@@ -176,9 +176,11 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 func droppedDependencies(p *projectgraph.Project) []protocol.Finding {
 	var out []protocol.Finding
 	for _, task := range slices.Sorted(maps.Keys(p.Dropped)) {
+		// The source names the override, and any dependency it kept after it.
+		override, _, _ := strings.Cut(p.Sources[task+".dependsOn"], ", with ")
 		out = append(out, protocol.Finding{
 			Check: p.Name + ":" + task + " keeps the dependencies its plugins add", Warning: true,
-			Detail: "smith.toml's depends_on (" + p.Sources[task+".dependsOn"] + ") leaves out " + strings.Join(p.Dropped[task], ", "),
+			Detail: "depends_on in " + override + " leaves out " + strings.Join(p.Dropped[task], ", "),
 			Remedy: "add them to depends_on, or leave them out if the task does not need them (`smith explain " + p.Name + ":" + task + "` shows where each field comes from)",
 		})
 	}

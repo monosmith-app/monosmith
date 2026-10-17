@@ -168,10 +168,11 @@ web:build — Compile to dist/
 ```
 
 A `depends_on` override replaces the list, with one exception: a task that a
-plugin added to the project for the overridden one stays. For example, the
-`e2e-browsers` task the playwright plugin runs before `e2e` stays, because
-`e2e` cannot run without it; `smith explain` shows it as
-`from smith.toml …, with e2e-browsers from plugin playwright`. Any other
+plugin added to the project for the overridden one stays, whether the plugin
+is in the project's stack or applied as a convention (`[conventions.<name>]`).
+For example, the `e2e-browsers` task the playwright plugin runs before `e2e`
+stays, because `e2e` cannot run without it; `smith explain` shows it as
+`from smith.toml …, with e2e-browsers from convention playwright`. Any other
 dependency a plugin gave the task and the override leaves out (`build`,
 `^build`) is gone. `smith doctor` names each one as a warning, so the drop is
 deliberate rather than silent.

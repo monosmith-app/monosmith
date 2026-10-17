@@ -80,7 +80,9 @@ func (p *Project) override(name string, o workspace.TaskOverride, source string)
 	before := p.Tasks[name]
 	from := p.Sources[name+".dependsOn"]
 	t := apply(before, o, p.Sources, name, source)
-	if o.DependsOn != nil && strings.HasPrefix(from, "plugin ") {
+	// A plugin added the list: a language plugin, a stack's toolchain ("plugin
+	// x (stack y)") or a convention ("convention x"), not an earlier override.
+	if o.DependsOn != nil && from != "" && !strings.HasPrefix(from, "smith.toml") {
 		for _, d := range before.DependsOn {
 			if slices.Contains(t.DependsOn, d) {
 				continue

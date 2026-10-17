@@ -1,6 +1,7 @@
 package projectgraph
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,6 +35,52 @@ func TestADependsOnOverrideKeepsATaskThePluginAddedForIt(t *testing.T) {
 	}
 	if len(cfg.Projects["core"].Tasks["e2e"].DependsOn) != 1 {
 		t.Error("the override's own list was changed")
+	}
+}
+
+// The path OpenCraw takes: [conventions.playwright] replaces the e2e task the
+// node plugin discovered from package.json, and adds e2e-browsers; the
+// converted smith.toml then overrides e2e's depends_on.
+func TestADependsOnOverrideKeepsWhatAConventionAddedForTheTask(t *testing.T) {
+	for _, override := range [][]string{{"build"}, {"build", "^build"}, {"build", "core:build"}} {
+		p := &Project{Project: protocol.Project{Name: "office-reader", Root: "packages/office-reader", Tasks: map[string]protocol.Task{
+			"build": {Command: []string{"npm", "run", "build"}},
+			"e2e":   {Command: []string{"npm", "run", "e2e"}},
+		}}, Plugin: "node"}
+		merge(p, protocol.Contribution{Replace: map[string]protocol.Task{
+			"e2e":          {Command: []string{"npm", "run", "e2e"}, DependsOn: []string{"build", "e2e-browsers"}},
+			"e2e-browsers": {Command: []string{"npx", "--no-install", "playwright", "install", "chromium"}},
+		}}, "convention playwright")
+		cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{"office-reader": {Tasks: map[string]workspace.TaskOverride{
+			"e2e": {DependsOn: override},
+		}}}}
+		if err := ApplyOverrides(p, cfg); err != nil {
+			t.Fatal(err)
+		}
+		want := strings.Join(append(slices.Clone(override), "e2e-browsers"), ",")
+		if got := strings.Join(p.Tasks["e2e"].DependsOn, ","); got != want {
+			t.Errorf("override %v: depends_on = %s, want %s", override, got, want)
+		}
+		if src := p.Sources["e2e.dependsOn"]; !strings.Contains(src, "e2e-browsers from convention playwright") {
+			t.Errorf("override %v: source = %q", override, src)
+		}
+	}
+}
+
+func TestADependsOnOverrideRecordsWhatItDropsFromAConvention(t *testing.T) {
+	p := &Project{Project: protocol.Project{Name: "web", Root: "apps/web", Tasks: map[string]protocol.Task{
+		"build": {Command: []string{"tsc"}},
+		"lint":  {Command: []string{"eslint", "."}},
+	}}, Plugin: "node"}
+	merge(p, protocol.Contribution{DependsOn: map[string][]string{"lint": {"slice-check"}}}, "convention vertical-slices")
+	cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{"web": {Tasks: map[string]workspace.TaskOverride{
+		"lint": {DependsOn: []string{"build"}},
+	}}}}
+	if err := ApplyOverrides(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if d := p.Dropped["lint"]; len(d) != 1 || d[0] != "slice-check (from convention vertical-slices)" {
+		t.Errorf("dropped = %v", d)
 	}
 }
 

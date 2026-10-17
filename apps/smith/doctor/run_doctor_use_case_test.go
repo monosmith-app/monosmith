@@ -26,6 +26,11 @@ func TestDroppedDependenciesAreNamed(t *testing.T) {
 	if !strings.Contains(got[0].Remedy, "smith explain core:e2e") {
 		t.Errorf("remedy %q", got[0].Remedy)
 	}
+	// An override that kept a plugin's task names only the override.
+	p.Sources["e2e.dependsOn"] = "smith.toml [projects.core.tasks.e2e], with e2e-browsers from convention playwright"
+	if d := droppedDependencies(p)[0].Detail; d != "depends_on in smith.toml [projects.core.tasks.e2e] leaves out build (from plugin node)" {
+		t.Errorf("detail %q", d)
+	}
 	if len(droppedDependencies(&projectgraph.Project{})) != 0 {
 		t.Error("a project with nothing dropped has no finding")
 	}
