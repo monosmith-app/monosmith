@@ -26,6 +26,20 @@ import x from '../local'
 	}
 }
 
+func TestPackageNamesSkipsWordsInsideStrings(t *testing.T) {
+	// Both from OpenCraw: "from" and "import" as words in strings (#298).
+	src := `
+import { z } from 'zod'
+throw new Error('the step has no "from" is given')
+const label = word('from'), field = pillField(step, 'from', 'page')
+const hint = "use import('x') to load it"
+const t = ` + "`" + `copy from "a" to 'b'` + "`" + `
+`
+	if got, want := PackageNames(src), []string{"zod"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
 func TestScanImportsSkipsBuildOutput(t *testing.T) {
 	dir := t.TempDir()
 	write := func(rel, body string) {

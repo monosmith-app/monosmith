@@ -69,14 +69,55 @@ func ScanFileImports(dir string) (map[string][]string, error) {
 
 // PackageNames extracts bare package names from one source file's imports.
 // Comments are skipped: a doc comment quoting `require('x')` imports nothing.
+// So is text inside strings: in `'no "from" is given'` the from is a word,
+// not a keyword. A match counts only when its keyword is code and its
+// specifier is a string literal of its own.
 func PackageNames(src string) []string {
+	code := withoutComments(src)
+	literals := stringLiterals(code)
 	var out []string
-	for _, m := range specifierPattern.FindAllStringSubmatch(withoutComments(src), -1) {
-		if name := packageName(m[1]); name != "" {
+	for _, m := range specifierPattern.FindAllStringSubmatchIndex(code, -1) {
+		quote := m[2] - 1
+		if insideLiteral(literals, m[0]) || literals[quote] != m[3] {
+			continue
+		}
+		if name := packageName(code[m[2]:m[3]]); name != "" {
 			out = append(out, name)
 		}
 	}
 	return out
+}
+
+// stringLiterals maps the offset of each string or template literal's
+// opening quote to the offset of its closing one.
+func stringLiterals(code string) map[int]int {
+	literals := map[int]int{}
+	for i := 0; i < len(code); i++ {
+		c := code[i]
+		if c != '\'' && c != '"' && c != '`' {
+			continue
+		}
+		end := i + 1
+		for end < len(code) && code[end] != c && (c == '`' || code[end] != '\n') {
+			if code[end] == '\\' {
+				end++
+			}
+			end++
+		}
+		literals[i] = end
+		i = end
+	}
+	return literals
+}
+
+// insideLiteral reports whether an offset falls within a literal's quotes.
+func insideLiteral(literals map[int]int, at int) bool {
+	for start, end := range literals {
+		if at > start && at <= end {
+			return true
+		}
+	}
+	return false
 }
 
 // withoutComments blanks JavaScript's // and /* */ comments, leaving string
