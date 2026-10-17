@@ -2,6 +2,7 @@ package gitclient
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -238,6 +239,26 @@ func (g *Git) RestoreFiles(paths ...string) error {
 // Init creates a repository with main as its first branch.
 func (g *Git) Init() error {
 	_, err := g.Run("init", "--initial-branch=main")
+	return err
+}
+
+// Prefix is the directory's path inside its repository: "" at the top level,
+// "sub/dir/" below it.
+func (g *Git) Prefix() (string, error) { return g.Run("rev-parse", "--show-prefix") }
+
+// TopLevel is the root of the repository the directory is in.
+func (g *Git) TopLevel() (string, error) { return g.Run("rev-parse", "--show-toplevel") }
+
+// CommitPaths stages and commits only paths (relative to the directory),
+// leaving every other change, staged or not, as it was.
+func (g *Git) CommitPaths(message string, paths []string) error {
+	if len(paths) == 0 {
+		return errors.New("nothing to commit")
+	}
+	if _, err := g.Run(append([]string{"add", "--"}, paths...)...); err != nil {
+		return err
+	}
+	_, err := g.Run(append([]string{"commit", "--quiet", "--message", message, "--"}, paths...)...)
 	return err
 }
 

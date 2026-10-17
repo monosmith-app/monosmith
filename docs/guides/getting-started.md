@@ -25,7 +25,9 @@ cd acme
 This writes `smith.toml`, `.gitignore`, `.gitattributes`, a README and a CI
 pipeline, initialises git on `main` and makes the first commit. In a clone that
 already exists (with a LICENSE, say), run `smith new acme --dir .`: files smith
-does not own are kept.
+does not own are kept, and the commit holds only the files smith wrote, so
+your other changes stay uncommitted. A workspace created in a folder below the
+top of an existing repository is left uncommitted; commit it there yourself.
 
 Options: `--scope @acme` (npm scope), `--module-prefix github.com/acme/acme`
 (Go module prefix; by default it is derived from the `origin` remote) and

@@ -51,10 +51,18 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		return "", err
 	}
 	git := gitclient.New(dir)
+	// A repository smith creates is the workspace's alone, so its first commit
+	// takes everything in it. In someone else's repository smith commits only
+	// the files it wrote, and below the top of one (a folder of a bigger
+	// repository) it commits nothing: the user decides what goes in.
+	created, nested := false, false
 	if !git.IsRepository() {
 		if err := git.Init(); err != nil {
 			return "", err
 		}
+		created = true
+	} else if prefix, err := git.Prefix(); err == nil && prefix != "" {
+		nested = true
 	}
 	if opts.Scope == "" {
 		opts.Scope = "@" + opts.Name
@@ -83,13 +91,18 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		".gitattributes":   gitattributes,
 		"README.md":        fmt.Sprintf(readme, opts.Name),
 	}
+	var written []string
 	for name, body := range files {
 		p := filepath.Join(dir, name)
 		if _, err := os.Stat(p); err == nil && name != workspace.FileName {
 			fmt.Fprintf(opts.Out, "  kept your %s\n", name)
 			if name == ".gitignore" {
-				if err := ignoreCache(p, opts.Out); err != nil {
+				changed, err := ignoreCache(p, opts.Out)
+				if err != nil {
 					return "", err
+				}
+				if changed {
+					written = append(written, name)
 				}
 			}
 			continue
@@ -99,19 +112,31 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
 			return "", err
 		}
+		written = append(written, name)
 		fmt.Fprintf(opts.Out, "  wrote %s\n", name)
 	}
-	written, _, err := cipipeline.Write(dir, cfg, cipipeline.NewModel(cipipeline.Contributions{}, opts.Version, cfg.Release.Branch))
+	pipelines, _, err := cipipeline.Write(dir, cfg, cipipeline.NewModel(cipipeline.Contributions{}, opts.Version, cfg.Release.Branch))
 	if err != nil {
 		return "", err
 	}
-	for _, f := range written {
+	for _, f := range pipelines {
 		fmt.Fprintf(opts.Out, "  wrote %s\n", f)
 	}
+	written = append(written, pipelines...)
 	if opts.NoCommit {
 		return dir, nil
 	}
-	if err := git.CommitAll("chore: create the " + opts.Name + " workspace with smith"); err != nil {
+	if nested {
+		top, _ := git.TopLevel()
+		fmt.Fprintf(opts.Out, "  not committed: %s is inside the git repository at %s; commit the workspace there when ready\n", dir, filepath.FromSlash(top))
+		return dir, nil
+	}
+	message := "chore: create the " + opts.Name + " workspace with smith"
+	commit := func() error { return git.CommitPaths(message, written) }
+	if created {
+		commit = func() error { return git.CommitAll(message) }
+	}
+	if err := commit(); err != nil {
 		fmt.Fprintf(opts.Out, "  not committed (%v); commit when ready\n", firstLine(err.Error()))
 	} else {
 		fmt.Fprintln(opts.Out, "  committed")
@@ -120,15 +145,15 @@ func NewWorkspace(opts NewOptions) (string, error) {
 }
 
 // ignoreCache adds .smith/ (the task cache) to a .gitignore smith kept, unless
-// it already ignores it.
-func ignoreCache(path string, out io.Writer) error {
+// it already ignores it, and says whether it changed the file.
+func ignoreCache(path string, out io.Writer) (bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return false, err
 	}
 	for _, line := range strings.Split(string(raw), "\n") {
 		if l := strings.TrimSpace(line); l == ".smith/" || l == ".smith" || l == "/.smith/" || l == "/.smith" {
-			return nil
+			return false, nil
 		}
 	}
 	text := string(raw)
@@ -136,10 +161,10 @@ func ignoreCache(path string, out io.Writer) error {
 		text += "\n"
 	}
 	if err := os.WriteFile(path, []byte(text+"\n# smith\n.smith/\n"), 0o644); err != nil {
-		return err
+		return false, err
 	}
 	fmt.Fprintln(out, "  added .smith/ to your .gitignore")
-	return nil
+	return true, nil
 }
 
 // modulePrefixFromRemote derives github.com/<owner>/<repo> from the origin
