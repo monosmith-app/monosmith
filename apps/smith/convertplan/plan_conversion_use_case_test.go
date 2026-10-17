@@ -264,6 +264,47 @@ func TestPlanConvertsAnUnbundledEsbuildBuild(t *testing.T) {
 	}
 }
 
+func TestPlanBuildsEveryRollupEntry(t *testing.T) {
+	// OpenCraw's office-reader: Rollup's input map, one entry per subpath.
+	reader := project("@acme/reader", "packages/reader", "lib", []string{"package.json", "rollup.config.cjs"}, map[string]nxworkspace.Target{})
+	reader.Package = &nxworkspace.PackageJSON{Name: "@acme/reader", Module: "./dist/index.esm.js", Types: "./dist/src/index.d.ts"}
+	dynamic := project("@acme/dyn", "packages/dyn", "lib", []string{"package.json", "rollup.config.cjs"}, map[string]nxworkspace.Target{})
+	dynamic.Package = &nxworkspace.PackageJSON{Name: "@acme/dyn", Module: "./dist/index.esm.js", Types: "./dist/src/index.d.ts"}
+	w := &nxworkspace.Workspace{Projects: []*nxworkspace.Project{reader, dynamic}}
+	contents := map[string]string{
+		"packages/reader/rollup.config.cjs": officeReaderRollup,
+		"packages/dyn/rollup.config.cjs":    "const { withNx } = require('@nx/rollup/with-nx')\nmodule.exports = withNx({ main: './src/index.ts', tsConfig: './tsconfig.lib.json', format: ['esm'] }, { input: entries() })\n",
+	}
+	plan := MakePlan(w, Input{DirName: "acme", Files: []string{"packages/reader/rollup.config.cjs", "packages/dyn/rollup.config.cjs"}, Read: func(f string) string { return contents[f] }})
+
+	build := plan.Project("reader").Scripts["build"]
+	if !strings.HasPrefix(build, "esbuild index=src/index.ts xlsx=src/spreadsheet/index.ts pptx=src/presentation/index.ts docx=src/document/index.ts --bundle --splitting --packages=external --format=esm --outdir=dist --out-extension:.js=.esm.js") || !strings.Contains(build, "&& tsc -p tsconfig.lib.json --emitDeclarationOnly") {
+		t.Fatalf("reader build %q", build)
+	}
+	if changed := findings(plan, Changed); !strings.Contains(changed, "every entry Rollup built (index, xlsx, pptx, docx, sharing code in dist/chunks)") {
+		t.Fatalf("changed:\n%s", changed)
+	}
+	if _, converted := plan.Project("dyn").Scripts["build"]; converted {
+		t.Fatal("an input convert cannot read must not build main alone")
+	}
+	if manual := findings(plan, Manual); !strings.Contains(manual, "packages/dyn/rollup.config.cjs: builds several entries (input or additionalEntryPoints) convert cannot read") {
+		t.Fatalf("manual:\n%s", manual)
+	}
+}
+
+func TestPlanReportsEsbuildOptionsItCannotCarry(t *testing.T) {
+	ext := project("@acme/ext", "apps/ext", "app", []string{"package.json"}, map[string]nxworkspace.Target{
+		"build": target(t, `{"executor": "@nx/esbuild:esbuild", "options": {"main": "apps/ext/src/extension.ts", "outputPath": "apps/ext/dist", "esbuildOptions": {"outExtension": {".js": ".cjs"}, "banner": {"js": "// x"}}}}`),
+	})
+	plan := MakePlan(&nxworkspace.Workspace{Projects: []*nxworkspace.Project{ext}}, Input{DirName: "acme", Read: func(string) string { return "" }})
+	if build := plan.Project("ext").Scripts["build"]; !strings.Contains(build, "--outdir=dist --out-extension:.js=.cjs --sourcemap") {
+		t.Fatalf("build %q", build)
+	}
+	if manual := findings(plan, Manual); !strings.Contains(manual, "ext build: esbuildOptions not carried to the build script: banner") {
+		t.Fatalf("manual:\n%s", manual)
+	}
+}
+
 func TestPlanShipsANodeAppWithADockerfileAsAnImage(t *testing.T) {
 	host := project("@acme/host", "apps/host", "app", []string{"package.json", "Dockerfile"}, nil)
 	lib := project("@acme/tools", "libs/tools", "lib", []string{"package.json", "Dockerfile"}, nil)

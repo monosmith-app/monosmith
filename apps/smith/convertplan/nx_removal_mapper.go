@@ -31,16 +31,16 @@ func NxPackage(name string) bool {
 // TypeScript file resolves to "./x" (npm workspaces resolve the packages).
 const JestPreset = `// Written by smith convert: the values @nx/jest/preset provided, without Nx.
 module.exports = {
-  testMatch: ['**/?(*.)+(spec|test).?([mc])[jt]s?(x)'],
+  testMatch:            ['**/?(*.)+(spec|test).?([mc])[jt]s?(x)'],
   moduleFileExtensions: ['ts', 'js', 'mts', 'mjs', 'cts', 'cjs', 'html'],
-  coverageReporters: ['html'],
-  moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
-  transform: {
+  coverageReporters:    ['html'],
+  moduleNameMapper:     { '^(\\.{1,2}/.*)\\.js$': '$1' },
+  transform:            {
     '^.+\\.(ts|js|mts|mjs|cts|cjs|html)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
-  testEnvironment: 'jsdom',
+  testEnvironment:          'jsdom',
   modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/out-tsc/'],
-  testEnvironmentOptions: {
+  testEnvironmentOptions:   {
     customExportConditions: ['node', 'require', 'default'],
   },
 }
@@ -144,8 +144,8 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			}
 			plan.Add(Changed, "", f, "rewritten without @nx/react: its Jest transformer is "+AssetTransformFile+" at the workspace root, and @nx/react/babel becomes the Babel presets it stood for (without its decorator, macro and runtime plugins)")
 		case strings.HasPrefix(base, "rollup.config.") && strings.Contains(text, "with-nx"):
-			if !replaceRollup(plan, w, f, text) {
-				plan.Add(Manual, "", f, "builds with @nx/rollup's withNx, which needs Nx; rewrite the build without it")
+			if why := replaceRollup(plan, w, f, text); why != "" {
+				plan.Add(Manual, "", f, why)
 			}
 		case strings.HasPrefix(base, "eslint.config."):
 			rewritten, ok := RewriteNxESLint(text)
@@ -184,8 +184,9 @@ var (
 
 // replaceRollup swaps a library's @nx/rollup build for esbuild (the bundle)
 // plus tsc (the declarations), writing to the paths its package.json
-// already publishes. It reports false when those paths cannot be read.
-func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) bool {
+// already publishes. It returns why it could not, or "".
+func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) string {
+	const unreadable = "builds with @nx/rollup's withNx, which needs Nx; rewrite the build without it"
 	root := path.Dir(file)
 	var project *nxworkspace.Project
 	for _, p := range w.Projects {
@@ -195,7 +196,7 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) bool
 	}
 	pp := plan.ProjectAt(root)
 	if project == nil || project.Package == nil || pp == nil || pp.Language != "node" {
-		return false
+		return unreadable
 	}
 	main := rollupMain.FindStringSubmatch(text)
 	tsconfig := rollupTSConfig.FindStringSubmatch(text)
@@ -205,13 +206,25 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) bool
 	}
 	types := strings.TrimPrefix(project.Package.Types, "./")
 	if main == nil || tsconfig == nil || out == "" || types == "" {
-		return false
+		return unreadable
 	}
 	format := "esm"
 	if m := rollupFormat.FindStringSubmatch(text); m != nil {
 		format = m[1]
 	}
 	entry := strings.TrimPrefix(main[1], "./")
+	bundle := fmt.Sprintf("esbuild %s --bundle --packages=external --format=%s --outfile=%s --sourcemap", entry, format, out)
+	entries, readable := RollupEntries(text)
+	if !readable {
+		return "builds several entries (input or additionalEntryPoints) convert cannot read; build each with esbuild, e.g. esbuild name=src/file.ts ... --splitting --outdir=" + path.Dir(out)
+	}
+	if len(entries) > 0 {
+		multi, ok := rollupMultiEntry(entries, format, out)
+		if !ok {
+			return fmt.Sprintf("builds %d entries, but %s (package.json main or module) is none of them as %s output; build them with esbuild by hand", len(entries), out, format)
+		}
+		bundle = multi
+	}
 	// The declarations keep their own build info: sharing the project's
 	// would make `tsc --build` (typecheck) think the library is built when
 	// its own outputs are missing.
@@ -222,8 +235,8 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) bool
 	}
 	// Then each relative specifier in the declarations names its file, as
 	// mnci's rollup plugin did, so nodenext consumers can follow them.
-	build := fmt.Sprintf("esbuild %s --bundle --packages=external --format=%s --outfile=%s --sourcemap && tsc -p %s --emitDeclarationOnly --declaration --declarationDir %s --tsBuildInfoFile %s/tsconfig.lib.tsbuildinfo && node %s%s %s",
-		entry, format, out, strings.TrimPrefix(tsconfig[1], "./"), declarations, declarations, up, DeclarationSpecifiersFile, declarations)
+	build := fmt.Sprintf("%s && tsc -p %s --emitDeclarationOnly --declaration --declarationDir %s --tsBuildInfoFile %s/tsconfig.lib.tsbuildinfo && node %s%s %s",
+		bundle, strings.TrimPrefix(tsconfig[1], "./"), declarations, declarations, up, DeclarationSpecifiersFile, declarations)
 	plan.WriteFile(DeclarationSpecifiersFile, DeclarationSpecifiers)
 	if pp.Scripts == nil {
 		pp.Scripts = map[string]string{}
@@ -234,8 +247,48 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) bool
 	}
 	plan.AddDevDependencies["esbuild"] = ""
 	plan.DeletePath(file)
-	plan.Add(Changed, pp.Name, "build", "Rollup with @nx/rollup becomes esbuild plus tsc declarations, into the same "+out+" and "+types+", whose relative specifiers "+DeclarationSpecifiersFile+" gives their .js files (as the old mnci's rollup plugin did): "+build)
-	return true
+	built := out
+	if len(entries) > 0 {
+		names := make([]string, len(entries))
+		for i, e := range entries {
+			names[i] = e.Name
+		}
+		built = fmt.Sprintf("every entry Rollup built (%s, sharing code in %s/chunks)", strings.Join(names, ", "), path.Dir(out))
+	}
+	plan.Add(Changed, pp.Name, "build", "Rollup with @nx/rollup becomes esbuild plus tsc declarations, into the same "+built+" and "+types+", whose relative specifiers "+DeclarationSpecifiersFile+" gives their .js files (as the old mnci's rollup plugin did): "+build)
+	return ""
+}
+
+// rollupMultiEntry builds every entry of a rollup config in one esbuild run.
+// With --splitting the code two entries share sits in one chunk, as Rollup
+// did, so a class two subpaths export keeps one identity. The output names
+// follow out (package.json main or module): its entry's name plus the
+// extension Rollup gave it (index.esm.js: .esm.js). esbuild splits ES
+// modules only, so another format reports false.
+func rollupMultiEntry(entries []RollupEntry, format, out string) (string, bool) {
+	if format != "esm" {
+		return "", false
+	}
+	base := path.Base(out)
+	ext := ""
+	for _, e := range entries {
+		if strings.HasPrefix(base, e.Name+".") && strings.HasSuffix(base, ".js") {
+			ext = strings.TrimPrefix(base, e.Name)
+		}
+	}
+	if ext == "" {
+		return "", false
+	}
+	parts := []string{"esbuild"}
+	for _, e := range entries {
+		parts = append(parts, e.Name+"="+e.Source)
+	}
+	parts = append(parts, "--bundle", "--splitting", "--packages=external", "--format=esm", "--outdir="+path.Dir(out))
+	if ext != ".js" {
+		parts = append(parts, "--out-extension:.js="+ext)
+	}
+	parts = append(parts, "--chunk-names=chunks/[name]-[hash]", "--sourcemap")
+	return strings.Join(parts, " "), true
 }
 
 // tsconfigFile reports whether a file is a tsconfig outside node_modules.

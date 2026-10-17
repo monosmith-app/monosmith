@@ -10,8 +10,9 @@ import (
 )
 
 // Doctor checks that Node.js is the version CI installs (nodeVersion), that
-// dependencies are installed and that every Node project is covered by the
-// root package.json workspaces.
+// dependencies are installed, that every Node project is covered by the
+// root package.json workspaces, and that a built package has every file
+// its package.json names.
 func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion string) protocol.DoctorResult {
 	var findings []protocol.Finding
 	if len(params.Projects) == 0 {
@@ -51,6 +52,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		}
 		if p.Kind == protocol.ProjectPackage {
 			findings = append(findings, CheckPackageImports(workspaceRoot, p))
+		}
+		if f, ok := CheckEntryFiles(workspaceRoot, p); ok {
+			findings = append(findings, f)
 		}
 	}
 	return protocol.DoctorResult{Findings: findings}

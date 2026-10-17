@@ -118,7 +118,14 @@ func executorCommand(w *nxworkspace.Workspace, p *nxworkspace.Project, t nxworks
 			line, ok := EsbuildTranspile(rel("tsConfig"), main, out, platform, format)
 			return line, []string{"esbuild", "typescript"}, ok
 		}
-		return fmt.Sprintf("esbuild %s --bundle --packages=external --platform=%s --format=%s --outdir=%s --sourcemap", main, platform, format, out), []string{"esbuild"}, true
+		opts := MapEsbuildOptions(t)
+		line := fmt.Sprintf("esbuild %s --bundle --packages=external --platform=%s --format=%s --outdir=%s", main, platform, format, out)
+		for _, f := range append(opts.Flags, opts.Sourcemap) {
+			if f != "" {
+				line += " " + f
+			}
+		}
+		return line, []string{"esbuild"}, true
 	case "@nx/js:node":
 		var build string
 		t.Option("buildTarget", &build)

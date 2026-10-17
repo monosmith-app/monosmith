@@ -15,7 +15,7 @@ type PackageManifest struct {
 	PeerDependenciesMeta map[string]struct {
 		Optional bool `json:"optional"`
 	} `json:"peerDependenciesMeta"`
-	Engines              struct {
+	Engines struct {
 		VSCode string `json:"vscode"`
 	} `json:"engines"`
 	Smith struct {

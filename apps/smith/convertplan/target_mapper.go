@@ -134,8 +134,19 @@ func mapTargets(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, pp
 			}
 			setScript(plan, pp, script, line, t, nil)
 			plan.Add(Changed, pp.Name, name, fmt.Sprintf("%s becomes the script %q: %s", t.Executor, script, line))
-			if t.Executor == "@nx/esbuild:esbuild" && !esbuildBundles(t) {
-				plan.Add(Changed, pp.Name, name, "bundle: false: like Nx, it transpiles each file the tsconfig includes into the same place under the output, bundling nothing")
+			if t.Executor == "@nx/esbuild:esbuild" {
+				opts := MapEsbuildOptions(t)
+				unmapped := opts.Unmapped
+				if !esbuildBundles(t) {
+					plan.Add(Changed, pp.Name, name, "bundle: false: like Nx, it transpiles each file the tsconfig includes into the same place under the output, bundling nothing")
+					// The transpile script takes none of them.
+					if len(opts.Flags) > 0 || opts.Sourcemap != "--sourcemap" {
+						unmapped = append(unmapped, "esbuildOptions (with bundle: false)")
+					}
+				}
+				if len(unmapped) > 0 {
+					plan.Add(Manual, pp.Name, name, "esbuildOptions not carried to the build script: "+strings.Join(unmapped, ", ")+"; add the matching esbuild flags to the "+script+" script")
+				}
 			}
 			if copied {
 				plan.Add(Changed, pp.Name, name, "its assets are copied after the build by a node one-liner, as Nx copied them (fs.globSync: Node 22 or later)")
