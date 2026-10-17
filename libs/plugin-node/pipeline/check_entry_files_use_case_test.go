@@ -16,7 +16,8 @@ const readerManifest = `{
     "./package.json": "./package.json",
     ".": {"types": "./dist/src/index.d.ts", "import": "./dist/index.esm.js"},
     "./xlsx": {"types": "./dist/src/spreadsheet/index.d.ts", "import": "./dist/xlsx.esm.js"},
-    "./assets/*": "./dist/assets/*"
+    "./assets/*": "./dist/assets/*",
+    "./source": "./src/index.ts"
   }
 }`
 
@@ -42,7 +43,7 @@ func TestCheckEntryFilesNamesWhatTheBuildDidNotProduce(t *testing.T) {
 	// OpenCraw's office-reader after the first conversion: only index built.
 	root, p := readerWorkspace(t, "dist/index.esm.js", "dist/src/index.d.ts", "dist/src/spreadsheet/index.d.ts")
 	f, ok := CheckEntryFiles(root, p)
-	if !ok || f.OK || f.Detail != "packages/reader/package.json names dist/xlsx.esm.js, which the build did not produce" {
+	if !ok || f.OK || f.Detail != "packages/reader/package.json names packages/reader/dist/xlsx.esm.js, which the build did not produce" {
 		t.Fatalf("finding %+v %v", f, ok)
 	}
 }
@@ -54,8 +55,24 @@ func TestCheckEntryFilesPassesACompleteBuild(t *testing.T) {
 	}
 }
 
+func TestCheckEntryFilesReadsTheWorkspaceBuildDir(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "packages", "kit")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"main": "../../dist/packages/kit/index.js", "types": "../../dist/packages/kit/index.d.ts"}`), 0o644)
+	_ = os.MkdirAll(filepath.Join(root, "dist", "packages", "kit"), 0o755)
+	_ = os.WriteFile(filepath.Join(root, "dist", "packages", "kit", "index.js"), nil, 0o644)
+	p := protocol.Project{Name: "kit", Root: "packages/kit", Kind: protocol.ProjectPackage, Tasks: map[string]protocol.Task{"build": {}}}
+	f, ok := CheckEntryFiles(root, p)
+	if !ok || f.OK || f.Detail != "packages/kit/package.json names dist/packages/kit/index.d.ts, which the build did not produce" {
+		t.Fatalf("finding %+v %v", f, ok)
+	}
+}
+
 func TestCheckEntryFilesWaitsForABuild(t *testing.T) {
-	root, p := readerWorkspace(t)
+	// A source an exports condition names exists before any build: it is
+	// not the build's, so the package still counts as not built.
+	root, p := readerWorkspace(t, "src/index.ts")
 	if f, ok := CheckEntryFiles(root, p); ok {
 		t.Fatalf("an unbuilt package is not judged: %+v", f)
 	}
