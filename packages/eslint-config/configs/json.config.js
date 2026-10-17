@@ -23,7 +23,9 @@ export default [
   },
   {
     name:            'monosmith/jsonc',
-    files:           ['**/*.jsonc', '**/tsconfig*.json', '**/*.code-workspace', '**/.vscode/*.json'],
+    // A dev container definition is JSONC too (VS Code and the devcontainer
+    // CLI read comments), and smith marks the one it writes with a comment.
+    files:           ['**/*.jsonc', '**/tsconfig*.json', '**/*.code-workspace', '**/.vscode/*.json', '**/.devcontainer.json', '**/.devcontainer/**/devcontainer.json'],
     languageOptions: { parser: jsoncParser },
     plugins:         { jsonc },
     rules:           {
