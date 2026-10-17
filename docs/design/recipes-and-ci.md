@@ -177,6 +177,38 @@ does not change because a URL's content did. Recommendation: yes. Record the
 content's hash beside the URL, as a lockfile does, and refuse a changed hash
 until `smith upgrade`.
 
+### Creating a recipe
+
+**Decided (later, after recipes work):** recipes get a creation wizard, not
+only the choice prompt. `smith recipe new` builds one interactively:
+
+1. It asks for the parent, if any.
+2. It goes through the roles one by one, listing the plugins that can fill
+   each: the built-in ones and those on the plugin search path.
+3. For each role it asks whether the plugin is fixed, or a choice the
+   recipe's users make.
+
+It validates as it goes (one plugin per role, requirements, conflicts), so a
+recipe the wizard writes always resolves. It writes the same TOML a person
+would, so the result can be edited and reviewed like any file. `smith recipe
+check <file>` runs the same validation on a recipe written by hand.
+
+### Versioning a recipe
+
+**Decided (later):** recipes are versioned the way code is, from commit
+messages. A recipe is a project kind (`recipe`) in a smith workspace, usually
+the team's recipes repository:
+- `feat(team-recipe): …` releases a minor, `fix` a patch, and a breaking
+  change a major, as for any package
+- `smith release` tags it `team-recipe@1.3.0` and attaches the file to the
+  release
+- a recipe URL points at a tag, so a workspace pins a version and `smith
+  upgrade` moves it forward
+- `doctor` reports a newer version of the recipe a project was made with
+
+So the recipes repository is itself a smith workspace, and its releases need
+nothing beyond what smith already does for packages.
+
 ## CI
 
 ### What is already right
@@ -267,6 +299,8 @@ a per-dependency exception list. The plugin protocol already has the
 | 3 | Recipes offer any choices, including the language; declarative `when` blocks | Decided; how far the logic goes is Open |
 | 4 | Upgrades update files smith owns only | Decided, for now |
 | 5 | Recipes are a file or a URL | Decided, for now; URL pinning is Open |
+| 5b | A recipe creation wizard (`smith recipe new`) and `smith recipe check` | Decided, later |
+| 5c | Recipes versioned from commit messages, as a `recipe` project kind | Decided, later |
 | 6 | CI is part of the recipe, no separate wizard | Open, recommended |
 | 7 | Named private registries, with provider-native auth | Open, recommended |
 | 8 | CI providers stay in the core; a renderer role later | Open, recommended |
