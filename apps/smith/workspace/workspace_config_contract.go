@@ -126,6 +126,9 @@ type ConventionConfig struct {
 	// Push turns the docker convention's push off for every app; default
 	// true when a registry is set. Docker only.
 	Push *bool `toml:"push"`
+	// Verify false stops smith ci verify building the affected apps'
+	// images on pull requests; default true. Docker only.
+	Verify *bool `toml:"verify"`
 }
 
 // DockerOverride is one app's docker settings ([projects.<name>.docker]).
@@ -139,6 +142,8 @@ type DockerOverride struct {
 	// the default) or a directory such as the app's own, for a Dockerfile
 	// written for it (Nx's convention: docker build apps/api).
 	Context string `toml:"context"`
+	// Verify false stops smith ci verify building this app's image.
+	Verify *bool `toml:"verify"`
 }
 
 // ProjectOverride adjusts one project.

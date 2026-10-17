@@ -47,6 +47,16 @@ func BuildArgs(p protocol.Project, tags ...string) []string {
 	return append(argv, Context(p))
 }
 
+// Verified reports whether smith ci verify builds the app's image on a pull
+// request that affects it, so a broken Dockerfile fails there and not at
+// the release: yes unless [conventions.docker] or the app's docker settings
+// say verify = false. The image is built, never pushed, and only for
+// affected apps, where Docker is installed.
+func Verified(p protocol.Project) bool {
+	verify, ok := p.Settings["docker"]["verify"].(bool)
+	return !ok || verify
+}
+
 // Context is the image's build context, workspace-relative: "." unless the
 // project's docker settings name another directory.
 func Context(p protocol.Project) string {
@@ -73,6 +83,7 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 			Command:     BuildArgs(p, Name(p)+":"+version, Name(p)+":latest"),
 			Cwd:         ".",
 			Description: "Build the app's container image (" + Name(p) + ":" + version + ")",
+			Verify:      Verified(p),
 		}
 		for _, before := range []string{"build", PruneTask} {
 			if _, ok := p.Tasks[before]; ok {

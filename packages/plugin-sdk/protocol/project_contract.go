@@ -72,4 +72,10 @@ type Task struct {
 	Cache     bool     `json:"cache,omitempty"`
 	// Description is shown by `smith explain` and the TUI.
 	Description string `json:"description,omitempty"`
+	// Verify asks CI's verify phase (smith ci verify) to run the task too,
+	// after lint, typecheck, test and build, for the affected projects that
+	// have it: an app's container image, so a broken Dockerfile fails the
+	// pull request, not the release. It is skipped, with a warning, where
+	// its program is not installed.
+	Verify bool `json:"verify,omitempty"`
 }

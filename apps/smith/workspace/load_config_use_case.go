@@ -115,8 +115,8 @@ func Validate(cfg *Config) error {
 		cfg.Cache.MaxSizeMB = 2048
 	}
 	for name, conv := range cfg.Conventions {
-		if name != "docker" && (conv.Registry != "" || conv.Push != nil) {
-			return fmt.Errorf("%s: [conventions.%s] registry and push are settings of the docker convention", FileName, name)
+		if name != "docker" && (conv.Registry != "" || conv.Push != nil || conv.Verify != nil) {
+			return fmt.Errorf("%s: [conventions.%s] registry, push and verify are settings of the docker convention", FileName, name)
 		}
 	}
 	for name, po := range cfg.Projects {

@@ -82,6 +82,14 @@ depends_on = ["build", "bundle"]
 That replaces the convention's list, so name everything the image needs;
 `smith doctor` names a dependency the override leaves out.
 
+`smith ci verify` builds the image of every app a pull request affects, after
+lint, typecheck, test and build, so a broken Dockerfile fails the pull
+request rather than the release. The image is built, never pushed. Where
+Docker is not installed the image is skipped with a warning; a runner with
+the CLI but no daemon (GitLab's default image) fails, so set
+`verify = false` under `[conventions.docker]` there, or for one app under
+`[projects.<app>.docker]`.
+
 | Registry | Logs in with | The pipeline gets |
 |---|---|---|
 | `ghcr.io/<owner>` | `GITHUB_TOKEN` as `GITHUB_ACTOR` | `packages: write` on GitHub Actions, nothing to set; on Azure Pipelines set `GITHUB_TOKEN` to a token with `write:packages` |

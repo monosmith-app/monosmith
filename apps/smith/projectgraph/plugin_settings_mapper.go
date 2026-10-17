@@ -21,6 +21,9 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if conv.Push != nil {
 		s["push"] = *conv.Push
 	}
+	if conv.Verify != nil {
+		s["verify"] = *conv.Verify
+	}
 	if d := po.Docker; d != nil {
 		if d.Image != "" {
 			s["image"] = d.Image
@@ -30,6 +33,9 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 		}
 		if d.Context != "" {
 			s["context"] = strings.TrimSuffix(d.Context, "/")
+		}
+		if d.Verify != nil {
+			s["verify"] = *d.Verify
 		}
 	}
 	if len(s) == 0 {

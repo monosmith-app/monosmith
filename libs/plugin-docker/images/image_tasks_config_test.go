@@ -44,6 +44,21 @@ func TestTheContextIsTheDirectoryTheSettingsName(t *testing.T) {
 	}
 }
 
+func TestTheImageIsVerifiedOnPullRequestsUnlessTurnedOff(t *testing.T) {
+	ws := t.TempDir()
+	for _, dir := range []string{"apps/on", "apps/off"} {
+		_ = os.MkdirAll(filepath.Join(ws, filepath.FromSlash(dir)), 0o755)
+		_ = os.WriteFile(filepath.Join(ws, filepath.FromSlash(dir), Dockerfile), nil, 0o644)
+	}
+	res := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "on", Root: "apps/on", Kind: protocol.ProjectApp},
+		{Name: "off", Root: "apps/off", Kind: protocol.ProjectApp, Settings: map[string]map[string]any{"docker": {"verify": false}}},
+	}})
+	if !res.Projects["on"].Tasks[TaskName].Verify || res.Projects["off"].Tasks[TaskName].Verify {
+		t.Errorf("on %v, off %v", res.Projects["on"].Tasks[TaskName].Verify, res.Projects["off"].Tasks[TaskName].Verify)
+	}
+}
+
 func TestTheImageIsBuiltAfterTheAppIsPruned(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "api"), 0o755)

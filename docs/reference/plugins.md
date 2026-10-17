@@ -191,6 +191,10 @@ A **project** carries its name, root, language, kind (`app`, `lib`,
 identifiers its sources import (`imports` — the host keeps those another
 project exports and turns them into graph edges), its manifest version, an
 optional release tag prefix, its tasks, and the stack its manifest records.
+A task marked `verify` is run by `smith ci verify` too, after the verify
+tasks, for the affected projects that have it (the docker convention marks
+an app's `image`); it is skipped, with a warning, where its program is not
+installed.
 
 Rules:
 
