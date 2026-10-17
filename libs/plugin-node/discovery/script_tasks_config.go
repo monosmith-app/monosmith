@@ -86,6 +86,20 @@ func AddDepsCheck(project *protocol.Project) {
 	}
 }
 
+// PruneTask writes an app's deploy output into its build directory
+// (smith npm-prune): a package.json and lockfile of its production tree, and
+// the workspace packages it uses in workspace_modules/, so the directory
+// installs on its own with npm ci --omit=dev (a container image does). It
+// runs after the app's build and the builds of what it uses, and is not
+// cached: it writes into the build's directory.
+func PruneTask(root string) protocol.Task {
+	return protocol.Task{
+		Command:     []string{"{smith}", "npm-prune", root},
+		DependsOn:   []string{"build", "^build"},
+		Description: "Write the app's deploy output into " + protocol.ProjectBuildDir(root) + ": its production package.json and lockfile, and the workspace packages it uses (workspace_modules/)",
+	}
+}
+
 // PackageTask packs an app with npm pack into dist/drop, the deliverable
 // smith ci pack keeps. An app that builds is packed from its build directory,
 // staged with its package.json (smith npm-pack); one that does not, from its

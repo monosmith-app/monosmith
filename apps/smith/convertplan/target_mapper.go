@@ -24,18 +24,16 @@ var pluginTargets = map[string]string{
 
 // plumbing are targets and executors that only serve Nx itself.
 var plumbing = map[string]string{
-	"build-deps":                    "Nx's build-deps helper; smith builds dependencies first on its own",
-	"watch-deps":                    "Nx's watch helper",
-	"nx-release-publish":            "smith release publishes",
-	"nx:noop":                       "an Nx no-op",
-	"@nx/js:release-publish":        "smith release publishes",
-	"@mnci/nx-python-pip:publish":   "smith release publishes",
-	"@nx/js:prune-lockfile":         "an Nx deployment helper with no smith equivalent",
-	"@nx/js:copy-workspace-modules": "an Nx deployment helper with no smith equivalent",
-	"@nx/js:verdaccio":              "a local registry helper",
-	"@nx-go/nx-go:serve":            "smith run start runs the app (go run .)",
-	"@nx-go/nx-go:tidy":             "run go mod tidy directly",
-	"@nx-go/nx-go:generate":         "run go generate ./... directly",
+	"build-deps":                  "Nx's build-deps helper; smith builds dependencies first on its own",
+	"watch-deps":                  "Nx's watch helper",
+	"nx-release-publish":          "smith release publishes",
+	"nx:noop":                     "an Nx no-op",
+	"@nx/js:release-publish":      "smith release publishes",
+	"@mnci/nx-python-pip:publish": "smith release publishes",
+	"@nx/js:verdaccio":            "a local registry helper",
+	"@nx-go/nx-go:serve":          "smith run start runs the app (go run .)",
+	"@nx-go/nx-go:tidy":           "run go mod tidy directly",
+	"@nx-go/nx-go:generate":       "run go generate ./... directly",
 }
 
 // packageTask is the task smith ci pack runs into dist/drop.
@@ -73,6 +71,14 @@ func mapTargets(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, pp
 		}
 		if strings.Contains(name, "-ci--") {
 			plan.Add(Dropped, pp.Name, name, "Nx's per-file split of a test target for CI")
+			continue
+		}
+		if IsNxPrune(name, t) {
+			if pp.Language == "node" {
+				mapNxPrune(plan, p, pp, name)
+			} else {
+				plan.Add(Changed, pp.Name, name, "an Nx deployment helper with no smith equivalent for "+pp.Language)
+			}
 			continue
 		}
 		if reason, ok := plumbing[name]; ok {

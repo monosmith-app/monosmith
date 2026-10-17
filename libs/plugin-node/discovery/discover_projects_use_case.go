@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/pruning"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -70,6 +71,12 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 	// deliverable smith ci pack keeps (a .vsix for an extension).
 	if _, own := pkg.Scripts["package"]; !own && (project.Kind == protocol.ProjectApp || pkg.Engines.VSCode != "") {
 		project.Tasks["package"] = PackageTask(root, pkg.Scripts)
+	}
+	// An app that builds can be deployed from its build directory alone.
+	if _, own := pkg.Scripts[pruning.Task]; !own && project.Kind == protocol.ProjectApp {
+		if _, builds := pkg.Scripts["build"]; builds {
+			project.Tasks[pruning.Task] = PruneTask(root)
+		}
 	}
 	// What a published package imports is resolved where it is installed.
 	if _, own := pkg.Scripts[DepsCheckTask]; !own && project.Kind == protocol.ProjectPackage {

@@ -22,6 +22,24 @@ COPY --from=build /out/app /app
 ENTRYPOINT ["/app"]
 `
 
+// nodeDockerfile installs a Node app from its pruned build (smith run prune,
+// which the image task runs first): dist/<app dir> holds the build, a
+// production package.json and lockfile, and the workspace packages the app
+// uses in workspace_modules/. Dependencies first, so a code change reuses
+// the install layer.
+const nodeDockerfile = `# The app's image (smith run image, after its build and prune). The context
+# is the workspace.
+FROM node:[[.NodeVersion]]-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY dist/[[.Dir]]/package.json dist/[[.Dir]]/package-lock.json ./
+COPY dist/[[.Dir]]/workspace_modules ./workspace_modules
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+COPY dist/[[.Dir]]/ ./
+USER node
+CMD ["node", "."]
+`
+
 // webDockerfile serves the static build smith writes to dist/<app dir>.
 const webDockerfile = `# The app's image (smith run image, after its build). The context is the
 # workspace.

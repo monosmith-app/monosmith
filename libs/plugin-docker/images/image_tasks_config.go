@@ -16,6 +16,12 @@ const TaskName = "image"
 // Dockerfile is the file that makes an app ship as an image.
 const Dockerfile = "Dockerfile"
 
+// PruneTask is the task a language plugin gives an app whose image installs
+// from a standalone deploy output (the node plugin's prune: a production
+// package.json, lockfile and workspace_modules/ in the build directory). The
+// image is built after it.
+const PruneTask = "prune"
+
 // Name is the image's name: the project's, lowercase as registries require.
 func Name(p protocol.Project) string { return strings.ToLower(p.Name) }
 
@@ -58,8 +64,10 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 			Cwd:         ".",
 			Description: "Build the app's container image (" + Name(p) + ":" + version + ")",
 		}
-		if _, ok := p.Tasks["build"]; ok {
-			task.DependsOn = []string{"build"}
+		for _, before := range []string{"build", PruneTask} {
+			if _, ok := p.Tasks[before]; ok {
+				task.DependsOn = append(task.DependsOn, before)
+			}
 		}
 		res.Projects[p.Name] = protocol.Contribution{Tasks: map[string]protocol.Task{TaskName: task}}
 	}

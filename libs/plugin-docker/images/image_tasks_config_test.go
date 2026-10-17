@@ -33,3 +33,15 @@ func TestContribute(t *testing.T) {
 		t.Errorf("image %+v", image)
 	}
 }
+
+func TestTheImageIsBuiltAfterTheAppIsPruned(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "api"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "apps", "api", Dockerfile), nil, 0o644)
+	res := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "api", Root: "apps/api", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{"build": {}, PruneTask: {}}},
+	}})
+	if got := strings.Join(res.Projects["api"].Tasks[TaskName].DependsOn, ","); got != "build,prune" {
+		t.Errorf("dependsOn %s", got)
+	}
+}

@@ -3,6 +3,7 @@
 package goldenpath
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -74,5 +75,46 @@ func TestDockerWorkspace(t *testing.T) {
 	tags, _ := io.ReadAll(resp.Body)
 	if !strings.Contains(string(tags), `"0.1.0"`) || !strings.Contains(string(tags), `"latest"`) {
 		t.Fatalf("the registry has the release's tags: %s", tags)
+	}
+}
+
+// TestDockerNodeApp ships a Node app that uses a workspace package as an
+// image: the image task prunes the app's build (a production package.json
+// and lockfile, the package copied into workspace_modules/) and the
+// Dockerfile the convention writes installs from it, away from the
+// workspace.
+func TestDockerNodeApp(t *testing.T) {
+	out, err := exec.Command("docker", "version", "--format", "{{.Server.Os}}").Output()
+	if err != nil || strings.TrimSpace(string(out)) != "linux" {
+		t.Skip("no Docker daemon running Linux containers")
+	}
+	t.Cleanup(func() { _ = exec.Command("docker", "image", "rm", "-f", "svc:dev", "svc:latest").Run() })
+	base := t.TempDir()
+	w := &workspace{t: t, bin: buildSmith(t, base), dir: base, env: identity()}
+	w.smith(true, "new", "smith-e2e-node-image", "--ci", "github")
+	w.dir = filepath.Join(base, "smith-e2e-node-image")
+	w.write("smith.toml", w.read("smith.toml")+"\n[conventions.docker]\n")
+	w.smith(true, "add", "package", "greetkit", "--lang", "node")
+	w.smith(true, "add", "app", "svc", "--lang", "node")
+	var kit struct{ Name string }
+	if err := json.Unmarshal([]byte(w.read("packages/greetkit/package.json")), &kit); err != nil {
+		t.Fatal(err)
+	}
+	svc := w.read("apps/svc/package.json")
+	w.write("apps/svc/package.json", strings.Replace(svc, `"scripts": {`, `"dependencies": { "`+kit.Name+`": "*" },`+"\n  \"scripts\": {", 1))
+	w.write("apps/svc/src/main.ts", "import { greet } from '"+kit.Name+"'\n\nprocess.stdout.write(greet('image').message + '\\n')\n")
+	run(t, w.dir, "npm", "install", "--no-audit", "--no-fund")
+	if dockerfile := w.read("apps/svc/Dockerfile"); !strings.Contains(dockerfile, "COPY dist/apps/svc/workspace_modules ./workspace_modules") {
+		t.Fatalf("the convention writes a Node app's Dockerfile from its pruned build:\n%s", dockerfile)
+	}
+	if out := w.smith(true, "run", "image", "-p", "svc"); !strings.Contains(out, "svc:prune ✔") || !strings.Contains(out, "svc:image ✔") {
+		t.Fatalf("image (after prune):\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(w.dir, "dist", "apps", "svc", "workspace_modules", filepath.FromSlash(kit.Name), "package.json")); err != nil {
+		t.Fatalf("prune copies the package the app uses: %v", err)
+	}
+	got, err := exec.Command("docker", "run", "--rm", "svc:dev").CombinedOutput()
+	if err != nil || !strings.Contains(string(got), "image") {
+		t.Fatalf("the image runs the app with its workspace package: %v\n%s", err, got)
 	}
 }

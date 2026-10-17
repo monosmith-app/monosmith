@@ -71,6 +71,40 @@ func TestDiscoverTagsNativeProjects(t *testing.T) {
 	}
 }
 
+func TestDiscoverGivesAnAppThatBuildsAPruneTask(t *testing.T) {
+	ws := t.TempDir()
+	for dir, body := range map[string]string{
+		"apps/api":    `{"name":"@acme/api","private":true,"scripts":{"build":"tsc"}}`,
+		"apps/script": `{"name":"@acme/script","private":true}`,
+		"apps/own":    `{"name":"@acme/own","private":true,"scripts":{"build":"tsc","prune":"node prune.mjs"}}`,
+		"libs/ui":     `{"name":"@acme/ui","private":true,"scripts":{"build":"tsc"}}`,
+	} {
+		_ = os.MkdirAll(filepath.Join(ws, filepath.FromSlash(dir)), 0o755)
+		_ = os.WriteFile(filepath.Join(ws, filepath.FromSlash(dir), "package.json"), []byte(body), 0o644)
+	}
+	res, err := Discover(ws, []string{"apps/api/package.json", "apps/script/package.json", "apps/own/package.json", "libs/ui/package.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range res.Projects {
+		prune, ok := p.Tasks["prune"]
+		switch p.Name {
+		case "api":
+			if !ok || strings.Join(prune.Command, " ") != "{smith} npm-prune apps/api" || strings.Join(prune.DependsOn, ",") != "build,^build" || prune.Cache {
+				t.Errorf("api prune = %+v (%v)", prune, ok)
+			}
+		case "own":
+			if !ok || prune.Command[0] != "npm" {
+				t.Errorf("own's prune script is replaced: %+v", prune)
+			}
+		default:
+			if ok {
+				t.Errorf("%s has a prune task", p.Name)
+			}
+		}
+	}
+}
+
 func TestDiscoverReportsBadJSON(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "x"), 0o755)
