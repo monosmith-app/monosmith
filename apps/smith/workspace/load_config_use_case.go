@@ -124,6 +124,9 @@ func Validate(cfg *Config) error {
 			if _, ok := cfg.Conventions["docker"]; !ok {
 				return fmt.Errorf("%s: [projects.%s.docker] needs [conventions.docker]", FileName, name)
 			}
+			if c := po.Docker.Context; c != "" && !ValidContext(c) {
+				return fmt.Errorf("%s: [projects.%s.docker] context %q must be a workspace-relative directory with forward slashes (\".\" or apps/%s, say)", FileName, name, c, name)
+			}
 		}
 		if po.Release == nil {
 			continue

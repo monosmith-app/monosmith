@@ -92,6 +92,7 @@ push = true                           # default: true when a registry is set
 [projects.api.docker]
 image = "acme-api"                    # the image's name under the registry; default: the project's
 push = false                          # build this app's image, never push it
+context = "apps/api"                  # the build context; default: ".", the workspace
 
 [plugins.external.kiwi]
 version = "^1"                        # installed on the plugin search path (docs/reference/plugins.md)

@@ -17,6 +17,10 @@ func TestPluginSettingsLayersTheProjectOnTheConvention(t *testing.T) {
 	if got := PluginSettings("docker", conv, po); !reflect.DeepEqual(got, map[string]any{"registry": "ghcr.io/acme", "push": false, "image": "acme-api"}) {
 		t.Errorf("project on top: %v", got)
 	}
+	po = workspace.ProjectOverride{Docker: &workspace.DockerOverride{Context: "apps/api/"}}
+	if got := PluginSettings("docker", workspace.ConventionConfig{}, po); !reflect.DeepEqual(got, map[string]any{"context": "apps/api"}) {
+		t.Errorf("context: %v", got)
+	}
 	if got := PluginSettings("docker", workspace.ConventionConfig{}, workspace.ProjectOverride{}); got != nil {
 		t.Errorf("nothing set: %v", got)
 	}

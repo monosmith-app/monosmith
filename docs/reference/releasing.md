@@ -60,7 +60,27 @@ registry = "ghcr.io/acme"   # unset: the image task builds it, release never pus
 [projects.api.docker]
 image = "acme-api"          # default: the project's name, lowercase
 push = false                # build api's image, never push it
+context = "apps/api"        # default: ".", the workspace
 ```
+
+The image is built with the workspace as its context, after the app's
+`build` and, for a Node app, its `prune`. That task writes the app's deploy
+output into its build directory: a production `package.json` and lockfile,
+and the workspace packages it uses in `workspace_modules/`. The Dockerfile the
+convention writes for a new Node app installs from it with
+`npm ci --omit=dev`. A Dockerfile written for its own directory as the context
+(Nx's `docker build apps/api`) takes `context = "apps/api"`.
+
+To build the image after a task of your own (a hand-written prune script, a
+bundler), list what it waits for:
+
+```toml
+[projects.api.tasks.image]
+depends_on = ["build", "bundle"]
+```
+
+That replaces the convention's list, so name everything the image needs;
+`smith doctor` names a dependency the override leaves out.
 
 | Registry | Logs in with | The pipeline gets |
 |---|---|---|

@@ -67,6 +67,31 @@ func TestADependsOnOverrideKeepsWhatAConventionAddedForTheTask(t *testing.T) {
 	}
 }
 
+func TestAnImageCanWaitForTheAppsOwnPruneTask(t *testing.T) {
+	// An app whose deploy output a hand-written script makes: the image
+	// waits for it, and doctor names the node plugin's prune it left out.
+	p := &Project{Project: protocol.Project{Name: "host", Root: "apps/host", Tasks: map[string]protocol.Task{
+		"build":  {Command: []string{"npm", "run", "build"}},
+		"prune":  {Command: []string{"{smith}", "npm-prune", "apps/host"}},
+		"bundle": {Command: []string{"npm", "run", "bundle"}},
+	}}, Plugin: "node"}
+	merge(p, protocol.Contribution{Tasks: map[string]protocol.Task{
+		"image": {Command: []string{"docker", "build", "."}, DependsOn: []string{"build", "prune"}},
+	}}, "convention docker")
+	cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{"host": {Tasks: map[string]workspace.TaskOverride{
+		"image": {DependsOn: []string{"build", "bundle"}},
+	}}}}
+	if err := ApplyOverrides(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(p.Tasks["image"].DependsOn, ","); got != "build,bundle" {
+		t.Errorf("depends_on = %s", got)
+	}
+	if d := p.Dropped["image"]; len(d) != 1 || d[0] != "prune (from convention docker)" {
+		t.Errorf("dropped = %v", d)
+	}
+}
+
 func TestADependsOnOverrideRecordsWhatItDropsFromAConvention(t *testing.T) {
 	p := &Project{Project: protocol.Project{Name: "web", Root: "apps/web", Tasks: map[string]protocol.Task{
 		"build": {Command: []string{"tsc"}},

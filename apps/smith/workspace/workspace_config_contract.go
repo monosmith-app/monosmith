@@ -135,6 +135,10 @@ type DockerOverride struct {
 	Image string `toml:"image"`
 	// Push false builds the image but never pushes it on release.
 	Push *bool `toml:"push"`
+	// Context is the build context, workspace-relative: "." (the workspace,
+	// the default) or a directory such as the app's own, for a Dockerfile
+	// written for it (Nx's convention: docker build apps/api).
+	Context string `toml:"context"`
 }
 
 // ProjectOverride adjusts one project.

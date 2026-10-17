@@ -34,6 +34,16 @@ func TestContribute(t *testing.T) {
 	}
 }
 
+func TestTheContextIsTheDirectoryTheSettingsName(t *testing.T) {
+	p := protocol.Project{Root: "apps/azure-host", Settings: map[string]map[string]any{"docker": {"context": "apps/azure-host"}}}
+	if got := strings.Join(BuildArgs(p, "host:dev"), " "); got != "docker build -f apps/azure-host/Dockerfile -t host:dev apps/azure-host" {
+		t.Errorf("command %q", got)
+	}
+	if got := Context(protocol.Project{}); got != "." {
+		t.Errorf("default context %q", got)
+	}
+}
+
 func TestTheImageIsBuiltAfterTheAppIsPruned(t *testing.T) {
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "api"), 0o755)

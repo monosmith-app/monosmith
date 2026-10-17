@@ -123,7 +123,8 @@
             "description": "The app's settings for the docker convention.",
             "properties": {
               "image": { "type": "string", "pattern": "^[a-z0-9]+([._/-][a-z0-9]+)*$", "description": "The image's name under the registry. Default: the project's name, lowercase." },
-              "push": { "type": "boolean", "description": "false builds the image but never pushes it on release." }
+              "push": { "type": "boolean", "description": "false builds the image but never pushes it on release." },
+              "context": { "type": "string", "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9_.@-]*(/[A-Za-z0-9_@][A-Za-z0-9_.@-]*)*/?)$", "description": "The build context, workspace-relative: \".\" (the workspace, the default) or a directory such as the app's own, for a Dockerfile written for it (Nx's: docker build apps/api)." }
             }
           },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },

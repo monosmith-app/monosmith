@@ -35,15 +35,25 @@ func Ships(workspaceRoot string, p protocol.Project) bool {
 	return err == nil
 }
 
-// BuildArgs are docker build's arguments for the project's Dockerfile, with
-// the workspace as the context (a Dockerfile copies the app's build from
-// dist/, or builds from the sources it needs), tagged with each tag.
+// BuildArgs are docker build's arguments for the project's Dockerfile,
+// tagged with each tag. The context is the workspace (a Dockerfile copies
+// the app's build from dist/, or builds from the sources it needs), or the
+// directory [projects.<name>.docker] context names.
 func BuildArgs(p protocol.Project, tags ...string) []string {
 	argv := []string{"docker", "build", "-f", path.Join(p.Root, Dockerfile)}
 	for _, t := range tags {
 		argv = append(argv, "-t", t)
 	}
-	return append(argv, ".")
+	return append(argv, Context(p))
+}
+
+// Context is the image's build context, workspace-relative: "." unless the
+// project's docker settings name another directory.
+func Context(p protocol.Project) string {
+	if c, _ := p.Settings["docker"]["context"].(string); c != "" {
+		return c
+	}
+	return "."
 }
 
 // Contribute gives every app that ships an image task, run from the
