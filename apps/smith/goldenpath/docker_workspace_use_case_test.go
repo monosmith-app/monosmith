@@ -88,7 +88,7 @@ func TestDockerNodeApp(t *testing.T) {
 	if err != nil || strings.TrimSpace(string(out)) != "linux" {
 		t.Skip("no Docker daemon running Linux containers")
 	}
-	t.Cleanup(func() { _ = exec.Command("docker", "image", "rm", "-f", "svc:dev", "svc:latest").Run() })
+	t.Cleanup(func() { _ = exec.Command("docker", "image", "rm", "-f", "svc:0.0.0", "svc:latest").Run() })
 	base := t.TempDir()
 	w := &workspace{t: t, bin: buildSmith(t, base), dir: base, env: identity()}
 	w.smith(true, "new", "smith-e2e-node-image", "--ci", "github")
@@ -113,7 +113,7 @@ func TestDockerNodeApp(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "apps", "svc", "workspace_modules", filepath.FromSlash(kit.Name), "package.json")); err != nil {
 		t.Fatalf("prune copies the package the app uses: %v", err)
 	}
-	got, err := exec.Command("docker", "run", "--rm", "svc:dev").CombinedOutput()
+	got, err := exec.Command("docker", "run", "--rm", "svc:latest").CombinedOutput()
 	if err != nil || !strings.Contains(string(got), "image") {
 		t.Fatalf("the image runs the app with its workspace package: %v\n%s", err, got)
 	}
