@@ -12,6 +12,11 @@ type GenerateParams struct {
 	// Stack is the stack the project is created with. The plugin that writes
 	// the manifest records it there, so discovery reports it back.
 	Stack string `json:"stack,omitempty"`
+	// Convention is true when the plugin is asked as a workspace convention
+	// ([conventions.<name>] applying to the new project), not as one of the
+	// stack's plugins. A plugin adds only what every matching project needs
+	// then: a suite or starter files belong to the stack that names it.
+	Convention bool `json:"convention,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.
