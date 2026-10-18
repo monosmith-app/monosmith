@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -70,6 +71,11 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if source == "" {
 		source = NuGetSource
 	}
+	key := os.Getenv("NUGET_API_KEY")
+	// A feed smith.toml names for the package wins, with its own key.
+	if feed, feedKey, ok := registries.Push(params.Project, os.Getenv); ok {
+		source, key = feed, feedKey
+	}
 	result := protocol.PublishResult{Registry: source}
 	if params.DryRun {
 		result.Skipped = "dry run"
@@ -90,7 +96,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	}
 	nupkg := filepath.Join(out, id+"."+params.Version+".nupkg")
 	argv := []string{"dotnet", "nuget", "push", nupkg, "--source", source, "--skip-duplicate"}
-	if key := os.Getenv("NUGET_API_KEY"); key != "" {
+	if key != "" {
 		argv = append(argv, "--api-key", key)
 	}
 	if err := DotnetRunner(workspaceRoot, argv); err != nil {
@@ -107,6 +113,9 @@ var NuGetIndex = "https://api.nuget.org/v3-flatcontainer"
 func Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	if params.Project.Kind != protocol.ProjectPackage || len(params.Project.Exports) == 0 {
 		return protocol.PublishedResult{}, nil
+	}
+	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NuGet != "" {
+		return protocol.PublishedResult{Registry: r.Publish.NuGet, Unreachable: true, Detail: "smith does not ask a private NuGet feed for its versions yet"}, nil
 	}
 	result := protocol.PublishedResult{Registry: "nuget.org"}
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(NuGetIndex + "/" + strings.ToLower(params.Project.Exports[0]) + "/index.json")
