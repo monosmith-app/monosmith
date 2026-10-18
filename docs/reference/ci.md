@@ -200,6 +200,48 @@ app's pub tag (the ci workflow gets `actions: write` for that). It sets up
 Dart with pub.dev's OIDC token and runs `smith release pub`; see
 [Releasing](releasing.md#pubdev) for the one-time setup on pub.dev.
 
+## Package download stores
+
+smith caches task outputs, but `npm ci`, `pip install`, `go mod download`,
+`cargo fetch` and `dotnet restore` would still download everything on every
+run. Each language plugin declares the directory its package manager keeps
+downloads in and the lockfiles that decide what is in it, and the generated
+pipelines restore it before `smith ci setup` and save it after a successful
+run, keyed on the lockfiles:
+
+| Plugin | Store | Keyed on |
+|---|---|---|
+| node | `~/.npm` | `package-lock.json` |
+| python | `~/.cache/pip` | `requirements-dev.txt` and each project's `pyproject.toml` |
+| go | `~/go/pkg/mod` | each module's `go.sum` |
+| rust | `~/.cargo/registry` | every `Cargo.lock` |
+| dotnet | `~/.nuget/packages` | every `.csproj` and `.fsproj` |
+| php | `~/.cache/composer` | every `composer.lock` |
+| dart | `~/.pub-cache` | every `pubspec.lock` |
+
+The key is `smith-<store>-<OS>-<hash of the lockfiles>`. When a lockfile
+changed, the run restores the latest cache of the same store and OS and only
+downloads the difference. Only the ci job caches: the native jobs run on other
+operating systems whose stores live elsewhere.
+
+How each provider does it:
+
+- **GitHub Actions**: an `actions/cache` step per store. A pull request from a
+  fork restores the cache and never writes the base repository's.
+- **Azure Pipelines**: a `Cache@2` task per store. The stores live under
+  `$(Pipeline.Workspace)/.smith-stores/`, which the pipeline's `variables:`
+  point each package manager at (`NPM_CONFIG_CACHE`, `PIP_CACHE_DIR`,
+  `GOMODCACHE`, `CARGO_HOME`, `NUGET_PACKAGES`, `COMPOSER_CACHE_DIR`,
+  `PUB_CACHE`), because Azure caches only paths it can name.
+- **GitLab CI**: a `cache:` entry per store under `.smith/stores/` in the
+  project (the same variables point there; `.smith/` is smith's own ignored
+  directory). GitLab keys on at most two files, so a store with more takes
+  the first two, and allows four caches per job: stores beyond the fourth are
+  named in a comment. A merge request from a fork runs in the fork's project
+  and uses its caches.
+
+`smith ci generate --check` reports a pipeline that is missing them.
+
 ## Cached audit verdicts
 
 A pull request that touches only Go code should not re-audit the Python and npm

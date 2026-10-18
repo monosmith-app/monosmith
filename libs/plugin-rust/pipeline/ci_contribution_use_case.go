@@ -48,6 +48,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
 		Setup:      []protocol.Step{{Name: "Fetch crates", Command: []string{"cargo", "fetch"}, Blocking: true}},
+		Stores:     []protocol.PackageStore{{Name: "cargo", Path: "~/.cargo/registry", Env: "CARGO_HOME", Files: []string{"**/Cargo.lock"}}},
 	}
 	for _, p := range params.Projects {
 		if p.Publishes() {

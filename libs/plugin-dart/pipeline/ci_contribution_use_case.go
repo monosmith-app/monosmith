@@ -75,6 +75,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		usesFlutter = usesFlutter || flutterProject(p)
 	}
 	result := protocol.CIResult{Toolchains: []protocol.Toolchain{dart()}, Setup: []protocol.Step{{Name: "Resolve the pub workspace", Command: []string{"dart", "pub", "get"}, Blocking: true}}}
+	result.Stores = []protocol.PackageStore{{Name: "pub", Path: "~/.pub-cache", Env: "PUB_CACHE", Files: []string{"**/pubspec.lock"}}}
 	if usesFlutter {
 		result.Toolchains = []protocol.Toolchain{flutter(FlutterVersion(workspaceRoot))}
 		result.Setup[0].Command[0] = "flutter"

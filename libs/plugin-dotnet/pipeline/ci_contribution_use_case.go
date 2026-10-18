@@ -49,7 +49,10 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
-	result := protocol.CIResult{Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))}}
+	result := protocol.CIResult{
+		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
+		Stores:     []protocol.PackageStore{{Name: "nuget", Path: "~/.nuget/packages", Env: "NUGET_PACKAGES", Files: []string{"**/*.csproj", "**/*.fsproj"}}},
+	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate
 	result.Credentials = append(result.Credentials, signIn.Credentials...)

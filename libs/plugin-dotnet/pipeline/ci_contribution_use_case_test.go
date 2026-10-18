@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -29,5 +30,13 @@ func TestDoctor(t *testing.T) {
 	res := Doctor(t.TempDir(), protocol.DoctorParams{Projects: []protocol.Project{{}}})
 	if len(res.Findings) != 1 || res.Findings[0].OK {
 		t.Fatalf("%+v", res)
+	}
+}
+
+func TestCIDeclaresTheNuGetDownloadStore(t *testing.T) {
+	got := CI(t.TempDir(), protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "src/api"}}}).Stores
+	want := []protocol.PackageStore{{Name: "nuget", Path: "~/.nuget/packages", Env: "NUGET_PACKAGES", Files: []string{"**/*.csproj", "**/*.fsproj"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%+v", got)
 	}
 }

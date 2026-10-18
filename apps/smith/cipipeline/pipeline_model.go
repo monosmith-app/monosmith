@@ -20,6 +20,8 @@ type Model struct {
 	// after the toolchains and before setup.
 	Authenticate []protocol.Toolchain
 	Credentials  []protocol.Credential
+	// Stores are the package stores the ci job caches, sorted by name.
+	Stores []protocol.PackageStore
 	// Pack is true when a project has a package task: pushes to the release
 	// branch then run smith ci pack and keep dist/drop as the "drop" artifact.
 	Pack bool
@@ -52,6 +54,7 @@ type Contributions struct {
 	Authenticate []protocol.Toolchain
 	Setup        []protocol.Step
 	Audit        []protocol.Step
+	Stores       []protocol.PackageStore
 	// PostRelease are the steps smith ci release runs after the release.
 	PostRelease []protocol.Step
 	Credentials []protocol.Credential
@@ -85,6 +88,11 @@ func (c *Contributions) Add(r protocol.CIResult) {
 	for _, perm := range r.Permissions {
 		if !slices.Contains(c.Permissions, perm) {
 			c.Permissions = append(c.Permissions, perm)
+		}
+	}
+	for _, s := range r.Stores {
+		if !slices.ContainsFunc(c.Stores, func(have protocol.PackageStore) bool { return have.Name == s.Name }) {
+			c.Stores = append(c.Stores, s)
 		}
 	}
 	c.Setup = append(c.Setup, r.Setup...)
@@ -127,6 +135,8 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 	sort.Slice(m.Authenticate, func(i, j int) bool { return m.Authenticate[i].Name < m.Authenticate[j].Name })
 	m.Toolchains = append(m.Toolchains, c.Toolchains...)
 	sort.Slice(m.Toolchains, func(i, j int) bool { return m.Toolchains[i].Name < m.Toolchains[j].Name })
+	m.Stores = append(m.Stores, c.Stores...)
+	sort.Slice(m.Stores, func(i, j int) bool { return m.Stores[i].Name < m.Stores[j].Name })
 	m.Credentials = append(m.Credentials, c.Credentials...)
 	sort.Slice(m.Credentials, func(i, j int) bool { return m.Credentials[i].Env < m.Credentials[j].Env })
 	return m
