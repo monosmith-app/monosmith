@@ -47,6 +47,10 @@ scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
+recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
+
+[recipes]                             # a different recipe for one project kind: app, lib or package
+package = "https://example.com/recipes/package.recipe.toml"
 
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", or several
@@ -85,6 +89,9 @@ stack = "node-vitest"                 # replaces the stack web's manifest record
 
 [projects.sdk]
 registry = "public-npm"               # this package publishes here instead of [release] registry
+
+[projects.sdk.settings.dotnet]        # a plugin's settings for this project, by plugin name; written from a recipe's settings
+target_framework = "net10.0"
 
 [registries.libs]                     # a private registry (below)
 auth = "azure-artifacts"              # or "github-packages", or "token" with token_env
@@ -204,6 +211,43 @@ examples users copy and install on their own. A Node package outside the root
 the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
+
+## Recipes
+
+`[workspace] recipe` names the recipe `smith add` creates projects from: a
+path relative to `smith.toml`, or an https URL. `[recipes]` names a different
+one for a project kind (`app`, `lib` or `package`). `smith new --recipe` writes
+the setting. [Recipes](recipes.md) explains them.
+
+When a recipe creates a project, smith adds three kinds of table to
+`smith.toml`, under a comment that says where they came from. They are ordinary
+settings: edit or remove them like any other.
+
+```toml
+# Written by smith from the recipe team for the project billing.
+[stacks.team-python-library]          # the plugins the recipe picked, as a stack other projects with the same answers share
+description = "From the recipe team 1.2.0 (language=python, kind=library); written by smith"
+language = "python"
+structure = ["vertical-slices"]
+
+[projects.billing.recipe]             # which recipe, version and answers made the project
+name = "team"
+version = "1.2.0"
+source = "recipes/team.recipe.toml"
+
+[projects.billing.recipe.answers]
+kind = "library"
+language = "python"
+
+[projects.billing.settings.python]    # the recipe's settings for a plugin the project uses
+layout = "src"
+```
+
+The project's manifest records the stack's name, as for any stack. A plugin
+reads `[projects.<name>.settings.<plugin>]` as its entry in the project's
+`settings` (and gets it as `settings` when it generates the project). `smith
+remove` drops a project's `recipe` and `settings` tables with the rest of its
+tables; the stack stays, since other projects may use it.
 
 ## Overriding a task
 

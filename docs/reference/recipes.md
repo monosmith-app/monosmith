@@ -6,10 +6,78 @@ choose and configure plugins, never run anything. Recipes can extend one
 another and ask a few choices, and the answers decide the rest.
 
 Recipes are being built in steps (epic #312). What exists today is the file
-format, loading, resolving, validating and `smith recipe check`. Creating
-projects from a recipe (`smith new` and `smith add`), recording the recipe in a
-project, upgrades, the creation wizard and versioned recipes are still to come;
-the whole design is in [recipes and CI](../design/recipes-and-ci.md).
+format, loading, resolving, validating, `smith recipe check`, and creating
+projects from a recipe with `smith add` (below). Drift checks and upgrades of
+the projects a recipe made (#309), the creation wizard and versioned recipes
+(#311) are still to come; the whole design is in
+[recipes and CI](../design/recipes-and-ci.md).
+
+## Using a recipe
+
+```toml
+# smith.toml
+[workspace]
+recipe = "recipes/team.recipe.toml"   # a path relative to smith.toml, or an https URL
+
+[recipes]                             # optional: another recipe for one project kind
+package = "https://example.com/recipes/package.recipe.toml"
+```
+
+`smith new acme --recipe recipes/team.recipe.toml` writes the setting into a
+new workspace's `smith.toml`. A URL must be reachable and a recipe, or `new`
+refuses before creating anything; a path that is not there yet is only said,
+since a recipe kept in the same repository may be added next.
+
+With a recipe configured, `smith add <kind> <name>` creates the project from it:
+
+1. **It asks the recipe's choices.** In a terminal, one question at a time, in
+   the order the recipe declares them, with the default pre-selected (Enter
+   takes it). A choice that a `when` block adds is asked only after the answer
+   that makes the block apply. An answer is an option's text or its number.
+   `--choice name=answer`, as often as needed, answers without asking. With no
+   terminal (or `CI` set) a choice not given takes its default, and one with
+   neither fails, naming the choice and the flag that answers it. Nothing is
+   written before every choice is answered.
+2. **It shows what the recipe will use**, for each level or slot, with the
+   recipe line that chose it, and the settings it carries:
+
+   ```text
+   Recipe team 1.2.0 (language=python, kind=library) will use:
+     language   python           team.recipe.toml:21 (recipe team)
+     structure  vertical-slices  team.recipe.toml:22 (recipe team)
+   ```
+
+3. **It makes the project exactly as a stack's project is made.** The resolved
+   plugins become a stack: `use.language` and `use.scaffold` are its language
+   and scaffold, `use.structure` and `use.deploy` its structure and deploy
+   plugins, `use.toolchain` its toolchain in the order given, and the plugin
+   of any other key (a slot such as `lint`) follows it. The scaffold (or the
+   language plugin) writes the files, each other plugin adds its part, and the
+   pipelines are regenerated. The recipe's `settings.<plugin>` tables are given
+   to each plugin they name, when it generates the project and afterwards in
+   the project's `settings`; those of a plugin the project does not use are
+   left out, and said.
+4. **It records what it did in `smith.toml`:** the stack
+   (`[stacks.<recipe>-<answers>]`, shared by every project made with the same
+   answers; a different stack that already has the name gets a short hash
+   after it), the project's recipe (name, version, source and answers) and its
+   settings. See [configuration](configuration.md#recipes). If creating the
+   project fails, `smith.toml` is put back as it was.
+
+```sh
+smith add package billing --choice language=python            # the other choices take their defaults
+smith add app basket --choice language=csharp --choice kind=service
+smith add lib core --stack none --lang go                     # bypasses the recipe
+```
+
+`--stack` bypasses the recipe: the project is made as it was before the
+workspace had one, with `[default_stacks]` and `--lang`. `--choice` with
+`--stack` is an error, and so is `--choice` where no recipe is configured.
+`--lang` is accepted when it names the language plugin the recipe picks for
+these answers, and an error when it does not.
+
+Existing stacks, `--stack` and `[default_stacks]` keep working unchanged: a
+workspace with no recipe behaves as before.
 
 ## The file
 
@@ -169,8 +237,10 @@ sha256 = "9f2c..."
   pointing at `smith upgrade`.
 - Accepting the new content is `Loader.Accept(url)` (all pinned URLs:
   `AcceptAll`). It fetches again and replaces the cached copy and the pin, and
-  reports the old and new hash. `smith upgrade` will call it; no command does
-  yet.
+  reports the old and new hash. `smith upgrade` calls it for every recipe
+  `smith.toml` names (`smith upgrade --check` only reports a recipe that
+  changed, and sees it only where the cache is missing, such as a fresh clone
+  or CI; `smith upgrade` always asks the URL).
 
 Outside a workspace nothing is cached or pinned; the URL is fetched each time.
 

@@ -78,6 +78,13 @@ language, it is the default. `--stack` picks the plugins the project is built
 with instead (`smith add app web --stack react`); `smith stacks` lists them,
 and [stacks](../reference/stacks.md) explains them.
 
+If your team keeps a [recipe](../reference/recipes.md) (`smith new acme
+--recipe <path or URL>`, or `recipe` under `[workspace]` in `smith.toml`),
+`smith add` creates the project from it instead: it asks the recipe's few
+questions one at a time (a language, say), shows the plugins the answers pick,
+and makes the project with them. `--choice language=python` answers without
+asking, which is how scripts and CI add projects; `--stack` bypasses the recipe.
+
 Each project starts with one worked example slice (`greeting`) laid out as
 vertical slices, and passes lint, type-check, test and build immediately.
 

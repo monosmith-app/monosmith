@@ -34,7 +34,7 @@ func ApplyConventions(projects []*Project, plugins *pluginhost.PluginSet, cfg wo
 		}
 		for _, p := range targets {
 			applied[name] = append(applied[name], p.Name)
-			if settings := PluginSettings(name, conv, cfg.Projects[p.Name]); settings != nil {
+			if settings := withProjectSettings(PluginSettings(name, conv, cfg.Projects[p.Name]), name, cfg.Projects[p.Name]); settings != nil {
 				if p.Settings == nil {
 					p.Settings = map[string]map[string]any{}
 				}

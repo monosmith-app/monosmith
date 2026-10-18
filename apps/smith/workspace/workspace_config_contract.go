@@ -22,9 +22,12 @@ type Config struct {
 	Stacks map[string]StackConfig `toml:"stacks"`
 	// DefaultStacks is the stack of a project that records none, and of
 	// `smith add` without --stack, by language.
-	DefaultStacks map[string]string          `toml:"default_stacks"`
-	Tasks         map[string]TaskOverride    `toml:"tasks"`
-	Projects      map[string]ProjectOverride `toml:"projects"`
+	DefaultStacks map[string]string `toml:"default_stacks"`
+	// Recipes names the recipe for one project kind (app, lib or package),
+	// instead of [workspace] recipe.
+	Recipes  map[string]string          `toml:"recipes"`
+	Tasks    map[string]TaskOverride    `toml:"tasks"`
+	Projects map[string]ProjectOverride `toml:"projects"`
 	// Registries are private package registries, by name, that the
 	// workspace installs from ([workspace] registry) and publishes to
 	// ([release] registry, [projects.<name>] registry).
@@ -77,6 +80,10 @@ type WorkspaceSection struct {
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`
+	// Recipe is the recipe new projects are created from: a path relative
+	// to smith.toml, or an https URL (docs/reference/recipes.md). Empty means
+	// stacks only. `smith add --stack` bypasses it.
+	Recipe string `toml:"recipe"`
 }
 
 // CISection chooses which pipelines smith generates.
@@ -210,8 +217,26 @@ type ProjectOverride struct {
 	// instead of [release] registry.
 	Registry string `toml:"registry"`
 	// Docker is the app's settings for the docker convention.
-	Docker *DockerOverride         `toml:"docker"`
+	Docker *DockerOverride `toml:"docker"`
+	// Settings are plugins' settings for this project, by plugin name
+	// ([projects.<name>.settings.<plugin>]): what a recipe's settings became
+	// when it created the project. A plugin reads its own table.
+	Settings map[string]map[string]any `toml:"settings"`
+	// Recipe records the recipe the project was created from.
+	Recipe *ProjectRecipe          `toml:"recipe"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`
+}
+
+// ProjectRecipe is the recipe a project was created from, written by
+// `smith add` ([projects.<name>.recipe]): enough to resolve the same recipe
+// again with the same answers.
+type ProjectRecipe struct {
+	Name    string `toml:"name"`
+	Version string `toml:"version"`
+	// Source is the recipe as [workspace] recipe named it: a path or a URL.
+	Source string `toml:"source"`
+	// Answers are the choices as they were answered, by choice name.
+	Answers map[string]string `toml:"answers"`
 }
 
 // DefaultPlatforms are the platforms an app's assets are built for.

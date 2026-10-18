@@ -23,8 +23,11 @@ type NewOptions struct {
 	Scope        string
 	ModulePrefix string
 	Providers    []string
-	Version      string
-	Out          io.Writer
+	// Recipe is written as [workspace] recipe: the recipe `smith add`
+	// creates projects from.
+	Recipe  string
+	Version string
+	Out     io.Writer
 	// NoCommit leaves the files uncommitted (smith adopt commits once, after
 	// generating the pipelines for the projects it found).
 	NoCommit bool
@@ -46,6 +49,9 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, workspace.FileName)); err == nil {
 		return "", fmt.Errorf("%s already holds a smith workspace", dir)
+	}
+	if err := checkRecipe(dir, opts.Recipe, opts.Out); err != nil {
+		return "", err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
@@ -81,6 +87,9 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		quoted[i] = fmt.Sprintf("%q", p)
 	}
 	config := fmt.Sprintf(configTemplate, opts.Name, opts.Scope, opts.ModulePrefix, strings.Join(quoted, ", "))
+	if opts.Recipe != "" {
+		config = withRecipe(config, opts.ModulePrefix, opts.Recipe)
+	}
 	cfg, err := workspace.Parse([]byte(config))
 	if err != nil {
 		return "", err
