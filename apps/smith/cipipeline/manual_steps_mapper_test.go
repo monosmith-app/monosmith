@@ -25,6 +25,28 @@ func TestManualStepsNameTheFeedPermissionInAzureTerms(t *testing.T) {
 	}
 }
 
+func TestManualStepsExplainTheRemoteCacheInEachProvidersTerms(t *testing.T) {
+	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"azure"}}, Release: workspace.ReleaseSection{Branch: "main"}}
+	cfg.Cache.Remote = "azblob://acme/smith-cache/main"
+	m := cacheModel(cfg.Cache.Remote, false)
+	steps := strings.Join(ManualSteps(cfg, m), "\n")
+	for _, want := range []string{
+		"Azure Pipelines: add the secret variables AZURE_STORAGE_SAS_TOKEN, NODE_AUTH_TOKEN, SMITH_CACHE_KEY",
+		"SMITH_CACHE_KEY is any long random string",
+		"never write it; only a push to main stores results",
+		"SAS token scoped to it with read, write and create permission",
+		"mark the variables secret",
+	} {
+		if !strings.Contains(steps, want) {
+			t.Errorf("lacks %q:\n%s", want, steps)
+		}
+	}
+	cfg.CI.Providers, cfg.Cache.Remote = []string{"github"}, ""
+	if got := strings.Join(ManualSteps(cfg, cacheModel("", false)), "\n"); strings.Contains(got, "remote cache") {
+		t.Errorf("no remote cache, no cache steps:\n%s", got)
+	}
+}
+
 func TestManualStepsListSecretsButNotGitHubsOwnToken(t *testing.T) {
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github", "gitlab"}}}
 	m := Model{Credentials: []protocol.Credential{{Env: "GITHUB_TOKEN"}, {Env: "FEED_TOKEN"}}}

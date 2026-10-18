@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
@@ -58,6 +59,8 @@ func Collect(s *session.Session) (Contributions, error) {
 			c.Pub = true
 		}
 	}
+	// A remote cache is read by every step that runs tasks.
+	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
 	c.NativeRunners, c.NativeLinuxPackages = s.Config.CI.NativeRunners, s.Config.CI.NativeLinuxPackages
 	if s.Config.Release.GitHubReleases {
 		c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GITHUB_TOKEN", Description: "creates GitHub Releases and uploads their assets", Required: true}}})

@@ -36,6 +36,7 @@ func ManualSteps(cfg workspace.Config, m Model) []string {
 			steps = append(steps, "GitLab: add the masked CI/CD variables "+strings.Join(secrets, ", ")+" (Settings → CI/CD → Variables)")
 		}
 	}
+	steps = append(steps, cacheSteps(cfg)...)
 	for _, name := range usedRegistries(cfg) {
 		r := cfg.Registries[name]
 		switch r.Auth {
@@ -79,6 +80,32 @@ func usedRegistries(cfg workspace.Config) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// cacheSteps are what a person does by hand for the remote cache: the
+// secrets are listed with the others; these say what each one is and how it
+// behaves where no secret exists.
+func cacheSteps(cfg workspace.Config) []string {
+	remote := cfg.Cache.Remote
+	if remote == "" {
+		return nil
+	}
+	steps := []string{
+		"remote cache " + remote + ": SMITH_CACHE_KEY is any long random string the whole team shares; every object is signed with it, and with no value (a pull request from a fork, which gets no secrets) the remote is off and the run uses the local cache",
+		"remote cache: pull requests and merge requests read the cache and never write it; only a push to " + cfg.Release.Branch + " stores results",
+	}
+	switch {
+	case strings.HasPrefix(remote, "azblob://"):
+		steps = append(steps, "remote cache (Azure Blob): create the container, then a SAS token scoped to it with read, write and create permission, and keep it as AZURE_STORAGE_SAS_TOKEN; a developer who only reads needs read permission alone")
+	case strings.HasPrefix(remote, "s3://"):
+		steps = append(steps, "remote cache (S3): AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY belong to an identity allowed to read and write the bucket; set AWS_REGION to its region")
+	case strings.HasPrefix(remote, "https://"), strings.HasPrefix(remote, "http://"):
+		steps = append(steps, "remote cache (HTTP): the server must take PUT, GET and HEAD; if it needs a bearer token, keep it as SMITH_CACHE_TOKEN")
+	}
+	if slices.Contains(cfg.CI.Providers, "azure") {
+		steps = append(steps, "remote cache, on Azure Pipelines: mark the variables secret; the pipeline maps each into the steps that run tasks, since Azure exposes a secret only through env:. In a build of a fork Azure leaves the variable's name in place of its value, which smith reads as unset")
+	}
+	return steps
 }
 
 // azureFeed is the feed's name in an Azure Artifacts URL (the segment after

@@ -101,6 +101,9 @@ func (c *Contributions) Add(r protocol.CIResult) {
 			if c.Credentials[i].Env == cred.Env && cred.Setup {
 				c.Credentials[i].Setup = true
 			}
+			if c.Credentials[i].Env == cred.Env && cred.Tasks {
+				c.Credentials[i].Tasks = true
+			}
 		}
 	}
 }
@@ -133,6 +136,30 @@ func hasToolchain(list []protocol.Toolchain, name string) bool {
 		}
 	}
 	return false
+}
+
+// TaskCredentials are the credentials every step that runs tasks needs: the
+// remote cache's key and its backend's credentials.
+func (m Model) TaskCredentials() []protocol.Credential {
+	var out []protocol.Credential
+	for _, c := range m.Credentials {
+		if c.Tasks {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// nativeCredentials are the credentials the native job's step needs: those of
+// the tasks it runs, and the release's when it publishes a native package.
+func (m Model) nativeCredentials() []protocol.Credential {
+	var out []protocol.Credential
+	for _, c := range m.Credentials {
+		if c.Tasks || (m.NativePublish && c.Env != "GITHUB_TOKEN") {
+			out = append(out, c)
+		}
+	}
+	return out
 }
 
 // SetupCredentials are the credentials setup needs too: a token installs
