@@ -33,10 +33,18 @@ type DescriptionResult struct {
 	Failed []string
 	// Skipped says why nothing was attempted.
 	Skipped string
+	// Short is the short description sent, or that would be, fitted to Docker
+	// Hub's limit; empty when none is set.
+	Short string
+	// Full names the file the full description comes from; empty when none is
+	// set.
+	Full string
 }
 
-// SyncDescription sets the Docker Hub description of an app's image from the
-// file description_from names, for each docker.io registry, without a
+// SyncDescription sets the Docker Hub descriptions of an app's image, for
+// each docker.io registry: the full one from the file description_from names,
+// the short one from short_description or the project's description. It runs
+// without a
 // release: the call is an idempotent PATCH, so running it again is harmless.
 // A failure is in the result and logged as a warning, never an error; the
 // error is for settings that contradict each other. With dryRun it only
@@ -63,8 +71,8 @@ func syncDescription(workspaceRoot string, t images.Target) {
 
 func describe(workspaceRoot string, t images.Target, dryRun bool) DescriptionResult {
 	var res DescriptionResult
-	if t.DescriptionFrom == "" {
-		res.Skipped = "no description_from"
+	if t.DescriptionFrom == "" && strings.TrimSpace(t.ShortDescription) == "" {
+		res.Skipped = "no description_from or short description"
 		return res
 	}
 	var hub []images.Registry
@@ -77,16 +85,34 @@ func describe(workspaceRoot string, t images.Target, dryRun bool) DescriptionRes
 		res.Skipped = "no docker.io registry"
 		return res
 	}
-	text, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(t.DescriptionFrom)))
-	if err != nil {
-		warn("not setting the Docker Hub description: %v", err)
-		res.Failed = append(res.Failed, t.DescriptionFrom+": "+err.Error())
-		return res
+	// The fields to send: only the ones set, so a missing full description
+	// leaves what is on Docker Hub alone, and so does a missing short one.
+	fields := map[string]string{}
+	if t.DescriptionFrom != "" {
+		text, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(t.DescriptionFrom)))
+		if err != nil {
+			warn("not setting the Docker Hub description: %v", err)
+			res.Failed = append(res.Failed, t.DescriptionFrom+": "+err.Error())
+		} else {
+			description := string(text)
+			if len(description) > hubDescriptionLimit {
+				warn("%s is longer than the %d characters Docker Hub takes; the description is cut", t.DescriptionFrom, hubDescriptionLimit)
+				description = strings.ToValidUTF8(description[:hubDescriptionLimit], "")
+			}
+			fields["full_description"] = description
+			res.Full = t.DescriptionFrom
+		}
 	}
-	description := string(text)
-	if len(description) > hubDescriptionLimit {
-		warn("%s is longer than the %d characters Docker Hub takes; the description is cut", t.DescriptionFrom, hubDescriptionLimit)
-		description = strings.ToValidUTF8(description[:hubDescriptionLimit], "")
+	if strings.TrimSpace(t.ShortDescription) != "" {
+		short, cut := images.FitShortDescription(t.ShortDescription)
+		if cut {
+			warn("the short description is longer than the %d characters Docker Hub takes; it is cut to %q", images.ShortDescriptionLimit, short)
+		}
+		fields["description"] = short
+		res.Short = short
+	}
+	if len(fields) == 0 {
+		return res
 	}
 	for _, r := range hub {
 		repository := r.URL + "/" + t.Image
@@ -94,7 +120,7 @@ func describe(workspaceRoot string, t images.Target, dryRun bool) DescriptionRes
 			res.Set = append(res.Set, repository)
 			continue
 		}
-		if err := setHubDescription(r, t.Image, description); err != nil {
+		if err := setHubDescription(r, t.Image, fields); err != nil {
 			warn("the Docker Hub description of %s/%s was not set: %v. Editing a description may need an access token with Read, Write & Delete permission", r.URL, t.Image, err)
 			res.Failed = append(res.Failed, repository+": "+err.Error())
 			continue
@@ -109,8 +135,9 @@ func warn(format string, args ...any) {
 }
 
 // setHubDescription logs in to Docker Hub with the registry's credentials and
-// sets the repository's full description.
-func setHubDescription(r images.Registry, image, description string) error {
+// sets the repository's descriptions in one call: fields holds
+// full_description and description (the short one), whichever are set.
+func setHubDescription(r images.Registry, image string, fields map[string]string) error {
 	user, password := credentialsOf(r)
 	if user == "" || password == "" {
 		return fmt.Errorf("%s and %s are not both set", r.UserEnv, r.PasswordEnv)
@@ -128,7 +155,7 @@ func setHubDescription(r images.Registry, image, description string) error {
 	if login.Token == "" {
 		return fmt.Errorf("signing in: no token in the answer")
 	}
-	return hubRequest(http.MethodPatch, "/v2/repositories/"+namespace+"/"+image+"/", login.Token, map[string]string{"full_description": description}, nil)
+	return hubRequest(http.MethodPatch, "/v2/repositories/"+namespace+"/"+image+"/", login.Token, fields, nil)
 }
 
 // hubRequest sends a JSON request to Docker Hub and decodes the answer into

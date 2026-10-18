@@ -144,19 +144,38 @@ A docs-only commit releases nothing, so the release alone would never send a
 changed file. `smith docker description` sets the description on its own:
 
 ```sh
-smith docker description               # every app that names a description_from file
+smith docker description               # every app with a description_from file or a short description
 smith docker description -p api        # one app
-smith docker description --dry-run     # name the repositories, call nothing
+smith docker description --dry-run     # name the repositories and both descriptions, call nothing
 smith docker description --strict      # exit non-zero if a description could not be set
 ```
 
 The generated pipeline runs it at the end of `smith ci release`, on every push
 to the release branch, whether or not something was released, when an app has a
-`description_from` file and a `docker.io` registry. That is safe because
+`description_from` file or a short description and a `docker.io` registry. That is safe because
 setting a description is an idempotent PATCH: sending the same text again
 changes nothing, so smith keeps no record of what was last sent and needs no
 new state in git. A failure is a warning (the images are published already),
 as in the release.
+
+The short description is the one line under the image's name on Docker Hub,
+in search results and on the repository card. It is sent in the same call as
+the full one. `short_description` sets it, per convention or per app; without
+it smith uses the project's own description, from the manifest
+(`package.json`, `pyproject.toml`, `pom.xml`, `Cargo.toml`, `pubspec.yaml`,
+`composer.json`), so a project that has one needs no setting:
+
+```toml
+[conventions.docker]
+short_description = "Crawl the web with recipes: the OpenCraw engine over HTTP."
+```
+
+Docker Hub takes at most 100 characters. A longer text is put on one line,
+cut at a word with `…`, and the release log warns; `smith doctor` reports a
+`short_description` over 100 (a long manifest description is cut without a
+finding, as it is not a setting). An app with neither a setting nor a
+description leaves the short description on Docker Hub alone, and so does an
+app with no `description_from` leave the full one.
 
 ### The image and its login
 

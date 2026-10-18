@@ -128,3 +128,39 @@ func TestContradictoryRegistriesAreAnErrorAndAFinding(t *testing.T) {
 		t.Fatalf("%+v", res)
 	}
 }
+
+func TestAShortDescriptionAloneAddsTheDescriptionStep(t *testing.T) {
+	ws, api := shippingApp(t, map[string]any{"registries": []any{"docker.io/opencraw"}})
+	if res := mustCI(t, ws, api); len(res.PostRelease) != 0 {
+		t.Fatalf("no description anywhere: %+v", res.PostRelease)
+	}
+	api.Description = "What the API does."
+	if res := mustCI(t, ws, api); len(res.PostRelease) != 1 {
+		t.Errorf("the project's own description is sent: %+v", res.PostRelease)
+	}
+	ws, api = shippingApp(t, map[string]any{"registries": []any{"ghcr.io/open-craw"}, "short_description": "x"})
+	if res := mustCI(t, ws, api); len(res.PostRelease) != 0 {
+		t.Errorf("only docker.io has a short description: %+v", res.PostRelease)
+	}
+}
+
+func TestDoctorReportsAShortDescriptionOverTheLimit(t *testing.T) {
+	real := probe
+	defer func() { probe = real }()
+	probe = func(string, []string) (string, error) { return "", nil }
+	ws, api := shippingApp(t, map[string]any{"registries": []any{"docker.io/opencraw"}, "short_description": strings.Repeat("a", 101)})
+	res := Doctor(ws, protocol.DoctorParams{Projects: []protocol.Project{api}})
+	if len(res.Findings) != 2 || res.Findings[1].OK || !strings.Contains(res.Findings[1].Check, "short description") || !strings.Contains(res.Findings[1].Detail, "100") {
+		t.Fatalf("%+v", res)
+	}
+	api.Settings["docker"]["short_description"] = strings.Repeat("é", 100)
+	if res := Doctor(ws, protocol.DoctorParams{Projects: []protocol.Project{api}}); len(res.Findings) != 1 {
+		t.Errorf("100 characters fit, bytes do not count: %+v", res)
+	}
+	// A long project description is cut, not reported: it is not the setting.
+	api.Settings["docker"]["short_description"] = ""
+	api.Description = strings.Repeat("a", 127)
+	if res := Doctor(ws, protocol.DoctorParams{Projects: []protocol.Project{api}}); len(res.Findings) != 1 {
+		t.Errorf("%+v", res)
+	}
+}

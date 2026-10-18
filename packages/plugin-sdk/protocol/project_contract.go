@@ -28,6 +28,10 @@ type Project struct {
 	Imports []string `json:"imports,omitempty"`
 	// Version is the version recorded in the manifest, if it has one.
 	Version string `json:"version,omitempty"`
+	// Description is the one-line description the manifest records (package.json
+	// description, pyproject.toml project.description, the pom's <description>),
+	// if it has one. Conventions use it where a registry asks for a summary.
+	Description string `json:"description,omitempty"`
 	// TagPrefix overrides the release tag prefix; empty means "<name>@".
 	// Go modules use "<root>/v" so `go get` can resolve the tag.
 	TagPrefix string          `json:"tagPrefix,omitempty"`

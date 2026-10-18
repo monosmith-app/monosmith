@@ -10,6 +10,7 @@ type PyProject struct {
 	Project struct {
 		Name         string            `toml:"name"`
 		Version      string            `toml:"version"`
+		Description  string            `toml:"description"`
 		Dependencies []string          `toml:"dependencies"`
 		Scripts      map[string]string `toml:"scripts"`
 	} `toml:"project"`

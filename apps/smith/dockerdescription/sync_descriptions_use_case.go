@@ -27,9 +27,9 @@ var ErrFailed = errors.New("a Docker Hub description could not be set")
 // syncDescription is the docker plugin's description sync; tests replace it.
 var syncDescription = publishing.SyncDescription
 
-// Run sets the description of each app that names a description_from file,
-// printing what it did. An app with no docker.io registry or no file is left
-// out of the output, unless it was asked for by name.
+// Run sets the descriptions of each app that has a description_from file or a
+// short description, printing what it did. An app with no docker.io registry
+// or neither is left out of the output, unless it was asked for by name.
 func Run(root string, projects []*projectgraph.Project, req Request, out io.Writer) error {
 	var failed []string
 	attempted := 0
@@ -56,13 +56,21 @@ func Run(root string, projects []*projectgraph.Project, req Request, out io.Writ
 		for _, repository := range res.Set {
 			fmt.Fprintf(out, "%s: %s %s\n", p.Name, verb, repository)
 		}
+		if req.DryRun && len(res.Set) > 0 {
+			if res.Short != "" {
+				fmt.Fprintf(out, "%s:   short description: %s\n", p.Name, res.Short)
+			}
+			if res.Full != "" {
+				fmt.Fprintf(out, "%s:   full description: %s\n", p.Name, res.Full)
+			}
+		}
 		for _, f := range res.Failed {
 			fmt.Fprintf(out, "%s: could not set the Docker Hub description: %s\n", p.Name, f)
 			failed = append(failed, p.Name+": "+f)
 		}
 	}
 	if attempted == 0 && len(req.Projects) == 0 {
-		fmt.Fprintln(out, "no app names a description_from file for a docker.io registry")
+		fmt.Fprintln(out, "no app has a description_from file or a short description for a docker.io registry")
 	}
 	if len(failed) > 0 && req.Strict {
 		return fmt.Errorf("%w: %s", ErrFailed, strings.Join(failed, "; "))

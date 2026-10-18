@@ -4,6 +4,7 @@ package discovery
 type PackageManifest struct {
 	Name                 string            `json:"name"`
 	Version              string            `json:"version"`
+	Description          string            `json:"description"`
 	Private              bool              `json:"private"`
 	Scripts              map[string]string `json:"scripts"`
 	Dependencies         map[string]string `json:"dependencies"`

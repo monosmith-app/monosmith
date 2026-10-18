@@ -164,3 +164,17 @@ func TestDiscoverChecksWhatAPackageImports(t *testing.T) {
 		t.Fatal("an internal lib is not published, so it is not checked")
 	}
 }
+
+func TestTheManifestsDescriptionIsTheProjectsDescription(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "apps", "web"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ws, "apps", "web", "package.json"), []byte(`{"name":"web","description":"  Serves the site. ","private":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Discover(ws, []string{"apps/web/package.json"})
+	if err != nil || len(res.Projects) != 1 || res.Projects[0].Description != "Serves the site." {
+		t.Fatalf("%+v %v", res, err)
+	}
+}

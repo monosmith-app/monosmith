@@ -71,3 +71,12 @@ func TestTypecheckOnlyWithMypyConfigured(t *testing.T) {
 		t.Fatalf("typecheck %v", cmd)
 	}
 }
+
+func TestTheProjectsDescriptionIsTheProjectsDescription(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/api/pyproject.toml", "[project]\nname = \"acme-api\"\nversion = \"0.0.0\"\ndescription = \"Serves the API.\"\n")
+	res, err := Discover(ws, []string{"apps/api/pyproject.toml"})
+	if err != nil || len(res.Projects) != 1 || res.Projects[0].Description != "Serves the API." {
+		t.Fatalf("%+v %v", res, err)
+	}
+}
