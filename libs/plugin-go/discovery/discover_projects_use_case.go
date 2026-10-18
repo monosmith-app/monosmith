@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the module behind each go.mod. A go.mod at the workspace
@@ -54,5 +55,6 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		}
 		result.Projects = append(result.Projects, project)
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("go", "go", "version") })
 	return result, nil
 }

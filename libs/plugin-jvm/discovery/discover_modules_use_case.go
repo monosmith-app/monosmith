@@ -12,6 +12,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the module behind each pom.xml and each Gradle build
@@ -43,6 +44,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			result.Projects = append(result.Projects, project)
 		}
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("java", "java", "-version") })
 	return result, nil
 }
 

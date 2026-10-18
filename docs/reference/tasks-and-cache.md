@@ -102,6 +102,12 @@ A task's **key** is a SHA-256 over a versioned, canonical encoding of:
 - the OS/architecture, the smith version, and the version of every plugin
   that shapes the project (its language plugin, its stack's plugins, its
   conventions)
+- the version of the compiler or runtime the task runs with (`node --version`,
+  `go version`, `python --version`, `rustc --version`, `dotnet --version`,
+  `java -version`, `php`, `ruby`, `dart`, `cmake`), which the language plugin
+  reports as part of the project and probes once per run. A `build` cached on
+  Node 20 is a miss on Node 22. A plugin that cannot tell leaves it out, and the
+  key is then what it was before
 
 On a hit, smith replaces the task's output directories with the cached files and
 replays its log. On a miss it clears the outputs, runs the task, and stores the
@@ -127,8 +133,8 @@ api:build would run: 2 change(s) since its last cached run (2026-10-16 09:12)
 
 It names added, removed and changed input files, a changed command, env
 variables (names only), the projects upstream whose sources changed, the
-dependency tasks whose keys changed, and a new smith or plugin version. It runs
-nothing; `--json` prints the same report.
+dependency tasks whose keys changed, a new smith or plugin version, and a new
+toolchain (`toolchain  node 20.11.0 → 22.3.0`). It runs nothing; `--json` prints the same report.
 
 Everything goes through a `Storage` interface (`Has/Get/Put/Delete/Walk/Touch`)
 with a conformance test. It stores three kinds (`ac`, `cas`, `last`); the

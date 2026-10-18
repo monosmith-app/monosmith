@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the package behind each pubspec.yaml. The workspace
@@ -46,5 +47,6 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Stack:       pub.Stack,
 		})
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("dart", "dart", "--version") })
 	return result, nil
 }

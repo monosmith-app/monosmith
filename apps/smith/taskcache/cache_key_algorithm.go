@@ -37,6 +37,11 @@ type KeyInputs struct {
 	// Tool is the version of smith and of every plugin that shapes the
 	// project ("0.2.0/node@0.2.0+jest@0.2.0").
 	Tool string `json:"tool"`
+	// Toolchain is the version of the compiler or runtime the task runs with
+	// ("node 20.11.0"), as its language plugin probed it; empty when it
+	// cannot tell. It joins the key only when set, so a plugin that reports
+	// nothing keeps the keys it always had.
+	Toolchain string `json:"toolchain,omitempty"`
 }
 
 // Key computes the cache key: a SHA-256 over a length-prefixed encoding of
@@ -57,6 +62,10 @@ func Key(in KeyInputs) string {
 	write(in.Task)
 	write(in.Platform)
 	write(in.Tool)
+	if in.Toolchain != "" {
+		write("toolchain")
+		write(in.Toolchain)
+	}
 	section("command", len(in.Command))
 	for _, a := range in.Command {
 		write(a)

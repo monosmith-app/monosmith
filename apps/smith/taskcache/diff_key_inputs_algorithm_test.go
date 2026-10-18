@@ -39,3 +39,18 @@ func TestDiffNamesWhatChanged(t *testing.T) {
 		t.Fatalf("no change, no differences: %v", d)
 	}
 }
+
+func TestDiffWordsAToolchainChange(t *testing.T) {
+	cases := []struct{ before, now, want string }{
+		{"node 20.11.0", "node 22.3.0", "toolchain  node 20.11.0 → 22.3.0"},
+		{"node 20.11.0", "bun 1.1.0", "toolchain  node 20.11.0 → bun 1.1.0"},
+		{"", "go 1.23.4", "toolchain  reported: go 1.23.4"},
+		{"go 1.23.4", "", "toolchain  go 1.23.4 → no longer reported"},
+	}
+	for _, c := range cases {
+		d := Diff(KeyInputs{Toolchain: c.before}, KeyInputs{Toolchain: c.now})
+		if len(d) != 1 || d[0].String() != c.want {
+			t.Errorf("%q → %q: %v, want %q", c.before, c.now, d, c.want)
+		}
+	}
+}
