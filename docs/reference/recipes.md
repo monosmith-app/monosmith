@@ -10,8 +10,9 @@ format, loading, resolving, validating, `smith recipe check`, creating
 projects from a recipe with `smith add` (below), and keeping those projects
 current: `smith doctor` reports drift, `smith upgrade` brings them up to date
 and `smith explain` shows where each value came from (see
-[Keeping projects current](#keeping-projects-current)). The creation wizard
-and versioned recipes (#311) are still to come; the whole design is in
+[Keeping projects current](#keeping-projects-current)), writing a recipe with
+the wizard (`smith recipe new`) and releasing recipes like packages
+([Versioned recipes](#versioned-recipes)). The whole design is in
 [recipes and CI](../design/recipes-and-ci.md).
 
 ## Using a recipe
@@ -335,6 +336,62 @@ sha256 = "9f2c..."
 
 Outside a workspace nothing is cached or pinned; the URL is fetched each time.
 
+## Versioned recipes
+
+A team keeps its recipes in a repository of their own, usually a smith
+workspace, and releases them the way it releases packages. The built-in
+`recipe` plugin makes each recipe a project:
+
+```
+recipes/
+  company/
+    company.recipe.toml
+  team/
+    team.recipe.toml        extends = "../company/company.recipe.toml"
+    README.md
+```
+
+```sh
+smith add package team --lang recipe      # a recipe that resolves, in packages/team/
+smith recipe new recipes/team/team.recipe.toml   # or write it with the wizard
+smith run test -p team                    # smith recipe check team.recipe.toml --all
+```
+
+- **A project is a recipe file in a folder of its own**: one `*.recipe.toml`,
+  and beside it only a README, CHANGELOG or LICENSE. The project is named by
+  the recipe's `name`, has kind `package` and takes its version from the
+  recipe's `version`. A recipe at the workspace root (an input of
+  `[workspace] recipe`), two in one folder, one beside another project's
+  files, or one with no name or that is not TOML is not a project.
+- **Its `test` task checks every answer** (`smith recipe check --all`), so a
+  pull request that breaks one branch of a recipe fails CI. A recipe that
+  extends another recipe in the workspace depends on it: a change to the
+  parent affects the child and its tests.
+- **Versions come from commits**, like any package: `feat(team): ...` that
+  touch the recipe's folder release a minor, `fix` a patch, a breaking change
+  a major (`version(team)[2.0.0]` forces one). `smith release` tags
+  `team@1.3.0` and, with `[release] github_releases = true`, attaches the
+  recipe to the GitHub Release.
+- **The attached file carries the release's version.** A release commits
+  nothing, so the recipe in the repository keeps the version it was committed
+  with; the copy attached to the release (built in
+  `dist/release/<name>/`) has `version` set to the release's. Pin that copy:
+
+  ```toml
+  [workspace]
+  recipe = "https://github.com/acme/recipes/releases/download/team@1.3.0/team.recipe.toml"
+  ```
+
+  A URL that points at the tag's source (`raw.githubusercontent.com/.../team@1.3.0/...`) also works
+  and is pinned by content like any URL, but its file shows the version it
+  was committed with.
+- **`smith doctor` reports a newer release** of a recipe the workspace pins
+  this way ("team 1.4.0 is released, and smith.toml pins 1.3.0") with the URL
+  to change it to. It asks GitHub's API for the repository's releases of that
+  recipe, says nothing when it cannot (offline, rate limited), and is off with
+  `SMITH_NO_UPDATE_CHECK`. `smith upgrade` then accepts the new content and
+  brings the projects up to date.
+
 ## `smith recipe check`
 
 ```sh
@@ -350,3 +407,86 @@ non-zero when it is not. A choice with no answer is listed as needing one.
 
 `--json` prints the same for tools: `name`, `version`, `chain`, `choices`,
 `use`, `settings`, `origins`, `pinned` and `errors` (empty when valid).
+
+`--all` checks every combination of answers (up to 64), not only the one given
+or defaulted, so a recipe whose python branch is fine and whose csharp branch
+is broken is caught. The report still shows the single answer given, when
+there is one; a recipe whose choices have no default is checked through its
+options. This is what a recipe project's `test` task runs.
+
+## Writing a recipe: `smith recipe new`
+
+```sh
+smith recipe new                                  # asks everything; writes <name>.recipe.toml
+smith recipe new recipes/team/team.recipe.toml    # writes there
+smith recipe new --from-answers answers.toml      # no terminal: the same answers, from a file
+```
+
+The wizard asks:
+
+1. the recipe's **name** (lowercase words joined by dashes: it names the
+   recipe's releases), its **version**, and the recipe it **extends**, if any
+   (a path, from the new file, or an https URL). The parent is loaded at
+   once, so a wrong path is caught while you type it, and the choices it asks
+   can be used by the levels below.
+2. each **level** a plugin can fill, in the order a recipe is written: the
+   language, the scaffold, each task slot (`lint`, `test`, ...), structure and
+   deploy. For a level you say whether its plugin is **fixed** (`f`), a
+   **choice** the recipe's users make (`c`), or **left unset** (enter).
+3. for a choice: its name, the question, the answers (at least two) and the
+   default; and the plugin each answer picks. A later level can use the same
+   choice, so one `language` choice picks the linter and the test runner too.
+
+Only plugins that **fit** are offered: those that can fill the level, apply to
+the language chosen so far, and agree with every plugin already chosen (the
+rules of [Validating](#validating)), in each branch of the choices. With a
+`language` choice of python and node, the linter that needs Node is offered
+for the node branch and not for the python one, and a plugin that fits only
+one branch cannot be fixed. A requirement on something other than the
+language may still be met by a plugin chosen later, so it does not rule a
+plugin out. Built-in plugins, those `smith.toml` declares and those installed
+on the search path are all offered.
+
+Before anything is written the finished recipe is rendered, parsed, and
+checked with its parents for **every combination of answers**, as
+`smith recipe check --all` does. A recipe that does not resolve is not
+written, and the error says for which answers and which plugins. The file is
+the TOML you would write by hand, with the choices, the plugins that are
+fixed under `[use]`, and a `[when.<choice>.<answer>.use]` block per answer.
+An existing file is replaced only after you confirm, or with `--force`.
+
+The wizard does not write `settings` or nested `when` blocks; add them by
+hand, and run `smith recipe check --all`.
+
+### Answers file
+
+`--from-answers` reads what the questions would learn, as TOML, so a script, a
+test or CI gets the same recipe (the questions and the file go through the
+same code after that):
+
+```toml
+name = "team"
+version = "0.1.0"
+extends = "../company.recipe.toml"      # optional
+
+[choices.language]
+ask = "Language"
+options = ["python", "node"]
+default = "python"
+
+[levels.language]
+choice = "language"                      # a plugin per answer
+plugins = { python = "python", node = "node" }
+
+[levels.lint]
+choice = "language"
+plugins = { node = "eslint" }            # python: unset
+
+[levels.structure]
+fixed = ["vertical-slices"]              # any number for structure and deploy
+```
+
+A level is `fixed` plugins or a `choice` with `plugins` by answer (a name, or
+a list for structure and deploy), never both. A choice the parent declares may
+be used without declaring it again. Unknown keys and a name or version a
+release cannot use are refused.

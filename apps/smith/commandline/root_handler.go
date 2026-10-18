@@ -24,6 +24,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
+	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
@@ -34,6 +35,13 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/whymiss"
 	"github.com/spf13/cobra"
 )
+
+// withWizard adds `smith recipe new` to `smith recipe`: the wizard needs the
+// recipe package, so it cannot be added from inside it.
+func withWizard(cmd *cobra.Command, version string) *cobra.Command {
+	cmd.AddCommand(recipewizard.NewCommand(version))
+	return cmd
+}
 
 // Root builds the smith command.
 func Root(version string) *cobra.Command {
@@ -69,7 +77,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
 	add("inspect", mcpserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), recipe.Command(version), stackview.Command(version), slicecheck.Command())
+	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command())
 	return root
 }
 

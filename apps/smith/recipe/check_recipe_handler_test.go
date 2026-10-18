@@ -20,7 +20,7 @@ func check(t *testing.T, text string, asJSON bool, pairs ...string) (stdout, std
 		t.Fatal(perr)
 	}
 	var out, errOut bytes.Buffer
-	err = runCheck(&out, &errOut, path, answers, asJSON, "1.0.0")
+	err = runCheck(&out, &errOut, path, answers, asJSON, false, "1.0.0")
 	return out.String(), errOut.String(), err
 }
 

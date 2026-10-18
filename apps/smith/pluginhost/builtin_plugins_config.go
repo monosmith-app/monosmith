@@ -23,6 +23,7 @@ import (
 	nodep "github.com/monosmith-app/monosmith/libs/plugin-node/plugin"
 	phpp "github.com/monosmith-app/monosmith/libs/plugin-php/plugin"
 	pythonp "github.com/monosmith-app/monosmith/libs/plugin-python/plugin"
+	recipep "github.com/monosmith-app/monosmith/libs/plugin-recipe/plugin"
 	rubyp "github.com/monosmith-app/monosmith/libs/plugin-ruby/plugin"
 	rustp "github.com/monosmith-app/monosmith/libs/plugin-rust/plugin"
 	slicesp "github.com/monosmith-app/monosmith/libs/plugin-vertical-slices/plugin"
@@ -42,6 +43,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"bicep":  func(v string) serve.Plugin { return bicepp.New(v) },
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },
+	"recipe": func(v string) serve.Plugin { return recipep.New(v) },
 }
 
 // BuiltinAddons constructs each built-in plugin that is not a language:

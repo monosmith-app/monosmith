@@ -84,6 +84,9 @@ If your team keeps a [recipe](../reference/recipes.md) (`smith new acme
 questions one at a time (a language, say), shows the plugins the answers pick,
 and makes the project with them. `--choice language=python` answers without
 asking, which is how scripts and CI add projects; `--stack` bypasses the recipe.
+To write a recipe, run `smith recipe new` (it asks, and checks the result for
+every answer before writing it); a team releases its recipes like packages
+([versioned recipes](../reference/recipes.md#versioned-recipes)).
 
 Each project starts with one worked example slice (`greeting`) laid out as
 vertical slices, and passes lint, type-check, test and build immediately.

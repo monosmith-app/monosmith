@@ -12,7 +12,13 @@ projects from a recipe with `smith add` and `smith new --recipe` (#308),
 which records the recipe, its version and the answers in `smith.toml`; and
 keeping those projects current (#309): `smith doctor` reports drift, `smith
 upgrade` rewrites the files smith owns and `smith explain` shows where each
-value came from. To come: the creation wizard and versioned recipes (#311).
+value came from; the creation wizard `smith recipe new` and versioned recipes
+(#311), with these choices where the design left room: a recipe is a project of
+language `recipe` and kind `package` (not a fourth kind, which every place that
+switches on the kind would have to learn), found as a `*.recipe.toml` in a
+folder of its own; its release attaches a copy of the file stamped with the
+release's version, since a release commits nothing; and the wizard reads the
+same answers from a file (`--from-answers`) for scripts and tests.
 
 ## The goal
 

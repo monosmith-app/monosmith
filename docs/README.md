@@ -22,7 +22,7 @@ What each part does and how to configure it.
 | [CI pipelines](reference/ci.md) | the generated GitHub, Azure and GitLab pipelines, their phases and secrets |
 | [Releasing](reference/releasing.md) | versions from commits, tags, publishing to every registry |
 | [Stacks](reference/stacks.md) | the plugins each project is built with |
-| [Recipes](reference/recipes.md) | a team's choice of plugins and settings: the file, resolving, `smith recipe check` |
+| [Recipes](reference/recipes.md) | a team's choice of plugins and settings: the file, resolving, `smith recipe check`, the `smith recipe new` wizard, releasing recipes |
 | [Conventions](reference/conventions.md) | workspace-wide conventions such as vertical slices |
 | [Plugins](reference/plugins.md) | the built-in plugins, writing one, the protocol |
 
