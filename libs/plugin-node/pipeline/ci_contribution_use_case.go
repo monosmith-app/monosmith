@@ -3,13 +3,15 @@ package pipeline
 import (
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // CI returns the Node contribution to every pipeline, or nothing when the
-// workspace has no Node project. Publishing needs NODE_AUTH_TOKEN for an npm
-// package and VSCE_PAT for a VS Code extension.
+// workspace has no Node project. Publishing needs NODE_AUTH_TOKEN for a
+// package published to npmjs.org and VSCE_PAT for a VS Code extension; a
+// private registry signs in its own way (registries.CI).
 func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
@@ -21,6 +23,10 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 		// can fix; the rest are notes.
 		Audit: []protocol.Step{{Name: "npm audit (runtime dependencies)", Command: []string{"{smith}", "npm-audit"}, Blocking: true}},
 	}
+	signIn, publicPublish := registries.CI(params.Projects)
+	result.Authenticate = signIn.Authenticate
+	result.Credentials = append(result.Credentials, signIn.Credentials...)
+	result.Permissions = append(result.Permissions, signIn.Permissions...)
 	npm, marketplace := false, false
 	for _, p := range params.Projects {
 		if p.Kind != protocol.ProjectPackage {
@@ -32,7 +38,7 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 			npm = true
 		}
 	}
-	if npm {
+	if npm && publicPublish {
 		result.Credentials = append(result.Credentials, protocol.Credential{Env: "NODE_AUTH_TOKEN", Description: "npm token that can publish the workspace's packages", Required: true})
 	}
 	if marketplace {

@@ -24,10 +24,17 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 		return publishedExtension(workspaceRoot, m), nil
 	}
 	name := params.Project.Exports[0]
-	registry, _, _ := capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
+	// The registry the project is published to, when smith.toml names one.
+	var at []string
+	registry := ""
+	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NPM != "" {
+		registry, at = r.Publish.NPM, []string{"--registry", r.Publish.NPM}
+	} else {
+		registry, _, _ = capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
+	}
 	result := protocol.PublishedResult{Registry: strings.TrimSpace(registry)}
 	// npm refuses view inside a workspace package, so ask at the root.
-	out, errOut, err := capture(workspaceRoot, []string{"npm", "view", name, "version", "--fetch-retries=0", "--fetch-timeout=15000"})
+	out, errOut, err := capture(workspaceRoot, append([]string{"npm", "view", name, "version", "--fetch-retries=0", "--fetch-timeout=15000"}, at...))
 	switch {
 	case err == nil:
 		result.Version = strings.TrimSpace(out)
