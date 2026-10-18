@@ -10,8 +10,9 @@ The product owner asked for a terminal interface that looks and behaves like
 interfaces): a full interface with **all the options visible**, **mouse
 compatible** and **rich**. From inside it you can start executions, install
 packages and run every function of smith, with **real-time feedback** of the
-results. The same functions are available from the **IDE plugins**, which carry
-the **engine embedded** and do not need smith installed.
+results. The same functions are available from the **IDE plugins**, which use
+the **smith the team has installed** (as the ESLint and Jest extensions use the
+workspace's own tools), so the team controls the version.
 
 ## What cuppa teaches
 
@@ -218,26 +219,49 @@ server mode, in the style of the language server protocol:
 - `smith lsp` (issue #303) is part of the same server: `smith.toml` and recipe
   completion, validation and fixes.
 
-### Embedded in the IDE plugins
+### The plugins use the installed smith
 
-**Decided (requirement):** the plugins **carry the engine** and do not require
-smith to be installed.
+**Decided (2026-10-18, replacing the earlier requirement to embed the engine):**
+the plugins **do not carry the engine**. They run the smith the team has
+installed, the way the ESLint and Jest extensions run the workspace's own
+tools. The reason is control: with an embedded engine the version is whatever
+the plugin shipped, which can differ from the one CI and the rest of the team
+use. With the installed one, the IDE, the terminal and CI run the same smith,
+so a task gives the same result, cache key and release preview everywhere.
 
-- **VS Code:** a **platform-specific extension package** per OS and architecture
-  holds the smith binary for that platform (VS Code installs the matching one
-  from `vsce publish --target`), started with `smith serve`. smith already
-  publishes extensions per platform from its native jobs (smith 1.8.0), so the
-  release machinery exists. The extension and its engine are released together
-  and always the same version.
-- **JetBrains:** the plugin bundles the binaries for the six platforms (one
-  archive, about 15 MB each) and starts the right one.
-- **Override:** a setting can point at another smith (for a team on a pinned
-  version); nothing in the plugin needs it.
-- **Updates:** the plugin updates through its marketplace, which updates the
-  engine with it.
-- A WebAssembly build of the engine (as cuppa has) is **not** the plan: the
-  engine runs processes and reads the file system, which a browser sandbox does
-  not allow. It stays an option for a read-only web viewer.
+How the plugin finds smith, first match wins:
+
+1. a setting (`smith.path`), for a smith somewhere unusual
+2. the workspace's own install: `node_modules/.bin/smith` (the npm package
+   `monosmith` as a dev dependency) or `.smith/bin/smith`, which pins the
+   version per repository
+3. `smith` on the `PATH`
+
+If none is found, the plugin does not fail silently: it shows what is missing
+and the install commands for each channel (npm, pipx, `dotnet tool`, gem, pub,
+the install script, a package manager), with a button for the common one.
+
+**Version compatibility.** `smith serve` (see above) reports its version and
+the protocol version it speaks. The plugin states the range of protocol
+versions it supports:
+- older than the range: the plugin offers the upgrade command and limits itself
+  to what the old smith can do
+- inside the range: everything works
+- newer: works if the protocol is compatible, and the plugin says when it is
+  not, since additions to the protocol are optional fields as for plugins
+
+**Updates** of smith are the team's decision, made in the repository (the
+dev dependency, or the version pinned in CI), not by the plugin updating
+itself. The plugin updates through its marketplace and only needs a smith in
+its supported range.
+
+**Not chosen:** embedding the binary in each extension package (platform
+packages for VS Code, bundled binaries for JetBrains) was the earlier plan and
+remains possible later as a **fallback** for a machine with no smith, but not
+as the default, because it would let the IDE run a different version from the
+rest of the team. A WebAssembly build of the engine (as cuppa has) is also not
+the plan: the engine runs processes and reads the file system, which a browser
+sandbox does not allow.
 
 ### What the IDE shows
 
@@ -275,12 +299,18 @@ and releasing show a dialog with the command first.
 3. **Install, doctor and release inside the interface**, with dialogs and the
    command line shown.
 4. **Recipes in the interface**: the choices as a form, the creation wizard.
-5. **The VS Code extension** on `smith serve`, with the engine embedded.
+5. **The VS Code extension** on `smith serve`, finding the installed smith.
 6. **The JetBrains plugin.**
 
 ## Open questions
 
 - **Run inside the app, with confirmation:** as above.
+- **Pinning smith in a repository:** the npm dev dependency `monosmith` pins it
+  for a Node workspace, and the install script takes a version for CI. A
+  repository with no Node has no equivalent. A `smith` version range in
+  `smith.toml` (`[workspace] smith = "~1.24"`), checked by `smith doctor` and
+  `smith ci check` and read by the IDE plugins, would give every repository one
+  place to say which smith it uses. A decision for the product owner.
 - **Minimum width:** 100 columns with a compact layout below. Is 80 enough as
   the floor?
 - **Mouse zone library:** Bubble Tea's own mouse messages need hit-testing; a
