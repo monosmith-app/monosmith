@@ -4,6 +4,14 @@ Status: **proposal**, for discussion. Decisions already taken are marked
 **Decided**; the rest are **Open**, each with a recommendation. Nothing here
 is built yet unless it says so.
 
+Built so far (epic #312): plugins declare their level, requirements and
+conflicts (#307); the recipe file, its loading with URL pinning, resolving and
+validating, and `smith recipe check` (#306, see
+[recipes](../reference/recipes.md)); named private registries (#310). To come:
+creating projects from a recipe (#308), recording it in each project with
+drift checks and upgrades (#309), the creation wizard and versioned recipes
+(#311).
+
 ## The goal
 
 MonoSmith exists so that a team can keep its internal libraries, in many
