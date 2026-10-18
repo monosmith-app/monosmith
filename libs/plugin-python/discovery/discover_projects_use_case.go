@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -46,15 +47,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		importName := ImportName(py.Project.Name)
 		kind := projectkind.Resolve(py.Tool.Smith.Kind, root, protocol.ProjectLib)
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "python",
-			Kind:     kind,
-			Stack:    py.Tool.Smith.Stack,
-			Exports:  []string{importName},
-			Imports:  dedupe(imports),
-			Version:  py.Project.Version,
-			Tasks:    Tasks(root, kind, importName, py.Tool.Mypy != nil),
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "python",
+			Kind:        kind,
+			Stack:       py.Tool.Smith.Stack,
+			Exports:     []string{importName},
+			Imports:     dedupe(imports),
+			Version:     py.Project.Version,
+			Description: strings.TrimSpace(py.Project.Description),
+			Tasks:       Tasks(root, kind, importName, py.Tool.Mypy != nil),
 		})
 	}
 	result.SetToolchain(func() string { return pythonToolchain() })

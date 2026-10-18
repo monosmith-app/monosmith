@@ -35,15 +35,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		kind := projectkind.Resolve(pub.Kind, root, protocol.ProjectLib)
 		_, testErr := os.Stat(filepath.Join(dir, "test"))
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "dart",
-			Kind:     kind,
-			Exports:  []string{pub.Name},
-			Imports:  pub.Dependencies,
-			Version:  pub.Version,
-			Tasks:    Tasks(Shape{Root: root, Name: pub.Name, Kind: kind, Flutter: pub.Flutter, Tests: testErr == nil}),
-			Stack:    pub.Stack,
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "dart",
+			Kind:        kind,
+			Exports:     []string{pub.Name},
+			Imports:     pub.Dependencies,
+			Version:     pub.Version,
+			Description: pub.Description,
+			Tasks:       Tasks(Shape{Root: root, Name: pub.Name, Kind: kind, Flutter: pub.Flutter, Tests: testErr == nil}),
+			Stack:       pub.Stack,
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("dart", "dart", "--version") })

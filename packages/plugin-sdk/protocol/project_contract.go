@@ -33,6 +33,10 @@ type Project struct {
 	// into every task's cache key, so a result from another version is a
 	// miss. Empty when the plugin cannot tell, and then it is left out.
 	Toolchain string `json:"toolchain,omitempty"`
+	// Description is the one-line description the manifest records (package.json
+	// description, pyproject.toml project.description, the pom's <description>),
+	// if it has one. Conventions use it where a registry asks for a summary.
+	Description string `json:"description,omitempty"`
 	// TagPrefix overrides the release tag prefix; empty means "<name>@".
 	// Go modules use "<root>/v" so `go get` can resolve the tag.
 	TagPrefix string          `json:"tagPrefix,omitempty"`

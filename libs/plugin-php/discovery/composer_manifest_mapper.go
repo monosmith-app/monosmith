@@ -9,6 +9,8 @@ import (
 // Manifest is what smith reads from a composer.json.
 type Manifest struct {
 	Name, Version, Type string
+	// Description is composer.json's description.
+	Description string
 	// Kind and Stack are extra.smith's.
 	Kind, Stack string
 	// Bin are the package's executables.
@@ -19,13 +21,14 @@ type Manifest struct {
 }
 
 type manifestJSON struct {
-	Name       string            `json:"name"`
-	Version    string            `json:"version"`
-	Type       string            `json:"type"`
-	Bin        []string          `json:"bin"`
-	Require    map[string]string `json:"require"`
-	RequireDev map[string]string `json:"require-dev"`
-	Extra      struct {
+	Name        string            `json:"name"`
+	Version     string            `json:"version"`
+	Description string            `json:"description"`
+	Type        string            `json:"type"`
+	Bin         []string          `json:"bin"`
+	Require     map[string]string `json:"require"`
+	RequireDev  map[string]string `json:"require-dev"`
+	Extra       struct {
 		Smith struct {
 			Kind  string `json:"kind"`
 			Stack string `json:"stack"`
@@ -44,7 +47,7 @@ func ParseManifest(src []byte) (Manifest, error) {
 	if err := json.Unmarshal(src, &j); err != nil {
 		return Manifest{}, err
 	}
-	m := Manifest{Name: j.Name, Version: j.Version, Type: j.Type, Bin: j.Bin, Kind: j.Extra.Smith.Kind, Stack: j.Extra.Smith.Stack}
+	m := Manifest{Name: j.Name, Version: j.Version, Description: strings.TrimSpace(j.Description), Type: j.Type, Bin: j.Bin, Kind: j.Extra.Smith.Kind, Stack: j.Extra.Smith.Stack}
 	for _, reqs := range []map[string]string{j.Require, j.RequireDev} {
 		for name := range reqs {
 			if !platform(name) {
