@@ -212,6 +212,43 @@ the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
 
+## Recipes
+
+`[workspace] recipe` names the recipe `smith add` creates projects from: a
+path relative to `smith.toml`, or an https URL. `[recipes]` names a different
+one for a project kind (`app`, `lib` or `package`). `smith new --recipe` writes
+the setting. [Recipes](recipes.md) explains them.
+
+When a recipe creates a project, smith adds three kinds of table to
+`smith.toml`, under a comment that says where they came from. They are ordinary
+settings: edit or remove them like any other.
+
+```toml
+# Written by smith from the recipe team for the project billing.
+[stacks.team-python-library]          # the plugins the recipe picked, as a stack other projects with the same answers share
+description = "From the recipe team 1.2.0 (language=python, kind=library); written by smith"
+language = "python"
+structure = ["vertical-slices"]
+
+[projects.billing.recipe]             # which recipe, version and answers made the project
+name = "team"
+version = "1.2.0"
+source = "recipes/team.recipe.toml"
+
+[projects.billing.recipe.answers]
+kind = "library"
+language = "python"
+
+[projects.billing.settings.python]    # the recipe's settings for a plugin the project uses
+layout = "src"
+```
+
+The project's manifest records the stack's name, as for any stack. A plugin
+reads `[projects.<name>.settings.<plugin>]` as its entry in the project's
+`settings` (and gets it as `settings` when it generates the project). `smith
+remove` drops a project's `recipe` and `settings` tables with the rest of its
+tables; the stack stays, since other projects may use it.
+
 ## Overriding a task
 
 Plugins infer every task. To change one, say only what differs:

@@ -172,7 +172,7 @@ Content-Length: 85\r\n
 |---|---|---|
 | `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names | always |
 | `discover` | workspace-relative manifest paths the host found → projects | `discover` |
-| `generate` | kind, name, directory, workspace info, stack, and `convention` when the plugin is asked as a workspace convention rather than as one of the stack's plugins → files written, notes | `generate` |
+| `generate` | kind, name, directory, workspace info, stack, `convention` when the plugin is asked as a workspace convention rather than as one of the stack's plugins, and `settings` (the plugin's own table from the recipe the project is created from) → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
 | `publish` | project, version, dry run → published / skipped with a reason | `publish` |
 | `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps, credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
