@@ -46,6 +46,35 @@ func word(input map[string]any, key string) (string, error) {
 	return v, nil
 }
 
+// choices reads a list of "name=answer" strings, each a recipe choice's
+// answer, into repeated --choice arguments.
+func choices(input map[string]any, key string) ([]string, error) {
+	list, err := words(input, key, false)
+	var args []string
+	for _, c := range list {
+		if name, answer, ok := strings.Cut(c, "="); !ok || name == "" || answer == "" {
+			return nil, fmt.Errorf("%q entries must be name=answer, got %q", key, c)
+		}
+		args = append(args, "--choice", c)
+	}
+	return args, err
+}
+
+// pluginName reads a plugin's name. smith plugin check also takes a path and
+// then runs that executable, which a tool must not: only names.
+func pluginName(input map[string]any, key string) (string, error) {
+	v, err := word(input, key)
+	if err != nil {
+		return "", err
+	}
+	for _, r := range v {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return "", fmt.Errorf("%q must be a plugin's name (lowercase letters, digits and -), not a path", key)
+		}
+	}
+	return v, nil
+}
+
 func optional(input map[string]any, key string) (string, bool, error) {
 	if _, present := input[key]; !present {
 		return "", false, nil
@@ -115,6 +144,50 @@ var Tools = []Tool{
 	{Name: "smith_doctor", Description: "Check the workspace's health, as JSON; every failed check names its remedy.", InputSchema: noInput, ReadOnly: true, Args: fixed("doctor", "--json")},
 	{Name: "smith_release_preview", Description: "What the next release would version, tag and publish, as JSON; changes nothing.", InputSchema: noInput, ReadOnly: true, Args: fixed("release", "--dry-run", "--json")},
 	{Name: "smith_updates", Description: "Declared dependencies with newer releases, grouped patch, minor and major, and the tools smith pins against their newest releases, as JSON; changes nothing.", InputSchema: noInput, ReadOnly: true, Args: fixed("up", "--json")},
+	{Name: "smith_explain", Description: "How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each level and the settings.", ReadOnly: true,
+		InputSchema: object(map[string]any{"target": str("a project, or project:task"), "recipe": boolean("only what the recipe decided")}, "target"),
+		Args: func(in map[string]any) ([]string, error) {
+			target, err := word(in, "target")
+			args := []string{"explain", target, "--json"}
+			if flag(in, "recipe") {
+				args = append(args, "--recipe")
+			}
+			return args, err
+		}},
+	{Name: "smith_recipe_check", Description: "Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each level and the merged settings with the file and line each came from, or why it is not valid. Use it to show the plan before smith_add_project or smith_recipe_new.", ReadOnly: true,
+		InputSchema: object(map[string]any{
+			"recipe":  str("a recipe file in the workspace, or an https URL pinned in smith.recipes.lock"),
+			"choices": list("answers to its choices, each name=answer; the rest take their defaults"),
+			"all":     boolean("check every combination of answers (up to 64)"),
+		}, "recipe"),
+		Args: func(in map[string]any) ([]string, error) {
+			recipe, err := word(in, "recipe")
+			if err != nil {
+				return nil, err
+			}
+			answers, err := choices(in, "choices")
+			if err != nil {
+				return nil, err
+			}
+			args := append([]string{"recipe", "check", recipe, "--json"}, answers...)
+			if flag(in, "all") {
+				args = append(args, "--all")
+			}
+			return args, nil
+		}},
+	{Name: "smith_plugin_list", Description: "The built-in plugins and those installed on the plugin search path, as JSON: the levels each can be chosen for (roles), the slots it fills (provides), its requirements and conflicts, and what it implements.", InputSchema: noInput, ReadOnly: true, Args: fixed("plugin", "list", "--json")},
+	{Name: "smith_plugin_check", Description: "Run the conformance suite against a plugin by name, as JSON: that it names itself, its roles match what it implements, its stacks are complete and every method it advertises answers. With generate, it also generates an app, a lib and a package in a temporary directory (this may install dependencies).",
+		InputSchema: object(map[string]any{"plugin": str("the plugin's name"), "generate": boolean("also generate projects and discover them")}, "plugin"),
+		Args: func(in map[string]any) ([]string, error) {
+			name, err := pluginName(in, "plugin")
+			args := []string{"plugin", "check", name, "--json"}
+			if flag(in, "generate") {
+				args = append(args, "--generate")
+			}
+			return args, err
+		}},
+	{Name: "smith_doctor_fixes", Description: "The fixes smith_doctor's findings have, as diffs, and which of them are safe (they only restore what smith or a plugin owns, like go.work or a generated pipeline); changes nothing. Apply the safe ones with smith_doctor_fix.", InputSchema: noInput, ReadOnly: true, Args: fixed("doctor", "--fix")},
+	{Name: "smith_upgrade_preview", Description: "What smith upgrade would change after a newer smith or recipe: the migration of smith.toml, the files smith owns it regenerates or deletes, and the projects a recipe brings up to date, as JSON; changes nothing.", InputSchema: noInput, ReadOnly: true, Args: fixed("upgrade", "--dry-run", "--json")},
 	{Name: "smith_run", Description: "Run tasks (build, test, lint, typecheck, or any task a project has) in dependency order, from the cache when nothing changed.",
 		InputSchema: object(map[string]any{
 			"tasks":    list("the tasks to run"),
@@ -138,10 +211,11 @@ var Tools = []Tool{
 		}},
 	{Name: "smith_add_project", Description: "Add a project: kind app (deployed), lib (imported internally) or package (published), or a combined kind from smith_kinds (node-app). Writes files, installs packages and regenerates the pipelines.",
 		InputSchema: object(map[string]any{
-			"kind":  str("app, lib, package, or a combined kind such as node-app"),
-			"name":  str("the project name, kebab-case"),
-			"lang":  str("node, go, python, or a language a plugin adds"),
-			"stack": str("the stack to build it with (see smith_stacks); none for the language plugin alone"),
+			"kind":    str("app, lib, package, or a combined kind such as node-app"),
+			"name":    str("the project name, kebab-case"),
+			"lang":    str("node, go, python, or a language a plugin adds"),
+			"stack":   str("the stack to build it with (see smith_stacks); none for the language plugin alone"),
+			"choices": list("answers to the workspace recipe's choices, each name=answer (language=python); check them first with smith_recipe_check"),
 		}, "kind", "name"),
 		Args: func(in map[string]any) ([]string, error) {
 			kind, err := word(in, "kind")
@@ -162,7 +236,8 @@ var Tools = []Tool{
 					args = append(args, "--"+key, v)
 				}
 			}
-			return args, nil
+			answers, err := choices(in, "choices")
+			return append(args, answers...), err
 		}},
 	{Name: "smith_remove_project", Description: "Remove a project and its traces (go.work, the lockfile, the venv, smith.toml). Refused while another project imports it. With dry_run, only says what would change.",
 		InputSchema: object(map[string]any{"name": str("the project"), "dry_run": boolean("report only")}, "name"),
@@ -209,6 +284,33 @@ var Tools = []Tool{
 				args = append(args, "-w", p)
 			}
 			return append(args, pkg), nil
+		}},
+	{Name: "smith_doctor_fix", Description: "Apply the safe fixes smith_doctor_fixes lists. Others are shown, never applied.", InputSchema: noInput, Args: fixed("doctor", "--fix", "--yes")},
+	{Name: "smith_upgrade", Description: "Migrate smith.toml to the current schema and regenerate the files smith owns; a project made from a recipe is brought up to date with it. Preview it first with smith_upgrade_preview.", InputSchema: noInput, Args: fixed("upgrade")},
+	{Name: "smith_recipe_new", Description: "Write a recipe from an answers file (TOML; see docs/reference/recipes.md) instead of asking questions; the recipe is checked for every combination of answers before it is written. Refuses to replace an existing file unless force is set.",
+		InputSchema: object(map[string]any{
+			"answers": str("path of the answers file, relative to the workspace"),
+			"path":    str("where to write the recipe; default <name>.recipe.toml"),
+			"force":   boolean("replace the file if it exists"),
+		}, "answers"),
+		Args: func(in map[string]any) ([]string, error) {
+			answers, err := word(in, "answers")
+			if err != nil {
+				return nil, err
+			}
+			args := []string{"recipe", "new"}
+			path, ok, err := optional(in, "path")
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				args = append(args, path)
+			}
+			args = append(args, "--from-answers", answers)
+			if flag(in, "force") {
+				args = append(args, "--force")
+			}
+			return args, nil
 		}},
 	{Name: "smith_sync", Description: "Make every project declare a shared dependency at the same version, then install. With check, only report.",
 		InputSchema: object(map[string]any{"check": boolean("report without writing")}),

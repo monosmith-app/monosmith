@@ -34,10 +34,33 @@ the workspace. For example, in a client's JSON configuration:
 
 The read-only tools (`smith_projects`, `smith_graph`, `smith_affected`,
 `smith_kinds`, `smith_stacks`, `smith_commands`, `smith_info`, `smith_doctor`,
-`smith_release_preview`, `smith_updates`) are marked so a client may run them
-without asking. The others change the workspace: `smith_run`,
-`smith_add_project`, `smith_remove_project`, `smith_install`, `smith_uninstall`,
-`smith_sync` and `smith_pipeline`. Each tool runs the smith command it stands for
+`smith_release_preview`, `smith_updates`, `smith_explain`, `smith_recipe_check`,
+`smith_plugin_list`, `smith_doctor_fixes` and `smith_upgrade_preview`) are
+marked so a client may run them without asking. The others change the
+workspace or run a plugin: `smith_run`, `smith_add_project`,
+`smith_remove_project`, `smith_install`, `smith_uninstall`, `smith_sync`,
+`smith_pipeline`, `smith_doctor_fix`, `smith_upgrade`, `smith_recipe_new` and
+`smith_plugin_check`. Each tool runs the smith command it stands for
 and returns its output headed by that command line (`$ smith install -w web
 zod`), so you can see and repeat exactly what was done. Values become single
 arguments, and one that looks like an option is refused.
+
+### Helping with recipes, plugins and new projects
+
+An assistant creating a recipe, a plugin or a project can look before it
+writes:
+
+| To | Tool | Runs |
+|---|---|---|
+| see the plan of a recipe: the choices asked, the plugin at each level, the merged settings and where each came from, or why it is invalid | `smith_recipe_check` (`choices`: `name=answer`, `all`) | `smith recipe check <recipe> --json` |
+| write a recipe from an answers file, checked for every combination first | `smith_recipe_new` (`answers`, `path`, `force`) | `smith recipe new --from-answers` |
+| create a project from the workspace's recipe, answering its choices | `smith_add_project` (`choices`) | `smith add <kind> <name> --choice name=answer` |
+| see why a task or setting has its value | `smith_explain` (`target`, `recipe`) | `smith explain <project>[:<task>] --json` |
+| know what plugins exist: levels, slots, requirements, conflicts | `smith_plugin_list` | `smith plugin list --json` |
+| check a plugin keeps the protocol's promises | `smith_plugin_check` (`plugin`, `generate`) | `smith plugin check <name> --json` |
+| see, then apply, the fixes doctor can make | `smith_doctor_fixes`, `smith_doctor_fix` | `smith doctor --fix`, `--fix --yes` |
+| see, then apply, what a newer smith or recipe changes | `smith_upgrade_preview`, `smith_upgrade` | `smith upgrade --dry-run --json`, `smith upgrade` |
+
+`smith_plugin_check` takes a plugin's name, never a path, because `smith plugin
+check ./path` would run that executable. `smith_doctor_fixes` shows diffs and
+changes nothing; only `smith_doctor_fix` applies the safe ones.
