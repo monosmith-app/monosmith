@@ -24,6 +24,12 @@ The first release starts from the manifest's version (`0.0.0`), so a first
 `feat` gives `0.1.0`. A package whose dependency releases is released too (at
 least a patch), so its published dependency range stays correct.
 
+Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
+nuget.org, …), or to the private registry smith.toml names with `[release]
+registry` or `[projects.<name>] registry` (npm, Python and .NET; see
+[configuration](configuration.md#private-registries)). Either way a version
+the registry already has is skipped, so a re-run completes a release.
+
 To force a version, commit a directive anywhere in the repository:
 
 ```

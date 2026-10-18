@@ -170,7 +170,8 @@ you regenerate it with a newer smith.
 | `VSCE_PAT` | `vsce publish` of a VS Code extension package to the Marketplace (on the release step, and on the native job's step for a native extension) |
 | `CONTAINER_USERNAME`, `CONTAINER_PASSWORD` | the docker convention's image push to a registry other than ghcr.io, which logs in with `GITHUB_TOKEN` and gives the job `packages: write` (see releasing.md). `CONTAINER_REGISTRY`, deprecated, names the registry when `[conventions.docker] registry` is unset |
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
-| `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it |
+| `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
+| the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |
 
 The pipeline lists only the secrets its projects need. Go packages are
 published by their tag and need no secret; PHP packages are read by Packagist
@@ -183,6 +184,29 @@ second workflow, `.github/workflows/pub.yml`, which the release starts on the
 app's pub tag (the ci workflow gets `actions: write` for that). It sets up
 Dart with pub.dev's OIDC token and runs `smith release pub`; see
 [Releasing](releasing.md#pubdev) for the one-time setup on pub.dev.
+
+## Private registries
+
+With `[registries]` in smith.toml (see
+[configuration](configuration.md#private-registries)), the pipeline signs in
+before `smith ci setup`:
+
+- **Azure Pipelines:** `npmAuthenticate@0` on the `.npmrc`, `PipAuthenticate@1`
+  and `TwineAuthenticate@1` for the feed, `NuGetAuthenticate@1`. Each signs in
+  with the pipeline's own token, so an Azure Artifacts feed needs no secret.
+- **GitHub Actions:** `GITHUB_TOKEN`, with `packages: read` (or `packages:
+  write` when a package publishes to GitHub Packages).
+- **GitLab:** a `token` registry's variable, as a masked CI/CD variable. GitLab
+  has no sign-in task, so use `auth = "token"` there.
+
+A registry's credential reaches setup only when installs read from it.
+Publishing to the feed drops `NODE_AUTH_TOKEN`, `PYPI_TOKEN` and
+`NUGET_API_KEY` from the pipeline.
+
+`smith ci check` lists what to set up by hand before the pipelines run: the
+secrets to create, in each provider's terms, and for each registry its
+permissions, such as the Feed Publisher role an Azure Artifacts feed must give
+the project's build service.
 
 ## Ready-made pipelines
 
