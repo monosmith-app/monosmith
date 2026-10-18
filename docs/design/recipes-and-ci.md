@@ -215,6 +215,47 @@ recipe = "./recipes/team.recipe.toml"   # or a URL
   without prompting (CI, scripts).
 - A recipe can also be named for one project kind only.
 
+### Workspace settings in a recipe
+
+**Proposed.** A recipe has two scopes. Everything above is **per project**:
+which plugin fills each level. Some settings belong to the **whole
+workspace**, and a team wants them set once, for every repository made from
+the recipe:
+
+| Workspace setting | Today |
+|---|---|
+| CI providers, release branch | `[ci]` |
+| Private registries, and which one installs and publishes | `[registries]` (#310) |
+| The task cache: remote store, read-only mode, size limit | `[cache]` |
+| Conventions applied to every project | `[conventions.*]` |
+
+```toml
+# in a recipe
+[workspace.ci]
+providers = ["azure"]
+
+[workspace.cache]
+remote = "azblob://acme/smith-cache"
+remote_read_only = false
+
+[workspace.registries.internal]
+auth = "azure-artifacts"
+npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
+```
+
+- `smith new` writes these into the new workspace's `smith.toml`; they follow
+  the same `when` and `extends` rules as the rest of the recipe.
+- **A secret is never in a recipe.** A recipe is a shared file. It names what
+  is needed (`SMITH_CACHE_KEY` for the remote cache, a feed's token), and `smith
+  ci check` lists the secrets to create.
+- **Cache backends stay built in** (S3, Azure Blob, any HTTP server). A
+  backend as an out-of-process plugin would add a process hop to every cached
+  object, and any custom store already works through the plain HTTP form. The
+  cache is configured by the recipe, not provided by a plugin.
+- When a workspace has a recipe, the generated pipelines wire the remote
+  cache from `[cache]`: the key and credentials as secrets, read-only on pull
+  requests from forks.
+
 ### Keeping projects current
 
 **Decided (for now):** `smith upgrade` and `doctor` update **files smith owns**
@@ -364,6 +405,7 @@ a per-dependency exception list. The plugin protocol already has the
 | 5b | A recipe creation wizard (`smith recipe new`) and `smith recipe check` | Decided, later |
 | 5c | Recipes versioned from commit messages, as a `recipe` project kind | Decided, later |
 | 5d | Plugin levels: exclusive (language, each task slot, scaffold) and additive (structure, deploy, conventions); rules and configs are versioned packages, not plugins | Decided |
+| 5e | A recipe has a workspace scope (CI, registries, cache, conventions); secrets are named, never stored; cache backends stay built in | Proposed |
 | 6 | CI is part of the recipe, no separate wizard | Open, recommended |
 | 7 | Named private registries, with provider-native auth | Open, recommended |
 | 8 | CI providers stay in the core; a renderer role later | Open, recommended |
