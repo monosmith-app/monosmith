@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -87,6 +88,17 @@ func Validate(cfg *Config) error {
 	for _, glob := range cfg.Workspace.Exclude {
 		if !doublestar.ValidatePattern(glob) || path.IsAbs(glob) || strings.Contains(glob, `\`) {
 			return fmt.Errorf("%s: [workspace] exclude: %q is not a workspace-relative glob with forward slashes", FileName, glob)
+		}
+	}
+	if r := cfg.Workspace.Recipe; r != "" && !ValidRecipeRef(r) {
+		return fmt.Errorf("%s: [workspace] recipe: %q is not an https URL or a path relative to smith.toml with forward slashes", FileName, r)
+	}
+	for kind, r := range cfg.Recipes {
+		if !slices.Contains(RecipeKinds, kind) {
+			return fmt.Errorf("%s: [recipes] %s: the kind is app, lib or package", FileName, kind)
+		}
+		if !ValidRecipeRef(r) {
+			return fmt.Errorf("%s: [recipes] %s: %q is not an https URL or a path relative to smith.toml with forward slashes", FileName, kind, r)
 		}
 	}
 	for name, st := range cfg.Stacks {

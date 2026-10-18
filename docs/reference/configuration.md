@@ -47,6 +47,10 @@ scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
+recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
+
+[recipes]                             # a different recipe for one project kind: app, lib or package
+package = "https://example.com/recipes/package.recipe.toml"
 
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", or several
@@ -85,6 +89,9 @@ stack = "node-vitest"                 # replaces the stack web's manifest record
 
 [projects.sdk]
 registry = "public-npm"               # this package publishes here instead of [release] registry
+
+[projects.sdk.settings.dotnet]        # a plugin's settings for this project, by plugin name; written from a recipe's settings
+target_framework = "net10.0"
 
 [registries.libs]                     # a private registry (below)
 auth = "azure-artifacts"              # or "github-packages", or "token" with token_env

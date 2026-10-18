@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
@@ -16,12 +17,17 @@ type Result struct {
 	Files []string `json:"files,omitempty"`
 	// Lost are team steps in slots the new pipelines no longer have.
 	Lost []string `json:"lost,omitempty"`
+	// Recipes are the pinned recipe URLs whose content changed: accepted by
+	// the upgrade, or with check, the ones it would accept.
+	Recipes []string `json:"recipes,omitempty"`
 	// Hints are changes smith suggests but does not make.
 	Hints []string `json:"hints,omitempty"`
 }
 
 // Changed reports whether anything changed (or would).
-func (r Result) Changed() bool { return len(r.Migrations) > 0 || len(r.Files) > 0 }
+func (r Result) Changed() bool {
+	return len(r.Migrations) > 0 || len(r.Files) > 0 || len(r.Recipes) > 0
+}
 
 // Upgrade migrates smith.toml, then regenerates the pipelines. With check it
 // changes nothing and reports what it would do.
@@ -46,6 +52,9 @@ func Upgrade(dir, version string, check bool, log io.Writer) (Result, error) {
 		return r, err
 	}
 	defer s.Close()
+	if r.Recipes, err = recipeChanges(&recipe.Loader{Root: s.Root}, s.Config, check); err != nil {
+		return r, err
+	}
 	if check {
 		c, err := cipipeline.Collect(s)
 		if err != nil {

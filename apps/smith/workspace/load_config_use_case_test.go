@@ -27,11 +27,44 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace\nname = \"a\"\n":                                                           "smith.toml:",
 		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n": "settings of the docker convention",
 		"[workspace]\nname = \"a\"\n[projects.api.docker]\nimage = \"api\"\n":                  "needs [conventions.docker]",
+		"[workspace]\nname = \"a\"\nrecipe = \"http://example.com/team.toml\"\n":               "[workspace] recipe",
+		"[workspace]\nname = \"a\"\nrecipe = \"../team.toml\"\n":                               "[workspace] recipe",
+		"[workspace]\nname = \"a\"\n[recipes]\nservice = \"team.toml\"\n":                      "the kind is app, lib or package",
+		"[workspace]\nname = \"a\"\n[recipes]\napp = \"C:\\\\team.toml\"\n":                    "[recipes] app",
 	} {
 		_, err := Parse([]byte(input))
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("input %q: want error containing %q, got %v", input, want, err)
 		}
+	}
+}
+
+func TestParseRecipesAndProjectSettings(t *testing.T) {
+	cfg, err := Parse([]byte(`[workspace]
+name = "a"
+recipe = "recipes/team.recipe.toml"
+[recipes]
+package = "https://example.com/pkg.recipe.toml"
+[projects.api.settings.dotnet]
+target_framework = "net10.0"
+[projects.api.settings.dotnet.nested]
+on = true
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Workspace.Recipe != "recipes/team.recipe.toml" || cfg.Recipes["package"] != "https://example.com/pkg.recipe.toml" {
+		t.Fatalf("recipes %+v %+v", cfg.Workspace, cfg.Recipes)
+	}
+	dotnet := cfg.Projects["api"].Settings["dotnet"]
+	if dotnet["target_framework"] != "net10.0" {
+		t.Fatalf("settings %+v", cfg.Projects["api"].Settings)
+	}
+	if nested, _ := dotnet["nested"].(map[string]any); nested["on"] != true {
+		t.Fatalf("nested settings %+v", dotnet)
+	}
+	if got := RecipeFor(cfg, "app"); got != "recipes/team.recipe.toml" {
+		t.Errorf("recipe for app: %q", got)
 	}
 }
 

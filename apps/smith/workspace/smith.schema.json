@@ -17,7 +17,8 @@
         "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme." },
         "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo." },
         "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." },
-        "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." }
+        "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." },
+        "recipe": { "type": "string", "description": "The recipe new projects are created from: a path relative to smith.toml, or an https URL. smith add --stack bypasses it. Default: none (stacks only)." }
       }
     },
     "ci": {
@@ -108,6 +109,12 @@
       "description": "The stack of a project that records none, and of smith add without --stack, by language plugin.",
       "additionalProperties": { "type": "string" }
     },
+    "recipes": {
+      "type": "object",
+      "description": "The recipe for one project kind (app, lib or package), instead of [workspace] recipe.",
+      "propertyNames": { "enum": ["app", "lib", "package"] },
+      "additionalProperties": { "type": "string" }
+    },
     "tasks": {
       "type": "object",
       "description": "Overrides of a task for every project, by task name.",
@@ -138,6 +145,11 @@
           },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },
           "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry." },
+          "settings": {
+            "type": "object",
+            "description": "Plugins' settings for this project, by plugin name: what a recipe's settings became when it created the project. A plugin reads its own table.",
+            "additionalProperties": { "type": "object", "additionalProperties": {} }
+          },
           "release": {
             "type": "object",
             "description": "Makes an app releasable: versioned by its tag, its assets built and attached.",

@@ -44,6 +44,9 @@ would change, for CI.`,
 				for _, f := range r.Files {
 					fmt.Fprintf(out, "%s: %s\n", verb, f)
 				}
+				for _, c := range r.Recipes {
+					fmt.Fprintf(out, "recipe %s\n", c)
+				}
 				for _, l := range r.Lost {
 					fmt.Fprintf(out, "warning: slot %s has no place in the new pipeline; its steps were not kept\n", l)
 				}
