@@ -63,3 +63,33 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	}
 	return s
 }
+
+// ProjectSettings is a plugin's settings for one project from smith.toml's
+// [projects.<project>.settings.<plugin>]: what a recipe's settings became
+// when it created the project. It is a copy, nil when there are none.
+func ProjectSettings(plugin string, po workspace.ProjectOverride) map[string]any {
+	table := po.Settings[plugin]
+	if len(table) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(table))
+	for k, v := range table {
+		out[k] = v
+	}
+	return out
+}
+
+// withProjectSettings puts a project's own settings for a plugin under the
+// settings a convention computed from its [conventions.<name>] table and the
+// project's [projects.<project>.<name>] table: those are more specific, so
+// they win key by key.
+func withProjectSettings(computed map[string]any, plugin string, po workspace.ProjectOverride) map[string]any {
+	own := ProjectSettings(plugin, po)
+	if own == nil {
+		return computed
+	}
+	for k, v := range computed {
+		own[k] = v
+	}
+	return own
+}

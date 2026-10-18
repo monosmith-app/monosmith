@@ -45,3 +45,32 @@ func TestPluginSettingsLayersTheProjectOnTheConvention(t *testing.T) {
 		t.Errorf("other conventions have no settings: %v", got)
 	}
 }
+
+func TestProjectSettingsAreACopyOrNil(t *testing.T) {
+	po := workspace.ProjectOverride{Settings: map[string]map[string]any{"dotnet": {"target_framework": "net10.0"}}}
+	got := ProjectSettings("dotnet", po)
+	if !reflect.DeepEqual(got, map[string]any{"target_framework": "net10.0"}) {
+		t.Fatalf("got %v", got)
+	}
+	got["target_framework"] = "changed"
+	if po.Settings["dotnet"]["target_framework"] != "net10.0" {
+		t.Error("the copy shares the config's table")
+	}
+	if ProjectSettings("python", po) != nil || ProjectSettings("dotnet", workspace.ProjectOverride{}) != nil {
+		t.Error("no settings must be nil")
+	}
+}
+
+func TestConventionSettingsWinOverTheProjectsOwn(t *testing.T) {
+	po := workspace.ProjectOverride{Settings: map[string]map[string]any{"docker": {"image": "from-recipe", "extra": 1}}}
+	got := withProjectSettings(map[string]any{"image": "from-convention"}, "docker", po)
+	if got["image"] != "from-convention" || got["extra"] != 1 {
+		t.Fatalf("got %v", got)
+	}
+	if got := withProjectSettings(map[string]any{"image": "x"}, "docker", workspace.ProjectOverride{}); got["image"] != "x" {
+		t.Fatalf("no own settings: %v", got)
+	}
+	if got := withProjectSettings(nil, "dotnet", workspace.ProjectOverride{}); got != nil {
+		t.Fatalf("nothing at all: %v", got)
+	}
+}

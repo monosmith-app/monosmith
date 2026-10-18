@@ -55,6 +55,17 @@ func ApplyStacks(projects []*Project, plugins *pluginhost.PluginSet, catalog *pl
 		for _, n := range st.Plugins() {
 			users[n] = append(users[n], p)
 		}
+		// Every plugin of the stack, its language and scaffold included, reads
+		// the settings smith.toml holds for it, which a recipe wrote when it
+		// created the project.
+		for _, n := range append(st.Plugins(), p.Plugin, st.Scaffold) {
+			if settings := ProjectSettings(n, cfg.Projects[p.Name]); n != "" && settings != nil {
+				if p.Settings == nil {
+					p.Settings = map[string]map[string]any{}
+				}
+				p.Settings[n] = settings
+			}
+		}
 	}
 	contributed := map[string]protocol.ContributeResult{}
 	for _, n := range sortedTaskNames(users) {
