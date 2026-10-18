@@ -35,6 +35,7 @@ Why smith is built the way it is.
 | [Architecture](design/architecture.md) | the core's slices, plugins as processes, how a run and a release flow |
 | [Decisions](design/decisions.md) | what was decided, when and why, and what is still open |
 | [Recipes and CI](design/recipes-and-ci.md) | proposal: team recipes of plugins, with choices, and CI as part of them |
+| [The TUI and the IDE plugins](design/tui-and-ide.md) | proposal: a rich, mouse-driven interface with live results, and IDE plugins with the engine embedded |
 | [Research](design/research/) | the research smith was planned from (historical) |
 
 ## Contributing
