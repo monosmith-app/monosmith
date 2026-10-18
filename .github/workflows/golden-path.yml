@@ -28,8 +28,8 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
           cache-dependency-path: '**/go.sum'
@@ -59,21 +59,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The jvm plugin's kotlin stack's e2e. First: where a Gradle is already
       # on PATH (/usr/bin on Ubuntu) setup-gradle puts that directory first,
       # and every later setup step must still win over it (setup-ruby).
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.8.1'
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
           cache-dependency-path: '**/go.sum'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       # The dotnet plugin's e2e builds for .NET 10.
@@ -99,7 +99,7 @@ jobs:
           channel: stable
           cache: true
       # The jvm plugin's e2e; the hosted images carry Maven.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -124,15 +124,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
           cache-dependency-path: '**/go.sum'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Convert an Nx workspace and an old-mnci workspace, then build and plan a release

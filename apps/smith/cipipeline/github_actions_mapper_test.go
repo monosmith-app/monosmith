@@ -22,9 +22,9 @@ func runtime(name, version, action, task, input string) protocol.Toolchain {
 
 func model() Model {
 	var c Contributions
-	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("python", "3.12", "actions/setup-python@v5", "UsePythonVersion@0", "versionSpec")}, Credentials: []protocol.Credential{{Env: "PYPI_TOKEN", Required: true}}})
-	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("node", "24", "actions/setup-node@v4", "UseNode@1", "version"), {Name: "python", Version: "9"}}, Credentials: []protocol.Credential{{Env: "NODE_AUTH_TOKEN"}}})
-	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("go", "1.26", "actions/setup-go@v5", "GoTool@0", "version")}})
+	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("python", "3.12", "actions/setup-python@v7", "UsePythonVersion@0", "versionSpec")}, Credentials: []protocol.Credential{{Env: "PYPI_TOKEN", Required: true}}})
+	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("node", "24", "actions/setup-node@v7", "UseNode@1", "version"), {Name: "python", Version: "9"}}, Credentials: []protocol.Credential{{Env: "NODE_AUTH_TOKEN"}}})
+	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("go", "1.26", "actions/setup-go@v7", "GoTool@0", "version")}})
 	// A plugin for a language smith does not know: an install command only,
 	// or nothing at all.
 	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{{Name: "zig", Version: "0.14", Install: "curl -fsSL https://example.com/zig.sh | sh\nzig version"}, {Name: "rust", Version: "1.90"}}})
@@ -35,7 +35,7 @@ func model() Model {
 // to the release step, where vsce publish reads it.
 func TestTheReleaseStepGetsTheMarketplaceToken(t *testing.T) {
 	var c Contributions
-	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("node", "24", "actions/setup-node@v4", "UseNode@1", "version")}, Credentials: []protocol.Credential{{Env: "VSCE_PAT", Required: true}}})
+	c.Add(protocol.CIResult{Toolchains: []protocol.Toolchain{runtime("node", "24", "actions/setup-node@v7", "UseNode@1", "version")}, Credentials: []protocol.Credential{{Env: "VSCE_PAT", Required: true}}})
 	m := NewModel(c, "dev", "main")
 	gh := RenderGitHub(m)
 	if release := gh[strings.Index(gh, "      - name: Release\n"):]; !strings.Contains(release, "          VSCE_PAT: ${{ secrets.VSCE_PAT }}\n") {
@@ -51,7 +51,7 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 	m := model()
 	gh, az := RenderGitHub(m), RenderAzure(m)
 	for _, want := range []string{
-		"      - uses: actions/setup-node@v4\n        with:\n          node-version: '24'\n          cache: false\n",
+		"      - uses: actions/setup-node@v7\n        with:\n          node-version: '24'\n          cache: false\n",
 		"python-version: '3.12'", "go-version: '1.26'",
 		"      - name: Install zig\n        run: |\n          curl -fsSL https://example.com/zig.sh | sh\n          zig version\n",
 		"      # smith: no plugin says how to install rust 1.90",
@@ -227,7 +227,7 @@ func TestPackOnlyWhenAProjectPackages(t *testing.T) {
 	}
 	m.Pack = true
 	gh, az := RenderGitHub(m), RenderAzure(m)
-	for _, want := range []string{"run: smith ci pack", "uses: actions/upload-artifact@v4", "name: drop", "path: dist/drop", "if-no-files-found: ignore"} {
+	for _, want := range []string{"run: smith ci pack", "uses: actions/upload-artifact@v7", "name: drop", "path: dist/drop", "if-no-files-found: ignore"} {
 		if !strings.Contains(gh, want) {
 			t.Errorf("GitHub workflow lacks %q", want)
 		}
