@@ -36,9 +36,11 @@ type Project struct {
 	// Stack is the stack recorded in the project's manifest, if any.
 	Stack string `json:"stack,omitempty"`
 	// Settings are plugins' settings for this project from smith.toml, by
-	// plugin name: a convention's [conventions.<name>] settings with the
-	// project's [projects.<project>.<name>] on top. Set by the host; a plugin
-	// reads its own entry.
+	// plugin name: [projects.<project>.settings.<name>] (what a recipe's
+	// settings became when it created the project), and for a convention its
+	// [conventions.<name>] settings and the project's
+	// [projects.<project>.<name>] on top. Set by the host; a plugin reads its
+	// own entry.
 	Settings map[string]map[string]any `json:"settings,omitempty"`
 	// Registries are the private registries the project installs from and
 	// publishes to, from smith.toml [registries]; nil means the public ones.

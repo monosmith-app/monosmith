@@ -17,6 +17,11 @@ type GenerateParams struct {
 	// stack's plugins. A plugin adds only what every matching project needs
 	// then: a suite or starter files belong to the stack that names it.
 	Convention bool `json:"convention,omitempty"`
+	// Settings are this plugin's own settings for the new project, from the
+	// recipe the project is created from (its settings.<plugin> table); the
+	// same table is later the plugin's entry in Project.Settings. Nil when
+	// there are none.
+	Settings map[string]any `json:"settings,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.
