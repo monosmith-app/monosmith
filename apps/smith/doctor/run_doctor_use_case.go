@@ -41,6 +41,7 @@ func Run(s *session.Session) Report {
 	}
 	add("smith", CoreChecks(s)...)
 	add("smith", lineageChecks(s)...)
+	add("smith", recipeChecks(s)...)
 	for _, c := range s.Plugins.Clients {
 		if !c.Info.Capabilities.Doctor {
 			continue
