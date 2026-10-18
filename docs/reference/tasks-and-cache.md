@@ -160,6 +160,11 @@ off: nothing is shared unsigned.
 | S3 | `s3://bucket/prefix` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_REGION`; `AWS_ENDPOINT_URL_S3` for an S3-compatible store |
 | Azure Blob | `azblob://account/container/prefix` | `AZURE_STORAGE_SAS_TOKEN` |
 
+The generated pipelines pass the key and the backend's credentials to the steps
+that run tasks, and keep the cache read-only in pull requests; see
+[The remote cache](ci.md#the-remote-cache) in CI pipelines, with a worked Azure
+Blob example.
+
 `SMITH_CACHE_REMOTE` and `SMITH_CACHE_READ_ONLY=1` override the settings for
 one machine. The remote holds results only: which run was last (for
 `smith why-miss`) and pruning stay local.

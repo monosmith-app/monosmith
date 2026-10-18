@@ -171,6 +171,10 @@ you regenerate it with a newer smith.
 | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | the docker convention's image push to Docker Hub (a `docker.io/...` registry); the token is a Docker Hub access token |
 | `CONTAINER_USERNAME`, `CONTAINER_PASSWORD` | the docker convention's image push to a registry other than ghcr.io and docker.io, which logs in with `GITHUB_TOKEN` (giving the job `packages: write`) and `DOCKERHUB_*`. Only one such registry can use these names; further ones name theirs in a `registries` table, and those variables are listed here too (see releasing.md). `CONTAINER_REGISTRY`, deprecated, names the registry when `[conventions.docker] registry` is unset |
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
+| `SMITH_CACHE_KEY` | the remote cache (`[cache] remote`): the secret every object is signed with. Given to every step that runs tasks, with the backend's credentials below (see [The remote cache](#the-remote-cache)) |
+| `AZURE_STORAGE_SAS_TOKEN` | an `azblob://` remote cache: a SAS token for the container |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | an `s3://` remote cache |
+| `SMITH_CACHE_TOKEN` | an `https://` remote cache whose server wants a bearer token |
 | `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
 | the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |
 
@@ -185,6 +189,72 @@ second workflow, `.github/workflows/pub.yml`, which the release starts on the
 app's pub tag (the ci workflow gets `actions: write` for that). It sets up
 Dart with pub.dev's OIDC token and runs `smith release pub`; see
 [Releasing](releasing.md#pubdev) for the one-time setup on pub.dev.
+
+## The remote cache
+
+With `[cache] remote` set (see [Tasks, cache and affected](tasks-and-cache.md#remote-cache)),
+the pipelines pass the cache's key and its backend's credentials to every step
+that runs tasks: `smith ci verify`, `smith ci pack`, `smith ci native` and the
+release. The audit and the setup run no cached task and get none. Which
+credentials follows from the remote's scheme:
+
+| `remote` | Secrets |
+|---|---|
+| `azblob://account/container/prefix` | `SMITH_CACHE_KEY`, `AZURE_STORAGE_SAS_TOKEN` |
+| `s3://bucket/prefix` | `SMITH_CACHE_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` |
+| `https://host/path` | `SMITH_CACHE_KEY`, `SMITH_CACHE_TOKEN` (when the server wants one) |
+
+`smith ci check` lists them, in each provider's terms, and what each one is.
+None of them is required: a run without the key uses the local cache and says
+so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
+
+- **Pull requests read the cache and never write it.** A pull request (GitHub
+  `pull_request`, Azure `Build.Reason` of `PullRequest`, GitLab merge requests)
+  is read-only, so a contributor's build cannot store a result that every later
+  run replays; only a push to the release branch writes. This is smith's own
+  rule, not YAML: `smith run` in a pull request behaves the same on a laptop
+  that sets `GITHUB_EVENT_NAME=pull_request`. `[cache] remote_read_only = true`
+  and `SMITH_CACHE_READ_ONLY` still force read-only everywhere.
+- **A fork's pull request has no secrets.** GitHub passes an empty
+  `SMITH_CACHE_KEY`; Azure leaves the variable's own name, `$(SMITH_CACHE_KEY)`,
+  in its place. smith reads both as unset, so the remote is off and the run
+  works with the local cache.
+- **Azure needs the mapping.** Azure Pipelines exposes a secret variable to a
+  step only through `env:`, so each of those steps carries
+  `SMITH_CACHE_KEY: $(SMITH_CACHE_KEY)`. GitHub reads `${{ secrets.X }}`, and
+  GitLab's CI/CD variables are already environment.
+- `smith doctor` warns on a machine where the remote is configured and the key
+  is not set.
+
+### Example: Azure Pipelines with Azure Blob
+
+1. Create a storage account and a container for the cache, for example
+   `smith-cache` in `acmecache`.
+2. Create a SAS token for the container with read, write and create
+   permission, and a long random string for the key.
+3. Configure the remote (a recipe can set this once for every repository):
+
+   ```toml
+   [cache]
+   remote = "azblob://acmecache/smith-cache/main"
+   ```
+
+4. In the pipeline's variables (Edit → Variables) add `AZURE_STORAGE_SAS_TOKEN`
+   and `SMITH_CACHE_KEY`, each marked **keep this value secret**.
+5. `smith ci generate`. The Verify step becomes:
+
+   ```yaml
+     - bash: smith ci verify
+       displayName: Verify
+       env:
+         AZURE_STORAGE_SAS_TOKEN: $(AZURE_STORAGE_SAS_TOKEN)
+         SMITH_CACHE_KEY: $(SMITH_CACHE_KEY)
+   ```
+
+   and the Pack, Native and Release steps carry the same two lines.
+6. On a developer's machine, export the same two variables (with
+   `remote_read_only = true`, or a SAS token with read permission only, when
+   only CI should write).
 
 ## Private registries
 
