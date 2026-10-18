@@ -23,6 +23,9 @@ type Project struct {
 	// Release is set for an app that releases (smith.toml
 	// [projects.<name>.release]).
 	Release *workspace.ProjectRelease `json:"release,omitempty"`
+	// TagPrefixSet means smith.toml gave the tag prefix ([projects.<name>]
+	// tag_prefix), as opposed to the one a plugin reports or the default.
+	TagPrefixSet bool `json:"-"`
 	// BareTags makes the release tags the bare version (smith.toml
 	// [projects.<name>] bare_tags).
 	BareTags bool `json:"-"`
