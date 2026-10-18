@@ -53,7 +53,9 @@ jobs:
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Audit
         run: smith ci audit
-      - name: Verify
+`)
+	b.WriteString(githubEnv("        ", m.TaskCredentials()))
+	b.WriteString(`      - name: Verify
         run: smith ci verify
 `)
 	b.WriteString(githubEnv("        ", m.TaskCredentials()))

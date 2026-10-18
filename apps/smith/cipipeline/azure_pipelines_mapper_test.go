@@ -31,7 +31,7 @@ func TestAzureMapsTheCacheSecretsIntoEveryStepThatRunsTasks(t *testing.T) {
 	}
 	for remote, envs := range cases {
 		out := RenderAzure(cacheModel(remote, true))
-		for _, step := range []string{"- bash: smith ci verify\n", "- bash: smith ci pack\n", "- bash: smith ci native\n"} {
+		for _, step := range []string{"- bash: smith ci audit\n", "- bash: smith ci verify\n", "- bash: smith ci pack\n", "- bash: smith ci native\n"} {
 			body := azureStepAfter(out, step)
 			if body == "" {
 				t.Fatalf("%s: no step %q in\n%s", remote, step, out)
@@ -44,9 +44,6 @@ func TestAzureMapsTheCacheSecretsIntoEveryStepThatRunsTasks(t *testing.T) {
 					t.Errorf("%s: %q does not map %s:\n%s", remote, step, env, body)
 				}
 			}
-		}
-		if audit := azureStepAfter(out, "- bash: smith ci audit\n"); strings.Contains(audit, "SMITH_CACHE_KEY") {
-			t.Errorf("%s: the audit runs no task and gets no cache env:\n%s", remote, audit)
 		}
 	}
 }

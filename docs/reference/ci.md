@@ -20,7 +20,9 @@ Each plugin contributes, for its own projects:
 - **audit** — `npm audit` (blocking only on a production advisory at moderate
   or above that `npm audit fix` can apply; advisories with no fix, a
   semver-major-only fix, or only in dev dependencies are printed as notes),
-  `pip-audit` and `govulncheck` (reported)
+  `pip-audit` and `govulncheck` (reported). A step that passed is not run
+  again while its lockfile is unchanged and the day is the same (see
+  [Cached audit verdicts](#cached-audit-verdicts))
 - **credentials** — the secrets publishing needs (`NODE_AUTH_TOKEN`, `PYPI_TOKEN`,
   `CARGO_REGISTRY_TOKEN`, …; see [Secrets](#secrets))
 
@@ -198,12 +200,34 @@ app's pub tag (the ci workflow gets `actions: write` for that). It sets up
 Dart with pub.dev's OIDC token and runs `smith release pub`; see
 [Releasing](releasing.md#pubdev) for the one-time setup on pub.dev.
 
+## Cached audit verdicts
+
+A pull request that touches only Go code should not re-audit the Python and npm
+trees. Each audit step names the files that decide what it finds (a plugin
+declares them: `package-lock.json` for npm audit, a module's `go.mod` and
+`go.sum` for govulncheck, `requirements-dev.txt` and the projects'
+`pyproject.toml` for pip-audit). When the step passes, smith records it in the
+task cache, keyed on the content of those files, the step's command and
+directory, smith's version, the platform and **the day (UTC)**. The next
+`smith ci audit` with the same files on the same day prints
+`✓ npm audit: no change in package-lock.json since it passed on 2026-10-18`
+and skips the step. With a [remote cache](#the-remote-cache) configured, the
+verdict is shared by every runner and by pull requests, which read the remote
+and never write it.
+
+The day stands in for the advisory database: a new advisory shows up within a
+day, so no verdict is replayed on the next one. A failing step is never
+remembered, blocking or not, and always runs again. govulncheck also reads the
+module's code, which the key leaves out; a change that newly reaches a
+vulnerable function is found at the next day's run.
+
 ## The remote cache
 
 With `[cache] remote` set (see [Tasks, cache and affected](tasks-and-cache.md#remote-cache)),
 the pipelines pass the cache's key and its backend's credentials to every step
 that runs tasks: `smith ci verify`, `smith ci pack`, `smith ci native` and the
-release. The audit and the setup run no cached task and get none. Which
+release, and to `smith ci audit`, which keeps its verdicts there. The setup runs
+no cached task and gets none. Which
 credentials follows from the remote's scheme:
 
 | `remote` | Secrets |
