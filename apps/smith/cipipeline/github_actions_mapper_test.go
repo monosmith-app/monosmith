@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -84,6 +85,84 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 	}
 	if RenderGitHub(m) != gh {
 		t.Fatal("rendering must be deterministic")
+	}
+}
+
+// cacheModel is the workspace's model with a remote cache configured.
+func cacheModel(remote string, native bool) Model {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "NODE_AUTH_TOKEN", Required: true}}})
+	c.Add(protocol.CIResult{Credentials: cachecredentials.For(remote)})
+	c.Pack, c.Native = true, native
+	return NewModel(c, "dev", "main")
+}
+
+// stepAfter is what follows a step's first line, up to the next step.
+func stepAfter(out, first string) string {
+	at := strings.Index(out, first)
+	if at < 0 {
+		return ""
+	}
+	rest := out[at+len(first):]
+	if end := strings.Index(rest, "\n      - "); end >= 0 {
+		rest = rest[:end+1]
+	}
+	return rest
+}
+
+// A remote cache's key and credentials reach every GitHub step that runs
+// tasks, from secrets; the audit runs none.
+func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
+	cases := map[string][]string{
+		"azblob://acme/smith-cache/main": {"SMITH_CACHE_KEY", "AZURE_STORAGE_SAS_TOKEN"},
+		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
+		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
+	}
+	for remote, envs := range cases {
+		out := RenderGitHub(cacheModel(remote, true))
+		for _, step := range []string{"      - name: Verify\n        run: smith ci verify", "      - name: Pack\n", "      - name: Native\n"} {
+			body := stepAfter(out, step)
+			if body == "" {
+				t.Fatalf("%s: no step %q in\n%s", remote, step, out)
+			}
+			for _, env := range envs {
+				if !strings.Contains(body, "          "+env+": ${{ secrets."+env+" }}\n") {
+					t.Errorf("%s: %q lacks %s:\n%s", remote, step, env, body)
+				}
+			}
+		}
+		if audit := stepAfter(out, "      - name: Audit\n"); strings.Contains(audit, "SMITH_CACHE_KEY") {
+			t.Errorf("%s: the audit runs no task and gets no cache env:\n%s", remote, audit)
+		}
+	}
+}
+
+func TestGitHubDoesNotMentionTheCacheWithoutARemote(t *testing.T) {
+	out := RenderGitHub(cacheModel("", false))
+	if strings.Contains(out, "SMITH_CACHE") || strings.Contains(out, "AZURE_STORAGE") {
+		t.Errorf("a workspace without a remote cache gets cache env:\n%s", out)
+	}
+	if !strings.Contains(out, "      - name: Verify\n        run: smith ci verify\n      # smith:slot after-verify") {
+		t.Errorf("verify is unchanged:\n%s", out)
+	}
+}
+
+func TestTheNativeJobPassesTheCacheWithoutThePublishingSecrets(t *testing.T) {
+	remote := "azblob://acme/smith-cache/main"
+	out := RenderGitHub(cacheModel(remote, true))
+	native := out[strings.Index(out, "\n  native:"):]
+	if !strings.Contains(native, "SMITH_CACHE_KEY: ${{ secrets.SMITH_CACHE_KEY }}") || !strings.Contains(native, "AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}") {
+		t.Errorf("the native job lacks the cache:\n%s", native)
+	}
+	if strings.Contains(native, "NODE_AUTH_TOKEN") {
+		t.Errorf("a native job that publishes nothing gets no release secret:\n%s", native)
+	}
+	published := cacheModel(remote, true)
+	published.NativePublish = true
+	native = RenderGitHub(published)
+	native = native[strings.Index(native, "\n  native:"):]
+	if strings.Count(native, "SMITH_CACHE_KEY:") != 1 || !strings.Contains(native, "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}") {
+		t.Errorf("a publishing native job gets both, each once:\n%s", native)
 	}
 }
 

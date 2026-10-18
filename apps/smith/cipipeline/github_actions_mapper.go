@@ -56,6 +56,7 @@ jobs:
       - name: Verify
         run: smith ci verify
 `)
+	b.WriteString(githubEnv("        ", m.TaskCredentials()))
 	b.WriteString(slot("      ", "after-verify"))
 	b.WriteString(`      - name: Release preview
         if: github.event_name == 'pull_request'
@@ -67,13 +68,13 @@ jobs:
 		fmt.Fprintf(&b, `      - name: Pack
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         run: smith ci pack
-      - uses: actions/upload-artifact@v4
+%[2]s      - uses: actions/upload-artifact@v4
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         with:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
-`, m.ReleaseBranch)
+`, m.ReleaseBranch, githubEnv("        ", m.TaskCredentials()))
 	}
 	fmt.Fprintf(&b, `      - name: Release
         if: github.event_name == 'push' && github.ref_name == '%s'
@@ -129,12 +130,10 @@ func githubNativeJob(m Model) string {
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 `)
-	if m.NativePublish {
-		for _, c := range m.Credentials {
-			if c.Env != "GITHUB_TOKEN" {
-				fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
-			}
-		}
+	// The tasks it runs read the cache's credentials; a native package
+	// publishes from here on a release push, which needs the release's too.
+	for _, c := range m.nativeCredentials() {
+		fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 	}
 	b.WriteString(`      - uses: actions/upload-artifact@v4
         with:

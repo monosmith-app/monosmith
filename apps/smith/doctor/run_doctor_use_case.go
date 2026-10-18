@@ -119,6 +119,11 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Detail: "a run leaves these changed, and the release refuses a dirty tree (smith ci verify fails on them): " + strings.Join(generated, "; "),
 		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
 	})
+	remote := s.Config.Cache.Remote
+	if env := os.Getenv("SMITH_CACHE_REMOTE"); env != "" {
+		remote = env
+	}
+	out = append(out, cacheKeyFinding(remote, os.Getenv)...)
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,

@@ -59,6 +59,7 @@ func azureSteps(m Model) string {
   - bash: smith ci verify
     displayName: Verify
 `)
+	b.WriteString(azureEnv("    ", m.TaskCredentials()))
 	b.WriteString(slot("  ", "after-verify"))
 	b.WriteString(`  - bash: smith release --dry-run --comment
     displayName: Release preview
@@ -71,11 +72,11 @@ func azureSteps(m Model) string {
 		fmt.Fprintf(&b, `  - bash: smith ci pack
     displayName: Pack
     condition: %[1]s
-  - publish: dist/drop
+%[2]s  - publish: dist/drop
     artifact: drop
     displayName: Keep the packed apps
     condition: %[1]s
-`, onPush)
+`, onPush, azureEnv("    ", m.TaskCredentials()))
 	}
 	fmt.Fprintf(&b, `  - bash: smith ci release
     displayName: Release
@@ -116,14 +117,9 @@ func azureNativeJob(m Model) string {
 	b.WriteString(`      - bash: smith ci native
         displayName: Native
 `)
-	// A native package publishes from here on a release push: the job needs
-	// the release credentials too.
-	if m.NativePublish && len(m.Credentials) > 0 {
-		b.WriteString("        env:\n")
-		for _, c := range m.Credentials {
-			fmt.Fprintf(&b, "          %s: $(%s)\n", c.Env, c.Env)
-		}
-	}
+	// The tasks it runs read the cache's credentials; a native package
+	// publishes from here on a release push, which needs the release's too.
+	b.WriteString(azureEnv("        ", m.nativeCredentials()))
 	b.WriteString(`      - publish: dist/drop
         artifact: native-$(image)
         displayName: Keep the native builds

@@ -87,4 +87,8 @@ type Credential struct {
 	// Setup gives it to `smith ci setup` (and the native job's setup) as
 	// well: installs from a private registry need it, not only the release.
 	Setup bool `json:"setup,omitempty"`
+	// Tasks gives it to every step that runs tasks (verify, pack, native)
+	// as well: the remote cache's key and credentials are read there, not
+	// only by the release.
+	Tasks bool `json:"tasks,omitempty"`
 }

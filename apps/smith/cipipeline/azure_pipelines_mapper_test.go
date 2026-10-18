@@ -5,6 +5,59 @@ import (
 	"testing"
 )
 
+// azureStepAfter is what follows a step's first line, up to the next step.
+func azureStepAfter(out, first string) string {
+	at := strings.Index(out, first)
+	if at < 0 {
+		return ""
+	}
+	rest := out[at+len(first):]
+	if end := strings.Index(rest, "\n  - "); end >= 0 {
+		rest = rest[:end+1]
+	}
+	if end := strings.Index(rest, "\n      - "); end >= 0 {
+		rest = rest[:end+1]
+	}
+	return rest
+}
+
+// Azure Pipelines exposes a secret variable to a step only through env:, so
+// each step that runs tasks maps the cache's key and credentials itself.
+func TestAzureMapsTheCacheSecretsIntoEveryStepThatRunsTasks(t *testing.T) {
+	cases := map[string][]string{
+		"azblob://acme/smith-cache/main": {"AZURE_STORAGE_SAS_TOKEN", "SMITH_CACHE_KEY"},
+		"s3://acme/smith":                {"AWS_ACCESS_KEY_ID", "AWS_REGION", "AWS_SECRET_ACCESS_KEY", "SMITH_CACHE_KEY"},
+		"https://cache.acme.dev/smith":   {"SMITH_CACHE_KEY", "SMITH_CACHE_TOKEN"},
+	}
+	for remote, envs := range cases {
+		out := RenderAzure(cacheModel(remote, true))
+		for _, step := range []string{"- bash: smith ci verify\n", "- bash: smith ci pack\n", "- bash: smith ci native\n"} {
+			body := azureStepAfter(out, step)
+			if body == "" {
+				t.Fatalf("%s: no step %q in\n%s", remote, step, out)
+			}
+			if !strings.Contains(body, "env:\n") {
+				t.Errorf("%s: %q has no env block:\n%s", remote, step, body)
+			}
+			for _, env := range envs {
+				if !strings.Contains(body, " "+env+": $("+env+")\n") {
+					t.Errorf("%s: %q does not map %s:\n%s", remote, step, env, body)
+				}
+			}
+		}
+		if audit := azureStepAfter(out, "- bash: smith ci audit\n"); strings.Contains(audit, "SMITH_CACHE_KEY") {
+			t.Errorf("%s: the audit runs no task and gets no cache env:\n%s", remote, audit)
+		}
+	}
+}
+
+func TestAzureDoesNotMentionTheCacheWithoutARemote(t *testing.T) {
+	out := RenderAzure(cacheModel("", false))
+	if strings.Contains(out, "SMITH_CACHE") {
+		t.Errorf("a workspace without a remote cache gets cache env:\n%s", out)
+	}
+}
+
 func TestANativeProjectAddsAJobPerOS(t *testing.T) {
 	m := model()
 	if strings.Contains(RenderGitHub(m), "native:") || strings.Contains(RenderAzure(m), "jobs:") {
