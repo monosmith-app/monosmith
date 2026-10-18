@@ -34,7 +34,7 @@ func Assess(subjects []Subject) []Finding {
 			}
 		}
 		switch {
-		case alt != "" && !(s.Explicit && own == "") && (own == "" || less(own, alt)):
+		case alt != "" && (!s.Explicit || own != "") && (own == "" || less(own, alt)):
 			out = append(out, Finding{Project: s.Project, Check: CheckResolve, Blocking: true, Message: fmt.Sprintf(
 				"%s's newest release tag is %s, under another name than its prefix %s, so the next release would start from %s. Set [projects.%s] tag_prefix = %q in smith.toml, or tag the same commit under the current name: git tag %s%s %s^{commit}, then push the tag.",
 				s.Project, altTag, s.Prefix, describe(own, s.Prefix), s.Project, strings.TrimSuffix(altTag, alt), s.Prefix, alt, altTag),
