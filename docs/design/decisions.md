@@ -288,3 +288,26 @@ predictable they make setting up, running and releasing a polyglot monorepo
 for a team. A feature a competitor has that does not answer that is not a
 priority (distributed task execution, hermetic sandboxing, a Starlark-style
 configuration language).
+
+## 19. smith is not installed with `go install`
+
+2026-10-18 · #267
+
+**Context.** smith is built from the repository's `go.work`: `apps/smith`
+imports `packages/plugin-sdk` and fifteen `libs/plugin-*` modules that are
+never tagged as Go modules (only the SDK is). `go install
+github.com/monosmith-app/monosmith/apps/smith@latest` ignores `go.work`, so it
+cannot resolve them. Supporting it would mean tagging every plugin module on
+every release, and a release that first commits `apps/smith/go.mod` pinning
+those tags before it tags smith itself.
+
+**Decision.** `go install` is not a supported way to install smith. The
+supported ways are the install script, npm, PyPI, NuGet, RubyGems, pub.dev, the
+`.deb` and `.rpm` packages and the GitHub Release (docs/guides/installing.md).
+Those carry a stamped, reproducible binary; `go install` would build one with
+no version.
+
+**Consequences.** The plugin modules stay unreleased internal modules and a
+release stays one tag. Someone who wants to build from source clones the
+repository and builds inside the workspace (apps/smith/README.md). Revisit if
+the plugins ever ship as separately versioned Go modules.
