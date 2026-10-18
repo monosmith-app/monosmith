@@ -103,6 +103,29 @@ re-run asks each registry whether it has the version's tag
 release never pushes twice to the same place. Per registry `latest` is pushed
 first and the version last, so the version tag shows the registry is complete.
 
+### The Docker Hub description
+
+Docker Hub shows a repository's description on its page, and a pushed image
+does not set it. `description_from` names a file whose text becomes the
+description of the image's repository on every `docker.io` registry, after the
+push (a release that pushed nothing new leaves it alone):
+
+```toml
+[conventions.docker]
+registries = ["ghcr.io/open-craw", "docker.io/opencraw"]
+description_from = "README.md"        # or per app: [projects.api.docker] description_from = "apps/api/README.md"
+```
+
+It signs in to Docker Hub's API with the registry's own credentials
+(`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`). The description is limited to 25,000
+characters, and longer text is cut. Editing a description may need an access
+token with Read, Write & Delete permission, which a plain push does not: the
+images are already published when this runs, so a refusal, a missing file or
+missing secrets is a warning in the release log and the release goes on. Other
+registries ignore the setting.
+
+### The image and its login
+
 The image is built with the workspace as its context, after the app's
 `build` and, for a Node app, its `prune`. That task writes the app's deploy
 output into its build directory: a production `package.json` and lockfile,

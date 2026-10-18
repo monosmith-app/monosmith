@@ -122,6 +122,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	switch {
 	case len(pushed) > 0:
 		result.Published = true
+		syncDescription(workspaceRoot, t)
 	default:
 		result.Skipped = "image " + params.Version + " already published to " + strings.Join(had, ", ")
 	}
