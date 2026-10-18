@@ -24,12 +24,21 @@ type InitializeResult struct {
 	// them (*.csproj), whose presence in a directory may make it a project of
 	// this plugin.
 	Manifests []string `json:"manifests,omitempty"`
-	// Roles are what the plugin can be in a stack. Empty means the default
-	// of its kind (see DefaultRoles).
+	// Roles are the levels the plugin can be chosen for in a project's
+	// make-up (a stack, a recipe). Empty means the default of its kind (see
+	// DefaultRoles). A role is a level: there is no separate level field,
+	// because one plugin can play several (a scaffold that is also a
+	// toolchain).
 	Roles []Role `json:"roles,omitempty"`
-	// Provides are the task names a toolchain plugin owns ("test" for a test
-	// runner). Two plugins of one stack may not provide the same task.
+	// Provides are the slots a toolchain plugin fills: the task names it
+	// owns ("test" for a test runner). A slot is exclusive: two plugins of
+	// one project may not provide the same task.
 	Provides []string `json:"provides,omitempty"`
+	// Requires are plugins that must also be in the project for this one to
+	// work: a Node toolchain requires the node language plugin.
+	Requires []PluginRef `json:"requires,omitempty"`
+	// Conflicts are plugins that must not be in the same project.
+	Conflicts []PluginRef `json:"conflicts,omitempty"`
 	// Stacks are ready-made stacks the plugin publishes.
 	Stacks []Stack `json:"stacks,omitempty"`
 }

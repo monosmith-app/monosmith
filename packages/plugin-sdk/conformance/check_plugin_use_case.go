@@ -26,8 +26,6 @@ type Options struct {
 // Stack is the stack name generated projects are asked to record.
 const Stack = "conformance"
 
-var knownRoles = []protocol.Role{protocol.RoleLanguage, protocol.RoleToolchain, protocol.RoleStructure, protocol.RoleScaffold, protocol.RoleDeploy}
-
 // Check runs every check against a connected plugin.
 func Check(c *host.Client, opts Options) Report {
 	info := c.Info
@@ -36,7 +34,7 @@ func Check(c *host.Client, opts Options) Report {
 	r.add("has a known kind", info.Kind == protocol.KindLanguage || info.Kind == protocol.KindConvention, "kind %q is neither language nor convention", info.Kind)
 	roles := info.EffectiveRoles()
 	for _, role := range roles {
-		r.add("plays a known role: "+string(role), slices.Contains(knownRoles, role), "roles are %v", knownRoles)
+		r.add("plays a known role: "+string(role), role.Known(), "roles are %v", protocol.Roles)
 	}
 	caps := info.Capabilities
 	if slices.Contains(roles, protocol.RoleLanguage) {
@@ -52,6 +50,15 @@ func Check(c *host.Client, opts Options) Report {
 	}
 	if len(info.Provides) > 0 {
 		r.add("only a toolchain provides tasks", slices.Contains(roles, protocol.RoleToolchain), "it provides %v without the toolchain role", info.Provides)
+	}
+	if info.Kind == protocol.KindConvention && slices.Contains(roles, protocol.RoleToolchain) {
+		r.add("a toolchain names the slots it fills", len(info.Provides) > 0, "a toolchain plugin must list the tasks it provides")
+	}
+	for _, ref := range info.Requires {
+		r.add("requires "+ref.String()+": a known reference", validRef(ref), "a reference sets a known level, a name or a slot")
+	}
+	for _, ref := range info.Conflicts {
+		r.add("conflicts with "+ref.String()+": a known reference", validRef(ref) && ref.Name != info.Plugin.Name, "a reference sets a known level, a name or a slot, and is not the plugin itself")
 	}
 	names := map[string]bool{}
 	for _, st := range info.Stacks {
@@ -180,4 +187,10 @@ func article(kind protocol.ProjectKind) string {
 		return "an app"
 	}
 	return "a " + string(kind)
+}
+
+// validRef reports whether a requirement or conflict names something: a
+// known level, a name or a slot.
+func validRef(ref protocol.PluginRef) bool {
+	return !ref.IsZero() && (ref.Level == "" || ref.Level.Known())
 }
