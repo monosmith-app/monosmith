@@ -9,9 +9,10 @@ conflicts (#307); the recipe file, its loading with URL pinning, resolving and
 validating, and `smith recipe check` (#306, see
 [recipes](../reference/recipes.md)); named private registries (#310); creating
 projects from a recipe with `smith add` and `smith new --recipe` (#308),
-which records the recipe, its version and the answers in `smith.toml`. To
-come: drift checks and upgrades of the projects a recipe made (#309), the
-creation wizard and versioned recipes (#311).
+which records the recipe, its version and the answers in `smith.toml`; and
+keeping those projects current (#309): `smith doctor` reports drift, `smith
+upgrade` rewrites the files smith owns and `smith explain` shows where each
+value came from. To come: the creation wizard and versioned recipes (#311).
 
 ## The goal
 
