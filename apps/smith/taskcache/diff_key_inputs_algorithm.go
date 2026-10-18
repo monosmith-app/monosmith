@@ -9,7 +9,7 @@ import (
 // Difference is one way a task's key inputs changed.
 type Difference struct {
 	// What changed: "file", "command", "env", "upstream", "dependency",
-	// "tool" or "platform".
+	// "tool", "toolchain" or "platform".
 	What string `json:"what"`
 	// Name is the file, variable, project or task concerned, when there is one.
 	Name string `json:"name,omitempty"`
@@ -31,6 +31,9 @@ func Diff(before, now KeyInputs) []Difference {
 	var out []Difference
 	if before.Tool != now.Tool {
 		out = append(out, Difference{What: "tool", Change: before.Tool + " → " + now.Tool})
+	}
+	if before.Toolchain != now.Toolchain {
+		out = append(out, Difference{What: "toolchain", Change: toolchainChange(before.Toolchain, now.Toolchain)})
 	}
 	if before.Platform != now.Platform {
 		out = append(out, Difference{What: "platform", Change: before.Platform + " → " + now.Platform})
@@ -80,4 +83,19 @@ func diffMaps(what string, before, now map[string]string) []Difference {
 		}
 	}
 	return out
+}
+
+// toolchainChange words a toolchain change, dropping the tool's name from the
+// new side when it is the same one: "node 20.11.0 → 22.3.0".
+func toolchainChange(before, now string) string {
+	switch {
+	case before == "":
+		return "reported: " + now
+	case now == "":
+		return before + " → no longer reported"
+	}
+	if name, _, ok := strings.Cut(before, " "); ok && strings.HasPrefix(now, name+" ") {
+		now = strings.TrimPrefix(now, name+" ")
+	}
+	return before + " → " + now
 }

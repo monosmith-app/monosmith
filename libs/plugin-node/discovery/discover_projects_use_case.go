@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pruning"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the project behind each package.json. The workspace's
@@ -28,6 +29,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		}
 		result.Projects = append(result.Projects, p)
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("node", "node", "--version") })
 	return result, nil
 }
 

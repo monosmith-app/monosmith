@@ -28,6 +28,11 @@ type Project struct {
 	Imports []string `json:"imports,omitempty"`
 	// Version is the version recorded in the manifest, if it has one.
 	Version string `json:"version,omitempty"`
+	// Toolchain is the version of the compiler or runtime the project's tasks
+	// run with ("node 20.11.0", "go 1.23.4"), as the plugin probed it. It goes
+	// into every task's cache key, so a result from another version is a
+	// miss. Empty when the plugin cannot tell, and then it is left out.
+	Toolchain string `json:"toolchain,omitempty"`
 	// TagPrefix overrides the release tag prefix; empty means "<name>@".
 	// Go modules use "<root>/v" so `go get` can resolve the tag.
 	TagPrefix string          `json:"tagPrefix,omitempty"`
@@ -46,6 +51,18 @@ type Project struct {
 	// publishes to, from smith.toml [registries]; nil means the public ones.
 	// Set by the host.
 	Registries *Registries `json:"registries,omitempty"`
+}
+
+// SetToolchain records the toolchain on every discovered project. The probe
+// runs only when there is a project, and once.
+func (r *DiscoverResult) SetToolchain(probe func() string) {
+	if len(r.Projects) == 0 {
+		return
+	}
+	toolchain := probe()
+	for i := range r.Projects {
+		r.Projects[i].Toolchain = toolchain
+	}
 }
 
 // ProjectKind is the universal kind vocabulary.
