@@ -19,6 +19,26 @@ func shipping(workspaceRoot string, projects []protocol.Project) []protocol.Proj
 	return out
 }
 
+// descriptionStep marks that the Docker Hub description step is in the result.
+const descriptionStep = "step: docker description"
+
+// setsHubDescription reports whether an app's description_from file is sent
+// to a docker.io registry, which smith docker description does after every
+// push to the release branch: a docs-only commit releases nothing, so the
+// release alone would never send it. The call is an idempotent PATCH, so
+// running it on every push needs no record of what was sent.
+func setsHubDescription(t images.Target) bool {
+	if t.DescriptionFrom == "" {
+		return false
+	}
+	for _, r := range t.Registries {
+		if images.LoginFor(r.URL) == images.LoginDockerHub {
+			return true
+		}
+	}
+	return false
+}
+
 // CI returns what pushing the apps' images on release needs: the
 // credentials of every registry smith.toml names (GITHUB_TOKEN with
 // packages: write for ghcr.io, DOCKERHUB_USERNAME and DOCKERHUB_TOKEN for
@@ -34,6 +54,10 @@ func CI(workspaceRoot string, params protocol.CIParams) (protocol.CIResult, erro
 		t, err := images.TargetOf(p, func(string) string { return "" })
 		if err != nil {
 			return res, fmt.Errorf("%s: %w", p.Name, err)
+		}
+		if setsHubDescription(t) && !seen[descriptionStep] {
+			seen[descriptionStep] = true
+			res.PostRelease = append(res.PostRelease, protocol.Step{Name: "Docker Hub descriptions", Command: []string{"{smith}", "docker", "description"}})
 		}
 		if !images.Configured(p) && !images.PushOff(p) {
 			t = images.Target{Legacy: true}

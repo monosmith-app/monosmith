@@ -56,7 +56,7 @@ can run locally.
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
 | `smith ci pack` | on a push to the release branch: every project's `package` task into `dist/drop`, kept as the run's `drop` artifact |
 | `smith ci native` | in a job per OS, after the ci job: lint, test, build and package the projects tagged native |
-| `smith ci release` | on a push to the release branch: version, publish and tag |
+| `smith ci release` | on a push to the release branch: version, publish and tag; then the post-release steps plugins declare, whether or not anything was released (the docker plugin's `smith docker description`, when an app sets `description_from` for a `docker.io` registry), each only a warning when it fails |
 
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
 and each phase adds a line (passed or failed, and how long it took) and the

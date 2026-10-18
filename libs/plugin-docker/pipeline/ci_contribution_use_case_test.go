@@ -80,6 +80,41 @@ func TestEveryRegistrysSecretsReachThePipeline(t *testing.T) {
 	}
 }
 
+func TestTheDescriptionStepRunsAfterTheReleaseOnlyForADockerHubDescription(t *testing.T) {
+	cases := map[string]struct {
+		settings map[string]any
+		want     int
+	}{
+		"docker.io with description_from": {map[string]any{"registries": []any{"docker.io/opencraw"}, "description_from": "README.md"}, 1},
+		"also pushed to ghcr.io":          {map[string]any{"registries": []any{"ghcr.io/open-craw", "docker.io/opencraw"}, "description_from": "README.md"}, 1},
+		"no description_from":             {map[string]any{"registries": []any{"docker.io/opencraw"}}, 0},
+		"description_from, only ghcr.io":  {map[string]any{"registry": "ghcr.io/open-craw", "description_from": "README.md"}, 0},
+		"description_from, no registry":   {map[string]any{"description_from": "README.md"}, 0},
+	}
+	for name, c := range cases {
+		ws, api := shippingApp(t, c.settings)
+		res := mustCI(t, ws, api)
+		if len(res.PostRelease) != c.want {
+			t.Errorf("%s: post-release steps %+v, want %d", name, res.PostRelease, c.want)
+		}
+		if c.want == 1 {
+			step := res.PostRelease[0]
+			if strings.Join(step.Command, " ") != "{smith} docker description" || step.Blocking {
+				t.Errorf("%s: step %+v runs smith docker description and only warns", name, step)
+			}
+		}
+	}
+	// Two apps with a description share one step.
+	ws, api := shippingApp(t, map[string]any{"registries": []any{"docker.io/opencraw"}, "description_from": "README.md"})
+	other := api
+	other.Name, other.Root = "worker", "apps/worker"
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "worker"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "apps", "worker", "Dockerfile"), nil, 0o644)
+	if res := mustCI(t, ws, api, other); len(res.PostRelease) != 1 {
+		t.Errorf("one step for the workspace: %+v", res.PostRelease)
+	}
+}
+
 func TestContradictoryRegistriesAreAnErrorAndAFinding(t *testing.T) {
 	ws, api := shippingApp(t, map[string]any{"registry": "ghcr.io/a", "registries": []any{"docker.io/b"}})
 	if _, err := CI(ws, protocol.CIParams{Projects: []protocol.Project{api}}); err == nil || !strings.Contains(err.Error(), "api:") {

@@ -150,6 +150,62 @@ func TestNoDescriptionIsSetWithoutTheSettingTheCredentialsOrAPush(t *testing.T) 
 	}
 }
 
+func TestTheDescriptionCanBeSetWithoutAReleaseOrAPush(t *testing.T) {
+	ws, api := shipping(t, hubSettings())
+	bothCredentials(t)
+	hub := startHub(t)
+	withReadme(t, ws, "# opencraw\n\nThe API.")
+	res, err := SyncDescription(ws, api, false)
+	if err != nil || len(res.Failed) != 0 || len(res.Set) != 1 || res.Set[0] != "docker.io/opencraw/opencraw-api" {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if hub.description != "# opencraw\n\nThe API." || hub.authorized != "JWT jwt-token" {
+		t.Errorf("authorization %q, description %q", hub.authorized, hub.description)
+	}
+	// A second call sets it again: the call is idempotent, so there is
+	// nothing to remember between runs.
+	if _, err := SyncDescription(ws, api, false); err != nil || hub.descriptions != 2 {
+		t.Errorf("%v, %d descriptions", err, hub.descriptions)
+	}
+}
+
+func TestADryRunNamesTheRepositoriesAndCallsNothing(t *testing.T) {
+	ws, api := shipping(t, hubSettings())
+	bothCredentials(t)
+	hub := startHub(t)
+	withReadme(t, ws, "# opencraw")
+	res, err := SyncDescription(ws, api, true)
+	if err != nil || len(res.Set) != 1 || len(hub.requests) != 0 {
+		t.Errorf("%+v %v, requests %v", res, err, hub.requests)
+	}
+}
+
+func TestAFailedDescriptionIsInTheResultAndLogged(t *testing.T) {
+	ws, api := shipping(t, hubSettings())
+	bothCredentials(t)
+	hub := startHub(t)
+	hub.patchStatus = http.StatusForbidden
+	log := capture(t)
+	withReadme(t, ws, "# opencraw")
+	res, err := SyncDescription(ws, api, false)
+	if err != nil || len(res.Failed) != 1 || !strings.Contains(res.Failed[0], "403 Forbidden") || !strings.Contains(log.String(), "Read, Write & Delete") {
+		t.Errorf("%+v %v\n%s", res, err, log)
+	}
+}
+
+func TestNothingIsSetWithoutADescriptionFileOrADockerHubRegistry(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registries": []any{"docker.io/opencraw"}})
+	bothCredentials(t)
+	hub := startHub(t)
+	if res, err := SyncDescription(ws, api, false); err != nil || res.Skipped != "no description_from" || len(hub.requests) != 0 {
+		t.Errorf("%+v %v", res, err)
+	}
+	ws, api = shipping(t, map[string]any{"registries": []any{"ghcr.io/open-craw"}, "description_from": "README.md"})
+	if res, err := SyncDescription(ws, api, false); err != nil || res.Skipped != "no docker.io registry" || len(hub.requests) != 0 {
+		t.Errorf("%+v %v", res, err)
+	}
+}
+
 func TestAMissingOrLongDescriptionFileIsHandled(t *testing.T) {
 	ws, api := shipping(t, hubSettings())
 	bothCredentials(t)

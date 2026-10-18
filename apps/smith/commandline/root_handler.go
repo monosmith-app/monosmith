@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
+	"github.com/monosmith-app/monosmith/apps/smith/dockerdescription"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/explain"
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
@@ -73,7 +74,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))
-	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version))
+	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
 	add("inspect", mcpserver.Command(version))
