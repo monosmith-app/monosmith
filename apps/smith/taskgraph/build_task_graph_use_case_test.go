@@ -70,3 +70,27 @@ func TestBuildErrors(t *testing.T) {
 		t.Fatal("dependency on a missing task must fail")
 	}
 }
+
+func TestWhatTheServedTaskNeedsBuiltFirstIsADependencyOfTheServingTask(t *testing.T) {
+	api := &projectgraph.Project{Project: protocol.Project{Name: "api", Root: "apps/api", Tasks: map[string]protocol.Task{
+		"build": {Command: []string{"build"}},
+		"start": {Command: []string{"start"}, DependsOn: []string{"build"}},
+	}}}
+	e2e := &projectgraph.Project{Project: protocol.Project{Name: "api-e2e", Root: "apps/api-e2e", Tasks: map[string]protocol.Task{
+		"e2e": {Command: []string{"e2e"}, Serve: "api:start"},
+	}}}
+	pg, err := projectgraph.New([]*projectgraph.Project{api, e2e})
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := Build(pg, []string{"api-e2e"}, []string{"e2e"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := g.Tasks["api-e2e:e2e"].Deps; !reflect.DeepEqual(got, []string{"api:build"}) {
+		t.Errorf("deps %v", got)
+	}
+	if _, started := g.Tasks["api:start"]; started {
+		t.Error("the served task is started by the runner, not run as a dependency")
+	}
+}

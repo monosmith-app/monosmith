@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,21 @@ func TestMain(m *testing.M) {
 		}
 		if arg == "sleep" {
 			time.Sleep(time.Minute)
+		}
+		if arg == "serve" {
+			http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("up")) })
+			fmt.Println("serving on", os.Getenv("SERVE_ADDR"))
+			os.Exit(map[bool]int{true: 1, false: 0}[http.ListenAndServe(os.Getenv("SERVE_ADDR"), nil) != nil])
+		}
+		if arg == "probe" {
+			resp, err := http.Get(os.Getenv("E2E_BASE_URL"))
+			if err != nil || resp.StatusCode != 200 {
+				fmt.Println("probe failed:", err)
+				os.Exit(4)
+			}
+			_ = os.MkdirAll("out", 0o755)
+			_ = os.WriteFile(filepath.Join("out", "result.txt"), []byte("probed "+os.Getenv("E2E_BASE_URL")), 0o644)
+			os.Exit(0)
 		}
 		_ = os.MkdirAll("out", 0o755)
 		_ = os.WriteFile(filepath.Join("out", "result.txt"), []byte(arg), 0o644)

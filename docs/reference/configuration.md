@@ -278,7 +278,8 @@ Fields: `command` (argv, never a shell string), `cwd` (workspace-relative,
 `"."` for the root; default: the project root), `inputs`, `outputs`,
 `depends_on`, `env`, `cache`, `verify` (run the task in `smith ci verify` on
 pull requests; an app's `package` task does by default, `verify = false` turns
-it off).
+it off), and `serve`, `serve_url` and `serve_timeout`, which start an app around
+the task ([Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task)).
 
 There is exactly one precedence rule: **plugin → `[tasks.<task>]` →
 `[projects.<name>.tasks.<task>]`**, later wins, field by field. To see the

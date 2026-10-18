@@ -9,7 +9,7 @@ import (
 // Difference is one way a task's key inputs changed.
 type Difference struct {
 	// What changed: "file", "command", "env", "upstream", "dependency",
-	// "tool", "toolchain" or "platform".
+	// "tool", "toolchain", "serve" or "platform".
 	What string `json:"what"`
 	// Name is the file, variable, project or task concerned, when there is one.
 	Name string `json:"name,omitempty"`
@@ -34,6 +34,9 @@ func Diff(before, now KeyInputs) []Difference {
 	}
 	if before.Toolchain != now.Toolchain {
 		out = append(out, Difference{What: "toolchain", Change: toolchainChange(before.Toolchain, now.Toolchain)})
+	}
+	if before.Serve != now.Serve {
+		out = append(out, Difference{What: "serve", Change: before.Serve + " → " + now.Serve})
 	}
 	if before.Platform != now.Platform {
 		out = append(out, Difference{What: "platform", Change: before.Platform + " → " + now.Platform})
