@@ -65,11 +65,11 @@ func pluginNames(specs []string) []string {
 }
 
 // describe is the stack's description in `smith stacks`: where it came from.
+// It names the recipe and the answers, not its version: the version is
+// recorded for each project, and a description that carried it would go stale
+// the day a recipe's new version leaves the stack's plugins as they are.
 func describe(res recipe.Resolution) string {
 	d := "From the recipe " + res.Name
-	if res.Version != "" {
-		d += " " + res.Version
-	}
 	if a := Answers(res); len(a) > 0 {
 		var parts []string
 		for _, q := range res.Asked {

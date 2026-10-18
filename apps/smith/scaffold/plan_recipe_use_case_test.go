@@ -4,14 +4,11 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func workspaceWithRecipe(t *testing.T, file, body string) *session.Session {
@@ -77,33 +74,5 @@ func TestPlanRecipeUsesTheRecipeOfTheKind(t *testing.T) {
 	_, err := planRecipe(s, AddOptions{Kind: "lib", Recipe: &RecipeUse{}, Out: &bytes.Buffer{}})
 	if err == nil || !strings.Contains(err.Error(), "libs.recipe.toml") || !strings.Contains(err.Error(), `choice "flavour"`) {
 		t.Fatalf("the lib recipe was not used: %v", err)
-	}
-}
-
-func TestSettingsOfProjectKeepsThePluginsTheProjectUses(t *testing.T) {
-	res := recipe.Resolution{Settings: map[string]any{
-		"python": map[string]any{"layout": "src"},
-		"ruff":   map[string]any{"line": 100},
-		"dotnet": map[string]any{"target_framework": "net10.0"},
-	}}
-	st := protocol.Stack{Language: "python", Toolchain: []string{"ruff"}}
-	kept, unused := settingsOfProject(res, st)
-	if !reflect.DeepEqual(kept, map[string]map[string]any{"python": {"layout": "src"}, "ruff": {"line": 100}}) {
-		t.Errorf("kept %v", kept)
-	}
-	if !reflect.DeepEqual(unused, []string{"dotnet"}) {
-		t.Errorf("unused %v", unused)
-	}
-	if kept, unused := settingsOfProject(recipe.Resolution{}, st); kept != nil || unused != nil {
-		t.Errorf("no settings: %v %v", kept, unused)
-	}
-}
-
-func TestRecipeLocationIsAbsoluteForAPathAndLeavesAURL(t *testing.T) {
-	if got := recipeLocation("/ws", "https://example.com/t.toml"); got != "https://example.com/t.toml" {
-		t.Errorf("url: %q", got)
-	}
-	if got := recipeLocation(filepath.FromSlash("/ws"), "recipes/team.toml"); got != filepath.Join(filepath.FromSlash("/ws"), "recipes", "team.toml") {
-		t.Errorf("path: %q", got)
 	}
 }

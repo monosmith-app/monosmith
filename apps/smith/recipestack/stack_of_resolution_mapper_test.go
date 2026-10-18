@@ -28,7 +28,7 @@ func TestStackOfMapsLevelsAndSlots(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := protocol.Stack{
-		Description: "From the recipe team 1.2.0 (language=python, kind=library); written by smith",
+		Description: "From the recipe team (language=python, kind=library); written by smith",
 		Language:    "python", Toolchain: []string{"ruff", "pytest"}, Structure: []string{"vertical-slices"},
 	}
 	if !reflect.DeepEqual(st, want) {

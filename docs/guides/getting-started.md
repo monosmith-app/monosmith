@@ -267,8 +267,9 @@ shows its progress. When stdin or stdout is not a terminal, or `CI` is set,
 After installing a newer smith, run it once in the workspace:
 
 ```sh
-smith upgrade           # migrate smith.toml, regenerate the pipelines
-smith upgrade --check   # change nothing; fail when something would change (CI)
+smith upgrade             # migrate smith.toml, regenerate the pipelines, update recipe projects
+smith upgrade --dry-run   # show the plan and the change to smith.toml; change nothing
+smith upgrade --check     # the same, and fail when something would change (CI)
 ```
 
 `smith.toml` is migrated to the current schema with its comments and layout
@@ -278,3 +279,9 @@ one the workspace no longer asks for (a provider dropped from `[ci] providers`)
 is deleted. Files smith wrote once, like `README.md` and `.gitignore`, and your
 own files are never touched. It also says what an older workspace may want,
 for example a default stack for Node.
+
+Projects made from a [recipe](../reference/recipes.md#keeping-projects-current)
+are brought up to date with the recipe as it is now: the recipe version, the
+stack and the settings recorded in `smith.toml`, and the files their plugins
+own. Starter files you edited are left as they are. `smith doctor` warns about
+a project that has drifted before you upgrade.

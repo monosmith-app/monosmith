@@ -24,7 +24,7 @@ func checkRecipe(dir, ref string, out io.Writer) error {
 	if !workspace.ValidRecipeRef(ref) {
 		return fmt.Errorf("--recipe %q is not an https URL or a path relative to smith.toml with forward slashes", ref)
 	}
-	location := recipeLocation(dir, ref)
+	location := workspace.RecipeLocation(dir, ref)
 	if !strings.Contains(ref, "://") {
 		if _, err := os.Stat(location); errors.Is(err, fs.ErrNotExist) {
 			fmt.Fprintf(out, "  the recipe %s is not there yet; add it before `smith add`\n", ref)

@@ -47,7 +47,9 @@ Core slices in `apps/smith`:
 | `cipipeline` | pipeline model, renderers, `smith ci` |
 | `nativebuild` | `smith ci native`: build native (cgo) projects on each OS and attach their release assets |
 | `scaffold` | `smith new`, `smith add` |
-| `upgrade` | `smith upgrade`: migrate smith.toml, regenerate what smith owns |
+| `upgrade` | `smith upgrade`: migrate smith.toml, regenerate what smith owns, bring recipe projects up to date |
+| `recipe`, `recipechoice`, `recipestack` | load, resolve and validate a recipe (`smith recipe check`); ask its choices; turn it into a stack and the declarations `smith add` writes |
+| `recipedrift` | compare each recipe project with its recipe as it is now (`smith doctor`), plan the upgrade, and list where a recipe's values came from (`smith explain`) |
 | `nxworkspace`, `convertplan`, `convert` | read an Nx workspace, plan its conversion, apply it (`smith convert`) |
 | `githubrelease` | GitHub Releases and their assets |
 | `packagemanifests` | the Homebrew, Scoop and winget manifests attached to an app's GitHub Release |

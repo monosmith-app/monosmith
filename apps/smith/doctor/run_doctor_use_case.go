@@ -41,23 +41,8 @@ func Run(s *session.Session) Report {
 	}
 	add("smith", CoreChecks(s)...)
 	add("smith", lineageChecks(s)...)
-	for _, c := range s.Plugins.Clients {
-		if !c.Info.Capabilities.Doctor {
-			continue
-		}
-		var projects []protocol.Project
-		for _, p := range s.Graph.Projects {
-			if p.ServedBy(c.Info.Plugin.Name) {
-				projects = append(projects, p.Project)
-			}
-		}
-		var res protocol.DoctorResult
-		if err := c.Call(protocol.MethodDoctor, protocol.DoctorParams{Projects: projects}, &res, time.Minute); err != nil {
-			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers doctor", Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
-			continue
-		}
-		add(c.Info.Plugin.Name, res.Findings...)
-	}
+	add("smith", recipeChecks(s)...)
+	findings = append(findings, PluginChecks(s, nil)...)
 	report := Report{Findings: findings}
 	for _, f := range findings {
 		switch {
@@ -71,6 +56,39 @@ func Run(s *session.Session) Report {
 	}
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
 	return report
+}
+
+// PluginChecks asks each plugin that does doctor about its projects, and
+// returns what they find. With only, a plugin is asked about just the named
+// projects, and not at all when it serves none of them.
+func PluginChecks(s *session.Session, only map[string]bool) []Finding {
+	var findings []Finding
+	add := func(source string, fs ...protocol.Finding) {
+		for _, f := range fs {
+			findings = append(findings, Finding{Finding: f, Source: source})
+		}
+	}
+	for _, c := range s.Plugins.Clients {
+		if !c.Info.Capabilities.Doctor {
+			continue
+		}
+		var projects []protocol.Project
+		for _, p := range s.Graph.Projects {
+			if p.ServedBy(c.Info.Plugin.Name) && (only == nil || only[p.Name]) {
+				projects = append(projects, p.Project)
+			}
+		}
+		if only != nil && len(projects) == 0 {
+			continue
+		}
+		var res protocol.DoctorResult
+		if err := c.Call(protocol.MethodDoctor, protocol.DoctorParams{Projects: projects}, &res, time.Minute); err != nil {
+			add(c.Info.Plugin.Name, protocol.Finding{Check: "plugin " + c.Info.Plugin.Name + " answers doctor", Detail: err.Error(), Remedy: "report this to the plugin's maintainers"})
+			continue
+		}
+		add(c.Info.Plugin.Name, res.Findings...)
+	}
+	return findings
 }
 
 // lineageChecks report release tags a release would refuse to start from:

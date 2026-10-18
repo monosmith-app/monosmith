@@ -6,10 +6,12 @@ choose and configure plugins, never run anything. Recipes can extend one
 another and ask a few choices, and the answers decide the rest.
 
 Recipes are being built in steps (epic #312). What exists today is the file
-format, loading, resolving, validating, `smith recipe check`, and creating
-projects from a recipe with `smith add` (below). Drift checks and upgrades of
-the projects a recipe made (#309), the creation wizard and versioned recipes
-(#311) are still to come; the whole design is in
+format, loading, resolving, validating, `smith recipe check`, creating
+projects from a recipe with `smith add` (below), and keeping those projects
+current: `smith doctor` reports drift, `smith upgrade` brings them up to date
+and `smith explain` shows where each value came from (see
+[Keeping projects current](#keeping-projects-current)). The creation wizard
+and versioned recipes (#311) are still to come; the whole design is in
 [recipes and CI](../design/recipes-and-ci.md).
 
 ## Using a recipe
@@ -78,6 +80,95 @@ these answers, and an error when it does not.
 
 Existing stacks, `--stack` and `[default_stacks]` keep working unchanged: a
 workspace with no recipe behaves as before.
+
+## Keeping projects current
+
+A recipe changes: a new lint plugin, a changed setting, a new version. The
+projects it made before do not follow by themselves. Each one recorded the
+recipe, its version and its answers when `smith add` made it, so smith can
+resolve the recipe as it is now with the same answers and say what differs.
+
+**`smith doctor`** does that for every project made from a recipe. A project
+that has drifted is a warning, in the recipe's terms:
+
+```text
+! orders follows its recipe team
+    orders is on team 1.2.0; the recipe is 1.3.0, which changes the settings of
+    the lint plugin eslint (config: "@acme/eslint-config" → "@acme/eslint-config/strict")
+    → run `smith upgrade` (`smith upgrade --dry-run` shows what it changes first)
+```
+
+What it compares is the project's stack (the plugins at each level: a plugin
+the recipe adds, drops or replaces), the settings in `smith.toml` for its
+plugins, and the answers recorded. A project the recipe has not changed passes.
+Some things are reported as warnings, never as failures:
+
+- the recipe cannot be loaded (a path that moved, a URL with the network down
+  and no pinned copy); a URL recipe fetched once is read from its pinned copy
+- the recipe now asks a choice the project has no answer for and that has no
+  default: the warning names the choice, and the answer to add under
+  `[projects.<name>.recipe.answers]` (a new choice with a default takes the
+  default, and upgrade records it)
+- the recorded answers no longer fit the recipe (it dropped a choice or an
+  option)
+- `[workspace] recipe` now names a different recipe from the one the project
+  was made with, so there is no way to say how it differs
+
+**`smith upgrade`** brings the projects up to date. For each one that has
+drifted it resolves the recipe again with the recorded answers and:
+
+1. rewrites what `smith.toml` holds for the project: the recorded recipe
+   version and answers, its settings and, when the recipe now picks other
+   plugins, the stack declaration, with everything else in the file kept as it
+   was
+2. has the project's plugins restore the files they own from the new settings,
+   through the safe fixes their doctor checks offer (a fix that only restores
+   what a plugin owns, such as a generated configuration file)
+3. regenerates the CI pipelines, as upgrade always does
+
+```sh
+smith upgrade --dry-run   # the plan, and the change to smith.toml as a diff; changes nothing
+smith upgrade --check     # the same, and fails when something would change (CI)
+smith upgrade             # does it, and prints what it changed
+```
+
+**Only files smith owns change.** The files a plugin wrote once when the
+project was created (a starter test, a config you then edited) are yours and
+are never rewritten. When the recipe adds a plugin, a new project would get its
+starter files, but an existing project does not: upgrade says so, per project
+and plugin, and `smith doctor` lists what is missing. A fix that is not safe
+(it could change a file you edited) is named and left; `smith doctor --fix`
+shows its diff.
+
+A project is left as it is, with the reason, when:
+
+- its stack is provided by a plugin, not declared in `smith.toml` (smith cannot
+  change the plugins a plugin's stack holds)
+- its stack is shared with a project that the recipe does not change the same
+  way, or that was not made from a recipe: rewriting the stack would change
+  that project too
+- the recipe's plugins cannot work together, or the language plugin is not
+  enabled in this workspace
+
+A stack declared by a recipe is named after the recipe and the answers
+(`team-python-library`) and its description does not carry the recipe's
+version: the version is recorded for each project.
+
+**`smith explain <project>`** also lists what the project's recipe decided for
+it: its choices, the plugin at each level and the plugins' settings, each with
+the recipe file and line it came from. `--recipe` prints only that, and with
+`--json` prints it for tools:
+
+```text
+$ smith explain orders
+recipe team 1.3.0 — recipes/team.recipe.toml
+  choices.language       python
+                           from recipes/team.recipe.toml:6 (recipe team)
+  use.lint               eslint
+                           from recipes/team.recipe.toml:14 (recipe team)
+  settings.eslint.config "@acme/eslint-config/strict"
+                           from recipes/team.recipe.toml:21 (recipe team)
+```
 
 ## The file
 

@@ -3,8 +3,6 @@ package scaffold
 import (
 	"fmt"
 	"io"
-	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
@@ -57,7 +55,7 @@ func planRecipe(s *session.Session, opts AddOptions) (*recipePlan, error) {
 	case ref == "":
 		return nil, nil
 	}
-	loaded, err := (&recipe.Loader{Root: s.Root}).Load(recipeLocation(s.Root, ref))
+	loaded, err := (&recipe.Loader{Root: s.Root}).Load(workspace.RecipeLocation(s.Root, ref))
 	if err != nil {
 		return nil, fmt.Errorf("the recipe %s: %w", ref, err)
 	}
@@ -105,45 +103,11 @@ func planRecipe(s *session.Session, opts AddOptions) (*recipePlan, error) {
 		}
 	}
 	fmt.Fprint(opts.Out, recipechoice.Describe(res, s.Root))
-	settings, unused := settingsOfProject(res, st)
+	settings, unused := recipestack.ProjectSettings(res, st)
 	if len(unused) > 0 {
 		fmt.Fprintf(opts.Out, "  not used here: the recipe's settings for %s (the project does not use that plugin)\n", strings.Join(unused, ", "))
 	}
 	return &recipePlan{ref: ref, res: res, stack: st, reuse: reuse, settings: settings}, nil
-}
-
-// recipeLocation is where a recipe named in smith.toml is: a URL as it is, a
-// path relative to smith.toml made absolute.
-func recipeLocation(root, ref string) string {
-	if strings.Contains(ref, "://") {
-		return ref
-	}
-	return filepath.Join(root, filepath.FromSlash(ref))
-}
-
-// settingsOfProject keeps the recipe's settings for the plugins the project
-// is built with, and lists the plugins whose settings it leaves out.
-func settingsOfProject(res recipe.Resolution, st protocol.Stack) (kept map[string]map[string]any, unused []string) {
-	used := map[string]bool{st.Language: true}
-	for _, name := range append(st.Plugins(), st.Scaffold) {
-		used[name] = true
-	}
-	for plugin, table := range res.Settings {
-		values, ok := table.(map[string]any)
-		if !ok {
-			continue
-		}
-		if !used[plugin] {
-			unused = append(unused, plugin)
-			continue
-		}
-		if kept == nil {
-			kept = map[string]map[string]any{}
-		}
-		kept[plugin] = values
-	}
-	sort.Strings(unused)
-	return kept, unused
 }
 
 // declare writes the plan to smith.toml and reloads the session from it. It
