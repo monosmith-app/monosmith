@@ -41,6 +41,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 			p.override(name, o, fmt.Sprintf("smith.toml [tasks.%s]", name))
 		}
 	}
+	p.Registries = ProjectRegistries(cfg, p.Name)
 	if po, ok := cfg.Projects[p.Name]; ok {
 		if po.TagPrefix != "" {
 			p.TagPrefix = po.TagPrefix

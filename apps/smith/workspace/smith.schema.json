@@ -16,7 +16,8 @@
         "name": { "type": "string", "minLength": 1, "description": "The workspace's name." },
         "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme." },
         "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo." },
-        "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." }
+        "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." },
+        "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." }
       }
     },
     "ci": {
@@ -35,7 +36,8 @@
       "properties": {
         "branch": { "type": "string", "description": "The only branch a real release runs from. Default: main." },
         "remote": { "type": "string", "description": "The remote release tags are pushed to. Default: origin." },
-        "github_releases": { "type": "boolean", "description": "Create a GitHub Release for every tag (needs GITHUB_TOKEN). Default: false." }
+        "github_releases": { "type": "boolean", "description": "Create a GitHub Release for every tag (needs GITHUB_TOKEN). Default: false." },
+        "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." }
       }
     },
     "cache": {
@@ -130,6 +132,7 @@
             }
           },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },
+          "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry." },
           "release": {
             "type": "object",
             "description": "Makes an app releasable: versioned by its tag, its assets built and attached.",
@@ -155,6 +158,23 @@
             }
           },
           "tasks": { "type": "object", "additionalProperties": { "$ref": "#/definitions/task" } }
+        }
+      }
+    },
+    "registries": {
+      "type": "object",
+      "description": "Private package registries by name: Azure Artifacts, GitHub Packages or any token-protected registry.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["auth"],
+        "properties": {
+          "auth": { "enum": ["azure-artifacts", "github-packages", "token"], "description": "azure-artifacts: the pipeline's own token through Azure's authenticate tasks; github-packages: GITHUB_TOKEN; token: the variable token_env names." },
+          "token_env": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "description": "The environment variable holding the token, for auth = \"token\"." },
+          "npm": { "type": "string", "description": "The npm registry URL." },
+          "pypi": { "type": "string", "description": "The simple index pip installs from (.../simple/)." },
+          "pypi_upload": { "type": "string", "description": "Where twine uploads. Default: pypi with /simple/ replaced by /upload/." },
+          "nuget": { "type": "string", "description": "The NuGet v3 service index (.../index.json)." }
         }
       }
     }

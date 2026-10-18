@@ -16,7 +16,10 @@ type Model struct {
 	SmithVersion  string
 	ReleaseBranch string
 	Toolchains    []protocol.Toolchain
-	Credentials   []protocol.Credential
+	// Authenticate are the steps that sign in to private registries, run
+	// after the toolchains and before setup.
+	Authenticate []protocol.Toolchain
+	Credentials  []protocol.Credential
 	// Pack is true when a project has a package task: pushes to the release
 	// branch then run smith ci pack and keep dist/drop as the "drop" artifact.
 	Pack bool
@@ -45,10 +48,11 @@ var DefaultNativeRunners = []string{"ubuntu-latest", "windows-latest", "macos-la
 
 // Contributions are every plugin's CI needs for this workspace.
 type Contributions struct {
-	Toolchains  []protocol.Toolchain
-	Setup       []protocol.Step
-	Audit       []protocol.Step
-	Credentials []protocol.Credential
+	Toolchains   []protocol.Toolchain
+	Authenticate []protocol.Toolchain
+	Setup        []protocol.Step
+	Audit        []protocol.Step
+	Credentials  []protocol.Credential
 	// Pack is true when a project has a package task.
 	Pack bool
 	// Native is true when a project is tagged native.
@@ -71,6 +75,11 @@ func (c *Contributions) Add(r protocol.CIResult) {
 			c.Toolchains = append(c.Toolchains, t)
 		}
 	}
+	for _, a := range r.Authenticate {
+		if !hasToolchain(c.Authenticate, a.Name) {
+			c.Authenticate = append(c.Authenticate, a)
+		}
+	}
 	for _, perm := range r.Permissions {
 		if !slices.Contains(c.Permissions, perm) {
 			c.Permissions = append(c.Permissions, perm)
@@ -85,6 +94,13 @@ func (c *Contributions) Add(r protocol.CIResult) {
 		}
 		if !dup {
 			c.Credentials = append(c.Credentials, cred)
+		}
+		// A credential setup needs as well as the release keeps that need,
+		// whichever plugin asked first.
+		for i := range c.Credentials {
+			if c.Credentials[i].Env == cred.Env && cred.Setup {
+				c.Credentials[i].Setup = true
+			}
 		}
 	}
 }
@@ -101,6 +117,8 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 	}
 	m.Permissions = append(m.Permissions, c.Permissions...)
 	sort.Strings(m.Permissions)
+	m.Authenticate = append(m.Authenticate, c.Authenticate...)
+	sort.Slice(m.Authenticate, func(i, j int) bool { return m.Authenticate[i].Name < m.Authenticate[j].Name })
 	m.Toolchains = append(m.Toolchains, c.Toolchains...)
 	sort.Slice(m.Toolchains, func(i, j int) bool { return m.Toolchains[i].Name < m.Toolchains[j].Name })
 	m.Credentials = append(m.Credentials, c.Credentials...)
@@ -115,4 +133,16 @@ func hasToolchain(list []protocol.Toolchain, name string) bool {
 		}
 	}
 	return false
+}
+
+// SetupCredentials are the credentials setup needs too: a token installs
+// read from a private registry.
+func (m Model) SetupCredentials() []protocol.Credential {
+	var out []protocol.Credential
+	for _, c := range m.Credentials {
+		if c.Setup {
+			out = append(out, c)
+		}
+	}
+	return out
 }

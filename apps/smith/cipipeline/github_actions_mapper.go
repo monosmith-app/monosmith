@@ -39,6 +39,9 @@ jobs:
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
+	for _, a := range m.Authenticate {
+		b.WriteString(githubAuthenticate(a))
+	}
 	fmt.Fprintf(&b, `      - name: Install smith
         run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
         env:
@@ -46,9 +49,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 `, InstallScriptURL, m.SmithVersion)
 	b.WriteString(slot("      ", "before-setup"))
-	b.WriteString(`      - name: Setup
-        run: smith ci setup
-      - name: Audit
+	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
+	b.WriteString(githubEnv("        ", m.SetupCredentials()))
+	b.WriteString(`      - name: Audit
         run: smith ci audit
       - name: Verify
         run: smith ci verify
@@ -108,6 +111,9 @@ func githubNativeJob(m Model) string {
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
+	for _, a := range m.Authenticate {
+		b.WriteString(githubAuthenticate(a))
+	}
 	fmt.Fprintf(&b, `      - name: Install smith
         shell: bash
         run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
@@ -116,11 +122,13 @@ func githubNativeJob(m Model) string {
           GITHUB_TOKEN: ${{ github.token }}
       - name: Setup
         run: smith ci setup
-      - name: Native
+`, InstallScriptURL, m.SmithVersion)
+	b.WriteString(githubEnv("        ", m.SetupCredentials()))
+	b.WriteString(`      - name: Native
         run: smith ci native
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-`, InstallScriptURL, m.SmithVersion)
+`)
 	if m.NativePublish {
 		for _, c := range m.Credentials {
 			if c.Env != "GITHUB_TOKEN" {

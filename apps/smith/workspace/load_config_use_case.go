@@ -143,6 +143,9 @@ func Validate(cfg *Config) error {
 			}
 		}
 	}
+	if err := validateRegistries(cfg); err != nil {
+		return err
+	}
 	for name, ext := range cfg.Plugins.External {
 		if len(ext.Command) > 0 && strings.TrimSpace(ext.Command[0]) == "" {
 			return fmt.Errorf("%s: [plugins.external.%s] command starts with an empty program", FileName, name)

@@ -31,6 +31,51 @@ func azureSetup(t protocol.Toolchain) string {
 	return missing("  ", t)
 }
 
+// githubAuthenticate renders a registry sign-in step on GitHub Actions, or
+// nothing: there the credentials come from the environment.
+func githubAuthenticate(a protocol.Toolchain) string {
+	if a.GitHub == nil {
+		return ""
+	}
+	return actionStep("      ", "- uses: ", "with", a.GitHub)
+}
+
+// azureAuthenticate renders a registry sign-in task on Azure Pipelines
+// (npmAuthenticate@0, PipAuthenticate@1, NuGetAuthenticate@1), which signs
+// in with the pipeline's own token.
+func azureAuthenticate(a protocol.Toolchain) string {
+	if a.Azure == nil {
+		return ""
+	}
+	return actionStep("  ", "- task: ", "inputs", a.Azure)
+}
+
+// githubEnv renders an env block of secrets, or nothing.
+func githubEnv(indent string, creds []protocol.Credential) string {
+	if len(creds) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(indent + "env:\n")
+	for _, c := range creds {
+		fmt.Fprintf(&b, "%s  %s: ${{ secrets.%s }}\n", indent, c.Env, c.Env)
+	}
+	return b.String()
+}
+
+// azureEnv renders an env block of pipeline variables, or nothing.
+func azureEnv(indent string, creds []protocol.Credential) string {
+	if len(creds) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(indent + "env:\n")
+	for _, c := range creds {
+		fmt.Fprintf(&b, "%s  %s: $(%s)\n", indent, c.Env, c.Env)
+	}
+	return b.String()
+}
+
 func actionStep(indent, head, inputsKey string, s *protocol.ActionStep) string {
 	var b strings.Builder
 	b.WriteString(indent + head + s.Uses + "\n")
