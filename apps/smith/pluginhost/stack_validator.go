@@ -20,7 +20,19 @@ type Member struct {
 // the level it is chosen for and applies to the language; each slot (a task
 // a toolchain provides) has one plugin; every requirement is met and no two
 // plugins conflict. Errors name both sides.
-func ValidateMembers(members []Member) error {
+func ValidateMembers(members []Member) error { return validateMembers(members, false) }
+
+// Fits says why a plugin cannot join the plugins already chosen for a project,
+// or nil when it can. It applies the rules of ValidateMembers, except that a
+// requirement on a plugin that is not a language may still be met by a
+// plugin chosen later: only the language is known to be settled when the
+// others are being picked. A recipe wizard uses it to offer only the plugins
+// that fit.
+func Fits(chosen []Member, candidate Member) error {
+	return validateMembers(append(slices.Clone(chosen), candidate), true)
+}
+
+func validateMembers(members []Member, partial bool) error {
 	var lang *Member
 	for i, m := range members {
 		if m.Role != protocol.RoleLanguage {
@@ -85,6 +97,9 @@ func ValidateMembers(members []Member) error {
 	}
 	for _, m := range members {
 		for _, ref := range m.Info.Requires {
+			if partial && ref.Level != protocol.RoleLanguage {
+				continue
+			}
 			if !slices.ContainsFunc(members, func(o Member) bool { return o.Info.Plugin.Name != m.Info.Plugin.Name && matches(ref, o) }) {
 				return fmt.Errorf("%s requires a %s, and none is chosen", m.Info.Plugin.Name, ref)
 			}

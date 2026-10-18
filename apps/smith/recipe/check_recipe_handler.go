@@ -29,7 +29,7 @@ type checkReport struct {
 func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{Use: "recipe", Short: "Check recipes: a team's choice of plugins and settings"}
 	var choices []string
-	var asJSON bool
+	var asJSON, all bool
 	check := &cobra.Command{
 		Use:   "check <file-or-url>",
 		Short: "Resolve and validate a recipe, showing what it would use and where each value came from",
@@ -52,9 +52,10 @@ tools.`,
 			if err != nil {
 				return err
 			}
-			return runCheck(cmd.OutOrStdout(), cmd.ErrOrStderr(), args[0], answers, asJSON, version)
+			return runCheck(cmd.OutOrStdout(), cmd.ErrOrStderr(), args[0], answers, asJSON, all, version)
 		},
 	}
+	check.Flags().BoolVar(&all, "all", false, "check every combination of answers (up to 64), not only the one given or defaulted")
 	check.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice: name=answer (repeatable)")
 	check.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.AddCommand(check)
@@ -73,7 +74,7 @@ func parseAnswers(pairs []string) (map[string]string, error) {
 	return answers, nil
 }
 
-func runCheck(out, errOut io.Writer, ref string, answers map[string]string, asJSON bool, version string) error {
+func runCheck(out, errOut io.Writer, ref string, answers map[string]string, asJSON, all bool, version string) error {
 	root, _ := workspace.FindRoot(".")
 	var external map[string]workspace.ExternalPlugin
 	if root != "" {
@@ -83,11 +84,24 @@ func runCheck(out, errOut io.Writer, ref string, answers map[string]string, asJS
 	}
 	report := checkReport{Pinned: root != ""}
 	loaded, err := (&Loader{Root: root}).Load(ref)
+	lookup := Catalog{Root: root, Version: version, External: external}.Lookup
+	if err == nil && all {
+		// Every combination of answers; the report below still shows the one
+		// given or defaulted, when it resolves.
+		err = ValidateAll(loaded, lookup)
+	}
+	resolved := false
 	if err == nil {
 		report.Resolution, err = Resolve(loaded, answers)
+		resolved = err == nil
+		var missing *MissingAnswerError
+		if all && errors.As(err, &missing) {
+			// Every branch checked out; there is only no single answer to show.
+			err = nil
+		}
 	}
-	if err == nil {
-		err = Validate(report.Resolution, Catalog{Root: root, Version: version, External: external}.Lookup)
+	if err == nil && resolved {
+		err = Validate(report.Resolution, lookup)
 	}
 	if err != nil {
 		report.Errors = strings.Split(err.Error(), "\n")
