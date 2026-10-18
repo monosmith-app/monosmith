@@ -336,6 +336,62 @@ sha256 = "9f2c..."
 
 Outside a workspace nothing is cached or pinned; the URL is fetched each time.
 
+## Versioned recipes
+
+A team keeps its recipes in a repository of their own, usually a smith
+workspace, and releases them the way it releases packages. The built-in
+`recipe` plugin makes each recipe a project:
+
+```
+recipes/
+  company/
+    company.recipe.toml
+  team/
+    team.recipe.toml        extends = "../company/company.recipe.toml"
+    README.md
+```
+
+```sh
+smith add package team --lang recipe      # a recipe that resolves, in packages/team/
+smith recipe new recipes/team/team.recipe.toml   # or write it with the wizard
+smith run test -p team                    # smith recipe check team.recipe.toml --all
+```
+
+- **A project is a recipe file in a folder of its own**: one `*.recipe.toml`,
+  and beside it only a README, CHANGELOG or LICENSE. The project is named by
+  the recipe's `name`, has kind `package` and takes its version from the
+  recipe's `version`. A recipe at the workspace root (an input of
+  `[workspace] recipe`), two in one folder, one beside another project's
+  files, or one with no name or that is not TOML is not a project.
+- **Its `test` task checks every answer** (`smith recipe check --all`), so a
+  pull request that breaks one branch of a recipe fails CI. A recipe that
+  extends another recipe in the workspace depends on it: a change to the
+  parent affects the child and its tests.
+- **Versions come from commits**, like any package: `feat(team): ...` that
+  touch the recipe's folder release a minor, `fix` a patch, a breaking change
+  a major (`version(team)[2.0.0]` forces one). `smith release` tags
+  `team@1.3.0` and, with `[release] github_releases = true`, attaches the
+  recipe to the GitHub Release.
+- **The attached file carries the release's version.** A release commits
+  nothing, so the recipe in the repository keeps the version it was committed
+  with; the copy attached to the release (built in
+  `dist/release/<name>/`) has `version` set to the release's. Pin that copy:
+
+  ```toml
+  [workspace]
+  recipe = "https://github.com/acme/recipes/releases/download/team@1.3.0/team.recipe.toml"
+  ```
+
+  A URL that points at the tag's source (`raw.githubusercontent.com/.../team@1.3.0/...`) also works
+  and is pinned by content like any URL, but its file shows the version it
+  was committed with.
+- **`smith doctor` reports a newer release** of a recipe the workspace pins
+  this way ("team 1.4.0 is released, and smith.toml pins 1.3.0") with the URL
+  to change it to. It asks GitHub's API for the repository's releases of that
+  recipe, says nothing when it cannot (offline, rate limited), and is off with
+  `SMITH_NO_UPDATE_CHECK`. `smith upgrade` then accepts the new content and
+  brings the projects up to date.
+
 ## `smith recipe check`
 
 ```sh

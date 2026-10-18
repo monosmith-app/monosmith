@@ -493,7 +493,7 @@ func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item
 	if err != nil {
 		return err
 	}
-	if assets == nil && p.Release != nil && !Native(p) {
+	if assets == nil && (p.Release != nil || attachesItsFile(p)) && !Native(p) {
 		existing, found, err := client.ReleaseByTag(repo, item.Tag)
 		if err != nil {
 			return err
@@ -536,6 +536,11 @@ func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item
 	}
 	return nil
 }
+
+// attachesItsFile reports whether a project's release has an asset without
+// the project having a [release] table: a recipe attaches its own file, so a
+// URL can pin a version of it. A resumed release lists it from the plugin.
+func attachesItsFile(p *projectgraph.Project) bool { return p.Language == "recipe" }
 
 func missing(r githubrelease.Release, assets []string) bool {
 	have := map[string]bool{}

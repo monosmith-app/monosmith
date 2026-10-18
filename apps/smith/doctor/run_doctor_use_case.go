@@ -42,6 +42,7 @@ func Run(s *session.Session) Report {
 	add("smith", CoreChecks(s)...)
 	add("smith", lineageChecks(s)...)
 	add("smith", recipeChecks(s)...)
+	add("smith", recipeReleaseChecks(s)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	report := Report{Findings: findings}
 	for _, f := range findings {

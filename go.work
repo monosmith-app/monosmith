@@ -13,6 +13,7 @@ use (
 	./libs/plugin-node-toolchains
 	./libs/plugin-php
 	./libs/plugin-python
+	./libs/plugin-recipe
 	./libs/plugin-ruby
 	./libs/plugin-rust
 	./libs/plugin-vertical-slices
