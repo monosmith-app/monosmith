@@ -20,10 +20,11 @@ func ProjectRegistries(cfg workspace.Config, project string) *protocol.Registrie
 	if publishName != "" {
 		publish = registry(cfg, publishName)
 	}
-	if install == nil && publish == nil {
+	none := publishName == workspace.NoRegistry
+	if install == nil && publish == nil && !none {
 		return nil
 	}
-	return &protocol.Registries{Install: install, Publish: publish}
+	return &protocol.Registries{Install: install, Publish: publish, NoPublish: none}
 }
 
 func registry(cfg workspace.Config, name string) *protocol.Registry {

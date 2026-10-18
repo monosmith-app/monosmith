@@ -281,6 +281,9 @@ func publish(s *session.Session, p *projectgraph.Project, item Item, dryRun bool
 	if Native(p) {
 		spec = nil
 	}
+	if spec == nil && p.Registries != nil && p.Registries.NoPublish {
+		return protocol.PublishResult{Skipped: "published by its tag (registry = \"none\")"}, nil
+	}
 	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec}
 	var pr protocol.PublishResult
 	ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)

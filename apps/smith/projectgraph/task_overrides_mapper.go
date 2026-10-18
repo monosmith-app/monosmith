@@ -53,6 +53,8 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		if po.TagPrefix != "" {
 			p.TagPrefix = po.TagPrefix
 		}
+		p.TagPrefixSet = po.TagPrefix != ""
+		p.BareTags = po.BareTags
 		p.Release = po.Release
 		if po.SplitRepo != "" {
 			if err := splitrepo.Valid(po.SplitRepo); err != nil {

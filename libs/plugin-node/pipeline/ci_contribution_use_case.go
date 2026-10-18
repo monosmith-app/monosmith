@@ -29,7 +29,7 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 	result.Permissions = append(result.Permissions, signIn.Permissions...)
 	npm, marketplace := false, false
 	for _, p := range params.Projects {
-		if p.Kind != protocol.ProjectPackage {
+		if !p.Publishes() {
 			continue
 		}
 		if _, ok := releasing.Extension(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root))); ok {

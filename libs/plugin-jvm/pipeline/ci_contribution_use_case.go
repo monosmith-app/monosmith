@@ -114,7 +114,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		result.Setup = []protocol.Step{{Name: "Resolve Maven dependencies", Command: []string{"mvn", "-B", "-q", "dependency:go-offline"}, Blocking: true}}
 	}
 	for _, p := range params.Projects {
-		if p.Kind == protocol.ProjectPackage {
+		if p.Publishes() {
 			result.Credentials = append(result.Credentials,
 				protocol.Credential{Env: "MAVEN_REPOSITORY_URL", Description: "Maven repository the workspace's packages deploy to", Required: true},
 				protocol.Credential{Env: "MAVEN_USERNAME", Description: "Maven repository user", Required: true},

@@ -169,3 +169,16 @@ func TestAnAppsPackageTaskRunsInVerifyUnlessTurnedOff(t *testing.T) {
 		t.Errorf("verify = false did not turn it off: %v", err)
 	}
 }
+
+func TestOnlyATagPrefixFromSmithTomlIsMarkedSet(t *testing.T) {
+	// A Go package reports its own prefix, which is not a deliberate one.
+	goPkg := &Project{Project: protocol.Project{Name: "core", TagPrefix: "libs/core/v"}}
+	if err := ApplyOverrides(goPkg, workspace.Config{}); err != nil || goPkg.TagPrefixSet {
+		t.Errorf("a plugin's prefix is marked as set in smith.toml: %v", err)
+	}
+	set := &Project{Project: protocol.Project{Name: "kit"}}
+	cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{"kit": {TagPrefix: "@acme/kit@"}}}
+	if err := ApplyOverrides(set, cfg); err != nil || !set.TagPrefixSet || set.TagPrefix != "@acme/kit@" {
+		t.Errorf("tag_prefix from smith.toml is not marked set: %v", err)
+	}
+}
