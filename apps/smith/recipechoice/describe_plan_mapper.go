@@ -2,6 +2,7 @@ package recipechoice
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -11,8 +12,8 @@ import (
 
 // Describe says what a resolved recipe will use for each level or slot, with
 // the recipe line that chose it, and the settings it carries. It is shown
-// before anything is written.
-func Describe(res recipe.Resolution) string {
+// before anything is written. Files under root are shown relative to it.
+func Describe(res recipe.Resolution, root string) string {
 	var b strings.Builder
 	title := "Recipe " + res.Name
 	if res.Version != "" {
@@ -24,13 +25,24 @@ func Describe(res recipe.Resolution) string {
 	b.WriteString(title + " will use:\n")
 	w := tabwriter.NewWriter(&b, 0, 4, 2, ' ', 0)
 	for _, u := range res.Uses {
-		fmt.Fprintf(w, "  %s\t%s\t%s\n", u.Key, strings.Join(u.Plugins, ", "), u.Origin)
+		fmt.Fprintf(w, "  %s\t%s\t%s\n", u.Key, strings.Join(u.Plugins, ", "), where(u.Origin, root))
 	}
 	_ = w.Flush()
 	for _, line := range settingLines(res) {
 		b.WriteString("  " + line + "\n")
 	}
 	return b.String()
+}
+
+// where is a value's origin, its file relative to the workspace when it is in
+// it (a recipe loaded from a URL keeps its URL).
+func where(o recipe.Origin, root string) string {
+	if root != "" && filepath.IsAbs(o.File) {
+		if rel, err := filepath.Rel(root, o.File); err == nil && !strings.HasPrefix(rel, "..") {
+			o.File = filepath.ToSlash(rel)
+		}
+	}
+	return o.String()
 }
 
 // answersOf lists the answers in the order the choices were asked.

@@ -222,7 +222,21 @@ type ProjectOverride struct {
 	// ([projects.<name>.settings.<plugin>]): what a recipe's settings became
 	// when it created the project. A plugin reads its own table.
 	Settings map[string]map[string]any `toml:"settings"`
-	Tasks    map[string]TaskOverride   `toml:"tasks"`
+	// Recipe records the recipe the project was created from.
+	Recipe *ProjectRecipe          `toml:"recipe"`
+	Tasks  map[string]TaskOverride `toml:"tasks"`
+}
+
+// ProjectRecipe is the recipe a project was created from, written by
+// `smith add` ([projects.<name>.recipe]): enough to resolve the same recipe
+// again with the same answers.
+type ProjectRecipe struct {
+	Name    string `toml:"name"`
+	Version string `toml:"version"`
+	// Source is the recipe as [workspace] recipe named it: a path or a URL.
+	Source string `toml:"source"`
+	// Answers are the choices as they were answered, by choice name.
+	Answers map[string]string `toml:"answers"`
 }
 
 // DefaultPlatforms are the platforms an app's assets are built for.

@@ -29,7 +29,11 @@ type AddOptions struct {
 	// Stack is the stack the project is built with; empty means the
 	// workspace default for its language, if any.
 	Stack string
-	Out   io.Writer
+	// Recipe answers the workspace's recipe ([workspace] recipe), which
+	// creates the project unless Stack names one. Nil: no answers, no one to
+	// ask.
+	Recipe *RecipeUse
+	Out    io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -37,7 +41,12 @@ type AddOptions struct {
 // stack and each configured convention that applies adds its part (lint,
 // tests), and the pipelines are regenerated so CI knows about the new
 // toolchain at once.
-func AddProject(s *session.Session, opts AddOptions) (*protocol.GenerateResult, error) {
+//
+// With a recipe in smith.toml the stack comes from the recipe: its choices
+// are answered, the plugins it picks become a stack declared in smith.toml
+// with the recipe's settings, and the project is made exactly as a stack's
+// project is. If making it fails, smith.toml is put back.
+func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateResult, err error) {
 	kind := protocol.ProjectKind(opts.Kind)
 	switch kind {
 	case protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage:
@@ -50,8 +59,30 @@ func AddProject(s *session.Session, opts AddOptions) (*protocol.GenerateResult, 
 	if s.Graph.Get(opts.Name) != nil {
 		return nil, fmt.Errorf("a project named %q already exists (%s)", opts.Name, s.Graph.Get(opts.Name).Root)
 	}
-	language, st, err := chooseStack(s, opts)
+	dir := projectkind.Directory(kind) + "/" + opts.Name
+	if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(dir))); err == nil {
+		return nil, fmt.Errorf("%s already exists", dir)
+	}
+	plan, err := planRecipe(s, opts)
 	if err != nil {
+		return nil, err
+	}
+	var language *host.Client
+	var st protocol.Stack
+	var settings map[string]map[string]any
+	if plan != nil {
+		language, st, settings = s.Plugins.Get(plan.stack.Language), plan.stack, plan.settings
+		var undo func()
+		if undo, err = plan.declare(s, opts.Name); err != nil {
+			return nil, err
+		}
+		// A project that could not be made leaves nothing in smith.toml.
+		defer func() {
+			if err != nil {
+				undo()
+			}
+		}()
+	} else if language, st, err = chooseStack(s, opts); err != nil {
 		return nil, err
 	}
 	generator := language
@@ -60,10 +91,6 @@ func AddProject(s *session.Session, opts AddOptions) (*protocol.GenerateResult, 
 	}
 	if !generator.Supports(protocol.MethodGenerate) {
 		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
-	}
-	dir := projectkind.Directory(kind) + "/" + opts.Name
-	if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(dir))); err == nil {
-		return nil, fmt.Errorf("%s already exists", dir)
 	}
 	how := language.Info.Plugin.Name
 	if st.Name != "" && st.Name != protocol.NoStack {
@@ -74,6 +101,7 @@ func AddProject(s *session.Session, opts AddOptions) (*protocol.GenerateResult, 
 	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: s.Config.Workspace.ModulePrefix,
 	}}
+	params.Settings = settings[generator.Info.Plugin.Name]
 	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
 		return nil, err
 	}
@@ -87,7 +115,7 @@ func AddProject(s *session.Session, opts AddOptions) (*protocol.GenerateResult, 
 	if project.Stack != st.Name {
 		return &res, fmt.Errorf("%s generated %s, but its manifest does not record stack %s", generator.Info.Plugin.Name, opts.Name, st.Name)
 	}
-	if err := addParts(s, project, st, params, &res, opts.Out); err != nil {
+	if err := addParts(s, project, st, params, settings, &res, opts.Out); err != nil {
 		return &res, err
 	}
 	changed, _, err := cipipeline.Regenerate(s)
@@ -159,8 +187,9 @@ func chooseLanguage(s *session.Session, lang string) (string, error) {
 }
 
 // addParts asks the stack's other plugins, then each configured convention
-// that applies to the new project, to add their files, then rediscovers.
-func addParts(s *session.Session, project *projectgraph.Project, st protocol.Stack, params protocol.GenerateParams, res *protocol.GenerateResult, out io.Writer) error {
+// that applies to the new project, to add their files, then rediscovers. Each
+// is given the recipe's settings for it, when the project came from a recipe.
+func addParts(s *session.Session, project *projectgraph.Project, st protocol.Stack, params protocol.GenerateParams, settings map[string]map[string]any, res *protocol.GenerateResult, out io.Writer) error {
 	var parts []*host.Client
 	for _, n := range st.Plugins() {
 		if n != st.Scaffold { // it generated the project
@@ -191,6 +220,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		fmt.Fprintf(out, "Adding %s\n", c.Info.Plugin.Name)
 		asked := params
 		asked.Convention = conventions[c.Info.Plugin.Name]
+		asked.Settings = settings[c.Info.Plugin.Name]
 		var added protocol.GenerateResult
 		if err := c.Call(protocol.MethodGenerate, asked, &added, 20*time.Minute); err != nil {
 			return fmt.Errorf("plugin %s: %w", c.Info.Plugin.Name, err)

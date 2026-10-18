@@ -50,6 +50,8 @@ func tool(args []string) int {
 		fmt.Println("kiwi tests passed", strings.Join(args[1:], " "))
 	case "fmt":
 		fmt.Println("kiwi formatted")
+	case "greet":
+		fmt.Println("kiwi says", strings.Join(args[1:], " "))
 	default:
 		return 2
 	}
@@ -130,18 +132,33 @@ func (k *kiwi) Generate(params protocol.GenerateParams) (protocol.GenerateResult
 	if err := os.WriteFile(filepath.Join(dir, "kiwi.toml"), []byte(body), 0o644); err != nil {
 		return protocol.GenerateResult{}, err
 	}
-	return protocol.GenerateResult{Files: []string{params.Directory + "/kiwi.toml"}}, nil
+	files := []string{params.Directory + "/kiwi.toml"}
+	// A recipe's settings for kiwi arrive in the generate call: kiwi writes
+	// the greeting it was given where the end-to-end test can read it.
+	if greeting, ok := params.Settings["greeting"].(string); ok {
+		if err := os.WriteFile(filepath.Join(dir, "greeting.txt"), []byte(greeting+"\n"), 0o644); err != nil {
+			return protocol.GenerateResult{}, err
+		}
+		files = append(files, params.Directory+"/greeting.txt")
+	}
+	return protocol.GenerateResult{Files: files}, nil
 }
 
 // Contribute is the kiwi-strict stack's toolchain: fmt, and strict tests.
 func (k *kiwi) Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error) {
 	res := protocol.ContributeResult{Projects: map[string]protocol.Contribution{}}
 	for _, p := range params.Projects {
-		res.Projects[p.Name] = protocol.Contribution{
+		c := protocol.Contribution{
 			Tasks:     map[string]protocol.Task{"fmt": {Command: []string{self(), "fmt"}, Cache: true}},
 			Replace:   map[string]protocol.Task{"test": {Command: []string{self(), "test", "--strict"}, DependsOn: []string{"build"}, Cache: true}},
 			DependsOn: map[string][]string{"test": {"fmt"}},
 		}
+		// The settings smith.toml holds for kiwi reach it with every project:
+		// a greeting becomes a task that says it.
+		if greeting, ok := p.Settings["kiwi"]["greeting"].(string); ok {
+			c.Tasks["greet"] = protocol.Task{Command: []string{self(), "greet", greeting}}
+		}
+		res.Projects[p.Name] = c
 	}
 	return res, nil
 }

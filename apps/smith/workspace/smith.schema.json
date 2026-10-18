@@ -150,6 +150,17 @@
             "description": "Plugins' settings for this project, by plugin name: what a recipe's settings became when it created the project. A plugin reads its own table.",
             "additionalProperties": { "type": "object", "additionalProperties": {} }
           },
+          "recipe": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The recipe the project was created from, written by smith add: enough to resolve the same recipe again with the same answers.",
+            "properties": {
+              "name": { "type": "string", "description": "The recipe's name." },
+              "version": { "type": "string", "description": "The recipe's version when the project was created." },
+              "source": { "type": "string", "description": "The recipe as [workspace] recipe named it: a path or a URL." },
+              "answers": { "type": "object", "description": "The recipe's choices as they were answered, by choice name.", "additionalProperties": { "type": "string" } }
+            }
+          },
           "release": {
             "type": "object",
             "description": "Makes an app releasable: versioned by its tag, its assets built and attached.",

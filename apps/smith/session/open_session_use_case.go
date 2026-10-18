@@ -137,6 +137,22 @@ func (s *Session) Refresh() error {
 	return nil
 }
 
+// Reload re-reads smith.toml after a command wrote to it (smith add declares a
+// recipe's stack there), then rebuilds the stack catalog and the graph from it.
+// The plugins keep running: a change to [plugins] needs a new session.
+func (s *Session) Reload() error {
+	cfg, err := workspace.Load(s.Root)
+	if err != nil {
+		return err
+	}
+	catalog, err := pluginhost.NewCatalog(s.Plugins, cfg)
+	if err != nil {
+		return err
+	}
+	s.Config, s.Stacks = cfg, catalog
+	return s.Refresh()
+}
+
 // Close stops the plugins.
 func (s *Session) Close() {
 	if s != nil && s.Plugins != nil {

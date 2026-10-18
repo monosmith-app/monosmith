@@ -2,11 +2,14 @@ package scaffold
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/recipechoice"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // NewCommand is `smith new`.
@@ -37,12 +40,14 @@ func NewCommand(version string) *cobra.Command {
 	cmd.Flags().StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
 	cmd.Flags().StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
 	cmd.Flags().StringSliceVar(&opts.Providers, "ci", nil, "pipelines to generate: github, azure (default github)")
+	cmd.Flags().StringVar(&opts.Recipe, "recipe", "", "the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md)")
 	return cmd
 }
 
 // AddCommand is `smith add`.
 func AddCommand(version string) *cobra.Command {
 	var lang, stack string
+	var choices []string
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
 		Short: "Add an app, an internal lib or a publishable package",
@@ -55,12 +60,18 @@ func AddCommand(version string) *cobra.Command {
 A combined kind from ` + "`smith kinds`" + ` names the language too: node-app is
 app --lang node.
 
+When smith.toml names a recipe ([workspace] recipe), the recipe creates the
+project: it asks its choices one at a time (or take --choice name=answer, as
+often as needed, without asking), shows the plugins it picks, then makes the
+project as a stack's project is made. --stack bypasses the recipe.
+
 The project lints, type-checks, tests and builds immediately, and the CI
 pipelines are regenerated to install its toolchain.`,
 		Example: `  smith add app web --lang node
   smith add app api --stack node-vitest
   smith add lib core --lang go
-  smith add package sdk --lang python`,
+  smith add package sdk --lang python
+  smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -73,7 +84,15 @@ pipelines are regenerated to install its toolchain.`,
 			if k, l, ok := SplitKind(kind); ok && lang == "" {
 				kind, lang = k, l
 			}
-			res, err := AddProject(s, AddOptions{Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout()})
+			answers, err := recipechoice.ParseAnswers(choices)
+			if err != nil {
+				return err
+			}
+			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
+			res, err := AddProject(s, AddOptions{
+				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(),
+				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
+			})
 			if err != nil {
 				return err
 			}
@@ -87,6 +106,7 @@ pipelines are regenerated to install its toolchain.`,
 		},
 	}
 	cmd.Flags().StringVarP(&lang, "lang", "l", "", "language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep (default: the stack's, or the workspace's only language)")
-	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with (default: [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
+	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
+	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return cmd
 }
