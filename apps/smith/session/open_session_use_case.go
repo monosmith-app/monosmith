@@ -109,6 +109,11 @@ func (s *Session) Storage() (taskcache.Storage, error) {
 		return local, nil
 	}
 	warn := func(msg string) { fmt.Fprintln(os.Stderr, "smith: "+msg) }
+	// A variable Azure Pipelines has no value for (a fork's build, which gets
+	// no secrets) arrives as its own macro text: it counts as unset.
+	for _, name := range unexpandedMacros(os.Getenv, cacheEnvironment) {
+		_ = os.Unsetenv(name)
+	}
 	secret := os.Getenv("SMITH_CACHE_KEY")
 	if secret == "" {
 		warn("the remote cache is off: SMITH_CACHE_KEY is not set, and nothing is shared unsigned")
@@ -119,7 +124,8 @@ func (s *Session) Storage() (taskcache.Storage, error) {
 		warn("the remote cache is off: " + err.Error())
 		return local, nil
 	}
-	return &remotecache.Tiered{Local: local, Remote: store, Secret: []byte(secret), ReadOnly: s.Config.Cache.RemoteReadOnly || os.Getenv("SMITH_CACHE_READ_ONLY") != "", Warn: warn}, nil
+	readOnly := s.Config.Cache.RemoteReadOnly || os.Getenv("SMITH_CACHE_READ_ONLY") != "" || pullRequest(os.Getenv)
+	return &remotecache.Tiered{Local: local, Remote: store, Secret: []byte(secret), ReadOnly: readOnly, Warn: warn}, nil
 }
 
 // Refresh re-reads files and rebuilds the graph, after a command changed the
