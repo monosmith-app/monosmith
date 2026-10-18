@@ -46,6 +46,7 @@ func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Plugin:    protocol.Peer{Name: Name, Version: p.Version},
 		Kind:      protocol.KindConvention,
 		Languages: []string{"node"},
+		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
 		Provides:  []string{"build", "typecheck"},
 		Stacks:    stacks,

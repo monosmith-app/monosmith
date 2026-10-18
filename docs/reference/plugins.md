@@ -52,7 +52,8 @@ with through its [stack](stacks.md).
 
 Built-in plugins ship inside the `smith` binary but still run as separate
 processes (`smith plugin serve <name>`), speaking the same protocol an external
-plugin does. `smith plugin list` shows each one's roles and capabilities, and
+plugin does. `smith plugin list` shows each one's levels (roles), the slots it
+fills and what it requires (`--json` adds its conflicts and capabilities), and
 `smith stacks` the stacks they publish.
 
 ## Writing a plugin
@@ -169,7 +170,7 @@ Content-Length: 85\r\n
 
 | Method | Params → Result | Capability |
 |---|---|---|
-| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles, the tasks it provides, the stacks it publishes, capabilities, languages, manifest names | always |
+| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names | always |
 | `discover` | workspace-relative manifest paths the host found → projects | `discover` |
 | `generate` | kind, name, directory, workspace info, stack → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
@@ -229,3 +230,60 @@ A plugin can publish ready-made `stacks` in `initialize`. Any plugin of kind
 `convention` can also be applied workspace-wide with `[conventions.<name>]`;
 see [conventions](conventions.md). [Stacks](stacks.md) explains how a
 project's plugins combine.
+
+## Levels, slots, requirements and conflicts
+
+A role is a **level** in a project's make-up. There is no separate `level`
+field: one plugin can play several levels (`typescript` is a scaffold and a
+toolchain), so `roles` lists them. Some levels are exclusive and the others
+additive:
+
+| Level | A project has |
+|---|---|
+| `language` | exactly one |
+| `scaffold` | at most one |
+| `toolchain` | any number, but each **slot** (a task in `provides`, such as `test` or `lint`) is filled by one |
+| `structure`, `deploy` | any number; they only add |
+
+`provides` is the toolchain's slots: there is no separate `slots` field. Two
+more optional `initialize` fields say what a plugin needs around it:
+
+```json
+{
+  "roles": ["toolchain"],
+  "provides": ["test"],
+  "requires": [{"level": "language", "name": "node"}],
+  "conflicts": [{"name": "karma"}]
+}
+```
+
+A reference (`requires` and `conflicts` entries) names plugins by any of:
+- `level`: the level the plugin is chosen for
+- `name`: the plugin's name, or for a language plugin one of its `languages`
+- `slot`: a task the plugin provides
+
+Every field it sets must match, and it sets at least one. A plugin that
+declares neither field requires nothing, so plugins written before these
+fields keep working; the protocol stays at version 1.
+
+In Go:
+
+```go
+Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
+Conflicts: []protocol.PluginRef{protocol.ConflictsWith("karma")},
+```
+
+smith checks a project's plugins in one place, whatever chose them: a stack
+today, a recipe later. It checks that:
+- there is one language plugin and at most one scaffold
+- every plugin plays the level it is chosen for and applies to the language
+- each slot has one plugin
+- every requirement is met and no two plugins conflict
+
+An error names both sides, for example `jest and vitest both provide the test
+task; keep one` or `vitest conflicts with karma (plugin karma); keep one`.
+`smith plugin check` also verifies the declarations:
+- a convention plugin with the toolchain role lists its slots
+- only a toolchain provides tasks
+- every reference names a known level, a name or a slot, and a conflict
+  never names the plugin itself

@@ -12,6 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// orDash prints an empty column as "-".
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
 // Command is `smith plugin`: list plugins, and serve a built-in one over stdio.
 func Command(version string) *cobra.Command {
 	cmd := &cobra.Command{Use: "plugin", Short: "Inspect plugins, or serve a built-in plugin"}
@@ -37,9 +45,11 @@ func Command(version string) *cobra.Command {
 				Name         string          `json:"name"`
 				Version      string          `json:"version,omitempty"`
 				Source       string          `json:"source"`
-				Roles        []protocol.Role `json:"roles,omitempty"`
-				Provides     []string        `json:"provides,omitempty"`
-				Capabilities any             `json:"capabilities,omitempty"`
+				Roles        []protocol.Role      `json:"roles,omitempty"`
+				Provides     []string             `json:"provides,omitempty"`
+				Requires     []protocol.PluginRef `json:"requires,omitempty"`
+				Conflicts    []protocol.PluginRef `json:"conflicts,omitempty"`
+				Capabilities any                  `json:"capabilities,omitempty"`
 			}
 			var rows []row
 			for _, name := range append(BuiltinNames(), sortedNames(BuiltinAddons)...) {
@@ -49,7 +59,7 @@ func Command(version string) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				rows = append(rows, row{Name: name, Source: "built-in", Roles: info.EffectiveRoles(), Provides: info.Provides, Capabilities: serve.CapabilitiesOf(p)})
+				rows = append(rows, row{Name: name, Source: "built-in", Roles: info.EffectiveRoles(), Provides: info.Provides, Requires: info.Requires, Conflicts: info.Conflicts, Capabilities: serve.CapabilitiesOf(p)})
 			}
 			root, _ := workspace.FindRoot(".")
 			installed, err := FindInstalled(root)
@@ -65,6 +75,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
+			fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", "PLUGIN", "LEVELS", "SLOTS", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue
@@ -73,7 +84,14 @@ func Command(version string) *cobra.Command {
 				for i, role := range r.Roles {
 					roles[i] = string(role)
 				}
-				fmt.Fprintf(out, "%-16s %-28s %+v\n", r.Name, strings.Join(roles, ","), r.Capabilities)
+				needs := make([]string, 0, len(r.Requires)+len(r.Conflicts))
+				for _, ref := range r.Requires {
+					needs = append(needs, ref.String())
+				}
+				for _, ref := range r.Conflicts {
+					needs = append(needs, "not "+ref.String())
+				}
+				fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), orDash(strings.Join(needs, "; ")))
 			}
 			fmt.Fprintf(out, "\nInstalled (search path: %s):\n", strings.Join(SearchPath(root), ", "))
 			if len(installed) == 0 {

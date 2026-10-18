@@ -23,6 +23,7 @@ func (c *Toolchain) Describe(params protocol.InitializeParams) (protocol.Initial
 		Plugin:    protocol.Peer{Name: c.Name, Version: c.Version},
 		Kind:      protocol.KindConvention,
 		Languages: []string{"node"},
+		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  c.Provides,
 		Stacks:    c.Stacks,
