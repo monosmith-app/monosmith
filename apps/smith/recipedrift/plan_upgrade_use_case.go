@@ -62,7 +62,7 @@ func PlanUpgrade(s *session.Session, reports []Report) (Plan, error) {
 		}
 		for i, m := range members {
 			decls = append(decls, recipestack.Declaration{
-				Project: m.Project, Stack: members[0].Stack, Reuse: !(rewrite && i == 0), Settings: m.Settings,
+				Project: m.Project, Stack: members[0].Stack, Reuse: !rewrite || i != 0, Settings: m.Settings,
 				Recipe: workspace.ProjectRecipe{Name: m.Recipe, Version: m.To, Source: m.Ref, Answers: m.Answers},
 			})
 			plan.Changes = append(plan.Changes, Change{Project: m.Project, Recipe: m.Recipe, From: m.From, To: m.To, Changes: m.Changes})
