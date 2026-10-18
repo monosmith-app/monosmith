@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/images"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -22,13 +24,13 @@ func shipping(workspaceRoot string, projects []protocol.Project) []protocol.Proj
 // descriptionStep marks that the Docker Hub description step is in the result.
 const descriptionStep = "step: docker description"
 
-// setsHubDescription reports whether an app's description_from file is sent
-// to a docker.io registry, which smith docker description does after every
+// setsHubDescription reports whether an app's description_from file or short
+// description is sent to a docker.io registry, which smith docker description does after every
 // push to the release branch: a docs-only commit releases nothing, so the
 // release alone would never send it. The call is an idempotent PATCH, so
 // running it on every push needs no record of what was sent.
 func setsHubDescription(t images.Target) bool {
-	if t.DescriptionFrom == "" {
+	if t.DescriptionFrom == "" && strings.TrimSpace(t.ShortDescription) == "" {
 		return false
 	}
 	for _, r := range t.Registries {
@@ -94,6 +96,13 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		{Check: "Docker is running", OK: err == nil, Detail: "docker version could not reach a daemon", Remedy: "install and start Docker (https://docs.docker.com/get-docker/)"},
 	}
 	for _, p := range apps {
+		if short, _ := p.Settings["docker"]["short_description"].(string); utf8.RuneCountInString(strings.Join(strings.Fields(short), " ")) > images.ShortDescriptionLimit {
+			findings = append(findings, protocol.Finding{
+				Check:  "Docker Hub short description of " + p.Name + " fits",
+				Detail: fmt.Sprintf("short_description is longer than the %d characters Docker Hub takes and would be cut", images.ShortDescriptionLimit),
+				Remedy: "shorten short_description in [conventions.docker] (or [projects." + p.Name + ".docker]) in smith.toml",
+			})
+		}
 		if _, err := images.TargetOf(p, func(string) string { return "" }); err != nil {
 			findings = append(findings, protocol.Finding{
 				Check:  "Docker registries of " + p.Name + " agree",

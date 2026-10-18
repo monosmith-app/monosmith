@@ -14,10 +14,12 @@ func Command(version string) *cobra.Command {
 	var req Request
 	description := &cobra.Command{
 		Use:   "description",
-		Short: "Set the Docker Hub description of the apps' images from their description_from file",
-		Long: `description sets the Docker Hub repository description of each app whose
-registries include a docker.io entry and name a description_from file, with the
-registry's credentials (DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, or the variables
+		Short: "Set the Docker Hub descriptions of the apps' images",
+		Long: `description sets the Docker Hub repository descriptions of each app whose
+registries include a docker.io entry: the full one from its description_from
+file, and the short one (the line under the image's name) from
+short_description or, when that is unset, the project's own description. It
+signs in with the registry's credentials (DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, or the variables
 its entry names). Editing a description needs a token with Read, Write & Delete
 permission.
 

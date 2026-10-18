@@ -82,6 +82,7 @@
           "registry": { "type": "string", "description": "Docker only: where release pushes the apps' images (ghcr.io/acme). Unset: images are built, never pushed. ghcr.io logs in with GITHUB_TOKEN, docker.io with DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, another registry with CONTAINER_USERNAME and CONTAINER_PASSWORD. For several registries use registries." },
           "registries": { "$ref": "#/definitions/dockerRegistries" },
           "description_from": { "type": "string", "description": "Docker only: a workspace-relative file (README.md) whose text becomes the repository description on Docker Hub after a release." },
+          "short_description": { "type": "string", "description": "Docker only: the one-line summary shown under the image's name on Docker Hub (100 characters at most; longer is cut at a word). Default: the project's own description." },
           "push": { "type": "boolean", "description": "Docker only: false builds images without pushing them on release. Default: true when a registry is set." },
           "verify": { "type": "boolean", "description": "Docker only: false stops smith ci verify building the affected apps' images on pull requests. Default: true (an app without Docker on its runner is skipped with a warning)." }
         }
@@ -139,6 +140,7 @@
               "registry": { "type": "string", "description": "Where release pushes this app's image, instead of the convention's registry or registries." },
               "registries": { "$ref": "#/definitions/dockerRegistries" },
               "description_from": { "type": "string", "description": "A workspace-relative file whose text becomes this app's Docker Hub repository description." },
+              "short_description": { "type": "string", "description": "This app's one-line Docker Hub summary (100 characters at most), instead of the convention's or the project's description." },
               "push": { "type": "boolean", "description": "false builds the image but never pushes it on release." },
               "verify": { "type": "boolean", "description": "false stops smith ci verify building this app's image on pull requests." },
               "context": { "type": "string", "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9_.@-]*(/[A-Za-z0-9_@][A-Za-z0-9_.@-]*)*/?)$", "description": "The build context, workspace-relative: \".\" (the workspace, the default) or a directory such as the app's own, for a Dockerfile written for it (Nx's: docker build apps/api)." }

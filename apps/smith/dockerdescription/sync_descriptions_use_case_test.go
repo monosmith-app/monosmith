@@ -50,7 +50,7 @@ func TestEachAppWithADescriptionIsSetAndOthersStaySilent(t *testing.T) {
 
 func TestADryRunSaysWouldAndAProjectCanBeAskedForByName(t *testing.T) {
 	fakeSync(t, map[string]publishing.DescriptionResult{
-		"api": {Set: []string{"docker.io/acme/api"}},
+		"api": {Set: []string{"docker.io/acme/api"}, Short: "The API.", Full: "README.md"},
 		"web": {Skipped: "no docker.io registry"},
 	})
 	var out bytes.Buffer
@@ -61,6 +61,9 @@ func TestADryRunSaysWouldAndAProjectCanBeAskedForByName(t *testing.T) {
 	out.Reset()
 	if err := Run("/ws", []*projectgraph.Project{project("api")}, Request{DryRun: true}, &out); err != nil || !strings.Contains(out.String(), "would set the Docker Hub description of docker.io/acme/api") {
 		t.Errorf("%v %q", err, out.String())
+	}
+	if got := out.String(); !strings.Contains(got, "short description: The API.") || !strings.Contains(got, "full description: README.md") {
+		t.Errorf("a dry run shows both descriptions: %q", got)
 	}
 }
 
@@ -87,7 +90,7 @@ func TestContradictingSettingsAreAnErrorNamingTheApp(t *testing.T) {
 func TestSayingSoWhenNoAppNamesADescription(t *testing.T) {
 	fakeSync(t, map[string]publishing.DescriptionResult{"web": {Skipped: "no description_from"}})
 	var out bytes.Buffer
-	if err := Run("/ws", []*projectgraph.Project{project("web")}, Request{}, &out); err != nil || !strings.Contains(out.String(), "no app names a description_from file") {
+	if err := Run("/ws", []*projectgraph.Project{project("web")}, Request{}, &out); err != nil || !strings.Contains(out.String(), "no app has a description_from file or a short description") {
 		t.Errorf("%v %q", err, out.String())
 	}
 }

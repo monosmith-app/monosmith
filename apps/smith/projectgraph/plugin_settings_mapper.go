@@ -24,6 +24,9 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if conv.DescriptionFrom != "" {
 		s["description_from"] = conv.DescriptionFrom
 	}
+	if conv.ShortDescription != "" {
+		s["short_description"] = conv.ShortDescription
+	}
 	if conv.Push != nil {
 		s["push"] = *conv.Push
 	}
@@ -47,6 +50,9 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 		}
 		if d.DescriptionFrom != "" {
 			s["description_from"] = d.DescriptionFrom
+		}
+		if d.ShortDescription != "" {
+			s["short_description"] = d.ShortDescription
 		}
 		if d.Push != nil {
 			s["push"] = *d.Push
