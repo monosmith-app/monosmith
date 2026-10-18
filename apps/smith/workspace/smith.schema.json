@@ -239,7 +239,8 @@
         "outputs": { "type": "array", "items": { "type": "string" }, "description": "Directories restored on a cache hit." },
         "depends_on": { "type": "array", "items": { "type": "string" }, "description": "build, ^build or project:task." },
         "env": { "type": "object", "additionalProperties": { "type": "string" } },
-        "cache": { "type": "boolean" }
+        "cache": { "type": "boolean" },
+        "verify": { "type": "boolean", "description": "Run the task in smith ci verify on pull requests, for affected projects. An app's package task does by default; false turns that off." }
       }
     }
   }

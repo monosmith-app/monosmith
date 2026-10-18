@@ -31,6 +31,13 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 	for field, source := range p.contributed {
 		p.Sources[field] = source
 	}
+	// An app's package task runs in smith ci verify, so a packaging that breaks
+	// shows on the pull request and not at the release; verify = false turns
+	// it off.
+	if t, ok := p.Tasks["package"]; ok && p.Kind == protocol.ProjectApp && len(t.Command) > 0 {
+		t.Verify = true
+		p.Tasks["package"] = t
+	}
 	names := make([]string, 0, len(p.Tasks))
 	for name := range p.Tasks {
 		names = append(names, name)
@@ -131,6 +138,9 @@ func apply(t protocol.Task, o workspace.TaskOverride, sources map[string]string,
 	if o.Cache != nil {
 		t.Cache = *o.Cache
 		set("cache")
+	}
+	if o.Verify != nil {
+		t.Verify = *o.Verify
 	}
 	return t
 }

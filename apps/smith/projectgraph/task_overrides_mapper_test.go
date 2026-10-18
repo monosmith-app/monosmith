@@ -151,3 +151,21 @@ func TestApplyOverridesSplitRepo(t *testing.T) {
 		t.Errorf("a URL is refused, naming where it was set: %v", err)
 	}
 }
+
+func TestAnAppsPackageTaskRunsInVerifyUnlessTurnedOff(t *testing.T) {
+	task := map[string]protocol.Task{"package": {Command: []string{"npm", "pack"}}}
+	app := &Project{Project: protocol.Project{Name: "api", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{"package": task["package"]}}}
+	lib := &Project{Project: protocol.Project{Name: "kit", Kind: protocol.ProjectPackage, Tasks: map[string]protocol.Task{"package": task["package"]}}}
+	if err := ApplyOverrides(app, workspace.Config{}); err != nil || !app.Tasks["package"].Verify {
+		t.Errorf("an app's package task is not marked for verify: %v", err)
+	}
+	if err := ApplyOverrides(lib, workspace.Config{}); err != nil || lib.Tasks["package"].Verify {
+		t.Errorf("a package's package task is marked for verify: %v", err)
+	}
+	off := false
+	app = &Project{Project: protocol.Project{Name: "api", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{"package": task["package"]}}}
+	cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{"api": {Tasks: map[string]workspace.TaskOverride{"package": {Verify: &off}}}}}
+	if err := ApplyOverrides(app, cfg); err != nil || app.Tasks["package"].Verify {
+		t.Errorf("verify = false did not turn it off: %v", err)
+	}
+}
