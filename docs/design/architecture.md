@@ -4,6 +4,16 @@ How smith is built today. The decisions behind it are in
 [decisions.md](decisions.md); the plugin protocol in detail is in
 [plugins.md](../reference/plugins.md).
 
+This page is the overview. The deep dives:
+
+| Page | Answers |
+|---|---|
+| [The plugin system](plugin-system.md) | what a plugin is, the handshake, roles and levels, who speaks in what order when a project is assembled, how plugins interact (and why they never call each other), failure modes |
+| [How tasks run, and how the cache decides](execution-and-cache.md) | task graph, scheduler, process-tree cancellation, serving an app, the exact cache key, the store, the signed remote cache, affected, why-miss |
+| [Releases and CI](release-and-ci-internals.md) | the release plan, lineage and preflight, one project's release step by step, assets and distribution, the provider-neutral pipeline model, slots, the phases |
+| [Technology](technology.md) | why Go and a single binary, libraries, process boundaries, cross-platform handling, the security model, the test layers |
+| [Recipes and CI](recipes-and-ci.md), [TUI and IDE](tui-and-ide.md) | the design notes for those features |
+
 ## The repository
 
 One Go workspace (`go.work`), one module per project. smith builds, tests and
