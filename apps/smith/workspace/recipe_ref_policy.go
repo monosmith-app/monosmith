@@ -2,8 +2,18 @@ package workspace
 
 import (
 	"path"
+	"path/filepath"
 	"strings"
 )
+
+// RecipeLocation is where a recipe named in smith.toml is: a URL as it is, a
+// path relative to smith.toml made absolute.
+func RecipeLocation(root, ref string) string {
+	if strings.Contains(ref, "://") {
+		return ref
+	}
+	return filepath.Join(root, filepath.FromSlash(ref))
+}
 
 // ValidRecipeRef reports whether a recipe setting names a recipe: an https
 // URL, or a path relative to smith.toml with forward slashes that does not

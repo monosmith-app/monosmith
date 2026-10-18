@@ -1,6 +1,18 @@
 package workspace
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
+
+func TestRecipeLocationIsAbsoluteForAPathAndLeavesAURL(t *testing.T) {
+	if got := RecipeLocation("/ws", "https://example.com/t.toml"); got != "https://example.com/t.toml" {
+		t.Errorf("url: %q", got)
+	}
+	if got := RecipeLocation(filepath.FromSlash("/ws"), "recipes/team.toml"); got != filepath.Join(filepath.FromSlash("/ws"), "recipes", "team.toml") {
+		t.Errorf("path: %q", got)
+	}
+}
 
 func TestValidRecipeRef(t *testing.T) {
 	for ref, want := range map[string]bool{
