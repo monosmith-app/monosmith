@@ -84,6 +84,6 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		return res, err
 	}
 	res.Files = written
-	res.Notes = append(res.Notes, "smith run image -p "+params.Name+" builds its container image; a release pushes it to [conventions.docker] registry in smith.toml.")
+	res.Notes = append(res.Notes, "smith run image -p "+params.Name+" builds its container image; a release pushes it to the [conventions.docker] registry (or registries) in smith.toml.")
 	return res, nil
 }

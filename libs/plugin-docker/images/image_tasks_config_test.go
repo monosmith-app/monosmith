@@ -26,11 +26,36 @@ func TestContribute(t *testing.T) {
 		t.Fatalf("only an app with a Dockerfile ships: %+v", res.Projects)
 	}
 	image := res.Projects["API"].Tasks[TaskName]
-	if got := strings.Join(image.Command, " "); got != "docker build -f apps/API/Dockerfile -t api:1.2.0 -t api:latest ." {
-		t.Errorf("command %q", got)
+	if got := strings.Join(image.Command, " "); got != "docker build -f apps/API/Dockerfile -t api:local -t api:latest ." {
+		t.Errorf("command %q: the manifest's version is not what release publishes", got)
 	}
 	if image.Cwd != "." || image.DependsOn[0] != "build" || image.Cache {
 		t.Errorf("image %+v", image)
+	}
+}
+
+func TestTheImageIsNamedAsReleasePushesIt(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "azure-host"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "apps", "azure-host", Dockerfile), nil, 0o644)
+	res := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "azure-host", Root: "apps/azure-host", Kind: protocol.ProjectApp, Version: "0.0.1", Settings: map[string]map[string]any{"docker": {
+			"registries": []any{"ghcr.io/open-craw", "docker.io/opencraw"}, "image": "opencraw-azure-host",
+		}}},
+	}})
+	got := strings.Join(res.Projects["azure-host"].Tasks[TaskName].Command, " ")
+	if got != "docker build -f apps/azure-host/Dockerfile -t ghcr.io/open-craw/opencraw-azure-host:local -t ghcr.io/open-craw/opencraw-azure-host:latest ." {
+		t.Errorf("command %q", got)
+	}
+	// Settings that contradict each other leave the image buildable under its
+	// bare name; doctor and release report the contradiction.
+	res = Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "azure-host", Root: "apps/azure-host", Kind: protocol.ProjectApp, Settings: map[string]map[string]any{"docker": {
+			"registry": "ghcr.io/a", "registries": []any{"docker.io/b"},
+		}}},
+	}})
+	if got := strings.Join(res.Projects["azure-host"].Tasks[TaskName].Command, " "); !strings.Contains(got, "-t azure-host:local") {
+		t.Errorf("command %q", got)
 	}
 }
 

@@ -18,6 +18,12 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if conv.Registry != "" {
 		s["registry"] = conv.Registry
 	}
+	if conv.Registries != nil {
+		s["registries"] = conv.Registries
+	}
+	if conv.DescriptionFrom != "" {
+		s["description_from"] = conv.DescriptionFrom
+	}
 	if conv.Push != nil {
 		s["push"] = *conv.Push
 	}
@@ -27,6 +33,20 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if d := po.Docker; d != nil {
 		if d.Image != "" {
 			s["image"] = d.Image
+		}
+		// The app's registries replace the convention's, in either form.
+		if d.Registry != "" || d.Registries != nil {
+			delete(s, "registry")
+			delete(s, "registries")
+		}
+		if d.Registry != "" {
+			s["registry"] = d.Registry
+		}
+		if d.Registries != nil {
+			s["registries"] = d.Registries
+		}
+		if d.DescriptionFrom != "" {
+			s["description_from"] = d.DescriptionFrom
 		}
 		if d.Push != nil {
 			s["push"] = *d.Push

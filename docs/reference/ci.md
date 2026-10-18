@@ -168,7 +168,8 @@ you regenerate it with a newer smith.
 | `PUB_TOKEN` | a Dart package whose `publish_to` names another repository; pub.dev itself publishes with GitHub's OIDC token |
 | `MAVEN_REPOSITORY_URL`, `MAVEN_USERNAME`, `MAVEN_PASSWORD` | `mvn deploy` and Gradle's `maven-publish` of JVM packages |
 | `VSCE_PAT` | `vsce publish` of a VS Code extension package to the Marketplace (on the release step, and on the native job's step for a native extension) |
-| `CONTAINER_USERNAME`, `CONTAINER_PASSWORD` | the docker convention's image push to a registry other than ghcr.io, which logs in with `GITHUB_TOKEN` and gives the job `packages: write` (see releasing.md). `CONTAINER_REGISTRY`, deprecated, names the registry when `[conventions.docker] registry` is unset |
+| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | the docker convention's image push to Docker Hub (a `docker.io/...` registry); the token is a Docker Hub access token |
+| `CONTAINER_USERNAME`, `CONTAINER_PASSWORD` | the docker convention's image push to a registry other than ghcr.io and docker.io, which logs in with `GITHUB_TOKEN` (giving the job `packages: write`) and `DOCKERHUB_*`. Only one such registry can use these names; further ones name theirs in a `registries` table, and those variables are listed here too (see releasing.md). `CONTAINER_REGISTRY`, deprecated, names the registry when `[conventions.docker] registry` is unset |
 | `SPLIT_REPO_TOKEN` | pushing a project with `split_repo` to its mirror repository; a token with write access to that repository (see releasing.md) |
 | `GITHUB_TOKEN` | GitHub Releases and their assets, with `[release] github_releases`; GitHub Actions provides it. Also installs from and publishes to a `github-packages` registry (given to setup too) |
 | the `token_env` of a `token` registry | installing from (given to setup too) and publishing to that private registry |

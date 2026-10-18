@@ -52,7 +52,7 @@ func (d *Docker) Publish(params protocol.PublishParams) (protocol.PublishResult,
 
 // CI implements serve.CIContributor.
 func (d *Docker) CI(params protocol.CIParams) (protocol.CIResult, error) {
-	return pipeline.CI(d.root, params), nil
+	return pipeline.CI(d.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.

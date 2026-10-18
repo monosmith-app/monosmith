@@ -11,12 +11,17 @@ import (
 type Login int
 
 const (
-	// LoginPassword logs in with CONTAINER_USERNAME and CONTAINER_PASSWORD.
+	// LoginPassword logs in with the registry's username and password
+	// variables: CONTAINER_USERNAME and CONTAINER_PASSWORD, or the ones the
+	// registry's entry names.
 	LoginPassword Login = iota
 	// LoginGitHub logs in to ghcr.io with the job's GITHUB_TOKEN.
 	LoginGitHub
 	// LoginNone pushes without logging in: a registry on this machine.
 	LoginNone
+	// LoginDockerHub logs in to Docker Hub with DOCKERHUB_USERNAME and
+	// DOCKERHUB_TOKEN.
+	LoginDockerHub
 )
 
 // Host is the registry's host (ghcr.io, localhost:5000).
@@ -25,25 +30,49 @@ func Host(registry string) string {
 	return host
 }
 
-// LoginFor decides how release logs in to a registry.
-func LoginFor(registry string) Login {
-	host := Host(registry)
-	if host == "ghcr.io" {
-		return LoginGitHub
-	}
-	name := host
-	if h, _, err := net.SplitHostPort(host); err == nil {
+// Loopback reports whether a registry is on this machine.
+func Loopback(registry string) bool {
+	name := Host(registry)
+	if h, _, err := net.SplitHostPort(name); err == nil {
 		name = h
 	}
-	if name == "localhost" || net.ParseIP(name).IsLoopback() {
+	return name == "localhost" || net.ParseIP(strings.Trim(name, "[]")).IsLoopback()
+}
+
+// LoginFor decides how release logs in to a registry that names no
+// credentials of its own.
+func LoginFor(registry string) Login {
+	switch Host(registry) {
+	case "ghcr.io":
+		return LoginGitHub
+	case "docker.io", "index.docker.io", "registry-1.docker.io":
+		return LoginDockerHub
+	}
+	if Loopback(registry) {
 		return LoginNone
 	}
 	return LoginPassword
 }
 
-// Credentials are the secrets pushing to a target needs, and the GitHub
+// Registry is one registry an image is pushed to, with how release logs in.
+type Registry struct {
+	// URL is the registry and namespace (ghcr.io/acme), no trailing slash.
+	URL   string
+	Login Login
+	// UserEnv and PasswordEnv name the variables that hold the credentials.
+	// Empty for LoginNone; for LoginGitHub UserEnv is optional (the actor).
+	UserEnv, PasswordEnv string
+	// Explicit is true when smith.toml names the variables.
+	Explicit bool
+}
+
+// Host is the registry's host.
+func (r Registry) Host() string { return Host(r.URL) }
+
+// Credentials are the secrets pushing to the targets needs, and the GitHub
 // token permissions. A registry set with CONTAINER_REGISTRY keeps that
-// variable's old, optional credentials.
+// variable's old, optional credentials. Several registries that share a
+// variable (two docker.io namespaces) list it once.
 func Credentials(t Target) ([]protocol.Credential, []string) {
 	if t.Legacy {
 		return []protocol.Credential{
@@ -55,16 +84,28 @@ func Credentials(t Target) ([]protocol.Credential, []string) {
 	if !t.Push {
 		return nil, nil
 	}
-	switch LoginFor(t.Registry) {
-	case LoginGitHub:
-		return []protocol.Credential{
-			{Env: "GITHUB_TOKEN", Description: "pushes the images to " + t.Registry + " ([conventions.docker] registry): the job's token with packages: write; on Azure Pipelines, a token with write:packages", Required: true},
-		}, []string{"packages: write"}
-	case LoginNone:
-		return nil, nil
+	var creds []protocol.Credential
+	var perms []string
+	seen := map[string]bool{}
+	add := func(env, description string) {
+		if !seen[env] {
+			seen[env] = true
+			creds = append(creds, protocol.Credential{Env: env, Description: description, Required: true})
+		}
 	}
-	return []protocol.Credential{
-		{Env: "CONTAINER_USERNAME", Description: "user that pushes the images to " + Host(t.Registry) + " ([conventions.docker] registry)", Required: true},
-		{Env: "CONTAINER_PASSWORD", Description: "password or token that pushes the images to " + Host(t.Registry) + " ([conventions.docker] registry)", Required: true},
-	}, nil
+	for _, r := range t.Registries {
+		switch r.Login {
+		case LoginNone:
+		case LoginGitHub:
+			add("GITHUB_TOKEN", "pushes the images to "+r.URL+" ([conventions.docker] registries): the job's token with packages: write; on Azure Pipelines, a token with write:packages")
+			if !seen["packages: write"] {
+				seen["packages: write"] = true
+				perms = append(perms, "packages: write")
+			}
+		default:
+			add(r.UserEnv, "user that pushes the images to "+r.URL+" ([conventions.docker] registries)")
+			add(r.PasswordEnv, "password or token that pushes the images to "+r.URL+" ([conventions.docker] registries)")
+		}
+	}
+	return creds, perms
 }

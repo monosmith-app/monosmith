@@ -57,7 +57,7 @@ Release, without assets. The settings are in
 
 With the docker convention, an app with a `Dockerfile` releases too: the
 release builds its image tagged with the version and `latest` and pushes both
-to the registry `smith.toml` names.
+to the registry, or each of the registries, `smith.toml` names.
 
 ```toml
 [conventions.docker]
@@ -68,6 +68,63 @@ image = "acme-api"          # default: the project's name, lowercase
 push = false                # build api's image, never push it
 context = "apps/api"        # default: ".", the workspace
 ```
+
+### Several registries
+
+`registries` replaces `registry` (setting both is an error) to publish the
+same image in more than one place, for visibility on Docker Hub, say:
+
+```toml
+[conventions.docker]
+registries = [
+  "ghcr.io/open-craw",                  # GITHUB_TOKEN, packages: write
+  "docker.io/opencraw",                 # DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
+  { url = "registry.acme.dev/team", username_env = "ACME_USER", password_env = "ACME_TOKEN" },
+]
+```
+
+- Each entry is `host/namespace`, with the host: a name with no dot is a
+  Docker Hub namespace to Docker, so Docker Hub is written `docker.io/acme`.
+- A string entry logs in the way its host does (the table below). An entry
+  as a table names its own variables, both of them, whatever the host.
+- Several registries on hosts with no default would all read
+  `CONTAINER_USERNAME` and `CONTAINER_PASSWORD`, so all but one must be a table.
+  Two namespaces on `docker.io` share `DOCKERHUB_*`, which is fine.
+- The image is built once and pushed under the same name and tags (the
+  version, `latest`) to each registry. `image` names it under every one.
+- `[projects.<app>.docker] registries` (or `registry`) replaces the
+  convention's list for that app.
+- Every registry's secrets are in the generated pipeline and in
+  `smith ci check`, and a release missing one stops before it starts.
+
+A push that fails names its registry, and the others are still tried. A
+re-run asks each registry whether it has the version's tag
+(`docker manifest inspect`) and pushes only to those that do not, so a
+release never pushes twice to the same place. Per registry `latest` is pushed
+first and the version last, so the version tag shows the registry is complete.
+
+### The Docker Hub description
+
+Docker Hub shows a repository's description on its page, and a pushed image
+does not set it. `description_from` names a file whose text becomes the
+description of the image's repository on every `docker.io` registry, after the
+push (a release that pushed nothing new leaves it alone):
+
+```toml
+[conventions.docker]
+registries = ["ghcr.io/open-craw", "docker.io/opencraw"]
+description_from = "README.md"        # or per app: [projects.api.docker] description_from = "apps/api/README.md"
+```
+
+It signs in to Docker Hub's API with the registry's own credentials
+(`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`). The description is limited to 25,000
+characters, and longer text is cut. Editing a description may need an access
+token with Read, Write & Delete permission, which a plain push does not: the
+images are already published when this runs, so a refusal, a missing file or
+missing secrets is a warning in the release log and the release goes on. Other
+registries ignore the setting.
+
+### The image and its login
 
 The image is built with the workspace as its context, after the app's
 `build` and, for a Node app, its `prune`. That task writes the app's deploy
@@ -90,7 +147,9 @@ That replaces the convention's list, so name everything the image needs;
 
 `smith ci verify` builds the image of every app a pull request affects, after
 lint, typecheck, test and build, so a broken Dockerfile fails the pull
-request rather than the release. The image is built, never pushed. Where
+request rather than the release. The image is built, never pushed, under the
+name release pushes (the first registry's, `ghcr.io/acme/acme-api`) with the
+local tags `local` and `latest`; it never carries the manifest's version. Where
 Docker is not installed the image is skipped with a warning; a runner with
 the CLI but no daemon (GitLab's default image) fails, so set
 `verify = false` under `[conventions.docker]` there, or for one app under
@@ -99,12 +158,20 @@ the CLI but no daemon (GitLab's default image) fails, so set
 | Registry | Logs in with | The pipeline gets |
 |---|---|---|
 | `ghcr.io/<owner>` | `GITHUB_TOKEN` as `GITHUB_ACTOR` | `packages: write` on GitHub Actions, nothing to set; on Azure Pipelines set `GITHUB_TOKEN` to a token with `write:packages` |
-| any other | `CONTAINER_USERNAME` and `CONTAINER_PASSWORD` | those two secrets |
+| `docker.io/<namespace>` (Docker Hub) | `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` | those two secrets (a Docker Hub access token) |
+| any other | `CONTAINER_USERNAME` and `CONTAINER_PASSWORD`, or the variables the entry names | those secrets |
 | on this machine (`localhost`, `127.0.0.1`) | nothing | nothing |
+
+A workspace that pushed to `docker.io` with a single `registry` and
+`CONTAINER_*` secrets now reads `DOCKERHUB_*`: set those, or keep the old
+names with `{ url = "docker.io/acme", username_env = "CONTAINER_USERNAME",
+password_env = "CONTAINER_PASSWORD" }`.
 
 A release that would push without its credentials stops before it starts and
 names the setting. `smith release --dry-run` names each image it would push
-(`would push ghcr.io/acme/acme-api:1.2.0 and ghcr.io/acme/acme-api:latest`).
+(`would push ghcr.io/acme/acme-api:1.2.0, ghcr.io/acme/acme-api:latest`, then
+the same for every other registry); it does not ask the registries what they
+have.
 
 `CONTAINER_REGISTRY` still names the registry when `registry` is unset, so a
 pipeline that sets it keeps pushing; it is deprecated, and release says so.

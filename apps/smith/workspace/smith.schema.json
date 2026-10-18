@@ -78,7 +78,9 @@
         "properties": {
           "languages": { "type": "array", "items": { "type": "string" }, "description": "Narrow the convention to some of the languages it supports." },
           "exclude": { "type": "array", "items": { "type": "string" }, "description": "Projects it leaves alone." },
-          "registry": { "type": "string", "description": "Docker only: where release pushes the apps' images (ghcr.io/acme). Unset: images are built, never pushed. ghcr.io logs in with GITHUB_TOKEN; another registry with CONTAINER_USERNAME and CONTAINER_PASSWORD." },
+          "registry": { "type": "string", "description": "Docker only: where release pushes the apps' images (ghcr.io/acme). Unset: images are built, never pushed. ghcr.io logs in with GITHUB_TOKEN, docker.io with DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, another registry with CONTAINER_USERNAME and CONTAINER_PASSWORD. For several registries use registries." },
+          "registries": { "$ref": "#/definitions/dockerRegistries" },
+          "description_from": { "type": "string", "description": "Docker only: a workspace-relative file (README.md) whose text becomes the repository description on Docker Hub after a release." },
           "push": { "type": "boolean", "description": "Docker only: false builds images without pushing them on release. Default: true when a registry is set." },
           "verify": { "type": "boolean", "description": "Docker only: false stops smith ci verify building the affected apps' images on pull requests. Default: true (an app without Docker on its runner is skipped with a warning)." }
         }
@@ -126,6 +128,9 @@
             "description": "The app's settings for the docker convention.",
             "properties": {
               "image": { "type": "string", "pattern": "^[a-z0-9]+([._/-][a-z0-9]+)*$", "description": "The image's name under the registry. Default: the project's name, lowercase." },
+              "registry": { "type": "string", "description": "Where release pushes this app's image, instead of the convention's registry or registries." },
+              "registries": { "$ref": "#/definitions/dockerRegistries" },
+              "description_from": { "type": "string", "description": "A workspace-relative file whose text becomes this app's Docker Hub repository description." },
               "push": { "type": "boolean", "description": "false builds the image but never pushes it on release." },
               "verify": { "type": "boolean", "description": "false stops smith ci verify building this app's image on pull requests." },
               "context": { "type": "string", "pattern": "^(\\.|[A-Za-z0-9_@][A-Za-z0-9_.@-]*(/[A-Za-z0-9_@][A-Za-z0-9_.@-]*)*/?)$", "description": "The build context, workspace-relative: \".\" (the workspace, the default) or a directory such as the app's own, for a Dockerfile written for it (Nx's: docker build apps/api)." }
@@ -180,6 +185,26 @@
     }
   },
   "definitions": {
+    "dockerRegistries": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Docker only: the registries release pushes the apps' images to, each under the same name and tags. A \"host/namespace\" string uses the host's credentials (ghcr.io: GITHUB_TOKEN with packages: write; docker.io: DOCKERHUB_USERNAME and DOCKERHUB_TOKEN; another host: CONTAINER_USERNAME and CONTAINER_PASSWORD, for one only). A table names the variables: { url, username_env, password_env }. Instead of registry, never with it.",
+      "items": {
+        "oneOf": [
+          { "type": "string", "pattern": "^[a-z0-9._-]+(:[0-9]+)?(/[a-z0-9._/-]*)?$" },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url"],
+            "properties": {
+              "url": { "type": "string", "pattern": "^[a-z0-9._-]+(:[0-9]+)?(/[a-z0-9._/-]*)?$" },
+              "username_env": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+              "password_env": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+            }
+          }
+        ]
+      }
+    },
     "task": {
       "type": "object",
       "description": "Replaces individual fields of a plugin-inferred task; unset fields keep the plugin's value.",

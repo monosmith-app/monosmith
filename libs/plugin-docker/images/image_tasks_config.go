@@ -13,6 +13,10 @@ import (
 // lint, test and build never need a Docker daemon.
 const TaskName = "image"
 
+// LocalTag is the tag of an image built by the image task, which release
+// replaces with the version and latest.
+const LocalTag = "local"
+
 // Dockerfile is the file that makes an app ship as an image.
 const Dockerfile = "Dockerfile"
 
@@ -75,14 +79,17 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 		if !Ships(workspaceRoot, p) {
 			continue
 		}
-		version := p.Version
-		if version == "" {
-			version = "dev"
+		// The image is named as release will push it (the first registry's
+		// reference), tagged for local use: never with the manifest's version,
+		// which is not what a release publishes.
+		local := Name(p)
+		if t, err := TargetOf(p, func(string) string { return "" }); err == nil {
+			local = t.LocalReference()
 		}
 		task := protocol.Task{
-			Command:     BuildArgs(p, Name(p)+":"+version, Name(p)+":latest"),
+			Command:     BuildArgs(p, local+":"+LocalTag, local+":latest"),
 			Cwd:         ".",
-			Description: "Build the app's container image (" + Name(p) + ":" + version + ")",
+			Description: "Build the app's container image (" + local + ":" + LocalTag + ")",
 			Verify:      Verified(p),
 		}
 		for _, before := range []string{"build", PruneTask} {
