@@ -305,4 +305,7 @@ type TaskOverride struct {
 	DependsOn []string          `toml:"depends_on"`
 	Env       map[string]string `toml:"env"`
 	Cache     *bool             `toml:"cache"`
+	// Verify runs the task in smith ci verify on pull requests, for the
+	// affected projects; false turns off what a plugin or smith marked.
+	Verify *bool `toml:"verify"`
 }

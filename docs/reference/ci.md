@@ -80,6 +80,14 @@ plugins give every app one:
 A stack's plugin, or `[projects.<name>.tasks.package]` in `smith.toml`, can
 replace it, for example with a zip a deploy step expects.
 
+On a pull request, `smith ci verify` also runs the `package` task of every
+affected **app**, building into `dist/drop` and publishing nothing, so a
+packaging step that breaks (a staging script that misses a new workspace
+dependency) shows on the pull request and not on the release branch. Native
+projects are left to the native job. `verify = false` under
+`[projects.<name>.tasks.package]` turns it off for one app, or under
+`[tasks.package]` for all.
+
 ## The release preview comment
 
 On a pull request the preview is posted as one comment, which later runs of

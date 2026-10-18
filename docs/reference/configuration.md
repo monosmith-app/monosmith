@@ -271,7 +271,9 @@ depends_on = ["build"]
 
 Fields: `command` (argv, never a shell string), `cwd` (workspace-relative,
 `"."` for the root; default: the project root), `inputs`, `outputs`,
-`depends_on`, `env`, `cache`.
+`depends_on`, `env`, `cache`, `verify` (run the task in `smith ci verify` on
+pull requests; an app's `package` task does by default, `verify = false` turns
+it off).
 
 There is exactly one precedence rule: **plugin → `[tasks.<task>]` →
 `[projects.<name>.tasks.<task>]`**, later wins, field by field. To see the
