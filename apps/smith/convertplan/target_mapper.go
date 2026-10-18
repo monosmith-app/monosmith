@@ -241,6 +241,11 @@ func commandTarget(plan *Plan, pp *ProjectPlan, name string, t nxworkspace.Targe
 // customTask writes a smith.toml task with everything Nx knew about it.
 func customTask(plan *Plan, pp *ProjectPlan, name string, t nxworkspace.Target, argv []string, cwd string) {
 	o := workspace.TaskOverride{Command: argv, Cwd: cwd, DependsOn: dependsOn(plan, pp, name, t), Inputs: inputs(pp.Root, t), Outputs: outputs(pp.Root, t)}
+	if name == packageTask {
+		if dir, ok := ownDropDir(pp.Root, &o); ok {
+			plan.Add(Changed, pp.Name, name, "writes to "+dir+"/ instead of the shared "+DropDir+": a cache restore replaces a task's output directories, and would delete another package's zip mid-write")
+		}
+	}
 	cache := t.Cache != nil && *t.Cache && !t.Continuous
 	if cache {
 		o.Cache = &cache
