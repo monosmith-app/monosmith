@@ -14,6 +14,13 @@ type CIResult struct {
 	Setup []Step `json:"setup,omitempty"`
 	// Audit steps run in `smith ci audit`.
 	Audit []Step `json:"audit,omitempty"`
+	// PostRelease steps run at the end of `smith ci release`, whether or not
+	// anything was released, with the release's credentials: work that must
+	// follow every push to the release branch (setting a registry
+	// description from a file). They run only after a release that did not
+	// fail, from the workspace root, and a step that is not Blocking only
+	// warns.
+	PostRelease []Step `json:"postRelease,omitempty"`
 	// Credentials names the environment variables `smith ci release` needs.
 	Credentials []Credential `json:"credentials,omitempty"`
 	// Permissions are the GitHub Actions token permissions the release needs

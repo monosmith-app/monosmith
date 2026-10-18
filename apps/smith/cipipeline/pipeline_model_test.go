@@ -55,6 +55,21 @@ func TestSetupGetsTheCredentialsInstallsNeed(t *testing.T) {
 	}
 }
 
+func TestPostReleaseStepsAreMergedInOrderAndLeaveThePipelineYAMLAlone(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{PostRelease: []protocol.Step{{Name: "first", Command: []string{"a"}}}})
+	c.Add(protocol.CIResult{PostRelease: []protocol.Step{{Name: "second", Command: []string{"b"}}}})
+	if len(c.PostRelease) != 2 || c.PostRelease[0].Name != "first" || c.PostRelease[1].Name != "second" {
+		t.Errorf("post-release steps %+v", c.PostRelease)
+	}
+	// smith ci release runs them, so the generated YAML is the same with or without.
+	with := RenderGitHub(NewModel(c, "1.0.0", "main"))
+	without := RenderGitHub(NewModel(Contributions{}, "1.0.0", "main"))
+	if with != without {
+		t.Error("a post-release step changed the generated GitHub workflow")
+	}
+}
+
 func TestContributionsMergeSetupCredentialsAndSignIns(t *testing.T) {
 	var c Contributions
 	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "T"}}, Authenticate: []protocol.Toolchain{npmAuth()}})
