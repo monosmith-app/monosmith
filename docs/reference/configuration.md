@@ -226,7 +226,7 @@ settings: edit or remove them like any other.
 ```toml
 # Written by smith from the recipe team for the project billing.
 [stacks.team-python-library]          # the plugins the recipe picked, as a stack other projects with the same answers share
-description = "From the recipe team 1.2.0 (language=python, kind=library); written by smith"
+description = "From the recipe team (language=python, kind=library); written by smith"
 language = "python"
 structure = ["vertical-slices"]
 

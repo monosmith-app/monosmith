@@ -71,7 +71,7 @@ func TestPlanUpgradeRewritesTheStackWhenThePluginsChange(t *testing.T) {
 	if strings.Join(stack.Toolchain, ",") != "flake8,pytest" && strings.Join(stack.Toolchain, ",") != "pytest,flake8" {
 		t.Errorf("stack %+v\n%s", stack, plan.After)
 	}
-	if !strings.Contains(stack.Description, "team 1.3.0") || strings.Contains(plan.After, "ruff") {
+	if !strings.Contains(stack.Description, "From the recipe team (language=python)") || strings.Contains(plan.After, "ruff") {
 		t.Errorf("the old stack is still there:\n%s", plan.After)
 	}
 	if len(plan.Starters) != 1 || !strings.Contains(plan.Starters[0], "flake8") || !strings.Contains(plan.Starters[0], "starter files") {
