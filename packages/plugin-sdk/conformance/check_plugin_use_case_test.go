@@ -90,3 +90,29 @@ func TestABadPluginIsReported(t *testing.T) {
 		}
 	}
 }
+
+// badRefs is a toolchain that fills no slot and declares references that
+// name nothing, an unknown level, and itself.
+type badRefs struct{}
+
+func (badRefs) Describe(protocol.InitializeParams) (protocol.InitializeResult, error) {
+	return protocol.InitializeResult{
+		Plugin: protocol.Peer{Name: "refs", Version: "1.0.0"}, Kind: protocol.KindConvention,
+		Roles:     []protocol.Role{protocol.RoleToolchain},
+		Requires:  []protocol.PluginRef{{}, {Level: "platform", Name: "x"}},
+		Conflicts: []protocol.PluginRef{protocol.ConflictsWith("refs")},
+	}, nil
+}
+
+func (badRefs) Contribute(protocol.ContributeParams) (protocol.ContributeResult, error) {
+	return protocol.ContributeResult{}, nil
+}
+
+func TestLevelsAndReferencesAreChecked(t *testing.T) {
+	failures := Check(connect(t, badRefs{}, t.TempDir()), Options{}).Failures()
+	for _, want := range []string{"a toolchain names the slots it fills", "requires plugin: a known reference", "requires platform plugin x: a known reference", "conflicts with plugin refs: a known reference"} {
+		if !strings.Contains(failures, want) {
+			t.Errorf("not reported: %s\n%s", want, failures)
+		}
+	}
+}

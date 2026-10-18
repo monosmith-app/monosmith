@@ -26,6 +26,7 @@ func (p *Angular) Describe(params protocol.InitializeParams) (protocol.Initializ
 		Plugin:    protocol.Peer{Name: Name, Version: p.Version},
 		Kind:      protocol.KindConvention,
 		Languages: []string{"node"},
+		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
 		Provides:  []string{"build", "typecheck"},
 		Stacks: []protocol.Stack{{

@@ -28,6 +28,7 @@ func (p *Playwright) Describe(params protocol.InitializeParams) (protocol.Initia
 		Plugin:    protocol.Peer{Name: Name, Version: p.Version},
 		Kind:      protocol.KindConvention,
 		Languages: []string{"node"},
+		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  []string{TaskName},
 		Stacks: []protocol.Stack{{
