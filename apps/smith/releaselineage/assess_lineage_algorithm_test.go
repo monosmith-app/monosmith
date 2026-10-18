@@ -56,3 +56,29 @@ func TestAssess(t *testing.T) {
 		t.Errorf("web remedy: %s", got["web"].Message)
 	}
 }
+
+func TestTwoProjectsMaySharePackageNameInDifferentRegistries(t *testing.T) {
+	// A Python and a Dart package, both called opencraw, in one repository.
+	tags := []string{"opencraw@0.3.0", "opencraw-dart@0.1.0"}
+	subjects := []Subject{
+		{Project: "opencraw", Prefix: "opencraw@", Tags: tags},
+		// The Dart package's own name makes opencraw@ an earlier name, but
+		// another project releases under it.
+		{Project: "opencraw-dart", Prefix: "opencraw-dart@", Alternatives: []string{"opencraw@"}, Tags: tags},
+	}
+	if got := Assess(subjects); len(got) != 0 {
+		t.Errorf("findings %+v; a tag another project's prefix owns is not stranded", got)
+	}
+}
+
+func TestAnExplicitPrefixWithNoTagsYetIsAFirstRelease(t *testing.T) {
+	tags := []string{"@acme/web@1.4.0"}
+	stranded := Subject{Project: "web", Prefix: "web@", Alternatives: []string{"@acme/web@"}, Tags: tags}
+	if got := Assess([]Subject{stranded}); len(got) != 1 || !got[0].Blocking {
+		t.Fatalf("an implicit prefix with only old-name tags is stranded: %+v", got)
+	}
+	stranded.Explicit = true
+	if got := Assess([]Subject{stranded}); len(got) != 0 {
+		t.Errorf("findings %+v; a deliberate prefix with no tags is trusted", got)
+	}
+}
