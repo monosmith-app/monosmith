@@ -42,9 +42,9 @@ func Command(version string) *cobra.Command {
 		Short: "List the built-in plugins and the ones installed on the plugin search path",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			type row struct {
-				Name         string          `json:"name"`
-				Version      string          `json:"version,omitempty"`
-				Source       string          `json:"source"`
+				Name         string               `json:"name"`
+				Version      string               `json:"version,omitempty"`
+				Source       string               `json:"source"`
 				Roles        []protocol.Role      `json:"roles,omitempty"`
 				Provides     []string             `json:"provides,omitempty"`
 				Requires     []protocol.PluginRef `json:"requires,omitempty"`
