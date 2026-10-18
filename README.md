@@ -81,7 +81,8 @@ Everything is in [docs/](docs/README.md), in four sections:
 - **Reference:** [configuration (`smith.toml`)](docs/reference/configuration.md),
   [tasks, cache and affected](docs/reference/tasks-and-cache.md),
   [CI pipelines](docs/reference/ci.md), [releasing](docs/reference/releasing.md),
-  [stacks](docs/reference/stacks.md), [conventions](docs/reference/conventions.md),
+  [stacks](docs/reference/stacks.md), [recipes](docs/reference/recipes.md),
+  [conventions](docs/reference/conventions.md),
   [plugins and the protocol](docs/reference/plugins.md)
 - **Design:** [architecture](docs/design/architecture.md),
   [decisions](docs/design/decisions.md), [research](docs/design/research/)
