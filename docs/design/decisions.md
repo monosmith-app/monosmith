@@ -121,6 +121,13 @@ releases it. Commit subjects matter, so commitlint guards them.
 **Decision.** The Node plugin runs npm workspaces. pnpm and yarn are not
 supported, and `smith convert` reports them as such.
 
+**Clarified 2026-10-18.** This is not a gap to close. People do not call the
+package manager themselves: `smith install` and `smith uninstall` find the
+project's ecosystem and run the right tool through its plugin, so not
+supporting pnpm or yarn does not make smith harder to use. A workspace coming
+from another tool (Turborepo, a pnpm or yarn Nx workspace) is converted to npm
+workspaces instead of being refused (#353).
+
 ## 8. Containers through a docker plugin
 
 2026-10-16 · #83 · #213
@@ -266,3 +273,18 @@ suites run once a day at 03:00 UTC and when started by hand.
 **Consequences.** A change can reach `main`, and a release, before the
 end-to-end suites have run on it; the daily run catches it within a day, and
 a change the unit tests can't judge gets a manual run before merging.
+
+## 18. Improvements are judged by how much easier smith is than its competitors
+
+2026-10-18 · #336
+
+**Context.** The product owner keeps research on Nx, Turborepo, Bazel, Moon
+and Pants in Google Drive. Its purpose is to find where MonoSmith must improve
+to be an easier and better tool than they are, not to copy their feature lists.
+
+**Decision.** When ideas from that research (#341 to #353) or elsewhere
+compete for time, the first question is how much easier, safer or more
+predictable they make setting up, running and releasing a polyglot monorepo
+for a team. A feature a competitor has that does not answer that is not a
+priority (distributed task execution, hermetic sandboxing, a Starlark-style
+configuration language).
