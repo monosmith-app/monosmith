@@ -105,6 +105,45 @@ navigator becomes a tab, so the interface works in a small terminal too.
 | Dialog | confirm something that changes the workspace or publishes | open, confirmed, cancelled |
 | Status bar | the command line and the result | idle, running, passed, failed |
 
+## Building blocks: the libraries behind Cuppa's palette
+
+Cuppa's palette (79 components in the app) is made of the Charm libraries and a
+few community packages. Every one of them is a Go package that smith's shell
+can use directly, so the interface is designed in Cuppa and built from the same
+parts:
+
+| Library | What it gives | Used for |
+|---|---|---|
+| **Lip Gloss** | styles, borders, padding, layout (join, place), and its table, list and tree renderers | the panes, borders, tokens, the status bar, static tables and trees |
+| **Bubbles** | spinner, progress, viewport, list, table, text input, text area, paginator, file picker, timer and stopwatch, help and key bindings | running indicators, the log viewer, project and task lists, the command palette's input, search boxes, the help footer |
+| **Huh** | forms: input, text, select, multi-select, confirm, note | a recipe's choices, command arguments, confirmation dialogs |
+| **Glamour** | markdown rendering with themes | showing docs, `smith explain` output, release notes and a recipe's description |
+| **ntcharts** | terminal charts: bar, line, sparkline, time series | task durations, cache hit rate over time, release frequency |
+| Community components | mouse hit-testing zones, menus, tab bars, tree views | the menu bar, tabs, clickable regions (a zone library gives Bubble Tea the mouse hit-testing it lacks) |
+
+How the components above map to them:
+
+| MonoSmith component | Built from |
+|---|---|
+| Menu bar, context menu | a community menu, with Lip Gloss borders, and mouse zones |
+| Tabs | a community tab bar |
+| Tree (workspace, projects, tasks) | Lip Gloss tree for display; a Bubbles list with indentation for the interactive one |
+| Task list and progress | a Bubbles table or list, spinners and progress bars |
+| Log viewer | a Bubbles viewport with follow, search and filter on top |
+| Form (recipe choices, arguments) | Huh |
+| Dialog | Huh confirm in a Lip Gloss double border |
+| Command palette | a Bubbles text input over a Bubbles list |
+| Inspector | a Lip Gloss column of key and value rows; Glamour for long text |
+| Charts (durations, cache hits) | ntcharts |
+| Status bar | Lip Gloss, with Bubbles help for the key hints |
+
+**Designing it in Cuppa.** Cuppa exports pictures and text, not Go code, so it
+is for the design stage: the screens above (the main layout, a run in progress,
+a failed run, the recipe form, doctor's findings, the release preview, and the
+compact layout) are drawn in it from this palette, saved as `.cuppa` files and
+exported as images, and kept in `docs/design/tui/`. The Go interface is built
+from the same libraries and checked against those pictures.
+
 ## Interaction
 
 | Mouse | Keyboard |
@@ -246,5 +285,10 @@ and releasing show a dialog with the command first.
   the floor?
 - **Mouse zone library:** Bubble Tea's own mouse messages need hit-testing; a
   small library for zones is the usual answer. A choice for the implementation.
+- **Who draws the screens in Cuppa:** the product owner knows what the
+  interface should feel like; the screens listed above are the brief. Cuppa's
+  file format is specified (`docs/spec/cuppa-format.md` in its repository), so
+  a first draft of each can also be generated as a `.cuppa` file to refine by
+  hand.
 - **A desktop app:** cuppa also ships one. Not planned; the IDE plugins cover
   the graphical case.
