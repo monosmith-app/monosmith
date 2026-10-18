@@ -45,20 +45,25 @@ export type { Greeting } from './greeting.contract.ts'
 `,
 }
 
-// sliceTemplates are the greeting slice and the project's tsconfigs.
+// sliceTemplates are the greeting slice and the project's tsconfigs. The
+// project's tsconfig sets rewriteRelativeImportExtensions itself: the starter
+// imports './greeting/index.ts' (Node's ESM needs a file, not a directory),
+// and a base smith did not write, such as a converted Nx workspace's, may not
+// allow .ts specifiers.
 var sliceTemplates = withGreetingSlice(map[string]string{
 	"[[.Dir]]/tsconfig.json": `{
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "[[.Build]]"
+    "outDir": "[[.Build]]",
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src"]
 }
 `,
 	"[[.Dir]]/tsconfig.build.json": `{
   "extends": "./tsconfig.json",
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.[[.TestSuffix]].ts"]
 }
 `,
 })

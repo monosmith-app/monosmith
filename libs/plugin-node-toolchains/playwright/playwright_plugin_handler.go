@@ -52,7 +52,12 @@ func (p *Playwright) Doctor(params protocol.DoctorParams) (protocol.DoctorResult
 }
 
 // Generate implements serve.Generator: it runs after the node plugin has
-// generated the project.
+// generated the project. Only a stack that names playwright gets a suite:
+// as a workspace convention it runs the e2e task of projects that have a
+// suite, and a new project with no UI must not get a browser test (#314).
 func (p *Playwright) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
+	if params.Convention {
+		return protocol.GenerateResult{}, nil
+	}
 	return tooling.Apply(p.root, params, setup(p.root, params))
 }

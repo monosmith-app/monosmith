@@ -86,6 +86,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		return runSteps(ctx, s.Root, steps, out)
 	case "verify":
 		base := affected.BaseFromEnv()
+		before := uncommitted(s)
 		// Native projects are verified by the native job, on every OS.
 		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: []string{"!tag:" + release.NativeTag}, Affected: base != "", Base: base, Out: out})
 		if err != nil {
@@ -97,7 +98,10 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if !summary.OK() {
 			return taskrun.ErrTasksFailed
 		}
-		return verifyMarked(ctx, s, base, out)
+		if err := verifyMarked(ctx, s, base, out); err != nil {
+			return err
+		}
+		return verifyClean(s, before, summary)
 	case "pack":
 		// The directory always exists, so the artifact upload has a path.
 		if err := os.MkdirAll(filepath.Join(s.Root, filepath.FromSlash(DropDir)), 0o755); err != nil {
@@ -137,6 +141,41 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		return err
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
+}
+
+// uncommitted lists the tracked files changed in the working tree, as the
+// release's preflight sees them; nil when git cannot say.
+func uncommitted(s *session.Session) []string {
+	out, err := s.Git.Run("status", "--porcelain", "--untracked-files=no")
+	if err != nil {
+		return nil
+	}
+	return release.Uncommitted(out)
+}
+
+// verifyClean fails verify when its tasks left tracked files changed: the
+// release refuses a dirty tree, and the pull request is where to find out.
+// A file already changed before verify fails it only in CI, where checkout
+// starts clean; on a laptop it is the developer's own edit.
+func verifyClean(s *session.Session, before []string, summary taskrun.Summary) error {
+	after := uncommitted(s)
+	if len(after) == 0 {
+		return nil
+	}
+	ran := make([]string, 0, len(summary.Results))
+	for _, r := range summary.Results {
+		ran = append(ran, r.Task)
+	}
+	var changes []TrackedChange
+	for _, c := range TrackedChanges(before, after, s.Graph.Projects, ran) {
+		if !c.Before || os.Getenv("CI") != "" {
+			changes = append(changes, c)
+		}
+	}
+	if len(changes) == 0 {
+		return nil
+	}
+	return errors.New(ExplainTrackedChanges(changes))
 }
 
 // verifyMarked runs, after the verify tasks, the tasks a plugin marked for

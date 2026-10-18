@@ -33,6 +33,11 @@ const SOURCE = new RegExp(`${EXTENSION}$`)
 const ENTRY = new RegExp(String.raw`^(?:index|main|content\.config)${EXTENSION}$`)
 const BARREL = new RegExp(`^index${EXTENSION}$`)
 const SIBLING = /^\.\.\/([^./][^/]*)(\/.*)?$/
+// A slice's index named as a file. Node's own ESM resolution (TypeScript's
+// `nodenext`) cannot import a directory, so `'../billing/index.ts'` (or the
+// `.js` it is emitted as) is the same door as `'../billing'`.
+const INDEX_FILE = /^\/index\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/
+const OWN_INDEX = /^\.\/index(?:\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs))?$/
 
 /**
  * Where a file sits: its project's `src`, the subfeature it belongs to (`null`
@@ -192,7 +197,7 @@ export const plugin = {
       meta: {
         type:     'problem',
         messages: {
-          deep: 'Reach "{{slice}}" through its index - import from \'../{{slice}}\', not from a file inside it.',
+          deep: 'Reach "{{slice}}" through its index - import from \'../{{slice}}\' (or \'../{{slice}}/index.ts\' under nodenext), not from a file inside it.',
           self: 'Import the files of your own subfeature directly, never through its own index.',
         },
         schema: [],
@@ -202,8 +207,8 @@ export const plugin = {
 
         return onSpecifiers((specifier, node) => {
           const sibling = SIBLING.exec(specifier)
-          if (sibling?.[2] !== undefined) context.report({ node, messageId: 'deep', data: { slice: sibling[1] } })
-          if (['.', './', './index'].includes(specifier)) context.report({ node, messageId: 'self' })
+          if (sibling?.[2] !== undefined && !INDEX_FILE.test(sibling[2])) context.report({ node, messageId: 'deep', data: { slice: sibling[1] } })
+          if (specifier === '.' || specifier === './' || OWN_INDEX.test(specifier)) context.report({ node, messageId: 'self' })
         })
       },
     },
@@ -248,7 +253,8 @@ export const plugin = {
  *   its role (`.use-case.ts`, `.policy.ts`, `.algorithm.ts`... see `ROLES`); a
  *   subfeature is flat; only `index` and `main` sit at the root of `src`.
  * - `vertical-slices/no-deep-import` - a sibling subfeature is reached through
- *   its `index` (`'../billing'`), never a file inside it (`'../billing/fee.policy'`),
+ *   its `index` (`'../billing'`, or `'../billing/index.ts'` where Node's ESM
+ *   resolution needs a file), never a file inside it (`'../billing/fee.policy'`),
  *   and a subfeature never imports its own `index`.
  * - `vertical-slices/no-slice-cycle` - no two subfeatures importing each other,
  *   **type-only imports included**. This is the gap `import-x/no-cycle` leaves:

@@ -361,6 +361,10 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(true, "ci", "generate"); !strings.Contains(w.read(".github/workflows/ci.yml"), "run: smith ci native") {
 		t.Fatalf("no native job:\n%s", out)
 	}
+	// CI starts from a clean checkout, and verify fails on a tracked file
+	// changed under it, so the workspace is committed first.
+	w.git("add", "-A")
+	w.git("commit", "-qm", "feat: add every kind of project")
 	for _, phase := range []string{"setup", "audit", "verify", "pack", "native"} {
 		out := w.smith(true, "ci", phase)
 		if !strings.Contains(out, "smith ci "+phase+" passed") {
@@ -395,8 +399,12 @@ func TestGoldenPath(t *testing.T) {
 	}
 
 	// 5. Affected follows dependents and stays narrow.
+	// The phases changed no tracked file, which verify now guarantees.
+	if status := strings.TrimSpace(w.git("status", "--porcelain", "--untracked-files=no")); status != "" {
+		t.Fatalf("the CI phases changed tracked files:\n%s", status)
+	}
 	w.git("add", "-A")
-	w.git("commit", "-qm", "feat: add every kind of project")
+	w.git("commit", "--allow-empty", "-qm", "chore: after the ci phases")
 	w.git("branch", "base")
 	w.write("libs/ui/src/greeting/extra.ts", "export const extra = 1\n")
 	affected := w.smith(true, "affected", "--base", "base")

@@ -106,7 +106,7 @@ var templates = withGreetingSlice(map[string]string{
   "extends": "./tsconfig.json",
   "files": ["src/main.ts"],
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.[[.TestSuffix]].ts"]
 }
 `,
 	"[[.Dir]]/index.html": `<!doctype html>

@@ -167,6 +167,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 			parts = append(parts, s.Plugins.Get(n))
 		}
 	}
+	conventions := map[string]bool{}
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
 		conv, configured := s.Config.Conventions[name]
@@ -179,6 +180,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		}
 		if len(targets) > 0 {
 			parts = append(parts, c)
+			conventions[name] = true
 		}
 	}
 	ran := false
@@ -187,8 +189,10 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 			continue
 		}
 		fmt.Fprintf(out, "Adding %s\n", c.Info.Plugin.Name)
+		asked := params
+		asked.Convention = conventions[c.Info.Plugin.Name]
 		var added protocol.GenerateResult
-		if err := c.Call(protocol.MethodGenerate, params, &added, 20*time.Minute); err != nil {
+		if err := c.Call(protocol.MethodGenerate, asked, &added, 20*time.Minute); err != nil {
 			return fmt.Errorf("plugin %s: %w", c.Info.Plugin.Name, err)
 		}
 		res.Files = append(res.Files, added.Files...)
