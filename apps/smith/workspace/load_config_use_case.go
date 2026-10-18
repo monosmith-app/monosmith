@@ -115,14 +115,17 @@ func Validate(cfg *Config) error {
 		cfg.Cache.MaxSizeMB = 2048
 	}
 	for name, conv := range cfg.Conventions {
-		if name != "docker" && (conv.Registry != "" || conv.Push != nil) {
-			return fmt.Errorf("%s: [conventions.%s] registry and push are settings of the docker convention", FileName, name)
+		if name != "docker" && (conv.Registry != "" || conv.Push != nil || conv.Verify != nil) {
+			return fmt.Errorf("%s: [conventions.%s] registry, push and verify are settings of the docker convention", FileName, name)
 		}
 	}
 	for name, po := range cfg.Projects {
 		if po.Docker != nil {
 			if _, ok := cfg.Conventions["docker"]; !ok {
 				return fmt.Errorf("%s: [projects.%s.docker] needs [conventions.docker]", FileName, name)
+			}
+			if c := po.Docker.Context; c != "" && !ValidContext(c) {
+				return fmt.Errorf("%s: [projects.%s.docker] context %q must be a workspace-relative directory with forward slashes (\".\" or apps/%s, say)", FileName, name, c, name)
 			}
 		}
 		if po.Release == nil {

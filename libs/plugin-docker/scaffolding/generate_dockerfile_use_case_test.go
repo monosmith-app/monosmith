@@ -42,6 +42,20 @@ func TestGenerate(t *testing.T) {
 	if res, _ := Generate(ws, app("worker")); len(res.Files) != 0 || !strings.Contains(res.Notes[0], "Write apps/worker/Dockerfile") {
 		t.Errorf("an app without a recipe gets a note: %+v", res)
 	}
+	write("apps/svc/package.json", `{"name":"@acme/svc","scripts":{"build":"tsc"}}`)
+	if res, _ := Generate(ws, app("svc")); len(res.Files) != 1 {
+		t.Errorf("a Node app that builds gets a Dockerfile: %+v", res)
+	}
+	d := read("apps/svc/Dockerfile")
+	for _, want := range []string{"FROM node:24-slim", "COPY dist/apps/svc/package.json dist/apps/svc/package-lock.json ./", "COPY dist/apps/svc/workspace_modules ./workspace_modules", "RUN npm ci --omit=dev --ignore-scripts", `CMD ["node", "."]`} {
+		if !strings.Contains(d, want) {
+			t.Errorf("Node Dockerfile lacks %q:\n%s", want, d)
+		}
+	}
+	write("apps/plain/package.json", `{"name":"@acme/plain"}`)
+	if res, _ := Generate(ws, app("plain")); len(res.Files) != 0 {
+		t.Errorf("a Node app with no build is the author's to ship: %+v", res)
+	}
 	write("apps/api/Dockerfile", "FROM scratch\n")
 	if res, _ := Generate(ws, app("api")); len(res.Files) != 0 || read("apps/api/Dockerfile") != "FROM scratch\n" {
 		t.Error("an existing Dockerfile is kept")

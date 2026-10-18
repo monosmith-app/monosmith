@@ -52,7 +52,7 @@ can run locally.
 |---|---|
 | `smith ci setup` | every setup step the plugins contributed |
 | `smith ci audit` | dependency vulnerability checks; non-blocking ones warn |
-| `smith ci verify` | `lint`, `typecheck`, `test`, `build` — affected projects only on a pull request, everything otherwise |
+| `smith ci verify` | `lint`, `typecheck`, `test`, `build` — affected projects only on a pull request, everything otherwise; then the tasks a plugin marks for verify, such as the docker convention's `image` (skipped, with a warning, where their program is not installed) |
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
 | `smith ci pack` | on a push to the release branch: every project's `package` task into `dist/drop`, kept as the run's `drop` artifact |
 | `smith ci native` | in a job per OS, after the ci job: lint, test, build and package the projects tagged native |

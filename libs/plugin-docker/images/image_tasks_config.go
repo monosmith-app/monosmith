@@ -16,6 +16,12 @@ const TaskName = "image"
 // Dockerfile is the file that makes an app ship as an image.
 const Dockerfile = "Dockerfile"
 
+// PruneTask is the task a language plugin gives an app whose image installs
+// from a standalone deploy output (the node plugin's prune: a production
+// package.json, lockfile and workspace_modules/ in the build directory). The
+// image is built after it.
+const PruneTask = "prune"
+
 // Name is the image's name: the project's, lowercase as registries require.
 func Name(p protocol.Project) string { return strings.ToLower(p.Name) }
 
@@ -29,15 +35,35 @@ func Ships(workspaceRoot string, p protocol.Project) bool {
 	return err == nil
 }
 
-// BuildArgs are docker build's arguments for the project's Dockerfile, with
-// the workspace as the context (a Dockerfile copies the app's build from
-// dist/, or builds from the sources it needs), tagged with each tag.
+// BuildArgs are docker build's arguments for the project's Dockerfile,
+// tagged with each tag. The context is the workspace (a Dockerfile copies
+// the app's build from dist/, or builds from the sources it needs), or the
+// directory [projects.<name>.docker] context names.
 func BuildArgs(p protocol.Project, tags ...string) []string {
 	argv := []string{"docker", "build", "-f", path.Join(p.Root, Dockerfile)}
 	for _, t := range tags {
 		argv = append(argv, "-t", t)
 	}
-	return append(argv, ".")
+	return append(argv, Context(p))
+}
+
+// Verified reports whether smith ci verify builds the app's image on a pull
+// request that affects it, so a broken Dockerfile fails there and not at
+// the release: yes unless [conventions.docker] or the app's docker settings
+// say verify = false. The image is built, never pushed, and only for
+// affected apps, where Docker is installed.
+func Verified(p protocol.Project) bool {
+	verify, ok := p.Settings["docker"]["verify"].(bool)
+	return !ok || verify
+}
+
+// Context is the image's build context, workspace-relative: "." unless the
+// project's docker settings name another directory.
+func Context(p protocol.Project) string {
+	if c, _ := p.Settings["docker"]["context"].(string); c != "" {
+		return c
+	}
+	return "."
 }
 
 // Contribute gives every app that ships an image task, run from the
@@ -57,9 +83,12 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 			Command:     BuildArgs(p, Name(p)+":"+version, Name(p)+":latest"),
 			Cwd:         ".",
 			Description: "Build the app's container image (" + Name(p) + ":" + version + ")",
+			Verify:      Verified(p),
 		}
-		if _, ok := p.Tasks["build"]; ok {
-			task.DependsOn = []string{"build"}
+		for _, before := range []string{"build", PruneTask} {
+			if _, ok := p.Tasks[before]; ok {
+				task.DependsOn = append(task.DependsOn, before)
+			}
 		}
 		res.Projects[p.Name] = protocol.Contribution{Tasks: map[string]protocol.Task{TaskName: task}}
 	}

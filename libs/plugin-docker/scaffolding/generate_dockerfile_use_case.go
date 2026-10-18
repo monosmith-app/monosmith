@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -19,13 +20,30 @@ var webMarkers = []string{"index.html", "angular.json", "astro.config.mjs"}
 var goDirective = regexp.MustCompile(`(?m)^go\s+(\d+\.\d+)`)
 
 type templateData struct {
-	Dir, GoVersion string
+	Dir, GoVersion, NodeVersion string
+}
+
+// nodeAppBuilds reports whether a directory is a Node app with a build
+// script: its build is what the image installs, pruned.
+func nodeAppBuilds(dir string) bool {
+	raw, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		return false
+	}
+	var manifest struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if json.Unmarshal(raw, &manifest) != nil {
+		return false
+	}
+	_, ok := manifest.Scripts["build"]
+	return ok
 }
 
 // Generate writes a new app's Dockerfile, after its language plugin wrote
 // the app: a Go app builds its binary in Docker, a static web app is
-// served by nginx. Another app gets a note: its Dockerfile is the author's
-// to write. Libraries and packages do not ship as images.
+// served by nginx, a Node app that builds installs from its pruned build.
+// Another app gets a note: its Dockerfile is the author's to write. Libraries and packages do not ship as images.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	res := protocol.GenerateResult{Files: []string{}}
 	if params.Kind != protocol.ProjectApp {
@@ -48,6 +66,10 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 		if _, err := os.Stat(filepath.Join(dir, marker)); err == nil && dockerfile == "" {
 			dockerfile = webDockerfile
 		}
+	}
+	if dockerfile == "" && nodeAppBuilds(dir) {
+		data.NodeVersion = "24"
+		dockerfile = nodeDockerfile
 	}
 	if dockerfile == "" {
 		res.Notes = append(res.Notes, "Write "+params.Directory+"/"+images.Dockerfile+" (the context is the workspace) to ship "+params.Name+" as an image.")

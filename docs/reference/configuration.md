@@ -88,10 +88,13 @@ exclude = ["legacy"]                  # projects it leaves alone
 [conventions.docker]                  # an image task for every app with a Dockerfile
 registry = "ghcr.io/acme"             # where release pushes the images; unset: built, never pushed
 push = true                           # default: true when a registry is set
+verify = true                         # smith ci verify builds the affected apps' images; default: true
 
 [projects.api.docker]
 image = "acme-api"                    # the image's name under the registry; default: the project's
 push = false                          # build this app's image, never push it
+context = "apps/api"                  # the build context; default: ".", the workspace
+verify = false                        # this app's image is not built on pull requests
 
 [plugins.external.kiwi]
 version = "^1"                        # installed on the plugin search path (docs/reference/plugins.md)

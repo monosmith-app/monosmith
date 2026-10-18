@@ -1,6 +1,10 @@
 package projectgraph
 
-import "github.com/monosmith-app/monosmith/apps/smith/workspace"
+import (
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+)
 
 // PluginSettings is what a convention reads for one project: its
 // [conventions.<name>] settings with the project's [projects.<project>.<name>]
@@ -17,12 +21,21 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if conv.Push != nil {
 		s["push"] = *conv.Push
 	}
+	if conv.Verify != nil {
+		s["verify"] = *conv.Verify
+	}
 	if d := po.Docker; d != nil {
 		if d.Image != "" {
 			s["image"] = d.Image
 		}
 		if d.Push != nil {
 			s["push"] = *d.Push
+		}
+		if d.Context != "" {
+			s["context"] = strings.TrimSuffix(d.Context, "/")
+		}
+		if d.Verify != nil {
+			s["verify"] = *d.Verify
 		}
 	}
 	if len(s) == 0 {

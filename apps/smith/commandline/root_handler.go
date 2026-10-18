@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
 	"github.com/monosmith-app/monosmith/apps/smith/npmdepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/npmpack"
+	"github.com/monosmith-app/monosmith/apps/smith/npmprune"
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
 	"os"
 
@@ -59,7 +60,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version))
-	root.AddCommand(npmpack.Command(), npmaudit.Command(), npmdepscheck.Command())
+	root.AddCommand(npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))

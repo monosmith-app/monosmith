@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/nativebuild"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
@@ -93,7 +97,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if !summary.OK() {
 			return taskrun.ErrTasksFailed
 		}
-		return nil
+		return verifyMarked(ctx, s, base, out)
 	case "pack":
 		// The directory always exists, so the artifact upload has a path.
 		if err := os.MkdirAll(filepath.Join(s.Root, filepath.FromSlash(DropDir)), 0o755); err != nil {
@@ -133,6 +137,67 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		return err
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
+}
+
+// verifyMarked runs, after the verify tasks, the tasks a plugin marked for
+// verify (protocol.Task.Verify: an app's image), each for the affected
+// projects that have it marked, native ones left to the native job. A task
+// whose program is not installed is skipped with a warning.
+func verifyMarked(ctx context.Context, s *session.Session, base string, out io.Writer) error {
+	byTask, missing := MarkedForVerify(s.Graph.Projects, func(program string) bool {
+		_, err := exec.LookPath(program)
+		return err == nil
+	})
+	for _, m := range missing {
+		warn(out, m)
+	}
+	names := make([]string, 0, len(byTask))
+	for name := range byTask {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Out: out})
+		if err != nil {
+			return err
+		}
+		if len(summary.Results) > 0 {
+			fmt.Fprintln(out, summary.String())
+		}
+		if !summary.OK() {
+			return taskrun.ErrTasksFailed
+		}
+	}
+	return nil
+}
+
+// MarkedForVerify lists, by task, the projects whose task a plugin marked
+// for verify, leaving out native projects, the verify tasks themselves and
+// tasks whose program is not installed (named in missing, for a warning).
+func MarkedForVerify(projects []*projectgraph.Project, installed func(string) bool) (byTask map[string][]string, missing []string) {
+	byTask = map[string][]string{}
+	for _, p := range projects {
+		if slices.Contains(p.Tags, release.NativeTag) {
+			continue
+		}
+		tasks := make([]string, 0, len(p.Tasks))
+		for name := range p.Tasks {
+			tasks = append(tasks, name)
+		}
+		sort.Strings(tasks)
+		for _, name := range tasks {
+			t := p.Tasks[name]
+			if !t.Verify || slices.Contains(VerifyTasks, name) || len(t.Command) == 0 {
+				continue
+			}
+			if program := t.Command[0]; !strings.HasPrefix(program, "{") && !installed(program) {
+				missing = append(missing, fmt.Sprintf("%s:%s not verified: %s is not installed", p.Name, name, program))
+				continue
+			}
+			byTask[name] = append(byTask[name], p.Name)
+		}
+	}
+	return byTask, missing
 }
 
 func runSteps(ctx context.Context, root string, steps []protocol.Step, out io.Writer) error {
