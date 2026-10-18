@@ -96,11 +96,15 @@ exclude = ["legacy"]                  # projects it leaves alone
 
 [conventions.docker]                  # an image task for every app with a Dockerfile
 registry = "ghcr.io/acme"             # where release pushes the images; unset: built, never pushed
+# registries = ["ghcr.io/acme", "docker.io/acme"]   # or several (never with registry): the same image under the same tags in each
+# registries = [{ url = "registry.acme.dev/team", username_env = "ACME_USER", password_env = "ACME_TOKEN" }]
+description_from = "README.md"        # Docker Hub only: the repository description (see releasing.md)
 push = true                           # default: true when a registry is set
 verify = true                         # smith ci verify builds the affected apps' images; default: true
 
 [projects.api.docker]
 image = "acme-api"                    # the image's name under the registry; default: the project's
+registries = ["docker.io/acme"]       # this app's registries (or registry), instead of the convention's
 push = false                          # build this app's image, never push it
 context = "apps/api"                  # the build context; default: ".", the workspace
 verify = false                        # this app's image is not built on pull requests

@@ -154,6 +154,14 @@ type ConventionConfig struct {
 	// Registry is where the docker convention's release pushes images
 	// (ghcr.io/acme). Unset: images are built, never pushed. Docker only.
 	Registry string `toml:"registry"`
+	// Registries is the list form: every image is pushed to each, as
+	// "host/namespace" strings or tables with url, username_env and
+	// password_env. Setting both Registry and Registries is an error.
+	// Docker only.
+	Registries []any `toml:"registries"`
+	// DescriptionFrom is a workspace-relative file (README.md) whose text
+	// becomes the repository description on Docker Hub. Docker only.
+	DescriptionFrom string `toml:"description_from"`
 	// Push turns the docker convention's push off for every app; default
 	// true when a registry is set. Docker only.
 	Push *bool `toml:"push"`
@@ -167,6 +175,12 @@ type DockerOverride struct {
 	// Image is the image's name under the registry; default the project's
 	// name, lowercase.
 	Image string `toml:"image"`
+	// Registry and Registries replace the convention's for this app (the
+	// same forms; setting both is an error).
+	Registry   string `toml:"registry"`
+	Registries []any  `toml:"registries"`
+	// DescriptionFrom replaces the convention's description file.
+	DescriptionFrom string `toml:"description_from"`
 	// Push false builds the image but never pushes it on release.
 	Push *bool `toml:"push"`
 	// Context is the build context, workspace-relative: "." (the workspace,

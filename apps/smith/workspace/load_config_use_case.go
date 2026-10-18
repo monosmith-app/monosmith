@@ -115,9 +115,19 @@ func Validate(cfg *Config) error {
 		cfg.Cache.MaxSizeMB = 2048
 	}
 	for name, conv := range cfg.Conventions {
-		if name != "docker" && (conv.Registry != "" || conv.Push != nil || conv.Verify != nil) {
-			return fmt.Errorf("%s: [conventions.%s] registry, push and verify are settings of the docker convention", FileName, name)
+		if name != "docker" && (conv.Registry != "" || conv.Registries != nil || conv.DescriptionFrom != "" || conv.Push != nil || conv.Verify != nil) {
+			return fmt.Errorf("%s: [conventions.%s] registry, registries, description_from, push and verify are settings of the docker convention", FileName, name)
 		}
+		if name != "docker" {
+			continue
+		}
+		label := "[conventions.docker]"
+		registries, err := checkDockerRegistries(label, conv.Registry, conv.Registries, conv.DescriptionFrom)
+		if err != nil {
+			return fmt.Errorf("%s: %w", FileName, err)
+		}
+		conv.Registries = registries
+		cfg.Conventions[name] = conv
 	}
 	for name, po := range cfg.Projects {
 		if po.Docker != nil {
@@ -127,6 +137,11 @@ func Validate(cfg *Config) error {
 			if c := po.Docker.Context; c != "" && !ValidContext(c) {
 				return fmt.Errorf("%s: [projects.%s.docker] context %q must be a workspace-relative directory with forward slashes (\".\" or apps/%s, say)", FileName, name, c, name)
 			}
+			registries, err := checkDockerRegistries("[projects."+name+".docker]", po.Docker.Registry, po.Docker.Registries, po.Docker.DescriptionFrom)
+			if err != nil {
+				return fmt.Errorf("%s: %w", FileName, err)
+			}
+			po.Docker.Registries = registries
 		}
 		if po.Release == nil {
 			continue

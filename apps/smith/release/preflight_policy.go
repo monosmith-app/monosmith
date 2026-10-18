@@ -74,7 +74,15 @@ func Preflight(s *session.Session, plan Plan) error {
 			}
 		}
 		var ci protocol.CIResult
-		if ok, err := s.Plugins.Call(name, protocol.MethodCI, protocol.CIParams{Projects: projects}, &ci, time.Minute); err != nil || !ok {
+		ok, err := s.Plugins.Call(name, protocol.MethodCI, protocol.CIParams{Projects: projects}, &ci, time.Minute)
+		if err != nil {
+			// A plugin that cannot say what it needs (docker, with registry
+			// settings that contradict each other) would fail the release
+			// later, half-way: say so now.
+			problems = append(problems, fmt.Sprintf("%s: %v", name, err))
+			continue
+		}
+		if !ok {
 			continue
 		}
 		for _, c := range ci.Credentials {
