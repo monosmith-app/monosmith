@@ -22,6 +22,11 @@ func SimpleIndexURL(uploadURL string) string {
 	case strings.Contains(u, "test.pypi.org"):
 		return "https://test.pypi.org/simple/"
 	}
+	// Azure Artifacts names its upload URL .../pypi/upload/ beside the
+	// .../pypi/simple/ index.
+	if strings.HasSuffix(u, "/upload") {
+		return strings.TrimSuffix(u, "/upload") + "/simple/"
+	}
 	u = strings.TrimSuffix(u, "/legacy")
 	return u + "/simple/"
 }

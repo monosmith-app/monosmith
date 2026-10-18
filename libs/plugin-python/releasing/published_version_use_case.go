@@ -1,7 +1,6 @@
 package releasing
 
 import (
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,15 +16,11 @@ var distFile = regexp.MustCompile(`>[A-Za-z0-9_.]+?-(\d+(?:\.\d+)*)(?:\.tar\.gz|
 // (TWINE_REPOSITORY_URL, else PyPI) and returns the newest version among its
 // files. A project the index does not have is not published yet.
 func Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
-	registry := os.Getenv("TWINE_REPOSITORY_URL")
-	if registry == "" {
-		registry = "https://upload.pypi.org/legacy/"
-	}
 	project := params.Project.Name
 	if len(params.Project.Exports) > 0 {
 		project = params.Project.Exports[0]
 	}
-	index := SimpleIndexURL(registry)
+	index := targetOf(params.Project).Index
 	result := protocol.PublishedResult{Registry: index}
 	version, err := NewestOn(index, project)
 	if err != nil {
