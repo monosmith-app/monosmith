@@ -39,6 +39,13 @@ no registry, and no credentials are listed for it. The summary says
 (or `tag_prefix = "v"` for `v0.1.0`). Only one project of a workspace can use
 bare tags, since bare tags of two projects could not be told apart.
 
+For JitPack, smith only tags: JitPack builds the artifact itself from a
+`jitpack.yml` at the repository root, for example
+`install: mvn -pl packages/java -am install`. Its own Maven is older than
+3.6.3, so a build that needs a newer one installs it first in that file (for
+example through SDKMAN: `before_install: sdk install maven 3.9.11`).
+Consumers use the tag as the version.
+
 To force a version, commit a directive anywhere in the repository:
 
 ```
