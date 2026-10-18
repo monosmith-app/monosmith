@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-docker/images"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -24,14 +25,47 @@ var hubClient = &http.Client{Timeout: time.Minute}
 // hubDescriptionLimit is the longest repository description Docker Hub takes.
 const hubDescriptionLimit = 25000
 
+// DescriptionResult says what setting a Docker Hub description did.
+type DescriptionResult struct {
+	// Set are the repositories whose description was set, or would be.
+	Set []string
+	// Failed are the repositories it could not be set for, with the reason.
+	Failed []string
+	// Skipped says why nothing was attempted.
+	Skipped string
+}
+
+// SyncDescription sets the Docker Hub description of an app's image from the
+// file description_from names, for each docker.io registry, without a
+// release: the call is an idempotent PATCH, so running it again is harmless.
+// A failure is in the result and logged as a warning, never an error; the
+// error is for settings that contradict each other. With dryRun it only
+// names the repositories.
+func SyncDescription(workspaceRoot string, p protocol.Project, dryRun bool) (DescriptionResult, error) {
+	if !images.Ships(workspaceRoot, p) {
+		return DescriptionResult{Skipped: "no Dockerfile"}, nil
+	}
+	t, err := images.TargetOf(p, os.Getenv)
+	if err != nil {
+		return DescriptionResult{}, err
+	}
+	return describe(workspaceRoot, t, dryRun), nil
+}
+
 // syncDescription sets the repository description of the image on Docker Hub
 // from the file description_from names, for each docker.io registry. The
 // image is already pushed, so a failure here (a token that cannot edit the
 // repository, a file that is gone) is a warning and never fails the release.
 // Registries other than Docker Hub are left alone.
 func syncDescription(workspaceRoot string, t images.Target) {
+	describe(workspaceRoot, t, false)
+}
+
+func describe(workspaceRoot string, t images.Target, dryRun bool) DescriptionResult {
+	var res DescriptionResult
 	if t.DescriptionFrom == "" {
-		return
+		res.Skipped = "no description_from"
+		return res
 	}
 	var hub []images.Registry
 	for _, r := range t.Registries {
@@ -40,12 +74,14 @@ func syncDescription(workspaceRoot string, t images.Target) {
 		}
 	}
 	if len(hub) == 0 {
-		return
+		res.Skipped = "no docker.io registry"
+		return res
 	}
 	text, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(t.DescriptionFrom)))
 	if err != nil {
 		warn("not setting the Docker Hub description: %v", err)
-		return
+		res.Failed = append(res.Failed, t.DescriptionFrom+": "+err.Error())
+		return res
 	}
 	description := string(text)
 	if len(description) > hubDescriptionLimit {
@@ -53,10 +89,19 @@ func syncDescription(workspaceRoot string, t images.Target) {
 		description = strings.ToValidUTF8(description[:hubDescriptionLimit], "")
 	}
 	for _, r := range hub {
+		repository := r.URL + "/" + t.Image
+		if dryRun {
+			res.Set = append(res.Set, repository)
+			continue
+		}
 		if err := setHubDescription(r, t.Image, description); err != nil {
 			warn("the Docker Hub description of %s/%s was not set: %v. Editing a description may need an access token with Read, Write & Delete permission", r.URL, t.Image, err)
+			res.Failed = append(res.Failed, repository+": "+err.Error())
+			continue
 		}
+		res.Set = append(res.Set, repository)
 	}
+	return res
 }
 
 func warn(format string, args ...any) {

@@ -176,7 +176,7 @@ Content-Length: 85\r\n
 | `generate` | kind, name, directory, workspace info, stack, `convention` when the plugin is asked as a workspace convention rather than as one of the stack's plugins, and `settings` (the plugin's own table from the recipe the project is created from) → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
 | `publish` | project, version, dry run → published / skipped with a reason | `publish` |
-| `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps, credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
+| `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps, `postRelease` steps (run at the end of `smith ci release` after every push to the release branch, released or not; a step that is not blocking only warns), credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
 | `doctor` | the plugin's projects → findings, each with a remedy and, when the plugin can write it, a fix (files' new contents, marked safe when it only restores what the plugin owns) | `doctor` |
 | `remove` | a project whose directory the host deleted, dry run → the files the plugin cleaned (go.work, the lockfile), notes | `remove` |
 | `published` | a project → the newest version its registry has, or none, or that the registry could not be asked | `published` |

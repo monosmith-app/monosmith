@@ -138,7 +138,16 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
 		fmt.Fprint(out, report.Markdown())
-		return err
+		if err != nil {
+			return err
+		}
+		// Work plugins want after every push to the release branch, released
+		// or not (a docs-only commit releases nothing).
+		c, err := Collect(s)
+		if err != nil {
+			return err
+		}
+		return runSteps(ctx, s.Root, c.PostRelease, out)
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
 }

@@ -133,6 +133,24 @@ images are already published when this runs, so a refusal, a missing file or
 missing secrets is a warning in the release log and the release goes on. Other
 registries ignore the setting.
 
+A docs-only commit releases nothing, so the release alone would never send a
+changed file. `smith docker description` sets the description on its own:
+
+```sh
+smith docker description               # every app that names a description_from file
+smith docker description -p api        # one app
+smith docker description --dry-run     # name the repositories, call nothing
+smith docker description --strict      # exit non-zero if a description could not be set
+```
+
+The generated pipeline runs it at the end of `smith ci release`, on every push
+to the release branch, whether or not something was released, when an app has a
+`description_from` file and a `docker.io` registry. That is safe because
+setting a description is an idempotent PATCH: sending the same text again
+changes nothing, so smith keeps no record of what was last sent and needs no
+new state in git. A failure is a warning (the images are published already),
+as in the release.
+
 ### The image and its login
 
 The image is built with the workspace as its context, after the app's

@@ -52,7 +52,9 @@ type Contributions struct {
 	Authenticate []protocol.Toolchain
 	Setup        []protocol.Step
 	Audit        []protocol.Step
-	Credentials  []protocol.Credential
+	// PostRelease are the steps smith ci release runs after the release.
+	PostRelease []protocol.Step
+	Credentials []protocol.Credential
 	// Pack is true when a project has a package task.
 	Pack bool
 	// Native is true when a project is tagged native.
@@ -87,6 +89,7 @@ func (c *Contributions) Add(r protocol.CIResult) {
 	}
 	c.Setup = append(c.Setup, r.Setup...)
 	c.Audit = append(c.Audit, r.Audit...)
+	c.PostRelease = append(c.PostRelease, r.PostRelease...)
 	for _, cred := range r.Credentials {
 		dup := false
 		for _, have := range c.Credentials {
