@@ -2,6 +2,7 @@ package recipedrift
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -50,7 +51,28 @@ func Explain(s *session.Session, name string) (e Explained, ok bool, err error) 
 	}
 	e = Explained{Project: name, Recipe: res.Name, Version: res.Version, Source: ref, Answers: rec.Answers}
 	e.Values = values(res)
+	for i, v := range e.Values {
+		if v.Origin != nil {
+			o := *v.Origin
+			o.File = relativeTo(s.Root, o.File)
+			e.Values[i].Origin = &o
+		}
+	}
 	return e, true, nil
+}
+
+// relativeTo shows a recipe file the way smith.toml names it: relative to the
+// workspace, with forward slashes. A URL, or a file outside the workspace, is
+// left as it is.
+func relativeTo(root, file string) string {
+	if strings.Contains(file, "://") {
+		return file
+	}
+	rel, err := filepath.Rel(root, file)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return file
+	}
+	return filepath.ToSlash(rel)
 }
 
 // values lists a resolution's choices, plugins and settings, in that order,

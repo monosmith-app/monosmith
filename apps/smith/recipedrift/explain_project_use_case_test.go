@@ -1,6 +1,7 @@
 package recipedrift
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -44,6 +45,19 @@ func TestValuesListChoicesPluginsAndSettingsWithTheirOrigin(t *testing.T) {
 	}
 	if !reflect.DeepEqual(rows, want) {
 		t.Errorf("got\n%v\nwant\n%v", rows, want)
+	}
+}
+
+func TestRelativeToShowsARecipeFileTheWaySmithTomlNamesIt(t *testing.T) {
+	root := filepath.FromSlash("/ws")
+	for file, want := range map[string]string{
+		filepath.FromSlash("/ws/recipes/team.recipe.toml"): "recipes/team.recipe.toml",
+		filepath.FromSlash("/elsewhere/team.recipe.toml"):  filepath.FromSlash("/elsewhere/team.recipe.toml"),
+		"https://example.com/team.recipe.toml":             "https://example.com/team.recipe.toml",
+	} {
+		if got := relativeTo(root, file); got != want {
+			t.Errorf("%s: got %s want %s", file, got, want)
+		}
 	}
 }
 
