@@ -27,6 +27,10 @@ type Subject struct {
 	// Alternatives are prefixes its tags may have been made under before
 	// (its package name, scoped or not).
 	Alternatives []string
+	// Explicit means the prefix was set deliberately (tag_prefix in smith.toml
+	// or by its plugin), so a project with no tags of its own under it is a
+	// first release, not stranded tags.
+	Explicit bool
 	// Tags are every tag in the repository.
 	Tags []string
 	// Published is the newest version its registry has; empty when it has

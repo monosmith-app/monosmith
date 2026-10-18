@@ -15,11 +15,18 @@ const (
 // Assess checks each subject's tags against its old names and its registry.
 func Assess(subjects []Subject) []Finding {
 	var out []Finding
+	// A prefix another project releases under is never an earlier name of this
+	// one: two projects may share a package name in different registries
+	// (a Python and a Dart package called opencraw), and each owns its tags.
+	owner := map[string]string{}
+	for _, s := range subjects {
+		owner[s.Prefix] = s.Project
+	}
 	for _, s := range subjects {
 		own, ownTag := newest(s.Tags, s.Prefix)
 		alt, altTag := "", ""
 		for _, prefix := range s.Alternatives {
-			if prefix == s.Prefix {
+			if prefix == s.Prefix || (owner[prefix] != "" && owner[prefix] != s.Project) {
 				continue
 			}
 			if v, tag := newest(s.Tags, prefix); v != "" && (alt == "" || less(alt, v)) {
@@ -27,7 +34,7 @@ func Assess(subjects []Subject) []Finding {
 			}
 		}
 		switch {
-		case alt != "" && (own == "" || less(own, alt)):
+		case alt != "" && !(s.Explicit && own == "") && (own == "" || less(own, alt)):
 			out = append(out, Finding{Project: s.Project, Check: CheckResolve, Blocking: true, Message: fmt.Sprintf(
 				"%s's newest release tag is %s, under another name than its prefix %s, so the next release would start from %s. Set [projects.%s] tag_prefix = %q in smith.toml, or tag the same commit under the current name: git tag %s%s %s^{commit}, then push the tag.",
 				s.Project, altTag, s.Prefix, describe(own, s.Prefix), s.Project, strings.TrimSuffix(altTag, alt), s.Prefix, alt, altTag),

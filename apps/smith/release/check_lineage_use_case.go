@@ -29,7 +29,7 @@ func CheckLineage(s *session.Session, fetch bool) []releaselineage.Finding {
 		if !p.Releases() {
 			continue
 		}
-		subject := releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Tags: tags}
+		subject := releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefix != "", Tags: tags}
 		var res protocol.PublishedResult
 		if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublished, protocol.PublishedParams{Project: p.Project}, &res, time.Minute); ok {
 			if err != nil {
