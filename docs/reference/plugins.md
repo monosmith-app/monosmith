@@ -175,7 +175,7 @@ Content-Length: 85\r\n
 | `generate` | kind, name, directory, workspace info, stack → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
 | `publish` | project, version, dry run → published / skipped with a reason | `publish` |
-| `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps, credentials | `ci` |
+| `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps, credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
 | `doctor` | the plugin's projects → findings, each with a remedy and, when the plugin can write it, a fix (files' new contents, marked safe when it only restores what the plugin owns) | `doctor` |
 | `remove` | a project whose directory the host deleted, dry run → the files the plugin cleaned (go.work, the lockfile), notes | `remove` |
 | `published` | a project → the newest version its registry has, or none, or that the registry could not be asked | `published` |
@@ -192,6 +192,10 @@ A **project** carries its name, root, language, kind (`app`, `lib`,
 identifiers its sources import (`imports` — the host keeps those another
 project exports and turns them into graph edges), its manifest version, an
 optional release tag prefix, its tasks, and the stack its manifest records.
+The host adds `registries`: the private registry the workspace installs from
+and the one the project publishes to, from smith.toml `[registries]` (nil
+means the public registries). A language plugin points its package manager at
+them and publishes there.
 A task marked `verify` is run by `smith ci verify` too, after the verify
 tasks, for the affected projects that have it (the docker convention marks
 an app's `image`); it is skipped, with a warning, where its program is not

@@ -25,6 +25,31 @@ type Config struct {
 	DefaultStacks map[string]string          `toml:"default_stacks"`
 	Tasks         map[string]TaskOverride    `toml:"tasks"`
 	Projects      map[string]ProjectOverride `toml:"projects"`
+	// Registries are private package registries, by name, that the
+	// workspace installs from ([workspace] registry) and publishes to
+	// ([release] registry, [projects.<name>] registry).
+	Registries map[string]RegistryConfig `toml:"registries"`
+}
+
+// RegistryConfig is one private registry: how to sign in to it, and its URL
+// for each ecosystem it serves. Every URL is optional.
+type RegistryConfig struct {
+	// Auth is "azure-artifacts" (the pipeline's own token, through Azure
+	// Pipelines' authenticate tasks), "github-packages" (GITHUB_TOKEN) or
+	// "token" (the variable TokenEnv names).
+	Auth string `toml:"auth"`
+	// TokenEnv names the environment variable holding the token, for auth
+	// "token".
+	TokenEnv string `toml:"token_env"`
+	// NPM is the npm registry URL.
+	NPM string `toml:"npm"`
+	// PyPI is the simple index pip installs from (.../simple/).
+	PyPI string `toml:"pypi"`
+	// PyPIUpload is where twine uploads; default: PyPI with /simple/
+	// replaced by /upload/, as Azure Artifacts names them.
+	PyPIUpload string `toml:"pypi_upload"`
+	// NuGet is the NuGet v3 service index (.../index.json).
+	NuGet string `toml:"nuget"`
 }
 
 // StackConfig is a stack declared in smith.toml: the plugins a project is
@@ -49,6 +74,9 @@ type WorkspaceSection struct {
 	// whose manifests are not projects: discovery leaves them out in every
 	// language, and a change there affects no project.
 	Exclude []string `toml:"exclude"`
+	// Registry names the [registries] entry the workspace installs from;
+	// empty means the public registries.
+	Registry string `toml:"registry"`
 }
 
 // CISection chooses which pipelines smith generates.
@@ -78,6 +106,9 @@ type ReleaseSection struct {
 	// release's commits as notes and an app's assets attached. Needs
 	// GITHUB_TOKEN (or GH_TOKEN). Default: false.
 	GitHubReleases bool `toml:"github_releases"`
+	// Registry names the [registries] entry packages are published to;
+	// empty means [workspace] registry, and then the public registries.
+	Registry string `toml:"registry"`
 }
 
 // CacheSection configures the local task cache.
@@ -161,6 +192,9 @@ type ProjectOverride struct {
 	// the mirror's main branch and tagged vX.Y.Z there, for a registry that
 	// reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN.
 	SplitRepo string `toml:"split_repo"`
+	// Registry names the [registries] entry this package is published to,
+	// instead of [release] registry.
+	Registry string `toml:"registry"`
 	// Docker is the app's settings for the docker convention.
 	Docker *DockerOverride         `toml:"docker"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`

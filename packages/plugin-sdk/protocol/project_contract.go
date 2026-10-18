@@ -40,6 +40,10 @@ type Project struct {
 	// project's [projects.<project>.<name>] on top. Set by the host; a plugin
 	// reads its own entry.
 	Settings map[string]map[string]any `json:"settings,omitempty"`
+	// Registries are the private registries the project installs from and
+	// publishes to, from smith.toml [registries]; nil means the public ones.
+	// Set by the host.
+	Registries *Registries `json:"registries,omitempty"`
 }
 
 // ProjectKind is the universal kind vocabulary.

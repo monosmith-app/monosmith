@@ -40,15 +40,14 @@ func WriteVersion(workspaceRoot string, params protocol.VersionParams) (protocol
 	return protocol.VersionResult{Files: []string{manifest}}, nil
 }
 
-// Publish uploads the build in the workspace's dist/<project dir> with twine. TWINE_REPOSITORY_URL picks the index;
-// PYPI_TOKEN, when set, is used as an API token.
+// Publish uploads the build in the workspace's dist/<project dir> with
+// twine, to the registry smith.toml names for it, else PyPI
+// (TWINE_REPOSITORY_URL picks another index; PYPI_TOKEN, when set, is the
+// API token).
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))
-	registry := os.Getenv("TWINE_REPOSITORY_URL")
-	if registry == "" {
-		registry = "https://upload.pypi.org/legacy/"
-	}
-	result := protocol.PublishResult{Registry: registry}
+	target := targetOf(params.Project)
+	result := protocol.PublishResult{Registry: target.Upload}
 	if params.DryRun {
 		result.Skipped = "dry run"
 		return result, nil
@@ -73,7 +72,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	for i, f := range files {
 		names[i] = filepath.Base(f)
 	}
-	present := Uploaded(SimpleIndexURL(registry), project, names)
+	present := Uploaded(target.Index, project, names)
 	var missing []string
 	for i, f := range files {
 		if !present[names[i]] {
@@ -84,12 +83,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 		result.Skipped = "already published"
 		return result, nil
 	}
-	var env []string
-	if token := os.Getenv("PYPI_TOKEN"); token != "" && os.Getenv("TWINE_PASSWORD") == "" {
-		env = append(env, "TWINE_USERNAME=__token__", "TWINE_PASSWORD="+token)
-	}
-	argv := append([]string{venv.Path(workspaceRoot), "-m", "twine", "upload", "--non-interactive", "--disable-progress-bar"}, missing...)
-	if out, err := Twine(dir, argv, env); err != nil {
+	argv := append([]string{venv.Path(workspaceRoot), "-m", "twine", "upload", "--non-interactive", "--disable-progress-bar"}, target.Args...)
+	argv = append(argv, missing...)
+	if out, err := Twine(dir, argv, target.Env); err != nil {
 		if strings.Contains(out, "File already exists") || strings.Contains(out, "409") {
 			result.Skipped = "already published"
 			return result, nil

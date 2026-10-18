@@ -46,6 +46,7 @@ name = "acme"                         # required
 scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
+registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", or several
@@ -57,6 +58,7 @@ native_linux_packages = []            # apt packages the native job installs on 
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
 github_releases = false               # a GitHub Release per tag (needs GITHUB_TOKEN)
+registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
@@ -81,6 +83,13 @@ deploy = []
 [projects.web]
 stack = "node-vitest"                 # replaces the stack web's manifest records
 
+[projects.sdk]
+registry = "public-npm"               # this package publishes here instead of [release] registry
+
+[registries.libs]                     # a private registry (below)
+auth = "azure-artifacts"              # or "github-packages", or "token" with token_env
+npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
+
 [conventions.vertical-slices]         # apply a convention (docs/reference/conventions.md)
 languages = ["go"]                    # default: every language it supports
 exclude = ["legacy"]                  # projects it leaves alone
@@ -102,6 +111,69 @@ version = "^1"                        # installed on the plugin search path (doc
 [plugins.external.rust]
 command = ["smith-plugin-rust"]        # any executable speaking the protocol
 ```
+
+## Private registries
+
+`[registries.<name>]` names a private package registry: an Azure Artifacts
+feed, GitHub Packages, or any registry that takes a token. Give it the URL of
+each ecosystem it serves, all optional, and how CI signs in:
+
+| `auth` | Signs in with | Secrets to create |
+|---|---|---|
+| `azure-artifacts` | Azure Pipelines' own authenticate tasks (`npmAuthenticate@0`, `PipAuthenticate@1`, `TwineAuthenticate@1`, `NuGetAuthenticate@1`) and the pipeline's token | none |
+| `github-packages` | the workflow's `GITHUB_TOKEN`, with `packages: read` (or `write` to publish) | none |
+| `token` | the variable `token_env` names | that variable |
+
+Then `[workspace] registry` makes installs resolve from it, and
+`[release] registry` (default: the install registry) or `[projects.<name>]
+registry` makes packages publish there. Without them nothing changes: the
+public registries, as before.
+
+An Azure Artifacts feed for npm, Python and .NET, end to end:
+
+```toml
+[workspace]
+name = "libs"
+registry = "acme-libs"                # install from the feed; its upstream sources serve npmjs.com, PyPI and nuget.org
+
+[ci]
+providers = ["azure"]
+
+[registries.acme-libs]
+auth = "azure-artifacts"
+npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
+pypi = "https://pkgs.dev.azure.com/acme/_packaging/libs/pypi/simple/"   # pypi_upload defaults to .../pypi/upload/
+nuget = "https://pkgs.dev.azure.com/acme/_packaging/libs/nuget/v3/index.json"
+```
+
+What smith does with it:
+
+- **npm:** `smith doctor --fix` writes a block into the workspace's `.npmrc`
+  (between `# smith:registry` markers; the rest of the file stays yours):
+  `registry=` the feed, and for a token or GitHub Packages registry the
+  `_authToken` line reading the variable. GitHub Packages serves only its own
+  scopes, so it is set for the packages' scope (`@acme:registry=`).
+- **Python:** CI setup points the venv's pip at the index (`pip config
+  --site`), so every install through `.venv` uses it; twine uploads to
+  `pypi_upload`.
+- **.NET:** `smith doctor --fix` writes `nuget.config` with the feed (and
+  nuget.org beside it, unless the feed is Azure Artifacts, whose upstream
+  sources serve it). A `nuget.config` without smith's marker comment is yours:
+  doctor shows the change and leaves it to you.
+- **CI:** the pipeline signs in before setup, gives setup the token when
+  installs need one, and drops `NODE_AUTH_TOKEN`, `PYPI_TOKEN` and
+  `NUGET_API_KEY` for packages published to the feed.
+- **What is left to you:** `smith ci check` lists it in the provider's terms.
+  For Azure Artifacts: give the project's build service the Feed Publisher
+  (Contributor) role on the feed, add the upstream sources, and on a laptop
+  sign in once with vsts-npm-auth, artifacts-keyring or the Azure Artifacts
+  Credential Provider.
+
+`auth = "azure-artifacts"` signs in only on Azure Pipelines, and
+`github-packages` only on GitHub Actions: on another provider (GitLab
+included) use `auth = "token"` with a personal access token. With `token`,
+pip reads its credentials from `~/.netrc` or a keyring; smith sets only the
+index.
 
 ## Leaving directories out
 

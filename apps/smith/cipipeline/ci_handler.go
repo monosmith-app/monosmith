@@ -84,5 +84,31 @@ func Command(version string) *cobra.Command {
 	}
 	generate.Flags().BoolVar(&check, "check", false, "report drift without writing")
 	cmd.AddCommand(generate)
+	cmd.AddCommand(&cobra.Command{
+		Use:   "check",
+		Short: "List what to set up by hand for the pipelines: secrets, and each private registry's permissions",
+		Args:  cobra.NoArgs,
+		RunE: func(c *cobra.Command, _ []string) error {
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: c.ErrOrStderr()})
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			contributions, err := Collect(s)
+			if err != nil {
+				return err
+			}
+			steps := ManualSteps(s.Config, NewModel(contributions, s.Version, s.Config.Release.Branch))
+			if len(steps) == 0 {
+				fmt.Fprintln(c.OutOrStdout(), "nothing to set up by hand")
+				return nil
+			}
+			fmt.Fprintln(c.OutOrStdout(), "To set up by hand before the pipelines run:")
+			for _, step := range steps {
+				fmt.Fprintln(c.OutOrStdout(), "  - "+step)
+			}
+			return nil
+		},
+	})
 	return cmd
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -42,22 +43,36 @@ func runtime(version string) protocol.Toolchain {
 }
 
 // CI returns the .NET contribution: the SDK, a restore of each project (its
-// tests project too), and the NuGet key when a package is published.
+// tests project too), the sign-in a private feed needs, and the NuGet key
+// when a package is pushed to nuget.org.
 func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
 	result := protocol.CIResult{Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))}}
+	signIn, publicPublish := registries.CI(params.Projects)
+	result.Authenticate = signIn.Authenticate
+	result.Credentials = append(result.Credentials, signIn.Credentials...)
+	result.Permissions = signIn.Permissions
 	for _, p := range params.Projects {
 		result.Setup = append(result.Setup, protocol.Step{Name: "dotnet restore " + p.Name, Command: []string{"dotnet", "restore"}, Dir: p.Root, Blocking: true})
 		if t, ok := p.Tasks["test"]; ok && len(t.Command) > 2 {
 			result.Setup = append(result.Setup, protocol.Step{Name: "dotnet restore " + p.Name + " tests", Command: []string{"dotnet", "restore", t.Command[2]}, Dir: p.Root, Blocking: true})
 		}
-		if p.Kind == protocol.ProjectPackage && len(result.Credentials) == 0 {
+		if p.Kind == protocol.ProjectPackage && publicPublish && !hasCredential(result.Credentials, "NUGET_API_KEY") {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "NUGET_API_KEY", Description: "NuGet API key that can push the workspace's packages", Required: true})
 		}
 	}
 	return result
+}
+
+func hasCredential(list []protocol.Credential, env string) bool {
+	for _, c := range list {
+		if c.Env == env {
+			return true
+		}
+	}
+	return false
 }
 
 // probe runs a tool for its output; tests replace it.
@@ -69,8 +84,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
 	_, err := probe(workspaceRoot, []string{"dotnet", "--version"})
-	return protocol.DoctorResult{Findings: []protocol.Finding{{
+	findings := []protocol.Finding{{
 		Check: "the .NET SDK is installed", OK: err == nil,
 		Detail: "dotnet is not on PATH", Remedy: "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net)",
-	}}}
+	}}
+	if f, ok := registries.CheckNuGetConfig(workspaceRoot, params.Projects); ok {
+		findings = append(findings, f)
+	}
+	return protocol.DoctorResult{Findings: findings}
 }

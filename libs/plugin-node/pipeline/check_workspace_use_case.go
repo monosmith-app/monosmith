@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -26,6 +27,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		Detail: "node_modules is missing at the workspace root",
 		Remedy: "run `npm install` at the workspace root",
 	})
+	if f, ok := registries.CheckNpmrc(workspaceRoot, params.Projects); ok {
+		findings = append(findings, f)
+	}
 
 	var root struct {
 		Workspaces []string `json:"workspaces"`

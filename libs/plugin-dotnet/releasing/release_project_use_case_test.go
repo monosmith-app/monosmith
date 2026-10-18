@@ -39,6 +39,28 @@ func TestPublishPacksThenPushes(t *testing.T) {
 	}
 }
 
+func TestPublishPushesToTheFeedSmithTomlNames(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "packages", "core"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "packages", "core", "Acme.Core.csproj"), []byte("<Project/>"), 0o644)
+	var ran []string
+	real := DotnetRunner
+	defer func() { DotnetRunner = real }()
+	DotnetRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
+	t.Setenv("NUGET_API_KEY", "nuget-org-key")
+	feed := "https://pkgs.dev.azure.com/acme/_packaging/libs/nuget/v3/index.json"
+	core := protocol.Project{Name: "core", Root: "packages/core", Kind: protocol.ProjectPackage, Exports: []string{"Acme.Core"},
+		Registries: &protocol.Registries{Publish: &protocol.Registry{Name: "libs", Auth: protocol.AuthAzureArtifacts, NuGet: feed}}}
+	res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "1.0.0"})
+	if err != nil || !res.Published || res.Registry != feed {
+		t.Fatal(err, res)
+	}
+	// Azure Artifacts: the credential provider signs the push, the key is a placeholder.
+	if !strings.Contains(ran[1], "--source "+feed+" --skip-duplicate --api-key az") {
+		t.Fatalf("ran:\n%s", strings.Join(ran, "\n"))
+	}
+}
+
 func TestPublished(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/acme.core/index.json" {

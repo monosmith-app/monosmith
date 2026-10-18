@@ -55,7 +55,7 @@ func TestSimpleIndexURL(t *testing.T) {
 		"https://upload.pypi.org/legacy/":                         "https://pypi.org/simple/",
 		"https://test.pypi.org/legacy/":                           "https://test.pypi.org/simple/",
 		"http://localhost:8090/":                                  "http://localhost:8090/simple/",
-		"https://pkgs.dev.azure.com/o/p/_packaging/f/pypi/upload": "https://pkgs.dev.azure.com/o/p/_packaging/f/pypi/upload/simple/",
+		"https://pkgs.dev.azure.com/o/p/_packaging/f/pypi/upload": "https://pkgs.dev.azure.com/o/p/_packaging/f/pypi/simple/",
 	} {
 		if got := SimpleIndexURL(in); got != want {
 			t.Errorf("%s: got %s want %s", in, got, want)

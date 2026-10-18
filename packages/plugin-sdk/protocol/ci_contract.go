@@ -20,6 +20,11 @@ type CIResult struct {
 	// beyond the defaults ("packages: write" to push to ghcr.io). Other
 	// providers have no such permissions and ignore them.
 	Permissions []string `json:"permissions,omitempty"`
+	// Authenticate are provider-native steps that sign in to a private
+	// registry before setup (Azure Pipelines' npmAuthenticate@0, say). A
+	// provider the plugin gives no step for gets none: its credentials come
+	// from the environment instead.
+	Authenticate []Toolchain `json:"authenticate,omitempty"`
 }
 
 // Toolchain is a runtime the pipeline must install, and how. Plugins asking
@@ -79,4 +84,7 @@ type Credential struct {
 	Description string `json:"description"`
 	// Required false means release works without it (e.g. a dry run target).
 	Required bool `json:"required"`
+	// Setup gives it to `smith ci setup` (and the native job's setup) as
+	// well: installs from a private registry need it, not only the release.
+	Setup bool `json:"setup,omitempty"`
 }

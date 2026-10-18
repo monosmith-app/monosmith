@@ -51,14 +51,22 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if _, ok := Extension(dir); ok {
 		return publishExtension(workspaceRoot, params)
 	}
-	// npm refuses config and view inside a workspace package, so ask at the root.
-	registry, _ := npm.output(workspaceRoot, []string{"npm", "config", "get", "registry"})
+	// npm refuses config and view inside a workspace package, so ask at the
+	// root. A private registry smith.toml names for publishing is passed
+	// with --registry; otherwise npm uses the .npmrc's.
+	var at []string
+	registry := ""
+	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NPM != "" {
+		registry, at = r.Publish.NPM, []string{"--registry", r.Publish.NPM}
+	} else {
+		registry, _ = npm.output(workspaceRoot, []string{"npm", "config", "get", "registry"})
+	}
 	result := protocol.PublishResult{Registry: strings.TrimSpace(registry)}
 	if params.DryRun {
 		result.Skipped = "dry run"
 		return result, nil
 	}
-	existing, _ := npm.output(workspaceRoot, []string{"npm", "view", name + "@" + params.Version, "version"})
+	existing, _ := npm.output(workspaceRoot, append([]string{"npm", "view", name + "@" + params.Version, "version"}, at...))
 	if strings.TrimSpace(existing) == params.Version {
 		result.Skipped = "already published"
 		return result, nil
@@ -69,9 +77,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 		return result, err
 	}
 	if staged == dir {
-		err = npm.run(dir, []string{"npm", "publish", "--access", "public"})
+		err = npm.run(dir, append([]string{"npm", "publish", "--access", "public"}, at...))
 	} else {
-		err = npm.run(workspaceRoot, []string{"npm", "publish", staged, "--access", "public"})
+		err = npm.run(workspaceRoot, append([]string{"npm", "publish", staged, "--access", "public"}, at...))
 	}
 	if err != nil {
 		return result, err

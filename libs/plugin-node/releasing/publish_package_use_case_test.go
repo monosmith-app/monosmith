@@ -50,6 +50,20 @@ func TestPublishNewVersion(t *testing.T) {
 	}
 }
 
+func TestPublishGoesToThePrivateRegistrySmithTomlNames(t *testing.T) {
+	calls := fakeNpm(t, "")
+	feed := "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
+	project := protocol.Project{Root: "packages/sdk", Exports: []string{"@acme/sdk"}, Registries: &protocol.Registries{Publish: &protocol.Registry{Name: "libs", Auth: protocol.AuthAzureArtifacts, NPM: feed}}}
+	res, err := Publish("/ws", protocol.PublishParams{Project: project, Version: "1.1.0"})
+	if err != nil || !res.Published || res.Registry != feed {
+		t.Fatalf("res %+v err %v", res, err)
+	}
+	want := []string{"npm view @acme/sdk@1.1.0 version --registry " + feed, "npm publish --access public --registry " + feed}
+	if strings.Join(*calls, "\n") != strings.Join(want, "\n") {
+		t.Errorf("calls:\n%s", strings.Join(*calls, "\n"))
+	}
+}
+
 func TestPublishNeverSendsAnAppToNpm(t *testing.T) {
 	calls := fakeNpm(t, "")
 	res, err := Publish("/ws", protocol.PublishParams{Project: protocol.Project{Root: "apps/driver", Kind: protocol.ProjectApp, Exports: []string{"@acme/driver"}}, Version: "1.0.0"})

@@ -45,13 +45,16 @@ func azureSteps(m Model) string {
 	for _, t := range m.Toolchains {
 		b.WriteString(azureSetup(t))
 	}
+	for _, a := range m.Authenticate {
+		b.WriteString(azureAuthenticate(a))
+	}
 	fmt.Fprintf(&b, `  - bash: curl -fsSL %s | sh -s -- "%s"
     displayName: Install smith
 `, InstallScriptURL, m.SmithVersion)
 	b.WriteString(slot("  ", "before-setup"))
-	b.WriteString(`  - bash: smith ci setup
-    displayName: Setup
-  - bash: smith ci audit
+	b.WriteString("  - bash: smith ci setup\n    displayName: Setup\n")
+	b.WriteString(azureEnv("    ", m.SetupCredentials()))
+	b.WriteString(`  - bash: smith ci audit
     displayName: Audit
   - bash: smith ci verify
     displayName: Verify
@@ -100,14 +103,19 @@ func azureNativeJob(m Model) string {
 	for _, t := range m.Toolchains {
 		tools.WriteString(azureSetup(t))
 	}
+	for _, a := range m.Authenticate {
+		tools.WriteString(azureAuthenticate(a))
+	}
 	b.WriteString(indent(tools.String(), "    "))
 	fmt.Fprintf(&b, `      - bash: curl -fsSL %s | sh -s -- "%s"
         displayName: Install smith
       - bash: smith ci setup
         displayName: Setup
-      - bash: smith ci native
-        displayName: Native
 `, InstallScriptURL, m.SmithVersion)
+	b.WriteString(azureEnv("        ", m.SetupCredentials()))
+	b.WriteString(`      - bash: smith ci native
+        displayName: Native
+`)
 	// A native package publishes from here on a release push: the job needs
 	// the release credentials too.
 	if m.NativePublish && len(m.Credentials) > 0 {
