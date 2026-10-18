@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -41,7 +42,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	}
 	// govulncheck needs a module, so it runs once in each one.
 	for _, p := range params.Projects {
-		result.Audit = append(result.Audit, protocol.Step{Name: "govulncheck " + p.Name, Command: []string{"go", "run", "golang.org/x/vuln/cmd/govulncheck@" + GovulncheckVersion, "./..."}, Dir: p.Root, Blocking: false})
+		result.Audit = append(result.Audit, protocol.Step{Name: "govulncheck " + p.Name, Command: []string{"go", "run", "golang.org/x/vuln/cmd/govulncheck@" + GovulncheckVersion, "./..."}, Dir: p.Root, Blocking: false, CacheFiles: []string{path.Join(p.Root, "go.mod"), path.Join(p.Root, "go.sum")}})
 	}
 	return result
 }

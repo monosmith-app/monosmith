@@ -21,7 +21,7 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 		Setup:      []protocol.Step{{Name: "Install Node dependencies", Command: []string{"npm", "ci", "--no-audit", "--no-fund"}, Blocking: true}},
 		// smith npm-audit (AuditNpm) fails only on a production advisory npm
 		// can fix; the rest are notes.
-		Audit: []protocol.Step{{Name: "npm audit (runtime dependencies)", Command: []string{"{smith}", "npm-audit"}, Blocking: true}},
+		Audit: []protocol.Step{{Name: "npm audit (runtime dependencies)", Command: []string{"{smith}", "npm-audit"}, Blocking: true, CacheFiles: []string{"package-lock.json"}}},
 	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate

@@ -34,7 +34,7 @@ func (k *keyer) inputs(t *taskgraph.Task, deps map[string]string) taskcache.KeyI
 	}
 	return taskcache.KeyInputs{
 		Task: t.ID, Command: t.Def.Command, Env: t.Def.Env, Files: files, Upstream: upstream,
-		Deps: deps, Platform: Platform, Tool: k.opts.ToolVersion + "/" + t.Project.Toolset(),
+		Deps: deps, Platform: Platform, Tool: k.opts.ToolVersion + "/" + t.Project.Toolset(), Toolchain: t.Project.Toolchain,
 	}
 }
 

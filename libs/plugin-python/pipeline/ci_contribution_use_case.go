@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/registries"
@@ -33,7 +34,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(venv.PythonVersion)},
 		Setup:      setup,
-		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false}},
+		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false, CacheFiles: auditFiles(params.Projects)}},
 	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate
@@ -63,4 +64,14 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		findings = append(findings, CheckPythonVersion(workspaceRoot))
 	}
 	return protocol.DoctorResult{Findings: findings}
+}
+
+// auditFiles are the files that decide what pip-audit finds in the venv:
+// the toolchain's requirements and each project's pyproject.toml.
+func auditFiles(projects []protocol.Project) []string {
+	files := []string{venv.RequirementsFile}
+	for _, p := range projects {
+		files = append(files, path.Join(p.Root, "pyproject.toml"))
+	}
+	return files
 }
