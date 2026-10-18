@@ -23,6 +23,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
+	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
@@ -68,7 +69,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
 	add("inspect", mcpserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), stackview.Command(version), slicecheck.Command())
+	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), recipe.Command(version), stackview.Command(version), slicecheck.Command())
 	return root
 }
 
@@ -88,7 +89,7 @@ func Execute(version string, args []string) int {
 	root := Root(version)
 	root.SetArgs(args)
 	if err := root.Execute(); err != nil {
-		if !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) {
+		if !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) {
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
 		}
 		return 1
