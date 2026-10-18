@@ -53,15 +53,16 @@ func mavenModule(root string, src []byte) (protocol.Project, bool, error) {
 	}
 	kind := projectkind.Resolve(pom.Kind, root, protocol.ProjectLib)
 	return protocol.Project{
-		Name:     path.Base(root),
-		Root:     root,
-		Language: "jvm",
-		Kind:     kind,
-		Exports:  []string{pom.Coordinates()},
-		Imports:  pom.Dependencies,
-		Version:  pom.Version,
-		Tasks:    Tasks(root, pom.Coordinates(), pom.ArtifactID, kind),
-		Stack:    pom.Stack,
+		Name:        path.Base(root),
+		Root:        root,
+		Language:    "jvm",
+		Kind:        kind,
+		Exports:     []string{pom.Coordinates()},
+		Imports:     pom.Dependencies,
+		Version:     pom.Version,
+		Description: pom.Description,
+		Tasks:       Tasks(root, pom.Coordinates(), pom.ArtifactID, kind),
+		Stack:       pom.Stack,
 	}, true, nil
 }
 

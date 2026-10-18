@@ -38,15 +38,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			bin = m.Bin[0]
 		}
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "php",
-			Kind:     kind,
-			Exports:  []string{m.Name},
-			Imports:  m.Requires,
-			Version:  m.Version,
-			Tasks:    Tasks(Shape{Kind: kind, Tests: testsErr == nil, Bin: bin}),
-			Stack:    m.Stack,
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "php",
+			Kind:        kind,
+			Exports:     []string{m.Name},
+			Imports:     m.Requires,
+			Version:     m.Version,
+			Description: m.Description,
+			Tasks:       Tasks(Shape{Kind: kind, Tests: testsErr == nil, Bin: bin}),
+			Stack:       m.Stack,
 		})
 	}
 	return result, nil

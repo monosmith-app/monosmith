@@ -24,6 +24,10 @@ type Target struct {
 	// DescriptionFrom is a workspace-relative file whose text becomes the
 	// repository description on Docker Hub; empty for none.
 	DescriptionFrom string
+	// ShortDescription is the one-line summary on Docker Hub: the
+	// short_description setting, else the project's own description; empty
+	// for none. It is as written, before it is fitted to Docker Hub's limit.
+	ShortDescription string
 }
 
 // Reference is the image's reference in a registry, without a tag
@@ -70,6 +74,10 @@ func TargetOf(p protocol.Project, env func(string) string) (Target, error) {
 		t.Push = push && len(regs) > 0
 	}
 	t.DescriptionFrom, _ = s["description_from"].(string)
+	t.ShortDescription, _ = s["short_description"].(string)
+	if strings.TrimSpace(t.ShortDescription) == "" {
+		t.ShortDescription = p.Description
+	}
 	return t, nil
 }
 

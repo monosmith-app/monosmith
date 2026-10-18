@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pruning"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
@@ -45,13 +46,14 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 		fallback = protocol.ProjectLib
 	}
 	project := protocol.Project{
-		Name:     path.Base(root),
-		Root:     root,
-		Language: "node",
-		Kind:     projectkind.Resolve(pkg.Smith.Kind, root, fallback),
-		Version:  pkg.Version,
-		Stack:    pkg.Smith.Stack,
-		Tasks:    map[string]protocol.Task{},
+		Name:        path.Base(root),
+		Root:        root,
+		Language:    "node",
+		Kind:        projectkind.Resolve(pkg.Smith.Kind, root, fallback),
+		Version:     pkg.Version,
+		Description: strings.TrimSpace(pkg.Description),
+		Stack:       pkg.Smith.Stack,
+		Tasks:       map[string]protocol.Task{},
 	}
 	if pkg.Smith.Native {
 		project.Tags = append(project.Tags, NativeTag)

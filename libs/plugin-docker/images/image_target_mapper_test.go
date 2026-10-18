@@ -60,3 +60,19 @@ func TestSeveralRegistriesShareTheImageName(t *testing.T) {
 		t.Errorf("description_from %q", got.DescriptionFrom)
 	}
 }
+
+func TestTheShortDescriptionIsTheSettingElseTheProjectsOwn(t *testing.T) {
+	p := protocol.Project{Name: "api", Description: "From the manifest."}
+	got, err := TargetOf(p, func(string) string { return "" })
+	if err != nil || got.ShortDescription != "From the manifest." {
+		t.Fatalf("%+v %v", got, err)
+	}
+	p.Settings = map[string]map[string]any{"docker": {"short_description": "From smith.toml."}}
+	if got, _ := TargetOf(p, func(string) string { return "" }); got.ShortDescription != "From smith.toml." {
+		t.Errorf("the setting wins: %q", got.ShortDescription)
+	}
+	p.Settings["docker"]["short_description"] = "  "
+	if got, _ := TargetOf(p, func(string) string { return "" }); got.ShortDescription != "From the manifest." {
+		t.Errorf("a blank setting is no setting: %q", got.ShortDescription)
+	}
+}
