@@ -88,7 +88,11 @@ On top of the above, a workspace made by mnci 4.x gets:
   `tools/go-app-release.cjs` hooks) removed, because smith does that itself
 - `package` targets kept as `package` tasks, which `smith ci pack` runs into
   `dist/drop`; a Go or Python app's uses the plugin's own instead (the binary,
-  the wheel)
+  the wheel). A kept task that declared the shared `dist/drop` as its output
+  gets its own `dist/drop/<project dir>/` instead, in its command and its
+  `outputs`, because a cache restore replaces a task's output directories and
+  would delete another package's zip mid-write; `smith doctor` warns about
+  any two tasks whose outputs overlap
 - the per-project root scripts (`<project>:test`, …) removed in favour of
   `smith run <task> -p <project>`
 - pipeline slots kept: `after-install` becomes `before-setup` and

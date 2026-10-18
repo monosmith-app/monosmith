@@ -149,6 +149,12 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Detail: strings.Join(outside, "; "),
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin",
 	})
+	shared := SharedOutputs(s.Graph.Projects)
+	out = append(out, protocol.Finding{
+		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
+		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),
+		Remedy: "give each task its own directory (dist/drop/<project dir>/ for a package task) in its command and in smith.toml outputs = [...]",
+	})
 	cycles := s.Graph.Cycles()
 	var paths []string
 	for _, c := range cycles {

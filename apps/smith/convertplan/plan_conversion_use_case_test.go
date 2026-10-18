@@ -192,7 +192,7 @@ func TestPlanKeepsPackageTargetsForSmithCIPack(t *testing.T) {
 		t.Fatalf("ext package script %q", got)
 	}
 	hostPackage := plan.Config.Projects["host"].Tasks["package"]
-	if strings.Join(hostPackage.Command, " ") != "node -e zip()" || hostPackage.Cwd != "." || strings.Join(hostPackage.Outputs, ",") != "../../dist/drop" {
+	if strings.Join(hostPackage.Command, " ") != "node -e zip()" || hostPackage.Cwd != "." || strings.Join(hostPackage.Outputs, ",") != "../../dist/drop/host" {
 		t.Fatalf("host package task %+v", hostPackage)
 	}
 	if _, kept := plan.Config.Projects["tool"].Tasks["package"]; kept {
@@ -201,6 +201,9 @@ func TestPlanKeepsPackageTargetsForSmithCIPack(t *testing.T) {
 	changed := findings(plan, Changed)
 	if !strings.Contains(changed, "tool package: the go plugin's package task replaces the old mnci's: smith ci pack puts the app's binary in dist/drop") {
 		t.Fatalf("changed:\n%s", changed)
+	}
+	if !strings.Contains(changed, "host package: writes to dist/drop/host/ instead of the shared dist/drop") {
+		t.Fatalf("the package task gets its own directory:\n%s", changed)
 	}
 	if all := findings(plan, Dropped); strings.Contains(all, "pack phase") {
 		t.Fatalf("dropped:\n%s", all)
