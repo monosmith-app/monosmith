@@ -34,6 +34,9 @@ type Plan struct {
 
 // TagPrefix is the release tag prefix of a project.
 func TagPrefix(p *projectgraph.Project) string {
+	if p.BareTags {
+		return ""
+	}
 	if p.TagPrefix != "" {
 		return p.TagPrefix
 	}

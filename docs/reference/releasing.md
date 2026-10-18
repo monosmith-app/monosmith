@@ -30,6 +30,15 @@ registry` or `[projects.<name>] registry` (npm, Python and .NET; see
 [configuration](configuration.md#private-registries)). Either way a version
 the registry already has is skipped, so a re-run completes a release.
 
+A package that a registry builds from its tag (JitPack for Maven, Packagist,
+Go modules) sets `registry = "none"` under `[projects.<name>]` or `[release]`:
+the release versions it, tags it and creates the GitHub Release, publishes to
+no registry, and no credentials are listed for it. The summary says
+"published by its tag". JitPack uses the tag name as the version, so
+`bare_tags = true` on that one project tags `0.1.0` instead of `java@0.1.0`
+(or `tag_prefix = "v"` for `v0.1.0`). Only one project of a workspace can use
+bare tags, since bare tags of two projects could not be told apart.
+
 To force a version, commit a directive anywhere in the repository:
 
 ```

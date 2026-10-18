@@ -80,7 +80,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		result.Setup[0].Command[0] = "flutter"
 	}
 	for _, p := range params.Projects {
-		if p.Kind == protocol.ProjectPackage {
+		if p.Publishes() {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "PUB_TOKEN", Description: "token for the repository a package's publish_to names (pub.dev publishes with GitHub's OIDC token instead)"})
 			break
 		}

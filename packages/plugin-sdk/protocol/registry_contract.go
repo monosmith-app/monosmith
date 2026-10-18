@@ -39,4 +39,8 @@ const (
 type Registries struct {
 	Install *Registry `json:"install,omitempty"`
 	Publish *Registry `json:"publish,omitempty"`
+	// NoPublish means smith.toml says registry = "none": the release versions
+	// and tags the project and publishes it to no registry (a registry that
+	// builds from the tag, such as JitPack, does the rest).
+	NoPublish bool `json:"noPublish,omitempty"`
 }

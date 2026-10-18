@@ -203,6 +203,10 @@ type ProjectOverride struct {
 	// TagPrefix replaces the release tag prefix ("<name>@" by default), so a
 	// converted project keeps its existing tags.
 	TagPrefix string `toml:"tag_prefix"`
+	// BareTags makes the project's release tags the bare version (0.1.0),
+	// for a registry that takes the tag name as the version (JitPack). Only
+	// one project can; it excludes tag_prefix.
+	BareTags bool `toml:"bare_tags"`
 	// Stack replaces the stack the project's manifest records.
 	Stack string `toml:"stack"`
 	// Release makes an app releasable: it is versioned by its tag and its
