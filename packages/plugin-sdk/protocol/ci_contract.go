@@ -55,7 +55,7 @@ type DevcontainerFeature struct {
 // ActionStep is a provider-native step: a GitHub action or an Azure task,
 // with its inputs in the order they are written.
 type ActionStep struct {
-	// Uses is the action ("actions/setup-go@v5") or task ("GoTool@0").
+	// Uses is the action ("actions/setup-go@v7") or task ("GoTool@0").
 	Uses   string  `json:"uses"`
 	Inputs []Input `json:"inputs,omitempty"`
 }

@@ -66,7 +66,7 @@ func runtime(version string, used buildTools) protocol.Toolchain {
 	return protocol.Toolchain{
 		Name: "java", Version: version,
 		// GitHub's and Azure's hosted images carry Maven.
-		GitHub: &protocol.ActionStep{Uses: "actions/setup-java@v4", Inputs: []protocol.Input{{Name: "distribution", Value: "temurin"}, {Name: "java-version", Value: version}, {Name: "cache", Value: cache}}},
+		GitHub: &protocol.ActionStep{Uses: "actions/setup-java@v5", Inputs: []protocol.Input{{Name: "distribution", Value: "temurin"}, {Name: "java-version", Value: version}, {Name: "cache", Value: cache}}},
 		Azure:  &protocol.ActionStep{Uses: "JavaToolInstaller@0", Inputs: []protocol.Input{{Name: "versionSpec", Value: version}, {Name: "jdkArchitectureOption", Value: "x64"}, {Name: "jdkSourceOption", Value: "PreInstalled"}}},
 		// Elsewhere (GitLab, on a Debian image): Temurin and Maven archives.
 		Install: "mkdir -p /opt/jdk /opt/maven\n" +

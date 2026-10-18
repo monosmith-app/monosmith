@@ -15,7 +15,7 @@ func runtime(version string) protocol.Toolchain {
 	}
 	return protocol.Toolchain{
 		Name: "go", Version: version,
-		GitHub: &protocol.ActionStep{Uses: "actions/setup-go@v5", Inputs: []protocol.Input{{Name: "go-version", Value: version}, {Name: "cache", Value: "false"}}},
+		GitHub: &protocol.ActionStep{Uses: "actions/setup-go@v7", Inputs: []protocol.Input{{Name: "go-version", Value: version}, {Name: "cache", Value: "false"}}},
 		Azure:  &protocol.ActionStep{Uses: "GoTool@0", Inputs: []protocol.Input{{Name: "version", Value: azure}}},
 		// Elsewhere (GitLab CI, on a Debian image, as root): the release
 		// tarball, on PATH for the rest of the job.

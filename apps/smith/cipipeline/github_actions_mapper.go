@@ -32,7 +32,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 `, m.ReleaseBranch, idToken(m))
@@ -68,7 +68,7 @@ jobs:
 		fmt.Fprintf(&b, `      - name: Pack
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         run: smith ci pack
-%[2]s      - uses: actions/upload-artifact@v4
+%[2]s      - uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         with:
           name: drop
@@ -105,7 +105,7 @@ func githubNativeJob(m Model) string {
         os: [%s]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 `, strings.Join(m.NativeRunners, ", "))
@@ -135,7 +135,7 @@ func githubNativeJob(m Model) string {
 	for _, c := range m.nativeCredentials() {
 		fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 	}
-	b.WriteString(`      - uses: actions/upload-artifact@v4
+	b.WriteString(`      - uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.os }}
           path: dist/drop
@@ -193,7 +193,7 @@ jobs:
   pub:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 `)
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))

@@ -6,7 +6,7 @@ import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 func runtime(version string) protocol.Toolchain {
 	return protocol.Toolchain{
 		Name: "python", Version: version,
-		GitHub: &protocol.ActionStep{Uses: "actions/setup-python@v5", Inputs: []protocol.Input{{Name: "python-version", Value: version}}},
+		GitHub: &protocol.ActionStep{Uses: "actions/setup-python@v7", Inputs: []protocol.Input{{Name: "python-version", Value: version}}},
 		Azure:  &protocol.ActionStep{Uses: "UsePythonVersion@0", Inputs: []protocol.Input{{Name: "versionSpec", Value: version}}},
 		// Elsewhere (GitLab CI, on a Debian image, as root): uv installs the
 		// exact version, linked where smith looks for it.

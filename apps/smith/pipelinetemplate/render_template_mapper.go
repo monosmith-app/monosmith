@@ -64,7 +64,7 @@ func Render(name, provider string, m cipipeline.Model, app App) (string, bool) {
 		return "name: package\n\n" + written(name, "") + "# Packs the projects into dist/drop and keeps it as the drop artifact.\n\n" + githubOn +
 			"\njobs:\n  package:\n    runs-on: ubuntu-latest\n    steps:\n" + cipipeline.GitHubSetup(m) +
 			"      - name: Pack\n        run: smith ci pack\n" +
-			"      - uses: actions/upload-artifact@v4\n        with:\n          name: drop\n          path: " + cipipeline.DropDir + "\n          if-no-files-found: error\n", true
+			"      - uses: actions/upload-artifact@v7\n        with:\n          name: drop\n          path: " + cipipeline.DropDir + "\n          if-no-files-found: error\n", true
 	case "package-zip/azure":
 		return written(name, "") + azureNote + "# The drop artifact is what a classic release pipeline takes its packages from.\n\n" + azureOn +
 			"\nsteps:\n" + cipipeline.AzureSetup(m) + "  - bash: smith ci pack\n    displayName: Pack\n" +

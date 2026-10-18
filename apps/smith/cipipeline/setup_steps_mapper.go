@@ -10,7 +10,7 @@ import (
 // toolchains, smith at the version that wrote it, and smith ci setup.
 func GitHubSetup(m Model) string {
 	var b strings.Builder
-	b.WriteString(`      - uses: actions/checkout@v4
+	b.WriteString(`      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 `)

@@ -67,7 +67,7 @@ func TestANativeProjectAddsAJobPerOS(t *testing.T) {
 	gh, az := RenderGitHub(m), RenderAzure(m)
 	for _, want := range []string{
 		"\n  native:\n    needs: ci\n    strategy:\n      fail-fast: false\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n    runs-on: ${{ matrix.os }}\n",
-		"      - uses: actions/setup-node@v4\n",
+		"      - uses: actions/setup-node@v7\n",
 		"      - name: Install smith\n        shell: bash\n",
 		"      - name: Native\n        run: smith ci native\n        env:\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n",
 		"          name: native-${{ matrix.os }}\n",
@@ -103,7 +103,7 @@ func TestANativePackagePublishesFromTheNativeJob(t *testing.T) {
 	m.Native, m.NativePublish, m.NativeRunners = true, true, DefaultNativeRunners
 	gh := RenderGitHub(m)
 	native := gh[strings.Index(gh, "\n  native:\n"):]
-	step := native[strings.Index(native, "      - name: Native\n"):strings.Index(native, "      - uses: actions/upload-artifact@v4\n")]
+	step := native[strings.Index(native, "      - name: Native\n"):strings.Index(native, "      - uses: actions/upload-artifact@v7\n")]
 	for _, want := range []string{"GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}\n", "PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}\n"} {
 		if !strings.Contains(step, want) {
 			t.Errorf("each native job publishes its platform, with the release credentials; lacks %q:\n%s", want, step)

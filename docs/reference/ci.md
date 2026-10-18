@@ -11,7 +11,7 @@ Each plugin contributes, for its own projects:
 
 - **toolchains** — the runtimes to install, at versions the plugin pins. The
   plugin says how: a GitHub action and an Azure task with their inputs
-  (`actions/setup-node@v4`, `UsePythonVersion@0`, …), and a shell command for
+  (`actions/setup-node@v7`, `UsePythonVersion@0`, …), and a shell command for
   everything else (GitLab installs every toolchain this way). smith itself knows no runtime, so a plugin for a new
   language installs it the same way; a runtime no plugin says how to install
   is left as a comment in the pipeline, to fill through the `before-setup`
