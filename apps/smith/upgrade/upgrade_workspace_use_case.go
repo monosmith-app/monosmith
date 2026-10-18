@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
+	"github.com/monosmith-app/monosmith/apps/smith/recipedrift"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
@@ -20,13 +21,24 @@ type Result struct {
 	// Recipes are the pinned recipe URLs whose content changed: accepted by
 	// the upgrade, or with check, the ones it would accept.
 	Recipes []string `json:"recipes,omitempty"`
+	// Projects are the projects brought up to date with their recipe: its
+	// version, and what it changes in their plugins and settings.
+	Projects []recipedrift.Change `json:"projects,omitempty"`
+	// Skipped are projects that drifted from their recipe and were left as
+	// they are, with the reason.
+	Skipped []string `json:"skipped,omitempty"`
+	// Starters name plugins a recipe now adds to a project whose starter
+	// files an upgrade does not write.
+	Starters []string `json:"starters,omitempty"`
+	// Diff is the change to smith.toml, with check.
+	Diff string `json:"diff,omitempty"`
 	// Hints are changes smith suggests but does not make.
 	Hints []string `json:"hints,omitempty"`
 }
 
 // Changed reports whether anything changed (or would).
 func (r Result) Changed() bool {
-	return len(r.Migrations) > 0 || len(r.Files) > 0 || len(r.Recipes) > 0
+	return len(r.Migrations) > 0 || len(r.Files) > 0 || len(r.Recipes) > 0 || len(r.Projects) > 0
 }
 
 // Upgrade migrates smith.toml, then regenerates the pipelines. With check it
@@ -53,6 +65,9 @@ func Upgrade(dir, version string, check bool, log io.Writer) (Result, error) {
 	}
 	defer s.Close()
 	if r.Recipes, err = recipeChanges(&recipe.Loader{Root: s.Root}, s.Config, check); err != nil {
+		return r, err
+	}
+	if err := upgradeProjects(s, check, &r); err != nil {
 		return r, err
 	}
 	if check {
