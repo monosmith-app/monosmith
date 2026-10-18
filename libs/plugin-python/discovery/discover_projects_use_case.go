@@ -59,6 +59,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Tasks:       Tasks(root, kind, importName, py.Tool.Mypy != nil),
 		})
 	}
+	result.SetToolchain(func() string { return pythonToolchain() })
 	return result, nil
 }
 

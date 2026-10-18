@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the package behind each composer.json. The root's
@@ -50,5 +51,6 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Stack:       m.Stack,
 		})
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("php", "php", "--version") })
 	return result, nil
 }

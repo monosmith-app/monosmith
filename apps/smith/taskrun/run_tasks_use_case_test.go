@@ -158,3 +158,49 @@ func TestKeyOfMatchesTheRunAndExplainsAMiss(t *testing.T) {
 		t.Fatalf("differences %q", got)
 	}
 }
+
+func TestAChangedToolchainIsAMissAndWhyMissNamesIt(t *testing.T) {
+	f := newFixture(t, "core")
+	f.pg.Get("core").Toolchain = "node 20.11.0"
+	f.pg.Get("web").Toolchain = "node 20.11.0"
+	if s, out := f.run(t); s.Count(Succeeded) != 2 {
+		t.Fatalf("first run: %s\n%s", s, out)
+	}
+	if s, out := f.run(t); s.Count(Cached) != 2 {
+		t.Fatalf("the same toolchain is a hit: %s\n%s", s, out)
+	}
+
+	f.pg.Get("core").Toolchain = "node 22.3.0"
+	f.pg.Get("web").Toolchain = "node 22.3.0"
+	g, _ := taskgraph.Build(f.pg, []string{"web"}, []string{"build"})
+	_, now := KeyOf(g, Options{Root: f.root, Files: f.files, Projects: f.pg, ToolVersion: "test"}, "core:build")
+	last, _, err := taskcache.LastRun(f.store, "core:build")
+	if err != nil || last.Inputs == nil {
+		t.Fatalf("last run %v", err)
+	}
+	var got []string
+	for _, d := range taskcache.Diff(*last.Inputs, now) {
+		got = append(got, d.String())
+	}
+	if strings.Join(got, "|") != "toolchain  node 20.11.0 → 22.3.0" {
+		t.Fatalf("differences %q", got)
+	}
+	if s, out := f.run(t); s.Count(Succeeded) != 2 {
+		t.Fatalf("another toolchain re-runs both: %s\n%s", s, out)
+	}
+}
+
+func TestAProjectThatReportsNoToolchainKeepsItsKeys(t *testing.T) {
+	f := newFixture(t, "core")
+	g, _ := taskgraph.Build(f.pg, []string{"web"}, []string{"build"})
+	opts := Options{Root: f.root, Files: f.files, Projects: f.pg, ToolVersion: "test"}
+	without, _ := KeyOf(g, opts, "web:build")
+	f.pg.Get("web").Toolchain = "node 20.11.0"
+	if with, _ := KeyOf(g, opts, "web:build"); with == without {
+		t.Fatal("a reported toolchain is part of the key")
+	}
+	f.pg.Get("web").Toolchain = ""
+	if again, _ := KeyOf(g, opts, "web:build"); again != without {
+		t.Fatal("an empty toolchain leaves the key as it was")
+	}
+}

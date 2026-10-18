@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the gem behind each gemspec (one per directory).
@@ -46,5 +47,6 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Stack:    gem.Stack,
 		})
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("ruby", "ruby", "--version") })
 	return result, nil
 }

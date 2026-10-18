@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the project behind each CMakeLists.txt that calls
@@ -54,6 +55,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Stack:    lists.Stack,
 		})
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("cmake", "cmake", "--version") })
 	return result, nil
 }
 

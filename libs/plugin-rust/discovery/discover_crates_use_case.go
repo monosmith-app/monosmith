@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Discover describes the crate behind each Cargo.toml. A manifest without a
@@ -50,5 +51,6 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Stack:       crate.Stack,
 		})
 	}
+	result.SetToolchain(func() string { return toolrun.Toolchain("rustc", "rustc", "--version") })
 	return result, nil
 }
