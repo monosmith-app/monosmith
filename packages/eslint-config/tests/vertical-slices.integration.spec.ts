@@ -53,6 +53,13 @@ const FIXTURES: Record<string, string> = {
   'packages/app/src/reports/index.ts':          "export { report } from './report.use-case'\n",
   'packages/app/src/reports/report.use-case.ts':
     "import { add } from '../arithmetic/add.algorithm'\n\nexport function report (): number {\n  return add(1, 2)\n}\n",
+  // Under nodenext a slice's index is named as a file: the same door.
+  'packages/app/src/reports/total.use-case.ts':
+    "import { add } from '../arithmetic/index.ts'\n\nexport function total (): number {\n  return add(1, 2)\n}\n",
+  'packages/app/src/reports/emitted.use-case.ts':
+    "import { add } from '../arithmetic/index.js'\n\nexport function emitted (): number {\n  return add(1, 2)\n}\n",
+  'packages/app/src/reports/own-index.use-case.ts':
+    "import { report } from './index.ts'\n\nexport function again (): number {\n  return report()\n}\n",
   'packages/app/src/reports/selfish.use-case.ts':
     "import { report } from '.'\n\nexport function twice (): number {\n  return report() * 2\n}\n",
   'packages/app/src/reports/reportHelper.ts':          'export const helper = 1\n',
@@ -187,6 +194,12 @@ describe('monosmith({ verticalSlices })', () => {
   it('reports a sibling reached past its index, and a slice importing its own', () => {
     expect(slicesFor('packages/app/src/reports/report.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
     expect(slicesFor('packages/app/src/reports/selfish.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
+    expect(slicesFor('packages/app/src/reports/own-index.use-case.ts')).toEqual(['vertical-slices/no-deep-import'])
+  })
+
+  it('accepts the index of a sibling named as a file, as nodenext needs', () => {
+    expect(slicesFor('packages/app/src/reports/total.use-case.ts')).toEqual([])
+    expect(slicesFor('packages/app/src/reports/emitted.use-case.ts')).toEqual([])
   })
 
   it('holds a TEST to no-deep-import, unlike the role and cycle rules', () => {
