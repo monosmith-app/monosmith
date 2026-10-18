@@ -90,6 +90,10 @@ stack = "node-vitest"                 # replaces the stack web's manifest record
 [projects.sdk]
 registry = "public-npm"               # this package publishes here instead of [release] registry
 
+[projects.java]
+registry = "none"                     # tag it and create its GitHub Release, publish it to no registry (a registry that builds from the tag, such as JitPack); no credentials are asked for
+bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0, because JitPack uses the tag name as the version; one project only, not with tag_prefix
+
 [projects.sdk.settings.dotnet]        # a plugin's settings for this project, by plugin name; written from a recipe's settings
 target_framework = "net10.0"
 

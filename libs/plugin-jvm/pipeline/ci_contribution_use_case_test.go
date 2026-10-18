@@ -88,3 +88,12 @@ func TestAndroid(t *testing.T) {
 		t.Fatal("local.properties names the SDK")
 	}
 }
+
+func TestAPackageReleasedToNoRegistryNeedsNoMavenSecrets(t *testing.T) {
+	ws := t.TempDir()
+	java := module(t, ws, "java", "pom.xml", protocol.ProjectPackage)
+	java.Registries = &protocol.Registries{NoPublish: true}
+	if res := CI(ws, protocol.CIParams{Projects: []protocol.Project{java}}); len(res.Credentials) != 0 {
+		t.Errorf("credentials %+v for a package that publishes nowhere", res.Credentials)
+	}
+}

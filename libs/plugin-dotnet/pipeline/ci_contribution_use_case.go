@@ -59,7 +59,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		if t, ok := p.Tasks["test"]; ok && len(t.Command) > 2 {
 			result.Setup = append(result.Setup, protocol.Step{Name: "dotnet restore " + p.Name + " tests", Command: []string{"dotnet", "restore", t.Command[2]}, Dir: p.Root, Blocking: true})
 		}
-		if p.Kind == protocol.ProjectPackage && publicPublish && !hasCredential(result.Credentials, "NUGET_API_KEY") {
+		if p.Publishes() && publicPublish && !hasCredential(result.Credentials, "NUGET_API_KEY") {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "NUGET_API_KEY", Description: "NuGet API key that can push the workspace's packages", Required: true})
 		}
 	}

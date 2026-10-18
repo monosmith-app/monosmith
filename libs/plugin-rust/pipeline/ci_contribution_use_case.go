@@ -50,7 +50,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		Setup:      []protocol.Step{{Name: "Fetch crates", Command: []string{"cargo", "fetch"}, Blocking: true}},
 	}
 	for _, p := range params.Projects {
-		if p.Kind == protocol.ProjectPackage {
+		if p.Publishes() {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "CARGO_REGISTRY_TOKEN", Description: "crates.io API token that can publish the workspace's crates", Required: true})
 			break
 		}

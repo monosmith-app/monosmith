@@ -16,6 +16,10 @@ var (
 	registryName = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_.-]*$`)
 )
 
+// NoRegistry is the registry name for "publish nowhere": the release
+// versions and tags the project and creates its GitHub Release only.
+const NoRegistry = "none"
+
 // validateRegistries checks [registries] and every name that refers to one,
 // and fills the PyPI upload URL's default.
 func validateRegistries(cfg *Config) error {
@@ -29,6 +33,9 @@ func validateRegistries(cfg *Config) error {
 		at := fmt.Sprintf("%s: [registries.%s]", FileName, name)
 		if !registryName.MatchString(name) {
 			return fmt.Errorf("%s: the name must start with a letter and hold only letters, digits, '.', '-' and '_'", at)
+		}
+		if name == NoRegistry {
+			return fmt.Errorf("%s: %q is reserved: registry = %q publishes to no registry", at, NoRegistry, NoRegistry)
 		}
 		switch r.Auth {
 		case "azure-artifacts", "github-packages":
@@ -64,13 +71,16 @@ func validateRegistries(cfg *Config) error {
 		cfg.Registries[name] = r
 	}
 	known := func(where, name string) error {
-		if name == "" {
+		if name == "" || name == NoRegistry {
 			return nil
 		}
 		if _, ok := cfg.Registries[name]; !ok {
 			return fmt.Errorf("%s: %s registry = %q names no [registries.%s]", FileName, where, name, name)
 		}
 		return nil
+	}
+	if cfg.Workspace.Registry == NoRegistry {
+		return fmt.Errorf("%s: [workspace] registry = %q: installs always come from somewhere; %q is for [release] and project settings", FileName, NoRegistry, NoRegistry)
 	}
 	if err := known("[workspace]", cfg.Workspace.Registry); err != nil {
 		return err

@@ -39,7 +39,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	result.Authenticate = signIn.Authenticate
 	result.Credentials = append(result.Credentials, signIn.Credentials...)
 	for _, p := range params.Projects {
-		if p.Kind == protocol.ProjectPackage && publicPublish {
+		if p.Publishes() && publicPublish {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "PYPI_TOKEN", Description: "PyPI API token (or set TWINE_USERNAME/TWINE_PASSWORD and TWINE_REPOSITORY_URL)", Required: true})
 			break
 		}

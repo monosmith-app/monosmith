@@ -46,7 +46,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		Setup:      []protocol.Step{{Name: "Install the bundle", Command: []string{"bundle", "install"}, Blocking: true}},
 	}
 	for _, p := range params.Projects {
-		if p.Kind == protocol.ProjectPackage {
+		if p.Publishes() {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "GEM_HOST_API_KEY", Description: "RubyGems API key that can push the workspace's gems", Required: true})
 			break
 		}
