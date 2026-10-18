@@ -172,6 +172,11 @@ type ConventionConfig struct {
 	// ShortDescription is the one-line summary on Docker Hub (100 characters
 	// at most). Unset: the project's own description. Docker only.
 	ShortDescription string `toml:"short_description"`
+	// TagCommit also tags every image sha-<short commit>, and TagBranch with
+	// the release branch's name, for deployment platforms and GitOps agents
+	// that follow them. Docker only.
+	TagCommit *bool `toml:"tag_commit"`
+	TagBranch *bool `toml:"tag_branch"`
 	// Push turns the docker convention's push off for every app; default
 	// true when a registry is set. Docker only.
 	Push *bool `toml:"push"`
@@ -193,6 +198,9 @@ type DockerOverride struct {
 	DescriptionFrom string `toml:"description_from"`
 	// ShortDescription replaces the convention's short description.
 	ShortDescription string `toml:"short_description"`
+	// TagCommit and TagBranch replace the convention's.
+	TagCommit *bool `toml:"tag_commit"`
+	TagBranch *bool `toml:"tag_branch"`
 	// Push false builds the image but never pushes it on release.
 	Push *bool `toml:"push"`
 	// Context is the build context, workspace-relative: "." (the workspace,

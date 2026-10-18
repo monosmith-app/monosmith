@@ -139,7 +139,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return err
 	}
 	res.Published, res.Registry, res.Publish, res.Assets = pr.Published, pr.Registry, pr.Skipped, pr.Assets
-	if err := deploy(s, p, item, opts.DryRun, say); err != nil {
+	if err := deploy(s, p, item, opts.DryRun, res, say); err != nil {
 		return err
 	}
 	if err := distribute(s, p, item, pr, opts.DryRun, res, say); err != nil {
@@ -307,9 +307,11 @@ func PlannedAssets(s *session.Session, p *projectgraph.Project, version string) 
 
 // deploy publishes the project with each deploy plugin that ships it (a
 // container image to push), after its own plugin published it.
-func deploy(s *session.Session, p *projectgraph.Project, item Item, dryRun bool, say func(string, ...any)) error {
+func deploy(s *session.Session, p *projectgraph.Project, item Item, dryRun bool, res *ReportResult, say func(string, ...any)) error {
+	commit, _ := s.Git.RevParse("HEAD")
+	branch := s.Config.Release.Branch
 	for _, plugin := range p.Deployers {
-		params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun}
+		params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Commit: commit, Branch: branch}
 		var pr protocol.PublishResult
 		ok, err := s.Plugins.Call(plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
 		switch {
@@ -318,6 +320,10 @@ func deploy(s *session.Session, p *projectgraph.Project, item Item, dryRun bool,
 		case !ok:
 		case pr.Published:
 			say("%s published %s to %s", plugin, item.Next, pr.Registry)
+			for _, image := range pr.Images {
+				res.Images = append(res.Images, image)
+				say("  %s", ImageLine(image))
+			}
 		case pr.Skipped != "":
 			say("%s: %s", plugin, pr.Skipped)
 		}
