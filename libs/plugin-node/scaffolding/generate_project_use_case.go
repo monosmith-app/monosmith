@@ -28,6 +28,8 @@ type templateData struct {
 	Build string
 	// Up leads from the project to the workspace root (../../).
 	Up string
+	// TestSuffix is the workspace's test file suffix, "spec" or "test".
+	TestSuffix string
 }
 
 // Generate scaffolds one plain JavaScript project.
@@ -39,7 +41,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 // workspace's Node tooling the first time, and installs so the new package
 // is linked into node_modules.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot)}
 
 	var files []string
 	rootFiles, err := ensureWorkspace(workspaceRoot, params.Workspace.Name, set)

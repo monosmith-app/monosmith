@@ -63,7 +63,7 @@ var sliceTemplates = withGreetingSlice(map[string]string{
 `,
 	"[[.Dir]]/tsconfig.build.json": `{
   "extends": "./tsconfig.json",
-  "exclude": ["src/**/*.spec.ts"]
+  "exclude": ["src/**/*.[[.TestSuffix]].ts"]
 }
 `,
 })
