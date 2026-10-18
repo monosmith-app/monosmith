@@ -106,6 +106,19 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Check: "the repository has commits", OK: s.Git.HasCommits(),
 		Detail: "releases and affected detection need history", Remedy: "commit the workspace",
 	})
+	var ignored, tracked []string
+	if raw, err := s.Git.Run("ls-files", "--cached", "--ignored", "--exclude-standard"); err == nil {
+		ignored = lines(raw)
+	}
+	if raw, err := s.Git.Run("ls-files"); err == nil {
+		tracked = lines(raw)
+	}
+	generated := TrackedGenerated(ignored, tracked, s.Graph.Projects)
+	out = append(out, protocol.Finding{
+		Check: "no task rewrites a tracked file", OK: len(generated) == 0, Warning: true,
+		Detail: "a run leaves these changed, and the release refuses a dirty tree (smith ci verify fails on them): " + strings.Join(generated, "; "),
+		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
+	})
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,
