@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -12,6 +13,8 @@ type Crate struct {
 	// manifest.
 	Name    string
 	Version string
+	// Description is the package's description, when it is a string.
+	Description string
 	// Kind and Stack are [package.metadata.smith] kind and stack.
 	Kind, Stack string
 	// PathDependencies are the crates it depends on by path (the workspace's
@@ -23,9 +26,11 @@ type Crate struct {
 
 type manifest struct {
 	Package *struct {
-		Name     string `toml:"name"`
-		Version  any    `toml:"version"`
-		Metadata struct {
+		Name    string `toml:"name"`
+		Version any    `toml:"version"`
+		// Description is a string, or a table when inherited from the workspace.
+		Description any `toml:"description"`
+		Metadata    struct {
 			Smith struct {
 				Kind  string `toml:"kind"`
 				Stack string `toml:"stack"`
@@ -51,6 +56,9 @@ func ParseCargo(src []byte) (Crate, error) {
 		c.Name = m.Package.Name
 		if v, ok := m.Package.Version.(string); ok {
 			c.Version = v
+		}
+		if d, ok := m.Package.Description.(string); ok {
+			c.Description = strings.TrimSpace(d)
 		}
 		c.Kind, c.Stack = m.Package.Metadata.Smith.Kind, m.Package.Metadata.Smith.Stack
 	}

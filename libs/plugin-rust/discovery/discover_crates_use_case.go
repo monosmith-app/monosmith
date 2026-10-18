@@ -38,15 +38,16 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		}
 		kind := projectkind.Resolve(crate.Kind, root, fallback)
 		result.Projects = append(result.Projects, protocol.Project{
-			Name:     path.Base(root),
-			Root:     root,
-			Language: "rust",
-			Kind:     kind,
-			Exports:  []string{crate.Name},
-			Imports:  crate.PathDependencies,
-			Version:  crate.Version,
-			Tasks:    Tasks(crate.Name, kind),
-			Stack:    crate.Stack,
+			Name:        path.Base(root),
+			Root:        root,
+			Language:    "rust",
+			Kind:        kind,
+			Exports:     []string{crate.Name},
+			Imports:     crate.PathDependencies,
+			Version:     crate.Version,
+			Description: crate.Description,
+			Tasks:       Tasks(crate.Name, kind),
+			Stack:       crate.Stack,
 		})
 	}
 	return result, nil

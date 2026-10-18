@@ -74,3 +74,14 @@ func TestConventionSettingsWinOverTheProjectsOwn(t *testing.T) {
 		t.Fatalf("nothing at all: %v", got)
 	}
 }
+
+func TestTheShortDescriptionIsTheAppsElseTheConventions(t *testing.T) {
+	conv := workspace.ConventionConfig{ShortDescription: "For every app."}
+	if got := PluginSettings("docker", conv, workspace.ProjectOverride{}); !reflect.DeepEqual(got, map[string]any{"short_description": "For every app."}) {
+		t.Errorf("convention: %v", got)
+	}
+	po := workspace.ProjectOverride{Docker: &workspace.DockerOverride{ShortDescription: "For this app."}}
+	if got := PluginSettings("docker", conv, po); !reflect.DeepEqual(got, map[string]any{"short_description": "For this app."}) {
+		t.Errorf("app: %v", got)
+	}
+}

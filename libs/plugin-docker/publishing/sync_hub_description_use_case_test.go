@@ -20,6 +20,8 @@ type fakeHub struct {
 	requests     []string // "METHOD path"
 	loginBody    map[string]string
 	description  string
+	short        string
+	patch        map[string]string
 	authorized   string
 	patchStatus  int
 	loginStatus  int
@@ -40,7 +42,8 @@ func startHub(t *testing.T) *fakeHub {
 		case http.MethodPatch:
 			var body map[string]string
 			_ = json.Unmarshal(raw, &body)
-			hub.description, hub.authorized = body["full_description"], r.Header.Get("Authorization")
+			hub.description, hub.short, hub.patch = body["full_description"], body["description"], body
+			hub.authorized = r.Header.Get("Authorization")
 			hub.descriptions++
 			w.WriteHeader(hub.patchStatus)
 			_, _ = w.Write([]byte(`{"detail":"answer"}`))
@@ -197,7 +200,7 @@ func TestNothingIsSetWithoutADescriptionFileOrADockerHubRegistry(t *testing.T) {
 	ws, api := shipping(t, map[string]any{"registries": []any{"docker.io/opencraw"}})
 	bothCredentials(t)
 	hub := startHub(t)
-	if res, err := SyncDescription(ws, api, false); err != nil || res.Skipped != "no description_from" || len(hub.requests) != 0 {
+	if res, err := SyncDescription(ws, api, false); err != nil || res.Skipped != "no description_from or short description" || len(hub.requests) != 0 {
 		t.Errorf("%+v %v", res, err)
 	}
 	ws, api = shipping(t, map[string]any{"registries": []any{"ghcr.io/open-craw"}, "description_from": "README.md"})
@@ -222,5 +225,80 @@ func TestAMissingOrLongDescriptionFileIsHandled(t *testing.T) {
 	}
 	if len(hub.description) == 0 || len(hub.description) > hubDescriptionLimit || !strings.Contains(log.String(), "the description is cut") {
 		t.Errorf("a long README is cut to Docker Hub's limit: %d bytes\n%s", len(hub.description), log)
+	}
+}
+
+func TestTheShortDescriptionIsSetWithTheFullOne(t *testing.T) {
+	settings := hubSettings()
+	settings["short_description"] = "The OpenCraw API."
+	ws, api := shipping(t, settings)
+	bothCredentials(t)
+	hub := startHub(t)
+	withReadme(t, ws, "# opencraw")
+	res, err := SyncDescription(ws, api, false)
+	if err != nil || len(res.Failed) != 0 || res.Short != "The OpenCraw API." || res.Full != "README.md" {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if hub.descriptions != 1 || hub.short != "The OpenCraw API." || hub.description != "# opencraw" {
+		t.Errorf("one call sets both: %d calls, %v", hub.descriptions, hub.patch)
+	}
+}
+
+func TestTheShortDescriptionFallsBackToTheProjectsOwn(t *testing.T) {
+	ws, api := shipping(t, hubSettings())
+	api.Description = "What the API does."
+	bothCredentials(t)
+	hub := startHub(t)
+	withReadme(t, ws, "# opencraw")
+	if _, err := SyncDescription(ws, api, false); err != nil || hub.short != "What the API does." {
+		t.Errorf("%v, short %q", err, hub.short)
+	}
+	// The setting wins over the project's description.
+	api.Settings["docker"]["short_description"] = "From smith.toml."
+	if _, err := SyncDescription(ws, api, false); err != nil || hub.short != "From smith.toml." {
+		t.Errorf("%v, short %q", err, hub.short)
+	}
+}
+
+func TestTheShortDescriptionAloneNeedsNoFile(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registries": []any{"docker.io/opencraw"}, "image": "opencraw-api"})
+	api.Description = "What the API does."
+	bothCredentials(t)
+	hub := startHub(t)
+	res, err := SyncDescription(ws, api, false)
+	if err != nil || len(res.Failed) != 0 || hub.short != "What the API does." {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if _, has := hub.patch["full_description"]; has {
+		t.Errorf("the full description is left alone: %v", hub.patch)
+	}
+}
+
+func TestALongShortDescriptionIsCutWithAWarning(t *testing.T) {
+	settings := hubSettings()
+	settings["short_description"] = strings.Repeat("word ", 30)
+	ws, api := shipping(t, settings)
+	bothCredentials(t)
+	hub := startHub(t)
+	log := capture(t)
+	withReadme(t, ws, "# opencraw")
+	if _, err := SyncDescription(ws, api, false); err != nil {
+		t.Fatal(err)
+	}
+	if n := len([]rune(hub.short)); n > 100 || !strings.HasSuffix(hub.short, "word…") || !strings.Contains(log.String(), "short description is longer than the 100") {
+		t.Errorf("%d characters, %q\n%s", n, hub.short, log)
+	}
+}
+
+func TestADryRunReportsBothDescriptions(t *testing.T) {
+	settings := hubSettings()
+	settings["short_description"] = "The OpenCraw API."
+	ws, api := shipping(t, settings)
+	bothCredentials(t)
+	hub := startHub(t)
+	withReadme(t, ws, "# opencraw")
+	res, err := SyncDescription(ws, api, true)
+	if err != nil || res.Short != "The OpenCraw API." || res.Full != "README.md" || len(hub.requests) != 0 {
+		t.Errorf("%+v %v, requests %v", res, err, hub.requests)
 	}
 }

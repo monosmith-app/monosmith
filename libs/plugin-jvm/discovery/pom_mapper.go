@@ -8,6 +8,8 @@ import (
 // Pom is what smith reads from a pom.xml.
 type Pom struct {
 	GroupID, ArtifactID, Version, Packaging string
+	// Description is the pom's <description>.
+	Description string
 	// Kind and Stack are the smith.kind and smith.stack properties.
 	Kind, Stack string
 	// Dependencies are groupId:artifactId of every dependency.
@@ -20,11 +22,12 @@ type Pom struct {
 func (p Pom) Coordinates() string { return p.GroupID + ":" + p.ArtifactID }
 
 type pomXML struct {
-	GroupID    string `xml:"groupId"`
-	ArtifactID string `xml:"artifactId"`
-	Version    string `xml:"version"`
-	Packaging  string `xml:"packaging"`
-	Parent     struct {
+	GroupID     string `xml:"groupId"`
+	ArtifactID  string `xml:"artifactId"`
+	Version     string `xml:"version"`
+	Packaging   string `xml:"packaging"`
+	Description string `xml:"description"`
+	Parent      struct {
 		GroupID string `xml:"groupId"`
 		Version string `xml:"version"`
 	} `xml:"parent"`
@@ -47,7 +50,7 @@ func ParsePom(src []byte) (Pom, error) {
 	if err := xml.Unmarshal(src, &x); err != nil {
 		return Pom{}, err
 	}
-	p := Pom{GroupID: strings.TrimSpace(x.GroupID), ArtifactID: strings.TrimSpace(x.ArtifactID), Version: strings.TrimSpace(x.Version), Packaging: strings.TrimSpace(x.Packaging), Modules: x.Modules}
+	p := Pom{GroupID: strings.TrimSpace(x.GroupID), ArtifactID: strings.TrimSpace(x.ArtifactID), Version: strings.TrimSpace(x.Version), Packaging: strings.TrimSpace(x.Packaging), Description: strings.TrimSpace(x.Description), Modules: x.Modules}
 	if p.GroupID == "" {
 		p.GroupID = strings.TrimSpace(x.Parent.GroupID)
 	}
