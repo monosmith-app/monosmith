@@ -111,7 +111,7 @@ func stepAfter(out, first string) string {
 }
 
 // A remote cache's key and credentials reach every GitHub step that runs
-// tasks, from secrets; the audit runs none.
+// tasks, from secrets; the audit keeps its verdicts in the cache.
 func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
 	cases := map[string][]string{
 		"azblob://acme/smith-cache/main": {"SMITH_CACHE_KEY", "AZURE_STORAGE_SAS_TOKEN"},
@@ -120,7 +120,7 @@ func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
 	}
 	for remote, envs := range cases {
 		out := RenderGitHub(cacheModel(remote, true))
-		for _, step := range []string{"      - name: Verify\n        run: smith ci verify", "      - name: Pack\n", "      - name: Native\n"} {
+		for _, step := range []string{"      - name: Audit\n        run: smith ci audit", "      - name: Verify\n        run: smith ci verify", "      - name: Pack\n", "      - name: Native\n"} {
 			body := stepAfter(out, step)
 			if body == "" {
 				t.Fatalf("%s: no step %q in\n%s", remote, step, out)
@@ -130,9 +130,6 @@ func TestGitHubPassesTheCacheToTheStepsThatRunTasks(t *testing.T) {
 					t.Errorf("%s: %q lacks %s:\n%s", remote, step, env, body)
 				}
 			}
-		}
-		if audit := stepAfter(out, "      - name: Audit\n"); strings.Contains(audit, "SMITH_CACHE_KEY") {
-			t.Errorf("%s: the audit runs no task and gets no cache env:\n%s", remote, audit)
 		}
 	}
 }

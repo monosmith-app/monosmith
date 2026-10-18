@@ -83,6 +83,12 @@ type Step struct {
 	Dir string `json:"dir,omitempty"`
 	// Blocking false makes a failure a warning instead of an error.
 	Blocking bool `json:"blocking"`
+	// CacheFiles are workspace-relative files whose content decides what an
+	// audit step finds (a lockfile). When any exists, smith remembers a
+	// passing run per content of these files and per day, in the task cache,
+	// and skips the step while both are unchanged; a failing run is always
+	// repeated. Only the audit phase reads it.
+	CacheFiles []string `json:"cacheFiles,omitempty"`
 }
 
 // Credential is a secret the release phase needs.

@@ -56,7 +56,9 @@ func azureSteps(m Model) string {
 	b.WriteString(azureEnv("    ", m.SetupCredentials()))
 	b.WriteString(`  - bash: smith ci audit
     displayName: Audit
-  - bash: smith ci verify
+`)
+	b.WriteString(azureEnv("    ", m.TaskCredentials()))
+	b.WriteString(`  - bash: smith ci verify
     displayName: Verify
 `)
 	b.WriteString(azureEnv("    ", m.TaskCredentials()))

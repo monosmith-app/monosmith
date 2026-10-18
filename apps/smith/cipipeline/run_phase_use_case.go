@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -83,7 +84,11 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if len(steps) == 0 {
 			fmt.Fprintln(out, "nothing to "+phase)
 		}
-		return runSteps(ctx, s.Root, steps, out)
+		var remembered *verdicts
+		if phase == "audit" {
+			remembered = openVerdicts(s)
+		}
+		return runSteps(ctx, s.Root, steps, remembered, out)
 	case "verify":
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
@@ -147,7 +152,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if err != nil {
 			return err
 		}
-		return runSteps(ctx, s.Root, c.PostRelease, out)
+		return runSteps(ctx, s.Root, c.PostRelease, nil, out)
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
 }
@@ -248,9 +253,20 @@ func MarkedForVerify(projects []*projectgraph.Project, installed func(string) bo
 	return byTask, missing
 }
 
-func runSteps(ctx context.Context, root string, steps []protocol.Step, out io.Writer) error {
+func runSteps(ctx context.Context, root string, steps []protocol.Step, remembered *verdicts, out io.Writer) error {
 	var failures []string
 	for _, step := range steps {
+		var key string
+		var inputs taskcache.KeyInputs
+		if remembered != nil {
+			var ok bool
+			if key, inputs, ok = remembered.keyOf(step); ok {
+				if since, hit := remembered.passed(key); hit {
+					replay(out, step, since)
+					continue
+				}
+			}
+		}
 		fmt.Fprintf(out, "▶ %s\n", step.Name)
 		argv := make([]string, len(step.Command))
 		for i, a := range step.Command {
@@ -260,8 +276,14 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, out io.Wr
 		if step.Dir != "" {
 			dir = filepath.Join(root, filepath.FromSlash(step.Dir))
 		}
+		began := time.Now()
 		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: argv, Dir: dir, Env: os.Environ(), Out: out})
 		if err == nil && code == 0 {
+			if key != "" {
+				if err := remembered.remember(key, step, inputs, time.Since(began)); err != nil {
+					warn(out, step.Name+": the verdict was not remembered: "+err.Error())
+				}
+			}
 			continue
 		}
 		msg := fmt.Sprintf("%s (exit %d)", step.Name, code)
