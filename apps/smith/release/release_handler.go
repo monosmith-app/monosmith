@@ -18,7 +18,7 @@ import (
 // Command is `smith release`.
 func Command(version string) *cobra.Command {
 	var (
-		dryRun, yes, noPush, asJSON, comment, notes bool
+		dryRun, yes, noPush, asJSON, comment, notes, status bool
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
@@ -27,7 +27,11 @@ func Command(version string) *cobra.Command {
 feat → minor, fix/perf → patch, a breaking change → major (minor before 1.0).
 Packages release in dependency order. Each is stamped, built, published and
 tagged; manifests are restored afterwards (the tag is the record). A re-run
-after a failure resumes where it stopped.`,
+after a failure resumes where it stopped. Before the first publish every
+npm, PyPI, NuGet and RubyGems registry is asked whether it accepts the
+credential and the names, so a bad key stops the release before anything is
+published. What was published where is kept in dist/release/<project>/journal.json
+(smith release --status).`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
 			if comment && !dryRun {
@@ -43,6 +47,19 @@ after a failure resumes where it stopped.`,
 				return err
 			}
 			defer s.Close()
+			if status {
+				journals, err := ReadJournals(s.Root)
+				if err != nil {
+					return err
+				}
+				if asJSON {
+					enc := json.NewEncoder(out)
+					enc.SetIndent("", "  ")
+					return enc.Encode(journals)
+				}
+				fmt.Fprint(out, RenderJournalStatus(journals))
+				return nil
+			}
 			var blockers []string
 			for _, f := range CheckLineage(s, true) {
 				if f.Blocking {
@@ -107,6 +124,7 @@ after a failure resumes where it stopped.`,
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
 	cmd.Flags().BoolVar(&noPush, "no-push", false, "create tags locally only")
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
+	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the release report as JSON")
 	cmd.Flags().BoolVar(&comment, "comment", false, "with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment")
 	return cmd
