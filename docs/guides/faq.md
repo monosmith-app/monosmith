@@ -150,8 +150,9 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 
 ### Why does CI install smith from a script?
 
-The generated pipeline downloads the `smith` binary (`SMITH_VERSION: latest` by
-default) with `install.sh`. Pin a version by changing that value. See
+The generated pipeline downloads the `smith` binary with `install.sh`, pinned
+to the version that generated it (a development build writes
+`SMITH_VERSION: latest`). Change that value to pin another version. See
 [installing](installing.md).
 
 ### How does CI cache package downloads?
@@ -190,7 +191,9 @@ the job.
 ### What tag does smith create?
 
 `<project>@<version>` for each released project, for example `sdk@0.1.0`
-(`tag_prefix` changes the prefix).
+(`tag_prefix` changes the prefix). A Go package is tagged `<dir>/v<version>`
+(for example `packages/gokit/v0.1.0`), which is how `go get` finds a nested
+module's version. See [releasing](../reference/releasing.md#tags).
 
 ## Installing and upgrading
 

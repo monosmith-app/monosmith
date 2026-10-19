@@ -140,8 +140,8 @@ workspace (that is `smith convert`'s). Warnings include a root `package.json`
 with runtime dependencies (in smith each project declares what it uses) and a
 pipeline of yours at a path smith's uses, which `--init` keeps as
 `<file>.pre-smith`. When a project's existing release tags are named differently
-from the way smith names them (`<project>@<version>`, for example `sdk@0.1.0`),
-its next release would start from scratch; `--tags` creates the missing tags
+from the way smith names them (`<project>@<version>`, for example `sdk@0.1.0`;
+`<dir>/v<version>` for a Go package), its next release would start from scratch; `--tags` creates the missing tags
 locally, on the same commits, and pushing them is yours. Both steps need a clean
 git tree. `--init` takes the workspace name from the directory, the npm scope
 from the root `package.json` and the CI providers from the ones the repository

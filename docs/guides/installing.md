@@ -57,8 +57,8 @@ install smith this way, pinned to the version that generated them. Set
 
 ### Linux packages
 
-From the release after PR #243, each GitHub Release also carries a `.deb` and
-an `.rpm` for x64 and arm64, with the binary in `/usr/bin`:
+Each GitHub Release also carries a `.deb` and an `.rpm` for x64 and arm64, with
+the binary in `/usr/bin`:
 
 ```sh
 sudo apt install ./monosmith_<version>_amd64.deb

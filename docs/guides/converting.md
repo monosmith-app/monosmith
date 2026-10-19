@@ -17,6 +17,19 @@ git add -A && git commit -m "chore: convert to smith"
 Convert needs a git repository with a clean working tree (or `--allow-dirty`),
 so the whole conversion is one change you can review and undo.
 
+| Flag | Meaning |
+|---|---|
+| `--dry-run` | report the plan; change nothing. Always run this first |
+| `--allow-dirty` | convert even with uncommitted changes |
+| `--strict` | refuse to convert while anything needs manual work or is unsupported |
+| `--skip-install` | do not run `npm install` afterwards |
+| `--json` | print the plan as JSON, for tools |
+
+If your repository is not an Nx workspace at all, you want
+[`smith adopt`](getting-started.md#or-adopt-an-existing-repository) instead.
+Words used below (project, kind, task, stack) are defined in the
+[glossary](../reference/glossary.md).
+
 ## How it reads the workspace
 
 Convert asks the workspace's own Nx for its project graph (`nx graph --file`).
