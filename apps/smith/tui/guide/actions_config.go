@@ -1,4 +1,4 @@
-package tui
+package guide
 
 // Step is one question: a choice from options, or free text when Options is nil.
 type Step struct {

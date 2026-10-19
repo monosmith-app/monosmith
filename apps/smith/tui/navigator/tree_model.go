@@ -285,3 +285,29 @@ func (t Tree) line(th theme.Theme, r Row, w int, selected, hovered, focused bool
 	}
 	return pane.Fit(" "+text, w)
 }
+
+// Ordered returns the projects in the order the tree lists them: by kind
+// (apps, libs, packages, then others), then by name.
+func (t Tree) Ordered() []Project {
+	var out []Project
+	seen := map[string]bool{}
+	for _, r := range t.openAll().Rows() {
+		if r.Kind == ProjectRow && !seen[r.Project] {
+			seen[r.Project] = true
+			out = append(out, t.byName[r.Project])
+		}
+	}
+	return out
+}
+
+// openAll is the tree with every group open, to list all projects.
+func (t Tree) openAll() Tree {
+	t.open = cloneSet(t.open)
+	for _, p := range t.projects {
+		t.open["group:"+p.Kind] = true
+	}
+	return t
+}
+
+// CursorLine is the line, from the top of the visible rows, the cursor is on.
+func (t Tree) CursorLine() int { return min(max(t.cursor-t.top, 0), t.height-1) }

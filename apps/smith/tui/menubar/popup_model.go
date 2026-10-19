@@ -74,7 +74,7 @@ func (p Popup) Key(name string) (Popup, Result) {
 			}
 			return Popup{}, Result{Handled: true, Chosen: e.ID}
 		}
-	case "esc", "shift+f10":
+	case "esc", "ctrl+o":
 		return Popup{}, Result{Handled: true}
 	}
 	return p, Result{Handled: true}

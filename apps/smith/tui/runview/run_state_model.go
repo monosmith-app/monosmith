@@ -66,6 +66,14 @@ func (r *Run) task(id string) *Task {
 	return t
 }
 
+// Plan adds tasks expected to run that are not known yet, as queued, so the
+// progress bar has its total. Tasks already seen keep their state.
+func (r *Run) Plan(ids []string) {
+	for _, id := range ids {
+		r.task(id)
+	}
+}
+
 // Task returns the task with an ID, or nil.
 func (r *Run) Task(id string) *Task { return r.index[id] }
 

@@ -31,6 +31,15 @@ type Exit struct {
 	Err       error
 }
 
+// Handle is what the shell needs of a running command, so tests can replace
+// the process with a script.
+type Handle interface {
+	// Next blocks for output and, at the end, the exit (see Process.Next).
+	Next() (lines []string, exit *Exit)
+	// Stop asks the command to stop.
+	Stop()
+}
+
 // Process is a running child. Lines arrive through Next.
 type Process struct {
 	lines  chan string

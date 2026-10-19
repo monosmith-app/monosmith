@@ -10,7 +10,7 @@ func (c Command) Unavailable(s State) string {
 	case c.NeedsIdle && s.Running:
 		return "a run is in progress (Ctrl+C stops it)"
 	case c.NeedsSelection && !s.HasSelection:
-		return "select a project or task in the navigator first"
+		return "select a task in the navigator first"
 	}
 	return ""
 }

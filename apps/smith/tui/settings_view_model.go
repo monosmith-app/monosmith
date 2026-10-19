@@ -8,6 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // setting is one row of the settings view: a field of smith.toml and its value
@@ -25,7 +28,7 @@ type settingsLoaded struct {
 
 // settingsView lists smith.toml's settings. Enter edits one (a boolean
 // toggles), checked against the schema before it leaves the shell as `smith
-// config set`; u returns one to its default with `smith config unset`.
+// config set`; Ctrl+U (or Delete) returns one to its default with `smith config unset`.
 type settingsView struct {
 	loaded   bool
 	settings []setting
@@ -90,11 +93,11 @@ func (v settingsView) update(key tea.KeyMsg) (settingsView, []string) {
 		return v, nil
 	}
 	switch key.String() {
-	case "up", "k":
+	case "up":
 		v.cursor = (v.cursor - 1 + len(v.settings)) % len(v.settings)
-	case "down", "j":
+	case "down":
 		v.cursor = (v.cursor + 1) % len(v.settings)
-	case "u":
+	case "ctrl+u", "delete":
 		if s.set {
 			return v, []string{"config", "unset", s.field.Path}
 		}
@@ -111,38 +114,53 @@ func (v settingsView) update(key tea.KeyMsg) (settingsView, []string) {
 	return v, nil
 }
 
-func (v settingsView) view() string {
+// view draws the settings in w cells; rowOf maps a line to the setting drawn on it.
+func (v settingsView) view(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
+	rowOf = map[int]int{}
 	if v.err != nil {
-		return errorStyle.Render(v.err.Error()) + "\n"
+		return []string{th.Failure(v.err.Error())}, rowOf
 	}
 	if !v.loaded {
-		return hintStyle.Render("Reading smith.toml…") + "\n"
+		return []string{th.Muted("Reading smith.toml…")}, rowOf
 	}
-	var b strings.Builder
 	for i, s := range v.settings {
 		value := s.value
 		if !s.set {
-			value = hintStyle.Render("(default)")
+			value = th.Muted("(default)")
 		}
-		b.WriteString(line(i == v.cursor, "", s.field.Path, value))
+		rowOf[len(lines)] = i
+		lines = append(lines, guide.Row(th, i == v.cursor, "", s.field.Path, value))
 	}
-	s := v.settings[v.cursor]
-	b.WriteString("\n" + hintStyle.Render(s.field.Description) + "\n")
-	if v.editing {
-		hint := "one value"
-		if s.field.Type == "array" {
-			hint = "values separated by spaces"
-			if len(s.field.Enum) > 0 {
-				hint += " (" + strings.Join(s.field.Enum, ", ") + ")"
+	if len(v.settings) > 0 {
+		s := v.settings[min(v.cursor, len(v.settings)-1)]
+		lines = append(lines, "", th.Muted(s.field.Description))
+		if v.editing {
+			hint := "one value"
+			if s.field.Type == "array" {
+				hint = "values separated by spaces"
+				if len(s.field.Enum) > 0 {
+					hint += " (" + strings.Join(s.field.Enum, ", ") + ")"
+				}
 			}
+			lines = append(lines, "", th.Title(s.field.Path+" = ")+v.input.View(),
+				th.Muted(hint+" · enter save (smith config set) · esc cancel"))
+		} else {
+			lines = append(lines, "", th.Muted("up/down move · enter edit (a yes/no setting flips) · u back to the default"))
 		}
-		b.WriteString("\n" + titleStyle.Render(s.field.Path+" = ") + v.input.View() + "\n")
-		b.WriteString(hintStyle.Render(hint+" · enter save (smith config set) · esc cancel") + "\n")
-	} else {
-		b.WriteString(hintStyle.Render("\n↑/↓ move · enter edit (a yes/no setting flips) · u back to the default") + "\n")
 	}
 	if v.problem != "" {
-		b.WriteString(errorStyle.Render(v.problem) + "\n")
+		lines = append(lines, th.Failure(v.problem))
 	}
-	return b.String()
+	for i := range lines {
+		lines[i] = pane.Fit(lines[i], w)
+	}
+	return lines, rowOf
+}
+
+// selectRow moves the cursor to setting i.
+func (v settingsView) selectRow(i int) settingsView {
+	if v.loaded && !v.editing && i >= 0 && i < len(v.settings) {
+		v.cursor = i
+	}
+	return v
 }

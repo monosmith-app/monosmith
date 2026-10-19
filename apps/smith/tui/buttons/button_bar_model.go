@@ -86,3 +86,28 @@ func (bar Bar) Render(th theme.Theme, tick int, hover string, w int) string {
 	}
 	return pane.Fit(strings.Join(parts, strings.Repeat(" ", gap)), w)
 }
+
+// Wrap splits the buttons into rows that each fit in w cells, so a narrow
+// screen shows every button on a second row instead of dropping some. A button
+// wider than w gets a row of its own and is cut.
+func (bar Bar) Wrap(th theme.Theme, w int) []Bar {
+	var rows []Bar
+	var row Bar
+	used := 0
+	for _, b := range bar {
+		n := pane.Width(b.text(th, 0))
+		if len(row) > 0 && used+gap+n > w {
+			rows = append(rows, row)
+			row, used = nil, 0
+		}
+		if len(row) > 0 {
+			used += gap
+		}
+		row = append(row, b)
+		used += n
+	}
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+	return rows
+}

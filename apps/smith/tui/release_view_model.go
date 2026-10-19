@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// releaseView shows what the next release would do; releasing itself leaves
-// the shell for `smith release`, which confirms and streams its progress.
+// releaseView shows what the next release would do; releasing itself runs
+// `smith release` in the run view, after a confirmation that shows the command.
 type releaseView struct {
 	loaded   bool
 	plan     release.Plan
@@ -24,42 +26,52 @@ type releaseLoaded struct {
 	err      error
 }
 
-func (v releaseView) view() string {
-	if v.err != nil {
-		return errorStyle.Render(v.err.Error()) + "\n"
-	}
-	if !v.loaded {
-		return hintStyle.Render("Planning the release…") + "\n"
-	}
-	var b strings.Builder
-	for _, w := range v.warnings {
-		b.WriteString(hintStyle.Render("warning: "+w) + "\n")
-	}
-	if len(v.blockers) > 0 {
-		b.WriteString(errorStyle.Render("The release is blocked: its tags would give wrong versions.") + "\n\n")
+func (v releaseView) view(th theme.Theme, w int) []string {
+	var lines []string
+	switch {
+	case v.err != nil:
+		lines = append(lines, th.Failure(v.err.Error()))
+	case !v.loaded:
+		lines = append(lines, th.Muted("Planning the release…"))
+	case len(v.blockers) > 0:
+		for _, m := range v.warnings {
+			lines = append(lines, th.Warning("warning: "+m))
+		}
+		lines = append(lines, th.Failure("The release is blocked: its tags would give wrong versions."), "")
 		for _, m := range v.blockers {
-			b.WriteString("  • " + m + "\n")
+			lines = append(lines, "  • "+m)
 		}
-		b.WriteString(hintStyle.Render("\np smith release --dry-run (shows the same)") + "\n")
-		return b.String()
-	}
-	if len(v.plan.Items) == 0 {
-		b.WriteString("Nothing to release.\n")
-	}
-	for _, item := range v.plan.Items {
-		from := item.Current
-		if from == "" {
-			from = "new"
+		lines = append(lines, "", th.Muted("F2 shows the same with smith release --dry-run"))
+	default:
+		for _, m := range v.warnings {
+			lines = append(lines, th.Warning("warning: "+m))
 		}
-		fmt.Fprintf(&b, "  %-24s %s → %s  %s\n", item.Project, from, cursorStyle.Render(item.Next), hintStyle.Render(item.Reason))
+		if len(v.plan.Items) == 0 {
+			lines = append(lines, "Nothing to release.")
+		}
+		for _, item := range v.plan.Items {
+			from := item.Current
+			if from == "" {
+				from = "new"
+			}
+			lines = append(lines, fmt.Sprintf("  %-24s %s → %s  %s", item.Project, from, th.Accent(item.Next), th.Muted(item.Reason)))
+		}
+		if len(v.plan.Unchanged) > 0 {
+			lines = append(lines, "", th.Muted("unchanged: "+strings.Join(v.plan.Unchanged, ", ")))
+		}
+		help := "F2 preview (smith release --dry-run)"
+		if len(v.plan.Items) > 0 {
+			help += " · F3 release (smith release: confirms first)"
+		}
+		lines = append(lines, "", th.Muted(help))
 	}
-	if len(v.plan.Unchanged) > 0 {
-		b.WriteString(hintStyle.Render("\nunchanged: "+strings.Join(v.plan.Unchanged, ", ")) + "\n")
+	for i := range lines {
+		lines[i] = pane.Fit(lines[i], w)
 	}
-	help := "\np preview (smith release --dry-run)"
-	if len(v.plan.Items) > 0 {
-		help += " · R release (smith release: confirms, then streams)"
-	}
-	b.WriteString(hintStyle.Render(help) + "\n")
-	return b.String()
+	return lines
+}
+
+// canRelease reports whether a release can be started from the plan.
+func (v releaseView) canRelease() bool {
+	return v.loaded && v.err == nil && len(v.blockers) == 0 && len(v.plan.Items) > 0
 }

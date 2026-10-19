@@ -78,7 +78,7 @@ func TestWhileARunIsGoingNothingElseStartsAndStopIsAvailable(t *testing.T) {
 }
 
 func TestRunSelectionNeedsASelection(t *testing.T) {
-	if _, reason, _ := ByKey("ctrl+r", State{InWorkspace: true}); !strings.Contains(reason, "select a project or task") {
+	if _, reason, _ := ByKey("ctrl+r", State{InWorkspace: true}); !strings.Contains(reason, "select a task in the navigator") {
 		t.Fatalf("%q", reason)
 	}
 }

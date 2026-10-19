@@ -32,6 +32,8 @@ const (
 	PrevPane
 	// ReloadDoctor runs doctor again.
 	ReloadDoctor
+	// ContextMenu opens the context menu of the selection.
+	ContextMenu
 )
 
 // The ids of the main views.
@@ -79,6 +81,6 @@ type State struct {
 	InWorkspace bool
 	// Running is true while a command is running in the run view.
 	Running bool
-	// HasSelection is true when a project or task is selected in the navigator.
+	// HasSelection is true when a task is selected in the navigator.
 	HasSelection bool
 }

@@ -70,6 +70,7 @@ var all = []Command{
 	{ID: "view.doctor", Menu: MenuView, Title: "Doctor", Keys: []string{"alt+3"}, Shortcut: "Alt+3", Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
 	{ID: "view.next-pane", Menu: MenuView, Title: "Next pane", Hint: "move the focus: navigator, main, inspector", Keys: []string{"tab", "f6"}, Shortcut: "Tab", Kind: NextPane},
 	{ID: "view.prev-pane", Menu: MenuView, Title: "Previous pane", Keys: []string{"shift+tab"}, Shortcut: "Shift+Tab", Kind: PrevPane},
+	{ID: "view.context", Menu: MenuView, Title: "Context menu", Hint: "actions for the selection (the right button does the same)", Keys: []string{"ctrl+o"}, Shortcut: "Ctrl+O", Kind: ContextMenu},
 
 	// Help
 	{ID: "help.keys", Menu: MenuHelp, Title: "Keyboard shortcuts", Hint: "every shortcut", Keys: []string{"f1", "?"}, Shortcut: "F1", Kind: Help},

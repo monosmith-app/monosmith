@@ -54,3 +54,14 @@ func Overlay(base []string, over []string, x, y int) []string {
 	}
 	return out
 }
+
+// Cut shortens s to at most w cells without padding it.
+func Cut(s string, w int) string {
+	if w <= 0 {
+		return ""
+	}
+	return ansi.Truncate(s, w, "")
+}
+
+// Strip removes the colour codes from s.
+func Strip(s string) string { return ansi.Strip(s) }

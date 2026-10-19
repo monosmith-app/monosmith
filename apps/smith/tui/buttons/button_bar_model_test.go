@@ -43,3 +43,18 @@ func TestABusyButtonShowsTheSpinner(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+func TestWrapKeepsEveryButtonByStartingANewRow(t *testing.T) {
+	th := theme.Default()
+	bar := Bar{{ID: "a", Label: "aaaaaaaa"}, {ID: "b", Label: "bbbbbbbb"}, {ID: "c", Label: "cccccccc"}}
+	rows := bar.Wrap(th, 24) // each button is 10 wide; two fit with the gap (22), three do not
+	if len(rows) != 2 || len(rows[0]) != 2 || len(rows[1]) != 1 || rows[1][0].ID != "c" {
+		t.Fatalf("%v", rows)
+	}
+	if rows := bar.Wrap(th, 200); len(rows) != 1 {
+		t.Fatalf("%v", rows)
+	}
+	if rows := (Bar{}).Wrap(th, 10); rows != nil {
+		t.Fatalf("%v", rows)
+	}
+}
