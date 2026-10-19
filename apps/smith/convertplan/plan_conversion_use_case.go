@@ -30,8 +30,25 @@ type Input struct {
 
 var goModule = regexp.MustCompile(`(?m)^module\s+"?([^\s"]+)"?\s*$`)
 
-// MakePlan decides the whole conversion without touching the disk.
+// Removal plans what a conversion removes of the tool it converts from: its
+// configuration files, dependencies and the code that imports it.
+type Removal func(plan *Plan, w *nxworkspace.Workspace, files []string, read func(string) string)
+
+// MakePlan decides the whole conversion of an Nx workspace without touching
+// the disk.
 func MakePlan(w *nxworkspace.Workspace, in Input) *Plan {
+	plan := MakePlanWith(w, in, planNxRemoval)
+	plan.Source = SourceNx
+	if plan.Legacy {
+		plan.Source = SourceMnci
+	}
+	return plan
+}
+
+// MakePlanWith is MakePlan for any source workspace described as an Nx one:
+// its projects, release set and workspace settings become the plan, and
+// removal decides what goes of the tool it came from.
+func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	plan := &Plan{Root: w.Root, Legacy: w.Legacy(), RootScripts: map[string]string{}}
 	has := map[string]bool{}
 	for _, f := range in.Files {
@@ -106,7 +123,7 @@ func MakePlan(w *nxworkspace.Workspace, in Input) *Plan {
 			}
 		}
 	}
-	planNxRemoval(plan, w, in.Files, in.Read)
+	removal(plan, w, in.Files, in.Read)
 	planPythonTools(plan, in)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
 		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
