@@ -1,5 +1,7 @@
 # Configuration: `smith.toml`
 
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). The full list of commands and flags is in the [CLI reference](cli.md).
+
 One file at the workspace root, and the only one smith reads. Its presence marks
 the workspace root. Every setting has a default; a typo in a key is an error,
 never a silently ignored setting.
@@ -383,6 +385,7 @@ See [Releasing](releasing.md#apps).
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/` |
 | `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |
+| `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |
 | `NUGET_PUSH_URL` | the NuGet v2 push endpoint for an app's .NET tool packages (default nuget.org) |
 | `RUBYGEMS_HOST` | the gem server for an app's platform gems (default rubygems.org) |

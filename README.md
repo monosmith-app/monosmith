@@ -46,8 +46,8 @@ dart pub global activate monosmith
 ```
 
 Or download a zip from the [releases](https://github.com/monosmith-app/monosmith/releases).
-From the release after PR #243, each release also carries a `.deb` and an
-`.rpm`. Linux, macOS and Windows on x64 and arm64 are supported.
+Each release also carries a `.deb` and an `.rpm`. Linux, macOS and Windows on
+x64 and arm64 are supported.
 [Installing](docs/guides/installing.md) covers each channel, upgrading, checking a
 download, and the unsigned-binary prompts a browser download gets.
 
@@ -72,19 +72,24 @@ workspaces and those made by mnci.
 
 ## Documentation
 
-Everything is in [docs/](docs/README.md), in four sections:
+Start with [getting started](docs/guides/getting-started.md), a hands-on tour.
+Everything is in [docs/](docs/README.md), organised by what you want to do, and
+in four sections:
 
 - **Guides:** [installing](docs/guides/installing.md),
   [getting started](docs/guides/getting-started.md),
   [converting from Nx](docs/guides/converting.md),
-  [editors](docs/guides/editors.md)
-- **Reference:** [configuration (`smith.toml`)](docs/reference/configuration.md),
+  [editors](docs/guides/editors.md),
+  [writing a plugin](docs/guides/writing-a-plugin.md),
+  [troubleshooting](docs/guides/troubleshooting.md), [FAQ](docs/guides/faq.md)
+- **Reference:** [CLI](docs/reference/cli.md), [glossary](docs/reference/glossary.md),
+  [configuration (`smith.toml`)](docs/reference/configuration.md),
   [tasks, cache and affected](docs/reference/tasks-and-cache.md),
   [CI pipelines](docs/reference/ci.md), [releasing](docs/reference/releasing.md),
   [stacks](docs/reference/stacks.md), [recipes](docs/reference/recipes.md),
   [conventions](docs/reference/conventions.md),
   [plugins and the protocol](docs/reference/plugins.md)
-- **Design:** [architecture](docs/design/architecture.md),
+- **Design:** [architecture](docs/design/architecture.md), [plugin system](docs/design/plugin-system.md),
   [decisions](docs/design/decisions.md), [research](docs/design/research/)
 - **Contributing:** [working on MonoSmith](docs/contributing/development.md)
 

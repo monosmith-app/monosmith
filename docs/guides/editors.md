@@ -11,6 +11,29 @@ written against the old TypeScript mnci.
 | `smith projects --json` | each project: `name`, `dir`, `kind`, `ecosystem` (`npm`, `pip`, `go`, or the plugin's name), `targets` (its tasks), and also `root`, `language`, `plugin`, `stack`, `deps`, `tasks` |
 | `smith info --json` | `cli` (`version`, `latest` — the newest release, or null when it cannot be found out quickly — and `updateAvailable`) and `workspace` (`root` and `smith.toml` as JSON), or `"workspace": null` outside a workspace |
 
+For example, the start of `smith projects --json` in a workspace with a Go app
+that imports a Go lib:
+
+```json
+[
+  {
+    "name": "api",
+    "root": "apps/api",
+    "dir": "apps/api",
+    "kind": "app",
+    "language": "go",
+    "ecosystem": "go",
+    "plugin": "go",
+    "deps": ["core"],
+    "tasks": ["build", "lint", "package", "slice-check", "start", "test"],
+    "targets": ["build", "lint", "package", "slice-check", "start", "test"]
+  }
+]
+```
+
+(Real output is indented one item per line; shortened here.) Run a command with
+`--json` and pipe it to `jq` to explore the rest.
+
 `smith doctor --json` prints `findings` (`check`, `ok`, `detail`, `remedy`,
 `warning`, `source`) with `passed`, `failed` and `warnings` counts.
 
