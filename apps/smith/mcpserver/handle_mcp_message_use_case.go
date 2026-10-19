@@ -68,7 +68,7 @@ func (s Server) Handle(raw []byte) []byte {
 			"protocolVersion": version,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
 			"serverInfo":      map[string]any{"name": "smith", "version": s.Version},
-			"instructions":    "smith runs this monorepo: projects in several languages, their tasks from a cache, CI and releases. Start with smith_projects and smith_doctor; smith_kinds and smith_stacks list what smith_add_project can create.",
+			"instructions":    "smith runs this monorepo: projects in several languages, their tasks from a cache, CI and releases. Start with smith_projects and smith_doctor; smith_kinds and smith_stacks list what smith_add_project can create. To help with a recipe, a plugin or a new project, use smith_recipe_check to show the plan before writing, smith_explain to see where a value came from, and smith_plugin_list for what plugins are available.",
 		})
 	case "ping":
 		return reply(map[string]any{})
