@@ -107,6 +107,24 @@ cd apps/smith && go build -o ../../dist/dev/smith .
 and builds six static binaries (`CGO_ENABLED=0`, `-trimpath`), as configured in
 `[projects.smith.release]` of `smith.toml`.
 
+## Documentation
+
+The map is [docs/README.md](../README.md). Three parts are generated or checked
+against the binary, so refresh them when a command changes:
+
+- **The CLI reference** ([reference/cli.md](../reference/cli.md)): its flag tables
+  come from `smith commands --json`. Regenerate them with
+  `node docs/reference/cli-generate.mjs` (the note at the top of the page says
+  how).
+- **The screenshots** ([assets/](../assets/README.md)): captured from real runs;
+  `assets/README.md` says how each was made.
+- **The plugin examples** ([examples/plugins](../examples/plugins)): a Go, a Python
+  and a Node.js plugin that must keep passing `smith plugin check`. The repository's
+  `smith.toml` excludes `docs/examples/**` so they are not seen as projects.
+
+When you change what a command prints, run it and paste the real output into the
+page that shows it.
+
 ## Releasing smith
 
 smith releases itself. The generated pipeline builds smith from the commit (the

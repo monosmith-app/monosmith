@@ -41,7 +41,7 @@ not install compilers; it tells you what is missing (see
 | Language | You need |
 |---|---|
 | Node | Node 24 with npm |
-| Go | Go 1.27 |
+| Go | Go 1.24 or newer. The workspace's `go.work` records the version (1.27.0 when this tour was run with Go 1.27), and generated CI installs that one |
 | Python | Python 3.12 or newer |
 | Rust | Rust, with clippy and rustfmt |
 | .NET | the .NET 10 SDK |
