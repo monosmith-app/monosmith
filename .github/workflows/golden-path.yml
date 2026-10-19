@@ -110,7 +110,8 @@ jobs:
           SUITE: ${{ matrix.suite == 'core' && '-run=^TestGoldenPath$' || '-skip=^(TestConvert.*|TestGoldenPath)$' }}
         run: go test -tags e2e -timeout 40m -v "$SUITE" ./goldenpath
 
-  # Manual only: building the old-mnci and Nx workspaces to convert takes
+  # Manual only: building the old-mnci and Nx workspaces to convert (the
+  # Turborepo one is a committed fixture) takes
   # over half an hour on Windows, and nobody else converts yet. Run it from
   # the Actions tab after changing convert.
   convert:
@@ -135,6 +136,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Convert an Nx workspace and an old-mnci workspace, then build and plan a release
+      - name: Convert an Nx, an old-mnci and a Turborepo workspace, then build and plan a release
         working-directory: apps/smith
         run: go test -tags e2e -timeout 85m -v -run TestConvert ./goldenpath

@@ -53,7 +53,7 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		if !p.Supported {
 			continue
 		}
-		if err := editManifest(root, p); err != nil {
+		if err := editManifest(root, p, plan.Specifiers); err != nil {
 			return res, fmt.Errorf("%s: %w", p.Root, err)
 		}
 	}
@@ -105,7 +105,7 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 	}
 
 	if !opts.SkipInstall {
-		if err := refreshLockfile(root, opts.Out); err != nil {
+		if err := refreshLockfile(root, opts.Out, plan.Source != convertplan.SourceTurborepo); err != nil {
 			return res, err
 		}
 	}
@@ -116,7 +116,7 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 // removed, and checks that npm ci accepts the result. npm 11 can reuse the
 // installed tree on the first run and leave the lockfile out of step, so a
 // second install re-resolves it when the check fails.
-func refreshLockfile(root string, out io.Writer) error {
+func refreshLockfile(root string, out io.Writer, pruneNx bool) error {
 	if _, err := os.Stat(filepath.Join(root, "package.json")); err != nil {
 		return nil
 	}
@@ -125,7 +125,7 @@ func refreshLockfile(root string, out io.Writer) error {
 		return nil
 	}
 	lock := filepath.Join(root, "package-lock.json")
-	if raw, err := os.ReadFile(lock); err == nil {
+	if raw, err := os.ReadFile(lock); err == nil && pruneNx {
 		pruned, dropped, err := PruneLockfile(raw, convertplan.NxPackage)
 		if err != nil {
 			return err
@@ -175,10 +175,28 @@ func editRootPackage(root string, plan *convertplan.Plan) error {
 		return fmt.Errorf("package.json: %w", err)
 	}
 	doc.Delete("nx")
+	for _, field := range plan.RemoveFields {
+		deleteField(doc, field)
+	}
+	if plan.SetWorkspaces != nil {
+		if err := doc.SetJSON("workspaces", plan.SetWorkspaces); err != nil {
+			return err
+		}
+	}
+	if len(plan.SetOverrides) > 0 {
+		overrides := doc.Object("overrides", true)
+		for _, name := range sortedKeys(plan.SetOverrides) {
+			overrides.SetString(name, plan.SetOverrides[name])
+		}
+	}
+	applySpecifiers(doc, plan.Specifiers["."])
 	for _, section := range []string{"devDependencies", "dependencies"} {
 		if deps := doc.Object(section, false); deps != nil {
 			for _, name := range plan.RemoveDependencies {
 				deps.Delete(name)
+			}
+			if deps.Len() == 0 && len(plan.RemoveDependencies) > 0 {
+				doc.Delete(section)
 			}
 		}
 	}
@@ -208,6 +226,43 @@ func editRootPackage(root string, plan *convertplan.Plan) error {
 	return os.WriteFile(path, doc.Bytes(), 0o644)
 }
 
+// deleteField removes a root package.json field; "engines.pnpm" is the pnpm
+// key of engines, which goes too when it leaves engines empty.
+func deleteField(doc *jsondoc.Document, field string) {
+	parent, key, nested := strings.Cut(field, ".")
+	if !nested {
+		doc.Delete(parent)
+		return
+	}
+	obj := doc.Object(parent, false)
+	if obj == nil {
+		return
+	}
+	obj.Delete(key)
+	if obj.Len() == 0 {
+		doc.Delete(parent)
+	}
+}
+
+// applySpecifiers rewrites the range of each named dependency, in every
+// dependency section that lists it.
+func applySpecifiers(doc *jsondoc.Document, specifiers map[string]string) {
+	if len(specifiers) == 0 {
+		return
+	}
+	for _, section := range []string{"dependencies", "devDependencies", "peerDependencies", "optionalDependencies"} {
+		deps := doc.Object(section, false)
+		if deps == nil {
+			continue
+		}
+		for _, name := range sortedKeys(specifiers) {
+			if deps.Has(name) {
+				deps.SetString(name, specifiers[name])
+			}
+		}
+	}
+}
+
 // installedRange is ^<installed version> of a package already in
 // node_modules (Nx installed it), or "*" when it is not there.
 func installedRange(root, name string) string {
@@ -226,7 +281,7 @@ func installedRange(root, name string) string {
 
 // editManifest records scripts and the kind in a project's manifest, and
 // removes the package.json "nx" field.
-func editManifest(root string, p *convertplan.ProjectPlan) error {
+func editManifest(root string, p *convertplan.ProjectPlan, specifiers map[string]map[string]string) error {
 	dir := filepath.Join(root, filepath.FromSlash(p.Root))
 	switch p.Language {
 	case "node":
@@ -240,6 +295,7 @@ func editManifest(root string, p *convertplan.ProjectPlan) error {
 			return err
 		}
 		doc.Delete("nx")
+		applySpecifiers(doc, specifiers[p.Root])
 		if len(p.Scripts) > 0 {
 			scripts := doc.Object("scripts", true)
 			for _, name := range sortedKeys(p.Scripts) {

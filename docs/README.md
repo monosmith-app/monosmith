@@ -18,7 +18,7 @@ minute tour with real commands and real output. Stuck on a word? See the
 | install smith | [Installing](guides/installing.md) |
 | try it end to end | [Getting started](guides/getting-started.md) |
 | bring an existing repository under smith | [Getting started, adopt](guides/getting-started.md#or-adopt-an-existing-repository) |
-| move from Nx or the old mnci | [Converting from Nx](guides/converting.md) |
+| move from Nx, Turborepo or the old mnci | [Converting](guides/converting.md) |
 | understand the words | [Glossary](reference/glossary.md) |
 | get a quick answer | [FAQ](guides/faq.md) |
 

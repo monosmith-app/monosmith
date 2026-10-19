@@ -3,7 +3,8 @@
 `smith convert` turns an Nx workspace into a smith workspace in place. It also
 converts a workspace made by the old, Nx-based mnci (4.x), whose settings it
 reads too. Projects keep their directories and sources. What changes is how
-they are described and run.
+they are described and run. A Turborepo workspace is converted too; see
+[Converting from Turborepo](#converting-from-turborepo).
 
 ```sh
 npm ci                    # Nx must be installed: it describes the projects
@@ -116,6 +117,69 @@ On top of the above, a workspace made by mnci 4.x gets:
 One behaviour changes, and the report says so: before 1.0, a `feat:` releases
 a minor version (the old mnci released a patch).
 
+## Converting from Turborepo
+
+`smith convert` also converts a Turborepo workspace (it has a `turbo.json`).
+Turborepo workspaces are usually pnpm or yarn, and smith's Node plugin runs
+npm (decision 7 in the design decisions); smith has its own install command,
+`smith install` (`smith i`), whatever the language, and for Node it runs npm.
+So convert does not add pnpm or yarn: it turns the workspace into the npm
+workspace `smith i` installs, and the report says exactly what changed or went.
+
+```sh
+smith convert --dry-run    # the report; nothing needs installing first
+smith convert              # applies it, then runs npm install
+smith i                    # from now on, instead of pnpm install or yarn
+smith run build test
+```
+
+It reads `turbo.json` (comments allowed), the `turbo.json` some packages keep
+beside their `package.json`, `pnpm-workspace.yaml` and the packages the
+workspace lists, from the files alone. It is tested with Turborepo 2; with
+another major the report says so.
+
+| Turborepo | smith |
+|---|---|
+| a workspace package | a project named after its directory, as for Nx; `apps/` is an app, a package that is not `private` is a package, the rest are libs |
+| `package.json` scripts | stay scripts; the Node plugin runs each as a task (`npm run <script>`) |
+| `dependsOn: ["^build"]`, `["build"]`, `["web#build"]` | `depends_on` in `smith.toml`: `^build`, `build`, `web:build`. The Node plugin already makes `build`, `typecheck`, `test` and `lint` wait for `^build`, so a definition that says the same writes nothing, and one that says less (a `lint` with no `dependsOn`) writes an empty `depends_on`, as Turborepo ran it. A task waiting for its own `build` keeps `^build`, as `build` itself waits for it |
+| `outputs` | `outputs`: the directory each glob starts in (`dist/**` is `dist`); a `!` exclusion cannot be stated, and the report says so |
+| `inputs` | `inputs`, with `$TURBO_DEFAULT$` as `**/*` and `$TURBO_ROOT$/x` as `{workspaceRoot}/x`; the lockfile stays an input |
+| `globalDependencies` | inputs of every cached task |
+| `cache: false` | `cache = false` |
+| `pkg#task` in the root, and a package's own `turbo.json` | applied to that package: the root entry replaces the general one, the package configuration is laid over it, `$TURBO_EXTENDS$` included |
+| a task Turborepo caches that the Node plugin does not (`codegen`) | `cache = true` on it |
+| root scripts and package scripts calling `turbo run`, `pnpm` or `yarn` | the `smith` or `npm` command that does the same: `turbo run build --filter=web` is `smith run build -p web --bail`, `pnpm install` is `smith install`, `pnpm -r run test` is `smith run test`, `pnpm build` is `npm run build`; a script that only enforced a package manager (`npx only-allow pnpm`) is removed |
+
+What it changes to get npm workspaces, each in the report:
+
+| From | To |
+|---|---|
+| `pnpm-workspace.yaml` `packages` (or yarn's object-form `workspaces`) | the root `package.json` `"workspaces"` list; `pnpm-workspace.yaml` is removed |
+| `workspace:*`, `workspace:^`, `workspace:~`, `workspace:1.2.3` | `*`, `^<the package's version>`, `~<the package's version>`, `1.2.3`; npm links a workspace package by name when the range matches its version |
+| `catalog:` and `catalog:name` | the range in `pnpm-workspace.yaml`'s `catalog` or `catalogs` |
+| `pnpm.overrides`, pnpm 10's `overrides` in `pnpm-workspace.yaml`, yarn `resolutions` | `overrides`, for a plain package name; a selector (`a>b`, `foo@<2`, `**/foo`) is reported for you to write |
+| `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `.yarnrc.yml`, `.yarn/`, `.pnp.cjs` | removed. **Resolved versions are not carried over**: `npm install` resolves every range again and writes `package-lock.json`, so a dependency can move inside its range; review the diff |
+| the `packageManager` field, `engines.pnpm` and `engines.yarn`, the `pnpm` field | removed (`pnpm.overrides` moved, any other key is reported as unsupported) |
+| `turbo.json`, package `turbo.json` files, `.turbo/`, `turbo`, `turbo-ignore` and `@turbo/*` | removed |
+
+What it cannot map is reported, never dropped silently:
+
+| Turborepo | In the report |
+|---|---|
+| `env`, `globalEnv` | **Not supported**: Turborepo keys the cache on these variables' values, smith's task cache does not. Set `cache = false` on the task, or list the values in its `env` table |
+| `passThroughEnv`, `globalPassThroughEnv` | dropped: smith runs tasks with the whole environment, there is no strict mode |
+| `persistent: true` | **Behaves differently**: the task is left uncached and `smith run` keeps it running; `smith dev` starts several apps' `start` tasks together |
+| `interactive`, `with` | **Not supported**: `smith run` does not forward stdin, and has no link between a persistent task and the tasks started beside it |
+| `remoteCache` | **Not supported**: smith shares its cache through the bucket or URL set as `[cache] remote` (see [tasks and cache](../reference/tasks-and-cache.md#remote-cache)) |
+| a build whose `outputs` are inside the package | **Needs you**: `smith doctor` fails a build that does not write to `dist/<project dir>`; point the tool there and update `main`, `types` and `exports` |
+| `//#task` (a root task), a `dependsOn` smith cannot name | a root task stays a root script; **Needs you** for the rest |
+| `ui`, `daemon`, `envMode`, `cacheDir`, `outputLogs` and the like | dropped: they only set how turbo runs |
+| a script with a `--filter` by graph or path (`web...`, `./apps/*`), `--dry`, `--parallel`, arguments after `--` | **Needs you**: left as it is |
+| ESLint configs using `eslint-plugin-turbo`, workflows and Dockerfiles calling `pnpm`, `yarn` or `turbo`, `.yarnrc.yml` registries, `.changeset/` | **Needs you** or **Behaves differently**, naming the file |
+
+The sections, `--strict`, `--json` and `--dry-run` work as for Nx.
+
 ## The report
 
 Every finding has a severity:
@@ -124,9 +188,9 @@ Every finding has a severity:
 |---|---|
 | **Blocking** | stops the conversion (two projects that would get the same name) |
 | **Needs you** | something convert could not do; it says what to do instead |
-| **Not supported yet** | a project convert does not map: it maps Node, Go and Python projects only, so a Flutter/Dart, .NET, Rust, JVM, PHP, Ruby, C++ or Bicep project is reported here even though smith has a plugin for its language. Also a `Dockerfile` with no manifest beside it, pnpm or yarn workspaces, releasing an app that is not Go, and publishing a VS Code extension. These projects keep their files and `project.json`; bringing them under smith is by hand for now (their language's workspace file, see [plugins](../reference/plugins.md)). |
+| **Not supported yet** | a project convert does not map: it maps Node, Go and Python projects only, so a Flutter/Dart, .NET, Rust, JVM, PHP, Ruby, C++ or Bicep project is reported here even though smith has a plugin for its language. Also a `Dockerfile` with no manifest beside it, pnpm or yarn workspaces in an Nx workspace (a Turborepo one is converted to npm workspaces), releasing an app that is not Go, and publishing a VS Code extension. These projects keep their files and `project.json`; bringing them under smith is by hand for now (their language's workspace file, see [plugins](../reference/plugins.md)). |
 | **Behaves differently** | a change you should know about |
-| **Converted** / **Dropped** | what moved where, and the Nx-only plumbing that went |
+| **Converted** / **Dropped** | what moved where, and the Nx-only (or Turborepo, pnpm and yarn) plumbing that went |
 
 `--strict` refuses to convert while anything needs you or is unsupported.
 `--json` prints the plan for tools.

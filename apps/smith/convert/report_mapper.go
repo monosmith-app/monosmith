@@ -17,16 +17,24 @@ var sections = []struct {
 	{convertplan.Unsupported, "Not supported by smith yet"},
 	{convertplan.Changed, "Behaves differently"},
 	{convertplan.Mapped, "Converted"},
-	{convertplan.Dropped, "Dropped (Nx-only)"},
+	{convertplan.Dropped, "Dropped"},
+}
+
+// sourceLabel names the workspace a plan converts from.
+func sourceLabel(plan *convertplan.Plan) string {
+	switch {
+	case plan.Source == convertplan.SourceTurborepo:
+		return "Turborepo workspace"
+	case plan.Legacy:
+		return "Nx workspace made by the old mnci"
+	}
+	return "Nx workspace"
 }
 
 // Report renders a plan for a terminal.
 func Report(plan *convertplan.Plan, dryRun bool) string {
 	var b strings.Builder
-	kind := "Nx workspace"
-	if plan.Legacy {
-		kind = "Nx workspace made by the old mnci"
-	}
+	kind := sourceLabel(plan)
 	verb := "Converting"
 	if dryRun {
 		verb = "Conversion plan for"
@@ -56,10 +64,22 @@ func Report(plan *convertplan.Plan, dryRun bool) string {
 			continue
 		}
 		sort.Strings(lines)
-		fmt.Fprintf(&b, "\n%s (%d):\n%s\n", s.title, len(lines), strings.Join(lines, "\n"))
+		title := s.title
+		if s.severity == convertplan.Dropped {
+			title += " (" + dropReason(plan) + ")"
+		}
+		fmt.Fprintf(&b, "\n%s (%d):\n%s\n", title, len(lines), strings.Join(lines, "\n"))
 	}
 	if len(plan.Delete) > 0 {
 		fmt.Fprintf(&b, "\nRemoves: %s\n", strings.Join(plan.Delete, ", "))
 	}
 	return b.String()
+}
+
+// dropReason says why what was dropped is not needed.
+func dropReason(plan *convertplan.Plan) string {
+	if plan.Source == convertplan.SourceTurborepo {
+		return "Turborepo, pnpm and yarn only"
+	}
+	return "Nx-only"
 }

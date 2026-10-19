@@ -1,0 +1,22 @@
+{
+  "name": "acme",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test --filter=web",
+    "verify": "pnpm install --frozen-lockfile && pnpm turbo run build test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "pnpm": {
+    "overrides": {
+      "semver": "7.6.3"
+    }
+  }
+}

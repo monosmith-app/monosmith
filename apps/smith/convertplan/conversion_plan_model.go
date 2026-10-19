@@ -54,9 +54,19 @@ type ProjectPlan struct {
 	Supported bool `json:"supported"`
 }
 
+// The tools a plan converts from.
+const (
+	SourceNx        = "nx"
+	SourceMnci      = "mnci"
+	SourceTurborepo = "turborepo"
+)
+
 // Plan is everything a conversion will do.
 type Plan struct {
-	Root   string `json:"root"`
+	Root string `json:"root"`
+	// Source is the tool converted from (SourceNx, SourceMnci or
+	// SourceTurborepo).
+	Source string `json:"source"`
 	Legacy bool   `json:"legacy"`
 	// Config is the smith.toml to write.
 	Config   workspace.Config `json:"-"`
@@ -71,6 +81,18 @@ type Plan struct {
 	RemoveOverrides []string `json:"removeOverrides,omitempty"`
 	// AddDevDependencies are root devDependencies to add, with their range.
 	AddDevDependencies map[string]string `json:"addDevDependencies,omitempty"`
+	// RemoveFields are root package.json fields to delete (packageManager,
+	// the package manager's own settings).
+	RemoveFields []string `json:"removeFields,omitempty"`
+	// SetWorkspaces replaces the root package.json "workspaces" with these
+	// globs when it is not nil.
+	SetWorkspaces []string `json:"setWorkspaces,omitempty"`
+	// SetOverrides are npm overrides to add to the root package.json.
+	SetOverrides map[string]string `json:"setOverrides,omitempty"`
+	// Specifiers rewrite dependency specifiers: the project root ("." for
+	// the workspace root) maps each dependency name to its new range. A name
+	// is rewritten in every dependency section that lists it.
+	Specifiers map[string]map[string]string `json:"specifiers,omitempty"`
 	// Delete lists workspace-relative files and directories to remove.
 	Delete []string `json:"delete,omitempty"`
 	// Write maps workspace-relative files to their new content.
@@ -152,6 +174,18 @@ func (p *Plan) SetTask(project, task string, t workspace.TaskOverride) {
 	}
 	o.Tasks[task] = t
 	p.SetOverride(project, o)
+}
+
+// SetSpecifier schedules a dependency's range to be rewritten in the manifest
+// of the project at root ("." for the workspace root).
+func (p *Plan) SetSpecifier(root, dependency, specifier string) {
+	if p.Specifiers == nil {
+		p.Specifiers = map[string]map[string]string{}
+	}
+	if p.Specifiers[root] == nil {
+		p.Specifiers[root] = map[string]string{}
+	}
+	p.Specifiers[root][dependency] = specifier
 }
 
 // WriteFile schedules a file to be written.
