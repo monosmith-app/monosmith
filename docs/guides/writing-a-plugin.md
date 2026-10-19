@@ -618,9 +618,30 @@ widget 0.1.0
 
 `go build` appends `.exe` on Windows, so there `smith plugin check
 .\smith-plugin-widget.exe`. The quickest start for a Go plugin of your own is
-the scaffold: `smith add app my-plugin --stack go-smith-plugin` writes a module
-that is a working structure plugin with a conformance test and a README that
-says how to declare it.
+the scaffold, which writes a module that is a working structure plugin with a
+conformance test and a README that says how to declare it:
+
+```sh
+$ smith add app my-plugin --stack go-smith-plugin
+```
+
+```text
+Adding app my-plugin (stack go-smith-plugin) in apps/my-plugin
+go: creating new go.mod: module github.com/acme/demo/apps/my-plugin
+go: downloading github.com/monosmith-app/monosmith/packages/plugin-sdk v0.30.0
+go: added github.com/monosmith-app/monosmith/packages/plugin-sdk v0.30.0
+Wrote 8 file(s):
+  .github/workflows/ci.yml
+  apps/my-plugin/README.md
+  apps/my-plugin/go.mod
+  apps/my-plugin/go.sum
+  apps/my-plugin/main.go
+  apps/my-plugin/plugin/doc.go
+  apps/my-plugin/plugin/myplugin_plugin_handler.go
+  apps/my-plugin/plugin/myplugin_plugin_handler_test.go
+Declare it in smith.toml to use it: see apps/my-plugin/README.md.
+Try: smith test -p my-plugin
+```
 
 ### Python, standard library only
 
