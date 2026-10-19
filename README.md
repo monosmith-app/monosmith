@@ -52,7 +52,7 @@ From the release after PR #243, each release also carries a `.deb` and an
 download, and the unsigned-binary prompts a browser download gets.
 
 MonoSmith continues mnci, which was built on Nx; `smith convert` converts Nx
-workspaces and those made by mnci.
+and Turborepo workspaces and those made by mnci.
 
 ## What it does
 
@@ -67,7 +67,7 @@ workspaces and those made by mnci.
 | **CI generated** | GitHub Actions, Azure Pipelines and GitLab CI, derived from the plugins in use, calling `smith ci <phase>` — the same commands you run locally. |
 | **Release** | feat → minor, fix → patch, breaking → major. Packages release in dependency order to their registries (npm, PyPI, crates.io, NuGet, RubyGems, pub.dev, a Maven repository, Go module tags); an app releases per-platform binaries to GitHub Releases and, if you ask, to npm, PyPI, NuGet and RubyGems. A failed release resumes when re-run. |
 | **Conventions** | `vertical-slices` checks that code is laid out by what it does, in each language's own naming style. `docker` builds and pushes an image for every app with a `Dockerfile`. |
-| **Convert** | `smith convert` turns an Nx workspace, or one made by the old Nx-based mnci, into a smith workspace, keeping its projects and release tags. It reports anything it cannot map. |
+| **Convert** | `smith convert` turns an Nx or Turborepo workspace, or one made by the old Nx-based mnci, into a smith workspace, keeping its projects and release tags. It reports anything it cannot map. |
 | **Editors and assistants** | Stable `--json` contracts for editors, a JSON Schema for `smith.toml`, and `smith mcp` for AI assistants. |
 
 ## Documentation

@@ -128,6 +128,12 @@ supporting pnpm or yarn does not make smith harder to use. A workspace coming
 from another tool (Turborepo, a pnpm or yarn Nx workspace) is converted to npm
 workspaces instead of being refused (#353).
 
+**Decided 2026-10-19 (#353).** `smith install` (`smith i`) is smith's own install
+command, independent of each language's tooling; for Node it runs npm. A
+converted Turborepo workspace uses `smith i` instead of pnpm or yarn. So
+`smith convert` turns pnpm and yarn workspaces into npm workspaces and reports
+what changes or goes, and smith does not grow pnpm or yarn support.
+
 ## 8. Containers through a docker plugin
 
 2026-10-16 · #83 · #213

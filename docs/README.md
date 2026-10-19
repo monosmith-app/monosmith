@@ -8,7 +8,7 @@ Start here to install smith and use it.
 |---|---|
 | [Installing](guides/installing.md) | every install channel, upgrading, checking a download |
 | [Getting started](guides/getting-started.md) | a new workspace, adding projects, running tasks |
-| [Converting from Nx](guides/converting.md) | `smith convert` for Nx workspaces and the old mnci |
+| [Converting from Nx](guides/converting.md) | `smith convert` for Nx and Turborepo workspaces and the old mnci |
 | [Editors](guides/editors.md) | the `--json` contracts editors and tools use |
 
 ## Reference
