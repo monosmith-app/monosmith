@@ -72,6 +72,8 @@ type PnpmWorkspace struct {
 	// named ones (`catalog:name`).
 	Catalog  map[string]string            `yaml:"catalog"`
 	Catalogs map[string]map[string]string `yaml:"catalogs"`
+	// Overrides are pnpm 10's `overrides`, which moved here from package.json.
+	Overrides map[string]string `yaml:"overrides"`
 	// Keys are every top-level key of the file.
 	Keys []string `yaml:"-"`
 }
