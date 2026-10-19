@@ -13,7 +13,7 @@ import (
 )
 
 // GradleRunner runs gradle; tests replace it.
-var GradleRunner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
+var GradleRunner = func(dir string, argv []string, env ...string) error { return toolrun.Run(dir, argv, env...) }
 
 // gradleScript is the workspace-relative build script of the Gradle module
 // in root, or empty for a Maven module.
@@ -64,10 +64,10 @@ func writeGradleVersion(workspaceRoot, script string, params protocol.VersionPar
 
 // publishGradle publishes the module's publications to the repository its
 // script declares as smith (from MAVEN_REPOSITORY_URL, MAVEN_USERNAME and
-// MAVEN_PASSWORD).
-func publishGradle(workspaceRoot string, project protocol.Project, result protocol.PublishResult) (protocol.PublishResult, error) {
+// MAVEN_PASSWORD, which env overrides when smith.toml names the registry).
+func publishGradle(workspaceRoot string, project protocol.Project, result protocol.PublishResult, env []string) (protocol.PublishResult, error) {
 	argv := []string{"gradle", "--console=plain", "-q", discovery.ProjectPath(project.Root) + ":publishAllPublicationsToSmithRepository"}
-	if err := GradleRunner(workspaceRoot, argv); err != nil {
+	if err := GradleRunner(workspaceRoot, argv, env...); err != nil {
 		return result, err
 	}
 	result.Published = true

@@ -164,6 +164,17 @@ pypi = "https://pkgs.dev.azure.com/acme/_packaging/libs/pypi/simple/"   # pypi_u
 nuget = "https://pkgs.dev.azure.com/acme/_packaging/libs/nuget/v3/index.json"
 ```
 
+GitHub Packages' Maven repository, with the job's token and no secrets:
+
+```toml
+[registries.github]
+auth = "github-packages"
+maven = "github"          # or https://maven.pkg.github.com/<owner>/<repo>
+
+[release]
+registry = "github"
+```
+
 What smith does with it:
 
 - **npm:** `smith doctor --fix` writes a block into the workspace's `.npmrc`
@@ -181,6 +192,18 @@ What smith does with it:
 - **CI:** the pipeline signs in before setup, gives setup the token when
   installs need one, and drops `NODE_AUTH_TOKEN`, `PYPI_TOKEN` and
   `NUGET_API_KEY` for packages published to the feed.
+- **JVM (Maven and Gradle):** `maven` is the repository packages deploy to.
+  `maven = "github"` means GitHub Packages,
+  `https://maven.pkg.github.com/<owner>/<repo>` of the repository the release
+  runs in (`GITHUB_REPOSITORY`, else the `origin` remote); an explicit URL
+  works too. With `auth = "github-packages"` the user is `GITHUB_ACTOR` and the
+  password the job's `GITHUB_TOKEN`: the workflow gets `packages: write` and no
+  Maven secret. `token` uses `MAVEN_USERNAME` and the variable `token_env`
+  names; `azure-artifacts` signs in with `MavenAuthenticate@0` (Maven only:
+  Gradle needs `SYSTEM_ACCESSTOKEN` mapped into the release step). With no
+  registry, `MAVEN_REPOSITORY_URL`, `MAVEN_USERNAME` and `MAVEN_PASSWORD` work
+  as before. GitHub Packages needs a token even to read a Maven package, so
+  whoever depends on yours needs their own with `read:packages`.
 - **What is left to you:** `smith ci check` lists it in the provider's terms.
   For Azure Artifacts: give the project's build service the Feed Publisher
   (Contributor) role on the feed, add the upstream sources, and on a laptop

@@ -26,7 +26,9 @@ least a patch), so its published dependency range stays correct.
 
 Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
 nuget.org, …), or to the private registry smith.toml names with `[release]
-registry` or `[projects.<name>] registry` (npm, Python and .NET; see
+registry` or `[projects.<name>] registry` (npm, Python, .NET and Maven, where
+`maven = "github"` publishes to GitHub Packages with the job's token and no
+secrets, and consumers need their own token to read it; see
 [configuration](configuration.md#private-registries)). Either way a version
 the registry already has is skipped, so a re-run completes a release.
 

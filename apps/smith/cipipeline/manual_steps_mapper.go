@@ -51,6 +51,9 @@ func ManualSteps(cfg workspace.Config, m Model) []string {
 			}
 		case "github-packages":
 			steps = append(steps, fmt.Sprintf("registry %s (GitHub Packages): the workflow's GITHUB_TOKEN reads and writes this repository's packages; to install a package another repository publishes, give this repository access in that package's settings (Manage Actions access)", name))
+			if r.Maven != "" {
+				steps = append(steps, fmt.Sprintf("registry %s (GitHub Packages, Maven): anyone who depends on these packages needs their own token with read:packages in ~/.m2/settings.xml or Gradle's credentials, even for a public repository; GitHub Packages serves no Maven package anonymously", name))
+			}
 			if !slices.Contains(cfg.CI.Providers, "github") {
 				steps = append(steps, fmt.Sprintf("registry %s: GITHUB_TOKEN exists only in GitHub Actions; elsewhere use auth = \"token\" with a personal access token that has read:packages and write:packages", name))
 			}
@@ -111,7 +114,7 @@ func cacheSteps(cfg workspace.Config) []string {
 // azureFeed is the feed's name in an Azure Artifacts URL (the segment after
 // _packaging), or the registry's first URL when it has none.
 func azureFeed(r workspace.RegistryConfig) string {
-	for _, raw := range []string{r.NPM, r.PyPI, r.PyPIUpload, r.NuGet} {
+	for _, raw := range []string{r.NPM, r.PyPI, r.PyPIUpload, r.NuGet, r.Maven} {
 		u, err := url.Parse(raw)
 		if raw == "" || err != nil {
 			continue

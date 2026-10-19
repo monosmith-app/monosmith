@@ -97,3 +97,13 @@ func TestAPackageReleasedToNoRegistryNeedsNoMavenSecrets(t *testing.T) {
 		t.Errorf("credentials %+v for a package that publishes nowhere", res.Credentials)
 	}
 }
+
+func TestCIForGitHubPackagesAsksForNoMavenSecrets(t *testing.T) {
+	ws := t.TempDir()
+	core := module(t, ws, "core", "pom.xml", protocol.ProjectPackage)
+	core.Registries = &protocol.Registries{Publish: &protocol.Registry{Name: "github", Auth: protocol.AuthGitHubPackages, Maven: protocol.MavenGitHub}}
+	res := CI(ws, protocol.CIParams{Projects: []protocol.Project{core}})
+	if len(res.Credentials) != 1 || res.Credentials[0].Env != "GITHUB_TOKEN" || len(res.Permissions) != 1 || res.Permissions[0] != "packages: write" {
+		t.Fatalf("%+v", res)
+	}
+}

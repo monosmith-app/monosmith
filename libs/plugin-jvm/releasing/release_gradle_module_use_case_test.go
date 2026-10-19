@@ -45,7 +45,7 @@ func TestPublishGradle(t *testing.T) {
 	real := GradleRunner
 	defer func() { GradleRunner = real }()
 	var ran []string
-	GradleRunner = func(_ string, argv []string) error { ran = argv; return nil }
+	GradleRunner = func(_ string, argv []string, _ ...string) error { ran = argv; return nil }
 	t.Setenv("MAVEN_REPOSITORY_URL", "https://maven.example/releases")
 	res, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Root: "libs/core", Kind: protocol.ProjectPackage}})
 	if err != nil || !res.Published || strings.Join(ran, " ") != "gradle --console=plain -q :libs:core:publishAllPublicationsToSmithRepository" {

@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 var (
@@ -51,14 +53,17 @@ func validateRegistries(cfg *Config) error {
 		default:
 			return fmt.Errorf("%s unknown auth %q: use \"azure-artifacts\", \"github-packages\" or \"token\"", at, r.Auth)
 		}
-		if r.NPM == "" && r.PyPI == "" && r.PyPIUpload == "" && r.NuGet == "" {
-			return fmt.Errorf("%s gives no npm, pypi or nuget URL", at)
+		if r.NPM == "" && r.PyPI == "" && r.PyPIUpload == "" && r.NuGet == "" && r.Maven == "" {
+			return fmt.Errorf("%s gives no npm, pypi, nuget or maven URL", at)
 		}
 		if r.Auth == "github-packages" && (r.PyPI != "" || r.PyPIUpload != "") {
 			return fmt.Errorf("%s GitHub Packages has no Python registry", at)
 		}
-		for key, u := range map[string]string{"npm": r.NPM, "pypi": r.PyPI, "pypi_upload": r.PyPIUpload, "nuget": r.NuGet} {
-			if u == "" {
+		if r.Maven == protocol.MavenGitHub && r.Auth != "github-packages" {
+			return fmt.Errorf("%s maven = %q is GitHub Packages: it needs auth = \"github-packages\"", at, r.Maven)
+		}
+		for key, u := range map[string]string{"npm": r.NPM, "pypi": r.PyPI, "pypi_upload": r.PyPIUpload, "nuget": r.NuGet, "maven": r.Maven} {
+			if u == "" || (key == "maven" && u == protocol.MavenGitHub) {
 				continue
 			}
 			if parsed, err := url.Parse(u); err != nil || parsed.Scheme != "https" || parsed.Host == "" {
