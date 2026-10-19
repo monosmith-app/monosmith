@@ -4,6 +4,7 @@
 smith release --dry-run    # the plan; changes nothing
 smith release --dry-run --comment   # in a pull request build: also post the plan on it (docs/reference/ci.md)
 smith release              # asks before releasing (CI: smith ci release)
+smith release --status     # the release journal: what was published where
 ```
 
 ## What releases
@@ -478,6 +479,38 @@ Packagist and the Maven repository; a Go module's tags are its registry, and
 C++ and Bicep projects have none). An unreachable
 registry is a warning, not a stop. `smith doctor` runs the same checks without
 fetching.
+
+## Checked before anything is published
+
+Before the first publish of a real release, smith asks npm, PyPI, NuGet and
+RubyGems whether they accept it, with authenticated calls that publish
+nothing: the credential is accepted (npm `/-/whoami`, an upload to PyPI or a
+push to NuGet with no file, RubyGems' list of your gems), the registry is
+reachable, and the package name is yours (a gem or an unscoped npm package
+that exists must be owned by the key; a scoped npm package owned by someone
+else is only a warning, since a team can own it). Any failure stops the
+release before a single package is published, naming the registry, the
+secret and the fix. A key that is merely unset is already refused by the
+credential check above; npm's own login (no `NODE_AUTH_TOKEN`) cannot be
+asked and is left to `npm publish`.
+
+A version a registry already has is a warning: it is expected when the
+[journal](#the-release-journal) shows this release published it, and said
+otherwise, since the content cannot be compared before it is built. Smith
+does not run `npm publish --dry-run`, `twine check` or `cargo publish
+--dry-run` ahead of time (they need the built packages), and packages
+published by a language plugin (not an app's binaries) are not asked yet.
+A dry run does not check the registries.
+
+## The release journal
+
+Each package's release appends what it did to `dist/release/<project>/journal.json`:
+the plugin's registry, each npm, PyPI, NuGet or RubyGems package (published, or
+already there), images, the tag, the push, the mirror and the GitHub Release,
+and the step that failed. `smith release --status` prints it (`--json` too).
+The journal only grows and there is no rollback: registries do not let a
+published version be removed (npm unpublish is restricted, PyPI and crates.io
+are immutable), so recovery is to re-run, which publishes the rest.
 
 ## When something fails
 
