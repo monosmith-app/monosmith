@@ -19,7 +19,15 @@ type Registry struct {
 	PyPIUpload string `json:"pypiUpload,omitempty"`
 	// NuGet is the NuGet v3 service index.
 	NuGet string `json:"nuget,omitempty"`
+	// Maven is the Maven repository packages deploy to: an https URL, or
+	// MavenGitHub for the GitHub Packages repository of the repository the
+	// release runs in.
+	Maven string `json:"maven,omitempty"`
 }
+
+// MavenGitHub is the Registry.Maven shorthand for GitHub Packages' Maven
+// repository, https://maven.pkg.github.com/<owner>/<repo>.
+const MavenGitHub = "github"
 
 // Registry sign-in kinds.
 const (

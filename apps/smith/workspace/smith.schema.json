@@ -209,7 +209,8 @@
           "npm": { "type": "string", "description": "The npm registry URL." },
           "pypi": { "type": "string", "description": "The simple index pip installs from (.../simple/)." },
           "pypi_upload": { "type": "string", "description": "Where twine uploads. Default: pypi with /simple/ replaced by /upload/." },
-          "nuget": { "type": "string", "description": "The NuGet v3 service index (.../index.json)." }
+          "nuget": { "type": "string", "description": "The NuGet v3 service index (.../index.json)." },
+          "maven": { "type": "string", "description": "The Maven repository packages deploy to: an https URL, or \"github\" for GitHub Packages (https://maven.pkg.github.com/<owner>/<repo> of the repository the release runs in; needs auth = github-packages)." }
         }
       }
     }

@@ -60,7 +60,7 @@ func TestPublish(t *testing.T) {
 	var ran []string
 	real := MavenRunner
 	defer func() { MavenRunner = real }()
-	MavenRunner = func(_ string, argv []string) error { ran = argv; return nil }
+	MavenRunner = func(_ string, argv []string, _ ...string) error { ran = argv; return nil }
 	core := protocol.Project{Name: "core", Root: "libs/core", Kind: protocol.ProjectPackage, Exports: []string{"dev.acme:acme-core"}}
 	if _, err := Publish(t.TempDir(), protocol.PublishParams{Project: core}); err == nil {
 		t.Fatal("a repository is required")

@@ -1,5 +1,7 @@
 # Tasks, cache and affected
 
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [execution and cache](../design/execution-and-cache.md). Why a task missed the cache: `smith why-miss`, and the [troubleshooting guide](../guides/troubleshooting.md).
+
 ## Tasks
 
 A task is a command a plugin infers for a project: `build`, `test`, `lint`,

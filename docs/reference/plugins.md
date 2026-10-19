@@ -16,7 +16,7 @@ with through its [stack](stacks.md).
 | `dotnet` | language (+ default toolchain, scaffold) | `*.csproj`/`*.fsproj` projects, each with its `tests/` project; `dotnet build`, `test`, `format --verify-no-changes` (lint), `pack`; bin/ and obj/ under `dist/dotnet` | `dotnet nuget push` of packages (`NUGET_API_KEY`), skipping a version the feed has |
 | `php` | language (+ default toolchain, scaffold) | Composer packages the root `composer.json` requires through path repositories, one `vendor/`; PHPStan level 8 (lint), PHPUnit (test), the `bin` script (start) | none to upload: Packagist reads the release's tags |
 | `dart` | language (+ default toolchain, scaffold; the `flutter` stack) | the packages of a root pub workspace (`pubspec.yaml`), Dart or Flutter; `analyze --fatal-infos` (lint), `dart format` (format), `test`; a Flutter app builds for the web (`flutter build web`), a Dart app with `dart build cli`, both into `dist/<app dir>` | `pub publish` of packages: pub.dev, or the `publish_to` repository with `PUB_TOKEN` |
-| `jvm` | language (+ default toolchain, scaffold; the `kotlin` and `android` stacks) | Maven modules of the root aggregator pom (`pom.xml`), in Java; `mvn install` (build), `test`, Checkstyle with Google's rules (lint), `exec:java` (start); every build under `dist/maven`, installed with a flattened pom. Gradle modules (`build.gradle.kts`, `build.gradle`) of the root settings, in Kotlin with the `kotlin` stack; `gradle assemble` (build), `test`, ktlint or Checkstyle (lint), `run` (start); builds under `dist/gradle`. Android apps with the `android` stack (AGP, Kotlin built in): the APKs under `dist/gradle/<module>/outputs/apk`, ktlint and Android Lint, one task after another (build, test, lint) | `mvn deploy` of packages to `MAVEN_REPOSITORY_URL` (`MAVEN_USERNAME`, `MAVEN_PASSWORD`), the version written into dependent modules too; Gradle packages publish to the same repository with `maven-publish` |
+| `jvm` | language (+ default toolchain, scaffold; the `kotlin` and `android` stacks) | Maven modules of the root aggregator pom (`pom.xml`), in Java; `mvn install` (build), `test`, Checkstyle with Google's rules (lint), `exec:java` (start); every build under `dist/maven`, installed with a flattened pom. Gradle modules (`build.gradle.kts`, `build.gradle`) of the root settings, in Kotlin with the `kotlin` stack; `gradle assemble` (build), `test`, ktlint or Checkstyle (lint), `run` (start); builds under `dist/gradle`. Android apps with the `android` stack (AGP, Kotlin built in): the APKs under `dist/gradle/<module>/outputs/apk`, ktlint and Android Lint, one task after another (build, test, lint) | `mvn deploy` of packages to `MAVEN_REPOSITORY_URL` (`MAVEN_USERNAME`, `MAVEN_PASSWORD`), the version written into dependent modules too; Gradle packages publish to the same repository with `maven-publish`; `[registries.<name>] maven` (`"github"` for GitHub Packages, signed in with the job's token and `packages: write`, no Maven secrets) replaces those variables, and consumers need their own token to read from GitHub Packages |
 | `bicep` | language (+ default toolchain, scaffold) | Azure infrastructure as code: each `main.bicep` is a project (a deployment in `apps/`, a module in `libs/`), using the workspace modules it references; `az bicep lint` with `bicepconfig.json`'s rules raised to errors (lint), `az bicep build` into `dist/<project dir>/template` (build), after `build-params` into `dist/<project dir>/parameters` (params) | none to upload: released by its tag (`metadata version` in `main.bicep`) |
 | `recipe` | language (+ default toolchain, scaffold) | a `*.recipe.toml` in a folder of its own is a package project, named by the recipe's `name`; `test` runs `smith recipe check <file> --all`; a recipe that extends another in the workspace depends on it ([versioned recipes](recipes.md#versioned-recipes)) | none to upload: released by its tag (`name@x.y.z`), with the recipe attached to the GitHub Release as `dist/release/<name>/<file>` stamped with the version |
 | `python` | language (+ default toolchain, scaffold) | `pyproject.toml` projects (src layout); one root `.venv`, Ruff, pytest, PyPA `build` | `twine upload` of files the index lacks |
@@ -32,6 +32,7 @@ with through its [stack](stacks.md).
 | `vitest` | toolchain, provides `test`; publishes `node-vitest` | Node projects test with Vitest | — |
 | `playwright` | toolchain, provides `e2e`, and a convention (`[conventions.playwright]`); publishes `node-vitest-playwright` | the `e2e` task of every Node project with a Playwright suite: the Playwright test runner (a `playwright.config.*` or `@playwright/test`) runs `playwright test`, and a project that drives the `playwright` library from its own runner keeps its `e2e` script (the library may be declared by the project or, hoisted by npm workspaces, by the root `package.json`). Before it, an `e2e-browsers` task installs the browsers (`playwright install`, with `--with-deps` in CI on Linux), so nothing else downloads one. `"smith": {"playwright": {"display": true}}` runs the suite under `xvfb-run -a` on Linux, `"browsers"` names what to install (default `chromium`). The task is cached like `test`, with `dist/e2e/<project dir>` (where the starter's config writes reports and traces) as its outputs. Doctor checks Playwright is installed, `xvfb-run` for display suites, and that an e2e pipeline exists. A new project gets a starter suite only from a stack that names playwright (`node-vitest-playwright`); the convention never adds one | — |
 | `docker` | deploy, a convention for every language (`[conventions.docker]`) | an `image` task (`docker build`, the workspace as context, after `build` and, for a Node app, `prune`) for every app with a `Dockerfile`; writes one for a new Go app (built in Docker, shipped on distroless), static web app (nginx serving `dist/<app dir>`) or Node app that builds (installing from its pruned `dist/<app dir>` with `npm ci --omit=dev`) | the release builds the image once, tagged with the version and `latest`, and pushes both to `[conventions.docker] registry`, or to each of its `registries` (see [releasing](releasing.md#container-images)); a re-run pushes only to the registries that lack the version; with no registry the image is built and not pushed; an app with a `Dockerfile` releases without a `[release]` section |
+| `go-smith-plugin` | scaffold, requires the `go` language plugin; publishes the `go-smith-plugin` stack | `smith add app my-plugin --stack go-smith-plugin` writes a smith plugin in Go on the plugin SDK, with a conformance test and a README that says how to declare it. See [Writing a plugin](../guides/writing-a-plugin.md) | — |
 | `vertical-slices` | structure | a `slice-check` task for Go, Python, Dart, Rust, Ruby, C++, .NET, JVM and PHP projects, run before `lint`, in each language's own file-naming style | — |
 
 ### playwright
@@ -46,10 +47,13 @@ with through its [stack](stacks.md).
   caches them under a key made of the lockfile (the Playwright version) and the
   manifests (the `browsers` lists); a cache that lacks one only makes
   `playwright install` download it.
+- **The app under test** is started before the suite and stopped after by the
+  task's `serve` setting; see
+  [Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task).
 - **Not yet:** a starter for the library flavour (`smith add` writes the runner
-  flavour), starting the app under test before the suite (#261), and doctor
-  checks that the browsers are installed and that the unit test runner leaves
-  `e2e/` alone (the starter's `*.e2e.ts` names keep Vitest and Jest away).
+  flavour), and doctor checks that the browsers are installed and that the unit
+  test runner leaves `e2e/` alone (the starter's `*.e2e.ts` names keep Vitest
+  and Jest away).
 
 Built-in plugins ship inside the `smith` binary but still run as separate
 processes (`smith plugin serve <name>`), speaking the same protocol an external
@@ -58,6 +62,12 @@ fills and what it requires (`--json` adds its conflicts and capabilities), and
 `smith stacks` the stacks they publish.
 
 ## Writing a plugin
+
+This section is the reference. For a walk-through with working examples in Go,
+Python and Node.js, read the guide
+[Writing a plugin](../guides/writing-a-plugin.md); for why plugins are
+processes and how smith loads them, read
+[the plugin system](../design/plugin-system.md).
 
 A plugin is any executable that speaks the protocol on stdin/stdout; anything
 it wants the user to see goes to stderr. Declare it in `smith.toml`, with its

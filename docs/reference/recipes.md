@@ -1,5 +1,7 @@
 # Recipes
 
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). The design behind recipes: [recipes and CI](../design/recipes-and-ci.md).
+
 A recipe is a team's description of which plugin fills each level of a project
 and with what settings. It is data: a TOML file with no code, so it can only
 choose and configure plugins, never run anything. Recipes can extend one

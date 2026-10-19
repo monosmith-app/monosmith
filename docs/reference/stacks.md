@@ -1,5 +1,7 @@
 # Stacks
 
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How plugins are loaded and combined: [the plugin system](../design/plugin-system.md).
+
 A **stack** is the set of plugins a project is built with. Each project
 records its own, so one monorepo can hold a React app built with nothing but
 Vite next to an Azure Function built with a strongly opinionated stack:

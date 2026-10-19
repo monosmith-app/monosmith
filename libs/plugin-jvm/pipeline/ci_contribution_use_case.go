@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-jvm/registries"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -97,7 +98,8 @@ func gradle() protocol.Toolchain {
 
 // CI returns the JVM contribution: a JDK with Maven, and Gradle when a
 // module builds with it, resolving every Maven module's dependencies, and
-// the repository credentials when a package is deployed.
+// the repository sign-in when a package is deployed: the job's token for
+// GitHub Packages, else the Maven secrets.
 func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
@@ -113,15 +115,10 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if used.maven {
 		result.Setup = []protocol.Step{{Name: "Resolve Maven dependencies", Command: []string{"mvn", "-B", "-q", "dependency:go-offline"}, Blocking: true}}
 	}
-	for _, p := range params.Projects {
-		if p.Publishes() {
-			result.Credentials = append(result.Credentials,
-				protocol.Credential{Env: "MAVEN_REPOSITORY_URL", Description: "Maven repository the workspace's packages deploy to", Required: true},
-				protocol.Credential{Env: "MAVEN_USERNAME", Description: "Maven repository user", Required: true},
-				protocol.Credential{Env: "MAVEN_PASSWORD", Description: "Maven repository password or token", Required: true})
-			break
-		}
-	}
+	signIn := registries.CI(params.Projects)
+	result.Authenticate = signIn.Authenticate
+	result.Credentials = signIn.Credentials
+	result.Permissions = signIn.Permissions
 	return result
 }
 

@@ -1,5 +1,7 @@
 # Conventions
 
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). A convention is a plugin: see [plugins](plugins.md) and [writing a plugin](../guides/writing-a-plugin.md).
+
 A language plugin knows how to build, test and release a kind of project. A
 **convention** adds the rules a team holds on top: how code is laid out, which
 checks run, what a pipeline adds. A convention applies to the projects of the

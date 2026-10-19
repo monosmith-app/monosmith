@@ -15,17 +15,21 @@ func TestRegistriesAreValidated(t *testing.T) {
 		install    string
 		want       string
 	}{
-		"no auth":        {map[string]RegistryConfig{"f": {NPM: "https://f/npm/"}}, "", "needs auth"},
-		"unknown auth":   {map[string]RegistryConfig{"f": {Auth: "basic", NPM: "https://f/npm/"}}, "", "unknown auth"},
-		"token no env":   {map[string]RegistryConfig{"f": {Auth: "token", NPM: "https://f/npm/"}}, "", "needs token_env"},
-		"env not token":  {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", TokenEnv: "X", NPM: "https://f/npm/"}}, "", "only for auth"},
-		"no url":         {map[string]RegistryConfig{"f": {Auth: "azure-artifacts"}}, "", "no npm, pypi or nuget"},
-		"http url":       {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", NPM: "http://f/npm/"}}, "", "https URL"},
-		"github pypi":    {map[string]RegistryConfig{"f": {Auth: "github-packages", PyPI: "https://f/simple/"}}, "", "no Python registry"},
-		"unknown name":   {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", NPM: "https://f/npm/"}}, "g", `names no [registries.g]`},
-		"bad name":       {map[string]RegistryConfig{"my feed": {Auth: "azure-artifacts", NPM: "https://f/npm/"}}, "", "must start with a letter"},
-		"valid, used":    {map[string]RegistryConfig{"f": {Auth: "token", TokenEnv: "FEED_TOKEN", NPM: "https://f/npm/"}}, "f", ""},
-		"nothing at all": {nil, "", ""},
+		"no auth":                   {map[string]RegistryConfig{"f": {NPM: "https://f/npm/"}}, "", "needs auth"},
+		"unknown auth":              {map[string]RegistryConfig{"f": {Auth: "basic", NPM: "https://f/npm/"}}, "", "unknown auth"},
+		"token no env":              {map[string]RegistryConfig{"f": {Auth: "token", NPM: "https://f/npm/"}}, "", "needs token_env"},
+		"env not token":             {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", TokenEnv: "X", NPM: "https://f/npm/"}}, "", "only for auth"},
+		"no url":                    {map[string]RegistryConfig{"f": {Auth: "azure-artifacts"}}, "", "no npm, pypi, nuget or maven"},
+		"http url":                  {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", NPM: "http://f/npm/"}}, "", "https URL"},
+		"github pypi":               {map[string]RegistryConfig{"f": {Auth: "github-packages", PyPI: "https://f/simple/"}}, "", "no Python registry"},
+		"unknown name":              {map[string]RegistryConfig{"f": {Auth: "azure-artifacts", NPM: "https://f/npm/"}}, "g", `names no [registries.g]`},
+		"bad name":                  {map[string]RegistryConfig{"my feed": {Auth: "azure-artifacts", NPM: "https://f/npm/"}}, "", "must start with a letter"},
+		"valid, used":               {map[string]RegistryConfig{"f": {Auth: "token", TokenEnv: "FEED_TOKEN", NPM: "https://f/npm/"}}, "f", ""},
+		"maven github":              {map[string]RegistryConfig{"gh": {Auth: "github-packages", Maven: "github"}}, "gh", ""},
+		"maven url":                 {map[string]RegistryConfig{"gh": {Auth: "github-packages", Maven: "https://maven.pkg.github.com/acme/tools"}}, "gh", ""},
+		"maven http":                {map[string]RegistryConfig{"f": {Auth: "token", TokenEnv: "T", Maven: "http://f/maven"}}, "", "https URL"},
+		"maven shorthand elsewhere": {map[string]RegistryConfig{"f": {Auth: "token", TokenEnv: "T", Maven: "github"}}, "", "needs auth = \"github-packages\""},
+		"nothing at all":            {nil, "", ""},
 	}
 	for name, c := range cases {
 		cfg := validConfig()

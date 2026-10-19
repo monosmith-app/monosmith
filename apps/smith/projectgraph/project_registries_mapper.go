@@ -32,5 +32,5 @@ func registry(cfg workspace.Config, name string) *protocol.Registry {
 	if name == "" || !ok {
 		return nil
 	}
-	return &protocol.Registry{Name: name, Auth: r.Auth, TokenEnv: r.TokenEnv, NPM: r.NPM, PyPI: r.PyPI, PyPIUpload: r.PyPIUpload, NuGet: r.NuGet}
+	return &protocol.Registry{Name: name, Auth: r.Auth, TokenEnv: r.TokenEnv, NPM: r.NPM, PyPI: r.PyPI, PyPIUpload: r.PyPIUpload, NuGet: r.NuGet, Maven: r.Maven}
 }
