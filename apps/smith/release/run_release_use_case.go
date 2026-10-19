@@ -34,6 +34,9 @@ type Options struct {
 	// Push sends tags to the release remote (when it exists).
 	Push bool
 	Out  io.Writer
+	// Registries asks the registries before the first publish whether they
+	// would accept the release; nil reads the environment.
+	Registries *RegistryProbe
 }
 
 // Execute releases a plan. Each package is stamped, built, published, restored
@@ -51,6 +54,10 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 			report.Error = err.Error()
 			return report, err
 		}
+		if err := checkRegistries(s, plan, opts.Registries, opts.Out); err != nil {
+			report.Error = err.Error()
+			return report, err
+		}
 		pushPending(s, opts)
 	}
 	versions := map[string]string{}
@@ -64,10 +71,12 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 		if err := releaseOne(ctx, s, item, versions, opts, &res); err != nil {
 			res.Status, res.Error = "failed", err.Error()
 			report.Results = append(report.Results, res)
+			journalRelease(s, res, opts.Out)
 			report.Error = item.Project + ": " + err.Error()
 			return report, errors.New(report.Error)
 		}
 		report.Results = append(report.Results, res)
+		journalRelease(s, res, opts.Out)
 	}
 	return report, nil
 }
