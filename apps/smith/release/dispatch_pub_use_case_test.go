@@ -1,6 +1,7 @@
 package release
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
@@ -128,5 +129,53 @@ func TestDispatchPubSkipsWhatPubDevHasAndOtherCIs(t *testing.T) {
 	t.Setenv("TF_BUILD", "")
 	if err := dispatchPub(s, pubApp("", ""), item, &ReportResult{}, func(string, ...any) {}); err != nil || dispatched {
 		t.Errorf("tag not pushed: dispatched %v, %v", dispatched, err)
+	}
+}
+
+func TestPubPackageNamesWhatPublishesToPubDev(t *testing.T) {
+	pkg := func(publishTo string, exports ...string) *projectgraph.Project {
+		return &projectgraph.Project{Project: protocol.Project{Name: "core", Kind: protocol.ProjectPackage, PublishTo: publishTo, Exports: exports}}
+	}
+	cases := []struct {
+		name string
+		p    *projectgraph.Project
+		want string
+	}{
+		{"an app's configured package", pubApp("", ""), "monosmith"},
+		{"a dart package that publishes to pub.dev", pkg("pub.dev", "acme_core"), "acme_core"},
+		{"a package with a private repository", pkg("https://pub.example", "acme_core"), ""},
+		{"a package that never publishes", pkg("none", "acme_core"), ""},
+		{"a package that says nothing", pkg("", "acme_core"), ""},
+		{"a package without an export", pkg("pub.dev"), ""},
+	}
+	for _, c := range cases {
+		if got := PubPackage(c.p); got != c.want {
+			t.Errorf("%s: PubPackage = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestDispatchPubStartsThePubWorkflowForAPackage(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "acme/acme")
+	t.Setenv("TF_BUILD", "")
+	t.Setenv("GITLAB_CI", "")
+	s := released(t)
+	keep, keepHas := dispatcher, pubHas
+	defer func() { dispatcher, pubHas = keep, keepHas }()
+	var ref string
+	dispatcher = func(_ githubrelease.Repository, r string, _ map[string]string) error {
+		ref = r
+		return nil
+	}
+	pubHas = func(string, string) (bool, error) { return false, nil }
+
+	core := &projectgraph.Project{Project: protocol.Project{Name: "smith", Kind: protocol.ProjectPackage, PublishTo: "pub.dev", Exports: []string{"acme_core"}}}
+	res := ReportResult{Pushed: true}
+	item := Item{Project: "smith", Next: "1.4.0", Tag: "smith@1.4.0"}
+	if err := dispatchPub(s, core, item, &res, func(string, ...any) {}); err != nil {
+		t.Fatal(err)
+	}
+	if ref != "refs/tags/smith-v1.4.0" || !strings.Contains(res.PubDispatch, "acme_core 1.4.0") {
+		t.Errorf("ref %q, dispatch %q", ref, res.PubDispatch)
 	}
 }
