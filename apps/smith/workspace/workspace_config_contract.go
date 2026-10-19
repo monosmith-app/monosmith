@@ -53,6 +53,10 @@ type RegistryConfig struct {
 	PyPIUpload string `toml:"pypi_upload"`
 	// NuGet is the NuGet v3 service index (.../index.json).
 	NuGet string `toml:"nuget"`
+	// Maven is the Maven repository packages deploy to: an https URL, or
+	// "github" for GitHub Packages (https://maven.pkg.github.com/<owner>/<repo>
+	// of the repository the release runs in; needs auth = "github-packages").
+	Maven string `toml:"maven"`
 }
 
 // StackConfig is a stack declared in smith.toml: the plugins a project is
