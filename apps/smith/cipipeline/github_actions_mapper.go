@@ -42,6 +42,7 @@ jobs:
 	for _, a := range m.Authenticate {
 		b.WriteString(githubAuthenticate(a))
 	}
+	b.WriteString(githubStores(m.Stores))
 	fmt.Fprintf(&b, `      - name: Install smith
         run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
         env:

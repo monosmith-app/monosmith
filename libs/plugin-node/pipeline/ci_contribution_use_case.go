@@ -18,6 +18,7 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 	}
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(nodeVersion)},
+		Stores:     []protocol.PackageStore{{Name: "npm", Path: "~/.npm", Env: "NPM_CONFIG_CACHE", Files: []string{"package-lock.json"}}},
 		Setup:      []protocol.Step{{Name: "Install Node dependencies", Command: []string{"npm", "ci", "--no-audit", "--no-fund"}, Blocking: true}},
 		// smith npm-audit (AuditNpm) fails only on a production advisory npm
 		// can fix; the rest are notes.

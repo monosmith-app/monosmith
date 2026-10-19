@@ -6,8 +6,9 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// runtime installs Go in the generated pipelines. The Go module cache is not
-// cached by the action: smith's own cache covers the tasks.
+// runtime installs Go in the generated pipelines. The action does not cache
+// the module cache itself: the plugin declares it as a package store, so every
+// provider caches it the same way (see CI).
 func runtime(version string) protocol.Toolchain {
 	azure := version
 	if strings.Count(azure, ".") == 1 {

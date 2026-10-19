@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -33,5 +34,13 @@ func TestDoctor(t *testing.T) {
 	res := Doctor(t.TempDir(), protocol.DoctorParams{Projects: []protocol.Project{{}}})
 	if len(res.Findings) != 2 || !res.Findings[0].OK || res.Findings[1].OK {
 		t.Fatalf("%+v", res)
+	}
+}
+
+func TestCIDeclaresTheComposerDownloadStore(t *testing.T) {
+	got := CI(t.TempDir(), protocol.CIParams{Projects: []protocol.Project{{Name: "lib", Root: "packages/lib"}}}).Stores
+	want := []protocol.PackageStore{{Name: "composer", Path: "~/.cache/composer", Env: "COMPOSER_CACHE_DIR", Files: []string{"**/composer.lock"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%+v", got)
 	}
 }

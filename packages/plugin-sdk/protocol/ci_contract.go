@@ -8,6 +8,9 @@ type CIParams struct {
 
 // CIResult is the plugin's contribution to every generated pipeline.
 type CIResult struct {
+	// Stores are the package managers' download stores the pipeline caches
+	// between runs, keyed on the lockfiles that decide what is in them.
+	Stores []PackageStore `json:"stores,omitempty"`
 	// Toolchains are rendered as provider-native setup steps.
 	Toolchains []Toolchain `json:"toolchains,omitempty"`
 	// Setup steps run in `smith ci setup`, in order, from the workspace root.
@@ -104,4 +107,24 @@ type Credential struct {
 	// as well: the remote cache's key and credentials are read there, not
 	// only by the release.
 	Tasks bool `json:"tasks,omitempty"`
+}
+
+// PackageStore is where a package manager keeps what it downloaded (npm's
+// ~/.npm, Go's module cache). A generated pipeline restores it before setup
+// and saves it after a run, keyed on Files, so `npm ci` or `go mod download`
+// fetches only what changed. A pull request from a fork restores it and
+// never writes the base repository's cache.
+type PackageStore struct {
+	// Name identifies the store ("npm", "go") and is part of its cache key.
+	Name string `json:"name"`
+	// Path is the store's default location, which GitHub Actions caches as it
+	// is ("~/.npm").
+	Path string `json:"path"`
+	// Env is the environment variable that moves the store (NPM_CONFIG_CACHE,
+	// GOMODCACHE). Azure Pipelines and GitLab CI cache only directories under
+	// their own workspace, so they set it to one and cache that instead.
+	Env string `json:"env"`
+	// Files are the lockfiles that key the store: workspace-relative paths or
+	// globs. GitLab CI keys on the first two.
+	Files []string `json:"files"`
 }

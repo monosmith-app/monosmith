@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -30,5 +31,13 @@ func TestCIWithoutARegistryIsUnchanged(t *testing.T) {
 	r := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "sdk", Root: "packages/sdk", Kind: protocol.ProjectPackage}}})
 	if len(r.Setup) != 3 || len(r.Authenticate) != 0 || len(r.Credentials) != 1 || r.Credentials[0].Env != "PYPI_TOKEN" {
 		t.Errorf("result %+v", r)
+	}
+}
+
+func TestCIDeclaresThePipCacheKeyedOnTheDependencyFiles(t *testing.T) {
+	got := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "apps/api"}}}).Stores
+	want := []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: []string{"requirements-dev.txt", "apps/api/pyproject.toml"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%+v", got)
 	}
 }
