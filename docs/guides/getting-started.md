@@ -134,15 +134,18 @@ smith adopt --tags --init
 ```
 
 When something blocks, the report lists each blocker and warning with the step
-that clears it. For example, release tags made under another name
-(`core@1.2.0`, where smith expects `libs/core/v1.2.0`) would make a project's
-next release start from scratch; `--tags` creates the missing tags locally, on
-the same commits, and pushing them is yours. A pipeline of yours at a path
-smith's uses is kept as `<file>.pre-smith`. `smith adopt` exits non-zero while
-something blocks. Both steps need a clean git tree. `--init` takes the name from
-the directory, the npm scope from the root `package.json` and the CI providers
-from the ones the repository already uses, and adds `.smith/` to your
-`.gitignore`.
+that clears it, and `smith adopt` exits non-zero. Blockers include a folder that
+is not a git repository, one that is already a smith workspace, and an Nx
+workspace (that is `smith convert`'s). Warnings include a root `package.json`
+with runtime dependencies (in smith each project declares what it uses) and a
+pipeline of yours at a path smith's uses, which `--init` keeps as
+`<file>.pre-smith`. When a project's existing release tags are named differently
+from the way smith names them (`<project>@<version>`, for example `sdk@0.1.0`),
+its next release would start from scratch; `--tags` creates the missing tags
+locally, on the same commits, and pushing them is yours. Both steps need a clean
+git tree. `--init` takes the workspace name from the directory, the npm scope
+from the root `package.json` and the CI providers from the ones the repository
+already uses, and adds `.smith/` to your `.gitignore`.
 
 ## 3. Add projects
 
