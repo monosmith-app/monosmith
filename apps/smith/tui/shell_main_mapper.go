@@ -324,7 +324,7 @@ func (s Shell) runContent(w, h int) content {
 	}
 	counts := s.run.Counts()
 	now := s.now()
-	took := s.run.RunTime(now).Round(100 * time.Millisecond)
+	took := shortDuration(s.run.RunTime(now))
 	state := s.th.Info(s.th.Spin(s.tick) + " running")
 	switch {
 	case s.stopping && s.running():
@@ -336,7 +336,7 @@ func (s Shell) runContent(w, h int) content {
 	case s.run.Finished:
 		state = s.th.Failure(s.th.Icons.Failed + " failed")
 	}
-	c.lines = append(c.lines, pane.Fit(" "+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took.String()), w))
+	c.lines = append(c.lines, pane.Fit(" "+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took), w))
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))
@@ -398,7 +398,7 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 	nameW := min(max(w/3, 12), 28)
 	detail := t.Status.String()
 	if d := s.run.Elapsed(t, now); d > 0 {
-		detail += "  " + d.Round(10*time.Millisecond).String()
+		detail += "  " + shortDuration(d)
 	}
 	if t.Reason != "" && t.Status != runview.Passed {
 		detail += "  " + t.Reason
@@ -425,7 +425,7 @@ func (s Shell) inspectorPanel() inspector.Panel {
 		if t := s.run.Task(s.runSel); t != nil {
 			rows := []inspector.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String()}}
 			if d := s.run.Elapsed(t, s.now()); d > 0 {
-				rows = append(rows, inspector.Row{Label: "time", Value: d.Round(time.Millisecond).String()})
+				rows = append(rows, inspector.Row{Label: "time", Value: shortDuration(d)})
 			}
 			if t.Command != "" {
 				rows = append(rows, inspector.Row{Label: "command", Value: t.Command})
@@ -545,4 +545,12 @@ func yesNoMark(s Shell, b bool) string {
 		return s.th.Warning(s.th.Icons.Dot) + " yes"
 	}
 	return "no"
+}
+
+// shortDuration is a duration for a list: milliseconds under a second, then tenths of a second.
+func shortDuration(d time.Duration) string {
+	if d < time.Second {
+		return d.Round(time.Millisecond).String()
+	}
+	return d.Round(100 * time.Millisecond).String()
 }

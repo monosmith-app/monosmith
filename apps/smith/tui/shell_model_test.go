@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
@@ -17,14 +18,20 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/muesli/termenv"
 )
 
-func init() { tickInterval = time.Microsecond }
+func init() {
+	tickInterval = time.Microsecond
+	// Draw escape codes even though the tests have no terminal, so that a
+	// hover (an underline in the plain theme) can be told from no hover.
+	lipgloss.SetColorProfile(termenv.ANSI256)
+}
 
 var smithCommands = []clicontract.CommandDescription{
 	{Name: "affected", Description: "List projects a change touches, before a release"},
 	{Name: "doctor", Description: "Check the workspace"},
-	{Name: "up", Description: "Show dependencies with newer releases and update the ones you pick"},
+	{Name: "mcp", Description: "Serve the workspace to an AI assistant over the Model Context Protocol (stdio)"},
 	{Name: "release", Description: "Version, tag and publish", Options: []clicontract.OptionDescription{{Name: "dry-run"}}},
 }
 
@@ -226,6 +233,8 @@ func keyMsg(k string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyF2}
 	case "f3":
 		return tea.KeyMsg{Type: tea.KeyF3}
+	case "f4":
+		return tea.KeyMsg{Type: tea.KeyF4}
 	case "f10":
 		return tea.KeyMsg{Type: tea.KeyF10}
 	case "ctrl+o":
@@ -244,6 +253,8 @@ func keyMsg(k string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyCtrlR}
 	case "ctrl+b":
 		return tea.KeyMsg{Type: tea.KeyCtrlB}
+	case "ctrl+e":
+		return tea.KeyMsg{Type: tea.KeyCtrlE}
 	case "ctrl+f":
 		return tea.KeyMsg{Type: tea.KeyCtrlF}
 	case "ctrl+x":

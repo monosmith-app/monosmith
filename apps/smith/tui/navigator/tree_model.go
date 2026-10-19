@@ -40,8 +40,17 @@ func (t Tree) Projects() []Project { return t.projects }
 // Project returns the project with a name.
 func (t Tree) Project(name string) (Project, bool) { p, ok := t.byName[name]; return p, ok }
 
-// SetHeight tells the tree how many rows fit and keeps the cursor visible.
-func (t Tree) SetHeight(h int) Tree { t.height = max(h, 1); return t.reveal() }
+// SetHeight tells the tree how many rows fit; when that changes it keeps the
+// cursor visible. Setting the same height leaves the scroll position alone, so
+// drawing never undoes a wheel scroll.
+func (t Tree) SetHeight(h int) Tree {
+	h = max(h, 1)
+	if h == t.height {
+		return t
+	}
+	t.height = h
+	return t.reveal()
+}
 
 // Rows are the visible rows.
 func (t Tree) Rows() []Row {

@@ -269,7 +269,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	case startedMsg:
 		return s.started(msg)
 	case plannedMsg:
-		if s.run != nil && s.proc == msg.proc {
+		if s.run != nil && !s.run.Finished && s.proc == msg.proc {
 			s.run.Plan(msg.ids)
 		}
 	case outputMsg:

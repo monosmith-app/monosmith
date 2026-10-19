@@ -135,7 +135,7 @@ func (s *Shell) finished() {
 // summary is the result of the last run in a few words.
 func (s *Shell) summary() string {
 	r := s.run
-	took := r.RunTime(s.now()).Round(100 * 1e6)
+	took := shortDuration(r.RunTime(s.now()))
 	c := r.Counts()
 	if c.Total == 0 {
 		return fmt.Sprintf("exit %d in %s", r.Exit, took)
@@ -149,7 +149,7 @@ func (s *Shell) summary() string {
 			parts = append(parts, fmt.Sprintf("%d %s", p.n, p.word))
 		}
 	}
-	return strings.Join(parts, " · ") + " in " + took.String()
+	return strings.Join(parts, " · ") + " in " + took
 }
 
 // stop asks the running command to stop; asking again quits the shell.
