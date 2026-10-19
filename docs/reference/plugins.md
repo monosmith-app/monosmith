@@ -46,10 +46,13 @@ with through its [stack](stacks.md).
   caches them under a key made of the lockfile (the Playwright version) and the
   manifests (the `browsers` lists); a cache that lacks one only makes
   `playwright install` download it.
+- **The app under test** is started before the suite and stopped after by the
+  task's `serve` setting; see
+  [Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task).
 - **Not yet:** a starter for the library flavour (`smith add` writes the runner
-  flavour), starting the app under test before the suite (#261), and doctor
-  checks that the browsers are installed and that the unit test runner leaves
-  `e2e/` alone (the starter's `*.e2e.ts` names keep Vitest and Jest away).
+  flavour), and doctor checks that the browsers are installed and that the unit
+  test runner leaves `e2e/` alone (the starter's `*.e2e.ts` names keep Vitest
+  and Jest away).
 
 Built-in plugins ship inside the `smith` binary but still run as separate
 processes (`smith plugin serve <name>`), speaking the same protocol an external
@@ -58,6 +61,12 @@ fills and what it requires (`--json` adds its conflicts and capabilities), and
 `smith stacks` the stacks they publish.
 
 ## Writing a plugin
+
+This section is the reference. For a walk-through with working examples in Go,
+Python and Node.js, read the guide
+[Writing a plugin](../guides/writing-a-plugin.md); for why plugins are
+processes and how smith loads them, read
+[the plugin system](../design/plugin-system.md).
 
 A plugin is any executable that speaks the protocol on stdin/stdout; anything
 it wants the user to see goes to stderr. Declare it in `smith.toml`, with its
