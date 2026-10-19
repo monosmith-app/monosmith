@@ -144,5 +144,17 @@ func apply(t protocol.Task, o workspace.TaskOverride, sources map[string]string,
 	if o.Verify != nil {
 		t.Verify = *o.Verify
 	}
+	if o.Serve != "" {
+		t.Serve = o.Serve
+		set("serve")
+	}
+	if o.ServeURL != "" {
+		t.ServeURL = o.ServeURL
+		set("serve_url")
+	}
+	if o.ServeTimeout != "" {
+		t.ServeTimeout = o.ServeTimeout
+		set("serve_timeout")
+	}
 	return t
 }

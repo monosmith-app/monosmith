@@ -317,4 +317,9 @@ type TaskOverride struct {
 	// Verify runs the task in smith ci verify on pull requests, for the
 	// affected projects; false turns off what a plugin or smith marked.
 	Verify *bool `toml:"verify"`
+	// Serve, ServeURL and ServeTimeout start an app around the task (see
+	// protocol.Task).
+	Serve        string `toml:"serve"`
+	ServeURL     string `toml:"serve_url"`
+	ServeTimeout string `toml:"serve_timeout"`
 }

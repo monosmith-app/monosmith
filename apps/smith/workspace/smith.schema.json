@@ -243,7 +243,10 @@
         "depends_on": { "type": "array", "items": { "type": "string" }, "description": "build, ^build or project:task." },
         "env": { "type": "object", "additionalProperties": { "type": "string" } },
         "cache": { "type": "boolean" },
-        "verify": { "type": "boolean", "description": "Run the task in smith ci verify on pull requests, for affected projects. An app's package task does by default; false turns that off." }
+        "verify": { "type": "boolean", "description": "Run the task in smith ci verify on pull requests, for affected projects. An app's package task does by default; false turns that off." },
+        "serve": { "type": "string", "description": "A task (web:start, or start in the same project) smith starts before this one and stops after it, whatever the result: the app an end-to-end suite tests." },
+        "serve_url": { "type": "string", "pattern": "^https?://", "description": "Waited for (HTTP 2xx) before the task starts, and passed to it as E2E_BASE_URL." },
+        "serve_timeout": { "type": "string", "pattern": "^[0-9]+([.][0-9]+)?(ms|s|m|h)$", "description": "How long to wait for serve_url (60s by default)." }
       }
     }
   }

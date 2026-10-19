@@ -49,7 +49,25 @@ func add(g *Graph, pg *projectgraph.Graph, project, task string) error {
 	node := &Task{ID: id, Project: p, Name: task, Def: def}
 	g.Tasks[id] = node
 	deps := map[string]bool{}
-	for _, dep := range def.DependsOn {
+	// The app a task serves is started by the runner, not run as a
+	// dependency; what it needs built first is a dependency of this task.
+	dependsOn := def.DependsOn
+	depsOf := map[string]*projectgraph.Project{}
+	if def.Serve != "" {
+		sp, st, err := ServeTarget(pg, project, def.Serve)
+		if err != nil {
+			return fmt.Errorf("%s: %w", id, err)
+		}
+		for _, d := range sp.Tasks[st].DependsOn {
+			dependsOn = append(dependsOn[:len(dependsOn):len(dependsOn)], d)
+			depsOf[d] = sp
+		}
+	}
+	for _, dep := range dependsOn {
+		p, project := p, project
+		if owner := depsOf[dep]; owner != nil {
+			p, project = owner, owner.Name
+		}
 		if strings.HasPrefix(dep, "^") {
 			name := dep[1:]
 			for _, target := range upstreamWith(pg, p.Deps, name) {

@@ -42,6 +42,9 @@ type KeyInputs struct {
 	// cannot tell. It joins the key only when set, so a plugin that reports
 	// nothing keeps the keys it always had.
 	Toolchain string `json:"toolchain,omitempty"`
+	// Serve is the app the task runs against ("web:start http://127.0.0.1:5173");
+	// empty for a task that serves none, and then it is left out of the key.
+	Serve string `json:"serve,omitempty"`
 }
 
 // Key computes the cache key: a SHA-256 over a length-prefixed encoding of
@@ -65,6 +68,10 @@ func Key(in KeyInputs) string {
 	if in.Toolchain != "" {
 		write("toolchain")
 		write(in.Toolchain)
+	}
+	if in.Serve != "" {
+		write("serve")
+		write(in.Serve)
 	}
 	section("command", len(in.Command))
 	for _, a := range in.Command {
