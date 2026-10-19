@@ -8,7 +8,7 @@ name = "monosmith"
 scope = "@monosmith"
 module_prefix = "github.com/monosmith-app/monosmith"
 # Example plugins in the documentation are standalone modules, not projects.
-exclude = ["docs/examples/**"]
+exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
 
 [ci]
 providers = ["github"]
