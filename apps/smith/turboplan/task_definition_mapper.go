@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/turboworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // pluginDependsOn is what the Node plugin makes each well-known script depend
@@ -107,7 +108,7 @@ func mapPackageTasks(c taskContext, p *turboworkspace.Package, pp *convertplan.P
 				c.plan.Add(convertplan.Manual, pp.Name, script, fmt.Sprintf("the output %s is not a directory inside the package; smith caches directories, so list the directory it sits in under outputs in smith.toml", loose))
 			}
 			if script == "build" && len(out.Dirs) > 0 {
-				c.plan.Add(convertplan.Changed, pp.Name, script, "the build writes to "+strings.Join(out.Dirs, ", ")+" in the package; smith's Node convention is the workspace's dist/"+pp.Root+", which smith doctor checks")
+				c.plan.Add(convertplan.Manual, pp.Name, script, "the build writes to "+strings.Join(out.Dirs, ", ")+" inside the package, and smith doctor fails a build that does not write to the workspace's "+buildDirOf(pp.Root)+": point the tool there (tsconfig outDir, --outdir) and update main, types and exports, then set outputs to match")
 			}
 		}
 		if turboCaches && (def.Inputs != nil || len(c.global) > 0) {
@@ -163,6 +164,13 @@ func dependsOn(c taskContext, p *turboworkspace.Package, pp *convertplan.Project
 	want, known := pluginDependsOn[script]
 	if known && script == "start" && !hasScript(p, "build") {
 		want = nil
+	}
+	// A task that waits for its own package's build waits, through it, for
+	// the builds of the dependencies; the plugin's ^build says so directly.
+	if contains(want, "^build") && !contains(deps, "^build") && contains(deps, "build") {
+		if build, ok := effectiveTask(c.w, p, "build"); ok && contains(build.DependsOn, "^build") {
+			deps = append([]string{"^build"}, deps...)
+		}
 	}
 	if equal(deps, want) {
 		return nil, false
@@ -234,3 +242,6 @@ func dedupe(in []string) []string {
 	}
 	return out
 }
+
+// buildDirOf is the directory smith builds a project into.
+func buildDirOf(root string) string { return protocol.ProjectBuildDir(root) + "/" }

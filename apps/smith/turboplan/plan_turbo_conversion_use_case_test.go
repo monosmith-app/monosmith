@@ -133,7 +133,7 @@ func TestMakePlanTasks(t *testing.T) {
 	if got := ui["lint"].DependsOn; got == nil || len(got) != 0 {
 		t.Errorf("a lint with no dependsOn must not wait for ^build, as in Turborepo: %#v", got)
 	}
-	if got := ui["test"].DependsOn; !reflect.DeepEqual(got, []string{"build"}) {
+	if got := ui["test"].DependsOn; !reflect.DeepEqual(got, []string{"^build", "build"}) {
 		t.Errorf("test depends on %v", got)
 	}
 	if got := ui["test"].Inputs; !reflect.DeepEqual(got, []string{"**/*", "!README.md", "{workspaceRoot}/tsconfig.json", "{workspaceRoot}/package-lock.json"}) {
@@ -166,7 +166,7 @@ func TestMakePlanReportsWhatSmithCannotMap(t *testing.T) {
 		"task ghost", "pnpm@9.1.0", "options that only set how turbo runs: ui", "engines.pnpm", "pnpm-lock.yaml", "npx only-allow pnpm")
 	manual := findings(plan, convertplan.Manual)
 	mustContain(t, "manual", manual,
-		"script lint", "a>b", ".github/workflows/deploy.yml")
+		"script lint", "a>b", ".github/workflows/deploy.yml", "the build writes to dist inside the package")
 }
 
 func TestMakePlanMovesToNpmWorkspaces(t *testing.T) {

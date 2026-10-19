@@ -195,6 +195,9 @@ func editRootPackage(root string, plan *convertplan.Plan) error {
 			for _, name := range plan.RemoveDependencies {
 				deps.Delete(name)
 			}
+			if deps.Len() == 0 && len(plan.RemoveDependencies) > 0 {
+				doc.Delete(section)
+			}
 		}
 	}
 	if overrides := doc.Object("overrides", false); overrides != nil {

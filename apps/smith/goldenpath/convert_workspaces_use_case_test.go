@@ -147,6 +147,100 @@ func TestConvertPlainNxWorkspace(t *testing.T) {
 	}
 }
 
+// TestConvertTurborepoWorkspace converts a pnpm Turborepo (testdata/turborepo-pnpm:
+// an app and two packages whose builds need each other's, no registry
+// needed), then installs, builds and tests it as an npm workspace with smith.
+func TestConvertTurborepoWorkspace(t *testing.T) {
+	base := t.TempDir()
+	w := &workspace{t: t, bin: buildSmith(t, base), dir: filepath.Join(base, "turbo"), env: identity()}
+	copyTree(t, filepath.Join("testdata", "turborepo-pnpm"), w.dir)
+	w.git("init", "-q", "-b", "main")
+	w.git("add", "-A")
+	w.git("commit", "-qm", "chore: turborepo", "--no-verify")
+
+	plan := w.smith(true, "convert", "--dry-run")
+	for _, want := range []string{
+		"Conversion plan for Turborepo workspace",
+		"pnpm-workspace.yaml: its packages become the package.json \"workspaces\" field",
+		"2 workspace: and catalog: ranges become what npm accepts",
+		"task test: env [\"NODE_ENV\"]",
+		"web build: the build writes to dist inside the package",
+		"Nothing changed (dry run)",
+	} {
+		if !strings.Contains(plan, want) {
+			t.Fatalf("plan lacks %q:\n%s", want, plan)
+		}
+	}
+	w.smith(true, "convert")
+	for _, gone := range []string{"turbo.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"} {
+		if _, err := os.Stat(filepath.Join(w.dir, gone)); err == nil {
+			t.Fatalf("%s must be gone after convert", gone)
+		}
+	}
+	root := w.read("package.json")
+	for _, gone := range []string{"packageManager", "turbo", "pnpm"} {
+		if strings.Contains(root, gone) {
+			t.Fatalf("package.json still mentions %s:\n%s", gone, root)
+		}
+	}
+	if !strings.Contains(root, `"workspaces"`) || !strings.Contains(root, `"smith run build --bail"`) || !strings.Contains(root, `"semver": "7.6.3"`) {
+		t.Fatalf("package.json is not the npm workspace root:\n%s", root)
+	}
+	if web := w.read("apps/web/package.json"); !strings.Contains(web, `"@acme/ui": "*"`) {
+		t.Fatalf("workspace:* must become *:\n%s", web)
+	}
+	if ui := w.read("packages/ui/package.json"); !strings.Contains(ui, `"@acme/util": "^1.0.0"`) {
+		t.Fatalf("workspace:^ must become ^<version>:\n%s", ui)
+	}
+	if _, err := os.Stat(filepath.Join(w.dir, "package-lock.json")); err != nil {
+		t.Fatal("convert installs with npm and writes package-lock.json")
+	}
+	config := w.read("smith.toml")
+	for _, want := range []string{"[projects.web.tasks.test]", `depends_on = ["^build", "build"]`, `outputs = ["dist"]`, "[projects.web.tasks.dev]", "cache = false"} {
+		if !strings.Contains(config, want) {
+			t.Fatalf("smith.toml lacks %q:\n%s", want, config)
+		}
+	}
+
+	// The builds write into each package, which doctor refuses; the report said so.
+	if out := w.smith(false, "doctor"); !strings.Contains(out, "every build writes to dist/") {
+		t.Fatalf("doctor:\n%s", out)
+	}
+	// smith i installs the npm workspace; the packages build in dependency order.
+	if out := w.smith(true, "i"); !strings.Contains(out, "node: installed 3 project(s)") {
+		t.Fatalf("smith i:\n%s", out)
+	}
+	if out := w.smith(true, "run", "build", "test"); !strings.Contains(out, "tasks succeeded") {
+		t.Fatal(out)
+	}
+	if again := w.smith(true, "run", "build", "test"); strings.Contains(again, "▶") {
+		t.Fatalf("a second run is all cache:\n%s", again)
+	}
+}
+
+// copyTree copies a directory of fixtures.
+func copyTree(t *testing.T, from, to string) {
+	t.Helper()
+	err := filepath.WalkDir(from, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(from, path)
+		dest := filepath.Join(to, rel)
+		if d.IsDir() {
+			return os.MkdirAll(dest, 0o755)
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dest, raw, 0o644)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // npx runs npx in the workspace directory with the test's git identity.
 func (w *workspace) npx(args ...string) {
 	w.t.Helper()
