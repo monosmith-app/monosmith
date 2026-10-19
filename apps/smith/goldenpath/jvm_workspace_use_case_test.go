@@ -73,3 +73,31 @@ func TestJvmWorkspace(t *testing.T) {
 		t.Fatalf("release plan:\n%s", plan)
 	}
 }
+
+// TestJvmPublishesToGitHubPackagesWithTheJobsToken names GitHub Packages as
+// the release registry and checks the generated workflow: the job's token
+// with packages: write, and no Maven secret to create.
+func TestJvmPublishesToGitHubPackagesWithTheJobsToken(t *testing.T) {
+	base := t.TempDir()
+	w := &workspace{t: t, bin: buildSmith(t, base), dir: base, env: identity()}
+	w.smith(true, "new", "smith-e2e-jvm-gh", "--ci", "github")
+	w.dir = filepath.Join(base, "smith-e2e-jvm-gh")
+	w.smith(true, "add", "package", "core", "--lang", "jvm")
+	w.write("smith.toml", w.read("smith.toml")+"\n[registries.github]\nauth = \"github-packages\"\nmaven = \"github\"\n\n[release]\nregistry = \"github\"\n")
+	w.smith(true, "ci", "generate")
+	ci := w.read(".github/workflows/ci.yml")
+	if !strings.Contains(ci, "  packages: write\n") {
+		t.Fatalf("ci.yml grants packages: write:\n%s", ci)
+	}
+	for _, secret := range []string{"MAVEN_REPOSITORY_URL", "MAVEN_USERNAME", "MAVEN_PASSWORD"} {
+		if strings.Contains(ci, secret) {
+			t.Fatalf("ci.yml reads %s, which GitHub Packages does not need:\n%s", secret, ci)
+		}
+	}
+	if !strings.Contains(ci, "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}") {
+		t.Fatalf("ci.yml gives the release the job's token:\n%s", ci)
+	}
+	if out := w.smith(true, "ci", "generate", "--check"); strings.Contains(out, "MAVEN_") {
+		t.Fatalf("nothing to create by hand:\n%s", out)
+	}
+}
