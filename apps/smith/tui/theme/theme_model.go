@@ -1,6 +1,10 @@
 package theme
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 // Theme renders text in the meaning of a token. It is a value: pass it down to
 // every component that draws.
@@ -58,7 +62,6 @@ func (t Theme) Faint(s string) string    { return t.faint.Render(s) }
 func (t Theme) Title(s string) string    { return t.title.Render(s) }
 func (t Theme) Selected(s string) string { return t.selected.Render(s) }
 func (t Theme) Hover(s string) string    { return t.hover.Render(s) }
-func (t Theme) Bar(s string) string      { return t.bar.Render(s) }
 
 // Bold renders s in bold.
 func (t Theme) Bold(s string) string { return lipgloss.NewStyle().Bold(true).Render(s) }
@@ -75,4 +78,17 @@ func (t Theme) Border(s string, focused bool) string {
 func (t Theme) Spin(tick int) string {
 	f := t.Icons.Spinner
 	return f[((tick%len(f))+len(f))%len(f)]
+}
+
+// Bar renders s on the bar background. Styled segments inside s end with a
+// reset that would drop the background, so the background is put back after
+// each one.
+func (t Theme) Bar(s string) string {
+	open, reset, ok := strings.Cut(t.bar.Render("@"), "@")
+	if !ok || open == "" {
+		return s
+	}
+	s = strings.ReplaceAll(s, "\x1b[0m", reset+open)
+	s = strings.ReplaceAll(s, "\x1b[m", reset+open)
+	return open + s + reset
 }
