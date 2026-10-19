@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -148,11 +149,18 @@ marks the ones that changed.`,
 	projects.Flags().BoolVar(&projectsJSON, "json", false, "print JSON")
 
 	var base string
-	var affectedJSON bool
+	var affectedJSON, affectedPaths bool
 	affectedCmd := &cobra.Command{
 		Use:   "affected",
 		Short: "List the projects affected by changes since a base branch",
-		Args:  cobra.NoArgs,
+		Long: `List the projects affected by changes since a base branch, one per line.
+
+--json prints the whole answer, with "watch": for each app, the directories a
+deployment platform should watch (the app's own and those of everything it
+depends on, transitively), for Railway or Render watch paths and GitOps path
+filters. --paths prints just that, one app per line: the app, a tab, then its
+directories. Both list every app, affected or not.`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
@@ -165,10 +173,25 @@ marks the ones that changed.`,
 				}
 			}
 			res := affected.Compute(s.Git, s.Graph, base)
+			watch := affected.WatchPaths(s.Graph)
+			if affectedPaths {
+				names := make([]string, 0, len(watch))
+				for name := range watch {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+				for _, name := range names {
+					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", name, strings.Join(watch[name], " "))
+				}
+				return nil
+			}
 			if affectedJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(res)
+				return enc.Encode(struct {
+					affected.Result
+					Watch map[string][]string `json:"watch,omitempty"`
+				}{res, watch})
 			}
 			fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", res.Reason)
 			for _, p := range res.Projects {
@@ -178,6 +201,7 @@ marks the ones that changed.`,
 		},
 	}
 	affectedCmd.Flags().StringVar(&base, "base", "", "base branch (default: the PR target, else the release branch)")
-	affectedCmd.Flags().BoolVar(&affectedJSON, "json", false, "print JSON")
+	affectedCmd.Flags().BoolVar(&affectedJSON, "json", false, "print JSON, with the directories to watch for each app")
+	affectedCmd.Flags().BoolVar(&affectedPaths, "paths", false, "print each app and the directories a deployment platform should watch")
 	return []*cobra.Command{graph, projects, affectedCmd}
 }

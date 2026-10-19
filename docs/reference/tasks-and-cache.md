@@ -226,6 +226,24 @@ common ancestor (a shallow clone), or a changed workspace-level file such as
 project. Too wide costs minutes; too narrow reports green for code nothing
 checked.
 
+### Watch paths for deployment platforms
+
+```sh
+smith affected --paths      # every app, a tab, the directories to watch
+smith affected --json       # the same under "watch", with the affected projects
+```
+
+A deployment platform that rebuilds on a push needs to know which directories
+can change an app: the app's own and those of every project it depends on,
+transitively. For each app:
+
+```
+web	apps/web libs/core libs/ui
+api	apps/api libs/core
+```
+
+Both list every app, affected or not, and ignore `--base`.
+
 ## Paths
 
 Inside smith every path is POSIX and relative: project roots, task `cwd`,

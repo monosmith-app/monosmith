@@ -1,9 +1,12 @@
 package publishing
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -17,12 +20,19 @@ type fakeDocker struct {
 	has       map[string]bool   // tags a registry already has (manifest inspect succeeds)
 	failOn    string            // a command (prefix) that fails
 	inspected []string
+	noDigest  bool // reading a digest fails
+}
+
+// fakeDigest is the digest the fake registry gives a reference.
+func fakeDigest(ref string) string {
+	sum := sha256.Sum256([]byte(ref))
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
 func recordDocker(t *testing.T) *fakeDocker {
 	t.Helper()
-	realDocker, realInspect := Docker, Inspect
-	t.Cleanup(func() { Docker, Inspect = realDocker, realInspect })
+	realDocker, realInspect, realOutput := Docker, Inspect, Output
+	t.Cleanup(func() { Docker, Inspect, Output = realDocker, realInspect, realOutput })
 	f := &fakeDocker{passwords: map[string]string{}, has: map[string]bool{}}
 	Docker = func(_ string, argv []string, stdin string) error {
 		cmd := strings.Join(argv, " ")
@@ -34,6 +44,16 @@ func recordDocker(t *testing.T) *fakeDocker {
 			return errors.New("denied: requested access to the resource is denied")
 		}
 		return nil
+	}
+	// The digest of an image is the SHA-256 of its reference, in hex, so a
+	// test can compute it.
+	Output = func(_ string, argv []string) (string, error) {
+		ref := argv[len(argv)-1]
+		image, _, _ := strings.Cut(ref, ":1")
+		if f.noDigest {
+			return "", errors.New("no such image")
+		}
+		return image + "@" + fakeDigest(ref) + "\n", nil
 	}
 	Inspect = func(_ string, argv []string) error {
 		f.inspected = append(f.inspected, strings.Join(argv, " "))
@@ -231,5 +251,82 @@ func TestContradictorySettingsFailThePublish(t *testing.T) {
 	f := recordDocker(t)
 	if _, err := Publish(ws, protocol.PublishParams{Project: api, Version: "1.0.0"}); err == nil || len(f.ran) != 0 {
 		t.Fatalf("%v %v", err, f.ran)
+	}
+}
+
+func TestTheCommitAndBranchAreTaggedWhenAsked(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registry": "ghcr.io/acme", "image": "acme-api", "tag_commit": true, "tag_branch": true})
+	f := recordDocker(t)
+	t.Setenv("GITHUB_TOKEN", "ghs_token")
+	params := protocol.PublishParams{Project: api, Version: "1.0.0", Commit: "0123456789abcdef0123456789abcdef01234567", Branch: "main"}
+	res, err := Publish(ws, params)
+	if err != nil || !res.Published {
+		t.Fatalf("%+v %v", res, err)
+	}
+	want := []string{
+		"docker build -f apps/api/Dockerfile -t ghcr.io/acme/acme-api:1.0.0 -t ghcr.io/acme/acme-api:sha-0123456 -t ghcr.io/acme/acme-api:main -t ghcr.io/acme/acme-api:latest .",
+		"docker push ghcr.io/acme/acme-api:sha-0123456",
+		"docker push ghcr.io/acme/acme-api:main",
+		"docker push ghcr.io/acme/acme-api:latest",
+		"docker push ghcr.io/acme/acme-api:1.0.0",
+	}
+	if got := f.ran[len(f.ran)-5:]; strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("ran:\n%s", strings.Join(f.ran, "\n"))
+	}
+	params.DryRun = true
+	if res, _ := Publish(ws, params); !strings.Contains(res.Skipped, "ghcr.io/acme/acme-api:sha-0123456") || !strings.Contains(res.Skipped, "ghcr.io/acme/acme-api:main") {
+		t.Errorf("a dry run names the extra tags: %q", res.Skipped)
+	}
+}
+
+func TestTheCommitAndBranchAreNotTaggedUnlessAsked(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registry": "ghcr.io/acme", "image": "acme-api"})
+	f := recordDocker(t)
+	if _, err := Publish(ws, protocol.PublishParams{Project: api, Version: "1.0.0", Commit: "0123456789abcdef", Branch: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(f.ran, "\n"), "sha-") || strings.Contains(strings.Join(f.ran, "\n"), ":main") {
+		t.Errorf("ran:\n%s", strings.Join(f.ran, "\n"))
+	}
+}
+
+func TestATagTheReleaseCannotNameIsSkippedWithAWarning(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registry": "ghcr.io/acme", "image": "acme-api", "tag_commit": true})
+	f := recordDocker(t)
+	log := capture(t)
+	if _, err := Publish(ws, protocol.PublishParams{Project: api, Version: "1.0.0"}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(f.ran, "\n"), "sha-") || !strings.Contains(log.String(), "tag_commit: the commit is unknown, so that tag is not pushed") {
+		t.Errorf("ran:\n%s\nlog:\n%s", strings.Join(f.ran, "\n"), log)
+	}
+}
+
+func TestTheResultNamesEachRegistrysImageTagsAndDigest(t *testing.T) {
+	both := map[string]any{"registries": []any{"ghcr.io/open-craw", "docker.io/opencraw"}, "image": "opencraw-api", "tag_branch": true}
+	ws, api := shipping(t, both)
+	bothCredentials(t)
+	recordDocker(t)
+	res, err := Publish(ws, protocol.PublishParams{Project: api, Version: "1.0.0", Branch: "main"})
+	if err != nil || len(res.Images) != 2 {
+		t.Fatalf("%+v %v", res, err)
+	}
+	want := protocol.PublishedImage{Reference: "ghcr.io/open-craw/opencraw-api", Tags: []string{"main", "latest", "1.0.0"}, Digest: fakeDigest("ghcr.io/open-craw/opencraw-api:1.0.0")}
+	if !reflect.DeepEqual(res.Images[0], want) {
+		t.Errorf("%+v, want %+v", res.Images[0], want)
+	}
+	if res.Images[1].Reference != "docker.io/opencraw/opencraw-api" || res.Images[1].Digest != fakeDigest("docker.io/opencraw/opencraw-api:1.0.0") {
+		t.Errorf("%+v", res.Images[1])
+	}
+}
+
+func TestAnUnreadableDigestIsAWarningNotAFailure(t *testing.T) {
+	ws, api := shipping(t, map[string]any{"registry": "ghcr.io/acme", "image": "acme-api"})
+	f := recordDocker(t)
+	f.noDigest = true
+	log := capture(t)
+	res, err := Publish(ws, protocol.PublishParams{Project: api, Version: "1.0.0"})
+	if err != nil || !res.Published || len(res.Images) != 1 || res.Images[0].Digest != "" || !strings.Contains(log.String(), "the digest of ghcr.io/acme/acme-api:1.0.0 could not be read") {
+		t.Errorf("%+v %v\n%s", res, err, log)
 	}
 }

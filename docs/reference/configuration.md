@@ -111,6 +111,8 @@ registry = "ghcr.io/acme"             # where release pushes the images; unset: 
 # registries = [{ url = "registry.acme.dev/team", username_env = "ACME_USER", password_env = "ACME_TOKEN" }]
 description_from = "README.md"        # Docker Hub only: the repository description (see releasing.md)
 short_description = "What it does"    # Docker Hub only: the one-line summary, 100 characters at most; default: the project's own description
+tag_commit = false                    # also tag every image sha-<short commit> (releasing.md)
+tag_branch = false                    # also tag every image with the release branch's name
 push = true                           # default: true when a registry is set
 verify = true                         # smith ci verify builds the affected apps' images; default: true
 

@@ -27,6 +27,12 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 	if conv.ShortDescription != "" {
 		s["short_description"] = conv.ShortDescription
 	}
+	if conv.TagCommit != nil {
+		s["tag_commit"] = *conv.TagCommit
+	}
+	if conv.TagBranch != nil {
+		s["tag_branch"] = *conv.TagBranch
+	}
 	if conv.Push != nil {
 		s["push"] = *conv.Push
 	}
@@ -53,6 +59,12 @@ func PluginSettings(name string, conv workspace.ConventionConfig, po workspace.P
 		}
 		if d.ShortDescription != "" {
 			s["short_description"] = d.ShortDescription
+		}
+		if d.TagCommit != nil {
+			s["tag_commit"] = *d.TagCommit
+		}
+		if d.TagBranch != nil {
+			s["tag_branch"] = *d.TagBranch
 		}
 		if d.Push != nil {
 			s["push"] = *d.Push

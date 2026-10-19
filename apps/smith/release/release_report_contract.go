@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Report is the machine-readable record of a release run, written to
@@ -36,6 +38,10 @@ type ReportResult struct {
 	// those the registries already had.
 	Packages         []string `json:"packages,omitempty"`
 	ExistingPackages []string `json:"existingPackages,omitempty"`
+	// Images are the container images the release pushed, one per registry,
+	// with their tags and the manifest digest the registry holds: what a
+	// deploy step or a GitOps manifest refers to.
+	Images []protocol.PublishedImage `json:"images,omitempty"`
 	// GitHubRelease is the URL of the tag's GitHub Release.
 	GitHubRelease string `json:"githubRelease,omitempty"`
 	// PubDispatch names the pub.dev publish the release started (package,
@@ -68,6 +74,12 @@ func (r Report) Markdown() string {
 		}
 	}
 	for _, res := range r.Results {
+		if len(res.Images) > 0 {
+			fmt.Fprintf(&b, "\nImages pushed for %s:\n\n", res.Project)
+			for _, image := range res.Images {
+				fmt.Fprintf(&b, "- `%s`\n", ImageLine(image))
+			}
+		}
 		if res.PubDispatch != "" {
 			fmt.Fprintf(&b, "\nDispatched pub.dev publish for %s.\n", res.PubDispatch)
 		}
@@ -86,4 +98,15 @@ func (r Report) Markdown() string {
 		fmt.Fprintf(&b, "\n**Stopped:** %s\n\nRe-run the release: finished packages are kept and the rest resume.\n", r.Error)
 	}
 	return b.String()
+}
+
+// ImageLine describes a pushed image on one line: the reference by digest
+// when the registry's digest is known (the immutable one a deploy refers to),
+// else without a tag, then the tags pushed.
+func ImageLine(image protocol.PublishedImage) string {
+	ref := image.Reference
+	if image.Digest != "" {
+		ref += "@" + image.Digest
+	}
+	return ref + " [tags: " + strings.Join(image.Tags, ", ") + "]"
 }
