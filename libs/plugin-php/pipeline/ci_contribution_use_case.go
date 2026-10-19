@@ -44,6 +44,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	}
 	return protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
+		Stores:     []protocol.PackageStore{{Name: "composer", Path: "~/.cache/composer", Env: "COMPOSER_CACHE_DIR", Files: []string{"**/composer.lock"}}},
 		Setup:      []protocol.Step{{Name: "Install the Composer packages", Command: []string{"composer", "install", "--no-interaction", "--no-progress"}, Blocking: true}},
 	}
 }

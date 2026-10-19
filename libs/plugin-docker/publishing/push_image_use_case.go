@@ -32,8 +32,15 @@ var Inspect = func(dir string, argv []string) error {
 	return err
 }
 
+// Output runs a docker command and returns what it printed; tests replace it.
+var Output = func(dir string, argv []string) (string, error) {
+	return toolrun.Output(dir, argv)
+}
+
 // Publish builds a released app's image once, tagged with its version and
-// latest under each registry [conventions.docker] names, and pushes them.
+// latest (and sha-<short commit> and the branch, when [conventions.docker]
+// tag_commit and tag_branch ask) under each registry it names, and pushes
+// them. The result names the digest each registry holds.
 // With no registry, or push = false, the image is not pushed and the release
 // goes on.
 //
@@ -67,11 +74,19 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if t.Legacy {
 		_, _ = fmt.Fprintf(toolrun.Log, "docker: %s is deprecated; set [conventions.docker] registry = %q in smith.toml\n", images.LegacyRegistryEnv, t.Registries[0].URL)
 	}
+	tags, missing := images.Tags(t, params.Version, params.Commit, params.Branch)
+	for _, m := range missing {
+		warn("%s, so that tag is not pushed", m)
+	}
+	// Built and announced with the version first; pushed with it last.
+	listed := append([]string{params.Version}, tags[:len(tags)-1]...)
 	if params.DryRun {
 		var refs []string
 		for _, r := range t.Registries {
 			image := t.Reference(r)
-			refs = append(refs, image+":"+params.Version, image+":latest")
+			for _, tag := range listed {
+				refs = append(refs, image+":"+tag)
+			}
 		}
 		result.Skipped = "would push " + strings.Join(refs, ", ")
 		return result, nil
@@ -92,23 +107,29 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 		pending = append(pending, r)
 	}
 	if len(pending) > 0 {
-		var tags []string
+		var refs []string
 		for _, r := range pending {
-			image := t.Reference(r)
-			tags = append(tags, image+":"+params.Version, image+":latest")
+			for _, tag := range listed {
+				refs = append(refs, t.Reference(r)+":"+tag)
+			}
 		}
-		if err := Docker(workspaceRoot, images.BuildArgs(params.Project, tags...), ""); err != nil {
+		if err := Docker(workspaceRoot, images.BuildArgs(params.Project, refs...), ""); err != nil {
 			return result, fmt.Errorf("building the image: %w", err)
 		}
 	}
 	var pushed []string
 	for _, r := range pending {
 		image := t.Reference(r)
-		if err := push(workspaceRoot, image+":latest", image+":"+params.Version); err != nil {
+		refs := make([]string, len(tags))
+		for i, tag := range tags {
+			refs[i] = image + ":" + tag
+		}
+		if err := push(workspaceRoot, refs...); err != nil {
 			failed = append(failed, fmt.Sprintf("%s: %v", r.URL, err))
 			continue
 		}
 		pushed = append(pushed, r.URL)
+		result.Images = append(result.Images, protocol.PublishedImage{Reference: image, Tags: tags, Digest: digestOf(workspaceRoot, image, params.Version)})
 	}
 	if len(failed) > 0 {
 		done := append(append([]string{}, had...), pushed...)
@@ -127,6 +148,24 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 		result.Skipped = "image " + params.Version + " already published to " + strings.Join(had, ", ")
 	}
 	return result, nil
+}
+
+// digestOf reads the manifest digest the registry holds for the image's
+// version tag, from the local image's repo digests. A failure to read it is a
+// warning and an empty digest: the image is pushed already.
+func digestOf(workspaceRoot, image, version string) string {
+	out, err := Output(workspaceRoot, []string{"docker", "image", "inspect", "--format", "{{range .RepoDigests}}{{println .}}{{end}}", image + ":" + version})
+	if err != nil {
+		warn("the digest of %s:%s could not be read: %v", image, version, err)
+		return ""
+	}
+	for _, line := range strings.Fields(out) {
+		if digest, ok := strings.CutPrefix(line, image+"@"); ok {
+			return digest
+		}
+	}
+	warn("the digest of %s:%s is not among the image's repo digests", image, version)
+	return ""
 }
 
 // push pushes each tag, in order.

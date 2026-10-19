@@ -32,8 +32,20 @@ func (k *keyer) inputs(t *taskgraph.Task, deps map[string]string) taskcache.KeyI
 	for _, dep := range k.opts.Projects.TransitiveDeps(t.Project.Name) {
 		upstream[dep] = k.sources(dep)
 	}
+	serve := ""
+	if t.Def.Serve != "" {
+		serve = t.Def.Serve + " " + t.Def.ServeURL
+		// The app under test is part of what the suite proves.
+		if sp, _, err := taskgraph.ServeTarget(k.opts.Projects, t.Project.Name, t.Def.Serve); err == nil && sp.Name != t.Project.Name {
+			upstream[sp.Name] = k.sources(sp.Name)
+			for _, dep := range k.opts.Projects.TransitiveDeps(sp.Name) {
+				upstream[dep] = k.sources(dep)
+			}
+		}
+	}
 	return taskcache.KeyInputs{
-		Task: t.ID, Command: t.Def.Command, Env: t.Def.Env, Files: files, Upstream: upstream,
+		Serve: serve,
+		Task:  t.ID, Command: t.Def.Command, Env: t.Def.Env, Files: files, Upstream: upstream,
 		Deps: deps, Platform: Platform, Tool: k.opts.ToolVersion + "/" + t.Project.Toolset(), Toolchain: t.Project.Toolchain,
 	}
 }

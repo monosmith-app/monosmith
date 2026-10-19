@@ -89,6 +89,38 @@ and LICENSE.
 the task and where its outputs were set (a plugin or `smith.toml`). For Node, a
 `tsconfig` whose `outDir` is in the source tree fails too.
 
+## Serving an app for a task
+
+An end-to-end suite needs the app it tests running first and stopped after.
+Any task can say so, whatever tool it runs (Playwright's runner, Jest or Vitest
+driving `playwright`, Cypress, `pytest-playwright`):
+
+```toml
+[projects.web-e2e.tasks.e2e]
+serve         = "web:start"               # a task started before the suite, stopped after
+serve_url     = "http://127.0.0.1:5173"   # waited for (HTTP 2xx) before the suite starts
+serve_timeout = "60s"                     # how long to wait; default 60s
+```
+
+`serve` is a task of the same project (`start`) or of another (`web:start`).
+smith first runs what that task depends on (`web:start` depending on `build`
+makes `build` a dependency of the suite), then starts it in the background with
+its output prefixed `web:start │`, polls `serve_url` every 200 ms until it
+answers with a 2xx, and runs the suite with `E2E_BASE_URL` set to that URL.
+When the suite ends, passed or failed or cancelled, smith stops the app and its
+whole process tree.
+
+The suite does not run when the app exits before it answers or does not answer
+within `serve_timeout`: the task fails and says why. Without `serve_url` the
+suite starts as soon as the app has been started.
+
+The served app is part of the task's cache key: the `serve` target and URL, and
+the sources of the app's project and everything it depends on, so a cached
+passing suite is a miss when the app changed. `smith why-miss` shows a changed
+target as `serve`. `smith doctor` reports a `serve` that names no task,
+`serve_url` or `serve_timeout` without `serve`, a `serve_url` that is not
+http(s), and a `serve_timeout` that is not a duration.
+
 ## Cache
 
 A task's **key** is a SHA-256 over a versioned, canonical encoding of:
@@ -193,6 +225,24 @@ common ancestor (a shallow clone), or a changed workspace-level file such as
 `smith.toml` or a lockfile. Documentation (`*.md`, `docs/**`) never affects a
 project. Too wide costs minutes; too narrow reports green for code nothing
 checked.
+
+### Watch paths for deployment platforms
+
+```sh
+smith affected --paths      # every app, a tab, the directories to watch
+smith affected --json       # the same under "watch", with the affected projects
+```
+
+A deployment platform that rebuilds on a push needs to know which directories
+can change an app: the app's own and those of every project it depends on,
+transitively. For each app:
+
+```
+web	apps/web libs/core libs/ui
+api	apps/api libs/core
+```
+
+Both list every app, affected or not, and ignore `--base`.
 
 ## Paths
 

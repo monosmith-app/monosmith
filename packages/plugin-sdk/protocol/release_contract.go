@@ -32,6 +32,12 @@ type PublishParams struct {
 	// registry trusts (pub.dev's automated publishing); a registry that takes
 	// a package only from such a run is published to only then.
 	Tagged bool `json:"tagged,omitempty"`
+
+	// Commit is the full hash of the commit being released, and Branch the
+	// release branch, for a plugin that tags what it publishes with them (a
+	// container image's sha-<short> and branch tags). Empty when unknown.
+	Commit string `json:"commit,omitempty"`
+	Branch string `json:"branch,omitempty"`
 }
 
 // AssetSpec describes the release files of an app.
@@ -67,6 +73,20 @@ type PublishResult struct {
 	AssetPlatforms map[string]string `json:"assetPlatforms,omitempty"`
 	// Binary is the executable's name inside each archive, without ".exe".
 	Binary string `json:"binary,omitempty"`
+	// Images are the container images pushed, one per registry, for a deploy
+	// step or a GitOps manifest to refer to by digest.
+	Images []PublishedImage `json:"images,omitempty"`
+}
+
+// PublishedImage is one container image a release pushed.
+type PublishedImage struct {
+	// Reference is the image without a tag: ghcr.io/acme/api.
+	Reference string `json:"reference"`
+	// Tags are the tags pushed, in the order they were.
+	Tags []string `json:"tags"`
+	// Digest is the manifest digest the registry holds ("sha256:..."); empty
+	// when it could not be read.
+	Digest string `json:"digest,omitempty"`
 }
 
 // PublishedParams asks which version of a project its registry has.

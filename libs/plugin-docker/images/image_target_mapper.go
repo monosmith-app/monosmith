@@ -28,6 +28,9 @@ type Target struct {
 	// short_description setting, else the project's own description; empty
 	// for none. It is as written, before it is fitted to Docker Hub's limit.
 	ShortDescription string
+	// TagCommit and TagBranch also tag the image sha-<short commit> and with
+	// the release branch's name.
+	TagCommit, TagBranch bool
 }
 
 // Reference is the image's reference in a registry, without a tag
@@ -75,6 +78,8 @@ func TargetOf(p protocol.Project, env func(string) string) (Target, error) {
 	}
 	t.DescriptionFrom, _ = s["description_from"].(string)
 	t.ShortDescription, _ = s["short_description"].(string)
+	t.TagCommit, _ = s["tag_commit"].(bool)
+	t.TagBranch, _ = s["tag_branch"].(bool)
 	if strings.TrimSpace(t.ShortDescription) == "" {
 		t.ShortDescription = p.Description
 	}

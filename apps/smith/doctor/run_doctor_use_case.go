@@ -155,6 +155,12 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),
 		Remedy: "give each task its own directory (dist/drop/<project dir>/ for a package task) in its command and in smith.toml outputs = [...]",
 	})
+	badServe := BadServe(s.Graph)
+	out = append(out, protocol.Finding{
+		Check: "every task that serves an app can start it", OK: len(badServe) == 0,
+		Detail: strings.Join(badServe, "; "),
+		Remedy: "serve names a task (web:start) that exists; serve_url is an http(s) URL and serve_timeout a duration like 60s, both only with serve",
+	})
 	cycles := s.Graph.Cycles()
 	var paths []string
 	for _, c := range cycles {

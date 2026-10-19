@@ -21,6 +21,7 @@ pr:
     include: [%[1]s]
 
 `, m.ReleaseBranch)
+	b.WriteString(azureStoreVariables(m.Stores))
 	steps := azureSteps(m)
 	if !m.Native {
 		b.WriteString("pool:\n  vmImage: ubuntu-latest\n\nsteps:\n")
@@ -48,6 +49,7 @@ func azureSteps(m Model) string {
 	for _, a := range m.Authenticate {
 		b.WriteString(azureAuthenticate(a))
 	}
+	b.WriteString(azureStores(m.Stores))
 	fmt.Fprintf(&b, `  - bash: curl -fsSL %s | sh -s -- "%s"
     displayName: Install smith
 `, InstallScriptURL, m.SmithVersion)

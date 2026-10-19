@@ -111,4 +111,14 @@ type Task struct {
 	// pull request, not the release. It is skipped, with a warning, where
 	// its program is not installed.
 	Verify bool `json:"verify,omitempty"`
+	// Serve names a task ("web:start", or "start" in the same project) that
+	// smith starts before this one and stops after it, whatever the result:
+	// the app an end-to-end suite tests. Its own dependsOn run first.
+	Serve string `json:"serve,omitempty"`
+	// ServeURL is what smith waits for (an HTTP 2xx) before it runs the task,
+	// and passes to it as E2E_BASE_URL. Empty: the task starts at once.
+	ServeURL string `json:"serveUrl,omitempty"`
+	// ServeTimeout is how long to wait for ServeURL, as a Go duration
+	// ("60s"); empty means 60s.
+	ServeTimeout string `json:"serveTimeout,omitempty"`
 }

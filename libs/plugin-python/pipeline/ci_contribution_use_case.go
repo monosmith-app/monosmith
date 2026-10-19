@@ -34,7 +34,8 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(venv.PythonVersion)},
 		Setup:      setup,
-		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false, CacheFiles: auditFiles(params.Projects)}},
+		Stores:     []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: dependencyFiles(params.Projects)}},
+		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false, CacheFiles: dependencyFiles(params.Projects)}},
 	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate
@@ -66,9 +67,10 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	return protocol.DoctorResult{Findings: findings}
 }
 
-// auditFiles are the files that decide what pip-audit finds in the venv:
-// the toolchain's requirements and each project's pyproject.toml.
-func auditFiles(projects []protocol.Project) []string {
+// dependencyFiles are the files that decide what the venv holds, and so what
+// pip-audit finds in it and what pip downloads: the toolchain's requirements
+// and each project's pyproject.toml.
+func dependencyFiles(projects []protocol.Project) []string {
 	files := []string{venv.RequirementsFile}
 	for _, p := range projects {
 		files = append(files, path.Join(p.Root, "pyproject.toml"))

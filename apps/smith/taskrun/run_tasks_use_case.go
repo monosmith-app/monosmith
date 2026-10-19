@@ -141,8 +141,20 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
 	began := time.Now()
+	var app *served
+	if t.Def.Serve != "" {
+		var err error
+		if app, err = r.startServe(ctx, t, key); err != nil {
+			r.say("%s ✖ %v\n", t.ID, err)
+			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
+		}
+	}
 	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out})
 	out.Flush()
+	if app != nil {
+		app.stop()
+		r.say("%s ■ stopped\n", app.id)
+	}
 	took := time.Since(began)
 	r.keyer.digests.Forget()
 	if err != nil || code != 0 {
@@ -212,6 +224,9 @@ func (r *runner) env(t *taskgraph.Task, key string) []string {
 	if bin := VenvBin(r.opts.Root); bin != "" {
 		extra["PATH"] = bin + string(os.PathListSeparator) + os.Getenv("PATH")
 		extra["VIRTUAL_ENV"] = filepath.Dir(bin)
+	}
+	if t.Def.ServeURL != "" {
+		extra["E2E_BASE_URL"] = t.Def.ServeURL
 	}
 	for k, v := range t.Def.Env {
 		extra[k] = r.expand(t, []string{v})[0]

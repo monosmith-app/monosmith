@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -44,5 +45,13 @@ func TestDoctor(t *testing.T) {
 	_ = os.Mkdir(filepath.Join(ws, "flutter"), 0o755)
 	if res := Doctor(ws, protocol.DoctorParams{Projects: []protocol.Project{core}}); res.Findings[1].OK {
 		t.Fatalf("an SDK inside the workspace fails: %+v", res)
+	}
+}
+
+func TestCIDeclaresThePubDownloadStore(t *testing.T) {
+	got := CI(t.TempDir(), protocol.CIParams{Projects: []protocol.Project{{Name: "app", Root: "apps/app"}}}).Stores
+	want := []protocol.PackageStore{{Name: "pub", Path: "~/.pub-cache", Env: "PUB_CACHE", Files: []string{"**/pubspec.lock"}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%+v", got)
 	}
 }

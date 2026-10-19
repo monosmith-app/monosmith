@@ -72,7 +72,7 @@ Release, without assets. The settings are in
 ## Container images
 
 With the docker convention, an app with a `Dockerfile` releases too: the
-release builds its image tagged with the version and `latest` and pushes both
+release builds its image tagged with the version and `latest` (and the commit and branch, see below) and pushes them
 to the registry, or each of the registries, `smith.toml` names.
 
 ```toml
@@ -118,6 +118,46 @@ re-run asks each registry whether it has the version's tag
 (`docker manifest inspect`) and pushes only to those that do not, so a
 release never pushes twice to the same place. Per registry `latest` is pushed
 first and the version last, so the version tag shows the registry is complete.
+
+### Tags for deployment platforms, and digests
+
+Deployment platforms and GitOps agents (Keel, Argo CD, Flux) follow the commit
+or the branch, not a version. Two settings add those tags to every image, in
+`[conventions.docker]` or per app in `[projects.<app>.docker]`:
+
+```toml
+[conventions.docker]
+tag_commit = true     # also sha-<first 7 characters of the commit>
+tag_branch = true     # also the release branch's name (main); / and other odd characters become -
+```
+
+The image is built once with all its tags and each registry gets them in this
+order: `sha-…`, the branch, `latest`, the version last. A tag smith cannot name
+(no commit, no branch) is left out with a warning.
+
+After the push smith reads the manifest digest each registry holds and names it
+in the release output, so a deploy step or a GitOps manifest update can pin
+`ghcr.io/acme/api@sha256:…` instead of a tag that moves:
+
+- the log says `docker published 1.2.0 to ghcr.io/acme`, then one line per
+  registry: `ghcr.io/acme/api@sha256:… [tags: sha-0123456, latest, 1.2.0]`;
+- the release summary lists them under "Images pushed for api";
+- `smith release --json` and `.smith/release-report.json` carry them as
+  `results[].images`: `{"reference": "ghcr.io/acme/api", "tags": [...], "digest": "sha256:…"}`.
+
+A digest smith could not read is left out with a warning (the image is pushed
+already).
+
+The directories a platform should watch per app (Railway and Render's watch
+paths, a GitOps path filter) come from `smith affected --paths` and the
+`watch` object of `smith affected --json` (see
+[Tasks, cache and affected](tasks-and-cache.md#watch-paths-for-deployment-platforms)).
+
+Only Node apps have a `prune` task. It exists because a Node image must install
+production dependencies from a pruned manifest. A Go app's image copies the
+binary its `package` task builds, and a Python app's the wheel, so neither needs
+a slimmed copy of the workspace; a Dockerfile written for them copies from
+`dist/drop` (see [Packing](ci.md#packing)).
 
 ### The Docker Hub description
 

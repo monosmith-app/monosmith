@@ -111,6 +111,8 @@ registry = "ghcr.io/acme"             # where release pushes the images; unset: 
 # registries = [{ url = "registry.acme.dev/team", username_env = "ACME_USER", password_env = "ACME_TOKEN" }]
 description_from = "README.md"        # Docker Hub only: the repository description (see releasing.md)
 short_description = "What it does"    # Docker Hub only: the one-line summary, 100 characters at most; default: the project's own description
+tag_commit = false                    # also tag every image sha-<short commit> (releasing.md)
+tag_branch = false                    # also tag every image with the release branch's name
 push = true                           # default: true when a registry is set
 verify = true                         # smith ci verify builds the affected apps' images; default: true
 
@@ -278,7 +280,8 @@ Fields: `command` (argv, never a shell string), `cwd` (workspace-relative,
 `"."` for the root; default: the project root), `inputs`, `outputs`,
 `depends_on`, `env`, `cache`, `verify` (run the task in `smith ci verify` on
 pull requests; an app's `package` task does by default, `verify = false` turns
-it off).
+it off), and `serve`, `serve_url` and `serve_timeout`, which start an app around
+the task ([Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task)).
 
 There is exactly one precedence rule: **plugin → `[tasks.<task>]` →
 `[projects.<name>.tasks.<task>]`**, later wins, field by field. To see the

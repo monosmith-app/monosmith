@@ -85,3 +85,15 @@ func TestTheShortDescriptionIsTheAppsElseTheConventions(t *testing.T) {
 		t.Errorf("app: %v", got)
 	}
 }
+
+func TestTheImageTagSettingsLayerLikeTheOthers(t *testing.T) {
+	yes, no := true, false
+	conv := workspace.ConventionConfig{TagCommit: &yes, TagBranch: &yes}
+	if got := PluginSettings("docker", conv, workspace.ProjectOverride{}); !reflect.DeepEqual(got, map[string]any{"tag_commit": true, "tag_branch": true}) {
+		t.Errorf("convention: %v", got)
+	}
+	po := workspace.ProjectOverride{Docker: &workspace.DockerOverride{TagBranch: &no}}
+	if got := PluginSettings("docker", conv, po); !reflect.DeepEqual(got, map[string]any{"tag_commit": true, "tag_branch": false}) {
+		t.Errorf("app: %v", got)
+	}
+}

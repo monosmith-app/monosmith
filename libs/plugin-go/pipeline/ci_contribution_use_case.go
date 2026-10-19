@@ -40,6 +40,11 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 			break
 		}
 	}
+	store := protocol.PackageStore{Name: "go", Path: "~/go/pkg/mod", Env: "GOMODCACHE"}
+	for _, p := range params.Projects {
+		store.Files = append(store.Files, path.Join(p.Root, "go.sum"))
+	}
+	result.Stores = []protocol.PackageStore{store}
 	// govulncheck needs a module, so it runs once in each one.
 	for _, p := range params.Projects {
 		result.Audit = append(result.Audit, protocol.Step{Name: "govulncheck " + p.Name, Command: []string{"go", "run", "golang.org/x/vuln/cmd/govulncheck@" + GovulncheckVersion, "./..."}, Dir: p.Root, Blocking: false, CacheFiles: []string{path.Join(p.Root, "go.mod"), path.Join(p.Root, "go.sum")}})

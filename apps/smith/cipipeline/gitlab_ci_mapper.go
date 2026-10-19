@@ -30,9 +30,9 @@ ci:
   variables:
     GIT_DEPTH: "0"
     SMITH_VERSION: %[3]s
-  before_script:
+%[4]s%[5]s  before_script:
     - apt-get update -qq && apt-get install -y -qq curl git ca-certificates xz-utils >/dev/null
-`, m.ReleaseBranch, GitLabImage, yamlValue(m.SmithVersion))
+`, m.ReleaseBranch, GitLabImage, yamlValue(m.SmithVersion), gitlabStoreVariables(m.Stores), gitlabStores(m.Stores))
 	for _, t := range m.Toolchains {
 		b.WriteString(gitlabSetup(t))
 	}
