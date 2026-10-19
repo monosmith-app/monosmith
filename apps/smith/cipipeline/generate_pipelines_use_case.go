@@ -55,7 +55,7 @@ func Collect(s *session.Session) (Contributions, error) {
 		if p.Release != nil && len(p.Release.NPM) > 0 {
 			c.Provenance = true
 		}
-		if p.Release != nil && p.Release.Pub != "" {
+		if release.PubPackage(p) != "" {
 			c.Pub = true
 		}
 	}

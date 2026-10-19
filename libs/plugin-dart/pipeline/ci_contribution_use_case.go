@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-dart/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -80,7 +81,8 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		result.Setup[0].Command[0] = "flutter"
 	}
 	for _, p := range params.Projects {
-		if p.Publishes() {
+		// pub.dev publishes with GitHub's OIDC token, never a token.
+		if p.Publishes() && p.PublishTo != discovery.PubDev {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "PUB_TOKEN", Description: "token for the repository a package's publish_to names (pub.dev publishes with GitHub's OIDC token instead)"})
 			break
 		}

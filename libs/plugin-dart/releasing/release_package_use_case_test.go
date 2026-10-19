@@ -33,7 +33,10 @@ func TestPublish(t *testing.T) {
 	defer func() { PubRunner = real }()
 	PubRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
 	ws, core := writeCore(t, "name: acme_core\nversion: 1.0.0\n")
-	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "1.0.0"}); err != nil || !res.Published || res.Registry != PubDev {
+	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "1.0.0"}); err != nil || res.Published || res.Skipped == "" || res.Registry != PubDev {
+		t.Fatal("pub.dev is published to only from its tagged run", err, res)
+	}
+	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "1.0.0", Tagged: true}); err != nil || !res.Published || res.Registry != PubDev {
 		t.Fatal(err, res)
 	}
 	t.Setenv("PUB_TOKEN", "t")

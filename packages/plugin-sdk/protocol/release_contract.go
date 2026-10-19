@@ -28,6 +28,10 @@ type PublishParams struct {
 	// native project is published from: each native job publishes its own
 	// platform's build (a VS Code extension's target) and nothing else.
 	Platform string `json:"platform,omitempty"`
+	// Tagged says the publish runs on the project's own tag, in the run the
+	// registry trusts (pub.dev's automated publishing); a registry that takes
+	// a package only from such a run is published to only then.
+	Tagged bool `json:"tagged,omitempty"`
 }
 
 // AssetSpec describes the release files of an app.

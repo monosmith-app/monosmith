@@ -45,6 +45,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Description: pub.Description,
 			Tasks:       Tasks(Shape{Root: root, Name: pub.Name, Kind: kind, Flutter: pub.Flutter, Tests: testErr == nil}),
 			Stack:       pub.Stack,
+			PublishTo:   publishTo(pub, kind),
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("dart", "dart", "--version") })

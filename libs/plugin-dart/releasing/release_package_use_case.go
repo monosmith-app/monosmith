@@ -77,6 +77,13 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 		result.Skipped = "dry run"
 		return result, nil
 	}
+	if result.Registry == PubDev && !params.Tagged {
+		// pub.dev takes a package only from a GitHub Actions run on a tag
+		// that matches the pattern set on the package, with GitHub's OIDC
+		// token; the release job is neither, so the release starts that run.
+		result.Skipped = "published to pub.dev by the pub workflow, on the package's pub tag"
+		return result, nil
+	}
 	tool := "dart"
 	if pub.Flutter {
 		tool = "flutter"

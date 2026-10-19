@@ -33,6 +33,12 @@ type Project struct {
 	// into every task's cache key, so a result from another version is a
 	// miss. Empty when the plugin cannot tell, and then it is left out.
 	Toolchain string `json:"toolchain,omitempty"`
+	// PublishTo is where a package publishes, when its manifest says: "pub.dev"
+	// for the public registry that takes a package only from a run on its tag
+	// (so a release does not publish it itself), "none" for a package that
+	// is never published, or a repository URL. Empty when the plugin does not
+	// say.
+	PublishTo string `json:"publishTo,omitempty"`
 	// Description is the one-line description the manifest records (package.json
 	// description, pyproject.toml project.description, the pom's <description>),
 	// if it has one. Conventions use it where a registry asks for a summary.
