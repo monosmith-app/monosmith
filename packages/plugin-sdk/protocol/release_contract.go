@@ -32,7 +32,6 @@ type PublishParams struct {
 	// registry trusts (pub.dev's automated publishing); a registry that takes
 	// a package only from such a run is published to only then.
 	Tagged bool `json:"tagged,omitempty"`
-
 	// Commit is the full hash of the commit being released, and Branch the
 	// release branch, for a plugin that tags what it publishes with them (a
 	// container image's sha-<short> and branch tags). Empty when unknown.
