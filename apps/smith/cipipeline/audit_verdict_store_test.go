@@ -75,7 +75,8 @@ func TestAnUnchangedLockfileReplaysThePassedVerdict(t *testing.T) {
 		t.Fatalf("first audit: %d runs, %v", runs, err)
 	}
 	runs, out, err := f.run(t)
-	if runs != 1 || err != nil || !strings.Contains(out, "no change in package-lock.json since it passed on 2026-10-18") {
+	// The cache entry is stamped with the real day; only the advisory day is faked.
+	if runs != 1 || err != nil || !strings.Contains(out, "no change in package-lock.json since it passed on "+time.Now().UTC().Format("2006-01-02")) {
 		t.Errorf("second audit replays: %d runs, %v\n%s", runs, err, out)
 	}
 }

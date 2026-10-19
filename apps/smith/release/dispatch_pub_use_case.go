@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/pubpackage"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // PubWorkflow is the workflow file the release starts to publish to pub.dev.
@@ -27,6 +28,19 @@ func PubTag(p *projectgraph.Project, version string) string {
 	}
 	name := strings.TrimSuffix(TagPrefix(p), "@")
 	return strings.NewReplacer("{name}", name, "{version}", version).Replace(pattern)
+}
+
+// PubPackage is the pub.dev package a project is published as: an app's
+// configured one, or a Dart package's own name when its pubspec publishes
+// to pub.dev. Empty when the project is not published there.
+func PubPackage(p *projectgraph.Project) string {
+	switch {
+	case p.Release != nil && p.Release.Pub != "":
+		return p.Release.Pub
+	case p.Kind == protocol.ProjectPackage && p.PublishTo == "pub.dev" && len(p.Exports) > 0:
+		return p.Exports[0]
+	}
+	return ""
 }
 
 // dispatcher starts the pub workflow; tests replace it.
@@ -49,10 +63,11 @@ var pubHas = pubpackage.Has
 // archives. Nothing happens when pub.dev already has the version, so a
 // re-run completes a release.
 func dispatchPub(s *session.Session, p *projectgraph.Project, item Item, res *ReportResult, say func(string, ...any)) error {
-	if p.Release == nil || p.Release.Pub == "" || Native(p) {
+	name := PubPackage(p)
+	if name == "" || Native(p) {
 		return nil
 	}
-	name, tag := p.Release.Pub, PubTag(p, item.Next)
+	tag := PubTag(p, item.Next)
 	switch {
 	case os.Getenv("TF_BUILD") != "" || os.Getenv("GITLAB_CI") != "":
 		say("not publishing %s to pub.dev: pub.dev takes packages only from GitHub Actions", name)
