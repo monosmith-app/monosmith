@@ -80,3 +80,15 @@ func TestValidationAndBack(t *testing.T) {
 		t.Fatal("quitting runs nothing")
 	}
 }
+
+// Bubble Tea renders one last frame after the answer that ends the menu; it
+// has no step left, and used to panic on a nil pointer.
+func TestTheFrameAfterTheLastAnswerRenders(t *testing.T) {
+	m := keys(menu(), "enter", "enter", "enter")
+	if len(m.(Model).Argv) == 0 {
+		t.Fatalf("the menu did not finish: %q", m.View())
+	}
+	if got := m.View(); strings.Contains(got, "panic") {
+		t.Fatalf("view %q", got)
+	}
+}

@@ -175,6 +175,11 @@ func (m Model) View() string {
 func (m Model) body() string {
 	var b strings.Builder
 	step := m.current()
+	if m.action != nil && step == nil {
+		// The last answer was given and the program is quitting; Bubble Tea
+		// still renders a final frame, with no step left to draw.
+		return ""
+	}
 	switch {
 	case m.action == nil:
 		for i, a := range m.actions {
