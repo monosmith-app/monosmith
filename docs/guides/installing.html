@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing smith</title>
+<link rel="stylesheet" href="../../assets/lore-master.css">
+</head>
+<body>
+<div class="lm-layout">
+<nav class="lm-nav">
+<div class="lm-nav-title">monosmith</div>
+<ul>
+<li class="lm-depth-0"><a href="../../README.html">MonoSmith</a></li>
+<li class="lm-depth-1"><a href="../../packages/eslint-config/README.html">@monosmith/eslint-config</a></li>
+<li class="lm-depth-1"><a href="../../docs/README.html">MonoSmith documentation</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/01-current-mnci-inventory.html">Research 01 — Current mnci inventory (parity source)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/02-nx-subsystems.html">Research 02 — Nx subsystems to replace</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/03-prior-art-and-stack.html">Research 03 — Prior art and recommended stack</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/architecture.html">Architecture</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/ci.html">CI pipelines</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/cli.html">CLI reference</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/configuration.html">Configuration: smith.toml</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/conventions.html">Conventions</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/converting.html">Converting from Nx (and from the old mnci)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/decisions.html">Decisions</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/recipes-and-ci.html">Design: recipes, and CI as part of them</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/tui-and-ide.html">Design: the TUI and the IDE plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/editors.html">Editors</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/faq.html">FAQ</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/getting-started.html">Getting started</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/glossary.html">Glossary</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/execution-and-cache.html">How tasks run, and how the cache decides</a></li>
+<li class="lm-depth-2 lm-active"><a href="../../docs/guides/installing.html">Installing smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/plugins.html">Plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/recipes.html">Recipes</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/release-and-ci-internals.html">Releases and CI: how they are built</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/releasing.html">Releasing</a></li>
+<li class="lm-depth-2"><a href="../../docs/assets/README.html">Screenshots</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/stacks.html">Stacks</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/tasks-and-cache.html">Tasks, cache and affected</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/technology.html">Technology: what smith is made of, and why</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/plugin-system.html">The plugin system</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/troubleshooting.html">Troubleshooting</a></li>
+<li class="lm-depth-2"><a href="../../docs/contributing/development.html">Working on smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/writing-a-plugin.html">Writing a plugin</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/necromancer.html">necromancer</a></li>
+<li class="lm-depth-1"><a href="../../packages/plugin-sdk/README.html">plugin-sdk</a></li>
+<li class="lm-depth-1"><a href="../../apps/smith/README.html">smith</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/sorcerer.html">sorcerer</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/wizard.html">wizard</a></li>
+</ul>
+</nav>
+<main class="lm-content"><article id="lm-markdown" class="markdown-body"></article>
+<div id="lm-source" data-markdown="IyBJbnN0YWxsaW5nIHNtaXRoCgpzbWl0aCBpcyBvbmUgc3RhdGljIGJpbmFyeSBwZXIgcGxhdGZvcm0uIEV2ZXJ5IGNoYW5uZWwgYmVsb3cgaW5zdGFsbHMgdGhhdApzYW1lIGJpbmFyeSBhcyB0aGUgYHNtaXRoYCBjb21tYW5kOyBub25lIG9mIHRoZW0gbmVlZHMgdGhlIGxhbmd1YWdlIGl0IGNvbWVzCnRocm91Z2ggYXQgcnVuIHRpbWUsIGFuZCBub3RoaW5nIGlzIGRvd25sb2FkZWQgYWZ0ZXIgaW5zdGFsbC4KCnwgUGxhdGZvcm0gfCBBcmNoaXRlY3R1cmVzIHwgTWluaW11bSB8CnwtLS18LS0tfC0tLXwKfCBMaW51eCB8IHg2NCwgYXJtNjQgfCBhbnkgZGlzdHJpYnV0aW9uIChzdGF0aWMsIG5vIGxpYmMgbmVlZGVkKSB8CnwgbWFjT1MgfCBJbnRlbCwgQXBwbGUgc2lsaWNvbiB8IG1hY09TIDEyIHwKfCBXaW5kb3dzIHwgeDY0LCBhcm02NCB8IFdpbmRvd3MgMTAgfAoKIyMgQ2hhbm5lbHMKCnwgQ2hhbm5lbCB8IEluc3RhbGwgfCBVcGdyYWRlIHwgVW5pbnN0YWxsIHwKfC0tLXwtLS18LS0tfC0tLXwKfCBJbnN0YWxsIHNjcmlwdCAoTGludXgsIG1hY09TLCBHaXQgQmFzaCkgfCBgY3VybCAtZnNTTCBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbW9ub3NtaXRoLWFwcC9tb25vc21pdGgvbWFpbi9pbnN0YWxsLnNoIFx8IHNoYCB8IHJ1biBpdCBhZ2FpbiB8IGRlbGV0ZSBgfi8ubG9jYWwvYmluL3NtaXRoYCB8CnwgSW5zdGFsbCBzY3JpcHQgKFdpbmRvd3MgUG93ZXJTaGVsbCkgfCBgaXJtIGh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9tb25vc21pdGgtYXBwL21vbm9zbWl0aC9tYWluL2luc3RhbGwucHMxIFx8IGlleGAgfCBydW4gaXQgYWdhaW4gfCBkZWxldGUgYCVVU0VSUFJPRklMRSVcLmxvY2FsXGJpblxzbWl0aC5leGVgIChhbmQgdGhlIGRpcmVjdG9yeSBmcm9tIHlvdXIgdXNlciBQQVRIKSB8CnwgbnBtIHwgYG5wbSBpbnN0YWxsIC0tZ2xvYmFsIG1vbm9zbWl0aGAgfCBgbnBtIGluc3RhbGwgLS1nbG9iYWwgbW9ub3NtaXRoQGxhdGVzdGAgfCBgbnBtIHVuaW5zdGFsbCAtLWdsb2JhbCBtb25vc21pdGhgIHwKfCBwaXB4IHwgYHBpcHggaW5zdGFsbCBtb25vc21pdGhgIHwgYHBpcHggdXBncmFkZSBtb25vc21pdGhgIHwgYHBpcHggdW5pbnN0YWxsIG1vbm9zbWl0aGAgfAp8IHV2IHwgYHV2IHRvb2wgaW5zdGFsbCBtb25vc21pdGhgIHwgYHV2IHRvb2wgdXBncmFkZSBtb25vc21pdGhgIHwgYHV2IHRvb2wgdW5pbnN0YWxsIG1vbm9zbWl0aGAgfAp8IHBpcCB8IGBwaXAgaW5zdGFsbCBtb25vc21pdGhgIHwgYHBpcCBpbnN0YWxsIC0tdXBncmFkZSBtb25vc21pdGhgIHwgYHBpcCB1bmluc3RhbGwgbW9ub3NtaXRoYCB8CnwgLk5FVCB0b29sICguTkVUIDEwIFNESykgfCBgZG90bmV0IHRvb2wgaW5zdGFsbCAtLWdsb2JhbCBtb25vc21pdGhgIHwgYGRvdG5ldCB0b29sIHVwZGF0ZSAtLWdsb2JhbCBtb25vc21pdGhgIHwgYGRvdG5ldCB0b29sIHVuaW5zdGFsbCAtLWdsb2JhbCBtb25vc21pdGhgIHwKfCBSdWJ5R2VtcyB8IGBnZW0gaW5zdGFsbCBtb25vc21pdGhgIHwgYGdlbSB1cGRhdGUgbW9ub3NtaXRoYCB8IGBnZW0gdW5pbnN0YWxsIG1vbm9zbWl0aGAgfAp8IHB1Yi5kZXYgfCBgZGFydCBwdWIgZ2xvYmFsIGFjdGl2YXRlIG1vbm9zbWl0aGAgfCBydW4gaXQgYWdhaW4gfCBgZGFydCBwdWIgZ2xvYmFsIGRlYWN0aXZhdGUgbW9ub3NtaXRoYCB8CnwgR2l0SHViIFJlbGVhc2VzIHwgZG93bmxvYWQgYG1vbm9zbWl0aF88dmVyc2lvbj5fPG9zPl88YXJjaD4uemlwYCBmcm9tIFtyZWxlYXNlc10oaHR0cHM6Ly9naXRodWIuY29tL21vbm9zbWl0aC1hcHAvbW9ub3NtaXRoL3JlbGVhc2VzKSBhbmQgcHV0IGBzbWl0aGAgb24geW91ciBQQVRIIHwgZG93bmxvYWQgdGhlIG5ld2VyIHppcCB8IGRlbGV0ZSB0aGUgYmluYXJ5IHwKClRvIHJ1biBzbWl0aCBvbmNlIHdpdGhvdXQgaW5zdGFsbGluZyBpdDogYHV2eCAtLWZyb20gbW9ub3NtaXRoIHNtaXRoIC0tdmVyc2lvbmAKb3IgYG5weCBtb25vc21pdGggLS12ZXJzaW9uYC4KCmBAbW9ub3NtaXRoL2NsaWAgaXMgdGhlIHNhbWUgbnBtIHBhY2thZ2UgdW5kZXIgdGhlIHNjb3BlOyBgbW9ub3NtaXRoYCBpcyB0aGUKc2hvcnQgbmFtZS4gQm90aCBpbnN0YWxsIHRoZSBiaW5hcnkgdGhyb3VnaCBwZXItcGxhdGZvcm0gcGFja2FnZXMKKGBAbW9ub3NtaXRoL2NsaS1saW51eC14NjRgLCDigKYpIHRoYXQgbnBtIHBpY2tzIGJ5IGBvc2AgYW5kIGBjcHVgLgoKVGhlIHB1Yi5kZXYgcGFja2FnZSBpcyBwdWJsaXNoZWQgYnkgaGFuZCBmb3Igbm93LCBzbyBpdCBjYW4gbGFnIGJlaGluZCB0aGUKb3RoZXJzLgoKIyMjIFRoZSBpbnN0YWxsIHNjcmlwdHMKCmBpbnN0YWxsLnNoYCBpbnN0YWxscyBpbnRvIGAkU01JVEhfSU5TVEFMTF9ESVJgIChkZWZhdWx0IGB+Ly5sb2NhbC9iaW5gKTsKYGluc3RhbGwucHMxYCBpbnRvIGAkZW52OlNNSVRIX0lOU1RBTExfRElSYCAoZGVmYXVsdCBgJEhPTUVcLmxvY2FsXGJpbmApIGFuZAphZGRzIHRoYXQgZGlyZWN0b3J5IHRvIHlvdXIgdXNlciBQQVRILiBCb3RoIHRha2UgYSB2ZXJzaW9uOgoKYGBgc2gKY3VybCAtZnNTTCBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbW9ub3NtaXRoLWFwcC9tb25vc21pdGgvbWFpbi9pbnN0YWxsLnNoIHwgc2ggLXMgLS0gMS4zLjEKYGBgCgpgYGBwb3dlcnNoZWxsCiYgKFtzY3JpcHRibG9ja106OkNyZWF0ZSgoaXJtIGh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9tb25vc21pdGgtYXBwL21vbm9zbWl0aC9tYWluL2luc3RhbGwucHMxKSkpIC1WZXJzaW9uIDEuMy4xCmBgYAoKYFNNSVRIX1ZFUlNJT05gIGRvZXMgdGhlIHNhbWUuIFdpdGggbm8gdmVyc2lvbiB0aGV5IGluc3RhbGwgdGhlIG5ld2VzdApgc21pdGhAYCByZWxlYXNlLiBPbiBHaXRIdWIgQWN0aW9ucyBhbmQgQXp1cmUgUGlwZWxpbmVzIGBpbnN0YWxsLnNoYCBhbHNvCmFkZHMgaXRzIGRpcmVjdG9yeSB0byBgUEFUSGAgZm9yIHRoZSBmb2xsb3dpbmcgc3RlcHM7IGdlbmVyYXRlZCBwaXBlbGluZXMKaW5zdGFsbCBzbWl0aCB0aGlzIHdheSwgcGlubmVkIHRvIHRoZSB2ZXJzaW9uIHRoYXQgZ2VuZXJhdGVkIHRoZW0uIFNldApgR0lUSFVCX1RPS0VOYCB0byBhdm9pZCBHaXRIdWIncyBBUEkgcmF0ZSBsaW1pdCBvbiBzaGFyZWQgcnVubmVycy4KCiMjIyBMaW51eCBwYWNrYWdlcwoKRWFjaCBHaXRIdWIgUmVsZWFzZSBhbHNvIGNhcnJpZXMgYSBgLmRlYmAgYW5kIGFuIGAucnBtYCBmb3IgeDY0IGFuZCBhcm02NCwgd2l0aAp0aGUgYmluYXJ5IGluIGAvdXNyL2JpbmA6CgpgYGBzaApzdWRvIGFwdCBpbnN0YWxsIC4vbW9ub3NtaXRoXzx2ZXJzaW9uPl9hbWQ2NC5kZWIKc3VkbyBkbmYgaW5zdGFsbCAuL21vbm9zbWl0aC08dmVyc2lvbj4tMS54ODZfNjQucnBtCmBgYAoKVXBncmFkZSBieSBpbnN0YWxsaW5nIHRoZSBuZXdlciBmaWxlOyB1bmluc3RhbGwgd2l0aCBgc3VkbyBhcHQgcmVtb3ZlCm1vbm9zbWl0aGAgb3IgYHN1ZG8gZG5mIHJlbW92ZSBtb25vc21pdGhgLgoKIyMjIE5vdCB5ZXQKCkhvbWVicmV3LCBTY29vcCwgd2luZ2V0LCBDaG9jb2xhdGV5LCB0aGUgQVVSLCBTbmFwLCBhbiBhcHQgb3IgZG5mIHJlcG9zaXRvcnkKYW5kIGNyYXRlcy5pbyBhcmUgdHJhY2tlZCBpbiAjMjI1LiBFYWNoIEdpdEh1YiBSZWxlYXNlIGFscmVhZHkgY2FycmllcyBhCkhvbWVicmV3IGZvcm11bGEsIGEgU2Nvb3AgbWFuaWZlc3QgYW5kIHdpbmdldCBtYW5pZmVzdHMsIGJ1dCBubyB0YXAsIGJ1Y2tldCBvcgp3aW5nZXQtcGtncyBzdWJtaXNzaW9uIHVzZXMgdGhlbSB5ZXQuIGBnbyBpbnN0YWxsYCBpcyBub3Qgc3VwcG9ydGVkLCBieQpkZWNpc2lvbjogc21pdGggaXMgYnVpbHQgZnJvbSB0aGUgcmVwb3NpdG9yeSdzIGBnby53b3JrYCwgd2hpY2ggYGdvIGluc3RhbGxgCmlnbm9yZXMgKGRvY3MvZGVzaWduL2RlY2lzaW9ucy5tZCwgZW50cnkgMTkpLgoKIyMgQ2hlY2tpbmcgYSBkb3dubG9hZAoKRXZlcnkgcmVsZWFzZSBoYXMgYSBgY2hlY2tzdW1zLnR4dGAgd2l0aCB0aGUgU0hBLTI1NiBvZiBlYWNoIGFyY2hpdmU6CgpgYGBzaApzaGEyNTZzdW0gLS1jaGVjayAtLWlnbm9yZS1taXNzaW5nIGNoZWNrc3Vtcy50eHQgICAgICMgTGludXgKc2hhc3VtIC1hIDI1NiAtLWNoZWNrIC0taWdub3JlLW1pc3NpbmcgY2hlY2tzdW1zLnR4dCAjIG1hY09TCmBgYAoKYGBgcG93ZXJzaGVsbAooR2V0LUZpbGVIYXNoIG1vbm9zbWl0aF8xLjMuMV93aW5kb3dzX2FtZDY0LnppcCAtQWxnb3JpdGhtIFNIQTI1NikuSGFzaC5Ub0xvd2VyKCkKIyBjb21wYXJlIHdpdGggdGhlIGxpbmUgZm9yIHRoYXQgZmlsZSBpbiBjaGVja3N1bXMudHh0CmBgYAoKVGhlIGluc3RhbGwgc2NyaXB0cyBjaGVjayB0aGUgYXJjaGl2ZSBhZ2FpbnN0IGBjaGVja3N1bXMudHh0YCBiZWZvcmUKaW5zdGFsbGluZy4gVGhlIG5wbSBwYWNrYWdlcyBjYXJyeQpbcHJvdmVuYW5jZV0oaHR0cHM6Ly9kb2NzLm5wbWpzLmNvbS9nZW5lcmF0aW5nLXByb3ZlbmFuY2Utc3RhdGVtZW50cyk6IG5wbQpzaG93cywgYW5kIGBucG0gYXVkaXQgc2lnbmF0dXJlc2AgY2hlY2tzLCB0aGF0IHRoZXkgd2VyZSBidWlsdCBieSB0aGlzCnJlcG9zaXRvcnkncyBDSS4KCiMjIFVuc2lnbmVkIGJpbmFyaWVzCgpUaGUgYmluYXJpZXMgYXJlIG5vdCBzaWduZWQgd2l0aCBhbiBBcHBsZSBvciBNaWNyb3NvZnQgY2VydGlmaWNhdGUuIFRoYXQKbWF0dGVycyBvbmx5IGZvciBhIHppcCBkb3dubG9hZGVkIGluIGEgYnJvd3NlcjoKCi0gKiptYWNPUyoqIHF1YXJhbnRpbmVzIGl0LCBhbmQgR2F0ZWtlZXBlciByZWZ1c2VzIHRvIHJ1biB0aGUgYmluYXJ5LiBDbGVhcgogIHRoZSBmbGFnIG9uY2U6IGB4YXR0ciAtZCBjb20uYXBwbGUucXVhcmFudGluZSBzbWl0aGAuCi0gKipXaW5kb3dzKiogU21hcnRTY3JlZW4gd2FybnMgYWJvdXQgYW4gdW5rbm93biBwdWJsaXNoZXIgdGhlIGZpcnN0IHRpbWU7CiAgY2hvb3NlICpNb3JlIGluZm8qLCB0aGVuICpSdW4gYW55d2F5Ki4KClRoZSBpbnN0YWxsIHNjcmlwdHMgYW5kIGV2ZXJ5IHBhY2thZ2UgbWFuYWdlciBhYm92ZSBkb3dubG9hZCB3aXRob3V0IG1hcmtpbmcKdGhlIGZpbGUsIHNvIG5laXRoZXIgY2hlY2sgYXBwbGllcyB0byB0aGVtLgo=" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>(function () {
+  var source = document.getElementById('lm-source');
+  if (!source) { return; }
+  var bytes = Uint8Array.from(atob(source.getAttribute('data-markdown')), function (c) { return c.charCodeAt(0); });
+  var markdown = new TextDecoder('utf-8').decode(bytes);
+  var article = document.getElementById('lm-markdown');
+  article.innerHTML = marked.parse(markdown);
+  article.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.charAt(0) === '#' || href.charAt(0) === '/') { return; }
+    link.setAttribute('href', href.replace(/\.(md|markdown)(#.*)?$/i, '.html$2'));
+  });
+  article.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
+    var diagram = document.createElement('div');
+    diagram.className = 'mermaid';
+    diagram.textContent = code.textContent;
+    code.parentNode.replaceWith(diagram);
+  });
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false });
+    mermaid.run({ querySelector: '.mermaid' });
+  }
+})();</script></main>
+</div>
+</body>
+</html>

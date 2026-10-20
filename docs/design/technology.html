@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Technology: what smith is made of, and why</title>
+<link rel="stylesheet" href="../../assets/lore-master.css">
+</head>
+<body>
+<div class="lm-layout">
+<nav class="lm-nav">
+<div class="lm-nav-title">monosmith</div>
+<ul>
+<li class="lm-depth-0"><a href="../../README.html">MonoSmith</a></li>
+<li class="lm-depth-1"><a href="../../packages/eslint-config/README.html">@monosmith/eslint-config</a></li>
+<li class="lm-depth-1"><a href="../../docs/README.html">MonoSmith documentation</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/01-current-mnci-inventory.html">Research 01 — Current mnci inventory (parity source)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/02-nx-subsystems.html">Research 02 — Nx subsystems to replace</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/03-prior-art-and-stack.html">Research 03 — Prior art and recommended stack</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/architecture.html">Architecture</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/ci.html">CI pipelines</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/cli.html">CLI reference</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/configuration.html">Configuration: smith.toml</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/conventions.html">Conventions</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/converting.html">Converting from Nx (and from the old mnci)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/decisions.html">Decisions</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/recipes-and-ci.html">Design: recipes, and CI as part of them</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/tui-and-ide.html">Design: the TUI and the IDE plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/editors.html">Editors</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/faq.html">FAQ</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/getting-started.html">Getting started</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/glossary.html">Glossary</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/execution-and-cache.html">How tasks run, and how the cache decides</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/installing.html">Installing smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/plugins.html">Plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/recipes.html">Recipes</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/release-and-ci-internals.html">Releases and CI: how they are built</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/releasing.html">Releasing</a></li>
+<li class="lm-depth-2"><a href="../../docs/assets/README.html">Screenshots</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/stacks.html">Stacks</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/tasks-and-cache.html">Tasks, cache and affected</a></li>
+<li class="lm-depth-2 lm-active"><a href="../../docs/design/technology.html">Technology: what smith is made of, and why</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/plugin-system.html">The plugin system</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/troubleshooting.html">Troubleshooting</a></li>
+<li class="lm-depth-2"><a href="../../docs/contributing/development.html">Working on smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/writing-a-plugin.html">Writing a plugin</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/necromancer.html">necromancer</a></li>
+<li class="lm-depth-1"><a href="../../packages/plugin-sdk/README.html">plugin-sdk</a></li>
+<li class="lm-depth-1"><a href="../../apps/smith/README.html">smith</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/sorcerer.html">sorcerer</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/wizard.html">wizard</a></li>
+</ul>
+</nav>
+<main class="lm-content"><article id="lm-markdown" class="markdown-body"></article>
+<div id="lm-source" data-markdown="IyBUZWNobm9sb2d5OiB3aGF0IHNtaXRoIGlzIG1hZGUgb2YsIGFuZCB3aHkKCkEgdG91ciBvZiB0aGUgdGVjaG5pY2FsIGNob2ljZXMsIHdpdGggdGhlIHJlYXNvbiBmb3IgZWFjaC4gRm9yIHRoZSBzdHJ1Y3R1cmUgb2YKdGhlIGNvZGUgc2VlIFthcmNoaXRlY3R1cmUubWRdKGFyY2hpdGVjdHVyZS5tZCk7IGZvciB0aGUgZGVjaXNpb25zIGxvZyAodGhlCm9uZXMgdGhlIHByb2R1Y3Qgb3duZXIgbWFkZSkgc2VlIFtkZWNpc2lvbnMubWRdKGRlY2lzaW9ucy5tZCkuCgojIyBPbmUgc3RhdGljIGJpbmFyeQoKc21pdGggaXMgd3JpdHRlbiBpbiAqKkdvKiogYW5kIHNoaXBzIGFzIGEgc2luZ2xlIHN0YXRpYyBleGVjdXRhYmxlIHBlciBwbGF0Zm9ybQooTGludXgsIG1hY09TIGFuZCBXaW5kb3dzLCBhbWQ2NCBhbmQgYXJtNjQpLiBUaGUgcmVhc29ucyBhcmUgYWJvdXQgdGhlIHBlcnNvbgppbnN0YWxsaW5nIGl0OgoKLSBub3RoaW5nIHRvIGluc3RhbGwgZmlyc3Q6IG5vIE5vZGUsIG5vIEpWTSwgbm8gUHl0aG9uLiBBIG1vbm9yZXBvIHRvb2wgdGhhdAogIG5lZWRzIGEgcnVudGltZSB0byBzdGFydCB3b3VsZCBmYWlsIHRoZSBmaXJzdCB0aW1lIG9uIGEgQ0kgaW1hZ2UgdGhhdCBsYWNrcwogIGl0OwotIHRoZSBiaW5hcnkgaXMgc3RhbXBlZCB3aXRoIGl0cyB2ZXJzaW9uIGFuZCByZXByb2R1Y2libGUgKGBDR09fRU5BQkxFRD0wYCwKICBgLXRyaW1wYXRoYCksIGFuZCBzdGFydHMgaW4gbWlsbGlzZWNvbmRzLCB3aGljaCBtYXR0ZXJzIGZvciBhIHRvb2wgdGhhdCBydW5zCiAgb24gZXZlcnkgY29tbWl0IGFuZCBldmVyeSBzaGVsbCBwcm9tcHQ7Ci0gY3Jvc3MtY29tcGlsYXRpb24gZnJvbSBvbmUgbWFjaGluZSBidWlsZHMgYWxsIHNpeCB0YXJnZXRzLCBzbyBhIHJlbGVhc2UgaXMKICBvbmUgam9iOwotIGdvcm91dGluZXMgbWFrZSB0aGUgc2NoZWR1bGVyICgib25lIGdvcm91dGluZSBwZXIgdGFzaywgZ2F0ZWQgYnkgYSBzZW1hcGhvcmUiKQogIG5lYXJseSB0aGUgd2hvbGUgb2YgaXRzIGltcGxlbWVudGF0aW9uLgoKYGdvIGluc3RhbGxgIGlzIGRlbGliZXJhdGVseSBub3QgYSBzdXBwb3J0ZWQgd2F5IHRvIGluc3RhbGwgaXQgKGRlY2lzaW9uIDE5KToKdGhlIGluc3RhbGwgY2hhbm5lbHMgKHNjcmlwdCwgbnBtLCBQeVBJLCBOdUdldCwgUnVieUdlbXMsIHB1Yi5kZXYsIGAuZGViYCwKYC5ycG1gLCBHaXRIdWIgUmVsZWFzZSkgYWxsIGNhcnJ5IHRoZSBzdGFtcGVkIGJpbmFyeS4KCiMjIyBMaWJyYXJpZXMKCkZldywgYW5kIGVhY2ggZG9lcyBvbmUgdGhpbmc6Cgp8IExpYnJhcnkgfCBVc2VkIGZvciB8CnwtLS18LS0tfAp8IGBzcGYxMy9jb2JyYWAgfCB0aGUgY29tbWFuZCB0cmVlLCBmbGFncywgc2hlbGwgY29tcGxldGlvbiB8CnwgYHBlbGxldGllci9nby10b21sL3YyYCB8IHJlYWRpbmcgYHNtaXRoLnRvbWxgIHN0cmljdGx5ICh1bmtub3duIGtleXMgYXJlIGVycm9ycykgYW5kIGVkaXRpbmcgaXQgaW4gcGxhY2UsIGtlZXBpbmcgY29tbWVudHMgfAp8IGBibWF0Y3VrL2RvdWJsZXN0YXJgIHwgYCoqYCBnbG9icyBmb3IgdGFzayBpbnB1dHMgYW5kIHNlbGVjdGlvbiB8CnwgYGNoYXJtYnJhY2VsZXQvYnViYmxldGVhYCwgYGxpcGdsb3NzYCwgYGJ1YmJsZXNgIHwgdGhlIHRlcm1pbmFsIFVJIChhIGJhcmUgYHNtaXRoYCkgYW5kIHRoZSBpbnRlcmFjdGl2ZSBncmFwaCBicm93c2VyIHwKfCBgZ29vZ2xlL3JwbXBhY2tgIHwgYnVpbGRpbmcgYC5ycG1gIHBhY2thZ2VzIHdpdGhvdXQgYHJwbWJ1aWxkYCB8CnwgYGdvbGFuZy5vcmcveC9zeXNgLCBgeC90ZXJtYCB8IFdpbmRvd3MgSm9iIE9iamVjdHMsIHRlcm1pbmFsIGRldGVjdGlvbiB8CgpFdmVyeXRoaW5nIGVsc2UgaXMgdGhlIHN0YW5kYXJkIGxpYnJhcnk6IEhUVFAgY2xpZW50cywgYGNyeXB0by9obWFjYCBmb3IgdGhlCnJlbW90ZSBjYWNoZSwgWklQL1RBUi9HWklQIGZvciByZWxlYXNlIGFyY2hpdmVzLCBgZW5jb2RpbmcvanNvbmAgZm9yIHRoZQpwcm90b2NvbC4gUzMgcmVxdWVzdCBzaWduaW5nIChBV1MgU2lnbmF0dXJlIFY0KSBpcyBpbXBsZW1lbnRlZCBpbiB+MTUwIGxpbmVzCnJhdGhlciB0aGFuIHB1bGxpbmcgaW4gYW4gU0RLLgoKIyMgUHJvY2VzcyBib3VuZGFyaWVzCgp8IEJvdW5kYXJ5IHwgTWVjaGFuaXNtIHwgV2h5IHwKfC0tLXwtLS18LS0tfAp8IHNtaXRoIOKHhCBwbHVnaW4gfCBKU09OLVJQQyAyLjAgb3ZlciBzdGRpbywgTFNQIGZyYW1pbmcgfCBsYW5ndWFnZS1uZXV0cmFsLCBubyBwb3J0cywgY3Jhc2gtaXNvbGF0ZWQgKFtwbHVnaW4tc3lzdGVtLm1kXShwbHVnaW4tc3lzdGVtLm1kKSkgfAp8IHNtaXRoIOKHhCB0b29sIChgbnBtYCwgYGdvYCwgYGNhcmdvYCwgYGRvY2tlcmApIHwgY2hpbGQgcHJvY2VzcywgKiphcmd2IGFycmF5cywgbmV2ZXIgYSBzaGVsbCoqIHwgdGhlIHNhbWUgY29tbWFuZCBtZWFucyB0aGUgc2FtZSBvbiBXaW5kb3dzIGFuZCBMaW51eDsgbm90aGluZyBpcyB3b3JkLXNwbGl0IG9yIGdsb2JiZWQgYnkgYWNjaWRlbnQ7IG5vIGluamVjdGlvbiB0aHJvdWdoIGEgcHJvamVjdCBuYW1lIHwKfCBzbWl0aCDih4QgZ2l0IHwgdGhlIGBnaXRgIGJpbmFyeSwgdGhyb3VnaCBvbmUgc2xpY2UgKGBnaXRjbGllbnRgKSB8IGdpdCBpcyB0aGUgc291cmNlIG9mIHRydXRoIGZvciB0aGUgZmlsZSBsaXN0LCBoaXN0b3J5IGFuZCB0YWdzOyBzaGVsbGluZyBvdXQgaXMgbW9yZSBmYWl0aGZ1bCB0aGFuIGEgcmVpbXBsZW1lbnRhdGlvbiBhbmQga2VlcHMgdGhlIGRvb3IgbmFycm93IHwKfCBzbWl0aCDih4QgR2l0SHViIHwgUkVTVCwgdGhyb3VnaCBvbmUgc2xpY2UgKGBnaXRodWJyZWxlYXNlYCkgfCByZWxlYXNlcywgY29tbWVudHMgfAp8IENJIOKHhCBzbWl0aCB8IGBzbWl0aCBjaSA8cGhhc2U+YCB8IHRoZSBZQU1MIHN0YXlzIHRoaW47IGEgbGFwdG9wIHJ1bnMgd2hhdCBDSSBydW5zIHwKfCBtYWNoaW5lIOKHhCBtYWNoaW5lIHwgdGhlIHJlbW90ZSBjYWNoZSwgSE1BQy1zaWduZWQgb2JqZWN0cyB8IHNoYXJlIHJlc3VsdHMsIG5ldmVyIHRydXN0IHRoZSBzdG9yZSB8CgpOb3RoaW5nIGluIHNtaXRoIHJ1bnMgYSBsb25nLWxpdmVkIGRhZW1vbi4gU3RhdGUgbGl2ZXMgaW4gZmlsZXM6IGBzbWl0aC50b21sYAooY29uZmlndXJhdGlvbiksIGAuc21pdGgvY2FjaGVgIChyZXN1bHRzKSwgZ2l0IHRhZ3MgKHJlbGVhc2VzKSwgYW5kIHRoZQptYW5pZmVzdHMgb2YgdGhlIHByb2plY3RzIHRoZW1zZWx2ZXMuIFRoZXJlIGlzIG5vIGRhdGFiYXNlIGFuZCBubyBoaWRkZW4gc3RhdGUKdG8gcmVwYWlyLgoKIyMgQ3Jvc3MtcGxhdGZvcm0sIHRha2VuIHNlcmlvdXNseQoKQSBtb25vcmVwbyB0b29sIHRoYXQgd29ya3Mgb25seSBvbiB0aGUgbWFpbnRhaW5lcidzIE9TIGlzIG5vdCBhIG1vbm9yZXBvIHRvb2wuClRoZSByZWN1cnJpbmcgcHJvYmxlbXMgYW5kIHRoZWlyIGFuc3dlcnM6CgotICoqUGF0aHMuKiogSW5zaWRlIHNtaXRoIGV2ZXJ5IHBhdGggaXMgUE9TSVggYW5kIHdvcmtzcGFjZS1yZWxhdGl2ZSAocHJvamVjdAogIHJvb3RzLCBgY3dkYCwgaW5wdXRzLCBvdXRwdXRzLCBjYWNoZSBlbnRyaWVzLCBKU09OIG91dHB1dCkuIENvbnZlcnNpb24gdG8gdGhlCiAgT1MgZm9ybSBoYXBwZW5zIGF0IHRoZSBmaWxlIHN5c3RlbSBkb29yIG9ubHkuCi0gKipQcm9jZXNzIHRyZWVzLioqIFVuaXggcHJvY2VzcyBncm91cHMsIFdpbmRvd3MgSm9iIE9iamVjdHMKICAoYHRhc2tydW4vcHJvY2Vzc190cmVlX2NsaWVudCouZ29gKTogY2FuY2VsbGluZyBhIHRhc2sgbGVhdmVzIG5vIG9ycGhhbnMKICBhbnl3aGVyZS4KLSAqKkxpbmUgZW5kaW5ncyBhbmQgcXVvdGluZy4qKiBUaGUgcmVwb3NpdG9yeSBwaW5zIGBlb2w9bGZgOyBjb21tYW5kcyBhcmUKICBhcmd2IGFycmF5czsgc2NyaXB0cyB0aGF0IG5lZWQgYSBzaGVsbCBhcmUgd3JpdHRlbiBhcyBgcGFja2FnZS5qc29uYCBzY3JpcHRzCiAgKHdoaWNoIG5wbSBydW5zIHRocm91Z2ggdGhlIHJpZ2h0IHNoZWxsIG9uIGVhY2ggT1MpIGJ5IGBzbWl0aCBjb252ZXJ0YC4KLSAqKlRvb2wgbG9va3VwLioqIFRoZSBgUEFUSGAgYSB0YXNrIHNlZXMgaXMgdGhlIG9uZSBzbWl0aCBidWlsZHMgKHZlbnYgZmlyc3QpLAogIGhvbm91cmluZyBgUEFUSEVYVGAgb24gV2luZG93cyBzbyBgbnBtYCBmaW5kcyBgbnBtLmNtZGAuCi0gKipDSS4qKiBVbml0IHRlc3RzIHJ1biBvbiBhbGwgdGhyZWUgb3BlcmF0aW5nIHN5c3RlbXMgb24gZXZlcnkgcHVsbCByZXF1ZXN0LAogIGFuZCB0aGUgZW5kLXRvLWVuZCBzdWl0ZXMgZGFpbHkgb24gYWxsIHRocmVlLiBXaW5kb3dzIGlzIHRoZSBzbG93ZXN0IGFuZCB0aGUKICBvbmUgdGhhdCBmaW5kcyB0aGUgbW9zdC4KCiMjIERhdGEgZm9ybWF0cwoKLSBgc21pdGgudG9tbGA6IFRPTUwsIGV2ZXJ5IHNldHRpbmcgb3B0aW9uYWwsIHVua25vd24ga2V5cyByZWplY3RlZCB3aXRoIGEKICBtZXNzYWdlIG5hbWluZyB0aGUga2V5LiBBIEpTT04gU2NoZW1hIHNoaXBzIGZvciBlZGl0b3JzCiAgKGBhcHBzL3NtaXRoL3dvcmtzcGFjZS9zbWl0aC5zY2hlbWEuanNvbmApLgotIFJlY2lwZXM6IFRPTUwsIGV4dGVuZGFibGUsIHJlc29sdmVkIHdpdGggcHJvdmVuYW5jZSDigJQgZWFjaCB2YWx1ZSByZW1lbWJlcnMgdGhlCiAgZmlsZSBhbmQgbGluZSBpdCBjYW1lIGZyb20sIGFuZCBgc21pdGggZXhwbGFpbmAgc2hvd3MgaXQuCi0gTWFjaGluZSBvdXRwdXQ6IGAtLWpzb25gIG9uIGV2ZXJ5IHJlcG9ydGluZyBjb21tYW5kLCB3aXRoIGEgc3RhYmxlCiAgY29udHJhY3QgKGBjbGljb250cmFjdGApIHRoYXQgZWRpdG9ycyBhbmQgYHNtaXRoIG1jcGAgcmVseSBvbi4KLSBUaGUgY2FjaGU6IEpTT04gZW50cmllcyBwbHVzIGNvbnRlbnQtYWRkcmVzc2VkIGJsb2JzLgotIFJlbGVhc2UgcmVjb3JkczogYC5zbWl0aC9yZWxlYXNlLXJlcG9ydC5qc29uYC4KCiMjIFNlY3VyaXR5IG1vZGVsCgotICoqTm8gc2hlbGwsIG5vIGV2YWwuKiogVGFza3MgYXJlIGFyZ3Y7IHBsdWdpbnMgYXJlIHNlcGFyYXRlIHByb2Nlc3Nlcy4KLSAqKlNlY3JldHMgb25seSB0aHJvdWdoIHRoZSBlbnZpcm9ubWVudCoqLCBuYW1lZCBpbiB0aGUgZ2VuZXJhdGVkIHBpcGVsaW5lIGFuZAogIGxpc3RlZCBieSBgc21pdGggY2kgY2hlY2tgLiBzbWl0aCBuZXZlciB3cml0ZXMgYSBzZWNyZXQgdG8gZGlzayBvciB0byBhIGxvZy4KICBGb3JrZWQgcHVsbCByZXF1ZXN0cywgd2hpY2ggZ2V0IG5vIHNlY3JldHMsIHN0aWxsIGJ1aWxkIGFuZCB0ZXN0LgotICoqVGhlIHJlbW90ZSBjYWNoZSBjYW5ub3QgbWFrZSBhIGJ1aWxkIHdyb25nOioqIHNpZ25lZCBvYmplY3RzLCB2ZXJpZmllZAogIGNvbnRlbnQgaGFzaGVzLCBmYWlsdXJlcyBhcmUgbWlzc2VzLgotICoqUHVibGlzaGluZyB1c2VzIHNob3J0LWxpdmVkIGlkZW50aXR5IHdoZXJlIHRoZSByZWdpc3RyeSBhbGxvd3MgaXQ6KiogbnBtCiAgcHJvdmVuYW5jZSBhbmQgcHViLmRldiB0aHJvdWdoIEdpdEh1YidzIE9JREMgdG9rZW47IFB5UEksIE51R2V0IGFuZCBSdWJ5R2VtcwogIHRocm91Z2ggc2NvcGVkIHRva2Vucy4KLSAqKlBsdWdpbnMgYXJlIGNvZGUgeW91IHJ1bi4qKiBBbiBleHRlcm5hbCBwbHVnaW4gaXMgYSBwcm9ncmFtIG9uIHlvdXIKICBgUEFUSGAtbGlrZSBzZWFyY2ggcGF0aDsgc21pdGgudG9tbCBwaW5zIGl0cyB2ZXJzaW9uLiBUaGUgYnVpbHQtaW5zIGFyZSBwYXJ0CiAgb2YgdGhlIGJpbmFyeS4gYHNtaXRoIHBsdWdpbiBjaGVja2AgdmVyaWZpZXMgYmVoYXZpb3VyLCBub3QgdHJ1c3R3b3J0aGluZXNzLgotICoqTUNQIHRvb2xzKiogcmVmdXNlIGlucHV0cyB0aGF0IGxvb2sgbGlrZSBvcHRpb25zIGFuZCBuZXZlciB0YWtlIGEgcGF0aCB3aGVyZQogIGEgbmFtZSBzdWZmaWNlcy4KLSBObyBjb2RlIHNpZ25pbmcgb3Igbm90YXJpc2F0aW9uIHlldCAoZGVjaXNpb24gbG9nKTsgY2hlY2tzdW1zIGFyZSBwdWJsaXNoZWQKICB3aXRoIGV2ZXJ5IHJlbGVhc2UuCgojIyBUZXN0aW5nCgp8IExheWVyIHwgV2hhdCB8IFdoZXJlIHwKfC0tLXwtLS18LS0tfAp8IFVuaXQgfCBwdXJlIHBvbGljaWVzLCBhbGdvcml0aG1zLCBtYXBwZXJzLCB1c2UgY2FzZXMgd2l0aCBmYWtlcyB8IG5leHQgdG8gdGhlIGNvZGUgKGAqX3Rlc3QuZ29gKSwgcnVuIG9uIHRocmVlIE9TZXMgb24gZXZlcnkgcHVsbCByZXF1ZXN0IHwKfCBQbHVnaW4gY29uZm9ybWFuY2UgfCBhIHBsdWdpbiBvYmV5cyB0aGUgcHJvdG9jb2wgfCBgcGFja2FnZXMvcGx1Z2luLXNkay9jb25mb3JtYW5jZWAsIGBzbWl0aCBwbHVnaW4gY2hlY2tgIHwKfCBHb2xkZW4gcGF0aCB8IHRoZSByZWFsIHRoaW5nOiBhIG5ldyB3b3Jrc3BhY2UsIGV2ZXJ5IHByb2plY3Qga2luZCBpbiBldmVyeSBsYW5ndWFnZSwgYnVpbGQsIHRlc3QsIHJlbGVhc2UgfCBgYXBwcy9zbWl0aC9nb2xkZW5wYXRoYCwgZGFpbHkgYW5kIG9uIGRlbWFuZCB8CnwgQ29udmVydCB8IE54IGFuZCBvbGQtbW5jaSB3b3Jrc3BhY2VzIGNvbnZlcnQgYW5kIHN0aWxsIGJ1aWxkIHwgYGFwcHMvc21pdGgvY29udmVydGAgZml4dHVyZXMgb24gdGhyZWUgT1NlcyB8CnwgU2VsZi1ob3N0aW5nIHwgc21pdGggYnVpbGRzLCBsaW50cywgdGVzdHMgYW5kIHJlbGVhc2VzIGl0c2VsZiB8IHRoaXMgcmVwb3NpdG9yeSdzIENJIHwKClRoZSBjb2RlIGxheW91dCBpcyBlbmZvcmNlZCBieSBhIHRvb2wsIHRvbzogYHNtaXRoIHNsaWNlcyBjaGVja2AgdmVyaWZpZXMKZXZlcnkgZmlsZSdzIG5hbWUgY2FycmllcyBpdHMgcm9sZSBhbmQgZXZlcnkgcGFja2FnZSBoYXMgYSBwdWJsaWMgc3VyZmFjZQooYHNsaWNlY2hlY2tgKSwgYW5kIENJIHJ1bnMgaXQgb24gZXZlcnkgR28gbW9kdWxlLgoKIyMgV2h5IGEgbW9ub3JlcG8gdG9vbCBuZWVkcyBhbGwgb2YgdGhpcyBpbiBvbmUgcHJvZ3JhbQoKVGVhbXMgdGhhdCBtaXggbGFuZ3VhZ2VzIHVzdWFsbHkgZW5kIHVwIHdpdGggdGhyZWUgYnVpbGQgc3lzdGVtcyBhbmQgYSBNYWtlZmlsZQpob2xkaW5nIHRoZW0gdG9nZXRoZXIuIHNtaXRoJ3MgYmV0IGlzIHRoYXQgdGhlIHRoaW5ncyB0aGF0IGFyZSB0aGUgc2FtZSBhY3Jvc3MKbGFuZ3VhZ2VzIOKAlCAqd2hhdCBkZXBlbmRzIG9uIHdoYXQsIHdoYXQgaGFzIHRvIGJlIHJlYnVpbHQsIHdoYXQgdG8gcnVuIGluIENJLAp3aGF0IHRvIHJlbGVhc2UgYW5kIGluIHdoaWNoIG9yZGVyKiDigJQgZGVzZXJ2ZSBvbmUgb3duZXIsIHdoaWxlIGV2ZXJ5dGhpbmcgdGhhdApkaWZmZXJzIGxpdmVzIGJlaGluZCBhIG5hcnJvdyBpbnRlcmZhY2UuIFRoZSB0ZWNobm9sb2d5IGFib3ZlIGlzIHRoZSBjb3N0IG9mCmtlZXBpbmcgdGhhdCBpbnRlcmZhY2UgbmFycm93OiBhIGJpbmFyeSB3aXRoIG5vIHJ1bnRpbWUsIHBsdWdpbnMgYXMgcHJvY2Vzc2VzLApnaXQgYXMgdGhlIGRhdGFiYXNlLCBhbmQgYSBjYWNoZSB0aGF0IGlzIGFsbG93ZWQgdG8gYmUgd3Jvbmcgb25seSBieSBiZWluZwphYnNlbnQuCg==" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>(function () {
+  var source = document.getElementById('lm-source');
+  if (!source) { return; }
+  var bytes = Uint8Array.from(atob(source.getAttribute('data-markdown')), function (c) { return c.charCodeAt(0); });
+  var markdown = new TextDecoder('utf-8').decode(bytes);
+  var article = document.getElementById('lm-markdown');
+  article.innerHTML = marked.parse(markdown);
+  article.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.charAt(0) === '#' || href.charAt(0) === '/') { return; }
+    link.setAttribute('href', href.replace(/\.(md|markdown)(#.*)?$/i, '.html$2'));
+  });
+  article.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
+    var diagram = document.createElement('div');
+    diagram.className = 'mermaid';
+    diagram.textContent = code.textContent;
+    code.parentNode.replaceWith(diagram);
+  });
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false });
+    mermaid.run({ querySelector: '.mermaid' });
+  }
+})();</script></main>
+</div>
+</body>
+</html>

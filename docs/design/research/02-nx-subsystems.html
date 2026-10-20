@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research 02 — Nx subsystems to replace</title>
+<link rel="stylesheet" href="../../../assets/lore-master.css">
+</head>
+<body>
+<div class="lm-layout">
+<nav class="lm-nav">
+<div class="lm-nav-title">monosmith</div>
+<ul>
+<li class="lm-depth-0"><a href="../../../README.html">MonoSmith</a></li>
+<li class="lm-depth-1"><a href="../../../packages/eslint-config/README.html">@monosmith/eslint-config</a></li>
+<li class="lm-depth-1"><a href="../../../docs/README.html">MonoSmith documentation</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/research/01-current-mnci-inventory.html">Research 01 — Current mnci inventory (parity source)</a></li>
+<li class="lm-depth-2 lm-active"><a href="../../../docs/design/research/02-nx-subsystems.html">Research 02 — Nx subsystems to replace</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/research/03-prior-art-and-stack.html">Research 03 — Prior art and recommended stack</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/architecture.html">Architecture</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/ci.html">CI pipelines</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/cli.html">CLI reference</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/configuration.html">Configuration: smith.toml</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/conventions.html">Conventions</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/converting.html">Converting from Nx (and from the old mnci)</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/decisions.html">Decisions</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/recipes-and-ci.html">Design: recipes, and CI as part of them</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/tui-and-ide.html">Design: the TUI and the IDE plugins</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/editors.html">Editors</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/faq.html">FAQ</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/getting-started.html">Getting started</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/glossary.html">Glossary</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/execution-and-cache.html">How tasks run, and how the cache decides</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/installing.html">Installing smith</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/plugins.html">Plugins</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/recipes.html">Recipes</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/release-and-ci-internals.html">Releases and CI: how they are built</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/releasing.html">Releasing</a></li>
+<li class="lm-depth-2"><a href="../../../docs/assets/README.html">Screenshots</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/stacks.html">Stacks</a></li>
+<li class="lm-depth-2"><a href="../../../docs/reference/tasks-and-cache.html">Tasks, cache and affected</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/technology.html">Technology: what smith is made of, and why</a></li>
+<li class="lm-depth-2"><a href="../../../docs/design/plugin-system.html">The plugin system</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/troubleshooting.html">Troubleshooting</a></li>
+<li class="lm-depth-2"><a href="../../../docs/contributing/development.html">Working on smith</a></li>
+<li class="lm-depth-2"><a href="../../../docs/guides/writing-a-plugin.html">Writing a plugin</a></li>
+<li class="lm-depth-1"><a href="../../../.claude/agents/necromancer.html">necromancer</a></li>
+<li class="lm-depth-1"><a href="../../../packages/plugin-sdk/README.html">plugin-sdk</a></li>
+<li class="lm-depth-1"><a href="../../../apps/smith/README.html">smith</a></li>
+<li class="lm-depth-1"><a href="../../../.claude/agents/sorcerer.html">sorcerer</a></li>
+<li class="lm-depth-1"><a href="../../../.claude/agents/wizard.html">wizard</a></li>
+</ul>
+</nav>
+<main class="lm-content"><article id="lm-markdown" class="markdown-body"></article>
+<div id="lm-source" data-markdown="IyBSZXNlYXJjaCAwMiDigJQgTnggc3Vic3lzdGVtcyB0byByZXBsYWNlCgpTb3VyY2U6IE54IDIzLjMuMCBhcyBpbnN0YWxsZWQgaW4gdGhlIFR5cGVTY3JpcHQgbW5jaSByZXBvLiBIYXNoaW5nLCBjYWNoZSBJL08sIGdsb2JiaW5nIGFuZCB0b3VjaGVkLXByb2plY3QKbG9jYXRpb24gYXJlIG5hdGl2ZSBSdXN0IGluIE54LCBzbyAqKk54J3MgaGFzaCB2YWx1ZXMgY2Fubm90IGFuZCBuZWVkIG5vdCBiZSByZXByb2R1Y2VkKio7IHdlIGRlZmluZSBvdXIgb3duLgoKIyMgMS4gUHJvamVjdCBncmFwaAoKLSBEaXNjb3ZlciBwcm9qZWN0cyBmcm9tIHdvcmtzcGFjZSBtYW5pZmVzdHMgKHBhY2thZ2UuanNvbiB3b3Jrc3BhY2VzIGdsb2JzLCBwcm9qZWN0Lmpzb24pIGhvbm91cmluZyBpZ25vcmUgZmlsZXMuCi0gTWVyZ2UgcHJlY2VkZW5jZSAobGF0ZXIgd2lucyk6IHBsdWdpbnMgPCBgdGFyZ2V0RGVmYXVsdHNgIDwgcGFja2FnZS5qc29uIDwgcHJvamVjdC5qc29uLiBQZXItdGFyZ2V0LCBwZXIta2V5IG1lcmdlOwogIGFycmF5cyByZXBsYWNlZCB1bmxlc3Mgc3ByZWFkOyBhbiAqaW5jb21wYXRpYmxlKiB0YXJnZXQgKGRpZmZlcmVudCBleGVjdXRvci9jb21tYW5kKSBSRVBMQUNFUyB0aGUgYmFzZS4gVGhpcyBpcwogIHRoZSBtYWluIHNvdXJjZSBvZiBOeCBjb25mdXNpb24g4oCUIHdlIHJlcGxhY2UgaXQgd2l0aCBvbmUgc2ltcGxlIHJ1bGUgKHNlZSBjb25maWcgZXBpYykuCi0gRWRnZXM6IHdvcmtzcGFjZSBwYWNrYWdlIGRlcHMgKHN0YXRpYyksIGltcG9ydCBhbmFseXNpcyByZXNvbHZlZCB0aHJvdWdoIHRzY29uZmlnIHBhdGhzIC8gcGFja2FnZSBuYW1lcywKICBgaW1wbGljaXREZXBlbmRlbmNpZXNgICh3aXRoIGAhbmFtZWAgcmVtb3ZhbCkuIEZpbGXihpJwcm9qZWN0IGlzIHRoZSBsb25nZXN0LXJvb3QgbWF0Y2gsIFBPU0lYLW5vcm1hbGlzZWQuCi0gRHJvcDogSlMgcGx1Z2luIGV4ZWN1dGlvbiwgbG9ja2ZpbGUgZXh0ZXJuYWwgbm9kZXMsIGdyYXBoIGNhY2hlL2luY3JlbWVudGFsIHJlY29tcHV0ZSwgaXNvbGF0ZWQgcGx1Z2luIHdvcmtlci4KCiMjIDIuIFRhc2sgZ3JhcGgKCi0gVGFzayBpZCBgcHJvamVjdDp0YXJnZXRbOmNvbmZpZ3VyYXRpb25dYC4gYGRlcGVuZHNPbmAgZm9ybXM6IGBedGAgKGRpcmVjdCBkZXBzJyBgdGAsIGJyaWRnaW5nIHRocm91Z2ggZGVwcyB0aGF0CiAgbGFjayBgdGAgdmlhIGR1bW15IG5vZGVzKSwgYHRgLCBgcHJvajp0YCwgYW5kIG9iamVjdCBmb3JtIChgcHJvamVjdHNgLCBgZGVwZW5kZW5jaWVzYCwgcGFyYW1zIGZvcndhcmRpbmcpLgotIERlZmF1bHRzOiBgY2FjaGU9ZmFsc2VgLCBgcGFyYWxsZWxpc209dHJ1ZWAsIGlucHV0cyBgWyJkZWZhdWx0IiwiXmRlZmF1bHQiXWAuIEN5Y2xlIGRldGVjdGlvbiByZXF1aXJlZC4KLSBEcm9wIGluaXRpYWxseTogY29udGludW91cy9iYXRjaCB0YXNrcywgYHVsdHJhY2FjaGVgLiBBZGQgY29udGludW91cyB0YXNrcyBsYXRlciBmb3IgYGRldmAvYHNlcnZlYC4KCiMjIDMuIEhhc2hpbmcKCklucHV0czogZmlsZXNldHMsIG5hbWVkIGlucHV0cyAoYF5uYW1lZGAgPSBkZXBlbmRlbmN5IHByb2plY3RzKSwgYGVudmAsIGBydW50aW1lYCAoaGFzaCBjb21tYW5kIHN0ZG91dCksCmBleHRlcm5hbERlcGVuZGVuY2llc2AsIGBkZXBlbmRlbnRUYXNrc091dHB1dEZpbGVzYCAoZGVmZXJyZWQgdW50aWwgdXBzdHJlYW0gdGFza3MgcmFuKSwgYGpzb25gIGZpZWxkIHN1YnNldHMuCkhhc2ggPSBzb3J0ZWQgZmlsZSBoYXNoZXMgKyBlbnYgdmFsdWVzICsgcnVudGltZSBvdXRwdXRzICsgZXh0ZXJuYWwgZGVwIHZlcnNpb25zICsgZGVwZW5kZW5jeSB0YXNrIGhhc2hlcyArCmNvbW1hbmQgKyBvdmVycmlkZXMgKyB0b29sIHZlcnNpb24uIE9ubHkgKmRlY2xhcmVkKiBlbnYgYWZmZWN0cyB0aGUgaGFzaC4gQ1JMRi9hdXRvY3JsZiBhbmQgY2FzZS1pbnNlbnNpdGl2ZQpwYXRocyBtYXR0ZXIgb24gV2luZG93cy4KCiMjIDQuIExvY2FsIGNhY2hlCgpgLmNhY2hlLzxoYXNoPi97b3V0cHV0cy88cmVscGF0aD4sIHRlcm1pbmFsT3V0cHV0LCBjb2RlfWAgcGx1cyBhIGNvbW1pdCBtYXJrZXIgd3JpdHRlbiBsYXN0IChyZW5hbWUgaW50byBwbGFjZSkuCk9ubHkgYGNvZGU9PT0wYCByZXN1bHRzIGFyZSBzdG9yZWQgKG9wdGlvbmFsIGZhaWx1cmUgY2FjaGluZykuIEhpdDogZGVsZXRlIGV4aXN0aW5nIG91dHB1dHMsIGNvcHkgY2FjaGVkLCByZXBsYXkKdGVybWluYWwgb3V0cHV0LiBNaXNzOiBydW4sIGNhcHR1cmUgb3V0cHV0LCBzdG9yZS4gVHJpbSBieSBzaXplL0xSVS4gV2luZG93czogbG9uZyBwYXRocyAoYFxcP1xgKSwgZGVsZXRlIHJldHJpZXMKKEFWL3dhdGNoZXJzKSwgbm8gcGFydGlhbCB3cml0ZXMgb24gQ3RybCtDLgoKIyMgNS4gQWZmZWN0ZWQKCkJhc2UgPSBgLS1iYXNlYCB8IGVudiB8IGBkZWZhdWx0QmFzZWAgfCBgbWFpbmA7IGJhc2UgYmVjb21lcyBgZ2l0IG1lcmdlLWJhc2UgYmFzZSBoZWFkYCAoZmFsbGJhY2sgZm9yay1wb2ludCwgdGhlbgpyYXcpLiBUb3VjaGVkIGZpbGVzOiBgZ2l0IGRpZmYgLS1uYW1lLW9ubHkgLS1uby1yZW5hbWVzIC0tcmVsYXRpdmUgLXogYmFzZSBoZWFkYCAoKyB1bmNvbW1pdHRlZCArIHVudHJhY2tlZCB3aGVuCmhlYWQgaXMgZGVmYXVsdCkuIEZpbGXihpJwcm9qZWN0OyBub24tcHJvamVjdCBmaWxlcyB2aWEgd29ya3NwYWNlIGltcGxpY2l0IGRlcHM7IGRlbGV0ZWQgbWFuaWZlc3RzIGFmZmVjdCBhbGw7CmxvY2tmaWxlIGNoYW5nZSBhZmZlY3RzIGRlcGVuZGVudHMgb2YgY2hhbmdlZCBleHRlcm5hbHMgKG9yIGFsbCk7IHRoZW4gcmV2ZXJzZSBjbG9zdXJlIG92ZXIgYWxsIGVkZ2VzLgpTaGFsbG93IGNsb25lcyBuZWVkIGhpc3Rvcnk7IHVucmVzb2x2YWJsZSBiYXNlIOKHkiB2ZXJpZnkgZXZlcnl0aGluZy4KCiMjIDYuIFJ1bi1tYW55IC8gc2NoZWR1bGluZwoKU2VsZWN0aW9uIGJ5IG5hbWUsIGdsb2IsIGB0YWc6eGAsIG5lZ2F0aW9uLiBQYXJhbGxlbGlzbSBkZWZhdWx0IDMsIGBOYCwgYE4lYC4gUHJpb3JpdHk6IG1vcmUgcmV2ZXJzZQpkZXBlbmRlbnRzLCBtb3JlIGRlcHMsIGxvbmdlciBkdXJhdGlvbi4gYHBhcmFsbGVsaXNtOmZhbHNlYCBydW5zIGV4Y2x1c2l2ZWx5LiBPbiBmYWlsdXJlIGRlcGVuZGVudHMgYXJlCmBza2lwcGVkYCwgaW5kZXBlbmRlbnRzIGNvbnRpbnVlOyBgLS1iYWlsYCBzdG9wcyBzdGFydGluZy4gRW52IGluamVjdGVkOiBgTlhfVEFTS18qYC1zdHlsZSB0YXNrIGlkL2hhc2gsIFBBVEgKZ2V0cyBgbm9kZV9tb2R1bGVzLy5iaW5gLiBXaW5kb3dzOiBgdGFza2tpbGwgL1QgL0ZgIGZvciB0cmVlcywgYC5jbWRgIHNoaW1zIHZpYSBQQVRIRVhULCBjYXNlLWluc2Vuc2l0aXZlIGVudiwKY21kLmV4ZSB2cyBzaCBxdW90aW5nLgoKIyMgNy4gUmVsZWFzZQoKLSBUYWcgcGF0dGVybiBkZWZhdWx0IGluZGVwZW5kZW50IGB7cHJvamVjdE5hbWV9QHt2ZXJzaW9ufWAgKGZpeGVkOiBgdnt2ZXJzaW9ufWApLiBDdXJyZW50IHZlcnNpb24gZnJvbSBsYXRlc3QKICBtYXRjaGluZyB0YWcgKGZhbGxiYWNrIGRpc2spLiBDb21taXRzIGBnaXQgbG9nIDx0YWc+Li5IRUFEYCAodXNlIE5VTCBkZWxpbWl0ZXJzLCBub3QgbGl0ZXJhbCBzZXBhcmF0b3JzKS4KLSBQYXJzZSBgdHlwZShzY29wZSkhOiBkZXNjcmlwdGlvbmA7IGJyZWFraW5nIHZpYSBgIWAgb3IgYEJSRUFLSU5HIENIQU5HRTpgOyByZXZlcnRzLiBEcm9wIGF1dG9tYXRlZCByZWxlYXNlCiAgY29tbWl0cy4gTWFwIGNvbW1pdHMgdG8gcHJvamVjdHMgYnkgY2hhbmdlZCBmaWxlcyB0aHJvdWdoIHRoZSBncmFwaCAoaW5jbC4gZGVwZW5kZW50cykgYW5kIGJ5IHNjb3BlLgotIEJ1bXBzOiBmZWF04oaSbWlub3IsIGZpeOKGknBhdGNoLCBicmVha2luZ+KGkm1ham9yLCBvdGhlcnMgbm9uZTsgaGlnaGVzdCB3aW5zOyBvcHRpb25hbCAwLnggYWRqdXN0bWVudC4KLSBEZXBlbmRlbnRzIGdldCByYW5nZSB1cGRhdGVzIGFuZCBhIHBhdGNoIGJ1bXA7IHRvcG9sb2dpY2FsIG9yZGVyLiBNYW5pZmVzdCBlZGl0cyBtdXN0IHByZXNlcnZlIGZvcm1hdHRpbmcsCiAga2V5IG9yZGVyLCBFT0wgYW5kIHRyYWlsaW5nIG5ld2xpbmUgKHRleHQgZWRpdHMsIG5vdCByZS1zZXJpYWxpc2F0aW9uKS4KLSBPcmRlcjogdmVyc2lvbiDihpIgY2hhbmdlbG9nIOKGkiBgZ2l0IGFkZGAgKGNodW5rIGxvbmcgcGF0aCBsaXN0cykg4oaSIGNvbW1pdCAoc2tpcCBpZiBub3RoaW5nIHN0YWdlZCkg4oaSIGFubm90YXRlZCB0YWdzCiAg4oaSIHB1c2ggYC0tZm9sbG93LXRhZ3MgLS1hdG9taWNgLiBQdWJsaXNoOiBza2lwIHByaXZhdGUsIGNoZWNrIGFscmVhZHktcHVibGlzaGVkLCB0YWcgZnJvbSBwcmVpZC4gRHJ5LXJ1biBydW5zIHRoZQogIHNhbWUgY29kZSBwYXRoIGFuZCB3cml0ZXMgbm90aGluZy4KCiMjIDguIFN5bmMKCk9ubHkgb25lIGdlbmVyYXRvciBtYXR0ZXJzOiBUeXBlU2NyaXB0IHByb2plY3QgcmVmZXJlbmNlcyBtaXJyb3JpbmcgZ3JhcGggZGVwcywgcGx1cyBhIGAtLWNoZWNrYCBtb2RlLiBJbiBDSSwKY2hlY2sgb25seS4KCiMjIDkuIERhZW1vbgoKRHJvcC4gQnVpbGQgdGhlIGdyYXBoIHBlciBpbnZvY2F0aW9uOyBwZXJzaXN0IGtleWVkIGJ5IGNvbmZpZyBoYXNoICsgZmlsZSBzdGF0IGlmIHNsb3cuIE5hbWVkLXBpcGUgZGFlbW9ucyBhbmQKZmlsZSB3YXRjaGVycyBhcmUgYSB0b3Agc291cmNlIG9mIE54IFdpbmRvd3MgYnVncy4KCiMjIEltcGxlbWVudGF0aW9uIHByaW9yaXR5CgoxLiBDb25maWcgKyBkaXNjb3ZlcnkgKyBtZXJnZS4gMi4gVGFzayBncmFwaC4gMy4gUnVubmVyICsgc2NoZWR1bGVyICsgZmFpbHVyZSBza2lwcGluZy4gNC4gSGFzaGluZyArIGNhY2hlLgo1LiBBZmZlY3RlZC4gNi4gUmVsZWFzZSB3aXRoIGRyeS1ydW4uIDcuIFN5bmMgY2hlY2ssIGNoYW5nZWxvZywgVFVJIGxhdGVyLgo=" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>(function () {
+  var source = document.getElementById('lm-source');
+  if (!source) { return; }
+  var bytes = Uint8Array.from(atob(source.getAttribute('data-markdown')), function (c) { return c.charCodeAt(0); });
+  var markdown = new TextDecoder('utf-8').decode(bytes);
+  var article = document.getElementById('lm-markdown');
+  article.innerHTML = marked.parse(markdown);
+  article.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.charAt(0) === '#' || href.charAt(0) === '/') { return; }
+    link.setAttribute('href', href.replace(/\.(md|markdown)(#.*)?$/i, '.html$2'));
+  });
+  article.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
+    var diagram = document.createElement('div');
+    diagram.className = 'mermaid';
+    diagram.textContent = code.textContent;
+    code.parentNode.replaceWith(diagram);
+  });
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false });
+    mermaid.run({ querySelector: '.mermaid' });
+  }
+})();</script></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>plugin-sdk</title>
+<link rel="stylesheet" href="../../assets/lore-master.css">
+</head>
+<body>
+<div class="lm-layout">
+<nav class="lm-nav">
+<div class="lm-nav-title">monosmith</div>
+<ul>
+<li class="lm-depth-0"><a href="../../README.html">MonoSmith</a></li>
+<li class="lm-depth-1"><a href="../../packages/eslint-config/README.html">@monosmith/eslint-config</a></li>
+<li class="lm-depth-1"><a href="../../docs/README.html">MonoSmith documentation</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/01-current-mnci-inventory.html">Research 01 — Current mnci inventory (parity source)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/02-nx-subsystems.html">Research 02 — Nx subsystems to replace</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/research/03-prior-art-and-stack.html">Research 03 — Prior art and recommended stack</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/architecture.html">Architecture</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/ci.html">CI pipelines</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/cli.html">CLI reference</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/configuration.html">Configuration: smith.toml</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/conventions.html">Conventions</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/converting.html">Converting from Nx (and from the old mnci)</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/decisions.html">Decisions</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/recipes-and-ci.html">Design: recipes, and CI as part of them</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/tui-and-ide.html">Design: the TUI and the IDE plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/editors.html">Editors</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/faq.html">FAQ</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/getting-started.html">Getting started</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/glossary.html">Glossary</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/execution-and-cache.html">How tasks run, and how the cache decides</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/installing.html">Installing smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/plugins.html">Plugins</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/recipes.html">Recipes</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/release-and-ci-internals.html">Releases and CI: how they are built</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/releasing.html">Releasing</a></li>
+<li class="lm-depth-2"><a href="../../docs/assets/README.html">Screenshots</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/stacks.html">Stacks</a></li>
+<li class="lm-depth-2"><a href="../../docs/reference/tasks-and-cache.html">Tasks, cache and affected</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/technology.html">Technology: what smith is made of, and why</a></li>
+<li class="lm-depth-2"><a href="../../docs/design/plugin-system.html">The plugin system</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/troubleshooting.html">Troubleshooting</a></li>
+<li class="lm-depth-2"><a href="../../docs/contributing/development.html">Working on smith</a></li>
+<li class="lm-depth-2"><a href="../../docs/guides/writing-a-plugin.html">Writing a plugin</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/necromancer.html">necromancer</a></li>
+<li class="lm-depth-1 lm-active"><a href="../../packages/plugin-sdk/README.html">plugin-sdk</a></li>
+<li class="lm-depth-1"><a href="../../apps/smith/README.html">smith</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/sorcerer.html">sorcerer</a></li>
+<li class="lm-depth-1"><a href="../../.claude/agents/wizard.html">wizard</a></li>
+</ul>
+</nav>
+<main class="lm-content"><article id="lm-markdown" class="markdown-body"></article>
+<div id="lm-source" data-markdown="IyBwbHVnaW4tc2RrCgpUaGUgR28gU0RLIGZvciB3cml0aW5nIHNtaXRoIHBsdWdpbnM6IHRoZSBwcm90b2NvbCdzIG1lc3NhZ2VzLCBpdHMgZnJhbWluZywKdGhlIHBsdWdpbiBydW50aW1lLCBhbmQgdGhlIGhvc3Qgc2lkZSB1c2VkIHRvIHRlc3QgYSBwbHVnaW4uCgpgYGBzaApnbyBnZXQgZ2l0aHViLmNvbS9tb25vc21pdGgtYXBwL21vbm9zbWl0aC9wYWNrYWdlcy9wbHVnaW4tc2RrQGxhdGVzdApgYGAKClJlbGVhc2VkIGFzIHRoZSBHbyBtb2R1bGUgdGFnIGBwYWNrYWdlcy9wbHVnaW4tc2RrL3Y8dmVyc2lvbj5gLiBCZWZvcmUgMS4wIGEKbWlub3IgdmVyc2lvbiBtYXkgY2hhbmdlIHRoZSBHbyBBUEk7IHRoZSB3aXJlIHByb3RvY29sIGlzIHZlcnNpb25lZCBvbiBpdHMgb3duCihwcm90b2NvbCB2ZXJzaW9uIDEpLCBhbmQgYSBicmVha2luZyBjaGFuZ2UgdG8gaXQgcmFpc2VzIHRoYXQgaW50ZWdlci4KCiMjIFBhY2thZ2VzCgp8IFBhY2thZ2UgfCBXaGF0IGl0IGlzIGZvciB8CnwtLS18LS0tfAp8IGBwcm90b2NvbGAgfCB0aGUgSlNPTi1SUEMgMi4wIG1lc3NhZ2VzIGJldHdlZW4gc21pdGggYW5kIGEgcGx1Z2luOiBldmVyeSBtZXRob2QncyBwYXJhbXMgYW5kIHJlc3VsdHMsIHByb2plY3Qga2luZHMsIHRhc2tzLCBzdGFja3MsIENJIGNvbnRyaWJ1dGlvbnMgfAp8IGBzZXJ2ZWAgfCBydW4gYSBwbHVnaW46IGBzZXJ2ZS5NYWluKHBsdWdpbilgIGFuc3dlcnMgdGhlIGhvc3Qgb24gc3RkaW4vc3Rkb3V0LCBkZXJpdmluZyB0aGUgY2FwYWJpbGl0aWVzIGZyb20gdGhlIGludGVyZmFjZXMgdGhlIHBsdWdpbiBpbXBsZW1lbnRzIHwKfCBgdHJhbnNwb3J0YCB8IExhbmd1YWdlIFNlcnZlciBQcm90b2NvbCBmcmFtaW5nIChgQ29udGVudC1MZW5ndGhgKSBvdmVyIGEgYnl0ZSBzdHJlYW0gfAp8IGBob3N0YCB8IHRoZSBob3N0IHNpZGU6IHN0YXJ0IGEgcGx1Z2luLCBoYW5kc2hha2UsIGNhbGwgd2l0aCB0aW1lb3V0cywgc2h1dCBkb3duOyBgaG9zdC5Db25uZWN0YCBkcml2ZXMgYSBwbHVnaW4gaW4tcHJvY2VzcyBmb3IgdGVzdHMgfAp8IGBjb25mb3JtYW5jZWAgfCBgY29uZm9ybWFuY2UuQ2hlY2tgOiB0aGUgY2hlY2tzIGBzbWl0aCBwbHVnaW4gY2hlY2tgIHJ1bnMsIGZvciBhIHBsdWdpbidzIG93biB0ZXN0cyB8CnwgYHRlbXBsYXRpbmdgIHwgcmVuZGVyIGEgbmV3IHByb2plY3QncyBmaWxlcyBmcm9tIGBbWyBdXWAgdGVtcGxhdGVzLCBuZXZlciBvdmVyd3JpdGluZyBhIGZpbGUgfAp8IGBqc29uZG9jYCB8IGVkaXQgSlNPTiBzdWNoIGFzIGBwYWNrYWdlLmpzb25gIGluIHBsYWNlLCBrZWVwaW5nIGtleSBvcmRlciB8CnwgYHByb2plY3RraW5kYCB8IGEgcHJvamVjdCdzIGtpbmQgd2hlbiBpdHMgbWFuaWZlc3QgZGVjbGFyZXMgbm9uZSwgYW5kIHRoZSBkaXJlY3RvcnkgZWFjaCBraW5kIGxpdmVzIGluIHwKfCBgdG9vbHJ1bmAgfCBydW4gdG9vbGNoYWluIGNvbW1hbmRzIHdpdGggdGhlaXIgb3V0cHV0IG9uIHN0ZGVyciwga2VlcGluZyBzdGRvdXQgZm9yIHRoZSBwcm90b2NvbCB8CgojIyBBIHBsdWdpbgoKYGBgZ28KcGFja2FnZSBtYWluCgppbXBvcnQgKAoJImdpdGh1Yi5jb20vbW9ub3NtaXRoLWFwcC9tb25vc21pdGgvcGFja2FnZXMvcGx1Z2luLXNkay9wcm90b2NvbCIKCSJnaXRodWIuY29tL21vbm9zbWl0aC1hcHAvbW9ub3NtaXRoL3BhY2thZ2VzL3BsdWdpbi1zZGsvc2VydmUiCikKCnR5cGUga2l3aSBzdHJ1Y3R7fQoKZnVuYyAoayAqa2l3aSkgRGVzY3JpYmUocCBwcm90b2NvbC5Jbml0aWFsaXplUGFyYW1zKSAocHJvdG9jb2wuSW5pdGlhbGl6ZVJlc3VsdCwgZXJyb3IpIHsKCXJldHVybiBwcm90b2NvbC5Jbml0aWFsaXplUmVzdWx0ewoJCVBsdWdpbjogcHJvdG9jb2wuUGVlcntOYW1lOiAia2l3aSIsIFZlcnNpb246ICIwLjEuMCJ9LCBLaW5kOiBwcm90b2NvbC5LaW5kTGFuZ3VhZ2UsCgkJTGFuZ3VhZ2VzOiBbXXN0cmluZ3sia2l3aSJ9LCBNYW5pZmVzdHM6IFtdc3RyaW5neyJraXdpLnRvbWwifSwKCX0sIG5pbAp9CgpmdW5jIG1haW4oKSB7IHNlcnZlLk1haW4oJmtpd2l7fSkgfQpgYGAKCmBzbWl0aCBhZGQgYXBwIG15LXBsdWdpbiAtLXN0YWNrIGdvLXNtaXRoLXBsdWdpbmAgc2NhZmZvbGRzIGEgd29ya2luZyBwbHVnaW4Kd2l0aCBhIGNvbmZvcm1hbmNlIHRlc3QuIFRoZSBwcm90b2NvbCwgdGhlIHBsdWdpbiByb2xlcyBhbmQgaG93IGEgd29ya3NwYWNlCmRlY2xhcmVzIGEgcGx1Z2luIGFyZSBpbiBbZG9jcy9yZWZlcmVuY2UvcGx1Z2lucy5tZF0oLi4vLi4vZG9jcy9yZWZlcmVuY2UvcGx1Z2lucy5tZCk7CmBhcHBzL3NtaXRoL2dvbGRlbnBhdGgvdGVzdGRhdGEva2l3aXBsdWdpbmAgaXMgYSBjb21wbGV0ZSBsYW5ndWFnZSBwbHVnaW4uCg==" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>(function () {
+  var source = document.getElementById('lm-source');
+  if (!source) { return; }
+  var bytes = Uint8Array.from(atob(source.getAttribute('data-markdown')), function (c) { return c.charCodeAt(0); });
+  var markdown = new TextDecoder('utf-8').decode(bytes);
+  var article = document.getElementById('lm-markdown');
+  article.innerHTML = marked.parse(markdown);
+  article.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.charAt(0) === '#' || href.charAt(0) === '/') { return; }
+    link.setAttribute('href', href.replace(/\.(md|markdown)(#.*)?$/i, '.html$2'));
+  });
+  article.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
+    var diagram = document.createElement('div');
+    diagram.className = 'mermaid';
+    diagram.textContent = code.textContent;
+    code.parentNode.replaceWith(diagram);
+  });
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: false });
+    mermaid.run({ querySelector: '.mermaid' });
+  }
+})();</script></main>
+</div>
+</body>
+</html>
