@@ -45,6 +45,11 @@ func (s *Server) query(ctx context.Context, tool string, raw json.RawMessage) (a
 	if rerr != nil {
 		return nil, rerr
 	}
+	return s.queryArgs(ctx, args)
+}
+
+// queryArgs runs a smith command and answers with the JSON it prints.
+func (s *Server) queryArgs(ctx context.Context, args []string) (any, *rpcError) {
 	stdout, code, err := s.execute()(ctx, s.dir(), args, nil)
 	if err != nil {
 		return nil, &rpcError{codeFailed, err.Error()}
@@ -56,22 +61,30 @@ func (s *Server) query(ctx context.Context, tool string, raw json.RawMessage) (a
 	return nil, &rpcError{codeFailed, fmt.Sprintf("smith %s exited with code %d and printed no JSON: %s", strings.Join(args, " "), code, body)}
 }
 
-// command runs a smith command that changes the workspace as a run of its own:
-// run.started, the command's lines as task.output, task.finished, run.finished.
-func (s *Server) command(ctx context.Context, method, tool string, raw json.RawMessage) (any, *rpcError) {
-	var named struct {
-		Run string `json:"run"`
-	}
-	_ = decodeParams(raw, &named)
+// commandArgs is the smith command a method that changes the workspace
+// stands for: from the server's own table, else from the MCP tool the method
+// maps to. The run param names the run; it is not an input of the command.
+func commandArgs(method string, raw json.RawMessage) (args []string, id string, rerr *rpcError) {
 	input := map[string]any{}
 	_ = decodeParams(raw, &input)
+	id, _ = input["run"].(string)
 	delete(input, "run")
 	cleaned, _ := json.Marshal(input)
-	args, rerr := argsOf(tool, cleaned)
+	if build, ok := serverCommands[method]; ok {
+		args, rerr = build(cleaned)
+		return args, id, rerr
+	}
+	args, rerr = argsOf(commandMethods[method], cleaned)
+	return args, id, rerr
+}
+
+// command runs a smith command that changes the workspace as a run of its own:
+// run.started, the command's lines as task.output, task.finished, run.finished.
+func (s *Server) command(ctx context.Context, method string, raw json.RawMessage) (any, *rpcError) {
+	args, id, rerr := commandArgs(method, raw)
 	if rerr != nil {
 		return nil, rerr
 	}
-	id := named.Run
 	if id == "" {
 		id = runevents.NewRunID()
 	}

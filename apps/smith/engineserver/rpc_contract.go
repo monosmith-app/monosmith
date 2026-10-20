@@ -3,7 +3,62 @@ package engineserver
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/monosmith-app/monosmith/apps/smith/recipe"
+	"github.com/monosmith-app/monosmith/apps/smith/recipecatalog"
 )
+
+// ReleaseParams are the parameters of the release method.
+type ReleaseParams struct {
+	// NoPush creates the tags locally only.
+	NoPush bool `json:"noPush,omitempty"`
+}
+
+// SettingParams are the parameters of the methods that name one setting of
+// smith.toml, such as "ci.devcontainer".
+type SettingParams struct {
+	Setting string `json:"setting"`
+}
+
+// ConfigSetParams are the parameters of config.set: Value for a setting that
+// holds one value, Values for a list.
+type ConfigSetParams struct {
+	Setting string   `json:"setting"`
+	Value   string   `json:"value,omitempty"`
+	Values  []string `json:"values,omitempty"`
+}
+
+// ConfigValue is what config.get answers. Value is as written in smith.toml;
+// when Set is false the setting has its default.
+type ConfigValue struct {
+	Setting     string `json:"setting"`
+	Value       string `json:"value,omitempty"`
+	Set         bool   `json:"set"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+// RecipeParams are the parameters of recipe.describe and recipe.roles.
+type RecipeParams struct {
+	// Recipe is a recipe file in the workspace, or an https URL.
+	Recipe string `json:"recipe"`
+	// Choices answer the recipe's choices for recipe.roles, by name.
+	Choices map[string]string `json:"choices,omitempty"`
+}
+
+// RecipeList is what recipe.list answers.
+type RecipeList struct {
+	Recipes []recipecatalog.Listed `json:"recipes"`
+}
+
+// RecipeRoles is what recipe.roles answers: the choices as answered and the
+// plugins each role gets.
+type RecipeRoles struct {
+	Name    string            `json:"name"`
+	Version string            `json:"version,omitempty"`
+	Choices []recipe.Question `json:"choices"`
+	Roles   []recipe.Use      `json:"roles"`
+}
 
 // ProtocolVersion is the version of the methods and their parameters. Additions
 // are optional fields and new methods, so a client written for a version keeps
