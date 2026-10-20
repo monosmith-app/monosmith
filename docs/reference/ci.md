@@ -285,24 +285,27 @@ change; opt in per ecosystem in `[ci]`:
 
 ```toml
 [ci]
-audit_policies = ["node", "go"]          # which ecosystems' policy checks run
+audit_policies = ["node", "go", "python", "rust"] # which ecosystems' policy checks run
 audit_warn = ["go"]                      # these only report; the rest block
 audit_allow_install_scripts = ["esbuild"] # node: packages allowed an install script
+audit_max_unsafe = 0                     # rust: unsafe blocks allowed in all (default 0)
 ```
 
 | Policy | Check | Fails on |
 |---|---|---|
 | `node` | `smith npm-policy` reads `package-lock.json` | a registry package with no integrity hash, a package fetched from git or over plain `http://`, a package with an install script that is not in `audit_allow_install_scripts` |
 | `go` | `go mod verify` in every Go module | a downloaded module that no longer matches `go.sum` |
+| `python` | `smith py-policy` reads `requirements-dev.txt` and each Python project's `requirements.txt` (a missing file is skipped) | a requirement with no `--hash`, one fetched from a direct URL or `git+`, an `--extra-index-url`, or an `--index-url` other than the expected index (the workspace's private registry, else PyPI) |
+| `rust` | `cargo deny check licenses bans` (a setup step installs cargo-deny; your `deny.toml` decides what is allowed) and `smith rust-policy`, which counts `unsafe` blocks, functions, impls and traits in each Rust project's `.rs` files (not `target/`, comments or strings) | a licence or ban cargo-deny rejects, or more `unsafe` than `audit_max_unsafe` |
 
 Each check is an ordinary audit step, so it is cached like the others (see
 [Cached audit verdicts](#cached-audit-verdicts)) and shows in the generated
 pipeline's single `smith ci audit` call. A plugin reads the choice from the CI
 request's `audit` field (`protocol.AuditSettings`), so a plugin for another
-language adds its checks the same way. Not yet implemented, tracked as
-follow-ups: Python (required hashes, wheels from the expected index) and Rust
-(`cargo-deny` licences and bans, a count of `unsafe` blocks); `govulncheck`
-already runs as the Go vulnerability scan.
+language adds its checks the same way. `govulncheck` already runs as the Go
+vulnerability scan and `pip-audit` as the Python one. Hashed requirements come
+from `pip-compile --generate-hashes` or `uv pip compile --generate-hashes`.
+The unsafe count reads sources, so it always runs; the other checks are cached.
 
 ## The remote cache
 

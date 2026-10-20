@@ -13,6 +13,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/npmpolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/npmprune"
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
+	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
+	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
 	"os"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -72,7 +74,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version))
-	root.AddCommand(npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command())
+	root.AddCommand(npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))

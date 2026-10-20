@@ -24,7 +24,8 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	// A private index goes into the venv's own pip configuration, so every
 	// install through the venv uses it. On Azure Pipelines PipAuthenticate@1
 	// sets PIP_INDEX_URL with the pipeline's token, which takes precedence.
-	if index := registries.Index(params.Projects); index != "" {
+	index := registries.Index(params.Projects)
+	if index != "" {
 		setup = append(setup, protocol.Step{Name: "Point pip at the private index", Command: []string{py, "-m", "pip", "config", "--site", "set", "global.index-url", index}, Blocking: true})
 	}
 	setup = append(setup, protocol.Step{Name: "Install the Python toolchain", Command: []string{py, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", venv.RequirementsFile}, Blocking: true})
@@ -36,6 +37,20 @@ func CI(params protocol.CIParams) protocol.CIResult {
 		Setup:      setup,
 		Stores:     []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: dependencyFiles(params.Projects)}},
 		Audit:      []protocol.Step{{Name: "pip-audit", Command: []string{py, "-m", "pip_audit", "--skip-editable"}, Blocking: false, CacheFiles: dependencyFiles(params.Projects)}},
+	}
+	if params.Audit.Enabled("python") {
+		// Opt-in ([ci] audit_policies): hashed pins, no direct URLs, only the
+		// workspace's index, in the toolchain file and each project's
+		// requirements.txt.
+		files := []string{venv.RequirementsFile}
+		for _, p := range params.Projects {
+			files = append(files, path.Join(p.Root, "requirements.txt"))
+		}
+		command := []string{"{smith}", "py-policy"}
+		if index != "" {
+			command = append(command, "--index="+index)
+		}
+		result.Audit = append(result.Audit, protocol.Step{Name: "python policy (requirements)", Command: append(command, files...), Blocking: params.Audit.Blocks("python"), CacheFiles: files})
 	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate

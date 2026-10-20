@@ -22,7 +22,8 @@ func TestParseRejectsMistakes(t *testing.T) {
 	for input, want := range map[string]string{
 		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n": "nmae",
 		"[workspace]\n": "name is required",
-		"[workspace]\nname = \"a\"\n[ci]\naudit_policies=[\"rust\"]":                           "unknown audit policy",
+		"[workspace]\nname = \"a\"\n[ci]\naudit_policies=[\"cobol\"]":                          "unknown audit policy",
+		"[workspace]\nname = \"a\"\n[ci]\naudit_max_unsafe=-1":                                 "audit_max_unsafe",
 		"[workspace]\nname = \"a\"\n[ci]\nproviders=[\"x\"]":                                   "unknown CI provider",
 		"schema = 9\n[workspace]\nname = \"a\"\n":                                              "upgrade smith",
 		"[workspace\nname = \"a\"\n":                                                           "smith.toml:",

@@ -59,9 +59,10 @@ providers = ["github"]                # "github", "azure", "gitlab", or several
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
 native_linux_packages = []            # apt packages the native job installs on Linux
-audit_policies = []                    # "node", "go": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)
+audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)
 audit_warn = []                        # audit policies that only report
 audit_allow_install_scripts = []       # npm packages the node policy lets run install scripts
+audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts in all
 
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true

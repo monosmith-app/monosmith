@@ -9,8 +9,8 @@ import (
 )
 
 func TestAuditSettingsCarriesTheCISectionsAuditKeys(t *testing.T) {
-	got := auditSettings(workspace.CISection{AuditPolicies: []string{"node", "go"}, AuditWarn: []string{"go"}, AuditAllowInstallScripts: []string{"esbuild"}})
-	want := protocol.AuditSettings{Policies: []string{"node", "go"}, Warn: []string{"go"}, AllowInstallScripts: []string{"esbuild"}}
+	got := auditSettings(workspace.CISection{AuditPolicies: []string{"node", "go"}, AuditWarn: []string{"go"}, AuditAllowInstallScripts: []string{"esbuild"}, AuditMaxUnsafe: 2})
+	want := protocol.AuditSettings{Policies: []string{"node", "go"}, Warn: []string{"go"}, AllowInstallScripts: []string{"esbuild"}, MaxUnsafe: 2}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%+v", got)
 	}
