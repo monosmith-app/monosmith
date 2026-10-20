@@ -136,7 +136,7 @@ C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
 Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../guides/converting.md).
 
 <!-- smith:begin convert -->
-Convert an Nx workspace (or one made by the old mnci) to smith
+Convert an Nx or Turborepo workspace (or one made by the old mnci) to smith
 
 Usage: `smith convert [flags]`
 
@@ -315,11 +315,14 @@ Usage: `smith run <task> [flags]`
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
 | `--json` | print the summary as JSON | off |
+| `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
 
 <!-- smith:end run -->
+
+`--json-events` prints the run as [JSON lines](serve.md#the-event-stream), one event each, and nothing else (it cannot be combined with `--json`).
 
 Tasks run in parallel, one per CPU by default. A failed task skips the tasks that depend on it; independent ones keep going unless `--bail`. A cache hit prints `✔ from cache`. See [Tasks, cache and affected](tasks-and-cache.md).
 
@@ -354,6 +357,7 @@ Usage: `smith build [project] [flags]`
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
 | `--json` | print the summary as JSON | off |
+| `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
@@ -385,6 +389,7 @@ Usage: `smith test [project] [flags]`
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
 | `--json` | print the summary as JSON | off |
+| `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
@@ -421,6 +426,7 @@ Usage: `smith lint [project] [flags]`
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
 | `--json` | print the summary as JSON | off |
+| `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
@@ -452,6 +458,7 @@ Usage: `smith typecheck [project] [flags]`
 | `--bail` | stop starting tasks after the first failure | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
 | `--json` | print the summary as JSON | off |
+| `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
 | `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
@@ -1023,6 +1030,23 @@ No flags.
 { "mcpServers": { "smith": { "command": "smith", "args": ["mcp"] } } }
 ```
 
+### smith serve
+
+Serve the engine over JSON-RPC on stdin and stdout, one JSON message per line, in the workspace smith is started in. It opens no network port. A method per function, and a run's events as notifications. The protocol is in [Serve and the event stream](serve.md).
+
+<!-- smith:begin serve -->
+Serve the engine to an editor or a terminal interface over JSON-RPC (stdio)
+
+Usage: `smith serve`
+
+No flags.
+
+<!-- smith:end serve -->
+
+```sh
+$ echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | smith serve
+```
+
 ### smith plugin
 
 Inspect plugins, or check one you wrote. (`smith plugin serve <name>` also exists: smith starts each built-in plugin as a process with it. You do not run it yourself.)
@@ -1217,6 +1241,7 @@ Usage: `smith release [flags]`
 | `--json` | print the release report as JSON | off |
 | `--no-push` | create tags locally only | off |
 | `--notes` | also print each release's notes (what its GitHub Release says) | off |
+| `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end release -->

@@ -45,6 +45,28 @@ that imports a Go lib:
 Set `SMITH_NO_UPDATE_CHECK=1` to stop `smith info` asking GitHub for the newest
 release.
 
+## The engine over JSON-RPC (`smith serve`)
+
+An editor plugin starts the installed smith as a child process, `smith serve`
+in the workspace, and talks JSON-RPC 2.0 to it over stdin and stdout, one JSON
+message per line. It opens no port. A method stands for each function the
+`--json` outputs above give (`projects`, `graph`, `affected`, `doctor`,
+`release.preview`, `explain`, ...), so the answer of a query is the same JSON
+and the contracts above do not change. What is new is the work that takes time:
+
+- `run` runs tasks and answers when the run ends, and `cancel` stops it and
+  its processes. `install`, `uninstall`, `add`, `upgrade` and `doctor.fix` are
+  runs too.
+- While a run goes, the server sends `event` notifications: `run.started`,
+  `task.queued`, `task.started`, `task.output`, `task.finished` (`passed`,
+  `failed`, `cached` or `skipped`, with its duration and cache key) and
+  `run.finished`. The plugin renders them live.
+- `initialize` reports smith's version, the protocol version and the event
+  version, so a plugin can tell what the smith it found can do.
+
+Without a server, `smith run build --json-events` prints the same events as
+JSON lines. Both are described in [Serve and the event stream](../reference/serve.md).
+
 ## AI assistants (MCP)
 
 `smith mcp` serves the workspace over the Model Context Protocol on stdin and

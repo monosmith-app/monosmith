@@ -80,6 +80,7 @@ minute tour with real commands and real output. Stuck on a word? See the
 [CI pipelines](reference/ci.md), [Releasing](reference/releasing.md),
 [Stacks](reference/stacks.md), [Recipes](reference/recipes.md),
 [Conventions](reference/conventions.md), [Plugins](reference/plugins.md),
+[Serve and the event stream](reference/serve.md),
 [Glossary](reference/glossary.md).
 
 **Design** (why it is built this way): see above.
