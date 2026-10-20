@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
@@ -43,6 +44,7 @@ func Run(s *session.Session) Report {
 	add("smith", lineageChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
+	add("smith", dependencies.CheckOneVersionPolicy(s)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	report := Report{Findings: findings}
 	for _, f := range findings {

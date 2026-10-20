@@ -61,11 +61,28 @@ uninstall -w <project> <package>.`,
 		},
 	}
 	uninstall.Flags().StringArrayVarP(&from, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
-	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version)}
+	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version), depsCommand(version)}
 }
 
 func upCommand(version string) *cobra.Command {
-	var check, yes, asJSON, noInstall bool
+	return newUpCommand(version)
+}
+
+// depsCommand is `smith deps`, the group for workspace-wide dependency work:
+// `smith deps up` is `smith up`, spelled where it is found with the other
+// dependency commands.
+func depsCommand(version string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deps",
+		Short: "Update dependencies across the workspace, or bring them to one version",
+		Long:  "Dependency work that spans projects. smith deps up is smith up: it updates every project that declares a package in one change. smith deps up --align brings a dependency that projects declare at different versions to one.",
+	}
+	cmd.AddCommand(newUpCommand(version))
+	return cmd
+}
+
+func newUpCommand(version string) *cobra.Command {
+	var check, yes, asJSON, noInstall, align bool
 	cmd := &cobra.Command{
 		Use:   "up [packages...]",
 		Short: "Show dependencies with newer releases and update the ones you pick",
@@ -75,10 +92,16 @@ declaration keeps its operator and moves to the latest version, and the
 workspace is installed again so lockfiles and the venv follow. Named packages
 are updated without a prompt; --yes takes every update. Without a terminal
 (or with --check) up only reports. A last section compares the tools smith
-pins (Node.js, Python, Go, golangci-lint) with their newest releases.`,
+pins (Node.js, Python, Go, golangci-lint) with their newest releases.
+
+Every project that declares a package is updated in the same change. With
+--align nothing is updated: the packages named (or, with none, every one)
+that projects declare at different versions are brought to one, as smith sync
+does, leaving the ones smith.toml [dependencies] allow lists.`,
 		Example: `  smith up              # pick in the terminal
-  smith up zod jest     # exactly these
+  smith up zod jest     # exactly these, in every project that uses them
   smith up --yes        # everything
+  smith up --align axios
   smith up --json`,
 		RunE: func(cmd *cobra.Command, names []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -86,6 +109,19 @@ pins (Node.js, Python, Go, golangci-lint) with their newest releases.`,
 				return err
 			}
 			defer s.Close()
+			if align {
+				aligned, err := Align(s, names, check, !noInstall)
+				if asJSON {
+					enc := json.NewEncoder(cmd.OutOrStdout())
+					enc.SetIndent("", "  ")
+					if encErr := enc.Encode(aligned); encErr != nil {
+						return encErr
+					}
+				} else {
+					PrintSync(cmd.OutOrStdout(), aligned, check)
+				}
+				return err
+			}
 			report, err := FindAvailable(s)
 			if err != nil {
 				return err
@@ -129,6 +165,7 @@ pins (Node.js, Python, Go, golangci-lint) with their newest releases.`,
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&align, "align", false, "bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ")
 	cmd.Flags().BoolVar(&check, "check", false, "report only; never prompt, never write")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "take every update without prompting")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the updates and tools as JSON; never write")

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -27,6 +28,19 @@ type SyncReport struct {
 // same spec. With check it only reports. After rewriting it installs, so
 // lockfiles and the venv follow, unless install is false.
 func Sync(s *session.Session, check, install bool) (SyncReport, error) {
+	return converge(s, nil, check, install)
+}
+
+// Align is Sync for the named dependencies only, or for every fragmented one
+// when none is named: `smith deps up --align`.
+func Align(s *session.Session, names []string, check, install bool) (SyncReport, error) {
+	return converge(s, names, check, install)
+}
+
+// converge brings the declarations of each plugin's projects to one spec.
+// Dependencies that [dependencies] allow lists are left alone; with names,
+// only those are looked at.
+func converge(s *session.Session, names []string, check, install bool) (SyncReport, error) {
 	var report SyncReport
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
@@ -44,6 +58,9 @@ func Sync(s *session.Session, check, install bool) (SyncReport, error) {
 		if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: projects}, &declared, timeout); err != nil {
 			return report, fmt.Errorf("plugin %s: %w", name, err)
 		}
+		declared.Declarations = slices.DeleteFunc(declared.Declarations, func(d protocol.Declaration) bool {
+			return slices.Contains(s.Config.Dependencies.Allow, d.Name) || (len(names) > 0 && !slices.Contains(names, d.Name))
+		})
 		drift := FindDrift(name, declared, local)
 		report.Drift = append(report.Drift, drift...)
 		if check {

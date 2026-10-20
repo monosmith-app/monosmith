@@ -595,6 +595,7 @@ Usage: `smith up [packages...] [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--align` | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ | off |
 | `--check` | report only; never prompt, never write | off |
 | `--json` | print the updates and tools as JSON; never write | off |
 | `--no-install` | rewrite the manifests without installing | off |
@@ -624,6 +625,29 @@ Tools smith pins (informational):
 ```
 
 Needs network access to the registries.
+
+### smith deps
+
+Work on dependencies across the workspace. See [One version per dependency](configuration.md#dependencies).
+
+<!-- smith:begin deps -->
+Update dependencies across the workspace, or bring them to one version
+
+Usage: `smith deps`
+
+No flags.
+
+<!-- smith:end deps -->
+
+| Subcommand | Does |
+|---|---|
+| `smith deps up [packages...] [--check] [--yes] [--json] [--no-install]` | the same as `smith up`: a named package is updated in every project that declares it, in one change |
+| `smith deps up --align [packages...] [--check] [--json] [--no-install]` | bring a dependency that projects of one ecosystem declare at different versions to one (the installed version, else the highest declared), instead of updating. The packages named, or every fragmented one; the ones `[dependencies] allow` lists are left alone. With `--check` it only reports and fails when any differ |
+
+```sh
+$ smith deps up axios
+$ smith deps up --align
+```
 
 ## Look at the workspace
 

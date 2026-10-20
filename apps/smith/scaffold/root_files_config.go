@@ -21,6 +21,13 @@ providers = [%s]
 # installs, at the same versions.
 devcontainer = true
 
+[dependencies]
+# One version per production dependency across the workspace, and dev tools at
+# the root, once: smith doctor reports a dependency two projects declare at
+# different versions, and smith deps up --align brings it to one.
+one_version = true
+# Dependencies that may differ between projects: allow = ["left-pad"]
+
 # A stack is the set of plugins a project is built with: its language plugin
 # and the toolchain, structure, scaffold and deploy plugins on top. Each
 # project records its own, so one monorepo can mix them; ` + "`smith stacks`" + ` lists

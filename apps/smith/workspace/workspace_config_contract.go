@@ -13,7 +13,10 @@ type Config struct {
 	CI        CISection        `toml:"ci"`
 	Release   ReleaseSection   `toml:"release"`
 	Cache     CacheSection     `toml:"cache"`
-	Plugins   PluginsSection   `toml:"plugins"`
+	// Dependencies is the workspace's policy for the versions its projects
+	// declare.
+	Dependencies DependenciesSection `toml:"dependencies"`
+	Plugins      PluginsSection      `toml:"plugins"`
 	// Conventions apply convention plugins, by name, to the projects of the
 	// languages they support.
 	Conventions map[string]ConventionConfig `toml:"conventions"`
@@ -120,6 +123,21 @@ type ReleaseSection struct {
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`
+}
+
+// DependenciesSection is the one-version policy: a production dependency is
+// declared at the same version by every project of an ecosystem, and dev
+// tools are declared once, at the root.
+type DependenciesSection struct {
+	// OneVersion makes smith doctor report a dependency that projects of the
+	// same ecosystem declare at different versions, and a dev tool declared
+	// in a project as well as at the root. Default: false (smith new turns
+	// it on).
+	OneVersion bool `toml:"one_version"`
+	// Allow lists dependencies, by name, that may differ between projects
+	// (a library pinned for a legacy app): doctor, smith sync and
+	// smith deps up --align leave them alone.
+	Allow []string `toml:"allow"`
 }
 
 // CacheSection configures the local task cache.
