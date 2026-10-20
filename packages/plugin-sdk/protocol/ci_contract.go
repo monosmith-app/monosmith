@@ -4,6 +4,41 @@ package protocol
 // needs for them.
 type CIParams struct {
 	Projects []Project `json:"projects"`
+	// Audit is the workspace's opt-in to policy checks beyond the
+	// vulnerability scan; the zero value asks for none.
+	Audit AuditSettings `json:"audit,omitempty"`
+}
+
+// AuditSettings are the workspace's audit policy choices ([ci] audit_*).
+type AuditSettings struct {
+	// Policies are the ecosystems ("node", "go") whose policy checks run in
+	// `smith ci audit`, as extra Audit steps.
+	Policies []string `json:"policies,omitempty"`
+	// Warn are the policies whose checks only warn instead of blocking.
+	Warn []string `json:"warn,omitempty"`
+	// AllowInstallScripts names npm packages whose install scripts the node
+	// policy accepts.
+	AllowInstallScripts []string `json:"allowInstallScripts,omitempty"`
+}
+
+// Enabled reports whether the ecosystem's policy checks are on.
+func (a AuditSettings) Enabled(policy string) bool {
+	for _, p := range a.Policies {
+		if p == policy {
+			return true
+		}
+	}
+	return false
+}
+
+// Blocks reports whether a failing check of the policy fails the audit.
+func (a AuditSettings) Blocks(policy string) bool {
+	for _, p := range a.Warn {
+		if p == policy {
+			return false
+		}
+	}
+	return true
 }
 
 // CIResult is the plugin's contribution to every generated pipeline.

@@ -114,6 +114,13 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("%s: unknown CI provider %q (use github, azure or gitlab)", FileName, p)
 		}
 	}
+	for _, list := range [][]string{cfg.CI.AuditPolicies, cfg.CI.AuditWarn} {
+		for _, p := range list {
+			if p != "node" && p != "go" {
+				return fmt.Errorf("%s: unknown audit policy %q (use node or go)", FileName, p)
+			}
+		}
+	}
 	if cfg.Release.Branch == "" {
 		cfg.Release.Branch = "main"
 	}

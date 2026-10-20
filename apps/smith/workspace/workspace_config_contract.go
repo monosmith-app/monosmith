@@ -108,6 +108,17 @@ type CISection struct {
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
+	// AuditPolicies opts ecosystems into the policy checks `smith ci audit`
+	// runs beyond the vulnerability scan: "node" (lockfile integrity, no git
+	// or http dependencies, install-script allow-list) and "go" (go mod
+	// verify). Default: none.
+	AuditPolicies []string `toml:"audit_policies"`
+	// AuditWarn lists audit policies that only report instead of failing the
+	// audit. Default: none (every enabled policy blocks).
+	AuditWarn []string `toml:"audit_warn"`
+	// AuditAllowInstallScripts names the npm packages whose install scripts
+	// the node policy accepts. Default: none.
+	AuditAllowInstallScripts []string `toml:"audit_allow_install_scripts"`
 }
 
 // ReleaseSection configures `smith release`.
