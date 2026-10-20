@@ -116,10 +116,13 @@ func Validate(cfg *Config) error {
 	}
 	for _, list := range [][]string{cfg.CI.AuditPolicies, cfg.CI.AuditWarn} {
 		for _, p := range list {
-			if p != "node" && p != "go" {
-				return fmt.Errorf("%s: unknown audit policy %q (use node or go)", FileName, p)
+			if p != "node" && p != "go" && p != "python" && p != "rust" {
+				return fmt.Errorf("%s: unknown audit policy %q (use node, go, python or rust)", FileName, p)
 			}
 		}
+	}
+	if cfg.CI.AuditMaxUnsafe < 0 {
+		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
 	}
 	if cfg.Release.Branch == "" {
 		cfg.Release.Branch = "main"

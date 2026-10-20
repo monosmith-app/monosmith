@@ -29,9 +29,10 @@
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },
         "native_linux_packages": { "type": "array", "items": { "type": "string" }, "description": "apt packages the native job installs on Linux before building." },
-        "audit_policies": { "type": "array", "items": { "enum": ["node", "go"] }, "uniqueItems": true, "description": "Ecosystem policy checks smith ci audit runs beyond the vulnerability scan. Default: none." },
-        "audit_warn": { "type": "array", "items": { "enum": ["node", "go"] }, "uniqueItems": true, "description": "Audit policies that only report instead of failing. Default: none." },
-        "audit_allow_install_scripts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "npm packages whose install scripts the node audit policy accepts. Default: none." }
+        "audit_policies": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Ecosystem policy checks smith ci audit runs beyond the vulnerability scan. Default: none." },
+        "audit_warn": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Audit policies that only report instead of failing. Default: none." },
+        "audit_allow_install_scripts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "npm packages whose install scripts the node audit policy accepts. Default: none." },
+        "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." }
       }
     },
     "dependencies": {

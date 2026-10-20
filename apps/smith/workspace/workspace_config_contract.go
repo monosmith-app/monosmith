@@ -111,7 +111,9 @@ type CISection struct {
 	// AuditPolicies opts ecosystems into the policy checks `smith ci audit`
 	// runs beyond the vulnerability scan: "node" (lockfile integrity, no git
 	// or http dependencies, install-script allow-list) and "go" (go mod
-	// verify). Default: none.
+	// verify), "python" (hashed requirements, only the expected index) and
+	// "rust" (cargo-deny licences and bans, an unsafe-block budget).
+	// Default: none.
 	AuditPolicies []string `toml:"audit_policies"`
 	// AuditWarn lists audit policies that only report instead of failing the
 	// audit. Default: none (every enabled policy blocks).
@@ -119,6 +121,9 @@ type CISection struct {
 	// AuditAllowInstallScripts names the npm packages whose install scripts
 	// the node policy accepts. Default: none.
 	AuditAllowInstallScripts []string `toml:"audit_allow_install_scripts"`
+	// AuditMaxUnsafe is how many unsafe blocks the rust policy accepts in all
+	// the workspace's Rust sources. Default: 0 (none).
+	AuditMaxUnsafe int `toml:"audit_max_unsafe"`
 }
 
 // ReleaseSection configures `smith release`.

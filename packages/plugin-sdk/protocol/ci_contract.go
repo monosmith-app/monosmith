@@ -11,14 +11,17 @@ type CIParams struct {
 
 // AuditSettings are the workspace's audit policy choices ([ci] audit_*).
 type AuditSettings struct {
-	// Policies are the ecosystems ("node", "go") whose policy checks run in
-	// `smith ci audit`, as extra Audit steps.
+	// Policies are the ecosystems ("node", "go", "python", "rust") whose
+	// policy checks run in `smith ci audit`, as extra Audit steps.
 	Policies []string `json:"policies,omitempty"`
 	// Warn are the policies whose checks only warn instead of blocking.
 	Warn []string `json:"warn,omitempty"`
 	// AllowInstallScripts names npm packages whose install scripts the node
 	// policy accepts.
 	AllowInstallScripts []string `json:"allowInstallScripts,omitempty"`
+	// MaxUnsafe is the number of unsafe blocks the rust policy accepts in all
+	// (zero: none).
+	MaxUnsafe int `json:"maxUnsafe,omitempty"`
 }
 
 // Enabled reports whether the ecosystem's policy checks are on.

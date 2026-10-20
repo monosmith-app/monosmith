@@ -7,5 +7,5 @@ import (
 
 // auditSettings turns the [ci] audit_* settings into what plugins are told.
 func auditSettings(ci workspace.CISection) protocol.AuditSettings {
-	return protocol.AuditSettings{Policies: ci.AuditPolicies, Warn: ci.AuditWarn, AllowInstallScripts: ci.AuditAllowInstallScripts}
+	return protocol.AuditSettings{Policies: ci.AuditPolicies, Warn: ci.AuditWarn, AllowInstallScripts: ci.AuditAllowInstallScripts, MaxUnsafe: ci.AuditMaxUnsafe}
 }

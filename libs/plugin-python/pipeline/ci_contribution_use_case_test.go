@@ -34,6 +34,31 @@ func TestCIWithoutARegistryIsUnchanged(t *testing.T) {
 	}
 }
 
+func TestCIAddsThePythonPolicyStepOnlyWhenOptedIn(t *testing.T) {
+	projects := []protocol.Project{{Name: "api", Root: "apps/api"}}
+	if got := CI(protocol.CIParams{Projects: projects}).Audit; len(got) != 1 {
+		t.Fatalf("off by default: %+v", got)
+	}
+	got := CI(protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit
+	want := protocol.Step{Name: "python policy (requirements)", Command: []string{"{smith}", "py-policy", "requirements-dev.txt", "apps/api/requirements.txt"}, Blocking: true, CacheFiles: []string{"requirements-dev.txt", "apps/api/requirements.txt"}}
+	if len(got) != 2 || !reflect.DeepEqual(got[1], want) {
+		t.Fatalf("%+v", got)
+	}
+	warn := protocol.AuditSettings{Policies: []string{"python"}, Warn: []string{"python"}}
+	if CI(protocol.CIParams{Projects: projects, Audit: warn}).Audit[1].Blocking {
+		t.Error("warn makes it report only")
+	}
+}
+
+func TestCIPythonPolicyExpectsThePrivateIndex(t *testing.T) {
+	feed := &protocol.Registry{Name: "libs", PyPI: "https://pkgs.example/simple/"}
+	projects := []protocol.Project{{Name: "api", Root: "apps/api", Registries: &protocol.Registries{Install: feed}}}
+	got := CI(protocol.CIParams{Projects: projects, Audit: protocol.AuditSettings{Policies: []string{"python"}}}).Audit[1].Command
+	if got[2] != "--index=https://pkgs.example/simple/" {
+		t.Errorf("%v", got)
+	}
+}
+
 func TestCIDeclaresThePipCacheKeyedOnTheDependencyFiles(t *testing.T) {
 	got := CI(protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "apps/api"}}}).Stores
 	want := []protocol.PackageStore{{Name: "pip", Path: "~/.cache/pip", Env: "PIP_CACHE_DIR", Files: []string{"requirements-dev.txt", "apps/api/pyproject.toml"}}}
