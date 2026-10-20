@@ -1,6 +1,7 @@
 package affected
 
 import (
+	"path"
 	"sort"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -22,6 +23,14 @@ func WatchPaths(g *projectgraph.Graph) map[string][]string {
 		for _, dep := range g.TransitiveDeps(p.Name) {
 			if d := g.Get(dep); d != nil {
 				dirs[d.Root] = true
+			}
+		}
+		// A consumed schema outside every project's directory is watched too.
+		for _, name := range append([]string{p.Name}, g.TransitiveDeps(p.Name)...) {
+			for _, f := range g.Get(name).Consumes {
+				if g.Owner(f) == nil {
+					dirs[path.Dir(f)] = true
+				}
 			}
 		}
 		list := make([]string, 0, len(dirs))

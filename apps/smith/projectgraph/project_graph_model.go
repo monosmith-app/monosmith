@@ -17,6 +17,14 @@ type Project struct {
 	Plugin string `json:"plugin"`
 	// Deps are names of projects this one imports, sorted.
 	Deps []string `json:"deps"`
+	// Schemas are the shared schema files the project owns (OpenAPI,
+	// AsyncAPI, Protocol Buffers, GraphQL), workspace-relative, sorted.
+	Schemas []string `json:"schemas,omitempty"`
+	// Consumes are the schema files the project consumes, sorted.
+	Consumes []string `json:"consumes,omitempty"`
+	// SchemaDeps are the projects whose schemas this one consumes: the part
+	// of Deps that comes from schemas rather than imports, sorted.
+	SchemaDeps []string `json:"schemaDeps,omitempty"`
 	// Sources maps "task.field" to where its value came from
 	// ("plugin node", "smith.toml [tasks.test]", ...).
 	Sources map[string]string `json:"-"`
@@ -215,6 +223,17 @@ func (g *Graph) Order() ([]string, error) {
 		}
 	}
 	return order, nil
+}
+
+// SchemaOwner returns the project that owns a schema file (inside its root,
+// or matched by its [projects.<name>] schemas globs), or nil.
+func (g *Graph) SchemaOwner(file string) *Project {
+	for _, p := range g.Projects {
+		if slices.Contains(p.Schemas, file) {
+			return p
+		}
+	}
+	return nil
 }
 
 // Owner returns the project whose root contains a workspace-relative path, the

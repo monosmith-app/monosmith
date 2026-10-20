@@ -48,6 +48,7 @@ func Discover(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost
 		}
 	}
 	ResolveEdges(projects)
+	ResolveSchemaEdges(projects, files, cfg)
 	if err := ApplyStacks(projects, plugins, catalog, cfg); err != nil {
 		return nil, err
 	}

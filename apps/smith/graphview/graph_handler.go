@@ -15,7 +15,7 @@ import (
 
 // Commands returns `smith graph`, `smith projects` and `smith affected`.
 func Commands(version string) []*cobra.Command {
-	var format, file, graphBase, diffFrom string
+	var format, file, graphBase, diffFrom, blastRadius string
 	var focus []string
 	var onlyAffected bool
 	graph := &cobra.Command{
@@ -29,6 +29,7 @@ marks the ones that changed.`,
 		Example: `  smith graph                       tree in the terminal
   smith graph --format tui          browse it
   smith graph --focus web           web, what it uses and what uses it
+  smith graph --blast-radius services/orders/openapi.yaml   what a schema change reaches
   smith graph --affected --format html -o affected.html
   smith graph --format dot | dot -Tsvg > graph.svg`,
 		Args: cobra.NoArgs,
@@ -55,6 +56,19 @@ marks the ones that changed.`,
 					return enc.Encode(d)
 				}
 				fmt.Fprint(cmd.OutOrStdout(), DiffText(d))
+				return nil
+			}
+			if blastRadius != "" {
+				r, err := BlastRadius(s.Graph, blastRadius)
+				if err != nil {
+					return err
+				}
+				if format == "json" {
+					enc := json.NewEncoder(cmd.OutOrStdout())
+					enc.SetIndent("", "  ")
+					return enc.Encode(r)
+				}
+				fmt.Fprint(cmd.OutOrStdout(), BlastRadiusText(r))
 				return nil
 			}
 			g, marked := s.Graph, map[string]bool{}
@@ -123,6 +137,8 @@ marks the ones that changed.`,
 	graph.Flags().BoolVar(&onlyAffected, "affected", false, "keep the projects affected by changes since --base; mark the changed ones")
 	graph.Flags().StringVar(&graphBase, "base", "", "base branch for --affected (default: the PR target, else the release branch)")
 	graph.Flags().StringVar(&diffFrom, "diff", "", "show how the graph changed since a revision (a branch, tag or commit): projects and imports added and removed, kinds and stacks changed; text or json")
+
+	graph.Flags().StringVar(&blastRadius, "blast-radius", "", "list everything a change to a project or a file reaches, across languages and through shared schemas; text or json")
 
 	var projectsJSON bool
 	projects := &cobra.Command{

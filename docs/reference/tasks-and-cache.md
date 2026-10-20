@@ -228,6 +228,43 @@ common ancestor (a shallow clone), or a changed workspace-level file such as
 project. Too wide costs minutes; too narrow reports green for code nothing
 checked.
 
+### Shared schemas
+
+A JVM service that exports an OpenAPI spec, with a Go client and a TypeScript
+frontend generated from it, shares no import with them, so the language
+plugins report no edge. smith links them through the schema. A project owns
+the OpenAPI (`openapi.yaml`, `swagger.json`), AsyncAPI (`asyncapi.yaml`),
+Protocol Buffers (`*.proto`) and GraphQL (`*.graphql`, `*.gql`) files inside
+its directory, and a consumer names what it consumes:
+
+```toml
+[projects.orders-go]
+consumes_schemas = ["services/orders/openapi.yaml"]
+
+[projects.storefront]
+consumes_schemas = ["services/*/openapi.yaml", "contracts/*.proto"]
+
+[projects.orders]
+schemas = ["contracts/*.proto"]     # owned, though outside its directory
+```
+
+A consumer depends on the owner of every schema it consumes, so changing the
+spec marks the owner and its clients affected (`smith affected`,
+`smith run --affected`), orders the owner's tasks before theirs, and shows in
+`smith graph`. A schema outside every project's directory still names its
+owner instead of affecting everything. The globs are workspace-relative; see
+[configuration](configuration.md#shared-schemas).
+
+`smith graph --blast-radius <project|file>` lists everything a change reaches,
+across languages, and whether each step is an import or a schema:
+
+```text
+$ smith graph --blast-radius services/orders/openapi.yaml
+services/orders/openapi.yaml starts at orders
+  orders-go            via schema of orders
+  storefront           via schema of orders
+```
+
 ### Watch paths for deployment platforms
 
 ```sh

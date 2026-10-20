@@ -691,6 +691,7 @@ Usage: `smith graph [flags]`
 |---|---|---|
 | `--affected` | keep the projects affected by changes since --base; mark the changed ones | off |
 | `--base <base>` | base branch for --affected (default: the PR target, else the release branch) | the pull request target, else the release branch |
+| `--blast-radius <blast-radius>` | list everything a change to a project or a file reaches, across languages and through shared schemas; text or json |  |
 | `--diff <diff>` | show how the graph changed since a revision (a branch, tag or commit): projects and imports added and removed, kinds and stacks changed; text or json |  |
 | `--focus <focus>` | keep these projects and everything connected to them (names, globs, tag:x) (repeatable) |  |
 | `--format <format>` | text, json, dot, html or tui | `text` |
@@ -699,6 +700,8 @@ Usage: `smith graph [flags]`
 <!-- smith:end graph -->
 
 `--diff <revision>` discovers the graph at another revision in a temporary git worktree and lists projects and imports added (`+`) and removed (`-`) and kinds, stacks, plugins and directories that changed (`~`). Projects that import each other in a cycle are reported with the path.
+
+`--blast-radius <project|file>` lists everything a change to a project or a file reaches, across languages and through [shared schemas](tasks-and-cache.md#shared-schemas); `--format json` prints it as data.
 
 ```sh
 $ smith graph
