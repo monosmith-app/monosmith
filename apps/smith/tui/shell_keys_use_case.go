@@ -15,7 +15,7 @@ import (
 // globalWhileEditing are the shortcuts that still work while a text field has
 // the keyboard; the others (Ctrl+A, Ctrl+F…) are the field's own.
 var globalWhileEditing = map[string]bool{
-	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true,
+	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true,
 }
 
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
@@ -33,6 +33,29 @@ var otherKeys = []dialog.HelpRow{
 	{Group: "Moving", Title: "Run the task, or open the branch", Shortcut: "Enter"},
 	{Group: "Moving", Title: "Open the menu bar", Shortcut: "F10 / Alt+letter"},
 	{Group: "Moving", Title: "Back, close, clear", Shortcut: "Esc"},
+	{Group: "Moving", Title: "Reload the view (Doctor, Release, Plugins, Deps)", Shortcut: "r"},
+	{Group: "Moving", Title: "Show or hide this help", Shortcut: "? / F1"},
+}
+
+// tabKeys are the keys of one view, shown in the help while it is open.
+var tabKeys = map[string][]dialog.HelpRow{
+	commands.TabProjects: {
+		{Group: "Projects view", Title: "Run the selected task", Shortcut: "Enter / Ctrl+R"},
+		{Group: "Projects view", Title: "Build, test, lint, typecheck", Shortcut: "Ctrl+B/T/L/Y"},
+		{Group: "Projects view", Title: "Run lint and test on what changed", Shortcut: "Ctrl+A"},
+		{Group: "Projects view", Title: "Graph around the project", Shortcut: "Inspector"},
+	},
+	commands.TabPlugins: {
+		{Group: "Plugins view", Title: "Turn the plugin on or off (smith plugin enable|disable)", Shortcut: "e / Enter"},
+		{Group: "Plugins view", Title: "List the plugins again", Shortcut: "r"},
+	},
+	commands.TabDeps: {
+		{Group: "Deps view", Title: "Mark or unmark a dependency", Shortcut: "Space"},
+		{Group: "Deps view", Title: "Mark all, or none", Shortcut: "a"},
+		{Group: "Deps view", Title: "Update the marked ones (smith deps up)", Shortcut: "u / Enter"},
+		{Group: "Deps view", Title: "Bring drifting versions to one (--align)", Shortcut: "v"},
+		{Group: "Deps view", Title: "Look for releases again", Shortcut: "r"},
+	},
 }
 
 func (s *Shell) editing() bool {
@@ -172,6 +195,27 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	case "log":
 		s.runSel = ""
 		return s.gotoTab(commands.TabRun)
+	case "graph":
+		if sel.Project != "" {
+			return s.execute([]string{"graph", "--focus", sel.Project}, false)
+		}
+	case "plugin-toggle":
+		if argv := s.plugins.toggleArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("Only the built-in language plugins can be turned on or off here")
+	case "deps-up":
+		if argv := s.deps.upArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("No dependency to update")
+	case "deps-align":
+		if argv := s.deps.alignArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("The one-version policy found nothing to align")
+	case "reload":
+		return s.reload()
 	}
 	return nil
 }
@@ -236,7 +280,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 }
 
 func (s *Shell) openHelp() {
-	var rows []dialog.HelpRow
+	// The keys of the open view come first, then the menus' shortcuts, then
+	// the keys every view shares.
+	rows := append([]dialog.HelpRow(nil), tabKeys[s.tab]...)
 	for _, c := range commands.Shortcuts(s.state()) {
 		rows = append(rows, dialog.HelpRow{Group: c.Menu, Title: c.Title, Shortcut: c.Shortcut})
 	}
@@ -286,6 +332,16 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 			load := s.sources.Release
 			return func() tea.Msg { return load() }
 		}
+	case commands.TabPlugins:
+		if !s.plugins.loaded && s.sources.Plugins != nil {
+			load := s.sources.Plugins
+			return func() tea.Msg { return load() }
+		}
+	case commands.TabDeps:
+		if !s.deps.loaded && s.sources.Deps != nil {
+			load := s.sources.Deps
+			return func() tea.Msg { return load() }
+		}
 	case commands.TabSettings:
 		if !s.settings.loaded && s.sources.Settings != nil {
 			load := s.sources.Settings
@@ -304,9 +360,27 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	case s.focus == layout.Inspector:
 		return s.inspectorKey(name)
 	}
+	if name == "r" && !s.editing() {
+		if cmd := s.reload(); cmd != nil {
+			return cmd
+		}
+	}
 	switch s.tab {
 	case commands.TabProjects:
 		return s.navigatorKey(name)
+	case commands.TabPlugins:
+		if name == "e" || name == "enter" {
+			return s.activateSelection("plugin-toggle")
+		}
+		s.plugins = s.plugins.update(msg, s.listPage())
+	case commands.TabDeps:
+		switch name {
+		case "u", "enter":
+			return s.activateSelection("deps-up")
+		case "v":
+			return s.activateSelection("deps-align")
+		}
+		s.deps = s.deps.update(msg, s.listPage())
 	case commands.TabRun:
 		return s.runKey(name)
 	case commands.TabDoctor:
@@ -441,4 +515,25 @@ func (s *Shell) logLines() []string {
 		return t.Log
 	}
 	return s.run.Lines
+}
+
+// listPage is how many rows a page key moves in a list view.
+func (s *Shell) listPage() int { return max(s.mainInner().H-6, 1) }
+
+// reload forgets what the current view loaded and loads it again; nil for a
+// view that has nothing to reload.
+func (s *Shell) reload() tea.Cmd {
+	switch s.tab {
+	case commands.TabDoctor:
+		s.doctor = doctorView{}
+	case commands.TabRelease:
+		s.release = releaseView{}
+	case commands.TabPlugins:
+		s.plugins = pluginsView{cursor: s.plugins.cursor}
+	case commands.TabDeps:
+		s.deps = depsView{}
+	default:
+		return nil
+	}
+	return s.gotoTab(s.tab)
 }

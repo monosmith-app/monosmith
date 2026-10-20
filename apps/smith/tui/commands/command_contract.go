@@ -42,6 +42,8 @@ const (
 	TabRun      = "run"
 	TabDoctor   = "doctor"
 	TabRelease  = "release"
+	TabPlugins  = "plugins"
+	TabDeps     = "deps"
 	TabSettings = "settings"
 	TabGuide    = "guide"
 )

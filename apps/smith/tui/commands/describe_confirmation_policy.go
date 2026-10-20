@@ -27,6 +27,11 @@ func Describe(argv []string) (title, why string) {
 		return "Create a workspace", "This creates a directory with smith.toml, git and CI pipelines."
 	case verb == "config":
 		return "Change a setting", "This edits smith.toml."
+	case verb == "deps":
+		if slices.Contains(argv, "--align") {
+			return "Align dependency versions", "This rewrites manifests so each dependency has one version across the workspace, then installs."
+		}
+		return "Update dependencies", "This moves the chosen dependencies to their latest release in every project that declares them, then installs."
 	case verb == "plugin":
 		return "Change plugins", "This edits smith.toml."
 	}

@@ -45,6 +45,26 @@ var sampleProjects = []navigator.Project{
 	{Name: "sdk", Kind: "package", Language: "python", Root: "packages/sdk", Tasks: []navigator.Task{{Name: "test", Command: "pytest"}}},
 }
 
+var samplePlugins = []pluginRow{
+	{Name: "go", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"orders", "kit"}},
+	{Name: "node", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"web"}},
+	{Name: "python", Source: "built-in", Builtin: true, Switchable: true, Roles: []string{"language"}, Requires: []string{"uv"}},
+	{Name: "vitest", Source: "built-in", Builtin: true, Enabled: true, Roles: []string{"test"}},
+	{Name: "acme-lint", Version: "0.3.0", Source: "/home/me/.smith/plugins", Enabled: true, UsedBy: []string{"web"}},
+}
+
+var sampleDeps = depsLoaded{
+	rows: []depRow{
+		{Name: "axios", Plugin: "node", Current: "1.6.0", Latest: "1.6.8", Level: "patch", Projects: []string{"web", "api"}},
+		{Name: "zod", Plugin: "node", Current: "3.22.0", Latest: "3.23.0", Level: "minor", Projects: []string{"web"}},
+		{Name: "react", Plugin: "node", Current: "17.0.2", Latest: "18.3.0", Level: "major", Projects: []string{"web"}},
+	},
+	policy: []policyLine{
+		{Check: "every production dependency has one version across the workspace", Detail: "axios (node) should be ^1.6.8 everywhere, but is web ^1.6.0, api ^1.5.0"},
+		{Check: "dev tools are declared once, at the root", OK: true, Warning: true},
+	},
+}
+
 // scripted is a process that prints its lines, then, unless hold is set,
 // exits; with hold set it stays running until stopped.
 type scripted struct {
@@ -119,6 +139,8 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 			Doctor:   func() (doctor.Report, error) { return report, nil },
 			Release:  func() releaseLoaded { return releaseLoaded{plan: plan} },
 			Projects: func() projectsLoaded { return projectsLoaded{projects: sampleProjects, branch: "main"} },
+			Plugins:  func() pluginsLoaded { return pluginsLoaded{rows: samplePlugins} },
+			Deps:     func() depsLoaded { return sampleDeps },
 			Settings: func() settingsLoaded {
 				fields, _ := configedit.Fields()
 				var out settingsLoaded

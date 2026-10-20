@@ -113,6 +113,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	s.finished()
 	if _, isRun := commands.ParseRun(s.run.Command); !isRun {
 		s.doctor, s.release, s.settings = doctorView{}, releaseView{}, settingsView{}
+		s.plugins, s.deps = pluginsView{cursor: s.plugins.cursor}, depsView{}
 		if load := s.sources.Projects; load != nil {
 			return func() tea.Msg { return load() }
 		}

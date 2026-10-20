@@ -437,26 +437,54 @@ Run `smith` with no arguments, in a terminal:
 *The Menu tab asks one question at a time. Everything it does ends as a smith
 command printed before it runs, so you can type the same line in a script.*
 
-Tab and shift+tab switch between the tabs:
+The shell has a menu bar, the workspace navigator, the main view with tabs, an
+inspector for what is selected and a status bar, and it works with the mouse
+too. The tabs are also on `Alt+1` to `Alt+8` and in the View menu:
 
-- **Menu**: the common tasks.
-- **Commands**: every command; type to find one, press enter, then type its
-  arguments.
-- **Doctor**: every check, problems first. Enter shows the detail and remedy,
-  `r` checks again, `f` previews the fixes.
-- **Release**: what the next release would do or why it is blocked. `p`
-  previews it and `R` releases.
-- **Settings**: the settings of `smith.toml` with their values and what they do.
-  Enter edits one and `u` returns it to its default; a value the schema rejects
-  is refused on the spot. The change is made by `smith config set`, which keeps
-  the file's comments.
+- **Projects** (`Alt+1`): every project with its language, kind, stack or
+  recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
+  a mark on the ones the current changes affect. Enter or `Ctrl+R` runs the
+  selected task; the inspector lists what the project depends on and what
+  depends on it, and shows its graph (`smith graph --focus <project>`).
+- **Run** (`Alt+2`): the task graph of the command running, each task's state,
+  its log, failures first.
+- **Doctor** (`Alt+3`): every check, problems first. Enter shows the detail and
+  remedy, `r` checks again, `Ctrl+X` applies the safe fixes (`smith doctor --fix`, after you confirm).
+- **Release** (`Alt+4`): what the next release would do or why it is blocked.
+  `F2` previews it and `F3` releases.
+- **Plugins** (`Alt+7`): the built-in and installed plugins, the roles each
+  fills, and the projects that use it. `e` turns a built-in language plugin on
+  or off (`smith plugin enable|disable <name>`).
+- **Deps** (`Alt+8`): the dependencies with a newer release, patch before minor
+  before major, with the projects that declare them, and what the one-version
+  policy says. `Space` marks a row and `a` marks all; `u` or Enter updates the
+  marked ones, or the row under the cursor (`smith deps up <packages>`), and
+  `v` brings dependencies that projects declare at different versions to one
+  (`smith deps up --align`).
+- **Settings** (`Alt+5`): the settings of `smith.toml` with their values and
+  what they do. Enter edits one and `u` returns it to its default; a value the
+  schema rejects is refused on the spot. The change is made by `smith config
+  set`, which keeps the file's comments.
+- **Guide** (`Alt+6`): the common tasks, one question at a time.
+
+The keys are the same in every tab: the arrows, `PgUp`, `PgDn`, `Home` and
+`End` move, Enter acts on the row, `r` loads the view again, `Tab` moves
+between the panes, `Esc` goes back, `Ctrl+P` opens the command palette with
+every smith command, and `?` (or `F1`) lists the keys of the tab you are in and
+the shortcuts of the menus. Everything fits 80 columns; below that the
+navigator becomes a tab and the tab labels lose their padding.
+
+Nothing the shell does happens on its own. Every action ends as a smith
+command line, printed in the status bar and the Run tab before it runs; one
+that changes the workspace, installs or publishes first shows the line in a
+confirmation you answer with `y` or `n`.
 
 ![The Settings tab: workspace.name "acme", ci.devcontainer true, ci.providers ["github"], and the others "(default)"](../assets/tui-settings.png)
 
 *Settings you have not set show `(default)`; the line under the list explains
 the highlighted one.*
 
-Doctor, Release and Settings appear only inside a workspace. When stdin or
+Every tab but Guide appears only inside a workspace. When stdin or
 stdout is not a terminal, or `CI` is set, `smith` prints its help instead.
 
 ## 8. CI

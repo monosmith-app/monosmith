@@ -25,7 +25,7 @@ const tabNavigator = "workspace"
 
 var tabTitles = map[string]string{
 	tabNavigator: "Workspace", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
+	commands.TabRelease: "Release", commands.TabPlugins: "Plugins", commands.TabDeps: "Deps", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
 }
 
 // Config is what the shell is built from.
@@ -73,6 +73,8 @@ type Shell struct {
 	doctor   doctorView
 	release  releaseView
 	settings settingsView
+	plugins  pluginsView
+	deps     depsView
 
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
@@ -148,7 +150,7 @@ func (s Shell) tabList() []string {
 		tabs = append(tabs, tabNavigator)
 	}
 	if s.inWorkspace {
-		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabSettings)
+		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabPlugins, commands.TabDeps, commands.TabSettings)
 	}
 	return append(tabs, commands.TabGuide)
 }
@@ -262,6 +264,13 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.doctor = doctorView{report: &msg.report}
 	case doctorFailed:
 		s.doctor = doctorView{err: msg.err}
+	case pluginsLoaded:
+		s.plugins = pluginsView{loaded: true, rows: msg.rows, err: msg.err, cursor: s.plugins.cursor}
+		if s.plugins.cursor >= len(msg.rows) {
+			s.plugins.cursor = 0
+		}
+	case depsLoaded:
+		s.deps = depsView{loaded: true, rows: msg.rows, policy: msg.policy, err: msg.err}
 	case settingsLoaded:
 		s.settings = settingsView{loaded: true, settings: msg.settings, err: msg.err}
 	case releaseLoaded:
