@@ -370,3 +370,27 @@ func TestTheHelpOfPluginsAndDepsListsTheirOwnKeysFirst(t *testing.T) {
 		l.has(want...)
 	}
 }
+
+func TestAboutShowsTheLogoWhatSmithIsForAndTheDocsLink(t *testing.T) {
+	l := newLab(t, true, 100, 40)
+	l.keys("alt+h")
+	l.clickText("About")
+	l.has("About MonoSmith", "▄████", "scaffolds projects", "https://monosmith-app.github.io/monosmith/README.html", "[ OK ]")
+	l.keys("esc")
+	l.hasNot("About MonoSmith")
+}
+
+func TestAboutClosesOnTheOKButton(t *testing.T) {
+	l := newLab(t, true, 100, 40)
+	l.keys("alt+h")
+	l.clickText("About")
+	l.clickText("[ OK ]")
+	l.hasNot("About MonoSmith")
+}
+
+func TestTheMenuBarStartsWithTheAppName(t *testing.T) {
+	l := newLab(t, true, 100, 40)
+	if first := l.lines()[0]; !strings.HasPrefix(first, " MonoSmith │ ") {
+		t.Fatalf("bar %q", first)
+	}
+}

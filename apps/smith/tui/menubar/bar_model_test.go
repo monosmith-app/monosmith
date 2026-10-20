@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -165,5 +166,17 @@ func TestThePopupStaysOnScreen(t *testing.T) {
 	p := OpenPopup([]Entry{{ID: "a", Name: "A long entry name", Shortcut: "Ctrl+X"}}, 78, 23, 80, 24)
 	if p.box.X+p.box.innerWidth()+2 > 80 || p.box.Y+p.box.height() > 24 {
 		t.Fatalf("box at %d,%d is off a 80x24 screen", p.box.X, p.box.Y)
+	}
+}
+
+func TestTheAppNameAndAPipeComeBeforeTheMenus(t *testing.T) {
+	b := sample().SetBrand("MonoSmith")
+	row := pane.Strip(b.Row(theme.Default(), "", 60))
+	if !strings.HasPrefix(row, " MonoSmith │ File") {
+		t.Fatalf("row %q", row)
+	}
+	x := strings.Index(row, "File")
+	if b.HeadingAt(x) != 0 || b.HeadingAt(x-4) != -1 {
+		t.Fatalf("headings must be found after the name: %d %d", b.HeadingAt(x), b.HeadingAt(x-4))
 	}
 }
