@@ -99,7 +99,7 @@ jobs:
           channel: stable
           cache: true
       # The jvm plugin's e2e; the hosted images carry Maven.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
