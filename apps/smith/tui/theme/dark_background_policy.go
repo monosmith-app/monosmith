@@ -18,5 +18,5 @@ func DarkBackground(getenv func(string) string) bool {
 	if err != nil {
 		return true
 	}
-	return !(bg == 7 || bg >= 9 && bg != 8)
+	return bg != 7 && (bg < 9 || bg == 8)
 }

@@ -51,10 +51,7 @@ func (c Confirm) Place(sw, sh int) Confirm {
 func (c Confirm) Rect() Rect { return c.rect }
 
 func (c Confirm) bodyLines(inner int) []string {
-	var body []string
-	for _, l := range wrap(c.Why, inner) {
-		body = append(body, l)
-	}
+	body := append([]string(nil), wrap(c.Why, inner)...)
 	body = append(body, "", "The command that will run:")
 	for _, l := range c.cmdLines {
 		body = append(body, "  $ "+l)
@@ -102,10 +99,10 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	line := strings.Repeat(" ", spans[0][0]-2)
 	for i, label := range []string{buttonRun, buttonStop} {
 		text := th.Muted(label)
-		switch {
-		case i == c.focus:
+		switch i {
+		case c.focus:
 			text = th.Selected(label)
-		case i == c.hover:
+		case c.hover:
 			text = th.Hover(label)
 		}
 		line += text
