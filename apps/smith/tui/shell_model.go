@@ -6,16 +6,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/menubar"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
@@ -70,11 +75,11 @@ type Shell struct {
 	guide    guide.Model
 	pal      palette.Palette
 	palOpen  bool
-	doctor   doctorView
-	release  releaseView
-	settings settingsView
-	plugins  pluginsView
-	deps     depsView
+	doctor   doctorview.Model
+	release  releaseview.Model
+	settings settingsview.Model
+	plugins  pluginsview.Model
+	deps     depsview.Model
 
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
@@ -198,7 +203,6 @@ type (
 		proc runner.Handle
 		ids  []string
 	}
-	doctorFailed struct{ err error }
 )
 
 // Update implements tea.Model.
@@ -260,21 +264,16 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			}
 			s.branch = msg.branch
 		}
-	case doctorLoaded:
-		s.doctor = doctorView{report: &msg.report}
-	case doctorFailed:
-		s.doctor = doctorView{err: msg.err}
-	case pluginsLoaded:
-		s.plugins = pluginsView{loaded: true, rows: msg.rows, err: msg.err, cursor: s.plugins.cursor}
-		if s.plugins.cursor >= len(msg.rows) {
-			s.plugins.cursor = 0
-		}
-	case depsLoaded:
-		s.deps = depsView{loaded: true, rows: msg.rows, policy: msg.policy, err: msg.err}
-	case settingsLoaded:
-		s.settings = settingsView{loaded: true, settings: msg.settings, err: msg.err}
-	case releaseLoaded:
-		s.release = releaseView{loaded: true, plan: msg.plan, blockers: msg.blockers, warnings: msg.warnings, err: msg.err}
+	case doctorview.Result:
+		s.doctor = doctorview.FromResult(msg)
+	case pluginsview.Result:
+		s.plugins = s.plugins.FromResult(msg)
+	case depsview.Result:
+		s.deps = depsview.FromResult(msg)
+	case settingsview.Result:
+		s.settings = settingsview.FromResult(msg)
+	case releaseview.Result:
+		s.release = releaseview.FromResult(msg)
 	case startedMsg:
 		return s.started(msg)
 	case plannedMsg:

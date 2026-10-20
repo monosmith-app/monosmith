@@ -6,10 +6,14 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
@@ -112,8 +116,8 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	s.finished()
 	if _, isRun := commands.ParseRun(s.run.Command); !isRun {
-		s.doctor, s.release, s.settings = doctorView{}, releaseView{}, settingsView{}
-		s.plugins, s.deps = pluginsView{cursor: s.plugins.cursor}, depsView{}
+		s.doctor, s.release, s.settings = doctorview.Model{}, releaseview.Model{}, settingsview.Model{}
+		s.plugins, s.deps = s.plugins.Reset(), depsview.Model{}
 		if load := s.sources.Projects; load != nil {
 			return func() tea.Msg { return load() }
 		}

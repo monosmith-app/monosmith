@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
@@ -107,7 +108,7 @@ func TestTheDepsViewSaysWhenThereIsNothingToUpdateAndWhenThePolicyIsOff(t *testi
 	l := newLab(t, true, 140, 34)
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { return depsLoaded{} }
+		sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 		return sh
 	}()
 	l.keys("alt+8")
@@ -122,7 +123,7 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 	l := newLab(t, true, 100, 30)
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { return depsLoaded{err: errString("the registry is unreachable")} }
+		sh.sources.Deps = func() depsview.Result { return depsview.Result{Err: errString("the registry is unreachable")} }
 		return sh
 	}()
 	l.keys("alt+8")
@@ -138,7 +139,7 @@ func TestRReloadsTheViewsThatLoadFromTheWorkspace(t *testing.T) {
 	calls := 0
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { calls++; return sampleDeps }
+		sh.sources.Deps = func() depsview.Result { calls++; return sampleDeps }
 		return sh
 	}()
 	l.keys("alt+8")

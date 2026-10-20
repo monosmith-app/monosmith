@@ -1,8 +1,8 @@
-package tui
+package pane
 
-// moveCursor is where a list cursor goes for a key in a list of n rows; page
+// MoveCursor is where a list cursor goes for a key in a list of n rows; page
 // is how many rows a page key moves.
-func moveCursor(cursor, n int, key string, page int) int {
+func MoveCursor(cursor, n int, key string, page int) int {
 	if n == 0 {
 		return 0
 	}
@@ -23,8 +23,8 @@ func moveCursor(cursor, n int, key string, page int) int {
 	return min(max(cursor, 0), n-1)
 }
 
-// windowTop is the first row of a window of size rows that keeps the cursor in
+// WindowTop is the first row of a window of size rows that keeps the cursor in
 // the middle where it can.
-func windowTop(cursor, n, size int) int {
+func WindowTop(cursor, n, size int) int {
 	return min(max(cursor-size/2, 0), max(n-size, 0))
 }

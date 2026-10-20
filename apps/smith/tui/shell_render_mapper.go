@@ -210,8 +210,8 @@ func (s Shell) tabText(id string, padded bool) string {
 			}
 		}
 	case commands.TabDoctor:
-		if s.doctor.report != nil && s.doctor.report.Failed > 0 {
-			label += " " + s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, s.doctor.report.Failed))
+		if s.doctor.Report != nil && s.doctor.Report.Failed > 0 {
+			label += " " + s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, s.doctor.Report.Failed))
 		}
 	}
 	if !padded {

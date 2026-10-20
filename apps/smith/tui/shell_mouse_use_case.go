@@ -189,13 +189,13 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 		s.runSel = h.id
 		s.keepRunVisible()
 	case "finding":
-		s.doctor = s.doctor.selectRow(h.index)
+		s.doctor = s.doctor.SelectRow(h.index)
 	case "plugin":
-		s.plugins = s.plugins.selectRow(h.index)
+		s.plugins = s.plugins.SelectRow(h.index)
 	case "dep":
-		s.deps = s.deps.selectRow(h.index)
+		s.deps = s.deps.SelectRow(h.index)
 	case "setting":
-		s.settings = s.settings.selectRow(h.index)
+		s.settings = s.settings.SelectRow(h.index)
 		if double {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}

@@ -5,10 +5,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
@@ -59,7 +62,7 @@ var tabKeys = map[string][]dialog.HelpRow{
 }
 
 func (s *Shell) editing() bool {
-	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.editing)
+	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Editing)
 }
 
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
@@ -200,17 +203,17 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute([]string{"graph", "--focus", sel.Project}, false)
 		}
 	case "plugin-toggle":
-		if argv := s.plugins.toggleArgv(); argv != nil {
+		if argv := s.plugins.ToggleArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("Only the built-in language plugins can be turned on or off here")
 	case "deps-up":
-		if argv := s.deps.upArgv(); argv != nil {
+		if argv := s.deps.UpArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("No dependency to update")
 	case "deps-align":
-		if argv := s.deps.alignArgv(); argv != nil {
+		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("The one-version policy found nothing to align")
@@ -273,7 +276,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 			s.openContextMenu(in.X+2, in.Y+1)
 		}
 	case commands.ReloadDoctor:
-		s.doctor = doctorView{}
+		s.doctor = doctorview.Model{}
 		return s.gotoTab(commands.TabDoctor)
 	}
 	return nil
@@ -317,33 +320,30 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 	s.tab, s.focus = id, layout.Main
 	switch id {
 	case commands.TabDoctor:
-		if s.doctor.report == nil && s.doctor.err == nil && s.sources.Doctor != nil {
+		if s.doctor.Report == nil && s.doctor.Err == nil && s.sources.Doctor != nil {
 			load := s.sources.Doctor
 			return func() tea.Msg {
 				report, err := load()
-				if err != nil {
-					return doctorFailed{err}
-				}
-				return doctorLoaded{report}
+				return doctorview.Result{Report: report, Err: err}
 			}
 		}
 	case commands.TabRelease:
-		if !s.release.loaded && s.sources.Release != nil {
+		if !s.release.Loaded && s.sources.Release != nil {
 			load := s.sources.Release
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabPlugins:
-		if !s.plugins.loaded && s.sources.Plugins != nil {
+		if !s.plugins.Loaded && s.sources.Plugins != nil {
 			load := s.sources.Plugins
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabDeps:
-		if !s.deps.loaded && s.sources.Deps != nil {
+		if !s.deps.Loaded && s.sources.Deps != nil {
 			load := s.sources.Deps
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabSettings:
-		if !s.settings.loaded && s.sources.Settings != nil {
+		if !s.settings.Loaded && s.sources.Settings != nil {
 			load := s.sources.Settings
 			return func() tea.Msg { return load() }
 		}
@@ -372,7 +372,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		if name == "e" || name == "enter" {
 			return s.activateSelection("plugin-toggle")
 		}
-		s.plugins = s.plugins.update(msg, s.listPage())
+		s.plugins = s.plugins.Update(msg, s.listPage())
 	case commands.TabDeps:
 		switch name {
 		case "u", "enter":
@@ -380,13 +380,13 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		case "v":
 			return s.activateSelection("deps-align")
 		}
-		s.deps = s.deps.update(msg, s.listPage())
+		s.deps = s.deps.Update(msg, s.listPage())
 	case commands.TabRun:
 		return s.runKey(name)
 	case commands.TabDoctor:
-		s.doctor = s.doctor.update(msg)
+		s.doctor = s.doctor.Update(msg)
 	case commands.TabSettings:
-		next, argv := s.settings.update(msg)
+		next, argv := s.settings.Update(msg)
 		s.settings = next
 		if argv != nil {
 			return s.execute(argv, false)
@@ -525,13 +525,13 @@ func (s *Shell) listPage() int { return max(s.mainInner().H-6, 1) }
 func (s *Shell) reload() tea.Cmd {
 	switch s.tab {
 	case commands.TabDoctor:
-		s.doctor = doctorView{}
+		s.doctor = doctorview.Model{}
 	case commands.TabRelease:
-		s.release = releaseView{}
+		s.release = releaseview.Model{}
 	case commands.TabPlugins:
-		s.plugins = pluginsView{cursor: s.plugins.cursor}
+		s.plugins = s.plugins.Reset()
 	case commands.TabDeps:
-		s.deps = depsView{}
+		s.deps = depsview.Model{}
 	default:
 		return nil
 	}

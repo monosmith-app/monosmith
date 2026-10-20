@@ -12,10 +12,14 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/muesli/termenv"
@@ -45,7 +49,7 @@ var sampleProjects = []navigator.Project{
 	{Name: "sdk", Kind: "package", Language: "python", Root: "packages/sdk", Tasks: []navigator.Task{{Name: "test", Command: "pytest"}}},
 }
 
-var samplePlugins = []pluginRow{
+var samplePlugins = []pluginsview.Row{
 	{Name: "go", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"orders", "kit"}},
 	{Name: "node", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"web"}},
 	{Name: "python", Source: "built-in", Builtin: true, Switchable: true, Roles: []string{"language"}, Requires: []string{"uv"}},
@@ -53,13 +57,13 @@ var samplePlugins = []pluginRow{
 	{Name: "acme-lint", Version: "0.3.0", Source: "/home/me/.smith/plugins", Enabled: true, UsedBy: []string{"web"}},
 }
 
-var sampleDeps = depsLoaded{
-	rows: []depRow{
+var sampleDeps = depsview.Result{
+	Rows: []depsview.Row{
 		{Name: "axios", Plugin: "node", Current: "1.6.0", Latest: "1.6.8", Level: "patch", Projects: []string{"web", "api"}},
 		{Name: "zod", Plugin: "node", Current: "3.22.0", Latest: "3.23.0", Level: "minor", Projects: []string{"web"}},
 		{Name: "react", Plugin: "node", Current: "17.0.2", Latest: "18.3.0", Level: "major", Projects: []string{"web"}},
 	},
-	policy: []policyLine{
+	Policy: []depsview.PolicyLine{
 		{Check: "every production dependency has one version across the workspace", Detail: "axios (node) should be ^1.6.8 everywhere, but is web ^1.6.0, api ^1.5.0"},
 		{Check: "dev tools are declared once, at the root", OK: true, Warning: true},
 	},
@@ -137,21 +141,21 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	if inWorkspace {
 		cfg.Sources = &Sources{
 			Doctor:   func() (doctor.Report, error) { return report, nil },
-			Release:  func() releaseLoaded { return releaseLoaded{plan: plan} },
+			Release:  func() releaseview.Result { return releaseview.Result{Plan: plan} },
 			Projects: func() projectsLoaded { return projectsLoaded{projects: sampleProjects, branch: "main"} },
-			Plugins:  func() pluginsLoaded { return pluginsLoaded{rows: samplePlugins} },
-			Deps:     func() depsLoaded { return sampleDeps },
-			Settings: func() settingsLoaded {
+			Plugins:  func() pluginsview.Result { return pluginsview.Result{Rows: samplePlugins} },
+			Deps:     func() depsview.Result { return sampleDeps },
+			Settings: func() settingsview.Result {
 				fields, _ := configedit.Fields()
-				var out settingsLoaded
+				var out settingsview.Result
 				for _, f := range fields {
 					switch f.Path {
 					case "ci.devcontainer":
-						out.settings = append(out.settings, setting{field: f, value: "true", set: true})
+						out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: "true", Set: true})
 					case "ci.providers":
-						out.settings = append(out.settings, setting{field: f, value: `["github"]`, set: true})
+						out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: `["github"]`, Set: true})
 					case "release.branch":
-						out.settings = append(out.settings, setting{field: f})
+						out.Settings = append(out.Settings, settingsview.Setting{Field: f})
 					}
 				}
 				return out
