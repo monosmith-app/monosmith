@@ -71,8 +71,16 @@ func Compute(git *gitclient.Git, graph *projectgraph.Graph, base string) Result 
 	}
 	touched := map[string]bool{}
 	for _, f := range changed {
-		if owner := graph.Owner(f); owner != nil {
+		owner := graph.Owner(f)
+		if owner != nil {
 			touched[owner.Name] = true
+		}
+		// A schema file belongs to its owner, wherever it lives.
+		if schema := graph.SchemaOwner(f); schema != nil {
+			touched[schema.Name] = true
+			continue
+		}
+		if owner != nil {
 			continue
 		}
 		// A file in an excluded directory belongs to no project.

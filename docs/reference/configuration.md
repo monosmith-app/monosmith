@@ -269,6 +269,24 @@ the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
 
+## Shared schemas
+
+Projects in different languages are linked by the schema they share. Each
+`[projects.<name>]` table takes two lists of workspace-relative globs:
+
+```toml
+[projects.orders]
+schemas = ["contracts/*.proto"]        # owned besides the OpenAPI, AsyncAPI, Protocol Buffers
+                                       # and GraphQL files inside the project's directory
+
+[projects.orders-go]
+consumes_schemas = ["services/orders/openapi.yaml"]
+```
+
+A consumer depends on the schema's owner: a change to the schema affects both
+(`smith affected`), and `smith graph --blast-radius` lists what it reaches.
+See [Affected](tasks-and-cache.md#shared-schemas).
+
 ## Recipes
 
 `[workspace] recipe` names the recipe `smith add` creates projects from: a

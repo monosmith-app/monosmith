@@ -271,6 +271,14 @@ type ProjectOverride struct {
 	// Registry names the [registries] entry this package is published to,
 	// instead of [release] registry.
 	Registry string `toml:"registry"`
+	// Schemas are workspace-relative globs of the shared schema files the
+	// project owns, besides the OpenAPI, AsyncAPI, Protocol Buffers and
+	// GraphQL files inside its directory (which it owns without saying so).
+	Schemas []string `toml:"schemas"`
+	// ConsumesSchemas are workspace-relative globs of the schema files the
+	// project consumes (a client generated from an OpenAPI spec): the project
+	// depends on the owner of each, so a schema change affects it.
+	ConsumesSchemas []string `toml:"consumes_schemas"`
 	// Docker is the app's settings for the docker convention.
 	Docker *DockerOverride `toml:"docker"`
 	// Settings are plugins' settings for this project, by plugin name

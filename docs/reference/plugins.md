@@ -223,6 +223,16 @@ Rules:
 - Every call has a timeout; a plugin that does not answer is killed.
 - Paths in messages are workspace-relative with forward slashes.
 
+## Edges the host adds
+
+A plugin reports a project's `imports` and `exports`, and smith links projects
+by them. Edges between languages come from the host, not from a plugin: a
+project owns the OpenAPI, AsyncAPI, Protocol Buffers and GraphQL files inside
+its directory (and the `schemas` globs of `[projects.<name>]`), and depends on
+the owner of every file its `consumes_schemas` globs match. A plugin needs
+nothing for it; the edge shows in `deps` of the graph and in `smith graph
+--blast-radius`. See [Shared schemas](tasks-and-cache.md#shared-schemas).
+
 ## Roles
 
 A plugin declares its roles in `initialize` (`roles`; a language plugin that
