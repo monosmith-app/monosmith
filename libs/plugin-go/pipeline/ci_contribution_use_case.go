@@ -49,5 +49,11 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	for _, p := range params.Projects {
 		result.Audit = append(result.Audit, protocol.Step{Name: "govulncheck " + p.Name, Command: []string{"go", "run", "golang.org/x/vuln/cmd/govulncheck@" + GovulncheckVersion, "./..."}, Dir: p.Root, Blocking: false, CacheFiles: []string{path.Join(p.Root, "go.mod"), path.Join(p.Root, "go.sum")}})
 	}
+	if params.Audit.Enabled("go") {
+		// Opt-in ([ci] audit_policies): the module cache still matches go.sum.
+		for _, p := range params.Projects {
+			result.Audit = append(result.Audit, protocol.Step{Name: "go mod verify " + p.Name, Command: []string{"go", "mod", "verify"}, Dir: p.Root, Blocking: params.Audit.Blocks("go"), CacheFiles: []string{path.Join(p.Root, "go.mod"), path.Join(p.Root, "go.sum")}})
+		}
+	}
 	return result
 }

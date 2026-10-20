@@ -277,6 +277,33 @@ remembered, blocking or not, and always runs again. govulncheck also reads the
 module's code, which the key leaves out; a change that newly reaches a
 vulnerable function is found at the next day's run.
 
+## Audit policy checks
+
+Beyond the vulnerability scan, a language plugin can contribute policy checks
+to `smith ci audit`. They are off by default, so an existing workspace does not
+change; opt in per ecosystem in `[ci]`:
+
+```toml
+[ci]
+audit_policies = ["node", "go"]          # which ecosystems' policy checks run
+audit_warn = ["go"]                      # these only report; the rest block
+audit_allow_install_scripts = ["esbuild"] # node: packages allowed an install script
+```
+
+| Policy | Check | Fails on |
+|---|---|---|
+| `node` | `smith npm-policy` reads `package-lock.json` | a registry package with no integrity hash, a package fetched from git or over plain `http://`, a package with an install script that is not in `audit_allow_install_scripts` |
+| `go` | `go mod verify` in every Go module | a downloaded module that no longer matches `go.sum` |
+
+Each check is an ordinary audit step, so it is cached like the others (see
+[Cached audit verdicts](#cached-audit-verdicts)) and shows in the generated
+pipeline's single `smith ci audit` call. A plugin reads the choice from the CI
+request's `audit` field (`protocol.AuditSettings`), so a plugin for another
+language adds its checks the same way. Not yet implemented, tracked as
+follow-ups: Python (required hashes, wheels from the expected index) and Rust
+(`cargo-deny` licences and bans, a count of `unsafe` blocks); `govulncheck`
+already runs as the Go vulnerability scan.
+
 ## The remote cache
 
 With `[cache] remote` set (see [Tasks, cache and affected](tasks-and-cache.md#remote-cache)),

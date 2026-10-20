@@ -34,7 +34,7 @@ func Collect(s *session.Session) (Contributions, error) {
 			continue
 		}
 		var r protocol.CIResult
-		if err := client.Call(protocol.MethodCI, protocol.CIParams{Projects: projects}, &r, time.Minute); err != nil {
+		if err := client.Call(protocol.MethodCI, protocol.CIParams{Projects: projects, Audit: auditSettings(s.Config.CI)}, &r, time.Minute); err != nil {
 			return c, fmt.Errorf("plugin %s: %w", client.Info.Plugin.Name, err)
 		}
 		c.Add(r)

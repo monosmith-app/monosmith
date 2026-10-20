@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/registries"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
@@ -23,6 +24,15 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 		// smith npm-audit (AuditNpm) fails only on a production advisory npm
 		// can fix; the rest are notes.
 		Audit: []protocol.Step{{Name: "npm audit (runtime dependencies)", Command: []string{"{smith}", "npm-audit"}, Blocking: true, CacheFiles: []string{"package-lock.json"}}},
+	}
+	if params.Audit.Enabled("node") {
+		// Opt-in ([ci] audit_policies): lockfile integrity, no git/http
+		// dependencies, install scripts only from the allow-list.
+		command := []string{"{smith}", "npm-policy"}
+		if len(params.Audit.AllowInstallScripts) > 0 {
+			command = append(command, "--allow-scripts="+strings.Join(params.Audit.AllowInstallScripts, ","))
+		}
+		result.Audit = append(result.Audit, protocol.Step{Name: "npm policy (lockfile)", Command: command, Blocking: params.Audit.Blocks("node"), CacheFiles: []string{"package-lock.json"}})
 	}
 	signIn, publicPublish := registries.CI(params.Projects)
 	result.Authenticate = signIn.Authenticate
