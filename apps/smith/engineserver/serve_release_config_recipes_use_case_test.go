@@ -83,6 +83,7 @@ func TestConfigListAnswersWithTheJSONOfSmithConfigList(t *testing.T) {
 }
 
 func TestConfigGetReadsASettingAndSaysWhetherItIsSet(t *testing.T) {
+	t.Setenv("SMITH_WORKSPACE_ROOT", "") // smith sets it for the tasks it runs
 	root := t.TempDir()
 	_ = os.WriteFile(filepath.Join(root, "smith.toml"), []byte("schema = 1\n\n[workspace]\nname = \"acme\"\n\n[ci]\ndevcontainer = false\n"), 0o644)
 	c := start(t, &Server{Version: "1", Dir: root})
@@ -122,6 +123,7 @@ target_framework = "net10.0"
 
 func recipeWorkspace(t *testing.T) *client {
 	t.Helper()
+	t.Setenv("SMITH_WORKSPACE_ROOT", "") // smith sets it for the tasks it runs
 	root := t.TempDir()
 	_ = os.WriteFile(filepath.Join(root, "smith.toml"), []byte("schema = 1\n\n[workspace]\nname = \"acme\"\n"), 0o644)
 	_ = os.MkdirAll(filepath.Join(root, "recipes"), 0o755)
