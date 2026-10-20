@@ -97,6 +97,16 @@ installing. The npm packages carry
 shows, and `npm audit signatures` checks, that they were built by this
 repository's CI.
 
+Archives, Linux packages and SBOMs are also attested with SLSA build
+provenance on GitHub, which proves they were built by this repository's
+workflow:
+
+```sh
+gh attestation verify monosmith_1.3.1_linux_amd64.tar.gz --repo monosmith-app/monosmith
+```
+
+Each release also carries a CycloneDX SBOM (`*_sbom.cdx.json`).
+
 ## Unsigned binaries
 
 The binaries are not signed with an Apple or Microsoft certificate. That

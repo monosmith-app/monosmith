@@ -13,6 +13,7 @@ permissions:
   pull-requests: write
   actions: write
   id-token: write
+  attestations: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -87,3 +88,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      - name: Attest build provenance
+        if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/release/*/*

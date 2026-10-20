@@ -289,6 +289,34 @@ caused only by a dependency says so. The notes end by thanking the commits'
 authors, bots aside. `smith release --dry-run --notes` prints them before
 anything is released.
 
+### SBOM and build provenance
+
+Every app released with a GitHub Release also gets a CycloneDX 1.5 SBOM,
+`<product>_<version>_sbom.cdx.json`, attached next to its archives. smith
+writes it from the project's lockfile or manifest: Go lists the modules in
+`go.mod` (direct and indirect), npm the packages in the nearest
+`package-lock.json` (the project's or the workspace's), falling back to the
+ranges in `package.json`. Apps of other ecosystems get no SBOM yet; Python,
+Rust, .NET and the rest follow.
+
+On GitHub Actions the generated workflow then attests everything in
+`dist/release` (archives, Linux packages, checksums and the SBOM) with
+[`actions/attest-build-provenance`](https://github.com/actions/attest-build-provenance),
+SLSA build provenance signed through GitHub's Sigstore. The workflow gets
+`id-token: write` and `attestations: write` for it. Anyone can check a
+download:
+
+```sh
+gh attestation verify acme_1.2.0_linux_amd64.tar.gz --repo acme/acme
+```
+
+Azure Pipelines and GitLab CI produce the SBOM too, since smith writes it,
+but have no attestation service: the provenance is not available there, and
+the SHA-256 `checksums.txt` is what verifies a download. Native apps, whose
+archives are attached by the per-OS jobs, get neither yet. Registry
+publishes keep their own provenance (npm provenance above, PyPI attestations
+through trusted publishing).
+
 ## Package managers
 
 An app released with assets can also get the manifests package managers

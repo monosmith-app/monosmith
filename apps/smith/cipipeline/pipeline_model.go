@@ -37,6 +37,10 @@ type Model struct {
 	// Provenance is true when an app is published to npm: on GitHub the job
 	// may then request an OIDC token, which npm provenance signs with.
 	Provenance bool
+	// Attest is true when a release attaches archives to a GitHub Release: on
+	// GitHub the job then attests them (SLSA build provenance), which needs
+	// id-token and attestations permissions.
+	Attest bool
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
@@ -67,6 +71,8 @@ type Contributions struct {
 	NativeLinuxPackages []string
 	// Provenance is true when an app is published to npm.
 	Provenance bool
+	// Attest is true when a release attaches archives to a GitHub Release.
+	Attest bool
 	// Pub is true when an app is published to pub.dev.
 	Pub bool
 	// Permissions are the GitHub token permissions plugins asked for.
@@ -125,7 +131,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Pub: c.Pub}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}

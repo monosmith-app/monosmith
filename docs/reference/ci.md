@@ -103,6 +103,18 @@ GitHub (the workflow grants `pull-requests: write` and passes
 token, so its preview stays in the log and the job summary; failing to post
 is a warning, never a failure.
 
+## SBOM and build provenance
+
+When an app attaches archives to a GitHub Release, `smith ci release`
+attaches a CycloneDX SBOM as well (see [releasing](releasing.md)). On GitHub
+the workflow adds `id-token: write` and `attestations: write` and, after the
+Release step, an `Attest build provenance` step
+(`actions/attest-build-provenance`) over `dist/release/*/*`, which signs the
+archives, packages and SBOMs with SLSA provenance. Verify one with
+`gh attestation verify <file> --repo <owner>/<repo>`. Azure Pipelines and
+GitLab CI get the SBOM but no provenance step: they have no attestation
+service.
+
 ## Pinned versions and the dev container
 
 Nothing installs "latest". Each plugin pins what it installs: for example

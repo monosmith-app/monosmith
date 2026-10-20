@@ -134,7 +134,7 @@ an unchanged workspace changes nothing, which is what lets
 
 The core adds what is not a plugin's business: whether anything needs
 `dist/drop` packing, whether there are native projects, whether a package
-publishes to npm (OIDC provenance needs `id-token: write`) or to pub.dev (the
+publishes to npm (OIDC provenance needs `id-token: write`), whether an app's archives go to a GitHub Release (the attestation step needs `id-token` and `attestations: write`) or to pub.dev (the
 release job needs `actions: write` to dispatch the pub workflow), and the
 distribution credentials of apps.
 

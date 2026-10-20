@@ -55,6 +55,9 @@ func Collect(s *session.Session) (Contributions, error) {
 		if p.Release != nil && len(p.Release.NPM) > 0 {
 			c.Provenance = true
 		}
+		if p.Release != nil && s.Config.Release.GitHubReleases {
+			c.Attest = true
+		}
 		if release.PubPackage(p) != "" {
 			c.Pub = true
 		}
