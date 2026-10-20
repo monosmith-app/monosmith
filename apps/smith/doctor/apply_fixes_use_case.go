@@ -10,6 +10,27 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
+// Only narrows a report to the findings whose check is one of names; with no
+// names it is the report as it is. The counts are not recomputed: it is meant
+// for choosing fixes.
+func Only(r Report, names []string) Report {
+	if len(names) == 0 {
+		return r
+	}
+	keep := map[string]bool{}
+	for _, n := range names {
+		keep[n] = true
+	}
+	var findings []Finding
+	for _, f := range r.Findings {
+		if keep[f.Check] {
+			findings = append(findings, f)
+		}
+	}
+	r.Findings = findings
+	return r
+}
+
 // Fixes are the distinct fixes the failed findings carry: safe ones smith
 // may apply, and the others, which it only shows.
 func Fixes(r Report) (safe, manual []protocol.Fix) {

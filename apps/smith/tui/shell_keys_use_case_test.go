@@ -35,7 +35,7 @@ func TestAltAndALetterOpenAMenuAndEveryItemShowsItsShortcut(t *testing.T) {
 func TestArrowsWalkTheMenuAndEnterRunsTheEntry(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("alt+w", "enter") // Doctor is the first entry of Workspace
-	l.has("1 passed")
+	l.has("2 passed")
 	l.hasNot("Fix with doctor…")
 }
 
@@ -76,7 +76,7 @@ func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 func TestThePaletteRunsAShellCommandAndASmithCommand(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p").typeText("doctor").keys("enter") // the shell's Doctor comes first
-	l.has("1 passed")
+	l.has("2 passed")
 	l.keys("ctrl+p").typeText("affected").keys("enter") // a smith command: it asks for arguments, then runs
 	l.has("smith affected")
 	l.keys("enter")
@@ -134,7 +134,7 @@ func TestTabMovesTheFocusBetweenPanesAndEveryPaneHasKeys(t *testing.T) {
 func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("alt+3")
-	l.has("1 passed", "1 failed")
+	l.has("2 passed", "1 failed")
 	l.keys("alt+4")
 	l.has("1.0.0 →", "1.1.0", "unchanged: sdk")
 	l.keys("alt+5")
@@ -148,7 +148,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndHasItsButtons(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+d")
-	l.has("✖ go.work lists every module", "Re-check", "Ctrl+D", "Fix…", "Ctrl+X")
+	l.has("✖ go.work lists every module", "Re-check", "Ctrl+D", "Fix this…", "Fix all…", "Ctrl+X")
 	l.hasNot("remedy:")
 	l.keys("enter")
 	l.has("remedy: go work use ./libs/x", "libs/x is missing")

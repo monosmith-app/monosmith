@@ -1,4 +1,4 @@
-package tui
+package pluginsview
 
 import (
 	"slices"
@@ -9,13 +9,13 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// loadPlugins lists the built-in plugins (on or off in smith.toml) and the
+// Load lists the built-in plugins (on or off in smith.toml) and the
 // installed ones, with the projects each discovered or deploys, as
 // `smith plugin list` does.
-func loadPlugins(open func() (*session.Session, error), version string) pluginsLoaded {
+func Load(open func() (*session.Session, error), version string) Result {
 	s, err := open()
 	if err != nil {
-		return pluginsLoaded{err: err}
+		return Result{Err: err}
 	}
 	defer s.Close()
 	enabled := s.Config.Plugins.Enabled
@@ -31,7 +31,7 @@ func loadPlugins(open func() (*session.Session, error), version string) pluginsL
 			}
 		}
 	}
-	var rows []pluginRow
+	var rows []Row
 	names := append(pluginhost.BuiltinNames(), sortedAddonNames()...)
 	for _, name := range names {
 		ctor, ok := pluginhost.Builtin(name)
@@ -40,9 +40,9 @@ func loadPlugins(open func() (*session.Session, error), version string) pluginsL
 		}
 		info, err := ctor(version).Describe(protocol.InitializeParams{})
 		if err != nil {
-			return pluginsLoaded{err: err}
+			return Result{Err: err}
 		}
-		row := pluginRow{
+		row := Row{
 			Name: name, Source: "built-in", Builtin: true, UsedBy: used[name],
 			Switchable: slices.Contains(pluginhost.BuiltinNames(), name), Enabled: slices.Contains(enabled, name),
 		}
@@ -60,12 +60,12 @@ func loadPlugins(open func() (*session.Session, error), version string) pluginsL
 	}
 	installed, err := pluginhost.FindInstalled(s.Root)
 	if err != nil {
-		return pluginsLoaded{err: err}
+		return Result{Err: err}
 	}
 	for _, p := range installed {
-		rows = append(rows, pluginRow{Name: p.Name, Version: p.Version, Source: p.Dir, Enabled: true, UsedBy: used[p.Name]})
+		rows = append(rows, Row{Name: p.Name, Version: p.Version, Source: p.Dir, Enabled: true, UsedBy: used[p.Name]})
 	}
-	return pluginsLoaded{rows: rows}
+	return Result{Rows: rows}
 }
 
 func sortedAddonNames() []string {

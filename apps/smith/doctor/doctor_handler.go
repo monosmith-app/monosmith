@@ -20,6 +20,7 @@ var ErrUnhealthy = errors.New("the workspace has problems")
 // Command is `smith doctor`.
 func Command(version string) *cobra.Command {
 	var asJSON, fix, yes bool
+	var only []string
 	cmd := &cobra.Command{
 		Use:   "doctor",
 		Short: "Check the workspace's health; every problem names its remedy",
@@ -27,12 +28,17 @@ func Command(version string) *cobra.Command {
 Every problem names its remedy. With --fix, doctor shows the fixes it can make
 as diffs, then applies the safe ones once you confirm (or with --yes): a safe
 fix only restores what smith or a plugin owns, like go.work or a generated
-pipeline with its slots kept. Others are shown, never applied.`,
+pipeline with its slots kept. Others are shown, never applied. With --only, doctor
+takes up just the fix of the named check (the check's text, as doctor prints it).`,
 		Example: `  smith doctor
   smith doctor --fix        # review the diffs, then confirm
-  smith doctor --fix --yes`,
+  smith doctor --fix --yes
+  smith doctor --fix --only "go.work exists" --yes`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if len(only) > 0 && !fix {
+				return errors.New("--only names the checks to fix, so it goes with --fix")
+			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
 				return err
@@ -61,7 +67,7 @@ pipeline with its slots kept. Others are shown, never applied.`,
 				fmt.Fprintf(out, "\n%d passed, %d failed, %d warning(s)\n", report.Passed, report.Failed, report.Warnings)
 			}
 			if fix {
-				if report, err = fixAll(cmd, s, report, yes); err != nil {
+				if report, err = fixAll(cmd, s, report, yes, only); err != nil {
 					return err
 				}
 			}
@@ -74,14 +80,28 @@ pipeline with its slots kept. Others are shown, never applied.`,
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&fix, "fix", false, "show the fixes doctor can make as diffs, and apply the safe ones")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
+	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
 	return cmd
+}
+
+// quoted puts each name in double quotes.
+func quoted(names []string) []string {
+	out := make([]string, len(names))
+	for i, n := range names {
+		out[i] = fmt.Sprintf("%q", n)
+	}
+	return out
 }
 
 // fixAll shows every fix the findings carry, applies the safe ones once
 // confirmed, and checks again.
-func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool) (Report, error) {
+func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, only []string) (Report, error) {
 	out := cmd.OutOrStdout()
-	safe, manual := Fixes(report)
+	safe, manual := Fixes(Only(report, only))
+	if len(safe)+len(manual) == 0 && len(only) > 0 {
+		fmt.Fprintf(out, "\nNo failed check named %s carries a fix.\n", strings.Join(quoted(only), ", "))
+		return report, nil
+	}
 	if len(safe)+len(manual) == 0 {
 		fmt.Fprintln(out, "\nNothing doctor can fix itself: follow the remedies above.")
 		return report, nil

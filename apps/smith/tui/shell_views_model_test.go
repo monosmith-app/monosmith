@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
@@ -107,7 +110,7 @@ func TestTheDepsViewSaysWhenThereIsNothingToUpdateAndWhenThePolicyIsOff(t *testi
 	l := newLab(t, true, 140, 34)
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { return depsLoaded{} }
+		sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 		return sh
 	}()
 	l.keys("alt+8")
@@ -122,11 +125,136 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 	l := newLab(t, true, 100, 30)
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { return depsLoaded{err: errString("the registry is unreachable")} }
+		sh.sources.Deps = func() depsview.Result { return depsview.Result{Err: errString("the registry is unreachable")} }
 		return sh
 	}()
 	l.keys("alt+8")
 	l.has("the registry is unreachable")
+}
+
+func TestTheDoctorTabGroupsByProjectAndAppliesOneSafeFixAfterConfirming(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("alt+3")
+	l.has("workspace", "web  1 failed", "orders  all passed", "Fix this…")
+	l.keys("f") // the cursor is on go.work, which has no fix
+	if l.sh().confirm != nil || len(l.started) != 0 {
+		t.Fatal("a finding without a safe fix offered a command")
+	}
+	l.has("no safe fix")
+	l.keys("down", "down", "f") // git, then web's Docker finding
+	l.has("Apply one doctor fix", "$ smith doctor --fix --only 'Docker registries of web agree' --yes")
+	if len(l.started) != 0 {
+		t.Fatal("nothing runs before the answer")
+	}
+	l.keys("y")
+	want := "doctor --fix --only Docker registries of web agree --yes"
+	if got := l.lastStarted(); got != want {
+		t.Fatalf("started %q, want %q", got, want)
+	}
+}
+
+func TestTheDoctorTabListsFlatWhenGroupingIsOff(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("alt+3", "g")
+	l.hasNot("orders  all passed", "web  1 failed")
+	l.has("Docker registries of web agree")
+}
+
+func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("alt+4")
+	l.has("web", "1.0.0", "1.1.0", "kit", "0.2.1", "Notes")
+	l.hasNot("a1b2c3d")
+	l.keys("enter")
+	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
+	l.keys("down", "enter")
+	l.has("dependency web releases (no commit of its own releases it)")
+	l.keys("n")
+	if got := l.lastStarted(); got != "release --dry-run --notes" {
+		t.Fatalf("the notes started %q", got)
+	}
+	l.has("$ smith release --dry-run --notes")
+}
+
+// recipeWorkspace writes a workspace on disk whose apps are made from a team recipe.
+func recipeWorkspace(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	recipe := "name = \"team\"\nversion = \"1.2.0\"\n\n[choices.language]\nask = \"Language\"\noptions = [\"python\", \"csharp\"]\n\n" +
+		"[use]\nstructure = \"vertical-slices\"\n\n[when.language.python.use]\nlanguage = \"python\"\n\n[when.language.csharp.use]\nlanguage = \"dotnet\"\n"
+	for name, content := range map[string]string{
+		"smith.toml":               "schema = 1\n\n[workspace]\nname = \"acme\"\n\n[recipes]\napp = \"recipes/team.recipe.toml\"\n",
+		"recipes/team.recipe.toml": recipe,
+	} {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root
+}
+
+func TestTheRecipesTabBuildsASmithAddFromTheRecipesChoicesAndConfirmsFirst(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("alt+9")
+	l.has("Recipes", "new project", "made from recipes/team.recipe.toml", "Recipe team 1.2.0", "Roles depend on language")
+	l.keys("c")
+	l.has("type the project's name")
+	if len(l.started) != 0 || l.sh().confirm != nil {
+		t.Fatal("a command was offered without a name")
+	}
+	l.keys("down", "down", "enter")
+	if sh := l.sh(); !sh.editing() {
+		t.Fatal("Enter on the name edits it")
+	}
+	l.typeText("web").keys("enter", "down", "right")
+	l.has("It puts, for these answers:", "structure", "vertical-slices", "smith add app web --choice language=python")
+	l.keys("c")
+	l.has("Add a project", "The command that will run:", "$ smith add app web --choice language=python")
+	if len(l.started) != 0 {
+		t.Fatal("nothing runs before the answer")
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "add app web --choice language=python" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTypingInTheRecipesFormIsNotAShortcut(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("alt+9", "down", "down", "enter")
+	l.typeText("c?r")
+	if l.sh().help != nil || len(l.started) != 0 {
+		t.Fatal("a typed letter acted as a shortcut")
+	}
+	l.keys("enter")
+	l.has("Name      c?r")
+}
+
+func TestTheRecipeWizardLeavesTheShellForSmithRecipeNew(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("alt+9", "left")
+	l.has("new recipe", "The recipe wizard", "smith recipe new team.recipe.toml", "in a terminal of its own")
+	l.keys("c")
+	if !l.quit {
+		t.Fatal("the wizard asks on a terminal, so the shell steps aside")
+	}
+	if got := strings.Join(l.sh().Argv, " "); got != "recipe new team.recipe.toml" {
+		t.Fatalf("the shell handed over %q", got)
+	}
+}
+
+func TestTheRecipesTabIsOnTheMouseAndTheViewMenuToo(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.clickText("Recipes")
+	l.has("Create", "new project")
+	x, y := l.find("Kind")
+	l.send(click(x, y))
+	l.send(click(x, y)) // the selected row acts: the kind moves on to lib
+	l.has("lib", "no recipe: made by the stack or the language plugin")
 }
 
 type errString string
@@ -138,7 +266,7 @@ func TestRReloadsTheViewsThatLoadFromTheWorkspace(t *testing.T) {
 	calls := 0
 	l.m = func() Shell {
 		sh := l.sh()
-		sh.sources.Deps = func() depsLoaded { calls++; return sampleDeps }
+		sh.sources.Deps = func() depsview.Result { calls++; return sampleDeps }
 		return sh
 	}()
 	l.keys("alt+8")
@@ -188,8 +316,9 @@ func TestQuestionMarkIsTextWhileASettingIsBeingEdited(t *testing.T) {
 
 func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
-	l.has("Projects", "Run", "Doctor", "Release", "Plugins", "Deps", "Settings", "Guide")
-	for _, key := range []string{"alt+1", "alt+2", "alt+3", "alt+4", "alt+7", "alt+8", "alt+5", "alt+6"} {
+	// Ten tabs do not fit 56 cells with their full names: the long ones are shortened.
+	l.has("Proj", "Run", "Doctor", "Rel", "Plug", "Deps", "Recipes", "Conf", "Guide")
+	for _, key := range []string{"alt+1", "alt+2", "alt+3", "alt+4", "alt+7", "alt+8", "alt+9", "alt+5", "alt+6"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
 			if w := pane.Width(line); w != 80 {

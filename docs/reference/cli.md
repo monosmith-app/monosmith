@@ -855,11 +855,12 @@ Usage: `smith doctor [flags]`
 |---|---|---|
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
+| `--only <check>` | with --fix, fix only the named check, as doctor prints it (repeatable) |  |
 | `-y, --yes` | with --fix, apply without asking | off |
 
 <!-- smith:end doctor -->
 
-With `--fix`, doctor shows the fixes it can make as unified diffs, then applies the safe ones once you confirm (or with `--yes`): a safe fix only restores what smith or a plugin owns, like `go.work` or a generated pipeline with its slots kept. Others are shown, never applied. Without a terminal `--fix` only shows. The checks and their remedies are in [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do).
+With `--fix`, doctor shows the fixes it can make as unified diffs, then applies the safe ones once you confirm (or with `--yes`): a safe fix only restores what smith or a plugin owns, like `go.work` or a generated pipeline with its slots kept. Others are shown, never applied. `--only "go.work exists"` takes up just the fix of that check (the interactive shell's Doctor tab uses it to apply one fix). Without a terminal `--fix` only shows. The checks and their remedies are in [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do).
 
 ```sh
 $ smith doctor

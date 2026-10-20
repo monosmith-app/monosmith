@@ -6,16 +6,22 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/menubar"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
@@ -25,7 +31,7 @@ const tabNavigator = "workspace"
 
 var tabTitles = map[string]string{
 	tabNavigator: "Workspace", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabRelease: "Release", commands.TabPlugins: "Plugins", commands.TabDeps: "Deps", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
+	commands.TabRelease: "Release", commands.TabPlugins: "Plugins", commands.TabDeps: "Deps", commands.TabRecipes: "Recipes", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
 }
 
 // Config is what the shell is built from.
@@ -70,11 +76,12 @@ type Shell struct {
 	guide    guide.Model
 	pal      palette.Palette
 	palOpen  bool
-	doctor   doctorView
-	release  releaseView
-	settings settingsView
-	plugins  pluginsView
-	deps     depsView
+	doctor   doctorview.Model
+	release  releaseview.Model
+	settings settingsview.Model
+	plugins  pluginsview.Model
+	deps     depsview.Model
+	recipes  recipesview.Model
 
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
@@ -115,7 +122,7 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		guide: guide.NewModel(cfg.Actions), focus: layout.Main, mouseX: -1, mouseY: -1,
+		guide: guide.NewModel(cfg.Actions), recipes: recipesview.New(), focus: layout.Main, mouseX: -1, mouseY: -1,
 		tree: navigator.New(nil),
 	}
 	if sh.th.Icons.Spinner == nil {
@@ -150,7 +157,7 @@ func (s Shell) tabList() []string {
 		tabs = append(tabs, tabNavigator)
 	}
 	if s.inWorkspace {
-		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabPlugins, commands.TabDeps, commands.TabSettings)
+		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabPlugins, commands.TabDeps, commands.TabRecipes, commands.TabSettings)
 	}
 	return append(tabs, commands.TabGuide)
 }
@@ -198,12 +205,12 @@ type (
 		proc runner.Handle
 		ids  []string
 	}
-	doctorFailed struct{ err error }
 )
 
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
+	cmd = tea.Batch(cmd, s.describeRecipe())
 	s.refreshMenus()
 	if s.quit {
 		return s, tea.Quit
@@ -260,21 +267,20 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			}
 			s.branch = msg.branch
 		}
-	case doctorLoaded:
-		s.doctor = doctorView{report: &msg.report}
-	case doctorFailed:
-		s.doctor = doctorView{err: msg.err}
-	case pluginsLoaded:
-		s.plugins = pluginsView{loaded: true, rows: msg.rows, err: msg.err, cursor: s.plugins.cursor}
-		if s.plugins.cursor >= len(msg.rows) {
-			s.plugins.cursor = 0
-		}
-	case depsLoaded:
-		s.deps = depsView{loaded: true, rows: msg.rows, policy: msg.policy, err: msg.err}
-	case settingsLoaded:
-		s.settings = settingsView{loaded: true, settings: msg.settings, err: msg.err}
-	case releaseLoaded:
-		s.release = releaseView{loaded: true, plan: msg.plan, blockers: msg.blockers, warnings: msg.warnings, err: msg.err}
+	case doctorview.Result:
+		s.doctor = doctorview.FromResult(msg)
+	case pluginsview.Result:
+		s.plugins = s.plugins.FromResult(msg)
+	case depsview.Result:
+		s.deps = depsview.FromResult(msg)
+	case settingsview.Result:
+		s.settings = settingsview.FromResult(msg)
+	case recipesview.Loaded:
+		s.recipes = s.recipes.FromLoaded(msg)
+	case recipesview.DetailLoaded:
+		s.recipes = s.recipes.Receive(msg)
+	case releaseview.Result:
+		s.release = releaseview.FromResult(msg)
 	case startedMsg:
 		return s.started(msg)
 	case plannedMsg:
@@ -285,6 +291,21 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		return s.output(msg)
 	}
 	return nil
+}
+
+// describeRecipe asks for the recipe the Recipes form shows when it needs a
+// description it does not have; the recipe may be a URL, so it loads in the background.
+func (s *Shell) describeRecipe() tea.Cmd {
+	describe := s.sources.DescribeRecipe
+	if s.tab != commands.TabRecipes || describe == nil {
+		return nil
+	}
+	key, ref, answers, ok := s.recipes.Request()
+	if !ok {
+		return nil
+	}
+	s.recipes = s.recipes.Requested(key)
+	return func() tea.Msg { return recipesview.DetailLoaded{Key: key, Detail: describe(ref, answers)} }
 }
 
 // resize re-lays the screen out; it runs on every WindowSizeMsg.

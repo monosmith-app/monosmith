@@ -76,36 +76,51 @@ func (s Shell) mainContent(w, h int) content {
 	case commands.TabRun:
 		return s.runContent(w, h)
 	case commands.TabDoctor:
-		s.addBars(&c, buttons.Bar{s.cmdButton("ws.doctor", "Re-check", "↻"), s.cmdButton("ws.fix", "Fix…", "⚒")}, w)
-		lines, rowOf := s.doctor.view(s.th, w)
+		fixOne := buttons.Button{ID: "x:doctor-fix", Label: "Fix this…", Icon: "⚒", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()}
+		s.addBars(&c, buttons.Bar{s.cmdButton("ws.doctor", "Re-check", "↻"), fixOne, s.cmdButton("ws.fix", "Fix all…", "⚒")}, w)
+		lines, rowOf := s.doctor.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabRelease:
 		rel := s.cmdButton("rel.release", "Release…", "⇧")
-		rel.Disabled = rel.Disabled || !s.release.canRelease()
-		s.addBars(&c, buttons.Bar{s.cmdButton("rel.preview", "Preview", "▶"), rel}, w)
-		c.lines = append(c.lines, s.release.view(s.th, w)...)
+		rel.Disabled = rel.Disabled || !s.release.CanRelease()
+		notes := buttons.Button{ID: "x:release-notes", Label: "Notes", Icon: "≡", Shortcut: "N", Disabled: !s.release.CanRelease() || s.running()}
+		s.addBars(&c, buttons.Bar{s.cmdButton("rel.preview", "Preview", "▶"), notes, rel}, w)
+		lines, rowOf := s.release.View(s.th, w)
+		for row, i := range rowOf {
+			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
+		}
+		c.lines = append(c.lines, lines...)
 	case commands.TabPlugins:
-		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.toggleArgv() == nil || s.running()}
+		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.ToggleArgv() == nil || s.running()}
 		s.addBars(&c, buttons.Bar{toggle, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
-		lines, rowOf := s.plugins.view(s.th, w, max(h-len(c.lines), 1))
+		lines, rowOf := s.plugins.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "plugin", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabDeps:
-		up := buttons.Button{ID: "x:deps-up", Label: "Update…", Icon: "⇧", Shortcut: "U", Disabled: s.deps.upArgv() == nil || s.running()}
-		align := buttons.Button{ID: "x:deps-align", Label: "Align versions…", Icon: "=", Shortcut: "V", Disabled: s.deps.alignArgv() == nil || s.running()}
+		up := buttons.Button{ID: "x:deps-up", Label: "Update…", Icon: "⇧", Shortcut: "U", Disabled: s.deps.UpArgv() == nil || s.running()}
+		align := buttons.Button{ID: "x:deps-align", Label: "Align versions…", Icon: "=", Shortcut: "V", Disabled: s.deps.AlignArgv() == nil || s.running()}
 		s.addBars(&c, buttons.Bar{up, align, buttons.Button{ID: "x:reload", Label: "Re-check", Icon: "↻", Shortcut: "R"}}, w)
-		lines, rowOf := s.deps.view(s.th, w, max(h-len(c.lines), 1))
+		lines, rowOf := s.deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
+	case commands.TabRecipes:
+		argv, _ := s.recipes.Argv()
+		create := buttons.Button{ID: "x:recipes-create", Label: "Create…", Icon: "+", Shortcut: "C", Disabled: argv == nil || s.running()}
+		s.addBars(&c, buttons.Bar{create, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
+		lines, rowOf := s.recipes.View(s.th, w)
+		for row, i := range rowOf {
+			c.hits[len(c.lines)+row] = hit{kind: "recipe", index: i}
+		}
+		c.lines = append(c.lines, lines...)
 	case commands.TabSettings:
-		lines, rowOf := s.settings.view(s.th, w)
+		lines, rowOf := s.settings.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[row] = hit{kind: "setting", index: i}
 		}

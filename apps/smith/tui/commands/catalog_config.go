@@ -69,6 +69,7 @@ var all = []Command{
 	{ID: "view.run", Menu: MenuView, Title: "Run", Keys: []string{"alt+2"}, Shortcut: "Alt+2", Kind: ShowTab, Tab: TabRun, NeedsWorkspace: true},
 	{ID: "view.doctor", Menu: MenuView, Title: "Doctor", Keys: []string{"alt+3"}, Shortcut: "Alt+3", Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
 	{ID: "view.plugins", Menu: MenuView, Title: "Plugins", Hint: "built-in and installed plugins, their roles and what uses them", Keys: []string{"alt+7"}, Shortcut: "Alt+7", Kind: ShowTab, Tab: TabPlugins, NeedsWorkspace: true},
+	{ID: "view.recipes", Menu: MenuView, Title: "Recipes", Hint: "what a recipe puts in each role, and new projects from its choices", Keys: []string{"alt+9"}, Shortcut: "Alt+9", Kind: ShowTab, Tab: TabRecipes, NeedsWorkspace: true},
 	{ID: "view.deps", Menu: MenuView, Title: "Dependencies", Hint: "newer releases and the one-version policy", Keys: []string{"alt+8"}, Shortcut: "Alt+8", Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true},
 	{ID: "view.next-pane", Menu: MenuView, Title: "Next pane", Hint: "move the focus: navigator, main, inspector", Keys: []string{"tab", "f6"}, Shortcut: "Tab", Kind: NextPane},
 	{ID: "view.prev-pane", Menu: MenuView, Title: "Previous pane", Keys: []string{"shift+tab"}, Shortcut: "Shift+Tab", Kind: PrevPane},

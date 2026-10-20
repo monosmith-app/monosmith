@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/screenreader"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
@@ -23,9 +24,9 @@ func Interactive() bool {
 // Choose runs the shell full screen, with the mouse, and returns the smith
 // arguments of a command that needs a terminal of its own (it asks questions),
 // or nil when the user quit; every other command already ran inside the shell.
-// commands feed the palette. A panic restores the terminal and comes back as
+// catalog feeds the palette. A panic restores the terminal and comes back as
 // an error.
-func Choose(version string, out io.Writer, commands []clicontract.CommandDescription) (argv []string, err error) {
+func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription) (argv []string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			argv, err = nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
@@ -50,8 +51,20 @@ func Choose(version string, out io.Writer, commands []clicontract.CommandDescrip
 		}
 		actions = append(actions, a)
 	}
+	if screenreader.Wanted(os.Getenv) {
+		// No full-screen drawing, no mouse and no colour: plain numbered
+		// questions, then the command, which smith runs in this terminal.
+		argv, err := screenreader.Ask(os.Stdin, out, actions)
+		if err != nil {
+			return nil, err
+		}
+		if len(argv) > 0 {
+			fmt.Fprintf(out, "Running: %s\n\n", commands.Line(argv))
+		}
+		return argv, nil
+	}
 	cfg := Config{
-		Version: version, Workspace: name, Actions: actions, Commands: commands,
+		Version: version, Workspace: name, Actions: actions, Commands: catalog,
 		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
 	}
 	if inside {
@@ -66,7 +79,7 @@ func Choose(version string, out io.Writer, commands []clicontract.CommandDescrip
 	}
 	argv = final.(Shell).Argv
 	if len(argv) > 0 {
-		fmt.Fprintf(out, "→ smith %s\n\n", strings.Join(argv, " "))
+		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
 	}
 	return argv, nil
 }

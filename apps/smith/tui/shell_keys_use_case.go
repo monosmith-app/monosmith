@@ -5,17 +5,20 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
 // globalWhileEditing are the shortcuts that still work while a text field has
 // the keyboard; the others (Ctrl+A, Ctrl+F…) are the field's own.
 var globalWhileEditing = map[string]bool{
-	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true,
+	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true, "alt+9": true,
 }
 
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
@@ -45,6 +48,23 @@ var tabKeys = map[string][]dialog.HelpRow{
 		{Group: "Projects view", Title: "Run lint and test on what changed", Shortcut: "Ctrl+A"},
 		{Group: "Projects view", Title: "Graph around the project", Shortcut: "Inspector"},
 	},
+	commands.TabDoctor: {
+		{Group: "Doctor view", Title: "Open the detail, remedy and fix of a finding", Shortcut: "Enter"},
+		{Group: "Doctor view", Title: "Apply this finding's safe fix (smith doctor --fix --only)", Shortcut: "f"},
+		{Group: "Doctor view", Title: "Group the findings by project, or list them flat", Shortcut: "g"},
+		{Group: "Doctor view", Title: "Check again", Shortcut: "r / Ctrl+D"},
+	},
+	commands.TabRelease: {
+		{Group: "Release view", Title: "Show the commits behind the selected bump", Shortcut: "Enter"},
+		{Group: "Release view", Title: "Print the release notes (smith release --dry-run --notes)", Shortcut: "n"},
+		{Group: "Release view", Title: "Preview, or release after confirming", Shortcut: "F2 / F3"},
+	},
+	commands.TabRecipes: {
+		{Group: "Recipes view", Title: "Change the field: mode, kind, a choice, the recipe", Shortcut: "Left Right / Enter"},
+		{Group: "Recipes view", Title: "Type a name or a path", Shortcut: "Enter, then Enter / Esc"},
+		{Group: "Recipes view", Title: "Create (smith add, smith new, smith recipe new)", Shortcut: "c"},
+		{Group: "Recipes view", Title: "Read the recipes again", Shortcut: "r"},
+	},
 	commands.TabPlugins: {
 		{Group: "Plugins view", Title: "Turn the plugin on or off (smith plugin enable|disable)", Shortcut: "e / Enter"},
 		{Group: "Plugins view", Title: "List the plugins again", Shortcut: "r"},
@@ -59,7 +79,7 @@ var tabKeys = map[string][]dialog.HelpRow{
 }
 
 func (s *Shell) editing() bool {
-	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.editing)
+	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Editing) || (s.tab == commands.TabRecipes && s.recipes.Editing())
 }
 
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
@@ -119,7 +139,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 	if out.Confirmed {
 		return s.execute(c.Argv, true)
 	}
-	s.say("Cancelled: smith " + strings.Join(c.Argv, " ") + " was not run")
+	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
 	return nil
 }
 
@@ -200,17 +220,34 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute([]string{"graph", "--focus", sel.Project}, false)
 		}
 	case "plugin-toggle":
-		if argv := s.plugins.toggleArgv(); argv != nil {
+		if argv := s.plugins.ToggleArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("Only the built-in language plugins can be turned on or off here")
+	case "recipes-create":
+		argv, reason := s.recipes.Argv()
+		if argv == nil {
+			s.say(reason)
+			return nil
+		}
+		return s.execute(argv, false)
+	case "release-notes":
+		if s.release.CanRelease() {
+			return s.execute([]string{"release", "--dry-run", "--notes"}, false)
+		}
+		s.say("There is no release to show the notes of")
+	case "doctor-fix":
+		if argv := s.doctor.FixArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("This finding has no safe fix doctor can apply")
 	case "deps-up":
-		if argv := s.deps.upArgv(); argv != nil {
+		if argv := s.deps.UpArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("No dependency to update")
 	case "deps-align":
-		if argv := s.deps.alignArgv(); argv != nil {
+		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
 		s.say("The one-version policy found nothing to align")
@@ -273,7 +310,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 			s.openContextMenu(in.X+2, in.Y+1)
 		}
 	case commands.ReloadDoctor:
-		s.doctor = doctorView{}
+		s.doctor = doctorview.Model{}
 		return s.gotoTab(commands.TabDoctor)
 	}
 	return nil
@@ -317,33 +354,32 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 	s.tab, s.focus = id, layout.Main
 	switch id {
 	case commands.TabDoctor:
-		if s.doctor.report == nil && s.doctor.err == nil && s.sources.Doctor != nil {
+		if s.doctor.Report == nil && s.doctor.Err == nil && s.sources.Doctor != nil {
 			load := s.sources.Doctor
-			return func() tea.Msg {
-				report, err := load()
-				if err != nil {
-					return doctorFailed{err}
-				}
-				return doctorLoaded{report}
-			}
+			return func() tea.Msg { return load() }
 		}
 	case commands.TabRelease:
-		if !s.release.loaded && s.sources.Release != nil {
+		if !s.release.Loaded && s.sources.Release != nil {
 			load := s.sources.Release
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabPlugins:
-		if !s.plugins.loaded && s.sources.Plugins != nil {
+		if !s.plugins.Loaded && s.sources.Plugins != nil {
 			load := s.sources.Plugins
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabDeps:
-		if !s.deps.loaded && s.sources.Deps != nil {
+		if !s.deps.Loaded && s.sources.Deps != nil {
 			load := s.sources.Deps
 			return func() tea.Msg { return load() }
 		}
+	case commands.TabRecipes:
+		if !s.recipes.Loaded && s.sources.Recipes != nil {
+			load := s.sources.Recipes
+			return func() tea.Msg { return load() }
+		}
 	case commands.TabSettings:
-		if !s.settings.loaded && s.sources.Settings != nil {
+		if !s.settings.Loaded && s.sources.Settings != nil {
 			load := s.sources.Settings
 			return func() tea.Msg { return load() }
 		}
@@ -372,7 +408,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		if name == "e" || name == "enter" {
 			return s.activateSelection("plugin-toggle")
 		}
-		s.plugins = s.plugins.update(msg, s.listPage())
+		s.plugins = s.plugins.Update(msg, s.listPage())
 	case commands.TabDeps:
 		switch name {
 		case "u", "enter":
@@ -380,13 +416,26 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		case "v":
 			return s.activateSelection("deps-align")
 		}
-		s.deps = s.deps.update(msg, s.listPage())
+		s.deps = s.deps.Update(msg, s.listPage())
 	case commands.TabRun:
 		return s.runKey(name)
+	case commands.TabRecipes:
+		if name == "c" && !s.recipes.Editing() {
+			return s.activateSelection("recipes-create")
+		}
+		s.recipes = s.recipes.Update(msg)
+	case commands.TabRelease:
+		if name == "n" {
+			return s.activateSelection("release-notes")
+		}
+		s.release = s.release.Update(msg)
 	case commands.TabDoctor:
-		s.doctor = s.doctor.update(msg)
+		if name == "f" {
+			return s.activateSelection("doctor-fix")
+		}
+		s.doctor = s.doctor.Update(msg)
 	case commands.TabSettings:
-		next, argv := s.settings.update(msg)
+		next, argv := s.settings.Update(msg)
 		s.settings = next
 		if argv != nil {
 			return s.execute(argv, false)
@@ -525,13 +574,15 @@ func (s *Shell) listPage() int { return max(s.mainInner().H-6, 1) }
 func (s *Shell) reload() tea.Cmd {
 	switch s.tab {
 	case commands.TabDoctor:
-		s.doctor = doctorView{}
+		s.doctor = doctorview.Model{}
 	case commands.TabRelease:
-		s.release = releaseView{}
+		s.release = releaseview.Model{}
 	case commands.TabPlugins:
-		s.plugins = pluginsView{cursor: s.plugins.cursor}
+		s.plugins = s.plugins.Reset()
 	case commands.TabDeps:
-		s.deps = depsView{}
+		s.deps = depsview.Model{}
+	case commands.TabRecipes:
+		s.recipes = s.recipes.Reset()
 	default:
 		return nil
 	}

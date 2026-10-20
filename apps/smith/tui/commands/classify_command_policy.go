@@ -50,6 +50,13 @@ func Classify(argv []string) Class {
 		return Free
 	case verb == "deps":
 		return Changes
+	case verb == "recipe" && len(argv) > 1 && argv[1] == "new":
+		// The wizard asks its questions on the terminal; with the answers in
+		// a file it only writes the recipe.
+		if has("--from-answers") {
+			return Changes
+		}
+		return NeedsTerminal
 	case verb == "recipe", verb == "config":
 		if len(argv) > 1 && (argv[1] == "set" || argv[1] == "unset") {
 			return Changes

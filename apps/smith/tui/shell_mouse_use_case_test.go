@@ -33,7 +33,7 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 	_, y := l.findAfter("Doctor", 1) // the tab row
 	x, _ := l.findAfter("Doctor", 1)
 	l.send(click(x+1, y))
-	l.has("1 passed", "✖ go.work lists every module", "Re-check")
+	l.has("2 passed", "✖ go.work lists every module", "Re-check")
 }
 
 func TestClickingAMenuHeadingOpensItAndHoveringAnotherSwitchesMenus(t *testing.T) {
@@ -322,7 +322,7 @@ func TestClickingAPaletteRowRunsIt(t *testing.T) {
 	x, y := l.findAfter("Doctor", 3)
 	l.send(click(x+2, y))
 	l.hasNot("Command palette")
-	l.has("1 passed")
+	l.has("2 passed")
 	// Clicking outside closes it.
 	l.keys("ctrl+p")
 	l.send(click(1, 30))

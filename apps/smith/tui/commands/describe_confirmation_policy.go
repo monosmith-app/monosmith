@@ -11,6 +11,8 @@ func Describe(argv []string) (title, why string) {
 	switch verb := argv[0]; {
 	case verb == "release":
 		return "Release", "This versions, publishes and tags every package with releasable commits."
+	case verb == "doctor" && slices.Contains(argv, "--fix") && slices.Contains(argv, "--only"):
+		return "Apply one doctor fix", "This applies the safe fix of the chosen check and rewrites the files it names."
 	case verb == "doctor" && slices.Contains(argv, "--fix"):
 		return "Fix with doctor", "This applies the safe fixes doctor found and rewrites files."
 	case verb == "install":

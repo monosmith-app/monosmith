@@ -40,3 +40,22 @@ func TestFixes(t *testing.T) {
 		t.Fatal("a fix must stay in the workspace")
 	}
 }
+
+func TestOnlyNarrowsTheFixesToTheNamedChecks(t *testing.T) {
+	work := &protocol.Fix{Description: "fix go.work", Safe: true, Files: []protocol.FileEdit{{Path: "go.work", Content: "x\n"}}}
+	ci := &protocol.Fix{Description: "regenerate ci", Safe: true, Files: []protocol.FileEdit{{Path: "ci.yml", Content: "y\n"}}}
+	r := Report{Findings: []Finding{
+		{Finding: protocol.Finding{Check: "go.work exists", Fix: work}},
+		{Finding: protocol.Finding{Check: "CI pipelines match the workspace", Fix: ci}},
+	}}
+	if safe, _ := Fixes(Only(r, nil)); len(safe) != 2 {
+		t.Fatalf("with no names every fix stays: %d", len(safe))
+	}
+	safe, manual := Fixes(Only(r, []string{"go.work exists"}))
+	if len(safe) != 1 || safe[0].Description != "fix go.work" || len(manual) != 0 {
+		t.Fatalf("only the named check's fix: %+v %+v", safe, manual)
+	}
+	if safe, manual := Fixes(Only(r, []string{"no such check"})); len(safe)+len(manual) != 0 {
+		t.Fatalf("an unknown name selects nothing: %+v %+v", safe, manual)
+	}
+}

@@ -44,6 +44,7 @@ const (
 	TabRelease  = "release"
 	TabPlugins  = "plugins"
 	TabDeps     = "deps"
+	TabRecipes  = "recipes"
 	TabSettings = "settings"
 	TabGuide    = "guide"
 )

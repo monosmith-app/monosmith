@@ -15,23 +15,33 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 // Sources load what the shell's views show; tests replace them.
 type Sources struct {
-	Doctor   func() (doctor.Report, error)
-	Release  func() releaseLoaded
-	Settings func() settingsLoaded
+	Doctor   func() doctorview.Result
+	Release  func() releaseview.Result
+	Settings func() settingsview.Result
 	// Projects lists the workspace's projects with their tasks and what the
 	// current changes affect.
 	Projects func() projectsLoaded
 	// Plugins lists the built-in and installed plugins and what uses them.
-	Plugins func() pluginsLoaded
+	Plugins func() pluginsview.Result
 	// Deps looks for newer releases and applies the one-version policy.
-	Deps func() depsLoaded
+	Deps func() depsview.Result
+	// Recipes lists the recipe files of the workspace and which recipe makes each kind of project.
+	Recipes func() recipesview.Loaded
+	// DescribeRecipe loads a recipe and resolves it for some answers, without writing anything.
+	DescribeRecipe func(ref string, answers map[string]string) recipesview.Detail
 	// Plan lists the tasks a run command line will start, in order, so the
 	// progress bar knows its total before the first task starts. A nil or
 	// failing Plan only means the total grows as tasks appear.
@@ -63,51 +73,69 @@ func WorkspaceSources(dir, version string) Sources {
 			return p, nil
 		},
 		Projects: func() projectsLoaded { return loadProjects(open) },
-		Plugins:  func() pluginsLoaded { return loadPlugins(open, version) },
-		Deps:     func() depsLoaded { return loadDependencies(open) },
-		Plan:     func(argv []string) []string { return planTasks(open, argv) },
-		Doctor: func() (doctor.Report, error) {
-			s, err := open()
-			if err != nil {
-				return doctor.Report{}, err
-			}
-			defer s.Close()
-			return doctor.Run(s), nil
-		},
-		Settings: func() settingsLoaded {
+		Plugins:  func() pluginsview.Result { return pluginsview.Load(open, version) },
+		Deps:     func() depsview.Result { return depsview.Load(open) },
+		Recipes: func() recipesview.Loaded {
 			root, err := workspace.FindRoot(dir)
 			if err != nil {
-				return settingsLoaded{err: err}
+				return recipesview.Loaded{Catalog: recipesview.Catalog{Err: err}}
 			}
-			fields, err := configedit.Fields()
+			return recipesview.Loaded{Catalog: recipesview.ReadCatalog(root)}
+		},
+		DescribeRecipe: func(ref string, answers map[string]string) recipesview.Detail {
+			root, err := workspace.FindRoot(dir)
 			if err != nil {
-				return settingsLoaded{err: err}
+				return recipesview.Detail{Ref: ref, Problem: err.Error()}
 			}
-			var out settingsLoaded
-			for _, f := range fields {
-				value, set, err := configedit.Get(root, f.Path)
-				if err != nil {
-					return settingsLoaded{err: err}
-				}
-				out.settings = append(out.settings, setting{field: f, value: value, set: set})
+			return recipesview.Describe(root, ref, answers)
+		},
+		Plan: func(argv []string) []string { return planTasks(open, argv) },
+		Doctor: func() doctorview.Result {
+			s, err := open()
+			if err != nil {
+				return doctorview.Result{Err: err}
+			}
+			defer s.Close()
+			out := doctorview.Result{Report: doctor.Run(s)}
+			for _, name := range s.Graph.Names() {
+				out.Projects = append(out.Projects, doctorview.ProjectRef{Name: name, Root: s.Graph.Get(name).Root})
 			}
 			return out
 		},
-		Release: func() releaseLoaded {
+		Settings: func() settingsview.Result {
+			root, err := workspace.FindRoot(dir)
+			if err != nil {
+				return settingsview.Result{Err: err}
+			}
+			fields, err := configedit.Fields()
+			if err != nil {
+				return settingsview.Result{Err: err}
+			}
+			var out settingsview.Result
+			for _, f := range fields {
+				value, set, err := configedit.Get(root, f.Path)
+				if err != nil {
+					return settingsview.Result{Err: err}
+				}
+				out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: value, Set: set})
+			}
+			return out
+		},
+		Release: func() releaseview.Result {
 			s, err := open()
 			if err != nil {
-				return releaseLoaded{err: err}
+				return releaseview.Result{Err: err}
 			}
 			defer s.Close()
-			var out releaseLoaded
+			var out releaseview.Result
 			for _, f := range release.CheckLineage(s, false) {
 				if f.Blocking {
-					out.blockers = append(out.blockers, f.Message)
+					out.Blockers = append(out.Blockers, f.Message)
 				} else {
-					out.warnings = append(out.warnings, f.Message)
+					out.Warnings = append(out.Warnings, f.Message)
 				}
 			}
-			out.plan, out.err = release.MakePlan(s.Git, s.Graph)
+			out.Plan, out.Err = release.MakePlan(s.Git, s.Graph)
 			return out
 		},
 	}

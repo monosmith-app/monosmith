@@ -1,6 +1,7 @@
 package runview
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"sort"
 	"strings"
 	"time"
@@ -213,7 +214,7 @@ func (r *Run) Ordered() []*Task {
 }
 
 // CommandLine is the command as the user would type it.
-func (r *Run) CommandLine() string { return "smith " + strings.Join(r.Command, " ") }
+func (r *Run) CommandLine() string { return commands.Line(r.Command) }
 
 func appendCapped(lines []string, line string, limit int) []string {
 	lines = append(lines, line)
