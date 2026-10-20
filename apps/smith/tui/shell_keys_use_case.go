@@ -12,7 +12,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
 // globalWhileEditing are the shortcuts that still work while a text field has
@@ -89,6 +88,13 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		c, out := s.confirm.Key(name)
 		s.confirm = &c
 		return s.afterConfirm(c, out)
+	case s.about != nil:
+		a, out := s.about.Key(name)
+		s.about = &a
+		if out.Done {
+			s.about = nil
+		}
+		return nil
 	case s.help != nil:
 		h, out := s.help.Key(name, s.help.Total(s.th))
 		s.help = &h
@@ -281,7 +287,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Help:
 		s.openHelp()
 	case commands.About:
-		s.notify("smith "+s.version+" · "+s.header, toast.Info)
+		a := dialog.NewAbout(s.version).Place(s.w, s.h)
+		s.about = &a
 	case commands.Quit:
 		if s.proc != nil {
 			s.proc.Stop()

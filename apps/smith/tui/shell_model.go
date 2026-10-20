@@ -97,6 +97,7 @@ type Shell struct {
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
+	about   *dialog.About
 	toast   toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
@@ -136,7 +137,7 @@ func NewShell(cfg Config) Shell {
 	} else {
 		sh.tab = commands.TabGuide
 	}
-	sh.bar = menubar.New(commands.Menus(sh.state()), 80)
+	sh.bar = menubar.New(commands.Menus(sh.state()), 80).SetBrand("MonoSmith")
 	sh.tabs = sh.tabList()
 	sh.refreshMenus()
 	return sh
@@ -311,6 +312,10 @@ func (s *Shell) describeRecipe() tea.Cmd {
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
+	if s.about != nil {
+		a := s.about.Place(w, h)
+		s.about = &a
+	}
 	s.lay = layout.Divide(w, h)
 	s.tabs = s.tabList()
 	if !contains(s.tabs, s.tab) {

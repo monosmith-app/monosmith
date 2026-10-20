@@ -52,7 +52,7 @@ func (s *Shell) hover(x, y int) {
 		}
 	case s.popup.Shown():
 		s.popup = s.popup.Hover(x, y)
-	case s.help == nil:
+	case s.help == nil && s.about == nil:
 		s.bar = s.bar.Hover(x, y)
 	}
 }
@@ -70,6 +70,11 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
 		return s.afterConfirm(c, out)
+	case s.about != nil:
+		if s.about.Click(x, y).Done {
+			s.about = nil
+		}
+		return nil
 	case s.help != nil:
 		if s.help.Click(x, y).Done {
 			s.help = nil
@@ -224,7 +229,7 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
-	case s.confirm != nil || s.popup.Shown():
+	case s.confirm != nil || s.popup.Shown() || s.about != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))
@@ -269,7 +274,7 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 
 // rightClick opens the context menu of what is under the pointer.
 func (s *Shell) rightClick(x, y int) {
-	if s.confirm != nil || s.help != nil || s.palOpen {
+	if s.confirm != nil || s.help != nil || s.about != nil || s.palOpen {
 		return
 	}
 	s.bar = s.bar.Close()

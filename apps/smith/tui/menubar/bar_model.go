@@ -19,6 +19,9 @@ type Bar struct {
 	active                bool
 	// width is the room the bar has, to keep the box on screen.
 	width int
+	// brand is the app name drawn before the headings, after which a pipe
+	// separates it from them.
+	brand string
 }
 
 // New returns a closed bar.
@@ -38,6 +41,18 @@ func (b Bar) SetMenus(menus []Menu) Bar {
 
 // SetWidth tells the bar how wide the screen is.
 func (b Bar) SetWidth(w int) Bar { b.width = w; return b }
+
+// SetBrand sets the app name shown before the headings.
+func (b Bar) SetBrand(name string) Bar { b.brand = name; return b }
+
+// brandWidth is the room the name and its pipe take: a space, the name, a
+// space and the pipe.
+func (b Bar) brandWidth() int {
+	if b.brand == "" {
+		return 1
+	}
+	return pane.Width(b.brand) + 3
+}
 
 // Menus are the menus.
 func (b Bar) Menus() []Menu { return b.menus }
@@ -88,7 +103,7 @@ func (b Bar) box() dropdown {
 // headingX are the columns where each heading's label (with its padding) starts.
 func (b Bar) headingX() []int {
 	xs := make([]int, len(b.menus))
-	x := 1
+	x := b.brandWidth()
 	for i, m := range b.menus {
 		xs[i] = x
 		x += pane.Width(m.Name) + 3
@@ -249,7 +264,11 @@ func mnemonic(m Menu) rune {
 // underlined, and a title at the right, padded to w cells.
 func (b Bar) Row(th theme.Theme, title string, w int) string {
 	var s strings.Builder
-	s.WriteString(" ")
+	if b.brand == "" {
+		s.WriteString(" ")
+	} else {
+		s.WriteString(" " + th.Accent(th.Bold(b.brand)) + " " + th.Faint("│"))
+	}
 	for i, m := range b.menus {
 		label := m.Name
 		idx := strings.IndexRune(strings.ToLower(label), unicode.ToLower(mnemonic(m)))
