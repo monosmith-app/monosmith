@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 
-	"github.com/monosmith-app/monosmith/apps/smith/affected"
-	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +30,8 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 	var (
 		req    Request
 		asJSON bool
+		// jsonEvents prints the event stream as JSON lines instead of text.
+		jsonEvents bool
 	)
 	cmd := &cobra.Command{
 		Use:   use,
@@ -46,22 +48,23 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 				req.Projects = append(req.Projects, args...)
 			}
 			req.Out = cmd.OutOrStdout()
-			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
-			if err != nil {
-				return err
-			}
-			defer s.Close()
-			if req.Affected && req.Base == "" {
-				req.Base = affected.BaseFromEnv()
-				if req.Base == "" {
-					req.Base = s.Config.Release.Branch
-				}
+			if jsonEvents {
+				// Stdout carries the event stream and nothing else: each task's
+				// output arrives as task.output events.
+				req.Out = io.Discard
+				req.Events = runevents.NewJSONLines(cmd.OutOrStdout())
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
 			defer stop()
-			summary, err := RunInWorkspace(ctx, s, req)
+			summary, err := RunInDirectory(ctx, ".", version, cmd.ErrOrStderr(), req)
 			if err != nil {
 				return err
+			}
+			if jsonEvents {
+				if !summary.OK() {
+					return ErrTasksFailed
+				}
+				return nil
 			}
 			if len(summary.Results) == 0 {
 				return nil
@@ -90,5 +93,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")
+	f.BoolVar(&jsonEvents, "json-events", false, "print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else")
+	cmd.MarkFlagsMutuallyExclusive("json", "json-events")
 	return cmd
 }

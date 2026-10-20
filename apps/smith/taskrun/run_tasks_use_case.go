@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 )
@@ -34,6 +35,10 @@ type Options struct {
 	Out     io.Writer
 	// ToolVersion goes into every key.
 	ToolVersion string
+	// Events, when set, receives the run's event stream; nil means nobody listens.
+	Events *runevents.RunStream
+	// Command is the command line the run stands for, reported in run.started.
+	Command string
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -49,6 +54,10 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 		done: map[string]chan struct{}{}, results: map[string]Result{}, keys: map[string]string{}}
 	for _, id := range g.Order {
 		r.done[id] = make(chan struct{})
+	}
+	opts.Events.Emit(runevents.Event{Event: runevents.RunStarted, Command: opts.Command, Tasks: append([]string(nil), g.Order...)})
+	for _, id := range g.Order {
+		opts.Events.Emit(runevents.Event{Event: runevents.TaskQueued, Task: id})
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -67,6 +76,9 @@ func Run(ctx context.Context, g *taskgraph.Graph, opts Options) Summary {
 	for _, id := range g.Order {
 		s.Results = append(s.Results, r.results[id])
 	}
+	ok := s.OK()
+	opts.Events.Emit(runevents.Event{Event: runevents.RunFinished, OK: &ok, Summary: runevents.Summarize(
+		s.Count(Succeeded), s.Count(Failed), s.Count(Cached), s.Count(Skipped), s.Duration)})
 	return s
 }
 
@@ -89,6 +101,7 @@ func (r *runner) record(res Result) {
 	defer r.mu.Unlock()
 	r.results[res.Task] = res
 	r.keys[res.Task] = res.Key
+	r.opts.Events.Emit(finishedEvent(res))
 	if res.Status == Failed {
 		r.failed = true
 		if r.opts.Bail {
@@ -121,6 +134,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	}
 	defer func() { <-r.sem }()
 
+	r.opts.Events.Emit(runevents.Event{Event: runevents.TaskStarted, Task: t.ID})
 	key, inputs := r.key(t)
 	prefix := t.ID + " │ "
 	if t.Def.Cache && !r.opts.NoCache && r.opts.Storage != nil {
@@ -128,7 +142,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, t.Def.Outputs, entry)
 			if err == nil {
 				_ = taskcache.Remember(r.opts.Storage, t.ID, key)
-				Replay(prefix, log, r.opts.Out, &r.outMu)
+				Replay(prefix, log, r.opts.Out, &r.outMu, r.outputOf(t.ID))
 				r.say("%s ✔ from cache\n", t.ID)
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
 			}
@@ -140,6 +154,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 		_ = os.RemoveAll(filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o))))
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
+	out.onLine = r.outputOf(t.ID)
 	began := time.Now()
 	var app *served
 	if t.Def.Serve != "" {
@@ -232,6 +247,23 @@ func (r *runner) env(t *taskgraph.Task, key string) []string {
 		extra[k] = r.expand(t, []string{v})[0]
 	}
 	return Environment(extra)
+}
+
+// outputOf reports each line a task writes as a task.output event; nil when
+// nobody listens.
+func (r *runner) outputOf(task string) func(string) {
+	if r.opts.Events == nil {
+		return nil
+	}
+	return func(line string) {
+		r.opts.Events.Emit(runevents.Event{Event: runevents.TaskOutput, Task: task, Stream: runevents.Combined, Line: line})
+	}
+}
+
+// finishedEvent is the task.finished event of a result.
+func finishedEvent(res Result) runevents.Event {
+	status := map[Status]runevents.Status{Succeeded: runevents.Passed, Cached: runevents.Cached, Failed: runevents.Failed, Skipped: runevents.Skipped}[res.Status]
+	return runevents.Event{Event: runevents.TaskFinished, Task: res.Task, Status: status, DurationMs: res.Duration.Milliseconds(), CacheKey: res.Key, Reason: res.Reason}
 }
 
 func (r *runner) say(format string, args ...any) {
