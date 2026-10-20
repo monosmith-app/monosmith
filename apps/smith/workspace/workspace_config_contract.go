@@ -13,6 +13,12 @@ type Config struct {
 	CI        CISection        `toml:"ci"`
 	Release   ReleaseSection   `toml:"release"`
 	Cache     CacheSection     `toml:"cache"`
+	// Toolchains pins the runtime versions the workspace builds with, by
+	// toolchain label (node, go, python, rustc, java, dotnet, ruby, php,
+	// dart, cmake): "22" accepts any 22.x. smith doctor reports a machine
+	// that runs another version, and --fix writes .tool-versions for mise
+	// and asdf. Default: none.
+	Toolchains map[string]string `toml:"toolchains"`
 	// Dependencies is the workspace's policy for the versions its projects
 	// declare.
 	Dependencies DependenciesSection `toml:"dependencies"`

@@ -243,6 +243,18 @@ With `one_version = true`, `smith doctor` fails when projects of one ecosystem d
 
 To fix a fragmented dependency, `smith deps up --align [name...]` rewrites every declaration to one spec: the version installed, with the operator most projects use, else the highest version declared. `smith up <name>` and `smith deps up <name>` move a dependency to its latest release in every project that declares it, in one change. Both go through the plugins' `dependencies/declared` and `dependencies/rewrite` methods, so any language plugin that lists declarations takes part; Go does not need it, since a `go.work` builds every module with the highest version required. The policy is a workspace setting; a recipe cannot carry it yet (it has no workspace scope).
 
+## Toolchains
+
+Pin the runtimes the workspace builds with, by the label the plugins report (`node`, `go`, `python`, `rustc`, `java`, `dotnet`, `ruby`, `php`, `dart`, `cmake`):
+
+```toml
+[toolchains]
+node = "22"      # any 22.x
+go = "1.23"      # any 1.23.x
+```
+
+A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([decision 20](../design/decisions.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding.
+
 ## Leaving directories out
 
 smith makes a project of every manifest it finds (`package.json`, `go.mod`,

@@ -15,6 +15,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/toolchainpin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -145,6 +146,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		remote = env
 	}
 	out = append(out, cacheKeyFinding(remote, os.Getenv)...)
+	out = append(out, toolchainPinFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,
@@ -236,6 +238,19 @@ func droppedDependencies(p *projectgraph.Project) []protocol.Finding {
 		})
 	}
 	return out
+}
+
+// toolchainPinFindings checks [toolchains] against what the plugins probed.
+func toolchainPinFindings(s *session.Session) []protocol.Finding {
+	if len(s.Config.Toolchains) == 0 {
+		return nil
+	}
+	var projects []protocol.Project
+	for _, p := range s.Graph.Projects {
+		projects = append(projects, p.Project)
+	}
+	existing, _ := os.ReadFile(filepath.Join(s.Root, toolchainpin.ToolVersionsFile))
+	return toolchainpin.CheckPins(s.Config.Toolchains, projects, string(existing))
 }
 
 // ignoreFix adds .smith/ to the workspace's .gitignore (creating it).

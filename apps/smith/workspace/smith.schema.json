@@ -63,6 +63,11 @@
         "remote_read_only": { "type": "boolean", "description": "Read the remote cache without writing to it (SMITH_CACHE_READ_ONLY=1 does the same). Default: false." }
       }
     },
+    "toolchains": {
+      "type": "object",
+      "description": "Runtime versions the workspace builds with, by toolchain label (node, go, python, rustc, java, dotnet, ruby, php, dart, cmake). A version is a prefix: \"22\" accepts any 22.x. smith doctor reports a machine on another version.",
+      "additionalProperties": { "type": "string", "pattern": "^v?[0-9]+(\\.[0-9]+)*$" }
+    },
     "plugins": {
       "type": "object",
       "additionalProperties": false,
