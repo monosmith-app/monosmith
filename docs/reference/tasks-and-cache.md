@@ -265,6 +265,33 @@ services/orders/openapi.yaml starts at orders
   storefront           via schema of orders
 ```
 
+### Generated code from schemas
+
+`[projects.<name>.generate]` turns a shared schema into code in the consumer,
+without a hand-written task:
+
+```toml
+[projects.orders-go.generate]
+schema = "services/orders/openapi.yaml"
+generator = "go"
+version = "7.8.0"
+```
+
+smith adds a `generate` task to `orders-go` that runs before its `build`,
+`lint`, `typecheck` and `test`. Its only input is the schema file (so it is
+cached on the schema's content, and re-runs only when the schema or `version`
+changes), and its output is the `out` directory (default `generated`), restored
+on a cache hit. The project consumes the schema, so the graph, `smith affected`
+and `smith graph --blast-radius` already link it to the schema's owner.
+
+For an OpenAPI file the command is `npx @openapitools/openapi-generator-cli@<version>
+generate -i <schema> -g <generator> -o <out>`; for a `.proto` file it is
+`protoc -I <dir> --<generator>_out=<out> <schema>`. `version` is required so
+the tool is pinned (it is also `SMITH_GENERATOR_VERSION` in the task's
+environment). Any other tool, or a protoc wrapper, goes in `command`, with
+`{schema}`, `{schema_dir}`, `{out}` and `{generator}` replaced. The task can be
+refined like any other with `[projects.<name>.tasks.generate]`.
+
 ### Watch paths for deployment platforms
 
 ```sh

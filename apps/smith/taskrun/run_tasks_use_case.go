@@ -151,7 +151,12 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 
 	r.say("%s ▶ %s\n", t.ID, strings.Join(t.Def.Command, " "))
 	for _, o := range t.Def.Outputs {
-		_ = os.RemoveAll(filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o))))
+		dir := filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o)))
+		_ = os.RemoveAll(dir)
+		if t.Name == "generate" {
+			// A generator writes into its output directory, so it exists.
+			_ = os.MkdirAll(dir, 0o755)
+		}
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
 	out.onLine = r.outputOf(t.ID)

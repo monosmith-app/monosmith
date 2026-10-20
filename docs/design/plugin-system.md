@@ -306,6 +306,24 @@ guidance for plugin authors:
 - never put a timestamp, a random value or an absolute path into a command;
 - set `cache` only for tasks whose result depends on their inputs alone.
 
+## Schema-driven code generation
+
+A generated client is a task whose input is a file outside the consumer. The
+design keeps that in smith core, not in a plugin method, because the pieces
+already exist: a project consumes a schema (the schema edge, so the consumer
+depends on its owner), a task can read `{workspaceRoot}/` inputs, and the cache
+key covers command, environment and input contents.
+
+`[projects.<name>.generate]` therefore expands, in `ApplyOverrides`, into an
+ordinary `generate` task: input the schema, output the `out` directory, `cache`
+on, and `generate` prepended to the `dependsOn` of the project's `lint`,
+`typecheck`, `test` and `build`. The generator is named by settings (`generator`
+for the default OpenAPI and protoc commands, or a full `command`) and must be
+pinned with `version`, which is in the command and in `SMITH_GENERATOR_VERSION`,
+so upgrading it invalidates the cache. The graph knows the outputs through the
+task's `outputs`. Not yet: several schemas per project, a plugin contributing
+the generate task from a recipe's settings, and gRPC/AsyncAPI/GraphQL defaults.
+
 ## Failure modes
 
 | What goes wrong | What the host does |

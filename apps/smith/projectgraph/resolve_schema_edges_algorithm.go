@@ -1,6 +1,7 @@
 package projectgraph
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -60,7 +61,11 @@ func ResolveSchemaEdges(projects []*Project, files []string, cfg workspace.Confi
 	for _, p := range projects {
 		deps := map[string]bool{}
 		consumed := map[string]bool{}
-		for _, glob := range cfg.Projects[p.Name].ConsumesSchemas {
+		globs := cfg.Projects[p.Name].ConsumesSchemas
+		if g := cfg.Projects[p.Name].Generate; g != nil && g.Schema != "" {
+			globs = append(slices.Clone(globs), g.Schema)
+		}
+		for _, glob := range globs {
 			for _, f := range files {
 				if ok, _ := doublestar.Match(glob, f); !ok {
 					continue

@@ -38,6 +38,11 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		t.Verify = true
 		p.Tasks["package"] = t
 	}
+	if g := cfg.Projects[p.Name].Generate; g != nil {
+		if err := p.addGenerate(*g); err != nil {
+			return fmt.Errorf("smith.toml [projects.%s.generate]: %w", p.Name, err)
+		}
+	}
 	names := make([]string, 0, len(p.Tasks))
 	for name := range p.Tasks {
 		names = append(names, name)

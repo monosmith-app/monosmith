@@ -279,6 +279,9 @@ type ProjectOverride struct {
 	// project consumes (a client generated from an OpenAPI spec): the project
 	// depends on the owner of each, so a schema change affects it.
 	ConsumesSchemas []string `toml:"consumes_schemas"`
+	// Generate turns a shared schema into code in the project: a generate
+	// task that runs before the project's build and is cached on the schema.
+	Generate *GenerateConfig `toml:"generate"`
 	// Docker is the app's settings for the docker convention.
 	Docker *DockerOverride `toml:"docker"`
 	// Settings are plugins' settings for this project, by plugin name
@@ -288,6 +291,28 @@ type ProjectOverride struct {
 	// Recipe records the recipe the project was created from.
 	Recipe *ProjectRecipe          `toml:"recipe"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`
+}
+
+// GenerateConfig is [projects.<name>.generate]: the code generated from one
+// shared schema (an OpenAPI spec, a Protocol Buffers file).
+type GenerateConfig struct {
+	// Schema is the workspace-relative schema file. The project consumes it.
+	Schema string `toml:"schema"`
+	// Generator is what to generate: the openapi-generator name ("go",
+	// "typescript-fetch") for OpenAPI, the protoc plugin ("go", "python")
+	// for Protocol Buffers. Not needed with Command.
+	Generator string `toml:"generator"`
+	// Version pins the generator tool: part of the default command, and in
+	// the task's environment (SMITH_GENERATOR_VERSION), so a new version
+	// regenerates.
+	Version string `toml:"version"`
+	// Out is the directory, relative to the project, the code is written to
+	// and the task's output. Default: generated.
+	Out string `toml:"out"`
+	// Command replaces the generator's default command: an argv array in which
+	// {schema} (the schema's path from the project), {schema_dir}, {out} and
+	// {generator} are replaced.
+	Command []string `toml:"command"`
 }
 
 // ProjectRecipe is the recipe a project was created from, written by

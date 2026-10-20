@@ -287,6 +287,20 @@ A consumer depends on the schema's owner: a change to the schema affects both
 (`smith affected`), and `smith graph --blast-radius` lists what it reaches.
 See [Affected](tasks-and-cache.md#shared-schemas).
 
+A consumer can have its client generated from the schema:
+
+```toml
+[projects.orders-go.generate]
+schema = "services/orders/openapi.yaml"   # consumed, so no consumes_schemas needed
+generator = "go"                          # openapi-generator -g, or the protoc plugin
+version = "7.8.0"                         # required: pins the generator
+out = "generated"                         # default; the task's output
+# command = ["buf", "generate", "{schema}"]   # replaces the default command
+```
+
+This adds a cached `generate` task; see
+[Generated code](tasks-and-cache.md#generated-code-from-schemas).
+
 ## Recipes
 
 `[workspace] recipe` names the recipe `smith add` creates projects from: a
