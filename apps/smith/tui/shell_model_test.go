@@ -13,10 +13,12 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
@@ -48,6 +50,8 @@ var sampleProjects = []navigator.Project{
 		Tasks: []navigator.Task{{Name: "build", Command: "go build ./..."}, {Name: "test", Command: "go test ./..."}}},
 	{Name: "sdk", Kind: "package", Language: "python", Root: "packages/sdk", Tasks: []navigator.Task{{Name: "test", Command: "pytest"}}},
 }
+
+var sampleDoctorProjects = []doctorview.ProjectRef{{Name: "web", Root: "apps/web"}, {Name: "orders", Root: "apps/orders"}}
 
 var samplePlugins = []pluginsview.Row{
 	{Name: "go", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"orders", "kit"}},
@@ -127,12 +131,22 @@ func (l *lab) sh() Shell { return l.m.(Shell) }
 
 func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	t.Helper()
+	recipeRoot := recipeWorkspace(t)
 	l := &lab{t: t, clock: time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)}
-	report := doctor.Report{Passed: 1, Failed: 1, Findings: []doctor.Finding{
+	report := doctor.Report{Passed: 2, Failed: 2, Findings: []doctor.Finding{
 		{Finding: protocol.Finding{Check: "go.work lists every module", Detail: "libs/x is missing", Remedy: "go work use ./libs/x"}, Source: "go"},
+		{Finding: protocol.Finding{Check: "Docker registries of web agree", Detail: "web has two", Remedy: "pick one", Fix: &protocol.Fix{
+			Description: "write web's registry", Safe: true, Files: []protocol.FileEdit{{Path: "apps/web/Dockerfile", Content: "FROM x\n"}}}}, Source: "docker"},
 		{Finding: protocol.Finding{Check: "git is installed", OK: true}, Source: "smith"},
+		{Finding: protocol.Finding{Check: "orders has a lockfile", OK: true}, Source: "node"},
 	}}
-	plan := release.Plan{Items: []release.Item{{Project: "web", Current: "1.0.0", Next: "1.1.0", Reason: "feat: dark mode"}}, Unchanged: []string{"sdk"}}
+	plan := release.Plan{Items: []release.Item{
+		{Project: "web", Plugin: "node", Current: "1.0.0", Next: "1.1.0", Level: "minor", Tag: "web@1.1.0", Reason: "2 releasing commit(s)", Changes: []release.Change{
+			{Type: "feat", Scopes: []string{"ui"}, Description: "dark mode", Hash: "a1b2c3d4e5f6", Author: "Ada"},
+			{Type: "fix", Description: "cookie parsing", Breaking: true, BreakingNote: "drops the old cookie format", Hash: "9f8e7d6c5b4a"},
+		}},
+		{Project: "kit", Plugin: "go", Current: "0.2.0", Next: "0.2.1", Level: "patch", Tag: "kit@0.2.1", Reason: "dependency web releases"},
+	}, Unchanged: []string{"sdk"}}
 	cfg := Config{
 		Version: "1.2.3", Workspace: "acme", Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}),
 		Commands: smithCommands,
@@ -140,11 +154,15 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	}
 	if inWorkspace {
 		cfg.Sources = &Sources{
-			Doctor:   func() (doctor.Report, error) { return report, nil },
+			Doctor:   func() doctorview.Result { return doctorview.Result{Report: report, Projects: sampleDoctorProjects} },
 			Release:  func() releaseview.Result { return releaseview.Result{Plan: plan} },
 			Projects: func() projectsLoaded { return projectsLoaded{projects: sampleProjects, branch: "main"} },
 			Plugins:  func() pluginsview.Result { return pluginsview.Result{Rows: samplePlugins} },
 			Deps:     func() depsview.Result { return sampleDeps },
+			Recipes:  func() recipesview.Loaded { return recipesview.Loaded{Catalog: recipesview.ReadCatalog(recipeRoot)} },
+			DescribeRecipe: func(ref string, answers map[string]string) recipesview.Detail {
+				return recipesview.Describe(recipeRoot, ref, answers)
+			},
 			Settings: func() settingsview.Result {
 				fields, _ := configedit.Fields()
 				var out settingsview.Result

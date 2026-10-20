@@ -29,6 +29,10 @@ func TestClassify(t *testing.T) {
 		{[]string{"plugin", "disable", "go"}, Changes},
 		{[]string{"deps", "up", "zod"}, Changes},
 		{[]string{"deps", "up", "--align"}, Changes},
+		{[]string{"doctor", "--fix", "--only", "go.work exists"}, Changes},
+		{[]string{"recipe", "check", "team.recipe.toml"}, Free},
+		{[]string{"recipe", "new", "team.recipe.toml"}, NeedsTerminal},
+		{[]string{"recipe", "new", "team.recipe.toml", "--from-answers", "a.toml"}, Changes},
 		{[]string{"graph", "--focus", "web"}, Free},
 		{[]string{"graph"}, Free},
 		{[]string{"graph", "--format", "tui"}, NeedsTerminal},
@@ -50,6 +54,7 @@ func TestWithConfirmationAddsYesToCommandsThatWouldAskOnATerminal(t *testing.T) 
 		{[]string{"release"}, []string{"release", "--yes"}},
 		{[]string{"remove", "web"}, []string{"remove", "web", "--yes"}},
 		{[]string{"doctor", "--fix"}, []string{"doctor", "--fix", "--yes"}},
+		{[]string{"doctor", "--fix", "--only", "go.work exists"}, []string{"doctor", "--fix", "--only", "go.work exists", "--yes"}},
 		{[]string{"release", "--yes"}, []string{"release", "--yes"}},
 		{[]string{"install"}, []string{"install"}},
 	}

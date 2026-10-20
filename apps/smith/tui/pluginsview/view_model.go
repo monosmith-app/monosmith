@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
@@ -148,7 +149,7 @@ func (v Model) detail(th theme.Theme, w int) []string {
 		out = append(out, "  "+th.Muted("used by  no project"))
 	}
 	if argv := v.ToggleArgv(); argv != nil {
-		out = append(out, "  "+th.Muted("e runs smith "+strings.Join(argv, " ")))
+		out = append(out, "  "+th.Muted("e runs "+commands.Line(argv)))
 	}
 	return out
 }

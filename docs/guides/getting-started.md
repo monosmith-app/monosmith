@@ -439,7 +439,7 @@ command printed before it runs, so you can type the same line in a script.*
 
 The shell has a menu bar, the workspace navigator, the main view with tabs, an
 inspector for what is selected and a status bar, and it works with the mouse
-too. The tabs are also on `Alt+1` to `Alt+8` and in the View menu:
+too. The tabs are also on `Alt+1` to `Alt+9` and in the View menu:
 
 - **Projects** (`Alt+1`): every project with its language, kind, stack or
   recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
@@ -448,10 +448,25 @@ too. The tabs are also on `Alt+1` to `Alt+8` and in the View menu:
   depends on it, and shows its graph (`smith graph --focus <project>`).
 - **Run** (`Alt+2`): the task graph of the command running, each task's state,
   its log, failures first.
-- **Doctor** (`Alt+3`): every check, problems first. Enter shows the detail and
-  remedy, `r` checks again, `Ctrl+X` applies the safe fixes (`smith doctor --fix`, after you confirm).
-- **Release** (`Alt+4`): what the next release would do or why it is blocked.
-  `F2` previews it and `F3` releases.
+- **Doctor** (`Alt+3`): every check, grouped by the project it names (the
+  workspace's own checks first; `g` lists them flat), problems first. Enter
+  shows the detail, remedy and the fix with the files it writes. `f` applies
+  the fix of the selected check when it is a safe one (`smith doctor --fix
+  --only "<check>"`, after you confirm), `Ctrl+X` applies every safe fix
+  (`smith doctor --fix`) and `r` checks again.
+- **Release** (`Alt+4`): what the next release would do, project by project, or
+  why it is blocked. Enter on a project shows the commits behind its bump (the
+  tag, the level, each commit with its type, scope and author, and a breaking
+  change's note); `n` prints the release notes (`smith release --dry-run
+  --notes`), `F2` previews it and `F3` releases.
+- **Recipes** (`Alt+9`): a form built from the recipe's own choices. *New
+  project* picks the kind (the recipe of `[recipes]` or `[workspace] recipe`
+  makes it), a name and an answer to each choice, and shows what the recipe
+  puts in each role (language, lint, deploy, ...) and the file and line it
+  came from before anything is written; `c` ends as `smith add <kind> <name>
+  --choice name=answer`. *New workspace* ends as `smith new <name> --recipe
+  <recipe>`, and *new recipe* as `smith recipe new <path>`: the recipe wizard
+  asks its questions on a terminal, so the shell steps aside and smith runs it.
 - **Plugins** (`Alt+7`): the built-in and installed plugins, the roles each
   fills, and the projects that use it. `e` turns a built-in language plugin on
   or off (`smith plugin enable|disable <name>`).
@@ -471,13 +486,32 @@ The keys are the same in every tab: the arrows, `PgUp`, `PgDn`, `Home` and
 `End` move, Enter acts on the row, `r` loads the view again, `Tab` moves
 between the panes, `Esc` goes back, `Ctrl+P` opens the command palette with
 every smith command, and `?` (or `F1`) lists the keys of the tab you are in and
-the shortcuts of the menus. Everything fits 80 columns; below that the
-navigator becomes a tab and the tab labels lose their padding.
+the shortcuts of the menus. Everything fits 80 columns, where the longest tab
+names are shortened (Proj, Rel, Plug, Conf); below that the navigator becomes a
+tab and the tab labels lose their padding.
 
 Nothing the shell does happens on its own. Every action ends as a smith
 command line, printed in the status bar and the Run tab before it runs; one
 that changes the workspace, installs or publishes first shows the line in a
-confirmation you answer with `y` or `n`.
+confirmation you answer with `y` or `n`. A line that has a space in it is
+printed with quotes, so you can paste it into a script as it is.
+
+**With a screen reader.** The full-screen shell redraws the terminal, which a
+screen reader cannot follow. Set `SMITH_SCREEN_READER=1` and a bare `smith`
+asks the guided questions as plain numbered lines instead (no colour, no mouse,
+nothing drawn over earlier output), prints `Running: smith ...` and runs the
+command in your terminal:
+
+```text
+smith. What do you want to do? Type a number and press Enter, or q to quit.
+1. Run tasks - build, test, lint, typecheck
+2. Add a project - app, lib or package
+...
+Your choice: 2
+What kind? Type the number of one.
+1. app - deployed, never published
+...
+```
 
 ![The Settings tab: workspace.name "acme", ci.devcontainer true, ci.providers ["github"], and the others "(default)"](../assets/tui-settings.png)
 

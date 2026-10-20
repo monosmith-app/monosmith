@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"time"
 )
@@ -22,7 +22,7 @@ type Spec struct {
 }
 
 // CommandLine is the line as a user would type it, for display.
-func (s Spec) CommandLine() string { return "smith " + strings.Join(s.Argv, " ") }
+func (s Spec) CommandLine() string { return commands.Line(s.Argv) }
 
 // Exit is how a process ended.
 type Exit struct {

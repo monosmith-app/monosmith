@@ -190,6 +190,10 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 		s.keepRunVisible()
 	case "finding":
 		s.doctor = s.doctor.SelectRow(h.index)
+	case "recipe":
+		s.recipes = s.recipes.SelectRow(h.index)
+	case "release":
+		s.release = s.release.SelectRow(h.index)
 	case "plugin":
 		s.plugins = s.plugins.SelectRow(h.index)
 	case "dep":
@@ -252,7 +256,7 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 			}
 		case commands.TabProjects:
 			s.tree = s.tree.Move(dir)
-		case commands.TabDoctor, commands.TabSettings, commands.TabGuide, commands.TabPlugins, commands.TabDeps:
+		case commands.TabDoctor, commands.TabSettings, commands.TabGuide, commands.TabPlugins, commands.TabDeps, commands.TabRelease, commands.TabRecipes:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}

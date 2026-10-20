@@ -178,25 +178,38 @@ type tabSpan struct {
 	x0, x1 int
 }
 
-// tabLabel is a tab's text with a space of padding on each side; the padding is
-// dropped when the tabs would not fit the main view otherwise (80 columns and below).
-func (s Shell) tabLabel(id string) string {
-	return s.tabText(id, s.tabsFit())
+// shortTitles are the tab names used when even the unpadded full names do not
+// fit the main view (80 columns, with ten tabs).
+var shortTitles = map[string]string{
+	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabPlugins: "Plug", commands.TabSettings: "Conf",
 }
 
-// tabsFit is true when every tab fits the main view with its padding.
-func (s Shell) tabsFit() bool {
+// tabLabel is a tab's text with a space of padding on each side; the padding is
+// dropped when the tabs would not fit the main view otherwise (80 columns and
+// below), and then the names are shortened if they still do not fit.
+func (s Shell) tabLabel(id string) string {
+	padded := s.tabsFit(true, false)
+	return s.tabText(id, padded, !padded && !s.tabsFit(false, false))
+}
+
+// tabsFit is true when every tab fits the main view, with or without padding
+// and with the full names or the short ones.
+func (s Shell) tabsFit(padded, short bool) bool {
 	total := 1
 	for _, id := range s.tabs {
-		total += pane.Width(s.tabText(id, true)) + 1
+		total += pane.Width(s.tabText(id, padded, short)) + 1
 	}
 	return total <= max(s.lay.Main.W-2, 0)
 }
 
-func (s Shell) tabText(id string, padded bool) string {
-	label := " " + tabTitles[id]
+func (s Shell) tabText(id string, padded, short bool) string {
+	title := tabTitles[id]
+	if t, ok := shortTitles[id]; short && ok {
+		title = t
+	}
+	label := " " + title
 	if !padded {
-		label = tabTitles[id]
+		label = title
 	}
 	switch id {
 	case commands.TabRun:

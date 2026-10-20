@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
@@ -26,7 +27,7 @@ type Confirm struct {
 
 // NewConfirm builds the dialog for a command line (smith's arguments).
 func NewConfirm(title, why string, argv []string) Confirm {
-	return Confirm{Title: title, Why: why, Command: "smith " + strings.Join(argv, " "), Argv: argv, hover: -1}
+	return Confirm{Title: title, Why: why, Command: commands.Line(argv), Argv: argv, hover: -1}
 }
 
 const (

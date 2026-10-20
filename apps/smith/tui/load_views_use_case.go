@@ -16,8 +16,10 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
@@ -26,7 +28,7 @@ import (
 
 // Sources load what the shell's views show; tests replace them.
 type Sources struct {
-	Doctor   func() (doctor.Report, error)
+	Doctor   func() doctorview.Result
 	Release  func() releaseview.Result
 	Settings func() settingsview.Result
 	// Projects lists the workspace's projects with their tasks and what the
@@ -36,6 +38,10 @@ type Sources struct {
 	Plugins func() pluginsview.Result
 	// Deps looks for newer releases and applies the one-version policy.
 	Deps func() depsview.Result
+	// Recipes lists the recipe files of the workspace and which recipe makes each kind of project.
+	Recipes func() recipesview.Loaded
+	// DescribeRecipe loads a recipe and resolves it for some answers, without writing anything.
+	DescribeRecipe func(ref string, answers map[string]string) recipesview.Detail
 	// Plan lists the tasks a run command line will start, in order, so the
 	// progress bar knows its total before the first task starts. A nil or
 	// failing Plan only means the total grows as tasks appear.
@@ -69,14 +75,32 @@ func WorkspaceSources(dir, version string) Sources {
 		Projects: func() projectsLoaded { return loadProjects(open) },
 		Plugins:  func() pluginsview.Result { return pluginsview.Load(open, version) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
-		Plan:     func(argv []string) []string { return planTasks(open, argv) },
-		Doctor: func() (doctor.Report, error) {
+		Recipes: func() recipesview.Loaded {
+			root, err := workspace.FindRoot(dir)
+			if err != nil {
+				return recipesview.Loaded{Catalog: recipesview.Catalog{Err: err}}
+			}
+			return recipesview.Loaded{Catalog: recipesview.ReadCatalog(root)}
+		},
+		DescribeRecipe: func(ref string, answers map[string]string) recipesview.Detail {
+			root, err := workspace.FindRoot(dir)
+			if err != nil {
+				return recipesview.Detail{Ref: ref, Problem: err.Error()}
+			}
+			return recipesview.Describe(root, ref, answers)
+		},
+		Plan: func(argv []string) []string { return planTasks(open, argv) },
+		Doctor: func() doctorview.Result {
 			s, err := open()
 			if err != nil {
-				return doctor.Report{}, err
+				return doctorview.Result{Err: err}
 			}
 			defer s.Close()
-			return doctor.Run(s), nil
+			out := doctorview.Result{Report: doctor.Run(s)}
+			for _, name := range s.Graph.Names() {
+				out.Projects = append(out.Projects, doctorview.ProjectRef{Name: name, Root: s.Graph.Get(name).Root})
+			}
+			return out
 		},
 		Settings: func() settingsview.Result {
 			root, err := workspace.FindRoot(dir)

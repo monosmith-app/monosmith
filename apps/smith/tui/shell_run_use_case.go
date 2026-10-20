@@ -117,7 +117,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	s.finished()
 	if _, isRun := commands.ParseRun(s.run.Command); !isRun {
 		s.doctor, s.release, s.settings = doctorview.Model{}, releaseview.Model{}, settingsview.Model{}
-		s.plugins, s.deps = s.plugins.Reset(), depsview.Model{}
+		s.plugins, s.deps, s.recipes = s.plugins.Reset(), depsview.Model{}, s.recipes.Reset()
 		if load := s.sources.Projects; load != nil {
 			return func() tea.Msg { return load() }
 		}
