@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
+	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
 	"github.com/monosmith-app/monosmith/apps/smith/npmdepscheck"
@@ -77,7 +78,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
-	add("inspect", mcpserver.Command(version))
+	add("inspect", mcpserver.Command(version), engineserver.Command(version))
 	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command())
 	return root
 }

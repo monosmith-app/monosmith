@@ -15,6 +15,8 @@ type prefixWriter struct {
 	outMu   *sync.Mutex
 	pending []byte
 	log     bytes.Buffer
+	// onLine, when set, receives every line without its prefix, for the event stream.
+	onLine func(string)
 }
 
 func newPrefixWriter(prefix string, out io.Writer, mu *sync.Mutex) *prefixWriter {
@@ -49,11 +51,15 @@ func (w *prefixWriter) emit(line []byte) {
 	_, _ = io.WriteString(w.out, w.prefix)
 	_, _ = w.out.Write(bytes.TrimRight(line, "\r\n"))
 	_, _ = io.WriteString(w.out, "\n")
+	if w.onLine != nil {
+		w.onLine(string(bytes.TrimRight(line, "\r\n")))
+	}
 }
 
 // Replay writes a cached log through the same prefixing.
-func Replay(prefix string, log []byte, out io.Writer, mu *sync.Mutex) {
+func Replay(prefix string, log []byte, out io.Writer, mu *sync.Mutex, onLine func(string)) {
 	w := newPrefixWriter(prefix, out, mu)
+	w.onLine = onLine
 	_, _ = w.Write(log)
 	w.Flush()
 }
