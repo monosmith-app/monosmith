@@ -277,6 +277,11 @@ func (p *RegistryProbe) rubygems(t RegistryTarget) []RegistryFinding {
 	if err != nil {
 		return []RegistryFinding{p.unreachable(t, host, err)}
 	}
+	if status == http.StatusForbidden {
+		// RubyGems answers 403 to a key that is valid but was not given the
+		// index scope this listing needs; a push-only key is the recommended one.
+		return []RegistryFinding{p.finding(t, false, "give the key the index_rubygems scope to have ownership and versions checked before publishing", "the RubyGems key cannot list its gems (403), so ownership and existing versions were not checked")}
+	}
 	if rejected(status) {
 		return []RegistryFinding{p.finding(t, true, "create a RubyGems API key that can push "+strings.Join(t.Names, " and ")+" and set GEM_HOST_API_KEY", "RubyGems refused the API key (%d)", status)}
 	}

@@ -22,6 +22,8 @@ type fakeRegistries struct {
 	publishes []string
 	// rubyKey is the only RubyGems key accepted.
 	rubyKey string
+	// rubyPushOnly is a key RubyGems knows but without the index scope.
+	rubyPushOnly string
 	// npmVersions are the versions npm already has of "acme".
 	npmVersions []string
 	// npmMaintainers maintain "acme".
@@ -71,7 +73,10 @@ func newFakeRegistries(t *testing.T) *fakeRegistries {
 		http.Error(w, "no package", http.StatusBadRequest)
 	})
 	mux.HandleFunc("/ruby/api/v1/gems.json", func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != f.rubyKey {
+		if key := r.Header.Get("Authorization"); f.rubyPushOnly != "" && key == f.rubyPushOnly {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		} else if key != f.rubyKey {
 			http.Error(w, "Access Denied", http.StatusUnauthorized)
 			return
 		}
@@ -230,5 +235,23 @@ func TestAPlanWithoutRegistriesIsNotChecked(t *testing.T) {
 	s, plan := appSession(t, &workspace.ProjectRelease{})
 	if err := checkRegistries(s, plan, &RegistryProbe{}, &strings.Builder{}); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestAPushOnlyRubyGemsKeyIsAWarningNotABlock(t *testing.T) {
+	f := newFakeRegistries(t)
+	f.rubyPushOnly = "push-only"
+	probe := f.probe()
+	probe.RubyGemsKey = "push-only"
+	found := ValidateRegistries(allTargets(), probe)
+	if len(blocking(found)) != 0 {
+		t.Fatalf("a valid push-only key blocked the release: %+v", found)
+	}
+	warned := false
+	for _, x := range found {
+		warned = warned || (x.Registry == "RubyGems" && strings.Contains(x.String(), "index_rubygems"))
+	}
+	if !warned {
+		t.Errorf("the missing scope should be said: %+v", found)
 	}
 }
