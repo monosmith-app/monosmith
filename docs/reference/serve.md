@@ -136,6 +136,19 @@ The methods that change the workspace are runs of their own:
 | `upgrade` | `smith upgrade` |
 | `doctor.fix` | `smith doctor --fix --yes` |
 | `sync` | `smith sync` |
+| `release` (`noPush`) | `smith release --yes [--no-push]` |
+| `config.set` (`setting`, `value` or `values`) | `smith config set <setting> <value...>` |
+| `config.unset` (`setting`) | `smith config unset <setting>` |
+
+`release` publishes, so it has no MCP tool: an assistant is not handed it. A
+client that calls it has shown the plan (`release.preview`) and asked the
+person, which is why the command is run with `--yes`. Its output, with the
+registry checks and each publish, arrives as `task.output`, and a failed
+release ends the run `failed` with `exitCode` 1 and the journal in
+`dist/release/` as `smith release --status` reads it. `config.set` takes
+`value` for a setting with one value and `values` for a list, and checks them
+against the schema like the command line; a refused value is a failed run with
+the reason in its output.
 
 Such a run has one task, named after the method (`install`), and the events
 `run.started` (with the command line in `command`), `task.queued`,
@@ -143,9 +156,24 @@ Such a run has one task, named after the method (`install`), and the events
 `task.finished` and `run.finished`. It answers `run`, `ok` and `exitCode`, and
 `cancel` stops it. The `run` param names the run, as for `run`.
 
-Not yet served: `smith release` itself (only its preview), recipe creation, and
-reading and writing `smith.toml` settings; `smith mcp` and `smith lsp` do not
-yet sit on this server.
+Settings and recipes are read by the server itself, in the workspace it serves,
+and answered at once:
+
+| Method | Params | Answers |
+|---|---|---|
+| `config.list` | none | what `smith config list --json` prints: every setting with its value and what it does |
+| `config.get` | `setting` (`ci.devcontainer`) | `setting`, `value` (as written in `smith.toml`), `set` (false: it has its default), `type`, `description` |
+| `recipe.list` | none | `recipes`: each `*.recipe.toml` of the workspace (not under `node_modules`, `dist` or a hidden directory) with `path`, `name`, `version`, `extends`, and an `error` when it is not a recipe |
+| `recipe.describe` | `recipe` (a file in the workspace, or an https URL) | the recipe as written, before any answer: `chain`, every `choices` entry (with `when` when it is asked only for an answer, and its file and line), the roles it fills as `use` (`plugins` always, `alternatives` by answer, such as `language=csharp`) and the plugins it `configures` |
+| `recipe.roles` | `recipe`, `choices` (`{"language": "csharp"}`) | what the recipe puts in each role once the choices are answered (the rest take their defaults): `choices` as answered, and `roles`, each a level (`language`, `deploy`) or a slot (`lint`) with its `plugins` and the file and line they came from; an unanswered choice without a default is an invalid-params error |
+
+A recipe file must be inside the workspace. `recipe.check` still validates a
+recipe against the installed plugins, and `explain` with `recipe` shows what
+the recipe decided for a project.
+
+Not yet served: recipe creation (`smith recipe new`), and `smith mcp` and
+`smith lsp` as views on this server: they still run their own process, with
+the same functions behind them.
 
 ### A client in a few lines
 

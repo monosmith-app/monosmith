@@ -120,8 +120,12 @@ func (s *Server) dispatch(ctx context.Context, req request) (any, *rpcError) {
 	if tool, ok := queryMethods[req.Method]; ok {
 		return s.query(ctx, tool, req.Params)
 	}
-	if tool, ok := commandMethods[req.Method]; ok {
-		return s.command(ctx, req.Method, tool, req.Params)
+	_, mapped := commandMethods[req.Method]
+	if _, own := serverCommands[req.Method]; mapped || own {
+		return s.command(ctx, req.Method, req.Params)
+	}
+	if method, ok := serverMethods[req.Method]; ok {
+		return method(s, ctx, req.Params)
 	}
 	return nil, &rpcError{codeMethodNotFound, "method not found: " + req.Method}
 }
@@ -132,6 +136,12 @@ func (s *Server) initialize() InitializeResult {
 		methods = append(methods, m)
 	}
 	for m := range commandMethods {
+		methods = append(methods, m)
+	}
+	for m := range serverCommands {
+		methods = append(methods, m)
+	}
+	for m := range serverMethods {
 		methods = append(methods, m)
 	}
 	sort.Strings(methods)

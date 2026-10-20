@@ -1,5 +1,30 @@
 package engineserver
 
+import (
+	"context"
+	"encoding/json"
+)
+
+// serverCommands are the methods that change the workspace and have no MCP
+// tool: an assistant is not handed a release or a settings edit, but an editor
+// that shows the plan and asks the person may call them. Each turns the
+// method's params into the smith arguments.
+var serverCommands = map[string]func(raw json.RawMessage) ([]string, *rpcError){
+	"release":      releaseArgs,
+	"config.set":   configSetArgs,
+	"config.unset": configUnsetArgs,
+}
+
+// serverMethods are answered by the server itself, in process, without
+// running smith: settings and recipes are read where the workspace is.
+var serverMethods = map[string]func(s *Server, ctx context.Context, raw json.RawMessage) (any, *rpcError){
+	"config.list":     (*Server).configList,
+	"config.get":      (*Server).configGet,
+	"recipe.list":     (*Server).recipeList,
+	"recipe.describe": (*Server).recipeDescribe,
+	"recipe.roles":    (*Server).recipeRoles,
+}
+
 // queryMethods answer with the JSON of the smith command they stand for, and
 // change nothing. Each takes the input of the MCP tool it maps to (see
 // mcpserver), so what a client sends and what the command line is are decided
