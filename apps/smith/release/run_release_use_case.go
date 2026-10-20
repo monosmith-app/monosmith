@@ -22,6 +22,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/pypiwheels"
 	"github.com/monosmith-app/monosmith/apps/smith/rubygems"
+	"github.com/monosmith-app/monosmith/apps/smith/sbom"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
@@ -535,6 +536,16 @@ func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item
 				return err
 			}
 			assets = append(built.Assets, packages...)
+		}
+	}
+	if len(assets) > 0 && p.Release != nil && !Native(p) {
+		bom, err := sbom.Write(sbom.Request{Root: s.Root, ProjectRoot: p.Root, Language: p.Language, Name: p.Name, Version: item.Next,
+			Product: p.Release.Product, OutDir: "dist/release/" + p.Name, SmithVersion: s.Version})
+		if err != nil {
+			return fmt.Errorf("SBOM for %s: %w (re-run the release to finish it)", item.Tag, err)
+		}
+		if bom != "" {
+			assets = append(slices.Clone(assets), bom)
 		}
 	}
 	files := make([]string, len(assets))

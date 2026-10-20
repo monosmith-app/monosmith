@@ -250,6 +250,35 @@ func TestGitHubWorkflowMayRequestAnOIDCTokenForNPMProvenance(t *testing.T) {
 	}
 }
 
+func TestGitHubWorkflowAttestsReleaseAssetsOnlyWhenTheyAreAttached(t *testing.T) {
+	m := model()
+	if gh := RenderGitHub(m); strings.Contains(gh, "attest") {
+		t.Errorf("attestation without release assets:\n%s", gh)
+	}
+	m.Attest = true
+	gh := RenderGitHub(m)
+	for _, want := range []string{
+		"  id-token: write\n  attestations: write\n",
+		"uses: actions/attest-build-provenance@v3",
+		"subject-path: dist/release/*/*",
+		"hashFiles('dist/release/**') != ''",
+	} {
+		if !strings.Contains(gh, want) {
+			t.Errorf("workflow lacks %q:\n%s", want, gh)
+		}
+	}
+	if strings.Index(gh, "smith ci release") > strings.Index(gh, "attest-build-provenance") {
+		t.Error("attestation runs before the release attaches its assets")
+	}
+	m.Provenance = true
+	if strings.Count(RenderGitHub(m), "id-token: write") != 1 {
+		t.Error("id-token requested twice")
+	}
+	if az := RenderAzure(m); strings.Contains(az, "attest") {
+		t.Error("Azure Pipelines has no attestations")
+	}
+}
+
 func TestGitHubWorkflowGrantsThePermissionsPluginsAskFor(t *testing.T) {
 	var c Contributions
 	c.Add(protocol.CIResult{Permissions: []string{"packages: write"}})

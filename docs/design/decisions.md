@@ -193,12 +193,20 @@ on the first real upload, and are now in the code:
 2026-10-16 · #124
 
 **Decision.** No Apple Developer ID and no Windows code-signing certificate
-for now. Free provenance instead: SHA-256 `checksums.txt` and npm
-provenance today, with GitHub artifact attestations to follow.
+for now. Free provenance instead: SHA-256 `checksums.txt`, npm provenance,
+and (#348) a CycloneDX SBOM per released app plus GitHub artifact
+attestations (`actions/attest-build-provenance`, SLSA provenance) over the
+archives, packages and SBOMs, verified with `gh attestation verify`.
 
 **Consequences.** Only a binary downloaded from GitHub Releases in a browser
 is affected: macOS quarantines it, and Windows SmartScreen warns. Installs
 through package managers and the install scripts are not affected.
+
+The SBOM is written by smith from the lockfile or manifest (Go and npm so
+far; the plugin protocol is not extended until more ecosystems need it).
+Azure Pipelines and GitLab have no attestation service, so they get the SBOM
+and `checksums.txt` only. Native apps' archives are attached by the per-OS
+jobs and are not attested or given an SBOM yet.
 
 ## 12. No Java registry; OS package managers later
 

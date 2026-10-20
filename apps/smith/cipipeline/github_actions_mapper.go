@@ -89,6 +89,14 @@ jobs:
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
 	}
+	if m.Attest {
+		fmt.Fprintf(&b, `      - name: Attest build provenance
+        if: github.event_name == 'push' && github.ref_name == '%s' && hashFiles('dist/release/**') != ''
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/release/*/*
+`, m.ReleaseBranch)
+	}
 	if m.Native {
 		b.WriteString(githubNativeJob(m))
 	}
@@ -155,8 +163,11 @@ func idToken(m Model) string {
 	if m.Pub {
 		b.WriteString("  actions: write\n")
 	}
-	if m.Provenance {
+	if m.Provenance || m.Attest {
 		b.WriteString("  id-token: write\n")
+	}
+	if m.Attest {
+		b.WriteString("  attestations: write\n")
 	}
 	// Plugins add what their publishing needs: packages: write to push
 	// images to ghcr.io.
