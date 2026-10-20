@@ -31,6 +31,14 @@
         "native_linux_packages": { "type": "array", "items": { "type": "string" }, "description": "apt packages the native job installs on Linux before building." }
       }
     },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "one_version": { "type": "boolean", "description": "Report a dependency that projects of one ecosystem declare at different versions, and a dev tool declared outside the root. Default: false (smith new turns it on)." },
+        "allow": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Dependencies that may differ between projects: doctor, smith sync and smith deps up --align leave them alone." }
+      }
+    },
     "release": {
       "type": "object",
       "additionalProperties": false,

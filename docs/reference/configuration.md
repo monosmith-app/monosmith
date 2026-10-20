@@ -60,6 +60,10 @@ devcontainer = true                   # write .devcontainer/devcontainer.json wi
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
 native_linux_packages = []            # apt packages the native job installs on Linux
 
+[dependencies]
+one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
+allow = ["left-pad"]                  # dependencies that may differ between projects
+
 [release]
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
@@ -217,6 +221,23 @@ What smith does with it:
 included) use `auth = "token"` with a personal access token. With `token`,
 pip reads its credentials from `~/.netrc` or a keyring; smith sets only the
 index.
+
+## Dependencies
+
+The one-version policy keeps a workspace on one copy of each library, as pnpm catalogs and Gradle version catalogs do, without moving declarations out of the projects:
+
+- **Production dependencies are declared in each project**, at the same version in every project of an ecosystem (Node with Node, Python with Python).
+- **Dev tools are declared at the root, once** (ESLint, Jest, ...), as the Node stack does today.
+
+```toml
+[dependencies]
+one_version = true        # default: false; `smith new` writes true
+allow = ["left-pad"]      # may differ between projects
+```
+
+With `one_version = true`, `smith doctor` fails when projects of one ecosystem declare a production dependency at different versions (it names each project and spec) and warns about a dev tool declared in a project as well as at the root, or by two projects. Peer dependencies, the workspace's own packages and the names in `allow` are never reported. `allow` also keeps `smith sync` and `smith deps up --align` from touching those names.
+
+To fix a fragmented dependency, `smith deps up --align [name...]` rewrites every declaration to one spec: the version installed, with the operator most projects use, else the highest version declared. `smith up <name>` and `smith deps up <name>` move a dependency to its latest release in every project that declares it, in one change. Both go through the plugins' `dependencies/declared` and `dependencies/rewrite` methods, so any language plugin that lists declarations takes part; Go does not need it, since a `go.work` builds every module with the highest version required. The policy is a workspace setting; a recipe cannot carry it yet (it has no workspace scope).
 
 ## Leaving directories out
 
