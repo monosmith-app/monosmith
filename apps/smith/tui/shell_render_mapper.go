@@ -178,8 +178,26 @@ type tabSpan struct {
 	x0, x1 int
 }
 
+// tabLabel is a tab's text with a space of padding on each side; the padding is
+// dropped when the tabs would not fit the main view otherwise (80 columns and below).
 func (s Shell) tabLabel(id string) string {
+	return s.tabText(id, s.tabsFit())
+}
+
+// tabsFit is true when every tab fits the main view with its padding.
+func (s Shell) tabsFit() bool {
+	total := 1
+	for _, id := range s.tabs {
+		total += pane.Width(s.tabText(id, true)) + 1
+	}
+	return total <= max(s.lay.Main.W-2, 0)
+}
+
+func (s Shell) tabText(id string, padded bool) string {
 	label := " " + tabTitles[id]
+	if !padded {
+		label = tabTitles[id]
+	}
 	switch id {
 	case commands.TabRun:
 		if s.running() {
@@ -195,6 +213,9 @@ func (s Shell) tabLabel(id string) string {
 		if s.doctor.report != nil && s.doctor.report.Failed > 0 {
 			label += " " + s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, s.doctor.report.Failed))
 		}
+	}
+	if !padded {
+		return label
 	}
 	return label + " "
 }

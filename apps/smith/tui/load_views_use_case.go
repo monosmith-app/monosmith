@@ -28,6 +28,10 @@ type Sources struct {
 	// Projects lists the workspace's projects with their tasks and what the
 	// current changes affect.
 	Projects func() projectsLoaded
+	// Plugins lists the built-in and installed plugins and what uses them.
+	Plugins func() pluginsLoaded
+	// Deps looks for newer releases and applies the one-version policy.
+	Deps func() depsLoaded
 	// Plan lists the tasks a run command line will start, in order, so the
 	// progress bar knows its total before the first task starts. A nil or
 	// failing Plan only means the total grows as tasks appear.
@@ -59,6 +63,8 @@ func WorkspaceSources(dir, version string) Sources {
 			return p, nil
 		},
 		Projects: func() projectsLoaded { return loadProjects(open) },
+		Plugins:  func() pluginsLoaded { return loadPlugins(open, version) },
+		Deps:     func() depsLoaded { return loadDependencies(open) },
 		Plan:     func(argv []string) []string { return planTasks(open, argv) },
 		Doctor: func() (doctor.Report, error) {
 			s, err := open()

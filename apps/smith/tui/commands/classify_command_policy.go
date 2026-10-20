@@ -44,10 +44,12 @@ func Classify(argv []string) Class {
 		}
 		return Free
 	case verb == "plugin":
-		if len(argv) > 1 && (argv[1] == "set" || argv[1] == "add" || argv[1] == "remove") {
+		if len(argv) > 1 && (argv[1] == "set" || argv[1] == "add" || argv[1] == "remove" || argv[1] == "enable" || argv[1] == "disable") {
 			return Changes
 		}
 		return Free
+	case verb == "deps":
+		return Changes
 	case verb == "recipe", verb == "config":
 		if len(argv) > 1 && (argv[1] == "set" || argv[1] == "unset") {
 			return Changes

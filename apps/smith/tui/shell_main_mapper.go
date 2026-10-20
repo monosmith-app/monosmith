@@ -87,6 +87,23 @@ func (s Shell) mainContent(w, h int) content {
 		rel.Disabled = rel.Disabled || !s.release.canRelease()
 		s.addBars(&c, buttons.Bar{s.cmdButton("rel.preview", "Preview", "▶"), rel}, w)
 		c.lines = append(c.lines, s.release.view(s.th, w)...)
+	case commands.TabPlugins:
+		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.toggleArgv() == nil || s.running()}
+		s.addBars(&c, buttons.Bar{toggle, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
+		lines, rowOf := s.plugins.view(s.th, w, max(h-len(c.lines), 1))
+		for row, i := range rowOf {
+			c.hits[len(c.lines)+row] = hit{kind: "plugin", index: i}
+		}
+		c.lines = append(c.lines, lines...)
+	case commands.TabDeps:
+		up := buttons.Button{ID: "x:deps-up", Label: "Update…", Icon: "⇧", Shortcut: "U", Disabled: s.deps.upArgv() == nil || s.running()}
+		align := buttons.Button{ID: "x:deps-align", Label: "Align versions…", Icon: "=", Shortcut: "V", Disabled: s.deps.alignArgv() == nil || s.running()}
+		s.addBars(&c, buttons.Bar{up, align, buttons.Button{ID: "x:reload", Label: "Re-check", Icon: "↻", Shortcut: "R"}}, w)
+		lines, rowOf := s.deps.view(s.th, w, max(h-len(c.lines), 1))
+		for row, i := range rowOf {
+			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
+		}
+		c.lines = append(c.lines, lines...)
 	case commands.TabSettings:
 		lines, rowOf := s.settings.view(s.th, w)
 		for row, i := range rowOf {
@@ -138,14 +155,21 @@ func (s Shell) projectsContent(w, h int) content {
 	if p := s.selectedProject(); p != "" {
 		scope = p
 	}
-	c.lines = append(c.lines, s.th.Muted("Build, test and lint run on: ")+s.th.Bold(scope), "")
+	affected := 0
+	for _, p := range projects {
+		if p.Affected {
+			affected++
+		}
+	}
+	c.lines = append(c.lines, s.th.Muted("Build, test and lint run on: ")+s.th.Bold(scope),
+		s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s) · ↑ needs, ↓ used by", len(projects), affected, s.th.Icons.Dot)), "")
 
 	nameW := 8
 	for _, p := range projects {
 		nameW = max(nameW, pane.Width(p.Name))
 	}
 	nameW = min(nameW, max(w/3, 8))
-	c.lines = append(c.lines, s.th.Muted(pane.Fit("   "+pad("Project", nameW)+" "+pad("Kind", 8)+pad("Language", 10)+"Tasks", w)))
+	c.lines = append(c.lines, s.th.Muted(pane.Fit("   "+pad("Project", nameW)+" "+pad("Kind", 8)+pad("Language", 10)+pad("Stack", 14)+pad("↑ ↓", 6)+"Tasks", w)))
 
 	foldedLines := 0
 	var folded []string
@@ -172,7 +196,7 @@ func (s Shell) projectsContent(w, h int) content {
 		for _, t := range p.Tasks {
 			names = append(names, t.Name)
 		}
-		line := " " + dot + " " + pad(p.Name, nameW) + " " + pad(p.Kind, 8) + pad(p.Language, 10) + strings.Join(names, " ")
+		line := " " + dot + " " + pad(p.Name, nameW) + " " + pad(p.Kind, 8) + pad(p.Language, 10) + pad(p.Stack, 14) + pad(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), 6) + strings.Join(names, " ")
 		if p.Name == s.selectedProject() {
 			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 		}
@@ -483,6 +507,7 @@ func (s Shell) inspectorPanel() inspector.Panel {
 				s.action("run.selection", "Run"),
 				{ID: "x:explain", Label: "Explain"},
 				{ID: "x:why-miss", Label: "Why a cache miss"},
+				{ID: "x:graph", Label: "Graph around the project"},
 			},
 		}
 	}
@@ -505,6 +530,7 @@ func (s Shell) inspectorPanel() inspector.Panel {
 	return inspector.Panel{Sections: secs, Actions: []inspector.Action{
 		s.action("run.build", "Build"), s.action("run.test", "Test"), s.action("run.lint", "Lint"), s.action("run.typecheck", "Typecheck"),
 		{ID: "x:explain", Label: "Explain"},
+		{ID: "x:graph", Label: "Graph: needs and used by"},
 	}}
 }
 
