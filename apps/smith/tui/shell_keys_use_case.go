@@ -1,0 +1,444 @@
+package tui
+
+import (
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+)
+
+// globalWhileEditing are the shortcuts that still work while a text field has
+// the keyboard; the others (Ctrl+A, Ctrl+F…) are the field's own.
+var globalWhileEditing = map[string]bool{
+	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true,
+}
+
+// mouseHelp are the mouse actions listed in the shortcuts overlay.
+var mouseHelp = []string{
+	"Click: select or focus   Double-click: run the task",
+	"Right-click: context menu   Wheel: scroll lists and logs",
+	"Click a tab, a menu, a button or a menu item",
+	"Hover a menu to switch menus; hover a disabled item for why",
+}
+
+// otherKeys are keys that are not commands of their own.
+var otherKeys = []dialog.HelpRow{
+	{Group: "Moving", Title: "Move in a list or tree", Shortcut: "Up Down"},
+	{Group: "Moving", Title: "Open or close a branch", Shortcut: "Right Left"},
+	{Group: "Moving", Title: "Run the task, or open the branch", Shortcut: "Enter"},
+	{Group: "Moving", Title: "Open the menu bar", Shortcut: "F10 / Alt+letter"},
+	{Group: "Moving", Title: "Back, close, clear", Shortcut: "Esc"},
+}
+
+func (s *Shell) editing() bool {
+	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.editing)
+}
+
+func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
+	name := msg.String()
+	switch {
+	case s.confirm != nil:
+		c, out := s.confirm.Key(name)
+		s.confirm = &c
+		return s.afterConfirm(c, out)
+	case s.help != nil:
+		h, out := s.help.Key(name, s.help.Total(s.th))
+		s.help = &h
+		if out.Done {
+			s.help = nil
+		}
+		return nil
+	case s.palOpen:
+		p, res := s.pal.Key(msg)
+		s.pal = p
+		return s.afterPalette(res)
+	case s.popup.Shown():
+		p, res := s.popup.Key(name)
+		s.popup = p
+		return s.afterMenu(res.Chosen, res.Refused)
+	}
+	if (name == "ctrl+q" || name == "ctrl+c") && s.bar.Active() {
+		s.bar = s.bar.Close()
+	}
+	if b, res := s.bar.Key(name); res.Handled {
+		s.bar = b
+		return s.afterMenu(res.Chosen, res.Refused)
+	}
+	if name == "ctrl+c" {
+		if s.running() {
+			s.stop()
+		} else {
+			s.quit = true
+		}
+		return nil
+	}
+	if c, reason, ok := commands.ByKey(name, s.state()); ok && (!s.editing() || globalWhileEditing[name]) {
+		if reason != "" {
+			s.say(c.Title + " is unavailable: " + reason)
+			return nil
+		}
+		return s.perform(c)
+	}
+	return s.paneKey(msg)
+}
+
+// afterConfirm acts on the confirmation dialog's outcome.
+func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
+	if !out.Done {
+		return nil
+	}
+	s.confirm = nil
+	if out.Confirmed {
+		return s.execute(c.Argv, true)
+	}
+	s.say("Cancelled: smith " + strings.Join(c.Argv, " ") + " was not run")
+	return nil
+}
+
+// afterMenu runs the command a menu chose, or says why it could not.
+func (s *Shell) afterMenu(chosen, refused string) tea.Cmd {
+	if refused != "" {
+		s.say(refused)
+	}
+	if chosen != "" {
+		return s.activate(chosen)
+	}
+	return nil
+}
+
+func (s *Shell) afterPalette(res palette.Result) tea.Cmd {
+	if res.Refused != "" {
+		s.say(res.Refused)
+	}
+	if res.Closed {
+		s.palOpen = false
+		s.pal = s.pal.Reset()
+	}
+	switch {
+	case res.CommandID != "":
+		return s.activate(res.CommandID)
+	case len(res.Argv) > 0:
+		return s.execute(res.Argv, false)
+	}
+	return nil
+}
+
+// activate runs a command by id: a menu entry, a button, an inspector action.
+// Ids starting with "x:" are actions that belong to the selection.
+func (s *Shell) activate(id string) tea.Cmd {
+	if rest, ok := strings.CutPrefix(id, "x:"); ok {
+		return s.activateSelection(rest)
+	}
+	c, ok := commands.ByID(id)
+	if !ok {
+		return nil
+	}
+	if reason := c.Unavailable(s.state()); reason != "" {
+		s.say(c.Title + " is unavailable: " + reason)
+		return nil
+	}
+	return s.perform(c)
+}
+
+// activateSelection runs the actions of the inspector and context menus that
+// depend on what is selected.
+func (s *Shell) activateSelection(action string) tea.Cmd {
+	sel := s.tree.Selected()
+	switch action {
+	case "explain":
+		if sel.Task != "" {
+			return s.execute([]string{"explain", sel.Project + ":" + sel.Task}, false)
+		}
+		if sel.Project != "" {
+			return s.execute([]string{"explain", sel.Project}, false)
+		}
+	case "why-miss":
+		if sel.Task != "" {
+			return s.execute([]string{"why-miss", sel.Project + ":" + sel.Task}, false)
+		}
+	case "rerun":
+		if s.lastArg != nil {
+			return s.execute(s.lastArg, false)
+		}
+	case "toggle":
+		s.tree = s.tree.Toggle()
+	case "projects":
+		return s.gotoTab(commands.TabProjects)
+	case "log":
+		s.runSel = ""
+		return s.gotoTab(commands.TabRun)
+	}
+	return nil
+}
+
+// perform carries out a command.
+func (s *Shell) perform(c commands.Command) tea.Cmd {
+	switch c.Kind {
+	case commands.ShowTab:
+		return s.gotoTab(c.Tab)
+	case commands.Execute:
+		return s.execute(c.Argv, false)
+	case commands.RunTask:
+		return s.execute(commands.RunArgv(c.Task, s.selectedProject()), false)
+	case commands.RunSelection:
+		if sel := s.tree.Selected(); sel.Kind == navigator.TaskRow {
+			return s.execute(commands.RunArgv(sel.Task, sel.Project), false)
+		}
+	case commands.Guided:
+		if g, ok := s.guide.Pick(c.Guide); ok {
+			s.guide = g
+		}
+		return s.gotoTab(commands.TabGuide)
+	case commands.Palette:
+		s.palOpen = true
+		s.pal = s.pal.Reset()
+	case commands.Help:
+		s.openHelp()
+	case commands.About:
+		s.notify("smith "+s.version+" · "+s.header, toast.Info)
+	case commands.Quit:
+		if s.proc != nil {
+			s.proc.Stop()
+		}
+		s.quit = true
+	case commands.Stop:
+		s.stop()
+	case commands.Follow:
+		s.log = s.log.Toggle(len(s.logLines()), s.logHeight())
+		if s.log.Following() {
+			s.say("Following the log")
+		} else {
+			s.say("Log paused: scroll or press Ctrl+F to follow again")
+		}
+	case commands.NextPane:
+		s.cyclePane(1)
+	case commands.PrevPane:
+		s.cyclePane(-1)
+	case commands.ContextMenu:
+		s.bar = s.bar.Close()
+		if s.focus == layout.Navigator {
+			in := s.navigatorInner()
+			s.openContextMenu(in.X+2, in.Y+s.tree.CursorLine())
+		} else {
+			in := s.mainInner()
+			s.openContextMenu(in.X+2, in.Y+1)
+		}
+	case commands.ReloadDoctor:
+		s.doctor = doctorView{}
+		return s.gotoTab(commands.TabDoctor)
+	}
+	return nil
+}
+
+func (s *Shell) openHelp() {
+	var rows []dialog.HelpRow
+	for _, c := range commands.Shortcuts(s.state()) {
+		rows = append(rows, dialog.HelpRow{Group: c.Menu, Title: c.Title, Shortcut: c.Shortcut})
+	}
+	rows = append(rows, otherKeys...)
+	h := dialog.NewHelp(rows, mouseHelp).Place(s.w, s.h)
+	s.help = &h
+}
+
+// cyclePane moves the keyboard focus to the next visible pane.
+func (s *Shell) cyclePane(dir int) {
+	panes := []layout.Area{layout.Main}
+	if s.lay.HasNavigator() && s.inWorkspace {
+		panes = append([]layout.Area{layout.Navigator}, panes...)
+	}
+	if s.lay.HasInspector() && s.inWorkspace {
+		panes = append(panes, layout.Inspector)
+	}
+	for i, a := range panes {
+		if a == s.focus {
+			s.focus = panes[((i+dir)%len(panes)+len(panes))%len(panes)]
+			return
+		}
+	}
+	s.focus = layout.Main
+}
+
+// gotoTab shows a view and loads it the first time.
+func (s *Shell) gotoTab(id string) tea.Cmd {
+	if !contains(s.tabs, id) {
+		return nil
+	}
+	s.tab, s.focus = id, layout.Main
+	switch id {
+	case commands.TabDoctor:
+		if s.doctor.report == nil && s.doctor.err == nil && s.sources.Doctor != nil {
+			load := s.sources.Doctor
+			return func() tea.Msg {
+				report, err := load()
+				if err != nil {
+					return doctorFailed{err}
+				}
+				return doctorLoaded{report}
+			}
+		}
+	case commands.TabRelease:
+		if !s.release.loaded && s.sources.Release != nil {
+			load := s.sources.Release
+			return func() tea.Msg { return load() }
+		}
+	case commands.TabSettings:
+		if !s.settings.loaded && s.sources.Settings != nil {
+			load := s.sources.Settings
+			return func() tea.Msg { return load() }
+		}
+	}
+	return nil
+}
+
+// paneKey sends a key to the focused pane.
+func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
+	name := msg.String()
+	switch {
+	case s.focus == layout.Navigator || s.tab == tabNavigator:
+		return s.navigatorKey(name)
+	case s.focus == layout.Inspector:
+		return s.inspectorKey(name)
+	}
+	switch s.tab {
+	case commands.TabProjects:
+		return s.navigatorKey(name)
+	case commands.TabRun:
+		return s.runKey(name)
+	case commands.TabDoctor:
+		s.doctor = s.doctor.update(msg)
+	case commands.TabSettings:
+		next, argv := s.settings.update(msg)
+		s.settings = next
+		if argv != nil {
+			return s.execute(argv, false)
+		}
+	case commands.TabGuide:
+		g, cmd := s.guide.Handle(msg)
+		s.guide = g
+		if g.Done() {
+			argv := g.Argv
+			s.guide = g.Reset()
+			if len(argv) > 0 {
+				return s.execute(argv, false)
+			}
+			if s.inWorkspace {
+				return s.gotoTab(commands.TabProjects)
+			}
+		}
+		return cmd
+	}
+	return nil
+}
+
+func (s *Shell) navigatorKey(name string) tea.Cmd {
+	before := s.tree.Selected()
+	switch name {
+	case "up":
+		s.tree = s.tree.Move(-1)
+	case "down":
+		s.tree = s.tree.Move(1)
+	case "pgup":
+		s.tree = s.tree.Page(-1)
+	case "pgdown":
+		s.tree = s.tree.Page(1)
+	case "home":
+		s.tree = s.tree.Home()
+	case "end":
+		s.tree = s.tree.End()
+	case "left":
+		s.tree = s.tree.Collapse()
+	case "right":
+		s.tree = s.tree.Expand()
+	case " ":
+		s.tree = s.tree.Toggle()
+	case "enter":
+		if sel := s.tree.Selected(); sel.Kind == navigator.TaskRow {
+			return s.perform(mustCommand("run.selection"))
+		}
+		s.tree = s.tree.Toggle()
+	}
+	if s.tree.Selected() != before {
+		s.inspCursor = 0
+	}
+	return nil
+}
+
+func mustCommand(id string) commands.Command {
+	c, _ := commands.ByID(id)
+	return c
+}
+
+func (s *Shell) inspectorKey(name string) tea.Cmd {
+	actions := s.inspectorActions()
+	switch name {
+	case "up":
+		s.inspCursor = max(s.inspCursor-1, 0)
+	case "down":
+		s.inspCursor = min(s.inspCursor+1, max(len(actions)-1, 0))
+	case "enter":
+		if s.inspCursor < len(actions) && !actions[s.inspCursor].Disabled {
+			return s.activate(actions[s.inspCursor].ID)
+		}
+	}
+	return nil
+}
+
+// runKey moves in the Run tab: the task list and the log.
+func (s *Shell) runKey(name string) tea.Cmd {
+	if s.run == nil {
+		return nil
+	}
+	ids := s.runIDs()
+	at := 0
+	for i, id := range ids {
+		if id == s.runSel {
+			at = i
+		}
+	}
+	switch name {
+	case "up":
+		s.runSel = ids[max(at-1, 0)]
+	case "down":
+		s.runSel = ids[min(at+1, len(ids)-1)]
+	case "esc":
+		s.runSel = ""
+	case "pgup":
+		s.log = s.log.Page(-1, len(s.logLines()), s.logHeight())
+	case "pgdown":
+		s.log = s.log.Page(1, len(s.logLines()), s.logHeight())
+	case "home":
+		s.log = s.log.Home()
+	case "end":
+		s.log = s.log.End()
+	}
+	s.keepRunVisible()
+	return nil
+}
+
+// runIDs are the choices in the Run tab's list: "" (all output), then the
+// tasks in the order they are drawn.
+func (s *Shell) runIDs() []string {
+	ids := []string{""}
+	if s.run != nil {
+		for _, t := range s.run.Ordered() {
+			ids = append(ids, t.ID)
+		}
+	}
+	return ids
+}
+
+// logLines are the lines of the log being shown: one task's, or everything.
+func (s *Shell) logLines() []string {
+	if s.run == nil {
+		return nil
+	}
+	if t := s.run.Task(s.runSel); t != nil && s.runSel != "" {
+		return t.Log
+	}
+	return s.run.Lines
+}

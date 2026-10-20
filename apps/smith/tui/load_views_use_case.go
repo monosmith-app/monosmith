@@ -1,12 +1,22 @@
 package tui
 
 import (
+	"context"
 	"io"
+	"slices"
+	"sort"
+	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -15,6 +25,23 @@ type Sources struct {
 	Doctor   func() (doctor.Report, error)
 	Release  func() releaseLoaded
 	Settings func() settingsLoaded
+	// Projects lists the workspace's projects with their tasks and what the
+	// current changes affect.
+	Projects func() projectsLoaded
+	// Plan lists the tasks a run command line will start, in order, so the
+	// progress bar knows its total before the first task starts. A nil or
+	// failing Plan only means the total grows as tasks appear.
+	Plan func(argv []string) []string
+	// Start launches a smith command line as a child process (the smith
+	// binary itself) in the workspace.
+	Start func(argv []string) (runner.Handle, error)
+}
+
+// projectsLoaded is the workspace's projects, loaded in the background.
+type projectsLoaded struct {
+	projects []navigator.Project
+	branch   string
+	err      error
 }
 
 // WorkspaceSources open the workspace in dir for each view, as the CLI
@@ -24,6 +51,15 @@ func WorkspaceSources(dir, version string) Sources {
 		return session.Open(session.Options{Dir: dir, Version: version, Log: io.Discard})
 	}
 	return Sources{
+		Start: func(argv []string) (runner.Handle, error) {
+			p, err := runner.Start(context.Background(), runner.Spec{Argv: argv, Dir: dir})
+			if err != nil {
+				return nil, err
+			}
+			return p, nil
+		},
+		Projects: func() projectsLoaded { return loadProjects(open) },
+		Plan:     func(argv []string) []string { return planTasks(open, argv) },
 		Doctor: func() (doctor.Report, error) {
 			s, err := open()
 			if err != nil {
@@ -69,4 +105,89 @@ func WorkspaceSources(dir, version string) Sources {
 			return out
 		},
 	}
+}
+
+// loadProjects reads the project graph and what the changes since the release
+// branch affect.
+func loadProjects(open func() (*session.Session, error)) projectsLoaded {
+	s, err := open()
+	if err != nil {
+		return projectsLoaded{err: err}
+	}
+	defer s.Close()
+	base := affected.BaseFromEnv()
+	if base == "" {
+		base = s.Config.Release.Branch
+	}
+	hit := map[string]bool{}
+	for _, n := range affected.Compute(s.Git, s.Graph, base).Projects {
+		hit[n] = true
+	}
+	var out []navigator.Project
+	for _, name := range s.Graph.Names() {
+		p := s.Graph.Get(name)
+		np := navigator.Project{
+			Name: name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
+			Stack: projectgraph.StackOf(p, s.Config), Deps: p.Deps, Dependents: s.Graph.Dependents(name), Affected: hit[name],
+		}
+		var tasks []string
+		for t := range p.Tasks {
+			tasks = append(tasks, t)
+		}
+		sort.Strings(tasks)
+		for _, t := range tasks {
+			def := p.Tasks[t]
+			np.Tasks = append(np.Tasks, navigator.Task{
+				Name: t, Command: strings.Join(def.Command, " "), DependsOn: def.DependsOn, Cache: def.Cache, Description: def.Description,
+			})
+		}
+		out = append(out, np)
+	}
+	return projectsLoaded{projects: out, branch: s.Git.CurrentBranch()}
+}
+
+// planTasks lists the task IDs a run command line will start, in dependency
+// order, selecting projects the way `smith run` does; nil when it cannot tell.
+func planTasks(open func() (*session.Session, error), argv []string) []string {
+	req, ok := commands.ParseRun(argv)
+	if !ok {
+		return nil
+	}
+	s, err := open()
+	if err != nil {
+		return nil
+	}
+	defer s.Close()
+	names, err := s.Graph.Select(req.Projects)
+	if err != nil {
+		return nil
+	}
+	if req.Affected {
+		base := req.Base
+		if base == "" {
+			base = affected.BaseFromEnv()
+		}
+		if base == "" {
+			base = s.Config.Release.Branch
+		}
+		res := affected.Compute(s.Git, s.Graph, base)
+		names = slices.DeleteFunc(names, func(n string) bool { return !slices.Contains(res.Projects, n) })
+	}
+	var withTask []string
+	for _, n := range names {
+		for _, t := range req.Tasks {
+			if _, ok := s.Graph.Get(n).Tasks[t]; ok {
+				withTask = append(withTask, n)
+				break
+			}
+		}
+	}
+	if len(withTask) == 0 {
+		return nil
+	}
+	g, err := taskgraph.Build(s.Graph, withTask, req.Tasks)
+	if err != nil {
+		return nil
+	}
+	return slices.Clone(g.Order)
 }

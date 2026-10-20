@@ -9,6 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 )
@@ -18,38 +20,51 @@ func Interactive() bool {
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 }
 
-// Choose shows the shell and returns the smith arguments the user built, or
-// nil when they quit. commands feed the palette.
-func Choose(version string, out io.Writer, commands []clicontract.CommandDescription) ([]string, error) {
-	header := "smith " + version
+// Choose runs the shell full screen, with the mouse, and returns the smith
+// arguments of a command that needs a terminal of its own (it asks questions),
+// or nil when the user quit; every other command already ran inside the shell.
+// commands feed the palette. A panic restores the terminal and comes back as
+// an error.
+func Choose(version string, out io.Writer, commands []clicontract.CommandDescription) (argv []string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			argv, err = nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
+		}
+	}()
+	name := "no workspace"
 	inside := false
 	enabled := pluginhost.BuiltinNames()
 	if root, err := workspace.FindRoot("."); err == nil {
 		if cfg, err := workspace.Load(root); err == nil {
 			inside = true
-			header += " · " + cfg.Workspace.Name
+			name = cfg.Workspace.Name
 			if len(cfg.Plugins.Enabled) > 0 {
 				enabled = cfg.Plugins.Enabled
 			}
 		}
 	}
-	var actions []Action
-	for _, a := range Actions(enabled, pluginhost.BuiltinNames(), enabled) {
+	var actions []guide.Action
+	for _, a := range guide.Actions(enabled, pluginhost.BuiltinNames(), enabled) {
 		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) {
 			continue
 		}
 		actions = append(actions, a)
 	}
-	var sources *Sources
+	cfg := Config{
+		Version: version, Workspace: name, Actions: actions, Commands: commands,
+		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
+	}
 	if inside {
 		s := WorkspaceSources(".", version)
-		sources = &s
+		cfg.Sources = &s
 	}
-	final, err := tea.NewProgram(NewShell(NewModel(header, actions), commands, sources), tea.WithOutput(out)).Run()
+	// The alternate screen gives the shell the whole terminal and puts the
+	// user's screen back on exit; all-motion mouse reports drive the hover.
+	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
 	if err != nil {
 		return nil, err
 	}
-	argv := final.(Shell).Argv
+	argv = final.(Shell).Argv
 	if len(argv) > 0 {
 		fmt.Fprintf(out, "→ smith %s\n\n", strings.Join(argv, " "))
 	}

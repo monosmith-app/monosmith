@@ -2,10 +2,12 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // doctorView lists doctor's findings, problems first; enter opens the
@@ -26,10 +28,10 @@ func (v doctorView) update(key tea.KeyMsg) doctorView {
 		return v
 	}
 	switch key.String() {
-	case "up", "k":
+	case "up":
 		v.cursor = (v.cursor - 1 + len(v.report.Findings)) % len(v.report.Findings)
 		v.open = false
-	case "down", "j":
+	case "down":
 		v.cursor = (v.cursor + 1) % len(v.report.Findings)
 		v.open = false
 	case "enter", " ":
@@ -38,33 +40,52 @@ func (v doctorView) update(key tea.KeyMsg) doctorView {
 	return v
 }
 
-func (v doctorView) view() string {
+// view draws the findings in w cells; rowOf maps a line to the finding drawn on it.
+func (v doctorView) view(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
+	rowOf = map[int]int{}
 	if v.err != nil {
-		return errorStyle.Render(v.err.Error()) + "\n"
+		return []string{th.Failure(v.err.Error())}, rowOf
 	}
 	if v.report == nil {
-		return hintStyle.Render("Checking the workspace…") + "\n"
+		return []string{th.Muted("Checking the workspace…")}, rowOf
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "%d passed · %d failed · %d warning(s)\n\n", v.report.Passed, v.report.Failed, v.report.Warnings)
+	lines = append(lines, fmt.Sprintf("%s · %s · %s", th.Success(fmt.Sprintf("%d passed", v.report.Passed)),
+		th.Failure(fmt.Sprintf("%d failed", v.report.Failed)), th.Warning(fmt.Sprintf("%d warning(s)", v.report.Warnings))), "")
 	for i, f := range v.report.Findings {
-		mark := "✔"
+		mark := th.Success(th.Icons.Passed)
 		switch {
 		case !f.OK && f.Warning:
-			mark = "!"
+			mark = th.Warning(th.Icons.Warning)
 		case !f.OK:
-			mark = "✖"
+			mark = th.Failure(th.Icons.Failed)
 		}
-		b.WriteString(line(i == v.cursor, mark+" ", f.Check, f.Source))
+		rowOf[len(lines)] = i
+		lines = append(lines, guide.Row(th, i == v.cursor, mark+" ", f.Check, f.Source))
 		if i == v.cursor && v.open && !f.OK {
 			if f.Detail != "" {
-				b.WriteString("      " + f.Detail + "\n")
+				lines = append(lines, "      "+f.Detail)
 			}
 			if f.Remedy != "" {
-				b.WriteString("      " + cursorStyle.Render("remedy: ") + f.Remedy + "\n")
+				lines = append(lines, "      "+th.Accent("remedy: ")+f.Remedy)
 			}
 		}
 	}
-	b.WriteString(hintStyle.Render("\n↑/↓ move · enter details and remedy · r re-check · f fix (smith doctor --fix)") + "\n")
-	return b.String()
+	lines = append(lines, "", th.Muted("up/down move · enter details and remedy · ctrl+d re-check · ctrl+x fix (smith doctor --fix)"))
+	for i := range lines {
+		lines[i] = pane.Fit(lines[i], w)
+	}
+	return lines, rowOf
+}
+
+// selectRow moves the cursor to finding i and toggles its details when it was already there.
+func (v doctorView) selectRow(i int) doctorView {
+	if v.report == nil || i < 0 || i >= len(v.report.Findings) {
+		return v
+	}
+	if v.cursor == i {
+		v.open = !v.open
+	} else {
+		v.cursor, v.open = i, false
+	}
+	return v
 }
