@@ -90,6 +90,6 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
       - name: Attest build provenance
         if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/release/*/*
