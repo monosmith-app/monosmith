@@ -2,8 +2,10 @@ package projectgraph
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
@@ -82,6 +84,22 @@ func merge(p *Project, c protocol.Contribution, source string) {
 		p.Tasks[name] = c.Replace[name]
 		for _, f := range TaskFields {
 			p.contributed[name+"."+f] = source
+		}
+	}
+	p.contributedConsumes = append(p.contributedConsumes, c.Consumes...)
+	added := maps.Clone(c.Tasks)
+	if added == nil {
+		added = map[string]protocol.Task{}
+	}
+	maps.Copy(added, c.Replace)
+	for _, name := range sortedTaskNames(added) {
+		if !IsGenerateTask(name) {
+			continue
+		}
+		for _, in := range added[name].Inputs {
+			if file, ok := strings.CutPrefix(in, "{workspaceRoot}/"); ok && SchemaKind(file) != "" {
+				p.contributedConsumes = append(p.contributedConsumes, file)
+			}
 		}
 	}
 	for _, name := range sortedTaskNames(c.DependsOn) {

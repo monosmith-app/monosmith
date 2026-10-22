@@ -22,4 +22,9 @@ type Contribution struct {
 	// DependsOn adds dependencies to tasks the project already has, by task
 	// name ({"lint": ["slice-check"]}).
 	DependsOn map[string][]string `json:"dependsOn,omitempty"`
+	// Consumes are workspace-relative globs of the shared schema files the
+	// project consumes, so it depends on their owner. A task named generate
+	// or generate-<name> that reads a schema through a {workspaceRoot}/
+	// input declares it the same way without listing it here.
+	Consumes []string `json:"consumes,omitempty"`
 }

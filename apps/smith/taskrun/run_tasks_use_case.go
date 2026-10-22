@@ -153,7 +153,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	for _, o := range t.Def.Outputs {
 		dir := filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o)))
 		_ = os.RemoveAll(dir)
-		if t.Name == "generate" {
+		if t.Name == "generate" || strings.HasPrefix(t.Name, "generate-") {
 			// A generator writes into its output directory, so it exists.
 			_ = os.MkdirAll(dir, 0o755)
 		}

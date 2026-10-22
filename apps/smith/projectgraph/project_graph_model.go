@@ -51,6 +51,9 @@ type Project struct {
 	Dropped map[string][]string `json:"-"`
 	// contributed maps "task.field" to the plugin or convention that set it.
 	contributed map[string]string
+	// contributedConsumes are schema globs a plugin's contribution says the
+	// project consumes (its generate task's schema).
+	contributedConsumes []string
 	// stackPlugins are the plugins of the project's stack, other than its
 	// language plugin.
 	stackPlugins []string

@@ -50,6 +50,7 @@ func TestGenerateTaskRejectsIncompleteConfig(t *testing.T) {
 		"no generator": {Schema: "a/openapi.yaml", Version: "1"},
 		"out escapes":  {Schema: "a/openapi.yaml", Version: "1", Generator: "go", Out: "../x"},
 		"no default":   {Schema: "a/schema.graphql", Version: "1", Generator: "go"},
+		"no kind":      {Schema: "a/data.json", Version: "1", Generator: "go"},
 	} {
 		if _, err := GenerateTaskFor("app", g); err == nil {
 			t.Errorf("%s accepted", name)
@@ -62,7 +63,7 @@ func TestGenerateRunsBeforeTheTasksThatReadTheCode(t *testing.T) {
 		"build": {Command: []string{"go", "build"}, DependsOn: []string{"^build"}},
 		"test":  {Command: []string{"go", "test"}},
 	}}, Sources: map[string]string{}}
-	err := p.addGenerate(workspace.GenerateConfig{Schema: "services/orders/openapi.yaml", Generator: "go", Version: "7.8.0"})
+	err := p.addGenerate(workspace.ProjectOverride{Generate: &workspace.GenerateConfig{Schema: "services/orders/openapi.yaml", Generator: "go", Version: "7.8.0"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,5 +90,88 @@ func TestGenerateSchemaIsConsumedWithoutConsumesSchemas(t *testing.T) {
 	ResolveSchemaEdges(ps, []string{"services/orders/openapi.yaml"}, cfg)
 	if !reflect.DeepEqual(ps[1].Deps, []string{"orders"}) {
 		t.Fatalf("deps %v", ps[1].Deps)
+	}
+}
+
+func TestGenerateAsyncAPIAndGraphQLDefaults(t *testing.T) {
+	async, err := GenerateTaskFor("apps/events", workspace.GenerateConfig{Schema: "specs/asyncapi.yaml", Generator: "@asyncapi/html-template", Version: "6.2.1", Out: "docs"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"npx", "--yes", "@asyncapi/cli@6.2.1", "generate", "fromTemplate", "../../specs/asyncapi.yaml", "@asyncapi/html-template", "-o", "docs", "--force-write"}
+	if !reflect.DeepEqual(async.Command, want) {
+		t.Fatalf("asyncapi command %v", async.Command)
+	}
+	for _, generator := range []string{"", "typescript"} {
+		gql, err := GenerateTaskFor("apps/web", workspace.GenerateConfig{Schema: "api/schema.graphql", Generator: generator, Version: "6.3.4"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		want = []string{"npx", "--yes", "@genql/cli@6.3.4", "--schema", "../../api/schema.graphql", "--output", "generated"}
+		if !reflect.DeepEqual(gql.Command, want) {
+			t.Fatalf("graphql command %v", gql.Command)
+		}
+	}
+	if _, err := GenerateTaskFor("apps/events", workspace.GenerateConfig{Schema: "specs/asyncapi.yaml", Version: "1"}); err == nil {
+		t.Error("an AsyncAPI template is required")
+	}
+}
+
+func TestSeveralSchemasMakeOneTaskEach(t *testing.T) {
+	p := &Project{Project: protocol.Project{Name: "client", Root: "clients/py", Tasks: map[string]protocol.Task{
+		"test": {Command: []string{"pytest"}},
+	}}, Sources: map[string]string{}}
+	err := p.addGenerate(workspace.ProjectOverride{
+		Generate: &workspace.GenerateConfig{Schema: "contracts/user.proto", Generator: "python", Version: "36.2"},
+		Generates: []workspace.GenerateConfig{
+			{Schema: "contracts/order.proto", Generator: "python", Version: "36.2"},
+			{Name: "Billing API", Schema: "services/billing/openapi.yaml", Generator: "python", Version: "7.8.0"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Tasks["generate-order"].Outputs; !reflect.DeepEqual(got, []string{"generated-order"}) {
+		t.Fatalf("outputs %v", got)
+	}
+	if _, ok := p.Tasks["generate-billing-api"]; !ok {
+		t.Fatalf("tasks %v", p.Tasks)
+	}
+	if got := p.Tasks["test"].DependsOn; !reflect.DeepEqual(got, []string{"generate", "generate-billing-api", "generate-order"}) {
+		t.Fatalf("test deps %v", got)
+	}
+	// Two entries must not write into each other's directory.
+	err = (&Project{Project: protocol.Project{Name: "c", Root: "c"}, Sources: map[string]string{}}).addGenerate(workspace.ProjectOverride{
+		Generate:  &workspace.GenerateConfig{Schema: "a/a.proto", Generator: "go", Version: "1"},
+		Generates: []workspace.GenerateConfig{{Schema: "a/b.proto", Generator: "go", Version: "1", Out: "generated/b"}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "overlapping") {
+		t.Fatalf("overlap accepted: %v", err)
+	}
+	err = (&Project{Project: protocol.Project{Name: "c", Root: "c"}, Sources: map[string]string{}}).addGenerate(workspace.ProjectOverride{
+		Generates: []workspace.GenerateConfig{{Schema: "a/x.proto", Generator: "go", Version: "1"}, {Schema: "b/x.proto", Generator: "go", Version: "1"}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "named") {
+		t.Fatalf("duplicate name accepted: %v", err)
+	}
+}
+
+func TestAPluginsGenerateTaskIsOrderedAndConsumesItsSchema(t *testing.T) {
+	ps := []*Project{proj("orders", "services/orders", nil, nil), proj("client", "clients/go", nil, nil)}
+	client := ps[1]
+	client.Tasks = map[string]protocol.Task{"build": {Command: []string{"go", "build"}}}
+	merge(client, protocol.Contribution{Tasks: map[string]protocol.Task{
+		"generate-orders": {Command: []string{"gen"}, Inputs: []string{"{workspaceRoot}/services/orders/openapi.yaml"}, Outputs: []string{"gen"}, Cache: true},
+	}}, "plugin gen")
+	ResolveEdges(ps)
+	ResolveSchemaEdges(ps, []string{"services/orders/openapi.yaml"}, workspace.Config{})
+	if !reflect.DeepEqual(client.Deps, []string{"orders"}) {
+		t.Fatalf("deps %v", client.Deps)
+	}
+	if err := ApplyOverrides(client, workspace.Config{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := client.Tasks["build"].DependsOn; !reflect.DeepEqual(got, []string{"generate-orders"}) {
+		t.Fatalf("build deps %v", got)
 	}
 }

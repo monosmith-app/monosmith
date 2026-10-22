@@ -152,18 +152,11 @@
           "stack": { "type": "string", "description": "Replaces the stack the project's manifest records." },
           "schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of shared schema files (OpenAPI, AsyncAPI, Protocol Buffers, GraphQL) the project owns, besides those inside its directory." },
           "consumes_schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of schema files the project consumes: it depends on their owner, so a schema change affects it." },
-          "generate": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["schema"],
-            "description": "Code generated from a shared schema: a generate task that runs before the project's build, cached on the schema's content.",
-            "properties": {
-              "schema": { "type": "string", "description": "Workspace-relative schema file (OpenAPI or Protocol Buffers). The project consumes it." },
-              "generator": { "type": "string", "description": "What to generate: the openapi-generator name (go, typescript-fetch) or the protoc plugin (go, python)." },
-              "version": { "type": "string", "description": "Pins the generator tool; a new version regenerates." },
-              "out": { "type": "string", "description": "Output directory, relative to the project. Default: generated." },
-              "command": { "type": "array", "items": { "type": "string" }, "description": "Replaces the default command; {schema}, {schema_dir}, {out} and {generator} are replaced." }
-            }
+          "generate": { "$ref": "#/definitions/generate" },
+          "generates": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/generate" },
+            "description": "More generate entries, for a project that consumes several schemas: each is the task generate-<name> and needs an out directory of its own."
           },
           "docker": {
             "type": "object",
@@ -248,6 +241,20 @@
     }
   },
   "definitions": {
+    "generate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema"],
+      "description": "Code generated from a shared schema: a task that runs before the project's build, cached on the schema's content.",
+      "properties": {
+        "name": { "type": "string", "description": "In generates: the entry's name; its task is generate-<name>. Default: the schema file's name." },
+        "schema": { "type": "string", "description": "Workspace-relative schema file (OpenAPI, AsyncAPI, GraphQL or Protocol Buffers). The project consumes it." },
+        "generator": { "type": "string", "description": "What to generate: the openapi-generator name (go, typescript-fetch), the protoc plugin (go, python) or the AsyncAPI template (@asyncapi/html-template). GraphQL needs none." },
+        "version": { "type": "string", "description": "Pins the generator tool; a new version regenerates." },
+        "out": { "type": "string", "description": "Output directory, relative to the project. Default: generated (generated-<name> in generates)." },
+        "command": { "type": "array", "items": { "type": "string" }, "description": "Replaces the default command; {schema}, {schema_dir}, {out} and {generator} are replaced." }
+      }
+    },
     "dockerRegistries": {
       "type": "array",
       "minItems": 1,

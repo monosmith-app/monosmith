@@ -62,9 +62,18 @@ func ResolveSchemaEdges(projects []*Project, files []string, cfg workspace.Confi
 		deps := map[string]bool{}
 		consumed := map[string]bool{}
 		globs := cfg.Projects[p.Name].ConsumesSchemas
-		if g := cfg.Projects[p.Name].Generate; g != nil && g.Schema != "" {
-			globs = append(slices.Clone(globs), g.Schema)
+		globs = slices.Clone(globs)
+		po := cfg.Projects[p.Name]
+		if po.Generate != nil && po.Generate.Schema != "" {
+			globs = append(globs, po.Generate.Schema)
 		}
+		for _, g := range po.Generates {
+			if g.Schema != "" {
+				globs = append(globs, g.Schema)
+			}
+		}
+		// What a plugin's generate task reads, from its contribution.
+		globs = append(globs, p.contributedConsumes...)
 		for _, glob := range globs {
 			for _, f := range files {
 				if ok, _ := doublestar.Match(glob, f); !ok {

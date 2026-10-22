@@ -288,6 +288,10 @@ type ProjectOverride struct {
 	// Generate turns a shared schema into code in the project: a generate
 	// task that runs before the project's build and is cached on the schema.
 	Generate *GenerateConfig `toml:"generate"`
+	// Generates are further generate entries ([[projects.<name>.generates]]),
+	// one task each (generate-<name>), for a project that consumes several
+	// schemas. Each needs a distinct out directory.
+	Generates []GenerateConfig `toml:"generates"`
 	// Docker is the app's settings for the docker convention.
 	Docker *DockerOverride `toml:"docker"`
 	// Settings are plugins' settings for this project, by plugin name
@@ -300,13 +304,18 @@ type ProjectOverride struct {
 }
 
 // GenerateConfig is [projects.<name>.generate]: the code generated from one
-// shared schema (an OpenAPI spec, a Protocol Buffers file).
+// shared schema (an OpenAPI, AsyncAPI, GraphQL or Protocol Buffers file).
 type GenerateConfig struct {
+	// Name is the entry's name in [[projects.<name>.generates]]: its task is
+	// generate-<name>. Default: the schema file's name without extension.
+	Name string `toml:"name"`
 	// Schema is the workspace-relative schema file. The project consumes it.
 	Schema string `toml:"schema"`
 	// Generator is what to generate: the openapi-generator name ("go",
 	// "typescript-fetch") for OpenAPI, the protoc plugin ("go", "python")
-	// for Protocol Buffers. Not needed with Command.
+	// for Protocol Buffers, the template ("@asyncapi/html-template") for
+	// AsyncAPI. GraphQL needs none (a TypeScript client). Not needed with
+	// Command.
 	Generator string `toml:"generator"`
 	// Version pins the generator tool: part of the default command, and in
 	// the task's environment (SMITH_GENERATOR_VERSION), so a new version

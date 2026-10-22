@@ -56,6 +56,8 @@ func Discover(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost
 	if err != nil {
 		return nil, err
 	}
+	// Again: a plugin's generate task names the schema it reads.
+	ResolveSchemaEdges(projects, files, cfg)
 	for convention, names := range applied {
 		for _, p := range projects {
 			if slices.Contains(names, p.Name) {
