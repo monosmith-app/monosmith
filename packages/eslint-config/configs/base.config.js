@@ -67,9 +67,9 @@ export default [
       // function, a boolean must be named `isX`); the third condemns the
       // standard per-test fixture idiom of assigning to a module-level binding
       // from inside `beforeEach`.
-      'unicorn/name-replacements':                          'off',
-      'unicorn/consistent-boolean-name':                    'off',
-      'unicorn/no-top-level-assignment-in-function':        'off',
+      'unicorn/name-replacements':                            'off',
+      'unicorn/consistent-boolean-name':                      'off',
+      'unicorn/no-top-level-assignment-in-function':          'off',
       // Reports `{workspaceRoot}` in a plain string as a template literal
       // someone forgot to write `${...}` in. But `{workspaceRoot}` and
       // `{projectRoot}` are **Nx's own interpolation tokens**, the correct
@@ -77,12 +77,12 @@ export default [
       // any code that writes Nx config. Ten findings on this repo, ten false,
       // zero defects: it fails the same "earns its keep" test the rules above
       // fail.
-      'unicorn/no-incorrect-template-string-interpolation': 'off',
-      'unicorn/filename-case':                              'off',
-      'unicorn/prevent-abbreviations':                      'off',
-      'unicorn/no-null':                                    'off',
-      'unicorn/prefer-top-level-await':                     'off',
-      'unicorn/no-array-reduce':                            'off',
+      'unicorn/no-incorrect-template-string-interpolation':   'off',
+      'unicorn/filename-case':                                'off',
+      'unicorn/prevent-abbreviations':                        'off',
+      'unicorn/no-null':                                      'off',
+      'unicorn/prefer-top-level-await':                       'off',
+      'unicorn/no-array-reduce':                              'off',
       // These three demand the ES2023 non-mutating array copy methods
       // (`toSorted`/`toReversed`/`toSpliced`) — real advice on a runtime that
       // has them, and a rule the generated workspace's own `tsconfig.base.json`
@@ -93,29 +93,29 @@ export default [
       // at runtime. Satisfying the rule breaks `typecheck`; satisfying
       // `typecheck` fails the rule — both smith-owned gates, contradicting each
       // other over one line, on every project the moment it calls `.sort()`.
-      'unicorn/no-array-sort':                              'off',
-      'unicorn/no-array-reverse':                           'off',
-      'unicorn/no-array-splice':                            'off',
+      'unicorn/no-array-sort':                                'off',
+      'unicorn/no-array-reverse':                             'off',
+      'unicorn/no-array-splice':                              'off',
       // Demands `import path from 'node:path'` over `import { join } from
       // 'node:path'`. Named imports are idiomatic, tree-shake better, and are
       // what Nx's own generators emit — this is preference, not correctness.
-      'unicorn/import-style':                               'off',
+      'unicorn/import-style':                                 'off',
       // `document.getElementById('root')` is the canonical React mount, is what
       // every Nx/Vite/CRA template emits, and is faster than the selector form.
       // A rule that fails a generated app on its own entry point is not earning
       // its keep.
-      'unicorn/prefer-query-selector':                      'off',
+      'unicorn/prefer-query-selector':                        'off',
       // An Nx monorepo is legitimately mixed CJS/ESM: Nx generates CJS jest
       // configs, executors run under CJS, and `__dirname`/`createRequire` are
       // the correct tools there. The rule cannot tell those apart from real
       // legacy code.
-      'unicorn/prefer-module':                              'off',
+      'unicorn/prefer-module':                                'off',
       // Nx's own generators emit files with a bare `/* eslint-disable */`
       // (e.g. the jest.config.cts they write for every project). Those files
       // are not ours to edit, and a rule that makes a freshly generated
       // workspace fail `npm run lint` out of the box is worse than the
       // blanket disables it is trying to catch.
-      'unicorn/no-abusive-eslint-disable':                  'off',
+      'unicorn/no-abusive-eslint-disable':                    'off',
       // Pure formatting (`10000` vs `10_000`), which puts it outside this
       // config's stated scope — ESLint here is correctness-only, Prettier owns
       // formatting, and Prettier does not touch numeric separators. It is also
@@ -127,7 +127,20 @@ export default [
       // added `react-lib`/`react-internal-lib` failed `npm run lint` on its own
       // generated build config — the same "not earning its keep" test the two
       // rules above are off for.
-      'unicorn/numeric-separators-style':                   'off',
+      'unicorn/numeric-separators-style':                     'off',
+      // The v78 additions that police how a comment is written. The first
+      // two forbid the `/** ... */` documentation comment this repo writes
+      // everywhere (TSDoc, asterisk prefixes and all) and a one-line block
+      // comment; 64 findings in `eslint-config` alone, none a defect. This
+      // config is correctness-only and comment layout is formatting, so they
+      // fail the same "earns its keep" test as the rules above.
+      'unicorn/single-line-block-comment-style':              'off',
+      'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
+      // Every module in `configs/` is `export default [...named(...)]`: the
+      // exported value is built by a call, which is how a flat config is
+      // written. The rule cannot tell that from a module that does work when
+      // imported (nine findings here, all of this shape, none a defect).
+      'unicorn/no-top-level-side-effects':                    'off',
     },
   },
 ]
