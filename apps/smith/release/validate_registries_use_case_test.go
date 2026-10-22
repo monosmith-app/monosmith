@@ -155,7 +155,6 @@ func TestEachRegistryRefusesItsOwnBadCredential(t *testing.T) {
 	cases := map[string]func(*RegistryProbe){
 		"npm":      func(p *RegistryProbe) { p.NPMToken = "expired" },
 		"PyPI":     func(p *RegistryProbe) { p.PyPIPassword = "expired" },
-		"NuGet":    func(p *RegistryProbe) { p.NuGetKey = "expired" },
 		"RubyGems": func(p *RegistryProbe) { p.RubyGemsKey = "expired" },
 	}
 	for registry, spoil := range cases {
@@ -166,6 +165,23 @@ func TestEachRegistryRefusesItsOwnBadCredential(t *testing.T) {
 		if len(found) != 1 || found[0].Registry != registry {
 			t.Errorf("%s: blocking findings %+v", registry, found)
 		}
+	}
+}
+
+func TestNuGetRefusingTheEmptyPushIsOnlyAWarning(t *testing.T) {
+	f := newFakeRegistries(t)
+	probe := f.probe()
+	probe.NuGetKey = "expired"
+	found := ValidateRegistries(allTargets(), probe)
+	if len(blocking(found)) != 0 {
+		t.Fatalf("a NuGet answer must not stop the release: %+v", blocking(found))
+	}
+	warned := false
+	for _, finding := range found {
+		warned = warned || (finding.Registry == "NuGet" && strings.Contains(finding.Message, "not confirmed"))
+	}
+	if !warned {
+		t.Errorf("the NuGet answer should still be said: %+v", found)
 	}
 }
 
