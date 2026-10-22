@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-jvm/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -96,4 +97,9 @@ func (j *JVM) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error
 // ChangeKind implements serve.KindChanger.
 func (j *JVM) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(j.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (j *JVM) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(j.root, params)
 }

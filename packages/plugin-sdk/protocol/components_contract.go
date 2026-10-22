@@ -24,4 +24,7 @@ type ComponentsResult struct {
 	// Source is the workspace-relative file the list was read from, "" when
 	// the project has none.
 	Source string `json:"source,omitempty"`
+	// PURL is the project's own package URL when it has a registry identity
+	// (without a version: the release supplies it); "" otherwise.
+	PURL string `json:"purl,omitempty"`
 }

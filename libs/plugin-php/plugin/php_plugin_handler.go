@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-php/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-php/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -101,4 +102,9 @@ func (p *PHP) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult,
 // Latest implements serve.LatestReader.
 func (p *PHP) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(p.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (p *PHP) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(p.root, params)
 }
