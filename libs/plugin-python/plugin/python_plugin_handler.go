@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -92,4 +93,9 @@ func (p *Python) Rewrite(params protocol.RewriteParams) (protocol.DependencyResu
 // Latest implements serve.LatestReader.
 func (p *Python) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(p.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (p *Python) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(p.root, params)
 }

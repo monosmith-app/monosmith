@@ -69,6 +69,12 @@ type LatestReader interface {
 	Latest(params protocol.LatestParams) (protocol.LatestResult, error)
 }
 
+// ComponentLister lists the components a project ships, read from its
+// lockfile or manifest, for the release's SBOM.
+type ComponentLister interface {
+	Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error)
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)

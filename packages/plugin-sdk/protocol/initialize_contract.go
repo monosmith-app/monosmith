@@ -89,6 +89,8 @@ type Capabilities struct {
 	Declarations bool `json:"declarations,omitempty"`
 	// Latest reports the newest releases of dependencies and pinned tools.
 	Latest bool `json:"latest,omitempty"`
+	// Components lists a project's dependencies for its SBOM.
+	Components bool `json:"components,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -69,4 +70,9 @@ func (r *Rust) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, erro
 // Remove implements serve.Remover.
 func (r *Rust) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
 	return scaffolding.Remove(r.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (r *Rust) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(r.root, params)
 }
