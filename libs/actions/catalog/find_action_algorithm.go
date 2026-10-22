@@ -1,4 +1,4 @@
-package actions
+package catalog
 
 // Find returns the action a command line runs: the one with the longest
 // command path that begins the line. ok is false when no action does.

@@ -1,4 +1,4 @@
-package actions
+package catalog
 
 // Reasons an action is left out of the interactive shell's menus. Each
 // action's own reason names what is missing; these are the recurring ones.

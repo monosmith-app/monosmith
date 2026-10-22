@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/apps/smith/actions"
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -27,13 +27,13 @@ func TestEveryCommandIsAnActionAndEveryActionIsACommand(t *testing.T) {
 	exists := map[string]bool{}
 	for _, path := range visiblePaths(root, nil) {
 		exists[strings.Join(path, " ")] = true
-		if _, ok := actions.Find(path); !ok {
-			t.Errorf("smith %s has no action: add one to apps/smith/actions/catalog_config.go", strings.Join(path, " "))
+		if _, ok := catalog.Find(path); !ok {
+			t.Errorf("smith %s has no action: add one to libs/actions/catalog/catalog_config.go", strings.Join(path, " "))
 		}
 	}
-	for _, a := range actions.All() {
+	for _, a := range catalog.All() {
 		if !exists[a.ID()] {
-			t.Errorf("action %q names a command that is not there: remove or rename it in apps/smith/actions/catalog_config.go", a.ID())
+			t.Errorf("action %q names a command that is not there: remove or rename it in libs/actions/catalog/catalog_config.go", a.ID())
 		}
 	}
 }

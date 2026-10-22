@@ -1,4 +1,4 @@
-package actions
+package catalog
 
 // Safety says what an action does to the workspace, which decides how an
 // interface may run it.

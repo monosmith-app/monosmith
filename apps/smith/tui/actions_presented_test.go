@@ -4,9 +4,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/apps/smith/actions"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
 // presented is the id of every action a menu entry or a guided form stands for.
@@ -15,7 +15,7 @@ func presented(t *testing.T) map[string]bool {
 	out := map[string]bool{}
 	add := func(where string, ids ...string) {
 		for _, id := range ids {
-			if _, ok := actions.ByID(id); !ok {
+			if _, ok := catalog.ByID(id); !ok {
 				t.Errorf("%s presents %q, which is not an action", where, id)
 			}
 			out[id] = true
@@ -27,7 +27,7 @@ func presented(t *testing.T) map[string]bool {
 			add(c.ID, c.Task)
 		}
 		if len(c.Argv) > 0 {
-			a, ok := actions.Find(c.Argv)
+			a, ok := catalog.Find(c.Argv)
 			if !ok {
 				t.Errorf("%s runs %v, which is not an action", c.ID, c.Argv)
 				continue
@@ -45,12 +45,12 @@ func presented(t *testing.T) map[string]bool {
 
 func TestEveryActionIsPresentedOrExcusedInTheShell(t *testing.T) {
 	shown := presented(t)
-	for _, a := range actions.All() {
+	for _, a := range catalog.All() {
 		switch {
 		case shown[a.ID()] && a.NotInTUI != "":
 			t.Errorf("action %q is in the shell and also excused (%q): drop NotInTUI", a.ID(), a.NotInTUI)
 		case !shown[a.ID()] && a.NotInTUI == "":
-			t.Errorf("action %q is in no menu or guided form of the shell: add one, or say why not in NotInTUI (apps/smith/actions/catalog_config.go)", a.ID())
+			t.Errorf("action %q is in no menu or guided form of the shell: add one, or say why not in NotInTUI (libs/actions/catalog/catalog_config.go)", a.ID())
 		}
 	}
 }

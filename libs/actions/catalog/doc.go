@@ -1,4 +1,4 @@
-// Package actions is the one list of what smith can do: each action with the
+// Package catalog is the one list of what smith can do: each action with the
 // command it is, what it does to the workspace, whether it asks first, and
 // which interface leaves it out and why.
 //
@@ -8,4 +8,4 @@
 // is neither presented nor excused there. Presentation that belongs to one
 // interface (a shortcut key, a menu position) stays with that interface and
 // names the action it presents.
-package actions
+package catalog
