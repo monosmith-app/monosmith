@@ -3,7 +3,7 @@ package catalog
 // Reasons an action is left out of the interactive shell's menus. Each
 // action's own reason names what is missing; these are the recurring ones.
 const (
-	needsForm    = "no menu entry or guided form yet: it takes arguments the shell cannot ask for (#302)"
+	noSubforms   = "its subcommands are not described to the shell, so no form can ask for them yet (#302)"
 	ownTerminal  = "takes over the terminal, so the shell hands it back to one"
 	referenceOut = "reference output for tools and scripts; the command palette runs it"
 )
@@ -30,9 +30,9 @@ var catalog = []Action{
 	{Command: []string{"typecheck"}, Safety: Reads},
 	{Command: []string{"dev"}, Safety: NeedsTerminal, NotInTUI: ownTerminal},
 	{Command: []string{"install"}, Safety: Changes},
-	{Command: []string{"uninstall"}, Safety: Changes, NotInTUI: needsForm},
-	{Command: []string{"sync"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}, NotInTUI: needsForm},
-	{Command: []string{"deps"}, Safety: Changes, NotInTUI: needsForm},
+	{Command: []string{"uninstall"}, Safety: Changes},
+	{Command: []string{"sync"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},
+	{Command: []string{"deps"}, Safety: Changes, NotInTUI: noSubforms},
 	{Command: []string{"up"}, Safety: NeedsTerminal, Variants: []Variant{
 		{When: []string{"--yes"}, Safety: Changes},
 		{When: []string{"--check", "--json"}, Safety: Reads},
@@ -41,8 +41,8 @@ var catalog = []Action{
 	// Ship
 	{Command: []string{"release"}, Safety: Changes, Asks: true},
 	{Command: []string{"ci"}, Safety: Changes},
-	{Command: []string{"pipeline"}, Safety: Changes, NotInTUI: needsForm},
-	{Command: []string{"docker"}, Safety: Changes, NotInTUI: needsForm},
+	{Command: []string{"pipeline"}, Safety: Changes},
+	{Command: []string{"docker"}, Safety: Changes, NotInTUI: noSubforms},
 
 	// Inspect
 	{Command: []string{"doctor"}, Safety: Reads, Asks: true, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}},
@@ -50,9 +50,9 @@ var catalog = []Action{
 	{Command: []string{"affected"}, Safety: Reads},
 	{Command: []string{"graph"}, Safety: Reads, Variants: []Variant{{When: []string{"tui", "--format=tui"}, Safety: NeedsTerminal}}},
 	{Command: []string{"info"}, Safety: Reads},
-	{Command: []string{"explain"}, Safety: Reads, NotInTUI: needsForm},
-	{Command: []string{"why-miss"}, Safety: Reads, NotInTUI: needsForm},
-	{Command: []string{"slices"}, Safety: Reads, NotInTUI: needsForm},
+	{Command: []string{"explain"}, Safety: Reads},
+	{Command: []string{"why-miss"}, Safety: Reads},
+	{Command: []string{"slices"}, Safety: Reads, NotInTUI: noSubforms},
 	{Command: []string{"kinds"}, Safety: Reads, NotInTUI: referenceOut},
 	{Command: []string{"stacks"}, Safety: Reads, NotInTUI: referenceOut},
 	{Command: []string{"commands"}, Safety: Reads, NotInTUI: referenceOut},

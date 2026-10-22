@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/tui"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +36,18 @@ func TestEveryCommandIsAnActionAndEveryActionIsACommand(t *testing.T) {
 	for _, a := range catalog.All() {
 		if !exists[a.ID()] {
 			t.Errorf("action %q names a command that is not there: remove or rename it in libs/actions/catalog/catalog_config.go", a.ID())
+		}
+	}
+}
+
+func TestEveryActionHasAFormOrAMenuEntryInTheShellOrIsExcused(t *testing.T) {
+	shown := tui.PresentedWithForms(clicontract.DescribeCommands(Root("0.0.0")))
+	for _, a := range catalog.All() {
+		switch {
+		case shown[a.ID()] && a.NotInTUI != "":
+			t.Errorf("action %q is in the shell and also excused (%q): drop NotInTUI", a.ID(), a.NotInTUI)
+		case !shown[a.ID()] && a.NotInTUI == "":
+			t.Errorf("action %q has no menu entry or form in the shell, and a form could not be made for it: say why in NotInTUI (libs/actions/catalog/catalog_config.go)", a.ID())
 		}
 	}
 }
