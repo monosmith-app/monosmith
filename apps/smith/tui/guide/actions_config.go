@@ -9,6 +9,8 @@ type Step struct {
 	Placeholder string
 	// Multi lets the user toggle several options (space) before confirming.
 	Multi bool
+	// Optional lets a free-text step be left empty; the answer is then empty.
+	Optional bool
 }
 
 // Option is one answer.

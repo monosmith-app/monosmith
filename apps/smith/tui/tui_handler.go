@@ -45,7 +45,7 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		}
 	}
 	var actions []guide.Action
-	for _, a := range guide.Actions(enabled, pluginhost.BuiltinNames(), enabled) {
+	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), GeneratedForms(catalog)...) {
 		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) {
 			continue
 		}

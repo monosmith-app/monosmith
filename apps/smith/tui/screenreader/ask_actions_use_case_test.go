@@ -87,3 +87,24 @@ func TestTheOutputIsPlainText(t *testing.T) {
 		}
 	}
 }
+
+func TestAnOptionalQuestionCanBeSkippedWithEnter(t *testing.T) {
+	action := guide.Action{
+		Title: "Add a pipeline",
+		Steps: []guide.Step{{Key: "template", Prompt: "template (optional)", Optional: true}},
+		Argv: func(a map[string][]string) []string {
+			if len(a["template"]) == 0 || a["template"][0] == "" {
+				return []string{"pipeline"}
+			}
+			return []string{"pipeline", a["template"][0]}
+		},
+	}
+	var out strings.Builder
+	argv, err := Ask(strings.NewReader("1\n\n"), &out, []guide.Action{action})
+	if err != nil || len(argv) != 1 || argv[0] != "pipeline" {
+		t.Fatalf("argv %v err %v\n%s", argv, err, out.String())
+	}
+	if !strings.Contains(out.String(), "Press Enter to skip.") {
+		t.Errorf("the question does not say it can be skipped:\n%s", out.String())
+	}
+}

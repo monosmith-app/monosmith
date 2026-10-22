@@ -158,7 +158,7 @@ func (m Model) confirm() Model {
 	switch {
 	case step.Options == nil:
 		value := strings.TrimSpace(m.input.Value())
-		if value == "" {
+		if value == "" && !step.Optional {
 			m.err = "type a value, or esc to go back"
 			return m
 		}

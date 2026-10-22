@@ -72,6 +72,9 @@ func question(r *bufio.Reader, out io.Writer, step guide.Step) (answer []string,
 		if step.Placeholder != "" {
 			hint = " For example " + step.Placeholder + "."
 		}
+		if step.Optional {
+			hint += " Press Enter to skip."
+		}
 		fmt.Fprintf(out, "%s.%s\n", strings.TrimSuffix(step.Prompt, "."), hint)
 		for try := 0; try < maxTries; try++ {
 			fmt.Fprint(out, "Your answer: ")
@@ -79,7 +82,7 @@ func question(r *bufio.Reader, out io.Writer, step guide.Step) (answer []string,
 			if q {
 				return nil, true, nil
 			}
-			if line != "" {
+			if line != "" || step.Optional {
 				return []string{line}, false, nil
 			}
 			fmt.Fprintln(out, "An answer is required.")
