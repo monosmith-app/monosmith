@@ -16,11 +16,23 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
+// call asks a plugin for a method; tests replace it.
+var call = func(s *session.Session, plugin, method string, params, result any, timeout time.Duration) (bool, error) {
+	return s.Plugins.Call(plugin, method, params, result, timeout)
+}
+
 // publishTagged publishes a package with its plugin, from the run on its pub
-// tag that pub.dev trusts.
+// tag that pub.dev trusts. The tag holds the committed version, a
+// placeholder: a release writes its version into the files only while it
+// runs and restores them, so the run writes the version again before it
+// publishes (pub.dev also wants the pubspec's version to be the tag's).
 func publishTagged(s *session.Session, p *projectgraph.Project, name, version string) (pubpackage.Result, error) {
+	var vr protocol.VersionResult
+	if _, err := call(s, p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: version}, &vr, time.Minute); err != nil {
+		return pubpackage.Result{}, fmt.Errorf("writing version: %w", err)
+	}
 	var pr protocol.PublishResult
-	ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublish, protocol.PublishParams{Project: p.Project, Version: version, Tagged: true}, &pr, 30*time.Minute)
+	ok, err := call(s, p.Plugin, protocol.MethodPublish, protocol.PublishParams{Project: p.Project, Version: version, Tagged: true}, &pr, 30*time.Minute)
 	switch {
 	case err != nil:
 		return pubpackage.Result{}, fmt.Errorf("publishing: %w", err)
