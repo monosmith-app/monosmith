@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-jvm/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -69,4 +70,9 @@ func (j *JVM) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // Doctor implements serve.DoctorContributor.
 func (j *JVM) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return pipeline.Doctor(j.root, params), nil
+}
+
+// Components implements serve.ComponentLister.
+func (j *JVM) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(j.root, params)
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -64,4 +65,9 @@ func (d *Dotnet) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // Doctor implements serve.DoctorContributor.
 func (d *Dotnet) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return pipeline.Doctor(d.root, params), nil
+}
+
+// Components implements serve.ComponentLister.
+func (d *Dotnet) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(d.root, params)
 }

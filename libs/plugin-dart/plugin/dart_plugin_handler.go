@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-dart/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -83,4 +84,9 @@ func (d *Dart) Install(params protocol.InstallParams) (protocol.DependencyResult
 // Uninstall implements serve.DependencyManager.
 func (d *Dart) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(d.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (d *Dart) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(d.root, params)
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-cpp/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -59,4 +60,9 @@ func (c *Cpp) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // Doctor implements serve.DoctorContributor.
 func (c *Cpp) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return pipeline.Doctor(c.root, params), nil
+}
+
+// Components implements serve.ComponentLister.
+func (c *Cpp) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(c.root, params)
 }

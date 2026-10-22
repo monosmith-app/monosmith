@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -92,4 +93,9 @@ func (n *Node) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult
 // Latest implements serve.LatestReader.
 func (n *Node) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(n.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (n *Node) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(n.root, params)
 }

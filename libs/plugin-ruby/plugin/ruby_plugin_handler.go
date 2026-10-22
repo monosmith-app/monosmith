@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-ruby/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -80,4 +81,9 @@ func (r *Ruby) Install(params protocol.InstallParams) (protocol.DependencyResult
 // Uninstall implements serve.DependencyManager.
 func (r *Ruby) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(r.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (r *Ruby) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(r.root, params)
 }

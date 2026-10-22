@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-php/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-php/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -80,4 +81,9 @@ func (p *PHP) Install(params protocol.InstallParams) (protocol.DependencyResult,
 // Uninstall implements serve.DependencyManager.
 func (p *PHP) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(p.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (p *PHP) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(p.root, params)
 }
