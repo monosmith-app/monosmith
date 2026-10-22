@@ -61,11 +61,10 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 		}
 		pushPending(s, opts)
 	}
-	versions := map[string]string{}
-	for _, item := range plan.Items {
-		for _, e := range s.Graph.Get(item.Project).Exports {
-			versions[e] = item.Next
-		}
+	versions, err := SiblingVersions(s.Git, s.Graph, plan)
+	if err != nil {
+		report.Error = err.Error()
+		return report, err
 	}
 	for _, item := range plan.Items {
 		res := ReportResult{Item: item, Status: "planned"}
