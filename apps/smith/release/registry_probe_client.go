@@ -232,7 +232,9 @@ func (p *RegistryProbe) nuget(t RegistryTarget) []RegistryFinding {
 	if p.NuGetKey == "" {
 		return nil
 	}
-	// A push with no package: the feed checks the key first.
+	// A push with no package: the feed checks the key first. Only PyPI is
+	// known to answer an empty upload that way, so what NuGet says is a
+	// warning: a refusal must never stop a release whose key is valid.
 	req, err := http.NewRequest(http.MethodPut, p.NuGetPush, strings.NewReader(""))
 	if err != nil {
 		return []RegistryFinding{p.unreachable(t, p.NuGetPush, err)}
@@ -242,7 +244,7 @@ func (p *RegistryProbe) nuget(t RegistryTarget) []RegistryFinding {
 		return []RegistryFinding{p.unreachable(t, p.NuGetPush, err)}
 	}
 	if rejected(status) {
-		return []RegistryFinding{p.finding(t, true, "create a NuGet API key that can push "+strings.Join(t.Names, " and ")+" and set NUGET_API_KEY", "NuGet refused the API key (%d)", status)}
+		return []RegistryFinding{p.finding(t, false, "if the key is wrong, create a NuGet API key that can push "+strings.Join(t.Names, " and ")+" and set NUGET_API_KEY", "NuGet answered the empty push with %d; the API key was not confirmed", status)}
 	}
 	if p.NuGetIndex == "" {
 		return nil
