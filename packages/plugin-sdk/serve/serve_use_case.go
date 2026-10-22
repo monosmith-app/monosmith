@@ -242,6 +242,10 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if l, ok := p.(LatestReader); ok {
 			return call(req.Params, l.Latest)
 		}
+	case protocol.MethodComponents:
+		if l, ok := p.(ComponentLister); ok {
+			return call(req.Params, l.Components)
+		}
 	}
 	return nil, &protocol.ResponseError{Code: protocol.CodeMethodNotFound, Message: "method not supported: " + req.Method}
 }
@@ -282,7 +286,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, declarations := p.(DeclarationEditor)
 	_, latest := p.(LatestReader)
 	_, cancel := p.(Cancellable)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel}
+	_, components := p.(ComponentLister)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

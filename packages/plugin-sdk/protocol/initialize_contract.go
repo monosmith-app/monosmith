@@ -129,6 +129,8 @@ type Capabilities struct {
 	// result (if the work was already done) or the request-cancelled error.
 	// A host never sends the notification to a plugin without it.
 	Cancel bool `json:"cancel,omitempty"`
+	// Components lists a project's dependencies for its SBOM.
+	Components bool `json:"components,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

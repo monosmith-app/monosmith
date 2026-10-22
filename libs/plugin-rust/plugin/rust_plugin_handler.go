@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -101,4 +102,9 @@ func (r *Rust) Latest(params protocol.LatestParams) (protocol.LatestResult, erro
 // ChangeKind implements serve.KindChanger.
 func (r *Rust) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(r.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (r *Rust) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(r.root, params)
 }
