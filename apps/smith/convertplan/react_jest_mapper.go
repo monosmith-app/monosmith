@@ -29,9 +29,9 @@ function className (name) {
 
 function jsTransformer (transforms) {
   const swc = (transforms ?? []).some((t) => Array.isArray(t) && t.some((v) => typeof v === 'string' && v.includes('@swc/jest')))
-  if (swc) return require('@swc/jest').createTransformer()
+  const transformer = swc ? require('@swc/jest') : require('babel-jest').default
 
-  return require('babel-jest').default.createTransformer()
+  return transformer.createTransformer()
 }
 
 module.exports = {
@@ -51,11 +51,11 @@ module.exports = {
 };` + "`" + `,
       }
     }
-    if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(path.extname(filename))) {
-      return jsTransformer(options.config?.transform).process(src, filename, options)
-    }
+    const isScript = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(path.extname(filename))
 
-    return { code: ` + "`module.exports = ${assetFilename};`" + ` }
+    return isScript
+      ? jsTransformer(options.config?.transform).process(src, filename, options)
+      : { code: ` + "`module.exports = ${assetFilename};`" + ` }
   },
 }
 `

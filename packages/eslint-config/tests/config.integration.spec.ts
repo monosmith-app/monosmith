@@ -114,7 +114,7 @@ const FIXTURES: Record<string, string> = {
   'packages/demo/src/mocked.spec.ts':
     "import { Client } from './client'\n\ndescribe('client', () => {\n  it('is mocked', () => {\n    const client = new Client()\n    expect(client.method).toBeDefined()\n  })\n})\n",
   'packages/demo/src/unbound.spec.ts':
-    "import { Client } from './client'\n\ndescribe('client', () => {\n  it('loses this', () => {\n    const client = new Client()\n    const { method } = client\n    expect(method()).toBe(1)\n  })\n})\n",
+    "import { Client } from './client'\n\ndescribe('client', () => {\n  it('loses this', () => {\n    const client = new Client()\n    const { method } = client\n    expect(client).toBeDefined()\n    expect(method()).toBe(1)\n  })\n})\n",
   'packages/demo/src/unbound.ts':
     "import type { Client } from './client'\n\nexport function run (client: Client): number {\n  const { method } = client\n\n  return method()\n}\n",
 
