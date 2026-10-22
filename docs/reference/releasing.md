@@ -410,14 +410,18 @@ the GitHub Release, the release:
 
 1. tags the release commit with the pub tag, `<name>-v<version>`
    (`acme-v1.4.0` for `acme@1.4.0`; change it with `pub_tag`, using `{name}`
-   and `{version}`), and pushes it;
+   and `{version}`), and pushes it. `{name}` is the project's `tag_prefix`
+   without a trailing `@`, so a prefix that already ends in `-v` doubles it
+   (`acme-v-v1.4.0`);
 2. starts `.github/workflows/pub.yml`, which `smith ci generate` writes, on
    that tag. A tag pushed with the workflow's own token starts no workflow,
    but a `workflow_dispatch` does, so the release job gets `actions: write`;
 3. the pub workflow runs `smith release pub --project <app> --version
-   <version>`: it downloads the archives from the GitHub Release, builds the
-   package and runs `dart pub publish`, authenticated by `setup-dart` with
-   GitHub's OIDC token.
+   <version>`: for an app it downloads the archives from the GitHub Release
+   and builds the package; for a Dart package it writes the version into the
+   pubspec (the tag's commit has the placeholder, because a release restores
+   the files it versions). It then runs `dart pub publish`, authenticated by
+   `setup-dart` with GitHub's OIDC token.
 
 A version pub.dev already has is skipped, so a re-run completes a release.
 The release summary says when it started a publish; the pub workflow's run
