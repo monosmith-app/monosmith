@@ -1,4 +1,4 @@
-package commands
+package catalog
 
 import (
 	"reflect"
@@ -8,35 +8,47 @@ import (
 func TestClassify(t *testing.T) {
 	cases := []struct {
 		argv []string
-		want Class
+		want Safety
 	}{
-		{[]string{"run", "build", "-p", "kit"}, Free},
-		{[]string{"test"}, Free},
-		{[]string{"doctor"}, Free},
+		{[]string{"run", "build", "-p", "kit"}, Reads},
+		{[]string{"test"}, Reads},
+		{[]string{"doctor"}, Reads},
 		{[]string{"doctor", "--fix"}, Changes},
-		{[]string{"release", "--dry-run"}, Free},
+		{[]string{"release", "--dry-run"}, Reads},
 		{[]string{"release"}, Changes},
 		{[]string{"install"}, Changes},
 		{[]string{"add", "app", "web", "--lang", "node"}, Changes},
 		{[]string{"remove", "web"}, Changes},
 		{[]string{"upgrade"}, Changes},
-		{[]string{"upgrade", "--dry-run"}, Free},
+		{[]string{"upgrade", "--dry-run"}, Reads},
 		{[]string{"ci", "generate"}, Changes},
 		{[]string{"config", "set", "ci.providers", "github"}, Changes},
 		{[]string{"plugin", "set", "go"}, Changes},
-		{[]string{"plugin", "list"}, Free},
+		{[]string{"plugin", "list"}, Reads},
 		{[]string{"plugin", "enable", "go"}, Changes},
 		{[]string{"plugin", "disable", "go"}, Changes},
 		{[]string{"deps", "up", "zod"}, Changes},
 		{[]string{"deps", "up", "--align"}, Changes},
 		{[]string{"doctor", "--fix", "--only", "go.work exists"}, Changes},
-		{[]string{"recipe", "check", "team.recipe.toml"}, Free},
+		{[]string{"recipe", "check", "team.recipe.toml"}, Reads},
 		{[]string{"recipe", "new", "team.recipe.toml"}, NeedsTerminal},
 		{[]string{"recipe", "new", "team.recipe.toml", "--from-answers", "a.toml"}, Changes},
-		{[]string{"graph", "--focus", "web"}, Free},
-		{[]string{"graph"}, Free},
+		{[]string{"graph", "--focus", "web"}, Reads},
+		{[]string{"graph"}, Reads},
 		{[]string{"graph", "--format", "tui"}, NeedsTerminal},
 		{[]string{"mcp"}, NeedsTerminal},
+		{[]string{"serve"}, NeedsTerminal},
+		{[]string{"dev"}, NeedsTerminal},
+		{[]string{"adopt"}, Reads},
+		{[]string{"adopt", "--json"}, Reads},
+		{[]string{"adopt", "--tags"}, Changes},
+		{[]string{"adopt", "--init"}, Changes},
+		{[]string{"convert", "--dry-run"}, Reads},
+		{[]string{"convert"}, Changes},
+		{[]string{"up", "--json"}, Reads},
+		{[]string{"up", "--yes"}, Changes},
+		{[]string{"sync", "--check"}, Reads},
+		{[]string{"version"}, Reads},
 		{[]string{"up"}, NeedsTerminal},
 		{[]string{"new", "acme"}, Changes},
 		{[]string{"something-new-and-unknown"}, Changes},

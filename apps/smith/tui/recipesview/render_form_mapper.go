@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
 // labelWidth is the width of the field names, so the values line up.
@@ -54,7 +55,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 
 // confirmNote says what happens after c: the shell asks first, or hands over to a terminal.
 func confirmNote(argv []string) string {
-	if commands.Classify(argv) == commands.NeedsTerminal {
+	if catalog.Classify(argv) == catalog.NeedsTerminal {
 		return " in a terminal of its own, where the wizard asks its questions"
 	}
 	return " after you confirm"

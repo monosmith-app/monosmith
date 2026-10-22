@@ -2,6 +2,7 @@ go 1.26.0
 
 use (
 	./apps/smith
+	./libs/actions
 	./libs/plugin-bicep
 	./libs/plugin-cpp
 	./libs/plugin-dart

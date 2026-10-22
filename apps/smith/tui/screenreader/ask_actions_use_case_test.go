@@ -1,6 +1,7 @@
 package screenreader
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -66,7 +67,7 @@ func TestAWrongNumberIsSaidAndAskedAgainThenGivenUp(t *testing.T) {
 	if err == nil || argv != nil {
 		t.Fatalf("argv %v err %v", argv, err)
 	}
-	if !strings.Contains(out, `"nine" is not one of the numbers 1 to 8.`) {
+	if want := fmt.Sprintf(`"nine" is not one of the numbers 1 to %d.`, len(sampleActions())); !strings.Contains(out, want) {
 		t.Fatalf("the mistake was not said:\n%s", out)
 	}
 	argv, out, err = converse(t, "3\n9\n1\n1\nweb\n")

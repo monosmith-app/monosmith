@@ -15,6 +15,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
 // maxHistory bounds the command log.
@@ -25,18 +26,18 @@ const maxHistory = 200
 // workspace or publish ask first in a dialog that shows the line, and the
 // rest start at once in the Run tab. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
-	switch commands.Classify(argv) {
-	case commands.NeedsTerminal:
+	switch catalog.Classify(argv) {
+	case catalog.NeedsTerminal:
 		s.Argv, s.quit = argv, true
 		return nil
-	case commands.Changes:
+	case catalog.Changes:
 		if !confirmed {
 			title, why := commands.Describe(argv)
-			c := dialog.NewConfirm(title, why, commands.WithConfirmation(argv)).Place(s.w, s.h)
+			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).Place(s.w, s.h)
 			s.confirm = &c
 			return nil
 		}
-		argv = commands.WithConfirmation(argv)
+		argv = catalog.WithConfirmation(argv)
 	}
 	if s.running() {
 		s.say("A run is in progress (Ctrl+C stops it)")
