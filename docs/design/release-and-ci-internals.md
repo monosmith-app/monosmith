@@ -168,7 +168,10 @@ A generated file is smith's, but a team always has one more step.
 renders the new file and puts it back (re-indented when the slot moved, as when
 an Azure pipeline gains a native job and nests its steps). A slot the new file
 no longer has is reported, so a team's step is never dropped silently. Anything
-outside a slot is smith's and is overwritten; `--check` reports drift without writing.
+outside a slot is smith's and is overwritten, with one exception: an action version
+(`uses: actions/cache@v6`) that the existing file pins **higher** than smith's
+template is kept, because a dependency bot bumps those and cannot see the templates;
+a lower pin, or a branch or commit, is replaced. `--check` reports drift without writing.
 
 ### What is cached in CI
 
