@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/actions"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -54,7 +55,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 
 // confirmNote says what happens after c: the shell asks first, or hands over to a terminal.
 func confirmNote(argv []string) string {
-	if commands.Classify(argv) == commands.NeedsTerminal {
+	if actions.Classify(argv) == actions.NeedsTerminal {
 		return " in a terminal of its own, where the wizard asks its questions"
 	}
 	return " after you confirm"

@@ -69,6 +69,10 @@ type Command struct {
 	Tab string
 	// Guide is the title of the guided action for Guided.
 	Guide string
+	// Presents are the ids of the actions (see package actions) the command
+	// stands for when its Argv or Task does not already name them: a view
+	// that runs several, or a key that reloads one.
+	Presents []string
 	// Confirm means the command changes the workspace or publishes: a dialog
 	// shows the command line before it runs.
 	Confirm bool

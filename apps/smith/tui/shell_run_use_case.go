@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/actions"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
@@ -25,18 +26,18 @@ const maxHistory = 200
 // workspace or publish ask first in a dialog that shows the line, and the
 // rest start at once in the Run tab. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
-	switch commands.Classify(argv) {
-	case commands.NeedsTerminal:
+	switch actions.Classify(argv) {
+	case actions.NeedsTerminal:
 		s.Argv, s.quit = argv, true
 		return nil
-	case commands.Changes:
+	case actions.Changes:
 		if !confirmed {
 			title, why := commands.Describe(argv)
-			c := dialog.NewConfirm(title, why, commands.WithConfirmation(argv)).Place(s.w, s.h)
+			c := dialog.NewConfirm(title, why, actions.WithConfirmation(argv)).Place(s.w, s.h)
 			s.confirm = &c
 			return nil
 		}
-		argv = commands.WithConfirmation(argv)
+		argv = actions.WithConfirmation(argv)
 	}
 	if s.running() {
 		s.say("A run is in progress (Ctrl+C stops it)")
