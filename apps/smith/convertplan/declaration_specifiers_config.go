@@ -27,9 +27,8 @@ function withFile (from, quote, prefix, name) {
   if (resolved.test(name)) return null
   const bare = name.replace(/\/$/, '')
   if (fs.existsSync(path.join(from, bare + '.d.ts'))) return prefix + quote + bare + '.js' + quote
-  if (fs.existsSync(path.join(from, bare, 'index.d.ts'))) return prefix + quote + bare + '/index.js' + quote
 
-  return null
+  return fs.existsSync(path.join(from, bare, 'index.d.ts')) ? prefix + quote + bare + '/index.js' + quote : null
 }
 
 const entries = fs.readdirSync(directory, { recursive: true })
