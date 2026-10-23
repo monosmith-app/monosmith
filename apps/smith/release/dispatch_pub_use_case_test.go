@@ -179,3 +179,33 @@ func TestDispatchPubStartsThePubWorkflowForAPackage(t *testing.T) {
 		t.Errorf("ref %q, dispatch %q", ref, res.PubDispatch)
 	}
 }
+
+// A pub tag left on an older commit (a changed tag_prefix, a hand-made tag)
+// would start the pub run from that commit, with its old workflow and smith.
+func TestDispatchPubStopsWhenThePubTagIsOnAnotherCommit(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "acme/acme")
+	t.Setenv("TF_BUILD", "")
+	t.Setenv("GITLAB_CI", "")
+	s := released(t)
+	keep, keepHas := dispatcher, pubHas
+	defer func() { dispatcher, pubHas = keep, keepHas }()
+	dispatched := false
+	dispatcher = func(githubrelease.Repository, string, map[string]string) error { dispatched = true; return nil }
+	pubHas = func(string, string) (bool, error) { return false, nil }
+	if err := s.Git.CreateTag("smith-v1.4.0", "old"); err != nil {
+		t.Fatal(err)
+	}
+	// Move the release tag's commit away from the pub tag's.
+	if _, err := s.Git.Run("tag", "-d", "smith@1.4.0"); err != nil {
+		t.Fatal(err)
+	}
+	commit(t, s.Git, "other.txt", "fix: later")
+	if err := s.Git.CreateTag("smith@1.4.0", "smith 1.4.0"); err != nil {
+		t.Fatal(err)
+	}
+	item := Item{Project: "smith", Next: "1.4.0", Tag: "smith@1.4.0"}
+	err := dispatchPub(s, pubApp("", ""), item, &ReportResult{Pushed: true}, func(string, ...any) {})
+	if err == nil || !strings.Contains(err.Error(), "smith-v1.4.0 already exists on") || dispatched {
+		t.Errorf("err %v, dispatched %v", err, dispatched)
+	}
+}
