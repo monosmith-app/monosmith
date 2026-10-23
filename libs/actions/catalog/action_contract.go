@@ -41,6 +41,9 @@ type Action struct {
 	// NotInMCP is why the MCP server has no tool for it. Empty means a tool
 	// runs it (the tool's Action names this action).
 	NotInMCP string
+	// NotInServe is why `smith serve` (the editors' engine) has no method for
+	// it. Empty means a method runs it.
+	NotInServe string
 }
 
 // ID is the action's name: its command path joined by spaces.
