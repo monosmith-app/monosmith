@@ -22,6 +22,9 @@ command = ["golangci-lint", "run", "--allow-serial-runners"]
 
 [release]
 github_releases = true
+# VS Code extensions publish as a Microsoft Entra ID app signed in with the workflow
+# (federated credential), not with a VSCE_PAT secret: see docs/reference/releasing.md.
+vsce_entra = true
 
 [projects.smith.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"

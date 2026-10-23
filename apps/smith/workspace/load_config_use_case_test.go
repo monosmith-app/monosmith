@@ -26,6 +26,7 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[ci]\naudit_max_unsafe=-1":                                                              "audit_max_unsafe",
 		"[workspace]\nname = \"a\"\n[ci]\nproviders=[\"x\"]":                                                                "unknown CI provider",
 		"[workspace]\nname = \"a\"\n[release]\nrubygems_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]": "works on GitHub Actions only",
+		"[workspace]\nname = \"a\"\n[release]\nvsce_entra = true\n[ci]\nproviders=[\"github\",\"azure\"]":                   "vsce_entra works on GitHub Actions only",
 		"schema = 9\n[workspace]\nname = \"a\"\n":                                                                           "upgrade smith",
 		"[workspace\nname = \"a\"\n":                                                                                        "smith.toml:",
 		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n":                              "settings of the docker convention",

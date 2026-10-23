@@ -417,6 +417,47 @@ longer passes `GEM_HOST_API_KEY` as a secret; the step exports a short-lived
 key that `gem push` and smith's own gem uploads use. The release does not ask
 for the secret either. The setting needs `providers = ["github"]`.
 
+### The Marketplace without a token: Microsoft Entra ID
+
+A VS Code extension package is published to the Visual Studio Marketplace by
+`vsce publish`, with the token in `VSCE_PAT`. Azure DevOps retires its global
+personal access tokens on 1 December 2026, so a release can instead publish as
+a Microsoft Entra ID app registration, signed in with the workflow's OIDC token
+(workload identity federation): no token is stored anywhere.
+
+```toml
+[release]
+vsce_entra = true      # GitHub Actions only
+```
+
+Set up once:
+
+1. In the Azure portal (Microsoft Entra ID, App registrations), register an
+   application. Note its **Application (client) ID** and the **Directory
+   (tenant) ID**.
+2. Under **Certificates & secrets, Federated credentials**, add one for
+   *GitHub Actions deploying Azure resources*: the organisation and
+   repository, and the entity **Branch** with the release branch (`main`).
+3. Find the identity's Azure DevOps ID, which is what the Marketplace
+   knows it by (not the client ID): a federated app has no password to sign in
+   with from a terminal, so run this once in a workflow, after `azure/login`
+   (an `az login` as the app works too), and read `id` from the answer:
+   `az rest -u https://app.vssps.visualstudio.com/_apis/profile/profiles/me
+   --resource 499b84ac-1321-427f-aa17-267ca6975798`.
+4. On https://marketplace.visualstudio.com/manage, open the publisher, then
+   **Members**, and add that ID with the **Contributor** role.
+5. Add the repository secrets `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`. They
+   identify the app and are not credentials.
+
+With the setting on, `smith ci generate` gives the workflow `id-token: write`,
+adds a `Sign in to Azure` step (`azure/login`, with no subscription) right
+before the release step, only on a push to the release branch, tells the
+release step to publish with that sign-in (`VSCE_AZURE_CREDENTIAL`, which makes
+smith run `vsce publish --azure-credential`), and no longer passes `VSCE_PAT`
+as a secret. The release does not ask for `VSCE_PAT` either. The same holds
+for the native job when a native extension publishes from it. The setting
+needs `providers = ["github"]`.
+
 ### pub.dev
 
 `pub = "acme"` publishes the app to pub.dev, so `dart pub global activate

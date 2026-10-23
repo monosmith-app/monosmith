@@ -98,3 +98,14 @@ func TestPublishedExtension(t *testing.T) {
 		t.Fatalf("a failure is unreachable: %+v", res)
 	}
 }
+
+func TestPublishArgvPublishesWithTheEntraCredentialOnlyWhenAsked(t *testing.T) {
+	pat := strings.Join(publishArgv([]string{"--target", "linux-x64"}, false), " ")
+	if !strings.HasSuffix(pat, "--target linux-x64 --skip-duplicate") || strings.Contains(pat, "--azure-credential") {
+		t.Errorf("with a token: %s", pat)
+	}
+	entra := strings.Join(publishArgv(nil, true), " ")
+	if !strings.HasSuffix(entra, "--azure-credential --skip-duplicate") || !strings.HasPrefix(entra, "npx --no-install vsce publish ") {
+		t.Errorf("with Entra ID: %s", entra)
+	}
+}

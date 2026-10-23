@@ -48,7 +48,9 @@ func PackExtension(staged, drop string) (string, error) {
 }
 
 // publishExtension publishes a VS Code extension to the Marketplace with
-// the token in VSCE_PAT, from its staged build. vsce skips a version the
+// the token in VSCE_PAT, or as the Entra ID identity the pipeline signed in
+// as when VSCE_AZURE_CREDENTIAL is set (vsce --azure-credential), from its
+// staged build. vsce skips a version the
 // Marketplace already has. With a platform (a native job's), it publishes
 // that platform's build only, as vsce --target.
 func publishExtension(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
@@ -65,15 +67,14 @@ func publishExtension(workspaceRoot string, params protocol.PublishParams) (prot
 		result.Skipped = "dry run"
 		return result, nil
 	}
-	if os.Getenv("VSCE_PAT") == "" {
+	if os.Getenv("VSCE_PAT") == "" && os.Getenv("VSCE_AZURE_CREDENTIAL") == "" {
 		return result, errors.New("set VSCE_PAT to a Marketplace token to publish " + params.Project.Name)
 	}
 	staged, err := Stage(workspaceRoot, params.Project.Root)
 	if err != nil {
 		return result, err
 	}
-	argv := append(append([]string{"npx", "--no-install", "vsce", "publish"}, vsceFlags...), target...)
-	if err := npm.run(staged, append(argv, "--skip-duplicate")); err != nil {
+	if err := npm.run(staged, publishArgv(target, os.Getenv("VSCE_AZURE_CREDENTIAL") != "")); err != nil {
 		return result, err
 	}
 	result.Published = true
@@ -104,4 +105,15 @@ func publishedExtension(workspaceRoot string, m ExtensionManifest) protocol.Publ
 		result.Version = shown.Versions[0].Version
 	}
 	return result
+}
+
+// publishArgv is the vsce command that publishes a staged extension: with its
+// Entra ID credential when the pipeline signed in to Azure, else with the
+// token in VSCE_PAT, which vsce reads itself.
+func publishArgv(target []string, entra bool) []string {
+	argv := append(append([]string{"npx", "--no-install", "vsce", "publish"}, vsceFlags...), target...)
+	if entra {
+		argv = append(argv, "--azure-credential")
+	}
+	return append(argv, "--skip-duplicate")
 }

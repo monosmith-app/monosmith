@@ -75,6 +75,7 @@ branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
 github_releases = false               # a GitHub Release per tag (needs GITHUB_TOKEN)
 rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC token, not GEM_HOST_API_KEY (GitHub only; docs/reference/releasing.md)
+vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
 
 [cache]

@@ -52,6 +52,10 @@ type Model struct {
 	// OIDC token: the release job then gets id-token permission and signs in
 	// to RubyGems right before the release, and the key is not a secret.
 	RubyGemsTrusted bool
+	// VSCEEntra is true when extensions are published with Microsoft Entra
+	// ID: the release job gets id-token permission and signs in to Azure
+	// right before the release, and the Marketplace token is not a secret.
+	VSCEEntra bool
 	// Permissions are the GitHub token permissions plugins asked for
 	// ("packages: write"), sorted.
 	Permissions []string
@@ -85,6 +89,8 @@ type Contributions struct {
 	Pub bool
 	// RubyGemsTrusted is true when [release] rubygems_trusted_publishing is set.
 	RubyGemsTrusted bool
+	// VSCEEntra is true when [release] vsce_entra is set.
+	VSCEEntra bool
 	// Permissions are the GitHub token permissions plugins asked for.
 	Permissions []string
 }
@@ -95,6 +101,14 @@ type Contributions struct {
 func (c *Contributions) UseRubyGemsTrustedPublishing() {
 	c.RubyGemsTrusted = true
 	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "GEM_HOST_API_KEY" })
+}
+
+// UseVSCEEntra makes extensions publish with Microsoft Entra ID: the
+// Marketplace token is no longer a secret the release needs, because the
+// pipeline signs in to Azure right before it.
+func (c *Contributions) UseVSCEEntra() {
+	c.VSCEEntra = true
+	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "VSCE_PAT" })
 }
 
 // Add merges one plugin's contribution, keeping the first of duplicates.
@@ -149,7 +163,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}

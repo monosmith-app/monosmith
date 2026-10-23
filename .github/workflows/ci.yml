@@ -50,7 +50,7 @@ jobs:
       - name: Install smith
         run: curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh -s -- "$SMITH_VERSION"
         env:
-          SMITH_VERSION: 1.52.1
+          SMITH_VERSION: latest
           GITHUB_TOKEN: ${{ github.token }}
       # smith:slot before-setup
       # This repository is smith: every step below runs the smith built from this commit.
@@ -79,6 +79,13 @@ jobs:
           name: drop
           path: dist/drop
           if-no-files-found: ignore
+      - name: Sign in to Azure
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
       - name: Release
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci release
@@ -88,7 +95,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
         if: github.event_name == 'push' && github.ref_name == 'main' && hashFiles('dist/release/**') != ''
         uses: actions/attest-build-provenance@v4

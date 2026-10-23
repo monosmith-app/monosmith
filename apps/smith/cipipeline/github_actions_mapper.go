@@ -80,15 +80,17 @@ jobs:
 `, m.ReleaseBranch, githubEnv("        ", m.TaskCredentials()))
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
+	b.WriteString(githubAzureSignIn(m, "ci"))
 	fmt.Fprintf(&b, `      - name: Release
         if: github.event_name == 'push' && github.ref_name == '%s'
         run: smith ci release
 `, m.ReleaseBranch)
-	if len(m.Credentials) > 0 {
+	if len(m.Credentials) > 0 || m.VSCEEntra {
 		b.WriteString("        env:\n")
 		for _, c := range m.Credentials {
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
+		b.WriteString(githubEntraEnv(m))
 	}
 	if m.Attest {
 		fmt.Fprintf(&b, `      - name: Attest build provenance
@@ -116,6 +118,35 @@ func githubRubyGemsSignIn(m Model, job string) string {
         if: github.event_name == 'push' && github.ref_name == '%s'
         uses: rubygems/configure-rubygems-credentials@v2.1.0
 `, m.ReleaseBranch)
+}
+
+// githubAzureSignIn signs in to Azure with the run's OIDC token (workload
+// identity federation) right before the step that publishes, and only on a
+// push to the release branch, so vsce can publish to the Marketplace as the
+// app registration instead of with a PAT. The client and tenant ids are the
+// repository secrets AZURE_CLIENT_ID and AZURE_TENANT_ID; no subscription is
+// needed.
+func githubAzureSignIn(m Model, job string) string {
+	if !m.VSCEEntra || (job == "native" && !m.NativePublish) {
+		return ""
+	}
+	return fmt.Sprintf(`      - name: Sign in to Azure
+        if: github.event_name == 'push' && github.ref_name == '%s'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+`, m.ReleaseBranch)
+}
+
+// githubEntraEnv tells the release to publish extensions with the Azure
+// sign-in: vsce then uses its Entra ID credential rather than VSCE_PAT.
+func githubEntraEnv(m Model) string {
+	if !m.VSCEEntra {
+		return ""
+	}
+	return "          VSCE_AZURE_CREDENTIAL: \"true\"\n"
 }
 
 // githubNativeJob builds the native projects on every OS after the ci job,
@@ -152,6 +183,7 @@ func githubNativeJob(m Model) string {
 `, InstallScriptURL, m.SmithVersion)
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(githubRubyGemsSignIn(m, "native"))
+	b.WriteString(githubAzureSignIn(m, "native"))
 	b.WriteString(`      - name: Native
         run: smith ci native
         env:
@@ -161,6 +193,9 @@ func githubNativeJob(m Model) string {
 	// publishes from here on a release push, which needs the release's too.
 	for _, c := range m.nativeCredentials() {
 		fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
+	}
+	if m.NativePublish {
+		b.WriteString(githubEntraEnv(m))
 	}
 	b.WriteString(`      - uses: actions/upload-artifact@v7
         with:
@@ -179,7 +214,7 @@ func idToken(m Model) string {
 	if m.Pub {
 		b.WriteString("  actions: write\n")
 	}
-	if m.Provenance || m.Attest || m.RubyGemsTrusted {
+	if m.Provenance || m.Attest || m.RubyGemsTrusted || m.VSCEEntra {
 		b.WriteString("  id-token: write\n")
 	}
 	if m.Attest {
