@@ -10,9 +10,9 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// vsceFlags let vsce package a staged build: its dependencies are bundled,
+// VsceFlags let vsce package a staged build: its dependencies are bundled,
 // and a missing LICENSE or repository is the author's choice, not a prompt.
-var vsceFlags = []string{"--no-dependencies", "--skip-license", "--allow-missing-repository"}
+var VsceFlags = []string{"--no-dependencies", "--skip-license", "--allow-missing-repository"}
 
 // ExtensionManifest is what marks a package as a VS Code extension.
 type ExtensionManifest struct {
@@ -43,7 +43,7 @@ func Extension(dir string) (ExtensionManifest, bool) {
 func PackExtension(staged, drop string) (string, error) {
 	m, _ := Extension(staged)
 	out := filepath.Join(drop, m.Name+"-"+m.Version+".vsix")
-	argv := append([]string{"npx", "--no-install", "vsce", "package"}, vsceFlags...)
+	argv := append([]string{"npx", "--no-install", "vsce", "package"}, VsceFlags...)
 	return out, npm.run(staged, append(argv, "--out", out))
 }
 
@@ -111,7 +111,7 @@ func publishedExtension(workspaceRoot string, m ExtensionManifest) protocol.Publ
 // Entra ID credential when the pipeline signed in to Azure, else with the
 // token in VSCE_PAT, which vsce reads itself.
 func publishArgv(target []string, entra bool) []string {
-	argv := append(append([]string{"npx", "--no-install", "vsce", "publish"}, vsceFlags...), target...)
+	argv := append(append([]string{"npx", "--no-install", "vsce", "publish"}, VsceFlags...), target...)
 	if entra {
 		argv = append(argv, "--azure-credential")
 	}

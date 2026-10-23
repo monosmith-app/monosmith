@@ -88,3 +88,17 @@ func TestPublishDryRunTouchesNothing(t *testing.T) {
 		t.Fatalf("res %+v calls %v err %v", res, *calls, err)
 	}
 }
+
+func TestAnExtensionAppBuildsNoArchives(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "apps", "ext"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ws, "apps", "ext", "package.json"), []byte(`{"name":"ext","engines":{"vscode":"^1.90.0"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Name: "ext", Root: "apps/ext", Kind: protocol.ProjectApp}, Version: "1.0.0", Assets: &protocol.AssetSpec{Platforms: []string{"linux/amd64"}}})
+	if err != nil || len(res.Assets) != 0 || !strings.Contains(res.Skipped, "vscode plugin") {
+		t.Fatalf("result %+v: %v", res, err)
+	}
+}

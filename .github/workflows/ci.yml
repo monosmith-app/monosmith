@@ -94,6 +94,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           VSCE_AZURE_CREDENTIAL: "true"
       - name: Attest build provenance
