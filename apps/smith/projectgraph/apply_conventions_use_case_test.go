@@ -45,7 +45,7 @@ func TestApplyConventions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(applied["vertical-slices"], ",") != "tool,old" {
+	if strings.Join(applied["vertical-slices"], ",") != "tool,old,web" {
 		t.Fatalf("applied to %v", applied)
 	}
 	tool := ps[0]
@@ -62,7 +62,7 @@ func TestApplyConventions(t *testing.T) {
 		t.Fatal("a task the project already has is kept")
 	}
 	if len(ps[2].Tasks) != 0 || len(ps[3].Tasks) != 0 {
-		t.Fatal("excluded and unsupported projects are left alone")
+		t.Fatal("an excluded project is left alone, and a Node project gets no slice-check task (@monosmith/eslint-config enforces its rules; doctor checks it)")
 	}
 }
 

@@ -23,6 +23,7 @@ structure plugin such as `vertical-slices` can be either.
 | Convention | Languages | What it does |
 |---|---|---|
 | `vertical-slices` | Go, Python, Dart, Rust, Ruby, C++, .NET, JVM, PHP | a `slice-check` task, run before `lint` |
+| `vertical-slices` | Node | `smith doctor` checks that the root ESLint config loads `@monosmith/eslint-config`, where Node's slice rules live (see below); nothing is written |
 
 ## How a convention combines with a project
 
