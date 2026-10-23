@@ -85,6 +85,7 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 				out[GitHubPubPath] = RenderGitHubPub(m)
 			}
 		case "azure":
+			m.AzurePool, m.AzureVariableGroups = cfg.CI.AzurePool, cfg.CI.AzureVariableGroups
 			out[AzurePath] = RenderAzure(m)
 		case "gitlab":
 			out[GitLabPath] = RenderGitLab(m)

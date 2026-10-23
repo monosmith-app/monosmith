@@ -3,6 +3,8 @@ package cipipeline
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // azureStepAfter is what follows a step's first line, up to the next step.
@@ -130,5 +132,30 @@ func TestSlotsAreReindentedWhenTheyMove(t *testing.T) {
 	kept, lost := KeepSlots(old, RenderAzure(m))
 	if len(lost) != 0 || !strings.Contains(kept, "      # smith:slot before-setup\n      - bash: make tools\n        displayName: Team tools\n      # smith:slot-end before-setup") {
 		t.Fatalf("lost %v:\n%s", lost, kept)
+	}
+}
+
+// A workspace on a managed agent pool, whose secrets live in a variable group,
+// keeps both in the generated definition.
+func TestAzureRunsOnTheConfiguredPoolAndLinksItsVariableGroups(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Stores: []protocol.PackageStore{{Name: "npm", Path: "~/.npm", Env: "NPM_CONFIG_CACHE", Files: []string{"package-lock.json"}}}})
+	m := NewModel(c, "dev", "main")
+	m.AzurePool, m.AzureVariableGroups = "Managed Windows", []string{"Build", "Release"}
+	out := RenderAzure(m)
+	for _, want := range []string{
+		"variables:\n  - group: Build\n  - group: Release\n  - name: NPM_CONFIG_CACHE\n    value: $(Pipeline.Workspace)/.smith-stores/npm\n",
+		"pool:\n  name: \"Managed Windows\"\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "vmImage: ubuntu-latest") {
+		t.Errorf("a configured pool must replace the hosted image:\n%s", out)
+	}
+	plain := RenderAzure(NewModel(c, "dev", "main"))
+	if !strings.Contains(plain, "pool:\n  vmImage: ubuntu-latest\n") || !strings.Contains(plain, "variables:\n  NPM_CONFIG_CACHE:") {
+		t.Errorf("without settings the definition is as before:\n%s", plain)
 	}
 }

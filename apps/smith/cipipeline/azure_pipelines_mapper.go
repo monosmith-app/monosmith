@@ -2,6 +2,8 @@ package cipipeline
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -21,16 +23,16 @@ pr:
     include: [%[1]s]
 
 `, m.ReleaseBranch)
-	b.WriteString(azureStoreVariables(m.Stores))
+	b.WriteString(azureVariables(m))
 	steps := azureSteps(m)
 	if !m.Native {
-		b.WriteString("pool:\n  vmImage: ubuntu-latest\n\nsteps:\n")
+		b.WriteString("pool:\n" + azurePool(m, "  ") + "\nsteps:\n")
 		b.WriteString(steps)
 		return b.String()
 	}
 	// A native project needs a second job, built on each OS: the steps move
 	// under jobs.
-	b.WriteString("jobs:\n  - job: ci\n    pool:\n      vmImage: ubuntu-latest\n    steps:\n")
+	b.WriteString("jobs:\n  - job: ci\n    pool:\n" + azurePool(m, "      ") + "    steps:\n")
 	b.WriteString(indent(steps, "    "))
 	b.WriteString(azureNativeJob(m))
 	return b.String()
@@ -140,4 +142,42 @@ func indent(text, prefix string) string {
 		}
 	}
 	return strings.Join(lines, "")
+}
+
+// azurePool is the pool's setting, indented: the configured agent pool by
+// name, else Microsoft's hosted ubuntu image.
+func azurePool(m Model, indent string) string {
+	if m.AzurePool != "" {
+		return indent + "name: " + yamlWord(m.AzurePool) + "\n"
+	}
+	return indent + "vmImage: ubuntu-latest\n"
+}
+
+// azureVariables is the variables block: the linked variable groups, then the
+// package stores' variables. Without groups it is the plain mapping.
+func azureVariables(m Model) string {
+	if len(m.AzureVariableGroups) == 0 {
+		return azureStoreVariables(m.Stores)
+	}
+	var b strings.Builder
+	b.WriteString("variables:\n")
+	for _, g := range m.AzureVariableGroups {
+		fmt.Fprintf(&b, "  - group: %s\n", yamlWord(g))
+	}
+	for _, s := range m.Stores {
+		fmt.Fprintf(&b, "  - name: %s\n    value: %s/%s\n", s.Env, azureStoresDir, s.Name)
+	}
+	b.WriteString("\n")
+	return b.String()
+}
+
+// plainYAMLWord is a name that needs no quotes as a YAML scalar.
+var plainYAMLWord = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+// yamlWord is a name as a YAML scalar: bare when it is plain, else quoted.
+func yamlWord(s string) string {
+	if plainYAMLWord.MatchString(s) {
+		return s
+	}
+	return strconv.Quote(s)
 }

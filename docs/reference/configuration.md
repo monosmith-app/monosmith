@@ -57,6 +57,8 @@ package = "https://example.com/recipes/package.recipe.toml"
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", or several
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
+azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
+azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
 native_linux_packages = []            # apt packages the native job installs on Linux
 audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)

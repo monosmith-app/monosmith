@@ -114,6 +114,13 @@ type CISection struct {
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
+	// AzurePool is the agent pool an Azure Pipelines definition runs on (a
+	// self-hosted or managed pool's name). Default: Microsoft's hosted
+	// ubuntu-latest image.
+	AzurePool string `toml:"azure_pool"`
+	// AzureVariableGroups are the variable groups of the Library an Azure
+	// Pipelines definition links, for the secrets its steps read. Default: none.
+	AzureVariableGroups []string `toml:"azure_variable_groups"`
 	// AuditPolicies opts ecosystems into the policy checks `smith ci audit`
 	// runs beyond the vulnerability scan: "node" (lockfile integrity, no git
 	// or http dependencies, install-script allow-list) and "go" (go mod

@@ -44,6 +44,10 @@ type Model struct {
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
+	// AzurePool and AzureVariableGroups are [ci] azure_pool and
+	// azure_variable_groups, for the Azure Pipelines definition.
+	AzurePool           string
+	AzureVariableGroups []string
 	// RubyGemsTrusted is true when gems are published with the workflow's
 	// OIDC token: the release job then gets id-token permission and signs in
 	// to RubyGems right before the release, and the key is not a secret.

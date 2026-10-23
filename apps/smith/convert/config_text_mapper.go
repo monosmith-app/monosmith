@@ -26,10 +26,19 @@ func ConfigText(cfg workspace.Config) string {
 		b.WriteString("# Not projects: standalone folders outside the npm workspaces.\n")
 		fmt.Fprintf(&b, "exclude = %s\n", list(cfg.Workspace.Exclude))
 	}
-	if len(cfg.CI.Providers) > 0 {
-		fmt.Fprintf(&b, "\n[ci]\nproviders = %s\n", list(cfg.CI.Providers))
+	if len(cfg.CI.Providers) > 0 || cfg.CI.AzurePool != "" || len(cfg.CI.AzureVariableGroups) > 0 {
+		b.WriteString("\n[ci]\n")
+		if len(cfg.CI.Providers) > 0 {
+			fmt.Fprintf(&b, "providers = %s\n", list(cfg.CI.Providers))
+		}
+		if cfg.CI.AzurePool != "" {
+			fmt.Fprintf(&b, "azure_pool = %s\n", q(cfg.CI.AzurePool))
+		}
+		if len(cfg.CI.AzureVariableGroups) > 0 {
+			fmt.Fprintf(&b, "azure_variable_groups = %s\n", list(cfg.CI.AzureVariableGroups))
+		}
 	}
-	if cfg.Release.Branch != "" || cfg.Release.Remote != "" || cfg.Release.GitHubReleases {
+	if cfg.Release.Branch != "" || cfg.Release.Remote != "" || cfg.Release.GitHubReleases || cfg.Release.Registry != "" {
 		b.WriteString("\n[release]\n")
 		if cfg.Release.Branch != "" {
 			fmt.Fprintf(&b, "branch = %s\n", q(cfg.Release.Branch))
@@ -39,6 +48,16 @@ func ConfigText(cfg workspace.Config) string {
 		}
 		if cfg.Release.GitHubReleases {
 			b.WriteString("github_releases = true\n")
+		}
+		if cfg.Release.Registry != "" {
+			fmt.Fprintf(&b, "registry = %s\n", q(cfg.Release.Registry))
+		}
+	}
+	for _, name := range sortedKeys(cfg.Registries) {
+		r := cfg.Registries[name]
+		fmt.Fprintf(&b, "\n[registries.%s]\nauth = %s\n", key(name), q(r.Auth))
+		if r.NPM != "" {
+			fmt.Fprintf(&b, "npm = %s\n", q(r.NPM))
 		}
 	}
 	for _, name := range sortedKeys(cfg.Conventions) {
