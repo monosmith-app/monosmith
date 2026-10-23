@@ -33,3 +33,11 @@ func TestEsbuildBuildCarriesOutExtension(t *testing.T) {
 		t.Fatalf("line %q", line)
 	}
 }
+
+func TestMapEsbuildOptionsCarriesLogOverride(t *testing.T) {
+	tg := target(t, `{"executor": "@nx/esbuild:esbuild", "options": {"esbuildOptions": {"logOverride": {"require-resolve-not-external": "silent"}}}}`)
+	got := MapEsbuildOptions(tg)
+	if strings.Join(got.Flags, " ") != "--log-override:require-resolve-not-external=silent" || len(got.Unmapped) != 0 {
+		t.Errorf("%+v", got)
+	}
+}

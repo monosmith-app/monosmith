@@ -32,8 +32,10 @@ var (
 func RollupEntries(text string) (entries []RollupEntry, ok bool) {
 	text = stripLineComments(text)
 	key := rollupInputKey.FindStringIndex(text)
+	additional := false
 	if key == nil {
 		key = rollupAdditionalKey.FindStringIndex(text)
+		additional = key != nil
 	}
 	if key == nil {
 		return nil, true
@@ -68,6 +70,16 @@ func RollupEntries(text string) (entries []RollupEntry, ok bool) {
 		}
 		seen[name] = true
 		entries = append(entries, RollupEntry{Name: name, Source: src})
+	}
+	if additional {
+		// withNx builds `main` as well as its additional entry points.
+		if m := rollupMain.FindStringSubmatch(text); m != nil {
+			src := strings.TrimPrefix(m[1], "./")
+			name := strings.TrimSuffix(path.Base(src), path.Ext(src))
+			if !seen[name] {
+				entries = append([]RollupEntry{{Name: name, Source: src}}, entries...)
+			}
+		}
 	}
 	return entries, len(entries) > 0
 }

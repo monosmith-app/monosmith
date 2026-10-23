@@ -48,3 +48,19 @@ func TestRewriteNxESLintRefusesUnknownPresets(t *testing.T) {
 		t.Fatal("a preset with no plain equivalent must stay manual")
 	}
 }
+
+// A dependency check on package.json files is dropped with the comment that
+// explains it, and a comment that only names Nx does not stop the rewrite.
+func TestRewriteNxESLintDropsTheDependencyChecksBlockWithItsComment(t *testing.T) {
+	src := "// Built on @nx/eslint-plugin's checks; see below.\nimport base from './base.mjs'\n\nexport default [\n  base,\n  {\n    // @nx/dependency-checks cannot see a @types/* package: they are not imported.\n    // These are not unused.\n    name:  'local/types',\n    files: ['packages/*/package.json'],\n    rules: {\n      '@nx/dependency-checks': ['error', { ignoredDependencies: ['@types/he'] }],\n    },\n  },\n  { name: 'local/keep', rules: { 'no-undef': 'off' } },\n]\n"
+	out, ok := RewriteNxESLint(src)
+	if !ok {
+		t.Fatalf("not rewritten:\n%s", src)
+	}
+	if strings.Contains(out, "dependency-checks cannot see") || strings.Contains(out, "@types/he") || strings.Contains(out, "local/types") {
+		t.Errorf("the block or its comment stayed:\n%s", out)
+	}
+	if !strings.Contains(out, "local/keep") || !strings.Contains(out, "@nx/eslint-plugin's checks; see below") {
+		t.Errorf("what is not about the check was lost:\n%s", out)
+	}
+}

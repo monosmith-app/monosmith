@@ -14,8 +14,8 @@ import (
 // that its package.json does not declare. A file that ships may import only
 // what dependencies, peerDependencies (optional ones in peerDependenciesMeta
 // too) or optionalDependencies declare; a
-// test, e2e, tool or config file (DevFile) may also import devDependencies
-// and the workspace root's declarations. Node built-ins, the package's own
+// test, e2e, tool or config file (DevFile) may also import devDependencies,
+// the workspace root's declarations and what another workspace member declares. Node built-ins, the package's own
 // name, and vscode in a VS Code extension are always fine. Versions are not
 // compared, and a declaration nothing imports is not reported.
 func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
@@ -36,6 +36,7 @@ func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
 	}
 	dev := names(pkg.DevDependencies)
 	workspaceDev := names(root.Dependencies, root.DevDependencies)
+	siblings := declaredInWorkspace(workspaceRoot)
 	byFile, err := discovery.ScanFileImports(dir)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func Check(workspaceRoot, projectRoot string) ([]UndeclaredImport, error) {
 				continue
 			}
 			seen[name] = true
-			if DevFile(file) && (dev[name] || workspaceDev[name]) {
+			if DevFile(file) && (dev[name] || workspaceDev[name] || siblings[name]) {
 				continue
 			}
 			out = append(out, UndeclaredImport{File: file, Package: name, DevOnly: dev[name]})

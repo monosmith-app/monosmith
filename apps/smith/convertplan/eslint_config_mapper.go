@@ -53,7 +53,8 @@ func RewriteNxESLint(text string) (string, bool) {
 		}
 	}
 	out = blankLines.ReplaceAllString(out, "\n")
-	if strings.Contains(out, "@nx/") || strings.Contains(out, "nx.") {
+	// Nx named in a comment is not a dependency on it.
+	if code := stripLineComments(out); strings.Contains(code, "@nx/") || strings.Contains(code, "nx.") {
 		return text, false
 	}
 	return out, true
@@ -68,7 +69,7 @@ func removeRule(src string, at int, rule string) (string, bool) {
 	if strings.Contains(rule, "dependency-checks") {
 		if start, end, ok := enclosingElement(src, at); ok {
 			end = skipComma(src, end)
-			return trimLine(src, start, end), true
+			return trimLine(src, withLeadingComments(src, start), end), true
 		}
 	}
 	colon := strings.Index(src[at:], ":")
@@ -172,4 +173,22 @@ func trimLine(src string, start, end int) string {
 		}
 	}
 	return src[:start] + src[end:]
+}
+
+// withLeadingComments moves start back over the line comments directly above
+// the element that begins there: they explain it, and go with it. A start that
+// is not the first thing on its line is left alone.
+func withLeadingComments(src string, start int) int {
+	lineStart := strings.LastIndex(src[:start], "\n") + 1
+	if strings.TrimSpace(src[lineStart:start]) != "" {
+		return start
+	}
+	for lineStart > 0 {
+		prevStart := strings.LastIndex(src[:lineStart-1], "\n") + 1
+		if !strings.HasPrefix(strings.TrimSpace(src[prevStart:lineStart-1]), "//") {
+			break
+		}
+		lineStart = prevStart
+	}
+	return lineStart
 }

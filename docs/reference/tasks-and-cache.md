@@ -46,8 +46,9 @@ workspace hides because npm hoists every dependency to the root:
   declare
 - a test, e2e suite, test double, tool or config file (`*.test.*`,
   `*.spec.*`, `*.config.*`, and anything under `e2e/`, `tools/`, `test/`,
-  `tests/`, `__tests__/` or `testing/`) may also import `devDependencies` and
-  what the workspace root declares
+  `tests/`, `__tests__/` or `testing/`) may also import `devDependencies`,
+  what the workspace root declares and what another workspace package
+  declares (a test never ships, and the workspace installs it)
 - Node's built-ins, the package's own name, `#` subpath imports and, in a VS
   Code extension, `vscode` are always fine
 

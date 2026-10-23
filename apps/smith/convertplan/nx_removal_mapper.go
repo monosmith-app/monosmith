@@ -25,13 +25,16 @@ func NxPackage(name string) bool {
 	return false
 }
 
-// JestPreset replaces a jest.preset.js that re-exported @nx/jest/preset:
+// JestPreset replaces a jest.preset.js that re-exported @nx/jest/preset whole:
 // Nx's preset values. Its resolver is replaced by the one thing a
 // workspace without Nx needs from it: an ESM-style "./x.js" import of a
 // TypeScript file resolves to "./x" (npm workspaces resolve the packages).
-const JestPreset = `// Written by smith convert: the values @nx/jest/preset provided, without Nx.
-module.exports = {
+const JestPreset = "// Written by smith convert: the values @nx/jest/preset provided, without Nx.\nmodule.exports = " + jestPresetValues + "\n"
+
+// jestPresetValues are those values as an object literal.
+const jestPresetValues = `{
   testMatch:            ['**/?(*.)+(spec|test).?([mc])[jt]s?(x)'],
+  resolver:             require.resolve('./jest.resolver.cjs'),
   moduleFileExtensions: ['ts', 'js', 'mts', 'mjs', 'cts', 'cjs', 'html'],
   coverageReporters:    ['html'],
   moduleNameMapper:     { '^(\\.{1,2}/.*)\\.js$': '$1' },
@@ -43,8 +46,7 @@ module.exports = {
   testEnvironmentOptions:   {
     customExportConditions: ['node', 'require', 'default'],
   },
-}
-`
+}`
 
 // configFile reports whether a file is configuration or tooling that may
 // import Nx at run time.
@@ -102,7 +104,30 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 		plan.Add(Mapped, "", "package.json", "removes "+strings.Join(remove, ", "))
 	}
 
+	// A one-line rollup config that builds through a shared base file
+	// (module.exports = require('../../rollup.base.cjs')()) stands for that
+	// file's withNx build; the base goes when every config that used it
+	// could be converted.
+	delegated, keep := map[string]bool{}, map[string]bool{}
+	defer func() {
+		for _, base := range sortedKeys(delegated) {
+			if !keep[base] {
+				plan.DeletePath(base)
+				plan.Add(Dropped, "", base, "the shared rollup build the projects' one-line configs delegated to; each project now builds with esbuild")
+			}
+		}
+	}()
 	for _, f := range files {
+		if strings.HasPrefix(path.Base(f), "rollup.config.") && configFile(f) {
+			if base, text, ok := rollupDelegate(f, files, read); ok {
+				delegated[base] = true
+				if why := replaceRollup(plan, w, f, text); why != "" {
+					plan.Add(Manual, "", f, why)
+					keep[base] = true
+				}
+				continue
+			}
+		}
 		switch f {
 		case "pnpm-lock.yaml", "pnpm-workspace.yaml":
 			plan.Add(Unsupported, "", f, "pnpm workspaces: the smith Node plugin runs npm; switch to npm workspaces (npm install creates package-lock.json)")
@@ -117,14 +142,23 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			continue
 		}
 		text := read(f)
-		if !strings.Contains(text, "@nx/") && !strings.Contains(text, "'nx/") && !strings.Contains(text, "\"nx/") && !strings.Contains(text, "@nrwl/") {
+		// Nx named in a comment is not an import: a config that only mentions
+		// it needs nothing from convert.
+		code := stripLineComments(text)
+		if !strings.Contains(code, "@nx/") && !strings.Contains(code, "'nx/") && !strings.Contains(code, "\"nx/") && !strings.Contains(code, "@nrwl/") {
 			continue
 		}
 		base := path.Base(f)
 		switch {
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.preset.") && strings.Contains(text, "@nx/jest/preset"):
-			plan.WriteFile(f, JestPreset)
-			plan.Add(Changed, "", f, "rewritten without @nx/jest: the same preset values, written out")
+			plan.WriteFile(JestResolverFile, JestResolver)
+			if rewritten, kept := RewriteNxJestPreset(text); kept {
+				plan.WriteFile(f, rewritten)
+				plan.Add(Changed, "", f, "rewritten without @nx/jest: the same preset values, written out, and the rest of the file kept")
+			} else {
+				plan.WriteFile(f, JestPreset)
+				plan.Add(Manual, "", f, "replaced by the values @nx/jest/preset provided, written out: anything else this file added is gone (see git diff), add it back")
+			}
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.config.") && strings.Contains(text, "getJestProjects"):
 			plan.DeletePath(f)
 			plan.Add(Dropped, "", f, "listed every Jest project for Nx; smith runs each project's tests itself")
@@ -332,6 +366,7 @@ func pathDeleted(plan *Plan, f string) bool {
 
 // nxImport names the first Nx module a file imports.
 func nxImport(text string) string {
+	text = stripLineComments(text)
 	for _, marker := range []string{"@nx/", "@nrwl/", "'nx/", "\"nx/"} {
 		i := strings.Index(text, marker)
 		if i < 0 {
@@ -348,4 +383,13 @@ func nxImport(text string) string {
 		return text[start : start+end]
 	}
 	return "nx"
+}
+
+func sortedKeys(set map[string]bool) []string {
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
