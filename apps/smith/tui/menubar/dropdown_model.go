@@ -72,7 +72,7 @@ func (d dropdown) view(th theme.Theme) []string {
 			rows = append(rows, rule("├"+strings.Repeat("─", w)+"┤"))
 			continue
 		}
-		gap := max(w-2*padX-pane.Width(e.Name)-pane.Width(e.Shortcut), 1)
+		gap := max(w-2*padX-pane.Width(e.Name)-pane.Width(e.Shortcut), 0)
 		pad := strings.Repeat(" ", padX)
 		text := pad + e.Name + strings.Repeat(" ", gap) + e.Shortcut + pad
 		switch {

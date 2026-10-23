@@ -12,6 +12,7 @@ import (
 type About struct {
 	version string
 	rect    Rect
+	size    emblemSize
 }
 
 // NewAbout builds the screen for a smith version.
@@ -19,6 +20,7 @@ func NewAbout(version string) About { return About{version: version} }
 
 // Place centres the screen on a terminal of the given size.
 func (a About) Place(sw, sh int) About {
+	a.size = emblemSizeFor(sh)
 	w := min(max(sw-4, 10), 72)
 	h := len(a.content(theme.Theme{}, w-4)) + 4
 	h = min(h, max(sh-2, 3))
@@ -37,8 +39,8 @@ func centre(s string, w int) string {
 func (a About) content(th theme.Theme, inner int) []string {
 	var out []string
 	out = append(out, "")
-	for _, l := range aboutLogo {
-		out = append(out, centre(th.Accent(l), inner))
+	for _, l := range a.logo(th) {
+		out = append(out, centre(l, inner))
 	}
 	title := "MonoSmith"
 	if a.version != "" {
@@ -95,4 +97,34 @@ func (a About) Click(x, y int) Outcome {
 		return Outcome{Done: true}
 	}
 	return Outcome{Done: y == a.rect.Y+a.buttonRow() && x >= a.rect.X+a.rect.W-10}
+}
+
+// logo is the emblem at the size the terminal has room for: whole at 32
+// columns, halved at 16, and the small anvil when the terminal is short.
+func (a About) logo(th theme.Theme) []string {
+	if a.size == emblemAnvil {
+		lines := make([]string, len(aboutLogo))
+		for i, l := range aboutLogo {
+			lines[i] = th.Accent(l)
+		}
+		return lines
+	}
+	grid := emblemGrid()
+	if a.size == emblemSmall {
+		grid = shrink(grid)
+	}
+	mono := !th.Tokens.Colour
+	return halfBlocks(grid, func(glyph string, fg, bg *rgb) string {
+		if mono {
+			if bg != nil {
+				return "█"
+			}
+			return glyph
+		}
+		back := ""
+		if bg != nil {
+			back = bg.hex()
+		}
+		return th.Paint(glyph, fg.hex(), back)
+	})
 }
