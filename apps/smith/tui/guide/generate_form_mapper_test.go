@@ -20,7 +20,7 @@ func described() clicontract.CommandDescription {
 }
 
 func TestFormForAsksRequiredFirstThenSwitchesThenValuedOptions(t *testing.T) {
-	a := FormFor(described(), "uninstall")
+	a := FormFor(described(), []string{"uninstall"}, "uninstall")
 	var keys []string
 	for _, s := range a.Steps {
 		keys = append(keys, s.Key)
@@ -41,7 +41,7 @@ func TestFormForAsksRequiredFirstThenSwitchesThenValuedOptions(t *testing.T) {
 }
 
 func TestFormForBuildsTheCommandLineFromTheAnswers(t *testing.T) {
-	a := FormFor(described(), "uninstall")
+	a := FormFor(described(), []string{"uninstall"}, "uninstall")
 	cases := []struct {
 		answers map[string][]string
 		want    []string
@@ -59,7 +59,7 @@ func TestFormForBuildsTheCommandLineFromTheAnswers(t *testing.T) {
 }
 
 func TestAnOptionalStepMayBeLeftEmpty(t *testing.T) {
-	a := FormFor(clicontract.CommandDescription{Name: "pipeline", Description: "Add a pipeline", Arguments: []clicontract.ArgumentDescription{{Name: "template"}}}, "pipeline")
+	a := FormFor(clicontract.CommandDescription{Name: "pipeline", Description: "Add a pipeline", Arguments: []clicontract.ArgumentDescription{{Name: "template"}}}, []string{"pipeline"}, "pipeline")
 	m, ok := NewModel([]Action{a}).Pick("Add a pipeline")
 	if !ok {
 		t.Fatal("the form is not in the menu")
@@ -67,5 +67,16 @@ func TestAnOptionalStepMayBeLeftEmpty(t *testing.T) {
 	m = keys(m, "enter").(Model)
 	if !m.Done() || !reflect.DeepEqual(m.Argv, []string{"pipeline"}) {
 		t.Errorf("done %v, argv %v", m.Done(), m.Argv)
+	}
+}
+
+func TestFormForASubcommandRunsItUnderItsParent(t *testing.T) {
+	up := clicontract.CommandDescription{Name: "up", Description: "Update dependencies", Arguments: []clicontract.ArgumentDescription{{Name: "packages", Required: true, Variadic: true}}}
+	a := FormFor(up, []string{"deps", "up"}, "deps up")
+	if a.Hint != "smith deps up" || a.Presents != "deps up" {
+		t.Errorf("action %+v", a)
+	}
+	if got := a.Argv(map[string][]string{"arg:packages": {"zod lodash"}}); !reflect.DeepEqual(got, []string{"deps", "up", "zod", "lodash"}) {
+		t.Errorf("argv %v", got)
 	}
 }

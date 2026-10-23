@@ -15,10 +15,10 @@ var notAsked = []string{"json", "help", "yes"}
 // from the description `smith commands` gives, so a command has a form
 // without anyone writing one: the required arguments are asked first, then
 // the optional ones, the switches in one toggle list (with a choice of none)
-// and each option that takes a value, all of which may be left empty. id is
-// the action it presents.
-func FormFor(c clicontract.CommandDescription, id string) Action {
-	a := Action{Title: c.Description, Hint: "smith " + c.Name, NeedsWorkspace: true, Presents: id}
+// and each option that takes a value, all of which may be left empty. path is
+// the command's words under smith (["deps", "up"]) and id the action it presents.
+func FormFor(c clicontract.CommandDescription, path []string, id string) Action {
+	a := Action{Title: c.Description, Hint: "smith " + strings.Join(path, " "), NeedsWorkspace: true, Presents: id}
 	args := slices.Clone(c.Arguments)
 	slices.SortStableFunc(args, func(x, y clicontract.ArgumentDescription) int { return rank(y.Required) - rank(x.Required) })
 	for _, arg := range args {
@@ -57,7 +57,7 @@ func FormFor(c clicontract.CommandDescription, id string) Action {
 		a.Steps = append(a.Steps, Step{Key: "flag:" + o.Name, Prompt: prompt, Optional: true})
 	}
 	a.Argv = func(answers map[string][]string) []string {
-		argv := []string{c.Name}
+		argv := slices.Clone(path)
 		for _, arg := range args {
 			value := first(answers, "arg:"+arg.Name)
 			switch {

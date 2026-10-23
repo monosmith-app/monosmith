@@ -10,6 +10,9 @@ type CommandDescription struct {
 	Description string                `json:"description"`
 	Arguments   []ArgumentDescription `json:"arguments"`
 	Options     []OptionDescription   `json:"options"`
+	// Subcommands are the command's own subcommands (`deps up`), described the
+	// same way and in the same group; absent when it has none.
+	Subcommands []CommandDescription `json:"subcommands,omitempty"`
 }
 
 // ArgumentDescription is one positional argument.

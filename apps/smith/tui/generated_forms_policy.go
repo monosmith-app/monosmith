@@ -47,11 +47,8 @@ func GeneratedForms(described []clicontract.CommandDescription) []guide.Action {
 		if a.NotInTUI != "" || shown[a.ID()] {
 			continue
 		}
-		for _, c := range described {
-			if c.Name == a.ID() {
-				forms = append(forms, guide.FormFor(c, a.ID()))
-				break
-			}
+		if c, ok := describedAt(described, a.Command); ok {
+			forms = append(forms, guide.FormFor(c, a.Command, a.ID()))
 		}
 	}
 	return forms
@@ -64,4 +61,19 @@ func PresentedWithForms(described []clicontract.CommandDescription) map[string]b
 		out[f.Presents] = true
 	}
 	return out
+}
+
+// describedAt finds a command's description by its words: a top-level command,
+// or a subcommand under its parent.
+func describedAt(described []clicontract.CommandDescription, path []string) (clicontract.CommandDescription, bool) {
+	for _, c := range described {
+		if len(path) == 0 || c.Name != path[0] {
+			continue
+		}
+		if len(path) == 1 {
+			return c, true
+		}
+		return describedAt(c.Subcommands, path[1:])
+	}
+	return clicontract.CommandDescription{}, false
 }
