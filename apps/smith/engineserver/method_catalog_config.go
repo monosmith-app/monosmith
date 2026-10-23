@@ -25,6 +25,20 @@ var serverMethods = map[string]func(s *Server, ctx context.Context, raw json.Raw
 	"recipe.roles":    (*Server).recipeRoles,
 }
 
+// serverActions are the smith actions (libs/actions) the methods in
+// serverCommands and serverMethods run; queryMethods and commandMethods take
+// theirs from the MCP tool they map to, and the run method is the action run.
+var serverActions = map[string]string{
+	"release":         "release",
+	"config.set":      "config set",
+	"config.unset":    "config unset",
+	"config.list":     "config",
+	"config.get":      "config",
+	"recipe.list":     "recipe",
+	"recipe.describe": "recipe",
+	"recipe.roles":    "recipe",
+}
+
 // queryMethods answer with the JSON of the smith command they stand for, and
 // change nothing. Each takes the input of the MCP tool it maps to (see
 // mcpserver), so what a client sends and what the command line is are decided
