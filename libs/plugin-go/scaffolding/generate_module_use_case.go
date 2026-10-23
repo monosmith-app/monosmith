@@ -57,6 +57,10 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, template
 	data := templateData{Dir: params.Directory, Name: params.Name, Module: modulePath(params), Package: PackageName(params.Name)}
 
 	var files []string
+	// A module added to an existing workspace declares the Go version the
+	// workspace builds with, not the version of the toolchain that runs this:
+	// go mod init writes the latter, and go work use then raises go.work to it.
+	workspaceGo := WorkspaceGoVersion(workspaceRoot)
 	if _, err := os.Stat(filepath.Join(workspaceRoot, "go.work")); errors.Is(err, fs.ErrNotExist) {
 		if err := GoRunner(workspaceRoot, []string{"go", "work", "init"}); err != nil {
 			return protocol.GenerateResult{}, err
@@ -68,6 +72,11 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, template
 	}
 	if err := GoRunner(dir, []string{"go", "mod", "init", data.Module}); err != nil {
 		return protocol.GenerateResult{}, err
+	}
+	if workspaceGo != "" {
+		if err := GoRunner(dir, []string{"go", "mod", "edit", "-go=" + workspaceGo}); err != nil {
+			return protocol.GenerateResult{}, err
+		}
 	}
 	if err := declareKind(filepath.Join(dir, "go.mod"), params.Kind, params.Stack); err != nil {
 		return protocol.GenerateResult{}, err
@@ -94,6 +103,21 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, template
 		return protocol.GenerateResult{}, err
 	}
 	return protocol.GenerateResult{Files: files}, nil
+}
+
+// WorkspaceGoVersion is the version of the workspace's go.work `go` line
+// ("1.26.0"), or "" when there is no go.work or it names none.
+func WorkspaceGoVersion(workspaceRoot string) string {
+	src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(src), "\n") {
+		if fields := strings.Fields(line); len(fields) == 2 && fields[0] == "go" {
+			return fields[1]
+		}
+	}
+	return ""
 }
 
 // declareKind records the kind, and the stack when there is one, as the
