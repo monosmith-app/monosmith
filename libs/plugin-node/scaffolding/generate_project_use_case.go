@@ -1,7 +1,6 @@
 package scaffolding
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -117,41 +116,16 @@ func ensureWorkspace(root, workspaceName string, set TemplateSet) ([]string, err
 }
 
 func ensureRootManifest(path, workspaceName string, devDependencies map[string]string) (bool, error) {
-	manifest := map[string]any{}
 	raw, err := os.ReadFile(path)
-	switch {
-	case err == nil:
-		if err := json.Unmarshal(raw, &manifest); err != nil {
-			return false, fmt.Errorf("root package.json: %w", err)
-		}
-	case errors.Is(err, fs.ErrNotExist):
-		manifest["name"] = strings.ToLower(workspaceName) + "-workspace"
-		manifest["private"] = true
-	default:
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return false, err
 	}
-	changed := len(raw) == 0
-	if _, ok := manifest["workspaces"]; !ok {
-		manifest["workspaces"] = []string{"apps/*", "libs/*", "packages/*"}
-		changed = true
+	out, changed, err := completeRootManifest(raw, workspaceName, devDependencies)
+	if err != nil {
+		return false, fmt.Errorf("root package.json: %w", err)
 	}
-	dev, _ := manifest["devDependencies"].(map[string]any)
-	if dev == nil {
-		dev = map[string]any{}
-	}
-	for name, version := range devDependencies {
-		if _, ok := dev[name]; !ok {
-			dev[name] = version
-			changed = true
-		}
-	}
-	manifest["devDependencies"] = dev
 	if !changed {
 		return false, nil
 	}
-	out, err := json.MarshalIndent(manifest, "", "  ")
-	if err != nil {
-		return false, err
-	}
-	return true, os.WriteFile(path, append(out, '\n'), 0o644)
+	return true, os.WriteFile(path, out, 0o644)
 }
