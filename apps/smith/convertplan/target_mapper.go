@@ -261,7 +261,7 @@ func setScript(plan *Plan, pp *ProjectPlan, name, line string, t nxworkspace.Tar
 		pp.Scripts = map[string]string{}
 	}
 	pp.Scripts[name] = line
-	o := workspace.TaskOverride{DependsOn: extraDependsOn(plan, pp, name, t)}
+	o := workspace.TaskOverride{DependsOn: withNodeDefaults(name, extraDependsOn(plan, pp, name, t))}
 	if len(env) > 0 {
 		o.Env = env
 	}
@@ -352,6 +352,22 @@ func extraDependsOn(plan *Plan, pp *ProjectPlan, task string, t nxworkspace.Targ
 		}
 	}
 	return nil
+}
+
+// withNodeDefaults keeps, in the dependencies a converted Node script sets,
+// the "^build" the Node plugin gives its build, typecheck, test and lint: a
+// setting replaces what the plugin gives, and a typecheck that Nx ran after the
+// project's own build must not lose its dependencies' builds. No settings, no
+// change.
+func withNodeDefaults(task string, deps []string) []string {
+	if deps == nil || contains(deps, "^build") {
+		return deps
+	}
+	switch task {
+	case "build", "typecheck", "test", "lint":
+		return append([]string{"^build"}, deps...)
+	}
+	return deps
 }
 
 // inputs translates Nx inputs to smith globs. Named inputs (default,

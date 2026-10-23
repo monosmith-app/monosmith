@@ -70,3 +70,12 @@ func TestRollupMultiEntryBuildsEveryEntryInOneRun(t *testing.T) {
 		t.Error("main is none of the entries")
 	}
 }
+
+// withNx builds main as well as its additional entry points: a library whose
+// bin is a second entry (dist/main.esm.js) beside its index.
+func TestRollupEntriesIncludesMainWithAdditionalEntryPoints(t *testing.T) {
+	entries, ok := RollupEntries("withNx({ main: './src/index.ts', additionalEntryPoints: ['./src/main.ts'] })")
+	if !ok || fmt.Sprint(entries) != "[{index src/index.ts} {main src/main.ts}]" {
+		t.Errorf("%v %v", entries, ok)
+	}
+}

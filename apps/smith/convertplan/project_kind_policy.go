@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
+	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -73,8 +74,10 @@ func NeedsKindMarker(p *nxworkspace.Project, lang string, kind protocol.ProjectK
 }
 
 // TagPrefix is the release tag prefix that continues a project's existing
-// tags: the Nx pattern's when tags were made with it, smith's default
-// otherwise. An error means the pattern cannot become a prefix.
+// tags: the Nx pattern's or smith's default, whichever has the newest release
+// (a project renamed along the way keeps a stray old tag under the other
+// name, which must not hide the newer ones). With no release under either,
+// smith's default. An error means the pattern cannot become a prefix.
 func TagPrefix(pattern string, p *nxworkspace.Project, smithDefault string, tags []string) (string, error) {
 	prefix, ok := strings.CutSuffix(strings.ReplaceAll(pattern, "{projectName}", p.Name), "{version}")
 	if !ok || strings.Contains(prefix, "{") {
@@ -83,17 +86,31 @@ func TagPrefix(pattern string, p *nxworkspace.Project, smithDefault string, tags
 	if prefix == smithDefault {
 		return smithDefault, nil
 	}
-	for _, t := range tags {
-		if strings.HasPrefix(t, smithDefault) {
-			return smithDefault, nil
-		}
-	}
-	for _, t := range tags {
-		if strings.HasPrefix(t, prefix) {
-			return prefix, nil
-		}
+	nx, hasNx := newestUnder(tags, prefix)
+	def, hasDefault := newestUnder(tags, smithDefault)
+	if hasNx && (!hasDefault || def.Less(nx)) {
+		return prefix, nil
 	}
 	return smithDefault, nil
+}
+
+// newestUnder is the highest version among the tags that are prefix followed
+// by a semantic version.
+func newestUnder(tags []string, prefix string) (newest release.Version, found bool) {
+	for _, t := range tags {
+		rest, ok := strings.CutPrefix(t, prefix)
+		if !ok {
+			continue
+		}
+		v, err := release.ParseVersion(rest)
+		if err != nil {
+			continue
+		}
+		if !found || newest.Less(v) {
+			newest, found = v, true
+		}
+	}
+	return newest, found
 }
 
 // AppRelease reads the old mnci's release.asset of a releasable Go app.

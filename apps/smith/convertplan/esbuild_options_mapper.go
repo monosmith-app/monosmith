@@ -59,12 +59,12 @@ func esbuildOptionFlags(key string, raw json.RawMessage, res *EsbuildOptions) ([
 			res.Sourcemap = "--sourcemap=" + kind
 			return nil, true
 		}
-	case "outExtension", "loader", "define":
+	case "outExtension", "loader", "define", "logOverride":
 		var m map[string]string
 		if json.Unmarshal(raw, &m) != nil {
 			return nil, false
 		}
-		name := map[string]string{"outExtension": "out-extension", "loader": "loader", "define": "define"}[key]
+		name := map[string]string{"outExtension": "out-extension", "loader": "loader", "define": "define", "logOverride": "log-override"}[key]
 		return mapFlags(name, m, key == "outExtension")
 	case "external", "mainFields", "conditions", "target", "resolveExtensions":
 		var list []string

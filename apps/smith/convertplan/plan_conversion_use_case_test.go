@@ -133,8 +133,8 @@ func TestPlanLegacyWorkspace(t *testing.T) {
 	if kit.Scripts["test"] != "jest --passWithNoTests" || plan.Config.Projects["kit"].Tasks["test"].Env["TS_NODE"] != "1" {
 		t.Fatalf("test script %q %+v", kit.Scripts["test"], plan.Config.Projects["kit"].Tasks["test"])
 	}
-	if tc := plan.Config.Projects["kit"].Tasks["typecheck"]; strings.Join(tc.DependsOn, ",") != "build,^typecheck" {
-		t.Fatalf("typecheck keeps running after the project's build: %+v", tc)
+	if tc := plan.Config.Projects["kit"].Tasks["typecheck"]; strings.Join(tc.DependsOn, ",") != "^build,build,^typecheck" {
+		t.Fatalf("typecheck keeps running after the project's build, and keeps the Node plugin's ^build the setting would replace: %+v", tc)
 	}
 	if test := plan.Config.Projects["kit"].Tasks["test"]; test.DependsOn != nil {
 		t.Fatalf("a bare ^build is the plugin's default: %+v", test)
