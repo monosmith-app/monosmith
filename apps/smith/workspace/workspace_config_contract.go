@@ -142,6 +142,11 @@ type ReleaseSection struct {
 	// release's commits as notes and an app's assets attached. Needs
 	// GITHUB_TOKEN (or GH_TOKEN). Default: false.
 	GitHubReleases bool `toml:"github_releases"`
+	// RubyGemsTrustedPublishing publishes gems with the GitHub workflow's
+	// OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY
+	// secret, which needs a one-time password when the account asks for one.
+	// GitHub Actions only. Default: false.
+	RubyGemsTrustedPublishing bool `toml:"rubygems_trusted_publishing"`
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`

@@ -44,6 +44,10 @@ type Model struct {
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
+	// RubyGemsTrusted is true when gems are published with the workflow's
+	// OIDC token: the release job then gets id-token permission and signs in
+	// to RubyGems right before the release, and the key is not a secret.
+	RubyGemsTrusted bool
 	// Permissions are the GitHub token permissions plugins asked for
 	// ("packages: write"), sorted.
 	Permissions []string
@@ -75,8 +79,18 @@ type Contributions struct {
 	Attest bool
 	// Pub is true when an app is published to pub.dev.
 	Pub bool
+	// RubyGemsTrusted is true when [release] rubygems_trusted_publishing is set.
+	RubyGemsTrusted bool
 	// Permissions are the GitHub token permissions plugins asked for.
 	Permissions []string
+}
+
+// UseRubyGemsTrustedPublishing makes gems publish with the workflow's OIDC
+// token: the key is no longer a secret the release needs, because the
+// pipeline signs in to RubyGems right before it.
+func (c *Contributions) UseRubyGemsTrustedPublishing() {
+	c.RubyGemsTrusted = true
+	c.Credentials = slices.DeleteFunc(c.Credentials, func(cred protocol.Credential) bool { return cred.Env == "GEM_HOST_API_KEY" })
 }
 
 // Add merges one plugin's contribution, keeping the first of duplicates.
@@ -131,7 +145,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 		smithVersion = "latest"
 	}
 	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish,
-		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub}
+		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners
 	}
