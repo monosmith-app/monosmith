@@ -212,17 +212,21 @@ func (m Model) View() string {
 	return strings.Join(lines, "\n")
 }
 
-// Body draws the current screen in w cells. firstRow is the line where
-// option 0 is drawn, for mapping a click to an option (-1 when the screen has
-// no options).
-func (m Model) Body(th theme.Theme, w int) (lines []string, firstRow int) {
-	firstRow = -1
+// Body draws the current screen in w cells. A long entry wraps onto further
+// lines; optionAt maps every line an option takes to the option, for a click.
+func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int) {
+	optionAt = map[int]int{}
+	add := func(i int, row string) {
+		for _, l := range pane.Wrap(row, w, 4) {
+			optionAt[len(lines)] = i
+			lines = append(lines, l)
+		}
+	}
 	step := m.current()
 	switch {
 	case m.action == nil:
-		firstRow = 0
 		for i, a := range m.actions {
-			lines = append(lines, Row(th, i == m.cursor, "", a.Title, a.Hint))
+			add(i, Row(th, i == m.cursor, "", a.Title, a.Hint))
 		}
 		lines = append(lines, "", th.Muted("up/down choose · enter select · click an entry, double-click to select"))
 	case step == nil:
@@ -232,7 +236,6 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, firstRow int) {
 			th.Muted("enter confirm · esc back"))
 	default:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "")
-		firstRow = len(lines)
 		for i, o := range step.Options {
 			box := ""
 			if step.Multi {
@@ -241,7 +244,7 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, firstRow int) {
 					box = "[x] "
 				}
 			}
-			lines = append(lines, Row(th, i == m.cursor, box, o.Label, o.Hint))
+			add(i, Row(th, i == m.cursor, box, o.Label, o.Hint))
 		}
 		help := "up/down choose · enter select · esc back"
 		if step.Multi {
@@ -255,7 +258,7 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, firstRow int) {
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
-	return lines, firstRow
+	return lines, optionAt
 }
 
 // Row draws one selectable line: a pointer, an optional checkbox, the label

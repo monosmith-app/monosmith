@@ -39,6 +39,12 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		}
 		argv = catalog.WithConfirmation(argv)
 	}
+	if !s.inWorkspace {
+		// No workspace means no Run tab to show the output (smith new, adopt
+		// and convert start here): the terminal runs it after the shell quits.
+		s.Argv, s.quit = argv, true
+		return nil
+	}
 	if s.running() {
 		s.say("A run is in progress (Ctrl+C stops it)")
 		return nil

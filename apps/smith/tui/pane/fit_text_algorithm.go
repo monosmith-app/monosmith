@@ -21,6 +21,21 @@ func Fit(s string, w int) string {
 	return cut
 }
 
+// Wrap breaks s into lines of at most w cells at word boundaries (a word
+// longer than w is split), keeping colours; every line after the first is
+// indented by indent cells.
+func Wrap(s string, w, indent int) []string {
+	if w <= indent+1 {
+		return []string{Cut(s, w)}
+	}
+	parts := strings.Split(ansi.Wrap(s, w-indent, ""), "\n")
+	pad := strings.Repeat(" ", indent)
+	for i := 1; i < len(parts); i++ {
+		parts[i] = pad + strings.TrimLeft(parts[i], " ")
+	}
+	return parts
+}
+
 // Block returns exactly h lines of exactly w cells, padding with blank lines.
 func Block(lines []string, w, h int) []string {
 	out := make([]string, max(h, 0))
