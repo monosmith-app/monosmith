@@ -417,9 +417,31 @@ longer passes `GEM_HOST_API_KEY` as a secret; the step exports a short-lived
 key that `gem push` and smith's own gem uploads use. The release does not ask
 for the secret either. The setting needs `providers = ["github"]`.
 
+### VS Code extensions
+
+An extension is an app: nothing imports it, and its version is what it
+contains. It is versioned by its tag like any app, so it needs a release
+section, and it takes the `vscode-extension` stack (or `[conventions.vscode]`),
+whose plugin publishes it:
+
+```toml
+[projects.vscode.release]
+```
+
+The release stamps its version into the manifest of the build
+(`dist/<dir>/package.json`; the manifest in the repository is not changed),
+packs `dist/release/<name>/<name>.vsix`, publishes it to the Visual Studio
+Marketplace and, when `OVSX_PAT` is set, to Open VSX. Both skip a version they
+already have, so a re-run completes a release. Install `@vscode/vsce` (and
+`ovsx` for Open VSX) as a devDependency: smith runs them with `npx
+--no-install`. The extension must build into `dist/`.
+
+An extension that is a package (`"smith": {"kind": "package"}`) is still
+published to the Marketplace by the node plugin, as before.
+
 ### The Marketplace without a token: Microsoft Entra ID
 
-A VS Code extension package is published to the Visual Studio Marketplace by
+A VS Code extension (an app, or a package) is published to the Visual Studio Marketplace by
 `vsce publish`, with the token in `VSCE_PAT`. Azure DevOps retires its global
 personal access tokens on 1 December 2026, so a release can instead publish as
 a Microsoft Entra ID app registration, signed in with the workflow's OIDC token

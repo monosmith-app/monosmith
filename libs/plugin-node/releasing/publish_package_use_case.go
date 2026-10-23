@@ -25,6 +25,13 @@ var npm = struct {
 // already has is skipped, which is what makes a re-run after a partial
 // release safe.
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
+	// An extension app has no archives: the vscode plugin packs and publishes
+	// its .vsix.
+	if params.Project.Kind == protocol.ProjectApp {
+		if _, ok := Extension(filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))); ok {
+			return protocol.PublishResult{Skipped: "an extension app is published by the vscode plugin (stack vscode-extension)"}, nil
+		}
+	}
 	if params.Assets != nil {
 		return BuildAssets(workspaceRoot, params)
 	}
