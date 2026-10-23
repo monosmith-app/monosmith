@@ -56,3 +56,6 @@ Thumbs.db
 
 # smith
 .smith/
+
+# Affinity keeps a lock file next to a design file while it is open.
+assets/*~lock~

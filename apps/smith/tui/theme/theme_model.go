@@ -50,6 +50,22 @@ func New(c Choice) Theme {
 // Default is the dark theme with Unicode symbols.
 func Default() Theme { return New(Choice{Tokens: Dark, Icons: Unicode}) }
 
+// Paint renders s in an exact foreground and, when given, background colour
+// (#rrggbb). Without colour it is s unchanged.
+func (t Theme) Paint(s, fg, bg string) string {
+	if !t.Tokens.Colour {
+		return s
+	}
+	style := lipgloss.NewStyle()
+	if fg != "" {
+		style = style.Foreground(lipgloss.Color(fg))
+	}
+	if bg != "" {
+		style = style.Background(lipgloss.Color(bg))
+	}
+	return style.Render(s)
+}
+
 // Accent, Success, Warning, Failure, Info, Muted, Faint, Title, Selected,
 // Hover and Bar render s in the token's meaning.
 func (t Theme) Accent(s string) string   { return t.accent.Render(s) }
