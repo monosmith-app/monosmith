@@ -126,11 +126,9 @@ func (s Shell) mainContent(w, h int) content {
 		}
 		c.lines = lines
 	case commands.TabGuide:
-		lines, first := s.guide.Body(s.th, w)
-		if first >= 0 {
-			for i := 0; first+i < len(lines); i++ {
-				c.hits[first+i] = hit{kind: "option", index: i}
-			}
+		lines, optionAt := s.guide.Body(s.th, w)
+		for row, i := range optionAt {
+			c.hits[row] = hit{kind: "option", index: i}
 		}
 		c.lines = lines
 	}

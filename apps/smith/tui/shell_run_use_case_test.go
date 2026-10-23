@@ -220,3 +220,11 @@ func TestProcessOutputAfterANewRunIsIgnored(t *testing.T) {
 	l.send(outputMsg{proc: old, lines: []string{"kit:build ✖ stale"}})
 	l.hasNot("stale")
 }
+
+func TestOutsideAWorkspaceACommandRunsInTheTerminalAfterTheShellQuits(t *testing.T) {
+	sh := NewShell(Config{Version: "dev"})
+	sh.execute([]string{"adopt"}, false)
+	if !sh.quit || len(sh.Argv) == 0 || sh.Argv[0] != "adopt" {
+		t.Fatalf("quit=%v argv=%v", sh.quit, sh.Argv)
+	}
+}

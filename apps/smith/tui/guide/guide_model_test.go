@@ -115,3 +115,18 @@ func TestClickingAnOptionMovesTheCursorAndTogglesAMultipleChoice(t *testing.T) {
 		t.Fatalf("a click toggles:\n%s", view)
 	}
 }
+
+func TestALongEntryWrapsAndEveryLineOfItIsClickable(t *testing.T) {
+	long := []Action{{Title: "Adopt this repository", Hint: "smith adopt: bring an existing repository under smith without changing how it builds"}, {Title: "Other"}}
+	lines, optionAt := NewModel(long).Body(theme.Default(), 40)
+	if len(lines) < 4 {
+		t.Fatalf("the hint was cut, not wrapped:\n%s", strings.Join(lines, "\n"))
+	}
+	text := strings.Join(lines, " ")
+	if !strings.Contains(text, "builds") {
+		t.Fatalf("the end of the hint is missing:\n%s", strings.Join(lines, "\n"))
+	}
+	if optionAt[0] != 0 || optionAt[1] != 0 || optionAt[len(lines)-3] != 1 {
+		t.Errorf("rows do not map to their option: %v", optionAt)
+	}
+}
