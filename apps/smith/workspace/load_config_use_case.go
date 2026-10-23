@@ -114,6 +114,9 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("%s: unknown CI provider %q (use github, azure or gitlab)", FileName, p)
 		}
 	}
+	if cfg.Release.RubyGemsTrustedPublishing && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {
+		return fmt.Errorf("%s: [release] rubygems_trusted_publishing works on GitHub Actions only: set [ci] providers = [\"github\"]", FileName)
+	}
 	for _, list := range [][]string{cfg.CI.AuditPolicies, cfg.CI.AuditWarn} {
 		for _, p := range list {
 			if p != "node" && p != "go" && p != "python" && p != "rust" {

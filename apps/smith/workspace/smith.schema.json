@@ -50,6 +50,7 @@
         "branch": { "type": "string", "description": "The only branch a real release runs from. Default: main." },
         "remote": { "type": "string", "description": "The remote release tags are pushed to. Default: origin." },
         "github_releases": { "type": "boolean", "description": "Create a GitHub Release for every tag (needs GITHUB_TOKEN). Default: false." },
+        "rubygems_trusted_publishing": { "type": "boolean", "description": "Publish gems with the GitHub workflow's OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY secret. Each gem must be registered as a trusted publisher on rubygems.org first. GitHub Actions only. Default: false." },
         "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." }
       }
     },

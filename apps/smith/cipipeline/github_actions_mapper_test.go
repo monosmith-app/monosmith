@@ -337,3 +337,46 @@ func TestPubWorkflowOnlyWhenAnAppPublishesToPubDev(t *testing.T) {
 		t.Error("the pub workflow outlives the pub.dev app")
 	}
 }
+
+func TestTrustedPublishingSignsInToRubyGemsRightBeforeTheRelease(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GEM_HOST_API_KEY", Required: true}, {Env: "PYPI_TOKEN", Required: true}}})
+	c.UseRubyGemsTrustedPublishing()
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	signIn := strings.Index(gh, "      - name: Sign in to RubyGems\n        if: github.event_name == 'push' && github.ref_name == 'main'\n        uses: rubygems/configure-rubygems-credentials@v2.1.0\n")
+	release := strings.Index(gh, "      - name: Release\n")
+	if signIn < 0 || release < 0 || signIn > release {
+		t.Fatalf("the sign-in must come right before the release, only on a push to the release branch:\n%s", gh)
+	}
+	if !strings.Contains(gh, "  id-token: write\n") {
+		t.Error("the job may not ask for the OIDC token")
+	}
+	if strings.Contains(gh, "GEM_HOST_API_KEY") {
+		t.Error("the key is still a secret the release reads")
+	}
+	if !strings.Contains(gh, "PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}") {
+		t.Error("the other credentials went too")
+	}
+}
+
+func TestWithoutTrustedPublishingTheRubyGemsKeyIsASecret(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GEM_HOST_API_KEY", Required: true}}})
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	if strings.Contains(gh, "Sign in to RubyGems") || strings.Contains(gh, "id-token") || !strings.Contains(gh, "GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}") {
+		t.Errorf("GitHub:\n%s", gh)
+	}
+}
+
+func TestTheNativeJobSignsInToRubyGemsOnlyWhenItPublishes(t *testing.T) {
+	var c Contributions
+	c.Native = true
+	c.UseRubyGemsTrustedPublishing()
+	if gh := RenderGitHub(NewModel(c, "dev", "main")); strings.Count(gh, "Sign in to RubyGems") != 1 {
+		t.Errorf("a native job that publishes nothing signs in:\n%s", gh)
+	}
+	c.NativePublish = true
+	if gh := RenderGitHub(NewModel(c, "dev", "main")); strings.Count(gh, "Sign in to RubyGems") != 2 {
+		t.Errorf("a native job that publishes must sign in too:\n%s", gh)
+	}
+}

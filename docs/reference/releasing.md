@@ -395,6 +395,28 @@ prerelease goes to npm's `next` tag, to NuGet as is, to PyPI as `1.0.0rc1`
 RubyGems as `1.0.0.pre.rc.1`. Native apps are not published
 this way.
 
+#### RubyGems without a key: trusted publishing
+
+A RubyGems account that asks for a one-time password on pushes (its MFA level
+is "UI and API"), or a gem with `rubygems_mfa_required`, refuses a push made
+with `GEM_HOST_API_KEY` from CI. Trusted publishing replaces the key with the
+workflow's OIDC token:
+
+```toml
+[release]
+rubygems_trusted_publishing = true     # GitHub Actions only
+```
+
+On each gem's page on rubygems.org, under **Trusted publishers**, add the
+repository, the workflow `ci.yml` and no environment (for a gem that does not
+exist yet, add a *pending* trusted publisher from your account's settings).
+With the setting on, `smith ci generate` gives the workflow `id-token: write`,
+adds a `Sign in to RubyGems` step (`rubygems/configure-rubygems-credentials`)
+right before the release step, only on a push to the release branch, and no
+longer passes `GEM_HOST_API_KEY` as a secret; the step exports a short-lived
+key that `gem push` and smith's own gem uploads use. The release does not ask
+for the secret either. The setting needs `providers = ["github"]`.
+
 ### pub.dev
 
 `pub = "acme"` publishes the app to pub.dev, so `dart pub global activate

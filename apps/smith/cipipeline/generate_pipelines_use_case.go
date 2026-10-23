@@ -62,6 +62,9 @@ func Collect(s *session.Session) (Contributions, error) {
 			c.Pub = true
 		}
 	}
+	if s.Config.Release.RubyGemsTrustedPublishing {
+		c.UseRubyGemsTrustedPublishing()
+	}
 	// A remote cache is read by every step that runs tasks.
 	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
 	c.NativeRunners, c.NativeLinuxPackages = s.Config.CI.NativeRunners, s.Config.CI.NativeLinuxPackages

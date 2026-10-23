@@ -50,7 +50,7 @@ func Preflight(s *session.Session, plan Plan) error {
 		}
 		if p := s.Graph.Get(item.Project); p != nil && !Native(p) {
 			for _, c := range DistributionCredentials(p.Release) {
-				if os.Getenv(c.Env) == "" && !alternative(c.Env) {
+				if os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 					problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))
 				}
 			}
@@ -86,7 +86,7 @@ func Preflight(s *session.Session, plan Plan) error {
 			continue
 		}
 		for _, c := range ci.Credentials {
-			if c.Required && os.Getenv(c.Env) == "" && !alternative(c.Env) {
+			if c.Required && os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 				problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))
 			}
 		}
@@ -117,6 +117,13 @@ func DistributionCredentials(r *workspace.ProjectRelease) []protocol.Credential 
 		creds = append(creds, protocol.Credential{Env: "GEM_HOST_API_KEY", Description: "RubyGems API key that can push " + r.RubyGems, Required: true})
 	}
 	return creds
+}
+
+// signedInByTheRun is true for the RubyGems key when gems are published with
+// the workflow's OIDC token (rubygems_trusted_publishing): the pipeline signs
+// in right before the release, so the key is not in the environment before.
+func signedInByTheRun(s *session.Session, env string) bool {
+	return env == "GEM_HOST_API_KEY" && s.Config.Release.RubyGemsTrustedPublishing
 }
 
 // alternative accepts the credential forms each tool also understands.

@@ -79,6 +79,7 @@ jobs:
           if-no-files-found: ignore
 `, m.ReleaseBranch, githubEnv("        ", m.TaskCredentials()))
 	}
+	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	fmt.Fprintf(&b, `      - name: Release
         if: github.event_name == 'push' && github.ref_name == '%s'
         run: smith ci release
@@ -101,6 +102,20 @@ jobs:
 		b.WriteString(githubNativeJob(m))
 	}
 	return b.String()
+}
+
+// githubRubyGemsSignIn signs in to RubyGems with the run's OIDC token (RubyGems
+// trusted publishing) right before the step that publishes, and only on a
+// push to the release branch: the key it writes is short-lived and must not
+// be minted for a pull request. It exports GEM_HOST_API_KEY for gem push.
+func githubRubyGemsSignIn(m Model, job string) string {
+	if !m.RubyGemsTrusted || (job == "native" && !m.NativePublish) {
+		return ""
+	}
+	return fmt.Sprintf(`      - name: Sign in to RubyGems
+        if: github.event_name == 'push' && github.ref_name == '%s'
+        uses: rubygems/configure-rubygems-credentials@v2.1.0
+`, m.ReleaseBranch)
 }
 
 // githubNativeJob builds the native projects on every OS after the ci job,
@@ -136,6 +151,7 @@ func githubNativeJob(m Model) string {
         run: smith ci setup
 `, InstallScriptURL, m.SmithVersion)
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
+	b.WriteString(githubRubyGemsSignIn(m, "native"))
 	b.WriteString(`      - name: Native
         run: smith ci native
         env:
@@ -163,7 +179,7 @@ func idToken(m Model) string {
 	if m.Pub {
 		b.WriteString("  actions: write\n")
 	}
-	if m.Provenance || m.Attest {
+	if m.Provenance || m.Attest || m.RubyGemsTrusted {
 		b.WriteString("  id-token: write\n")
 	}
 	if m.Attest {
