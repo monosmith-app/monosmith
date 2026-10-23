@@ -68,6 +68,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	if plan.Legacy && hasReleasableApp(w) {
 		plan.Config.Release.GitHubReleases = plan.Config.Release.GitHubReleases || contains(plan.Config.CI.Providers, "github")
 	}
+	planCISettings(plan, in, has)
 
 	released := nxworkspace.ReleaseSet(w)
 	if plan.Legacy {

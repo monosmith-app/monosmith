@@ -10,9 +10,10 @@ import (
 func TestConfigTextRoundTrips(t *testing.T) {
 	yes := true
 	in := workspace.Config{
-		Workspace: workspace.WorkspaceSection{Name: "acme", Scope: "@acme", ModulePrefix: "github.com/acme/repo", Exclude: []string{"examples/*"}},
-		CI:        workspace.CISection{Providers: []string{"github", "azure"}},
-		Release:   workspace.ReleaseSection{GitHubReleases: true},
+		Workspace:  workspace.WorkspaceSection{Name: "acme", Scope: "@acme", ModulePrefix: "github.com/acme/repo", Exclude: []string{"examples/*"}},
+		CI:         workspace.CISection{Providers: []string{"github", "azure"}, AzurePool: "Managed Pool", AzureVariableGroups: []string{"Build", "Release secrets"}},
+		Release:    workspace.ReleaseSection{GitHubReleases: true, Registry: "feed"},
+		Registries: map[string]workspace.RegistryConfig{"feed": {Auth: "azure-artifacts", NPM: "https://pkgs.dev.azure.com/o/_packaging/feed/npm/registry/"}},
 		Conventions: map[string]workspace.ConventionConfig{
 			"docker":          {},
 			"vertical-slices": {Languages: []string{"go"}, Exclude: []string{"legacy"}},
