@@ -49,6 +49,9 @@ license = "MIT"
 [projects.eslint-config.tasks.lint]
 command = ["npm", "run", "lint", "--silent"]
 
+[projects.vscode.tasks.lint]
+command = ["npm", "run", "lint", "--silent"]
+
 [projects.smith.tasks.build-dev]
 command = ["go", "build", "-gcflags=all=-N -l", "-o", "../../dist/dev/apps/smith/smith", "."]
 outputs = ["../../dist/dev/apps/smith"]

@@ -1,0 +1,107 @@
+{
+  "name": "vscode",
+  "displayName": "MonoSmith",
+  "description": "The projects and tasks of a MonoSmith workspace in VS Code: run a task, see what the changes affect.",
+  "publisher": "monosmith",
+  "version": "0.0.0",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/monosmith-app/monosmith.git",
+    "directory": "packages/vscode"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "../../dist/packages/vscode/main.js",
+  "activationEvents": [
+    "workspaceContains:smith.toml"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "monosmith",
+          "title": "MonoSmith",
+          "icon": "media/monosmith.svg"
+        }
+      ]
+    },
+    "views": {
+      "monosmith": [
+        {
+          "id": "monosmith.projects",
+          "name": "Projects"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "monosmith.refresh",
+        "title": "MonoSmith: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "monosmith.runTask",
+        "title": "MonoSmith: Run Task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "monosmith.cancelRun",
+        "title": "MonoSmith: Cancel Run",
+        "icon": "$(debug-stop)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "monosmith.refresh",
+          "when": "view == monosmith.projects",
+          "group": "navigation"
+        },
+        {
+          "command": "monosmith.cancelRun",
+          "when": "view == monosmith.projects",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "monosmith.runTask",
+          "when": "view == monosmith.projects && viewItem == task",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "monosmith.runTask",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MonoSmith",
+      "properties": {
+        "monosmith.path": {
+          "type": "string",
+          "default": "",
+          "description": "The smith executable to use. Empty: the workspace's own (node_modules/.bin, .smith/bin), then the PATH."
+        }
+      }
+    }
+  },
+  "smith": {
+    "kind": "package",
+    "stack": "vscode-extension"
+  },
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/packages/vscode/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  }
+}
