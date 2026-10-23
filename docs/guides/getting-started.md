@@ -480,7 +480,14 @@ too. The tabs are also on `Alt+1` to `Alt+9` and in the View menu:
   what they do. Enter edits one and `u` returns it to its default; a value the
   schema rejects is refused on the spot. The change is made by `smith config
   set`, which keeps the file's comments.
-- **Guide** (`Alt+6`): the common tasks, one question at a time.
+- **Guide** (`Alt+6`): the common tasks, one question at a time: creating a
+  workspace, running tasks, adding or removing a project, managing plugins,
+  and adopting or converting an existing repository (`smith adopt`, `smith
+  convert`). Every other command that takes arguments or options has a form
+  too, built from the command itself: the required arguments are asked first,
+  then the optional ones, the switches in one list (with *none* to run it as it
+  is) and each option that takes a value; Enter on an optional question skips
+  it. A command added to smith appears there without anyone writing its form.
 
 The keys are the same in every tab: the arrows, `PgUp`, `PgDn`, `Home` and
 `End` move, Enter acts on the row, `r` loads the view again, `Tab` moves
