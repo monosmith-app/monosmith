@@ -38,6 +38,9 @@ type Action struct {
 	// it out (it stays reachable from the command palette). Empty means a
 	// menu entry or a guided form presents it.
 	NotInTUI string
+	// NotInMCP is why the MCP server has no tool for it. Empty means a tool
+	// runs it (the tool's Action names this action).
+	NotInMCP string
 }
 
 // ID is the action's name: its command path joined by spaces.
