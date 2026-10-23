@@ -1,17 +1,9 @@
-package convertplan
+package declarationspecifiers
 
-// DeclarationSpecifiersFile is the workspace-root script a converted
-// library build runs after tsc, in place of mnci's rollup plugin
-// withUpgradedDeclarationSpecifierPlugin.
-const DeclarationSpecifiersFile = "declaration-specifiers.mjs"
-
-// DeclarationSpecifiers is that script. tsc writes a source's relative
-// specifiers into its declarations as they are (`from './hooks'`), and an
-// ES module package's types cannot be followed from them under node16 or
-// nodenext resolution: every imported type becomes any. It gives each one
-// the file it names, `./hooks.js` for hooks.d.ts or `./hooks/index.js` for
-// a folder, as Node resolves ES modules.
-const DeclarationSpecifiers = `// Written by smith convert: what mnci's rollup plugin did to declarations.
+// LegacyContent is the root script smith convert used to write as
+// declaration-specifiers.mjs. smith upgrade deletes the file only when it is
+// still exactly this, so a script the team changed is never lost.
+const LegacyContent = `// Written by smith convert: what mnci's rollup plugin did to declarations.
 // tsc writes relative specifiers as the sources spell them ('./hooks'); a
 // node16 or nodenext consumer of an ES module package needs the file
 // ('./hooks.js', or './hooks/index.js' for a folder). Run after tsc with the
