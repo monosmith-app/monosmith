@@ -32,7 +32,7 @@ func (p *VSCode) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Kind:      protocol.KindConvention,
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
-		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
+		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain, protocol.RoleDeploy},
 		Provides:  []string{"build", "typecheck"},
 		Stacks: []protocol.Stack{{
 			Name:        Stack,
@@ -60,4 +60,19 @@ func (p *VSCode) Generate(params protocol.GenerateParams) (protocol.GenerateResu
 	manifest := "[[.Dir]]/package.json"
 	files[manifest] = strings.NewReplacer(publisherToken, publisher, kindToken, string(params.Kind)).Replace(files[manifest])
 	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: files, DevDependencies: devDependencies})
+}
+
+// Contribute implements serve.Contributor: the package task of an extension app.
+func (p *VSCode) Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error) {
+	return contributeExtensions(p.root, params), nil
+}
+
+// Publish implements serve.Publisher: a release of an extension app.
+func (p *VSCode) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
+	return publishExtension(p.root, params)
+}
+
+// CI implements serve.CIContributor: the tokens an extension app's release reads.
+func (p *VSCode) CI(params protocol.CIParams) (protocol.CIResult, error) {
+	return ciExtensions(p.root, params), nil
 }

@@ -32,7 +32,8 @@
     "vitest": "^5.0.5"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/vscode"
   ],
   "overrides": {
     "eslint-plugin-jsx-a11y": {

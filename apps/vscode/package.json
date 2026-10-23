@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/monosmith-app/monosmith.git",
-    "directory": "packages/vscode"
+    "directory": "apps/vscode"
   },
   "engines": {
     "vscode": "^1.96.0"
@@ -17,7 +17,7 @@
   "categories": [
     "Other"
   ],
-  "main": "../../dist/packages/vscode/main.js",
+  "main": "../../dist/apps/vscode/main.js",
   "activationEvents": [
     "workspaceContains:smith.toml"
   ],
@@ -95,11 +95,11 @@
     }
   },
   "smith": {
-    "kind": "package",
+    "kind": "app",
     "stack": "vscode-extension"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/packages/vscode/main.js && node -e \"require('node:fs').cpSync('media', '../../dist/packages/vscode/media', { recursive: true })\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/apps/vscode/main.js && node -e \"require('node:fs').cpSync('media', '../../dist/apps/vscode/media', { recursive: true })\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
