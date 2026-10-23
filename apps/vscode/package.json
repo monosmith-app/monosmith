@@ -1,5 +1,5 @@
 {
-  "name": "vscode",
+  "name": "monosmith-vscode",
   "displayName": "MonoSmith",
   "description": "The projects and tasks of a MonoSmith workspace in VS Code: run a task, see what the changes affect.",
   "publisher": "monosmith",
