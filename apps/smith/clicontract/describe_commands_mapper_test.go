@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -93,5 +94,33 @@ func TestCommandJSONKeepsTheExtensionsFieldNames(t *testing.T) {
 				t.Fatalf("option %v lacks %s", m, k)
 			}
 		}
+	}
+}
+
+func TestDescribeCommandsDescribesSubcommandsInTheirParentsGroup(t *testing.T) {
+	root := &cobra.Command{Use: "smith"}
+	root.AddGroup(&cobra.Group{ID: "work", Title: "Work:"})
+	deps := &cobra.Command{Use: "deps", Short: "Dependencies", GroupID: "work"}
+	up := &cobra.Command{Use: "up [packages...]", Short: "Update dependencies", Run: func(*cobra.Command, []string) {}}
+	up.Flags().Bool("align", false, "one version")
+	check := &cobra.Command{Use: "check", Short: "Check", Run: func(*cobra.Command, []string) {}}
+	secret := &cobra.Command{Use: "secret", Hidden: true, Run: func(*cobra.Command, []string) {}}
+	deps.AddCommand(up, check, secret)
+	root.AddCommand(deps)
+
+	d := DescribeCommands(root)
+	if len(d) != 1 || len(d[0].Subcommands) != 2 {
+		t.Fatalf("%+v", d)
+	}
+	if got := d[0].Subcommands[0]; got.Name != "check" || got.Group != "projects" {
+		t.Errorf("sorted by name, in the parent's group: %+v", got)
+	}
+	got := d[0].Subcommands[1]
+	if got.Name != "up" || len(got.Arguments) != 1 || got.Arguments[0].Name != "packages" || !got.Arguments[0].Variadic || len(got.Options) != 1 || got.Options[0].Name != "align" {
+		t.Errorf("up: %+v", got)
+	}
+	raw, _ := json.Marshal(DescribeCommands(tree()))
+	if strings.Contains(string(raw), "subcommands") {
+		t.Error("a command without subcommands must not carry the key")
 	}
 }

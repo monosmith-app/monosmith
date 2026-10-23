@@ -20,7 +20,8 @@ var regrouped = map[string]string{"doctor": "workspace", "add": "projects", "rem
 
 var argPattern = regexp.MustCompile(`<([^>]+)>|\[([^\]]+)\]`)
 
-// DescribeCommands describes root's visible commands, sorted by name.
+// DescribeCommands describes root's visible commands, sorted by name, each with
+// its own visible subcommands.
 func DescribeCommands(root *cobra.Command) []CommandDescription {
 	var out []CommandDescription
 	for _, c := range root.Commands() {
@@ -34,20 +35,33 @@ func DescribeCommands(root *cobra.Command) []CommandDescription {
 		if g, ok := regrouped[c.Name()]; ok {
 			group = g
 		}
-		d := CommandDescription{
-			Name: c.Name(), Aliases: append([]string{}, c.Aliases...), Group: group,
-			Description: c.Short, Arguments: arguments(c.Use), Options: []OptionDescription{},
-		}
-		c.NonInheritedFlags().VisitAll(func(f *pflag.Flag) {
-			if f.Hidden || f.Name == "help" {
-				return
-			}
-			d.Options = append(d.Options, option(f))
-		})
-		out = append(out, d)
+		out = append(out, describe(c, group))
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+// describe describes one command and, under it, its visible subcommands, which
+// are in the group of their parent.
+func describe(c *cobra.Command, group string) CommandDescription {
+	d := CommandDescription{
+		Name: c.Name(), Aliases: append([]string{}, c.Aliases...), Group: group,
+		Description: c.Short, Arguments: arguments(c.Use), Options: []OptionDescription{},
+	}
+	c.NonInheritedFlags().VisitAll(func(f *pflag.Flag) {
+		if f.Hidden || f.Name == "help" {
+			return
+		}
+		d.Options = append(d.Options, option(f))
+	})
+	for _, sub := range c.Commands() {
+		if sub.Hidden || sub.Name() == "help" || sub.Name() == "completion" {
+			continue
+		}
+		d.Subcommands = append(d.Subcommands, describe(sub, group))
+	}
+	sort.Slice(d.Subcommands, func(i, j int) bool { return d.Subcommands[i].Name < d.Subcommands[j].Name })
+	return d
 }
 
 func arguments(use string) []ArgumentDescription {

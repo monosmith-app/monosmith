@@ -3,7 +3,7 @@ package catalog
 // Reasons an action is left out of the interactive shell's menus. Each
 // action's own reason names what is missing; these are the recurring ones.
 const (
-	noSubforms   = "its subcommands are not described to the shell, so no form can ask for them yet (#302)"
+	groupOnly    = "a group of commands: each subcommand has its own form"
 	ownTerminal  = "takes over the terminal, so the shell hands it back to one"
 	referenceOut = "reference output for tools and scripts; the command palette runs it"
 	noToolYet    = "no tool yet"
@@ -38,7 +38,8 @@ var catalog = []Action{
 	{Command: []string{"install"}, Safety: Changes},
 	{Command: []string{"uninstall"}, Safety: Changes},
 	{Command: []string{"sync"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},
-	{Command: []string{"deps"}, Safety: Changes, NotInTUI: noSubforms, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
+	{Command: []string{"deps"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
+	{Command: []string{"deps", "up"}, Safety: Changes, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
 	{Command: []string{"up"}, Safety: NeedsTerminal, Variants: []Variant{
 		{When: []string{"--yes"}, Safety: Changes},
 		{When: []string{"--check", "--json"}, Safety: Reads},
@@ -48,7 +49,8 @@ var catalog = []Action{
 	{Command: []string{"release"}, Safety: Changes, Asks: true},
 	{Command: []string{"ci"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"pipeline"}, Safety: Changes, NotInServe: noMethodYet},
-	{Command: []string{"docker"}, Safety: Changes, NotInTUI: noSubforms, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"docker"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"docker", "description"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 
 	// Inspect
 	{Command: []string{"doctor"}, Safety: Reads, Asks: true, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}},
@@ -58,7 +60,8 @@ var catalog = []Action{
 	{Command: []string{"info"}, Safety: Reads},
 	{Command: []string{"explain"}, Safety: Reads},
 	{Command: []string{"why-miss"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
-	{Command: []string{"slices"}, Safety: Reads, NotInTUI: noSubforms, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"slices"}, Safety: Reads, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"slices", "check"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"kinds"}, Safety: Reads, NotInTUI: referenceOut},
 	{Command: []string{"stacks"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"commands"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
