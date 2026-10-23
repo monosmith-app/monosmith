@@ -32,7 +32,7 @@ jobs:
       - name: Install smith
         run: curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh -s -- "$SMITH_VERSION"
         env:
-          SMITH_VERSION: 1.52.1
+          SMITH_VERSION: latest
           GITHUB_TOKEN: ${{ github.token }}
       # smith:slot before-publish
       # smith:slot-end before-publish

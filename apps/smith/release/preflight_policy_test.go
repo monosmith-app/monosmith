@@ -27,3 +27,23 @@ func TestTheRubyGemsKeyIsSignedInByTheRunOnlyWithTrustedPublishing(t *testing.T)
 		}
 	}
 }
+
+func TestTheMarketplaceTokenIsSignedInByTheRunOnlyWithEntra(t *testing.T) {
+	cfg := workspace.Config{}
+	secret := &session.Session{Config: cfg}
+	cfg.Release.VSCEEntra = true
+	entra := &session.Session{Config: cfg}
+	for _, c := range []struct {
+		s    *session.Session
+		env  string
+		want bool
+	}{
+		{secret, "VSCE_PAT", false},
+		{entra, "VSCE_PAT", true},
+		{entra, "NODE_AUTH_TOKEN", false},
+	} {
+		if got := signedInByTheRun(c.s, c.env); got != c.want {
+			t.Errorf("signedInByTheRun(entra=%v, %s) = %v, want %v", c.s.Config.Release.VSCEEntra, c.env, got, c.want)
+		}
+	}
+}

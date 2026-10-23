@@ -380,3 +380,49 @@ func TestTheNativeJobSignsInToRubyGemsOnlyWhenItPublishes(t *testing.T) {
 		t.Errorf("a native job that publishes must sign in too:\n%s", gh)
 	}
 }
+
+func TestEntraPublishingSignsInToAzureRightBeforeTheRelease(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "VSCE_PAT", Required: true}, {Env: "PYPI_TOKEN", Required: true}}})
+	c.UseVSCEEntra()
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	signIn := strings.Index(gh, "      - name: Sign in to Azure\n        if: github.event_name == 'push' && github.ref_name == 'main'\n        uses: azure/login@v3\n        with:\n          client-id: ${{ secrets.AZURE_CLIENT_ID }}\n          tenant-id: ${{ secrets.AZURE_TENANT_ID }}\n          allow-no-subscriptions: true\n")
+	release := strings.Index(gh, "      - name: Release\n")
+	if signIn < 0 || release < 0 || signIn > release {
+		t.Fatalf("the sign-in must come right before the release, only on a push to the release branch:\n%s", gh)
+	}
+	if !strings.Contains(gh, "  id-token: write\n") {
+		t.Error("the job may not ask for the OIDC token")
+	}
+	if strings.Contains(gh, "VSCE_PAT") {
+		t.Error("the Marketplace token is still a secret the release reads")
+	}
+	if !strings.Contains(gh, "          VSCE_AZURE_CREDENTIAL: \"true\"\n") {
+		t.Errorf("the release is not told to publish with the Azure sign-in:\n%s", gh)
+	}
+	if !strings.Contains(gh, "PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}") {
+		t.Error("the other credentials went too")
+	}
+}
+
+func TestEntraPublishingNeedsNothingWhenItIsOff(t *testing.T) {
+	var c Contributions
+	c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "VSCE_PAT", Required: true}}})
+	gh := RenderGitHub(NewModel(c, "dev", "main"))
+	if strings.Contains(gh, "Sign in to Azure") || strings.Contains(gh, "id-token") || strings.Contains(gh, "VSCE_AZURE_CREDENTIAL") || !strings.Contains(gh, "VSCE_PAT: ${{ secrets.VSCE_PAT }}") {
+		t.Errorf("GitHub:\n%s", gh)
+	}
+}
+
+func TestTheNativeJobSignsInToAzureOnlyWhenItPublishes(t *testing.T) {
+	var c Contributions
+	c.Native = true
+	c.UseVSCEEntra()
+	if gh := RenderGitHub(NewModel(c, "dev", "main")); strings.Count(gh, "Sign in to Azure") != 1 || strings.Count(gh, "VSCE_AZURE_CREDENTIAL") != 1 {
+		t.Errorf("a native job that publishes nothing signs in:\n%s", gh)
+	}
+	c.NativePublish = true
+	if gh := RenderGitHub(NewModel(c, "dev", "main")); strings.Count(gh, "Sign in to Azure") != 2 || strings.Count(gh, "VSCE_AZURE_CREDENTIAL") != 2 {
+		t.Errorf("a native job that publishes must sign in too:\n%s", gh)
+	}
+}

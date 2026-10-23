@@ -154,6 +154,12 @@ type ReleaseSection struct {
 	// secret, which needs a one-time password when the account asks for one.
 	// GitHub Actions only. Default: false.
 	RubyGemsTrustedPublishing bool `toml:"rubygems_trusted_publishing"`
+	// VSCEEntra publishes VS Code extensions with Microsoft Entra ID instead
+	// of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its
+	// OIDC token (workload identity federation) and vsce publishes as that
+	// identity. Needs the repository secrets AZURE_CLIENT_ID and
+	// AZURE_TENANT_ID. GitHub Actions only. Default: false.
+	VSCEEntra bool `toml:"vsce_entra"`
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`
