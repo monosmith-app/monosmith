@@ -165,6 +165,11 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		}
 		if p.Release != nil && p.Release.Pub != "" && !Native(p) {
 			say("would publish %s %s to pub.dev from the tag %s", p.Release.Pub, item.Next, PubTag(p, item.Next))
+			if head, err := s.Git.RevParse("HEAD"); err == nil {
+				if elsewhere, ok := pubTagElsewhere(s, PubTag(p, item.Next), head); ok {
+					say("warning: %s already exists on %s, not on this commit: the release would stop at pub.dev", PubTag(p, item.Next), short(elsewhere))
+				}
+			}
 		}
 		return mirror(s, p, item, opts, res, say)
 	}

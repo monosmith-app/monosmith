@@ -410,9 +410,11 @@ the GitHub Release, the release:
 
 1. tags the release commit with the pub tag, `<name>-v<version>`
    (`acme-v1.4.0` for `acme@1.4.0`; change it with `pub_tag`, using `{name}`
-   and `{version}`), and pushes it. `{name}` is the project's `tag_prefix`
-   without a trailing `@`, so a prefix that already ends in `-v` doubles it
-   (`acme-v-v1.4.0`);
+   and `{version}`), and pushes it. `{name}` is the project's `tag_prefix` without a trailing `@`, or
+   without a trailing `-v`: with `tag_prefix = "acme-v"` the release tag
+   `acme-v1.4.0` already is the pub tag, so no second tag is made and the
+   workflow starts on it. If the pub tag already exists on another commit than
+   the release's, the release stops (the run would start from that old commit);
 2. starts `.github/workflows/pub.yml`, which `smith ci generate` writes, on
    that tag. A tag pushed with the workflow's own token starts no workflow,
    but a `workflow_dispatch` does, so the release job gets `actions: write`;

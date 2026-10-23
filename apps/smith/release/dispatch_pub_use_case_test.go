@@ -28,6 +28,9 @@ func TestPubTagSpellsTheReleaseTagWithoutTheAt(t *testing.T) {
 		{pubApp("cli@", ""), "cli-v1.4.0"},
 		{pubApp("", "v{version}"), "v1.4.0"},
 		{pubApp("", "{name}/{version}"), "smith/1.4.0"},
+		// A prefix that already ends in -v is the pub tag's form: the release tag is the pub tag.
+		{pubApp("cli-v", ""), "cli-v1.4.0"},
+		{pubApp("v", ""), "v-v1.4.0"},
 	}
 	for _, c := range cases {
 		if got := PubTag(c.p, "1.4.0"); got != c.want {
@@ -177,5 +180,62 @@ func TestDispatchPubStartsThePubWorkflowForAPackage(t *testing.T) {
 	}
 	if ref != "refs/tags/smith-v1.4.0" || !strings.Contains(res.PubDispatch, "acme_core 1.4.0") {
 		t.Errorf("ref %q, dispatch %q", ref, res.PubDispatch)
+	}
+}
+
+// A pub tag left on an older commit (a changed tag_prefix, a hand-made tag)
+// would start the pub run from that commit, with its old workflow and smith.
+func TestDispatchPubStopsWhenThePubTagIsOnAnotherCommit(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "acme/acme")
+	t.Setenv("TF_BUILD", "")
+	t.Setenv("GITLAB_CI", "")
+	s := released(t)
+	keep, keepHas := dispatcher, pubHas
+	defer func() { dispatcher, pubHas = keep, keepHas }()
+	dispatched := false
+	dispatcher = func(githubrelease.Repository, string, map[string]string) error { dispatched = true; return nil }
+	pubHas = func(string, string) (bool, error) { return false, nil }
+	if err := s.Git.CreateTag("smith-v1.4.0", "old"); err != nil {
+		t.Fatal(err)
+	}
+	// Move the release tag's commit away from the pub tag's.
+	if _, err := s.Git.Run("tag", "-d", "smith@1.4.0"); err != nil {
+		t.Fatal(err)
+	}
+	commit(t, s.Git, "other.txt", "fix: later")
+	if err := s.Git.CreateTag("smith@1.4.0", "smith 1.4.0"); err != nil {
+		t.Fatal(err)
+	}
+	item := Item{Project: "smith", Next: "1.4.0", Tag: "smith@1.4.0"}
+	err := dispatchPub(s, pubApp("", ""), item, &ReportResult{Pushed: true}, func(string, ...any) {})
+	if err == nil || !strings.Contains(err.Error(), "smith-v1.4.0 already exists on") || dispatched {
+		t.Errorf("err %v, dispatched %v", err, dispatched)
+	}
+}
+
+// With a tag prefix like acme-v the release tag is already the pub tag: no
+// second tag is made, and the workflow starts on the release tag.
+func TestDispatchPubUsesTheReleaseTagWhenItIsAlreadyThePubTag(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "acme/acme")
+	t.Setenv("TF_BUILD", "")
+	t.Setenv("GITLAB_CI", "")
+	s := released(t)
+	keep, keepHas := dispatcher, pubHas
+	defer func() { dispatcher, pubHas = keep, keepHas }()
+	var ref string
+	dispatcher = func(_ githubrelease.Repository, r string, _ map[string]string) error { ref = r; return nil }
+	pubHas = func(string, string) (bool, error) { return false, nil }
+	if err := s.Git.CreateTag("smith-v1.4.0", "smith 1.4.0"); err != nil {
+		t.Fatal(err)
+	}
+	item := Item{Project: "smith", Next: "1.4.0", Tag: "smith-v1.4.0"}
+	if err := dispatchPub(s, pubApp("smith-v", ""), item, &ReportResult{Pushed: true}, func(string, ...any) {}); err != nil {
+		t.Fatal(err)
+	}
+	if ref != "refs/tags/smith-v1.4.0" {
+		t.Errorf("dispatched %q", ref)
+	}
+	if s.Git.TagCommit("smith-v-v1.4.0") != "" {
+		t.Error("a second, doubled pub tag was made")
 	}
 }

@@ -26,8 +26,19 @@ func PubTag(p *projectgraph.Project, version string) string {
 	if p.Release != nil && p.Release.PubTag != "" {
 		pattern = p.Release.PubTag
 	}
-	name := strings.TrimSuffix(TagPrefix(p), "@")
-	return strings.NewReplacer("{name}", name, "{version}", version).Replace(pattern)
+	return strings.NewReplacer("{name}", pubName(p), "{version}", version).Replace(pattern)
+}
+
+// pubName is the project's name in its pub tag: its tag prefix without the
+// "@" of smith's own tags, or without the "-v" of a prefix that already is
+// the pub tag's form (`acme-v`), so such a project's release tag, `acme-v1.4.0`,
+// is the pub tag and not `acme-v-v1.4.0`.
+func pubName(p *projectgraph.Project) string {
+	prefix := TagPrefix(p)
+	if name := strings.TrimSuffix(prefix, "-v"); name != prefix && name != "" {
+		return name
+	}
+	return strings.TrimSuffix(prefix, "@")
 }
 
 // PubPackage is the pub.dev package a project is published as: an app's
@@ -54,6 +65,21 @@ var dispatcher = func(repo githubrelease.Repository, ref string, inputs map[stri
 
 // pubHas reports whether pub.dev has a version; tests replace it.
 var pubHas = pubpackage.Has
+
+// pubTagElsewhere reports the commit an existing pub tag is on when it is not
+// commit, the one the pub run must start from: a workflow run uses the
+// workflow file and the smith pinned in the commit it starts from.
+func pubTagElsewhere(s *session.Session, tag, commit string) (string, bool) {
+	existing := s.Git.TagCommit(tag)
+	return existing, existing != "" && existing != commit
+}
+
+func short(commit string) string {
+	if len(commit) > 7 {
+		return commit[:7]
+	}
+	return commit
+}
 
 // dispatchPub has a released app published to pub.dev. pub.dev accepts a
 // package only from a GitHub Actions run on a tag matching its pattern, and
@@ -88,8 +114,11 @@ func dispatchPub(s *session.Session, p *projectgraph.Project, item Item, res *Re
 		res.ExistingPackages = append(res.ExistingPackages, name+"@"+item.Next)
 		return nil
 	}
+	commit := s.Git.TagCommit(item.Tag)
+	if elsewhere, ok := pubTagElsewhere(s, tag, commit); commit != "" && ok {
+		return fmt.Errorf("pub.dev: the tag %s already exists on %s, not on the release commit %s (%s); the pub run would start from that old commit, with its old workflow. Move the tag or set another pub_tag, then re-run the release", tag, short(elsewhere), short(commit), item.Tag)
+	}
 	if s.Git.TagCommit(tag) == "" {
-		commit := s.Git.TagCommit(item.Tag)
 		if commit == "" {
 			return fmt.Errorf("pub.dev: %s has no commit to tag %s on", item.Tag, tag)
 		}
