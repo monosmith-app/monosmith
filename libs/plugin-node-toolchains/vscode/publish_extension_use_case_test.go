@@ -135,3 +135,24 @@ func TestOnlyAnExtensionAppIsContributedAndNeedsTokens(t *testing.T) {
 		t.Errorf("a package needs tokens: %v", got)
 	}
 }
+
+func TestANativeExtensionIsPublishedForEachPlatform(t *testing.T) {
+	ws := extensionWorkspace(t, true)
+	t.Setenv("VSCE_PAT", "token")
+	t.Setenv("OVSX_PAT", "")
+	t.Setenv("VSCE_AZURE_CREDENTIAL", "")
+	runs := recordRuns(t)
+	native := extensionApp()
+	native.Project.Tags = []string{"native"}
+	if result, err := publishExtension(ws, native); err != nil || result.Published || !strings.Contains(result.Skipped, "native jobs") || len(*runs) != 0 {
+		t.Fatalf("the release job: %v %v %v", result, err, *runs)
+	}
+	native.Platform = "linux/arm64"
+	result, err := publishExtension(ws, native)
+	if err != nil || !result.Published {
+		t.Fatalf("published %v: %v", result, err)
+	}
+	if len(*runs) != 2 || !strings.Contains((*runs)[0], "--target linux-arm64") || !strings.Contains((*runs)[1], "ext-linux-arm64.vsix") {
+		t.Errorf("commands: %v", *runs)
+	}
+}

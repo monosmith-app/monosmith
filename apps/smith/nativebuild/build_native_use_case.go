@@ -71,7 +71,8 @@ func Run(ctx context.Context, s *session.Session, out io.Writer) error {
 }
 
 // publishPackages publishes this platform's build of every native package
-// released at HEAD (a VS Code extension per target). The release job tagged
+// released at HEAD (a VS Code extension per target), and of every native app a
+// deploy plugin ships (a VS Code extension app). The release job tagged
 // it without publishing; the version is stamped into its manifest here, as
 // the release job stamps it, and restored after.
 func publishPackages(s *session.Session, native []*projectgraph.Project, out io.Writer) error {
@@ -81,7 +82,7 @@ func publishPackages(s *session.Session, native []*projectgraph.Project, out io.
 	}
 	platform := runtime.GOOS + "/" + runtime.GOARCH
 	for _, p := range native {
-		if p.Kind != protocol.ProjectPackage {
+		if p.Kind != protocol.ProjectPackage && (p.Kind != protocol.ProjectApp || len(p.Deployers) == 0) {
 			continue
 		}
 		tag, version := taggedAt(s, p, head)
@@ -108,18 +109,26 @@ func publishPlatform(s *session.Session, p *projectgraph.Project, version, platf
 			}
 		}()
 	}
-	var pr protocol.PublishResult
-	params := protocol.PublishParams{Project: p.Project, Version: version, Platform: platform}
-	if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute); err != nil {
-		return err
-	} else if !ok {
-		pr.Skipped = "published by its tag"
+	// A package is published by its own plugin; an app by the deploy plugins
+	// that ship it.
+	publishers := []string{p.Plugin}
+	if p.Kind == protocol.ProjectApp {
+		publishers = p.Deployers
 	}
-	switch {
-	case pr.Published:
-		fmt.Fprintf(out, "published %s %s for %s to %s\n", p.Name, version, platform, pr.Registry)
-	case pr.Skipped != "":
-		fmt.Fprintf(out, "%s %s for %s: %s\n", p.Name, version, platform, pr.Skipped)
+	for _, plugin := range publishers {
+		var pr protocol.PublishResult
+		params := protocol.PublishParams{Project: p.Project, Version: version, Platform: platform}
+		if ok, err := s.Plugins.Call(plugin, protocol.MethodPublish, params, &pr, 30*time.Minute); err != nil {
+			return err
+		} else if !ok {
+			pr.Skipped = "published by its tag"
+		}
+		switch {
+		case pr.Published:
+			fmt.Fprintf(out, "published %s %s for %s to %s\n", p.Name, version, platform, pr.Registry)
+		case pr.Skipped != "":
+			fmt.Fprintf(out, "%s %s for %s: %s\n", p.Name, version, platform, pr.Skipped)
+		}
 	}
 	return nil
 }

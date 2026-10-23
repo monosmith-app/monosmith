@@ -436,6 +436,12 @@ already have, so a re-run completes a release. Install `@vscode/vsce` (and
 `ovsx` for Open VSX) as a devDependency: smith runs them with `npx
 --no-install`. The extension must build into `dist/`.
 
+An extension with native modules needs one .vsix per platform: mark it
+`"smith": {"native": true}` in its package.json. The release job then only tags it,
+and `smith ci generate` gives the workflow a job on each OS that builds and
+publishes that platform's .vsix (`vsce package --target <platform>`), signing in
+to Azure first when `vsce_entra` is set. See [CI pipelines](ci.md).
+
 An extension that is a package (`"smith": {"kind": "package"}`) is still
 published to the Marketplace by the node plugin, as before.
 

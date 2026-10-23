@@ -45,7 +45,7 @@ func Collect(s *session.Session) (Contributions, error) {
 		}
 		if release.Native(p) {
 			c.Native = true
-			c.NativePublish = c.NativePublish || p.Kind == protocol.ProjectPackage
+			c.NativePublish = c.NativePublish || p.Kind == protocol.ProjectPackage || (p.Kind == protocol.ProjectApp && len(p.Deployers) > 0)
 			continue
 		}
 		c.Add(protocol.CIResult{Credentials: release.DistributionCredentials(p.Release)})

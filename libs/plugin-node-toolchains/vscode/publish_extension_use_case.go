@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
@@ -35,6 +36,21 @@ func publishExtension(workspaceRoot string, params protocol.PublishParams) (prot
 		return protocol.PublishResult{}, nil
 	}
 	result := protocol.PublishResult{Registry: marketplace}
+	// A native extension is built on each OS: its release job only tags it, and
+	// each native job publishes its own platform's build.
+	native := slices.Contains(params.Project.Tags, "native")
+	if native && params.Platform == "" {
+		result.Skipped = "published for each platform by the native jobs"
+		return result, nil
+	}
+	var target string
+	if params.Platform != "" {
+		t, err := releasing.VSCodeTarget(params.Platform)
+		if err != nil {
+			return result, err
+		}
+		target = t
+	}
 	ovsx := os.Getenv("OVSX_PAT") != ""
 	if ovsx {
 		result.Registry += ", " + openVSX
@@ -57,7 +73,7 @@ func publishExtension(workspaceRoot string, params protocol.PublishParams) (prot
 	if err := stampVersion(staged, params.Version); err != nil {
 		return result, err
 	}
-	vsix, err := packExtension(workspaceRoot, staged, params.Project.Name)
+	vsix, err := packExtension(workspaceRoot, staged, params.Project.Name, target)
 	if err != nil {
 		return result, err
 	}
@@ -88,14 +104,18 @@ func stampVersion(staged, version string) error {
 	return os.WriteFile(file, doc.Bytes(), 0o644)
 }
 
-// packExtension packs the staged build into dist/release/<app>/<name>.vsix.
-func packExtension(workspaceRoot, staged, app string) (string, error) {
+// packExtension packs the staged build into dist/release/<app>/<app>.vsix, or
+// <app>-<target>.vsix for one platform.
+func packExtension(workspaceRoot, staged, app, target string) (string, error) {
 	drop := filepath.Join(workspaceRoot, "dist", "release", app)
 	if err := os.MkdirAll(drop, 0o755); err != nil {
 		return "", err
 	}
-	vsix := filepath.Join(drop, app+".vsix")
-	argv := append([]string{"npx", "--no-install", "vsce", "package"}, releasing.VsceFlags...)
+	name, argv := app+".vsix", append([]string{"npx", "--no-install", "vsce", "package"}, releasing.VsceFlags...)
+	if target != "" {
+		name, argv = app+"-"+target+".vsix", append(argv, "--target", target)
+	}
+	vsix := filepath.Join(drop, name)
 	return vsix, run(staged, append(argv, "--out", vsix))
 }
 
