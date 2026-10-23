@@ -26,8 +26,19 @@ func PubTag(p *projectgraph.Project, version string) string {
 	if p.Release != nil && p.Release.PubTag != "" {
 		pattern = p.Release.PubTag
 	}
-	name := strings.TrimSuffix(TagPrefix(p), "@")
-	return strings.NewReplacer("{name}", name, "{version}", version).Replace(pattern)
+	return strings.NewReplacer("{name}", pubName(p), "{version}", version).Replace(pattern)
+}
+
+// pubName is the project's name in its pub tag: its tag prefix without the
+// "@" of smith's own tags, or without the "-v" of a prefix that already is
+// the pub tag's form (`acme-v`), so such a project's release tag, `acme-v1.4.0`,
+// is the pub tag and not `acme-v-v1.4.0`.
+func pubName(p *projectgraph.Project) string {
+	prefix := TagPrefix(p)
+	if name := strings.TrimSuffix(prefix, "-v"); name != prefix && name != "" {
+		return name
+	}
+	return strings.TrimSuffix(prefix, "@")
 }
 
 // PubPackage is the pub.dev package a project is published as: an app's
