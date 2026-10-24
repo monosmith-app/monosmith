@@ -39,7 +39,7 @@ func TestThePluginsViewListsBuiltInAndInstalledPluginsWithTheirUse(t *testing.T)
 func TestThePluginsViewTurnsAPluginOnOnlyAfterConfirmingTheCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("alt+7", "down", "down") // python, which is off
-	l.has("e runs smith plugin enable python")
+	l.has("Press E to enable, or run: smith plugin enable python")
 	l.keys("e")
 	l.has("smith plugin enable python") // the dialog shows the command line
 	if len(l.started) != 0 {
@@ -356,7 +356,7 @@ func TestTheWheelMovesThroughThePluginsAndDeps(t *testing.T) {
 	l.keys("alt+7")
 	x, y := l.find("vitest")
 	l.send(wheel(x+5, y, 1))
-	l.has("e runs smith plugin disable node")
+	l.has("Press E to disable, or run: smith plugin disable node")
 }
 
 func TestTheHelpOfPluginsAndDepsListsTheirOwnKeysFirst(t *testing.T) {

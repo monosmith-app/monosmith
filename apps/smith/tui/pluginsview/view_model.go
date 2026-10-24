@@ -90,13 +90,33 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			on++
 		}
 	}
-	lines = append(lines, th.Muted(fmt.Sprintf("%d built-in · %d installed · %d on", builtin, installed, on)), "")
+	inUse := 0
+	for _, r := range v.Rows {
+		if len(r.UsedBy) > 0 {
+			inUse++
+		}
+	}
+	summary := fmt.Sprintf("%d built-in · %d installed · %d on", builtin, installed, on)
+	if inUse > 0 {
+		summary += fmt.Sprintf(" · %d used by your projects (listed first)", inUse)
+	} else {
+		summary += " · none used by a project yet"
+	}
+	lines = append(lines, pane.Wrap(th.Muted(summary), w, 0)...)
+	lines = append(lines, "")
 	nameW := 8
 	for _, r := range v.Rows {
 		nameW = max(nameW, pane.Width(r.Name))
 	}
-	nameW = min(nameW, max(w/4, 8))
-	lines = append(lines, th.Muted(pane.Fit("  "+pane.Fit("Plugin", nameW)+" "+pane.Fit("State", 10)+pane.Fit("Roles", 24)+"Used by", w)))
+	nameW = min(nameW+1, max(w/4, 8))
+	const stateW = 11
+	rest := max(w-2-nameW-stateW, 12)
+	rolesW := rest * 11 / 20
+	usedW := rest - rolesW
+	row := func(name, state, roles, used string) string {
+		return "  " + pane.Cell(name, nameW) + pane.Cell(state, stateW) + pane.Cell(roles, rolesW) + pane.Cell(used, usedW)
+	}
+	lines = append(lines, th.Muted(pane.Fit(row("Plugin", "State", "Roles", "Used by"), w)))
 
 	detail := v.detail(th, w)
 	avail := max(h-len(lines)-len(detail), 1)
@@ -114,9 +134,9 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		if len(r.UsedBy) > 0 {
 			used = strings.Join(r.UsedBy, ", ")
 		}
-		line := "  " + pane.Fit(r.Name, nameW) + " " + pane.Fit(state, 10) + pane.Fit(strings.Join(r.Roles, ", "), 24) + used
+		line := row(r.Name, state, strings.Join(r.Roles, ", "), used)
 		if i == v.Cursor {
-			line = th.Selected(pane.Fit(pane.Strip("  "+pane.Fit(r.Name, nameW)+" "+pane.Fit(state, 10)+pane.Fit(strings.Join(r.Roles, ", "), 24)+used), w))
+			line = th.Selected(pane.Fit(pane.Strip(line), w))
 		}
 		rowOf[len(lines)] = i
 		lines = append(lines, line)
@@ -139,17 +159,24 @@ func (v Model) detail(th theme.Theme, w int) []string {
 		head += " " + th.Muted(r.Version)
 	}
 	out := []string{"", th.Faint(strings.Repeat("─", w)), head, "  " + th.Muted("from     ") + r.Source}
+	if len(r.Roles) > 0 {
+		out = append(out, pane.Wrap("  "+th.Muted("roles    ")+strings.Join(r.Roles, ", "), w, 11)...)
+	}
 	if len(r.Requires) > 0 {
 		out = append(out, "  "+th.Muted("needs    ")+strings.Join(r.Requires, ", "))
 	}
 	switch {
 	case len(r.UsedBy) > 0:
-		out = append(out, "  "+th.Muted("used by  ")+strings.Join(r.UsedBy, ", "))
+		out = append(out, pane.Wrap("  "+th.Muted("used by  ")+strings.Join(r.UsedBy, ", "), w, 11)...)
 	case r.Enabled:
 		out = append(out, "  "+th.Muted("used by  no project"))
 	}
 	if argv := v.ToggleArgv(); argv != nil {
-		out = append(out, "  "+th.Muted("e runs "+commands.Line(argv)))
+		verb := "enable"
+		if r.Enabled {
+			verb = "disable"
+		}
+		out = append(out, pane.Wrap("  "+th.Muted("Press E to "+verb+", or run: "+commands.Line(argv)), w, 4)...)
 	}
 	return out
 }
