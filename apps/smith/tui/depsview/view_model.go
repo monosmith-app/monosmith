@@ -24,7 +24,22 @@ type Model struct {
 
 // FromResult is the model for a loaded result.
 func FromResult(r Result) Model {
-	return Model{Loaded: true, Rows: r.Rows, Policy: r.Policy, Err: r.Err}
+	// Patch and minor first, majors last, whatever order they were found in.
+	rows := slices.Clone(r.Rows)
+	slices.SortStableFunc(rows, func(a, b Row) int {
+		return levelRank(a.Level) - levelRank(b.Level)
+	})
+	return Model{Loaded: true, Rows: rows, Policy: r.Policy, Err: r.Err}
+}
+
+func levelRank(level string) int {
+	switch level {
+	case "patch":
+		return 0
+	case "minor":
+		return 1
+	}
+	return 2
 }
 
 // Update handles a key; page is how many rows a page key moves.
@@ -34,6 +49,8 @@ func (v Model) Update(key tea.KeyMsg, page int) Model {
 		return v.toggle()
 	case "a":
 		return v.markAll()
+	case "s":
+		return v.markSafe()
 	}
 	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), key.String(), page)
 	return v
@@ -56,6 +73,48 @@ func (v Model) toggle() Model {
 	}
 	v.Marked = marked
 	return v
+}
+
+// markSafe marks every patch and minor row (what can be taken together), or
+// unmarks them when they are all marked already. Marked majors stay as they are.
+func (v Model) markSafe() Model {
+	marked := map[string]bool{}
+	for k := range v.Marked {
+		marked[k] = true
+	}
+	all := true
+	for _, r := range v.Rows {
+		if r.Level != "major" && !marked[r.Name] {
+			all = false
+		}
+	}
+	for _, r := range v.Rows {
+		if r.Level == "major" {
+			continue
+		}
+		if all {
+			delete(marked, r.Name)
+		} else {
+			marked[r.Name] = true
+		}
+	}
+	v.Marked = marked
+	return v
+}
+
+// chosenMajors counts the major releases among the packages an update would move.
+func (v Model) chosenMajors() int {
+	chosen := map[string]bool{}
+	for _, n := range v.chosen() {
+		chosen[n] = true
+	}
+	n := 0
+	for _, r := range v.Rows {
+		if r.Level == "major" && chosen[r.Name] {
+			n++
+		}
+	}
+	return n
 }
 
 // markAll marks every row, or none when every row is already marked.
@@ -164,23 +223,50 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			}
 		}
 	}
-	tail = append(tail, "", th.Muted("space marks · a marks all · enter or u updates (smith deps up <packages>) · r re-checks"))
+	if n := v.chosenMajors(); n > 0 {
+		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+fmt.Sprintf("%d of the chosen packages are major releases: they can break your code. Read their release notes first.", n)))
+	}
+	tail = append(tail, "", th.Muted("Space marks · S marks the safe ones · A marks all · Enter or U updates the marked (or the row under the cursor) · R re-checks"))
+	var wrapped []string
+	for _, l := range tail {
+		wrapped = append(wrapped, pane.Wrap(l, w, 4)...)
+	}
+	tail = wrapped
 
 	if len(v.Rows) == 0 {
 		lines = append(lines, th.Success(th.Icons.Passed+" Every dependency is on its latest release."))
 	} else {
 		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Muted(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major   %d marked", len(v.Rows), patch, minor, major, len(v.Marked))), "")
+		lines = append(lines, th.Muted(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major   %d marked", len(v.Rows), patch, minor, major, len(v.Marked))))
+		if safe := patch + minor; safe > 0 {
+			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press S).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
+		}
+		lines = append(lines, "")
 		nameW := 8
 		for _, r := range v.Rows {
 			nameW = max(nameW, pane.Width(r.Name))
 		}
-		nameW = min(nameW, max(w/3, 8))
-		lines = append(lines, th.Muted(pane.Fit("      "+pane.Fit("Package", nameW)+" "+pane.Fit("Now", 10)+pane.Fit("Latest", 10)+pane.Fit("Level", 7)+"Projects", w)))
-		avail := max(h-len(lines)-len(tail), 3)
+		nameW = min(nameW+1, max(w/3, 8))
+		const verW, levelW = 11, 8
+		usedW := max(w-6-nameW-2*verW-levelW, 8)
+		cols := func(name, now, latest, level, projects string) string {
+			return pane.Cell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
+		}
+		lines = append(lines, th.Muted(pane.Fit("      "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
+		// Two group headings may sit among the rows: they take room too.
+		avail := max(h-len(lines)-len(tail)-2, 3)
 		top := pane.WindowTop(v.Cursor, len(v.Rows), avail)
+		prevMajor := top > 0 && v.Rows[top-1].Level == "major"
 		for i := top; i < len(v.Rows) && i < top+avail; i++ {
 			r := v.Rows[i]
+			if isMajor := r.Level == "major"; i == top || isMajor != prevMajor {
+				if isMajor {
+					lines = append(lines, "  "+th.Warning("Major releases: may break your code, take one at a time"))
+				} else {
+					lines = append(lines, "  "+th.Success("Patch and minor releases: safe to take together"))
+				}
+			}
+			prevMajor = r.Level == "major"
 			box := "[ ] "
 			if v.Marked[r.Name] {
 				box = "[x] "
@@ -192,8 +278,9 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			case "patch":
 				level = th.Success(r.Level)
 			}
-			plain := "  " + box + pane.Fit(r.Name, nameW) + " " + pane.Fit(r.Current, 10) + pane.Fit(r.Latest, 10) + pane.Fit(r.Level, 7) + strings.Join(r.Projects, ", ")
-			line := "  " + box + pane.Fit(r.Name, nameW) + " " + pane.Fit(r.Current, 10) + pane.Fit(r.Latest, 10) + pane.Fit(level, 7) + strings.Join(r.Projects, ", ")
+			projects := strings.Join(r.Projects, ", ")
+			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, projects)
+			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, projects)
 			if i == v.Cursor {
 				line = th.Selected(pane.Fit(plain, w))
 			}
