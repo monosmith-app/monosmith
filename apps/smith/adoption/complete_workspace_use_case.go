@@ -14,7 +14,7 @@ import (
 // package.json "workspaces" for the Node ones, node_modules in .gitignore,
 // and, when install is set, npm install. What it cannot do safely it says,
 // and leaves to doctor's own remedy.
-func CompleteWorkspace(r Report, install bool, out io.Writer) error {
+func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 	var goRoots, nodeRoots []string
 	for _, p := range r.Projects {
 		switch p.Language {
@@ -30,6 +30,9 @@ func CompleteWorkspace(r Report, install bool, out io.Writer) error {
 		}
 	}
 	if len(nodeRoots) == 0 {
+		if eslint {
+			fmt.Fprintln(out, "  --eslint skipped: there are no Node projects")
+		}
 		return nil
 	}
 	manifest := filepath.Join(r.Root, "package.json")
@@ -45,6 +48,11 @@ func CompleteWorkspace(r Report, install bool, out io.Writer) error {
 	}
 	if err := ignoreNodeModules(r.Root, out); err != nil {
 		return err
+	}
+	if eslint {
+		if err := AddESLintConfig(r.Root, out); err != nil {
+			return err
+		}
 	}
 	if install {
 		cmd := exec.Command("npm", "install")
