@@ -60,11 +60,7 @@ func TestGTurnsTheGroupingOffAndOn(t *testing.T) {
 }
 
 func TestFixArgvIsTheSelectedFindingsSafeFixAndNothingElse(t *testing.T) {
-	m := sample() // the cursor is on the first drawn finding: git, which passed
-	if got := m.FixArgv(); got != nil {
-		t.Fatalf("a finding without a fix offered %v", got)
-	}
-	m = m.Update(key("down")) // Go is installed: failed, but no fix
+	m := sample() // the cursor is on the first drawn finding: Go is installed, failed, but no fix
 	if got := m.FixArgv(); got != nil {
 		t.Fatalf("a finding without a fix offered %v", got)
 	}
@@ -85,11 +81,9 @@ func TestFixArgvIsTheSelectedFindingsSafeFixAndNothingElse(t *testing.T) {
 
 func TestOpeningAFindingShowsItsFixAndWhetherItIsSafe(t *testing.T) {
 	m := sample()
-	for range 2 {
-		m = m.Update(key("down"))
-	}
+	m = m.Update(key("down"))
 	out := plain(m.Update(key("enter")))
-	for _, want := range []string{"remedy: pick one", "fix: restore web's Dockerfile", "f applies it", "writes apps/web/Dockerfile"} {
+	for _, want := range []string{"→ pick one", "fix: restore web's Dockerfile", "f applies it", "writes apps/web/Dockerfile"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
@@ -97,6 +91,30 @@ func TestOpeningAFindingShowsItsFixAndWhetherItIsSafe(t *testing.T) {
 	m = m.Update(key("down")).Update(key("enter"))
 	if out := plain(m); !strings.Contains(out, "never applied") {
 		t.Fatalf("a fix that is not safe says so:\n%s", out)
+	}
+}
+
+func TestPassedChecksAreOneCollapsedLineThatEnterOrPOpens(t *testing.T) {
+	m := sample()
+	out := plain(m)
+	if strings.Contains(out, "git is installed") || !strings.Contains(out, "1 checks passed") {
+		t.Fatalf("passes should be collapsed:\n%s", out)
+	}
+	if !strings.Contains(out, "→ install Go") || !strings.Contains(out, "go is not on PATH") {
+		t.Fatalf("a problem shows its detail and remedy inline:\n%s", out)
+	}
+	// Three problems, then the collapsed line: enter on it opens the passes.
+	for range 3 {
+		m = m.Update(key("down"))
+	}
+	if !m.OnPassedLine() {
+		t.Fatal("the cursor should reach the collapsed line")
+	}
+	if m = m.Update(key("enter")); !m.ShowPassed || !strings.Contains(plain(m), "git is installed") {
+		t.Fatal("enter opens the passed checks")
+	}
+	if m = m.Update(key("p")); m.ShowPassed {
+		t.Fatal("p hides them again")
 	}
 }
 

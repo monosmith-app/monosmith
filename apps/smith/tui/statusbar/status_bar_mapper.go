@@ -3,6 +3,7 @@ package statusbar
 import (
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
@@ -49,6 +50,10 @@ func Render(th theme.Theme, in Info, w int) string {
 	if right != "" && pane.Width(left)+2+pane.Width(right)+1 <= w {
 		gap := w - pane.Width(left) - pane.Width(right) - 1
 		return th.Bar(left + strings.Repeat(" ", gap) + right + " ")
+	}
+	// A hint longer than the bar ends in an ellipsis instead of being cut.
+	if pane.Width(left) > w {
+		left = ansi.Truncate(left, max(w, 1), "…")
 	}
 	return th.Bar(pane.Fit(left, w))
 }

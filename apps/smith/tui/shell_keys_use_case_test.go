@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
 func TestF10OpensTheMenuBarOverThePanesWithoutPushingThemDown(t *testing.T) {
@@ -149,9 +151,39 @@ func TestTheDoctorTabOpensARemedyAndHasItsButtons(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+d")
 	l.has("✖ go.work lists every module", "Re-check", "Ctrl+D", "Fix this…", "Fix all…", "Ctrl+X")
-	l.hasNot("remedy:")
-	l.keys("enter")
-	l.has("remedy: go work use ./libs/x", "libs/x is missing")
+	// The problem and its remedy are inline, without opening the row.
+	l.has("→ go work use ./libs/x", "libs/x is missing", "2 checks passed")
+	l.hasNot("git is installed")
+}
+
+func TestTheDoctorTabShowsThePassedChecksOnRequest(t *testing.T) {
+	l := newLab(t, true, 120, 30)
+	l.keys("ctrl+d")
+	l.hasNot("git is installed")
+	l.keys("p")
+	l.has("git is installed", "orders has a lockfile")
+}
+
+func TestTheFixDialogsListTheFilesOrThePackagesTheyTouch(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.keys("alt+3", "down", "f")
+	l.has("Files that will change:", "writes apps/web/Dockerfile")
+	l.keys("esc", "alt+4", "f3")
+	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0", "kit 0.2.0 → 0.2.1", "registry", "It cannot")
+}
+
+func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	p := &scripted{lines: []string{"web 1.0.0 -> 1.1.0 (dry run)"}, hold: true, release: make(chan struct{})}
+	l.next = p
+	l.keys("alt+4", "f2")
+	if l.sh().tab != "release" {
+		t.Fatalf("the preview left the Release screen for %q", l.sh().tab)
+	}
+	l.has("Preview: smith release --dry-run", "registry", "Ctrl+C stops it")
+	l.keys("ctrl+c")
+	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
+	l.has("Preview: smith release --dry-run", "full output on the Run screen")
 }
 
 func TestFixingAsksFirstWithTheCommandLine(t *testing.T) {

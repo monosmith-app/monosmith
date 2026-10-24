@@ -17,6 +17,9 @@ type Confirm struct {
 	Title   string
 	Why     string
 	Command string
+	// Details are lines between the sentence and the command: what the
+	// command will touch (the files, the packages and versions).
+	Details []string
 	// Argv is the command line without the program name; the shell runs it on confirmation.
 	Argv []string
 	// focus is 0 for Run, 1 for Cancel; hover is the button under the pointer or -1.
@@ -36,6 +39,12 @@ const (
 	buttonStop = "[ Cancel  Esc ]"
 )
 
+// WithDetails adds the lines that say what the command will touch.
+func (c Confirm) WithDetails(lines []string) Confirm {
+	c.Details = lines
+	return c
+}
+
 // Place centres the dialog on a screen of the given size.
 func (c Confirm) Place(sw, sh int) Confirm {
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
@@ -53,6 +62,12 @@ func (c Confirm) Rect() Rect { return c.rect }
 
 func (c Confirm) bodyLines(inner int) []string {
 	body := append([]string(nil), wrap(c.Why, inner)...)
+	if len(c.Details) > 0 {
+		body = append(body, "")
+		for _, d := range c.Details {
+			body = append(body, wrap(d, inner)...)
+		}
+	}
 	body = append(body, "", "The command that will run:")
 	for _, l := range c.cmdLines {
 		body = append(body, "  $ "+l)

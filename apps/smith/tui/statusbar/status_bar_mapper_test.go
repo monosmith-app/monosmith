@@ -28,6 +28,13 @@ func TestARunningCommandShowsTheSpinnerAndTheWord(t *testing.T) {
 	}
 }
 
+func TestALongHintEndsInAnEllipsis(t *testing.T) {
+	got := Render(theme.Default(), Info{Hint: "Stop is unavailable: nothing is running and there is a lot more to say about it"}, 40)
+	if !strings.Contains(got, "…") || pane.Width(got) != 40 {
+		t.Fatalf("got %q (%d cells)", got, pane.Width(got))
+	}
+}
+
 func TestAHintReplacesTheCommandWhileItIsSet(t *testing.T) {
 	got := Render(theme.Default(), Info{Command: "smith test", Hint: "Stop is unavailable: nothing is running"}, 80)
 	if !strings.Contains(got, "nothing is running") || strings.Contains(got, "smith test") {

@@ -24,6 +24,9 @@ type Model struct {
 	Open   bool
 	// Flat lists the findings in one run instead of grouped by project.
 	Flat bool
+	// ShowPassed lists the checks that passed; by default they are one
+	// collapsed line after the problems.
+	ShowPassed bool
 }
 
 // FromResult is the model for a finished check.
@@ -39,15 +42,52 @@ func (v Model) groups() []Group {
 	if v.Report == nil {
 		return nil
 	}
+	var groups []Group
 	if v.Flat {
 		idx := make([]int, len(v.Report.Findings))
 		for i := range idx {
 			idx[i] = i
 		}
-		return []Group{{Indexes: idx}}
+		groups = []Group{{Indexes: idx}}
+	} else {
+		groups = GroupByProject(v.Report.Findings, v.Projects)
 	}
-	return GroupByProject(v.Report.Findings, v.Projects)
+	if v.ShowPassed {
+		return groups
+	}
+	// Passes are collapsed: only the problems are drawn.
+	var shown []Group
+	for _, g := range groups {
+		var keep []int
+		for _, i := range g.Indexes {
+			if !v.Report.Findings[i].OK {
+				keep = append(keep, i)
+			}
+		}
+		if len(keep) > 0 {
+			shown = append(shown, Group{Project: g.Project, Indexes: keep})
+		}
+	}
+	return shown
 }
+
+// collapsed is true while passed checks are hidden behind one line.
+func (v Model) collapsed() bool {
+	return v.Report != nil && !v.ShowPassed && v.Report.Passed > 0
+}
+
+// rows is how many rows the cursor moves over: the problems, then the line
+// that stands for the collapsed passes.
+func (v Model) rows() int {
+	n := len(v.order())
+	if v.collapsed() {
+		n++
+	}
+	return n
+}
+
+// OnPassedLine is true when the cursor is on the collapsed passes' line.
+func (v Model) OnPassedLine() bool { return v.collapsed() && v.Cursor == len(v.order()) }
 
 // order is the finding indexes in the order they are drawn.
 func (v Model) order() []int {
@@ -82,7 +122,10 @@ func (v Model) Update(key tea.KeyMsg) Model {
 	if v.Report == nil || len(v.Report.Findings) == 0 {
 		return v
 	}
-	n := len(v.Report.Findings)
+	n := v.rows()
+	if n == 0 {
+		return v
+	}
 	switch key.String() {
 	case "up":
 		v.Cursor = (v.Cursor - 1 + n) % n
@@ -91,7 +134,14 @@ func (v Model) Update(key tea.KeyMsg) Model {
 		v.Cursor = (v.Cursor + 1) % n
 		v.Open = false
 	case "enter", " ":
+		if v.OnPassedLine() {
+			v.ShowPassed = true
+			return v
+		}
 		v.Open = !v.Open
+	case "p":
+		v.ShowPassed, v.Open = !v.ShowPassed, false
+		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
 	case "g":
 		v.Flat, v.Cursor, v.Open = !v.Flat, 0, false
 	}
@@ -126,14 +176,31 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 			selected := position == v.Cursor
 			rowOf[len(lines)] = i
 			lines = append(lines, guide.Row(th, selected, mark+" ", f.Check, f.Source))
+			if !f.OK {
+				// The problem and its remedy stay in view, as the CLI shows them.
+				if f.Detail != "" {
+					lines = append(lines, "      "+th.Muted(f.Detail))
+				}
+				if f.Remedy != "" {
+					lines = append(lines, "      "+th.Accent("→ ")+f.Remedy)
+				}
+			}
 			if selected && v.Open && !f.OK {
-				lines = append(lines, v.detail(th, f)...)
+				lines = append(lines, v.fixLines(th, f)...)
 			}
 			position++
 		}
 	}
-	lines = append(lines, "", th.Muted("up/down move · enter details and remedy · g group by project or not"),
-		th.Muted("f fix this one (smith doctor --fix --only) · ctrl+x fix all (smith doctor --fix) · ctrl+d re-check"))
+	if v.collapsed() {
+		if len(lines) > 2 {
+			lines = append(lines, "")
+		}
+		rowOf[len(lines)] = -1
+		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", fmt.Sprintf("%d checks passed", v.Report.Passed), "enter or p shows them"))
+	}
+	lines = append(lines, "", th.Muted("up/down move · enter fix details · p passed checks · g group by project"),
+		th.Muted("f fix this one · ctrl+x fix all · ctrl+d re-check"))
+	lines, rowOf = pane.WrapRows(lines, rowOf, w, 6)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
@@ -169,15 +236,10 @@ func (v Model) header(th theme.Theme, g Group) string {
 	return th.Title(name) + "  " + strings.Join(facts, " · ")
 }
 
-// detail is what the open finding says and what could fix it.
-func (v Model) detail(th theme.Theme, f doctor.Finding) []string {
+// fixLines is what the open finding's fix does, beyond the problem and the
+// remedy that are always shown.
+func (v Model) fixLines(th theme.Theme, f doctor.Finding) []string {
 	var out []string
-	if f.Detail != "" {
-		out = append(out, "      "+f.Detail)
-	}
-	if f.Remedy != "" {
-		out = append(out, "      "+th.Accent("remedy: ")+f.Remedy)
-	}
 	switch {
 	case f.Fix != nil && f.Fix.Safe:
 		out = append(out, "      "+th.Accent("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
@@ -198,6 +260,11 @@ func (v Model) detail(th theme.Theme, f doctor.Finding) []string {
 
 // SelectRow moves the cursor to finding i and toggles its details when it was already there.
 func (v Model) SelectRow(i int) Model {
+	if i == -1 && v.collapsed() {
+		// The line of collapsed passes: a click opens it.
+		v.ShowPassed = true
+		return v
+	}
 	if v.Report == nil || i < 0 || i >= len(v.Report.Findings) {
 		return v
 	}

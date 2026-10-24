@@ -94,6 +94,7 @@ func (s Shell) mainContent(w, h int) content {
 			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
 		}
 		c.lines = append(c.lines, lines...)
+		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabPlugins:
 		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.ToggleArgv() == nil || s.running()}
 		s.addBars(&c, buttons.Bar{toggle, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
@@ -503,6 +504,11 @@ func (s Shell) inspectorPanel() inspector.Panel {
 			Actions:  []inspector.Action{s.action("file.palette", "Command palette")},
 		}
 	}
+	if s.tab == commands.TabDoctor {
+		// A check is about the workspace or one project, not about the project
+		// last selected in the navigator.
+		return s.doctorPanel()
+	}
 	if s.tab == commands.TabRun && s.run != nil && s.runSel != "" {
 		if t := s.run.Task(s.runSel); t != nil {
 			rows := []inspector.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String()}}
@@ -589,6 +595,40 @@ func (s Shell) inspectorPanel() inspector.Panel {
 		s.action("run.build", "Build"), s.action("run.test", "Test"), s.action("run.lint", "Lint"), s.action("run.typecheck", "Typecheck"),
 		{ID: "x:explain", Label: "Explain"},
 		{ID: "x:graph", Label: "Graph: needs and used by"},
+	}}
+}
+
+// doctorPanel describes the selected check; with none selected it describes
+// the workspace.
+func (s Shell) doctorPanel() inspector.Panel {
+	f, ok := s.doctor.Selected()
+	if !ok {
+		return s.workspacePanel()
+	}
+	state := s.th.Success(s.th.Icons.Passed) + " passed"
+	switch {
+	case !f.OK && f.Warning:
+		state = s.th.Warning(s.th.Icons.Warning) + " warning"
+	case !f.OK:
+		state = s.th.Failure(s.th.Icons.Failed) + " failed"
+	}
+	rows := []inspector.Row{{Label: "state", Value: state}, {Label: "source", Value: f.Source}}
+	if f.Detail != "" {
+		rows = append(rows, inspector.Row{Label: "problem", Value: f.Detail})
+	}
+	if f.Remedy != "" {
+		rows = append(rows, inspector.Row{Label: "remedy", Value: f.Remedy})
+	}
+	sec := inspector.Section{Heading: f.Check, Rows: rows}
+	if f.Fix != nil {
+		sec.Items = append(sec.Items, "fix: "+f.Fix.Description)
+		for _, e := range f.Fix.Files {
+			sec.Items = append(sec.Items, "  "+e.Path)
+		}
+	}
+	return inspector.Panel{Sections: []inspector.Section{sec}, Actions: []inspector.Action{
+		{ID: "x:doctor-fix", Label: "Fix this…", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()},
+		s.action("ws.doctor", "Re-check"),
 	}}
 }
 
