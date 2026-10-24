@@ -35,6 +35,9 @@ type Finding struct {
 	// Subject is the target, file or setting the finding is about.
 	Subject string `json:"subject"`
 	Message string `json:"message"`
+	// Decide marks a finding the reader should weigh before applying (CI is
+	// replaced, release rules change), not one to skim.
+	Decide bool `json:"decide,omitempty"`
 }
 
 // ProjectPlan is how one Nx project becomes a smith project.
@@ -107,6 +110,12 @@ type Plan struct {
 // Add records a finding.
 func (p *Plan) Add(severity Severity, project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: severity, Project: project, Subject: subject, Message: message})
+}
+
+// Decide records a behaviour change the reader should decide on before the
+// conversion is applied; the report lists it first.
+func (p *Plan) Decide(project, subject, message string) {
+	p.Findings = append(p.Findings, Finding{Severity: Changed, Project: project, Subject: subject, Message: message, Decide: true})
 }
 
 // Count returns how many findings have each severity.

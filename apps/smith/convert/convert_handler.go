@@ -22,7 +22,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
-	var dryRun, asJSON, strict, skipInstall, allowDirty bool
+	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose bool
 	cmd := &cobra.Command{
 		Use:   "convert",
 		Short: "Convert an Nx or Turborepo workspace (or one made by the old mnci) to smith",
@@ -88,15 +88,12 @@ installed.`,
 					return err
 				}
 			} else {
-				fmt.Fprint(out, Report(plan, dryRun))
+				fmt.Fprint(out, Report(plan, ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}))
 			}
 			if plan.Blocked(strict) {
 				return ErrBlocked
 			}
 			if dryRun {
-				if !asJSON {
-					fmt.Fprintln(out, "\nNothing changed (dry run). Run `smith convert` to apply.")
-				}
 				return nil
 			}
 			log := out
@@ -123,6 +120,7 @@ installed.`,
 	f.BoolVar(&asJSON, "json", false, "print the plan as JSON")
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
+	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes")
 	return cmd
 }
