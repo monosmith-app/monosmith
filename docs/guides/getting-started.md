@@ -446,14 +446,7 @@ about each.
 
 ## 7. The interactive shell
 
-Run `smith` with no arguments, in a terminal:
-
-![The smith shell, Menu tab: Run tasks, Add a project, Manage plugins, Show the project graph, Check the workspace, Preview the next release, Regenerate CI pipelines](../assets/tui-menu.png)
-
-*The Menu tab asks one question at a time. Everything it does ends as a smith
-command printed before it runs, so you can type the same line in a script.*
-
-The shell has a header (the workspace, its branch and what doctor found, such as
+Run `smith` with no arguments, in a terminal. The shell has a header (the workspace, its branch and what doctor found, such as
 `✖2 ▲2`), the views as tabs, one pane for the open view, a row of key hints and
 a status bar, and it works with the mouse too. From 100 columns the selection's
 detail sits beside the list; below that the list has the whole width, Enter
@@ -462,56 +455,63 @@ the status bar always shows the keys of the view you are in (click a hint to
 press its key). The number keys open the tabs, in the order of the tab row, and
 clicking a tab name does the same:
 
-- **Projects** (`1`): every project with its language, kind, stack or
+- **Home** (`1`): the first thing you see. A headline for the workspace's
+  health ("2 checks fail"), the one thing to do next with its key ("press d",
+  "press w to lint and test them", "all good: press b to build"; Enter or a
+  click does it), and the facts behind it: the checks, the projects the changes
+  affect, how the last run ended and how many dependencies have newer releases.
+  Doctor runs in the background when the shell opens, so the health in the
+  header is filled before you open any tab.
+- **Projects** (`2`): every project with its language, kind, stack or
   recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
   a mark on the ones the current changes affect. `b`, `t`, `l` and `c` build, test,
   lint and typecheck the selected project; `w` lints and tests
   what changed (`smith run lint test --affected`); the detail lists the project's
   tasks (each can be run from it), what it depends on and what
   depends on it, and shows its graph (`smith graph --focus <project>`).
-- **Run** (`2`): the task graph of the command running, each task's state,
-  its log, failures first. `f` follows the log or pauses it and `r` runs the
-  last command again.
-- **Doctor** (`3`, or `d` from anywhere): every check, grouped by the project it names (the
-  workspace's own checks first; `g` lists them flat), problems first. Enter
-  shows the detail, remedy and the fix with the files it writes. `f` applies
+- **Run** (`3`): the runs you started (a task run uses the terminal itself, so
+  its output stays in your scrollback), and the task graph and log of a command
+  that ran captured. `r` runs the last command again; `f` follows a captured
+  log or pauses it.
+- **Doctor** (`4`, or `d` from anywhere): "2 failed · 2 warnings", then the
+  failing checks, one line each (`p` shows the ones that passed; `g` groups them
+  by project). Beside the list the detail tells the selected check in full: the
+  problem, the remedy and the fix with the files it writes; on a narrow screen
+  Enter expands the check in place instead. `f` applies
   the fix of the selected check when it is a safe one (`smith doctor --fix
   --only "<check>"`, after you confirm), `x` applies every safe fix
   (`smith doctor --fix`) and `r` checks again.
-- **Release** (`4`): what the next release would do, project by project, or
+- **Deps** (`5`): the dependencies with a newer release, patch before minor
+  before major, with the projects that declare them, and what the one-version
+  policy says. `Space` marks a row, `s` marks the patch and
+  minor ones and `a` marks all; `u` or Enter updates the marked ones, or the row under the cursor (`smith deps up <packages>`), and
+  `v` brings dependencies that projects declare at different versions to one
+  (`smith deps up --align`).
+- **Release** (`6`): what the next release would do, project by project, or
   why it is blocked. Enter on a project shows the commits behind its bump (the
   tag, the level, each commit with its type, scope and author, and a breaking
   change's note); `n` prints the release notes (`smith release --dry-run
   --notes`), `p` previews it and `x` releases (after you confirm).
-- **Recipes** (`7`): a form built from the recipe's own choices. *New
-  project* picks the kind (the recipe of `[recipes]` or `[workspace] recipe`
-  makes it), a name and an answer to each choice, and shows what the recipe
-  puts in each role (language, lint, deploy, ...) and the file and line it
-  came from before anything is written; `c` ends as `smith add <kind> <name>
-  --choice name=answer`. *New workspace* ends as `smith new <name> --recipe
-  <recipe>`, and *new recipe* as `smith recipe new <path>`: the recipe wizard
-  asks its questions on a terminal, so the shell steps aside and smith runs it.
-- **Plugins** (`5`): the built-in and installed plugins, the roles each
-  fills, and the projects that use it. `e` turns a built-in language plugin on
-  or off (`smith plugin enable|disable <name>`).
-- **Deps** (`6`): the dependencies with a newer release, patch before minor
-  before major, with the projects that declare them, and what the one-version
-  policy says. `Space` marks a row and `a` marks all; `u` or Enter updates the
-  marked ones, or the row under the cursor (`smith deps up <packages>`), and
-  `v` brings dependencies that projects declare at different versions to one
-  (`smith deps up --align`).
-- **Settings** (`8`): the settings of `smith.toml` with their values and
-  what they do. Enter edits one and `Ctrl+U` returns it to its default; a value the
-  schema rejects is refused on the spot. The change is made by `smith config
-  set`, which keeps the file's comments.
-- **Guide** (`9`): the common tasks, one question at a time: creating a
-  workspace, running tasks, adding or removing a project, managing plugins,
-  and adopting or converting an existing repository (`smith adopt`, `smith
-  convert`). Every other command that takes arguments or options has a form
-  too, built from the command itself: the required arguments are asked first,
-  then the optional ones, the switches in one list (with *none* to run it as it
-  is) and each option that takes a value; Enter on an optional question skips
-  it. A command added to smith appears there without anyone writing its form.
+
+The tabs for plugins, recipes, settings and the guide are gone: each is a smith
+command, and the palette (`:` or `Ctrl+P`) lists it. *Plugins* runs `smith plugin
+list` (`plugin enable`, `disable` and `set` change them), *Recipes* runs `smith
+recipe` (`recipe check` and `recipe new`; `smith add` asks the recipe's choices),
+*Settings* runs `smith config list` (`config set` and `unset` change `smith.toml`
+and refuse a value the schema rejects, keeping the file's comments) and *Commands
+and docs* runs `smith help`. These run in your terminal like a task run: the
+interface steps aside, the command prints into the scrollback, and a key brings
+the interface back. A command that changes the workspace asks first.
+
+The guided questions are still there when a command needs them. `a` adds a
+project, and the palette's *Add project…*, *Remove project…* and *Manage
+plugins…* open a form that asks one question at a time and ends as a smith
+command; so does every other command that takes arguments or options, with a
+form built from the command itself (the required arguments are asked first, then
+the optional ones, the switches in one list and each option that takes a value;
+Enter on an optional question skips it). A command added to smith appears there
+without anyone writing its form. Outside a workspace the guide is the only view:
+it offers to create a workspace, or to adopt or convert the repository you are in.
 
 The keys are the same in every tab: the arrows (or `j` and `k`), `PgUp`,
 `PgDn`, `Home` and `End` move, Enter acts on the row, `r` loads the view again,
@@ -522,13 +522,13 @@ the command palette with every smith command, `i` installs the dependencies,
 text, `q` quits, and `?` (or `F1`) lists the keys of the tab you are in and the
 rest. A key never fires while you are typing in a field or a form. The hints
 row and the help are drawn from the same list as the keys, so they cannot name
-a key that does nothing. Everything fits 72 columns: the tab names are shortened (Proj, Rel, Plug,
-Sett) before the row of tabs scrolls, with `‹` and `›` to click, so the open tab
-is always in view. On a terminal shorter than 24 rows the tabs are one plain
+a key that does nothing. Everything fits 72 columns; the tab names are shortened
+(Proj, Rel) before the row of tabs would scroll, with `‹` and `›` to click, so the
+open tab is always in view. On a terminal shorter than 24 rows the tabs are one plain
 row instead of boxes.
 
 Nothing the shell does happens on its own. Every action ends as a smith
-command line, printed in the status bar and the Run tab before it runs; one
+command line, printed in the status bar and the terminal before it runs; one
 that changes the workspace, installs or publishes first shows the line in a
 confirmation you answer with `y` or `n`. A line that has a space in it is
 printed with quotes, so you can paste it into a script as it is.
@@ -550,12 +550,7 @@ What kind? Type the number of one.
 ...
 ```
 
-![The Settings tab: workspace.name "acme", ci.devcontainer true, ci.providers ["github"], and the others "(default)"](../assets/tui-settings.png)
-
-*Settings you have not set show `(default)`; the line under the list explains
-the highlighted one.*
-
-Every tab but Guide appears only inside a workspace. When stdin or
+Every tab appears only inside a workspace. When stdin or
 stdout is not a terminal, or `CI` is set, `smith` prints its help instead.
 
 ## 8. CI

@@ -14,7 +14,7 @@ mocked up.
 | `release-preview.png` | `smith release --dry-run` | terminal output, rendered |
 | `graph-text.png` | `smith graph` | terminal output, rendered |
 | `ci-yml.png` | lines of the generated `.github/workflows/ci.yml` | `sed -n '35,76p'`, rendered |
-| `tui-menu.png`, `tui-commands.png`, `tui-doctor.png`, `tui-release.png`, `tui-settings.png` | the interactive shell's tabs | see below |
+| `tui-commands.png`, `tui-doctor.png`, `tui-release.png` | the interactive shell's tabs | see below |
 
 ## Rendering terminal output
 
