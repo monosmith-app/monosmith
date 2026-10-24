@@ -35,6 +35,9 @@ type Finding struct {
 	// Subject is the target, file or setting the finding is about.
 	Subject string `json:"subject"`
 	Message string `json:"message"`
+	// Decide marks a finding the reader should weigh before applying (CI is
+	// replaced, release rules change), not one to skim.
+	Decide bool `json:"decide,omitempty"`
 }
 
 // ProjectPlan is how one Nx project becomes a smith project.
@@ -97,6 +100,9 @@ type Plan struct {
 	Delete []string `json:"delete,omitempty"`
 	// Write maps workspace-relative files to their new content.
 	Write map[string]string `json:"-"`
+	// Keep maps files the converted workspace needs to why, for the next
+	// steps: they look like clutter, but deleting one breaks builds or tests.
+	Keep map[string]string `json:"keep,omitempty"`
 	// WriteFiles lists the keys of Write, for the report.
 	WriteFiles []string `json:"write,omitempty"`
 	// names maps each Nx project name to its smith name, so a target's
@@ -107,6 +113,12 @@ type Plan struct {
 // Add records a finding.
 func (p *Plan) Add(severity Severity, project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: severity, Project: project, Subject: subject, Message: message})
+}
+
+// Decide records a behaviour change the reader should decide on before the
+// conversion is applied; the report lists it first.
+func (p *Plan) Decide(project, subject, message string) {
+	p.Findings = append(p.Findings, Finding{Severity: Changed, Project: project, Subject: subject, Message: message, Decide: true})
 }
 
 // Count returns how many findings have each severity.
@@ -186,6 +198,14 @@ func (p *Plan) SetSpecifier(root, dependency, specifier string) {
 		p.Specifiers[root] = map[string]string{}
 	}
 	p.Specifiers[root][dependency] = specifier
+}
+
+// KeepFile records why the workspace needs a file convert writes.
+func (p *Plan) KeepFile(path, why string) {
+	if p.Keep == nil {
+		p.Keep = map[string]string{}
+	}
+	p.Keep[path] = why
 }
 
 // WriteFile schedules a file to be written.

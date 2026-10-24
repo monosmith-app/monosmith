@@ -2,6 +2,7 @@ package convertplan
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"path"
 	"regexp"
 	"sort"
@@ -152,6 +153,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 		switch {
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.preset.") && strings.Contains(text, "@nx/jest/preset"):
 			plan.WriteFile(JestResolverFile, JestResolver)
+			plan.KeepFile(JestResolverFile, "stands in for the resolver @nx/jest provided; the Jest preset loads it, so every package's tests need it")
 			if rewritten, kept := RewriteNxJestPreset(text); kept {
 				plan.WriteFile(f, rewritten)
 				plan.Add(Changed, "", f, "rewritten without @nx/jest: the same preset values, written out, and the rest of the file kept")
@@ -170,6 +172,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			}
 			plan.WriteFile(f, rewritten)
 			plan.WriteFile(AssetTransformFile, AssetTransform)
+			plan.KeepFile(AssetTransformFile, "the Jest transformer for CSS and image imports that @nx/react provided; the Jest configs load it")
 			if plan.AddDevDependencies == nil {
 				plan.AddDevDependencies = map[string]string{}
 			}
@@ -205,6 +208,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			plan.Add(Manual, "", f, "imports Nx ("+nxImport(text)+"), which convert removes; rewrite it without Nx")
 		}
 	}
+	planSharedESLintConfig(plan, files, read)
 	if w.Nx.NxCloudID != "" || w.Nx.NxCloudToken != "" {
 		plan.Add(Changed, "", "nx.json", "Nx Cloud is not used: smith caches locally (.smith/cache)")
 	}
@@ -263,15 +267,10 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) stri
 	// would make `tsc --build` (typecheck) think the library is built when
 	// its own outputs are missing.
 	declarations := path.Dir(types)
-	up := strings.Repeat("../", strings.Count(path.Clean(root), "/")+1)
-	if root == "." {
-		up = ""
-	}
 	// Then each relative specifier in the declarations names its file, as
 	// mnci's rollup plugin did, so nodenext consumers can follow them.
-	build := fmt.Sprintf("%s && tsc -p %s --emitDeclarationOnly --declaration --declarationDir %s --tsBuildInfoFile %s/tsconfig.lib.tsbuildinfo && node %s%s %s",
-		bundle, strings.TrimPrefix(tsconfig[1], "./"), declarations, declarations, up, DeclarationSpecifiersFile, declarations)
-	plan.WriteFile(DeclarationSpecifiersFile, DeclarationSpecifiers)
+	build := fmt.Sprintf("%s && tsc -p %s --emitDeclarationOnly --declaration --declarationDir %s --tsBuildInfoFile %s/tsconfig.lib.tsbuildinfo && smith %s %s",
+		bundle, strings.TrimPrefix(tsconfig[1], "./"), declarations, declarations, declarationspecifiers.Name, declarations)
 	if pp.Scripts == nil {
 		pp.Scripts = map[string]string{}
 	}
@@ -289,7 +288,7 @@ func replaceRollup(plan *Plan, w *nxworkspace.Workspace, file, text string) stri
 		}
 		built = fmt.Sprintf("every entry Rollup built (%s, sharing code in %s/chunks)", strings.Join(names, ", "), path.Dir(out))
 	}
-	plan.Add(Changed, pp.Name, "build", "Rollup with @nx/rollup becomes esbuild plus tsc declarations, into the same "+built+" and "+types+", whose relative specifiers "+DeclarationSpecifiersFile+" gives their .js files (as the old mnci's rollup plugin did): "+build)
+	plan.Add(Changed, pp.Name, "build", "Rollup is replaced by esbuild, which writes "+built+" as before; tsc writes the type definitions to "+types+". Afterwards `smith "+declarationspecifiers.Name+" "+declarations+"` rewrites the imports inside those type definitions (./hooks becomes ./hooks.js) so users on modern Node can follow them; the old Rollup plugin did the same. New build: "+build)
 	return ""
 }
 

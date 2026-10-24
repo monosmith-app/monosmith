@@ -106,7 +106,7 @@ Created demo. Next:
 Report what bringing an existing repository (npm workspaces, Go modules, Python projects) under smith involves, and take the steps. Read-only unless you ask for a step; both steps need a clean git tree.
 
 <!-- smith:begin adopt -->
-Report what bringing an existing repository under smith involves, and take the steps
+Bring an existing repository under smith: report what it involves, then take the steps (start here)
 
 Usage: `smith adopt [flags]`
 
@@ -123,20 +123,14 @@ Usage: `smith adopt [flags]`
 `--tags` creates, locally, the release tags a project needs where its tags were made under another name (nothing is pushed). `--init` writes `smith.toml` and the pipelines and commits; a pipeline of yours at a path smith owns is kept beside it as `<file>.pre-smith`. An Nx workspace is for `smith convert`. See [Getting started](../guides/getting-started.md#or-adopt-an-existing-repository).
 
 ```sh
-$ smith adopt --dry-run
+$ smith adopt
 ```
 
 ```text
 C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
-  PROJECT              LANGUAGE KIND     FOLDER
   lib                  node     package  packages/lib
-  kind: apps/ holds apps, libs/ libs, packages/ packages; elsewhere a Go main package is an app,
-  a public Node package is a package and the rest are libs. To change one: "smith": {"kind": "app"}
-  in its package.json, or a // smith:kind app comment in its go.mod.
 
-! smith doctor will report: node_modules is missing at the workspace root
-  → --init --install runs npm install for you (or run it yourself afterwards)
-✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports
+✔ nothing blocks: smith adopt --init makes it a workspace
 ```
 
 ### smith convert
@@ -144,7 +138,7 @@ C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
 Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../guides/converting.md).
 
 <!-- smith:begin convert -->
-Convert an Nx or Turborepo workspace (or one made by the old mnci) to smith
+Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)
 
 Usage: `smith convert [flags]`
 
@@ -155,6 +149,8 @@ Usage: `smith convert [flags]`
 | `--json` | print the plan as JSON | off |
 | `--skip-install` | do not run npm install afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
+| `--verbose` | name every project a finding applies to, not just a few | off |
+| `--yes` | apply without asking (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
@@ -514,7 +510,7 @@ $ smith dev web api --dry-run
 Add packages to one project with its own toolchain (`npm install --workspace`, the project's `pyproject.toml` and the workspace venv, `go get`), or install everything a fresh clone needs. Alias: `smith i`.
 
 <!-- smith:begin install -->
-Add packages to a project with its own toolchain, or install the whole workspace
+Add packages to a project, or install the whole workspace (up updates, sync aligns versions)
 
 Usage: `smith install [packages...] [flags]`
 
@@ -550,7 +546,7 @@ Only the last lines of each are shown (npm prints more).
 Remove packages from one project; the counterpart of `smith install`. Alias: `smith un`.
 
 <!-- smith:begin uninstall -->
-Remove packages from a project with its own toolchain
+Remove packages from a project (the opposite of install)
 
 Usage: `smith uninstall <packages...> [flags]`
 
@@ -569,7 +565,7 @@ See the example under `smith install`.
 Make every project declare a shared dependency at the same version, language by language. The target is the version installed, with the operator most declarations use; otherwise the highest version declared. Then it installs, so lockfiles and the venv follow.
 
 <!-- smith:begin sync -->
-Make every project declare a shared dependency at the same version
+Make every project declare a shared dependency at the same version (same as up --align)
 
 Usage: `smith sync [flags]`
 
@@ -597,7 +593,7 @@ $ smith sync --check
 List every declared dependency with a newer release, grouped as patch, minor and major with the projects that declare it, then update the ones you pick.
 
 <!-- smith:begin up -->
-Show dependencies with newer releases and update the ones you pick
+Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync)
 
 Usage: `smith up [packages...] [flags]`
 
@@ -639,7 +635,7 @@ Needs network access to the registries.
 Work on dependencies across the workspace. See [One version per dependency](configuration.md#dependencies).
 
 <!-- smith:begin deps -->
-Update dependencies across the workspace, or bring them to one version
+Group for dependency work across projects; deps up is the same as up
 
 Usage: `smith deps`
 
@@ -789,7 +785,7 @@ web	apps/web libs/ui
 Show how a project's tasks resolved and where each field came from: the language plugin, a stack's plugin, a convention, or `smith.toml`.
 
 <!-- smith:begin explain -->
-Show how a project's tasks resolved, and where each setting came from
+Show how a project's tasks resolved, and where each setting came from (why-miss says why one reran)
 
 Usage: `smith explain <project> [flags]`
 
@@ -797,6 +793,7 @@ Usage: `smith explain <project> [flags]`
 |---|---|---|
 | `--json` | print JSON | off |
 | `--recipe` | print only what the project's recipe decided, and where | off |
+| `--task <task>` | explain only this task (same as <project>:<task>) |  |
 
 <!-- smith:end explain -->
 
@@ -828,7 +825,7 @@ web:test — Run unit tests
 Say why a task would run instead of coming from the cache, by comparing its key with its last cached run. It runs nothing.
 
 <!-- smith:begin why-miss -->
-Say why a task would run again instead of coming from the cache (a cache miss)
+Say why a task would run again instead of coming from the cache (a cache miss; explain shows its settings)
 
 Usage: `smith why-miss <project> <task> [flags]`
 
@@ -1274,10 +1271,12 @@ Usage: `smith release [flags]`
 |---|---|---|
 | `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
 | `--dry-run` | show what would be released; change nothing | off |
+| `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |  |
 | `--json` | print the release report as JSON | off |
 | `--no-push` | create tags locally only | off |
 | `--notes` | also print each release's notes (what its GitHub Release says) | off |
 | `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
+| `--verbose` | name every unchanged package | off |
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end release -->

@@ -73,9 +73,16 @@ func Commands(version string) []*cobra.Command {
 			}
 			if report.Workspace == nil {
 				fmt.Fprintln(out, "not in a smith workspace")
-			} else {
-				fmt.Fprintf(out, "workspace: %s\n", report.Workspace.Root)
+				return nil
 			}
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: io.Discard})
+			if err != nil {
+				fmt.Fprintf(out, "workspace: %s (not loaded: %v)\n", report.Workspace.Root, err)
+				return nil
+			}
+			defer s.Close()
+			fmt.Fprintln(out)
+			fmt.Fprint(out, WorkspaceSummary(report.Workspace.Root, s.Config, s.Graph))
 			return nil
 		},
 	}

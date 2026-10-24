@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
@@ -56,9 +57,13 @@ func Root(version string) *cobra.Command {
 		Short: "A simple monorepo tool: add apps, libs and packages; build, test, release",
 		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM and Bicep (and anything a plugin adds):
 it scaffolds projects, runs their tasks in dependency order from a cache,
-generates CI pipelines, and releases packages from conventional commits.`,
+generates CI pipelines, and releases packages from conventional commits.
+
+Most people start with: new (an empty folder) or adopt (a repository you
+already have), then build and doctor.`,
 		Example: `  smith                      open the interactive menu (in a terminal)
-  smith new acme
+  smith new acme             a new, empty workspace
+  smith adopt --dry-run      what bringing the repository you are in under smith involves
   smith add app web --lang node
   smith build`,
 		Version:       version,
@@ -75,7 +80,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version))
-	root.AddCommand(npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
+	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))

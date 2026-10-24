@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -29,6 +31,10 @@ type ApplyOptions struct {
 // Result is what Apply changed.
 type Result struct {
 	Pipelines []string `json:"pipelines,omitempty"`
+	// Created are the files the conversion added that did not exist before
+	// (smith.toml included); Rewritten are files it replaced.
+	Created   []string `json:"created,omitempty"`
+	Rewritten []string `json:"rewritten,omitempty"`
 	// LostSlots are pipeline slots with steps that have no place in the new
 	// pipeline; their steps must be moved by hand.
 	LostSlots []string `json:"lostSlots,omitempty"`
@@ -45,10 +51,12 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 	if err := os.WriteFile(file(workspace.FileName), []byte(ConfigText(plan.Config)), 0o644); err != nil {
 		return res, err
 	}
-	say("wrote %s", workspace.FileName)
-	if err := editRootPackage(root, plan); err != nil {
+	res.Created = append(res.Created, workspace.FileName)
+	say("✔ wrote %s", workspace.FileName)
+	if err := editRootPackage(root, plan, opts.Version); err != nil {
 		return res, err
 	}
+	manifests := 0
 	for _, p := range plan.Projects {
 		if !p.Supported {
 			continue
@@ -56,18 +64,29 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		if err := editManifest(root, p, plan.Specifiers); err != nil {
 			return res, fmt.Errorf("%s: %w", p.Root, err)
 		}
+		manifests++
 	}
+	say("✔ updated the root package.json and %s", plural(manifests, "project manifest", "project manifests"))
 	for _, rel := range plan.WriteFiles {
+		if _, err := os.Stat(file(rel)); err == nil {
+			res.Rewritten = append(res.Rewritten, rel)
+		} else {
+			res.Created = append(res.Created, rel)
+		}
 		if err := os.WriteFile(file(rel), []byte(plan.Write[rel]), 0o644); err != nil {
 			return res, err
 		}
-		say("wrote %s", rel)
+	}
+	if len(plan.WriteFiles) > 0 {
+		say("✔ wrote %s", strings.Join(plan.WriteFiles, ", "))
 	}
 	for _, rel := range plan.Delete {
 		if err := os.RemoveAll(file(rel)); err != nil {
 			return res, err
 		}
-		say("removed %s", rel)
+	}
+	if len(plan.Delete) > 0 {
+		say("✔ removed %s", plural(len(plan.Delete), "file or folder the old tool needed", "files and folders the old tool needed"))
 	}
 	if err := ignoreSmithFiles(root, plan); err != nil {
 		return res, err
@@ -100,17 +119,26 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 	}
 	res.Pipelines = changed
 	res.LostSlots = append(res.LostSlots, lost...)
-	for _, c := range changed {
-		say("generated %s", c)
+	if len(changed) > 0 {
+		say("✔ generated %s", strings.Join(changed, ", "))
 	}
+	res.Created = append(res.Created, changed...)
 
 	if !opts.SkipInstall {
+		say("… reinstalling dependencies (this can take a minute)")
 		if err := refreshLockfile(root, opts.Out, plan.Source != convertplan.SourceTurborepo); err != nil {
 			return res, err
 		}
+		say("✔ reinstalled dependencies and updated package-lock.json")
 	}
 	return res, nil
 }
+
+// SmithPackage is the npm package that installs smith.
+const SmithPackage = "monosmith"
+
+// releasedVersion tells a smith release from a development build.
+var releasedVersion = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 // refreshLockfile runs npm install so package-lock.json drops what convert
 // removed, and checks that npm ci accepts the result. npm 11 can reuse the
@@ -121,7 +149,7 @@ func refreshLockfile(root string, out io.Writer, pruneNx bool) error {
 		return nil
 	}
 	if _, err := exec.LookPath("npm"); err != nil {
-		fmt.Fprintln(out, "npm is not installed: run npm install to update package-lock.json")
+		fmt.Fprintln(out, "! npm is not installed: run npm install to update package-lock.json")
 		return nil
 	}
 	lock := filepath.Join(root, "package-lock.json")
@@ -134,34 +162,34 @@ func refreshLockfile(root string, out io.Writer, pruneNx bool) error {
 			if err := os.WriteFile(lock, pruned, 0o644); err != nil {
 				return err
 			}
-			fmt.Fprintf(out, "removed %d Nx packages from package-lock.json\n", len(dropped))
 		}
 	}
+	// npm's own output (warnings about engines, deprecations, the husky
+	// banner) looks like smith's problem and buries the summary: it is shown
+	// only when npm fails.
+	var log bytes.Buffer
 	run := func(args ...string) error {
+		log.Reset()
 		cmd := exec.Command("npm", args...)
-		cmd.Dir, cmd.Stdout, cmd.Stderr = root, out, out
-		return cmd.Run()
-	}
-	quiet := func(args ...string) error {
-		cmd := exec.Command("npm", args...)
-		cmd.Dir = root
+		cmd.Dir, cmd.Stdout, cmd.Stderr = root, &log, &log
 		return cmd.Run()
 	}
 	for attempt := 1; attempt <= 2; attempt++ {
-		fmt.Fprintln(out, "running npm install to update the lockfile")
 		if err := run("install", "--no-audit", "--no-fund"); err != nil {
+			_, _ = out.Write(log.Bytes())
 			return fmt.Errorf("npm install failed (%w); fix it and run npm install again, the conversion itself is complete", err)
 		}
-		if quiet("ci", "--dry-run", "--ignore-scripts", "--no-audit", "--no-fund") == nil {
+		if run("ci", "--dry-run", "--ignore-scripts", "--no-audit", "--no-fund") == nil {
 			return nil
 		}
 	}
+	_, _ = out.Write(log.Bytes())
 	return errors.New("package-lock.json is still out of step with package.json after npm install; run npm install until `npm ci --dry-run` passes")
 }
 
 // editRootPackage removes Nx from the root package.json and rewrites its
 // scripts.
-func editRootPackage(root string, plan *convertplan.Plan) error {
+func editRootPackage(root string, plan *convertplan.Plan, version string) error {
 	path := filepath.Join(root, "package.json")
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -214,6 +242,14 @@ func editRootPackage(root string, plan *convertplan.Plan) error {
 			continue
 		}
 		deps.SetString(name, installedRange(root, name))
+	}
+	// The root scripts call smith: a teammate who runs npm install and then
+	// npm run build gets the same smith as everyone else.
+	if releasedVersion.MatchString(version) {
+		deps := doc.Object("devDependencies", true)
+		if dependencies := doc.Object("dependencies", false); !deps.Has(SmithPackage) && (dependencies == nil || !dependencies.Has(SmithPackage)) {
+			deps.SetString(SmithPackage, version)
+		}
 	}
 	scripts := doc.Object("scripts", len(plan.RootScripts) > 0)
 	for _, name := range sortedKeys(plan.RootScripts) {

@@ -43,6 +43,9 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	case exists(workspace.FileName):
 		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "smith upgrade, after installing a newer smith", Blocks: BlocksAdoption})
 		return r, nil
+	case exists("turbo.json") && !exists("nx.json"):
+		r.Blockers = append(r.Blockers, Item{Message: "this is a Turborepo workspace: its tasks are turbo.json's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption})
+		return r, nil
 	case exists("nx.json"):
 		item := Item{Message: "this is an Nx workspace: its projects and targets are Nx's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption}
 		if !exists("node_modules/nx") {

@@ -59,7 +59,7 @@ func TestConvertLegacyWorkspace(t *testing.T) {
 	}
 
 	plan := w.smith(true, "convert", "--dry-run")
-	for _, want := range []string{"made by the old mnci", "kit ", "tool ", "Rollup with @nx/rollup becomes esbuild", "Nothing changed (dry run)"} {
+	for _, want := range []string{"made by the old mnci", "kit ", "tool ", "Rollup is replaced by esbuild", "Nothing changed (dry run)"} {
 		if !strings.Contains(plan, want) {
 			t.Fatalf("plan lacks %q:\n%s", want, plan)
 		}

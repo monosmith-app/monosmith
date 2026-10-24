@@ -60,6 +60,12 @@ func ConfigText(cfg workspace.Config) string {
 			fmt.Fprintf(&b, "npm = %s\n", q(r.NPM))
 		}
 	}
+	if len(cfg.DefaultStacks) > 0 {
+		b.WriteString("\n[default_stacks]\n")
+		for _, lang := range sortedKeys(cfg.DefaultStacks) {
+			fmt.Fprintf(&b, "%s = %s\n", key(lang), q(cfg.DefaultStacks[lang]))
+		}
+	}
 	for _, name := range sortedKeys(cfg.Conventions) {
 		c := cfg.Conventions[name]
 		fmt.Fprintf(&b, "\n[conventions.%s]\n", key(name))

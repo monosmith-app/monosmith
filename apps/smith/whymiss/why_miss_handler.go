@@ -15,7 +15,7 @@ func Command(version string) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:     "why-miss <project>:<task>",
-		Short:   "Say why a task would run again instead of coming from the cache (a cache miss)",
+		Short:   "Say why a task would run again instead of coming from the cache (a cache miss; explain shows its settings)",
 		Example: "  smith why-miss web:build",
 		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a project and task as <project>:<task>"}, Example: "smith why-miss web:build", More: "smith projects lists the projects"}),
 		RunE: func(cmd *cobra.Command, args []string) error {

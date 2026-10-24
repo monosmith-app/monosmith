@@ -19,7 +19,7 @@ func Commands(version string) []*cobra.Command {
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
-		Short:   "Add packages to a project with its own toolchain, or install the whole workspace",
+		Short:   "Add packages to a project, or install the whole workspace (up updates, sync aligns versions)",
 		Long: `Add packages to one project with its own toolchain: npm install --workspace,
 the project's pyproject.toml and the workspace venv, go get. Each project owns
 its dependencies, so a package needs a target: smith install -w <project>
@@ -45,7 +45,7 @@ needs, for every language in the workspace.`,
 	uninstall := &cobra.Command{
 		Use:     "uninstall <packages...>",
 		Aliases: []string{"un"},
-		Short:   "Remove packages from a project with its own toolchain",
+		Short:   "Remove packages from a project (the opposite of install)",
 		Long: `Remove packages from one project, the counterpart of smith install. A
 dependency belongs to the project that uses it, so it needs a target: smith
 uninstall -w <project> <package>.`,
@@ -74,7 +74,7 @@ func upCommand(version string) *cobra.Command {
 func depsCommand(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deps",
-		Short: "Update dependencies across the workspace, or bring them to one version",
+		Short: "Group for dependency work across projects; deps up is the same as up",
 		Long:  "Dependency work that spans projects. smith deps up is smith up: it updates every project that declares a package in one change. smith deps up --align brings a dependency that projects declare at different versions to one.",
 	}
 	cmd.AddCommand(newUpCommand(version))
@@ -85,7 +85,7 @@ func newUpCommand(version string) *cobra.Command {
 	var check, yes, asJSON, noInstall, align bool
 	cmd := &cobra.Command{
 		Use:   "up [packages...]",
-		Short: "Show dependencies with newer releases and update the ones you pick",
+		Short: "Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync)",
 		Long: `Show every declared dependency with a newer release, grouped patch, minor and
 major, with the projects declaring it, then update the ones you pick: each
 declaration keeps its operator and moves to the latest version, and the
@@ -182,7 +182,7 @@ func syncCommand(version string) *cobra.Command {
 	var check, asJSON, noInstall bool
 	cmd := &cobra.Command{
 		Use:   "sync",
-		Short: "Make every project declare a shared dependency at the same version",
+		Short: "Make every project declare a shared dependency at the same version (same as up --align)",
 		Long: `Make every project declare a shared dependency at the same spec, language by
 language. The target is the version installed, with the operator most
 declarations use; when nothing says what is installed, the highest version

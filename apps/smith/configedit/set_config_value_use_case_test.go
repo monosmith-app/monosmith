@@ -79,3 +79,33 @@ func TestFieldsCoverTheFixedTables(t *testing.T) {
 		t.Error("a table of named entries is edited in the file")
 	}
 }
+
+func TestSetEditsTheDefaultStackOfALanguage(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, workspace.FileName)
+	_ = os.WriteFile(file, []byte("schema = 1\n\n[workspace]\nname = \"acme\"\n"), 0o644)
+	if err := Set(root, "default_stacks.node", []string{"node-jest"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(file)
+	cfg, err := workspace.Parse(raw)
+	if err != nil || cfg.DefaultStacks["node"] != "node-jest" {
+		t.Fatalf("%v\n%s", err, raw)
+	}
+	if value, set, _ := Get(root, "default_stacks.node"); !set || value != `"node-jest"` {
+		t.Fatalf("got %q %v", value, set)
+	}
+	if err := Unset(root, "default_stacks.node"); err != nil {
+		t.Fatal(err)
+	}
+	if raw, _ := os.ReadFile(file); strings.Contains(string(raw), "default_stacks") {
+		t.Fatalf("left behind:\n%s", raw)
+	}
+}
+
+func TestAnUnknownSettingSuggestsInsteadOfListingEverything(t *testing.T) {
+	_, err := Find("workspace.nam")
+	if err == nil || !strings.Contains(err.Error(), "did you mean workspace.name") || !strings.Contains(err.Error(), "smith config list") || len(err.Error()) > 240 {
+		t.Fatalf("%v", err)
+	}
+}
