@@ -32,6 +32,14 @@ function fakeSmith () {
 }
 
 describe('runTasks', () => {
+  it('passes the parallelism only when it is set', async () => {
+    const { connection, calls } = fakeSmith()
+    await runTasks(connection, { runId: 'ide-1', tasks: ['build'], parallel: 3 }, () => {})
+    await runTasks(connection, { runId: 'ide-2', tasks: ['build'], parallel: 0 }, () => {})
+    expect(calls[0]?.params).toMatchObject({ parallel: 3 })
+    expect(calls[1]?.params).not.toHaveProperty('parallel')
+  })
+
   it('asks smith to run the task of the project under the given id', async () => {
     const { connection, calls } = fakeSmith()
     await runTasks(connection, { runId: 'ide-1', tasks: ['build'], projects: ['api'] }, () => {})

@@ -1,4 +1,4 @@
-import type { RunEvent, TaskStatus } from './run-event.contract.ts'
+import type { RunEvent, TaskResult, TaskStatus } from './run-event.contract.ts'
 
 /** What the last run did to each task, kept so the views can show it. */
 export interface TaskStatusStore {
@@ -6,6 +6,8 @@ export interface TaskStatusStore {
   apply:       (event: RunEvent) => void
   /** The status of a task id (`api:build`), if a run has touched it. */
   statusOf:    (task: string) => TaskStatus | undefined
+  /** How the task last ended or where it is: its status, duration and reason. */
+  resultOf:    (task: string) => TaskResult | undefined
   /** How many tasks the runs so far left failed. */
   failedCount: () => number
   /** Listens to changes; returns what stops the listening. */
@@ -14,31 +16,36 @@ export interface TaskStatusStore {
 
 /** A store with no statuses. */
 export function createTaskStatusStore (): TaskStatusStore {
-  const statuses = new Map<string, TaskStatus>()
+  const results = new Map<string, TaskResult>()
   const listeners = new Set<() => void>()
 
-  const set = (task: string | undefined, status: TaskStatus): void => {
+  const set = (task: string | undefined, result: TaskResult): void => {
     if (task === undefined) return
-    statuses.set(task, status)
+    results.set(task, result)
   }
 
   return {
     apply: (event) => {
       switch (event.event) {
         case 'run.started': {
-          for (const task of listed(event)) set(task, 'queued')
+          for (const task of listed(event)) set(task, { status: 'queued', time: event.time })
           break
         }
         case 'task.queued': {
-          set(event.task, 'queued')
+          set(event.task, { status: 'queued', time: event.time })
           break
         }
         case 'task.started': {
-          set(event.task, 'running')
+          set(event.task, { status: 'running', time: event.time })
           break
         }
         case 'task.finished': {
-          set(event.task, event.status ?? 'failed')
+          set(event.task, {
+            status: event.status ?? 'failed',
+            time:   event.time,
+            ...(event.durationMs !== undefined && { durationMs: event.durationMs }),
+            ...(event.reason !== undefined && { reason: event.reason }),
+          })
           break
         }
         default: {
@@ -47,10 +54,11 @@ export function createTaskStatusStore (): TaskStatusStore {
       }
       for (const listener of listeners) listener()
     },
-    statusOf:    (task) => statuses.get(task),
+    statusOf:    (task) => results.get(task)?.status,
+    resultOf:    (task) => results.get(task),
     failedCount: () => {
       let failed = 0
-      for (const status of statuses.values()) if (status === 'failed') failed++
+      for (const result of results.values()) if (result.status === 'failed') failed++
 
       return failed
     },

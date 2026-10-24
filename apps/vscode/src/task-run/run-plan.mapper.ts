@@ -9,7 +9,7 @@ import type { RunOptions, RunPlan, RunTarget } from './run-plan.contract.ts'
  * @returns the plan, or undefined when there is nothing to run
  */
 export function toRunPlan (target: RunTarget, projects: readonly WorkspaceProject[], options: RunOptions): RunPlan | undefined {
-  const flags = { ...(options.bail && { bail: true }), ...(options.noCache && { noCache: true }) }
+  const flags = { ...(options.bail && { bail: true }), ...(options.noCache && { noCache: true }), ...(options.parallel > 0 && { parallel: options.parallel }) }
   switch (target.kind) {
     case 'task': {
       return { tasks: [target.task], projects: [target.project], ...flags }

@@ -10,6 +10,8 @@ export interface RunPlan {
   bail?:     boolean
   /** Run again even when the cache has the result. */
   noCache?:  boolean
+  /** How many tasks may run at once; smith chooses when absent. */
+  parallel?: number
 }
 
 /**
@@ -24,6 +26,8 @@ export type RunTarget = { kind: 'task', project: string, task: string } |
 
 /** The options that apply to any run. */
 export interface RunOptions {
-  bail:    boolean
-  noCache: boolean
+  bail:     boolean
+  noCache:  boolean
+  /** 0: smith chooses. */
+  parallel: number
 }

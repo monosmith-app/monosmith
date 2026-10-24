@@ -28,6 +28,7 @@ export async function runTasks (
       ...((request.affected === true) && { affected: true }),
       ...((request.bail === true) && { bail: true }),
       ...((request.noCache === true) && { noCache: true }),
+      ...((request.parallel ?? 0) > 0 && { parallel: request.parallel }),
       run:   request.runId,
     })
   } finally {

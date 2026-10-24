@@ -30,6 +30,17 @@ export function projectChoices (snapshot: WorkspaceSnapshot): Array<Choice<Works
     }))
 }
 
+/** Every project of a folder, the affected ones first, for an action that is not about running a task. */
+export function everyProjectChoice (snapshot: WorkspaceSnapshot): Array<Choice<string>> {
+  return [...snapshot.projects]
+    .sort((a, b) => Number(snapshot.affected.has(b.name)) - Number(snapshot.affected.has(a.name)) || a.name.localeCompare(b.name))
+    .map((project) => ({
+      label:       project.name,
+      description: [project.kind, project.language].filter(Boolean).join(' · '),
+      value:       project.name,
+    }))
+}
+
 /** What to run in a project: all its tasks, or one of them. `undefined` stands for all. */
 export function taskChoices (project: WorkspaceProject): Array<Choice<string | undefined>> {
   return [

@@ -1,0 +1,8 @@
+export { findPathReferences } from './find-path-reference.algorithm.ts'
+export { registerOutputLinks, type OutputLinkSource } from './output-links.client.ts'
+export { resolveSourcePath, type PathSearch } from './resolve-source-path.policy.ts'
+export { sourceBases, type FolderProjects } from './source-bases.policy.ts'
+export { createTaskDiagnostics, type TaskDiagnostics } from './task-diagnostics.client.ts'
+export { createTaskLogDocuments, LOG_SCHEME, logKey, type TaskLogDocuments } from './task-log-document.client.ts'
+export { createTaskLogStore, type TaskLogStore } from './task-log.store.ts'
+export type { ParsedDiagnostic, PathReference } from './parsed-diagnostic.contract.ts'

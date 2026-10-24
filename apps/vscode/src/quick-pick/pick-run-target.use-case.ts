@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import type { RunTarget } from '../task-run/index.ts'
 import type { FolderWorkspace } from '../workspace/index.ts'
-import { folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
+import { everyProjectChoice, folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
 
 /** What the person chose to run, and in which folder. */
 export interface PickedTarget {
@@ -70,4 +70,18 @@ async function pickFolder (folders: readonly FolderWorkspace[]): Promise<FolderW
   const chosen = await vscode.window.showQuickPick(folderChoices(folders), { title: 'Choose a folder', placeHolder: 'Folder' })
 
   return folders.find((folder) => folder.root === chosen?.value)
+}
+
+/**
+ * Asks which project (and which folder, when there are several) an action is
+ * about, such as explaining or drawing its graph.
+ * @param title - what the action is, for the title of the pick
+ * @returns the folder and the project, or undefined when the person backed out
+ */
+export async function pickProject (folders: readonly FolderWorkspace[], title: string): Promise<{ root: string, project: string } | undefined> {
+  const folder = await pickFolder(folders)
+  if (folder === undefined) return undefined
+  const project = await vscode.window.showQuickPick(everyProjectChoice(folder.snapshot), { title, placeHolder: 'Project', matchOnDescription: true })
+
+  return project === undefined ? undefined : { root: folder.root, project: project.value }
 }

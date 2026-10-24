@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
-import { folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
+import { everyProjectChoice, folderChoices, projectChoices, taskChoices, taskNameChoices } from './task-choices.mapper.ts'
 
 const project = (name: string, tasks: string[]): WorkspaceProject => ({ name, dir: name, kind: 'app', language: 'ts', tasks, deps: [] })
 const snapshot: WorkspaceSnapshot = {
@@ -46,5 +46,12 @@ describe('taskNameChoices', () => {
 describe('folderChoices', () => {
   it('names a folder and counts its projects', () => {
     expect(folderChoices([{ root: '/a', name: 'a', snapshot }])).toEqual([{ label: 'a', description: '3 projects', value: '/a' }])
+  })
+})
+
+describe('everyProjectChoice', () => {
+  it('lists every project, also one without tasks, the affected first', () => {
+    expect(everyProjectChoice(snapshot).map((choice) => choice.value)).toEqual(['web', 'api', 'docs'])
+    expect(everyProjectChoice(snapshot)[0]?.description).toBe('app · ts')
   })
 })

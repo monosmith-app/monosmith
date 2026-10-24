@@ -1,3 +1,7 @@
 export { sayDoctor, summarizeDoctor, type DoctorSummary } from './doctor-report.mapper.ts'
+export { fixDoctor, type FixOutcome } from './fix-doctor.use-case.ts'
+export { parseFixPreview, type FixPreview } from './fix-preview.mapper.ts'
+export { toHealthRows } from './health-tree.mapper.ts'
+export { readFixPreview, readHealth, type HealthReading } from './read-health.use-case.ts'
 export { runDoctor } from './run-doctor.use-case.ts'
 export type { DoctorFinding, DoctorReport } from './doctor-report.contract.ts'

@@ -5,10 +5,12 @@ import * as vscode from 'vscode'
  * keybindings and welcome views: `monosmith.running` (a run is in progress),
  * `monosmith.state` (what the view shows: ready, starting, missing, untrusted,
  * failed or empty), `monosmith.selectionKind` (the kind of row selected: task,
- * project, group or folder) and `monosmith.hasLastRun` (a run was started
- * before, so it can be run again).
+ * project, group or folder), `monosmith.hasLastRun` (a run was started
+ * before, so it can be run again), `monosmith.affectedOnly` and
+ * `monosmith.filtered` (the view is narrowed to the affected projects, or by a
+ * text) and `monosmith.fixable` (the doctor proposes fixes).
  */
-export type ContextKey = 'monosmith.running' | 'monosmith.state' | 'monosmith.selectionKind' | 'monosmith.hasLastRun'
+export type ContextKey = 'monosmith.running' | 'monosmith.state' | 'monosmith.selectionKind' | 'monosmith.hasLastRun' | 'monosmith.affectedOnly' | 'monosmith.filtered' | 'monosmith.fixable'
 
 /** Sets a context key. */
 export async function setContextKey (key: ContextKey, value: boolean | string): Promise<void> {

@@ -42,3 +42,12 @@ describe('createTaskStatusStore', () => {
     expect(changes).toBe(1)
   })
 })
+
+describe('resultOf', () => {
+  it('keeps how long a task ran, why it failed and when', () => {
+    const store = createTaskStatusStore()
+    store.apply(at({ event: 'task.finished', task: 'api:build', status: 'failed', durationMs: 1200, reason: 'exited with code 1', time: '2026-10-20T06:05:59Z' }))
+    expect(store.resultOf('api:build')).toEqual({ status: 'failed', durationMs: 1200, reason: 'exited with code 1', time: '2026-10-20T06:05:59Z' })
+    expect(store.resultOf('web:build')).toBeUndefined()
+  })
+})

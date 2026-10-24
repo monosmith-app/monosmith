@@ -4,7 +4,7 @@ import { describePlan, toRunPlan } from './run-plan.mapper.ts'
 
 const project = (name: string, tasks: string[]): WorkspaceProject => ({ name, dir: name, kind: 'app', language: 'ts', tasks, deps: [] })
 const projects = [project('api', ['build', 'test']), project('web', ['build', 'lint']), project('docs', [])]
-const off = { bail: false, noCache: false }
+const off = { bail: false, noCache: false, parallel: 0 }
 
 describe('toRunPlan', () => {
   it('runs one task of one project', () => {
@@ -33,7 +33,8 @@ describe('toRunPlan', () => {
   })
 
   it('carries bail and no-cache', () => {
-    expect(toRunPlan({ kind: 'all', task: 'build' }, projects, { bail: true, noCache: true })).toEqual({ tasks: ['build'], bail: true, noCache: true })
+    expect(toRunPlan({ kind: 'all', task: 'build' }, projects, { bail: true, noCache: true, parallel: 0 })).toEqual({ tasks: ['build'], bail: true, noCache: true })
+    expect(toRunPlan({ kind: 'all', task: 'build' }, projects, { ...off, parallel: 4 })).toEqual({ tasks: ['build'], parallel: 4 })
   })
 })
 

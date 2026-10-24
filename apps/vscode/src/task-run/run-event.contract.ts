@@ -25,3 +25,14 @@ export interface RunResult {
   ok:       boolean
   summary?: RunEvent['summary']
 }
+
+/** How the last run of a task ended: what a row of the view tells in its tooltip. */
+export interface TaskResult {
+  status:      TaskStatus
+  /** How long it ran; absent while it has not ended, and 0 for a cached or skipped one. */
+  durationMs?: number
+  /** Why it was skipped or failed. */
+  reason?:     string
+  /** When the event came, RFC 3339. */
+  time?:       string
+}
