@@ -37,6 +37,15 @@ func NewModel(actions []Action) Model {
 // chosen; with Argv empty, the user left the top level.
 func (m Model) Done() bool { return m.done }
 
+// Title is the heading of the chosen action ("Add a project"), or "" while
+// the list of actions is showing.
+func (m Model) Title() string {
+	if m.action == nil {
+		return ""
+	}
+	return m.action.Title
+}
+
 // Reset returns the guide to its first screen, to be used again.
 func (m Model) Reset() Model { return NewModel(m.actions) }
 

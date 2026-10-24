@@ -168,6 +168,10 @@ func (s Shell) mainTitle() string {
 		if s.run != nil {
 			return s.run.CommandLine()
 		}
+	case commands.TabGuide:
+		if t := s.guide.Title(); t != "" {
+			return t
+		}
 	}
 	return tabTitles[s.tab]
 }
@@ -181,7 +185,7 @@ type tabSpan struct {
 // shortTitles are the tab names used when even the unpadded full names do not
 // fit the main view (80 columns, with ten tabs).
 var shortTitles = map[string]string{
-	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabPlugins: "Plug", commands.TabSettings: "Conf",
+	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabPlugins: "Plug", commands.TabSettings: "Sett",
 }
 
 // tabLabel is a tab's text with a space of padding on each side; the padding is
@@ -197,19 +201,35 @@ func (s Shell) tabLabel(id string) string {
 func (s Shell) tabsFit(padded, short bool) bool {
 	total := 1
 	for _, id := range s.tabs {
-		total += pane.Width(s.tabText(id, padded, short)) + 1
+		total += pane.Width(s.tabName(id, padded, short)) + 1
+		if id == commands.TabRun || id == commands.TabDoctor {
+			total += badgeRoom
+		}
 	}
 	return total <= max(s.lay.Main.W-2, 0)
 }
 
-func (s Shell) tabText(id string, padded, short bool) string {
+// badgeRoom is what a status badge (spinner, check, cross and count) may add
+// to a tab. It is reserved in every state, so a badge appearing never changes
+// which names are spelled out.
+const badgeRoom = 4
+
+// tabName is a tab's name with its padding and no badge.
+func (s Shell) tabName(id string, padded, short bool) string {
 	title := tabTitles[id]
 	if t, ok := shortTitles[id]; short && ok {
 		title = t
 	}
-	label := " " + title
+	if padded {
+		return " " + title + " "
+	}
+	return title
+}
+
+func (s Shell) tabText(id string, padded, short bool) string {
+	label := strings.TrimSuffix(s.tabName(id, padded, short), " ")
 	if !padded {
-		label = title
+		label = s.tabName(id, padded, short)
 	}
 	switch id {
 	case commands.TabRun:
