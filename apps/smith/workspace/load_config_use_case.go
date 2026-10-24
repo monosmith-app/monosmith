@@ -16,7 +16,7 @@ import (
 )
 
 // ErrNotFound is returned when no smith.toml exists at or above a directory.
-var ErrNotFound = errors.New("not inside a smith workspace (no smith.toml found); run `smith new <name>` to create one")
+var ErrNotFound = errors.New("not inside a smith workspace (no smith.toml found)")
 
 // FindRoot walks up from dir to the directory holding smith.toml.
 func FindRoot(dir string) (string, error) {
@@ -27,13 +27,14 @@ func FindRoot(dir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	start := dir
 	for {
 		if _, err := os.Stat(filepath.Join(dir, FileName)); err == nil {
 			return dir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", ErrNotFound
+			return "", MissingWorkspace(start)
 		}
 		dir = parent
 	}
@@ -43,7 +44,7 @@ func FindRoot(dir string) (string, error) {
 func Load(root string) (Config, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
 	if errors.Is(err, fs.ErrNotExist) {
-		return Config{}, ErrNotFound
+		return Config{}, MissingWorkspace(root)
 	}
 	if err != nil {
 		return Config{}, err

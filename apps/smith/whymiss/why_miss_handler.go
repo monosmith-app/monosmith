@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -14,9 +15,9 @@ func Command(version string) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:     "why-miss <project>:<task>",
-		Short:   "Say why a task would run instead of coming from the cache",
+		Short:   "Say why a task would run again instead of coming from the cache (a cache miss)",
 		Example: "  smith why-miss web:build",
-		Args:    cobra.ExactArgs(1),
+		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a project and task as <project>:<task>"}, Example: "smith why-miss web:build", More: "smith projects lists the projects"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {

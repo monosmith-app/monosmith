@@ -106,7 +106,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 			lines = append(lines, th.Warning("warning: "+m))
 		}
 		if len(v.Plan.Items) == 0 {
-			lines = append(lines, "Nothing to release.")
+			lines = append(lines, strings.Split(release.NothingToRelease(), "\n")...)
 		}
 		nameW := 8
 		for _, item := range v.Plan.Items {
