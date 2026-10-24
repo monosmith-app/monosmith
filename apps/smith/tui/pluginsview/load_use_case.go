@@ -65,6 +65,8 @@ func Load(open func() (*session.Session, error), version string) Result {
 	for _, p := range installed {
 		rows = append(rows, Row{Name: p.Name, Version: p.Version, Source: p.Dir, Enabled: true, UsedBy: used[p.Name]})
 	}
+	// Plugins a project relies on come first, so a newcomer sees what matters.
+	sort.SliceStable(rows, func(i, j int) bool { return len(rows[i].UsedBy) > 0 && len(rows[j].UsedBy) == 0 })
 	return Result{Rows: rows}
 }
 
