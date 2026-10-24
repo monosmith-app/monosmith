@@ -792,6 +792,7 @@ Usage: `smith explain <project> [flags]`
 |---|---|---|
 | `--json` | print JSON | off |
 | `--recipe` | print only what the project's recipe decided, and where | off |
+| `--task <task>` | explain only this task (same as <project>:<task>) |  |
 
 <!-- smith:end explain -->
 
@@ -1269,10 +1270,12 @@ Usage: `smith release [flags]`
 |---|---|---|
 | `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
 | `--dry-run` | show what would be released; change nothing | off |
+| `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |  |
 | `--json` | print the release report as JSON | off |
 | `--no-push` | create tags locally only | off |
 | `--notes` | also print each release's notes (what its GitHub Release says) | off |
 | `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
+| `--verbose` | name every unchanged package | off |
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end release -->
