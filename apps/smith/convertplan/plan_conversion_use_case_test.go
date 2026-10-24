@@ -130,6 +130,9 @@ func TestPlanLegacyWorkspace(t *testing.T) {
 	if !strings.HasPrefix(kit.Scripts["build"], "esbuild src/index.ts --bundle --packages=external --format=esm --outfile=dist/index.esm.js") || !strings.Contains(kit.Scripts["build"], "--declarationDir dist/src --tsBuildInfoFile dist/src/tsconfig.lib.tsbuildinfo && smith declaration-specifiers dist/src") || len(plan.Write["declaration-specifiers.mjs"]) != 0 {
 		t.Fatalf("rollup build %q", kit.Scripts["build"])
 	}
+	if got := plan.Config.Projects["kit"].Tasks["build"].Outputs; len(got) != 1 || got[0] != "dist" {
+		t.Fatalf("the build writes the project's dist, so the task declares it: %v", got)
+	}
 	if kit.Scripts["test"] != "jest --passWithNoTests" || plan.Config.Projects["kit"].Tasks["test"].Env["TS_NODE"] != "1" {
 		t.Fatalf("test script %q %+v", kit.Scripts["test"], plan.Config.Projects["kit"].Tasks["test"])
 	}
@@ -283,6 +286,9 @@ func TestPlanBuildsEveryRollupEntry(t *testing.T) {
 	build := plan.Project("reader").Scripts["build"]
 	if !strings.HasPrefix(build, "esbuild index=src/index.ts xlsx=src/spreadsheet/index.ts pptx=src/presentation/index.ts docx=src/document/index.ts --bundle --splitting --packages=external --format=esm --outdir=dist --out-extension:.js=.esm.js") || !strings.Contains(build, "&& tsc -p tsconfig.lib.json --emitDeclarationOnly") {
 		t.Fatalf("reader build %q", build)
+	}
+	if got := plan.Config.Projects["reader"].Tasks["build"].Outputs; len(got) != 1 || got[0] != "dist" {
+		t.Fatalf("reader outputs %v", got)
 	}
 	if changed := findings(plan, Changed); !strings.Contains(changed, "every entry Rollup built (index, xlsx, pptx, docx, sharing code in dist/chunks)") {
 		t.Fatalf("changed:\n%s", changed)

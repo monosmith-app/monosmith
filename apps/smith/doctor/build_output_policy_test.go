@@ -14,7 +14,9 @@ func TestOutsideBuildDir(t *testing.T) {
 		"test":  {Outputs: []string{"coverage"}},
 	}}, Sources: map[string]string{"test.outputs": "smith.toml [tasks.test]"}}
 	api := &projectgraph.Project{Plugin: "go", Project: protocol.Project{Name: "api", Root: "apps/api", Tasks: map[string]protocol.Task{"build": {Outputs: []string{"dist"}}}}}
-	got := OutsideBuildDir([]*projectgraph.Project{web, api})
+	kit := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "kit", Root: "packages/kit", Tasks: map[string]protocol.Task{"build": {Outputs: []string{"dist"}}}},
+		Sources: map[string]string{"build.outputs": "smith.toml [projects.kit.tasks.build]"}}
+	got := OutsideBuildDir([]*projectgraph.Project{web, api, kit})
 	want := []string{
 		"web:test writes apps/web/coverage (from smith.toml [tasks.test]), not dist/apps/web/",
 		"api:build writes apps/api/dist (from plugin go), not dist/apps/api/",

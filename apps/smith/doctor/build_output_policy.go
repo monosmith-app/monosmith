@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -23,10 +24,13 @@ func OutsideBuildDir(projects []*projectgraph.Project) []string {
 		for _, n := range names {
 			for _, o := range p.Tasks[n].Outputs {
 				resolved := path.Clean(path.Join(p.Root, o))
-				if protocol.InBuildDir(resolved) {
+				from := p.Sources[n+".outputs"]
+				// A package whose smith.toml declares the dist/ beside its
+				// package.json (main and types point there) has chosen it.
+				ownDist := resolved == path.Join(p.Root, "dist") || strings.HasPrefix(resolved, path.Join(p.Root, "dist")+"/")
+				if protocol.InBuildDir(resolved) || (ownDist && strings.HasPrefix(from, "smith.toml")) {
 					continue
 				}
-				from := p.Sources[n+".outputs"]
 				if from == "" {
 					from = "plugin " + p.Plugin
 				}
