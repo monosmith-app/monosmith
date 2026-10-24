@@ -84,10 +84,36 @@ type row struct {
 	question Question
 }
 
+// NoRecipes is true when the workspace has no recipe at all (no *.recipe.toml
+// and none named in smith.toml): there is nothing to create a project or a
+// workspace from, so the form offers only to write the first recipe.
+func (v Model) NoRecipes() bool {
+	if !v.Loaded || v.Catalog.Err != nil || len(v.Catalog.Recipes) > 0 {
+		return false
+	}
+	for _, ref := range v.Catalog.ByKind {
+		if ref != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// mode is what the form creates: with no recipe in the workspace, only a recipe.
+func (v Model) mode() Mode {
+	if v.NoRecipes() {
+		return NewRecipe
+	}
+	return v.Mode
+}
+
 // rows are the form's fields for the mode and the recipe's choices.
 func (v Model) rows() []row {
-	out := []row{{id: "mode"}}
-	switch v.Mode {
+	var out []row
+	if !v.NoRecipes() {
+		out = append(out, row{id: "mode"})
+	}
+	switch v.mode() {
 	case NewProject:
 		out = append(out, row{id: "kind"}, row{id: "name"})
 		// The choices of the last description stay while an answer reloads it.
@@ -106,7 +132,7 @@ func (v Model) rows() []row {
 
 // ref is the recipe the form describes now.
 func (v Model) ref() string {
-	switch v.Mode {
+	switch v.mode() {
 	case NewProject:
 		return v.Catalog.ByKind[v.Kind]
 	case NewWorkspace:
@@ -315,7 +341,7 @@ func (v Model) SelectRow(i int) Model {
 // Argv is the smith command line the form builds, or why it cannot yet: the
 // reason is shown beside the button that would run it.
 func (v Model) Argv() (argv []string, reason string) {
-	switch v.Mode {
+	switch v.mode() {
 	case NewRecipe:
 		if v.Path == "" {
 			return nil, "type where to write the recipe (Enter edits the path)"
