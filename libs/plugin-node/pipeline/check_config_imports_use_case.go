@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -31,7 +32,7 @@ func CheckConfigImports(workspaceRoot string) (protocol.Finding, bool) {
 	if _, err := os.Stat(filepath.Join(workspaceRoot, "node_modules")); err != nil {
 		return protocol.Finding{}, false
 	}
-	var problems []string
+	var problems, missing []string
 	found := false
 	for _, name := range configNames {
 		raw, err := os.ReadFile(filepath.Join(workspaceRoot, name))
@@ -48,6 +49,7 @@ func CheckConfigImports(workspaceRoot string) (protocol.Finding, bool) {
 			seen[pkg] = true
 			if _, err := os.Stat(filepath.Join(workspaceRoot, "node_modules", filepath.FromSlash(pkg))); err != nil {
 				problems = append(problems, name+" imports "+pkg+", which is not installed")
+				missing = append(missing, pkg)
 			}
 		}
 	}
@@ -55,12 +57,16 @@ func CheckConfigImports(workspaceRoot string) (protocol.Finding, bool) {
 		return protocol.Finding{}, false
 	}
 	sort.Strings(problems)
-	return protocol.Finding{
+	finding := protocol.Finding{
 		Check:  "the packages the ESLint config imports are installed",
 		OK:     len(problems) == 0,
 		Detail: strings.Join(problems, "; "),
 		Remedy: "install the package (npm i -D <package> at the workspace root), or change the import to one that is installed",
-	}, true
+	}
+	if !finding.OK {
+		finding.Fix = manifestfixes.InstallMissingPackagesFix(workspaceRoot, missing)
+	}
+	return finding, true
 }
 
 // packageOf is the package a bare import names, "" for a relative path, a

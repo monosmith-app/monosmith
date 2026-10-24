@@ -287,10 +287,19 @@ provider-neutral model.
 ### `doctor`
 
 A plugin returns *findings*: a check, whether it is OK, the detail, the remedy,
-and optionally a safe fix (a file it owns and the content it should have). The
-core adds its own invariants (builds go to `dist/`, no two tasks write the same
-directory, no cycles, a full clone…) and prints one report. A fix is applied
-only when it restores something smith or a plugin owns.
+and optionally a fix. A fix is files (whole new contents, so the host can show
+a diff), then ordered command *steps* (argv, no shell, run from the workspace
+root), and *choices*: questions whose options are fixes themselves, which turn a
+remedy like "install the tool or remove the script" into a wizard. The core adds
+its own invariants (builds go to `dist/`, no two tasks write the same directory,
+no cycles, a full clone…) and prints one report, with the fixes folded: the same
+fix on many projects is one that says which it applies to. A fix is applied
+unasked only when it is marked safe, restores something smith or a plugin owns,
+and has no choices; every other fix is asked about, in a terminal as numbered
+prompts, and elsewhere named with the command that applies it. The host owns
+applying (writing, running steps, stopping at the first failure), so a plugin in
+any language only describes the change. See
+[Writing a plugin](../guides/writing-a-plugin.md#doctor-fixes-files-steps-and-choices).
 
 ## How plugins affect the cache
 

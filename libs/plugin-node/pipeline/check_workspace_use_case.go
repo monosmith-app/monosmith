@@ -21,12 +21,19 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 	}
 	findings = append(findings, CheckNodeVersion(workspaceRoot, nodeVersion))
 	_, err := os.Stat(filepath.Join(workspaceRoot, "node_modules"))
-	findings = append(findings, protocol.Finding{
+	installed := protocol.Finding{
 		Check:  "Node dependencies are installed",
 		OK:     err == nil,
 		Detail: "node_modules is missing at the workspace root",
 		Remedy: "run `npm install` at the workspace root",
-	})
+	}
+	if err != nil {
+		installed.Fix = &protocol.Fix{
+			Description: "install the Node dependencies",
+			Steps:       []protocol.FixStep{{Description: "install the workspace's dependencies", Argv: []string{"npm", "install", "--no-audit", "--no-fund"}}},
+		}
+	}
+	findings = append(findings, installed)
 	if f, ok := registries.CheckNpmrc(workspaceRoot, params.Projects); ok {
 		findings = append(findings, f)
 	}

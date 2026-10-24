@@ -4,6 +4,8 @@ import (
 	"path"
 	"slices"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 )
 
 // Task is the build task whose outputs are checked.
@@ -56,7 +58,7 @@ func (g Gap) Problem() string {
 
 // Remedy says how to declare the outputs.
 func (g Gap) Remedy() string {
-	return "declare outputs = [" + quoteAll(g.Outputs) + "] under [projects." + tableKey(g.Project) + ".tasks." + Task + "] in smith.toml"
+	return "declare outputs = [" + quoteAll(g.Outputs) + "] under [projects." + configedit.TableKey(g.Project) + ".tasks." + Task + "] in smith.toml"
 }
 
 func (g Gap) paths(dirs []string) string {

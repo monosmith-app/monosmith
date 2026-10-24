@@ -117,7 +117,9 @@ update, view for a width and a height).
   Doctor.
 - **Doctor** shows "2 failed · 2 warnings", then the failing checks as one line
   each (state, title); passed checks stay behind `p`. Beside the list, the detail
-  tells the selected check in full (problem, remedy, fix, files) and Enter is not
+  tells the selected check in full (problem, remedy, fix: files as diffs, command
+  steps, the questions a wizard asks; a fix folded from many projects says
+  "applies to 22 projects") and Enter is not
   offered; in the single pane Enter expands the check in place. Each part is said
   once.
 - **Deps** and **Release** keep their behaviour: a headline ("3 with newer

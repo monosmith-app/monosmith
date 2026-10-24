@@ -187,7 +187,7 @@ Content-Length: 85\r\n
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
 | `publish` | project, version, dry run → published / skipped with a reason | `publish` |
 | `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps (an audit step may name `cacheFiles`, the files that decide its verdict: smith skips it while they are unchanged on the same day), `postRelease` steps (run at the end of `smith ci release` after every push to the release branch, released or not; a step that is not blocking only warns), credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
-| `doctor` | the plugin's projects → findings, each with a remedy and, when the plugin can write it, a fix (files' new contents, marked safe when it only restores what the plugin owns) | `doctor` |
+| `doctor` | the plugin's projects → findings, each with a remedy and, when the plugin can write it, a fix (files' new contents, command steps and choices; marked safe when it only restores what the plugin owns) | `doctor` |
 | `remove` | a project whose directory the host deleted, dry run → the files the plugin cleaned (go.work, the lockfile), notes | `remove` |
 | `published` | a project → the newest version its registry has, or none, or that the registry could not be asked | `published` |
 | `dependencies/install` | a project, packages, dev → the files changed, notes; with no project, the projects it serves, to install them all | `dependencies` |

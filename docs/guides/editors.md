@@ -35,7 +35,14 @@ that imports a Go lib:
 `--json` and pipe it to `jq` to explore the rest.
 
 `smith doctor --json` prints `findings` (`check`, `ok`, `detail`, `remedy`,
-`warning`, `source`) with `passed`, `failed` and `warnings` counts.
+`warning`, `source`) with `passed`, `failed` and `warnings` counts. A finding
+that can be fixed carries a `fix`, and the report lists the fixes folded in
+`fixes`: each has `description`, `safe`, `ask` (the user must decide), `checks`
+it clears, `applies_to` (the projects, when folded), `files` (whole new
+contents), `steps` (`argv` commands run in order) and `choices` (`question`
+with `options`, each `label` and the `fix` it adds). An editor shows the files
+as diffs and walks the choices; `smith doctor --fix --only "<fix>" --choose 1,2
+--yes` applies one.
 
 `smith schema` prints the JSON Schema of `smith.toml` (see configuration).
 
@@ -108,4 +115,6 @@ writes:
 
 `smith_plugin_check` takes a plugin's name, never a path, because `smith plugin
 check ./path` would run that executable. `smith_doctor_fixes` shows diffs and
-changes nothing; only `smith_doctor_fix` applies the safe ones.
+changes nothing; only `smith_doctor_fix` applies the safe ones. A fix that
+needs a decision (steps, questions) is reported with the command that applies
+it, and the call fails until someone runs it.

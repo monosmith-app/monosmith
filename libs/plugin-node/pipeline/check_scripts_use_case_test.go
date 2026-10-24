@@ -49,6 +49,14 @@ func TestCheckScriptsNamesMissingFilesAndTools(t *testing.T) {
 	if !strings.Contains(f.Remedy, "oxfmt") || !strings.Contains(f.Remedy, "restore the file") {
 		t.Errorf("remedy %q", f.Remedy)
 	}
+	// The missing tool is a question: install it, or drop the script.
+	if f.Fix == nil || f.Fix.Safe || len(f.Fix.Choices) != 1 || len(f.Fix.Choices[0].Options) != 2 {
+		t.Fatalf("fix %+v", f.Fix)
+	}
+	remove := f.Fix.Choices[0].Options[1].Fix.Files[0].Content
+	if strings.Contains(remove, "oxfmt") || !strings.Contains(remove, "node ../../declaration-specifiers.mjs") {
+		t.Errorf("removing the script keeps the others:\n%s", remove)
+	}
 }
 
 func TestCheckScriptsDoesNotJudgeToolsBeforeInstall(t *testing.T) {
