@@ -17,6 +17,8 @@ health of the workspace, its dependencies and its next release.
   A **filter** (the search button) narrows the view by project, task or
   language as you type, and **Show Affected Only** keeps the affected projects.
   A multi-root workspace gets one section per folder that has a `smith.toml`.
+
+  ![A project with the tasks of its last run: passed with a duration, failed with the reason](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-tasks.png)
 - **Run from the keyboard or the mouse.** Enter on a task runs it. **Run Task**
   (`Ctrl+Alt+M T`) asks for a project, then a task or all of them. The context
   menu and the inline buttons run a task, or all the tasks of a project, a

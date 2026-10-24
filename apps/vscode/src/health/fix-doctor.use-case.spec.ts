@@ -55,8 +55,8 @@ describe('fixDoctor', () => {
     expect(calls).toHaveLength(1)
   })
 
-  it('reports a fixing that did not succeed', async () => {
+  it('reports that a check without a fix still fails after the fixing', async () => {
     const { connection } = fakeSmith('proposed', { ok: false })
-    expect(await fixDoctor(connection, async () => true)).toBe('failed')
+    expect(await fixDoctor(connection, async () => true)).toBe('incomplete')
   })
 })

@@ -18,7 +18,7 @@ export function toExplainDocument (project: string, tasks: readonly ExplainedTas
           ...fields.map((field) => `| ${cell(field.name)} | ${code(field.value)} | ${cell(field.source)} |`),
         ].join('\n')
 
-    return [`## ${task.id}`, task.description === undefined || task.description === '' ? '' : `\n\n${task.description}`, table].join('')
+    return [`## ${task.id}`, task.description === undefined || task.description === '' ? '' : `\n\n${markup(task.description)}`, table].join('')
   })
 
   return [
@@ -38,4 +38,9 @@ function code (text: string): string {
   const safe = cell(text)
 
   return safe === '' || safe === '—' ? safe : `\`${safe.replaceAll('`', "'")}\``
+}
+
+/** Text of smith that holds `<project dir>` and the like must not be read as a tag. */
+function markup (text: string): string {
+  return text.replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 }

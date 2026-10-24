@@ -539,7 +539,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         return choice === 'Apply fixes'
       }, (line) => { output.appendLine(`doctor | ${line}`) })
       if (outcome === 'fixed') void vscode.window.showInformationMessage(`MonoSmith: the fixes were applied${states().length > 1 ? ` in ${state.name}` : ''}.`)
-      else if (outcome === 'failed') void vscode.window.showWarningMessage('MonoSmith: smith could not apply every fix. See the output.', 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
+      else if (outcome === 'incomplete') void vscode.window.showInformationMessage('MonoSmith: the fixes were applied. Some checks still fail and need their remedy by hand; the Health view lists them.')
     }
     await health.reload()
     release.invalidate()

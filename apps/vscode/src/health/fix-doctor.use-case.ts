@@ -3,7 +3,7 @@ import type { FixPreview } from './fix-preview.mapper.ts'
 import { readFixPreview } from './read-health.use-case.ts'
 
 /** How an attempt to fix the workspace ended. */
-export type FixOutcome = 'nothing' | 'declined' | 'fixed' | 'failed'
+export type FixOutcome = 'nothing' | 'declined' | 'fixed' | 'incomplete'
 
 /**
  * Applies the fixes doctor proposes, after the person has seen them: reads the
@@ -28,7 +28,8 @@ export async function fixDoctor (
   try {
     const result = await connection.request<{ ok?: boolean }>('doctor.fix', { run: runId })
 
-    return result.ok === false ? 'failed' : 'fixed'
+    // doctor ends with a failure status while a check that has no fix still fails, so this is not a failed fixing.
+    return result.ok === false ? 'incomplete' : 'fixed'
   } finally {
     stop()
   }

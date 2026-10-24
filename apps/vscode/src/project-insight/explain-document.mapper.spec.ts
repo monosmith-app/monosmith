@@ -27,6 +27,10 @@ describe('toExplainDocument', () => {
     expect(document).toContain('| env | — | plugin node |')
   })
 
+  it('does not let <project dir> in a description become a tag', () => {
+    expect(toExplainDocument('web', [{ id: 'web:build', description: 'Compile into dist/<project dir>' }])).toContain('dist/&lt;project dir&gt;')
+  })
+
   it('says so when the project has no tasks', () => {
     expect(toExplainDocument('x', [])).toContain('This project has no tasks.')
   })
