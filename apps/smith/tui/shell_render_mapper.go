@@ -22,7 +22,33 @@ func (s Shell) View() (out string) {
 	if s.w < 1 || s.h < 1 {
 		return ""
 	}
+	if s.w < minWidth || s.h < minHeight {
+		return s.tooSmall()
+	}
 	return strings.Join(s.screen(), "\n")
+}
+
+// The least terminal the screens are laid out for; below it a one-line hint
+// replaces them instead of a jumble.
+const (
+	minWidth  = 72
+	minHeight = 9
+)
+
+// tooSmall is the one-line hint shown on a terminal below the minimum, cut to
+// the width when even the hint does not fit.
+func (s Shell) tooSmall() string {
+	msg := fmt.Sprintf("Terminal too small (%dx%d): enlarge it to at least %dx%d, or press Ctrl+C to leave.", s.w, s.h, minWidth, minHeight)
+	if pane.Width(msg) > s.w {
+		msg = fmt.Sprintf("Terminal too small: need %dx%d", minWidth, minHeight)
+	}
+	// One line of hint; the rest stays blank, so the screen still has exactly
+	// the terminal's size.
+	rows := []string{pane.Fit(msg, s.w)}
+	for len(rows) < s.h {
+		rows = append(rows, strings.Repeat(" ", s.w))
+	}
+	return strings.Join(rows, "\n")
 }
 
 // screen is the whole terminal as h lines of w cells.

@@ -55,8 +55,20 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 			lines = append(lines, " "+th.Title(s.Heading))
 		}
 		for _, r := range s.Rows {
+			// A long value wraps under itself instead of running off the pane.
 			label := pane.Fit(th.Muted(r.Label), labelW)
-			lines = append(lines, pane.Fit(" "+label+" "+r.Value, w))
+			valueW := max(w-labelW-2, 4)
+			parts := pane.Wrap(r.Value, valueW, 0)
+			if len(parts) == 0 {
+				parts = []string{""}
+			}
+			for n, part := range parts {
+				if n == 0 {
+					lines = append(lines, pane.Fit(" "+label+" "+part, w))
+					continue
+				}
+				lines = append(lines, pane.Fit(strings.Repeat(" ", labelW+2)+part, w))
+			}
 		}
 		for _, it := range s.Items {
 			for _, part := range pane.Wrap("  "+it, w, 2) {

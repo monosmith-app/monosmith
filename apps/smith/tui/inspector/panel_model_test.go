@@ -29,6 +29,15 @@ func TestThePanelListsRowsAndClickableActions(t *testing.T) {
 	}
 }
 
+func TestALongValueWrapsUnderItselfInsteadOfBeingCut(t *testing.T) {
+	p := Panel{Sections: []Section{{Rows: []Row{{"root", "apps/markobot-vscode-extension/src"}}}}}
+	lines, _ := p.View(theme.Default(), 26, "")
+	text := strings.ReplaceAll(strings.Join(lines, ""), " ", "")
+	if !strings.Contains(text, "apps/markobot-vscode-extension/src") {
+		t.Fatalf("the value was cut:\n%s", strings.Join(lines, "\n"))
+	}
+}
+
 func TestAnEmptyPanelSaysSo(t *testing.T) {
 	lines, _ := Panel{}.View(theme.Default(), 30, "")
 	if !strings.Contains(lines[0], "Nothing selected") {
