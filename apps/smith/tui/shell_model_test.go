@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -10,6 +13,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
@@ -115,6 +119,21 @@ type lab struct {
 	next    *scripted
 	clock   time.Time
 	quit    bool
+
+	// The fake fix engine: what ApplyFix was given, what it answers, and
+	// whether the context it was given was cancelled.
+	fixMu       sync.Mutex
+	applied     []protocol.Fix
+	applyErr    error
+	applyHold   chan struct{}
+	applyCancel bool
+}
+
+// appliedFixes are the fixes the fake engine was asked to apply.
+func (l *lab) appliedFixes() []protocol.Fix {
+	l.fixMu.Lock()
+	defer l.fixMu.Unlock()
+	return append([]protocol.Fix(nil), l.applied...)
 }
 
 func (l *lab) sh() Shell { return l.m.(Shell) }
@@ -147,6 +166,31 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 			Release:  func() releaseview.Result { return releaseview.Result{Plan: plan} },
 			Projects: func() sources.ProjectsLoaded { return sources.ProjectsLoaded{Projects: sampleProjects, Branch: "main"} },
 			Deps:     func() depsview.Result { return sampleDeps },
+			ShowFix: func(p doctorfix.Planned) (string, error) {
+				var b strings.Builder
+				err := doctorfix.ShowFix(&b, t.TempDir(), p)
+				return b.String(), err
+			},
+			ApplyFix: func(ctx context.Context, fix protocol.Fix, out io.Writer) error {
+				l.fixMu.Lock()
+				l.applied = append(l.applied, fix)
+				err, hold := l.applyErr, l.applyHold
+				l.fixMu.Unlock()
+				for _, st := range fix.Steps {
+					fmt.Fprintf(out, "… %s\n", strings.Join(st.Argv, " "))
+					if hold != nil {
+						select {
+						case <-hold:
+						case <-ctx.Done():
+							l.fixMu.Lock()
+							l.applyCancel = true
+							l.fixMu.Unlock()
+							return ctx.Err()
+						}
+					}
+				}
+				return err
+			},
 			Plan: func(argv []string) []string {
 				return []string{"kit:build", "orders:build", "web:build", "sdk:test"}
 			},

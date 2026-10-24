@@ -95,27 +95,23 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 	l.has("the registry is unreachable")
 }
 
-func TestTheDoctorTabGroupsByProjectAndAppliesOneSafeFixAfterConfirming(t *testing.T) {
+func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4", "g")
 	l.has("workspace", "web  1 failed", "2 checks passed", "x fix all")
-	l.hasNot("f fix") // the cursor is on go.work, which has no fix: the key is not offered
+	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
+	l.has("Check again")
 	l.keys("f")
-	if l.sh().confirm != nil || len(l.started) != 0 {
-		t.Fatal("a finding without a safe fix offered a command")
+	if l.sh().fix != nil || len(l.started) != 0 {
+		t.Fatal("a finding without a fix opened a wizard")
 	}
-	l.has("no safe fix")
+	l.has("no fix")
 	l.keys("down")
-	l.has("f fix")
+	l.has("f fix", "Fix: write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
-	l.has("Apply one doctor fix", "$ smith doctor --fix --only 'Docker registries of web agree' --yes")
-	if len(l.started) != 0 {
-		t.Fatal("nothing runs before the answer")
-	}
-	l.keys("y")
-	want := "doctor --fix --only Docker registries of web agree --yes"
-	if got := l.lastStarted(); got != want {
-		t.Fatalf("started %q, want %q", got, want)
+	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
+	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
+		t.Fatal("nothing runs before the confirmation")
 	}
 }
 

@@ -17,6 +17,8 @@ func TestTheNextActionIsTheMostUrgentThingWithItsKey(t *testing.T) {
 	}{
 		{"waiting for doctor", Facts{}, "checking the workspace", ""},
 		{"failing checks come first", Facts{Checked: true, Failed: 2, Warnings: 2, Affected: 3, Last: &Run{}}, "2 checks fail: press d", "ws.doctor"},
+		{"failing checks with fixes open the wizard", Facts{Checked: true, Failed: 3, Fixable: 2}, "3 checks fail, 2 fixes are ready: Enter opens the fix wizard", "ws.fix"},
+		{"one fix for one check", Facts{Checked: true, Failed: 1, Fixable: 1}, "1 check fails, 1 fix is ready", "ws.fix"},
 		{"one failing check", Facts{Checked: true, Failed: 1}, "1 check fails: press d", "ws.doctor"},
 		{"a failed run", Facts{Checked: true, Last: &Run{Command: "run lint"}, Affected: 1}, "the last run failed: press 3", "view.run"},
 		{"a stopped run is not a failure", Facts{Checked: true, Last: &Run{Cancelled: true}, Affected: 3}, "3 projects affected: press w", "run.affected"},

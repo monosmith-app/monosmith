@@ -40,6 +40,9 @@ func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 // cursor; panes read the pointer position when they are drawn.
 func (s *Shell) hover(x, y int) {
 	switch {
+	case s.fix != nil:
+		w := s.fix.Hover(x, y)
+		s.fix = &w
 	case s.confirm != nil:
 		c := s.confirm.Hover(x, y)
 		s.confirm = &c
@@ -60,6 +63,10 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		s.lastClick = pointer.Click{}
 	}
 	switch {
+	case s.fix != nil:
+		w, out := s.fix.Click(x, y)
+		s.fix = &w
+		return s.afterFix(out)
 	case s.confirm != nil:
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
@@ -171,6 +178,10 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
+	case s.fix != nil:
+		w := s.fix.Wheel(dir * wheelStep)
+		s.fix = &w
+		return nil
 	case s.confirm != nil:
 		return nil
 	case s.help != nil:

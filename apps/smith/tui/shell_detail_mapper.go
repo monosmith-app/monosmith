@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
@@ -275,7 +276,8 @@ func (s Shell) doctorPanel() detail.Panel {
 	if f.Source != "" {
 		rows = append(rows, detail.Row{Label: "from", Value: f.Source})
 	}
-	if f.Fix != nil && f.Fix.Safe {
+	planned, hasFix := s.doctor.FixFor(f)
+	if hasFix {
 		rows = append(rows, detail.Row{Label: "command", Value: "smith doctor --fix --only '" + f.Check + "'"})
 	} else if c := commandIn(f.Remedy); c != "" {
 		rows = append(rows, detail.Row{Label: "command", Value: c})
@@ -287,24 +289,43 @@ func (s Shell) doctorPanel() detail.Panel {
 		secs = append(secs, detail.Section{Heading: "How to fix", Items: []string{f.Remedy}})
 	}
 	var after []detail.Section
-	if f.Fix != nil {
-		items := []string{f.Fix.Description}
-		for _, e := range f.Fix.Files {
-			verb := "writes "
-			if e.Delete {
-				verb = "removes "
-			}
-			items = append(items, "  "+verb+e.Path)
-		}
-		after = append(after, detail.Section{Heading: "Fix", Items: items, Collapse: 8})
+	if hasFix {
+		after = append(after, detail.Section{Heading: "Fix", Items: fixItems(planned), Collapse: 8})
 	}
 	if problems := doctorview.SplitProblem(f.Detail); len(problems) > 0 {
 		after = append(after, detail.Section{Heading: "Problem", Items: problems, Bullets: len(problems) > 1, Collapse: 5})
 	}
-	return detail.Panel{Sections: secs, After: after, Actions: []detail.Action{
-		{ID: "x:doctor-fix", Label: "Fix this…", Shortcut: "f", Disabled: s.doctor.FixArgv() == nil || s.running()},
-		{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload")},
-	}}
+	// A check without a fix shows no fix action: it is remedy-only, and the
+	// remedy above says what to do.
+	var actions []detail.Action
+	if hasFix {
+		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Shortcut: "f", Disabled: s.running()})
+	}
+	actions = append(actions, detail.Action{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload")})
+	return detail.Panel{Sections: secs, After: after, Actions: actions}
+}
+
+// fixItems tell a fix in the detail: what it does, the projects it covers, the
+// files it writes, the commands it runs and the questions it asks first.
+func fixItems(p doctorfix.Planned) []string {
+	items := []string{p.Description}
+	if scope := doctorfix.Scope(p.AppliesTo); scope != "" {
+		items = append(items, scope)
+	}
+	for _, e := range p.Files {
+		verb := "writes "
+		if e.Delete {
+			verb = "removes "
+		}
+		items = append(items, "  "+verb+e.Path)
+	}
+	for _, st := range p.Steps {
+		items = append(items, "  runs $ "+strings.Join(st.Argv, " "))
+	}
+	for _, c := range p.Choices {
+		items = append(items, "  asks: "+c.Question)
+	}
+	return items
 }
 
 // commandIn is the first `command` a remedy spells out, or "".

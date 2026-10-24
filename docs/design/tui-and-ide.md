@@ -121,7 +121,14 @@ update, view for a width and a height).
   steps, the questions a wizard asks; a fix folded from many projects says
   "applies to 22 projects") and Enter is not
   offered; in the single pane Enter expands the check in place. Each part is said
-  once.
+  once. A check with a fix shows "Fix: <description>" (`f`; "Fix all N projects"
+  for a folded fix) and opens a wizard dialog: the fix's questions as numbered
+  options, a scrollable review (files as diffs, commands, the projects covered),
+  then the apply with its progress; a failing step shows its output with Retry
+  and Close, and a success re-runs doctor. `x` and the palette's "Fix with
+  doctor" open the wizard on the fixes that need no decision, so no fix is
+  applied without a review; nothing here runs in plain mode, where `smith doctor
+  --fix` asks the same questions as numbered prompts.
 - **Deps** and **Release** keep their behaviour: a headline ("3 with newer
   releases: 1 patch · 1 minor · 1 major", "2 packages to release (1 minor · 1
   patch)"), then the rows; long names are shortened in the middle. The footer
@@ -226,7 +233,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `?`, `F1` | help for the open view | anywhere |
 | `q` | quit when nothing runs | anywhere |
 | `Ctrl+C` | stop the run; quit when nothing runs | anywhere |
-| `f` `x` `g` `p` `r` | Doctor: fix this check, fix all, group by project, show passed, check again | Doctor |
+| `f` `x` `g` `p` `r` | Doctor: open the fix wizard for this check, for every fix that needs no decision, group by project, show passed, check again | Doctor |
 | `p` `n` `x` | Release: preview, notes, release (asks first) | Release |
 | `Space` `s` `a` `u` `v` | Deps: mark, mark the safe ones, mark all, update the marked, align versions | Deps |
 | `Enter` | Home: do the suggested next action | Home |

@@ -1,12 +1,12 @@
 package doctorview
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -73,23 +73,47 @@ func TestGTurnsTheGroupingOffAndOn(t *testing.T) {
 	}
 }
 
-func TestFixArgvIsTheSelectedFindingsSafeFixAndNothingElse(t *testing.T) {
+func TestTheSelectedFindingHasAPlannedFixOnlyWhenItCarriesOne(t *testing.T) {
 	m := sample() // the cursor is on the first drawn finding: Go is installed, failed, but no fix
-	if got := m.FixArgv(); got != nil {
-		t.Fatalf("a finding without a fix offered %v", got)
+	if p, ok := m.SelectedFix(); ok {
+		t.Fatalf("a finding without a fix offered %+v", p)
 	}
 	m = m.Update(key("down")) // web's Docker finding
-	f, _ := m.Selected()
-	if f.Check != "Docker registries of web agree" {
-		t.Fatalf("selected %q", f.Check)
+	p, ok := m.SelectedFix()
+	if !ok || p.Description != "restore web's Dockerfile" || p.Ask {
+		t.Fatalf("web's fix: %+v ok=%v", p, ok)
 	}
-	want := []string{"doctor", "--fix", "--only", "Docker registries of web agree"}
-	if got := m.FixArgv(); !reflect.DeepEqual(got, want) {
-		t.Fatalf("got %v, want %v", got, want)
+	if FixLabel(p) != "Fix: restore web's Dockerfile" {
+		t.Fatalf("label %q", FixLabel(p))
 	}
-	m = m.Update(key("down")) // api's finding: its fix is not safe
-	if got := m.FixArgv(); got != nil {
-		t.Fatalf("a fix that is not safe was offered: %v", got)
+	m = m.Update(key("down")) // api's finding: its fix is not safe, so the wizard asks
+	if p, ok := m.SelectedFix(); !ok || !p.Ask {
+		t.Fatalf("a fix that is not safe is still a fix, and asks: %+v ok=%v", p, ok)
+	}
+}
+
+func TestFixAllStartsOnTheFixesThatNeedNoDecisionElseOnTheFirstThatAsks(t *testing.T) {
+	m := sample()
+	p, ok := m.FixAll()
+	if !ok || p.Description != "restore web's Dockerfile" {
+		t.Fatalf("%+v ok=%v", p, ok)
+	}
+	m.Report.Findings[1].Fix = nil
+	m.Report.Fixes = nil
+	p, ok = m.FixAll()
+	if !ok || !p.Ask {
+		t.Fatalf("only the fix that asks is left: %+v ok=%v", p, ok)
+	}
+	m.Report.Findings[2].Fix = nil
+	if _, ok := m.FixAll(); ok {
+		t.Fatal("nothing to fix, yet a fix was offered")
+	}
+}
+
+func TestAFixFoldedFromManyProjectsIsLabelledByTheirNumber(t *testing.T) {
+	p := doctorfix.Planned{Fix: protocol.Fix{Description: "declare imports", AppliesTo: []string{"a", "b", "c"}}}
+	if got := FixLabel(p); got != "Fix all 3 projects" {
+		t.Fatalf("label %q", got)
 	}
 }
 
@@ -97,13 +121,13 @@ func TestOpeningAFindingShowsItsFixAndWhetherItIsSafe(t *testing.T) {
 	m := sample()
 	m = m.Update(key("down"))
 	out := plain(m.Update(key("enter")))
-	for _, want := range []string{"→ pick one", "fix: restore web's Dockerfile", "f applies it", "writes apps/web/Dockerfile"} {
+	for _, want := range []string{"→ pick one", "fix: restore web's Dockerfile", "f shows what changes, then applies it", "writes apps/web/Dockerfile"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
 	}
 	m = m.Update(key("down")).Update(key("enter"))
-	if out := plain(m); !strings.Contains(out, "never applied") {
+	if out := plain(m); !strings.Contains(out, "f asks, shows what changes") {
 		t.Fatalf("a fix that is not safe says so:\n%s", out)
 	}
 }

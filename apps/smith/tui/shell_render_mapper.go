@@ -149,6 +149,10 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.confirm.Rect()
 		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)
 	}
+	if s.fix != nil {
+		r := s.fix.Rect()
+		rows = pane.Overlay(rows, s.fix.Lines(s.th, s.tick), r.X, r.Y)
+	}
 	if lines := s.toast.Lines(s.th, s.w-2); lines != nil {
 		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-2-len(lines), 1))
 	}

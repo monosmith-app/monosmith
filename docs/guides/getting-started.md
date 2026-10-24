@@ -473,11 +473,24 @@ clicking a tab name does the same:
 - **Doctor** (`4`, or `d` from anywhere): "2 failed · 2 warnings", then the
   failing checks, one line each (`p` shows the ones that passed; `g` groups them
   by project). Beside the list the detail tells the selected check in full: the
-  problem, the remedy and the fix with the files it writes; on a narrow screen
-  Enter expands the check in place instead. `f` applies
-  the fix of the selected check when it is a safe one (`smith doctor --fix
-  --only "<check>"`, after you confirm), `x` applies every safe fix
-  (`smith doctor --fix`) and `r` checks again.
+  problem, the remedy and the fix (the files it writes, the commands it runs,
+  the questions it asks); on a narrow screen Enter expands the check in place
+  instead. A check that has a fix shows the action "Fix: <what it does>" (`f`),
+  or "Fix all N projects" when one fix covers several; a check without one shows
+  only its remedy. `f` opens the fix wizard: it asks the fix's questions as
+  numbered options (arrows or `j` `k` and Enter, a number key, or a click; Esc
+  cancels), then shows what will change, the files as diffs, the commands to
+  run and the projects it covers (scroll with the arrows, PgUp and PgDn or the
+  wheel), and applies it when you press Enter. A fix with no questions skips
+  straight to that review. While it applies the wizard shows the step it is on,
+  and Ctrl+C stops it; if a step fails, it shows that step's output (`y` copies
+  it) with Retry and Close. When it finishes, doctor checks again and the list
+  refreshes. `x` (and "Fix with doctor" in the palette, and the suggestion on
+  Home when checks fail and fixes are ready) opens the same wizard on every fix
+  that needs no decision at once, still showing the review before it applies.
+  `r` checks again. In plain or screen-reader mode, and when output is not a
+  terminal, there is no shell: `smith doctor --fix` asks the same questions as
+  numbered prompts.
 - **Deps** (`5`): the dependencies with a newer release, patch before minor
   before major, with the projects that declare them, and what the one-version
   policy says. `Space` marks a row, `s` marks the patch and

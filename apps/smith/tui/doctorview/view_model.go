@@ -13,8 +13,8 @@ import (
 
 // Model lists doctor's failing checks, one line each, failures before
 // warnings; g files them by project (the workspace's first); enter expands the
-// selected one into its problem and remedy, and f applies its fix when it is a safe one, as
-// `smith doctor --fix --only <check>`.
+// selected one into its problem and remedy, and f opens the wizard of its fix
+// (see package fixwizard); Plan, FixFor and FixAll say which fixes there are.
 type Model struct {
 	Report   *doctor.Report
 	Projects []ProjectRef
@@ -110,16 +110,6 @@ func (v Model) Selected() (doctor.Finding, bool) {
 		return doctor.Finding{}, false
 	}
 	return v.Report.Findings[order[v.Cursor]], true
-}
-
-// FixArgv is the command line that applies the selected finding's fix; nil
-// unless the finding failed and carries a safe fix (others are only shown).
-func (v Model) FixArgv() []string {
-	f, ok := v.Selected()
-	if !ok || f.OK || f.Fix == nil || !f.Fix.Safe {
-		return nil
-	}
-	return []string{"doctor", "--fix", "--only", f.Check}
 }
 
 // Update handles a key.
@@ -239,10 +229,10 @@ func Text(th theme.Theme, f doctor.Finding, indent int) []string {
 		return out
 	}
 	switch {
-	case f.Fix != nil && f.Fix.Safe:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
+	case f.Fix != nil && f.Fix.Safe && len(f.Fix.Choices) == 0:
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f shows what changes, then applies it)"))
 	case f.Fix != nil:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (shown by smith doctor --fix, never applied: it could lose something of yours)"))
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (f asks, shows what changes, then applies it)"))
 	}
 	if f.Fix != nil {
 		for _, e := range f.Fix.Files {

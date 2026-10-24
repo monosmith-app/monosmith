@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -19,6 +20,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Sources load what the shell's views show; tests replace them.
@@ -37,6 +40,13 @@ type Sources struct {
 	// progress bar knows its total before the first task starts. A nil or
 	// failing Plan only means the total grows as tasks appear.
 	Plan func(argv []string) []string
+	// ShowFix writes a planned fix as the wizard's review: its description,
+	// the diff of each file, the commands it runs.
+	ShowFix func(doctorfix.Planned) (string, error)
+	// ApplyFix writes a fix's files and runs its steps from the workspace
+	// root, stopping at the first that fails (a *doctorfix.StepError). It
+	// writes a line "… name" to out as each step starts, and honours ctx.
+	ApplyFix func(ctx context.Context, fix protocol.Fix, out io.Writer) error
 	// Start launches a smith command line as a child process (the smith
 	// binary itself) in the workspace.
 	Start func(argv []string) (runner.Handle, error)
@@ -65,6 +75,22 @@ func WorkspaceSources(dir, version string) Sources {
 		},
 		Inline: func(argv []string) *runner.Inline {
 			return runner.NewInline(runner.Spec{Argv: argv, Dir: dir})
+		},
+		ShowFix: func(p doctorfix.Planned) (string, error) {
+			root, err := fixRoot(dir)
+			if err != nil {
+				return "", err
+			}
+			var b strings.Builder
+			err = doctorfix.ShowFix(&b, root, p)
+			return b.String(), err
+		},
+		ApplyFix: func(ctx context.Context, fix protocol.Fix, out io.Writer) error {
+			root, err := fixRoot(dir)
+			if err != nil {
+				return err
+			}
+			return doctorfix.Apply(ctx, root, fix, out)
 		},
 		Projects: func() ProjectsLoaded { return loadProjects(open) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
@@ -100,6 +126,9 @@ func WorkspaceSources(dir, version string) Sources {
 		},
 	}
 }
+
+// fixRoot is the workspace root a fix's paths are relative to.
+func fixRoot(dir string) (string, error) { return workspace.FindRoot(dir) }
 
 // loadProjects reads the project graph and what the changes since the release
 // branch affect.

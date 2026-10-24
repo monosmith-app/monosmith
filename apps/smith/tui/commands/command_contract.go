@@ -31,6 +31,9 @@ const (
 	ToggleMouse
 	// ViewAction runs the action of the open view that Action names.
 	ViewAction
+	// OpenFixWizard opens the doctor fix wizard on the fixes that need no
+	// decision (or, when all of them ask, on the first).
+	OpenFixWizard
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey

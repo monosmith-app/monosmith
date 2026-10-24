@@ -37,6 +37,8 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch {
+	case s.fix != nil:
+		return s.fixKey(name)
 	case s.confirm != nil:
 		c, out := s.confirm.Key(name)
 		s.confirm = &c
@@ -166,10 +168,10 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		}
 		s.say("There is no release to show the notes of")
 	case "doctor-fix":
-		if argv := s.doctor.FixArgv(); argv != nil {
-			return s.execute(argv, false)
+		if p, ok := s.doctor.SelectedFix(); ok {
+			return s.openFix(p)
 		}
-		s.say("This finding has no safe fix doctor can apply")
+		s.say("This check has no fix; its remedy says what to do")
 	case "deps-up":
 		if argv := s.deps.UpArgv(); argv != nil {
 			return s.execute(argv, false)
@@ -250,6 +252,11 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.activateSelection(c.Action)
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
+	case commands.OpenFixWizard:
+		if p, ok := s.doctor.FixAll(); ok {
+			return s.openFix(p)
+		}
+		s.say("Doctor found nothing it can fix")
 	}
 	return nil
 }

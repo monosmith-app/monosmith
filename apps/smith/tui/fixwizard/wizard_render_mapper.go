@@ -1,0 +1,250 @@
+package fixwizard
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+)
+
+// button is a labelled key on the bottom row; a click presses its key.
+type button struct{ label, key string }
+
+func spell(name, key string) string { return fmt.Sprintf("[ %s  %s ]", name, key) }
+
+// buttons are the buttons of the phase, left to right.
+func (w Wizard) buttons() []button {
+	var out []button
+	switch w.phase {
+	case Asking:
+		if w.canGoBack() {
+			out = append(out, button{spell("Back", "b"), "b"})
+		}
+		out = append(out, button{spell("Cancel", "Esc"), "esc"})
+	case Reviewing:
+		out = append(out, button{spell("Apply", "Enter"), "enter"})
+		if w.canGoBack() {
+			out = append(out, button{spell("Back", "b"), "b"})
+		}
+		out = append(out, button{spell("Cancel", "Esc"), "esc"})
+	case Applying:
+		out = append(out, button{spell("Stop", "Ctrl+C"), "ctrl+c"})
+	case Failed:
+		out = append(out, button{spell("Retry", "r"), "r"}, button{spell("Copy output", "y"), "y"}, button{spell("Close", "Esc"), "esc"})
+	}
+	return out
+}
+
+// buttonSpans are the columns (from the dialog's left edge) each button covers.
+func (w Wizard) buttonSpans(inner int) [][2]int {
+	bs := w.buttons()
+	total := 2 * max(len(bs)-1, 0)
+	for _, b := range bs {
+		total += ansi.StringWidth(b.label)
+	}
+	x := 2 + max((inner-total)/2, 0)
+	var spans [][2]int
+	for _, b := range bs {
+		spans = append(spans, [2]int{x, x + ansi.StringWidth(b.label)})
+		x += ansi.StringWidth(b.label) + 2
+	}
+	return spans
+}
+
+func (w Wizard) buttonAt(x, y int) int {
+	r := w.Rect()
+	if y != r.Y+r.H-2 {
+		return -1
+	}
+	for i, s := range w.buttonSpans(r.W - 4) {
+		if x-r.X >= s[0] && x-r.X < s[1] {
+			return i
+		}
+	}
+	return -1
+}
+
+// width is the dialog's width on the screen it was placed on.
+func (w Wizard) width() int {
+	if w.sw < 30 {
+		return max(w.sw, 6)
+	}
+	return min(max(w.sw-6, 30), 100)
+}
+
+// visible is how many body rows the dialog shows.
+func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
+
+// Rect is where the dialog sits.
+func (w Wizard) Rect() dialog.Rect {
+	width := w.width()
+	rows, _ := w.rows(theme.Default(), 0)
+	h := min(len(rows)+4, max(w.sh-2, 5))
+	return dialog.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
+}
+
+func (w Wizard) bodyRows() []string {
+	rows, _ := w.rows(theme.Default(), 0)
+	return rows
+}
+
+// title is set into the top edge.
+func (w Wizard) title() string {
+	switch w.phase {
+	case Asking:
+		return fmt.Sprintf("Fix · question %d of %d", len(w.answers)+1, len(w.answers)+len(w.resolved.Choices))
+	case Reviewing:
+		return "Fix · review"
+	case Applying:
+		return "Fixing…"
+	}
+	return "Fix failed"
+}
+
+// rows is the whole body, before it is windowed, and for Asking the line each
+// option is on.
+func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) {
+	inner := max(w.width()-4, 4)
+	switch w.phase {
+	case Asking:
+		return w.askingRows(th, inner)
+	case Reviewing:
+		return reviewLines(th, strings.Join(w.review, "\n"), inner), nil
+	case Applying:
+		return w.applyingRows(th, tick, inner), nil
+	}
+	rows = pane.Wrap(th.Failure(w.headline), inner, 2)
+	if len(w.output) > 0 {
+		rows = append(rows, "", th.Muted("What it printed:"))
+		for _, l := range w.output {
+			rows = append(rows, pane.Wrap("  "+l, inner, 4)...)
+		}
+	}
+	return rows, nil
+}
+
+func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow []int) {
+	rows = append(rows, pane.Wrap(th.Muted(w.Fix.Description), inner, 0)...)
+	if scope := doctorfix.Scope(w.Fix.AppliesTo); scope != "" {
+		rows = append(rows, th.Muted(scope))
+	}
+	rows = append(rows, "")
+	rows = append(rows, pane.Wrap(th.Bold(w.question.Question), inner, 0)...)
+	rows = append(rows, "")
+	for i, o := range w.question.Options {
+		label := fmt.Sprintf("%d) %s", i+1, o.Label)
+		if i == 0 {
+			label += "  (suggested)"
+		}
+		line := pane.Fit("  "+label, inner)
+		if i == w.cursor {
+			line = th.Selected(pane.Fit("▸ "+label, inner))
+		}
+		optionRow = append(optionRow, len(rows))
+		rows = append(rows, line)
+	}
+	rows = append(rows, "", th.Muted("Up Down or a number picks · Enter chooses · Esc cancels"))
+	return rows, optionRow
+}
+
+func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
+	rows := pane.Wrap(th.Bold(w.resolved.Description), inner, 0)
+	rows = append(rows, "")
+	switch {
+	case w.total == 0:
+		rows = append(rows, th.Accent(th.Spin(tick))+" writing the files…")
+	case w.step == 0:
+		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" writing the files, then %d step(s)…", w.total))
+	default:
+		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, w.total, w.stepName))
+	}
+	return append(rows, "", th.Muted("Ctrl+C stops the step that is running."))
+}
+
+// follow scrolls the question so the option under the cursor shows, clear of
+// the "more" markers.
+func (w Wizard) follow() Wizard {
+	if w.phase != Asking {
+		return w
+	}
+	_, at := w.rows(theme.Default(), 0)
+	if w.cursor >= len(at) {
+		return w
+	}
+	row, vis := at[w.cursor], w.visible()
+	if row < w.top+1 {
+		w.top = max(row-1, 0)
+	}
+	if row > w.top+vis-2 {
+		w.top = row - vis + 2
+	}
+	return w
+}
+
+// optionAt is the option drawn on screen row y.
+func (w Wizard) optionAt(y int) (int, bool) {
+	if w.phase != Asking {
+		return 0, false
+	}
+	r := w.Rect()
+	rows, at := w.rows(theme.Default(), 0)
+	line := y - r.Y - 1
+	if line < 0 || line >= w.visible() {
+		return 0, false
+	}
+	if len(rows) > w.visible() {
+		line += detail.ClampTop(w.top, len(rows), w.visible())
+	}
+	for i, row := range at {
+		if row == line {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// Lines draws the dialog: Rect().H lines of Rect().W cells. tick moves the
+// spinner while a step runs.
+func (w Wizard) Lines(th theme.Theme, tick int) []string {
+	r := w.Rect()
+	if r.W < 6 || r.H < 3 {
+		return nil
+	}
+	inner := r.W - 4
+	rows, _ := w.rows(th, tick)
+	rows, _ = detail.Window(th, rows, nil, w.top, w.visible())
+	out := make([]string, 0, r.H-2)
+	row := func(content string) string { return " " + pane.Fit(content, inner) }
+	for i, l := range rows {
+		if i >= r.H-4 {
+			break
+		}
+		out = append(out, row(l))
+	}
+	for len(out) < r.H-4 {
+		out = append(out, row(""))
+	}
+	out = append(out, row(""))
+	line := ""
+	spans := w.buttonSpans(inner)
+	col := 0
+	for i, b := range w.buttons() {
+		line += strings.Repeat(" ", spans[i][0]-2-col)
+		text := th.Muted(b.label)
+		switch {
+		case i == w.hover:
+			text = th.Hover(b.label)
+		case i == 0 && (w.phase == Reviewing || w.phase == Failed):
+			text = th.Selected(b.label)
+		}
+		line += text
+		col = spans[i][1] - 2
+	}
+	out = append(out, row(line))
+	return pane.Frame(th, w.title(), out, r.W, r.H, true)
+}

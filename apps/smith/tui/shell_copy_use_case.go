@@ -48,6 +48,11 @@ func (s *Shell) copyFocused() {
 		s.say("Nothing to copy here")
 		return
 	}
+	s.copyText(text)
+}
+
+// copyText puts text on the clipboard and says so in a toast.
+func (s *Shell) copyText(text string) {
 	if err := clipboard.Copy(s.clip, text); err != nil {
 		s.notify("Could not copy: "+err.Error(), toast.Warning)
 		return
