@@ -1,134 +1,726 @@
 import { existsSync } from 'node:fs'
+import { isAbsolute } from 'node:path'
 import * as vscode from 'vscode'
+import { setContextKey } from './context-keys/index.ts'
+import { connectFolder, describeFolderNote, judgeViewState, type FolderState } from './folder-session/index.ts'
+import { fixDoctor, readHealth, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
+import { pickArguments, readUpdates, toDependencyRows, updateArguments } from './dependencies/index.ts'
+import { createListView, groupByFolder, readFolderData, tagWithFolder, type ListNode, type ListResult } from './list-view/index.ts'
+import { createInsightDocuments, readExplain, readGraph } from './project-insight/index.ts'
+import { pickProject, pickTask, pickTaskName, showStatusMenu } from './quick-pick/index.ts'
+import { readReleasePreview, toReleaseRows } from './release-preview/index.ts'
+import { readSettings } from './settings/index.ts'
+import { openSmithTerminal } from './smith-terminal/index.ts'
+import { registerSmithTasks, type TaskFolder } from './task-provider/index.ts'
+import {
+  createTaskDiagnostics, createTaskLogDocuments, createTaskLogStore, logKey, registerOutputLinks, resolveSourcePath, sourceBases, LOG_SCHEME, type FolderProjects,
+} from './task-output/index.ts'
+import { createRefreshCoalescer, watchRefreshTriggers, type RefreshCoalescer, type RefreshScope } from './refresh/index.ts'
+import { locateSmith, startSmith, type SmithExit } from './smith-client/index.ts'
+import {
+  describeOrigin, judgeSkew, readSmithVersion, createWarnedOnceStore,
+} from './smith-version/index.ts'
+import type { ExtensionStateApi } from './extension-api/index.ts'
 import { createStatusBar } from './status-bar/index.ts'
-import { locateSmith, startSmith, type SmithSession } from './smith-client/index.ts'
-import { cancelRun, createTaskStatusStore, describeEvent, runTask } from './task-run/index.ts'
-import { createWorkspaceTree, type TreeNode } from './workspace-view/index.ts'
-import { readWorkspace } from './workspace/index.ts'
+import {
+  cancelRun, createLastRunStore, createTaskStatusStore, describeEvent, describePlan, runTasks, toRunPlan,
+  type RunEvent, type RunPlan, type RunTarget, type TaskStatusStore,
+} from './task-run/index.ts'
+import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './workspace/index.ts'
+import { findSmithRoots, listFolders, onFoldersChanged } from './workspace-folders/index.ts'
+import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter } from './workspace-view/index.ts'
+import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 
 const INSTALL_COMMAND = 'npm i -D monosmith'
+const UPDATE_COMMAND = 'npm i -D monosmith@latest'
+const FILTER_KEY = 'monosmith.filter'
 
-let current: SmithSession | undefined
+const folders = new Map<string, FolderState>()
+
+function states (): FolderState[] {
+  return Array.from(folders, ([, state]) => state)
+}
+
+function readyWorkspaces (): FolderWorkspace[] {
+  return ready()
+    .filter((state) => state.snapshot !== undefined)
+    .map((state) => ({ root: state.root, name: state.name, snapshot: state.snapshot as WorkspaceSnapshot }))
+}
+
+function ready (): FolderState[] {
+  return states().filter((state) => state.phase === 'ready' && state.session !== undefined)
+}
+
+function folderProjects (): FolderProjects[] {
+  return ready().map((state) => ({
+    root:     state.root,
+    projects: state.snapshot?.projects.map((project) => ({ name: project.name, dir: project.dir })) ?? [],
+  }))
+}
+
+function options (): { bail: boolean, noCache: boolean, parallel: number } {
+  const { bail, noCache, parallel } = readSettings()
+
+  return { bail, noCache, parallel }
+}
+
+/** Reads a list view's rows from every folder that runs smith, and lays them out by folder. */
+async function loadAcross (nothing: string, read: (state: FolderState, connection: NonNullable<FolderState['session']>['connection']) => Promise<ListResult>): Promise<ListResult> {
+  const targets = ready()
+  if (targets.length === 0) return { nodes: [], message: nothing }
+  const results = await Promise.all(targets.map(async (state) => {
+    try {
+      return { state, result: await read(state, (state.session as NonNullable<FolderState['session']>).connection) }
+    } catch (error) {
+      return { state, result: { nodes: [], message: `${state.name}: ${error instanceof Error ? error.message : String(error)}` } satisfies ListResult }
+    }
+  }))
+  const nodes = groupByFolder(results.map(({ state, result }) => ({ root: state.root, name: state.name, nodes: tagWithFolder(result.nodes, state.root) })))
+  const messages = results.flatMap(({ result }) => result.message ?? [])
+  const summaries = results.flatMap(({ result }) => result.summary ?? [])
+
+  return {
+    nodes,
+    ...(messages.length > 0 && (nodes.length === 0 || results.length === 1) && { message: messages.join(' ') }),
+    ...(summaries.length > 0 && { summary: results.length === 1 ? summaries[0] : summaries.join(' · ') }),
+  }
+}
+
+function taskFolders (): TaskFolder[] {
+  const found: TaskFolder[] = []
+  for (const state of ready()) {
+    if (state.location === undefined || state.snapshot === undefined) continue
+    found.push({ root: state.root, executable: state.location.executable, tasks: state.snapshot.projects.flatMap((project) => project.tasks) })
+  }
+
+  return found
+}
+
+/** The file a path printed by a task means, found from the project the task belongs to. */
+function resolveFile (root: string | undefined, task: string | undefined, file: string): string | undefined {
+  return resolveSourcePath({ file, bases: sourceBases(folderProjects(), task, root), exists: existsSync })
+}
+
+function stopFolder (root: string): void {
+  const state = folders.get(root)
+  state?.session?.stop()
+  if (state !== undefined) state.session = undefined
+}
 
 /**
  * Starts the extension: the MonoSmith view, its commands and the status bar,
- * all served by the smith the team has installed.
+ * one `smith serve` for each folder that has a `smith.toml`, all served by the
+ * smith the team has installed.
  * @param context - the extension's lifetime
  */
-export function activate (context: vscode.ExtensionContext): void {
-  const folder = vscode.workspace.workspaceFolders?.[0]
-  if (folder === undefined) return
-  const root = folder.uri.fsPath
+export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const output = vscode.window.createOutputChannel('MonoSmith')
-  const statuses = createTaskStatusStore()
-  const tree = createWorkspaceTree(statuses.statusOf)
-  const bar = createStatusBar('monosmith.refresh')
-  let affected: number | undefined
-  let activeRun: string | undefined
-
-  const paint = (): void => { bar.update(current?.version, affected, activeRun !== undefined) }
-  const fail = (error: unknown): void => { void vscode.window.showErrorMessage(`MonoSmith: ${error instanceof Error ? error.message : String(error)}`) }
-
-  const connect = async (): Promise<SmithSession | undefined> => {
-    if (current !== undefined) return current
-    const executable = locateSmith({
-      setting:       vscode.workspace.getConfiguration('monosmith').get<string>('path', ''),
-      workspaceRoot: root,
-      platform:      process.platform,
-      pathVariable:  process.env.PATH ?? '',
-      exists:        existsSync,
-    })
-    if (executable === undefined) {
-      void offerInstall()
-
-      return undefined
+  const statuses = new Map<string, TaskStatusStore>()
+  const watchers = new Map<string, { coalescer: RefreshCoalescer, watcher: vscode.Disposable }>()
+  const generations = new Map<string, number>()
+  const connecting = new Set<string>()
+  const terminalVersions = new Map<string, string | undefined>()
+  const warned = createWarnedOnceStore()
+  const lastRun = createLastRunStore()
+  const statusOf = (root: string): TaskStatusStore => {
+    let store = statuses.get(root)
+    if (store === undefined) {
+      store = createTaskStatusStore()
+      store.onChange(() => {
+        tree.redraw()
+        paint()
+      })
+      statuses.set(root, store)
     }
-    try {
-      current = await startSmith(executable, root)
-    } catch (error) {
-      fail(error)
 
-      return undefined
-    }
-    if (current.protocol === 'newer') output.appendLine('smith speaks a newer protocol than this extension knows; it keeps working with what it knows.')
+    return store
+  }
+  const logs = createTaskLogStore()
+  const factsOf = (root: string, task: string): TaskFacts | undefined => {
+    const result = statuses.get(root)?.resultOf(task)
 
-    return current
+    return result === undefined ? undefined : { ...result, hasLog: logs.has(logKey(root, task)) }
+  }
+  const stored = context.workspaceState.get<ViewFilter>(FILTER_KEY)
+  const tree = createWorkspaceTree(factsOf, { text: stored?.text ?? '', affectedOnly: stored?.affectedOnly ?? false })
+  const diagnostics = createTaskDiagnostics()
+  const logDocs = createTaskLogDocuments(logs)
+  const insight = createInsightDocuments()
+  const bar = createStatusBar('monosmith.showMenu')
+  let activeRun: { id: string, root: string } | undefined
+
+  const failedTasks = (): number => {
+    let failed = 0
+    for (const store of statuses.values()) failed += store.failedCount()
+
+    return failed
+  }
+  const note = (message: string): void => { output.appendLine(message) }
+  const fail = (error: unknown): void => {
+    const message = error instanceof Error ? error.message : String(error)
+    note(`MonoSmith: ${message}`)
+    void vscode.window.showErrorMessage(`MonoSmith: ${message}`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
   }
 
-  const refresh = async (): Promise<void> => {
-    const session = await connect()
-    if (session !== undefined) {
-      try {
-        const snapshot = await readWorkspace(session.connection)
-        affected = snapshot.affected.size
-        tree.show(snapshot)
-      } catch (error) {
-        session.stop()
-        current = undefined
-        fail(error)
-      }
-    }
+  const paint = (): void => {
+    const phases = states().map((state) => state.phase)
+    const viewState = judgeViewState(phases)
+    const readyStates = ready()
+    const many = states().length > 1
+    const origin = readyStates.flatMap((state) => {
+      if (state.location === undefined || state.session === undefined) return []
+      const lines = describeOrigin({
+        location:         state.location,
+        version:          state.session.version,
+        skippedUntrusted: state.skippedUntrusted,
+        terminalVersion:  state.pathSmith === undefined ? undefined : terminalVersions.get(state.pathSmith),
+      })
+
+      return many ? [`${state.name}:`, ...lines] : lines
+    })
+    const affected = readyStates.some((state) => state.snapshot !== undefined)
+      ? readyStates.reduce((sum, state) => sum + (state.snapshot?.affected.size ?? 0), 0)
+      : undefined
+    bar.update({
+      state:   viewState,
+      version: readyStates[0]?.session?.version,
+      affected,
+      running: activeRun !== undefined,
+      failed:  failedTasks(),
+      origin,
+    })
+    void setContextKey('monosmith.state', viewState)
+  }
+
+  const sync = (): void => {
+    tree.show(states().map((state) => ({
+      root:     state.root,
+      name:     state.name,
+      snapshot: state.phase === 'ready' ? state.snapshot : undefined,
+      note:     describeFolderNote(state),
+    })))
     paint()
   }
 
-  const run = async (node?: TreeNode): Promise<void> => {
-    if (node?.project === undefined || node.task === undefined) return
+  const warnAboutSkew = async (state: FolderState): Promise<void> => {
+    if (state.location === undefined || state.session === undefined || state.pathSmith === undefined || (state.location.executable === state.pathSmith)) return
+    if (!terminalVersions.has(state.pathSmith)) terminalVersions.set(state.pathSmith, await readSmithVersion(state.pathSmith))
+    paint()
+    const warning = judgeSkew({
+      editorSmith:     state.location.executable,
+      editorVersion:   state.session.version,
+      editorSource:    state.location.source,
+      terminalSmith:   state.pathSmith,
+      terminalVersion: terminalVersions.get(state.pathSmith),
+    })
+    if (warning === undefined || !warned.firstTime('skew')) return
+    note(warning)
+    const copy = `Copy "${UPDATE_COMMAND}"`
+    const choice = await vscode.window.showWarningMessage(warning, 'Open settings', copy)
+    if (choice === 'Open settings') await vscode.commands.executeCommand('monosmith.openSettings')
+    else if (choice === copy) await vscode.env.clipboard.writeText(UPDATE_COMMAND)
+  }
+
+  const refreshFolder = async (root: string, scope: RefreshScope, quiet: boolean): Promise<void> => {
+    const state = folders.get(root)
+    const session = state?.session
+    if (state === undefined || session === undefined || state.phase !== 'ready') return
+    const token = (generations.get(root) ?? 0) + 1
+    generations.set(root, token)
+    const stale = (): boolean => generations.get(root) !== token || folders.get(root)?.session !== session
+    try {
+      if (scope === 'full' || state.snapshot === undefined) {
+        const snapshot = await readWorkspace(session.connection)
+        if (stale()) return
+        state.snapshot = snapshot
+      } else {
+        const affected = await readAffected(session.connection)
+        if (stale()) return
+        state.snapshot = { ...state.snapshot, affected }
+      }
+    } catch (error) {
+      if (stale()) return
+      if (quiet) note(`MonoSmith: could not refresh ${state.name}: ${error instanceof Error ? error.message : String(error)}`)
+      else fail(error)
+    }
+    sync()
+    if (scope === 'full') {
+      health.invalidate()
+      release.invalidate()
+      if (!quiet) dependencies.invalidate()
+    } else {
+      release.invalidate()
+    }
+  }
+
+  const connect = async (root: string): Promise<void> => {
+    const state = folders.get(root)
+    if (state === undefined || connecting.has(root)) return
+    connecting.add(root)
+    stopFolder(root)
+    Object.assign(state, { phase: 'starting', error: undefined, snapshot: undefined })
+    sync()
+    const trusted = isWorkspaceTrusted()
+    const outcome = await connectFolder({
+      locate: (folder) => locateSmith({
+        setting:       vscode.workspace.getConfiguration('monosmith').get<string>('path', ''),
+        workspaceRoot: folder,
+        trusted,
+        platform:      process.platform,
+        pathVariable:  process.env.PATH ?? '',
+        exists:        existsSync,
+      }),
+      start: async (executable, folder) => await startSmith(executable, folder, {
+        onStderr: (line) => { note(`[${state.name}] ${line}`) },
+        onExit:   (exit) => { handleExit(root, exit) },
+      }),
+    }, root)
+    connecting.delete(root)
+    if (folders.get(root) !== state) {
+      outcome.session?.stop()
+
+      return
+    }
+    Object.assign(state, outcome)
+    if (outcome.phase === 'failed') note(`MonoSmith: smith could not start in ${state.name}: ${outcome.error ?? ''}`)
+    if (outcome.session?.protocol === 'newer') note('smith speaks a newer protocol than this extension knows; it keeps working with what it knows.')
+    sync()
+    if (outcome.phase !== 'ready') {
+      return
+    }
+
+    await refreshFolder(root, 'full', false)
+    void warnAboutSkew(state)
+  }
+
+  const handleExit = (root: string, exit: SmithExit): void => {
+    const state = folders.get(root)
+    if (state === undefined) return
+    const why = exit.signal === null ? `exit code ${String(exit.code)}` : `signal ${exit.signal}`
+    Object.assign(state, { phase: 'failed', session: undefined, error: `smith serve ended (${why})${exit.stderr === '' ? '' : `: ${exit.stderr.split('\n').at(-1) ?? ''}`}` })
+    note(`MonoSmith: smith serve ended in ${state.name} (${why}).`)
+    if (activeRun?.root === root) {
+      activeRun = undefined
+      void setContextKey('monosmith.running', false)
+    }
+    sync()
+    void vscode.window.showErrorMessage(`MonoSmith: smith stopped unexpectedly in ${state.name} (${why}).`, 'Restart', 'Show output').then((choice) => {
+      if (choice === 'Restart') void connect(root)
+      else if (choice === 'Show output') output.show()
+    })
+  }
+
+  const watch = (root: string): void => {
+    const coalescer = createRefreshCoalescer(readSettings().refreshDebounceMs, (scope) => { void refreshFolder(root, scope, true) })
+    const watcher = watchRefreshTriggers(root, (scope) => {
+      if (readSettings().refreshAuto) coalescer.request(scope)
+    })
+    watchers.set(root, { coalescer, watcher })
+  }
+
+  const unwatch = (root: string): void => {
+    const entry = watchers.get(root)
+    entry?.coalescer.cancel()
+    entry?.watcher.dispose()
+    watchers.delete(root)
+  }
+
+  const discover = (): void => {
+    const roots = findSmithRoots(listFolders(), existsSync)
+    const wanted = new Set(roots.map((folder) => folder.root))
+    for (const root of folders.keys()) {
+      if (wanted.has(root)) continue
+      stopFolder(root)
+      folders.delete(root)
+      statuses.delete(root)
+      unwatch(root)
+    }
+    const added = roots.filter((folder) => !folders.has(folder.root))
+    for (const folder of added) {
+      folders.set(folder.root, { root: folder.root, name: folder.name, phase: 'starting', skippedUntrusted: false })
+      watch(folder.root)
+    }
+    sync()
+    for (const folder of added) void connect(folder.root)
+  }
+
+  const restartAll = async (): Promise<void> => {
+    await Promise.all(states().map(async (state) => { await connect(state.root) }))
+  }
+
+  const refresh = async (): Promise<void> => {
+    await tree.withProgress(async () => {
+      await Promise.all(states().map(async (state) => {
+        if (state.phase === 'ready') await refreshFolder(state.root, 'full', false)
+        else await connect(state.root)
+      }))
+    })
+  }
+
+  /** Keeps what a task printed: its log for the row, and its failures for the Problems panel. */
+  const keepOutput = (root: string, event: RunEvent, command: string): void => {
+    const task = event.task
+    if (task === undefined) return
+    const key = logKey(root, task)
+    switch (event.event) {
+      case 'task.queued': {
+        logs.begin(key, `$ ${command}`)
+        diagnostics.begin(key)
+        break
+      }
+      case 'task.output': {
+        if (event.line === undefined) break
+        logs.add(key, event.line)
+        if (readSettings().problems) diagnostics.line(key, event.line, (file) => resolveFile(root, task, file))
+        break
+      }
+      case 'task.finished': {
+        const line = describeEvent(event)
+        if (line !== undefined) logs.add(key, line)
+        logDocs.changed(root, task)
+        break
+      }
+      default: {
+        break
+      }
+    }
+  }
+
+  const run = async (root: string, plan: RunPlan | undefined, confirm = false): Promise<void> => {
+    if (plan === undefined) {
+      void vscode.window.showInformationMessage('MonoSmith: there is nothing to run there.')
+
+      return
+    }
+    if (!isWorkspaceTrusted()) {
+      const choice = await vscode.window.showWarningMessage('MonoSmith: running tasks needs a trusted workspace; they execute code from it.', 'Manage Workspace Trust')
+      if (choice !== undefined) await vscode.commands.executeCommand('workbench.trust.manage')
+
+      return
+    }
     if (activeRun !== undefined) {
       void vscode.window.showWarningMessage('MonoSmith: a run is already in progress.')
 
       return
     }
-    const session = await connect()
+    const label = describePlan(plan)
+    if (confirm) {
+      const choice = await vscode.window.showWarningMessage(`MonoSmith: run ${label}?`, { modal: true }, 'Run')
+      if (choice !== 'Run') return
+    }
+    const state = folders.get(root)
+    if (state === undefined) return
+    if (state.session === undefined) await connect(root)
+    const session = state.session
     if (session === undefined) return
+    lastRun.remember({ root, plan })
+    void setContextKey('monosmith.hasLastRun', true)
     const runId = `ide-${Date.now()}`
-    activeRun = runId
+    activeRun = { id: runId, root }
+    void setContextKey('monosmith.running', true)
     paint()
     output.show(true)
+    const store = statusOf(root)
     try {
-      const result = await runTask(session.connection, { runId, task: node.task, project: node.project }, (event) => {
-        statuses.apply(event)
+      let command = 'smith run'
+      const result = await runTasks(session.connection, { ...plan, runId }, (event) => {
+        store.apply(event)
         const line = describeEvent(event)
         if (line !== undefined) output.appendLine(line)
+        if (event.event === 'run.started') command = event.command ?? command
+        keepOutput(root, event, command)
       })
-      if (!result.ok) void vscode.window.showWarningMessage(`MonoSmith: ${node.project}:${node.task} did not pass. See the output.`)
+      if (!result.ok) void vscode.window.showWarningMessage(`MonoSmith: ${label} did not pass. See the output.`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
     } catch (error) {
-      output.appendLine(`MonoSmith: ${error instanceof Error ? error.message : String(error)}`)
+      note(`MonoSmith: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       activeRun = undefined
+      void setContextKey('monosmith.running', false)
       paint()
+      void refreshFolder(root, 'affected', true)
     }
   }
 
-  const cancel = async (): Promise<void> => {
-    if (current === undefined || activeRun === undefined) return
-    await cancelRun(current.connection, activeRun)
+  const runTarget = async (root: string, target: RunTarget, confirm = false): Promise<void> => {
+    const projects = folders.get(root)?.snapshot?.projects ?? []
+    await run(root, toRunPlan(target, projects, options()), confirm)
   }
+
+  const runNode = async (node: TreeNode | undefined): Promise<void> => {
+    if (node?.kind === 'task' && node.project !== undefined && node.task !== undefined) {
+      await runTarget(node.root, { kind: 'task', project: node.project, task: node.task })
+    } else if (node === undefined) {
+      const picked = await pickTask(readyWorkspaces())
+      if (picked !== undefined) await runTarget(picked.root, picked.target)
+    } else {
+      await runTarget(node.root, { kind: 'projects', projects: node.projects }, node.projects.length > 1)
+    }
+  }
+
+  const runAcross = async (scope: 'affected' | 'all'): Promise<void> => {
+    const picked = await pickTaskName(readyWorkspaces(), scope)
+    if (picked !== undefined) await runTarget(picked.root, picked.target, scope === 'all')
+  }
+
+  const cancel = async (): Promise<void> => {
+    const current = activeRun
+    const session = current === undefined ? undefined : folders.get(current.root)?.session
+    if (current === undefined || session === undefined) return
+    await cancelRun(session.connection, current.id)
+  }
+
+  const doctor = async (): Promise<void> => {
+    const targets = ready()
+    if (targets.length === 0) {
+      void vscode.window.showInformationMessage('MonoSmith: smith is not running, so there is nothing to check.')
+
+      return
+    }
+    output.show(true)
+    for (const state of targets) {
+      if (state.session === undefined) continue
+      try {
+        const summary = summarizeDoctor(await runDoctor(state.session.connection))
+        output.appendLine(`$ smith doctor${targets.length > 1 ? ` (${state.name})` : ''}`)
+        for (const line of summary.lines) output.appendLine(line)
+        const message = sayDoctor(summary)
+        output.appendLine(message)
+        const show = summary.failed > 0 || summary.warnings > 0 ? vscode.window.showWarningMessage : vscode.window.showInformationMessage
+        void show(`MonoSmith: ${message}`, 'Show output').then((choice) => { if (choice === 'Show output') output.show() })
+      } catch (error) {
+        fail(error)
+      }
+    }
+  }
+
+  const fixableRoots = new Set<string>()
+  const health = createListView({
+    id:    'monosmith.health',
+    title: 'Health',
+    load:  async () => {
+      fixableRoots.clear()
+
+      return await loadAcross('smith is not running, so there is nothing to check.', async (state, connection) => {
+        const reading: HealthReading = await readHealth(connection)
+        if (reading.preview !== undefined) fixableRoots.add(state.root)
+
+        return toHealthRows(reading.report, reading.preview)
+      })
+    },
+    loaded: () => { void setContextKey('monosmith.fixable', fixableRoots.size > 0) },
+  })
+  const dependencies = createListView({
+    id:    'monosmith.dependencies',
+    title: 'Dependencies',
+    load:  async () => await loadAcross('smith is not running, so dependencies cannot be read.', async (_state, connection) => toDependencyRows(await readUpdates(connection))),
+  })
+  const release = createListView({
+    id:    'monosmith.release',
+    title: 'Release Preview',
+    load:  async () => await loadAcross('smith is not running, so there is no release to preview.', async (_state, connection) => toReleaseRows(await readReleasePreview(connection))),
+  })
+
+  const fixHealth = async (): Promise<void> => {
+    const targets = ready().filter((state) => fixableRoots.has(state.root))
+    if (targets.length === 0) {
+      void vscode.window.showInformationMessage('MonoSmith: doctor proposes no fix. The remedies listed under a check say what to do by hand.')
+
+      return
+    }
+    for (const state of targets) {
+      if (state.session === undefined) continue
+      const outcome = await fixDoctor(state.session.connection, async (preview) => {
+        const choice = await vscode.window.showWarningMessage(
+          `MonoSmith: apply ${preview.titles.length} ${preview.titles.length === 1 ? 'fix' : 'fixes'}${states().length > 1 ? ` in ${state.name}` : ''}?`,
+          { modal: true, detail: `${preview.text}\n\nThe files are changed as shown. Review them with git afterwards.` },
+          'Apply fixes',
+        )
+
+        return choice === 'Apply fixes'
+      }, (line) => { output.appendLine(`doctor | ${line}`) })
+      if (outcome === 'fixed') void vscode.window.showInformationMessage(`MonoSmith: the fixes were applied${states().length > 1 ? ` in ${state.name}` : ''}.`)
+      else if (outcome === 'incomplete') void vscode.window.showInformationMessage('MonoSmith: the fixes were applied. Some checks still fail and need their remedy by hand; the Health view lists them.')
+    }
+    await health.reload()
+    release.invalidate()
+  }
+
+  const folderOf = async (): Promise<FolderState | undefined> => {
+    const targets = ready()
+    if (targets.length <= 1) return targets[0]
+    const picked = await vscode.window.showQuickPick(targets.map((state) => ({ label: state.name, description: state.root, state })), { title: 'Choose a folder', placeHolder: 'Folder' })
+
+    return picked?.state
+  }
+
+  const runUp = async (): Promise<void> => {
+    const state = await folderOf()
+    if (state?.location === undefined) return
+    openSmithTerminal(state.location.executable, pickArguments(), state.root)
+  }
+
+  const updateDependency = async (node: ListNode | undefined): Promise<void> => {
+    const tagged = readFolderData(node?.data)
+    const args = tagged === undefined ? undefined : updateArguments(tagged.data)
+    const state = tagged === undefined ? undefined : folders.get(tagged.root)
+    if (tagged === undefined || args === undefined || state?.location === undefined) return
+    if (!isWorkspaceTrusted()) {
+      void vscode.window.showWarningMessage('MonoSmith: updating dependencies needs a trusted workspace.')
+
+      return
+    }
+    const choice = await vscode.window.showWarningMessage(
+      `MonoSmith: update ${tagged.data} to its latest version?`,
+      { modal: true, detail: 'smith rewrites the manifests of every project that declares it, then installs again. It runs in a terminal so you can read what it does.' },
+      'Update',
+    )
+    if (choice === 'Update') openSmithTerminal(state.location.executable, args, state.root)
+  }
+
+  const showInsight = async (node: TreeNode | undefined, kind: 'explain' | 'graph'): Promise<void> => {
+    const picked = node?.kind === 'project' && node.project !== undefined
+      ? { root: node.root, project: node.project }
+      : await pickProject(readyWorkspaces(), kind === 'explain' ? 'Explain a project' : 'Show the graph of a project')
+    const session = picked === undefined ? undefined : folders.get(picked.root)?.session
+    if (picked === undefined || session === undefined) return
+    const text = kind === 'explain' ? await readExplain(session.connection, picked.project) : await readGraph(session.connection, picked.project)
+    await insight.show(`${picked.project}-${kind}.md`, text)
+  }
+
+  const setFilter = (next: ViewFilter): void => {
+    tree.setFilter(next)
+    void context.workspaceState.update(FILTER_KEY, next)
+    void setContextKey('monosmith.affectedOnly', next.affectedOnly)
+    void setContextKey('monosmith.filtered', next.text.trim() !== '')
+  }
+
+  const copyInstallCommand = async (): Promise<void> => {
+    await vscode.env.clipboard.writeText(INSTALL_COMMAND)
+    void vscode.window.showInformationMessage(`MonoSmith: copied "${INSTALL_COMMAND}". Run it in the workspace, then retry.`)
+  }
+
+  const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
+    try {
+      await action(node)
+    } catch (error) {
+      fail(error)
+    }
+  })
 
   context.subscriptions.push(
     output,
     bar,
-    { dispose: statuses.onChange(tree.redraw) },
-    vscode.window.registerTreeDataProvider('monosmith.projects', tree.provider),
-    vscode.commands.registerCommand('monosmith.refresh', refresh),
-    vscode.commands.registerCommand('monosmith.runTask', run),
-    vscode.commands.registerCommand('monosmith.cancelRun', cancel),
+    tree,
+    health,
+    dependencies,
+    release,
+    diagnostics,
+    logDocs,
+    insight,
+    registerSmithTasks(taskFolders),
+    registerOutputLinks({
+      selector: [{ scheme: 'output' }, { scheme: LOG_SCHEME }],
+      owns:     (document) => document.uri.scheme === LOG_SCHEME || document.uri.path.endsWith('MonoSmith'),
+      resolve:  (document, task, reference) => {
+        if (document.uri.scheme === LOG_SCHEME) {
+          const which = logDocs.taskOf(document.uri)
+
+          return resolveFile(which?.root, which?.task, reference.file)
+        }
+        // The output panel links absolute paths and paths relative to the folder itself; this adds the ones relative to a project.
+        if (isAbsolute(reference.file)) return
+        const viaProject = resolveFile(undefined, task, reference.file)
+        const viaFolder = resolveSourcePath({ file: reference.file, bases: sourceBases(folderProjects(), undefined), exists: existsSync })
+
+        return viaProject === undefined || viaProject === viaFolder ? undefined : viaProject
+      },
+    }),
+    { dispose: () => { for (const root of watchers.keys()) unwatch(root) } },
+    tree.onSelectionChange((node) => { void setContextKey('monosmith.selectionKind', node?.kind ?? '') }),
+    onFoldersChanged(discover),
+    onTrustGranted(() => { void restartAll() }),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('monosmith.path')) void restartAll()
+      else if (event.affectsConfiguration('monosmith.refresh')) {
+        for (const root of watchers.keys()) {
+          unwatch(root)
+          watch(root)
+        }
+      }
+    }),
+    command('monosmith.refresh', refresh),
+    command('monosmith.restart', restartAll),
+    command('monosmith.runTask', runNode),
+    command('monosmith.runSelected', async () => {
+      // Arrow keys move the focus, not the selection; Enter selects the focused row first.
+      await vscode.commands.executeCommand('list.select')
+      const node = tree.selected()
+      if (node?.kind === 'task') await runNode(node)
+    }),
+    command('monosmith.runAllTasks', async (node) => { await runNode(node ?? tree.selected()) }),
+    command('monosmith.runAffected', async () => { await runAcross('affected') }),
+    command('monosmith.runAll', async () => { await runAcross('all') }),
+    command('monosmith.rerunLast', async () => {
+      const last = lastRun.last()
+      if (last === undefined) void vscode.window.showInformationMessage('MonoSmith: nothing has run yet.')
+      else await run(last.root, last.plan)
+    }),
+    command('monosmith.cancelRun', cancel),
+    command('monosmith.doctor', doctor),
+    command('monosmith.showMenu', async () => {
+      await showStatusMenu({ running: activeRun !== undefined, hasLastRun: lastRun.last() !== undefined, failed: failedTasks() })
+    }),
+    command('monosmith.showOutput', async () => { output.show() }),
+    command('monosmith.openSettings', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith') }),
+    command('monosmith.copyInstallCommand', copyInstallCommand),
+    command('monosmith.health.refresh', async () => { await health.reload() }),
+    command('monosmith.health.fix', fixHealth),
+    command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
+    command('monosmith.dependencies.up', runUp),
+    command<ListNode>('monosmith.dependencies.update', updateDependency),
+    command('monosmith.release.refresh', async () => { await release.reload() }),
+    command('monosmith.explainProject', async (node) => { await showInsight(node, 'explain') }),
+    command('monosmith.showGraph', async (node) => { await showInsight(node, 'graph') }),
+    command('monosmith.showTaskOutput', async (node) => {
+      const target = node ?? tree.selected()
+      if (target?.kind !== 'task' || target.project === undefined || target.task === undefined) return
+      const task = `${target.project}:${target.task}`
+      if (logs.has(logKey(target.root, task))) await logDocs.open(target.root, task)
+      else void vscode.window.showInformationMessage(`MonoSmith: ${task} has not run since the editor started, so there is no output to show.`)
+    }),
+    command('monosmith.clearProblems', async () => { diagnostics.clearAll() }),
+    command('monosmith.affectedOnly.on', async () => { setFilter({ ...tree.filter(), affectedOnly: true }) }),
+    command('monosmith.affectedOnly.off', async () => { setFilter({ ...tree.filter(), affectedOnly: false }) }),
+    command('monosmith.filter', async () => { askFilterText(tree.filter().text, (text) => { setFilter({ ...tree.filter(), text }) }) }),
+    command('monosmith.clearFilter', async () => { setFilter({ text: '', affectedOnly: tree.filter().affectedOnly }) }),
+    command('monosmith.openWalkthrough', async () => {
+      await vscode.commands.executeCommand('workbench.action.openWalkthrough', 'monosmith.monosmith-vscode#monosmith.start', false)
+    }),
   )
-  void refresh()
+  setFilter(tree.filter())
+  void setContextKey('monosmith.running', false)
+  void setContextKey('monosmith.hasLastRun', false)
+  void setContextKey('monosmith.selectionKind', '')
+  discover()
+
+  return {
+    viewState:  () => judgeViewState(states().map((state) => state.phase)),
+    projects:   () => readyWorkspaces().flatMap((folder) => folder.snapshot.projects.map((project) => project.name)),
+    taskStatus: (task) => {
+      for (const store of statuses.values()) {
+        const status = store.statusOf(task)
+        if (status !== undefined) return status
+      }
+
+      return
+    },
+    isRunning: () => activeRun !== undefined,
+    roots:     () => ready().map((state) => state.root),
+  }
 }
 
-/** Ends `smith serve` with the extension. */
+/** Ends every `smith serve` with the extension. */
 export function deactivate (): void {
-  current?.stop()
-  current = undefined
-}
-
-async function offerInstall (): Promise<void> {
-  const copy = `Copy "${INSTALL_COMMAND}"`
-  const choice = await vscode.window.showErrorMessage(
-    'MonoSmith: smith was not found. Install it in the workspace, put it on the PATH, or set monosmith.path.',
-    copy,
-    'Open settings',
-  )
-  if (choice === copy) await vscode.env.clipboard.writeText(INSTALL_COMMAND)
-  else if (choice === 'Open settings') await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith.path')
+  for (const state of folders.values()) state.session?.stop()
+  folders.clear()
 }

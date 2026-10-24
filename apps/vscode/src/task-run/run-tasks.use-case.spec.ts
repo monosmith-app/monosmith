@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SmithConnection } from '../smith-client/index.ts'
 import type { RunEvent } from './run-event.contract.ts'
-import { cancelRun, runTask } from './run-tasks.use-case.ts'
+import { cancelRun, runTasks } from './run-tasks.use-case.ts'
 
 function fakeSmith () {
   const listeners = new Set<(event: unknown) => void>()
@@ -31,17 +31,25 @@ function fakeSmith () {
   return { connection, calls, listeners }
 }
 
-describe('runTask', () => {
+describe('runTasks', () => {
+  it('passes the parallelism only when it is set', async () => {
+    const { connection, calls } = fakeSmith()
+    await runTasks(connection, { runId: 'ide-1', tasks: ['build'], parallel: 3 }, () => {})
+    await runTasks(connection, { runId: 'ide-2', tasks: ['build'], parallel: 0 }, () => {})
+    expect(calls[0]?.params).toMatchObject({ parallel: 3 })
+    expect(calls[1]?.params).not.toHaveProperty('parallel')
+  })
+
   it('asks smith to run the task of the project under the given id', async () => {
     const { connection, calls } = fakeSmith()
-    await runTask(connection, { runId: 'ide-1', task: 'build', project: 'api' }, () => {})
+    await runTasks(connection, { runId: 'ide-1', tasks: ['build'], projects: ['api'] }, () => {})
     expect(calls[0]).toEqual({ method: 'run', params: { tasks: ['build'], projects: ['api'], run: 'ide-1' } })
   })
 
   it('hands over the events of its run only, and stops listening after', async () => {
     const { connection, listeners } = fakeSmith()
     const seen: RunEvent[] = []
-    const result = await runTask(connection, { runId: 'ide-1', task: 'build', project: 'api' }, (event) => { seen.push(event) })
+    const result = await runTasks(connection, { runId: 'ide-1', tasks: ['build'], projects: ['api'] }, (event) => { seen.push(event) })
     expect(result.ok).toBe(true)
     expect(seen.map((event) => event.task)).toEqual(['api:build'])
     expect(listeners.size).toBe(0)

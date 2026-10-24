@@ -20,22 +20,27 @@ interface ProjectsAnswer {
 export async function readWorkspace (connection: SmithConnection): Promise<WorkspaceSnapshot> {
   const [projects, affected] = await Promise.all([
     connection.request<ProjectsAnswer[]>('projects'),
-    affectedProjects(connection),
+    readAffected(connection),
   ])
 
   return {
     projects: projects.map((project) => toProject(project)),
-    affected: new Set(affected),
+    affected,
   }
 }
 
-async function affectedProjects (connection: SmithConnection): Promise<string[]> {
+/**
+ * Asks smith which projects the changes affect: the cheap half of a refresh,
+ * for when only files changed and the projects did not. An empty set when it
+ * cannot be had.
+ */
+export async function readAffected (connection: SmithConnection): Promise<ReadonlySet<string>> {
   try {
     const answer = await connection.request<{ projects?: string[] }>('affected')
 
-    return answer.projects ?? []
+    return new Set(answer.projects)
   } catch {
-    return []
+    return new Set()
   }
 }
 
