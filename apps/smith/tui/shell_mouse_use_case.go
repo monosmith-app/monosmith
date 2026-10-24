@@ -64,11 +64,6 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
 		return s.afterConfirm(c, out)
-	case s.about != nil:
-		if s.about.Click(x, y).Done {
-			s.about = nil
-		}
-		return nil
 	case s.help != nil:
 		if s.help.Click(x, y).Done {
 			s.help = nil
@@ -176,7 +171,7 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
-	case s.confirm != nil || s.about != nil:
+	case s.confirm != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))

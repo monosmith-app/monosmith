@@ -125,7 +125,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 				cursor = th.Accent(th.Icons.Pointer + " ")
 			}
 			rowOf[len(lines)] = i
-			lines = append(lines, fmt.Sprintf("%s%s%s → %s  %s  %s", cursor, pane.MiddleCell(item.Project, nameW+1), from, th.Accent(item.Next), levelMark(th, item.Level), th.Muted(item.Reason)))
+			lines = append(lines, fmt.Sprintf("%s%s%s → %s  %s  %s", cursor, pane.MiddleCell(item.Project, nameW+1), from, th.Bold(item.Next), levelMark(th, item.Level), th.Muted(item.Reason)))
 			if selected && v.Open {
 				lines = append(lines, v.commits(th, item)...)
 			}

@@ -38,7 +38,7 @@ func (h Help) content(th theme.Theme, w int) []string {
 			last = r.Group
 		}
 		gap := max(w-2-pane.Width(r.Title)-pane.Width(r.Shortcut), 1)
-		out = append(out, "  "+r.Title+strings.Repeat(" ", gap)+th.Accent(r.Shortcut))
+		out = append(out, "  "+r.Title+strings.Repeat(" ", gap)+th.Bold(r.Shortcut))
 	}
 	if len(h.extra) > 0 {
 		out = append(out, "", th.Title("Mouse"))
@@ -70,20 +70,15 @@ func (h Help) Lines(th theme.Theme) []string {
 	}
 	content := h.content(th, r.W-4)
 	top := min(max(h.top, 0), h.maxTop(len(content)))
-	edge := func(s string) string { return th.Accent(s) }
-	title := " Keyboard shortcuts "
-	foot := " Esc closes · ↑↓ scroll "
-	rows := []string{pane.Fit(edge("╔═")+th.Title(title)+edge(strings.Repeat("═", max(r.W-3-pane.Width(title), 0))+"╗"), r.W)}
+	rows := make([]string, 0, r.H-2)
 	for i := 0; i < r.H-2; i++ {
 		line := ""
 		if top+i < len(content) {
 			line = content[top+i]
 		}
-		rows = append(rows, edge("║")+" "+pane.Fit(line, r.W-4)+" "+edge("║"))
+		rows = append(rows, " "+line)
 	}
-	bottom := edge("╚═") + th.Muted(foot) + edge(strings.Repeat("═", max(r.W-3-pane.Width(foot), 0))+"╝")
-	rows = append(rows, pane.Fit(bottom, r.W))
-	return pane.Block(rows, r.W, r.H)
+	return pane.Frame(th, "Keyboard shortcuts · Esc closes · ↑↓ scroll", rows, r.W, r.H, true)
 }
 
 // Key handles a key name; the overlay ends on Esc, F1, ? or q.

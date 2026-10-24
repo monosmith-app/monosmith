@@ -122,7 +122,7 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 			case a.ID == hover:
 				text = th.Selected(text)
 			default:
-				text = th.Accent(text)
+				text = th.Bold(text)
 			}
 			hits[len(lines)] = a.ID
 			lines = append(lines, text)

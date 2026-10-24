@@ -131,7 +131,6 @@ var all = []Command{
 	{ID: "file.palette", Group: GroupHelp, Title: "Command palette…", Hint: "find and run any smith command", Keys: []string{":", "ctrl+p"}, Kind: Palette, WhileEditing: true, Footer: "palette", Tail: true},
 	{ID: "file.find", Group: GroupHelp, Title: "Find a command…", Hint: "the same palette, opened with the filter key", Keys: []string{"/"}, Kind: Palette},
 	{ID: "help.keys", Group: GroupHelp, Title: "Keyboard shortcuts", Hint: "every shortcut", Keys: []string{"?", "f1"}, Kind: Help, WhileEditing: true, Footer: "help", Tail: true},
-	{ID: "help.about", Group: GroupHelp, Title: "About smith", Kind: About},
 	{ID: "file.quit", Group: GroupHelp, Title: "Quit", Hint: "leave smith (not while a run is going: Ctrl+C stops it first)", Keys: []string{"q"}, Kind: Quit, Footer: "quit", Tail: true},
 }
 

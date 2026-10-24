@@ -14,7 +14,7 @@ func Render(th theme.Theme, placed []Placed, hover, w int) string {
 	x := 0
 	for _, p := range placed {
 		b.WriteString(strings.Repeat(" ", max(p.X-x, 0)))
-		text := th.Accent(p.Hint.Glyph) + " " + th.Muted(p.Hint.Label)
+		text := th.Bold(p.Hint.Glyph) + " " + th.Muted(p.Hint.Label)
 		if p.Hint.Key != "" && hover >= p.X && hover < p.X+p.W {
 			text = th.Hover(pane.Strip(text))
 		}

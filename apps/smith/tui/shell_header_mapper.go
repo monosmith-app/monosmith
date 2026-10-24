@@ -13,7 +13,7 @@ func (s Shell) headerRow() string {
 	if name == "" {
 		name = "smith"
 	}
-	parts := []string{" " + s.th.Accent(name)}
+	parts := []string{" " + s.th.Bold(name)}
 	if !s.inWorkspace {
 		parts = append(parts, s.th.Muted(strings.TrimSpace(s.noWorkspaceHint())))
 	}

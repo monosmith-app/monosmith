@@ -100,7 +100,6 @@ type Shell struct {
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
-	about   *dialog.About
 	toast   toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
@@ -339,10 +338,6 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
-	if s.about != nil {
-		a := s.about.Place(w, h)
-		s.about = &a
-	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {
 		s.tab = commands.TabHome

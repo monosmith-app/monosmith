@@ -274,5 +274,5 @@ func (p Palette) line(th theme.Theme, it item, selected bool, w int) string {
 	if selected {
 		return th.Selected(pane.Fit(" "+name+"  "+desc+strings.Repeat(" ", gap)+right+" ", w))
 	}
-	return pane.Fit(" "+name+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Accent(right)+" ", w)
+	return pane.Fit(" "+name+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
 }

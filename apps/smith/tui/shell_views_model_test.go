@@ -249,21 +249,6 @@ func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
 	}
 }
 
-func TestAboutShowsTheLogoWhatSmithIsForAndTheDocsLink(t *testing.T) {
-	l := newLab(t, true, 100, 40)
-	l.keys("ctrl+p").typeText("About").keys("enter")
-	l.has("About MonoSmith", "▄████", "scaffolds projects", "https://monosmith-app.github.io/monosmith/README.html", "[ OK ]")
-	l.keys("esc")
-	l.hasNot("About MonoSmith")
-}
-
-func TestAboutClosesOnTheOKButton(t *testing.T) {
-	l := newLab(t, true, 100, 40)
-	l.keys("ctrl+p").typeText("About").keys("enter")
-	l.clickText("[ OK ]")
-	l.hasNot("About MonoSmith")
-}
-
 func TestTheHeaderNamesTheWorkspaceAndTheStatusBarTheVersion(t *testing.T) {
 	l := newLab(t, true, 100, 40)
 	if last := l.lines()[39]; !strings.Contains(last, "smith 1.2.3") {

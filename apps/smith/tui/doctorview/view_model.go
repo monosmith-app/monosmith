@@ -233,16 +233,16 @@ func Text(th theme.Theme, f doctor.Finding, indent int) []string {
 		out = append(out, pad+th.Muted(f.Detail))
 	}
 	if f.Remedy != "" {
-		out = append(out, pad+th.Accent("→ ")+f.Remedy)
+		out = append(out, pad+th.Bold("→ ")+f.Remedy)
 	}
 	if f.OK {
 		return out
 	}
 	switch {
 	case f.Fix != nil && f.Fix.Safe:
-		out = append(out, pad+th.Accent("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
 	case f.Fix != nil:
-		out = append(out, pad+th.Accent("fix: ")+f.Fix.Description+th.Muted(" (shown by smith doctor --fix, never applied: it could lose something of yours)"))
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (shown by smith doctor --fix, never applied: it could lose something of yours)"))
 	}
 	if f.Fix != nil {
 		for _, e := range f.Fix.Files {

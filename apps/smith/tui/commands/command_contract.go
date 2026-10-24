@@ -17,8 +17,6 @@ const (
 	Palette
 	// Help opens the shortcuts overlay.
 	Help
-	// About shows the version.
-	About
 	// Quit leaves the shell.
 	Quit
 	// Stop cancels the run in progress.
