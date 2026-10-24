@@ -35,7 +35,7 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 passed", "✖ go.work lists every module", "f fix")
+	l.has("2 failed", "✖ go.work lists every module", "x fix all")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
@@ -73,7 +73,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 	l := newLab(t, true, 160, 34)
-	x, y := l.find("1-9 views")
+	x, y := l.find("1-6 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
 		t.Fatal("nothing happens")
@@ -183,17 +183,16 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("d")
-	l.has("→ go work use ./libs/x") // inline, nothing to open
+	l.has("Remedy", "go work use ./libs/x") // the detail beside the list tells the selected check
 	x, y := l.find("✖ Docker registries")
-	l.hasNot("fix: write web's registry")
-	l.send(click(x+3, y))
-	l.send(click(x+3, y)) // a second click opens the fix
-	l.has("fix: write web's registry")
+	l.hasNot("write web's registry")
+	l.send(click(x+3, y)) // selecting a check shows its fix in the detail
+	l.has("Fix", "write web's registry")
 }
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "x")
+	l.keys("6", "x")
 	x, y := l.find("[ Cancel")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
@@ -210,7 +209,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 
 func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "x")
+	l.keys("6", "x")
 	l.send(click(2, 30))
 	l.hasNot("The command that will run:")
 	if len(l.started) != 0 {
@@ -220,7 +219,7 @@ func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 
 func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "x")
+	l.keys("6", "x")
 	before := l.sh().View()
 	x, y := l.find("[ Cancel")
 	l.send(motion(x+2, y))
@@ -277,13 +276,13 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 
 func TestClickingAGuideOptionSelectsAndDoubleClickingChoosesIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("9")
-	x, y := l.find("Add a project")
-	l.send(click(x+2, y))
-	l.has("› Add a project")
-	l.hasNot("What kind?")
-	l.doubleClick(x+2, y)
+	l.keys("a")
 	l.has("What kind?")
+	x, y := l.find("package")
+	l.send(click(x+2, y))
+	l.has("› package")
+	l.doubleClick(x+2, y)
+	l.hasNot("What kind?")
 }
 
 func TestClickingAPaletteRowRunsIt(t *testing.T) {
@@ -292,7 +291,7 @@ func TestClickingAPaletteRowRunsIt(t *testing.T) {
 	x, y := l.findAfter("Doctor", 3)
 	l.send(click(x+2, y))
 	l.hasNot("Command palette")
-	l.has("2 passed")
+	l.has("2 failed")
 	// Clicking outside closes it.
 	l.keys("ctrl+p")
 	l.send(click(1, 30))
@@ -307,26 +306,15 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 	l.hasNot("Keyboard shortcuts")
 }
 
-func TestTheTabStripScrollsWithTheMouseOnANarrowScreen(t *testing.T) {
+func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
 	l := newLab(t, true, 72, 30)
-	l.has("›")
-	x, y := l.findAfter("›", 2)
-	l.send(click(x, y))
+	l.hasNot("›", "‹")
+	for _, name := range []string{"Home", "Projects", "Run", "Doctor", "Deps", "Release"} {
+		l.has(name)
+	}
+	x, y := l.findAfter("Run", 0)
+	l.send(click(x+1, y))
 	if l.sh().tab != "run" {
-		t.Fatalf("the marker should move to the next tab, the open one is %q", l.sh().tab)
-	}
-	for i := 0; i < 12 && strings.Contains(l.view(), "›"); i++ {
-		x, y = l.findAfter("›", 2)
-		l.send(click(x, y))
-	}
-	if l.sh().tab == "projects" {
-		t.Fatal("clicking › should have moved on")
-	}
-	l.has("Guide", "‹") // the last tab is in view and the earlier ones are behind the left marker
-	before := l.sh().tab
-	x, y = l.findAfter("‹", 2)
-	l.send(click(x, y))
-	if l.sh().tab == before {
-		t.Fatal("the left marker should move back one tab")
+		t.Fatalf("a click on Run opened %q", l.sh().tab)
 	}
 }

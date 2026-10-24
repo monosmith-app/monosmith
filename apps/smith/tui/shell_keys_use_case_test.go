@@ -17,7 +17,7 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 	if first := l.lines()[0]; !strings.Contains(first, "acme") || !strings.Contains(first, "main") {
 		t.Fatalf("the first row names the workspace and its branch, with no menu bar above: %q", first)
 	}
-	if tabs := l.lines()[2]; !strings.Contains(tabs, "Projects") || !strings.Contains(tabs, "Doctor") {
+	if tabs := l.lines()[2]; !strings.Contains(tabs, "Home") || !strings.Contains(tabs, "Projects") || !strings.Contains(tabs, "Doctor") {
 		t.Fatalf("the views are tabs under the header: %q", tabs)
 	}
 	footer := l.lines()[len(l.lines())-2]
@@ -26,9 +26,9 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
 	}
-	l.keys("3")
+	l.keys("4")
 	footer = l.lines()[len(l.lines())-2]
-	for _, want := range []string{"f fix", "x fix all", "g group", "r reload", "q quit"} {
+	for _, want := range []string{"x fix all", "g group", "r reload", "q quit"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the Doctor footer lacks %q: %q", want, footer)
 		}
@@ -63,7 +63,7 @@ func TestSingleKeysRunTheViewsCommands(t *testing.T) {
 func TestDRechecksTheWorkspace(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("2 passed")
+	l.has("2 failed", "2 checks passed")
 }
 
 func TestEnterBesideTheDetailChangesNothing(t *testing.T) {
@@ -89,12 +89,12 @@ func TestJAndKMoveLikeTheArrows(t *testing.T) {
 
 func TestKeysDoNotFireWhileATextFieldIsEditing(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("8", "down", "enter") // ci.providers: a text field opens
+	l.keys("a", "down", "down", "enter", "down", "enter") // Add project, a package in node: the name is a text field
 	l.typeText("bq?:1/ mw")
 	if len(l.started) != 0 || l.quit {
 		t.Fatalf("typing ran something: %v quit %v", l.started, l.quit)
 	}
-	if l.sh().tab != "settings" || l.sh().palOpen || l.sh().help != nil {
+	if l.sh().tab != "guide" || l.sh().palOpen || l.sh().help != nil {
 		t.Fatalf("typing changed the screen: tab %q", l.sh().tab)
 	}
 	l.keys("esc", "ctrl+p")
@@ -121,13 +121,9 @@ func TestShortcutsExplainWhenTheyCannotRun(t *testing.T) {
 
 func TestAViewsLettersAreItsOwnNotTheGlobalOnes(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("6", "a") // Deps: a marks all, it does not open the Add a project form
+	l.keys("5", "a") // Deps: a marks all, it does not open the Add a project form
 	if l.sh().tab != "deps" {
 		t.Fatalf("a left Deps for %q", l.sh().tab)
-	}
-	l.keys("7", "c")
-	if len(l.started) != 0 || l.sh().tab != "recipes" {
-		t.Fatalf("c in Recipes is create, not typecheck: %v", l.started)
 	}
 }
 
@@ -147,7 +143,7 @@ func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 func TestThePaletteRunsAShellCommandAndASmithCommand(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p").typeText("doctor").keys("enter") // the shell's Doctor comes first
-	l.has("2 passed")
+	l.has("2 failed")
 	l.keys("ctrl+p").typeText("affected").keys("enter") // a smith command: it asks for arguments, then runs
 	l.has("smith affected")
 	l.keys("enter")
@@ -181,7 +177,7 @@ func TestEscNeverQuitsFromTheTopLevel(t *testing.T) {
 	if l.quit {
 		t.Fatal("esc must not quit")
 	}
-	l.keys("9", "esc")
+	l.keys("a", "esc")
 	if l.quit {
 		t.Fatal("esc in the guide must not quit")
 	}
@@ -206,7 +202,7 @@ func TestQDoesNotQuitWhileARunGoesNorWhileTyping(t *testing.T) {
 
 func TestQInsideAGuideFormGoesBackInsteadOfQuitting(t *testing.T) {
 	l := newLab(t, true, 100, 28)
-	l.keys("9", "down", "enter")
+	l.keys("a", "down", "enter")
 	l.keys("q")
 	if l.quit {
 		t.Fatal("q inside a form goes back")
@@ -220,7 +216,7 @@ func TestYCopiesTheFocusedItemWithOSC52AndSaysSo(t *testing.T) {
 	sh.clip = &out
 	l.m = sh
 
-	l.keys("3")
+	l.keys("4")
 	l.keys("y")
 	want := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte("go work use ./libs/x")) + "\a"
 	if out.String() != want {
@@ -229,20 +225,20 @@ func TestYCopiesTheFocusedItemWithOSC52AndSaysSo(t *testing.T) {
 	l.has("copied: go work use ./libs/x")
 
 	out.Reset()
-	l.keys("1", "y")
+	l.keys("2", "y")
 	if out.Len() == 0 || !strings.Contains(string(mustDecode(t, out.String())), "/") {
 		t.Fatalf("projects copies the project root: %q", out.String())
 	}
 
 	out.Reset()
-	l.keys("6", "y")
+	l.keys("5", "y")
 	got := string(mustDecode(t, out.String()))
 	if !slices.ContainsFunc(sampleDeps.Rows, func(r depsview.Row) bool { return r.Name == got }) {
 		t.Fatalf("deps copies the package: %q", got)
 	}
 
 	out.Reset()
-	l.keys("b", "2", "y")
+	l.keys("b", "3", "y")
 	if got := string(mustDecode(t, out.String())); !strings.HasPrefix(got, "smith ") {
 		t.Fatalf("run copies the command line: %q", got)
 	}
@@ -324,25 +320,27 @@ func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
 
 func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("3")
-	l.has("2 passed", "1 failed")
 	l.keys("4")
+	l.has("2 failed", "2 checks passed")
+	l.keys("6")
 	l.has("1.0.0 →", "1.1.0", "unchanged: sdk")
-	l.keys("8")
-	l.has("ci.devcontainer", "default: main")
-	l.keys("2")
+	l.keys("5")
+	l.has("3 with newer releases")
+	l.keys("3")
 	l.has("Nothing has run yet")
-	l.keys("1")
+	l.keys("2")
 	l.has("Projects (4)")
+	l.keys("1")
+	l.has("Next:")
 }
 
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("✖ go.work lists every module", "f fix", "x fix all", "r reload")
+	l.has("✖ go.work lists every module", "x fix all", "r reload")
 	l.hasNot("[↻", "Re-check")
-	// The problem and its remedy are inline, without opening the row.
-	l.has("→ go work use ./libs/x", "libs/x is missing", "2 checks passed")
+	// The list is one line per check; the detail beside it tells the selected one in full.
+	l.has("2 failed", "Problem", "libs/x is missing", "Remedy", "go work use ./libs/x", "2 checks passed")
 	l.hasNot("git is installed")
 }
 
@@ -356,9 +354,9 @@ func TestTheDoctorTabShowsThePassedChecksOnRequest(t *testing.T) {
 
 func TestTheFixDialogsListTheFilesOrThePackagesTheyTouch(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("3", "down", "f")
+	l.keys("4", "down", "f")
 	l.has("Files that will change:", "writes apps/web/Dockerfile")
-	l.keys("esc", "4", "x")
+	l.keys("esc", "6", "x")
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0", "kit 0.2.0 → 0.2.1", "registry", "It cannot")
 }
 
@@ -366,7 +364,7 @@ func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
 	l := newLab(t, true, 120, 34)
 	p := &scripted{lines: []string{"web 1.0.0 -> 1.1.0 (dry run)"}, hold: true, release: make(chan struct{})}
 	l.next = p
-	l.keys("4", "p")
+	l.keys("6", "p")
 	if l.sh().tab != "release" {
 		t.Fatalf("the preview left the Release screen for %q", l.sh().tab)
 	}
@@ -378,7 +376,7 @@ func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
 
 func TestFixingAsksFirstWithTheCommandLine(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("3", "x")
+	l.keys("4", "x")
 	l.has("Fix with doctor", "The command that will run:", "$ smith doctor --fix --yes")
 	if len(l.started) != 0 {
 		t.Fatal("nothing runs before the answer")
@@ -394,13 +392,13 @@ func TestFixingAsksFirstWithTheCommandLine(t *testing.T) {
 
 func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("4", "p")
+	l.keys("6", "p")
 	if l.lastStarted() != "release --dry-run" {
 		t.Fatalf("preview started %q", l.lastStarted())
 	}
 	l.hasNot("The command that will run:")
 	l = newLab(t, true, 120, 30)
-	l.keys("4", "x")
+	l.keys("6", "x")
 	l.has("Release", "$ smith release --yes", "Run  Enter", "Cancel  Esc")
 	if len(l.started) != 0 {
 		t.Fatal("release must wait for the dialog")
@@ -417,10 +415,10 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 	}
 	for name, steps := range map[string][]func(*lab){
 		"install": {func(l *lab) { l.keys("i") }},
-		"fix all": {func(l *lab) { l.keys("3", "x") }},
+		"fix all": {func(l *lab) { l.keys("4", "x") }},
 		"ci":      fromPalette("Regenerate CI"),
 		"upgrade": fromPalette("Upgrade workspace"),
-		"release": {func(l *lab) { l.keys("4", "x") }},
+		"release": {func(l *lab) { l.keys("6", "x") }},
 	} {
 		l := newLab(t, true, 120, 30)
 		for _, step := range steps {
@@ -442,24 +440,6 @@ func TestCommandsThatNeedATerminalHandOverToIt(t *testing.T) {
 	if len(l.started) != 0 {
 		t.Fatal("it must not run inside the shell")
 	}
-}
-
-func TestTheSettingsTabEditsThroughAConfirmedConfigSet(t *testing.T) {
-	l := newLab(t, true, 120, 30)
-	l.keys("8", "enter") // a yes/no setting flips
-	l.has("$ smith config set ci.devcontainer false")
-	l.keys("y")
-	if l.lastStarted() != "config set ci.devcontainer false" {
-		t.Fatalf("started %q", l.lastStarted())
-	}
-	l = newLab(t, true, 120, 30)
-	l.keys("8", "down", "enter")
-	l.has("accepts  any of github, azure")
-	// While typing, the letters belong to the text field, not to the shell.
-	l.typeText("bq?:1/").keys("backspace", "backspace", "backspace", "backspace", "backspace", "backspace")
-	l.hasNot("The command that will run:")
-	l.typeText(" azure").keys("enter")
-	l.has("$ smith config set ci.providers github azure")
 }
 
 func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {

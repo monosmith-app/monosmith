@@ -20,7 +20,9 @@ func sample() Model {
 		{Finding: protocol.Finding{Check: "CI of api matches", Detail: "drift", Remedy: "run smith ci generate", Fix: risky}, Source: "smith"},
 		{Finding: protocol.Finding{Check: "Go is installed", Detail: "go is not on PATH", Remedy: "install Go"}, Source: "go"},
 	}}
-	return FromResult(Result{Report: report, Projects: []ProjectRef{{Name: "web", Root: "apps/web"}, {Name: "api", Root: "apps/api"}}})
+	m := FromResult(Result{Report: report, Projects: []ProjectRef{{Name: "web", Root: "apps/web"}, {Name: "api", Root: "apps/api"}}})
+	m.Grouped = true // the workspace's checks first, then web's, then api's
+	return m
 }
 
 func key(s string) tea.KeyMsg {
@@ -33,8 +35,17 @@ func key(s string) tea.KeyMsg {
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
 }
 
+var plainTheme = theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
+
+// plain is the page alone in the pane: a check expands in place.
 func plain(m Model) string {
-	lines, _ := m.View(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII}), 120)
+	lines, _ := m.View(plainTheme, 120, true)
+	return strings.Join(lines, "\n")
+}
+
+// plainBeside is the page with the detail beside it, which tells a check in full.
+func plainBeside(m Model) string {
+	lines, _ := m.View(plainTheme, 120, false)
 	return strings.Join(lines, "\n")
 }
 
@@ -51,11 +62,14 @@ func TestTheViewGroupsFindingsByProjectWithTheWorkspaceFirst(t *testing.T) {
 
 func TestGTurnsTheGroupingOffAndOn(t *testing.T) {
 	m := sample().Update(key("g"))
-	if !m.Flat || strings.Contains(plain(m), "workspace") {
+	if m.Grouped || strings.Contains(plain(m), "workspace") {
 		t.Fatalf("flat view still has group headers:\n%s", plain(m))
 	}
-	if m = m.Update(key("g")); m.Flat {
+	if m = m.Update(key("g")); !m.Grouped {
 		t.Fatal("g again groups again")
+	}
+	if FromResult(Result{}).Grouped {
+		t.Fatal("the list starts flat")
 	}
 }
 
@@ -100,8 +114,8 @@ func TestPassedChecksAreOneCollapsedLineThatEnterOrPOpens(t *testing.T) {
 	if strings.Contains(out, "git is installed") || !strings.Contains(out, "1 checks passed") {
 		t.Fatalf("passes should be collapsed:\n%s", out)
 	}
-	if !strings.Contains(out, "→ install Go") || !strings.Contains(out, "go is not on PATH") {
-		t.Fatalf("a problem shows its detail and remedy inline:\n%s", out)
+	if strings.Contains(out, "install Go") || strings.Contains(out, "go is not on PATH") {
+		t.Fatalf("a check is one line until it is expanded:\n%s", out)
 	}
 	// Three problems, then the collapsed line: enter on it opens the passes.
 	for range 3 {
@@ -140,5 +154,58 @@ func TestFailuresAreListedBeforeWarnings(t *testing.T) {
 	}
 	if got, _ := m.Selected(); got.Check != "a failed thing" {
 		t.Fatalf("the cursor starts on the failure, got %q", got.Check)
+	}
+}
+
+func TestTheHeadlineComesFirstThenOneLinePerFailingCheck(t *testing.T) {
+	flat := sample()
+	flat.Grouped = false
+	lines, _ := flat.View(plainTheme, 120, true)
+	if !strings.Contains(lines[0], "3 failed") {
+		t.Fatalf("the headline is first: %q", lines[0])
+	}
+	var checks []string
+	for _, l := range lines[2:] {
+		if strings.TrimSpace(l) != "" && !strings.Contains(l, "checks passed") {
+			checks = append(checks, l)
+		}
+	}
+	if len(checks) != 3 {
+		t.Fatalf("one line per failing check, got %d:\n%s", len(checks), strings.Join(lines, "\n"))
+	}
+	if !strings.Contains(checks[0], "Docker registries of web agree") {
+		t.Fatalf("a line is the state and the title: %q", checks[0])
+	}
+}
+
+func TestEnterExpandsOneCheckAndTheProblemAndRemedyShowOnce(t *testing.T) {
+	m := sample().Update(key("enter"))
+	out := plain(m)
+	if strings.Count(out, "go is not on PATH") != 1 || strings.Count(out, "install Go") != 1 {
+		t.Fatalf("problem and remedy once:\n%s", out)
+	}
+	if strings.Contains(out, "two registries") {
+		t.Fatalf("only the selected check expands:\n%s", out)
+	}
+	m = m.Update(key("down"))
+	if strings.Contains(plain(m), "go is not on PATH") {
+		t.Fatal("moving closes the expanded check")
+	}
+}
+
+func TestBesideTheDetailTheListDoesNotRepeatWhatTheDetailSays(t *testing.T) {
+	out := plainBeside(sample().Update(key("enter")))
+	if strings.Contains(out, "go is not on PATH") || strings.Contains(out, "install Go") {
+		t.Fatalf("the detail pane tells it, the list does not:\n%s", out)
+	}
+}
+
+func TestTextTellsTheProblemTheRemedyAndTheFixOnce(t *testing.T) {
+	f, _ := sample().Update(key("down")).Selected()
+	got := strings.Join(Text(plainTheme, f, 2), "\n")
+	for _, want := range []string{"two registries", "pick one", "fix: restore web's Dockerfile", "writes apps/web/Dockerfile"} {
+		if strings.Count(got, want) != 1 {
+			t.Errorf("%q should appear once:\n%s", want, got)
+		}
 	}
 }

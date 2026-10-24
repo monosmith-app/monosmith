@@ -9,19 +9,16 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
-	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/muesli/termenv"
@@ -52,14 +49,6 @@ var sampleProjects = []projectlist.Project{
 }
 
 var sampleDoctorProjects = []doctorview.ProjectRef{{Name: "web", Root: "apps/web"}, {Name: "orders", Root: "apps/orders"}}
-
-var samplePlugins = []pluginsview.Row{
-	{Name: "go", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"orders", "kit"}},
-	{Name: "node", Source: "built-in", Builtin: true, Switchable: true, Enabled: true, Roles: []string{"language"}, UsedBy: []string{"web"}},
-	{Name: "python", Source: "built-in", Builtin: true, Switchable: true, Roles: []string{"language"}, Requires: []string{"uv"}},
-	{Name: "vitest", Source: "built-in", Builtin: true, Enabled: true, Roles: []string{"test"}},
-	{Name: "acme-lint", Version: "0.3.0", Source: "/home/me/.smith/plugins", Enabled: true, UsedBy: []string{"web"}},
-}
 
 var sampleDeps = depsview.Result{
 	Rows: []depsview.Row{
@@ -131,7 +120,6 @@ func (l *lab) sh() Shell { return l.m.(Shell) }
 
 func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	t.Helper()
-	recipeRoot := recipeWorkspace(t)
 	l := &lab{t: t, clock: time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)}
 	report := doctor.Report{Passed: 2, Failed: 2, Findings: []doctor.Finding{
 		{Finding: protocol.Finding{Check: "go.work lists every module", Detail: "libs/x is missing", Remedy: "go work use ./libs/x"}, Source: "go"},
@@ -157,27 +145,7 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 			Doctor:   func() doctorview.Result { return doctorview.Result{Report: report, Projects: sampleDoctorProjects} },
 			Release:  func() releaseview.Result { return releaseview.Result{Plan: plan} },
 			Projects: func() projectsLoaded { return projectsLoaded{projects: sampleProjects, branch: "main"} },
-			Plugins:  func() pluginsview.Result { return pluginsview.Result{Rows: samplePlugins} },
 			Deps:     func() depsview.Result { return sampleDeps },
-			Recipes:  func() recipesview.Loaded { return recipesview.Loaded{Catalog: recipesview.ReadCatalog(recipeRoot)} },
-			DescribeRecipe: func(ref string, answers map[string]string) recipesview.Detail {
-				return recipesview.Describe(recipeRoot, ref, answers)
-			},
-			Settings: func() settingsview.Result {
-				fields, _ := configedit.Fields()
-				var out settingsview.Result
-				for _, f := range fields {
-					switch f.Path {
-					case "ci.devcontainer":
-						out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: "true", Set: true})
-					case "ci.providers":
-						out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: `["github"]`, Set: true})
-					case "release.branch":
-						out.Settings = append(out.Settings, settingsview.Setting{Field: f})
-					}
-				}
-				return out
-			},
 			Plan: func(argv []string) []string {
 				return []string{"kit:build", "orders:build", "web:build", "sdk:test"}
 			},
@@ -197,7 +165,27 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 	l.m = sh
 	l.drive(sh.Init())
 	l.send(tea.WindowSizeMsg{Width: w, Height: h})
+	if inWorkspace {
+		// The shell opens on Home; most tests are about the project list.
+		l.openTab(commands.TabProjects)
+	}
 	return l
+}
+
+// openTab shows a tab the way a click on it would.
+func (l *lab) openTab(id string) *lab {
+	sh := l.sh()
+	cmd := sh.gotoTab(id)
+	l.m = sh
+	l.drive(cmd)
+	return l
+}
+
+// newHomeLab is a workspace shell as the user finds it on start: on Home.
+func newHomeLab(t *testing.T, w, h int) *lab {
+	t.Helper()
+	l := newLab(t, true, w, h)
+	return l.openTab(commands.TabHome)
 }
 
 // drive runs the commands an update returned, as Bubble Tea would, and feeds

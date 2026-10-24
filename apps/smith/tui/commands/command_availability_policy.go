@@ -8,6 +8,9 @@ import (
 
 // Unavailable says why the command cannot be used now, or "" when it can.
 func (c Command) Unavailable(s State) string {
+	if reason := s.Reasons[c.ID]; reason != "" {
+		return reason
+	}
 	switch {
 	case c.NeedsWorkspace && !s.InWorkspace:
 		return "not in a workspace (press " + ShortcutOf("file.new") + " to create one)"

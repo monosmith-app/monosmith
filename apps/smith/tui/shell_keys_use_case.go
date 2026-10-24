@@ -25,7 +25,7 @@ var mouseHelp = []string{
 
 // editing is true while a text field has the keyboard.
 func (s Shell) editing() bool {
-	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Editing) || (s.tab == commands.TabRecipes && s.recipes.Editing())
+	return s.tab == commands.TabGuide && s.guide.Editing()
 }
 
 // formOpen is true while a guided form is open: its keys are the form's.
@@ -164,18 +164,6 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if project != "" {
 			return s.execute([]string{"graph", "--focus", project}, false)
 		}
-	case "plugin-toggle":
-		if argv := s.plugins.ToggleArgv(); argv != nil {
-			return s.execute(argv, false)
-		}
-		s.say("Only the built-in language plugins can be turned on or off here")
-	case "recipes-create":
-		argv, reason := s.recipes.Argv()
-		if argv == nil {
-			s.say(reason)
-			return nil
-		}
-		return s.execute(argv, false)
 	case "release-notes":
 		if s.release.CanRelease() {
 			return s.execute([]string{"release", "--dry-run", "--notes"}, false)
@@ -248,8 +236,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.toggleMouse()
 	case commands.ViewAction:
 		return s.activateSelection(c.Action)
-	case commands.ReloadDoctor:
-		s.doctor = doctorview.Model{}
+	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
 	}
 	return nil
@@ -268,7 +255,7 @@ func (s *Shell) openHelp() {
 
 // gotoTab shows a view and loads it the first time.
 func (s *Shell) gotoTab(id string) tea.Cmd {
-	if !contains(s.tabs, id) {
+	if !s.canShow(id) {
 		return nil
 	}
 	if id != s.tab {
@@ -278,8 +265,9 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 	s.tab, s.detailOpen = id, false
 	switch id {
 	case commands.TabDoctor:
-		if s.doctor.Report == nil && s.doctor.Err == nil && s.sources.Doctor != nil {
+		if s.doctor.Report == nil && s.doctor.Err == nil && !s.doctor.Loading && s.sources.Doctor != nil {
 			load := s.sources.Doctor
+			s.doctor.Loading = true
 			return func() tea.Msg { return load() }
 		}
 	case commands.TabRelease:
@@ -287,24 +275,9 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 			load := s.sources.Release
 			return func() tea.Msg { return load() }
 		}
-	case commands.TabPlugins:
-		if !s.plugins.Loaded && s.sources.Plugins != nil {
-			load := s.sources.Plugins
-			return func() tea.Msg { return load() }
-		}
 	case commands.TabDeps:
 		if !s.deps.Loaded && s.sources.Deps != nil {
 			load := s.sources.Deps
-			return func() tea.Msg { return load() }
-		}
-	case commands.TabRecipes:
-		if !s.recipes.Loaded && s.sources.Recipes != nil {
-			load := s.sources.Recipes
-			return func() tea.Msg { return load() }
-		}
-	case commands.TabSettings:
-		if !s.settings.Loaded && s.sources.Settings != nil {
-			load := s.sources.Settings
 			return func() tea.Msg { return load() }
 		}
 	}
@@ -315,29 +288,25 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch s.tab {
+	case commands.TabHome:
+		if name == "enter" {
+			if id := s.nextAction().CommandID; id != "" {
+				return s.activate(id)
+			}
+		}
 	case commands.TabProjects:
 		if s.detailOpen {
 			return s.detailKey(name)
 		}
 		return s.projectsKey(name)
-	case commands.TabPlugins:
-		s.plugins = s.plugins.Update(msg, s.listPage())
 	case commands.TabDeps:
 		s.deps = s.deps.Update(msg, s.listPage())
 	case commands.TabRun:
 		return s.runKey(name)
-	case commands.TabRecipes:
-		s.recipes = s.recipes.Update(msg)
 	case commands.TabRelease:
 		s.release = s.release.Update(msg)
 	case commands.TabDoctor:
 		s.doctor = s.doctor.Update(msg)
-	case commands.TabSettings:
-		next, argv := s.settings.Update(msg)
-		s.settings = next
-		if argv != nil {
-			return s.execute(argv, false)
-		}
 	case commands.TabGuide:
 		g, cmd := s.guide.Handle(msg)
 		s.guide = g
@@ -348,8 +317,14 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 				return s.execute(argv, false)
 			}
 			if s.inWorkspace {
-				return s.gotoTab(commands.TabProjects)
+				return s.gotoTab(commands.TabHome)
 			}
+		}
+		if s.inWorkspace && g.Title() == "" {
+			// Inside a workspace the guide is only its forms: backing out of
+			// the first question leaves, there is no menu to land on.
+			s.guide = g.Reset()
+			return s.gotoTab(commands.TabHome)
 		}
 		return cmd
 	}
@@ -454,6 +429,15 @@ func (s *Shell) logLines() []string {
 	return s.run.Lines
 }
 
+// loadProjects reads the project list again; nil without a source.
+func (s *Shell) loadProjects() tea.Cmd {
+	load := s.sources.Projects
+	if load == nil {
+		return nil
+	}
+	return func() tea.Msg { return load() }
+}
+
 // listPage is how many rows a page key moves in a list view.
 func (s *Shell) listPage() int { return max(s.mainInner().H-6, 1) }
 
@@ -461,16 +445,20 @@ func (s *Shell) listPage() int { return max(s.mainInner().H-6, 1) }
 // view that has nothing to reload.
 func (s *Shell) reload() tea.Cmd {
 	switch s.tab {
+	case commands.TabHome:
+		s.doctor = doctorview.Model{}
+		cmds := []tea.Cmd{s.loadProjects()}
+		if load := s.sources.Doctor; load != nil {
+			s.doctor.Loading = true
+			cmds = append(cmds, func() tea.Msg { return load() })
+		}
+		return tea.Batch(cmds...)
 	case commands.TabDoctor:
 		s.doctor = doctorview.Model{}
 	case commands.TabRelease:
 		s.release = releaseview.Model{}
-	case commands.TabPlugins:
-		s.plugins = s.plugins.Reset()
 	case commands.TabDeps:
 		s.deps = depsview.Model{}
-	case commands.TabRecipes:
-		s.recipes = s.recipes.Reset()
 	default:
 		return nil
 	}

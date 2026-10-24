@@ -25,8 +25,8 @@ const (
 	Stop
 	// Follow toggles following the end of the log.
 	Follow
-	// ReloadDoctor runs doctor again.
-	ReloadDoctor
+	// OpenDoctor shows the Doctor view (which checks the workspace the first time).
+	OpenDoctor
 	// CopyFocused copies the focused item to the clipboard.
 	CopyFocused
 	// ToggleMouse turns mouse reporting off or on.
@@ -40,14 +40,12 @@ const (
 
 // The ids of the main views.
 const (
+	TabHome     = "home"
 	TabProjects = "projects"
 	TabRun      = "run"
 	TabDoctor   = "doctor"
-	TabRelease  = "release"
-	TabPlugins  = "plugins"
 	TabDeps     = "deps"
-	TabRecipes  = "recipes"
-	TabSettings = "settings"
+	TabRelease  = "release"
 	TabGuide    = "guide"
 )
 
@@ -122,4 +120,8 @@ type State struct {
 	Running bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// Reasons say, by command id, why the open view cannot do something now
+	// (nothing to update, no safe fix): the command is refused with that
+	// reason and the footer leaves its hint out.
+	Reasons map[string]string
 }

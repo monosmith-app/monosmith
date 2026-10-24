@@ -12,7 +12,7 @@ var (
 	busy    = State{InWorkspace: true, Running: true, View: TabProjects}
 )
 
-var everyView = []string{TabProjects, TabRun, TabDoctor, TabRelease, TabPlugins, TabDeps, TabRecipes, TabSettings, TabGuide}
+var everyView = []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease, TabGuide}
 
 func TestNoKeyIsBoundTwiceInTheSameViewAndState(t *testing.T) {
 	for _, base := range []State{inside, outside, busy} {
@@ -136,18 +136,13 @@ func TestAViewsOwnKeyWinsOverTheSameGlobalKey(t *testing.T) {
 	if _, _, ok := ByKey("a", deps); ok {
 		t.Fatal("a marks all in Deps, a pane key: no command runs")
 	}
-	recipes := inside
-	recipes.View = TabRecipes
-	if c, _, _ := ByKey("c", recipes); c.ID != "recipes.create" {
-		t.Fatalf("c in Recipes is %s", c.ID)
-	}
 	if c, _, _ := ByKey("c", inside); c.ID != "run.typecheck" {
 		t.Fatalf("c in Projects is %s", c.ID)
 	}
 }
 
 func TestNoPlainKeyWorksWhileATextFieldOrAFormHasTheKeyboard(t *testing.T) {
-	for _, s := range []State{{InWorkspace: true, View: TabSettings, Editing: true}, {InWorkspace: true, View: TabGuide, Form: true}} {
+	for _, s := range []State{{InWorkspace: true, View: TabGuide, Editing: true}, {InWorkspace: true, View: TabGuide, Form: true}} {
 		for _, c := range all {
 			for _, k := range c.Keys {
 				if _, _, ok := ByKey(k, s); ok && plain(k) {
@@ -156,7 +151,7 @@ func TestNoPlainKeyWorksWhileATextFieldOrAFormHasTheKeyboard(t *testing.T) {
 			}
 		}
 	}
-	editing := State{InWorkspace: true, View: TabSettings, Editing: true}
+	editing := State{InWorkspace: true, View: TabGuide, Editing: true}
 	for _, k := range []string{"ctrl+p", "f1"} {
 		if c, _, ok := ByKey(k, editing); !ok || !c.WhileEditing {
 			t.Errorf("%s should still work while editing", k)
@@ -203,14 +198,15 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	}
 	for view, want := range map[string]string{
 		TabProjects: "Enter detail · b build · t test · l lint · c typecheck · w changed · d doctor · a add project · y copy",
-		TabDoctor:   "Enter detail · f fix · x fix all · g group · p passed · r reload · b build · t test · y copy",
-		TabDeps:     "Space mark · a all · u update · v align · r reload · b build · t test · y copy",
+		TabDoctor:   "Enter expand · f fix · x fix all · g group · p passed · r reload · b build · t test · y copy",
+		TabHome:     "Enter next · r reload · b build · t test · w changed · d doctor",
+		TabDeps:     "Space mark · s safe · a all · u update · v align · r reload · b build · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · t test",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {
 			t.Errorf("%s footer is\n%s\nwant\n%s", view, got, want)
 		}
-		if got := line(view); !strings.HasSuffix(got, "1-9 views · m mouse · : palette · ? help · q quit") {
+		if got := line(view); !strings.HasSuffix(got, "1-6 views · m mouse · : palette · ? help · q quit") {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
@@ -309,11 +305,74 @@ func TestQuitCopyAndMouseAreSingleKeys(t *testing.T) {
 }
 
 func TestNumberKeysSwitchViewsInTheOrderOfTheTabs(t *testing.T) {
-	want := []string{TabProjects, TabRun, TabDoctor, TabRelease, TabPlugins, TabDeps, TabRecipes, TabSettings, TabGuide}
+	want := []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease}
 	for i, tab := range want {
 		key := string(rune('1' + i))
 		if c, _, ok := ByKey(key, inside); !ok || c.Tab != tab {
 			t.Errorf("%s opens %q, want %q", key, c.Tab, tab)
+		}
+	}
+}
+
+func TestAViewLeavesOutTheHintsOfKeysThatCannotDoAnythingNow(t *testing.T) {
+	labels := func(s State) []string {
+		v, _ := Hints(s)
+		var out []string
+		for _, h := range v {
+			out = append(out, h.Label)
+		}
+		return out
+	}
+	deps := inside
+	deps.View = TabDeps
+	if got := labels(deps); !slices.Contains(got, "update") || !slices.Contains(got, "align") {
+		t.Fatalf("with something to do: %v", got)
+	}
+	deps.Reasons = map[string]string{"deps.update": "no dependency to update", "deps.align": "nothing to align"}
+	if got := labels(deps); slices.Contains(got, "update") || slices.Contains(got, "align") {
+		t.Fatalf("with nothing to do the hints stay: %v", got)
+	}
+	if _, reason, ok := ByKey("u", deps); !ok || reason != "no dependency to update" {
+		t.Fatalf("the key says why it does nothing: %q %v", reason, ok)
+	}
+}
+
+func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
+	has := func(s State, label string) bool {
+		v, _ := Hints(s)
+		for _, h := range v {
+			if h.Label == label {
+				return true
+			}
+		}
+		return false
+	}
+	narrow := State{InWorkspace: true, Narrow: true, View: TabDoctor}
+	wide := State{InWorkspace: true, View: TabDoctor}
+	if !has(narrow, "expand") || has(wide, "expand") {
+		t.Fatal("Enter expands a check in the single pane and does nothing beside the detail")
+	}
+}
+
+func TestTheRunFooterDoesNotOfferFollowOrTasksWhenTheOutputIsInTheTerminal(t *testing.T) {
+	s := State{InWorkspace: true, View: TabRun, Reasons: map[string]string{
+		"run.follow": "the output is in your terminal's scrollback", "run.scroll": "the output is in your terminal's scrollback",
+	}}
+	v, _ := Hints(s)
+	for _, h := range v {
+		if h.Label == "follow" || h.Label == "task" {
+			t.Fatalf("the footer offers %q", h.Label)
+		}
+	}
+}
+
+func TestWhatTheRemovedViewsShowedIsStillACommandOfThePalette(t *testing.T) {
+	for id, argv := range map[string][]string{
+		"cli.plugins": {"plugin", "list"}, "cli.recipes": {"recipe"}, "cli.settings": {"config", "list"}, "cli.guide": {"help"},
+	} {
+		c, ok := ByID(id)
+		if !ok || !slices.Equal(c.Argv, argv) || c.Kind != Execute {
+			t.Errorf("%s: %+v", id, c)
 		}
 	}
 }

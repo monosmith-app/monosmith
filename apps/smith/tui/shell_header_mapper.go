@@ -27,11 +27,14 @@ func (s Shell) headerRow() string {
 }
 
 // healthSummary is what the last doctor run found, as counts: "✖2 ▲2" for two
-// failures and two warnings, a check mark when everything passed, and nothing
-// until doctor has run (the Doctor view runs it).
+// failures and two warnings, a check mark when everything passed, and "checking…"
+// until the first doctor run (it starts with the shell) has finished.
 func (s Shell) healthSummary() string {
 	r := s.doctor.Report
 	if r == nil {
+		if s.doctor.Loading {
+			return s.th.Muted("checking…")
+		}
 		return ""
 	}
 	var parts []string

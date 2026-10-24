@@ -36,13 +36,24 @@ type inlineDoneMsg struct {
 	err error
 }
 
-// runsInline reports whether argv is a task run that should use the terminal.
+// cliVerbs are the commands that took the place of the views that left the
+// interface (plugins, recipes, settings, the guide) and of the palette's
+// read-outs: they print and end, so they use the terminal like a task run.
+var cliVerbs = map[string]bool{
+	"plugin": true, "recipe": true, "config": true, "info": true, "graph": true, "affected": true,
+	"explain": true, "projects": true, "stacks": true, "kinds": true, "commands": true, "help": true,
+}
+
+// runsInline reports whether argv is a task run, or a command that prints and
+// ends, that should use the terminal.
 func (s Shell) runsInline(argv []string) bool {
 	if s.sources.Inline == nil {
 		return false
 	}
-	_, ok := commands.ParseRun(argv)
-	return ok
+	if _, ok := commands.ParseRun(argv); ok {
+		return true
+	}
+	return len(argv) > 0 && cliVerbs[argv[0]]
 }
 
 // startInline hands the terminal to the command.
@@ -62,12 +73,16 @@ func (s *Shell) inlineDone(msg inlineDoneMsg) tea.Cmd {
 		Argv: msg.cmd.Argv, Code: r.Exit.Code, Cancelled: r.Exit.Cancelled,
 		Failed: r.Exit.Err != nil || msg.err != nil, Took: r.Took,
 	}
-	s.runs = append(s.runs, run)
-	if len(s.runs) > maxHistory {
-		s.runs = s.runs[len(s.runs)-maxHistory:]
-	}
-	if contains(s.tabs, commands.TabRun) {
-		s.tab = commands.TabRun
+	_, isRun := commands.ParseRun(run.Argv)
+	if isRun {
+		s.runs = append(s.runs, run)
+		if len(s.runs) > maxHistory {
+			s.runs = s.runs[len(s.runs)-maxHistory:]
+		}
+		s.last = lastOf(run.Argv, run.OK(), run.Cancelled, shortDuration(run.Took))
+		if contains(s.tabs, commands.TabRun) {
+			s.tab = commands.TabRun
+		}
 	}
 	switch {
 	case run.Cancelled:
@@ -77,10 +92,10 @@ func (s *Shell) inlineDone(msg inlineDoneMsg) tea.Cmd {
 	default:
 		s.notify(fmt.Sprintf("Failed (exit %d)", run.Code), toast.Error)
 	}
-	if load := s.sources.Projects; load != nil {
-		return func() tea.Msg { return load() }
+	if isRun {
+		return s.loadProjects()
 	}
-	return nil
+	return s.refreshAfter(run.Argv)
 }
 
 // ExitSummary is the line printed in the scrollback when the interface ends: how

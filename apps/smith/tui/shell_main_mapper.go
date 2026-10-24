@@ -16,7 +16,7 @@ import (
 
 // hit says what a click on a line of the main view means.
 type hit struct {
-	// kind is "project", "task", "finding", "setting", "option", "tree" or "action".
+	// kind is "project", "task", "finding", "release", "dep", "option" or "action".
 	kind  string
 	id    string
 	index int
@@ -45,8 +45,11 @@ func (s Shell) mainContent(w, h int) content {
 		return s.projectsContent(w, h)
 	case commands.TabRun:
 		return s.runContent(w, h)
+	case commands.TabHome:
+		return s.homeContent(w)
 	case commands.TabDoctor:
-		lines, rowOf := s.doctor.View(s.th, w)
+		// Beside the list the detail tells a check in full; alone, the list expands it.
+		lines, rowOf := s.doctor.View(s.th, w, !s.lay().HasDetail())
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
 		}
@@ -58,30 +61,12 @@ func (s Shell) mainContent(w, h int) content {
 		}
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
-	case commands.TabPlugins:
-		lines, rowOf := s.plugins.View(s.th, w, max(h-len(c.lines), 1))
-		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "plugin", index: i}
-		}
-		c.lines = append(c.lines, lines...)
 	case commands.TabDeps:
 		lines, rowOf := s.deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
-	case commands.TabRecipes:
-		lines, rowOf := s.recipes.View(s.th, w)
-		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "recipe", index: i}
-		}
-		c.lines = append(c.lines, lines...)
-	case commands.TabSettings:
-		lines, rowOf := s.settings.View(s.th, w, h)
-		for row, i := range rowOf {
-			c.hits[row] = hit{kind: "setting", index: i}
-		}
-		c.lines = lines
 	case commands.TabGuide:
 		lines, optionAt := s.guide.Body(s.th, w)
 		for row, i := range optionAt {

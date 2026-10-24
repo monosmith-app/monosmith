@@ -21,7 +21,7 @@ func stripText(l *lab) string {
 func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 	spelled := func(text string) string {
 		var out []string
-		for _, name := range []string{"Projects", "Proj ", "Release", "Rel ", "Plugins", "Plug ", "Settings", "Sett "} {
+		for _, name := range []string{"Projects", "Proj ", "Release", "Rel "} {
 			if strings.Contains(text, name) {
 				out = append(out, name)
 			}
@@ -34,7 +34,7 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 		before := spelled(stripText(l))
 		l.keys("b")
 		l.advance(time.Second)
-		l.keys("1")
+		l.keys("2")
 		if after := spelled(stripText(l)); after != before {
 			t.Errorf("%d columns: tab names changed from %q to %q", w, before, after)
 		}
@@ -43,7 +43,7 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 
 func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 	text := stripText(newLab(t, true, 120, 30))
-	for _, name := range []string{"Projects", "Run", "Doctor", "Release", "Plugins", "Deps", "Recipes", "Settings", "Guide"} {
+	for _, name := range []string{"Home", "Projects", "Run", "Doctor", "Deps", "Release"} {
 		if !strings.Contains(text, name) {
 			t.Errorf("at 120 columns %q is not spelled out:\n%s", name, text)
 		}
@@ -52,7 +52,7 @@ func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 
 func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	l := newLab(t, true, 140, 30)
-	l.keys("3")
+	l.keys("4")
 	if text := stripText(l); !strings.Contains(text, "Doctor ✖2") {
 		t.Fatalf("the Doctor tab should carry its failures:\n%s", text)
 	}

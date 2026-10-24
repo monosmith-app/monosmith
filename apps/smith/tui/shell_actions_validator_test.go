@@ -20,7 +20,8 @@ func TestEveryPresentedActionIsAnActionAndIsNotAlsoExcused(t *testing.T) {
 		}
 	}
 	for _, c := range commands.All() {
-		if len(c.Argv) > 0 {
+		// help is cobra's own command, which prints and has no action.
+		if len(c.Argv) > 0 && c.Argv[0] != "help" {
 			if _, ok := catalog.Find(c.Argv); !ok {
 				t.Errorf("%s runs %v, which is not an action", c.ID, c.Argv)
 			}

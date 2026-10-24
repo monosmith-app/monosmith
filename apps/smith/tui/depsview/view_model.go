@@ -226,7 +226,6 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	if n := v.chosenMajors(); n > 0 {
 		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+fmt.Sprintf("%d of the chosen packages are major releases: they can break your code. Read their release notes first.", n)))
 	}
-	tail = append(tail, "", th.Muted("Space marks · S marks the safe ones · A marks all · Enter or U updates the marked (or the row under the cursor) · R re-checks"))
 	var wrapped []string
 	for _, l := range tail {
 		wrapped = append(wrapped, pane.Wrap(l, w, 4)...)
@@ -237,7 +236,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		lines = append(lines, th.Success(th.Icons.Passed+" Every dependency is on its latest release."))
 	} else {
 		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Muted(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major   %d marked", len(v.Rows), patch, minor, major, len(v.Marked))))
+		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
 		if safe := patch + minor; safe > 0 {
 			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press S).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
 		}
@@ -250,7 +249,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		const verW, levelW = 11, 8
 		usedW := max(w-6-nameW-2*verW-levelW, 8)
 		cols := func(name, now, latest, level, projects string) string {
-			return pane.Cell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
+			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
 		}
 		lines = append(lines, th.Muted(pane.Fit("      "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
 		// Two group headings may sit among the rows: they take room too.

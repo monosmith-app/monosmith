@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
-	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
@@ -17,34 +16,23 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
-	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 // Sources load what the shell's views show; tests replace them.
 type Sources struct {
 	// Inline prepares a task run that takes over the terminal (see
 	// shell_inline_run_use_case.go); nil runs it captured in the Run tab.
-	Inline   func(argv []string) *runner.Inline
-	Doctor   func() doctorview.Result
-	Release  func() releaseview.Result
-	Settings func() settingsview.Result
+	Inline  func(argv []string) *runner.Inline
+	Doctor  func() doctorview.Result
+	Release func() releaseview.Result
 	// Projects lists the workspace's projects with their tasks and what the
 	// current changes affect.
 	Projects func() projectsLoaded
-	// Plugins lists the built-in and installed plugins and what uses them.
-	Plugins func() pluginsview.Result
 	// Deps looks for newer releases and applies the one-version policy.
 	Deps func() depsview.Result
-	// Recipes lists the recipe files of the workspace and which recipe makes each kind of project.
-	Recipes func() recipesview.Loaded
-	// DescribeRecipe loads a recipe and resolves it for some answers, without writing anything.
-	DescribeRecipe func(ref string, answers map[string]string) recipesview.Detail
 	// Plan lists the tasks a run command line will start, in order, so the
 	// progress bar knows its total before the first task starts. A nil or
 	// failing Plan only means the total grows as tasks appear.
@@ -79,23 +67,8 @@ func WorkspaceSources(dir, version string) Sources {
 			return runner.NewInline(runner.Spec{Argv: argv, Dir: dir})
 		},
 		Projects: func() projectsLoaded { return loadProjects(open) },
-		Plugins:  func() pluginsview.Result { return pluginsview.Load(open, version) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
-		Recipes: func() recipesview.Loaded {
-			root, err := workspace.FindRoot(dir)
-			if err != nil {
-				return recipesview.Loaded{Catalog: recipesview.Catalog{Err: err}}
-			}
-			return recipesview.Loaded{Catalog: recipesview.ReadCatalog(root)}
-		},
-		DescribeRecipe: func(ref string, answers map[string]string) recipesview.Detail {
-			root, err := workspace.FindRoot(dir)
-			if err != nil {
-				return recipesview.Detail{Ref: ref, Problem: err.Error()}
-			}
-			return recipesview.Describe(root, ref, answers)
-		},
-		Plan: func(argv []string) []string { return planTasks(open, argv) },
+		Plan:     func(argv []string) []string { return planTasks(open, argv) },
 		Doctor: func() doctorview.Result {
 			s, err := open()
 			if err != nil {
@@ -105,25 +78,6 @@ func WorkspaceSources(dir, version string) Sources {
 			out := doctorview.Result{Report: doctor.Run(s)}
 			for _, name := range s.Graph.Names() {
 				out.Projects = append(out.Projects, doctorview.ProjectRef{Name: name, Root: s.Graph.Get(name).Root})
-			}
-			return out
-		},
-		Settings: func() settingsview.Result {
-			root, err := workspace.FindRoot(dir)
-			if err != nil {
-				return settingsview.Result{Err: err}
-			}
-			fields, err := configedit.Fields()
-			if err != nil {
-				return settingsview.Result{Err: err}
-			}
-			var out settingsview.Result
-			for _, f := range fields {
-				value, set, err := configedit.Get(root, f.Path)
-				if err != nil {
-					return settingsview.Result{Err: err}
-				}
-				out.Settings = append(out.Settings, settingsview.Setting{Field: f, Value: value, Set: set})
 			}
 			return out
 		},

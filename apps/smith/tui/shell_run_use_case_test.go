@@ -179,7 +179,7 @@ func TestTheProjectsListMarksTheLastResultOfEachProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
-	l.keys("1")
+	l.keys("2")
 	_, y := l.find("○ orders")
 	if row := l.lines()[y]; !strings.Contains(row, "✖") {
 		t.Fatalf("orders failed but its row says %q", row)

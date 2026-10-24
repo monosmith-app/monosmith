@@ -155,14 +155,15 @@ func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 		"idle":    func(*lab) {},
 		"palette": func(l *lab) { l.keys("ctrl+p") },
 		"help":    func(l *lab) { l.keys("f1") },
-		"confirm": func(l *lab) { l.keys("4", "x") },
+		"confirm": func(l *lab) { l.keys("6", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s", "x:y │ z"}}
 			l.keys("b")
 		},
-		"doctor":   func(l *lab) { l.keys("3") },
-		"settings": func(l *lab) { l.keys("8") },
-		"guide":    func(l *lab) { l.keys("9") },
+		"home":   func(l *lab) { l.keys("1") },
+		"doctor": func(l *lab) { l.keys("4") },
+		"deps":   func(l *lab) { l.keys("5") },
+		"guide":  func(l *lab) { l.keys("a") },
 	}
 	for name, prep := range prepare {
 		for _, btn := range []func(x, y int) any{func(x, y int) any { return click(x, y) }, func(x, y int) any { return rightClick(x, y) }, func(x, y int) any { return wheel(x, y, 1) }} {

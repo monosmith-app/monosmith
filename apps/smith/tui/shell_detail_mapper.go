@@ -19,7 +19,7 @@ func (s Shell) hasDetail() bool {
 	}
 	switch s.tab {
 	case commands.TabProjects, commands.TabDoctor:
-		return true
+		return s.tab == commands.TabProjects || s.doctor.Report != nil
 	case commands.TabRun:
 		return s.run != nil
 	}
@@ -185,24 +185,38 @@ func (s Shell) taskAction(task string) detail.Action {
 	return detail.Action{ID: "x:run:" + task, Label: "Run " + task, Disabled: s.running()}
 }
 
-// doctorPanel describes the selected check; with none selected it describes
-// the workspace.
+// doctorPanel tells the selected check in full: the list beside it has one
+// line per check, so the problem, the remedy and the fix are said here, once.
 func (s Shell) doctorPanel() detail.Panel {
 	f, ok := s.doctor.Selected()
 	if !ok {
 		return s.workspacePanel()
 	}
-	// The list already prints the problem and its remedy: the detail adds
-	// what it does not, the command that fixes it and the files it touches.
-	var rows []detail.Row
-	var items []string
+	state := s.th.Success(s.th.Icons.Passed) + " passed"
+	switch {
+	case !f.OK && f.Warning:
+		state = s.th.Warning(s.th.Icons.Warning) + " warning"
+	case !f.OK:
+		state = s.th.Failure(s.th.Icons.Failed) + " failed"
+	}
+	rows := []detail.Row{{Label: "state", Value: state}}
+	if f.Source != "" {
+		rows = append(rows, detail.Row{Label: "from", Value: f.Source})
+	}
 	if f.Fix != nil && f.Fix.Safe {
 		rows = append(rows, detail.Row{Label: "command", Value: "smith doctor --fix --only '" + f.Check + "'"})
 	} else if c := commandIn(f.Remedy); c != "" {
 		rows = append(rows, detail.Row{Label: "command", Value: c})
 	}
+	secs := []detail.Section{{Heading: f.Check, Rows: rows}}
+	if f.Detail != "" {
+		secs = append(secs, detail.Section{Heading: "Problem", Items: []string{f.Detail}})
+	}
+	if f.Remedy != "" {
+		secs = append(secs, detail.Section{Heading: "Remedy", Items: []string{f.Remedy}})
+	}
 	if f.Fix != nil {
-		items = append(items, f.Fix.Description)
+		items := []string{f.Fix.Description}
 		for _, e := range f.Fix.Files {
 			verb := "writes "
 			if e.Delete {
@@ -210,14 +224,11 @@ func (s Shell) doctorPanel() detail.Panel {
 			}
 			items = append(items, "  "+verb+e.Path)
 		}
+		secs = append(secs, detail.Section{Heading: "Fix", Items: items})
 	}
-	if len(rows) == 0 && len(items) == 0 {
-		return s.workspacePanel()
-	}
-	sec := detail.Section{Heading: f.Check, Rows: rows, Items: items}
-	return detail.Panel{Sections: []detail.Section{sec}, Actions: []detail.Action{
+	return detail.Panel{Sections: secs, Actions: []detail.Action{
 		{ID: "x:doctor-fix", Label: "Fix this…", Shortcut: "f", Disabled: s.doctor.FixArgv() == nil || s.running()},
-		s.action("ws.doctor", "Re-check"),
+		{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload")},
 	}}
 }
 
