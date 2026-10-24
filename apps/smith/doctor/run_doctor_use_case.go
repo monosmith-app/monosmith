@@ -102,7 +102,7 @@ func lineageChecks(s *session.Session) []protocol.Finding {
 	var out []protocol.Finding
 	for _, f := range release.CheckLineage(s, false) {
 		failed[f.Check] = true
-		out = append(out, protocol.Finding{Check: f.Check, Detail: f.Message, Warning: !f.Blocking, Remedy: "see the detail; smith release refuses to run until it is fixed"})
+		out = append(out, protocol.Finding{Check: f.Check, Detail: f.Message, Warning: !f.Blocking, Remedy: strings.Join(f.Remedy, "\n")})
 	}
 	for _, check := range []string{releaselineage.CheckResolve, releaselineage.CheckRegistry} {
 		if !failed[check] {

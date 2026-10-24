@@ -42,9 +42,9 @@ func TestAssess(t *testing.T) {
 		blocking bool
 		text     string
 	}{
-		"web": {true, `newest release tag is @acme/web@1.4.0, under another name than its prefix web@, so the next release would start from web@1.2.0. Set [projects.web] tag_prefix = "@acme/web@"`},
+		"web": {true, `newest release tag is @acme/web@1.4.0, under another name than its prefix web@, so the next release would start from web@1.2.0.`},
 		"sdk": {true, "tagged sdk@0.2.0 but the registry already has 0.4.0"},
-		"kit": {true, "published at 3.1.0 but has no release tag"},
+		"kit": {true, "published at 3.1.0 according to the registry, but has no release tag"},
 		"py":  {false, "could not ask https://pypi.org/simple/ about py (connection refused)"},
 	} {
 		f := got[project]
@@ -52,8 +52,11 @@ func TestAssess(t *testing.T) {
 			t.Errorf("%s: %+v\nwant %q", project, f, want.text)
 		}
 	}
-	if !strings.Contains(got["web"].Message, "git tag web@1.4.0 @acme/web@1.4.0^{commit}") {
-		t.Errorf("web remedy: %s", got["web"].Message)
+	if remedy := strings.Join(got["web"].Remedy, "\n"); !strings.Contains(remedy, "git tag web@1.4.0 @acme/web@1.4.0^{commit}") || !strings.Contains(remedy, `tag_prefix = "@acme/web@"`) {
+		t.Errorf("web remedy: %s", remedy)
+	}
+	if len(got["kit"].Remedy) < 2 || strings.Contains(got["kit"].Sentence(), "see the") {
+		t.Errorf("kit remedy must be real steps: %v", got["kit"].Remedy)
 	}
 }
 
