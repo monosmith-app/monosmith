@@ -109,7 +109,7 @@ func TestTheMenusListEveryShortcutAndDisableWithAReason(t *testing.T) {
 			if e.ID == "ws.doctor" && !strings.Contains(e.Disabled, "not in a workspace") {
 				t.Errorf("doctor outside should say why: %+v", e)
 			}
-			if e.ID == "file.quit" && (e.Shortcut != "Ctrl+Q" || e.Disabled != "") {
+			if e.ID == "file.quit" && (e.Shortcut != "Ctrl+C" || e.Disabled != "") {
 				t.Errorf("quit: %+v", e)
 			}
 		}

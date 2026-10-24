@@ -16,7 +16,7 @@ import (
 func (s Shell) View() (out string) {
 	defer func() {
 		if r := recover(); r != nil {
-			out = fmt.Sprintf("smith: the interface could not be drawn (%v). Press Ctrl+Q to leave.", r)
+			out = fmt.Sprintf("smith: the interface could not be drawn (%v). Press Ctrl+C to leave.", r)
 		}
 	}()
 	if s.w < 1 || s.h < 1 {
