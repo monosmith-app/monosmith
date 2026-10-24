@@ -150,13 +150,13 @@ from the same libraries and checked against those pictures.
 | Mouse | Keyboard |
 |---|---|
 | Click selects, double-click runs the default action (the task, the finding's fix) | Arrows move, `Enter` opens or runs |
-| Right-click opens a context menu | `Shift+F10` or `m` |
+| Right-click opens a context menu | `Ctrl+O` |
 | Drag a pane border to resize | `Ctrl+Arrows` |
 | Scroll the wheel in lists and logs | `PgUp` `PgDn`, `g` `G` |
 | Click a tab or a menu | `Tab`/`Shift+Tab`, `F10`, `Alt+letter` |
-| Hover shows a tooltip with the command and shortcut | `?` shows help for the focus |
+| Hover is not tracked, so `Shift+drag` (`Option+drag` on macOS) selects text natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
 | Click a task in a run to show its log | `Enter` on the task |
-| Click `■ Stop` | `Ctrl+C` once stops the run, twice quits |
+| Click `■ Stop` | `Ctrl+C` once stops the run, twice quits; `q` quits when nothing runs, `Esc` never quits |
 
 Focus is always visible. A run can be left in the background while another
 view is used, and the status bar keeps showing its progress.

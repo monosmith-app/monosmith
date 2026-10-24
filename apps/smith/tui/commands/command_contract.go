@@ -34,6 +34,10 @@ const (
 	ReloadDoctor
 	// ContextMenu opens the context menu of the selection.
 	ContextMenu
+	// CopyFocused copies the focused item to the clipboard.
+	CopyFocused
+	// ToggleMouse turns mouse reporting off or on.
+	ToggleMouse
 )
 
 // The ids of the main views.

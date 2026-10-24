@@ -1,9 +1,13 @@
 package tui
 
 import (
+	"bytes"
+	"encoding/base64"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
@@ -11,7 +15,7 @@ func TestF10OpensTheMenuBarOverThePanesWithoutPushingThemDown(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	before := len(l.lines())
 	l.keys("f10")
-	l.has("Add project…", "Ctrl+N", "Command palette…", "Ctrl+P", "Quit", "Ctrl+C")
+	l.has("Add project…", "Ctrl+N", "Command palette…", "Ctrl+P", "Quit", "Q")
 	if got := len(l.lines()); got != before {
 		t.Fatalf("the menu changed the screen height: %d -> %d", before, got)
 	}
@@ -87,17 +91,129 @@ func TestThePaletteRunsAShellCommandAndASmithCommand(t *testing.T) {
 	}
 }
 
-func TestCtrlQQuitsAndCtrlCQuitsWhenNothingRuns(t *testing.T) {
+func TestQAndCtrlCQuitWhenNothingRuns(t *testing.T) {
+	for _, k := range []string{"q", "ctrl+c"} {
+		l := newLab(t, true, 100, 28)
+		l.keys(k)
+		if !l.quit {
+			t.Fatalf("%s with nothing running should quit", k)
+		}
+	}
+}
+
+func TestCtrlQDoesNothing(t *testing.T) {
+	// Ctrl+Q closes the integrated terminal of some editors, so smith never uses it.
 	l := newLab(t, true, 100, 28)
 	l.keys("ctrl+q")
-	if !l.quit {
-		t.Fatal("ctrl+q should quit")
+	if l.quit {
+		t.Fatal("ctrl+q must stay unused")
 	}
-	l = newLab(t, true, 100, 28)
+}
+
+func TestEscNeverQuitsFromTheTopLevel(t *testing.T) {
+	l := newLab(t, true, 100, 28)
+	l.keys("esc", "esc")
+	if l.quit {
+		t.Fatal("esc must not quit")
+	}
+	l.keys("alt+6", "esc")
+	if l.quit {
+		t.Fatal("esc in the guide must not quit")
+	}
+}
+
+func TestQDoesNotQuitWhileARunGoesNorWhileTyping(t *testing.T) {
+	l := newLab(t, true, 100, 28)
+	l.next = &scripted{hold: true, release: make(chan struct{})}
+	l.keys("ctrl+b", "q")
+	if l.quit {
+		t.Fatal("q must not quit while a run goes")
+	}
+	l.has("Ctrl+C stops it", "ctrl+c stop")
 	l.keys("ctrl+c")
-	if !l.quit {
-		t.Fatal("ctrl+c with nothing running should quit")
+
+	l = newLab(t, true, 100, 28)
+	l.keys("ctrl+p").typeText("quit")
+	if l.quit {
+		t.Fatal("q typed in the palette must not quit")
 	}
+}
+
+func TestQInsideAGuideFormGoesBackInsteadOfQuitting(t *testing.T) {
+	l := newLab(t, true, 100, 28)
+	l.keys("alt+6", "down", "enter")
+	l.keys("q")
+	if l.quit {
+		t.Fatal("q inside a form goes back")
+	}
+}
+
+func TestYCopiesTheFocusedItemWithOSC52AndSaysSo(t *testing.T) {
+	l := newLab(t, true, 100, 28)
+	var out bytes.Buffer
+	sh := l.sh()
+	sh.clip = &out
+	l.m = sh
+
+	l.keys("alt+3")
+	l.keys("y")
+	want := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte("go work use ./libs/x")) + "\a"
+	if out.String() != want {
+		t.Fatalf("doctor copies the remedy: %q", out.String())
+	}
+	l.has("copied: go work use ./libs/x")
+
+	out.Reset()
+	l.keys("alt+1", "y")
+	if out.Len() == 0 || !strings.Contains(string(mustDecode(t, out.String())), "/") {
+		t.Fatalf("projects copies the project root: %q", out.String())
+	}
+
+	out.Reset()
+	l.keys("alt+8", "y")
+	got := string(mustDecode(t, out.String()))
+	if !slices.ContainsFunc(sampleDeps.Rows, func(r depsview.Row) bool { return r.Name == got }) {
+		t.Fatalf("deps copies the package: %q", got)
+	}
+
+	out.Reset()
+	l.keys("ctrl+b", "alt+2", "y")
+	if got := string(mustDecode(t, out.String())); !strings.HasPrefix(got, "smith ") {
+		t.Fatalf("run copies the command line: %q", got)
+	}
+}
+
+func TestYWhileTypingIsTheFieldsAndCopiesNothing(t *testing.T) {
+	l := newLab(t, true, 100, 28)
+	var out bytes.Buffer
+	sh := l.sh()
+	sh.clip = &out
+	l.m = sh
+	l.keys("ctrl+p").typeText("y")
+	if out.Len() != 0 {
+		t.Fatal("y typed in the palette must not copy")
+	}
+}
+
+func TestMTurnsTheMouseOffAndOnAndTheFooterSaysSo(t *testing.T) {
+	l := newLab(t, true, 140, 28)
+	l.keys("m")
+	if !l.sh().mouseOff {
+		t.Fatal("m turns the mouse off")
+	}
+	l.has("mouse off")
+	l.keys("m")
+	if l.sh().mouseOff {
+		t.Fatal("m turns the mouse on again")
+	}
+	l.hasNot("mouse off · m")
+}
+
+func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
+	l := newLab(t, true, 100, 50)
+	l.keys("f1", "end")
+	l.has("Shift+drag selects text")
+	l.hasNot("Ctrl+Q", "Hover")
 }
 
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
@@ -310,4 +426,19 @@ func TestStartingASecondCommandWhileOneRunsIsRefusedWithAReason(t *testing.T) {
 	if len(l.started) != 1 {
 		t.Fatalf("started %v", l.started)
 	}
+}
+
+// mustDecode returns the text an OSC 52 sequence copies.
+func mustDecode(t *testing.T, seq string) []byte {
+	t.Helper()
+	body, ok := strings.CutPrefix(seq, "\x1b]52;c;")
+	body, ok2 := strings.CutSuffix(body, "\a")
+	if !ok || !ok2 {
+		t.Fatalf("not an OSC 52 sequence: %q", seq)
+	}
+	text, err := base64.StdEncoding.DecodeString(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return text
 }

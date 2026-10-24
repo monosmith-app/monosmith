@@ -33,8 +33,7 @@ func TestEveryCommandWithAKeyShowsItsShortcut(t *testing.T) {
 		if len(c.Keys) > 0 && c.Shortcut == "" {
 			t.Errorf("%s has keys but shows no shortcut", c.ID)
 		}
-		// Quit advertises Ctrl+C; Ctrl+Q is accepted silently (terminals may capture it).
-		if c.ID != "file.quit" && c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
+		if c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
 			t.Errorf("%s shows %q but its first key is %q", c.ID, c.Shortcut, c.Keys[0])
 		}
 	}
@@ -110,7 +109,7 @@ func TestTheMenusListEveryShortcutAndDisableWithAReason(t *testing.T) {
 			if e.ID == "ws.doctor" && !strings.Contains(e.Disabled, "not in a workspace") {
 				t.Errorf("doctor outside should say why: %+v", e)
 			}
-			if e.ID == "file.quit" && (e.Shortcut != "Ctrl+C" || e.Disabled != "") {
+			if e.ID == "file.quit" && (e.Shortcut != "Q" || e.Disabled != "") {
 				t.Errorf("quit: %+v", e)
 			}
 		}
@@ -121,6 +120,25 @@ func TestShortcutsListsOnlyVisibleCommands(t *testing.T) {
 	for _, c := range Shortcuts(inside) {
 		if c.ID == "file.new" {
 			t.Fatal("New workspace is not offered inside a workspace")
+		}
+	}
+}
+
+func TestCtrlQIsNeverBound(t *testing.T) {
+	// Ctrl+Q closes the integrated terminal of some editors.
+	for _, c := range all {
+		for _, k := range c.Keys {
+			if k == "ctrl+q" {
+				t.Errorf("%s is bound to ctrl+q", c.ID)
+			}
+		}
+	}
+}
+
+func TestQuitCopyAndMouseAreSingleKeys(t *testing.T) {
+	for key, id := range map[string]string{"q": "file.quit", "y": "view.copy", "m": "view.mouse"} {
+		if c, reason, ok := ByKey(key, inside); !ok || c.ID != id || reason != "" {
+			t.Errorf("%s: %s %q %v", key, c.ID, reason, ok)
 		}
 	}
 }

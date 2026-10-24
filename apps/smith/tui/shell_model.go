@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"io"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -47,6 +48,8 @@ type Config struct {
 	Sources *Sources
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
+	Clipboard io.Writer
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a menu bar, a
@@ -115,6 +118,11 @@ type Shell struct {
 	lastClick  pointer.Click
 	now        func() time.Time
 
+	// mouseOff is set while `m` has turned mouse reporting off.
+	mouseOff bool
+	// clip is where the OSC 52 sequence of `y` is written; nil copies nothing.
+	clip io.Writer
+
 	// Argv is a command that needs a terminal of its own (it asks questions or
 	// takes over the screen): the shell leaves and smith runs it.
 	Argv []string
@@ -127,7 +135,7 @@ func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
 		guide: guide.NewModel(cfg.Actions), recipes: recipesview.New(), focus: layout.Main, mouseX: -1, mouseY: -1,
-		tree: navigator.New(nil),
+		tree: navigator.New(nil), clip: cfg.Clipboard,
 	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()

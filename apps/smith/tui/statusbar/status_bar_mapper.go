@@ -11,7 +11,7 @@ import (
 // Render draws the bar in w cells. The right side (branch, version) is
 // dropped before the left is cut short.
 func Render(th theme.Theme, in Info, w int) string {
-	left := th.Muted(" ready ") + th.Muted("· ctrl+p command palette · f1 help · ctrl+c quit")
+	left := th.Muted(" ready ") + th.Muted("· ctrl+p palette · f1 help · y copy · q quit · shift+drag selects text")
 	switch {
 	case in.Hint != "":
 		left = " " + th.Warning(th.Icons.Warning) + " " + in.Hint
@@ -42,10 +42,14 @@ func Render(th theme.Theme, in Info, w int) string {
 	if in.Version != "" {
 		right += th.Muted("smith " + in.Version)
 	}
-	if in.Hint == "" && middle != "" {
+	if middle != "" {
 		left += "   " + middle
-	} else if in.Hint != "" && middle != "" {
-		left += "   " + middle
+	}
+	if in.State == Running {
+		left += "   " + th.Muted("ctrl+c stop")
+	}
+	if in.MouseOff {
+		left += "   " + th.Warning("mouse off · m turns it on")
 	}
 	if right != "" && pane.Width(left)+2+pane.Width(right)+1 <= w {
 		gap := w - pane.Width(left) - pane.Width(right) - 1

@@ -35,7 +35,7 @@ var all = []Command{
 	{ID: "file.convert", Menu: MenuFile, Title: "Convert an Nx or Turborepo workspace…", Hint: "smith convert: turn it into a smith workspace", Kind: Guided, Guide: "Convert an Nx or Turborepo workspace", NeedsIdle: true, OnlyOutside: true, NeedsContent: true},
 	{ID: "file.guide", Menu: MenuFile, Title: "Guided actions", Hint: "the step-by-step menu", Keys: []string{"alt+6"}, Shortcut: "Alt+6", Kind: ShowTab, Tab: TabGuide},
 	{ID: "file.palette", Menu: MenuFile, Title: "Command palette…", Hint: "find and run any smith command", Keys: []string{"ctrl+p"}, Shortcut: "Ctrl+P", Kind: Palette},
-	{ID: "file.quit", Menu: MenuFile, Title: "Quit", Hint: "leave smith", Keys: []string{"ctrl+q"}, Shortcut: "Ctrl+C", Kind: Quit},
+	{ID: "file.quit", Menu: MenuFile, Title: "Quit", Hint: "leave smith (not while a run is going: Ctrl+C stops it first)", Keys: []string{"q"}, Shortcut: "Q", Kind: Quit},
 
 	// Workspace
 	{ID: "ws.doctor", Menu: MenuWorkspace, Title: "Doctor", Hint: "check the workspace; every problem names its remedy", Keys: []string{"ctrl+d"}, Shortcut: "Ctrl+D", Kind: ReloadDoctor, NeedsWorkspace: true, Presents: []string{"doctor"}},
@@ -54,7 +54,7 @@ var all = []Command{
 	{ID: "run.lint-all", Menu: MenuRun, Title: "Lint all", Hint: "smith run lint, on every project", Kind: RunTask, Task: "lint", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}},
 	{ID: "run.typecheck", Menu: MenuRun, Title: "Typecheck", Hint: "smith typecheck, on the selected project or all", Keys: []string{"ctrl+y"}, Shortcut: "Ctrl+Y", Kind: RunTask, Task: "typecheck", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"typecheck"}},
 	{ID: "run.affected", Menu: MenuRun, Title: "Lint and test what changed", Hint: "smith run lint test --affected", Keys: []string{"ctrl+a"}, Shortcut: "Ctrl+A", Kind: Execute, Argv: []string{"run", "lint", "test", "--affected"}, NeedsWorkspace: true, NeedsIdle: true},
-	{ID: "run.stop", Menu: MenuRun, Title: "Stop", Hint: "Ctrl+C stops the run; Ctrl+C again quits", Keys: []string{"ctrl+c"}, Shortcut: "Ctrl+C", Kind: Stop, NeedsRunning: true},
+	{ID: "run.stop", Menu: MenuRun, Title: "Stop", Hint: "stops the run; pressing it again quits", Keys: []string{"ctrl+c"}, Shortcut: "Ctrl+C", Kind: Stop, NeedsRunning: true},
 	{ID: "run.follow", Menu: MenuRun, Title: "Follow log", Hint: "stay at the end of the log, or pause to read", Keys: []string{"ctrl+f"}, Shortcut: "Ctrl+F", Kind: Follow},
 
 	// Projects
@@ -79,6 +79,8 @@ var all = []Command{
 	{ID: "view.deps", Menu: MenuView, Title: "Dependencies", Hint: "newer releases and the one-version policy", Keys: []string{"alt+8"}, Shortcut: "Alt+8", Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true, Presents: []string{"up"}},
 	{ID: "view.next-pane", Menu: MenuView, Title: "Next pane", Hint: "move the focus: navigator, main, inspector", Keys: []string{"tab", "f6"}, Shortcut: "Tab", Kind: NextPane},
 	{ID: "view.prev-pane", Menu: MenuView, Title: "Previous pane", Keys: []string{"shift+tab"}, Shortcut: "Shift+Tab", Kind: PrevPane},
+	{ID: "view.copy", Menu: MenuView, Title: "Copy the focused item", Hint: "remedy, command, project path or package to the clipboard", Keys: []string{"y"}, Shortcut: "Y", Kind: CopyFocused},
+	{ID: "view.mouse", Menu: MenuView, Title: "Mouse on or off", Hint: "off lets the terminal select text; Shift+drag selects with it on", Keys: []string{"m"}, Shortcut: "M", Kind: ToggleMouse},
 	{ID: "view.context", Menu: MenuView, Title: "Context menu", Hint: "actions for the selection (the right button does the same)", Keys: []string{"ctrl+o"}, Shortcut: "Ctrl+O", Kind: ContextMenu},
 
 	// Help

@@ -72,7 +72,7 @@ func (s Shell) screen() []string {
 // statusInfo is what the status bar shows: the exact command running or last
 // run, its result, the branch and the version.
 func (s Shell) statusInfo() statusbar.Info {
-	info := statusbar.Info{Branch: s.branch, Version: s.version, Hint: s.hint, Tick: s.tick}
+	info := statusbar.Info{Branch: s.branch, Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
 	if tip := s.bar.Tooltip(); tip != "" {
 		info.Hint = tip
 	}
