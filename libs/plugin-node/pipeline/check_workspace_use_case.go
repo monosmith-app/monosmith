@@ -30,7 +30,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 	if f, ok := registries.CheckNpmrc(workspaceRoot, params.Projects); ok {
 		findings = append(findings, f)
 	}
-	if f, ok := CheckScripts(workspaceRoot, "", "the root package.json"); ok {
+	if f, ok := CheckScripts(workspaceRoot, "", "the root package.json", protocol.Project{}); ok {
 		findings = append(findings, f)
 	}
 	if f, ok := CheckConfigImports(workspaceRoot); ok {
@@ -57,7 +57,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 			Detail: p.Root + " is not matched by the root package.json \"workspaces\"",
 			Remedy: "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
 		})
-		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name); ok {
+		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}
 		if f, ok := CheckBuildDir(workspaceRoot, p); ok {

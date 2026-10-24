@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -36,7 +37,12 @@ var shellCommands = map[string]bool{
 // a script starts is installed (in a node_modules/.bin, or on the PATH). The
 // tools are judged only once dependencies are installed, since before that
 // none are. label names the package in the finding.
-func CheckScripts(workspaceRoot, dir, label string) (protocol.Finding, bool) {
+//
+// A file the project's build creates is not missing, it is not built yet:
+// the file is under a directory a task of the project declares as an output,
+// or under one its build script writes to. Those are noted in the check, not
+// failed; project is the zero value for the root package.json.
+func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (protocol.Finding, bool) {
 	pkgDir := filepath.Join(workspaceRoot, filepath.FromSlash(dir))
 	raw, err := os.ReadFile(filepath.Join(pkgDir, "package.json"))
 	if err != nil {
@@ -56,11 +62,19 @@ func CheckScripts(workspaceRoot, dir, label string) (protocol.Finding, bool) {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	var problems, tools []string
+	var problems, tools, unbuilt []string
 	failing, anyFile := false, false
+	var builder buildOutputs
+	builder.load(project, pkg.Scripts["build"])
 	for _, name := range names {
 		files, missingTools := scriptProblems(workspaceRoot, pkgDir, pkg.Scripts[name], installed)
 		for _, f := range files {
+			if target := missingTarget(f); builder.covers(target) {
+				if !contains(unbuilt, target) {
+					unbuilt = append(unbuilt, target)
+				}
+				continue
+			}
 			problems = append(problems, name+" runs "+f+", which does not exist")
 			anyFile = true
 		}
@@ -75,6 +89,9 @@ func CheckScripts(workspaceRoot, dir, label string) (protocol.Finding, bool) {
 		}
 	}
 	finding := protocol.Finding{Check: "the scripts of " + label + " call files and tools that exist", OK: len(problems) == 0}
+	if len(unbuilt) > 0 {
+		finding.Check += " (" + strings.Join(unbuilt, ", ") + " is built by " + label + ":build; run `smith build` first)"
+	}
 	if len(problems) == 0 {
 		return finding, true
 	}
@@ -189,6 +206,53 @@ func toolInstalled(workspaceRoot, pkgDir, tool string) bool {
 func contains(list []string, s string) bool {
 	for _, x := range list {
 		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+// missingTarget is the path in a missing-file problem: scriptProblems names a
+// bare path, "node <path>" or "<tool> <flag> <path>".
+func missingTarget(problem string) string {
+	words := strings.Fields(problem)
+	return words[len(words)-1]
+}
+
+// buildOutputs are the directories (relative to the package) a project's
+// build creates, and so where a file a script runs may be not built yet.
+type buildOutputs struct {
+	dirs []string
+}
+
+// load collects the directories of the declared outputs of the project's
+// tasks, and the ones the build script writes to (--outdir, --out-dir, -o).
+func (b *buildOutputs) load(project protocol.Project, buildScript string) {
+	if _, builds := project.Tasks["build"]; !builds && buildScript == "" {
+		return
+	}
+	for _, task := range project.Tasks {
+		for _, out := range task.Outputs {
+			b.dirs = append(b.dirs, path.Clean(filepath.ToSlash(out)))
+		}
+	}
+	words := strings.Fields(strings.NewReplacer("=", " ").Replace(buildScript))
+	for i := 0; i+1 < len(words); i++ {
+		switch words[i] {
+		case "--outdir", "--out-dir", "--outDir", "-o", "--output":
+			if out := words[i+1]; plainWord(out) {
+				b.dirs = append(b.dirs, path.Clean(out))
+			}
+		}
+	}
+}
+
+// covers reports whether rel (relative to the package) is, or is under, a
+// build output.
+func (b buildOutputs) covers(rel string) bool {
+	rel = path.Clean(filepath.ToSlash(rel))
+	for _, d := range b.dirs {
+		if d != "." && (rel == d || strings.HasPrefix(rel, d+"/")) {
 			return true
 		}
 	}
