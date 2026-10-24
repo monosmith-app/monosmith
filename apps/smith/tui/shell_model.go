@@ -97,6 +97,8 @@ type Shell struct {
 	log     logview.Log
 	lastArg []string
 	history []string
+	// runs are the task runs that used the terminal, oldest first.
+	runs []inlineRun
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
@@ -291,6 +293,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case outputMsg:
 		return s.output(msg)
+	case inlineDoneMsg:
+		return s.inlineDone(msg)
 	}
 	return nil
 }

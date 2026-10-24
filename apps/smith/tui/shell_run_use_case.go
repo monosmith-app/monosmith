@@ -49,6 +49,9 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		s.say("A run is in progress (Ctrl+C stops it)")
 		return nil
 	}
+	if s.runsInline(argv) {
+		return s.startInline(argv)
+	}
 	return s.start(argv)
 }
 

@@ -284,6 +284,13 @@ func (s *Shell) keepRunVisible() {
 
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
+	if s.run == nil && len(s.runs) > 0 {
+		c.lines = append(c.lines, "", s.th.Title("Runs"))
+		c.lines = append(c.lines, s.inlineRunLines(w, h)...)
+		c.lines = append(c.lines, "")
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted("The output of a run stays in your terminal's scrollback. "+commands.ShortcutOf("run.again")+" runs the last one again."), w, 0)...)
+		return c
+	}
 	if s.run == nil {
 		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
 		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a project in the list and press "+commands.ShortcutOf("run.build")+" to build it, or "+commands.ShortcutOf("run.test")+" to test."), w, 0)...)

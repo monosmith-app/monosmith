@@ -28,6 +28,9 @@ import (
 
 // Sources load what the shell's views show; tests replace them.
 type Sources struct {
+	// Inline prepares a task run that takes over the terminal (see
+	// shell_inline_run_use_case.go); nil runs it captured in the Run tab.
+	Inline   func(argv []string) *runner.Inline
 	Doctor   func() doctorview.Result
 	Release  func() releaseview.Result
 	Settings func() settingsview.Result
@@ -71,6 +74,9 @@ func WorkspaceSources(dir, version string) Sources {
 				return nil, err
 			}
 			return p, nil
+		},
+		Inline: func(argv []string) *runner.Inline {
+			return runner.NewInline(runner.Spec{Argv: argv, Dir: dir})
 		},
 		Projects: func() projectsLoaded { return loadProjects(open) },
 		Plugins:  func() pluginsview.Result { return pluginsview.Load(open, version) },

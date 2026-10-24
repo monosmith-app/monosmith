@@ -81,7 +81,11 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 	if err != nil {
 		return nil, err
 	}
-	argv = final.(Shell).Argv
+	sh := final.(Shell)
+	if line := sh.ExitSummary(); line != "" {
+		fmt.Fprintf(out, "%s\n", line)
+	}
+	argv = sh.Argv
 	if len(argv) > 0 {
 		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
 	}
