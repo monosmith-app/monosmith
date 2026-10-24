@@ -31,8 +31,8 @@ var all = []Command{
 	// File
 	{ID: "file.new", Menu: MenuFile, Title: "New workspace…", Hint: "smith new: create a monorepo", Keys: []string{"ctrl+n"}, Shortcut: "Ctrl+N", Kind: Guided, Guide: "Create a workspace", OnlyOutside: true},
 	{ID: "file.add", Menu: MenuFile, Title: "Add project…", Hint: "smith add: an app, lib or package", Keys: []string{"ctrl+n"}, Shortcut: "Ctrl+N", Kind: Guided, Guide: "Add a project", NeedsWorkspace: true, NeedsIdle: true, OnlyInside: true},
-	{ID: "file.adopt", Menu: MenuFile, Title: "Adopt this repository…", Hint: "smith adopt: bring an existing repository under smith", Kind: Guided, Guide: "Adopt this repository", NeedsIdle: true, OnlyOutside: true},
-	{ID: "file.convert", Menu: MenuFile, Title: "Convert an Nx or Turborepo workspace…", Hint: "smith convert: turn it into a smith workspace", Kind: Guided, Guide: "Convert an Nx or Turborepo workspace", NeedsIdle: true, OnlyOutside: true},
+	{ID: "file.adopt", Menu: MenuFile, Title: "Adopt this repository…", Hint: "smith adopt: bring an existing repository under smith", Kind: Guided, Guide: "Adopt this repository", NeedsIdle: true, OnlyOutside: true, NeedsContent: true},
+	{ID: "file.convert", Menu: MenuFile, Title: "Convert an Nx or Turborepo workspace…", Hint: "smith convert: turn it into a smith workspace", Kind: Guided, Guide: "Convert an Nx or Turborepo workspace", NeedsIdle: true, OnlyOutside: true, NeedsContent: true},
 	{ID: "file.guide", Menu: MenuFile, Title: "Guided actions", Hint: "the step-by-step menu", Keys: []string{"alt+6"}, Shortcut: "Alt+6", Kind: ShowTab, Tab: TabGuide},
 	{ID: "file.palette", Menu: MenuFile, Title: "Command palette…", Hint: "find and run any smith command", Keys: []string{"ctrl+p"}, Shortcut: "Ctrl+P", Kind: Palette},
 	{ID: "file.quit", Menu: MenuFile, Title: "Quit", Hint: "leave smith", Keys: []string{"ctrl+q"}, Shortcut: "Ctrl+C", Kind: Quit},

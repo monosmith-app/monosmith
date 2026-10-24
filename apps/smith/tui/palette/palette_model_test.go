@@ -31,7 +31,7 @@ func enter() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyEnter} }
 
 func TestTheListHasEveryShellCommandAndEverySmithCommand(t *testing.T) {
 	text := strings.Join(New(ui, cli).Lines(theme.Default(), 70, 12), "\n")
-	for _, want := range []string{"Build", "Ctrl+B", "Stop", "unavailable", "affected", "doctor", "release"} {
+	for _, want := range []string{"Build", "Ctrl+B", "affected", "doctor", "release"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
@@ -103,7 +103,7 @@ func TestTheWheelAndTheArrowsMoveTheCursor(t *testing.T) {
 	if p.cursor != 1 {
 		t.Fatalf("%d", p.cursor)
 	}
-	if New(ui, cli).Scroll(99).cursor != 4 || New(ui, cli).Scroll(-9).cursor != 0 {
+	if New(ui, cli).Scroll(99).cursor != 3 || New(ui, cli).Scroll(-9).cursor != 0 {
 		t.Fatal("clamped")
 	}
 }

@@ -466,7 +466,7 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 func (s Shell) inspectorPanel() inspector.Panel {
 	if !s.inWorkspace {
 		return inspector.Panel{
-			Sections: []inspector.Section{{Heading: "No workspace", Items: []string{"smith.toml was not found here.", "File > New workspace… creates one."}}},
+			Sections: []inspector.Section{{Heading: "No workspace", Items: []string{"No smith.toml here.", "File > New workspace… creates one."}}},
 			Actions:  []inspector.Action{s.action("file.palette", "Command palette")},
 		}
 	}

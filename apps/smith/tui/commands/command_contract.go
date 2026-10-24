@@ -83,6 +83,8 @@ type Command struct {
 	NeedsWorkspace, NeedsIdle, NeedsRunning, NeedsSelection bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
+	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
+	NeedsContent bool
 }
 
 // State is what decides whether a command is available.
@@ -92,4 +94,6 @@ type State struct {
 	Running bool
 	// HasSelection is true when a task is selected in the navigator.
 	HasSelection bool
+	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
+	EmptyFolder bool
 }

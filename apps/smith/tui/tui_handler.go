@@ -44,9 +44,10 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 			}
 		}
 	}
+	empty := !inside && folderIsEmpty(".")
 	var actions []guide.Action
 	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), GeneratedForms(catalog)...) {
-		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) {
+		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) || (a.NeedsContent && empty) {
 			continue
 		}
 		actions = append(actions, a)
@@ -64,7 +65,7 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		return argv, nil
 	}
 	cfg := Config{
-		Version: version, Workspace: name, Actions: actions, Commands: catalog,
+		Version: version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
 		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
 	}
 	if inside {

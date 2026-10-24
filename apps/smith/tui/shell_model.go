@@ -45,6 +45,8 @@ type Config struct {
 	Commands []clicontract.CommandDescription
 	// Sources load the views; nil outside a workspace.
 	Sources *Sources
+	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
+	EmptyFolder bool
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a menu bar, a
@@ -61,6 +63,7 @@ type Shell struct {
 	lay     layout.Layout
 
 	inWorkspace bool
+	emptyFolder bool
 	sources     Sources
 	tabs        []string
 	tab         string
@@ -136,6 +139,7 @@ func NewShell(cfg Config) Shell {
 		sh.tab = commands.TabProjects
 	} else {
 		sh.tab = commands.TabGuide
+		sh.emptyFolder = cfg.EmptyFolder
 	}
 	sh.bar = menubar.New(commands.Menus(sh.state()), 80).SetBrand("MonoSmith")
 	sh.tabs = sh.tabList()
@@ -146,7 +150,7 @@ func NewShell(cfg Config) Shell {
 // state is what decides which commands are available.
 func (s Shell) state() commands.State {
 	sel := s.tree.Selected()
-	return commands.State{InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow}
+	return commands.State{InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow, EmptyFolder: s.emptyFolder}
 }
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }

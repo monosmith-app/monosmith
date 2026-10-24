@@ -28,6 +28,8 @@ type Action struct {
 	NeedsWorkspace bool
 	// OutsideOnly hides the action inside a workspace.
 	OutsideOnly bool
+	// NeedsContent hides the action in a folder that holds nothing.
+	NeedsContent bool
 	// Presents is the id of the action (see package actions) the form runs.
 	Presents string
 }
@@ -108,7 +110,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		{Title: "Preview the next release", Presents: "release", Hint: "smith release --dry-run", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
 		{Title: "Regenerate CI pipelines", Presents: "ci", Hint: "smith ci generate", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
 		{
-			Title: "Adopt this repository", Presents: "adopt", Hint: "smith adopt: bring an existing repository under smith (start here; Nx and Turborepo go to Convert)", OutsideOnly: true,
+			Title: "Adopt this repository", Presents: "adopt", Hint: "smith adopt: bring an existing repository under smith (start here; Nx and Turborepo go to Convert)", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "step", Prompt: "What should smith do?", Options: []Option{
 				{Label: "Report what adopting involves", Value: "report", Hint: "read-only: the projects smith would see, the blockers and the step that clears each"},
 				{Label: "Create the baseline release tags", Value: "tags", Hint: "local only, nothing is pushed; needs a clean git tree"},
@@ -128,7 +130,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Convert an Nx or Turborepo workspace", Presents: "convert", Hint: "smith convert: Nx, Turborepo or mnci workspaces; Adopt sends you here when it recognises one", OutsideOnly: true,
+			Title: "Convert an Nx or Turborepo workspace", Presents: "convert", Hint: "smith convert: Nx, Turborepo or mnci workspaces; Adopt sends you here when it recognises one", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "mode", Prompt: "Preview first?", Options: []Option{
 				{Label: "Preview the conversion", Value: "preview", Hint: "smith convert --dry-run: reports what maps and what needs you, changes nothing"},
 				{Label: "Convert now", Value: "convert", Hint: "the old tool is removed and the pipelines are regenerated"},

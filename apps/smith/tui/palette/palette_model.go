@@ -1,6 +1,7 @@
 package palette
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -99,7 +100,8 @@ func (p Palette) matches() []item {
 			described = append(described, it)
 		}
 	}
-	return append(append(prefix, name...), described...)
+	found := append(append(prefix, name...), described...)
+	return arrange(found, q == "")
 }
 
 // Reset clears the filter and the choice, for reopening.
@@ -243,10 +245,14 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 	for i := top; i < len(found) && i < top+height; i++ {
 		out = append(out, p.line(th, found[i], i == p.cursor, w))
 	}
+	footer := "up/down choose · enter pick · esc close"
+	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
+		footer = fmt.Sprintf("%d commands unusable here are hidden: type to find them", n)
+	}
 	for len(out) < h-1 {
 		out = append(out, "")
 	}
-	out = append(out, th.Muted("up/down choose · enter pick · esc close"))
+	out = append(out, th.Muted(pane.Cut(footer, w)))
 	return pane.Block(out, w, h)
 }
 
@@ -259,9 +265,12 @@ func (p Palette) line(th theme.Theme, it item, selected bool, w int) string {
 		right = it.entry.Shortcut
 	}
 	name := it.name()
-	room := max(w-3-pane.Width(name)-2-pane.Width(right), 0)
-	desc = pane.Cut(desc, room)
-	gap := max(w-3-pane.Width(name)-2-pane.Width(desc)-pane.Width(right), 0)
+	// One cell on each side, two after the name and one before the shortcut.
+	room := max(w-2-2-1-pane.Width(name)-pane.Width(right), 0)
+	if pane.Width(desc) > room {
+		desc = strings.TrimRight(pane.Cell(desc, room), " ")
+	}
+	gap := max(w-2-2-pane.Width(name)-pane.Width(desc)-pane.Width(right), 1)
 	if selected {
 		return th.Selected(pane.Fit(" "+name+"  "+desc+strings.Repeat(" ", gap)+right+" ", w))
 	}
