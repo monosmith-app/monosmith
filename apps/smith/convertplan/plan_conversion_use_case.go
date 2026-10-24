@@ -129,11 +129,11 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	planNodeStack(plan)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
 		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
-			plan.Add(Changed, "", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
+			plan.Decide("", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
 		}
 	}
 	if plan.Legacy {
-		plan.Add(Changed, "", "versions", "before 1.0 a feat: commit releases a minor version (the old mnci released a patch); breaking changes still release a minor until 1.0")
+		plan.Decide("", "versions", "before 1.0 a feat: commit releases a minor version (the old mnci released a patch); breaking changes still release a minor until 1.0")
 	}
 	sort.Slice(plan.Projects, func(i, j int) bool { return plan.Projects[i].Name < plan.Projects[j].Name })
 	return plan

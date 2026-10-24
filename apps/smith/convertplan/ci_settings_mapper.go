@@ -25,9 +25,9 @@ func planCISettings(plan *Plan, in Input, has map[string]bool) {
 			plan.Config.Release.Registry = name
 			plan.Add(Mapped, "", ".npmrc", "routes a scope to the Azure Artifacts feed "+url+": [registries."+name+"] (auth = azure-artifacts, signed in by the pipeline) and [release] registry = "+name+", where the packages publish; installs stay as they were")
 		}
-		plan.Add(Changed, "", "azure-pipelines.yml", "replaced by the pipeline smith generates: steps of your own are not carried (see git diff), put them between the smith:slot markers; a private npm feed other than Azure Artifacts needs a [registries] entry")
+		plan.Decide("", "azure-pipelines.yml", "replaced by the pipeline smith generates: steps of your own are not carried (see git diff), put them between the smith:slot markers; a private npm feed other than Azure Artifacts needs a [registries] entry")
 	}
 	if contains(plan.Config.CI.Providers, "github") && (has[".github/workflows/ci.yml"] || has[".github/workflows/ci.yaml"]) {
-		plan.Add(Changed, "", ".github/workflows/ci.yml", "replaced by the workflow smith generates: steps of your own are not carried (see git diff), put them between the smith:slot markers")
+		plan.Decide("", ".github/workflows/ci.yml", "replaced by the workflow smith generates: steps of your own are not carried (see git diff), put them between the smith:slot markers")
 	}
 }
