@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -60,9 +61,15 @@ func TestFixWizardShowsProgressWhileAStepRunsAndCtrlCStopsIt(t *testing.T) {
 		t.Fatal("the fix is not applying")
 	}
 	l.keys("q", "esc") // esc stops, q is ignored: only the first press of a stop key matters
-	l.fixMu.Lock()
-	cancelled := l.applyCancel
-	l.fixMu.Unlock()
+	cancelled := false
+	for i := 0; i < 200 && !cancelled; i++ { // the step's goroutine notices a moment later
+		l.fixMu.Lock()
+		cancelled = l.applyCancel
+		l.fixMu.Unlock()
+		if !cancelled {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
 	if !cancelled {
 		t.Fatal("the step's context was not cancelled")
 	}
