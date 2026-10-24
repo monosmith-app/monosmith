@@ -317,7 +317,7 @@ func TestQuestionMarkIsTextWhileASettingIsBeingEdited(t *testing.T) {
 func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
 	// Ten tabs do not fit 56 cells with their full names: the long ones are shortened.
-	l.has("Proj", "Run", "Doctor", "Rel", "Plug", "Deps", "Recipes", "Conf", "Guide")
+	l.has("Proj", "Run", "Doctor", "Rel", "Plug", "Deps", "Recipes", "Sett", "Guide")
 	for _, key := range []string{"alt+1", "alt+2", "alt+3", "alt+4", "alt+7", "alt+8", "alt+9", "alt+5", "alt+6"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
@@ -333,10 +333,10 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 
 func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
-	l.has("Workspace", "Plugins", "Deps", "Guide")
+	l.has("Workspace", "Plug", "Deps", "Guide")
 	l.clickText("Deps")
 	l.has("3 with newer releases")
-	l.clickText("Plugins")
+	l.clickText("Plug")
 	l.has("built-in")
 }
 
