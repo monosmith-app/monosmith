@@ -89,8 +89,10 @@ read the shared cache but never write it.
 
 ## What `smith doctor` reports, and what to do
 
-Every failed check prints a `→` line with the remedy. The checks, grouped by who
-owns them:
+Every failed check prints a `→` line with the remedy, one per way out. Checks
+that pass are summarised: a check that repeats for every project is one line
+("npm workspaces include each project (23 projects)"); `smith doctor --verbose`
+lists them all. The checks, grouped by who owns them:
 
 ### Workspace checks (owned by smith)
 
@@ -115,7 +117,7 @@ owns them:
 | Language | Checks |
 |---|---|
 | Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it) |
-| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); `tsconfig` `outDir` points into `dist/` |
+| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
 | Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`) |
 | Rust | `cargo` is installed; the root `Cargo.toml` is a workspace and lists every crate in `members` |
 | .NET | the .NET SDK is installed; `nuget.config` matches `[registries]` (`smith doctor --fix`) |
