@@ -19,7 +19,7 @@ func (p tabPage) Title() string {
 	s := p.sh
 	switch s.tab {
 	case commands.TabProjects:
-		if s.detailOpen {
+		if s.detailFull() {
 			return s.list.SelectedName()
 		}
 		return fmt.Sprintf("Projects (%d)", s.list.Len())

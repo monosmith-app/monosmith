@@ -24,6 +24,28 @@ type Layout struct {
 // is true, the detail of the selection beside it (two fifths of the width, 38
 // to 64 columns).
 func Divide(width, height int, withDetail bool) Layout {
+	return DivideWith(width, height, withDetail, 0)
+}
+
+// The least and the most the user can make the detail, in columns; the list
+// keeps at least MinList.
+const (
+	MinDetail = 28
+	MinList   = 36
+)
+
+// AutoDetailWidth is the width of the detail the user has not resized.
+func AutoDetailWidth(width int) int { return clamp(width*2/5, 38, 64) }
+
+// ClampDetailWidth keeps a width the user chose between MinDetail and what
+// leaves the list its MinList columns.
+func ClampDetailWidth(width, detailW int) int {
+	return clamp(detailW, MinDetail, max(width-MinList, MinDetail))
+}
+
+// DivideWith is Divide with a detail width the user chose (0 keeps the
+// automatic one).
+func DivideWith(width, height int, withDetail bool, detailW int) Layout {
 	l := Layout{Width: width, Height: height, Mode: Narrow, Tall: height >= TallFrom}
 	if width >= WideFrom {
 		l.Mode = Wide
@@ -39,7 +61,10 @@ func Divide(width, height int, withDetail bool) Layout {
 	}
 	detail := 0
 	if l.Mode == Wide && withDetail {
-		detail = clamp(width*2/5, 38, 64)
+		detail = AutoDetailWidth(width)
+		if detailW > 0 {
+			detail = ClampDetailWidth(width, detailW)
+		}
 	}
 	// The content starts under the tabs; the top edge of a tall strip is the
 	// content's own.

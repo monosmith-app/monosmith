@@ -39,7 +39,7 @@ func (s Shell) mainContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	switch s.tab {
 	case commands.TabProjects:
-		if s.detailOpen {
+		if s.detailFull() {
 			return s.detailContent(w, h)
 		}
 		return s.projectsContent(w, h)
@@ -48,6 +48,9 @@ func (s Shell) mainContent(w, h int) content {
 	case commands.TabHome:
 		return s.homeContent(w)
 	case commands.TabDoctor:
+		if s.detailFull() {
+			return s.detailContent(w, h)
+		}
 		// Beside the list the detail tells a check in full; alone, the list expands it.
 		lines, rowOf := s.doctor.View(s.th, w, !s.lay().HasDetail())
 		for row, i := range rowOf {

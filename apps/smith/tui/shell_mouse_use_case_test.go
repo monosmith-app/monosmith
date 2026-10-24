@@ -183,7 +183,7 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("d")
-	l.has("Remedy", "go work use ./libs/x") // the detail beside the list tells the selected check
+	l.has("How to fix", "go work use ./libs/x") // the detail beside the list tells the selected check
 	x, y := l.find("✖ Docker registries")
 	l.hasNot("write web's registry")
 	l.send(click(x+3, y)) // selecting a check shows its fix in the detail
