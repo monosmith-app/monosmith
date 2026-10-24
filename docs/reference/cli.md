@@ -1289,9 +1289,15 @@ $ smith release --dry-run
 ```
 
 ```text
+Dry run: nothing is published or tagged.
   sdk                  unreleased → 0.1.0  (2 releasing commit(s))
-sdk: would release 0.1.0 (2 releasing commit(s))
 
+→ Push to the release branch and CI releases these; or run smith release here to publish them yourself.
+```
+
+That is what the terminal shows. `--format markdown` prints the table that `--comment` posts and the CI job summary shows:
+
+```text
 ### Release preview
 
 | Package | Version | Why | Status |
@@ -1299,14 +1305,11 @@ sdk: would release 0.1.0 (2 releasing commit(s))
 | sdk | new → **0.1.0** | 2 releasing commit(s) | planned |
 ```
 
-The line at the top is the preview for the terminal; the table is the markdown that `--comment` posts.
-
 ```sh
 $ smith release --dry-run --json | head -c 700
 ```
 
 ```text
-sdk: would release 0.1.0 (2 releasing commit(s))
 {
   "dryRun": true,
   "started": "2026-10-19T07:06:13.8132743Z",
