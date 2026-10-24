@@ -126,6 +126,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	}
 	removal(plan, w, in.Files, in.Read)
 	planPythonTools(plan, in)
+	planNodeStack(plan)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
 		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
 			plan.Add(Changed, "", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
@@ -274,6 +275,23 @@ func planRoot(plan *Plan, w *nxworkspace.Workspace, names map[string]string) {
 	}
 	if removedProjectScripts > 0 {
 		plan.Add(Dropped, "", "scripts", fmt.Sprintf("%d per-project scripts (<project>:test and the like); use smith run <task> -p <project>", removedProjectScripts))
+	}
+}
+
+// planNodeStack makes node-jest the workspace's default Node stack, so a
+// Node project that records no stack, and any added later, gets the lint and
+// test tasks. A script a project already has still wins over the stack's.
+func planNodeStack(plan *Plan) {
+	for _, p := range plan.Projects {
+		if p.Language != "node" {
+			continue
+		}
+		if plan.Config.DefaultStacks == nil {
+			plan.Config.DefaultStacks = map[string]string{}
+		}
+		plan.Config.DefaultStacks["node"] = "node-jest"
+		plan.Add(Mapped, "", "[default_stacks]", `node = "node-jest": Node projects that record no stack, and new ones, get ESLint and Jest tasks; a script a project already has wins`)
+		return
 	}
 }
 

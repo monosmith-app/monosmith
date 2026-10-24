@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/recipedrift"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ settings), each with the recipe file and line it came from. --recipe prints
 only that, and with --json prints it for tools. The tasks' --json output is
 unchanged.`,
 		Example: "  smith explain web\n  smith explain web:build\n  smith explain web --recipe",
-		Args:    cobra.ExactArgs(1),
+		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a project name"}, Example: "smith explain web", More: "smith projects lists them; add :<task> for one task, e.g. smith explain web:build"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {

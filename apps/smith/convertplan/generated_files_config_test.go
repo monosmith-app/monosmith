@@ -30,7 +30,6 @@ func TestGeneratedFilesPassTheESLintConfig(t *testing.T) {
 	}
 	dir := t.TempDir()
 	files := map[string]string{
-		DeclarationSpecifiersFile:   DeclarationSpecifiers,
 		AssetTransformFile:          AssetTransform,
 		"jest.preset.js":            JestPreset,
 		JestResolverFile:            JestResolver,

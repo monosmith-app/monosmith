@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/turboplan"
 	"github.com/monosmith-app/monosmith/apps/smith/turboworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -51,15 +52,15 @@ installed.`,
 				return err
 			}
 			if _, err := os.Stat(filepath.Join(root, workspace.FileName)); err == nil {
-				return fmt.Errorf("%s already exists: this workspace is already a smith workspace", workspace.FileName)
+				return problem.New("this is already a smith workspace ("+workspace.FileName+" exists)", "smith upgrade brings it up to the installed smith")
 			}
 			git := gitclient.New(root)
 			if !git.IsRepository() {
-				return errors.New("convert runs in a git repository, so every change it makes can be reviewed and undone")
+				return problem.New("this folder is not a git repository: convert makes its changes through git, so each one can be reviewed and undone", `git init && git add -A && git commit -m "before smith", then run this again`)
 			}
 			if !dryRun && !allowDirty {
 				if status, err := git.Run("status", "--porcelain"); err == nil && status != "" {
-					return errors.New("the working tree has changes: commit or stash them first, so the conversion is one reviewable change (or pass --allow-dirty)")
+					return problem.New("the working tree has uncommitted changes, so the conversion would not be one reviewable change", "git add -A && git commit -m \"before smith\", then run this again", "or pass --allow-dirty to convert anyway")
 				}
 			}
 			files, err := git.Files()

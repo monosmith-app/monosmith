@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise bool
+	var asJSON, tags, initialise, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "adopt",
 		Short: "Bring an existing repository under smith: report what it involves, then take the steps (start here)",
@@ -31,11 +32,14 @@ is asked for, and both steps need a clean git tree:
 
 An Nx or Turborepo workspace is smith convert's: adopt says so and stops. Exits
 non-zero while something blocks.`,
-		Example: `  smith adopt
+		Example: `  smith adopt --dry-run
   smith adopt --tags --init`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			if dryRun && (tags || initialise) {
+				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags or --init", "drop --dry-run to take the steps, or drop the steps to only look")
+			}
 			report, err := Inspect(".", version, cmd.ErrOrStderr())
 			if err != nil {
 				return err
@@ -76,6 +80,7 @@ non-zero while something blocks.`,
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only report (this is the default; the flag makes it explicit)")
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines, and commit")
 	return cmd
