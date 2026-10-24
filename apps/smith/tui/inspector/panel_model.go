@@ -59,7 +59,9 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 			lines = append(lines, pane.Fit(" "+label+" "+r.Value, w))
 		}
 		for _, it := range s.Items {
-			lines = append(lines, pane.Fit("  "+it, w))
+			for _, part := range pane.Wrap("  "+it, w, 2) {
+				lines = append(lines, pane.Fit(part, w))
+			}
 		}
 	}
 	if len(p.Actions) > 0 {

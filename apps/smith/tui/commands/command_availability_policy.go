@@ -18,7 +18,7 @@ func (c Command) Unavailable(s State) string {
 // Visible reports whether the command is listed at all in this state (a
 // command for creating a workspace has no place inside one).
 func (c Command) Visible(s State) bool {
-	return (!c.OnlyOutside || !s.InWorkspace) && (!c.OnlyInside || s.InWorkspace)
+	return (!c.OnlyOutside || !s.InWorkspace) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
 }
 
 // ByKey finds the command a key triggers among those visible and available

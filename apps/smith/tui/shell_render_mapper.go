@@ -90,7 +90,7 @@ func (s Shell) body() []string {
 		}
 		lines := tree.View(s.th, max(r.W-2, 0), hover, s.focus == layout.Navigator, s.treeStatus)
 		if !s.inWorkspace {
-			lines = pane.Wrap(s.th.Muted(" No workspace here. File > New workspace… (or smith adopt, smith convert)"), max(r.W-2, 0), 1)
+			lines = pane.Wrap(s.th.Muted(s.noWorkspaceHint()), max(r.W-2, 0), 1)
 		}
 		nav = pane.Frame(s.th, "Workspace", lines, r.W, r.H, s.focus == layout.Navigator)
 	}
