@@ -184,9 +184,10 @@ func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
 	}
 }
 
-func TestBuildAllRunsEveryProjectAndTheButtonsNameTheirScope(t *testing.T) {
+func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("[▶ Build orders", "[▶ Build all")
+	l.has("[▶ Build ", "[▶ Build all", "On: orders")
+	l.hasNot("Build orders")
 	x, y := l.find("[▶ Build all")
 	l.send(click(x+3, y))
 	if l.lastStarted() != "run build" {
