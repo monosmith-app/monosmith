@@ -125,6 +125,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 		}
 	}
 	removal(plan, w, in.Files, in.Read)
+	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)
 	planNodeStack(plan)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
