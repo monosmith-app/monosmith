@@ -60,7 +60,8 @@ func (s *Shell) start(argv []string) tea.Cmd {
 		s.history = s.history[len(s.history)-maxHistory:]
 	}
 	// The preview is shown on the Release screen it was started from.
-	if contains(s.tabs, commands.TabRun) && !(s.tab == commands.TabRelease && isPreview(argv)) {
+	stayOnRelease := s.tab == commands.TabRelease && isPreview(argv)
+	if contains(s.tabs, commands.TabRun) && !stayOnRelease {
 		s.tab = commands.TabRun
 	}
 	begin := s.sources.Start
