@@ -153,6 +153,7 @@ func Details(plan *convertplan.Plan, opts ReportOptions) string {
 	if len(plan.Delete) > 0 {
 		b.WriteString(removals(plan.Delete, opts.Verbose))
 	}
+	b.WriteString(keepSection(plan))
 	return b.String()
 }
 

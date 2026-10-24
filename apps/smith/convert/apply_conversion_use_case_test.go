@@ -41,7 +41,7 @@ func TestEditManifestsForAnotherSourceTool(t *testing.T) {
 	plan.SetSpecifier("apps/web", "@acme/ui", "^1.2.0")
 	pp := &convertplan.ProjectPlan{Name: "web", Root: "apps/web", Language: "node", Supported: true, Scripts: map[string]string{"build": "smith run build"}}
 
-	if err := editRootPackage(root, plan); err != nil {
+	if err := editRootPackage(root, plan, ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := editManifest(root, pp, plan.Specifiers); err != nil {
@@ -73,11 +73,27 @@ func TestDeleteFieldDropsAnEmptiedParent(t *testing.T) {
 		t.Fatal(err)
 	}
 	plan := &convertplan.Plan{Root: root, RootScripts: map[string]string{}, RemoveFields: []string{"engines.pnpm"}}
-	if err := editRootPackage(root, plan); err != nil {
+	if err := editRootPackage(root, plan, ""); err != nil {
 		t.Fatal(err)
 	}
 	text, _ := os.ReadFile(filepath.Join(root, "package.json"))
 	if strings.Contains(string(text), "engines") {
 		t.Fatalf("an engines left empty goes too:\n%s", text)
+	}
+}
+
+func TestConvertedRootDependsOnTheSmithThatConvertedIt(t *testing.T) {
+	for version, want := range map[string]bool{"1.54.0": true, "dev": false, "1.54.0-rc.1": false} {
+		root := t.TempDir()
+		if err := os.WriteFile(filepath.Join(root, "package.json"), []byte(`{"name": "acme", "devDependencies": {"jest": "^29.0.0"}}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := editRootPackage(root, &convertplan.Plan{Root: root, RootScripts: map[string]string{"build": "smith run build"}}, version); err != nil {
+			t.Fatal(err)
+		}
+		text, _ := os.ReadFile(filepath.Join(root, "package.json"))
+		if got := strings.Contains(string(text), `"monosmith": "`+version+`"`); got != want {
+			t.Errorf("version %q: monosmith pinned = %v, want %v:\n%s", version, got, want, text)
+		}
 	}
 }

@@ -80,7 +80,6 @@ func TestFieldsCoverTheFixedTables(t *testing.T) {
 	}
 }
 
-
 func TestSetEditsTheDefaultStackOfALanguage(t *testing.T) {
 	root := t.TempDir()
 	file := filepath.Join(root, workspace.FileName)
