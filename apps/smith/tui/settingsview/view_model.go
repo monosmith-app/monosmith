@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
@@ -113,6 +112,7 @@ func (v Model) Update(key tea.KeyMsg) (Model, []string) {
 			return v, []string{"config", "set", s.Field.Path, strconv.FormatBool(s.Value != "true")}
 		}
 		v.input = textinput.New()
+		v.input.Prompt = ""
 		v.input.SetValue(strings.Join(args(s.Field, s.Value), " "))
 		v.input.Focus()
 		v.Editing, v.problem = true, ""
@@ -120,8 +120,11 @@ func (v Model) Update(key tea.KeyMsg) (Model, []string) {
 	return v, nil
 }
 
-// View draws the settings in w cells; rowOf maps a line to the setting drawn on it.
-func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
+// View draws the settings in a w by h area: the list on top and, right under
+// it, what the selected setting does, what it accepts and what it is now.
+// Editing happens on the selected row itself. rowOf maps a line to the
+// setting drawn on it.
+func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int) {
 	rowOf = map[int]int{}
 	if v.Err != nil {
 		return []string{th.Failure(v.Err.Error())}, rowOf
@@ -129,38 +132,71 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	if !v.Loaded {
 		return []string{th.Muted("Reading smith.toml…")}, rowOf
 	}
-	for i, s := range v.Settings {
+	if len(v.Settings) == 0 {
+		return []string{th.Muted("No settings.")}, rowOf
+	}
+	cur := min(v.Cursor, len(v.Settings)-1)
+	detail := v.detail(th, w, cur)
+	lines = append(lines, pane.Wrap(th.Muted("Settings in smith.toml. One you have not set shows its default."), w, 0)...)
+	lines = append(lines, "")
+	pathW := 0
+	for _, s := range v.Settings {
+		pathW = max(pathW, pane.Width(s.Field.Path))
+	}
+	pathW = min(pathW+2, max(w/2, 12))
+	valueW := max(w-2-pathW, 8)
+
+	avail := max(h-len(lines)-len(detail), 3)
+	top := pane.WindowTop(cur, len(v.Settings), avail)
+	for i := top; i < len(v.Settings) && i < top+avail; i++ {
+		s := v.Settings[i]
 		value := s.Value
-		if !s.Set {
+		switch {
+		case i == cur && v.Editing:
+			in := v.input
+			in.Width = max(valueW-3, 4)
+			value = "[" + in.View() + "]"
+		case !s.Set && s.Field.Default() != "":
+			value = th.Muted("default: " + s.Field.Default())
+		case !s.Set:
 			value = th.Muted("(default)")
 		}
 		rowOf[len(lines)] = i
-		lines = append(lines, guide.Row(th, i == v.Cursor, "", s.Field.Path, value))
-	}
-	if len(v.Settings) > 0 {
-		s := v.Settings[min(v.Cursor, len(v.Settings)-1)]
-		lines = append(lines, "", th.Muted(s.Field.Description))
-		if v.Editing {
-			hint := "one value"
-			if s.Field.Type == "array" {
-				hint = "values separated by spaces"
-				if len(s.Field.Enum) > 0 {
-					hint += " (" + strings.Join(s.Field.Enum, ", ") + ")"
-				}
-			}
-			lines = append(lines, "", th.Title(s.Field.Path+" = ")+v.input.View(),
-				th.Muted(hint+" · enter save (smith config set) · esc cancel"))
-		} else {
-			lines = append(lines, "", th.Muted("up/down move · enter edit (a yes/no setting flips) · u back to the default"))
+		cursor, path := "  ", pane.Cell(s.Field.Path, pathW)
+		if i == cur {
+			cursor, path = th.Accent(th.Icons.Pointer+" "), th.Accent(path)
 		}
+		lines = append(lines, cursor+path+pane.Cut(value, valueW))
 	}
-	if v.problem != "" {
-		lines = append(lines, th.Failure(v.problem))
-	}
+	lines = append(lines, detail...)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, rowOf
+}
+
+// detail describes the setting at cur below the list.
+func (v Model) detail(th theme.Theme, w, cur int) []string {
+	s := v.Settings[cur]
+	out := []string{"", th.Faint(strings.Repeat("─", w)), th.Bold(s.Field.Path)}
+	out = append(out, pane.Wrap("  "+s.Field.Explanation(), w, 2)...)
+	out = append(out, "  "+th.Muted("accepts  ")+allowed(s.Field))
+	now := "its default"
+	if s.Set {
+		now = s.Value
+	} else if d := s.Field.Default(); d != "" {
+		now = "its default, " + d
+	}
+	out = append(out, "  "+th.Muted("now      ")+now)
+	if v.Editing {
+		out = append(out, pane.Wrap(th.Muted("Enter saves (smith config set) · Esc cancels"), w, 0)...)
+	} else {
+		out = append(out, pane.Wrap(th.Muted("Up/Down move · Enter edit (true/false flips) · Ctrl+U back to the default"), w, 0)...)
+	}
+	if v.problem != "" {
+		out = append(out, th.Failure(v.problem))
+	}
+	return out
 }
 
 // SelectRow moves the cursor to setting i.
