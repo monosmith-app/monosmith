@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/recipechoice"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -49,6 +50,7 @@ func NewCommand(version string) *cobra.Command {
 func AddCommand(version string) *cobra.Command {
 	var lang, stack string
 	var choices []string
+	var verbose bool
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
 		Short: "Add an app, an internal lib or a publishable package",
@@ -75,6 +77,11 @@ pipelines are regenerated to install its toolchain.`,
   smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
 		Args: commandargs.Exactly(commandargs.Spec{Names: []string{"a kind (app, lib or package)", "a name"}, Example: "smith add app web --lang node", More: "smith kinds lists the kinds and languages"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if verbose {
+				// The plugins inherit it: a package manager's output is shown
+				// as it runs, instead of only when it fails.
+				_ = os.Setenv(toolrun.VerboseEnv, "1")
+			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
 				return err
@@ -108,6 +115,7 @@ pipelines are regenerated to install its toolchain.`,
 	}
 	cmd.Flags().StringVarP(&lang, "lang", "l", "", "language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, recipe (default: the stack's, or the workspace's only language)")
 	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return cmd
 }

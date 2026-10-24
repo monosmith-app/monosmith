@@ -203,6 +203,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
+| `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 
 <!-- smith:end add -->
 

@@ -17,7 +17,7 @@ import (
 
 // Installer runs npm install at the workspace root; tests replace it.
 var Installer = func(workspaceRoot string) error {
-	return toolrun.Run(workspaceRoot, []string{"npm", "install", "--no-audit", "--no-fund"})
+	return toolrun.Quiet(workspaceRoot, []string{"npm", "install", "--no-audit", "--no-fund"})
 }
 
 type templateData struct {

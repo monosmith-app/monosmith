@@ -80,3 +80,29 @@ func read(t *testing.T, root, rel string) string {
 	}
 	return string(b)
 }
+
+func TestApplyAddsRootFieldsOnlyWhenTheWorkspaceHasNone(t *testing.T) {
+	Installer = func(string) error { return nil }
+	fields := map[string]any{"overrides": map[string]any{"eslint-plugin-jsx-a11y": map[string]any{"eslint": "$eslint"}}}
+	params := protocol.GenerateParams{Name: "web", Directory: "apps/web"}
+
+	fresh := t.TempDir()
+	write(t, fresh, "package.json", `{"name": "acme"}`)
+	write(t, fresh, "apps/web/package.json", `{"name": "@acme/web"}`)
+	if _, err := Apply(fresh, params, Setup{RootFields: fields}); err != nil {
+		t.Fatal(err)
+	}
+	if root := read(t, fresh, "package.json"); !strings.Contains(root, `"eslint": "$eslint"`) {
+		t.Fatalf("the override was not added:\n%s", root)
+	}
+
+	own := t.TempDir()
+	write(t, own, "package.json", `{"name": "acme", "overrides": {"semver": "7.5.2"}}`)
+	write(t, own, "apps/web/package.json", `{"name": "@acme/web"}`)
+	if _, err := Apply(own, params, Setup{RootFields: fields}); err != nil {
+		t.Fatal(err)
+	}
+	if root := read(t, own, "package.json"); strings.Contains(root, "eslint-plugin-jsx-a11y") {
+		t.Fatalf("a workspace's own overrides are left alone:\n%s", root)
+	}
+}
