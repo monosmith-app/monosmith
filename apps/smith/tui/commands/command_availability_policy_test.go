@@ -33,7 +33,8 @@ func TestEveryCommandWithAKeyShowsItsShortcut(t *testing.T) {
 		if len(c.Keys) > 0 && c.Shortcut == "" {
 			t.Errorf("%s has keys but shows no shortcut", c.ID)
 		}
-		if c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
+		// Quit advertises Ctrl+C; Ctrl+Q is accepted silently (terminals may capture it).
+		if c.ID != "file.quit" && c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
 			t.Errorf("%s shows %q but its first key is %q", c.ID, c.Shortcut, c.Keys[0])
 		}
 	}
@@ -109,7 +110,7 @@ func TestTheMenusListEveryShortcutAndDisableWithAReason(t *testing.T) {
 			if e.ID == "ws.doctor" && !strings.Contains(e.Disabled, "not in a workspace") {
 				t.Errorf("doctor outside should say why: %+v", e)
 			}
-			if e.ID == "file.quit" && (e.Shortcut != "Ctrl+Q" || e.Disabled != "") {
+			if e.ID == "file.quit" && (e.Shortcut != "Ctrl+C" || e.Disabled != "") {
 				t.Errorf("quit: %+v", e)
 			}
 		}

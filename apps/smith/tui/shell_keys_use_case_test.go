@@ -9,7 +9,7 @@ func TestF10OpensTheMenuBarOverThePanesWithoutPushingThemDown(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	before := len(l.lines())
 	l.keys("f10")
-	l.has("Add project…", "Ctrl+N", "Command palette…", "Ctrl+P", "Quit", "Ctrl+Q")
+	l.has("Add project…", "Ctrl+N", "Command palette…", "Ctrl+P", "Quit", "Ctrl+C")
 	if got := len(l.lines()); got != before {
 		t.Fatalf("the menu changed the screen height: %d -> %d", before, got)
 	}
@@ -63,7 +63,7 @@ func TestShortcutsExplainWhenTheyCannotRun(t *testing.T) {
 func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p")
-	l.has("Command palette", "Build", "Ctrl+B", "Doctor", "Ctrl+D", "Quit", "Ctrl+Q")
+	l.has("Command palette", "Build", "Ctrl+B", "Doctor", "Ctrl+D", "Quit", "Ctrl+C")
 	l.typeText("typec")
 	l.has("Typecheck", "Ctrl+Y")
 	l.hasNot("Quit")
@@ -101,7 +101,7 @@ func TestCtrlQQuitsAndCtrlCQuitsWhenNothingRuns(t *testing.T) {
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 40)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Ctrl+P", "Ctrl+Q")
+	l.has("Keyboard shortcuts", "Ctrl+P", "Ctrl+C")
 	l.keys("end")
 	l.has("F10 / Alt+letter", "Esc", "Mouse", "Double-click", "Right-click")
 	l.keys("esc")

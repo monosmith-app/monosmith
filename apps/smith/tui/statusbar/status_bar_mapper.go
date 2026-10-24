@@ -10,7 +10,7 @@ import (
 // Render draws the bar in w cells. The right side (branch, version) is
 // dropped before the left is cut short.
 func Render(th theme.Theme, in Info, w int) string {
-	left := th.Muted(" ready ") + th.Muted("· ctrl+p command palette · f1 help")
+	left := th.Muted(" ready ") + th.Muted("· ctrl+p command palette · f1 help · ctrl+c quit")
 	switch {
 	case in.Hint != "":
 		left = " " + th.Warning(th.Icons.Warning) + " " + in.Hint
