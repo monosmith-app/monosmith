@@ -63,6 +63,8 @@ type Command struct {
 	Kind     Kind
 	// Argv is the smith command line for Execute.
 	Argv []string
+	// All makes RunTask run on every project, whatever is selected.
+	All bool
 	// Task is the task for RunTask.
 	Task string
 	// Tab is the view for ShowTab.

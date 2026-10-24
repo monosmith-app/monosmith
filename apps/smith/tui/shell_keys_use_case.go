@@ -271,7 +271,11 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Execute:
 		return s.execute(c.Argv, false)
 	case commands.RunTask:
-		return s.execute(commands.RunArgv(c.Task, s.selectedProject()), false)
+		project := s.selectedProject()
+		if c.All {
+			project = ""
+		}
+		return s.execute(commands.RunArgv(c.Task, project), false)
 	case commands.RunSelection:
 		if sel := s.tree.Selected(); sel.Kind == navigator.TaskRow {
 			return s.execute(commands.RunArgv(sel.Task, sel.Project), false)
@@ -357,6 +361,10 @@ func (s *Shell) cyclePane(dir int) {
 func (s *Shell) gotoTab(id string) tea.Cmd {
 	if !contains(s.tabs, id) {
 		return nil
+	}
+	if id != s.tab {
+		// A result toast belongs to the screen it was raised on.
+		s.toast = s.toast.Dismiss()
 	}
 	s.tab, s.focus = id, layout.Main
 	switch id {

@@ -166,12 +166,32 @@ func TestClickingAButtonRunsItsCommandOnTheSelection(t *testing.T) {
 	}
 }
 
-func TestClickingADisabledButtonSaysWhy(t *testing.T) {
+func TestStopIsOfferedOnlyWhileARunGoes(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("alt+2")
-	x, y := l.find("[■ Stop")
+	l.hasNot("[■ Stop")
+}
+
+func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("ctrl+b")
+	if !l.sh().toast.Shown() {
+		t.Skip("the run has not ended in this lab")
+	}
+	l.keys("alt+1")
+	if l.sh().toast.Shown() {
+		t.Fatal("the toast stayed on another screen")
+	}
+}
+
+func TestBuildAllRunsEveryProjectAndTheButtonsNameTheirScope(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.has("[▶ Build orders", "[▶ Build all")
+	x, y := l.find("[▶ Build all")
 	l.send(click(x+3, y))
-	l.has("Stop is unavailable: nothing is running")
+	if l.lastStarted() != "run build" {
+		t.Fatalf("started %q", l.lastStarted())
+	}
 }
 
 func TestHoveringAButtonHighlightsIt(t *testing.T) {
