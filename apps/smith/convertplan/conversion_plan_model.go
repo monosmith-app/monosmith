@@ -100,6 +100,9 @@ type Plan struct {
 	Delete []string `json:"delete,omitempty"`
 	// Write maps workspace-relative files to their new content.
 	Write map[string]string `json:"-"`
+	// Keep maps files the converted workspace needs to why, for the next
+	// steps: they look like clutter, but deleting one breaks builds or tests.
+	Keep map[string]string `json:"keep,omitempty"`
 	// WriteFiles lists the keys of Write, for the report.
 	WriteFiles []string `json:"write,omitempty"`
 	// names maps each Nx project name to its smith name, so a target's
@@ -195,6 +198,14 @@ func (p *Plan) SetSpecifier(root, dependency, specifier string) {
 		p.Specifiers[root] = map[string]string{}
 	}
 	p.Specifiers[root][dependency] = specifier
+}
+
+// KeepFile records why the workspace needs a file convert writes.
+func (p *Plan) KeepFile(path, why string) {
+	if p.Keep == nil {
+		p.Keep = map[string]string{}
+	}
+	p.Keep[path] = why
 }
 
 // WriteFile schedules a file to be written.

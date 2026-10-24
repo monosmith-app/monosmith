@@ -148,6 +148,8 @@ Usage: `smith convert [flags]`
 | `--json` | print the plan as JSON | off |
 | `--skip-install` | do not run npm install afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
+| `--verbose` | name every project a finding applies to, not just a few | off |
+| `--yes` | apply without asking (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
