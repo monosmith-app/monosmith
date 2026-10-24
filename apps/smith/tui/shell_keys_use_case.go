@@ -17,7 +17,7 @@ import (
 // globalWhileEditing are the shortcuts that still work while a text field has
 // the keyboard; the others (Ctrl+A, Ctrl+F…) are the field's own.
 var globalWhileEditing = map[string]bool{
-	"ctrl+q": true, "ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true, "alt+9": true,
+	"ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true, "alt+9": true,
 }
 
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
@@ -25,7 +25,8 @@ var mouseHelp = []string{
 	"Click: select or focus   Double-click: run the task",
 	"Right-click: context menu   Wheel: scroll lists and logs",
 	"Click a tab, a menu, a button or a menu item",
-	"Hover a menu to switch menus; hover a disabled item for why",
+	"Shift+drag selects text (Option+drag in macOS terminals)",
+	"M turns the mouse off, so a plain drag selects text",
 }
 
 // otherKeys are keys that are not commands of their own.
@@ -34,7 +35,8 @@ var otherKeys = []dialog.HelpRow{
 	{Group: "Moving", Title: "Open or close a branch", Shortcut: "Right Left"},
 	{Group: "Moving", Title: "Run the task, or open the branch", Shortcut: "Enter"},
 	{Group: "Moving", Title: "Open the menu bar", Shortcut: "F10 / Alt+letter"},
-	{Group: "Moving", Title: "Back, close, clear", Shortcut: "Esc"},
+	{Group: "Moving", Title: "Back, close, clear (never quits)", Shortcut: "Esc"},
+	{Group: "Moving", Title: "Stop the run; quit when nothing runs", Shortcut: "Ctrl+C"},
 	{Group: "Moving", Title: "Reload the view (Doctor, Release, Plugins, Deps)", Shortcut: "r"},
 	{Group: "Moving", Title: "Show or hide this help", Shortcut: "? / F1"},
 }
@@ -111,7 +113,7 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		s.popup = p
 		return s.afterMenu(res.Chosen, res.Refused)
 	}
-	if (name == "ctrl+q" || name == "ctrl+c") && s.bar.Active() {
+	if name == "ctrl+c" && s.bar.Active() {
 		s.bar = s.bar.Close()
 	}
 	if b, res := s.bar.Key(name); res.Handled {
@@ -125,6 +127,16 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			s.quit = true
 		}
 		return nil
+	}
+	if name == "q" && !s.editing() {
+		switch {
+		case s.running():
+			s.say("A run is in progress (Ctrl+C stops it)")
+			return nil
+		case s.tab == commands.TabGuide && s.guide.Title() != "":
+			// Inside a form q goes back one step, as Esc does.
+			return s.paneKey(msg)
+		}
 	}
 	if c, reason, ok := commands.ByKey(name, s.state()); ok && (!s.editing() || globalWhileEditing[name]) {
 		if reason != "" {
@@ -311,6 +323,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		s.cyclePane(1)
 	case commands.PrevPane:
 		s.cyclePane(-1)
+	case commands.CopyFocused:
+		s.copyFocused()
+	case commands.ToggleMouse:
+		return s.toggleMouse()
 	case commands.ContextMenu:
 		s.bar = s.bar.Close()
 		if s.focus == layout.Navigator {

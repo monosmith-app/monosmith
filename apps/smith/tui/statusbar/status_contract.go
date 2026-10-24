@@ -25,6 +25,8 @@ type Info struct {
 	// Hint replaces the command while it is set: the reason a menu item is
 	// unavailable, a refused key, a toast-sized message.
 	Hint string
+	// MouseOff is true while `m` has turned mouse reporting off.
+	MouseOff bool
 	// Tick drives the spinner.
 	Tick int
 }

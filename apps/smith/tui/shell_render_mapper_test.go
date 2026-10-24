@@ -99,7 +99,7 @@ func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 		"tab", "tab", "tab", "shift+tab", "right", "left", "space", "enter", "alt+1", "alt+2", "alt+3", "alt+4", "alt+5", "alt+6",
 		"ctrl+d", "ctrl+x", "n", "ctrl+b", "ctrl+f", "pgup", "pgdown", "ctrl+c", "ctrl+n", "enter", "ctrl+g", "y", "f2", "f3", "esc",
 		click(3, 0), click(10, 3), click(40, 2), click(5, 8), rightClick(5, 4), motion(9, 9), wheel(10, 10, 1), wheel(40, 10, -1), click(0, 0),
-		"ctrl+q",
+		"q",
 	}
 	for _, sz := range [][2]int{{140, 40}, {100, 30}, {80, 24}, {60, 20}, {20, 5}, {1, 1}} {
 		for _, inside := range []bool{true, false} {

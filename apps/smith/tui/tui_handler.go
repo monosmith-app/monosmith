@@ -65,7 +65,8 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		return argv, nil
 	}
 	cfg := Config{
-		Version: version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
+		Clipboard: out,
+		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
 		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
 	}
 	if inside {
@@ -73,8 +74,10 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		cfg.Sources = &s
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
-	// user's screen back on exit; all-motion mouse reports drive the hover.
-	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseAllMotion()).Run()
+	// user's screen back on exit. Cell-motion mouse reports (clicks, drags,
+	// the wheel; no hover) keep Shift+drag free for the terminal's own text
+	// selection, and `m` turns the mouse off altogether.
+	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
 	if err != nil {
 		return nil, err
 	}
