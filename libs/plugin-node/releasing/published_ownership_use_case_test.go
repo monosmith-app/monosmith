@@ -65,3 +65,19 @@ func TestPublishedSkipsAPrivatePackage(t *testing.T) {
 		t.Errorf("a private package is never published: %+v", got)
 	}
 }
+
+func TestLatestAsksAboutAnyDependencyEvenInsideAPrivateWorkspace(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.WriteFile(filepath.Join(ws, "package.json"), []byte(`{"name":"demo","private":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	capture = func(_ string, argv []string) (string, string, error) {
+		if argv[1] == "config" {
+			return "https://registry.npmjs.org/\n", "", nil
+		}
+		return "3.0.1\n", "", nil
+	}
+	if got := Latest(ws, "is-odd"); got.Version != "3.0.1" {
+		t.Errorf("a dependency's latest version is whoever's it is: %+v", got)
+	}
+}
