@@ -340,7 +340,7 @@ func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l.has("✖ go.work lists every module", "x fix all", "r reload")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
-	l.has("2 failed", "Problem", "libs/x is missing", "Remedy", "go work use ./libs/x", "2 checks passed")
+	l.has("2 failed", "Problem", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")
 	l.hasNot("git is installed")
 }
 

@@ -111,8 +111,18 @@ type Shell struct {
 	mouseY  int
 	// detailCursor is the highlighted action while the detail fills the pane.
 	detailCursor int
-	lastClick    pointer.Click
-	now          func() time.Time
+	// zoom is set while the detail fills the pane on a wide screen (z).
+	zoom bool
+	// detailW is the width the user gave the detail pane ([ and ]); 0 is automatic.
+	detailW int
+	// detailTop is the first visible line of the detail; detailAll shows every
+	// line of a folded list; detailFor is what the detail told last, so the
+	// place starts over for another selection.
+	detailTop int
+	detailAll bool
+	detailFor string
+	lastClick pointer.Click
+	now       func() time.Time
 
 	// mouseOff is set while `m` has turned mouse reporting off.
 	mouseOff bool
@@ -155,7 +165,7 @@ func NewShell(cfg Config) Shell {
 // state is what decides which commands are available.
 func (s Shell) state() commands.State {
 	return commands.State{
-		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailOpen,
+		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
 	}
 }
@@ -265,6 +275,7 @@ type (
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
+	s.forgetDetailPlace()
 	s.refreshPalette()
 	if s.quit {
 		return s, tea.Quit
@@ -352,7 +363,9 @@ func (s *Shell) resize(w, h int) {
 }
 
 // lay is where each area of the screen is drawn, for the size and the open view.
-func (s Shell) lay() layout.Layout { return layout.Divide(s.w, s.h, s.hasDetail()) }
+func (s Shell) lay() layout.Layout {
+	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailW)
+}
 
 // canShow is true for a view the shell can open: a tab of the strip, or the
 // guided form inside a workspace (a form is not a tab, a command opens it).

@@ -157,7 +157,7 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 		}
 		s.guide = s.guide.SelectRow(h.index)
 	case "action":
-		if s.detailOpen {
+		if s.detailFull() {
 			for i, a := range s.detailActions() {
 				if a.ID == h.id {
 					s.detailCursor = i
@@ -182,8 +182,14 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		return nil
 	}
 	switch s.lay().AreaAt(x, y) {
+	case layout.Detail:
+		s.scrollDetail(dir * wheelStep)
 	case layout.Main:
 		in := s.mainInner()
+		if s.detailFull() {
+			s.scrollDetail(dir * wheelStep)
+			return nil
+		}
 		switch s.tab {
 		case commands.TabRun:
 			if s.run == nil {
@@ -196,9 +202,6 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 				s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
 			}
 		case commands.TabProjects:
-			if s.detailOpen {
-				return s.detailKey(map[int]string{-1: "up", 1: "down"}[dir])
-			}
 			s.list = s.list.Move(dir * wheelStep)
 		case commands.TabDoctor, commands.TabGuide, commands.TabDeps, commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}

@@ -34,6 +34,10 @@ var (
 	// vWorkspace are the views of a workspace where the run keys are shown.
 	vWorkspace = []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease}
 	vCopy      = []string{TabProjects, TabRun, TabDoctor, TabDeps}
+	// vSplit are the views whose selection has a detail pane beside the list.
+	vSplit = []string{TabProjects, TabRun, TabDoctor}
+	// vZoom are the views whose detail can fill the pane.
+	vZoom = []string{TabProjects, TabDoctor}
 )
 
 // all is the keymap; the order is the order within each group and in the footer.
@@ -54,6 +58,9 @@ var all = []Command{
 	{ID: "doctor.open", Group: GroupWorkspace, Title: "Expand the check: its problem, remedy and fix", Keys: []string{"enter"}, Kind: PaneKey, Views: vDoctor, NeedsNarrowList: true, Footer: "expand", Glyph: "Enter"},
 	{ID: "doctor.fix", Group: GroupWorkspace, Title: "Apply this finding's safe fix (smith doctor --fix --only)", Keys: []string{"f"}, Kind: ViewAction, Action: "doctor-fix", Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix"},
 	{ID: "ws.fix", Group: GroupWorkspace, Title: "Fix with doctor…", Hint: "smith doctor --fix: apply the safe fixes", Keys: []string{"x"}, Kind: Execute, Argv: []string{"doctor", "--fix"}, Confirm: true, Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix all"},
+	{ID: "doctor.back", Group: GroupWorkspace, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vDoctor, NeedsDetailOpen: true, Footer: "back"},
+	{ID: "doctor.page-up", Group: GroupWorkspace, Title: "Scroll the detail up", Keys: []string{"pgup"}, Kind: ViewAction, Action: "detail-up", Views: vDoctor},
+	{ID: "doctor.page-down", Group: GroupWorkspace, Title: "Scroll the detail down", Keys: []string{"pgdown"}, Kind: ViewAction, Action: "detail-down", Views: vDoctor},
 	{ID: "doctor.group", Group: GroupWorkspace, Title: "Group the checks by project, or list them flat", Keys: []string{"g"}, Kind: PaneKey, Views: vDoctor, Footer: "group"},
 	{ID: "doctor.passed", Group: GroupWorkspace, Title: "Show or hide the passed checks", Keys: []string{"p"}, Kind: PaneKey, Views: vDoctor, Footer: "passed"},
 
@@ -124,6 +131,12 @@ var all = []Command{
 	{ID: "view.doctor", Group: GroupViews, Title: "Doctor", Keys: []string{"4"}, Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
 	{ID: "view.deps", Group: GroupViews, Title: "Dependencies", Hint: "newer releases and the one-version policy", Keys: []string{"5"}, Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true, Presents: []string{"up"}},
 	{ID: "view.release", Group: GroupViews, Title: "Release", Hint: "what the next release would do", Keys: []string{"6"}, Kind: ShowTab, Tab: TabRelease, NeedsWorkspace: true, Presents: []string{"release"}},
+	{ID: "detail.zoom", Group: GroupViews, Title: "Zoom the detail to the full width, and back", Hint: "the detail alone fills the pane; on a narrow screen it replaces the list", Keys: []string{"z"}, Kind: ViewAction, Action: "detail-zoom", Views: vZoom, Footer: "zoom"},
+	{ID: "detail.expand", Group: GroupViews, Title: "Show every line of the problem, or fewer", Keys: []string{"e"}, Kind: ViewAction, Action: "detail-expand", Views: vDoctor},
+	{ID: "detail.wider", Group: GroupViews, Title: "Make the detail wider", Hint: "kept until smith closes", Keys: []string{"]"}, Kind: ViewAction, Action: "detail-wider", Views: vSplit},
+	{ID: "detail.narrower", Group: GroupViews, Title: "Make the detail narrower", Hint: "kept until smith closes", Keys: []string{"["}, Kind: ViewAction, Action: "detail-narrower", Views: vSplit},
+	{ID: "detail.up", Group: GroupViews, Title: "Scroll the detail up", Keys: []string{"ctrl+u"}, Kind: ViewAction, Action: "detail-up", Views: vSplit},
+	{ID: "detail.down", Group: GroupViews, Title: "Scroll the detail down", Keys: []string{"ctrl+d"}, Kind: ViewAction, Action: "detail-down", Views: vSplit},
 	{ID: "view.copy", Group: GroupViews, Title: "Copy the focused item", Hint: "remedy, command, project path or package to the clipboard", Keys: []string{"y"}, Kind: CopyFocused, Footer: "copy", ShowIn: vCopy},
 	{ID: "view.mouse", Group: GroupViews, Title: "Mouse on or off", Hint: "off lets the terminal select text; Shift+drag selects with it on", Keys: []string{"m"}, Kind: ToggleMouse, Footer: "mouse", Tail: true},
 

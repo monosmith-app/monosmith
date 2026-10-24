@@ -13,12 +13,15 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 )
 
+// detailStep is how many columns [ and ] move the edge of the detail.
+const detailStep = 4
+
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
 var mouseHelp = []string{
 	"Click: select   Double-click: open the detail (narrow terminals)",
 	"Click a tab to open the view, a hint in the footer to press its key",
 	"Click an action in the detail to do it",
-	"Wheel: scroll lists and logs",
+	"Wheel: scroll lists and logs; over the detail it scrolls the detail",
 	"Shift+drag selects text (Option+drag in macOS terminals)",
 	"m turns the mouse off, so a plain drag selects text",
 }
@@ -179,6 +182,25 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		s.say("The one-version policy found nothing to align")
 	case "reload":
 		return s.reload()
+	case "detail-zoom":
+		s.zoomDetail()
+	case "detail-wider":
+		s.resizeDetail(detailStep)
+	case "detail-narrower":
+		s.resizeDetail(-detailStep)
+	case "detail-up", "detail-down":
+		if !s.detailVisible() {
+			s.say("The detail is not on screen (" + commands.ShortcutOf("detail.zoom") + " shows it)")
+			return nil
+		}
+		s.pageDetail(map[string]int{"detail-up": -1, "detail-down": 1}[action])
+	case "detail-expand":
+		if !s.detailVisible() {
+			// Alone, the list unfolds the check under its line.
+			s.doctor = s.doctor.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			return nil
+		}
+		s.detailAll = !s.detailAll
 	}
 	return nil
 }
@@ -252,7 +274,7 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// A result toast belongs to the screen it was raised on.
 		s.toast = s.toast.Dismiss()
 	}
-	s.tab, s.detailOpen = id, false
+	s.tab, s.detailOpen, s.zoom = id, false, false
 	switch id {
 	case commands.TabDoctor:
 		if s.doctor.Report == nil && s.doctor.Err == nil && !s.doctor.Loading && s.sources.Doctor != nil {
@@ -285,7 +307,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			}
 		}
 	case commands.TabProjects:
-		if s.detailOpen {
+		if s.detailFull() {
 			return s.detailKey(name)
 		}
 		return s.projectsKey(name)
@@ -296,7 +318,15 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	case commands.TabRelease:
 		s.release = s.release.Update(msg)
 	case commands.TabDoctor:
-		s.doctor = s.doctor.Update(msg)
+		switch {
+		case s.detailFull():
+			return s.detailKey(name)
+		case name == "enter" && s.lay().HasDetail():
+			// Beside the detail Enter unfolds what the detail folded.
+			s.detailAll = !s.detailAll
+		default:
+			s.doctor = s.doctor.Update(msg)
+		}
 	case commands.TabGuide:
 		g, cmd := s.guide.Handle(msg)
 		s.guide = g
@@ -351,7 +381,11 @@ func (s *Shell) detailKey(name string) tea.Cmd {
 	actions := s.detailActions()
 	switch name {
 	case "esc", "left", "backspace":
-		s.detailOpen = false
+		s.detailOpen, s.zoom = false, false
+	case "pgup":
+		s.pageDetail(-1)
+	case "pgdown":
+		s.pageDetail(1)
 	case "up":
 		s.detailCursor = max(s.detailCursor-1, 0)
 	case "down":
