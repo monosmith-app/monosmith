@@ -55,7 +55,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 			Check:  "npm workspaces include " + p.Root,
 			OK:     err == nil && covered,
 			Detail: p.Root + " is not matched by the root package.json \"workspaces\"",
-			Remedy: "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`; or, if " + p.Root + " is deliberately standalone, leave it out of the workspace with `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
+			Remedy: "add \"" + path.Dir(p.Root) + "/*\" to \"workspaces\" in the root package.json, then run `npm install`\nor, if " + p.Root + " is deliberately standalone: add `exclude = [\"" + p.Root + "\"]` under [workspace] in smith.toml",
 		})
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name); ok {
 			findings = append(findings, f)
