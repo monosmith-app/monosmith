@@ -25,7 +25,7 @@ func Command(version string) *cobra.Command {
 	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose bool
 	cmd := &cobra.Command{
 		Use:   "convert",
-		Short: "Convert an Nx or Turborepo workspace (or one made by the old mnci) to smith",
+		Short: "Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)",
 		Long: `convert turns the Nx or Turborepo workspace in the current directory into a
 smith workspace: projects keep their directories, targets (Nx) or turbo.json
 tasks (Turborepo) become plugin tasks, package.json scripts or smith.toml
