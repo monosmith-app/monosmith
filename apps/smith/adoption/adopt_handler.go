@@ -19,7 +19,7 @@ func Command(version string) *cobra.Command {
 	var asJSON, tags, initialise, dryRun, install, eslint bool
 	cmd := &cobra.Command{
 		Use:   "adopt",
-		Short: "Bring an existing repository under smith: report what it involves, then take the steps (start here)",
+		Short: "Bring an existing repository under smith: report what it involves; --init takes the steps (start here)",
 		Long: `Read an existing repository (npm workspaces, Go modules, Python projects) and
 report what bringing it under smith involves: the projects smith would see, the
 blockers and warnings, and the step that clears each. Read-only unless a step
@@ -70,6 +70,9 @@ non-zero while something blocks.`,
 				}
 			} else {
 				printReport(out, report)
+				if !tags && report.Adoptable() {
+					fmt.Fprintln(out, "\nNothing changed (adopt only reports). To apply:\n  → smith adopt --init")
+				}
 			}
 			if len(report.Blockers) > 0 {
 				return ErrBlocked

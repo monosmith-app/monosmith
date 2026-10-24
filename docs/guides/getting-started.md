@@ -122,6 +122,9 @@ C:\work\old would be workspace "old" (scope @old, CI github) with:
 ! smith doctor will report: node_modules is missing at the workspace root
   → --init --install runs npm install for you (or run it yourself afterwards)
 ✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports
+
+Nothing changed (adopt only reports). To apply:
+  → smith adopt --init
 ```
 
 Then take the steps:

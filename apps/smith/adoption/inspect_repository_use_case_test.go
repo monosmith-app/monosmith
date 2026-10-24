@@ -95,3 +95,23 @@ func TestAdoptSendsNxAndTurborepoToConvert(t *testing.T) {
 		}
 	}
 }
+
+func TestNoProjectWarningExplainsARootPackage(t *testing.T) {
+	has := func(set ...string) func(string) bool {
+		return func(p string) bool {
+			for _, s := range set {
+				if s == p {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	root := noProjectWarning(has("package.json"))
+	if !strings.Contains(root.Message, "package.json at the root describes the workspace, not a project") || len(root.Steps) != 2 {
+		t.Errorf("root package: %+v", root)
+	}
+	if bare := noProjectWarning(has()); !strings.Contains(bare.Steps[0], "smith adopt --init makes an empty workspace") {
+		t.Errorf("no manifest: %+v", bare)
+	}
+}
