@@ -86,7 +86,7 @@ func Upgrade(dir, version string, check bool, log io.Writer) (Result, error) {
 		}
 		r.Files, r.Lost = append(r.Files, changed...), lost
 	}
-	r.Hints = hints(s)
+	r.Hints = append(r.Hints, hints(s)...)
 	return r, nil
 }
 
@@ -99,7 +99,7 @@ func hints(s *session.Session) []string {
 	}
 	for _, p := range s.Graph.Projects {
 		if p.Plugin == "node" && p.Stack == "" {
-			return []string{`Node projects record no stack and smith.toml sets no default: new ones get no lint or tests. Add [default_stacks] node = "node-jest" (https://github.com/monosmith-app/monosmith/blob/main/docs/reference/stacks.md).`}
+			return []string{"Some Node projects have no lint or test tasks from smith, because smith.toml names no default stack for Node.\n→ smith config set default_stacks.node node-jest\nThen every Node project without its own lint or test script gets ESLint and Jest; a script a project already has still wins. Stacks: https://github.com/monosmith-app/monosmith/blob/main/docs/reference/stacks.md"}
 		}
 	}
 	return nil

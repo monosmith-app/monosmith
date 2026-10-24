@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -73,14 +74,21 @@ nothing. --check does the same and fails when something would change, for CI.`,
 				for _, starter := range r.Starters {
 					fmt.Fprintf(out, "starter files: %s\n", starter)
 				}
-				for _, h := range r.Hints {
-					fmt.Fprintf(out, "hint: %s\n", h)
-				}
 				if r.Diff != "" {
 					fmt.Fprintf(out, "\n%s", r.Diff)
 				}
 				if !r.Changed() {
 					fmt.Fprintln(out, "The workspace is up to date.")
+				}
+				if len(r.Hints) > 0 {
+					fmt.Fprintln(out, "\nSuggestions:")
+					for _, h := range r.Hints {
+						lines := strings.Split(h, "\n")
+						fmt.Fprintf(out, "  - %s\n", lines[0])
+						for _, l := range lines[1:] {
+							fmt.Fprintf(out, "    %s\n", l)
+						}
+					}
 				}
 			}
 			if check && !dryRun && r.Changed() {
