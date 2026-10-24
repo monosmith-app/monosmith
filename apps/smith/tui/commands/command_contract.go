@@ -11,8 +11,6 @@ const (
 	Execute
 	// RunTask runs Task on the selected project, or on every project.
 	RunTask
-	// RunSelection runs the task selected in the navigator.
-	RunSelection
 	// Guided opens the guided form for the action titled Guide.
 	Guided
 	// Palette opens the command palette.
@@ -27,9 +25,6 @@ const (
 	Stop
 	// Follow toggles following the end of the log.
 	Follow
-	// NextPane and PrevPane move the focus between panes.
-	NextPane
-	PrevPane
 	// ReloadDoctor runs doctor again.
 	ReloadDoctor
 	// CopyFocused copies the focused item to the clipboard.
@@ -100,9 +95,12 @@ type Command struct {
 	// Confirm means the command changes the workspace or publishes: a dialog
 	// shows the command line before it runs.
 	Confirm bool
-	// NeedsWorkspace, NeedsIdle (no run in progress), NeedsRunning and
-	// NeedsSelection say when the command is unavailable.
-	NeedsWorkspace, NeedsIdle, NeedsRunning, NeedsSelection bool
+	// NeedsWorkspace, NeedsIdle (no run in progress) and NeedsRunning say when
+	// the command is unavailable.
+	NeedsWorkspace, NeedsIdle, NeedsRunning bool
+	// NeedsNarrowList and NeedsDetailOpen are for the keys of the narrow
+	// layout, where the detail is opened over the list and closed again.
+	NeedsNarrowList, NeedsDetailOpen bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
 	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
@@ -116,14 +114,12 @@ type State struct {
 	// Editing is true while a text field has the keyboard; Form while a guided
 	// form is open. Plain keys do nothing in either.
 	Editing, Form bool
-	// Side is true while the navigator or the inspector has the focus: the
-	// open view's own keys are then not live.
-	Side        bool
-	InWorkspace bool
+	InWorkspace   bool
+	// Narrow is true when the detail is not beside the list; DetailOpen when it
+	// fills the pane instead of the list.
+	Narrow, DetailOpen bool
 	// Running is true while a command is running in the run view.
 	Running bool
-	// HasSelection is true when a task is selected in the navigator.
-	HasSelection bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 }

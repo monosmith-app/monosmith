@@ -9,8 +9,9 @@ func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *t
 	for w := minWidth; w <= 150; w += 3 {
 		l := newLab(t, true, w, 24)
 		lines := l.lines()
-		if !strings.Contains(lines[0], "Guide") {
-			t.Fatalf("%d columns: the tab strip is cut: %q", w, lines[0])
+		// The strip is shortened to fit and, when it still does not, scrolls with a marker.
+		if strip := lines[2]; !strings.Contains(strip, "Guide") && !strings.Contains(strip, "›") {
+			t.Fatalf("%d columns: the tab strip is cut without a marker: %q", w, strip)
 		}
 		if foot := lines[len(lines)-2]; !strings.Contains(foot, "? help") || !strings.Contains(foot, "q quit") {
 			t.Fatalf("%d columns: the footer lost help or quit: %q", w, foot)

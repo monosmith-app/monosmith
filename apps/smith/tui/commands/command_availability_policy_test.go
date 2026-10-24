@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	inside  = State{InWorkspace: true, HasSelection: true, View: TabProjects}
+	inside  = State{InWorkspace: true, Narrow: true, View: TabProjects}
 	outside = State{View: TabGuide}
-	busy    = State{InWorkspace: true, Running: true, HasSelection: true, View: TabProjects}
+	busy    = State{InWorkspace: true, Running: true, View: TabProjects}
 )
 
 var everyView = []string{TabProjects, TabRun, TabDoctor, TabRelease, TabPlugins, TabDeps, TabRecipes, TabSettings, TabGuide}
@@ -202,7 +202,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		return strings.Join(out, " · ")
 	}
 	for view, want := range map[string]string{
-		TabProjects: "b build · t test · l lint · c typecheck · w changed · d doctor · a add project · y copy · Enter run",
+		TabProjects: "Enter detail · b build · t test · l lint · c typecheck · w changed · d doctor · a add project · y copy",
 		TabDoctor:   "Enter detail · f fix · x fix all · g group · p passed · r reload · b build · t test · y copy",
 		TabDeps:     "Space mark · a all · u update · v align · r reload · b build · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · t test",
@@ -216,6 +216,25 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 	}
 	if got := line(TabRun); !strings.HasPrefix(got, "r again · f follow") {
 		t.Errorf("Run footer %q", got)
+	}
+}
+
+func TestTheDetailKeysFollowTheLayout(t *testing.T) {
+	labels := func(s State) []string {
+		v, _ := Hints(s)
+		var out []string
+		for _, h := range v {
+			out = append(out, h.Label)
+		}
+		return out
+	}
+	wide := State{InWorkspace: true, View: TabProjects}
+	if got := labels(wide); slices.Contains(got, "detail") || slices.Contains(got, "back") {
+		t.Fatalf("beside the list there is nothing to open or close: %v", got)
+	}
+	open := State{InWorkspace: true, Narrow: true, DetailOpen: true, View: TabProjects}
+	if got := labels(open); !slices.Contains(got, "back") || slices.Contains(got, "detail") {
+		t.Fatalf("an open detail offers a way back: %v", got)
 	}
 }
 

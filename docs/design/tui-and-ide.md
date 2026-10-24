@@ -90,8 +90,16 @@ no panes.
   the workspace, the branch and the smith version.
 
 Panes can be resized by dragging their borders.
-Below 100 columns the inspector folds into the main view, and below 80 the
-navigator becomes a tab, so the interface works in a small terminal too.
+**As built (the adaptive shell).** The navigator tree and the permanent
+inspector are gone. The screen is a header (workspace, branch, doctor's health
+as `✖2 ▲2`), the views as rounded tabs whose active tab opens into the pane
+below, one content pane, the footer and the status bar. From 100 columns the
+pane is the list and, beside it, the detail of the selection (a project's
+tasks, dependencies and actions, a doctor finding's fix, a run's task); below,
+only the list, Enter opens the detail over it and Esc goes back. The tabs shorten
+their names and then scroll (`‹` `›`) so the open one is always in view, and are
+one row on a terminal under 24 rows high. Views implement a small `Page`
+(title, footer keys, update, view for a width and a height).
 
 ## Components
 

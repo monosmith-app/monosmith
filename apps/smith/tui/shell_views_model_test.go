@@ -283,7 +283,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 		key  string
 		want string
 	}{
-		{"1", "Run the selected task"},
+		{"1", "Open the detail of the project"},
 		{"5", "Turn the plugin on or off"},
 		{"6", "Update the marked ones"},
 		{"2", "Run the last command again"},
@@ -317,8 +317,8 @@ func TestQuestionMarkIsTextWhileASettingIsBeingEdited(t *testing.T) {
 
 func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
-	// Ten tabs do not fit 56 cells with their full names: the long ones are shortened.
-	l.has("Proj", "Run", "Doctor", "Rel", "Plug", "Deps", "Recipes", "Sett", "Guide")
+	// Nine tabs do not fit 79 cells: the long names are shortened and the strip scrolls.
+	l.has("Proj", "Run", "Doctor")
 	for _, key := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
@@ -329,14 +329,21 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 		if got := len(strings.Split(l.sh().View(), "\n")); got != 26 {
 			t.Fatalf("%s: %d lines", key, got)
 		}
+		// Whatever the strip scrolled to, the open tab is in it.
+		open := false
+		for _, sp := range l.sh().renderStrip("").Spans {
+			open = open || sp.ID == l.sh().tab
+		}
+		if !open {
+			t.Fatalf("%s: the open tab %q is out of view:\n%s", key, l.sh().tab, stripText(l))
+		}
 	}
 }
 
 func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
-	l.has("Workspace", "Plug", "Deps", "Guide")
-	l.clickText("Deps")
-	l.has("3 with newer releases")
+	l.keys("6")
+	l.has("Deps", "3 with newer releases")
 	l.clickText("Plug")
 	l.has("built-in")
 }
@@ -362,7 +369,7 @@ func TestTheWheelMovesThroughThePluginsAndDeps(t *testing.T) {
 
 func TestTheHelpOfPluginsAndDepsListsTheirOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
-		"1": {"Projects view", "Run the selected task, or open the branch"},
+		"1": {"Projects view", "Open the detail of the project"},
 		"5": {"Plugins view", "Turn the plugin on or off"},
 		"6": {"Deps view", "Update the marked ones", "Bring drifting versions to one"},
 	} {
@@ -387,12 +394,12 @@ func TestAboutClosesOnTheOKButton(t *testing.T) {
 	l.hasNot("About MonoSmith")
 }
 
-func TestTheStatusBarNamesTheWorkspaceAndTheFirstRowIsThePanes(t *testing.T) {
+func TestTheHeaderNamesTheWorkspaceAndTheStatusBarTheVersion(t *testing.T) {
 	l := newLab(t, true, 100, 40)
-	if last := l.lines()[39]; !strings.Contains(last, "acme") {
+	if last := l.lines()[39]; !strings.Contains(last, "smith 1.2.3") {
 		t.Fatalf("status bar %q", last)
 	}
-	if first := l.lines()[0]; !strings.HasPrefix(first, "╭") {
-		t.Fatalf("there is no bar above the panes: %q", first)
+	if first := l.lines()[0]; !strings.Contains(first, "acme") || strings.HasPrefix(first, "╭") {
+		t.Fatalf("the first row is the header: %q", first)
 	}
 }

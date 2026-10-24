@@ -42,8 +42,9 @@ var (
 var all = []Command{
 	// The keys of each view's own pane come first: they win over a global key
 	// that is the same letter (Deps marks all with a, which adds a project elsewhere).
-	{ID: "projects.move", Group: GroupRun, Title: "Move in the list or tree", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey, Views: vProjects},
-	{ID: "projects.fold", Group: GroupRun, Title: "Open or close a branch", Keys: []string{"right", "left"}, Shortcut: "Right Left", Kind: PaneKey, Views: vProjects},
+	{ID: "projects.move", Group: GroupRun, Title: "Move in the list", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey, Views: vProjects},
+	{ID: "projects.open", Group: GroupRun, Title: "Open the detail of the project (narrow terminals)", Keys: []string{"enter"}, Kind: PaneKey, Views: vProjects, NeedsNarrowList: true, Footer: "detail", Glyph: "Enter"},
+	{ID: "projects.back", Group: GroupRun, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsDetailOpen: true, Footer: "back"},
 
 	{ID: "run.again", Group: GroupRun, Title: "Run the last command again", Hint: "the last command line, as it was", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "again"},
 	{ID: "run.follow", Group: GroupRun, Title: "Follow the log, or pause it", Hint: "stay at the end of the log, or pause to read", Keys: []string{"f"}, Kind: Follow, Views: vRun, Footer: "follow"},
@@ -80,12 +81,11 @@ var all = []Command{
 	{ID: "view.reload", Group: GroupViews, Title: "Read the view again", Keys: []string{"r"}, Kind: ViewAction, Action: "reload", Views: vReloadable, NeedsWorkspace: true, Footer: "reload"},
 
 	// Moving: the keys every pane understands, handled by the pane itself.
-	{ID: "move.arrows", Group: GroupMoving, Title: "Move in a list or tree", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey},
+	{ID: "move.arrows", Group: GroupMoving, Title: "Move in a list", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey},
 	{ID: "move.enter", Group: GroupMoving, Title: "Open or run the selection", Keys: []string{"enter"}, Kind: PaneKey},
 	{ID: "move.esc", Group: GroupMoving, Title: "Back, close, clear (never quits)", Keys: []string{"esc"}, Kind: PaneKey},
 
 	// Run
-	{ID: "run.selection", Group: GroupRun, Title: "Run selected task", Hint: "the task selected in the navigator (Enter does the same)", Kind: RunSelection, NeedsWorkspace: true, NeedsIdle: true, NeedsSelection: true, Presents: []string{"run"}},
 	{ID: "run.build", Group: GroupRun, Title: "Build", Hint: "smith build, on the selected project or all", Keys: []string{"b"}, Kind: RunTask, Task: "build", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}, Footer: "build", ShowIn: vWorkspace},
 	{ID: "run.test", Group: GroupRun, Title: "Test", Hint: "smith test, on the selected project or all", Keys: []string{"t"}, Kind: RunTask, Task: "test", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}, Footer: "test", ShowIn: vWorkspace},
 	{ID: "run.lint", Group: GroupRun, Title: "Lint", Hint: "smith lint, on the selected project or all", Keys: []string{"l"}, Kind: RunTask, Task: "lint", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}, Footer: "lint", ShowIn: vProjects},
@@ -127,10 +127,7 @@ var all = []Command{
 	{ID: "view.recipes", Group: GroupViews, Title: "Recipes", Hint: "what a recipe puts in each role, and new projects from its choices", Keys: []string{"7"}, Kind: ShowTab, Tab: TabRecipes, NeedsWorkspace: true, Presents: []string{"recipe"}},
 	{ID: "view.settings", Group: GroupViews, Title: "Settings", Hint: "smith.toml, checked against its schema", Keys: []string{"8"}, Kind: ShowTab, Tab: TabSettings, NeedsWorkspace: true, Presents: []string{"config", "config set", "config unset"}},
 	{ID: "view.guide", Group: GroupViews, Title: "Guided actions", Hint: "the step-by-step menu", Keys: []string{"9"}, Kind: ShowTab, Tab: TabGuide},
-	{ID: "view.next-pane", Group: GroupViews, Title: "Next pane", Hint: "move the focus: navigator, main, inspector", Keys: []string{"tab"}, Kind: NextPane},
-	{ID: "view.prev-pane", Group: GroupViews, Title: "Previous pane", Keys: []string{"shift+tab"}, Kind: PrevPane},
 	{ID: "view.copy", Group: GroupViews, Title: "Copy the focused item", Hint: "remedy, command, project path or package to the clipboard", Keys: []string{"y"}, Kind: CopyFocused, Footer: "copy", ShowIn: vCopy},
-	{ID: "projects.open", Group: GroupRun, Title: "Run the selected task, or open the branch", Keys: []string{"enter"}, Kind: PaneKey, Views: vProjects, Footer: "run", Glyph: "Enter"},
 	{ID: "view.mouse", Group: GroupViews, Title: "Mouse on or off", Hint: "off lets the terminal select text; Shift+drag selects with it on", Keys: []string{"m"}, Kind: ToggleMouse, Footer: "mouse", Tail: true},
 
 	// Help

@@ -48,7 +48,7 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	// The failing task's log is shown without asking.
 	l.has("Log: orders:build", "main.go:12: undefined: Foo")
 	l.hasNot("ok example.com/kit")
-	// The tab carries a badge, the status bar the result, the navigator a mark.
+	// The tab carries a badge, the status bar the result, the Projects list a mark.
 	l.has("Run ✖1")
 }
 
@@ -175,15 +175,16 @@ func TestRunAgainRepeatsTheLastCommand(t *testing.T) {
 	}
 }
 
-func TestTheNavigatorMarksTheLastResultOfEachProject(t *testing.T) {
+func TestTheProjectsListMarksTheLastResultOfEachProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
 	l.keys("b")
-	_, y := l.find("orders go")
+	l.keys("1")
+	_, y := l.find("○ orders")
 	if row := l.lines()[y]; !strings.Contains(row, "✖") {
 		t.Fatalf("orders failed but its row says %q", row)
 	}
-	_, y = l.find("kit go")
+	_, y = l.find("○ kit")
 	if row := l.lines()[y]; !strings.Contains(row, "✔") {
 		t.Fatalf("kit passed but its row says %q", row)
 	}

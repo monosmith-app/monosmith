@@ -15,9 +15,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
@@ -41,14 +41,14 @@ var smithCommands = []clicontract.CommandDescription{
 	{Name: "release", Description: "Version, tag and publish", Options: []clicontract.OptionDescription{{Name: "dry-run"}}},
 }
 
-var sampleProjects = []navigator.Project{
+var sampleProjects = []projectlist.Project{
 	{Name: "web", Kind: "app", Language: "node", Root: "apps/web", Stack: "node-vitest", Deps: []string{"kit"}, Affected: true,
-		Tasks: []navigator.Task{{Name: "build", Command: "npm run build", Cache: true}, {Name: "test", Command: "npm run test", DependsOn: []string{"^build"}, Cache: true}}},
+		Tasks: []projectlist.Task{{Name: "build", Command: "npm run build", Cache: true}, {Name: "test", Command: "npm run test", DependsOn: []string{"^build"}, Cache: true}}},
 	{Name: "orders", Kind: "app", Language: "go", Root: "apps/orders",
-		Tasks: []navigator.Task{{Name: "build", Command: "go build ./..."}, {Name: "test", Command: "go test ./..."}}},
+		Tasks: []projectlist.Task{{Name: "build", Command: "go build ./..."}, {Name: "test", Command: "go test ./..."}}},
 	{Name: "kit", Kind: "lib", Language: "go", Root: "libs/kit", Dependents: []string{"web"},
-		Tasks: []navigator.Task{{Name: "build", Command: "go build ./..."}, {Name: "test", Command: "go test ./..."}}},
-	{Name: "sdk", Kind: "package", Language: "python", Root: "packages/sdk", Tasks: []navigator.Task{{Name: "test", Command: "pytest"}}},
+		Tasks: []projectlist.Task{{Name: "build", Command: "go build ./..."}, {Name: "test", Command: "go test ./..."}}},
+	{Name: "sdk", Kind: "package", Language: "python", Root: "packages/sdk", Tasks: []projectlist.Task{{Name: "test", Command: "pytest"}}},
 }
 
 var sampleDoctorProjects = []doctorview.ProjectRef{{Name: "web", Root: "apps/web"}, {Name: "orders", Root: "apps/orders"}}

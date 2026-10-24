@@ -453,19 +453,21 @@ Run `smith` with no arguments, in a terminal:
 *The Menu tab asks one question at a time. Everything it does ends as a smith
 command printed before it runs, so you can type the same line in a script.*
 
-The shell has the workspace navigator, the main view with tabs, an inspector
-for what is selected, a row of key hints and a status bar, and it works with
-the mouse too. It has no menu bar: every action is one key, and the row above
+The shell has a header (the workspace, its branch and what doctor found, such as
+`✖2 ▲2`), the views as tabs, one pane for the open view, a row of key hints and
+a status bar, and it works with the mouse too. From 100 columns the selection's
+detail sits beside the list; below that the list has the whole width, Enter
+opens the detail over it and Esc goes back. It has no menu bar: every action is one key, and the row above
 the status bar always shows the keys of the view you are in (click a hint to
 press its key). The number keys open the tabs, in the order of the tab row, and
 clicking a tab name does the same:
 
 - **Projects** (`1`): every project with its language, kind, stack or
   recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
-  a mark on the ones the current changes affect. Enter runs the
-  selected task, and `b`, `t`, `l` and `c` build, test, lint and typecheck the
-  selected project (every project when none is selected); `w` lints and tests
-  what changed (`smith run lint test --affected`); the inspector lists what the project depends on and what
+  a mark on the ones the current changes affect. `b`, `t`, `l` and `c` build, test,
+  lint and typecheck the selected project; `w` lints and tests
+  what changed (`smith run lint test --affected`); the detail lists the project's
+  tasks (each can be run from it), what it depends on and what
   depends on it, and shows its graph (`smith graph --focus <project>`).
 - **Run** (`2`): the task graph of the command running, each task's state,
   its log, failures first. `f` follows the log or pauses it and `r` runs the
@@ -520,9 +522,10 @@ the command palette with every smith command, `i` installs the dependencies,
 text, `q` quits, and `?` (or `F1`) lists the keys of the tab you are in and the
 rest. A key never fires while you are typing in a field or a form. The hints
 row and the help are drawn from the same list as the keys, so they cannot name
-a key that does nothing. Everything fits 80 columns, where the longest tab
-names are shortened (Proj, Rel, Plug, Conf); below that the navigator becomes a
-tab and the tab labels lose their padding.
+a key that does nothing. Everything fits 72 columns: the tab names are shortened (Proj, Rel, Plug,
+Sett) before the row of tabs scrolls, with `‹` and `›` to click, so the open tab
+is always in view. On a terminal shorter than 24 rows the tabs are one plain
+row instead of boxes.
 
 Nothing the shell does happens on its own. Every action ends as a smith
 command line, printed in the status bar and the Run tab before it runs; one

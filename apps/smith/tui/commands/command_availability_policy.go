@@ -13,10 +13,12 @@ func (c Command) Unavailable(s State) string {
 		return "not in a workspace (press " + ShortcutOf("file.new") + " to create one)"
 	case c.NeedsRunning && !s.Running:
 		return "nothing is running"
+	case c.NeedsNarrowList && (!s.Narrow || s.DetailOpen):
+		return "the detail is beside the list"
+	case c.NeedsDetailOpen && !s.DetailOpen:
+		return "the detail is not open"
 	case c.NeedsIdle && s.Running:
 		return "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
-	case c.NeedsSelection && !s.HasSelection:
-		return "select a task in the navigator first"
 	}
 	return ""
 }
@@ -39,7 +41,7 @@ func (c Command) Visible(s State) bool {
 	if c.Kind == PaneKey {
 		return false
 	}
-	if c.ownsView() && (!c.inView(s) || s.Side) {
+	if c.ownsView() && !c.inView(s) {
 		return false
 	}
 	return (!c.OnlyOutside || !s.InWorkspace) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
@@ -67,9 +69,6 @@ func ByKey(key string, s State) (c Command, reason string, ok bool) {
 				continue
 			}
 			if cmd.Kind == PaneKey {
-				if s.Side {
-					continue
-				}
 				return Command{}, "", false
 			}
 			if !cmd.Visible(s) || (s.Editing && !cmd.WhileEditing) {

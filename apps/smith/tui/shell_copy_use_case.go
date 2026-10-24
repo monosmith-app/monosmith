@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/clipboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
@@ -15,19 +14,16 @@ import (
 // the selected project, the package of the selected dependency. ok is false
 // when the view has nothing to copy.
 func (s Shell) focusedText() (text string, ok bool) {
-	switch {
-	case s.focus == layout.Navigator || s.tab == tabNavigator || s.tab == commands.TabProjects:
-		sel := s.tree.Selected()
-		for _, p := range s.tree.Projects() {
-			if p.Name == sel.Project && p.Root != "" {
-				return p.Root, true
-			}
+	switch s.tab {
+	case commands.TabProjects:
+		if p, found := s.list.Selected(); found && p.Root != "" {
+			return p.Root, true
 		}
-	case s.tab == commands.TabRun:
+	case commands.TabRun:
 		if s.run != nil {
 			return s.run.CommandLine(), true
 		}
-	case s.tab == commands.TabDoctor:
+	case commands.TabDoctor:
 		if f, found := s.doctor.Selected(); found {
 			switch {
 			case f.Remedy != "":
@@ -37,7 +33,7 @@ func (s Shell) focusedText() (text string, ok bool) {
 			}
 			return f.Check, true
 		}
-	case s.tab == commands.TabDeps:
+	case commands.TabDeps:
 		if s.deps.Cursor >= 0 && s.deps.Cursor < len(s.deps.Rows) {
 			return s.deps.Rows[s.deps.Cursor].Name, true
 		}

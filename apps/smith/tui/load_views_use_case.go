@@ -17,8 +17,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
@@ -53,7 +53,7 @@ type Sources struct {
 
 // projectsLoaded is the workspace's projects, loaded in the background.
 type projectsLoaded struct {
-	projects []navigator.Project
+	projects []projectlist.Project
 	branch   string
 	err      error
 }
@@ -157,10 +157,10 @@ func loadProjects(open func() (*session.Session, error)) projectsLoaded {
 	for _, n := range affected.Compute(s.Git, s.Graph, base).Projects {
 		hit[n] = true
 	}
-	var out []navigator.Project
+	var out []projectlist.Project
 	for _, name := range s.Graph.Names() {
 		p := s.Graph.Get(name)
-		np := navigator.Project{
+		np := projectlist.Project{
 			Name: name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
 			Stack: projectgraph.StackOf(p, s.Config), Deps: p.Deps, Dependents: s.Graph.Dependents(name), Affected: hit[name],
 		}
@@ -171,7 +171,7 @@ func loadProjects(open func() (*session.Session, error)) projectsLoaded {
 		sort.Strings(tasks)
 		for _, t := range tasks {
 			def := p.Tasks[t]
-			np.Tasks = append(np.Tasks, navigator.Task{
+			np.Tasks = append(np.Tasks, projectlist.Task{
 				Name: t, Command: strings.Join(def.Command, " "), DependsOn: def.DependsOn, Cache: def.Cache, Description: def.Description,
 			})
 		}

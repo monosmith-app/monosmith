@@ -8,9 +8,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-func TestTheBarShowsTheExactCommandTheResultTheBranchAndTheVersion(t *testing.T) {
-	got := Render(theme.Default(), Info{Command: "smith run build -p kit", State: Passed, Result: "4/4 tasks", Branch: "main", Version: "1.2.3"}, 100)
-	for _, want := range []string{"$ smith run build -p kit", "passed", "4/4 tasks", "main", "smith 1.2.3"} {
+func TestTheBarShowsTheExactCommandTheResultAndTheVersion(t *testing.T) {
+	got := Render(theme.Default(), Info{Command: "smith run build -p kit", State: Passed, Result: "4/4 tasks", Version: "1.2.3"}, 100)
+	for _, want := range []string{"$ smith run build -p kit", "passed", "4/4 tasks", "smith 1.2.3"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q in %q", want, got)
 		}
@@ -43,7 +43,7 @@ func TestAHintReplacesTheCommandWhileItIsSet(t *testing.T) {
 }
 
 func TestOnANarrowScreenTheRightSideGoesFirstAndTheWidthIsExact(t *testing.T) {
-	in := Info{Command: "smith run lint test --affected", State: Failed, Result: "1 failed", Branch: "feat/something-long", Version: "1.2.3"}
+	in := Info{Command: "smith run lint test --affected", State: Failed, Result: "1 failed", Version: "1.2.3"}
 	for _, w := range []int{80, 60, 40, 20, 5, 1} {
 		if got := Render(theme.Default(), in, w); pane.Width(got) != w {
 			t.Fatalf("width %d: got %d", w, pane.Width(got))
@@ -54,9 +54,9 @@ func TestOnANarrowScreenTheRightSideGoesFirstAndTheWidthIsExact(t *testing.T) {
 	}
 }
 
-func TestTheBarNamesTheWorkspaceAndLeavesTheKeysToTheFooter(t *testing.T) {
-	idle := Render(theme.Default(), Info{Workspace: "acme", Branch: "main"}, 120)
-	for _, want := range []string{"ready", "acme", "main"} {
+func TestTheBarLeavesTheKeysToTheFooterAndTheWorkspaceToTheHeader(t *testing.T) {
+	idle := Render(theme.Default(), Info{Version: "1.2.3"}, 120)
+	for _, want := range []string{"ready", "smith 1.2.3"} {
 		if !strings.Contains(idle, want) {
 			t.Fatalf("missing %q in %q", want, idle)
 		}

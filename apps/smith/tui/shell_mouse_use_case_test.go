@@ -30,9 +30,9 @@ func (l *lab) doubleClick(x, y int) {
 
 func TestClickingATabSwitchesTheView(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Doctor", 0) // the tab row, the first row of the screen
-	if y != 0 {
-		t.Fatalf("the tab row is on row %d", y)
+	x, y := l.findAfter("Doctor", 0) // the label row of the tab boxes, under the header
+	if y != 2 {
+		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
 	l.has("2 passed", "✖ go.work lists every module", "f fix")
@@ -80,41 +80,45 @@ func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 	}
 }
 
-func TestClickingARowSelectsItAndTheInspectorFollows(t *testing.T) {
+func TestClickingARowSelectsItAndTheDetailFollows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("● web")
 	l.send(click(x+2, y))
 	l.has("Depends on", "kit", "affected", "yes")
-	if l.sh().focus.String() != "navigator" {
-		t.Fatalf("focus %v", l.sh().focus)
+	if l.sh().list.SelectedName() != "web" {
+		t.Fatalf("selected %q", l.sh().list.SelectedName())
 	}
 }
 
-func TestDoubleClickingATaskRunsItAndASingleClickDoesNot(t *testing.T) {
+func TestClickingATaskActionOfTheDetailRunsItOnTheProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	x, y := l.find("● web")
 	l.send(click(x+2, y))
-	l.keys("right") // open web's tasks
-	tx, ty := l.find("› build")
-	l.send(click(tx+2, ty))
 	if len(l.started) != 0 {
-		t.Fatal("a single click must not run")
+		t.Fatal("selecting a project must not run anything")
 	}
-	l.advance(2 * time.Second)
-	l.doubleClick(tx+2, ty)
-	if l.lastStarted() != "run build -p web" {
+	tx, ty := l.find("Run test")
+	l.send(click(tx+2, ty))
+	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 }
 
-func TestDoubleClickingAProjectOpensItsTasks(t *testing.T) {
-	l := newLab(t, true, 140, 34)
+func TestDoubleClickingAProjectOpensItsDetailOnANarrowScreen(t *testing.T) {
+	l := newLab(t, true, 90, 30)
 	x, y := l.find("○ kit")
-	l.hasNot("› build")
+	l.hasNot("Used by")
+	l.send(click(x+2, y))
+	l.hasNot("Used by")
+	l.advance(2 * time.Second)
 	l.doubleClick(x+2, y)
-	l.has("› build", "› test")
-	l.doubleClick(x+2, y)
-	l.hasNot("› build")
+	l.has("Used by", "Run test")
+	// A click on an action of the detail does it.
+	ax, ay := l.find("Run test")
+	l.send(click(ax+2, ay))
+	if l.lastStarted() != "run test -p kit" {
+		t.Fatalf("started %q", l.lastStarted())
+	}
 }
 
 func TestRightClickOpensNoMenu(t *testing.T) {
@@ -160,23 +164,19 @@ func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	}
 }
 
-func TestClickingAnInspectorActionRunsIt(t *testing.T) {
+func TestClickingAnActionOfTheDetailRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Typecheck", 3) // the inspector's action
+	x, y := l.findAfter("Run test", 3)
 	l.send(click(x+3, y))
-	if l.lastStarted() != "run typecheck -p orders" {
+	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 }
 
 func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("kit", 5) // the table row (the navigator is further left)
-	for x < 40 {
-		nx, ny := l.findAfter("lib", y+1)
-		x, y = nx, ny
-	}
-	l.send(click(x+1, y))
+	x, y := l.find("○ kit")
+	l.send(click(x+2, y))
 	l.has("Used by")
 }
 
@@ -249,18 +249,16 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	l.has("following", "output line 149")
 }
 
-func TestTheWheelScrollsTheNavigatorWithoutMovingTheSelection(t *testing.T) {
-	l := newLab(t, true, 140, 9) // short: the tree does not fit
-	l.hasNot("sdk python")
-	l.send(wheel(5, 5, 1))
-	l.send(wheel(5, 5, 1))
-	l.send(wheel(5, 5, 1))
-	l.has("sdk python")
-	l.has("orders") // the inspector still shows the selected project
-	l.send(wheel(5, 5, -1))
-	l.send(wheel(5, 5, -1))
-	l.send(wheel(5, 5, -1))
-	l.has("▾ Apps")
+func TestTheWheelMovesTheSelectionOfTheList(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.send(wheel(5, 10, 1))
+	if got := l.sh().list.SelectedName(); got != "sdk" {
+		t.Fatalf("a notch of the wheel moves three rows: %q", got)
+	}
+	l.send(wheel(5, 10, -1))
+	if got := l.sh().list.SelectedName(); got != "orders" {
+		t.Fatalf("%q", got)
+	}
 }
 
 func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
@@ -309,17 +307,26 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 	l.hasNot("Keyboard shortcuts")
 }
 
-func TestTheNavigatorTabWorksWithTheMouseAt79Columns(t *testing.T) {
-	l := newLab(t, true, 79, 24)
-	_, y := l.find("Workspace ")
-	l.send(click(2, y))
-	x, ty := l.find("○ kit")
-	l.doubleClick(x+2, ty)
-	l.has("› build")
-	tx, tty := l.find("› build")
-	l.advance(3 * time.Second)
-	l.doubleClick(tx+2, tty)
-	if l.lastStarted() != "run build -p kit" {
-		t.Fatalf("started %q", l.lastStarted())
+func TestTheTabStripScrollsWithTheMouseOnANarrowScreen(t *testing.T) {
+	l := newLab(t, true, 72, 30)
+	l.has("›")
+	x, y := l.findAfter("›", 2)
+	l.send(click(x, y))
+	if l.sh().tab != "run" {
+		t.Fatalf("the marker should move to the next tab, the open one is %q", l.sh().tab)
+	}
+	for i := 0; i < 12 && strings.Contains(l.view(), "›"); i++ {
+		x, y = l.findAfter("›", 2)
+		l.send(click(x, y))
+	}
+	if l.sh().tab == "projects" {
+		t.Fatal("clicking › should have moved on")
+	}
+	l.has("Guide", "‹") // the last tab is in view and the earlier ones are behind the left marker
+	before := l.sh().tab
+	x, y = l.findAfter("‹", 2)
+	l.send(click(x, y))
+	if l.sh().tab == before {
+		t.Fatal("the left marker should move back one tab")
 	}
 }

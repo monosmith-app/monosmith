@@ -13,10 +13,10 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
@@ -26,11 +26,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
-// tabNavigator is the navigator shown as a tab below 80 columns.
-const tabNavigator = "workspace"
-
 var tabTitles = map[string]string{
-	tabNavigator: "Workspace", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
+	commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
 	commands.TabRelease: "Release", commands.TabPlugins: "Plugins", commands.TabDeps: "Deps", commands.TabRecipes: "Recipes", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
 }
 
@@ -51,10 +48,11 @@ type Config struct {
 	Clipboard io.Writer
 }
 
-// Shell is the interface of a bare `smith` in a terminal: a navigator, a main
-// view with tabs, an inspector, a row of key hints and a status bar that fill
-// the terminal, usable with the keyboard (single keys, see package commands)
-// and the mouse. Whatever it does is a smith
+// Shell is the interface of a bare `smith` in a terminal: a header with the
+// workspace, the branch, the health and the view tabs, one content pane (the
+// list, with its detail beside it from 100 columns), a row of key hints and a
+// status bar that fill the terminal, usable with the keyboard (single keys,
+// see package commands) and the mouse. Whatever it does is a smith
 // command line, shown in the status bar and logged, run as a child process in
 // the Run tab, and confirmed first when it changes the workspace or publishes.
 type Shell struct {
@@ -63,16 +61,17 @@ type Shell struct {
 	header  string
 	branch  string
 	w, h    int
-	lay     layout.Layout
 
 	inWorkspace bool
 	emptyFolder bool
 	sources     Sources
 	tabs        []string
 	tab         string
-	focus       layout.Area
+	// detailOpen is true while the detail of the selected project fills the
+	// pane, in the narrow layout (Enter opens it, Esc closes it).
+	detailOpen bool
 
-	tree navigator.Tree
+	list projectlist.List
 	// loadedProjects is true once the project list arrived (or failed).
 	loadedProjects bool
 	projectsErr    error
@@ -111,10 +110,10 @@ type Shell struct {
 	ticking bool
 	mouseX  int
 	mouseY  int
-	// inspCursor is the highlighted action in the inspector.
-	inspCursor int
-	lastClick  pointer.Click
-	now        func() time.Time
+	// detailCursor is the highlighted action while the detail fills the pane.
+	detailCursor int
+	lastClick    pointer.Click
+	now          func() time.Time
 
 	// mouseOff is set while `m` has turned mouse reporting off.
 	mouseOff bool
@@ -132,8 +131,8 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		guide: guide.NewModel(cfg.Actions), recipes: recipesview.New(), focus: layout.Main, mouseX: -1, mouseY: -1,
-		tree: navigator.New(nil), clip: cfg.Clipboard,
+		guide: guide.NewModel(cfg.Actions), recipes: recipesview.New(), mouseX: -1, mouseY: -1,
+		list: projectlist.New(nil), clip: cfg.Clipboard,
 	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
@@ -154,19 +153,10 @@ func NewShell(cfg Config) Shell {
 
 // state is what decides which commands are available.
 func (s Shell) state() commands.State {
-	sel := s.tree.Selected()
 	return commands.State{
-		View: s.keyView(), Editing: s.editing(), Form: s.formOpen(), Side: s.focus != layout.Main && s.tab != tabNavigator,
-		InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow, EmptyFolder: s.emptyFolder,
+		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailOpen,
+		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder,
 	}
-}
-
-// keyView is the view whose keys are live: the navigator shown as a tab is the Projects view.
-func (s Shell) keyView() string {
-	if s.tab == tabNavigator {
-		return commands.TabProjects
-	}
-	return s.tab
 }
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
@@ -174,9 +164,6 @@ func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
 // tabList is the tabs in this layout and workspace.
 func (s Shell) tabList() []string {
 	var tabs []string
-	if s.lay.Mode == layout.Narrow && s.inWorkspace {
-		tabs = append(tabs, tabNavigator)
-	}
 	if s.inWorkspace {
 		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabPlugins, commands.TabDeps, commands.TabRecipes, commands.TabSettings)
 	}
@@ -278,14 +265,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	case projectsLoaded:
 		s.loadedProjects, s.projectsErr = true, msg.err
 		if msg.err == nil {
-			selected := s.tree.Selected()
-			s.tree = navigator.New(msg.projects).SetHeight(max(s.lay.Navigator.H-2, 1))
-			switch {
-			case selected.Project != "":
-				s.tree = s.tree.SelectProject(selected.Project)
-			case len(s.tree.Ordered()) > 0:
-				s.tree = s.tree.SelectProject(s.tree.Ordered()[0].Name)
-			}
+			selected := s.list.SelectedName()
+			s.list = projectlist.New(msg.projects).SelectProject(selected)
 			s.branch = msg.branch
 		}
 	case doctorview.Result:
@@ -336,7 +317,6 @@ func (s *Shell) resize(w, h int) {
 		a := s.about.Place(w, h)
 		s.about = &a
 	}
-	s.lay = layout.Divide(w, h)
 	s.tabs = s.tabList()
 	if !contains(s.tabs, s.tab) {
 		s.tab = commands.TabProjects
@@ -344,11 +324,14 @@ func (s *Shell) resize(w, h int) {
 			s.tab = commands.TabGuide
 		}
 	}
-	if (!s.lay.HasNavigator() && s.focus == layout.Navigator) || (!s.lay.HasInspector() && s.focus == layout.Inspector) {
-		s.focus = layout.Main
+	if s.lay().Mode == layout.Wide {
+		// The detail is beside the list now; there is nothing to close.
+		s.detailOpen = false
 	}
-	s.tree = s.tree.SetHeight(max(s.lay.Navigator.H-2, 1))
 }
+
+// lay is where each area of the screen is drawn, for the size and the open view.
+func (s Shell) lay() layout.Layout { return layout.Divide(s.w, s.h, s.hasDetail()) }
 
 func contains(list []string, v string) bool {
 	for _, x := range list {

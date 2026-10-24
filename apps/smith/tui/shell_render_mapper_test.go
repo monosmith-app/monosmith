@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
@@ -27,58 +28,78 @@ func TestEveryScreenFillsExactlyTheTerminal(t *testing.T) {
 	}
 }
 
-func TestAt140ColumnsThereAreThreePanes(t *testing.T) {
+func TestAt140ColumnsTheHeaderTheListAndTheDetailShareTheScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.hasNot("File ", "View ", "Help ")                              // no menu bar
-	l.has("Apps", "web", "orders", "Libs", "kit", "Packages", "sdk", // the navigator
-		"Projects (4)", "Inspector", // the main view and the inspector
-		"smith 1.2.3", "main") // the status bar: version and branch
+	l.hasNot("File ", "View ", "Help ", "Apps", "Libs") // no menu bar, no tree, no permanent side panel
+	l.has("acme", "main",                               // the header
+		"Projects", "Doctor", // the tabs
+		"web", "orders", "kit", "sdk", "Projects (4)", // the list
+		"kind", "language", "Run build", // the detail of the selected project
+		"smith 1.2.3") // the status bar
 	l.hasNot("Reading the workspace")
 }
 
-func TestAt100ColumnsTheInspectorIsStillThere(t *testing.T) {
-	newLab(t, true, 100, 30).has("Inspector", "Workspace")
+func TestAt100ColumnsTheDetailIsStillBesideTheList(t *testing.T) {
+	newLab(t, true, 100, 30).has("kind", "Run build", "On: orders")
 }
 
-func TestBelow100ColumnsTheInspectorFoldsIntoTheMainView(t *testing.T) {
+func TestBelow100ColumnsOnlyTheListIsShown(t *testing.T) {
 	l := newLab(t, true, 99, 30)
-	l.hasNot("╭─ Inspector")
-	l.has("Workspace", "Projects (4)", "Actions") // the inspector's actions sit under the table
-	newLab(t, true, 80, 26).hasNot("╭─ Inspector")
+	l.has("On: orders", "web")
+	l.hasNot("Run build", "language") // the detail opens with Enter
+	newLab(t, true, 80, 26).hasNot("Run build")
 }
 
-func TestBelow80ColumnsTheNavigatorBecomesATab(t *testing.T) {
-	l := newLab(t, true, 79, 24)
-	l.hasNot("╭─ Workspace")
-	l.has("Workspace", "Projects", "Guide") // "Workspace" is now a tab
-	_, y := l.find("Workspace ")
-	l.send(click(2, y))
-	l.has("Apps", "orders", "kit")
+func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
+	l := newLab(t, true, 72, 24)
+	l.has("On: orders", "orders", "web", "kit", "sdk")
 }
 
 func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 	l := newLab(t, false, 100, 28)
-	l.has("Guide", "Create a workspace", "No workspace")
+	l.has("Guide", "Create a workspace", "No workspace here")
 	l.hasNot("Doctor", "Settings")
 }
 
 func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("Inspector")
+	l.has("Run build")
 	l.send(tea.WindowSizeMsg{Width: 90, Height: 20})
-	l.hasNot("╭─ Inspector")
+	l.hasNot("Run build")
 	if got := len(strings.Split(l.sh().View(), "\n")); got != 20 {
 		t.Fatalf("%d lines after the resize", got)
 	}
 	l.send(tea.WindowSizeMsg{Width: 72, Height: 20})
-	l.has("Workspace")
+	l.has("On: orders")
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
-	l.has("Inspector")
+	l.has("Run build")
 }
 
-func TestTheFirstProjectIsSelectedAndShownInTheInspector(t *testing.T) {
+func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *testing.T) {
+	l := newLab(t, true, 90, 30)
+	l.keys("enter")
+	if !l.sh().detailOpen {
+		t.Fatal("Enter should open the detail")
+	}
+	l.send(tea.WindowSizeMsg{Width: 130, Height: 30})
+	if l.sh().detailOpen {
+		t.Fatal("the detail is beside the list now")
+	}
+	l.has("Run build", "On: orders")
+}
+
+func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "kind", "language", "go", "Actions", "Build", "Typecheck")
+	l.has("orders", "kind", "language", "go", "Actions", "Run build", "Run test", "Explain")
+}
+
+func TestALongPathInTheDetailIsShortenedInTheMiddle(t *testing.T) {
+	l := newLab(t, true, 100, 30)
+	sh := l.sh()
+	sh.list = projectlist.New([]projectlist.Project{{Name: "far", Kind: "app", Language: "go", Root: "apps/some/deeply/nested/place/far-away-project"}})
+	l.m = sh
+	l.has("apps/", "project", "…")
+	l.hasNot("far-away-project")
 }
 
 func TestNoColourMeansSymbolsAndWordsStillCarryTheMeaning(t *testing.T) {

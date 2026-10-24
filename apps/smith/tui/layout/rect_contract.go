@@ -16,35 +16,36 @@ func (r Rect) Inner() Rect {
 // Area names a part of the screen.
 type Area int
 
-// The areas, in the order focus moves through them.
+// The areas.
 const (
 	Nowhere Area = iota
-	Footer
-	Navigator
+	Header
+	Tabs
 	Main
-	Inspector
+	Detail
+	Footer
 	StatusBar
 )
 
 // String names the area.
 func (a Area) String() string {
-	return [...]string{"nowhere", "footer", "navigator", "main", "inspector", "status bar"}[a]
+	return [...]string{"nowhere", "header", "tabs", "main", "detail", "footer", "status bar"}[a]
 }
 
 // Mode is how much of the interface fits.
 type Mode int
 
-// Modes by width: Wide has the navigator and the inspector, Medium folds the
-// inspector into the main view, Narrow also turns the navigator into a tab.
+// Modes by width: Wide shows the list and the detail side by side, Narrow only
+// the list (Enter opens the detail over it, Esc goes back).
 const (
 	Wide Mode = iota
-	Medium
 	Narrow
 )
 
-// Breakpoints in columns: the inspector folds below WideFrom, the navigator
-// becomes a tab below MediumFrom. 80 is the supported floor.
-const (
-	WideFrom   = 100
-	MediumFrom = 80
-)
+// WideFrom is the width, in columns, from which the detail sits beside the
+// list. 72 is the supported floor (see the shell).
+const WideFrom = 100
+
+// TallFrom is the height, in rows, from which the tabs are drawn as rounded
+// boxes three rows high; below it they are one row.
+const TallFrom = 24

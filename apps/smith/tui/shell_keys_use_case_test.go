@@ -14,8 +14,11 @@ import (
 func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T) {
 	l := newLab(t, true, 160, 30)
 	l.hasNot("File", "Workspace  Run", "Alt+")
-	if first := l.lines()[0]; !strings.Contains(first, "Workspace") || !strings.Contains(first, "Projects") {
-		t.Fatalf("the panes start on the first row, with no menu bar above: %q", first)
+	if first := l.lines()[0]; !strings.Contains(first, "acme") || !strings.Contains(first, "main") {
+		t.Fatalf("the first row names the workspace and its branch, with no menu bar above: %q", first)
+	}
+	if tabs := l.lines()[2]; !strings.Contains(tabs, "Projects") || !strings.Contains(tabs, "Doctor") {
+		t.Fatalf("the views are tabs under the header: %q", tabs)
 	}
 	footer := l.lines()[len(l.lines())-2]
 	for _, want := range []string{"b build", "t test", "l lint", "c typecheck", "w changed", "d doctor", "a add project", "y copy", ": palette", "? help", "q quit", "m mouse"} {
@@ -57,26 +60,29 @@ func TestSingleKeysRunTheViewsCommands(t *testing.T) {
 	}
 }
 
-func TestEnterOnATaskRunsItAndDRechecksTheWorkspace(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	l.keys("shift+tab", "right", "down", "enter") // orders > build
-	if l.lastStarted() != "run build -p orders" {
-		t.Fatalf("started %q", l.lastStarted())
-	}
-	l = newLab(t, true, 120, 30)
+func TestDRechecksTheWorkspace(t *testing.T) {
+	l := newLab(t, true, 120, 30)
 	l.keys("d")
 	l.has("2 passed")
 }
 
+func TestEnterBesideTheDetailChangesNothing(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	before := l.view()
+	l.keys("enter")
+	if l.view() != before || len(l.started) != 0 || l.sh().detailOpen {
+		t.Fatalf("the detail is already beside the list: %v", l.started)
+	}
+}
+
 func TestJAndKMoveLikeTheArrows(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("shift+tab")
 	l.keys("j")
-	if got := l.sh().tree.Selected().Project; got != "web" {
+	if got := l.sh().list.SelectedName(); got != "web" {
 		t.Fatalf("j moved to %q", got)
 	}
 	l.keys("k")
-	if got := l.sh().tree.Selected().Project; got != "orders" {
+	if got := l.sh().list.SelectedName(); got != "orders" {
 		t.Fatalf("k moved to %q", got)
 	}
 }
@@ -278,7 +284,7 @@ func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 40)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Move in a list or tree", "Stop", "Ctrl+C")
+	l.has("Keyboard shortcuts", "Move in a list", "Stop", "Ctrl+C")
 	l.keys("end")
 	l.has(": / Ctrl+P", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
 	l.hasNot("Right-click", "Alt+", "F10", "menu")
@@ -288,25 +294,32 @@ func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l.has("Keyboard shortcuts")
 }
 
-func TestTabMovesTheFocusBetweenPanesAndEveryPaneHasKeys(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	if l.sh().focus.String() != "main" {
-		t.Fatalf("focus %v", l.sh().focus)
+func TestBelow100ColumnsEnterOpensTheDetailAndEscGoesBack(t *testing.T) {
+	l := newLab(t, true, 90, 30)
+	l.hasNot("Depends on")
+	l.keys("down", "enter") // web
+	if !l.sh().detailOpen {
+		t.Fatal("Enter should open the detail")
 	}
-	l.keys("shift+tab")
-	if l.sh().focus.String() != "navigator" {
-		t.Fatalf("focus %v", l.sh().focus)
+	l.has("Depends on", "Run build", "Run test")
+	l.keys("esc")
+	if l.sh().detailOpen {
+		t.Fatal("Esc should go back to the list")
 	}
-	l.keys("down") // orders → web
-	l.has("Depends on")
-	l.keys("tab", "tab")
-	if l.sh().focus.String() != "inspector" {
-		t.Fatalf("focus %v", l.sh().focus)
-	}
-	l.keys("down", "enter") // the second action: Test, on web
+	l.has("On: web")
+	l.keys("enter", "down", "enter") // the second action: Run test, on web
 	if l.lastStarted() != "run test -p web" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
+}
+
+func TestAtTheSupportedFloorTheDetailStillOpensFullWidth(t *testing.T) {
+	l := newLab(t, true, 72, 24)
+	l.keys("enter")
+	l.has("orders", "Run build", "Explain")
+	l.keys("esc")
+	l.has("On: orders", "Tasks")
+	l.hasNot("Run build")
 }
 
 func TestNumberedShortcutsSwitchTabs(t *testing.T) {

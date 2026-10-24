@@ -8,7 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Render draws the bar in w cells. The right side (branch, version) is
+// Render draws the bar in w cells. The right side (the version) is
 // dropped before the left is cut short.
 func Render(th theme.Theme, in Info, w int) string {
 	left := th.Muted(" ready")
@@ -36,12 +36,6 @@ func Render(th theme.Theme, in Info, w int) string {
 		middle += in.Result
 	}
 	var right string
-	if in.Workspace != "" {
-		right += th.Accent(in.Workspace) + "  "
-	}
-	if in.Branch != "" {
-		right += th.Muted("⎇ ") + in.Branch + "  "
-	}
 	if in.Version != "" {
 		right += th.Muted("smith " + in.Version)
 	}

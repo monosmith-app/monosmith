@@ -180,7 +180,7 @@ func (s *Shell) stop() {
 	s.say("Stopping… (Ctrl+C again quits)")
 }
 
-// selectedProject is the project of the navigator's selection, or "".
-func (s Shell) selectedProject() string { return s.tree.Selected().Project }
+// selectedProject is the project of the list's selection, or "".
+func (s Shell) selectedProject() string { return s.list.SelectedName() }
 
 func fmtCount(done, total int) string { return fmt.Sprintf("%d/%d", done, total) }

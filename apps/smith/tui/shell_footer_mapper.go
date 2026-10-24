@@ -2,20 +2,19 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/footer"
 )
 
 // footerHints are the key hints of the open view, placed in the screen's width.
 func (s Shell) footerHints() []footer.Placed {
-	view, tail := commands.Hints(s.state())
+	view, tail := s.page().Footer()
 	return footer.Place(view, tail, s.w)
 }
 
 // footerRow draws the hints; the one under the pointer is highlighted.
 func (s Shell) footerRow() string {
 	hover := -1
-	if s.mouseY == s.lay.Footer.Y {
+	if s.mouseY == s.lay().Footer.Y {
 		hover = s.mouseX
 	}
 	return footer.Render(s.th, s.footerHints(), hover, s.w)

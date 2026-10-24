@@ -9,15 +9,15 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 )
 
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
 var mouseHelp = []string{
-	"Click: select or focus   Double-click: run the task",
+	"Click: select   Double-click: open the detail (narrow terminals)",
 	"Click a tab to open the view, a hint in the footer to press its key",
+	"Click an action in the detail to do it",
 	"Wheel: scroll lists and logs",
 	"Shift+drag selects text (Option+drag in macOS terminals)",
 	"m turns the mouse off, so a plain drag selects text",
@@ -86,7 +86,7 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	if (name == "j" || name == "k") && !s.editing() && !s.formOpen() {
 		msg = tea.KeyMsg{Type: map[string]tea.KeyType{"j": tea.KeyDown, "k": tea.KeyUp}[name]}
 	}
-	return s.paneKey(msg)
+	return s.page().Update(msg)
 }
 
 // afterConfirm acts on the confirmation dialog's outcome.
@@ -119,7 +119,7 @@ func (s *Shell) afterPalette(res palette.Result) tea.Cmd {
 	return nil
 }
 
-// activate runs a command by id: a palette entry, an inspector action.
+// activate runs a command by id: a palette entry, an action of the detail.
 // Ids starting with "x:" are actions that belong to the selection.
 func (s *Shell) activate(id string) tea.Cmd {
 	if rest, ok := strings.CutPrefix(id, "x:"); ok {
@@ -136,36 +136,33 @@ func (s *Shell) activate(id string) tea.Cmd {
 	return s.perform(c)
 }
 
-// activateSelection runs the actions of the inspector and context menus that
-// depend on what is selected.
+// activateSelection runs the actions of the detail that depend on what is
+// selected.
 func (s *Shell) activateSelection(action string) tea.Cmd {
-	sel := s.tree.Selected()
+	project := s.selectedProject()
+	if task, ok := strings.CutPrefix(action, "run:"); ok {
+		if project == "" {
+			return nil
+		}
+		return s.execute(commands.RunArgv(task, project), false)
+	}
 	switch action {
 	case "explain":
-		if sel.Task != "" {
-			return s.execute([]string{"explain", sel.Project + ":" + sel.Task}, false)
-		}
-		if sel.Project != "" {
-			return s.execute([]string{"explain", sel.Project}, false)
-		}
-	case "why-miss":
-		if sel.Task != "" {
-			return s.execute([]string{"why-miss", sel.Project + ":" + sel.Task}, false)
+		if project != "" {
+			return s.execute([]string{"explain", project}, false)
 		}
 	case "rerun":
 		if s.lastArg != nil {
 			return s.execute(s.lastArg, false)
 		}
-	case "toggle":
-		s.tree = s.tree.Toggle()
 	case "projects":
 		return s.gotoTab(commands.TabProjects)
 	case "log":
 		s.runSel = ""
 		return s.gotoTab(commands.TabRun)
 	case "graph":
-		if sel.Project != "" {
-			return s.execute([]string{"graph", "--focus", sel.Project}, false)
+		if project != "" {
+			return s.execute([]string{"graph", "--focus", project}, false)
 		}
 	case "plugin-toggle":
 		if argv := s.plugins.ToggleArgv(); argv != nil {
@@ -218,10 +215,6 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 			project = ""
 		}
 		return s.execute(commands.RunArgv(c.Task, project), false)
-	case commands.RunSelection:
-		if sel := s.tree.Selected(); sel.Kind == navigator.TaskRow {
-			return s.execute(commands.RunArgv(sel.Task, sel.Project), false)
-		}
 	case commands.Guided:
 		if g, ok := s.guide.Pick(c.Guide); ok {
 			s.guide = g
@@ -249,10 +242,6 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		} else {
 			s.say("Log paused: scroll or press " + commands.ShortcutOf("run.follow") + " to follow again")
 		}
-	case commands.NextPane:
-		s.cyclePane(1)
-	case commands.PrevPane:
-		s.cyclePane(-1)
 	case commands.CopyFocused:
 		s.copyFocused()
 	case commands.ToggleMouse:
@@ -277,24 +266,6 @@ func (s *Shell) openHelp() {
 	s.help = &h
 }
 
-// cyclePane moves the keyboard focus to the next visible pane.
-func (s *Shell) cyclePane(dir int) {
-	panes := []layout.Area{layout.Main}
-	if s.lay.HasNavigator() && s.inWorkspace {
-		panes = append([]layout.Area{layout.Navigator}, panes...)
-	}
-	if s.lay.HasInspector() && s.inWorkspace {
-		panes = append(panes, layout.Inspector)
-	}
-	for i, a := range panes {
-		if a == s.focus {
-			s.focus = panes[((i+dir)%len(panes)+len(panes))%len(panes)]
-			return
-		}
-	}
-	s.focus = layout.Main
-}
-
 // gotoTab shows a view and loads it the first time.
 func (s *Shell) gotoTab(id string) tea.Cmd {
 	if !contains(s.tabs, id) {
@@ -304,7 +275,7 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// A result toast belongs to the screen it was raised on.
 		s.toast = s.toast.Dismiss()
 	}
-	s.tab, s.focus = id, layout.Main
+	s.tab, s.detailOpen = id, false
 	switch id {
 	case commands.TabDoctor:
 		if s.doctor.Report == nil && s.doctor.Err == nil && s.sources.Doctor != nil {
@@ -340,18 +311,15 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 	return nil
 }
 
-// paneKey sends a key to the focused pane.
+// paneKey sends a key to the open view.
 func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
-	switch {
-	case s.focus == layout.Navigator || s.tab == tabNavigator:
-		return s.navigatorKey(name)
-	case s.focus == layout.Inspector:
-		return s.inspectorKey(name)
-	}
 	switch s.tab {
 	case commands.TabProjects:
-		return s.navigatorKey(name)
+		if s.detailOpen {
+			return s.detailKey(name)
+		}
+		return s.projectsKey(name)
 	case commands.TabPlugins:
 		s.plugins = s.plugins.Update(msg, s.listPage())
 	case commands.TabDeps:
@@ -388,54 +356,44 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-func (s *Shell) navigatorKey(name string) tea.Cmd {
-	before := s.tree.Selected()
+// projectsKey moves in the list of projects. Enter opens the detail over the
+// list when it is not beside it.
+func (s *Shell) projectsKey(name string) tea.Cmd {
 	switch name {
 	case "up":
-		s.tree = s.tree.Move(-1)
+		s.list = s.list.Move(-1)
 	case "down":
-		s.tree = s.tree.Move(1)
+		s.list = s.list.Move(1)
 	case "pgup":
-		s.tree = s.tree.Page(-1)
+		s.list = s.list.Page(-1, s.listPage())
 	case "pgdown":
-		s.tree = s.tree.Page(1)
+		s.list = s.list.Page(1, s.listPage())
 	case "home":
-		s.tree = s.tree.Home()
+		s.list = s.list.Home()
 	case "end":
-		s.tree = s.tree.End()
-	case "left":
-		s.tree = s.tree.Collapse()
-	case "right":
-		s.tree = s.tree.Expand()
-	case " ":
-		s.tree = s.tree.Toggle()
+		s.list = s.list.End()
 	case "enter":
-		if sel := s.tree.Selected(); sel.Kind == navigator.TaskRow {
-			return s.perform(mustCommand("run.selection"))
+		if s.lay().Mode == layout.Narrow && s.list.Len() > 0 {
+			s.detailOpen, s.detailCursor = true, 0
 		}
-		s.tree = s.tree.Toggle()
-	}
-	if s.tree.Selected() != before {
-		s.inspCursor = 0
 	}
 	return nil
 }
 
-func mustCommand(id string) commands.Command {
-	c, _ := commands.ByID(id)
-	return c
-}
-
-func (s *Shell) inspectorKey(name string) tea.Cmd {
-	actions := s.inspectorActions()
+// detailKey moves between the actions of the detail that fills the pane, runs
+// the highlighted one, and goes back to the list.
+func (s *Shell) detailKey(name string) tea.Cmd {
+	actions := s.detailActions()
 	switch name {
+	case "esc", "left", "backspace":
+		s.detailOpen = false
 	case "up":
-		s.inspCursor = max(s.inspCursor-1, 0)
+		s.detailCursor = max(s.detailCursor-1, 0)
 	case "down":
-		s.inspCursor = min(s.inspCursor+1, max(len(actions)-1, 0))
+		s.detailCursor = min(s.detailCursor+1, max(len(actions)-1, 0))
 	case "enter":
-		if s.inspCursor < len(actions) && !actions[s.inspCursor].Disabled {
-			return s.activate(actions[s.inspCursor].ID)
+		if s.detailCursor < len(actions) && !actions[s.detailCursor].Disabled {
+			return s.activate(actions[s.detailCursor].ID)
 		}
 	}
 	return nil

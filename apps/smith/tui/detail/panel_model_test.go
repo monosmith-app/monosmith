@@ -1,4 +1,4 @@
-package inspector
+package detail
 
 import (
 	"strings"
@@ -29,12 +29,26 @@ func TestThePanelListsRowsAndClickableActions(t *testing.T) {
 	}
 }
 
-func TestALongValueWrapsUnderItselfInsteadOfBeingCut(t *testing.T) {
+func TestALongPathIsShortenedInTheMiddleNotCutIntoFragments(t *testing.T) {
 	p := Panel{Sections: []Section{{Rows: []Row{{"root", "apps/markobot-vscode-extension/src"}}}}}
 	lines, _ := p.View(theme.Default(), 26, "")
-	text := strings.ReplaceAll(strings.Join(lines, ""), " ", "")
-	if !strings.Contains(text, "apps/markobot-vscode-extension/src") {
-		t.Fatalf("the value was cut:\n%s", strings.Join(lines, "\n"))
+	if len(lines) != 1 || !strings.Contains(lines[0], "…") || !strings.Contains(lines[0], "apps/") || !strings.Contains(lines[0], "/src") {
+		t.Fatalf("the path should keep both ends on one line:\n%s", strings.Join(lines, "\n"))
+	}
+}
+
+func TestAValueOfSeveralWordsWrapsAtTheSpaces(t *testing.T) {
+	p := Panel{Sections: []Section{{Rows: []Row{{"about", "builds the web app and its worker for the cloud"}}}}}
+	lines, _ := p.View(theme.Default(), 26, "")
+	if len(lines) < 2 {
+		t.Fatalf("expected a wrap:\n%s", strings.Join(lines, "\n"))
+	}
+	for _, l := range lines {
+		for _, word := range strings.Fields(l) {
+			if !strings.Contains("builds the web app and its worker for the cloud about", word) {
+				t.Fatalf("a word was cut: %q", word)
+			}
+		}
 	}
 }
 

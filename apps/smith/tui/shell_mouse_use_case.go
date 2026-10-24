@@ -5,8 +5,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/footer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 )
 
 // wheelStep is how many lines one notch of the wheel scrolls.
@@ -88,73 +88,48 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		}
 		return nil
 	}
-	switch s.lay.AreaAt(x, y) {
+	switch s.lay().AreaAt(x, y) {
 	case layout.Footer:
 		if h, ok := footer.At(s.footerHints(), x); ok && h.Key != "" {
 			return s.key(pressedKey(h.Key))
 		}
 		return nil
-	case layout.Navigator:
-		s.focus = layout.Navigator
-		return s.navigatorClick(x, y, double)
+	case layout.Tabs:
+		return s.tabClick(x)
 	case layout.Main:
-		s.focus = layout.Main
-		if y == s.lay.Main.Y {
-			for _, sp := range s.tabSpans() {
-				if x >= sp.x0 && x < sp.x1 {
-					return s.gotoTab(sp.id)
-				}
-			}
-			return nil
-		}
 		if in := s.mainInner(); in.Contains(x, y) {
 			return s.contentClick(x-in.X, y-in.Y, double)
 		}
-	case layout.Inspector:
-		s.focus = layout.Inspector
-		in := s.inspectorInner()
-		_, hits := s.inspectorPanel().View(s.th, in.W, "")
-		if id, ok := hits[y-in.Y]; ok {
-			for i, a := range s.inspectorActions() {
-				if a.ID == id {
-					s.inspCursor = i
-				}
+	case layout.Detail:
+		in := s.detailInner()
+		if in.Contains(x, y) {
+			if h, ok := s.detailContent(in.W, in.H).hits[y-in.Y]; ok {
+				return s.activate(h.id)
 			}
-			return s.activate(id)
 		}
 	}
 	return nil
 }
 
-// navigatorClick selects the row clicked, opens or closes it on its arrow, and
-// runs a task or toggles a branch on a double click.
-func (s *Shell) navigatorClick(x, y int, double bool) tea.Cmd {
-	in := s.navigatorInner()
-	i := s.tree.SetHeight(max(in.H, 1)).RowAt(y - in.Y)
-	if i < 0 {
+// tabClick opens the tab at column x of the strip; a scroll marker moves to
+// the previous or the next one.
+func (s *Shell) tabClick(x int) tea.Cmd {
+	id := s.renderStrip("").At(x)
+	at := -1
+	for i, t := range s.tabs {
+		if t == s.tab {
+			at = i
+		}
+	}
+	switch id {
+	case "":
 		return nil
+	case tabs.Prev:
+		return s.gotoTab(s.tabs[max(at-1, 0)])
+	case tabs.Next:
+		return s.gotoTab(s.tabs[min(at+1, len(s.tabs)-1)])
 	}
-	s.tree = s.tree.Select(i)
-	s.inspCursor = 0
-	row := s.tree.Rows()[i]
-	if double {
-		return s.openSelected()
-	}
-	arrowX := in.X + 1 + 2*row.Depth
-	if row.Expandable && x >= arrowX && x < arrowX+2 {
-		s.tree = s.tree.Toggle()
-	}
-	return nil
-}
-
-// openSelected is the double click and Enter on a navigator row: a task runs,
-// a project or group opens or closes.
-func (s *Shell) openSelected() tea.Cmd {
-	if s.tree.Selected().Kind == navigator.TaskRow {
-		return s.activate("run.selection")
-	}
-	s.tree = s.tree.Toggle()
-	return nil
+	return s.gotoTab(id)
 }
 
 // contentClick handles a click at (rx, ry) in the main body.
@@ -167,8 +142,11 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	}
 	switch h.kind {
 	case "project":
-		s.tree = s.tree.SelectProject(h.id)
-		s.inspCursor = 0
+		s.list = s.list.SelectProject(h.id)
+		s.detailCursor = 0
+		if double {
+			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
+		}
 	case "task":
 		s.runSel = h.id
 		s.keepRunVisible()
@@ -192,15 +170,14 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
 		}
 		s.guide = s.guide.SelectRow(h.index)
-	case "tree":
-		s.tree = s.tree.SetHeight(max(in.H, 1))
-		if i := s.tree.RowAt(ry); i >= 0 {
-			s.tree = s.tree.Select(i)
-			if double {
-				return s.openSelected()
+	case "action":
+		if s.detailOpen {
+			for i, a := range s.detailActions() {
+				if a.ID == h.id {
+					s.detailCursor = i
+				}
 			}
 		}
-	case "action":
 		return s.activate(h.id)
 	}
 	return nil
@@ -218,14 +195,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		s.pal = s.pal.Scroll(dir * wheelStep)
 		return nil
 	}
-	switch s.lay.AreaAt(x, y) {
-	case layout.Navigator:
-		s.tree = s.tree.Scroll(dir * wheelStep)
+	switch s.lay().AreaAt(x, y) {
 	case layout.Main:
 		in := s.mainInner()
 		switch s.tab {
-		case tabNavigator:
-			s.tree = s.tree.Scroll(dir * wheelStep)
 		case commands.TabRun:
 			if s.run == nil {
 				return nil
@@ -237,7 +210,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 				s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
 			}
 		case commands.TabProjects:
-			s.tree = s.tree.Move(dir)
+			if s.detailOpen {
+				return s.detailKey(map[int]string{-1: "up", 1: "down"}[dir])
+			}
+			s.list = s.list.Move(dir * wheelStep)
 		case commands.TabDoctor, commands.TabSettings, commands.TabGuide, commands.TabPlugins, commands.TabDeps, commands.TabRelease, commands.TabRecipes:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
