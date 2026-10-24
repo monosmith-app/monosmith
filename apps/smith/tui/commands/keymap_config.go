@@ -56,8 +56,8 @@ var all = []Command{
 	{ID: "run.scroll", Group: GroupRun, Title: "Pick a task, scroll its log", Keys: []string{"down", "up", "pgdown", "pgup"}, Shortcut: "Up Down PgUp PgDn", Glyph: "↑↓", Kind: PaneKey, Views: vRun, Footer: "task"},
 
 	{ID: "doctor.open", Group: GroupWorkspace, Title: "Expand the check: its problem, remedy and fix", Keys: []string{"enter"}, Kind: PaneKey, Views: vDoctor, NeedsNarrowList: true, Footer: "expand", Glyph: "Enter"},
-	{ID: "doctor.fix", Group: GroupWorkspace, Title: "Apply this finding's safe fix (smith doctor --fix --only)", Keys: []string{"f"}, Kind: ViewAction, Action: "doctor-fix", Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix"},
-	{ID: "ws.fix", Group: GroupWorkspace, Title: "Fix with doctor…", Hint: "smith doctor --fix: apply the safe fixes", Keys: []string{"x"}, Kind: Execute, Argv: []string{"doctor", "--fix"}, Confirm: true, Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix all"},
+	{ID: "doctor.fix", Group: GroupWorkspace, Title: "Fix this check: the wizard asks, shows what changes, then applies", Keys: []string{"f"}, Kind: ViewAction, Action: "doctor-fix", Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix"},
+	{ID: "ws.fix", Group: GroupWorkspace, Title: "Fix with doctor…", Hint: "the fix wizard: review the fixes doctor can make, then apply them", Keys: []string{"x"}, Kind: OpenFixWizard, Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix all"},
 	{ID: "doctor.back", Group: GroupWorkspace, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vDoctor, NeedsDetailOpen: true, Footer: "back"},
 	{ID: "doctor.page-up", Group: GroupWorkspace, Title: "Scroll the detail up", Keys: []string{"pgup"}, Kind: ViewAction, Action: "detail-up", Views: vDoctor},
 	{ID: "doctor.page-down", Group: GroupWorkspace, Title: "Scroll the detail down", Keys: []string{"pgdown"}, Kind: ViewAction, Action: "detail-down", Views: vDoctor},

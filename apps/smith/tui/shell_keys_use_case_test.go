@@ -352,11 +352,9 @@ func TestTheDoctorTabShowsThePassedChecksOnRequest(t *testing.T) {
 	l.has("git is installed", "orders has a lockfile")
 }
 
-func TestTheFixDialogsListTheFilesOrThePackagesTheyTouch(t *testing.T) {
+func TestTheReleaseDialogListsThePackagesItPublishes(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("4", "down", "f")
-	l.has("Files that will change:", "writes apps/web/Dockerfile")
-	l.keys("esc", "6", "x")
+	l.keys("6", "x")
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0", "kit 0.2.0 → 0.2.1", "registry", "It cannot")
 }
 
@@ -372,22 +370,6 @@ func TestThePreviewStaysOnTheReleaseScreenAndSaysWhatItWaitsFor(t *testing.T) {
 	l.keys("ctrl+c")
 	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
 	l.has("Preview: smith release --dry-run", "full output on the Run screen")
-}
-
-func TestFixingAsksFirstWithTheCommandLine(t *testing.T) {
-	l := newLab(t, true, 120, 30)
-	l.keys("4", "x")
-	l.has("Fix with doctor", "The command that will run:", "$ smith doctor --fix --yes")
-	if len(l.started) != 0 {
-		t.Fatal("nothing runs before the answer")
-	}
-	l.keys("esc")
-	l.hasNot("The command that will run:")
-	l.has("was not run")
-	l.keys("x", "y")
-	if l.lastStarted() != "doctor --fix --yes" {
-		t.Fatalf("started %q", l.lastStarted())
-	}
 }
 
 func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
@@ -415,7 +397,6 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 	}
 	for name, steps := range map[string][]func(*lab){
 		"install": {func(l *lab) { l.keys("i") }},
-		"fix all": {func(l *lab) { l.keys("4", "x") }},
 		"ci":      fromPalette("Regenerate CI"),
 		"upgrade": fromPalette("Upgrade workspace"),
 		"release": {func(l *lab) { l.keys("6", "x") }},

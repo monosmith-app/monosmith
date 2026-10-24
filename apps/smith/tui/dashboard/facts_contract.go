@@ -7,6 +7,8 @@ type Facts struct {
 	Checked                  bool
 	CheckErr                 string
 	Failed, Warnings, Passed int
+	// Fixable is how many fixes doctor can make; the fix wizard opens on them.
+	Fixable int
 	// ProjectsLoaded is true once the project list arrived.
 	ProjectsLoaded     bool
 	Projects, Affected int

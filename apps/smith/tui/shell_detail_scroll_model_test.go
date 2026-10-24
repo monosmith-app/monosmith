@@ -35,7 +35,7 @@ func doctorLab(t *testing.T, w, h int) *lab {
 
 func TestALongProblemNeverPushesTheRemedyAndTheActionsOffTheScreen(t *testing.T) {
 	l := doctorLab(t, 140, 30)
-	l.has("How to fix", "declare dist as the output", "Actions", "Fix this", "Problem", "pkg01:build", "23, e shows all")
+	l.has("How to fix", "declare dist as the output", "Actions", "Check again", "Problem", "pkg01:build", "23, e shows all")
 	l.hasNot("pkg06:build")
 	v := l.view()
 	if strings.Index(v, "How to fix") > strings.Index(v, "Problem") || strings.Index(v, "Actions") > strings.Index(v, "Problem") {
@@ -112,7 +112,7 @@ func TestZoomShowsTheDetailAloneAndGivesTheListBack(t *testing.T) {
 	l.has("second check")
 	l.keys("z")
 	l.hasNot("second check")
-	l.has("How to fix", "Fix this")
+	l.has("How to fix", "Check again")
 	l.keys("e", "pgdown")
 	l.has("↑ more")
 	l.keys("z")
@@ -124,7 +124,7 @@ func TestOnANarrowScreenZoomSwitchesBetweenTheListAndTheDetail(t *testing.T) {
 	l.has("second check")
 	l.hasNot("How to fix")
 	l.keys("z")
-	l.has("How to fix", "Fix this", "23, e shows all")
+	l.has("How to fix", "Check again", "23, e shows all")
 	l.hasNot("second check")
 	l.keys("pgdown", "esc")
 	l.has("second check")

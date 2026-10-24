@@ -33,7 +33,7 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 	if first := l.lines()[0]; !strings.Contains(first, "✖2") {
 		t.Fatalf("the header carries the health: %q", first)
 	}
-	l.has("2 checks fail", "Next: 2 checks fail: press d", "1 of 4 projects changed", "nothing has run yet", "not checked: 5 opens Deps")
+	l.has("2 checks fail", "Next: 2 checks fail, 1 fix is ready: Enter opens the fix wizard", "1 of 4 projects changed", "nothing has run yet", "not checked: 5 opens Deps")
 	lines := l.lines()
 	var headline, next int
 	for i, line := range lines {
@@ -60,14 +60,27 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 
 func TestEnterAndAClickDoTheSuggestedAction(t *testing.T) {
 	l := newHomeLab(t, 140, 34)
+	// With a fix ready the suggestion opens the fix wizard, not the Doctor
+	// tab and not a non-interactive `doctor --fix`.
 	l.keys("enter")
-	if l.sh().tab != commands.TabDoctor {
-		t.Fatalf("Enter did the next action and opened %q", l.sh().tab)
+	if l.sh().fix == nil || l.sh().tab != commands.TabHome || len(l.started) != 0 {
+		t.Fatalf("Enter did the next action: wizard %v, tab %q, started %v", l.sh().fix != nil, l.sh().tab, l.started)
 	}
+	l.has("Fix · review", "[ Apply  Enter ]")
 	l = newHomeLab(t, 140, 34)
 	l.clickText("Next: 2 checks fail")
-	if l.sh().tab != commands.TabDoctor {
-		t.Fatalf("a click on the next action opened %q", l.sh().tab)
+	if l.sh().fix == nil {
+		t.Fatal("a click on the next action did not open the fix wizard")
+	}
+	// Without a fix doctor can make, it goes to the Doctor tab as before.
+	l = newHomeLab(t, 140, 34)
+	sh := l.sh()
+	sh.doctor.Report.Findings[1].Fix, sh.doctor.Report.Fixes = nil, nil
+	l.m = sh
+	l.has("Next: 2 checks fail: press d")
+	l.keys("enter")
+	if l.sh().tab != commands.TabDoctor || l.sh().fix != nil {
+		t.Fatalf("with nothing to fix Enter opened %q", l.sh().tab)
 	}
 }
 

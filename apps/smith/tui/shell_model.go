@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
@@ -100,7 +101,11 @@ type Shell struct {
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
-	toast   toast.Toast
+	// fix is the doctor fix wizard while it is open; fixing is the fix being
+	// applied in the background.
+	fix    *fixwizard.Wizard
+	fixing *fixRun
+	toast  toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
@@ -174,10 +179,15 @@ func (s Shell) state() commands.State {
 // why: they are refused with the reason and leave the footer.
 func (s Shell) viewReasons() map[string]string {
 	r := map[string]string{}
+	if s.doctor.Report == nil {
+		r["ws.fix"] = "doctor has not checked the workspace yet"
+	} else if _, ok := s.doctor.FixAll(); !ok {
+		r["ws.fix"] = "doctor found nothing it can fix"
+	}
 	switch s.tab {
 	case commands.TabDoctor:
-		if s.doctor.FixArgv() == nil {
-			r["doctor.fix"] = "this check has no safe fix doctor can apply"
+		if _, ok := s.doctor.SelectedFix(); !ok {
+			r["doctor.fix"] = "this check has no fix; its remedy says what to do"
 		}
 	case commands.TabDeps:
 		if s.deps.UpArgv() == nil {
@@ -296,7 +306,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.toast.Shown() || s.hintTicks > 0
+	return s.running() || s.fixApplying() || s.toast.Shown() || s.hintTicks > 0
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {
@@ -327,7 +337,11 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			s.branch = msg.Branch
 		}
 	case doctorview.Result:
-		s.doctor = doctorview.FromResult(msg)
+		s.doctor = s.doctor.Replace(msg)
+	case fixProgressMsg:
+		return s.fixProgress(msg)
+	case fixDoneMsg:
+		return s.fixDone(msg)
 	case depsview.Result:
 		s.deps = depsview.FromResult(msg)
 	case releaseview.Result:
@@ -349,6 +363,10 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
+	if s.fix != nil {
+		placed := s.fix.Place(w, h)
+		s.fix = &placed
+	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {
 		s.tab = commands.TabHome
