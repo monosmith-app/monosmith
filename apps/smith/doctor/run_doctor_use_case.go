@@ -153,6 +153,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Detail: strings.Join(outside, "; "),
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin",
 	})
+	out = append(out, buildWritesFinding(s))
 	shared := SharedOutputs(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
