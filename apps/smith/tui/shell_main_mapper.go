@@ -120,7 +120,7 @@ func (s Shell) mainContent(w, h int) content {
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabSettings:
-		lines, rowOf := s.settings.View(s.th, w)
+		lines, rowOf := s.settings.View(s.th, w, h)
 		for row, i := range rowOf {
 			c.hits[row] = hit{kind: "setting", index: i}
 		}

@@ -138,7 +138,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 	l.keys("alt+4")
 	l.has("1.0.0 →", "1.1.0", "unchanged: sdk")
 	l.keys("alt+5")
-	l.has("ci.devcontainer", "(default)")
+	l.has("ci.devcontainer", "default: main")
 	l.keys("alt+2")
 	l.has("Nothing has run yet")
 	l.keys("alt+1")
@@ -223,7 +223,7 @@ func TestTheSettingsTabEditsThroughAConfirmedConfigSet(t *testing.T) {
 	}
 	l = newLab(t, true, 120, 30)
 	l.keys("alt+5", "down", "enter")
-	l.has("ci.providers = ")
+	l.has("accepts  any of github, azure")
 	// While typing, Ctrl+A and Ctrl+F belong to the text field, not to the shell.
 	l.keys("ctrl+a", "ctrl+f", "ctrl+e")
 	l.hasNot("The command that will run:")
