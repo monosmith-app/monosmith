@@ -23,6 +23,14 @@ export interface SmithConnection {
   close:   (reason?: Error) => void
 }
 
+/** How a `smith serve` that nobody stopped ended. */
+export interface SmithExit {
+  code:   number | null
+  signal: NodeJS.Signals | null
+  /** The last lines it wrote to stderr. */
+  stderr: string
+}
+
 /** A smith that is running and has said what it speaks. */
 export interface SmithSession {
   connection: SmithConnection

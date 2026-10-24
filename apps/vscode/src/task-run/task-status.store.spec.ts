@@ -4,6 +4,17 @@ import { createTaskStatusStore } from './task-status.store.ts'
 
 const at = (event: Partial<RunEvent> & { event: string }): RunEvent => ({ run: 'r', seq: 1, time: '', ...event })
 
+describe('failedCount', () => {
+  it('counts the tasks left failed', () => {
+    const store = createTaskStatusStore()
+    store.apply(at({ event: 'task.finished', task: 'api:build', status: 'failed' }))
+    store.apply(at({ event: 'task.finished', task: 'web:build', status: 'passed' }))
+    expect(store.failedCount()).toBe(1)
+    store.apply(at({ event: 'task.finished', task: 'api:build', status: 'passed' }))
+    expect(store.failedCount()).toBe(0)
+  })
+})
+
 describe('createTaskStatusStore', () => {
   it('follows a task from queued to its end', () => {
     const store = createTaskStatusStore()

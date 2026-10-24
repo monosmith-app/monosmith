@@ -35,51 +35,202 @@
       "monosmith": [
         {
           "id": "monosmith.projects",
-          "name": "Projects"
+          "name": "MonoSmith"
         }
       ]
     },
     "commands": [
       {
         "command": "monosmith.refresh",
-        "title": "MonoSmith: Refresh",
+        "title": "Refresh",
+        "category": "MonoSmith",
         "icon": "$(refresh)"
       },
       {
         "command": "monosmith.runTask",
-        "title": "MonoSmith: Run Task",
+        "title": "Run Task",
+        "category": "MonoSmith",
         "icon": "$(play)"
       },
       {
+        "command": "monosmith.runSelected",
+        "title": "Run Focused Task",
+        "category": "MonoSmith",
+        "icon": "$(play)"
+      },
+      {
+        "command": "monosmith.runAllTasks",
+        "title": "Run All Tasks",
+        "category": "MonoSmith",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "monosmith.runAffected",
+        "title": "Run Affected",
+        "category": "MonoSmith",
+        "icon": "$(target)"
+      },
+      {
+        "command": "monosmith.runAll",
+        "title": "Run Task in All Projects",
+        "category": "MonoSmith",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "monosmith.rerunLast",
+        "title": "Re-run Last",
+        "category": "MonoSmith",
+        "icon": "$(debug-rerun)",
+        "enablement": "monosmith.hasLastRun && !monosmith.running"
+      },
+      {
         "command": "monosmith.cancelRun",
-        "title": "MonoSmith: Cancel Run",
-        "icon": "$(debug-stop)"
+        "title": "Cancel Run",
+        "category": "MonoSmith",
+        "icon": "$(debug-stop)",
+        "enablement": "monosmith.running"
+      },
+      {
+        "command": "monosmith.doctor",
+        "title": "Run Doctor",
+        "category": "MonoSmith",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "monosmith.restart",
+        "title": "Restart smith",
+        "category": "MonoSmith",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "monosmith.showMenu",
+        "title": "Show Menu",
+        "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.showOutput",
+        "title": "Show Output",
+        "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.openSettings",
+        "title": "Open Settings",
+        "category": "MonoSmith",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "monosmith.copyInstallCommand",
+        "title": "Copy Install Command",
+        "category": "MonoSmith"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "monosmith.refresh",
-          "when": "view == monosmith.projects",
-          "group": "navigation"
+          "command": "monosmith.runAffected",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "navigation@1"
+        },
+        {
+          "command": "monosmith.rerunLast",
+          "when": "view == monosmith.projects && monosmith.state == ready && !monosmith.running",
+          "group": "navigation@2"
         },
         {
           "command": "monosmith.cancelRun",
+          "when": "view == monosmith.projects && monosmith.running",
+          "group": "navigation@3"
+        },
+        {
+          "command": "monosmith.refresh",
           "when": "view == monosmith.projects",
-          "group": "navigation"
+          "group": "navigation@4"
+        },
+        {
+          "command": "monosmith.runTask",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "1_run@1"
+        },
+        {
+          "command": "monosmith.runAll",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "1_run@2"
+        },
+        {
+          "command": "monosmith.doctor",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "2_check@1"
+        },
+        {
+          "command": "monosmith.restart",
+          "when": "view == monosmith.projects",
+          "group": "3_smith@1"
+        },
+        {
+          "command": "monosmith.showOutput",
+          "when": "view == monosmith.projects",
+          "group": "3_smith@2"
+        },
+        {
+          "command": "monosmith.openSettings",
+          "when": "view == monosmith.projects",
+          "group": "3_smith@3"
         }
       ],
       "view/item/context": [
         {
           "command": "monosmith.runTask",
           "when": "view == monosmith.projects && viewItem == task",
-          "group": "inline"
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.runTask",
+          "when": "view == monosmith.projects && viewItem == task",
+          "group": "0_run@1"
+        },
+        {
+          "command": "monosmith.runAllTasks",
+          "when": "view == monosmith.projects && viewItem =~ /^(project|group|folder)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.runAllTasks",
+          "when": "view == monosmith.projects && viewItem =~ /^(project|group|folder)$/",
+          "group": "0_run@1"
         }
       ],
       "commandPalette": [
         {
-          "command": "monosmith.runTask",
+          "command": "monosmith.runSelected",
           "when": "false"
+        },
+        {
+          "command": "monosmith.runAllTasks",
+          "when": "monosmith.selectionKind =~ /^(project|group|folder)$/"
+        },
+        {
+          "command": "monosmith.runTask",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.runAffected",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.runAll",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.rerunLast",
+          "when": "monosmith.state == ready && monosmith.hasLastRun"
+        },
+        {
+          "command": "monosmith.cancelRun",
+          "when": "monosmith.running"
+        },
+        {
+          "command": "monosmith.doctor",
+          "when": "monosmith.state == ready"
         }
       ]
     },
@@ -89,10 +240,74 @@
         "monosmith.path": {
           "type": "string",
           "default": "",
-          "description": "The smith executable to use. Empty: the workspace's own (node_modules/.bin, .smith/bin), then the PATH."
+          "description": "The smith executable to use. Empty: the workspace's own (node_modules/.bin, .smith/bin; only in a trusted workspace), then the PATH."
+        },
+        "monosmith.run.bail": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop a run at the first failed task."
+        },
+        "monosmith.run.noCache": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run tasks again even when their result is in the cache."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "monosmith.runSelected",
+        "key": "enter",
+        "when": "focusedView == monosmith.projects"
+      },
+      {
+        "command": "monosmith.runTask",
+        "key": "ctrl+alt+m t",
+        "when": "monosmith.state == ready"
+      },
+      {
+        "command": "monosmith.runAffected",
+        "key": "ctrl+alt+m a",
+        "when": "monosmith.state == ready"
+      },
+      {
+        "command": "monosmith.rerunLast",
+        "key": "ctrl+alt+m r",
+        "when": "monosmith.state == ready && monosmith.hasLastRun && !monosmith.running"
+      },
+      {
+        "command": "monosmith.cancelRun",
+        "key": "ctrl+alt+m c",
+        "when": "monosmith.running"
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == starting",
+        "contents": "Starting smith…\n[Show log](command:monosmith.showOutput)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == missing",
+        "contents": "smith was not found.\nMonoSmith runs the smith your team installed, so the editor, the terminal and CI agree. Install it in the workspace, put it on the PATH, or set monosmith.path.\n[Copy install command](command:monosmith.copyInstallCommand)\n[Open settings](command:monosmith.openSettings)\n[Retry](command:monosmith.refresh)\n[Show log](command:monosmith.showOutput)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == failed",
+        "contents": "smith could not start, or it stopped.\nThe log has what it said.\n[Restart smith](command:monosmith.restart)\n[Show log](command:monosmith.showOutput)\n[Open settings](command:monosmith.openSettings)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == untrusted",
+        "contents": "This workspace is not trusted.\nMonoSmith does not run the smith inside an untrusted workspace (node_modules/.bin, .smith/bin), and it does not run tasks there. Trust the workspace, or use a smith from the monosmith.path user setting or the PATH.\n[Manage Workspace Trust](command:workbench.trust.manage)\n[Open settings](command:monosmith.openSettings)\n[Retry](command:monosmith.refresh)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == empty",
+        "contents": "No open folder has a smith.toml.\n[Learn about MonoSmith](https://github.com/monosmith-app/monosmith)"
+      }
+    ]
   },
   "smith": {
     "kind": "app",
@@ -103,5 +318,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In a workspace that is not trusted, MonoSmith does not run the smith inside the workspace (node_modules/.bin or .smith/bin) and does not run tasks. It shows the projects with the smith from your monosmith.path user setting or the PATH.",
+      "restrictedConfigurations": [
+        "monosmith.path"
+      ]
+    }
   }
 }

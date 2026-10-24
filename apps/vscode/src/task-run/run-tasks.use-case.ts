@@ -1,19 +1,18 @@
 import type { SmithConnection } from '../smith-client/index.ts'
+import type { RunPlan } from './run-plan.contract.ts'
 import type { RunEvent, RunResult } from './run-event.contract.ts'
 
-/** A task of one project, run under an id the caller can cancel. */
-export interface RunRequest {
-  runId:   string
-  task:    string
-  project: string
+/** A plan run under an id the caller can cancel. */
+export interface RunRequest extends RunPlan {
+  runId: string
 }
 
 /**
- * Runs one task of one project through `smith serve` and hands every event of
- * the run to `onEvent` as it arrives. A failed run is a result with `ok:
- * false`, not an error.
+ * Runs a plan through `smith serve` and hands every event of the run to
+ * `onEvent` as it arrives. A failed run is a result with `ok: false`, not an
+ * error.
  */
-export async function runTask (
+export async function runTasks (
   connection: SmithConnection,
   request: RunRequest,
   onEvent: (event: RunEvent) => void,
@@ -24,9 +23,12 @@ export async function runTask (
   })
   try {
     return await connection.request<RunResult>('run', {
-      tasks:    [request.task],
-      projects: [request.project],
-      run:      request.runId,
+      tasks: request.tasks,
+      ...(request.projects !== undefined && request.projects.length > 0 && { projects: request.projects }),
+      ...((request.affected === true) && { affected: true }),
+      ...((request.bail === true) && { bail: true }),
+      ...((request.noCache === true) && { noCache: true }),
+      run:   request.runId,
     })
   } finally {
     stop()

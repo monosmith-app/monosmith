@@ -3,11 +3,13 @@ import type { RunEvent, TaskStatus } from './run-event.contract.ts'
 /** What the last run did to each task, kept so the views can show it. */
 export interface TaskStatusStore {
   /** Folds one event of a run into the statuses. */
-  apply:    (event: RunEvent) => void
+  apply:       (event: RunEvent) => void
   /** The status of a task id (`api:build`), if a run has touched it. */
-  statusOf: (task: string) => TaskStatus | undefined
+  statusOf:    (task: string) => TaskStatus | undefined
+  /** How many tasks the runs so far left failed. */
+  failedCount: () => number
   /** Listens to changes; returns what stops the listening. */
-  onChange: (listener: () => void) => () => void
+  onChange:    (listener: () => void) => () => void
 }
 
 /** A store with no statuses. */
@@ -45,7 +47,13 @@ export function createTaskStatusStore (): TaskStatusStore {
       }
       for (const listener of listeners) listener()
     },
-    statusOf: (task) => statuses.get(task),
+    statusOf:    (task) => statuses.get(task),
+    failedCount: () => {
+      let failed = 0
+      for (const status of statuses.values()) if (status === 'failed') failed++
+
+      return failed
+    },
     onChange: (listener) => {
       listeners.add(listener)
 

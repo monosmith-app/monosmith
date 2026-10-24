@@ -1,4 +1,7 @@
+export { createLastRunStore, type LastRun, type LastRunStore } from './last-run.store.ts'
 export { describeEvent } from './run-output.mapper.ts'
-export { cancelRun, runTask, type RunRequest } from './run-tasks.use-case.ts'
+export { describePlan, toRunPlan } from './run-plan.mapper.ts'
+export { cancelRun, runTasks, type RunRequest } from './run-tasks.use-case.ts'
 export { createTaskStatusStore, type TaskStatusStore } from './task-status.store.ts'
+export type { RunOptions, RunPlan, RunTarget } from './run-plan.contract.ts'
 export type { RunEvent, RunResult, TaskStatus } from './run-event.contract.ts'

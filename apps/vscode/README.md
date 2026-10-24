@@ -4,19 +4,64 @@ The projects and tasks of a [MonoSmith](https://github.com/monosmith-app/monosmi
 workspace, in the side bar.
 
 - **Projects view**: apps, libs and packages, each with its language, and a
-  dot on those the changes affect. Under a project, its tasks.
-- **Run a task** with the play button on it. The output panel shows the exact
-  command, then the task output as it arrives; each task shows how it ended
-  (passed, failed, cached, skipped). **Cancel** stops the run and its processes.
-- **Status bar**: the smith that is running and how many projects are affected.
+  dot on those the changes affect. Under a project, its tasks. A multi-root
+  workspace gets one section per folder that has a `smith.toml`, each with its
+  own `smith serve`.
+- **Run from the keyboard or the mouse.** Enter on a task runs it. **Run Task**
+  (palette, or `Ctrl+Alt+M T`) asks for a project, then one of its tasks or all
+  of them. The context menu (Shift+F10) and the inline buttons run a task, or
+  all the tasks of a project, a group or a folder.
+- **Run Affected** (`Ctrl+Alt+M A`) runs one task in the projects the changes
+  affect; **Run Task in All Projects** runs one task wherever it exists;
+  **Re-run Last** (`Ctrl+Alt+M R`) repeats the last run. The settings
+  `monosmith.run.bail` and `monosmith.run.noCache` apply to every run.
+- The output panel shows the exact command, then the task output as it arrives;
+  each task shows how it ended (passed, failed, cached, skipped). **Cancel**
+  (`Ctrl+Alt+M C`) is there only while a run goes, and stops the run and its
+  processes.
+- **Run Doctor** prints the failed checks and their fixes in the output.
+- **Status bar**: the smith that is running, how many projects are affected and
+  how many tasks failed (warning colour on failures). The tooltip says which
+  smith runs (path and why). A click opens a menu: run affected, re-run, doctor,
+  refresh, output, settings.
+- **Refreshes by itself**: when `smith.toml` changes, the git HEAD moves (branch
+  switch), a file is saved, and after each run. Bursts are debounced into one
+  refresh, and a result that was overtaken by a newer one is dropped.
+
+Every action is reachable without the mouse, and the rows carry text for screen
+readers (project, language, affected or not, task and status).
+
+## Which smith
 
 The extension does not carry smith. It runs the one your team installed, so the
 editor, the terminal and CI give the same result. It looks for it in this order:
 
 1. the `monosmith.path` setting
 2. the workspace's own install: `node_modules/.bin/smith` (`npm i -D monosmith`)
-   or `.smith/bin/smith`
+   or `.smith/bin/smith`, **only in a trusted workspace**
 3. `smith` on the `PATH`
+
+The status bar tooltip says which one runs. When the workspace's smith is not
+the version a terminal gets from the `PATH`, the extension warns once per
+session and offers to open the settings or copy the update command.
+
+## Workspace trust
+
+A workspace's own smith is an executable the folder brings, so in an untrusted
+workspace (Restricted Mode) the extension does not run it, and it does not run
+tasks either; they execute code from the workspace. It uses the `monosmith.path`
+user setting or the `PATH` to show the projects, says why in the view, and
+starts again by itself when you trust the workspace. The workspace value of
+`monosmith.path` is ignored while the workspace is untrusted.
+
+## When there is no smith
+
+The view tells what is wrong instead of staying empty, with buttons for what to
+do: smith not found (copy the install command, open settings, retry, show log),
+could not start or stopped (restart, show log, open settings), not trusted
+(manage workspace trust), starting. What `smith serve` writes to stderr goes to
+the MonoSmith output channel, and a smith that ends by itself is noticed at
+once, with an offer to restart it.
 
 It talks to `smith serve` (JSON-RPC over stdin and stdout, no network port) and
 works with any smith whose protocol it knows; see

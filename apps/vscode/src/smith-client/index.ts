@@ -1,3 +1,3 @@
-export { locateSmith, type SmithSearch } from './locate-smith.policy.ts'
-export { startSmith } from './start-smith.use-case.ts'
-export type { SmithConnection, SmithInitialized, SmithSession } from './smith-connection.contract.ts'
+export { locateSmith, type SmithLocation, type SmithLookup, type SmithSearch, type SmithSource } from './locate-smith.policy.ts'
+export { startSmith, type SmithHooks } from './start-smith.use-case.ts'
+export type { SmithConnection, SmithExit, SmithInitialized, SmithSession } from './smith-connection.contract.ts'
