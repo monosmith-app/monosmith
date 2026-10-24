@@ -58,7 +58,7 @@ Surprising misses usually come from three places:
 
 - **A task rewrites its own inputs.** A build that writes a file inside the
   project, or a formatter that rewrites sources, changes the key every run.
-  `smith doctor` fails with "no task rewrites a tracked file" and "every build
+  `smith doctor` fails with "tracked files are not generated files" and "every build
   writes to dist/" for the two common forms.
 - **A task reads files its `inputs` do not list.** Then the cache serves a stale
   result, not a miss. Add the files to `inputs`.
@@ -99,7 +99,7 @@ owns them:
 | the cache directory is ignored by git | `.smith/` would be committed. Add `.smith/` to `.gitignore` (`smith doctor --fix` does it) |
 | the repository has commits | releases and `--affected` need history. Make the first commit |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
-| no task rewrites a tracked file | a task changes a file git tracks. Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
+| tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |

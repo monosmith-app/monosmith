@@ -137,8 +137,8 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	}
 	generated := TrackedGenerated(ignored, tracked, s.Graph.Projects)
 	out = append(out, protocol.Finding{
-		Check: "no task rewrites a tracked file", OK: len(generated) == 0, Warning: true,
-		Detail: "a run leaves these changed, and the release refuses a dirty tree (smith ci verify fails on them): " + strings.Join(generated, "; "),
+		Check: "tracked files are not generated files", OK: len(generated) == 0, Warning: true,
+		Detail: "these files are in git but a run rewrites them (.gitignore ignores them, or a task writes there), so the tree is dirty after a build and a release refuses it: " + strings.Join(generated, "; "),
 		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
 	})
 	remote := s.Config.Cache.Remote
