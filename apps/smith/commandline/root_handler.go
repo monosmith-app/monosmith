@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
@@ -74,7 +75,7 @@ generates CI pipelines, and releases packages from conventional commits.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version))
-	root.AddCommand(npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
+	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))

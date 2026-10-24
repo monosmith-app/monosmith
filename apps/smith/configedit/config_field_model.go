@@ -2,6 +2,7 @@ package configedit
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -72,22 +73,79 @@ func Fields() ([]Field, error) {
 	return out, nil
 }
 
+// DefaultStackPrefix starts the path of a default stack: default_stacks.node
+// is the stack Node projects take when they record none.
+const DefaultStackPrefix = "default_stacks."
+
 // Find returns the field at path.
 func Find(path string) (Field, error) {
+	if language := strings.TrimPrefix(path, DefaultStackPrefix); language != path && language != "" {
+		return DefaultStackField(language), nil
+	}
 	fields, err := Fields()
 	if err != nil {
 		return Field{}, err
 	}
+	var paths []string
 	for _, f := range fields {
 		if f.Path == path {
 			return f, nil
 		}
-	}
-	var paths []string
-	for _, f := range fields {
 		paths = append(paths, f.Path)
 	}
-	return Field{}, fmt.Errorf("%s is not a setting smith config edits; it edits %s", path, strings.Join(paths, ", "))
+	message := path + " is not a setting smith config edits"
+	if near := nearest(path, paths); len(near) > 0 {
+		message += "; did you mean " + strings.Join(near, " or ") + "?"
+	}
+	return Field{}, errors.New(message + " Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).")
+}
+
+// DefaultStackField is the setting that names the stack of a language's
+// projects that record none.
+func DefaultStackField(language string) Field {
+	return Field{
+		Path:        DefaultStackPrefix + language,
+		Type:        "string",
+		Description: "the stack of " + language + " projects that record none, and of smith add without --stack (for example node-jest)",
+		MinLength:   1,
+	}
+}
+
+// nearest returns up to two settings whose name is close to path's: the same
+// last word, or a few letters away.
+func nearest(path string, paths []string) []string {
+	last := path[strings.LastIndex(path, ".")+1:]
+	var out []string
+	for _, p := range paths {
+		name := p[strings.LastIndex(p, ".")+1:]
+		if name == last || (len(last) > 2 && strings.Contains(p, last)) || editDistance(path, p) <= 3 {
+			out = append(out, p)
+		}
+		if len(out) == 2 {
+			break
+		}
+	}
+	return out
+}
+
+func editDistance(a, b string) int {
+	prev := make([]int, len(b)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+	for i := 1; i <= len(a); i++ {
+		cur := make([]int, len(b)+1)
+		cur[0] = i
+		for j := 1; j <= len(b); j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+		}
+		prev = cur
+	}
+	return prev[len(b)]
 }
 
 // Encode checks args against the field and renders them as a TOML value: one

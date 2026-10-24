@@ -3,6 +3,7 @@ package configedit
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -17,9 +18,11 @@ func Command() *cobra.Command {
 		Long: `Read and change the settings of smith.toml's [workspace], [ci], [release],
 [cache] and [plugins] tables. Values are checked against smith.toml's schema,
 and only the setting's value changes in the file: comments and every other
-line stay as they are. Edit stacks, conventions, tasks and projects in the
-file itself.`,
+line stay as they are. A default stack is set per language, as in
+default_stacks.node. Edit stacks, conventions, tasks and projects in the file
+itself.`,
 		Example: `  smith config list
+  smith config set default_stacks.node node-jest
   smith config set ci.devcontainer false
   smith config set ci.providers github azure
   smith config unset release.branch`,
@@ -44,6 +47,19 @@ file itself.`,
 				Field
 				Value string `json:"value,omitempty"`
 				Set   bool   `json:"set"`
+			}
+			cfg, err := workspace.Load(dir)
+			if err != nil {
+				return err
+			}
+			// A default stack exists per language; list the ones the file sets.
+			var languages []string
+			for language := range cfg.DefaultStacks {
+				languages = append(languages, language)
+			}
+			sort.Strings(languages)
+			for _, language := range languages {
+				fields = append(fields, DefaultStackField(language))
 			}
 			var rows []row
 			for _, f := range fields {
