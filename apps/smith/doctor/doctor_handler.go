@@ -19,7 +19,7 @@ var ErrUnhealthy = errors.New("the workspace has problems")
 
 // Command is `smith doctor`.
 func Command(version string) *cobra.Command {
-	var asJSON, fix, yes bool
+	var asJSON, fix, yes, verbose bool
 	var only []string
 	cmd := &cobra.Command{
 		Use:   "doctor",
@@ -51,7 +51,14 @@ takes up just the fix of the named check (the check's text, as doctor prints it)
 				enc.SetIndent("", "  ")
 				_ = enc.Encode(report)
 			} else {
+				var names []string
+				for _, p := range s.Graph.Projects {
+					names = append(names, p.Name, p.Root)
+				}
 				for _, f := range report.Findings {
+					if f.OK && !verbose {
+						continue
+					}
 					mark := "✔"
 					if !f.OK {
 						mark = "✖"
@@ -65,6 +72,11 @@ takes up just the fix of the named check (the check's text, as doctor prints it)
 						for _, step := range strings.Split(f.Remedy, "\n") {
 							fmt.Fprintf(out, "    → %s\n", step)
 						}
+					}
+				}
+				if !verbose {
+					for _, line := range CollapsePassed(report.Findings, names) {
+						fmt.Fprintf(out, "✔ %s\n", line.Text)
 					}
 				}
 				fmt.Fprintf(out, "\n%d passed, %d failed, %d warning(s)\n", report.Passed, report.Failed, report.Warnings)
@@ -82,6 +94,7 @@ takes up just the fix of the named check (the check's text, as doctor prints it)
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&fix, "fix", false, "show the fixes doctor can make as diffs, and apply the safe ones")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "list every passed check, not one line for each check that repeats per project")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
 	return cmd

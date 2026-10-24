@@ -58,7 +58,7 @@ Surprising misses usually come from three places:
 
 - **A task rewrites its own inputs.** A build that writes a file inside the
   project, or a formatter that rewrites sources, changes the key every run.
-  `smith doctor` fails with "no task rewrites a tracked file" and "every build
+  `smith doctor` fails with "tracked files are not generated files" and "every build
   writes to dist/" for the two common forms.
 - **A task reads files its `inputs` do not list.** Then the cache serves a stale
   result, not a miss. Add the files to `inputs`.
@@ -89,8 +89,10 @@ read the shared cache but never write it.
 
 ## What `smith doctor` reports, and what to do
 
-Every failed check prints a `→` line with the remedy. The checks, grouped by who
-owns them:
+Every failed check prints a `→` line with the remedy, one per way out. Checks
+that pass are summarised: a check that repeats for every project is one line
+("npm workspaces include each project (23 projects)"); `smith doctor --verbose`
+lists them all. The checks, grouped by who owns them:
 
 ### Workspace checks (owned by smith)
 
@@ -99,7 +101,7 @@ owns them:
 | the cache directory is ignored by git | `.smith/` would be committed. Add `.smith/` to `.gitignore` (`smith doctor --fix` does it) |
 | the repository has commits | releases and `--affected` need history. Make the first commit |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
-| no task rewrites a tracked file | a task changes a file git tracks. Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
+| tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |
@@ -115,7 +117,7 @@ owns them:
 | Language | Checks |
 |---|---|
 | Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it) |
-| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); `tsconfig` `outDir` points into `dist/` |
+| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
 | Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`) |
 | Rust | `cargo` is installed; the root `Cargo.toml` is a workspace and lists every crate in `members` |
 | .NET | the .NET SDK is installed; `nuget.config` matches `[registries]` (`smith doctor --fix`) |
