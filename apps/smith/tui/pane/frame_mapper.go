@@ -7,8 +7,8 @@ import (
 )
 
 // Frame draws body inside a rounded border w cells wide and h rows high, with
-// title set into the top edge. A focused pane has an accent border and a
-// double-weight title mark. The result has exactly h lines of w cells.
+// title set into the top edge. A focused pane has an accent border; the weight is the
+// same for every pane and dialog, only the colour changes. The result has exactly h lines of w cells.
 func Frame(th theme.Theme, title string, body []string, w, h int, focused bool) []string {
 	if w < 2 || h < 2 {
 		return Block(nil, w, h)

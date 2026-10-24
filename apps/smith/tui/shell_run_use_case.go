@@ -8,12 +8,10 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
@@ -48,6 +46,9 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	if s.running() {
 		s.say("A run is in progress (Ctrl+C stops it)")
 		return nil
+	}
+	if s.runsInline(argv) {
+		return s.startInline(argv)
 	}
 	return s.start(argv)
 }
@@ -124,14 +125,24 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 		}
 	}
 	s.finished()
-	if _, isRun := commands.ParseRun(s.run.Command); !isRun {
-		s.doctor, s.release, s.settings = doctorview.Model{}, releaseview.Model{}, settingsview.Model{}
-		s.plugins, s.deps, s.recipes = s.plugins.Reset(), depsview.Model{}, s.recipes.Reset()
-		if load := s.sources.Projects; load != nil {
-			return func() tea.Msg { return load() }
-		}
+	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
+	return s.refreshAfter(s.run.Command)
+}
+
+// refreshAfter reads again what a command that is not a task run may have
+// changed: the projects, the checks (the header keeps showing the old ones
+// until the new arrive), and, when their views are opened, the plan and the
+// dependencies.
+func (s *Shell) refreshAfter(argv []string) tea.Cmd {
+	if _, isRun := commands.ParseRun(argv); isRun {
+		return nil
 	}
-	return nil
+	s.release, s.deps = releaseview.Model{}, depsview.Model{}
+	cmds := []tea.Cmd{s.loadProjects()}
+	if load := s.sources.Doctor; load != nil {
+		cmds = append(cmds, func() tea.Msg { return load() })
+	}
+	return tea.Batch(cmds...)
 }
 
 // finished tells the user how the run ended.
@@ -180,7 +191,7 @@ func (s *Shell) stop() {
 	s.say("Stopping… (Ctrl+C again quits)")
 }
 
-// selectedProject is the project of the navigator's selection, or "".
-func (s Shell) selectedProject() string { return s.tree.Selected().Project }
+// selectedProject is the project of the list's selection, or "".
+func (s Shell) selectedProject() string { return s.list.SelectedName() }
 
 func fmtCount(done, total int) string { return fmt.Sprintf("%d/%d", done, total) }

@@ -93,15 +93,16 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	case !v.Loaded:
 		lines = append(lines, th.Muted("Planning the release…"))
 	case len(v.Blockers) > 0:
+		lines = append(lines, th.Failure(th.Icons.Failed+" The release is blocked: its tags would give wrong versions."), "")
 		for _, m := range v.Warnings {
 			lines = append(lines, th.Warning("warning: "+m))
 		}
-		lines = append(lines, th.Failure("The release is blocked: its tags would give wrong versions."), "")
 		for _, m := range v.Blockers {
 			lines = append(lines, "  • "+m)
 		}
-		lines = append(lines, "", th.Muted("F2 shows the same with smith release --dry-run"))
+		lines = append(lines, "", th.Muted("smith release --dry-run shows the same"))
 	default:
+		lines = append(lines, v.headline(th), "")
 		for _, m := range v.Warnings {
 			lines = append(lines, th.Warning("warning: "+m))
 		}
@@ -124,7 +125,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 				cursor = th.Accent(th.Icons.Pointer + " ")
 			}
 			rowOf[len(lines)] = i
-			lines = append(lines, fmt.Sprintf("%s%s %s → %s  %s  %s", cursor, pane.Fit(item.Project, nameW), from, th.Accent(item.Next), levelMark(th, item.Level), th.Muted(item.Reason)))
+			lines = append(lines, fmt.Sprintf("%s%s%s → %s  %s  %s", cursor, pane.MiddleCell(item.Project, nameW+1), from, th.Bold(item.Next), levelMark(th, item.Level), th.Muted(item.Reason)))
 			if selected && v.Open {
 				lines = append(lines, v.commits(th, item)...)
 			}
@@ -132,14 +133,6 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		if len(v.Plan.Unchanged) > 0 {
 			lines = append(lines, "", th.Muted("unchanged: "+strings.Join(v.Plan.Unchanged, ", ")))
 		}
-		if len(v.Plan.Items) > 0 {
-			lines = append(lines, "", th.Muted("up/down move · enter shows the commits behind the bump"))
-		}
-		help := "F2 preview (smith release --dry-run) · n notes (smith release --dry-run --notes)"
-		if len(v.Plan.Items) > 0 {
-			help += " · F3 release (smith release: confirms first)"
-		}
-		lines = append(lines, th.Muted(help))
 	}
 	// A long line wraps (the unchanged list, the help) instead of being cut.
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 2)
@@ -147,6 +140,29 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, rowOf
+}
+
+// headline says what the release is in a few words, before the detail.
+func (v Model) headline(th theme.Theme) string {
+	n := len(v.Plan.Items)
+	if n == 0 {
+		return th.Muted("Nothing to release")
+	}
+	levels := map[string]int{}
+	for _, item := range v.Plan.Items {
+		levels[item.Level]++
+	}
+	var parts []string
+	for _, l := range []string{"major", "minor", "patch"} {
+		if levels[l] > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", levels[l], l))
+		}
+	}
+	noun := "packages"
+	if n == 1 {
+		noun = "package"
+	}
+	return th.Bold(fmt.Sprintf("%d %s to release", n, noun)) + th.Muted(" ("+strings.Join(parts, " · ")+")")
 }
 
 // levelMark names a bump's level with a symbol, so it reads without colour.

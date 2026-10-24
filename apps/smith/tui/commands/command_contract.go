@@ -11,60 +11,69 @@ const (
 	Execute
 	// RunTask runs Task on the selected project, or on every project.
 	RunTask
-	// RunSelection runs the task selected in the navigator.
-	RunSelection
 	// Guided opens the guided form for the action titled Guide.
 	Guided
 	// Palette opens the command palette.
 	Palette
 	// Help opens the shortcuts overlay.
 	Help
-	// About shows the version.
-	About
 	// Quit leaves the shell.
 	Quit
 	// Stop cancels the run in progress.
 	Stop
 	// Follow toggles following the end of the log.
 	Follow
-	// NextPane and PrevPane move the focus between panes.
-	NextPane
-	PrevPane
-	// ReloadDoctor runs doctor again.
-	ReloadDoctor
-	// ContextMenu opens the context menu of the selection.
-	ContextMenu
+	// OpenDoctor shows the Doctor view (which checks the workspace the first time).
+	OpenDoctor
 	// CopyFocused copies the focused item to the clipboard.
 	CopyFocused
 	// ToggleMouse turns mouse reporting off or on.
 	ToggleMouse
+	// ViewAction runs the action of the open view that Action names.
+	ViewAction
+	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
+	// it is listed in the footer and the help but never run by the shell.
+	PaneKey
 )
 
 // The ids of the main views.
 const (
+	TabHome     = "home"
 	TabProjects = "projects"
 	TabRun      = "run"
 	TabDoctor   = "doctor"
-	TabRelease  = "release"
-	TabPlugins  = "plugins"
 	TabDeps     = "deps"
-	TabRecipes  = "recipes"
-	TabSettings = "settings"
+	TabRelease  = "release"
 	TabGuide    = "guide"
 )
 
 // Command is one thing the shell can do.
 type Command struct {
 	ID string
-	// Menu is the menu it sits in; empty means it is only on keys and in the palette.
-	Menu  string
+	// Group is the heading it sits under in the help.
+	Group string
 	Title string
 	Hint  string
-	// Keys are the Bubble Tea key names that trigger it; Shortcut is how the
-	// first of them is shown beside the control.
+	// Keys are the Bubble Tea key names that trigger it. Shortcut is how they
+	// are shown (derived from Keys unless set), Glyph a shorter form for the
+	// footer; a command with a Glyph stands for several keys and is not clickable.
 	Keys     []string
 	Shortcut string
+	Glyph    string
 	Kind     Kind
+	// Views are the views the command works in; empty means every view. A key
+	// in a view's own list wins over the same key in the global one.
+	Views []string
+	// Footer is the short label in the footer hints; empty keeps the command
+	// out of the footer. ShowIn are the views whose footer shows it (Views when
+	// empty); Tail puts it at the end of every footer.
+	Footer string
+	ShowIn []string
+	Tail   bool
+	// WhileEditing means the key still works while a text field has the keyboard.
+	WhileEditing bool
+	// Action is the view action for ViewAction.
+	Action string
 	// Argv is the smith command line for Execute.
 	Argv []string
 	// All makes RunTask run on every project, whatever is selected.
@@ -82,9 +91,12 @@ type Command struct {
 	// Confirm means the command changes the workspace or publishes: a dialog
 	// shows the command line before it runs.
 	Confirm bool
-	// NeedsWorkspace, NeedsIdle (no run in progress), NeedsRunning and
-	// NeedsSelection say when the command is unavailable.
-	NeedsWorkspace, NeedsIdle, NeedsRunning, NeedsSelection bool
+	// NeedsWorkspace, NeedsIdle (no run in progress) and NeedsRunning say when
+	// the command is unavailable.
+	NeedsWorkspace, NeedsIdle, NeedsRunning bool
+	// NeedsNarrowList and NeedsDetailOpen are for the keys of the narrow
+	// layout, where the detail is opened over the list and closed again.
+	NeedsNarrowList, NeedsDetailOpen bool
 	// OnlyOutside and OnlyInside hide the command in the other situation.
 	OnlyOutside, OnlyInside bool
 	// NeedsContent hides the command in a folder that holds nothing, where there is nothing for it to work on.
@@ -93,11 +105,21 @@ type Command struct {
 
 // State is what decides whether a command is available.
 type State struct {
-	InWorkspace bool
+	// View is the open view's id (a Tab constant).
+	View string
+	// Editing is true while a text field has the keyboard; Form while a guided
+	// form is open. Plain keys do nothing in either.
+	Editing, Form bool
+	InWorkspace   bool
+	// Narrow is true when the detail is not beside the list; DetailOpen when it
+	// fills the pane instead of the list.
+	Narrow, DetailOpen bool
 	// Running is true while a command is running in the run view.
 	Running bool
-	// HasSelection is true when a task is selected in the navigator.
-	HasSelection bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// Reasons say, by command id, why the open view cannot do something now
+	// (nothing to update, no safe fix): the command is refused with that
+	// reason and the footer leaves its hint out.
+	Reasons map[string]string
 }

@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
@@ -27,59 +28,78 @@ func TestEveryScreenFillsExactlyTheTerminal(t *testing.T) {
 	}
 }
 
-func TestAt140ColumnsThereAreThreePanes(t *testing.T) {
+func TestAt140ColumnsTheHeaderTheListAndTheDetailShareTheScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("File", "Workspace", "Run", "Projects", "Release", "View", "Help", // the menu bar
-		"Apps", "web", "orders", "Libs", "kit", "Packages", "sdk", // the navigator
-		"Projects (4)", "Inspector", // the main view and the inspector
-		"smith 1.2.3", "main") // the status bar: version and branch
+	l.hasNot("File ", "View ", "Help ", "Apps", "Libs") // no menu bar, no tree, no permanent side panel
+	l.has("acme", "main",                               // the header
+		"Projects", "Doctor", // the tabs
+		"web", "orders", "kit", "sdk", "Projects (4)", // the list
+		"kind", "language", "Run build", // the detail of the selected project
+		"smith 1.2.3") // the status bar
 	l.hasNot("Reading the workspace")
 }
 
-func TestAt100ColumnsTheInspectorIsStillThere(t *testing.T) {
-	newLab(t, true, 100, 30).has("Inspector", "Workspace")
+func TestAt100ColumnsTheDetailIsStillBesideTheList(t *testing.T) {
+	newLab(t, true, 100, 30).has("kind", "Run build", "On: orders")
 }
 
-func TestBelow100ColumnsTheInspectorFoldsIntoTheMainView(t *testing.T) {
+func TestBelow100ColumnsOnlyTheListIsShown(t *testing.T) {
 	l := newLab(t, true, 99, 30)
-	l.hasNot("╭─ Inspector")
-	l.has("Workspace", "Projects (4)", "Actions") // the inspector's actions sit under the table
-	newLab(t, true, 80, 26).hasNot("╭─ Inspector")
+	l.has("On: orders", "web")
+	l.hasNot("Run build", "language") // the detail opens with Enter
+	newLab(t, true, 80, 26).hasNot("Run build")
 }
 
-func TestBelow80ColumnsTheNavigatorBecomesATab(t *testing.T) {
-	l := newLab(t, true, 79, 24)
-	l.hasNot("╭─ Workspace")
-	l.has("Workspace", "Projects", "Guide") // "Workspace" is now a tab
-	x, y := l.find("Workspace ")            // the first match is the menu; the tab is on the next row
-	_ = x
-	l.send(click(2, y+1))
-	l.has("Apps", "orders", "kit")
+func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
+	l := newLab(t, true, 72, 24)
+	l.has("On: orders", "orders", "web", "kit", "sdk")
 }
 
 func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 	l := newLab(t, false, 100, 28)
-	l.has("Guide", "Create a workspace", "No workspace")
+	l.has("Guide", "Create a workspace", "No workspace here")
 	l.hasNot("Doctor", "Settings")
 }
 
 func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("Inspector")
+	l.has("Run build")
 	l.send(tea.WindowSizeMsg{Width: 90, Height: 20})
-	l.hasNot("╭─ Inspector")
+	l.hasNot("Run build")
 	if got := len(strings.Split(l.sh().View(), "\n")); got != 20 {
 		t.Fatalf("%d lines after the resize", got)
 	}
 	l.send(tea.WindowSizeMsg{Width: 72, Height: 20})
-	l.has("Workspace")
+	l.has("On: orders")
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
-	l.has("Inspector")
+	l.has("Run build")
 }
 
-func TestTheFirstProjectIsSelectedAndShownInTheInspector(t *testing.T) {
+func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *testing.T) {
+	l := newLab(t, true, 90, 30)
+	l.keys("enter")
+	if !l.sh().detailOpen {
+		t.Fatal("Enter should open the detail")
+	}
+	l.send(tea.WindowSizeMsg{Width: 130, Height: 30})
+	if l.sh().detailOpen {
+		t.Fatal("the detail is beside the list now")
+	}
+	l.has("Run build", "On: orders")
+}
+
+func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "kind", "language", "go", "Actions", "Build", "Ctrl+B")
+	l.has("orders", "kind", "language", "go", "Actions", "Run build", "Run test", "Explain")
+}
+
+func TestALongPathInTheDetailIsShortenedInTheMiddle(t *testing.T) {
+	l := newLab(t, true, 100, 30)
+	sh := l.sh()
+	sh.list = projectlist.New([]projectlist.Project{{Name: "far", Kind: "app", Language: "go", Root: "apps/some/deeply/nested/place/far-away-project"}})
+	l.m = sh
+	l.has("apps/", "project", "…")
+	l.hasNot("far-away-project")
 }
 
 func TestNoColourMeansSymbolsAndWordsStillCarryTheMeaning(t *testing.T) {
@@ -94,10 +114,11 @@ func TestNoColourMeansSymbolsAndWordsStillCarryTheMeaning(t *testing.T) {
 // frame Bubble Tea draws after quitting.
 func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 	events := []any{
-		"f10", "down", "down", "right", "enter", "esc", "alt+f", "alt+w", "alt+r", "left", "up", "home", "end", "esc",
-		"ctrl+p", "d", "o", "enter", "esc", "esc", "f1", "down", "pgdown", "esc", "ctrl+o", "down", "esc",
-		"tab", "tab", "tab", "shift+tab", "right", "left", "space", "enter", "alt+1", "alt+2", "alt+3", "alt+4", "alt+5", "alt+6",
-		"ctrl+d", "ctrl+x", "n", "ctrl+b", "ctrl+f", "pgup", "pgdown", "ctrl+c", "ctrl+n", "enter", "ctrl+g", "y", "f2", "f3", "esc",
+		"down", "down", "right", "enter", "esc", "left", "up", "home", "end", "esc", "j", "k", "/", "esc",
+		"ctrl+p", "d", "o", "enter", "esc", "esc", "f1", "down", "pgdown", "esc", ":", "esc", "?", "esc",
+		"tab", "tab", "tab", "shift+tab", "right", "left", "space", "enter", "1", "2", "3", "4", "8", "9",
+		"3", "x", "esc", "n", "a", "esc", "b", "f", "r", "pgup", "pgdown", "ctrl+c", "enter", "i", "y", "4", "p", "x", "esc", "m", "m",
+		"5", "e", "6", "u", "v", "space", "7", "c", "esc",
 		click(3, 0), click(10, 3), click(40, 2), click(5, 8), rightClick(5, 4), motion(9, 9), wheel(10, 10, 1), wheel(40, 10, -1), click(0, 0),
 		"q",
 	}
@@ -132,18 +153,17 @@ func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 	prepare := map[string]func(*lab){
 		"idle":    func(*lab) {},
-		"menu":    func(l *lab) { l.keys("alt+r") },
 		"palette": func(l *lab) { l.keys("ctrl+p") },
 		"help":    func(l *lab) { l.keys("f1") },
-		"popup":   func(l *lab) { l.send(rightClick(5, 4)) },
-		"confirm": func(l *lab) { l.keys("f3") },
+		"confirm": func(l *lab) { l.keys("6", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s", "x:y │ z"}}
-			l.keys("ctrl+b")
+			l.keys("b")
 		},
-		"doctor":   func(l *lab) { l.keys("alt+3") },
-		"settings": func(l *lab) { l.keys("alt+5") },
-		"guide":    func(l *lab) { l.keys("alt+6") },
+		"home":   func(l *lab) { l.keys("1") },
+		"doctor": func(l *lab) { l.keys("4") },
+		"deps":   func(l *lab) { l.keys("5") },
+		"guide":  func(l *lab) { l.keys("a") },
 	}
 	for name, prep := range prepare {
 		for _, btn := range []func(x, y int) any{func(x, y int) any { return click(x, y) }, func(x, y int) any { return rightClick(x, y) }, func(x, y int) any { return wheel(x, y, 1) }} {

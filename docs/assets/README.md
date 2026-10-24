@@ -14,7 +14,6 @@ mocked up.
 | `release-preview.png` | `smith release --dry-run` | terminal output, rendered |
 | `graph-text.png` | `smith graph` | terminal output, rendered |
 | `ci-yml.png` | lines of the generated `.github/workflows/ci.yml` | `sed -n '35,76p'`, rendered |
-| `tui-menu.png`, `tui-commands.png`, `tui-doctor.png`, `tui-release.png`, `tui-settings.png` | the interactive shell's tabs | see below |
 
 ## Rendering terminal output
 
@@ -30,14 +29,5 @@ It needs the `playwright` package in the directory you run it from
 (`npm i -D playwright`). With no downloaded Chromium, set
 `RENDER_CHANNEL=chrome` (or `msedge`) to use an installed browser. An output
 name ending in `.html` writes the page instead.
-
-## The interactive shell
-
-The shell needs a real terminal, so its screens were captured by building a
-throwaway program that renders the same Bubble Tea model `smith` opens
-(`tui.NewShell` with `tui.WorkspaceSources`, and a key sequence for each tab),
-writing each `View()` with its colours, and rendering that text with the script
-above. The header reads `smith dev` because the binary was a development build.
-That program is not part of the repository.
 
 Keep each image under about 300 KB.

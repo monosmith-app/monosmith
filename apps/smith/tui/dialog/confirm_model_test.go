@@ -14,7 +14,7 @@ func release() Confirm {
 
 func TestTheDialogShowsTheExactCommandFirst(t *testing.T) {
 	text := strings.Join(release().Lines(theme.Default()), "\n")
-	for _, want := range []string{"Release", "The command that will run:", "$ smith release --yes", "Run  Enter", "Cancel  Esc", "╔", "╝"} {
+	for _, want := range []string{"Release", "The command that will run:", "$ smith release --yes", "Run  Enter", "Cancel  Esc", "╭", "╯"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}

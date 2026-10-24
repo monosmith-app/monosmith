@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/statusbar"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 )
 
 // View implements tea.Model. It fills the whole terminal and can be called in
@@ -51,17 +51,17 @@ func (s Shell) tooSmall() string {
 	return strings.Join(rows, "\n")
 }
 
-// screen is the whole terminal as h lines of w cells.
+// screen is the whole terminal as h lines of w cells: the header, the tabs,
+// the content, the footer and the status bar.
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
 	rows := make([]string, 0, h)
-	rows = append(rows, s.bar.Row(s.th, s.header, w))
-	if h > 2 {
-		rows = append(rows, s.body()...)
-	}
-	if h > 1 {
-		rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
-	}
+	strip := s.tabStrip()
+	rows = append(rows, s.headerRow())
+	rows = append(rows, strip.Lines[:len(strip.Lines)-s.tabsInBody()]...)
+	rows = append(rows, s.body(strip)...)
+	rows = append(rows, s.footerRow())
+	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
 	rows = s.overlays(rows)
 	for i := range rows {
 		rows[i] = pane.Fit(rows[i], w)
@@ -72,13 +72,7 @@ func (s Shell) screen() []string {
 // statusInfo is what the status bar shows: the exact command running or last
 // run, its result, the branch and the version.
 func (s Shell) statusInfo() statusbar.Info {
-	info := statusbar.Info{Branch: s.branch, Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
-	if tip := s.bar.Tooltip(); tip != "" {
-		info.Hint = tip
-	}
-	if tip := s.popup.Tooltip(); tip != "" {
-		info.Hint = tip
-	}
+	info := statusbar.Info{Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
 	if s.run == nil {
 		return info
 	}
@@ -103,280 +97,60 @@ func (s Shell) statusInfo() statusbar.Info {
 	return info
 }
 
-// body draws the navigator, the main view and the inspector side by side.
-func (s Shell) body() []string {
-	h := s.lay.Main.H
-	var nav, insp []string
-	if s.lay.HasNavigator() {
-		r := s.lay.Navigator
-		tree := s.tree.SetHeight(max(r.H-2, 1))
-		hover := -1
-		if in := s.navigatorInner(); in.Contains(s.mouseX, s.mouseY) {
-			hover = tree.RowAt(s.mouseY - in.Y)
-		}
-		lines := tree.View(s.th, max(r.W-2, 0), hover, s.focus == layout.Navigator, s.treeStatus)
-		if !s.inWorkspace {
-			lines = pane.Wrap(s.th.Muted(s.noWorkspaceHint()), max(r.W-2, 0), 1)
-		}
-		nav = pane.Frame(s.th, "Workspace", lines, r.W, r.H, s.focus == layout.Navigator)
+// body draws the list, or the detail that took its place, and, on a wide
+// screen, the detail of the selection in the same frame: one border all round,
+// the list's right border dividing the two, and the top edge shared with the
+// tabs when they are tall.
+func (s Shell) body(strip tabs.Strip) []string {
+	l := s.lay()
+	page := s.page()
+	in := l.Main.Inner()
+	title := page.Title()
+	if l.Tall {
+		// The strip's last row is the pane's top edge, and the title sits in the strip.
+		title = ""
 	}
-	if s.lay.HasInspector() {
-		r := s.lay.Inspector
-		lines, _ := s.inspectorPanel().View(s.th, max(r.W-2, 0), s.inspectorHover())
-		insp = pane.Frame(s.th, "Inspector", lines, r.W, r.H, s.focus == layout.Inspector)
-	}
-	main := s.mainColumn()
-	out := make([]string, 0, h)
-	for y := 0; y < h; y++ {
-		var b strings.Builder
-		if nav != nil {
-			b.WriteString(nav[y])
+	main := pane.Frame(s.th, title, page.View(in.W, in.H).lines, l.Main.W, l.Main.H, false)
+	edge := func(r string) string { return s.th.Border(r, false) }
+	if !l.HasDetail() {
+		if l.Tall {
+			main[0] = strip.Lines[len(strip.Lines)-1]
 		}
-		b.WriteString(main[y])
-		if insp != nil {
-			b.WriteString(insp[y])
-		}
-		out = append(out, b.String())
+		return main
 	}
-	return out
+	din := l.DetailInner()
+	side := pane.Block(s.detailContent(din.W, din.H).lines, din.W, din.H)
+	cut := func(line string) string { return ansi.Truncate(line, l.Main.W-1, "") + "\x1b[m" }
+	out := make([]string, 0, len(main))
+	if l.Tall {
+		out = append(out, strip.Lines[len(strip.Lines)-1])
+	} else {
+		out = append(out, cut(main[0])+edge("┬"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╮"))
+	}
+	for y := 1; y < len(main)-1; y++ {
+		out = append(out, main[y]+side[y-1]+edge("│"))
+	}
+	return append(out, cut(main[len(main)-1])+edge("┴"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╯"))
 }
 
-// inspectorHover is the id of the inspector action under the pointer.
-func (s Shell) inspectorHover() string {
-	in := s.inspectorInner()
-	if !in.Contains(s.mouseX, s.mouseY) {
-		if s.focus == layout.Inspector {
-			if a := s.inspectorActions(); s.inspCursor < len(a) {
-				return a[s.inspCursor].ID
-			}
-		}
-		return ""
-	}
-	_, hits := s.inspectorPanel().View(s.th, in.W, "")
-	return hits[s.mouseY-in.Y]
-}
-
-// mainColumn is the tab row and, under it, the framed body of the active tab.
-func (s Shell) mainColumn() []string {
-	r := s.lay.Main
-	rows := []string{s.tabRow(r.W)}
-	in := s.mainInner()
-	c := s.mainContent(in.W, in.H)
-	lines := s.renderContent(c, in)
-	rows = append(rows, pane.Frame(s.th, s.mainTitle(), lines, r.W, r.H-1, s.focus == layout.Main)...)
-	return rows
-}
-
-// renderContent draws the button rows (with hover) over the content's blank
-// lines.
-func (s Shell) renderContent(c content, in layout.Rect) []string {
-	lines := append([]string(nil), c.lines...)
-	for i, bar := range c.bars {
-		hover := ""
-		if in.Contains(s.mouseX, s.mouseY) && s.mouseY-in.Y == i {
-			if id, ok := bar.At(s.th, in.W, s.mouseX-in.X); ok {
-				hover = id
-			}
-		}
-		if i < len(lines) {
-			lines[i] = bar.Render(s.th, s.tick, hover, in.W)
-		}
-	}
-	return lines
-}
-
-// mainTitle is the heading of the framed body.
-func (s Shell) mainTitle() string {
-	switch s.tab {
-	case commands.TabProjects:
-		return fmt.Sprintf("Projects (%d)", len(s.tree.Projects()))
-	case commands.TabRun:
-		if s.run != nil {
-			return s.run.CommandLine()
-		}
-	case commands.TabGuide:
-		if t := s.guide.Title(); t != "" {
-			return t
-		}
-	}
-	return tabTitles[s.tab]
-}
-
-// tabSpan is where a tab's label sits in the tab row.
-type tabSpan struct {
-	id     string
-	x0, x1 int
-}
-
-// shortTitles are the shorter tab names, used only for as many tabs as it takes
-// for the row to fit the main view.
-var shortTitles = map[string]string{
-	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabPlugins: "Plug", commands.TabSettings: "Sett",
-}
-
-// shortOrder is the order tabs give up their full name in: the ones people
-// meet last go first, so "Projects" is the last to be shortened.
-var shortOrder = []string{commands.TabSettings, commands.TabPlugins, commands.TabRelease, commands.TabProjects}
-
-// tabLabel is a tab's text with a space of padding on each side. The full
-// names win: when they do not fit padded the padding goes, and then as few
-// names as possible are shortened. The choice depends on the width alone, so a
-// badge never changes it.
-func (s Shell) tabLabel(id string) string {
-	padded, n := s.tabPlan()
-	return s.tabText(id, padded, s.isShort(id, n))
-}
-
-// isShort is true when id is among the first n tabs to be shortened.
-func (s Shell) isShort(id string, n int) bool {
-	for _, t := range shortOrder[:n] {
-		if t == id {
-			return true
-		}
-	}
-	return false
-}
-
-// tabPlan is whether the tabs are padded and how many of them are shortened.
-func (s Shell) tabPlan() (padded bool, shortened int) {
-	if s.tabsFit(true, 0) {
-		return true, 0
-	}
-	for n := 0; n < len(shortOrder); n++ {
-		if s.tabsFit(false, n) {
-			return false, n
-		}
-	}
-	return false, len(shortOrder)
-}
-
-// tabsFit is true when every tab fits the main view, with or without padding
-// and with the first n shortenable names shortened.
-func (s Shell) tabsFit(padded bool, n int) bool {
-	total := 1
-	for _, id := range s.tabs {
-		total += pane.Width(s.tabName(id, padded, s.isShort(id, n))) + 1
-		if id == commands.TabRun || id == commands.TabDoctor {
-			total += badgeRoom
-		}
-	}
-	return total <= max(s.lay.Main.W-2, 0)
-}
-
-// badgeRoom is what a status badge (spinner, check, cross and count) may add
-// to a tab. It is reserved in every state, so a badge appearing never changes
-// which names are spelled out.
-const badgeRoom = 4
-
-// tabName is a tab's name with its padding and no badge.
-func (s Shell) tabName(id string, padded, short bool) string {
-	title := tabTitles[id]
-	if t, ok := shortTitles[id]; short && ok {
-		title = t
-	}
-	if padded {
-		return " " + title + " "
-	}
-	return title
-}
-
-func (s Shell) tabText(id string, padded, short bool) string {
-	label := strings.TrimSuffix(s.tabName(id, padded, short), " ")
-	if !padded {
-		label = s.tabName(id, padded, short)
-	}
-	switch id {
-	case commands.TabRun:
-		if s.running() {
-			label += " " + s.th.Info(s.th.Spin(s.tick))
-		} else if s.run != nil {
-			if n := s.run.Counts().Failed; n > 0 {
-				label += " " + s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, n))
-			} else if s.run.OK() {
-				label += " " + s.th.Success(s.th.Icons.Passed)
-			}
-		}
-	case commands.TabDoctor:
-		if s.doctor.Report != nil && s.doctor.Report.Failed > 0 {
-			label += " " + s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, s.doctor.Report.Failed))
-		}
-	}
-	if !padded {
-		return label
-	}
-	return label + " "
-}
-
-func (s Shell) tabSpans() []tabSpan {
-	var spans []tabSpan
-	x := 1
-	for _, id := range s.tabs {
-		w := pane.Width(s.tabLabel(id))
-		spans = append(spans, tabSpan{id: id, x0: s.lay.Main.X + x, x1: s.lay.Main.X + x + w})
-		x += w + 1
-	}
-	return spans
-}
-
-func (s Shell) tabRow(w int) string {
-	var b strings.Builder
-	b.WriteString(" ")
-	for _, id := range s.tabs {
-		label := s.tabLabel(id)
-		switch {
-		case id == s.tab:
-			label = s.th.Selected(pane.Strip(label))
-		case s.hoveredTab() == id:
-			label = s.th.Hover(label)
-		default:
-			label = s.th.Muted(label)
-		}
-		b.WriteString(label + " ")
-	}
-	return pane.Fit(b.String(), w)
-}
-
-// hoveredTab is the tab under the pointer, or "".
-func (s Shell) hoveredTab() string {
-	if s.mouseY != s.lay.Main.Y {
-		return ""
-	}
-	for _, sp := range s.tabSpans() {
-		if s.mouseX >= sp.x0 && s.mouseX < sp.x1 {
-			return sp.id
-		}
-	}
-	return ""
-}
-
-// overlays composes the menus, popups, dialogs and toast over the rendered
+// overlays composes the palette, dialogs and toast over the rendered
 // screen by cell, so nothing underneath is pushed down.
 func (s Shell) overlays(rows []string) []string {
-	if lines, x, y, ok := s.bar.Box(s.th); ok {
-		rows = pane.Overlay(rows, lines, x, y)
-	}
 	if s.palOpen {
 		box := s.paletteBox()
 		lines := pane.Frame(s.th, "Command palette", s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
 		rows = pane.Overlay(rows, lines, box.X, box.Y)
 	}
-	if lines, x, y, ok := s.popup.Box(s.th); ok {
-		rows = pane.Overlay(rows, lines, x, y)
-	}
 	if s.help != nil {
 		r := s.help.Rect()
 		rows = pane.Overlay(rows, s.help.Lines(s.th), r.X, r.Y)
-	}
-	if s.about != nil {
-		r := s.about.Rect()
-		rows = pane.Overlay(rows, s.about.Lines(s.th), r.X, r.Y)
 	}
 	if s.confirm != nil {
 		r := s.confirm.Rect()
 		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)
 	}
 	if lines := s.toast.Lines(s.th, s.w-2); lines != nil {
-		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-1-len(lines), 1))
+		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-2-len(lines), 1))
 	}
 	return rows
 }

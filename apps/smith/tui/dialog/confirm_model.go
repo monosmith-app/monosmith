@@ -86,7 +86,7 @@ func (c Confirm) buttonsRow(inner int) (spans [2][2]int) {
 	return spans
 }
 
-// Lines draws the dialog: Rect().H lines of Rect().W cells, in a double border.
+// Lines draws the dialog: Rect().H lines of Rect().W cells, in the same rounded border as a pane, in the accent colour.
 func (c Confirm) Lines(th theme.Theme) []string {
 	r := c.rect
 	if r.W < 6 || r.H < 3 {
@@ -94,15 +94,10 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	}
 	inner := r.W - 4
 	body := c.bodyLines(inner)
-	edge := func(s string) string { return th.Accent(s) }
-	title := " " + c.Title + " "
-	top := edge("╔═") + th.Title(title) + edge(strings.Repeat("═", max(r.W-3-ansi.StringWidth(title), 0))+"╗")
-	rows := []string{pane.Fit(top, r.W)}
-	row := func(content string) string {
-		return edge("║") + " " + pane.Fit(content, r.W-4) + " " + edge("║")
-	}
+	rows := make([]string, 0, r.H-2)
+	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
 	for i, l := range body {
-		if len(rows) >= r.H-3 {
+		if len(rows) >= r.H-4 {
 			break
 		}
 		if i >= len(body)-len(c.cmdLines) {
@@ -127,8 +122,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 		}
 	}
 	rows = append(rows, row(line))
-	rows = append(rows, edge("╚"+strings.Repeat("═", r.W-2)+"╝"))
-	return pane.Block(rows, r.W, r.H)
+	return pane.Frame(th, c.Title, rows, r.W, r.H, true)
 }
 
 func (c Confirm) buttonAt(x, y int) int {

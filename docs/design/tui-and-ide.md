@@ -18,27 +18,29 @@ workspace's own tools), so the team controls the version.
 
 | cuppa | For MonoSmith |
 |---|---|
-| Three panes: component palette on the left, canvas in the centre, properties on the right | A navigator (workspace, projects, tasks), a main view, and an inspector for what is selected |
-| A menu bar, with undo and redo | A menu bar that lists every command, with its shortcut; nothing is hidden behind a key you must know |
+| Three panes: component palette on the left, canvas in the centre, properties on the right | Proposed: a navigator, a main view and an inspector. Built: a list with the detail of the selection beside it (see "As built") |
+| A menu bar, with undo and redo | No menu bar (a terminal is not a desktop): every action is a single key, listed in a footer that changes with the view, and the command palette lists the rest |
 | Mouse first: click to select, drag to resize, shift-click for several | Click to select, double-click to run, right-click for a context menu, drag the splitters, scroll the logs, hover for help |
 | Built on Bubble Tea, Lip Gloss and Bubbles, and also shipped as a desktop app and a WebAssembly build | smith's shell already uses the same libraries (Bubble Tea 1.3, Lip Gloss, Bubbles); one engine behind a terminal, and IDE views |
 | Needs a terminal with mouse support and about 100 columns | The same minimum, with a compact layout below it |
 
 ## What exists today
 
-`smith` with no arguments opens a shell with five tabs (Menu, Commands, Doctor,
-Release, Settings) and `smith graph --format tui`. It is keyboard driven, one
-view at a time, and **never acts by itself**: an action ends as a smith command
-line, printed before it runs, and `smith` hands over to that command (see
-docs/guides/getting-started.md). It has no mouse support, no live run view and
-no panes.
+`smith` with no arguments opens a shell with six tabs (Home, Projects, Run,
+Doctor, Deps, Release) and `smith graph --format tui`. It is keyboard and mouse
+driven, one view at a time, and **never acts by itself**: an action ends as a
+smith command line, printed before it runs, and a task run uses the terminal
+itself (see docs/guides/getting-started.md and "As built" below). What the
+Plugins, Recipes, Settings and Guide tabs showed is a smith command now, listed
+in the palette.
 
 ## Principles
 
-1. **Everything visible.** Every function is reachable from a menu or a pane
-   without knowing a shortcut. The shortcut is shown beside it.
+1. **Everything visible.** Every function is reachable from the command palette,
+   a pane or a key the footer shows, without knowing a shortcut beforehand. A
+   label is drawn from the same list as the key it names, so it cannot go stale.
 2. **Mouse and keyboard are equals.** Every mouse action has a key, and every
-   key has a visible control.
+   key hint in the footer can be clicked.
 3. **Real time.** A run shows each task as it starts, its output as it is
    written, cache hits, durations and failures, as they happen.
 4. **A command, always.** Whatever the interface does is a smith command,
@@ -52,9 +54,12 @@ no panes.
 
 ## Layout
 
+The drawing is the original proposal: a navigator tree on the left and an inspector on the
+right. It was not built that way; "As built" below is what the shell is.
+
 ```
-┌ File  Workspace  Run  Projects  Recipes  Plugins  Release  Help ─────────────────────┐
-│ ▸ libs (Python, C#)        │ Projects  Run  Doctor  Release  Recipes  Settings        │ Inspector          │
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ ▸ libs (Python, C#)        │ Home  Projects  Run  Doctor  Deps  Release               │ Inspector          │
 │   ▾ apps                   ├───────────────────────────────────────────────────────────┤ orders-api         │
 │     ● orders-api   app     │  orders-api                                               │ kind  app          │
 │     ○ web          app     │  Tasks      build   test   lint   package   image          │ stack team-csharp  │
@@ -66,42 +71,86 @@ no panes.
 │ Recipes                    │ kit:test        ▶ running  42/60                          │ Actions            │
 │   team 1.3.0               │ ...                                                       │ ▶ Run  ⟳ Why miss  │
 ├────────────────────────────┴───────────────────────────────────────────────────────────┴────────────────────┤
+│ b build  t test  l lint  c typecheck  w changed  d doctor            1-6 views  : palette  ? help  q quit │
 │ $ smith run build test -p orders-api --affected          ✔ 12 passed  ✖ 0  ⏱ 38s     main  smith 1.23  doctor ✔ │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Menu bar** (top): every command, grouped, each with its shortcut. Opens with a
-  click or `F10`/`Alt`.
 - **Navigator** (left): the workspace as a tree of projects (kind, affected
   dot), their tasks, the plugins in use and the recipes. Selecting an item sets
   the main view and the inspector.
-- **Main view** (centre): tabs for Projects, Run, Doctor, Release, Recipes and
-  Settings. A bar of buttons runs the common actions for the selection.
+- **Main view** (centre): tabs for Home, Projects, Run, Doctor, Deps and
+  Release. The keys that run the common actions for the selection are in the
+  footer.
 - **Output** (centre, bottom): the live run, with a tree of tasks and the log of
   the selected one.
 - **Inspector** (right): properties of the selection and its actions, as in
   cuppa's properties panel; where an option can be changed, it is edited here.
+- **Footer** (second row from the bottom): the keys of the open view, then the
+  keys every view ends with (`1-6` views, `m` mouse, `:` palette, `?` help,
+  `q` quit). Only what can be done now is listed, and a hint that is one key
+  can be clicked.
 - **Status bar** (bottom): the exact command running or last run, the result,
-  the branch, the smith version and doctor's status.
+  the workspace, the branch and the smith version.
 
-Panes can be resized by dragging their borders and hidden from the View menu.
-Below 100 columns the inspector folds into the main view, and below 80 the
-navigator becomes a tab, so the interface works in a small terminal too.
+Panes can be resized by dragging their borders.
+**As built (the adaptive shell).** The navigator tree and the permanent
+inspector are gone. The screen is a header (workspace, branch, doctor's health
+as `✖2 ▲2`), the views as rounded tabs whose active tab opens into the pane
+below, one content pane, the footer and the status bar. From 100 columns the
+pane is the list and, beside it, the detail of the selection (a project's
+tasks, dependencies and actions, a doctor finding's fix, a run's task); below,
+only the list, Enter opens the detail over it and Esc goes back. The tabs shorten
+their names and then scroll (`‹` `›`) so the open one is always in view, and are
+one row on a terminal under 24 rows high (six tabs fit the 72-column minimum, so
+they no longer scroll there). Views implement a small `Page` (title, footer keys,
+update, view for a width and a height).
+
+**Pages.** Each page leads with its headline, then the detail.
+
+- **Home** is the first tab: one headline for the workspace's health ("2 checks
+  fail"), the one suggested next action with its key ("press d", "press w to
+  lint and test them", "all good: press b to build"; Enter or a click does it),
+  and the facts behind them: checks, projects affected, how the last run ended,
+  dependencies with newer releases (known once Deps has looked). Doctor starts in
+  the background with the shell, so the header badge is filled without opening
+  Doctor.
+- **Doctor** shows "2 failed · 2 warnings", then the failing checks as one line
+  each (state, title); passed checks stay behind `p`. Beside the list, the detail
+  tells the selected check in full (problem, remedy, fix, files) and Enter is not
+  offered; in the single pane Enter expands the check in place. Each part is said
+  once.
+- **Deps** and **Release** keep their behaviour: a headline ("3 with newer
+  releases: 1 patch · 1 minor · 1 major", "2 packages to release (1 minor · 1
+  patch)"), then the rows; long names are shortened in the middle. The footer
+  lists only the keys that work now (no `u update` with nothing to update, no
+  `x release` without a plan; the key says why when pressed).
+
+**What left the tabs.** Each has a command, so none became unreachable:
+
+| Was a tab | Is now | Palette entry |
+|---|---|---|
+| Plugins | `smith plugin list`, `plugin enable`, `disable`, `set` | Plugins; Manage plugins… (form) |
+| Recipes | `smith recipe check`, `recipe new`; `smith add` asks a recipe's choices | Recipes; Add project… (form) |
+| Settings | `smith config list`, `get`, `set`, `unset`, checked against the schema | Settings |
+| Guide | `smith help`; the forms open from `a` (add), the palette and the CLI | Commands and docs |
+
+These run in the terminal like a task run (the inline runner): the interface
+steps aside, the command prints into the scrollback, a key brings the interface
+back. A command that changes `smith.toml` still asks first.
 
 ## Components
 
 | Component | Is | Variants and states |
 |---|---|---|
-| Menu bar and menus | all commands, grouped, with shortcuts | closed, open, item disabled (with the reason on hover) |
+| Footer hints | the keys of the open view | a hint per key; clickable; absent when the key cannot be used now |
 | Tree | workspace, projects, tasks | collapsed, expanded, selected, focused, affected, failed |
 | Tabs | the main views | active, inactive, with a badge (failures, findings) |
-| Button | run an action | default, hover, pressed, disabled, running (spinner) |
 | Task list | tasks of a run | queued, running, cached, passed, failed, skipped |
 | Log viewer | output of the selected task | follow, paused, filtered, searched, wrapped |
 | Form | a recipe's choices, a command's arguments | pending, valid, invalid with the reason |
 | Inspector | properties and actions of the selection | read-only, editable |
-| Command palette | find and run any command (`Ctrl+P`) | empty, results, no match |
-| Context menu | actions for what was right-clicked | open, closed |
+| Command palette | find and run any command (`:`, `/` or `Ctrl+P`) | empty, results, no match |
 | Toast | a short result or warning | info, success, warning, error |
 | Dialog | confirm something that changes the workspace or publishes | open, confirmed, cancelled |
 | Status bar | the command line and the result | idle, running, passed, failed |
@@ -120,19 +169,19 @@ parts:
 | **Huh** | forms: input, text, select, multi-select, confirm, note | a recipe's choices, command arguments, confirmation dialogs |
 | **Glamour** | markdown rendering with themes | showing docs, `smith explain` output, release notes and a recipe's description |
 | **ntcharts** | terminal charts: bar, line, sparkline, time series | task durations, cache hit rate over time, release frequency |
-| Community components | mouse hit-testing zones, menus, tab bars, tree views | the menu bar, tabs, clickable regions (a zone library gives Bubble Tea the mouse hit-testing it lacks) |
+| Community components | mouse hit-testing zones, tab bars, tree views | tabs, clickable regions (a zone library gives Bubble Tea the mouse hit-testing it lacks) |
 
 How the components above map to them:
 
 | MonoSmith component | Built from |
 |---|---|
-| Menu bar, context menu | a community menu, with Lip Gloss borders, and mouse zones |
+| Footer hints | Lip Gloss text, with mouse zones |
 | Tabs | a community tab bar |
 | Tree (workspace, projects, tasks) | Lip Gloss tree for display; a Bubbles list with indentation for the interactive one |
 | Task list and progress | a Bubbles table or list, spinners and progress bars |
 | Log viewer | a Bubbles viewport with follow, search and filter on top |
 | Form (recipe choices, arguments) | Huh |
-| Dialog | Huh confirm in a Lip Gloss double border |
+| Dialog | Huh confirm in the same rounded Lip Gloss border as a pane |
 | Command palette | a Bubbles text input over a Bubbles list |
 | Inspector | a Lip Gloss column of key and value rows; Glamour for long text |
 | Charts (durations, cache hits) | ntcharts |
@@ -147,16 +196,49 @@ from the same libraries and checked against those pictures.
 
 ## Interaction
 
+No key needs a modifier except `Ctrl+C` (stop, then quit) and the palette's
+`Ctrl+P`; there is no menu bar, no Alt chord and no function key to learn. The
+keymap is one list (`apps/smith/tui/commands/keymap_config.go`), and the keys, the
+footer hints, the help (`?`, `F1`) and the palette entries are all drawn from it.
+A key that works only in one view is listed in that view's footer; when the same
+letter is a global key, the view's own wins (Deps marks all with `a`, which adds a
+project elsewhere). No plain key fires while a text field or a guided form has the
+keyboard; `Ctrl+P` and `F1` still do.
+
+| Key | Does | Where |
+|---|---|---|
+| `b` `t` `l` `c` | build, test, lint, typecheck the selected project (all when none) | workspace |
+| `w` | lint and test what changed (`smith run lint test --affected`) | workspace |
+| `d` | doctor | workspace |
+| `i` | install dependencies (asks first) | workspace |
+| `a` | add a project | inside a workspace |
+| `n` | new workspace | outside a workspace |
+| `1`..`6` | open a view: Home, Projects, Run, Doctor, Deps, Release | workspace |
+| `Tab`, `Shift+Tab` | next, previous pane | anywhere |
+| arrows, `j` `k`, `PgUp` `PgDn`, `Home` `End` | move | lists, trees, logs |
+| `Enter` | open, run or edit the selection | anywhere |
+| `Esc` | back, close, clear; never quits | anywhere |
+| `y` | copy the focused remedy, command, path or package | Projects, Run, Doctor, Deps |
+| `m` | turn the mouse off, so the terminal selects text (`Shift+drag` does too) | anywhere |
+| `:`, `Ctrl+P`, `/` | command palette | anywhere |
+| `?`, `F1` | help for the open view | anywhere |
+| `q` | quit when nothing runs | anywhere |
+| `Ctrl+C` | stop the run; quit when nothing runs | anywhere |
+| `f` `x` `g` `p` `r` | Doctor: fix this check, fix all, group by project, show passed, check again | Doctor |
+| `p` `n` `x` | Release: preview, notes, release (asks first) | Release |
+| `Space` `s` `a` `u` `v` | Deps: mark, mark the safe ones, mark all, update the marked, align versions | Deps |
+| `Enter` | Home: do the suggested next action | Home |
+| `f` `r` | Run: follow or pause the log (when the output is captured), run the last command again | Run |
+
 | Mouse | Keyboard |
 |---|---|
 | Click selects, double-click runs the default action (the task, the finding's fix) | Arrows move, `Enter` opens or runs |
-| Right-click opens a context menu | `Ctrl+O` |
-| Drag a pane border to resize | `Ctrl+Arrows` |
-| Scroll the wheel in lists and logs | `PgUp` `PgDn`, `g` `G` |
-| Click a tab or a menu | `Tab`/`Shift+Tab`, `F10`, `Alt+letter` |
+| Click a view name in the tab row | `1`..`6` |
+| Click a hint in the footer | the key it shows |
+| Drag a pane border to resize | not built |
+| Scroll the wheel in lists and logs | `PgUp` `PgDn` |
 | Hover is not tracked, so `Shift+drag` (`Option+drag` on macOS) selects text natively; `m` turns the mouse off | `y` copies the focused remedy, command, path or package |
 | Click a task in a run to show its log | `Enter` on the task |
-| Click `■ Stop` | `Ctrl+C` once stops the run, twice quits; `q` quits when nothing runs, `Esc` never quits |
 
 Focus is always visible. A run can be left in the background while another
 view is used, and the status bar keeps showing its progress.
@@ -174,15 +256,25 @@ Colours are **semantic tokens**, never raw values in components:
 | `muted` | skipped, disabled, secondary text | dim |
 | `accent` | selection, focus, the active tab | bold, reverse |
 
-- Themes: dark, light, a 16-colour fallback and no colour (`NO_COLOR`, or
-  `--plain`). The terminal's own palette is used where possible, so the
-  interface follows the user's theme.
+- Themes: dark, light and plain (no colour). `NO_COLOR` (any value) and
+  `SMITH_THEME=plain` give plain; `SMITH_THEME=light` or `dark` forces one;
+  with none of them the terminal decides (`COLORFGBG`, dark when unknown). The
+  light tokens keep 4.5:1 contrast on white, checked by a test. In plain, the
+  selection is bold and reverse video, and every state keeps its symbol and
+  word.
 - Spacing is in cells: one-cell padding in panes, two-cell gaps between buttons.
-- Borders: rounded for panes, single for the focused pane, double for dialogs.
+- Borders: one weight, rounded, for panes, dialogs and overlays. Only the colour
+  changes: the focused pane or the open dialog has the accent border, the others
+  the faint one.
+- Colour is for state (success, warning, error, info, muted) and for one accent:
+  the active tab, the cursor and the focused border. Titles, key labels and
+  actions are bold, not coloured. Paths are shortened in the middle, and prose
+  wraps to the pane's width.
 - Icons have ASCII fallbacks (`[x]`, `[!]`, `[v]`) for terminals without Unicode.
 - Motion: one spinner for anything running; nothing else animates.
 - **Accessibility:** every state has a symbol and a word, not only a colour; a
-  plain mode prints events one per line for screen readers; all controls are
+  plain mode asks the questions as numbered lines for screen readers (`SMITH_SCREEN_READER=1`,
+  `SMITH_THEME=plain`, or output that is not a terminal); all controls are
   reachable by keyboard; contrast of the default theme meets WCAG AA.
 
 ## Real-time feedback: the event stream
@@ -272,8 +364,8 @@ The same functions as the terminal interface, in the editor's own style:
 | Workspace | Navigator tree | Side-bar view of projects, tasks, plugins and recipes |
 | Run | Output pane | Output panel with a task tree; problem matchers turn failures into editor problems |
 | Install | A form in the main view | A command and a view; a package picker for the project's ecosystem |
-| Doctor | Doctor tab | Problems panel, with fixes as quick fixes on the files they concern |
-| Recipes | Recipes tab and wizard | New project from a recipe, with the choices as a form |
+| Doctor | Home and Doctor tabs | Problems panel, with fixes as quick fixes on the files they concern |
+| Recipes | `smith recipe`, `smith add` (the palette lists them) | New project from a recipe, with the choices as a form |
 | Release | Release tab | A release preview view and the command |
 
 ## Reconciling "never acts by itself"
@@ -294,7 +386,7 @@ and releasing show a dialog with the command first.
 
 1. **The event stream and the server mode** (`smith serve`), with the run
    events. Foundation for everything below.
-2. **The layout and the run view** in the terminal: panes, menu bar, live task
+2. **The layout and the run view** in the terminal: panes, key footer, live task
    list and log, mouse support (Bubble Tea mouse events with a zone library).
 3. **Install, doctor and release inside the interface**, with dialogs and the
    command line shown.

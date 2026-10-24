@@ -61,7 +61,7 @@ generates CI pipelines, and releases packages from conventional commits.
 
 Most people start with: new (an empty folder) or adopt (a repository you
 already have), then build and doctor.`,
-		Example: `  smith                      open the interactive menu (in a terminal)
+		Example: `  smith                      open the interactive shell (in a terminal: ? lists the keys, : the commands)
   smith new acme             a new, empty workspace
   smith adopt --dry-run      what bringing the repository you are in under smith involves
   smith add app web --lang node

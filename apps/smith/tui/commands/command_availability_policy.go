@@ -1,38 +1,83 @@
 package commands
 
+import (
+	"slices"
+	"unicode"
+	"unicode/utf8"
+)
+
 // Unavailable says why the command cannot be used now, or "" when it can.
 func (c Command) Unavailable(s State) string {
+	if reason := s.Reasons[c.ID]; reason != "" {
+		return reason
+	}
 	switch {
 	case c.NeedsWorkspace && !s.InWorkspace:
-		return "not in a workspace (create one with File > New workspace)"
+		return "not in a workspace (press " + ShortcutOf("file.new") + " to create one)"
 	case c.NeedsRunning && !s.Running:
 		return "nothing is running"
+	case c.NeedsNarrowList && (!s.Narrow || s.DetailOpen):
+		return "the detail is beside the list"
+	case c.NeedsDetailOpen && !s.DetailOpen:
+		return "the detail is not open"
 	case c.NeedsIdle && s.Running:
-		return "a run is in progress (Ctrl+C stops it)"
-	case c.NeedsSelection && !s.HasSelection:
-		return "select a task in the navigator first"
+		return "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
 	}
 	return ""
 }
 
+// ownsView is true for the commands that act on the open view's own content:
+// they are listed only while that view is open.
+func (c Command) ownsView() bool {
+	return c.Kind == ViewAction || c.Kind == PaneKey || c.Kind == Follow
+}
+
+// inView reports whether the command's keys work in the open view.
+func (c Command) inView(s State) bool {
+	return len(c.Views) == 0 || slices.Contains(c.Views, s.View)
+}
+
 // Visible reports whether the command is listed at all in this state (a
-// command for creating a workspace has no place inside one).
+// command for creating a workspace has no place inside one, a view's own
+// action none in another view).
 func (c Command) Visible(s State) bool {
+	if c.Kind == PaneKey {
+		return false
+	}
+	if c.ownsView() && !c.inView(s) {
+		return false
+	}
 	return (!c.OnlyOutside || !s.InWorkspace) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
 }
 
-// ByKey finds the command a key triggers among those visible and available
-// in the state; an unavailable one is returned with ok true and its reason so
-// the shell can say why nothing happened. ok is false for an unbound key.
+// plain is a key that types a character: one letter, digit or symbol.
+func plain(key string) bool {
+	r, n := utf8.DecodeRuneInString(key)
+	return n == len(key) && r != utf8.RuneError && (unicode.IsPrint(r) || r == ' ')
+}
+
+// ByKey finds the command a key triggers in the state; an unavailable one is
+// returned with ok true and its reason so the shell can say why nothing
+// happened. ok is false for an unbound key, for a key the open view handles
+// itself (a PaneKey), and for a plain key while a text field or a guided form
+// has the keyboard.
 func ByKey(key string, s State) (c Command, reason string, ok bool) {
-	for _, cmd := range all {
-		if !cmd.Visible(s) {
-			continue
-		}
-		for _, k := range cmd.Keys {
-			if k == key {
-				return cmd, cmd.Unavailable(s), true
+	if plain(key) && (s.Editing || s.Form) {
+		return Command{}, "", false
+	}
+	// The view's own keys win over a global key that is the same letter.
+	for _, scoped := range []bool{true, false} {
+		for _, cmd := range all {
+			if !slices.Contains(cmd.Keys, key) || (len(cmd.Views) > 0) != scoped || !cmd.inView(s) {
+				continue
 			}
+			if cmd.Kind == PaneKey {
+				return Command{}, "", false
+			}
+			if !cmd.Visible(s) || (s.Editing && !cmd.WhileEditing) {
+				continue
+			}
+			return cmd, cmd.Unavailable(s), true
 		}
 	}
 	return Command{}, "", false
@@ -46,4 +91,10 @@ func ByID(id string) (Command, bool) {
 		}
 	}
 	return Command{}, false
+}
+
+// ShortcutOf is how a command's keys are shown, for text that names a key.
+func ShortcutOf(id string) string {
+	c, _ := ByID(id)
+	return c.Shortcut
 }

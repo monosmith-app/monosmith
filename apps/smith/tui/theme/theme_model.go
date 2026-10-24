@@ -34,7 +34,7 @@ func New(c Choice) Theme {
 	th := Theme{Tokens: t, Icons: c.Icons,
 		accent: fg(t.Accent).Bold(true), success: fg(t.Success), warning: fg(t.Warning),
 		failure: fg(t.Error).Bold(true), info: fg(t.Info), muted: fg(t.Muted), faint: fg(t.Faint),
-		text: fg(t.Text), title: fg(t.Accent).Bold(true),
+		text: fg(t.Text), title: lipgloss.NewStyle().Bold(true),
 		bar: bg(t.Bar).Inherit(fg(t.Text)),
 	}
 	if t.Colour {

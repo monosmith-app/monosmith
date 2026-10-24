@@ -15,7 +15,7 @@ type Tokens struct {
 	// Text is the normal text colour.
 	Text string
 	// Highlight is the background of the hovered or selected row, and Bar the
-	// background of the menu bar and status bar.
+	// background of the status bar.
 	Highlight, Bar string
 	// Border is the rule of an unfocused pane and Focus the rule of the focused one.
 	Border, Focus string
@@ -33,9 +33,9 @@ var Dark = Tokens{
 
 // Light suits a light terminal background; the colours keep a contrast of 4.5:1.
 var Light = Tokens{
-	Name: "light", Accent: "162", Success: "28", Warning: "130", Error: "160", Info: "25",
-	Muted: "241", Faint: "245", Text: "235", Highlight: "253", Bar: "254",
-	Border: "245", Focus: "162", Colour: true,
+	Name: "light", Accent: "125", Success: "28", Warning: "130", Error: "160", Info: "25",
+	Muted: "241", Faint: "243", Text: "235", Highlight: "253", Bar: "254",
+	Border: "243", Focus: "125", Colour: true,
 }
 
 // Plain has no colour at all (NO_COLOR): bold and reverse video mark the

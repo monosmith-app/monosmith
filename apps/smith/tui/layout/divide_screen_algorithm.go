@@ -1,85 +1,84 @@
 package layout
 
-// Layout is where each area is drawn. An area that is folded away has an
+// Layout is where each area is drawn. An area that is not on screen has an
 // empty rectangle.
 type Layout struct {
 	Mode          Mode
 	Width, Height int
-	MenuBar       Rect
-	Navigator     Rect
-	Main          Rect
-	Inspector     Rect
-	StatusBar     Rect
+	// Tall is true when the tabs are three rows high.
+	Tall bool
+	// Header is the workspace, the branch and the health; Tabs the row of views.
+	Header, Tabs Rect
+	// Main is the list (or the detail, when it has the whole width); Detail is
+	// the pane beside it, present only in the wide layout.
+	Main, Detail Rect
+	Footer       Rect
+	StatusBar    Rect
 }
 
-// Divide lays the screen out: a one-row menu bar on top, a one-row status bar
-// at the bottom, and between them the navigator, the main view and the
-// inspector. The navigator is a fifth of the width (22 to 30 columns), the
-// inspector a quarter (26 to 36).
-func Divide(width, height int) Layout {
-	l := Layout{Width: width, Height: height}
-	switch {
-	case width >= WideFrom:
+// Divide lays the screen out from the top: a header row, the row of tabs, the
+// content, then a one-row footer of key hints and a one-row status bar. From
+// TallFrom rows the tabs are drawn three rows high and the last of them is the
+// top edge of the content; below it they are one row. Below WideFrom columns
+// the content is one pane; from WideFrom it is the list and, when withDetail
+// is true, the detail of the selection beside it (two fifths of the width, 38
+// to 64 columns).
+func Divide(width, height int, withDetail bool) Layout {
+	l := Layout{Width: width, Height: height, Mode: Narrow, Tall: height >= TallFrom}
+	if width >= WideFrom {
 		l.Mode = Wide
-	case width >= MediumFrom:
-		l.Mode = Medium
-	default:
-		l.Mode = Narrow
 	}
-	body := max(height-2, 0)
-	l.MenuBar = Rect{0, 0, width, min(1, height)}
 	if height > 1 {
 		l.StatusBar = Rect{0, height - 1, width, 1}
 	}
-	nav, insp := 0, 0
-	if l.Mode != Narrow {
-		nav = clamp(width/5, 22, 30)
+	if height > 2 {
+		l.Footer = Rect{0, height - 2, width, 1}
 	}
-	if l.Mode == Wide {
-		insp = clamp(width/4, 26, 36)
+	if height > 4 {
+		l.Header = Rect{0, 0, width, 1}
 	}
-	l.Navigator = Rect{0, 1, nav, body}
-	l.Main = Rect{nav, 1, width - nav - insp, body}
-	l.Inspector = Rect{width - insp, 1, insp, body}
+	detail := 0
+	if l.Mode == Wide && withDetail {
+		detail = clamp(width*2/5, 38, 64)
+	}
+	// The content starts under the tabs; the top edge of a tall strip is the
+	// content's own.
+	tabsH, top := 1, 2
+	if l.Tall {
+		tabsH, top = 3, 3
+	}
+	l.Tabs = Rect{0, 1, width, tabsH}
+	l.Main = Rect{0, top, width - detail, max(height-2-top, 0)}
+	l.Detail = Rect{width - detail, top, detail, max(height-2-top, 0)}
 	return l
 }
 
 // AreaAt says which area the cell (x, y) belongs to.
 func (l Layout) AreaAt(x, y int) Area {
 	switch {
-	case l.MenuBar.Contains(x, y):
-		return MenuBar
+	case l.Footer.Contains(x, y):
+		return Footer
 	case l.StatusBar.Contains(x, y):
 		return StatusBar
-	case l.Navigator.Contains(x, y):
-		return Navigator
-	case l.Inspector.Contains(x, y):
-		return Inspector
+	case l.Header.Contains(x, y):
+		return Header
+	case l.Tabs.Contains(x, y):
+		return Tabs
+	case l.Detail.Contains(x, y):
+		return Detail
 	case l.Main.Contains(x, y):
 		return Main
 	}
 	return Nowhere
 }
 
-// Rect is the rectangle of an area.
-func (l Layout) Rect(a Area) Rect {
-	switch a {
-	case MenuBar:
-		return l.MenuBar
-	case Navigator:
-		return l.Navigator
-	case Main:
-		return l.Main
-	case Inspector:
-		return l.Inspector
-	case StatusBar:
-		return l.StatusBar
-	}
-	return Rect{}
+// DetailInner is where the detail is drawn: the pane has no left border of its
+// own, the list's right border divides them.
+func (l Layout) DetailInner() Rect {
+	return Rect{X: l.Detail.X, Y: l.Detail.Y + 1, W: max(l.Detail.W-1, 0), H: max(l.Detail.H-2, 0)}
 }
 
-// HasNavigator and HasInspector say whether those panes are on screen.
-func (l Layout) HasNavigator() bool { return l.Navigator.W > 0 }
-func (l Layout) HasInspector() bool { return l.Inspector.W > 0 }
+// HasDetail says whether the detail is on screen beside the list.
+func (l Layout) HasDetail() bool { return l.Detail.W > 0 }
 
 func clamp(v, lo, hi int) int { return min(max(v, lo), hi) }

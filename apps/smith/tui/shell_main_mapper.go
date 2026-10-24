@@ -6,127 +6,67 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/buttons"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/inspector"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 )
 
 // hit says what a click on a line of the main view means.
 type hit struct {
-	// kind is "project", "task", "finding", "setting", "option", "tree" or "action".
+	// kind is "project", "task", "finding", "release", "dep", "option" or "action".
 	kind  string
 	id    string
 	index int
 }
 
-// content is the main view's body: rows of buttons on top, then lines, and
-// what each line stands for.
+// content is the main view's body: its lines, and what each line stands for.
 type content struct {
 	lines []string
-	bars  []buttons.Bar
 	hits  map[int]hit
 }
 
-// mainInner is where the main view's body is drawn: inside the tab row and the border.
-func (s Shell) mainInner() layout.Rect {
-	m := s.lay.Main
-	return layout.Rect{X: m.X + 1, Y: m.Y + 2, W: max(m.W-2, 0), H: max(m.H-3, 0)}
-}
+// mainInner is where the pane's body is drawn: inside the border.
+func (s Shell) mainInner() layout.Rect { return s.lay().Main.Inner() }
 
-func (s Shell) navigatorInner() layout.Rect { return s.lay.Navigator.Inner() }
-
-func (s Shell) inspectorInner() layout.Rect { return s.lay.Inspector.Inner() }
-
-// cmdButton is a button for a command, with its shortcut and its availability.
-func (s Shell) cmdButton(id, label, icon string) buttons.Button {
-	c, _ := commands.ByID(id)
-	b := buttons.Button{ID: id, Label: label, Icon: icon, Shortcut: c.Shortcut, Disabled: c.Unavailable(s.state()) != ""}
-	if s.running() && len(s.run.Command) > 1 {
-		switch c.Kind {
-		case commands.RunTask:
-			b.Busy = s.run.Command[0] == "run" && s.run.Command[1] == c.Task && (!c.All || len(s.run.Command) == 2)
-		case commands.Execute:
-			b.Busy = strings.Join(s.run.Command, " ") == strings.Join(c.Argv, " ")
-		}
-	}
-	return b
-}
-
-// addBars puts rows of buttons at the top of the content, then a blank line.
-func (s Shell) addBars(c *content, bar buttons.Bar, w int) {
-	c.bars = bar.Wrap(s.th, w)
-	for range c.bars {
-		c.lines = append(c.lines, "")
-	}
-	c.lines = append(c.lines, "")
-}
+// detailInner is where the detail beside the list is drawn.
+func (s Shell) detailInner() layout.Rect { return s.lay().DetailInner() }
 
 // mainContent builds the body of the active tab for an area of w by h cells.
 func (s Shell) mainContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	switch s.tab {
-	case tabNavigator:
-		return s.navigatorContent(w, h)
 	case commands.TabProjects:
+		if s.detailOpen {
+			return s.detailContent(w, h)
+		}
 		return s.projectsContent(w, h)
 	case commands.TabRun:
 		return s.runContent(w, h)
+	case commands.TabHome:
+		return s.homeContent(w)
 	case commands.TabDoctor:
-		fixOne := buttons.Button{ID: "x:doctor-fix", Label: "Fix this…", Icon: "⚒", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{s.cmdButton("ws.doctor", "Re-check", "↻"), fixOne, s.cmdButton("ws.fix", "Fix all…", "⚒")}, w)
-		lines, rowOf := s.doctor.View(s.th, w)
+		// Beside the list the detail tells a check in full; alone, the list expands it.
+		lines, rowOf := s.doctor.View(s.th, w, !s.lay().HasDetail())
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabRelease:
-		rel := s.cmdButton("rel.release", "Release…", "⇧")
-		rel.Disabled = rel.Disabled || !s.release.CanRelease()
-		notes := buttons.Button{ID: "x:release-notes", Label: "Notes", Icon: "≡", Shortcut: "N", Disabled: !s.release.CanRelease() || s.running()}
-		s.addBars(&c, buttons.Bar{s.cmdButton("rel.preview", "Preview", "▶"), notes, rel}, w)
 		lines, rowOf := s.release.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
-	case commands.TabPlugins:
-		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.ToggleArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{toggle, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
-		lines, rowOf := s.plugins.View(s.th, w, max(h-len(c.lines), 1))
-		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "plugin", index: i}
-		}
-		c.lines = append(c.lines, lines...)
 	case commands.TabDeps:
-		up := buttons.Button{ID: "x:deps-up", Label: "Update…", Icon: "⇧", Shortcut: "U", Disabled: s.deps.UpArgv() == nil || s.running()}
-		align := buttons.Button{ID: "x:deps-align", Label: "Align versions…", Icon: "=", Shortcut: "V", Disabled: s.deps.AlignArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{up, align, buttons.Button{ID: "x:reload", Label: "Re-check", Icon: "↻", Shortcut: "R"}}, w)
 		lines, rowOf := s.deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
-	case commands.TabRecipes:
-		argv, _ := s.recipes.Argv()
-		create := buttons.Button{ID: "x:recipes-create", Label: "Create…", Icon: "+", Shortcut: "C", Disabled: argv == nil || s.running()}
-		s.addBars(&c, buttons.Bar{create, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
-		lines, rowOf := s.recipes.View(s.th, w)
-		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "recipe", index: i}
-		}
-		c.lines = append(c.lines, lines...)
-	case commands.TabSettings:
-		lines, rowOf := s.settings.View(s.th, w, h)
-		for row, i := range rowOf {
-			c.hits[row] = hit{kind: "setting", index: i}
-		}
-		c.lines = lines
 	case commands.TabGuide:
 		lines, optionAt := s.guide.Body(s.th, w)
 		for row, i := range optionAt {
@@ -137,36 +77,19 @@ func (s Shell) mainContent(w, h int) content {
 	return c
 }
 
-// navigatorContent is the tree as a tab, below 80 columns.
-func (s Shell) navigatorContent(w, h int) content {
-	c := content{hits: map[int]hit{}}
-	tree := s.tree.SetHeight(max(h, 1))
-	c.lines = tree.View(s.th, w, -1, true, s.treeStatus)
-	for i := range c.lines {
-		c.hits[i] = hit{kind: "tree", index: i}
-	}
-	return c
-}
-
-// projectsContent is the table of projects with the buttons that run tasks on
-// the selection. When the inspector is folded away it is drawn below.
+// projectsContent is the table of projects; the keys that run tasks on the
+// selection are in the footer, and its detail is beside it or opens over it.
 func (s Shell) projectsContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	// The scope is stated once, in the "On:" line below: the buttons stay short.
-	s.addBars(&c, buttons.Bar{
-		s.cmdButton("run.build", "Build", "▶"), s.cmdButton("run.test", "Test", "▶"), s.cmdButton("run.lint", "Lint", "▶"),
-		s.cmdButton("run.typecheck", "Typecheck", "▶"), s.cmdButton("run.build-all", "Build all", "▶"),
-		s.cmdButton("run.affected", "What changed", "⟳"),
-	}, w)
 	if !s.loadedProjects {
 		return withLines(c, s.th.Muted("Reading the workspace…"))
 	}
 	if s.projectsErr != nil {
 		return withLines(c, s.th.Failure(s.projectsErr.Error()))
 	}
-	projects := s.tree.Ordered()
+	projects := s.list.Projects()
 	if len(projects) == 0 {
-		return withLines(c, s.th.Muted("No projects yet. Use File > Add project… (Ctrl+N)."))
+		return withLines(c, s.th.Muted("No projects yet. Press "+commands.ShortcutOf("file.add")+" to add one."))
 	}
 	scope := "every project"
 	if p := s.selectedProject(); p != "" {
@@ -187,37 +110,25 @@ func (s Shell) projectsContent(w, h int) content {
 	nameW, tasksW, hasStack := 8, 0, false
 	for _, p := range projects {
 		hasStack = hasStack || p.Stack != ""
-		nameW = max(nameW, pane.Width(p.Name))
+		nameW = max(nameW, pane.Width(p.Name)+2) // the room for the last run's mark
 		tasksW = max(tasksW, pane.Width(taskList(p)))
 	}
-	cols := columnsForProjects(w, nameW, tasksW, hasStack)
-	head := "   " + pane.Cell("Project", cols.name+1)
-	if cols.kind {
-		head += pane.Cell("Kind", kindColW)
+	cols := projectlist.ColumnsFor(w, nameW, tasksW, hasStack)
+	head := "   " + pane.Cell("Project", cols.Name+1)
+	if cols.Kind {
+		head += pane.Cell("Kind", projectlist.KindW)
 	}
-	if cols.lang {
-		head += pane.Cell("Language", langColW)
+	if cols.Lang {
+		head += pane.Cell("Language", projectlist.LangW)
 	}
-	if cols.stack {
-		head += pane.Cell("Stack", stackColW)
+	if cols.Stack {
+		head += pane.Cell("Stack", projectlist.StackW)
 	}
-	head += pane.Cell("↑ ↓", depsColW) + "Tasks"
+	head += pane.Cell("↑ ↓", projectlist.DepsW) + "Tasks"
 	c.lines = append(c.lines, s.th.Muted(pane.Fit(head, w)))
 
-	foldedLines := 0
-	var folded []string
-	var foldedHits map[int]string
-	if !s.lay.HasInspector() {
-		folded, foldedHits = s.inspectorPanel().View(s.th, w, "")
-		foldedLines = min(len(folded)+1, max(h/2, 0))
-	}
-	avail := max(h-len(c.lines)-foldedLines, 1)
-	sel := 0
-	for i, p := range projects {
-		if p.Name == s.selectedProject() {
-			sel = i
-		}
-	}
+	avail := max(h-len(c.lines), 1)
+	sel := s.list.Cursor()
 	top := min(max(sel-avail/2, 0), max(len(projects)-avail, 0))
 	for i := top; i < len(projects) && i < top+avail; i++ {
 		p := projects[i]
@@ -225,37 +136,29 @@ func (s Shell) projectsContent(w, h int) content {
 		if p.Affected {
 			dot = s.th.Warning(s.th.Icons.Dot)
 		}
-		line := " " + dot + " " + pane.Cell(p.Name, cols.name+1)
-		if cols.kind {
-			line += pane.Cell(p.Kind, kindColW)
+		line := " " + dot + " " + pane.Cell(p.Name+s.treeStatus(p.Name, ""), cols.Name+1)
+		if cols.Kind {
+			line += pane.Cell(p.Kind, projectlist.KindW)
 		}
-		if cols.lang {
-			line += pane.Cell(p.Language, langColW)
+		if cols.Lang {
+			line += pane.Cell(p.Language, projectlist.LangW)
 		}
-		if cols.stack {
-			line += pane.Cell(p.Stack, stackColW)
+		if cols.Stack {
+			line += pane.Cell(p.Stack, projectlist.StackW)
 		}
-		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), depsColW)
-		line += ansi.Truncate(taskList(p), cols.tasks, "…")
+		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), projectlist.DepsW)
+		line += ansi.Truncate(taskList(p), cols.Tasks, "…")
 		if p.Name == s.selectedProject() {
 			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 		}
 		c.hits[len(c.lines)] = hit{kind: "project", id: p.Name, index: i}
 		c.lines = append(c.lines, pane.Fit(line, w))
 	}
-	if foldedLines > 0 {
-		c.lines = append(c.lines, s.th.Faint(strings.Repeat("─", w)))
-		base := len(c.lines)
-		for row, id := range foldedHits {
-			c.hits[base+row] = hit{kind: "action", id: id}
-		}
-		c.lines = append(c.lines, folded...)
-	}
 	return c
 }
 
 // taskList is a project's task names on one line.
-func taskList(p navigator.Project) string {
+func taskList(p projectlist.Project) string {
 	var names []string
 	for _, t := range p.Tasks {
 		names = append(names, t.Name)
@@ -270,8 +173,7 @@ func withLines(c content, lines ...string) content {
 
 func pad(s string, w int) string { return pane.Fit(s, w) }
 
-// treeStatus is the mark drawn after a project or task in the navigator: how
-// the last run did there.
+// treeStatus is the mark drawn after a project or task: how the last run did there.
 func (s Shell) treeStatus(project, task string) string {
 	if s.run == nil {
 		return ""
@@ -322,28 +224,15 @@ func (s Shell) statusIcon(st runview.Status) string {
 
 // runGeom is where the parts of the Run tab sit, in lines of its body.
 type runGeom struct {
-	bars, cmdRow, progRow int
-	listTop, listRows     int
-	sepRow                int
-	logTop, logRows       int
-}
-
-func (s Shell) runButtons() buttons.Bar {
-	follow := buttons.Button{ID: "run.follow", Label: "Pause log", Icon: "⏸", Shortcut: "Ctrl+F"}
-	if !s.log.Following() {
-		follow.Label, follow.Icon = "Follow log", "⏵"
-	}
-	again := buttons.Button{ID: "x:rerun", Label: "Run again", Icon: "↻", Disabled: s.lastArg == nil || s.running()}
-	if !s.running() {
-		// Stop has nothing to stop: it is shown only while a run goes.
-		return buttons.Bar{follow, again}
-	}
-	return buttons.Bar{s.cmdButton("run.stop", "Stop", "■"), follow, again}
+	cmdRow, progRow   int
+	listTop, listRows int
+	sepRow            int
+	logTop, logRows   int
 }
 
 func (s Shell) runGeom(w, h int) runGeom {
-	g := runGeom{bars: max(len(s.runButtons().Wrap(s.th, w)), 1)}
-	g.cmdRow, g.progRow, g.listTop = g.bars, g.bars+1, g.bars+2
+	g := runGeom{}
+	g.cmdRow, g.progRow, g.listTop = 0, 1, 2
 	n := len(s.runIDs())
 	avail := max(h-g.listTop-2, 1)
 	g.listRows = min(n, max(min(avail, 2), avail*2/5))
@@ -380,13 +269,16 @@ func (s *Shell) keepRunVisible() {
 
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	c.bars = s.runButtons().Wrap(s.th, w)
+	if s.run == nil && len(s.runs) > 0 {
+		c.lines = append(c.lines, "", s.th.Title("Runs"))
+		c.lines = append(c.lines, s.inlineRunLines(w, h)...)
+		c.lines = append(c.lines, "")
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted("The output of a run stays in your terminal's scrollback. "+commands.ShortcutOf("run.again")+" runs the last one again."), w, 0)...)
+		return c
+	}
 	if s.run == nil {
-		for range c.bars {
-			c.lines = append(c.lines, "")
-		}
 		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a task in the navigator and press Ctrl+R, or press Ctrl+B to build."), w, 0)...)
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a project in the list and press "+commands.ShortcutOf("run.build")+" to build it, or "+commands.ShortcutOf("run.test")+" to test."), w, 0)...)
 		c.lines = append(c.lines, "")
 		if len(s.history) > 0 {
 			c.lines = append(c.lines, s.th.Title("Command log"))
@@ -397,9 +289,6 @@ func (s Shell) runContent(w, h int) content {
 		return c
 	}
 	g := s.runGeom(w, h)
-	for range c.bars {
-		c.lines = append(c.lines, "")
-	}
 	counts := s.run.Counts()
 	now := s.now()
 	took := shortDuration(s.run.RunTime(now))
@@ -486,192 +375,6 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 		line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 	}
 	return pane.Fit(line, w)
-}
-
-// ---- the inspector --------------------------------------------------------
-
-// inspectorPanel describes what is selected: a task of the last run in the Run
-// tab, otherwise what the navigator has selected.
-func (s Shell) inspectorPanel() inspector.Panel {
-	if !s.inWorkspace {
-		return inspector.Panel{
-			Sections: []inspector.Section{{Heading: "No workspace", Items: []string{"No smith.toml here.", "File > New workspace… creates one."}}},
-			Actions:  []inspector.Action{s.action("file.palette", "Command palette")},
-		}
-	}
-	if s.tab == commands.TabDoctor {
-		// A check is about the workspace or one project, not about the project
-		// last selected in the navigator.
-		return s.doctorPanel()
-	}
-	if s.tab == commands.TabRun && s.run != nil && s.runSel != "" {
-		if t := s.run.Task(s.runSel); t != nil {
-			rows := []inspector.Row{{Label: "state", Value: s.statusIcon(t.Status) + " " + t.Status.String()}}
-			if d := s.run.Elapsed(t, s.now()); d > 0 {
-				rows = append(rows, inspector.Row{Label: "time", Value: shortDuration(d)})
-			}
-			if t.Command != "" {
-				rows = append(rows, inspector.Row{Label: "command", Value: t.Command})
-			}
-			if t.Reason != "" {
-				rows = append(rows, inspector.Row{Label: "reason", Value: t.Reason})
-			}
-			rows = append(rows, inspector.Row{Label: "log", Value: fmt.Sprintf("%d lines", len(t.Log))})
-			return inspector.Panel{
-				Sections: []inspector.Section{{Heading: t.ID, Rows: rows}},
-				Actions: []inspector.Action{
-					{ID: "x:rerun", Label: "Run again", Disabled: s.running() || s.lastArg == nil},
-					{ID: "x:projects", Label: "Show the project"},
-				},
-			}
-		}
-	}
-	sel := s.tree.Selected()
-	switch {
-	case !sel.Valid:
-		return s.workspacePanel()
-	case sel.Kind == navigator.GroupRow:
-		n := 0
-		for _, p := range s.tree.Projects() {
-			if p.Kind == sel.Group {
-				n++
-			}
-		}
-		return inspector.Panel{
-			Sections: []inspector.Section{{Heading: sel.Group + "s", Rows: []inspector.Row{{Label: "projects", Value: fmt.Sprint(n)}}}},
-			Actions:  []inspector.Action{s.action("run.build", "Build everything"), s.action("run.test", "Test everything")},
-		}
-	}
-	p, ok := s.tree.Project(sel.Project)
-	if !ok {
-		return s.workspacePanel()
-	}
-	if sel.Kind == navigator.TaskRow {
-		t, _ := p.Task(sel.Task)
-		rows := []inspector.Row{{Label: "command", Value: t.Command}, {Label: "cached", Value: yesNo(t.Cache)}}
-		if len(t.DependsOn) > 0 {
-			rows = append(rows, inspector.Row{Label: "needs", Value: strings.Join(t.DependsOn, ", ")})
-		}
-		if t.Description != "" {
-			rows = append(rows, inspector.Row{Label: "about", Value: t.Description})
-		}
-		if r := s.treeStatus(p.Name, t.Name); r != "" && s.run != nil {
-			if rt := s.run.Task(p.Name + ":" + t.Name); rt != nil {
-				rows = append(rows, inspector.Row{Label: "last run", Value: rt.Status.String()})
-			}
-		}
-		return inspector.Panel{
-			Sections: []inspector.Section{{Heading: p.Name + ":" + t.Name, Rows: rows}},
-			Actions: []inspector.Action{
-				s.action("run.selection", "Run"),
-				{ID: "x:explain", Label: "Explain"},
-				{ID: "x:why-miss", Label: "Why a cache miss"},
-				{ID: "x:graph", Label: "Graph around the project"},
-			},
-		}
-	}
-	rows := []inspector.Row{{Label: "kind", Value: p.Kind}, {Label: "language", Value: p.Language}}
-	if p.Stack != "" {
-		rows = append(rows, inspector.Row{Label: "stack", Value: p.Stack})
-	}
-	rows = append(rows, inspector.Row{Label: "root", Value: p.Root})
-	if p.Version != "" {
-		rows = append(rows, inspector.Row{Label: "version", Value: p.Version})
-	}
-	rows = append(rows, inspector.Row{Label: "affected", Value: yesNoMark(s, p.Affected)})
-	secs := []inspector.Section{{Heading: p.Name, Rows: rows}}
-	if len(p.Deps) > 0 {
-		secs = append(secs, inspector.Section{Heading: "Depends on", Items: p.Deps})
-	}
-	if len(p.Dependents) > 0 {
-		secs = append(secs, inspector.Section{Heading: "Used by", Items: p.Dependents})
-	}
-	return inspector.Panel{Sections: secs, Actions: []inspector.Action{
-		s.action("run.build", "Build"), s.action("run.test", "Test"), s.action("run.lint", "Lint"), s.action("run.typecheck", "Typecheck"),
-		{ID: "x:explain", Label: "Explain"},
-		{ID: "x:graph", Label: "Graph: needs and used by"},
-	}}
-}
-
-// doctorPanel describes the selected check; with none selected it describes
-// the workspace.
-func (s Shell) doctorPanel() inspector.Panel {
-	f, ok := s.doctor.Selected()
-	if !ok {
-		return s.workspacePanel()
-	}
-	// The list already prints the problem and its remedy: the Inspector adds
-	// what it does not, the command that fixes it and the files it touches.
-	var rows []inspector.Row
-	var items []string
-	if f.Fix != nil && f.Fix.Safe {
-		rows = append(rows, inspector.Row{Label: "command", Value: "smith doctor --fix --only '" + f.Check + "'"})
-	} else if c := commandIn(f.Remedy); c != "" {
-		rows = append(rows, inspector.Row{Label: "command", Value: c})
-	}
-	if f.Fix != nil {
-		items = append(items, f.Fix.Description)
-		for _, e := range f.Fix.Files {
-			verb := "writes "
-			if e.Delete {
-				verb = "removes "
-			}
-			items = append(items, "  "+verb+e.Path)
-		}
-	}
-	if len(rows) == 0 && len(items) == 0 {
-		return s.workspacePanel()
-	}
-	sec := inspector.Section{Heading: f.Check, Rows: rows, Items: items}
-	return inspector.Panel{Sections: []inspector.Section{sec}, Actions: []inspector.Action{
-		{ID: "x:doctor-fix", Label: "Fix this…", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()},
-		s.action("ws.doctor", "Re-check"),
-	}}
-}
-
-// commandIn is the first `command` a remedy spells out, or "".
-func commandIn(remedy string) string {
-	_, rest, ok := strings.Cut(remedy, "`")
-	if !ok {
-		return ""
-	}
-	c, _, ok := strings.Cut(rest, "`")
-	if !ok {
-		return ""
-	}
-	return c
-}
-
-func (s Shell) workspacePanel() inspector.Panel {
-	n, affected := len(s.tree.Projects()), 0
-	for _, p := range s.tree.Projects() {
-		if p.Affected {
-			affected++
-		}
-	}
-	rows := []inspector.Row{{Label: "workspace", Value: s.header}, {Label: "projects", Value: fmt.Sprint(n)}, {Label: "affected", Value: fmt.Sprint(affected)}}
-	if s.branch != "" {
-		rows = append(rows, inspector.Row{Label: "branch", Value: s.branch})
-	}
-	return inspector.Panel{
-		Sections: []inspector.Section{{Heading: "Workspace", Rows: rows}},
-		Actions:  []inspector.Action{s.action("ws.doctor", "Doctor"), s.action("rel.preview", "Preview the release")},
-	}
-}
-
-// action is an inspector action for a command, with its shortcut and availability.
-func (s Shell) action(id, label string) inspector.Action {
-	c, _ := commands.ByID(id)
-	return inspector.Action{ID: id, Label: label, Shortcut: c.Shortcut, Disabled: c.Unavailable(s.state()) != ""}
-}
-
-func (s Shell) inspectorActions() []inspector.Action { return s.inspectorPanel().Actions }
-
-func yesNo(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
 }
 
 func yesNoMark(s Shell, b bool) string {

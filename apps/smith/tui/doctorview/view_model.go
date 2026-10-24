@@ -11,9 +11,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Model lists doctor's findings grouped by project (the workspace's first),
-// problems first in each group; enter opens the selected one's detail and
-// remedy, and f applies its fix when it is a safe one, as
+// Model lists doctor's failing checks, one line each, failures before
+// warnings; g files them by project (the workspace's first); enter expands the
+// selected one into its problem and remedy, and f applies its fix when it is a safe one, as
 // `smith doctor --fix --only <check>`.
 type Model struct {
 	Report   *doctor.Report
@@ -22,8 +22,10 @@ type Model struct {
 	// Cursor is a position in the order the findings are drawn.
 	Cursor int
 	Open   bool
-	// Flat lists the findings in one run instead of grouped by project.
-	Flat bool
+	// Grouped files the findings under their project; by default they are one flat list.
+	Grouped bool
+	// Loading is true while doctor runs for the first time.
+	Loading bool
 	// ShowPassed lists the checks that passed; by default they are one
 	// collapsed line after the problems.
 	ShowPassed bool
@@ -43,7 +45,7 @@ func (v Model) groups() []Group {
 		return nil
 	}
 	var groups []Group
-	if v.Flat {
+	if !v.Grouped {
 		idx := make([]int, len(v.Report.Findings))
 		for i := range idx {
 			idx[i] = i
@@ -146,13 +148,33 @@ func (v Model) Update(key tea.KeyMsg) Model {
 		v.ShowPassed, v.Open = !v.ShowPassed, false
 		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
 	case "g":
-		v.Flat, v.Cursor, v.Open = !v.Flat, 0, false
+		v.Grouped, v.Cursor, v.Open = !v.Grouped, 0, false
 	}
 	return v
 }
 
-// View draws the findings in w cells; rowOf maps a line to the finding drawn on it.
-func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
+// Headline is the state of the workspace in a few words: "2 failed · 2 warnings".
+func (v Model) Headline(th theme.Theme) string {
+	r := v.Report
+	var parts []string
+	if r.Failed > 0 {
+		parts = append(parts, th.Failure(fmt.Sprintf("%s %d failed", th.Icons.Failed, r.Failed)))
+	}
+	if r.Warnings > 0 {
+		parts = append(parts, th.Warning(fmt.Sprintf("%s %d warning(s)", th.Icons.Warning, r.Warnings)))
+	}
+	if len(parts) == 0 {
+		parts = append(parts, th.Success(th.Icons.Passed+" Every check passed"))
+	}
+	return strings.Join(parts, th.Muted(" · "))
+}
+
+// View draws the page in w cells: the headline first, then the failing
+// checks one line each (the state and the title), the passed ones behind one
+// line. With expand the open check shows its problem, remedy and fix under
+// its line; without it the detail beside the list says all that, so the page
+// does not repeat it. rowOf maps a line to the finding drawn on it.
+func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf map[int]int) {
 	rowOf = map[int]int{}
 	if v.Err != nil {
 		return []string{th.Failure(v.Err.Error())}, rowOf
@@ -160,36 +182,19 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	if v.Report == nil {
 		return []string{th.Muted("Checking the workspace…")}, rowOf
 	}
-	lines = append(lines, fmt.Sprintf("%s · %s · %s", th.Success(fmt.Sprintf("%d passed", v.Report.Passed)),
-		th.Failure(fmt.Sprintf("%d failed", v.Report.Failed)), th.Warning(fmt.Sprintf("%d warning(s)", v.Report.Warnings))), "")
+	lines = append(lines, " "+v.Headline(th), "")
 	position := 0
 	for _, g := range v.groups() {
-		if !v.Flat {
+		if v.Grouped {
 			lines = append(lines, v.header(th, g))
 		}
 		for _, i := range g.Indexes {
 			f := v.Report.Findings[i]
-			mark := th.Success(th.Icons.Passed)
-			switch {
-			case !f.OK && f.Warning:
-				mark = th.Warning(th.Icons.Warning)
-			case !f.OK:
-				mark = th.Failure(th.Icons.Failed)
-			}
 			selected := position == v.Cursor
 			rowOf[len(lines)] = i
-			lines = append(lines, guide.Row(th, selected, mark+" ", f.Check, f.Source))
-			if !f.OK {
-				// The problem and its remedy stay in view, as the CLI shows them.
-				if f.Detail != "" {
-					lines = append(lines, "      "+th.Muted(f.Detail))
-				}
-				if f.Remedy != "" {
-					lines = append(lines, "      "+th.Accent("→ ")+f.Remedy)
-				}
-			}
-			if selected && v.Open && !f.OK {
-				lines = append(lines, v.fixLines(th, f)...)
+			lines = append(lines, guide.Row(th, selected, Mark(th, f)+" ", f.Check, ""))
+			if selected && v.Open && expand && !f.OK {
+				lines = append(lines, Text(th, f, 5)...)
 			}
 			position++
 		}
@@ -201,13 +206,54 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		rowOf[len(lines)] = -1
 		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", fmt.Sprintf("%d checks passed", v.Report.Passed), "enter or p shows them"))
 	}
-	lines = append(lines, "", th.Muted("up/down move · enter fix details · p passed checks · g group by project"),
-		th.Muted("f fix this one · ctrl+x fix all · ctrl+d re-check"))
-	lines, rowOf = pane.WrapRows(lines, rowOf, w, 6)
+	lines, rowOf = pane.WrapRows(lines, rowOf, w, 5)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, rowOf
+}
+
+// Mark is the symbol of a finding's state.
+func Mark(th theme.Theme, f doctor.Finding) string {
+	switch {
+	case !f.OK && f.Warning:
+		return th.Warning(th.Icons.Warning)
+	case !f.OK:
+		return th.Failure(th.Icons.Failed)
+	}
+	return th.Success(th.Icons.Passed)
+}
+
+// Text is a check told in full, each part once: the problem, the remedy, the
+// fix and the files it touches, indented by indent cells.
+func Text(th theme.Theme, f doctor.Finding, indent int) []string {
+	pad := strings.Repeat(" ", indent)
+	var out []string
+	if f.Detail != "" {
+		out = append(out, pad+th.Muted(f.Detail))
+	}
+	if f.Remedy != "" {
+		out = append(out, pad+th.Bold("→ ")+f.Remedy)
+	}
+	if f.OK {
+		return out
+	}
+	switch {
+	case f.Fix != nil && f.Fix.Safe:
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
+	case f.Fix != nil:
+		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (shown by smith doctor --fix, never applied: it could lose something of yours)"))
+	}
+	if f.Fix != nil {
+		for _, e := range f.Fix.Files {
+			verb := "writes "
+			if e.Delete {
+				verb = "removes "
+			}
+			out = append(out, pad+"  "+th.Muted(verb+e.Path))
+		}
+	}
+	return out
 }
 
 // header is a group's title line with what is wrong in it.
@@ -237,28 +283,6 @@ func (v Model) header(th theme.Theme, g Group) string {
 		facts = append(facts, th.Muted("all passed"))
 	}
 	return th.Title(name) + "  " + strings.Join(facts, " · ")
-}
-
-// fixLines is what the open finding's fix does, beyond the problem and the
-// remedy that are always shown.
-func (v Model) fixLines(th theme.Theme, f doctor.Finding) []string {
-	var out []string
-	switch {
-	case f.Fix != nil && f.Fix.Safe:
-		out = append(out, "      "+th.Accent("fix: ")+f.Fix.Description+th.Muted(" (safe: f applies it)"))
-	case f.Fix != nil:
-		out = append(out, "      "+th.Accent("fix: ")+f.Fix.Description+th.Muted(" (shown by smith doctor --fix, never applied: it could lose something of yours)"))
-	}
-	if f.Fix != nil {
-		for _, e := range f.Fix.Files {
-			verb := "writes "
-			if e.Delete {
-				verb = "removes "
-			}
-			out = append(out, "        "+th.Muted(verb+e.Path))
-		}
-	}
-	return out
 }
 
 // SelectRow moves the cursor to finding i and toggles its details when it was already there.

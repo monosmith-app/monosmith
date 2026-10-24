@@ -7,32 +7,27 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/menubar"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/recipesview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
 
-// tabNavigator is the navigator shown as a tab below 80 columns.
-const tabNavigator = "workspace"
-
 var tabTitles = map[string]string{
-	tabNavigator: "Workspace", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabRelease: "Release", commands.TabPlugins: "Plugins", commands.TabDeps: "Deps", commands.TabRecipes: "Recipes", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
+	commands.TabHome: "Home", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
+	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabGuide: "Guide",
 }
 
 // Config is what the shell is built from.
@@ -45,16 +40,18 @@ type Config struct {
 	// Commands are every smith command, for the palette.
 	Commands []clicontract.CommandDescription
 	// Sources load the views; nil outside a workspace.
-	Sources *Sources
+	Sources *sources.Sources
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
 }
 
-// Shell is the interface of a bare `smith` in a terminal: a menu bar, a
-// navigator, a main view with tabs, an inspector and a status bar that fill the
-// terminal, usable with the keyboard and the mouse. Whatever it does is a smith
+// Shell is the interface of a bare `smith` in a terminal: a header with the
+// workspace, the branch, the health and the view tabs, one content pane (the
+// list, with its detail beside it from 100 columns), a row of key hints and a
+// status bar that fill the terminal, usable with the keyboard (single keys,
+// see package commands) and the mouse. Whatever it does is a smith
 // command line, shown in the status bar and logged, run as a child process in
 // the Run tab, and confirmed first when it changes the workspace or publishes.
 type Shell struct {
@@ -63,32 +60,30 @@ type Shell struct {
 	header  string
 	branch  string
 	w, h    int
-	lay     layout.Layout
 
 	inWorkspace bool
 	emptyFolder bool
-	sources     Sources
+	sources     sources.Sources
 	tabs        []string
 	tab         string
-	focus       layout.Area
+	// detailOpen is true while the detail of the selected project fills the
+	// pane, in the narrow layout (Enter opens it, Esc closes it).
+	detailOpen bool
 
-	bar   menubar.Bar
-	popup menubar.Popup
-	tree  navigator.Tree
+	list projectlist.List
 	// loadedProjects is true once the project list arrived (or failed).
 	loadedProjects bool
 	projectsErr    error
 
-	guide    guide.Model
-	pal      palette.Palette
-	palOpen  bool
-	doctor   doctorview.Model
-	release  releaseview.Model
-	settings settingsview.Model
-	plugins  pluginsview.Model
-	deps     depsview.Model
-	recipes  recipesview.Model
+	guide   guide.Model
+	pal     palette.Palette
+	palOpen bool
+	doctor  doctorview.Model
+	release releaseview.Model
+	deps    depsview.Model
 
+	// last is how the last command ended, for Home.
+	last *dashboard.Run
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
 	proc runner.Handle
@@ -100,10 +95,11 @@ type Shell struct {
 	log     logview.Log
 	lastArg []string
 	history []string
+	// runs are the task runs that used the terminal, oldest first.
+	runs []inlineRun
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
-	about   *dialog.About
 	toast   toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
@@ -113,10 +109,10 @@ type Shell struct {
 	ticking bool
 	mouseX  int
 	mouseY  int
-	// inspCursor is the highlighted action in the inspector.
-	inspCursor int
-	lastClick  pointer.Click
-	now        func() time.Time
+	// detailCursor is the highlighted action while the detail fills the pane.
+	detailCursor int
+	lastClick    pointer.Click
+	now          func() time.Time
 
 	// mouseOff is set while `m` has turned mouse reporting off.
 	mouseOff bool
@@ -130,12 +126,12 @@ type Shell struct {
 }
 
 // NewShell builds the shell. Without sources (outside a workspace) it has
-// only the Guide tab, the palette and the menus.
+// only the Guide view and the palette.
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		guide: guide.NewModel(cfg.Actions), recipes: recipesview.New(), focus: layout.Main, mouseX: -1, mouseY: -1,
-		tree: navigator.New(nil), clip: cfg.Clipboard,
+		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1,
+		list: projectlist.New(nil), clip: cfg.Clipboard,
 	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
@@ -144,45 +140,82 @@ func NewShell(cfg Config) Shell {
 	if cfg.Sources != nil {
 		sh.inWorkspace = true
 		sh.sources = *cfg.Sources
-		sh.tab = commands.TabProjects
+		sh.tab = commands.TabHome
+		// Doctor runs in the background from the start (see Init).
+		sh.doctor.Loading = sh.sources.Doctor != nil
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
 	}
-	sh.bar = menubar.New(commands.Menus(sh.state()), 80).SetBrand("MonoSmith")
 	sh.tabs = sh.tabList()
-	sh.refreshMenus()
+	sh.refreshPalette()
 	return sh
 }
 
 // state is what decides which commands are available.
 func (s Shell) state() commands.State {
-	sel := s.tree.Selected()
-	return commands.State{InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow, EmptyFolder: s.emptyFolder}
+	return commands.State{
+		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailOpen,
+		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
+	}
+}
+
+// viewReasons are the keys of the open view that cannot do anything now, and
+// why: they are refused with the reason and leave the footer.
+func (s Shell) viewReasons() map[string]string {
+	r := map[string]string{}
+	switch s.tab {
+	case commands.TabDoctor:
+		if s.doctor.FixArgv() == nil {
+			r["doctor.fix"] = "this check has no safe fix doctor can apply"
+		}
+	case commands.TabDeps:
+		if s.deps.UpArgv() == nil {
+			r["deps.update"] = "no dependency to update"
+		}
+		if s.deps.AlignArgv() == nil {
+			r["deps.align"] = "the one-version policy found nothing to align"
+		}
+	case commands.TabRelease:
+		if !s.release.CanRelease() {
+			r["rel.notes"] = "there is no release to show the notes of"
+			r["rel.release"] = "there is nothing to release"
+		}
+	case commands.TabHome:
+		if s.nextAction().CommandID == "" {
+			r["home.next"] = "nothing to do yet"
+		}
+	case commands.TabRun:
+		if s.run == nil {
+			// The output of a run stays in the terminal's scrollback: there is no log to follow, no tasks to pick.
+			r["run.follow"] = "the output is in your terminal's scrollback"
+			r["run.scroll"] = "the output is in your terminal's scrollback"
+			if s.lastArg == nil {
+				r["run.again"] = "nothing has run yet"
+			}
+		}
+	}
+	return r
 }
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
 
-// tabList is the tabs in this layout and workspace.
+// tabList is the tabs of the strip: the views of a workspace; outside one, only the guide.
 func (s Shell) tabList() []string {
-	var tabs []string
-	if s.lay.Mode == layout.Narrow && s.inWorkspace {
-		tabs = append(tabs, tabNavigator)
-	}
 	if s.inWorkspace {
-		tabs = append(tabs, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabRelease, commands.TabPlugins, commands.TabDeps, commands.TabRecipes, commands.TabSettings)
+		return []string{commands.TabHome, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabDeps, commands.TabRelease}
 	}
-	return append(tabs, commands.TabGuide)
+	return []string{commands.TabGuide}
 }
 
-// refreshMenus rebuilds the menu bar and the palette's shell commands from
-// the current state, so every unavailable item carries its reason.
-func (s *Shell) refreshMenus() {
+// refreshPalette rebuilds the palette's shell commands from the current
+// state: what cannot work here is left out, and what is only unavailable for
+// now carries its reason.
+func (s *Shell) refreshPalette() {
 	st := s.state()
-	s.bar = s.bar.SetMenus(commands.Menus(st)).SetWidth(s.w)
 	var entries []palette.Entry
 	for _, c := range commands.All() {
-		if c.Visible(st) {
+		if c.Visible(st) && (st.InWorkspace || !c.NeedsWorkspace) {
 			entries = append(entries, palette.Entry{ID: c.ID, Title: c.Title, Hint: c.Hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(st)})
 		}
 	}
@@ -190,12 +223,21 @@ func (s *Shell) refreshMenus() {
 }
 
 // Init implements tea.Model: it loads the project list in the background.
+//
+// It also runs doctor in the background, so the health in the header and on
+// Home is known without opening the Doctor view.
 func (s Shell) Init() tea.Cmd {
-	if s.inWorkspace && s.sources.Projects != nil {
-		load := s.sources.Projects
-		return func() tea.Msg { return load() }
+	if !s.inWorkspace {
+		return nil
 	}
-	return nil
+	var cmds []tea.Cmd
+	if load := s.sources.Projects; load != nil {
+		cmds = append(cmds, func() tea.Msg { return load() })
+	}
+	if load := s.sources.Doctor; load != nil {
+		cmds = append(cmds, func() tea.Msg { return load() })
+	}
+	return tea.Batch(cmds...)
 }
 
 // Messages the shell sends itself.
@@ -223,8 +265,7 @@ type (
 // Update implements tea.Model.
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
-	cmd = tea.Batch(cmd, s.describeRecipe())
-	s.refreshMenus()
+	s.refreshPalette()
 	if s.quit {
 		return s, tea.Quit
 	}
@@ -267,31 +308,17 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			return tickCmd()
 		}
 		s.ticking = false
-	case projectsLoaded:
-		s.loadedProjects, s.projectsErr = true, msg.err
-		if msg.err == nil {
-			selected := s.tree.Selected()
-			s.tree = navigator.New(msg.projects).SetHeight(max(s.lay.Navigator.H-2, 1))
-			switch {
-			case selected.Project != "":
-				s.tree = s.tree.SelectProject(selected.Project)
-			case len(s.tree.Ordered()) > 0:
-				s.tree = s.tree.SelectProject(s.tree.Ordered()[0].Name)
-			}
-			s.branch = msg.branch
+	case sources.ProjectsLoaded:
+		s.loadedProjects, s.projectsErr = true, msg.Err
+		if msg.Err == nil {
+			selected := s.list.SelectedName()
+			s.list = projectlist.New(msg.Projects).SelectProject(selected)
+			s.branch = msg.Branch
 		}
 	case doctorview.Result:
 		s.doctor = doctorview.FromResult(msg)
-	case pluginsview.Result:
-		s.plugins = s.plugins.FromResult(msg)
 	case depsview.Result:
 		s.deps = depsview.FromResult(msg)
-	case settingsview.Result:
-		s.settings = settingsview.FromResult(msg)
-	case recipesview.Loaded:
-		s.recipes = s.recipes.FromLoaded(msg)
-	case recipesview.DetailLoaded:
-		s.recipes = s.recipes.Receive(msg)
 	case releaseview.Result:
 		s.release = releaseview.FromResult(msg)
 	case startedMsg:
@@ -302,45 +329,35 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case outputMsg:
 		return s.output(msg)
+	case inlineDoneMsg:
+		return s.inlineDone(msg)
 	}
 	return nil
-}
-
-// describeRecipe asks for the recipe the Recipes form shows when it needs a
-// description it does not have; the recipe may be a URL, so it loads in the background.
-func (s *Shell) describeRecipe() tea.Cmd {
-	describe := s.sources.DescribeRecipe
-	if s.tab != commands.TabRecipes || describe == nil {
-		return nil
-	}
-	key, ref, answers, ok := s.recipes.Request()
-	if !ok {
-		return nil
-	}
-	s.recipes = s.recipes.Requested(key)
-	return func() tea.Msg { return recipesview.DetailLoaded{Key: key, Detail: describe(ref, answers)} }
 }
 
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
-	if s.about != nil {
-		a := s.about.Place(w, h)
-		s.about = &a
-	}
-	s.lay = layout.Divide(w, h)
 	s.tabs = s.tabList()
-	if !contains(s.tabs, s.tab) {
-		s.tab = commands.TabProjects
+	if !s.canShow(s.tab) {
+		s.tab = commands.TabHome
 		if !s.inWorkspace {
 			s.tab = commands.TabGuide
 		}
 	}
-	if (!s.lay.HasNavigator() && s.focus == layout.Navigator) || (!s.lay.HasInspector() && s.focus == layout.Inspector) {
-		s.focus = layout.Main
+	if s.lay().Mode == layout.Wide {
+		// The detail is beside the list now; there is nothing to close.
+		s.detailOpen = false
 	}
-	s.tree = s.tree.SetHeight(max(s.lay.Navigator.H-2, 1))
-	s.bar = s.bar.SetWidth(w)
+}
+
+// lay is where each area of the screen is drawn, for the size and the open view.
+func (s Shell) lay() layout.Layout { return layout.Divide(s.w, s.h, s.hasDetail()) }
+
+// canShow is true for a view the shell can open: a tab of the strip, or the
+// guided form inside a workspace (a form is not a tab, a command opens it).
+func (s Shell) canShow(id string) bool {
+	return contains(s.tabs, id) || (id == commands.TabGuide && s.inWorkspace)
 }
 
 func contains(list []string, v string) bool {

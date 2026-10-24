@@ -11,14 +11,17 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/screenreader"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 )
 
-// Interactive reports whether a bare `smith` should open the TUI.
+// Interactive reports whether a bare `smith` should ask what to do: someone
+// is typing at a terminal and this is not CI. When standard output is not a
+// terminal the questions are plain lines (see screenreader.Plain).
 func Interactive() bool {
-	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
+	return term.IsTerminal(int(os.Stdin.Fd())) && os.Getenv("CI") == ""
 }
 
 // Choose runs the shell full screen, with the mouse, and returns the smith
@@ -44,17 +47,23 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 			}
 		}
 	}
-	empty := !inside && folderIsEmpty(".")
+	empty := !inside && sources.FolderIsEmpty(".")
 	var actions []guide.Action
-	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), GeneratedForms(catalog)...) {
+	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), guide.GeneratedForms(catalog)...) {
 		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) || (a.NeedsContent && empty) {
 			continue
 		}
 		actions = append(actions, a)
 	}
-	if screenreader.Wanted(os.Getenv) {
+	stdoutTTY := term.IsTerminal(int(os.Stdout.Fd()))
+	if screenreader.Plain(os.Getenv, stdoutTTY) {
 		// No full-screen drawing, no mouse and no colour: plain numbered
 		// questions, then the command, which smith runs in this terminal.
+		// With output that is not a terminal the questions go to stderr, where
+		// the person can still read them.
+		if !stdoutTTY {
+			out = os.Stderr
+		}
 		argv, err := screenreader.Ask(os.Stdin, out, actions)
 		if err != nil {
 			return nil, err
@@ -70,7 +79,7 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
 	}
 	if inside {
-		s := WorkspaceSources(".", version)
+		s := sources.WorkspaceSources(".", version)
 		cfg.Sources = &s
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
@@ -81,7 +90,11 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 	if err != nil {
 		return nil, err
 	}
-	argv = final.(Shell).Argv
+	sh := final.(Shell)
+	if line := sh.ExitSummary(); line != "" {
+		fmt.Fprintf(out, "%s\n", line)
+	}
+	argv = sh.Argv
 	if len(argv) > 0 {
 		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
 	}
