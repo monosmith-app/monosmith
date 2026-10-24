@@ -105,15 +105,23 @@ A repository with npm workspaces, Go modules or Python projects but no
 changes nothing:
 
 ```sh
-smith adopt
+smith adopt --dry-run
 ```
 
 ```text
 C:\work\old would be workspace "old" (scope @old, CI github) with:
+  PROJECT              LANGUAGE KIND     FOLDER
   lib                  node     package  packages/lib
-  api                  go       lib      services/api
+  api                  go       app      services/api
+  kind: apps/ holds apps, libs/ libs, packages/ packages; elsewhere a Go main package is an app,
+  a public Node package is a package and the rest are libs. To change one: "smith": {"kind": "app"}
+  in its package.json, or a // smith:kind app comment in its go.mod.
 
-✔ nothing blocks: smith adopt --init makes it a workspace
+! smith doctor will report: the workspace has Go projects but no go.work
+  → --init runs go work init and go work use for you
+! smith doctor will report: node_modules is missing at the workspace root
+  → --init --install runs npm install for you (or run it yourself afterwards)
+✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports
 ```
 
 Then take the steps:
@@ -129,9 +137,17 @@ smith adopt --tags --init
   wrote README.md
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote go.work: ./services/api
   committed: chore: adopt smith
-✔ adopted: smith doctor checks the workspace, smith run build builds it
+✔ adopted, and smith doctor finds nothing to fix
+  next: smith run build
 ```
+
+`--init` also takes the steps `smith doctor` would otherwise ask for: it runs
+`go work init` and `go work use` for the Go projects and adds the Node projects
+to the root `package.json` `"workspaces"` (`--install` runs `npm install` too).
+It ends by checking the workspace as `smith doctor` does, so anything left over
+is listed with its first step and nothing comes as a surprise afterwards.
 
 When something blocks, the report lists each blocker and warning with the step
 that clears it, and `smith adopt` exits non-zero. Blockers include a folder that

@@ -487,7 +487,7 @@ func TestGoldenPath(t *testing.T) {
 	commit := strings.TrimSpace(w.git("rev-parse", "sdk@0.1.0^{commit}"))
 	w.git("tag", "-d", "sdk@0.1.0")
 	w.git("push", "-q", "origin", ":refs/tags/sdk@0.1.0")
-	if out := w.smith(false, "release", "--dry-run"); !strings.Contains(out, "sdk is published at 0.1.0 but has no release tag") {
+	if out := w.smith(false, "release", "--dry-run"); !strings.Contains(out, "sdk is published at 0.1.0 according to") {
 		t.Fatalf("a published, untagged package must block the release:\n%s", out)
 	}
 	if out := w.smith(false, "doctor"); !strings.Contains(out, "release tags are not behind the registry") {

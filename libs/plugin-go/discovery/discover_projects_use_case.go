@@ -35,7 +35,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			return result, err
 		}
 		name := path.Base(root)
-		kind := projectkind.Resolve(mod.Kind, root, protocol.ProjectLib)
+		kind := projectkind.Resolve(mod.Kind, root, fallbackKind(dir))
 		project := protocol.Project{
 			Name:     name,
 			Root:     root,

@@ -114,6 +114,7 @@ Usage: `smith adopt [flags]`
 |---|---|---|
 | `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
 | `--init` | write smith.toml and the pipelines, and commit | off |
+| `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 

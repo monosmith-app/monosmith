@@ -64,9 +64,9 @@ published. What was published where is kept in dist/release/<project>/journal.js
 			var blockers []string
 			for _, f := range CheckLineage(s, true) {
 				if f.Blocking {
-					blockers = append(blockers, f.Message)
+					blockers = append(blockers, f.Sentence())
 				} else {
-					fmt.Fprintln(cmd.ErrOrStderr(), "warning: "+f.Message)
+					fmt.Fprintln(cmd.ErrOrStderr(), "warning: "+f.Sentence())
 				}
 			}
 			if len(blockers) > 0 {

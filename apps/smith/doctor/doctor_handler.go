@@ -61,7 +61,10 @@ takes up just the fix of the named check (the check's text, as doctor prints it)
 					}
 					fmt.Fprintf(out, "%s %s\n", mark, f.Check)
 					if !f.OK {
-						fmt.Fprintf(out, "    %s\n    → %s\n", f.Detail, f.Remedy)
+						fmt.Fprintf(out, "    %s\n", f.Detail)
+						for _, step := range strings.Split(f.Remedy, "\n") {
+							fmt.Fprintf(out, "    → %s\n", step)
+						}
 					}
 				}
 				fmt.Fprintf(out, "\n%d passed, %d failed, %d warning(s)\n", report.Passed, report.Failed, report.Warnings)

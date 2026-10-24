@@ -1,11 +1,17 @@
 package releaselineage
 
+import "strings"
+
 // Finding is one problem with a project's release tags.
 type Finding struct {
 	Project string `json:"project,omitempty"`
 	// Check names what was checked, for doctor.
-	Check   string `json:"check"`
+	Check string `json:"check"`
+	// Message is what is wrong, in a sentence.
 	Message string `json:"message"`
+	// Remedy lists the ways out, one short step each; the first is the usual
+	// one and the others are for when it does not fit.
+	Remedy []string `json:"remedy,omitempty"`
 	// Blocking stops a release; otherwise it is a warning.
 	Blocking bool `json:"blocking"`
 	// Baseline is the tag that resolves it, when one can be made without
@@ -41,4 +47,13 @@ type Subject struct {
 	Unreachable bool
 	Registry    string
 	Detail      string
+}
+
+// Sentence is the message and its remedies as one line, for places that print
+// no separate remedy (the refusal smith release gives).
+func (f Finding) Sentence() string {
+	if len(f.Remedy) == 0 {
+		return f.Message
+	}
+	return strings.TrimSuffix(f.Message, ".") + ". To fix it: " + strings.Join(f.Remedy, "; or ") + "."
 }
