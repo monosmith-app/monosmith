@@ -16,7 +16,7 @@ func Command(version string) *cobra.Command {
 	var asJSON, recipeOnly bool
 	cmd := &cobra.Command{
 		Use:   "explain <project>[:<task>]",
-		Short: "Show how a project's tasks resolved, and where each setting came from",
+		Short: "Show how a project's tasks resolved, and where each setting came from (why-miss says why one reran)",
 		Long: `Show how a project's tasks resolved, and where each of their fields came from:
 the language plugin, a stack's plugin, a convention, or smith.toml.
 

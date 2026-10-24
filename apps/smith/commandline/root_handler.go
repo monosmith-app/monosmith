@@ -55,9 +55,13 @@ func Root(version string) *cobra.Command {
 		Short: "A simple monorepo tool: add apps, libs and packages; build, test, release",
 		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM and Bicep (and anything a plugin adds):
 it scaffolds projects, runs their tasks in dependency order from a cache,
-generates CI pipelines, and releases packages from conventional commits.`,
+generates CI pipelines, and releases packages from conventional commits.
+
+Most people start with: new (an empty folder) or adopt (a repository you
+already have), then build and doctor.`,
 		Example: `  smith                      open the interactive menu (in a terminal)
-  smith new acme
+  smith new acme             a new, empty workspace
+  smith adopt --dry-run      what bringing the repository you are in under smith involves
   smith add app web --lang node
   smith build`,
 		Version:       version,
