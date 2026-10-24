@@ -605,31 +605,46 @@ func (s Shell) doctorPanel() inspector.Panel {
 	if !ok {
 		return s.workspacePanel()
 	}
-	state := s.th.Success(s.th.Icons.Passed) + " passed"
-	switch {
-	case !f.OK && f.Warning:
-		state = s.th.Warning(s.th.Icons.Warning) + " warning"
-	case !f.OK:
-		state = s.th.Failure(s.th.Icons.Failed) + " failed"
+	// The list already prints the problem and its remedy: the Inspector adds
+	// what it does not, the command that fixes it and the files it touches.
+	var rows []inspector.Row
+	var items []string
+	if f.Fix != nil && f.Fix.Safe {
+		rows = append(rows, inspector.Row{Label: "command", Value: "smith doctor --fix --only '" + f.Check + "'"})
+	} else if c := commandIn(f.Remedy); c != "" {
+		rows = append(rows, inspector.Row{Label: "command", Value: c})
 	}
-	rows := []inspector.Row{{Label: "state", Value: state}, {Label: "source", Value: f.Source}}
-	if f.Detail != "" {
-		rows = append(rows, inspector.Row{Label: "problem", Value: f.Detail})
-	}
-	if f.Remedy != "" {
-		rows = append(rows, inspector.Row{Label: "remedy", Value: f.Remedy})
-	}
-	sec := inspector.Section{Heading: f.Check, Rows: rows}
 	if f.Fix != nil {
-		sec.Items = append(sec.Items, "fix: "+f.Fix.Description)
+		items = append(items, f.Fix.Description)
 		for _, e := range f.Fix.Files {
-			sec.Items = append(sec.Items, "  "+e.Path)
+			verb := "writes "
+			if e.Delete {
+				verb = "removes "
+			}
+			items = append(items, "  "+verb+e.Path)
 		}
 	}
+	if len(rows) == 0 && len(items) == 0 {
+		return s.workspacePanel()
+	}
+	sec := inspector.Section{Heading: f.Check, Rows: rows, Items: items}
 	return inspector.Panel{Sections: []inspector.Section{sec}, Actions: []inspector.Action{
 		{ID: "x:doctor-fix", Label: "Fix this…", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()},
 		s.action("ws.doctor", "Re-check"),
 	}}
+}
+
+// commandIn is the first `command` a remedy spells out, or "".
+func commandIn(remedy string) string {
+	_, rest, ok := strings.Cut(remedy, "`")
+	if !ok {
+		return ""
+	}
+	c, _, ok := strings.Cut(rest, "`")
+	if !ok {
+		return ""
+	}
+	return c
 }
 
 func (s Shell) workspacePanel() inspector.Panel {

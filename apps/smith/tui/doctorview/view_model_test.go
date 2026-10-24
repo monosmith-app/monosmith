@@ -127,3 +127,18 @@ func TestSelectRowFollowsTheFindingEvenWhenGrouped(t *testing.T) {
 		t.Fatal("selecting the selected row again opens it")
 	}
 }
+
+func TestFailuresAreListedBeforeWarnings(t *testing.T) {
+	report := doctor.Report{Failed: 1, Warnings: 1, Findings: []doctor.Finding{
+		{Finding: protocol.Finding{Check: "a warned thing", Warning: true, Detail: "d", Remedy: "r"}, Source: "smith"},
+		{Finding: protocol.Finding{Check: "a failed thing", Detail: "d", Remedy: "r"}, Source: "smith"},
+	}}
+	m := FromResult(Result{Report: report})
+	out := plain(m)
+	if f, w := strings.Index(out, "a failed thing"), strings.Index(out, "a warned thing"); f < 0 || w < f {
+		t.Fatalf("the failure comes first:\n%s", out)
+	}
+	if got, _ := m.Selected(); got.Check != "a failed thing" {
+		t.Fatalf("the cursor starts on the failure, got %q", got.Check)
+	}
+}

@@ -1,6 +1,7 @@
 package doctorview
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
@@ -68,4 +69,19 @@ func tokens(text string) []string {
 // underRoot reports whether a word is the project's directory or a path inside it.
 func underRoot(word string, p ProjectRef) bool {
 	return p.Root != "" && p.Root != "." && (word == p.Root || strings.HasPrefix(word, p.Root+"/"))
+}
+
+// failuresFirst orders finding indexes in place: failures, then warnings,
+// then passes, each keeping its order.
+func failuresFirst(findings []doctor.Finding, idx []int) {
+	rank := func(f doctor.Finding) int {
+		switch {
+		case f.OK:
+			return 2
+		case f.Warning:
+			return 1
+		}
+		return 0
+	}
+	sort.SliceStable(idx, func(a, b int) bool { return rank(findings[idx[a]]) < rank(findings[idx[b]]) })
 }
