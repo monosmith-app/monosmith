@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vscode", "node", "mocha"]
+  },
+  "include": ["./**/*.ts", "../src/extension-api/*.ts"]
+}

@@ -64,6 +64,8 @@ jobs:
       - name: Verify
         run: smith ci verify
       # smith:slot after-verify
+      - name: VS Code extension integration tests
+        run: xvfb-run -a npm run test:integration -w monosmith-vscode
       # smith:slot-end after-verify
       - name: Release preview
         if: github.event_name == 'pull_request'

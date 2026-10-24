@@ -59,3 +59,6 @@ Thumbs.db
 
 # Affinity keeps a lock file next to a design file while it is open.
 assets/*~lock~
+
+# VS Code downloaded for the extension integration tests
+.vscode-test/
