@@ -70,7 +70,7 @@ func (v Model) intro(th theme.Theme, w int) []string {
 	out := []string{th.Title("What is a recipe?")}
 	for _, p := range []string{
 		"A recipe is an optional team template. It says which plugins fill each role (language, lint, test, deploy) and which questions smith asks when someone adds a project, so every project starts the same way.",
-		"You do not need one. Without a recipe smith uses the defaults of the project's stack or language. To add a project, use Add a project in the Guide (Ctrl+N).",
+		"You do not need one. Without a recipe smith uses the defaults of the project's stack or language. To add a project, use Add a project in the Guide.",
 		"This workspace has no recipe file (*.recipe.toml) yet. To write the first one:",
 	} {
 		out = append(out, pane.Wrap("  "+p, w, 2)...)

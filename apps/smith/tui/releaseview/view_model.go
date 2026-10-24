@@ -100,7 +100,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		for _, m := range v.Blockers {
 			lines = append(lines, "  • "+m)
 		}
-		lines = append(lines, "", th.Muted("F2 shows the same with smith release --dry-run"))
+		lines = append(lines, "", th.Muted("smith release --dry-run shows the same"))
 	default:
 		for _, m := range v.Warnings {
 			lines = append(lines, th.Warning("warning: "+m))
@@ -132,14 +132,6 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		if len(v.Plan.Unchanged) > 0 {
 			lines = append(lines, "", th.Muted("unchanged: "+strings.Join(v.Plan.Unchanged, ", ")))
 		}
-		if len(v.Plan.Items) > 0 {
-			lines = append(lines, "", th.Muted("up/down move · enter shows the commits behind the bump"))
-		}
-		help := "F2 preview (smith release --dry-run) · n notes (smith release --dry-run --notes)"
-		if len(v.Plan.Items) > 0 {
-			help += " · F3 release (smith release: confirms first)"
-		}
-		lines = append(lines, th.Muted(help))
 	}
 	// A long line wraps (the unchanged list, the help) instead of being cut.
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 2)

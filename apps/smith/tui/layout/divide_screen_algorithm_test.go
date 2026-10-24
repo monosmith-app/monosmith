@@ -10,7 +10,7 @@ func TestTheLayoutAt140ColumnsHasThreePanes(t *testing.T) {
 	if l.Navigator.W+l.Main.W+l.Inspector.W != 140 {
 		t.Fatalf("panes must fill the width: %+v", l)
 	}
-	if l.MenuBar.H != 1 || l.StatusBar.Y != 39 || l.Main.H != 38 {
+	if l.Footer.Y != 38 || l.StatusBar.Y != 39 || l.Main.H != 38 {
 		t.Fatalf("rows: %+v", l)
 	}
 }
@@ -50,7 +50,7 @@ func TestAreaAtFindsTheOwnerOfACell(t *testing.T) {
 		x, y int
 		want Area
 	}{
-		{5, 0, MenuBar}, {5, 39, StatusBar}, {2, 5, Navigator}, {70, 5, Main}, {139, 5, Inspector}, {200, 5, Nowhere},
+		{5, 38, Footer}, {5, 39, StatusBar}, {2, 5, Navigator}, {70, 5, Main}, {139, 5, Inspector}, {200, 5, Nowhere},
 	}
 	for _, c := range cases {
 		if got := l.AreaAt(c.x, c.y); got != c.want {

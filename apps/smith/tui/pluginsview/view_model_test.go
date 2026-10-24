@@ -37,7 +37,7 @@ func TestViewMarksCutTextWithAnEllipsis(t *testing.T) {
 func TestDetailPhrasesTheToggleAsASentence(t *testing.T) {
 	lines, _ := sampleModel().View(theme.Default(), 100, 30)
 	text := pane.Strip(strings.Join(lines, "\n"))
-	if !strings.Contains(text, "Press E to disable, or run: smith plugin disable node") {
+	if !strings.Contains(text, "Press e to disable, or run: smith plugin disable node") {
 		t.Fatalf("detail should read as a sentence:\n%s", text)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/buttons"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/inspector"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
@@ -24,11 +23,9 @@ type hit struct {
 	index int
 }
 
-// content is the main view's body: rows of buttons on top, then lines, and
-// what each line stands for.
+// content is the main view's body: its lines, and what each line stands for.
 type content struct {
 	lines []string
-	bars  []buttons.Bar
 	hits  map[int]hit
 }
 
@@ -42,30 +39,6 @@ func (s Shell) navigatorInner() layout.Rect { return s.lay.Navigator.Inner() }
 
 func (s Shell) inspectorInner() layout.Rect { return s.lay.Inspector.Inner() }
 
-// cmdButton is a button for a command, with its shortcut and its availability.
-func (s Shell) cmdButton(id, label, icon string) buttons.Button {
-	c, _ := commands.ByID(id)
-	b := buttons.Button{ID: id, Label: label, Icon: icon, Shortcut: c.Shortcut, Disabled: c.Unavailable(s.state()) != ""}
-	if s.running() && len(s.run.Command) > 1 {
-		switch c.Kind {
-		case commands.RunTask:
-			b.Busy = s.run.Command[0] == "run" && s.run.Command[1] == c.Task && (!c.All || len(s.run.Command) == 2)
-		case commands.Execute:
-			b.Busy = strings.Join(s.run.Command, " ") == strings.Join(c.Argv, " ")
-		}
-	}
-	return b
-}
-
-// addBars puts rows of buttons at the top of the content, then a blank line.
-func (s Shell) addBars(c *content, bar buttons.Bar, w int) {
-	c.bars = bar.Wrap(s.th, w)
-	for range c.bars {
-		c.lines = append(c.lines, "")
-	}
-	c.lines = append(c.lines, "")
-}
-
 // mainContent builds the body of the active tab for an area of w by h cells.
 func (s Shell) mainContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
@@ -77,18 +50,12 @@ func (s Shell) mainContent(w, h int) content {
 	case commands.TabRun:
 		return s.runContent(w, h)
 	case commands.TabDoctor:
-		fixOne := buttons.Button{ID: "x:doctor-fix", Label: "Fix this…", Icon: "⚒", Shortcut: "F", Disabled: s.doctor.FixArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{s.cmdButton("ws.doctor", "Re-check", "↻"), fixOne, s.cmdButton("ws.fix", "Fix all…", "⚒")}, w)
 		lines, rowOf := s.doctor.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabRelease:
-		rel := s.cmdButton("rel.release", "Release…", "⇧")
-		rel.Disabled = rel.Disabled || !s.release.CanRelease()
-		notes := buttons.Button{ID: "x:release-notes", Label: "Notes", Icon: "≡", Shortcut: "N", Disabled: !s.release.CanRelease() || s.running()}
-		s.addBars(&c, buttons.Bar{s.cmdButton("rel.preview", "Preview", "▶"), notes, rel}, w)
 		lines, rowOf := s.release.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
@@ -96,26 +63,18 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabPlugins:
-		toggle := buttons.Button{ID: "x:plugin-toggle", Label: "Turn on/off…", Icon: "⏻", Shortcut: "E", Disabled: s.plugins.ToggleArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{toggle, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
 		lines, rowOf := s.plugins.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "plugin", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabDeps:
-		up := buttons.Button{ID: "x:deps-up", Label: "Update…", Icon: "⇧", Shortcut: "U", Disabled: s.deps.UpArgv() == nil || s.running()}
-		align := buttons.Button{ID: "x:deps-align", Label: "Align versions…", Icon: "=", Shortcut: "V", Disabled: s.deps.AlignArgv() == nil || s.running()}
-		s.addBars(&c, buttons.Bar{up, align, buttons.Button{ID: "x:reload", Label: "Re-check", Icon: "↻", Shortcut: "R"}}, w)
 		lines, rowOf := s.deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabRecipes:
-		argv, _ := s.recipes.Argv()
-		create := buttons.Button{ID: "x:recipes-create", Label: "Create…", Icon: "+", Shortcut: "C", Disabled: argv == nil || s.running()}
-		s.addBars(&c, buttons.Bar{create, buttons.Button{ID: "x:reload", Label: "Reload", Icon: "↻", Shortcut: "R"}}, w)
 		lines, rowOf := s.recipes.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "recipe", index: i}
@@ -148,16 +107,10 @@ func (s Shell) navigatorContent(w, h int) content {
 	return c
 }
 
-// projectsContent is the table of projects with the buttons that run tasks on
-// the selection. When the inspector is folded away it is drawn below.
+// projectsContent is the table of projects; the keys that run tasks on the
+// selection are in the footer. When the inspector is folded away it is drawn below.
 func (s Shell) projectsContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	// The scope is stated once, in the "On:" line below: the buttons stay short.
-	s.addBars(&c, buttons.Bar{
-		s.cmdButton("run.build", "Build", "▶"), s.cmdButton("run.test", "Test", "▶"), s.cmdButton("run.lint", "Lint", "▶"),
-		s.cmdButton("run.typecheck", "Typecheck", "▶"), s.cmdButton("run.build-all", "Build all", "▶"),
-		s.cmdButton("run.affected", "What changed", "⟳"),
-	}, w)
 	if !s.loadedProjects {
 		return withLines(c, s.th.Muted("Reading the workspace…"))
 	}
@@ -166,7 +119,7 @@ func (s Shell) projectsContent(w, h int) content {
 	}
 	projects := s.tree.Ordered()
 	if len(projects) == 0 {
-		return withLines(c, s.th.Muted("No projects yet. Use File > Add project… (Ctrl+N)."))
+		return withLines(c, s.th.Muted("No projects yet. Press "+commands.ShortcutOf("file.add")+" to add one."))
 	}
 	scope := "every project"
 	if p := s.selectedProject(); p != "" {
@@ -322,28 +275,15 @@ func (s Shell) statusIcon(st runview.Status) string {
 
 // runGeom is where the parts of the Run tab sit, in lines of its body.
 type runGeom struct {
-	bars, cmdRow, progRow int
-	listTop, listRows     int
-	sepRow                int
-	logTop, logRows       int
-}
-
-func (s Shell) runButtons() buttons.Bar {
-	follow := buttons.Button{ID: "run.follow", Label: "Pause log", Icon: "⏸", Shortcut: "Ctrl+F"}
-	if !s.log.Following() {
-		follow.Label, follow.Icon = "Follow log", "⏵"
-	}
-	again := buttons.Button{ID: "x:rerun", Label: "Run again", Icon: "↻", Disabled: s.lastArg == nil || s.running()}
-	if !s.running() {
-		// Stop has nothing to stop: it is shown only while a run goes.
-		return buttons.Bar{follow, again}
-	}
-	return buttons.Bar{s.cmdButton("run.stop", "Stop", "■"), follow, again}
+	cmdRow, progRow   int
+	listTop, listRows int
+	sepRow            int
+	logTop, logRows   int
 }
 
 func (s Shell) runGeom(w, h int) runGeom {
-	g := runGeom{bars: max(len(s.runButtons().Wrap(s.th, w)), 1)}
-	g.cmdRow, g.progRow, g.listTop = g.bars, g.bars+1, g.bars+2
+	g := runGeom{}
+	g.cmdRow, g.progRow, g.listTop = 0, 1, 2
 	n := len(s.runIDs())
 	avail := max(h-g.listTop-2, 1)
 	g.listRows = min(n, max(min(avail, 2), avail*2/5))
@@ -380,13 +320,9 @@ func (s *Shell) keepRunVisible() {
 
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	c.bars = s.runButtons().Wrap(s.th, w)
 	if s.run == nil {
-		for range c.bars {
-			c.lines = append(c.lines, "")
-		}
 		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a task in the navigator and press Ctrl+R, or press Ctrl+B to build."), w, 0)...)
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a task in the navigator and press "+commands.KeyLabel("enter")+", or press "+commands.ShortcutOf("run.build")+" to build."), w, 0)...)
 		c.lines = append(c.lines, "")
 		if len(s.history) > 0 {
 			c.lines = append(c.lines, s.th.Title("Command log"))
@@ -397,9 +333,6 @@ func (s Shell) runContent(w, h int) content {
 		return c
 	}
 	g := s.runGeom(w, h)
-	for range c.bars {
-		c.lines = append(c.lines, "")
-	}
 	counts := s.run.Counts()
 	now := s.now()
 	took := shortDuration(s.run.RunTime(now))
@@ -495,8 +428,8 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 func (s Shell) inspectorPanel() inspector.Panel {
 	if !s.inWorkspace {
 		return inspector.Panel{
-			Sections: []inspector.Section{{Heading: "No workspace", Items: []string{"No smith.toml here.", "File > New workspace… creates one."}}},
-			Actions:  []inspector.Action{s.action("file.palette", "Command palette")},
+			Sections: []inspector.Section{{Heading: "No workspace", Items: []string{"No smith.toml here.", "Press " + commands.ShortcutOf("file.new") + " to create a workspace."}}},
+			Actions:  []inspector.Action{s.action("file.palette", "Palette")},
 		}
 	}
 	if s.tab == commands.TabDoctor {

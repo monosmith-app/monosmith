@@ -176,7 +176,7 @@ func (v Model) detail(th theme.Theme, w int) []string {
 		if r.Enabled {
 			verb = "disable"
 		}
-		out = append(out, pane.Wrap("  "+th.Muted("Press E to "+verb+", or run: "+commands.Line(argv)), w, 4)...)
+		out = append(out, pane.Wrap("  "+th.Muted("Press e to "+verb+", or run: "+commands.Line(argv)), w, 4)...)
 	}
 	return out
 }

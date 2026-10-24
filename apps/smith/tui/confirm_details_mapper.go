@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"slices"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 )
 
 // confirmDetails are the lines a confirmation dialog shows between its
@@ -30,7 +32,7 @@ func (s Shell) confirmDetails(argv []string) []string {
 // releaseDetails lists the packages and the versions the release publishes.
 func (s Shell) releaseDetails() []string {
 	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
-		return []string{"The plan is not loaded: press F2 first to see the packages and versions."}
+		return []string{"The plan is not loaded: open the Release view first (" + commands.ShortcutOf("view.release") + ") to see the packages and versions."}
 	}
 	lines := []string{"Packages and versions to publish:"}
 	for _, item := range s.release.Plan.Items {

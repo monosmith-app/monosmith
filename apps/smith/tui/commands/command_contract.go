@@ -32,12 +32,15 @@ const (
 	PrevPane
 	// ReloadDoctor runs doctor again.
 	ReloadDoctor
-	// ContextMenu opens the context menu of the selection.
-	ContextMenu
 	// CopyFocused copies the focused item to the clipboard.
 	CopyFocused
 	// ToggleMouse turns mouse reporting off or on.
 	ToggleMouse
+	// ViewAction runs the action of the open view that Action names.
+	ViewAction
+	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
+	// it is listed in the footer and the help but never run by the shell.
+	PaneKey
 )
 
 // The ids of the main views.
@@ -56,15 +59,30 @@ const (
 // Command is one thing the shell can do.
 type Command struct {
 	ID string
-	// Menu is the menu it sits in; empty means it is only on keys and in the palette.
-	Menu  string
+	// Group is the heading it sits under in the help.
+	Group string
 	Title string
 	Hint  string
-	// Keys are the Bubble Tea key names that trigger it; Shortcut is how the
-	// first of them is shown beside the control.
+	// Keys are the Bubble Tea key names that trigger it. Shortcut is how they
+	// are shown (derived from Keys unless set), Glyph a shorter form for the
+	// footer; a command with a Glyph stands for several keys and is not clickable.
 	Keys     []string
 	Shortcut string
+	Glyph    string
 	Kind     Kind
+	// Views are the views the command works in; empty means every view. A key
+	// in a view's own list wins over the same key in the global one.
+	Views []string
+	// Footer is the short label in the footer hints; empty keeps the command
+	// out of the footer. ShowIn are the views whose footer shows it (Views when
+	// empty); Tail puts it at the end of every footer.
+	Footer string
+	ShowIn []string
+	Tail   bool
+	// WhileEditing means the key still works while a text field has the keyboard.
+	WhileEditing bool
+	// Action is the view action for ViewAction.
+	Action string
 	// Argv is the smith command line for Execute.
 	Argv []string
 	// All makes RunTask run on every project, whatever is selected.
@@ -93,6 +111,14 @@ type Command struct {
 
 // State is what decides whether a command is available.
 type State struct {
+	// View is the open view's id (a Tab constant).
+	View string
+	// Editing is true while a text field has the keyboard; Form while a guided
+	// form is open. Plain keys do nothing in either.
+	Editing, Form bool
+	// Side is true while the navigator or the inspector has the focus: the
+	// open view's own keys are then not live.
+	Side        bool
 	InWorkspace bool
 	// Running is true while a command is running in the run view.
 	Running bool

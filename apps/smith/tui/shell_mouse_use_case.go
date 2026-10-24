@@ -3,8 +3,8 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/footer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/menubar"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
 )
@@ -32,8 +32,6 @@ func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 		return s.wheel(e.X, e.Y, 1)
 	case e.Button == tea.MouseButtonLeft:
 		return s.click(e.X, e.Y)
-	case e.Button == tea.MouseButtonRight:
-		s.rightClick(e.X, e.Y)
 	}
 	return nil
 }
@@ -50,10 +48,6 @@ func (s *Shell) hover(x, y int) {
 		if box.Contains(x, y) {
 			s.pal = s.pal.Hover(s.pal.RowAt(y-box.Y-2, max(box.H-5, 1)))
 		}
-	case s.popup.Shown():
-		s.popup = s.popup.Hover(x, y)
-	case s.help == nil && s.about == nil:
-		s.bar = s.bar.Hover(x, y)
 	}
 }
 
@@ -93,16 +87,13 @@ func (s *Shell) click(x, y int) tea.Cmd {
 			return s.afterPalette(res)
 		}
 		return nil
-	case s.popup.Shown():
-		p, res := s.popup.Click(x, y)
-		s.popup = p
-		return s.afterMenu(res.Chosen, res.Refused)
-	}
-	if b, res := s.bar.Click(x, y); res.Handled || b.Active() != s.bar.Active() {
-		s.bar = b
-		return s.afterMenu(res.Chosen, res.Refused)
 	}
 	switch s.lay.AreaAt(x, y) {
+	case layout.Footer:
+		if h, ok := footer.At(s.footerHints(), x); ok && h.Key != "" {
+			return s.key(pressedKey(h.Key))
+		}
+		return nil
 	case layout.Navigator:
 		s.focus = layout.Navigator
 		return s.navigatorClick(x, y, double)
@@ -170,18 +161,6 @@ func (s *Shell) openSelected() tea.Cmd {
 func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	in := s.mainInner()
 	c := s.mainContent(in.W, in.H)
-	if ry < len(c.bars) {
-		id, ok := c.bars[ry].At(s.th, in.W, rx)
-		switch {
-		case ok:
-			return s.activate(id)
-		case id != "":
-			if cmd, found := commands.ByID(id); found {
-				s.say(cmd.Title + " is unavailable: " + cmd.Unavailable(s.state()))
-			}
-		}
-		return nil
-	}
 	h, ok := c.hits[ry]
 	if !ok {
 		return nil
@@ -229,7 +208,7 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
-	case s.confirm != nil || s.popup.Shown() || s.about != nil:
+	case s.confirm != nil || s.about != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))
@@ -237,8 +216,6 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		return nil
 	case s.palOpen:
 		s.pal = s.pal.Scroll(dir * wheelStep)
-		return nil
-	case s.bar.Active():
 		return nil
 	}
 	switch s.lay.AreaAt(x, y) {
@@ -270,63 +247,4 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		}
 	}
 	return nil
-}
-
-// rightClick opens the context menu of what is under the pointer.
-func (s *Shell) rightClick(x, y int) {
-	if s.confirm != nil || s.help != nil || s.about != nil || s.palOpen {
-		return
-	}
-	s.bar = s.bar.Close()
-	switch s.lay.AreaAt(x, y) {
-	case layout.Navigator:
-		s.focus = layout.Navigator
-		in := s.navigatorInner()
-		if i := s.tree.SetHeight(max(in.H, 1)).RowAt(y - in.Y); i >= 0 {
-			s.tree = s.tree.Select(i)
-		}
-	case layout.Main:
-		s.focus = layout.Main
-		in := s.mainInner()
-		if in.Contains(x, y) {
-			c := s.mainContent(in.W, in.H)
-			if h, ok := c.hits[y-in.Y]; ok && h.kind == "project" {
-				s.tree = s.tree.SelectProject(h.id)
-			}
-		}
-	}
-	s.openContextMenu(x, y)
-}
-
-// openContextMenu shows the actions for the selection at a cell.
-func (s *Shell) openContextMenu(x, y int) {
-	st := s.state()
-	entry := func(id, name string) menubar.Entry {
-		e := menubar.Entry{ID: id, Name: name}
-		if c, ok := commands.ByID(id); ok {
-			e.Shortcut, e.Hint, e.Disabled = c.Shortcut, c.Hint, c.Unavailable(st)
-		}
-		return e
-	}
-	var entries []menubar.Entry
-	if s.inWorkspace {
-		switch sel := s.tree.Selected(); {
-		case sel.Kind == navigator.TaskRow && sel.Valid:
-			entries = append(entries, entry("run.selection", "Run "+sel.Task), menubar.Entry{ID: "x:explain", Name: "Explain"}, menubar.Entry{ID: "x:why-miss", Name: "Why a cache miss"})
-		case sel.Kind == navigator.ProjectRow && sel.Valid:
-			entries = append(entries, entry("run.build", "Build"), entry("run.test", "Test"), entry("run.lint", "Lint"),
-				entry("run.typecheck", "Typecheck"), menubar.Entry{Separator: true},
-				menubar.Entry{ID: "x:toggle", Name: "Show or hide tasks"}, menubar.Entry{ID: "x:explain", Name: "Explain"})
-		case sel.Kind == navigator.GroupRow && sel.Valid:
-			entries = append(entries, menubar.Entry{ID: "x:toggle", Name: "Open or close"}, entry("run.build", "Build all"), entry("run.test", "Test all"))
-		}
-		if s.run != nil && s.tab == commands.TabRun {
-			entries = append(entries, menubar.Entry{ID: "x:rerun", Name: "Run again", Disabled: map[bool]string{true: "a run is in progress", false: ""}[s.running()]})
-		}
-	}
-	if len(entries) > 0 {
-		entries = append(entries, menubar.Entry{Separator: true})
-	}
-	entries = append(entries, entry("file.palette", "Command palette…"), entry("help.keys", "Keyboard shortcuts"))
-	s.popup = menubar.OpenPopup(entries, x, y, s.w, s.h)
 }

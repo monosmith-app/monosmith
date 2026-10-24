@@ -35,7 +35,7 @@ func rowOf(l *lab, text string) int {
 func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	l := newLab(t, true, 140, 36)
 	l.next = failingRun()
-	l.keys("ctrl+b")
+	l.keys("b")
 	if l.lastStarted() != "run build -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -55,7 +55,7 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.next = &scripted{lines: []string{"kit:build ▶ go build"}, hold: true, release: make(chan struct{})}
-	l.keys("ctrl+b")
+	l.keys("b")
 	last := strings.Split(l.view(), "\n")
 	status := last[len(last)-1]
 	if !strings.Contains(status, "$ smith run build -p orders") || !strings.Contains(status, "running") {
@@ -63,11 +63,12 @@ func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {
 	}
 }
 
-func TestRunningTasksAndButtonsAreAnimatedByTicks(t *testing.T) {
+func TestRunningTasksAreAnimatedByTicks(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = &scripted{lines: []string{"kit:build ▶ go build", "orders:build ▶ go build"}, hold: true, release: make(chan struct{})}
-	l.keys("ctrl+b")
-	l.has("running", "0/4 0%", "■ Stop", "Pause log")
+	l.keys("b")
+	l.has("running", "0/4 0%", "Ctrl+C stop")
+	l.hasNot("b build", "[■")
 	first := l.sh().View()
 	l.send(tickMsg{})
 	second := l.sh().View()
@@ -92,7 +93,7 @@ func TestCtrlCStopsTheRunAndAsksTheProcessToStop(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	p := &scripted{lines: []string{"kit:build ▶ go build"}, hold: true, release: make(chan struct{})}
 	l.next = p
-	l.keys("ctrl+b")
+	l.keys("b")
 	l.keys("ctrl+c")
 	if !p.stopped {
 		t.Fatal("the process was not asked to stop")
@@ -114,7 +115,7 @@ func TestCtrlCStopsTheRunAndAsksTheProcessToStop(t *testing.T) {
 func TestCtrlCTwiceWhileStoppingQuits(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = &scripted{lines: []string{"kit:build ▶ go build"}, hold: true, release: make(chan struct{})}
-	l.keys("ctrl+b", "ctrl+c", "ctrl+c")
+	l.keys("b", "ctrl+c", "ctrl+c")
 	if !l.quit {
 		t.Fatal("a second ctrl+c quits")
 	}
@@ -124,7 +125,7 @@ func TestACancelledRunLeavesNothingSpinning(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	p := &scripted{lines: []string{"kit:build ▶ go build"}, hold: true, release: make(chan struct{})}
 	l.next = p
-	l.keys("ctrl+b", "ctrl+c")
+	l.keys("b", "ctrl+c")
 	l.send(outputMsg{proc: p, exit: &runner.Exit{Code: 1, Cancelled: true}})
 	run := l.sh().run
 	for _, task := range run.Tasks {
@@ -137,12 +138,12 @@ func TestACancelledRunLeavesNothingSpinning(t *testing.T) {
 func TestCachedTasksAreShownAsCached(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = &scripted{lines: []string{"kit:build ✔ from cache", "orders:build ✔ from cache", "web:build ✔ from cache", "sdk:test ✔ from cache", "✔ 4/4 tasks succeeded (4 from cache) in 10ms"}}
-	l.keys("ctrl+b")
+	l.keys("b")
 	l.has("cached", "⚡", "4 cached", "passed")
 	l.hasNot("failed")
 }
 
-func TestTheLogFollowsUntilYouScrollAndCtrlFTogglesIt(t *testing.T) {
+func TestTheLogFollowsUntilYouScrollAndFTogglesIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	lines := []string{"kit:build ▶ x"}
 	for i := 0; i < 120; i++ {
@@ -150,25 +151,25 @@ func TestTheLogFollowsUntilYouScrollAndCtrlFTogglesIt(t *testing.T) {
 	}
 	lines = append(lines, "kit:build ✔ 1s")
 	l.next = &scripted{lines: lines}
-	l.keys("ctrl+b", "esc") // esc shows all output
+	l.keys("b", "esc") // esc shows all output
 	l.has("following", "line 119")
 	l.keys("pgup")
 	l.has("paused")
 	l.hasNot("line 119")
 	l.keys("end")
 	l.has("following", "line 119")
-	l.keys("ctrl+f")
+	l.keys("f")
 	l.has("paused")
-	l.has("Follow log")
-	l.keys("ctrl+f")
+	l.has("f follow")
+	l.keys("f")
 	l.has("following")
 }
 
 func TestRunAgainRepeatsTheLastCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("ctrl+t")
-	l.has("Run again")
-	l.clickText("Run again")
+	l.keys("t")
+	l.keys("r")
+	l.has("r again")
 	if len(l.started) != 2 || l.started[0][0] != l.started[1][0] || l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %v", l.started)
 	}
@@ -177,7 +178,7 @@ func TestRunAgainRepeatsTheLastCommand(t *testing.T) {
 func TestTheNavigatorMarksTheLastResultOfEachProject(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
-	l.keys("ctrl+b")
+	l.keys("b")
 	_, y := l.find("orders go")
 	if row := l.lines()[y]; !strings.Contains(row, "✖") {
 		t.Fatalf("orders failed but its row says %q", row)
@@ -190,9 +191,9 @@ func TestTheNavigatorMarksTheLastResultOfEachProject(t *testing.T) {
 
 func TestEveryRunIsKeptInTheCommandLog(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("ctrl+b")
-	l.keys("ctrl+t")
-	l.keys("alt+1", "alt+2")
+	l.keys("b")
+	l.keys("t")
+	l.keys("1", "2")
 	if got := strings.Join(l.sh().history, " | "); got != "smith run build -p orders | smith run test -p orders" {
 		t.Fatalf("history %q", got)
 	}
@@ -203,7 +204,7 @@ func TestACommandThatCannotStartSaysSoInsteadOfHanging(t *testing.T) {
 	sh := l.sh()
 	sh.sources.Start = func([]string) (runner.Handle, error) { return nil, fmt.Errorf("no such program") }
 	l.m = sh
-	l.keys("ctrl+b")
+	l.keys("b")
 	l.has("could not start: no such program")
 	if l.sh().running() {
 		t.Fatal("a failed start must not leave the run going")
@@ -214,9 +215,9 @@ func TestProcessOutputAfterANewRunIsIgnored(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	old := &scripted{lines: []string{"kit:build ▶ x"}, hold: true, release: make(chan struct{})}
 	l.next = old
-	l.keys("ctrl+b", "ctrl+c")
+	l.keys("b", "ctrl+c")
 	l.send(outputMsg{proc: old, exit: &runner.Exit{Code: 1, Cancelled: true}})
-	l.keys("ctrl+t")
+	l.keys("t")
 	l.send(outputMsg{proc: old, lines: []string{"kit:build ✖ stale"}})
 	l.hasNot("stale")
 }

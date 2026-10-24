@@ -30,58 +30,54 @@ func (l *lab) doubleClick(x, y int) {
 
 func TestClickingATabSwitchesTheView(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	_, y := l.findAfter("Doctor", 1) // the tab row
-	x, _ := l.findAfter("Doctor", 1)
+	x, y := l.findAfter("Doctor", 0) // the tab row, the first row of the screen
+	if y != 0 {
+		t.Fatalf("the tab row is on row %d", y)
+	}
 	l.send(click(x+1, y))
-	l.has("2 passed", "✖ go.work lists every module", "Re-check")
+	l.has("2 passed", "✖ go.work lists every module", "f fix")
 }
 
-func TestClickingAMenuHeadingOpensItAndHoveringAnotherSwitchesMenus(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	x, _ := l.find("Run")
-	l.send(click(x+1, 0))
-	l.has("Run selected task", "Ctrl+R")
-	rx, _ := l.find("Release")
-	l.send(motion(rx+1, 0))
-	l.has("Preview next release", "F2")
-	l.hasNot("Run selected task")
-	// A click on an entry runs it.
-	ex, ey := l.findAfter("Preview next release", 1)
-	l.send(click(ex+1, ey))
-	if l.lastStarted() != "release --dry-run" {
+func TestClickingAFooterHintPressesItsKey(t *testing.T) {
+	l := newLab(t, true, 160, 34)
+	x, y := l.find("t test")
+	l.send(click(x+2, y))
+	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
-	l.hasNot("Preview next release  ")
-}
-
-func TestClickingOutsideAnOpenMenuClosesItAndRunsNothing(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	l.keys("alt+r")
-	l.has("Run selected task")
-	l.send(click(100, 25))
-	l.hasNot("Run selected task")
-	if len(l.started) != 0 {
-		t.Fatal("nothing should run")
-	}
-	// Clicking the open heading again also closes it.
-	x, _ := l.find("Run")
-	l.send(click(x+1, 0))
-	l.has("Run selected task")
-	l.send(click(x+1, 0))
-	l.hasNot("Run selected task")
-}
-
-func TestHoveringADisabledMenuEntryExplainsWhyInTheStatusBar(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	l.keys("alt+r")
-	x, y := l.findAfter("Stop", 1)
-	l.send(motion(x+1, y))
-	l.has("Stop is unavailable: nothing is running")
+	l = newLab(t, true, 160, 34)
+	x, y = l.find("? help")
 	l.send(click(x+1, y))
-	if len(l.started) != 0 {
-		t.Fatal("a disabled entry must not run")
+	l.has("Keyboard shortcuts")
+	l.keys("esc")
+	x, y = l.find("m mouse")
+	l.send(click(x+1, y))
+	if !l.sh().mouseOff {
+		t.Fatal("clicking the m hint turns the mouse off")
 	}
-	l.has("Run selected task") // the menu stays open
+}
+
+func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
+	l := newLab(t, true, 160, 34)
+	before := l.sh().View()
+	x, y := l.find("l lint")
+	l.send(motion(x+2, y))
+	if l.sh().View() == before {
+		t.Fatal("hover should change how the hint is drawn")
+	}
+	l.send(motion(159, 20))
+	if l.sh().View() != before {
+		t.Fatal("moving away should restore it")
+	}
+}
+
+func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
+	l := newLab(t, true, 160, 34)
+	x, y := l.find("1-9 views")
+	l.send(click(x+1, y))
+	if l.sh().tab != "projects" || len(l.started) != 0 {
+		t.Fatal("nothing happens")
+	}
 }
 
 func TestClickingARowSelectsItAndTheInspectorFollows(t *testing.T) {
@@ -121,64 +117,34 @@ func TestDoubleClickingAProjectOpensItsTasks(t *testing.T) {
 	l.hasNot("› build")
 }
 
-func TestRightClickOpensAContextMenuForTheRowAndAClickRunsAnEntry(t *testing.T) {
+func TestRightClickOpensNoMenu(t *testing.T) {
 	l := newLab(t, true, 140, 34)
+	before := l.view()
 	x, y := l.find("● web")
 	l.send(rightClick(x+2, y))
-	l.has("Show or hide tasks", "Explain", "Command palette…", "Keyboard shortcuts")
-	bx, by := l.findAfter("Test", y)
-	l.send(click(bx+1, by))
-	if l.lastStarted() != "run test -p web" {
-		t.Fatalf("started %q", l.lastStarted())
-	}
-	l.hasNot("Show or hide tasks")
-}
-
-func TestTheContextMenuOfATaskRunsIt(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	l.keys("shift+tab", "down", "right", "down") // web › build
-	tx, ty := l.find("› build")
-	l.send(rightClick(tx+2, ty))
-	l.has("Run build")
-	rx, ry := l.findAfter("Run build", ty)
-	l.send(click(rx+1, ry))
-	if l.lastStarted() != "run build -p web" {
-		t.Fatalf("started %q", l.lastStarted())
-	}
-}
-
-func TestEscClosesTheContextMenu(t *testing.T) {
-	l := newLab(t, true, 140, 34)
 	l.send(rightClick(5, 4))
-	l.has("Command palette…")
-	l.keys("esc")
-	l.hasNot("Command palette…")
-	l.keys("ctrl+o") // the keyboard equivalent
-	l.has("Command palette…")
-}
-
-func TestClickingAButtonRunsItsCommandOnTheSelection(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	x, y := l.find("[▶ Test")
-	l.send(click(x+3, y))
-	if l.lastStarted() != "run test -p orders" {
-		t.Fatalf("started %q", l.lastStarted())
+	if l.view() != before {
+		t.Fatalf("a right click changed the screen: %s", l.view())
+	}
+	l.keys("ctrl+o")
+	if l.view() != before {
+		t.Fatal("ctrl+o is no longer bound")
 	}
 }
 
 func TestStopIsOfferedOnlyWhileARunGoes(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+2")
+	l.keys("2")
 	l.hasNot("[■ Stop")
 }
 
 func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("ctrl+b")
+	l.keys("b")
 	if !l.sh().toast.Shown() {
 		t.Skip("the run has not ended in this lab")
 	}
-	l.keys("alt+1")
+	l.keys("1")
 	if l.sh().toast.Shown() {
 		t.Fatal("the toast stayed on another screen")
 	}
@@ -186,32 +152,17 @@ func TestTheResultToastLeavesWithTheScreenItWasRaisedOn(t *testing.T) {
 
 func TestBuildAllRunsEveryProjectAndTheScopeIsStatedOnce(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("[▶ Build ", "[▶ Build all", "On: orders")
+	l.has("On: orders")
 	l.hasNot("Build orders")
-	x, y := l.find("[▶ Build all")
-	l.send(click(x+3, y))
+	l.keys("ctrl+p").typeText("Build all").keys("enter")
 	if l.lastStarted() != "run build" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 }
 
-func TestHoveringAButtonHighlightsIt(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	before := l.sh().View()
-	x, y := l.find("[▶ Lint")
-	l.send(motion(x+3, y))
-	if l.sh().View() == before {
-		t.Fatal("hover should change how the button is drawn")
-	}
-	l.send(motion(139, 20))
-	if l.sh().View() != before {
-		t.Fatal("moving away should restore it")
-	}
-}
-
 func TestClickingAnInspectorActionRunsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Typecheck", 3) // the inspector's action, not the button
+	x, y := l.findAfter("Typecheck", 3) // the inspector's action
 	l.send(click(x+3, y))
 	if l.lastStarted() != "run typecheck -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -231,7 +182,7 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("ctrl+d")
+	l.keys("d")
 	l.has("→ go work use ./libs/x") // inline, nothing to open
 	x, y := l.find("✖ Docker registries")
 	l.hasNot("fix: write web's registry")
@@ -242,14 +193,14 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("f3")
+	l.keys("4", "x")
 	x, y := l.find("[ Cancel")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("cancel must not run")
 	}
 	l.hasNot("The command that will run:")
-	l.keys("f3")
+	l.keys("x")
 	x, y = l.find("[ Run")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "release --yes" {
@@ -259,7 +210,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 
 func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("f3")
+	l.keys("4", "x")
 	l.send(click(2, 30))
 	l.hasNot("The command that will run:")
 	if len(l.started) != 0 {
@@ -269,7 +220,7 @@ func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 
 func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("f3")
+	l.keys("4", "x")
 	before := l.sh().View()
 	x, y := l.find("[ Cancel")
 	l.send(motion(x+2, y))
@@ -286,7 +237,7 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	}
 	lines = append(lines, "kit:build ✔ 1s")
 	l.next = &scripted{lines: lines}
-	l.keys("ctrl+b", "esc")
+	l.keys("b", "esc")
 	l.has("output line 149", "following")
 	_, y := l.find("output line 149")
 	l.send(wheel(60, y-3, -1))
@@ -315,7 +266,7 @@ func TestTheWheelScrollsTheNavigatorWithoutMovingTheSelection(t *testing.T) {
 func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.next = failingRun()
-	l.keys("ctrl+b")
+	l.keys("b")
 	l.has("main.go:12")
 	x, y := l.find("✔ kit:build")
 	l.send(click(x+3, y))
@@ -328,7 +279,7 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 
 func TestClickingAGuideOptionSelectsAndDoubleClickingChoosesIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+6")
+	l.keys("9")
 	x, y := l.find("Add a project")
 	l.send(click(x+2, y))
 	l.has("› Add a project")
@@ -361,7 +312,7 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 func TestTheNavigatorTabWorksWithTheMouseAt79Columns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
 	_, y := l.find("Workspace ")
-	l.send(click(2, y+1))
+	l.send(click(2, y))
 	x, ty := l.find("○ kit")
 	l.doubleClick(x+2, ty)
 	l.has("› build")

@@ -15,7 +15,7 @@ type Tokens struct {
 	// Text is the normal text colour.
 	Text string
 	// Highlight is the background of the hovered or selected row, and Bar the
-	// background of the menu bar and status bar.
+	// background of the status bar.
 	Highlight, Bar string
 	// Border is the rule of an unfocused pane and Focus the rule of the focused one.
 	Border, Focus string

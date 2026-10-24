@@ -190,8 +190,6 @@ func (v Model) detail(th theme.Theme, w, cur int) []string {
 	out = append(out, "  "+th.Muted("now      ")+now)
 	if v.Editing {
 		out = append(out, pane.Wrap(th.Muted("Enter saves (smith config set) · Esc cancels"), w, 0)...)
-	} else {
-		out = append(out, pane.Wrap(th.Muted("Up/Down move · Enter edit (true/false flips) · Ctrl+U back to the default"), w, 0)...)
 	}
 	if v.problem != "" {
 		out = append(out, th.Failure(v.problem))

@@ -55,13 +55,13 @@ func (s Shell) tooSmall() string {
 func (s Shell) screen() []string {
 	w, h := s.w, s.h
 	rows := make([]string, 0, h)
-	rows = append(rows, s.bar.Row(s.th, s.header, w))
 	if h > 2 {
 		rows = append(rows, s.body()...)
 	}
 	if h > 1 {
-		rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
+		rows = append(rows, s.footerRow())
 	}
+	rows = append(rows, statusbar.Render(s.th, s.statusInfo(), w))
 	rows = s.overlays(rows)
 	for i := range rows {
 		rows[i] = pane.Fit(rows[i], w)
@@ -72,13 +72,7 @@ func (s Shell) screen() []string {
 // statusInfo is what the status bar shows: the exact command running or last
 // run, its result, the branch and the version.
 func (s Shell) statusInfo() statusbar.Info {
-	info := statusbar.Info{Branch: s.branch, Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
-	if tip := s.bar.Tooltip(); tip != "" {
-		info.Hint = tip
-	}
-	if tip := s.popup.Tooltip(); tip != "" {
-		info.Hint = tip
-	}
+	info := statusbar.Info{Workspace: s.header, Branch: s.branch, Version: s.version, Hint: s.hint, Tick: s.tick, MouseOff: s.mouseOff}
 	if s.run == nil {
 		return info
 	}
@@ -162,27 +156,8 @@ func (s Shell) mainColumn() []string {
 	rows := []string{s.tabRow(r.W)}
 	in := s.mainInner()
 	c := s.mainContent(in.W, in.H)
-	lines := s.renderContent(c, in)
-	rows = append(rows, pane.Frame(s.th, s.mainTitle(), lines, r.W, r.H-1, s.focus == layout.Main)...)
+	rows = append(rows, pane.Frame(s.th, s.mainTitle(), c.lines, r.W, r.H-1, s.focus == layout.Main)...)
 	return rows
-}
-
-// renderContent draws the button rows (with hover) over the content's blank
-// lines.
-func (s Shell) renderContent(c content, in layout.Rect) []string {
-	lines := append([]string(nil), c.lines...)
-	for i, bar := range c.bars {
-		hover := ""
-		if in.Contains(s.mouseX, s.mouseY) && s.mouseY-in.Y == i {
-			if id, ok := bar.At(s.th, in.W, s.mouseX-in.X); ok {
-				hover = id
-			}
-		}
-		if i < len(lines) {
-			lines[i] = bar.Render(s.th, s.tick, hover, in.W)
-		}
-	}
-	return lines
 }
 
 // mainTitle is the heading of the framed body.
@@ -349,19 +324,13 @@ func (s Shell) hoveredTab() string {
 	return ""
 }
 
-// overlays composes the menus, popups, dialogs and toast over the rendered
+// overlays composes the palette, dialogs and toast over the rendered
 // screen by cell, so nothing underneath is pushed down.
 func (s Shell) overlays(rows []string) []string {
-	if lines, x, y, ok := s.bar.Box(s.th); ok {
-		rows = pane.Overlay(rows, lines, x, y)
-	}
 	if s.palOpen {
 		box := s.paletteBox()
 		lines := pane.Frame(s.th, "Command palette", s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
 		rows = pane.Overlay(rows, lines, box.X, box.Y)
-	}
-	if lines, x, y, ok := s.popup.Box(s.th); ok {
-		rows = pane.Overlay(rows, lines, x, y)
 	}
 	if s.help != nil {
 		r := s.help.Rect()
@@ -376,7 +345,7 @@ func (s Shell) overlays(rows []string) []string {
 		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)
 	}
 	if lines := s.toast.Lines(s.th, s.w-2); lines != nil {
-		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-1-len(lines), 1))
+		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-2-len(lines), 1))
 	}
 	return rows
 }

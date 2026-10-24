@@ -19,7 +19,7 @@ type Area int
 // The areas, in the order focus moves through them.
 const (
 	Nowhere Area = iota
-	MenuBar
+	Footer
 	Navigator
 	Main
 	Inspector
@@ -28,7 +28,7 @@ const (
 
 // String names the area.
 func (a Area) String() string {
-	return [...]string{"nowhere", "menu bar", "navigator", "main", "inspector", "status bar"}[a]
+	return [...]string{"nowhere", "footer", "navigator", "main", "inspector", "status bar"}[a]
 }
 
 // Mode is how much of the interface fits.

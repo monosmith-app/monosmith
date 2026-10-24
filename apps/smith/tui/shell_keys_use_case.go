@@ -14,74 +14,22 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 )
 
-// globalWhileEditing are the shortcuts that still work while a text field has
-// the keyboard; the others (Ctrl+A, Ctrl+F…) are the field's own.
-var globalWhileEditing = map[string]bool{
-	"ctrl+p": true, "f1": true, "alt+1": true, "alt+2": true, "alt+3": true, "alt+4": true, "alt+5": true, "alt+6": true, "alt+7": true, "alt+8": true, "alt+9": true,
-}
-
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
 var mouseHelp = []string{
 	"Click: select or focus   Double-click: run the task",
-	"Right-click: context menu   Wheel: scroll lists and logs",
-	"Click a tab, a menu, a button or a menu item",
+	"Click a tab to open the view, a hint in the footer to press its key",
+	"Wheel: scroll lists and logs",
 	"Shift+drag selects text (Option+drag in macOS terminals)",
-	"M turns the mouse off, so a plain drag selects text",
+	"m turns the mouse off, so a plain drag selects text",
 }
 
-// otherKeys are keys that are not commands of their own.
-var otherKeys = []dialog.HelpRow{
-	{Group: "Moving", Title: "Move in a list or tree", Shortcut: "Up Down"},
-	{Group: "Moving", Title: "Open or close a branch", Shortcut: "Right Left"},
-	{Group: "Moving", Title: "Run the task, or open the branch", Shortcut: "Enter"},
-	{Group: "Moving", Title: "Open the menu bar", Shortcut: "F10 / Alt+letter"},
-	{Group: "Moving", Title: "Back, close, clear (never quits)", Shortcut: "Esc"},
-	{Group: "Moving", Title: "Stop the run; quit when nothing runs", Shortcut: "Ctrl+C"},
-	{Group: "Moving", Title: "Reload the view (Doctor, Release, Plugins, Deps)", Shortcut: "r"},
-	{Group: "Moving", Title: "Show or hide this help", Shortcut: "? / F1"},
-}
-
-// tabKeys are the keys of one view, shown in the help while it is open.
-var tabKeys = map[string][]dialog.HelpRow{
-	commands.TabProjects: {
-		{Group: "Projects view", Title: "Run the selected task", Shortcut: "Enter / Ctrl+R"},
-		{Group: "Projects view", Title: "Build, test, lint, typecheck", Shortcut: "Ctrl+B/T/L/Y"},
-		{Group: "Projects view", Title: "Run lint and test on what changed", Shortcut: "Ctrl+A"},
-		{Group: "Projects view", Title: "Graph around the project", Shortcut: "Inspector"},
-	},
-	commands.TabDoctor: {
-		{Group: "Doctor view", Title: "Open the detail, remedy and fix of a finding", Shortcut: "Enter"},
-		{Group: "Doctor view", Title: "Apply this finding's safe fix (smith doctor --fix --only)", Shortcut: "f"},
-		{Group: "Doctor view", Title: "Group the findings by project, or list them flat", Shortcut: "g"},
-		{Group: "Doctor view", Title: "Check again", Shortcut: "r / Ctrl+D"},
-	},
-	commands.TabRelease: {
-		{Group: "Release view", Title: "Show the commits behind the selected bump", Shortcut: "Enter"},
-		{Group: "Release view", Title: "Print the release notes (smith release --dry-run --notes)", Shortcut: "n"},
-		{Group: "Release view", Title: "Preview, or release after confirming", Shortcut: "F2 / F3"},
-	},
-	commands.TabRecipes: {
-		{Group: "Recipes view", Title: "Change the field: mode, kind, a choice, the recipe", Shortcut: "Left Right / Enter"},
-		{Group: "Recipes view", Title: "Type a name or a path", Shortcut: "Enter, then Enter / Esc"},
-		{Group: "Recipes view", Title: "Create (smith add, smith new, smith recipe new)", Shortcut: "c"},
-		{Group: "Recipes view", Title: "Read the recipes again", Shortcut: "r"},
-	},
-	commands.TabPlugins: {
-		{Group: "Plugins view", Title: "Turn the plugin on or off (smith plugin enable|disable)", Shortcut: "e / Enter"},
-		{Group: "Plugins view", Title: "List the plugins again", Shortcut: "r"},
-	},
-	commands.TabDeps: {
-		{Group: "Deps view", Title: "Mark or unmark a dependency", Shortcut: "Space"},
-		{Group: "Deps view", Title: "Mark all, or none", Shortcut: "a"},
-		{Group: "Deps view", Title: "Update the marked ones (smith deps up)", Shortcut: "u / Enter"},
-		{Group: "Deps view", Title: "Bring drifting versions to one (--align)", Shortcut: "v"},
-		{Group: "Deps view", Title: "Look for releases again", Shortcut: "r"},
-	},
-}
-
-func (s *Shell) editing() bool {
+// editing is true while a text field has the keyboard.
+func (s Shell) editing() bool {
 	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Editing) || (s.tab == commands.TabRecipes && s.recipes.Editing())
 }
+
+// formOpen is true while a guided form is open: its keys are the form's.
+func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Title() != "" }
 
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
@@ -108,17 +56,6 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		p, res := s.pal.Key(msg)
 		s.pal = p
 		return s.afterPalette(res)
-	case s.popup.Shown():
-		p, res := s.popup.Key(name)
-		s.popup = p
-		return s.afterMenu(res.Chosen, res.Refused)
-	}
-	if name == "ctrl+c" && s.bar.Active() {
-		s.bar = s.bar.Close()
-	}
-	if b, res := s.bar.Key(name); res.Handled {
-		s.bar = b
-		return s.afterMenu(res.Chosen, res.Refused)
 	}
 	if name == "ctrl+c" {
 		if s.running() {
@@ -131,19 +68,23 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	if name == "q" && !s.editing() {
 		switch {
 		case s.running():
-			s.say("A run is in progress (Ctrl+C stops it)")
+			s.say("A run is in progress (" + commands.ShortcutOf("run.stop") + " stops it)")
 			return nil
 		case s.tab == commands.TabGuide && s.guide.Title() != "":
 			// Inside a form q goes back one step, as Esc does.
 			return s.paneKey(msg)
 		}
 	}
-	if c, reason, ok := commands.ByKey(name, s.state()); ok && (!s.editing() || globalWhileEditing[name]) {
+	if c, reason, ok := commands.ByKey(name, s.state()); ok {
 		if reason != "" {
 			s.say(c.Title + " is unavailable: " + reason)
 			return nil
 		}
 		return s.perform(c)
+	}
+	// j and k move as the arrows do, wherever the arrows would.
+	if (name == "j" || name == "k") && !s.editing() && !s.formOpen() {
+		msg = tea.KeyMsg{Type: map[string]tea.KeyType{"j": tea.KeyDown, "k": tea.KeyUp}[name]}
 	}
 	return s.paneKey(msg)
 }
@@ -158,17 +99,6 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return s.execute(c.Argv, true)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
-	return nil
-}
-
-// afterMenu runs the command a menu chose, or says why it could not.
-func (s *Shell) afterMenu(chosen, refused string) tea.Cmd {
-	if refused != "" {
-		s.say(refused)
-	}
-	if chosen != "" {
-		return s.activate(chosen)
-	}
 	return nil
 }
 
@@ -189,7 +119,7 @@ func (s *Shell) afterPalette(res palette.Result) tea.Cmd {
 	return nil
 }
 
-// activate runs a command by id: a menu entry, a button, an inspector action.
+// activate runs a command by id: a palette entry, an inspector action.
 // Ids starting with "x:" are actions that belong to the selection.
 func (s *Shell) activate(id string) tea.Cmd {
 	if rest, ok := strings.CutPrefix(id, "x:"); ok {
@@ -317,7 +247,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if s.log.Following() {
 			s.say("Following the log")
 		} else {
-			s.say("Log paused: scroll or press Ctrl+F to follow again")
+			s.say("Log paused: scroll or press " + commands.ShortcutOf("run.follow") + " to follow again")
 		}
 	case commands.NextPane:
 		s.cyclePane(1)
@@ -327,15 +257,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		s.copyFocused()
 	case commands.ToggleMouse:
 		return s.toggleMouse()
-	case commands.ContextMenu:
-		s.bar = s.bar.Close()
-		if s.focus == layout.Navigator {
-			in := s.navigatorInner()
-			s.openContextMenu(in.X+2, in.Y+s.tree.CursorLine())
-		} else {
-			in := s.mainInner()
-			s.openContextMenu(in.X+2, in.Y+1)
-		}
+	case commands.ViewAction:
+		return s.activateSelection(c.Action)
 	case commands.ReloadDoctor:
 		s.doctor = doctorview.Model{}
 		return s.gotoTab(commands.TabDoctor)
@@ -344,13 +267,12 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 }
 
 func (s *Shell) openHelp() {
-	// The keys of the open view come first, then the menus' shortcuts, then
-	// the keys every view shares.
-	rows := append([]dialog.HelpRow(nil), tabKeys[s.tab]...)
-	for _, c := range commands.Shortcuts(s.state()) {
-		rows = append(rows, dialog.HelpRow{Group: c.Menu, Title: c.Title, Shortcut: c.Shortcut})
+	// The keys of the open view come first, then the keys every view shares,
+	// all read from the keymap the keys themselves come from.
+	var rows []dialog.HelpRow
+	for _, r := range commands.HelpRows(s.state(), tabTitles[s.tab]) {
+		rows = append(rows, dialog.HelpRow(r))
 	}
-	rows = append(rows, otherKeys...)
 	h := dialog.NewHelp(rows, mouseHelp).Place(s.w, s.h)
 	s.help = &h
 }
@@ -427,43 +349,20 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	case s.focus == layout.Inspector:
 		return s.inspectorKey(name)
 	}
-	if name == "r" && !s.editing() {
-		if cmd := s.reload(); cmd != nil {
-			return cmd
-		}
-	}
 	switch s.tab {
 	case commands.TabProjects:
 		return s.navigatorKey(name)
 	case commands.TabPlugins:
-		if name == "e" || name == "enter" {
-			return s.activateSelection("plugin-toggle")
-		}
 		s.plugins = s.plugins.Update(msg, s.listPage())
 	case commands.TabDeps:
-		switch name {
-		case "u", "enter":
-			return s.activateSelection("deps-up")
-		case "v":
-			return s.activateSelection("deps-align")
-		}
 		s.deps = s.deps.Update(msg, s.listPage())
 	case commands.TabRun:
 		return s.runKey(name)
 	case commands.TabRecipes:
-		if name == "c" && !s.recipes.Editing() {
-			return s.activateSelection("recipes-create")
-		}
 		s.recipes = s.recipes.Update(msg)
 	case commands.TabRelease:
-		if name == "n" {
-			return s.activateSelection("release-notes")
-		}
 		s.release = s.release.Update(msg)
 	case commands.TabDoctor:
-		if name == "f" {
-			return s.activateSelection("doctor-fix")
-		}
 		s.doctor = s.doctor.Update(msg)
 	case commands.TabSettings:
 		next, argv := s.settings.Update(msg)

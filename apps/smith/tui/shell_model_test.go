@@ -235,7 +235,7 @@ func (l *lab) send(msg tea.Msg) *lab {
 	return l
 }
 
-// keys sends key names: "ctrl+r", "enter", "down", or text.
+// keys sends key names: "ctrl+p", "enter", "down", or text.
 func (l *lab) keys(names ...string) *lab {
 	for _, n := range names {
 		l.send(keyMsg(n))
@@ -263,6 +263,8 @@ func keyMsg(k string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyShiftTab}
 	case "space":
 		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}}
+	case "backspace":
+		return tea.KeyMsg{Type: tea.KeyBackspace}
 	case "pgup":
 		return tea.KeyMsg{Type: tea.KeyPgUp}
 	case "pgdown":
@@ -273,45 +275,14 @@ func keyMsg(k string) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyEnd}
 	case "f1":
 		return tea.KeyMsg{Type: tea.KeyF1}
-	case "f2":
-		return tea.KeyMsg{Type: tea.KeyF2}
-	case "f3":
-		return tea.KeyMsg{Type: tea.KeyF3}
-	case "f4":
-		return tea.KeyMsg{Type: tea.KeyF4}
-	case "f10":
-		return tea.KeyMsg{Type: tea.KeyF10}
-	case "ctrl+o":
-		return tea.KeyMsg{Type: tea.KeyCtrlO}
 	case "ctrl+c":
 		return tea.KeyMsg{Type: tea.KeyCtrlC}
-	case "ctrl+d":
-		return tea.KeyMsg{Type: tea.KeyCtrlD}
-	case "ctrl+g":
-		return tea.KeyMsg{Type: tea.KeyCtrlG}
 	case "ctrl+p":
 		return tea.KeyMsg{Type: tea.KeyCtrlP}
 	case "ctrl+q":
 		return tea.KeyMsg{Type: tea.KeyCtrlQ}
-	case "ctrl+r":
-		return tea.KeyMsg{Type: tea.KeyCtrlR}
-	case "ctrl+b":
-		return tea.KeyMsg{Type: tea.KeyCtrlB}
-	case "ctrl+e":
-		return tea.KeyMsg{Type: tea.KeyCtrlE}
-	case "ctrl+f":
-		return tea.KeyMsg{Type: tea.KeyCtrlF}
-	case "ctrl+x":
-		return tea.KeyMsg{Type: tea.KeyCtrlX}
-	case "ctrl+n":
-		return tea.KeyMsg{Type: tea.KeyCtrlN}
-	case "ctrl+t":
-		return tea.KeyMsg{Type: tea.KeyCtrlT}
-	case "ctrl+a":
-		return tea.KeyMsg{Type: tea.KeyCtrlA}
-	}
-	if rest, ok := strings.CutPrefix(k, "alt+"); ok {
-		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(rest), Alt: true}
+	case "ctrl+u":
+		return tea.KeyMsg{Type: tea.KeyCtrlU}
 	}
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)}
 }

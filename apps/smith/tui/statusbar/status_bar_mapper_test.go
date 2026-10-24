@@ -54,19 +54,17 @@ func TestOnANarrowScreenTheRightSideGoesFirstAndTheWidthIsExact(t *testing.T) {
 	}
 }
 
-func TestTheBarSaysHowToStopARunAndHowToSelectText(t *testing.T) {
-	th := theme.Default()
-	if got := Render(th, Info{Command: "smith test", State: Running}, 100); !strings.Contains(got, "ctrl+c stop") {
-		t.Fatal(got)
-	}
-	idle := Render(th, Info{}, 120)
-	for _, want := range []string{"shift+drag selects text", "q quit", "y copy"} {
+func TestTheBarNamesTheWorkspaceAndLeavesTheKeysToTheFooter(t *testing.T) {
+	idle := Render(theme.Default(), Info{Workspace: "acme", Branch: "main"}, 120)
+	for _, want := range []string{"ready", "acme", "main"} {
 		if !strings.Contains(idle, want) {
 			t.Fatalf("missing %q in %q", want, idle)
 		}
 	}
-	if strings.Contains(idle, "ctrl+c quit") {
-		t.Fatalf("stale label: %q", idle)
+	for _, stale := range []string{"ctrl+p", "f1", "q quit", "y copy"} {
+		if strings.Contains(idle, stale) {
+			t.Fatalf("the key hints live in the footer, not the bar: %q", idle)
+		}
 	}
 }
 

@@ -21,9 +21,9 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 			return strings.Join(out, "|")
 		}
 		before := names()
-		l.keys("ctrl+b")
+		l.keys("b")
 		l.advance(time.Second)
-		l.keys("alt+1")
+		l.keys("1")
 		if after := names(); after != before {
 			t.Errorf("%d columns: tab names changed from %q to %q", w, before, after)
 		}
@@ -57,7 +57,7 @@ func stripBadge(label string) string {
 
 func TestTheAddProjectWizardIsTitledAddAProject(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("ctrl+n")
+	l.keys("a")
 	for _, line := range l.lines() {
 		if strings.Contains(line, "╭") && strings.Contains(line, "Add a project") {
 			return

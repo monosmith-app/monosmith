@@ -3,6 +3,7 @@ package tui
 import (
 	"slices"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
@@ -29,7 +30,7 @@ func (s Shell) previewLines(w, room int) []string {
 	if !s.run.OK() {
 		mark = s.th.Failure(s.th.Icons.Failed) + " failed"
 	}
-	lines = append(lines, mark+s.th.Muted(" · full output on the Run screen (Alt+2)"))
+	lines = append(lines, mark+s.th.Muted(" · full output on the Run screen ("+commands.ShortcutOf("view.run")+")"))
 	var out []string
 	for _, l := range s.run.Lines {
 		out = append(out, pane.Wrap(pane.Strip(l), w-2, 2)...)

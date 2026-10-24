@@ -242,7 +242,7 @@ func (t Tree) reveal() Tree {
 func (t Tree) View(th theme.Theme, w int, hover int, focused bool, status func(project, task string) string) []string {
 	rows := t.Rows()
 	if len(rows) == 0 {
-		return []string{th.Muted(" No projects yet."), th.Muted(" File > Add project…")}
+		return []string{th.Muted(" No projects yet.")}
 	}
 	var out []string
 	for i := t.top; i < len(rows) && len(out) < t.height; i++ {

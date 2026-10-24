@@ -5,16 +5,15 @@ package layout
 type Layout struct {
 	Mode          Mode
 	Width, Height int
-	MenuBar       Rect
+	Footer        Rect
 	Navigator     Rect
 	Main          Rect
 	Inspector     Rect
 	StatusBar     Rect
 }
 
-// Divide lays the screen out: a one-row menu bar on top, a one-row status bar
-// at the bottom, and between them the navigator, the main view and the
-// inspector. The navigator is a fifth of the width (22 to 30 columns), the
+// Divide lays the screen out: the navigator, the main view and the inspector
+// from the top, then a one-row footer of key hints and a one-row status bar. The navigator is a fifth of the width (22 to 30 columns), the
 // inspector a quarter (26 to 36).
 func Divide(width, height int) Layout {
 	l := Layout{Width: width, Height: height}
@@ -27,9 +26,11 @@ func Divide(width, height int) Layout {
 		l.Mode = Narrow
 	}
 	body := max(height-2, 0)
-	l.MenuBar = Rect{0, 0, width, min(1, height)}
 	if height > 1 {
 		l.StatusBar = Rect{0, height - 1, width, 1}
+	}
+	if height > 2 {
+		l.Footer = Rect{0, height - 2, width, 1}
 	}
 	nav, insp := 0, 0
 	if l.Mode != Narrow {
@@ -38,17 +39,17 @@ func Divide(width, height int) Layout {
 	if l.Mode == Wide {
 		insp = clamp(width/4, 26, 36)
 	}
-	l.Navigator = Rect{0, 1, nav, body}
-	l.Main = Rect{nav, 1, width - nav - insp, body}
-	l.Inspector = Rect{width - insp, 1, insp, body}
+	l.Navigator = Rect{0, 0, nav, body}
+	l.Main = Rect{nav, 0, width - nav - insp, body}
+	l.Inspector = Rect{width - insp, 0, insp, body}
 	return l
 }
 
 // AreaAt says which area the cell (x, y) belongs to.
 func (l Layout) AreaAt(x, y int) Area {
 	switch {
-	case l.MenuBar.Contains(x, y):
-		return MenuBar
+	case l.Footer.Contains(x, y):
+		return Footer
 	case l.StatusBar.Contains(x, y):
 		return StatusBar
 	case l.Navigator.Contains(x, y):
@@ -64,8 +65,8 @@ func (l Layout) AreaAt(x, y int) Area {
 // Rect is the rectangle of an area.
 func (l Layout) Rect(a Area) Rect {
 	switch a {
-	case MenuBar:
-		return l.MenuBar
+	case Footer:
+		return l.Footer
 	case Navigator:
 		return l.Navigator
 	case Main:

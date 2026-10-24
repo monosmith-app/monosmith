@@ -13,7 +13,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/menubar"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/navigator"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pluginsview"
@@ -52,9 +51,10 @@ type Config struct {
 	Clipboard io.Writer
 }
 
-// Shell is the interface of a bare `smith` in a terminal: a menu bar, a
-// navigator, a main view with tabs, an inspector and a status bar that fill the
-// terminal, usable with the keyboard and the mouse. Whatever it does is a smith
+// Shell is the interface of a bare `smith` in a terminal: a navigator, a main
+// view with tabs, an inspector, a row of key hints and a status bar that fill
+// the terminal, usable with the keyboard (single keys, see package commands)
+// and the mouse. Whatever it does is a smith
 // command line, shown in the status bar and logged, run as a child process in
 // the Run tab, and confirmed first when it changes the workspace or publishes.
 type Shell struct {
@@ -72,9 +72,7 @@ type Shell struct {
 	tab         string
 	focus       layout.Area
 
-	bar   menubar.Bar
-	popup menubar.Popup
-	tree  navigator.Tree
+	tree navigator.Tree
 	// loadedProjects is true once the project list arrived (or failed).
 	loadedProjects bool
 	projectsErr    error
@@ -130,7 +128,7 @@ type Shell struct {
 }
 
 // NewShell builds the shell. Without sources (outside a workspace) it has
-// only the Guide tab, the palette and the menus.
+// only the Guide tab and the palette.
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
@@ -149,16 +147,26 @@ func NewShell(cfg Config) Shell {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
 	}
-	sh.bar = menubar.New(commands.Menus(sh.state()), 80).SetBrand("MonoSmith")
 	sh.tabs = sh.tabList()
-	sh.refreshMenus()
+	sh.refreshPalette()
 	return sh
 }
 
 // state is what decides which commands are available.
 func (s Shell) state() commands.State {
 	sel := s.tree.Selected()
-	return commands.State{InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow, EmptyFolder: s.emptyFolder}
+	return commands.State{
+		View: s.keyView(), Editing: s.editing(), Form: s.formOpen(), Side: s.focus != layout.Main && s.tab != tabNavigator,
+		InWorkspace: s.inWorkspace, Running: s.running(), HasSelection: sel.Valid && sel.Kind == navigator.TaskRow, EmptyFolder: s.emptyFolder,
+	}
+}
+
+// keyView is the view whose keys are live: the navigator shown as a tab is the Projects view.
+func (s Shell) keyView() string {
+	if s.tab == tabNavigator {
+		return commands.TabProjects
+	}
+	return s.tab
 }
 
 func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
@@ -175,14 +183,14 @@ func (s Shell) tabList() []string {
 	return append(tabs, commands.TabGuide)
 }
 
-// refreshMenus rebuilds the menu bar and the palette's shell commands from
-// the current state, so every unavailable item carries its reason.
-func (s *Shell) refreshMenus() {
+// refreshPalette rebuilds the palette's shell commands from the current
+// state: what cannot work here is left out, and what is only unavailable for
+// now carries its reason.
+func (s *Shell) refreshPalette() {
 	st := s.state()
-	s.bar = s.bar.SetMenus(commands.Menus(st)).SetWidth(s.w)
 	var entries []palette.Entry
 	for _, c := range commands.All() {
-		if c.Visible(st) {
+		if c.Visible(st) && (st.InWorkspace || !c.NeedsWorkspace) {
 			entries = append(entries, palette.Entry{ID: c.ID, Title: c.Title, Hint: c.Hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(st)})
 		}
 	}
@@ -224,7 +232,7 @@ type (
 func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
 	cmd = tea.Batch(cmd, s.describeRecipe())
-	s.refreshMenus()
+	s.refreshPalette()
 	if s.quit {
 		return s, tea.Quit
 	}
@@ -340,7 +348,6 @@ func (s *Shell) resize(w, h int) {
 		s.focus = layout.Main
 	}
 	s.tree = s.tree.SetHeight(max(s.lay.Navigator.H-2, 1))
-	s.bar = s.bar.SetWidth(w)
 }
 
 func contains(list []string, v string) bool {

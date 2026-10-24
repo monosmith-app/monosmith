@@ -17,11 +17,11 @@ func TestTheProjectsViewShowsStackNeedsAndWhatIsAffected(t *testing.T) {
 
 func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("ctrl+b")
+	l.keys("b")
 	if got := l.lastStarted(); !strings.Contains(got, "build") {
-		t.Fatalf("ctrl+b started %q", got)
+		t.Fatalf("b started %q", got)
 	}
-	l.keys("alt+1")
+	l.keys("1")
 	l.clickText("Graph: needs and used by")
 	if got := l.lastStarted(); got != "graph --focus orders" {
 		t.Fatalf("the graph action started %q", got)
@@ -31,15 +31,15 @@ func TestTheProjectsViewRunsATaskAndGraphsWhatItNeeds(t *testing.T) {
 
 func TestThePluginsViewListsBuiltInAndInstalledPluginsWithTheirUse(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+7")
+	l.keys("5")
 	l.has("Plugins", "4 built-in · 1 installed · 4 on", "go", "node", "python", "vitest", "acme-lint", "language", "orders, kit", "Used by")
 	l.has("from     built-in")
 }
 
 func TestThePluginsViewTurnsAPluginOnOnlyAfterConfirmingTheCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+7", "down", "down") // python, which is off
-	l.has("Press E to enable, or run: smith plugin enable python")
+	l.keys("5", "down", "down") // python, which is off
+	l.has("Press e to enable, or run: smith plugin enable python")
 	l.keys("e")
 	l.has("smith plugin enable python") // the dialog shows the command line
 	if len(l.started) != 0 {
@@ -53,12 +53,12 @@ func TestThePluginsViewTurnsAPluginOnOnlyAfterConfirmingTheCommand(t *testing.T)
 
 func TestThePluginsViewDisablesAnEnabledPluginAndLeavesAddonsAlone(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+7", "e", "y")
+	l.keys("5", "e", "y")
 	if got := l.lastStarted(); got != "plugin disable go" {
 		t.Fatalf("started %q", got)
 	}
 	l = newLab(t, true, 140, 34)
-	l.keys("alt+7", "down", "down", "down", "e") // vitest is not switchable
+	l.keys("5", "down", "down", "down", "e") // vitest is not switchable
 	if len(l.started) != 0 || l.sh().confirm != nil {
 		t.Fatal("an add-on plugin was switched")
 	}
@@ -66,14 +66,14 @@ func TestThePluginsViewDisablesAnEnabledPluginAndLeavesAddonsAlone(t *testing.T)
 
 func TestTheDepsViewListsNewerReleasesAndThePolicy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+8")
+	l.keys("6")
 	l.has("3 with newer releases: 1 patch · 1 minor · 1 major", "axios", "1.6.8", "zod", "react", "web, api",
 		"One version", "every production dependency has one version", "axios (node) should be ^1.6.8 everywhere")
 }
 
 func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+8", "space", "down", "down", "space") // axios and react
+	l.keys("6", "space", "down", "down", "space") // axios and react
 	l.has("[x] axios", "[ ] zod", "[x] react", "2 marked")
 	l.keys("u")
 	l.has("smith deps up axios react")
@@ -88,7 +88,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+8", "down", "enter", "y")
+	l.keys("6", "down", "enter", "y")
 	if got := l.lastStarted(); got != "deps up zod" {
 		t.Fatalf("started %q", got)
 	}
@@ -96,7 +96,7 @@ func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T)
 
 func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+8", "a")
+	l.keys("6", "a")
 	l.has("[x] axios", "[x] zod", "[x] react", "3 marked")
 	l.keys("a")
 	l.has("0 marked")
@@ -113,7 +113,7 @@ func TestTheDepsViewSaysWhenThereIsNothingToUpdateAndWhenThePolicyIsOff(t *testi
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 		return sh
 	}()
-	l.keys("alt+8")
+	l.keys("6")
 	l.has("Every dependency is on its latest release.", "not required")
 	l.keys("u", "v")
 	if len(l.started) != 0 || l.sh().confirm != nil {
@@ -128,14 +128,14 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { return depsview.Result{Err: errString("the registry is unreachable")} }
 		return sh
 	}()
-	l.keys("alt+8")
+	l.keys("6")
 	l.has("the registry is unreachable")
 }
 
 func TestTheDoctorTabGroupsByProjectAndAppliesOneSafeFixAfterConfirming(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+3")
-	l.has("workspace", "web  1 failed", "2 checks passed", "Fix this…")
+	l.keys("3")
+	l.has("workspace", "web  1 failed", "2 checks passed", "f fix")
 	l.keys("f") // the cursor is on go.work, which has no fix
 	if l.sh().confirm != nil || len(l.started) != 0 {
 		t.Fatal("a finding without a safe fix offered a command")
@@ -155,15 +155,15 @@ func TestTheDoctorTabGroupsByProjectAndAppliesOneSafeFixAfterConfirming(t *testi
 
 func TestTheDoctorTabListsFlatWhenGroupingIsOff(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+3", "g")
+	l.keys("3", "g")
 	l.hasNot("orders  all passed", "web  1 failed")
 	l.has("Docker registries of web agree")
 }
 
 func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+4")
-	l.has("web", "1.0.0", "1.1.0", "kit", "0.2.1", "Notes")
+	l.keys("4")
+	l.has("web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
 	l.hasNot("a1b2c3d")
 	l.keys("enter")
 	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
@@ -199,7 +199,7 @@ func recipeWorkspace(t *testing.T) string {
 
 func TestTheRecipesTabBuildsASmithAddFromTheRecipesChoicesAndConfirmsFirst(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("alt+9")
+	l.keys("7")
 	l.has("Recipes", "new project", "made from recipes/team.recipe.toml", "Recipe team 1.2.0", "Roles depend on language")
 	l.keys("c")
 	l.has("type the project's name")
@@ -225,7 +225,7 @@ func TestTheRecipesTabBuildsASmithAddFromTheRecipesChoicesAndConfirmsFirst(t *te
 
 func TestTypingInTheRecipesFormIsNotAShortcut(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("alt+9", "down", "down", "enter")
+	l.keys("7", "down", "down", "enter")
 	l.typeText("c?r")
 	if l.sh().help != nil || len(l.started) != 0 {
 		t.Fatal("a typed letter acted as a shortcut")
@@ -236,7 +236,7 @@ func TestTypingInTheRecipesFormIsNotAShortcut(t *testing.T) {
 
 func TestTheRecipeWizardLeavesTheShellForSmithRecipeNew(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("alt+9", "left")
+	l.keys("7", "left")
 	l.has("new recipe", "The recipe wizard", "smith recipe new team.recipe.toml", "in a terminal of its own")
 	l.keys("c")
 	if !l.quit {
@@ -269,12 +269,12 @@ func TestRReloadsTheViewsThatLoadFromTheWorkspace(t *testing.T) {
 		sh.sources.Deps = func() depsview.Result { calls++; return sampleDeps }
 		return sh
 	}()
-	l.keys("alt+8")
+	l.keys("6")
 	l.keys("r")
 	if calls != 2 {
 		t.Fatalf("the dependencies were looked up %d times, want 2", calls)
 	}
-	l.keys("alt+3", "r")
+	l.keys("3", "r")
 	l.has("go.work lists every module")
 }
 
@@ -283,19 +283,20 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 		key  string
 		want string
 	}{
-		{"alt+1", "Show or hide this help"},
-		{"alt+7", "Show or hide this help"},
-		{"alt+8", "Show or hide this help"},
-		{"alt+2", "Reload the view"},
-		{"alt+3", "Reload the view"},
-		{"alt+4", "Show or hide this help"},
-		{"alt+5", "Show or hide this help"},
+		{"1", "Run the selected task"},
+		{"5", "Turn the plugin on or off"},
+		{"6", "Update the marked ones"},
+		{"2", "Run the last command again"},
+		{"3", "Read the view again"},
+		{"4", "Print the release notes"},
+		{"8", "Edit the setting"},
 	}
 	for _, c := range cases {
 		l := newLab(t, true, 100, 40)
 		l.keys(c.key, "?")
+		l.has(c.want) // the keys of the open view come first
 		l.keys("end") // the keys every view shares are last
-		l.has(c.want, "Esc", "Mouse")
+		l.has("? / F1", "Esc", "Mouse")
 		l.keys("?")
 		l.hasNot("Keyboard shortcuts")
 	}
@@ -303,7 +304,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 
 func TestQuestionMarkIsTextWhileASettingIsBeingEdited(t *testing.T) {
 	l := newLab(t, true, 100, 30)
-	l.keys("alt+5", "enter")
+	l.keys("8", "enter")
 	sh := l.sh()
 	if !sh.editing() {
 		t.Skip("the first setting is not text")
@@ -318,7 +319,7 @@ func TestEveryTabFitsEightyColumns(t *testing.T) {
 	l := newLab(t, true, 80, 26)
 	// Ten tabs do not fit 56 cells with their full names: the long ones are shortened.
 	l.has("Proj", "Run", "Doctor", "Rel", "Plug", "Deps", "Recipes", "Sett", "Guide")
-	for _, key := range []string{"alt+1", "alt+2", "alt+3", "alt+4", "alt+7", "alt+8", "alt+9", "alt+5", "alt+6"} {
+	for _, key := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9"} {
 		l.keys(key)
 		for i, line := range strings.Split(l.sh().View(), "\n") {
 			if w := pane.Width(line); w != 80 {
@@ -342,10 +343,10 @@ func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 
 func TestClickingAPluginRowSelectsItAndAMarkBoxMarksADependency(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+7")
+	l.keys("5")
 	l.clickText("acme-lint")
 	l.has("from     /home/me/.smith/plugins")
-	l.keys("alt+8")
+	l.keys("6")
 	l.clickText("zod")
 	l.clickText("zod") // a second click on the row marks it
 	l.has("[x] zod")
@@ -353,17 +354,17 @@ func TestClickingAPluginRowSelectsItAndAMarkBoxMarksADependency(t *testing.T) {
 
 func TestTheWheelMovesThroughThePluginsAndDeps(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("alt+7")
+	l.keys("5")
 	x, y := l.find("vitest")
 	l.send(wheel(x+5, y, 1))
-	l.has("Press E to disable, or run: smith plugin disable node")
+	l.has("Press e to disable, or run: smith plugin disable node")
 }
 
 func TestTheHelpOfPluginsAndDepsListsTheirOwnKeysFirst(t *testing.T) {
 	for key, want := range map[string][]string{
-		"alt+1": {"Projects view", "Run the selected task"},
-		"alt+7": {"Plugins view", "smith plugin enable|disable"},
-		"alt+8": {"Deps view", "smith deps up", "--align"},
+		"1": {"Projects view", "Run the selected task, or open the branch"},
+		"5": {"Plugins view", "Turn the plugin on or off"},
+		"6": {"Deps view", "Update the marked ones", "Bring drifting versions to one"},
 	} {
 		l := newLab(t, true, 100, 40)
 		l.keys(key, "?")
@@ -373,8 +374,7 @@ func TestTheHelpOfPluginsAndDepsListsTheirOwnKeysFirst(t *testing.T) {
 
 func TestAboutShowsTheLogoWhatSmithIsForAndTheDocsLink(t *testing.T) {
 	l := newLab(t, true, 100, 40)
-	l.keys("alt+h")
-	l.clickText("About")
+	l.keys("ctrl+p").typeText("About").keys("enter")
 	l.has("About MonoSmith", "▄████", "scaffolds projects", "https://monosmith-app.github.io/monosmith/README.html", "[ OK ]")
 	l.keys("esc")
 	l.hasNot("About MonoSmith")
@@ -382,15 +382,17 @@ func TestAboutShowsTheLogoWhatSmithIsForAndTheDocsLink(t *testing.T) {
 
 func TestAboutClosesOnTheOKButton(t *testing.T) {
 	l := newLab(t, true, 100, 40)
-	l.keys("alt+h")
-	l.clickText("About")
+	l.keys("ctrl+p").typeText("About").keys("enter")
 	l.clickText("[ OK ]")
 	l.hasNot("About MonoSmith")
 }
 
-func TestTheMenuBarStartsWithTheAppName(t *testing.T) {
+func TestTheStatusBarNamesTheWorkspaceAndTheFirstRowIsThePanes(t *testing.T) {
 	l := newLab(t, true, 100, 40)
-	if first := l.lines()[0]; !strings.HasPrefix(first, " MonoSmith │ ") {
-		t.Fatalf("bar %q", first)
+	if last := l.lines()[39]; !strings.Contains(last, "acme") {
+		t.Fatalf("status bar %q", last)
+	}
+	if first := l.lines()[0]; !strings.HasPrefix(first, "╭") {
+		t.Fatalf("there is no bar above the panes: %q", first)
 	}
 }

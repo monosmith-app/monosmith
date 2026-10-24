@@ -453,29 +453,35 @@ Run `smith` with no arguments, in a terminal:
 *The Menu tab asks one question at a time. Everything it does ends as a smith
 command printed before it runs, so you can type the same line in a script.*
 
-The shell has a menu bar, the workspace navigator, the main view with tabs, an
-inspector for what is selected and a status bar, and it works with the mouse
-too. The tabs are also on `Alt+1` to `Alt+9` and in the View menu:
+The shell has the workspace navigator, the main view with tabs, an inspector
+for what is selected, a row of key hints and a status bar, and it works with
+the mouse too. It has no menu bar: every action is one key, and the row above
+the status bar always shows the keys of the view you are in (click a hint to
+press its key). The number keys open the tabs, in the order of the tab row, and
+clicking a tab name does the same:
 
-- **Projects** (`Alt+1`): every project with its language, kind, stack or
+- **Projects** (`1`): every project with its language, kind, stack or
   recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
-  a mark on the ones the current changes affect. Enter or `Ctrl+R` runs the
-  selected task; the inspector lists what the project depends on and what
+  a mark on the ones the current changes affect. Enter runs the
+  selected task, and `b`, `t`, `l` and `c` build, test, lint and typecheck the
+  selected project (every project when none is selected); `w` lints and tests
+  what changed (`smith run lint test --affected`); the inspector lists what the project depends on and what
   depends on it, and shows its graph (`smith graph --focus <project>`).
-- **Run** (`Alt+2`): the task graph of the command running, each task's state,
-  its log, failures first.
-- **Doctor** (`Alt+3`): every check, grouped by the project it names (the
+- **Run** (`2`): the task graph of the command running, each task's state,
+  its log, failures first. `f` follows the log or pauses it and `r` runs the
+  last command again.
+- **Doctor** (`3`, or `d` from anywhere): every check, grouped by the project it names (the
   workspace's own checks first; `g` lists them flat), problems first. Enter
   shows the detail, remedy and the fix with the files it writes. `f` applies
   the fix of the selected check when it is a safe one (`smith doctor --fix
-  --only "<check>"`, after you confirm), `Ctrl+X` applies every safe fix
+  --only "<check>"`, after you confirm), `x` applies every safe fix
   (`smith doctor --fix`) and `r` checks again.
-- **Release** (`Alt+4`): what the next release would do, project by project, or
+- **Release** (`4`): what the next release would do, project by project, or
   why it is blocked. Enter on a project shows the commits behind its bump (the
   tag, the level, each commit with its type, scope and author, and a breaking
   change's note); `n` prints the release notes (`smith release --dry-run
-  --notes`), `F2` previews it and `F3` releases.
-- **Recipes** (`Alt+9`): a form built from the recipe's own choices. *New
+  --notes`), `p` previews it and `x` releases (after you confirm).
+- **Recipes** (`7`): a form built from the recipe's own choices. *New
   project* picks the kind (the recipe of `[recipes]` or `[workspace] recipe`
   makes it), a name and an answer to each choice, and shows what the recipe
   puts in each role (language, lint, deploy, ...) and the file and line it
@@ -483,20 +489,20 @@ too. The tabs are also on `Alt+1` to `Alt+9` and in the View menu:
   --choice name=answer`. *New workspace* ends as `smith new <name> --recipe
   <recipe>`, and *new recipe* as `smith recipe new <path>`: the recipe wizard
   asks its questions on a terminal, so the shell steps aside and smith runs it.
-- **Plugins** (`Alt+7`): the built-in and installed plugins, the roles each
+- **Plugins** (`5`): the built-in and installed plugins, the roles each
   fills, and the projects that use it. `e` turns a built-in language plugin on
   or off (`smith plugin enable|disable <name>`).
-- **Deps** (`Alt+8`): the dependencies with a newer release, patch before minor
+- **Deps** (`6`): the dependencies with a newer release, patch before minor
   before major, with the projects that declare them, and what the one-version
   policy says. `Space` marks a row and `a` marks all; `u` or Enter updates the
   marked ones, or the row under the cursor (`smith deps up <packages>`), and
   `v` brings dependencies that projects declare at different versions to one
   (`smith deps up --align`).
-- **Settings** (`Alt+5`): the settings of `smith.toml` with their values and
-  what they do. Enter edits one and `u` returns it to its default; a value the
+- **Settings** (`8`): the settings of `smith.toml` with their values and
+  what they do. Enter edits one and `Ctrl+U` returns it to its default; a value the
   schema rejects is refused on the spot. The change is made by `smith config
   set`, which keeps the file's comments.
-- **Guide** (`Alt+6`): the common tasks, one question at a time: creating a
+- **Guide** (`9`): the common tasks, one question at a time: creating a
   workspace, running tasks, adding or removing a project, managing plugins,
   and adopting or converting an existing repository (`smith adopt`, `smith
   convert`). Every other command that takes arguments or options has a form
@@ -505,11 +511,16 @@ too. The tabs are also on `Alt+1` to `Alt+9` and in the View menu:
   is) and each option that takes a value; Enter on an optional question skips
   it. A command added to smith appears there without anyone writing its form.
 
-The keys are the same in every tab: the arrows, `PgUp`, `PgDn`, `Home` and
-`End` move, Enter acts on the row, `r` loads the view again, `Tab` moves
-between the panes, `Esc` goes back, `Ctrl+P` opens the command palette with
-every smith command, and `?` (or `F1`) lists the keys of the tab you are in and
-the shortcuts of the menus. Everything fits 80 columns, where the longest tab
+The keys are the same in every tab: the arrows (or `j` and `k`), `PgUp`,
+`PgDn`, `Home` and `End` move, Enter acts on the row, `r` loads the view again,
+`Tab` moves between the panes, `Esc` goes back, `:` or `Ctrl+P` (or `/`) opens
+the command palette with every smith command, `i` installs the dependencies,
+`a` adds a project (and `n` starts a workspace in a folder that has none),
+`y` copies the focused item, `m` turns the mouse off so the terminal can select
+text, `q` quits, and `?` (or `F1`) lists the keys of the tab you are in and the
+rest. A key never fires while you are typing in a field or a form. The hints
+row and the help are drawn from the same list as the keys, so they cannot name
+a key that does nothing. Everything fits 80 columns, where the longest tab
 names are shortened (Proj, Rel, Plug, Conf); below that the navigator becomes a
 tab and the tab labels lose their padding.
 

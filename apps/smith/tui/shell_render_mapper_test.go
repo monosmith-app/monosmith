@@ -29,8 +29,8 @@ func TestEveryScreenFillsExactlyTheTerminal(t *testing.T) {
 
 func TestAt140ColumnsThereAreThreePanes(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("File", "Workspace", "Run", "Projects", "Release", "View", "Help", // the menu bar
-		"Apps", "web", "orders", "Libs", "kit", "Packages", "sdk", // the navigator
+	l.hasNot("File ", "View ", "Help ")                              // no menu bar
+	l.has("Apps", "web", "orders", "Libs", "kit", "Packages", "sdk", // the navigator
 		"Projects (4)", "Inspector", // the main view and the inspector
 		"smith 1.2.3", "main") // the status bar: version and branch
 	l.hasNot("Reading the workspace")
@@ -51,9 +51,8 @@ func TestBelow80ColumnsTheNavigatorBecomesATab(t *testing.T) {
 	l := newLab(t, true, 79, 24)
 	l.hasNot("╭─ Workspace")
 	l.has("Workspace", "Projects", "Guide") // "Workspace" is now a tab
-	x, y := l.find("Workspace ")            // the first match is the menu; the tab is on the next row
-	_ = x
-	l.send(click(2, y+1))
+	_, y := l.find("Workspace ")
+	l.send(click(2, y))
 	l.has("Apps", "orders", "kit")
 }
 
@@ -79,7 +78,7 @@ func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 
 func TestTheFirstProjectIsSelectedAndShownInTheInspector(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "kind", "language", "go", "Actions", "Build", "Ctrl+B")
+	l.has("orders", "kind", "language", "go", "Actions", "Build", "Typecheck")
 }
 
 func TestNoColourMeansSymbolsAndWordsStillCarryTheMeaning(t *testing.T) {
@@ -94,10 +93,11 @@ func TestNoColourMeansSymbolsAndWordsStillCarryTheMeaning(t *testing.T) {
 // frame Bubble Tea draws after quitting.
 func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 	events := []any{
-		"f10", "down", "down", "right", "enter", "esc", "alt+f", "alt+w", "alt+r", "left", "up", "home", "end", "esc",
-		"ctrl+p", "d", "o", "enter", "esc", "esc", "f1", "down", "pgdown", "esc", "ctrl+o", "down", "esc",
-		"tab", "tab", "tab", "shift+tab", "right", "left", "space", "enter", "alt+1", "alt+2", "alt+3", "alt+4", "alt+5", "alt+6",
-		"ctrl+d", "ctrl+x", "n", "ctrl+b", "ctrl+f", "pgup", "pgdown", "ctrl+c", "ctrl+n", "enter", "ctrl+g", "y", "f2", "f3", "esc",
+		"down", "down", "right", "enter", "esc", "left", "up", "home", "end", "esc", "j", "k", "/", "esc",
+		"ctrl+p", "d", "o", "enter", "esc", "esc", "f1", "down", "pgdown", "esc", ":", "esc", "?", "esc",
+		"tab", "tab", "tab", "shift+tab", "right", "left", "space", "enter", "1", "2", "3", "4", "8", "9",
+		"3", "x", "esc", "n", "a", "esc", "b", "f", "r", "pgup", "pgdown", "ctrl+c", "enter", "i", "y", "4", "p", "x", "esc", "m", "m",
+		"5", "e", "6", "u", "v", "space", "7", "c", "esc",
 		click(3, 0), click(10, 3), click(40, 2), click(5, 8), rightClick(5, 4), motion(9, 9), wheel(10, 10, 1), wheel(40, 10, -1), click(0, 0),
 		"q",
 	}
@@ -132,18 +132,16 @@ func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 	prepare := map[string]func(*lab){
 		"idle":    func(*lab) {},
-		"menu":    func(l *lab) { l.keys("alt+r") },
 		"palette": func(l *lab) { l.keys("ctrl+p") },
 		"help":    func(l *lab) { l.keys("f1") },
-		"popup":   func(l *lab) { l.send(rightClick(5, 4)) },
-		"confirm": func(l *lab) { l.keys("f3") },
+		"confirm": func(l *lab) { l.keys("4", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s", "x:y │ z"}}
-			l.keys("ctrl+b")
+			l.keys("b")
 		},
-		"doctor":   func(l *lab) { l.keys("alt+3") },
-		"settings": func(l *lab) { l.keys("alt+5") },
-		"guide":    func(l *lab) { l.keys("alt+6") },
+		"doctor":   func(l *lab) { l.keys("3") },
+		"settings": func(l *lab) { l.keys("8") },
+		"guide":    func(l *lab) { l.keys("9") },
 	}
 	for name, prep := range prepare {
 		for _, btn := range []func(x, y int) any{func(x, y int) any { return click(x, y) }, func(x, y int) any { return rightClick(x, y) }, func(x, y int) any { return wheel(x, y, 1) }} {

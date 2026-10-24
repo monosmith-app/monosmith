@@ -201,8 +201,6 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		rowOf[len(lines)] = -1
 		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", fmt.Sprintf("%d checks passed", v.Report.Passed), "enter or p shows them"))
 	}
-	lines = append(lines, "", th.Muted("up/down move · enter fix details · p passed checks · g group by project"),
-		th.Muted("f fix this one · ctrl+x fix all · ctrl+d re-check"))
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 6)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
