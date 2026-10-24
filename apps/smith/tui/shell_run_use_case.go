@@ -33,7 +33,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	case catalog.Changes:
 		if !confirmed {
 			title, why := commands.Describe(argv)
-			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).Place(s.w, s.h)
+			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Place(s.w, s.h)
 			s.confirm = &c
 			return nil
 		}
@@ -59,7 +59,8 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {
 		s.history = s.history[len(s.history)-maxHistory:]
 	}
-	if contains(s.tabs, commands.TabRun) {
+	// The preview is shown on the Release screen it was started from.
+	if contains(s.tabs, commands.TabRun) && !(s.tab == commands.TabRelease && isPreview(argv)) {
 		s.tab = commands.TabRun
 	}
 	begin := s.sources.Start

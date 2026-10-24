@@ -231,12 +231,12 @@ func TestClickingAProjectInTheTableSelectsIt(t *testing.T) {
 func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("ctrl+d")
-	x, y := l.find("✖ go.work")
+	l.has("→ go work use ./libs/x") // inline, nothing to open
+	x, y := l.find("✖ Docker registries")
+	l.hasNot("fix: write web's registry")
 	l.send(click(x+3, y))
-	l.has("remedy: go work use ./libs/x")
-	x, y = l.find("✖ go.work")
-	l.send(click(x+3, y))
-	l.hasNot("remedy:")
+	l.send(click(x+3, y)) // a second click opens the fix
+	l.has("fix: write web's registry")
 }
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {

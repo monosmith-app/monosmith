@@ -135,13 +135,13 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 func TestTheDoctorTabGroupsByProjectAndAppliesOneSafeFixAfterConfirming(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("alt+3")
-	l.has("workspace", "web  1 failed", "orders  all passed", "Fix this…")
+	l.has("workspace", "web  1 failed", "2 checks passed", "Fix this…")
 	l.keys("f") // the cursor is on go.work, which has no fix
 	if l.sh().confirm != nil || len(l.started) != 0 {
 		t.Fatal("a finding without a safe fix offered a command")
 	}
 	l.has("no safe fix")
-	l.keys("down", "down", "f") // git, then web's Docker finding
+	l.keys("down", "f") // web's Docker finding
 	l.has("Apply one doctor fix", "$ smith doctor --fix --only 'Docker registries of web agree' --yes")
 	if len(l.started) != 0 {
 		t.Fatal("nothing runs before the answer")
