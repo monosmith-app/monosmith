@@ -153,6 +153,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 		switch {
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.preset.") && strings.Contains(text, "@nx/jest/preset"):
 			plan.WriteFile(JestResolverFile, JestResolver)
+			plan.KeepFile(JestResolverFile, "stands in for the resolver @nx/jest provided; the Jest preset loads it, so every package's tests need it")
 			if rewritten, kept := RewriteNxJestPreset(text); kept {
 				plan.WriteFile(f, rewritten)
 				plan.Add(Changed, "", f, "rewritten without @nx/jest: the same preset values, written out, and the rest of the file kept")
@@ -171,6 +172,7 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 			}
 			plan.WriteFile(f, rewritten)
 			plan.WriteFile(AssetTransformFile, AssetTransform)
+			plan.KeepFile(AssetTransformFile, "the Jest transformer for CSS and image imports that @nx/react provided; the Jest configs load it")
 			if plan.AddDevDependencies == nil {
 				plan.AddDevDependencies = map[string]string{}
 			}

@@ -1,11 +1,13 @@
 package convert
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
@@ -15,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/turboworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // ErrBlocked is returned when the plan has findings that stop the conversion.
@@ -22,7 +25,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
-	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose bool
+	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes bool
 	cmd := &cobra.Command{
 		Use:   "convert",
 		Short: "Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)",
@@ -81,16 +84,23 @@ installed.`,
 			if err != nil {
 				return err
 			}
-			if asJSON {
+			blocked := plan.Blocked(strict)
+			options := ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}
+			switch {
+			case asJSON:
 				enc := json.NewEncoder(out)
 				enc.SetIndent("", "  ")
 				if err := enc.Encode(plan); err != nil {
 					return err
 				}
-			} else {
-				fmt.Fprint(out, Report(plan, ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}))
+			case dryRun || blocked:
+				fmt.Fprint(out, Report(plan, options))
+			default:
+				// Applying: the short verdict, not the whole plan. The full
+				// report is saved afterwards, and --dry-run prints it.
+				fmt.Fprintf(out, "Converting %s %q\n\n%s", sourceLabel(plan), plan.Config.Workspace.Name, Verdict(plan, strict))
 			}
-			if plan.Blocked(strict) {
+			if blocked {
 				return ErrBlocked
 			}
 			if dryRun {
@@ -100,18 +110,23 @@ installed.`,
 			if asJSON {
 				log = cmd.ErrOrStderr()
 			}
+			if !yes && interactive() {
+				fmt.Fprint(log, "\nThis deletes the old tool's files and rewrites package.json files and the CI pipelines (git can undo it). `smith convert --dry-run` lists every change.\nApply? [y/N] ")
+				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+				if !strings.EqualFold(strings.TrimSpace(answer), "y") && !strings.EqualFold(strings.TrimSpace(answer), "yes") {
+					return errors.New("convert cancelled: nothing changed")
+				}
+			}
 			fmt.Fprintln(log)
 			res, err := Apply(plan, ApplyOptions{Version: version, SkipInstall: skipInstall, Out: log})
 			if err != nil {
 				return err
 			}
-			for _, s := range res.LostSlots {
-				fmt.Fprintf(log, "pipeline slot %s holds steps the new pipeline has no place for: move them into another slot\n", s)
+			if err := saveReport(root, Report(plan, ReportOptions{Verbose: true, Strict: strict})); err != nil {
+				fmt.Fprintf(log, "! could not save the report: %v\n", err)
 			}
-			fmt.Fprintln(log, "\nConverted. Next: review `git status`, run `smith doctor` and `smith run lint typecheck test build`, then commit.")
-			if plan.Source == convertplan.SourceTurborepo {
-				fmt.Fprintln(log, "Install dependencies with `smith i` from now on, not pnpm or yarn.")
-			}
+			staged := stageNewFiles(git, plan, res)
+			fmt.Fprint(log, Summary(plan, res.LostSlots, staged))
 			return nil
 		},
 	}
@@ -121,8 +136,44 @@ installed.`,
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
+	f.BoolVar(&yes, "yes", false, "apply without asking (a terminal asks before changing anything)")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes")
 	return cmd
+}
+
+// interactive is true in a terminal that can answer a question; CI and pipes
+// apply without asking, as convert always has.
+func interactive() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
+}
+
+// saveReport writes the full report where the user can read it again, in the
+// smith folder that is not committed.
+func saveReport(root, text string) error {
+	file := filepath.Join(root, filepath.FromSlash(ReportFile))
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(file, []byte(text), 0o644)
+}
+
+// stageNewFiles stages the files the conversion created that the builds load
+// (and smith.toml), so a clean of untracked files cannot lose them. It returns
+// what it staged.
+func stageNewFiles(repo *gitclient.Git, plan *convertplan.Plan, res Result) []string {
+	var files []string
+	for _, f := range res.Created {
+		if _, kept := plan.Keep[f]; kept || f == workspace.FileName {
+			files = append(files, f)
+		}
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	if _, err := repo.Run(append([]string{"add", "--"}, files...)...); err != nil {
+		return nil
+	}
+	return files
 }
 
 // readPlan reads the workspace in root, an Nx or a Turborepo one, and plans

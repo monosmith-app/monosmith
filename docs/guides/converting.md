@@ -21,6 +21,8 @@ so the whole conversion is one change you can review and undo.
 | Flag | Meaning |
 |---|---|
 | `--dry-run` | report the plan; change nothing. Always run this first |
+| `--yes` | apply without asking. In a terminal convert shows its verdict and asks `Apply? [y/N]`; scripts and CI are not asked |
+| `--verbose` | name every project a finding applies to, not just a few |
 | `--allow-dirty` | convert even with uncommitted changes |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported |
 | `--skip-install` | do not run `npm install` afterwards |

@@ -186,6 +186,9 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			}
 		}
 		r.say("%s ✖ %s\n", t.ID, reason)
+		if hint := FailureHint(out.log.String(), r.opts.Root); hint != "" {
+			r.say("%s → %s\n", t.ID, hint)
+		}
 		return Result{Task: t.ID, Status: Failed, Key: key, Duration: took, Reason: reason}
 	}
 	if t.Def.Cache && r.opts.Storage != nil {
