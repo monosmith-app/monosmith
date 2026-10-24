@@ -40,6 +40,19 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 	if !ownsName(workspaceRoot, params.Project, name, result.Registry, len(at) > 0) {
 		return result, nil
 	}
+	return view(workspaceRoot, name, at, result), nil
+}
+
+// Latest asks the registry .npmrc points at for the newest version of any
+// package a project depends on. Unlike Published it does not ask who owns the
+// name: a dependency belongs to whoever published it.
+func Latest(workspaceRoot, name string) protocol.PublishedResult {
+	registry, _, _ := capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
+	return view(workspaceRoot, name, nil, protocol.PublishedResult{Registry: strings.TrimSpace(registry)})
+}
+
+// view runs npm view for a package's version and records the answer in result.
+func view(workspaceRoot, name string, at []string, result protocol.PublishedResult) protocol.PublishedResult {
 	// npm refuses view inside a workspace package, so ask at the root.
 	out, errOut, err := capture(workspaceRoot, append([]string{"npm", "view", name, "version", "--fetch-retries=0", "--fetch-timeout=15000"}, at...))
 	switch {
@@ -50,7 +63,7 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 		result.Unreachable = true
 		result.Detail = firstLine(errOut, err.Error())
 	}
-	return result, nil
+	return result
 }
 
 // ownsName reports whether a registry's answer about name is about this

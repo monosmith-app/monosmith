@@ -16,11 +16,7 @@ import (
 
 // Lookup asks the registry for a package's latest version; tests replace it.
 var Lookup = func(workspaceRoot, name string) protocol.PublishedResult {
-	res, err := releasing.Published(workspaceRoot, protocol.PublishedParams{Project: protocol.Project{Exports: []string{name}}})
-	if err != nil {
-		return protocol.PublishedResult{Unreachable: true, Detail: err.Error()}
-	}
-	return res
+	return releasing.Latest(workspaceRoot, name)
 }
 
 // FetchJSON reads a JSON document over HTTP; tests replace it.
