@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,7 @@ func TestCheckScriptsNamesMissingFilesAndTools(t *testing.T) {
 	writeFile(t, ws, "run.mjs", "")
 	writeFile(t, ws, "node_modules/.bin/eslint", "")
 
-	f, ok := CheckScripts(ws, "", "the root package.json")
+	f, ok := CheckScripts(ws, "", "the root package.json", protocol.Project{})
 	if !ok || f.OK {
 		t.Fatalf("finding %+v", f)
 	}
@@ -53,7 +54,7 @@ func TestCheckScriptsNamesMissingFilesAndTools(t *testing.T) {
 func TestCheckScriptsDoesNotJudgeToolsBeforeInstall(t *testing.T) {
 	ws := t.TempDir()
 	writeFile(t, ws, "package.json", `{"scripts":{"format:check":"oxfmt --check ."}}`)
-	f, ok := CheckScripts(ws, "", "the root package.json")
+	f, ok := CheckScripts(ws, "", "the root package.json", protocol.Project{})
 	if !ok || !f.OK {
 		t.Fatalf("no node_modules yet, so no tool can be judged: %+v", f)
 	}
@@ -65,7 +66,7 @@ func TestCheckScriptsPassesWhenEverythingExists(t *testing.T) {
 	writeFile(t, ws, "packages/a/scripts/post.mjs", "")
 	writeFile(t, ws, "node_modules/.bin/tsc", "")
 	writeFile(t, ws, "node_modules/.bin/vitest", "")
-	f, ok := CheckScripts(ws, "packages/a", "a")
+	f, ok := CheckScripts(ws, "packages/a", "a", protocol.Project{})
 	if !ok || !f.OK {
 		t.Fatalf("%+v", f)
 	}
@@ -81,5 +82,28 @@ func TestCheckConfigImportsFindsAnUninstalledPackage(t *testing.T) {
 	f, judged := CheckConfigImports(ws)
 	if !judged || f.OK || !strings.Contains(f.Detail, "eslint.config.mjs imports @mnci/eslint-config, which is not installed") || strings.Contains(f.Detail, "present") {
 		t.Fatalf("%+v", f)
+	}
+}
+
+func TestCheckScriptsDoesNotFailAFileTheBuildCreates(t *testing.T) {
+	ws := t.TempDir()
+	writeFile(t, ws, "packages/app/package.json", `{"scripts":{"build":"esbuild main=src/main.ts --bundle --outdir=dist","dev":"node ./dist/main.esm.js","start":"node ./out/x.js","run":"node ./gone.js"}}`)
+	p := protocol.Project{Name: "app", Root: "packages/app", Tasks: map[string]protocol.Task{"build": {Outputs: []string{"../../out"}}}}
+
+	f, ok := CheckScripts(ws, "packages/app", "app", p)
+	if !ok || f.OK || f.Warning {
+		t.Fatalf("the really missing file must still fail: %+v", f)
+	}
+	if strings.Contains(f.Detail, "main.esm.js") || !strings.Contains(f.Detail, "gone.js") {
+		t.Errorf("detail %q", f.Detail)
+	}
+	if !strings.Contains(f.Check, "dist/main.esm.js") || !strings.Contains(f.Check, "app:build") {
+		t.Errorf("the unbuilt file should be noted: %q", f.Check)
+	}
+
+	writeFile(t, ws, "packages/app/package.json", `{"scripts":{"build":"esbuild --outdir=dist","dev":"node ./dist/main.esm.js"}}`)
+	f, _ = CheckScripts(ws, "packages/app", "app", p)
+	if !f.OK || !strings.Contains(f.Check, "run `smith build` first") {
+		t.Errorf("not built yet is a pass with a note: %+v", f)
 	}
 }
