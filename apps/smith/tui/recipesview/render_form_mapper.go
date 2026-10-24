@@ -25,12 +25,16 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	case !v.Loaded:
 		return []string{th.Muted("Reading the workspace's recipes…")}, rowOf
 	}
+	if v.NoRecipes() {
+		lines = append(lines, v.intro(th, w)...)
+	}
 	for i, r := range v.rows() {
 		rowOf[len(lines)] = i
 		lines = append(lines, v.field(th, i, r, w))
 	}
+	formEnd := len(lines)
 	lines = append(lines, "")
-	switch v.Mode {
+	switch v.mode() {
 	case NewRecipe:
 		lines = append(lines, v.wizard(th)...)
 	default:
@@ -47,10 +51,32 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	if v.Problem != "" {
 		lines = append(lines, th.Failure(v.Problem))
 	}
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
+	// Text below the form wraps; the form's own rows keep one line each.
+	var out []string
+	for i, l := range lines {
+		if i < formEnd || pane.Width(l) <= w {
+			out = append(out, pane.Fit(l, w))
+			continue
+		}
+		for _, part := range pane.Wrap(l, w, 2) {
+			out = append(out, pane.Fit(part, w))
+		}
 	}
-	return lines, rowOf
+	return out, rowOf
+}
+
+// intro explains what a recipe is to someone whose workspace has none.
+func (v Model) intro(th theme.Theme, w int) []string {
+	out := []string{th.Title("What is a recipe?")}
+	for _, p := range []string{
+		"A recipe is an optional team template. It says which plugins fill each role (language, lint, test, deploy) and which questions smith asks when someone adds a project, so every project starts the same way.",
+		"You do not need one. Without a recipe smith uses the defaults of the project's stack or language. To add a project, use Add a project in the Guide (Ctrl+N).",
+		"This workspace has no recipe file (*.recipe.toml) yet. To write the first one:",
+	} {
+		out = append(out, pane.Wrap("  "+p, w, 2)...)
+		out = append(out, "")
+	}
+	return out
 }
 
 // confirmNote says what happens after c: the shell asks first, or hands over to a terminal.
@@ -116,7 +142,9 @@ func (v Model) field(th theme.Theme, i int, r row, w int) string {
 	}
 	line := pointer + pane.Fit(label, labelWidth) + " " + value
 	if note != "" && v.editing == "" {
-		line += "   " + th.Muted(note)
+		if avail := w - pane.Width(line) - 3; avail >= 8 {
+			line += "   " + th.Muted(strings.TrimRight(pane.Cell(note, avail+1), " "))
+		}
 	}
 	return line
 }
@@ -165,7 +193,7 @@ func (v Model) preview(th theme.Theme) []string {
 		out = append(out, th.Warning("  Roles depend on "+strings.Join(d.Unanswered, ", ")+": answer it above."))
 		out = append(out, offers(th, d.Offers)...)
 	}
-	if v.Mode == NewWorkspace {
+	if v.mode() == NewWorkspace {
 		out = append(out, th.Muted("  Choices are asked when a project is added (smith add asks them)."))
 	}
 	return out
@@ -205,7 +233,7 @@ func (v Model) wizard(th theme.Theme) []string {
 // recipes lists the recipe files of the workspace.
 func (v Model) recipes(th theme.Theme) []string {
 	if len(v.Catalog.Recipes) == 0 {
-		return []string{"", th.Muted("This workspace holds no recipe file (*.recipe.toml). The wizard writes one.")}
+		return nil
 	}
 	out := []string{"", th.Title(fmt.Sprintf("Recipes in this workspace (%d)", len(v.Catalog.Recipes)))}
 	for _, l := range v.Catalog.Recipes {
