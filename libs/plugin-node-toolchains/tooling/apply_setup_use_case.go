@@ -16,7 +16,7 @@ import (
 
 // Installer runs npm install at the workspace root; tests replace it.
 var Installer = func(workspaceRoot string) error {
-	return toolrun.Run(workspaceRoot, []string{"npm", "install", "--no-audit", "--no-fund"})
+	return toolrun.Quiet(workspaceRoot, []string{"npm", "install", "--no-audit", "--no-fund"})
 }
 
 // Apply adds s to the workspace and to the project params names, and installs
@@ -28,7 +28,17 @@ func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (proto
 		return protocol.GenerateResult{}, err
 	}
 	rootChanged, err := edit(filepath.Join(workspaceRoot, "package.json"), func(doc *jsondoc.Document) (bool, error) {
-		return addStrings(doc.Object("devDependencies", true), s.DevDependencies), nil
+		changed := addStrings(doc.Object("devDependencies", true), s.DevDependencies)
+		for _, key := range sortedKeys(s.RootFields) {
+			if doc.Has(key) {
+				continue
+			}
+			if err := doc.SetJSON(key, s.RootFields[key]); err != nil {
+				return false, err
+			}
+			changed = true
+		}
+		return changed, nil
 	})
 	if err != nil {
 		return protocol.GenerateResult{Files: written}, fmt.Errorf("root package.json: %w", err)

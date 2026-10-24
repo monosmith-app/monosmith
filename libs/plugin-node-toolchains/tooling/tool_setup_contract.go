@@ -8,6 +8,10 @@ type Setup struct {
 	RootFiles map[string]string
 	// DevDependencies join the root package.json.
 	DevDependencies map[string]string
+	// RootFields join the top level of the root package.json when it has no
+	// such field (npm "overrides" that settle a peer range, for example); a
+	// field the workspace already has is its own and stays.
+	RootFields map[string]any
 	// Files are written in the project (project-relative path → content).
 	Files map[string]string
 	// Scripts join the project's package.json scripts.

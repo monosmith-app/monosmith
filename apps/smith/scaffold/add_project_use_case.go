@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -124,13 +123,14 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	res.Files = append(res.Files, changed...)
 	sort.Strings(res.Files)
+	res.Files = slices.Compact(res.Files)
 	return &res, nil
 }
 
 // chooseStack resolves the language plugin and the stack of a new project.
 func chooseStack(s *session.Session, opts AddOptions) (*host.Client, protocol.Stack, error) {
 	if opts.Stack == protocol.NoStack {
-		lang, err := chooseLanguage(s, opts.Lang)
+		lang, err := chooseLanguage(s, opts)
 		if err != nil {
 			return nil, protocol.Stack{}, err
 		}
@@ -154,7 +154,7 @@ func chooseStack(s *session.Session, opts AddOptions) (*host.Client, protocol.St
 		}
 		return language, st, nil
 	}
-	lang, err := chooseLanguage(s, opts.Lang)
+	lang, err := chooseLanguage(s, opts)
 	if err != nil {
 		return nil, protocol.Stack{}, err
 	}
@@ -168,22 +168,6 @@ func chooseStack(s *session.Session, opts AddOptions) (*host.Client, protocol.St
 	}
 	st, err := s.Stacks.Get(name)
 	return language, st, err
-}
-
-func chooseLanguage(s *session.Session, lang string) (string, error) {
-	if lang != "" {
-		return lang, nil
-	}
-	used := map[string]bool{}
-	for _, p := range s.Graph.Projects {
-		used[p.Plugin] = true
-	}
-	if len(used) == 1 {
-		for l := range used {
-			return l, nil
-		}
-	}
-	return "", fmt.Errorf("choose a language with --lang (%s) or a stack with --stack", strings.Join(s.Plugins.Languages(), ", "))
 }
 
 // addParts asks the stack's other plugins, then each configured convention

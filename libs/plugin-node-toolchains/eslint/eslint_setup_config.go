@@ -30,6 +30,11 @@ func setup(string, protocol.GenerateParams) tooling.Setup {
 			"@monosmith/eslint-config": "^1.0.0",
 			"eslint":                   "^10.12.0",
 		},
-		Scripts: map[string]string{"lint": "eslint ."},
+		// eslint-plugin-jsx-a11y (a dependency of @monosmith/eslint-config)
+		// still declares eslint 9 as its newest peer; it works with 10, and
+		// without this npm prints a page of peer-conflict warnings on the
+		// first install.
+		RootFields: map[string]any{"overrides": map[string]any{"eslint-plugin-jsx-a11y": map[string]any{"eslint": "$eslint"}}},
+		Scripts:    map[string]string{"lint": "eslint ."},
 	}
 }
