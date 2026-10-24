@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -43,7 +44,12 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "smith upgrade, after installing a newer smith", Blocks: BlocksAdoption})
 		return r, nil
 	case exists("nx.json"):
-		r.Blockers = append(r.Blockers, Item{Message: "this is an Nx workspace: its projects and targets are Nx's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption})
+		item := Item{Message: "this is an Nx workspace: its projects and targets are Nx's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption}
+		if !exists("node_modules/nx") {
+			item.Steps = []string{"npm ci, so Nx can describe the projects", "then smith convert --dry-run"}
+			item.Step = item.Steps[0]
+		}
+		r.Blockers = append(r.Blockers, item)
 		return r, nil
 	}
 	status, _ := git.Run("status", "--porcelain")
@@ -68,16 +74,27 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Warnings = append(r.Warnings, Item{Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)", Step: "smith add app <name> --lang <language> after --init"})
 	}
 	for _, f := range release.CheckLineage(s, false) {
-		item := Item{Message: f.Message, Step: "see the message", Baseline: f.Baseline}
+		item := Item{Message: f.Message, Baseline: f.Baseline, Steps: f.Remedy}
 		if f.Baseline != nil {
-			item.Step = "--tags creates " + f.Baseline.Name + " on " + f.Baseline.Target + " (locally; push it yourself)"
+			// --tags makes the tag the first remedy describes.
+			item.Steps = append([]string{"smith adopt --tags creates " + f.Baseline.Name + " on " + strings.TrimSuffix(f.Baseline.Target, "^{commit}") + " (locally; push it yourself)"}, f.Remedy[min(1, len(f.Remedy)):]...)
 		}
+		if len(item.Steps) == 0 {
+			item.Steps = []string{"smith doctor repeats this once the workspace exists"}
+		}
+		item.Step = item.Steps[0]
 		if f.Blocking {
 			item.Blocks = BlocksRelease
 			r.Blockers = append(r.Blockers, item)
 		} else {
 			r.Warnings = append(r.Warnings, item)
 		}
+	}
+	for _, f := range doctor.PluginChecks(s, nil) {
+		if f.OK || f.Warning {
+			continue
+		}
+		r.Warnings = append(r.Warnings, predictedFailure(f))
 	}
 	for _, path := range []string{cipipeline.GitHubPath, cipipeline.AzurePath, cipipeline.DevcontainerPath} {
 		body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
@@ -154,4 +171,27 @@ func hasNodeProjects(projects []ProjectLine) bool {
 		}
 	}
 	return false
+}
+
+// predictedFailure is a check smith doctor will fail on once the workspace
+// exists, said now. The mechanical ones are done by --init (npm install by
+// --install); the others are the plugin's own remedy.
+func predictedFailure(f doctor.Finding) Item {
+	item := Item{Message: "smith doctor will report: " + f.Detail}
+	switch {
+	case f.Check == "go.work exists":
+		item.Steps = []string{"--init runs go work init and go work use for you"}
+	case strings.HasPrefix(f.Check, "npm workspaces include "):
+		item.Steps = []string{"--init adds the \"workspaces\" to the root package.json for you"}
+	case f.Check == "Node dependencies are installed":
+		item.Steps = []string{"--init --install runs npm install for you (or run it yourself afterwards)"}
+	default:
+		lines := strings.Split(f.Remedy, "\n")
+		item.Steps = []string{lines[0]}
+		if len(lines) > 1 {
+			item.Steps[0] += " (smith doctor shows the rest)"
+		}
+	}
+	item.Step = item.Steps[0]
+	return item
 }

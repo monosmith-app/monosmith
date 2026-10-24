@@ -42,9 +42,11 @@ func CreateBaselines(r Report, out io.Writer) (int, error) {
 
 // Init makes the repository a workspace: a pipeline file of the user's at a
 // path smith owns is kept beside it as .pre-smith, smith.toml and the root files
-// smith needs are written (theirs kept), the pipelines are generated for the
-// projects found, and it all becomes one commit.
-func Init(r Report, version string, out io.Writer) error {
+// smith needs are written (theirs kept), the steps doctor would ask for (go.work,
+// npm workspaces, and with install npm install) are taken, the pipelines are
+// generated for the projects found, and it all becomes one commit. It ends by
+// saying what smith doctor still reports.
+func Init(r Report, version string, install bool, out io.Writer) error {
 	if !r.Adoptable() {
 		return errors.New("something blocks adoption; see smith adopt")
 	}
@@ -66,6 +68,9 @@ func Init(r Report, version string, out io.Writer) error {
 	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: r.Providers, Version: version, Out: out, NoCommit: true}); err != nil {
 		return err
 	}
+	if err := CompleteWorkspace(r, install, out); err != nil {
+		return err
+	}
 	s, err := session.Open(session.Options{Dir: r.Root, Version: version, Log: out})
 	if err != nil {
 		return err
@@ -80,8 +85,8 @@ func Init(r Report, version string, out io.Writer) error {
 	}
 	if err := git.CommitAll("chore: adopt smith"); err != nil {
 		fmt.Fprintf(out, "  not committed (%v); commit when ready\n", strings.SplitN(err.Error(), "\n", 2)[0])
-		return nil
+		return DescribeOutcome(r.Root, version, out)
 	}
 	fmt.Fprintln(out, "  committed: chore: adopt smith")
-	return nil
+	return DescribeOutcome(r.Root, version, out)
 }

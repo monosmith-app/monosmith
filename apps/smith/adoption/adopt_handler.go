@@ -16,7 +16,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise, dryRun bool
+	var asJSON, tags, initialise, dryRun, install bool
 	cmd := &cobra.Command{
 		Use:   "adopt",
 		Short: "Report what bringing an existing repository under smith involves, and take the steps",
@@ -52,11 +52,7 @@ An Nx workspace is smith convert's. Exits non-zero while something blocks.`,
 				}
 			}
 			if initialise {
-				if err := Init(report, version, out); err != nil {
-					return err
-				}
-				fmt.Fprintln(out, "✔ adopted: smith doctor checks the workspace, smith run build builds it")
-				return nil
+				return Init(report, version, install, out)
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {
@@ -81,6 +77,7 @@ An Nx workspace is smith convert's. Exits non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only report (this is the default; the flag makes it explicit)")
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
+	cmd.Flags().BoolVar(&install, "install", false, "with --init, also run npm install for the Node projects")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines, and commit")
 	return cmd
 }
@@ -88,24 +85,40 @@ An Nx workspace is smith convert's. Exits non-zero while something blocks.`,
 func printReport(w io.Writer, r Report) {
 	if len(r.Projects) > 0 {
 		fmt.Fprintf(w, "%s would be workspace %q (scope %s, CI %s) with:\n", r.Root, r.Name, r.Scope, strings.Join(r.Providers, ", "))
+		fmt.Fprintf(w, "  %-20s %-8s %-8s %s\n", "PROJECT", "LANGUAGE", "KIND", "FOLDER")
 		for _, p := range r.Projects {
 			fmt.Fprintf(w, "  %-20s %-8s %-8s %s\n", p.Name, p.Language, p.Kind, p.Root)
 		}
+		fmt.Fprintln(w, "  kind: apps/ holds apps, libs/ libs, packages/ packages; elsewhere a Go main package is an app,")
+		fmt.Fprintln(w, "  a public Node package is a package and the rest are libs. To change one: \"smith\": {\"kind\": \"app\"}")
+		fmt.Fprintln(w, "  in its package.json, or a // smith:kind app comment in its go.mod.")
 		fmt.Fprintln(w)
 	}
 	for _, b := range r.Blockers {
-		fmt.Fprintf(w, "✖ %s\n  → %s\n", b.Message, b.Step)
+		printItem(w, "✖", b)
 	}
 	for _, x := range r.Warnings {
-		fmt.Fprintf(w, "! %s\n  → %s\n", x.Message, x.Step)
+		printItem(w, "!", x)
 	}
 	switch {
 	case len(r.Blockers) == 0 && r.Adoptable():
-		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace")
+		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports")
 	case r.Adoptable():
 		fmt.Fprintln(w, "Nothing blocks --init; the release blockers above need clearing before the first release.")
 	}
 	if !r.Clean && r.Adoptable() {
 		fmt.Fprintln(w, "(uncommitted changes: commit them before --tags or --init)")
+	}
+}
+
+// printItem prints a finding and each way out on its own arrow line.
+func printItem(w io.Writer, mark string, it Item) {
+	fmt.Fprintf(w, "%s %s\n", mark, it.Message)
+	steps := it.Steps
+	if len(steps) == 0 {
+		steps = []string{it.Step}
+	}
+	for _, step := range steps {
+		fmt.Fprintf(w, "  → %s\n", step)
 	}
 }

@@ -27,7 +27,9 @@ type Report struct {
 // Item is one finding and the step that clears it.
 type Item struct {
 	Message string `json:"message"`
-	Step    string `json:"step"`
+	// Step is the usual way out; Steps lists every way, Step first.
+	Step  string   `json:"step"`
+	Steps []string `json:"steps,omitempty"`
 	// Blocks is BlocksAdoption or BlocksRelease, for blockers.
 	Blocks string `json:"blocks,omitempty"`
 	// Baseline is the tag --tags creates for it.

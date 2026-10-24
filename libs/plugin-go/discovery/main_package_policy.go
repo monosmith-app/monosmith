@@ -44,7 +44,7 @@ func holdsMainPackage(dir string) bool {
 				break
 			}
 		}
-		f.Close()
+		_ = f.Close()
 		if found {
 			return true
 		}

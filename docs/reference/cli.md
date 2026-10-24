@@ -112,7 +112,9 @@ Usage: `smith adopt [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
 | `--init` | write smith.toml and the pipelines, and commit | off |
+| `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 
@@ -121,14 +123,20 @@ Usage: `smith adopt [flags]`
 `--tags` creates, locally, the release tags a project needs where its tags were made under another name (nothing is pushed). `--init` writes `smith.toml` and the pipelines and commits; a pipeline of yours at a path smith owns is kept beside it as `<file>.pre-smith`. An Nx workspace is for `smith convert`. See [Getting started](../guides/getting-started.md#or-adopt-an-existing-repository).
 
 ```sh
-$ smith adopt
+$ smith adopt --dry-run
 ```
 
 ```text
 C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
+  PROJECT              LANGUAGE KIND     FOLDER
   lib                  node     package  packages/lib
+  kind: apps/ holds apps, libs/ libs, packages/ packages; elsewhere a Go main package is an app,
+  a public Node package is a package and the rest are libs. To change one: "smith": {"kind": "app"}
+  in its package.json, or a // smith:kind app comment in its go.mod.
 
-✔ nothing blocks: smith adopt --init makes it a workspace
+! smith doctor will report: node_modules is missing at the workspace root
+  → --init --install runs npm install for you (or run it yourself afterwards)
+✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports
 ```
 
 ### smith convert
@@ -820,7 +828,7 @@ web:test — Run unit tests
 Say why a task would run instead of coming from the cache, by comparing its key with its last cached run. It runs nothing.
 
 <!-- smith:begin why-miss -->
-Say why a task would run instead of coming from the cache
+Say why a task would run again instead of coming from the cache (a cache miss)
 
 Usage: `smith why-miss <project> <task> [flags]`
 
@@ -855,7 +863,7 @@ Usage: `smith doctor [flags]`
 |---|---|---|
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
-| `--only <check>` | with --fix, fix only the named check, as doctor prints it (repeatable) |  |
+| `--only <only>` | with --fix, fix only the named check, as doctor prints it (repeatable) (repeatable) |  |
 | `-y, --yes` | with --fix, apply without asking | off |
 
 <!-- smith:end doctor -->
