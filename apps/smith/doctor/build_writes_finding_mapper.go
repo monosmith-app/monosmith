@@ -3,7 +3,6 @@ package doctor
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -22,17 +21,22 @@ func buildWritesFinding(s *session.Session) protocol.Finding {
 	if len(gaps) == 0 {
 		return finding
 	}
-	var problems, remedies []string
+	var problems, remedies, projects []string
 	for _, g := range gaps {
 		problems = append(problems, g.Problem())
 		remedies = append(remedies, g.Remedy())
+		projects = append(projects, g.Project)
 	}
-	finding.Detail = strings.Join(problems, "; ")
-	finding.Remedy = strings.Join(remedies, "\n")
+	finding.Detail = Summary(problems, "; ", shownProblems)
+	finding.Remedy = Summary(remedies, "\n", shownProblems)
+	if len(remedies) > shownProblems {
+		finding.Remedy += "\n`smith doctor --fix` declares them all"
+	}
 	if raw, err := os.ReadFile(filepath.Join(s.Root, workspace.FileName)); err == nil {
 		finding.Fix = &protocol.Fix{
 			Description: "declare the directories the builds write as their outputs in smith.toml",
 			Safe:        true,
+			AppliesTo:   projects,
 			Files:       []protocol.FileEdit{{Path: workspace.FileName, Content: buildoutputs.DeclareOutputs(string(raw), gaps)}},
 		}
 	}

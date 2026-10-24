@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -63,6 +64,7 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 	}
 	sort.Strings(names)
 	var problems, tools, unbuilt []string
+	toolScripts := map[string][]string{}
 	failing, anyFile := false, false
 	var builder buildOutputs
 	builder.load(project, pkg.Scripts["build"])
@@ -80,6 +82,9 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 		}
 		for _, tool := range missingTools {
 			problems = append(problems, name+" starts "+tool+", which is not installed")
+			if !contains(toolScripts[tool], name) {
+				toolScripts[tool] = append(toolScripts[tool], name)
+			}
 			if !contains(tools, tool) {
 				tools = append(tools, tool)
 			}
@@ -105,6 +110,7 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 		remedy = append(remedy, "install the missing tool (npm i -D "+strings.Join(tools, " ")+" at the workspace root), or remove the script that starts it")
 	}
 	finding.Remedy = strings.Join(remedy, "\n")
+	finding.Fix = manifestfixes.MissingToolsFix(workspaceRoot, dir, label, toolScripts)
 	return finding, true
 }
 

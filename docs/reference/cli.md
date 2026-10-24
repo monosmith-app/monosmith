@@ -113,9 +113,9 @@ Usage: `smith adopt [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
+| `--eslint` | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies | off |
 | `--init` | write smith.toml and the pipelines, and commit | off |
 | `--install` | with --init, also run npm install for the Node projects | off |
-| `--eslint` | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies (--install then installs it) | off |
 | `--json` | print the report as JSON | off |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 
@@ -863,6 +863,7 @@ Usage: `smith doctor [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--choose <choose>` | with --fix and --only, answer the fix's questions by option number, in order (1,2) |  |
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
 | `--only <only>` | with --fix, fix only the named check, as doctor prints it (repeatable) (repeatable) |  |
@@ -871,7 +872,13 @@ Usage: `smith doctor [flags]`
 
 <!-- smith:end doctor -->
 
-With `--fix`, doctor shows the fixes it can make as unified diffs, then applies the safe ones once you confirm (or with `--yes`): a safe fix only restores what smith or a plugin owns, like `go.work` or a generated pipeline with its slots kept. Others are shown, never applied. `--only "go.work exists"` takes up just the fix of that check (the interactive shell's Doctor tab uses it to apply one fix). Without a terminal `--fix` only shows. The checks and their remedies are in [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do).
+With `--fix`, doctor shows the fixes it can make: file changes as unified diffs, the commands it would run (`npm install`, `git rm --cached`), and the questions it would ask. The same fix on many projects is one fix that says which projects it applies to ("applies to 23 projects"), and a plain `smith doctor` ends with how many fixes are available.
+
+- **Safe fixes** only restore what smith or a plugin owns, like `go.work`, a generated pipeline with its slots kept, or the build outputs declared in `smith.toml`. doctor applies them once you confirm, or with `--yes`.
+- **Every other fix asks.** In a terminal, doctor asks each question as a numbered list (`0` skips the fix), shows what your answers add, and asks before it applies. Without a terminal it applies nothing, prints the exact command for each option, and exits non-zero when you named the fix with `--only` (otherwise the exit code is the workspace's health, as without `--fix`): `smith doctor --fix --only "<check or fix>" --choose 2 --yes`. `--only` names a check as doctor prints it, or a fix by its description; `--choose` answers the fix's questions by option number, in order (`--choose 1,2`); `--yes` with `--only` applies the named fix without a prompt.
+- **Steps** run from the workspace root in order, their output captured. The first one that fails stops the fix, and doctor says which step failed and what it printed.
+
+doctor then checks again and prints the new counts. If a fix changes a file another fix was made from (two edits of `smith.toml`), the second is made again from the new content. `--json` prints the report with a `fixes` list (each fix's `checks`, `applies_to`, `ask`, `steps` and `choices`) and applies nothing; `--json` cannot be combined with `--fix`. The checks and their remedies are in [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do); the fix format a plugin returns is in [Writing a plugin](../guides/writing-a-plugin.md#doctor-fixes-files-steps-and-choices).
 
 ```sh
 $ smith doctor

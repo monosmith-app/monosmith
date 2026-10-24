@@ -128,7 +128,23 @@ lists them all. The checks, grouped by who owns them:
 | Bicep | the Azure CLI and the Bicep CLI |
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 
-`smith doctor --fix` applies only the safe fixes, and shows each as a diff first.
+`smith doctor --fix` shows each fix first (diffs, the commands it runs, the
+questions it asks) and applies the safe ones once you confirm. These have a fix
+beyond the safe ones, which doctor asks about:
+
+| Check | The fix |
+|---|---|
+| every build declares the directories it writes as outputs | declares them in `smith.toml` (safe), for all the projects at once |
+| CI pipelines match the workspace | regenerates them, keeping your slot contents (safe when no slot would be lost) |
+| tracked files are not generated files | `git rm --cached` on them; asks whether to add the output directory to `.gitignore` |
+| `<project> can be verified` (no lint task) | adds a `lint` task running ESLint to `smith.toml`, for every Node project without one |
+| `<project>` declares the packages it imports | adds each package to `package.json` at the range the workspace already uses (asks which when projects disagree), then `npm install` |
+| the packages the ESLint config imports are installed | `npm install`, or `npm install -D` for a package nothing declares |
+| the scripts of the root or a project call files and tools that exist | asks: install the missing tool, or remove the script that starts it |
+| Node dependencies are installed | `npm install` |
+
+A check with no fix (a file a script runs that is gone, a build that writes
+outside `dist/`) needs a decision only you can make; its remedy says what.
 `smith doctor --json` prints every finding for tools.
 
 ## Windows

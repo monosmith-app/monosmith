@@ -343,6 +343,45 @@ contents so smith can show a diff; `smith doctor --fix` applies only fixes
 marked `safe`, which restore what the plugin owns without losing anything of
 the user's.
 
+#### Doctor fixes: files, steps and choices
+
+A fix is `{"description", "safe", "files", "steps", "choices", "applies_to"}`
+and every part but `description` is optional. A host that predates `steps` and
+`choices` ignores them, so mark a fix `safe` only when its `files` alone are
+sound.
+
+- `files` are written first, as whole new contents (`"delete": true` removes one).
+- `steps` run after the files, in order, from the workspace root (or the step's
+  `dir`): `{"description": "install the missing packages", "argv": ["npm",
+  "install", "-D", "oxfmt"]}`. There is no shell, so `argv` is a program and its
+  arguments. The first step that fails stops the fix and the host shows its
+  output.
+- `choices` are questions the user answers before anything applies, in order:
+  `{"question": "oxfmt is not installed", "options": [{"label": "install it",
+  "fix": {"steps": [...]}}, {"label": "remove the script", "fix": {"files":
+  [...]}}]}`. The picked option's files and steps are added after the fix's own;
+  the first option is the suggested one. An option's fix may carry choices of its
+  own. A fix with choices is never applied unasked, whatever `safe` says.
+  Because options write files, give an option the whole new content of every file
+  it changes, and do not let two options of different questions edit the same file.
+- `applies_to` names the projects the fix is for. Fixes without choices that
+  share a `description` and name projects are folded into one, which the host
+  presents as "applies to 22 projects": give the same description to the same
+  kind of fix on every project, and a fix that edits one shared file for many
+  projects (one `smith.toml` edit) lists them all in `applies_to` and may be
+  returned by each project's finding, since identical fixes are one.
+
+```json
+{"description": "declare the packages each project imports in its package.json",
+ "safe": false, "applies_to": ["ocr"],
+ "files": [{"path": "packages/ocr/package.json", "content": "{...}"}],
+ "steps": [{"description": "install what package.json declares", "argv": ["npm", "install"]}]}
+```
+
+Mark a fix `safe` when it only restores what the plugin owns and installs
+nothing; a fix that runs a package manager, edits a file the team wrote, or
+changes what git tracks is asked about.
+
 `remove` takes `{"project": ..., "dryRun": false}` after smith deleted the
 project's directory, and answers the files it cleaned elsewhere
 (`{"files": [...], "notes": [...]}`).

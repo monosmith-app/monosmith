@@ -37,4 +37,15 @@ func TestDoctorChecksThatAPackageDeclaresItsImports(t *testing.T) {
 	if found == nil || found.OK || found.Detail != "src/read.ts imports @acme/core, which package.json does not declare" {
 		t.Fatalf("finding %+v", found)
 	}
+	// No project declares @acme/core and it is not installed: its version is
+	// unknown, so smith offers no fix rather than a guess.
+	if found.Fix != nil {
+		t.Errorf("fix %+v", found.Fix)
+	}
+	write("packages/core/package.json", `{"name":"@acme/core","version":"2.1.0"}`)
+	write("node_modules/@acme/core/package.json", `{"name":"@acme/core","version":"2.1.0"}`)
+	f := CheckPackageImports(ws, protocol.Project{Name: "ocr", Root: "packages/ocr", Kind: protocol.ProjectPackage})
+	if f.Fix == nil || !strings.Contains(f.Fix.Files[0].Content, `"@acme/core": "^2.1.0"`) || f.Fix.Safe {
+		t.Fatalf("the installed version is the fallback, and installing is asked about: %+v", f.Fix)
+	}
 }

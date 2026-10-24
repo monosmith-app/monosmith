@@ -1,10 +1,13 @@
 package upgrade
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/recipedrift"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -28,7 +31,7 @@ func upgradeProjects(s *session.Session, check bool, r *Result) error {
 	}
 	addFile(r, workspace.FileName)
 	if check {
-		r.Diff = doctor.UnifiedDiff(workspace.FileName, plan.Before, plan.After)
+		r.Diff = doctorfix.UnifiedDiff(workspace.FileName, plan.Before, plan.After)
 		return nil
 	}
 	if err := plan.Apply(s); err != nil {
@@ -47,7 +50,7 @@ func restoreOwnedFiles(s *session.Session, projects []string, r *Result) error {
 	}
 	safe, manual := doctor.Fixes(doctor.Report{Findings: doctor.PluginChecks(s, only)})
 	for _, fix := range safe {
-		if err := doctor.ApplyFix(s.Root, fix); err != nil {
+		if err := doctorfix.Apply(context.Background(), s.Root, fix, io.Discard); err != nil {
 			return err
 		}
 		for _, e := range fix.Files {

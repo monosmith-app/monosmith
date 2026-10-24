@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
 	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
+	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
@@ -25,6 +27,10 @@ type Report struct {
 	Passed   int       `json:"passed"`
 	Failed   int       `json:"failed"`
 	Warnings int       `json:"warnings"`
+	// Fixes are the fixes the failed findings carry, folded: what `doctor
+	// --fix` offers, with the steps to run, the questions it asks and the
+	// projects each applies to.
+	Fixes []doctorfix.Planned `json:"fixes,omitempty"`
 }
 
 // Finding is one check; Source is "smith" or the plugin's name.
@@ -59,6 +65,7 @@ func Run(s *session.Session) Report {
 		}
 	}
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
+	report.Fixes = Plan(report)
 	return report
 }
 
@@ -135,12 +142,21 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	if raw, err := s.Git.Run("ls-files"); err == nil {
 		tracked = lines(raw)
 	}
+	generatedFiles := TrackedGeneratedFiles(ignored, tracked, s.Graph.Projects)
 	generated := TrackedGenerated(ignored, tracked, s.Graph.Projects)
-	out = append(out, protocol.Finding{
+	untrack := protocol.Finding{
 		Check: "tracked files are not generated files", OK: len(generated) == 0, Warning: true,
-		Detail: "these files are in git but a run rewrites them (.gitignore ignores them, or a task writes there), so the tree is dirty after a build and a release refuses it: " + strings.Join(generated, "; "),
+		Detail: "these files are in git but a run rewrites them (.gitignore ignores them, or a task writes there), so the tree is dirty after a build and a release refuses it: " + Summary(generated, "; ", shownProblems),
 		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
-	})
+	}
+	if len(generated) > 0 {
+		files := make([]corefixes.TrackedFile, len(generatedFiles))
+		for i, f := range generatedFiles {
+			files[i] = f.TrackedFile
+		}
+		untrack.Fix = corefixes.UntrackFix(s.Root, files)
+	}
+	out = append(out, untrack)
 	remote := s.Config.Cache.Remote
 	if env := os.Getenv("SMITH_CACHE_REMOTE"); env != "" {
 		remote = env
@@ -150,7 +166,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,
-		Detail: strings.Join(outside, "; "),
+		Detail: Summary(outside, "; ", shownProblems),
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin",
 	})
 	out = append(out, buildWritesFinding(s))
@@ -206,6 +222,15 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		}
 		out = append(out, pipelines)
 	}
+	// One smith.toml change gives every Node project without a lint task one,
+	// so each of their checks carries the same fix.
+	var lintless []string
+	for _, p := range s.Graph.Projects {
+		if _, ok := p.Tasks["lint"]; !ok && p.Plugin == "node" {
+			lintless = append(lintless, p.Name)
+		}
+	}
+	addLint := corefixes.AddLintTaskFix(s.Root, lintless)
 	for _, p := range s.Graph.Projects {
 		missing := []string{}
 		for _, t := range []string{"lint", "test"} {
@@ -214,10 +239,14 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 			}
 		}
 		if len(missing) > 0 {
-			out = append(out, protocol.Finding{
+			verifiable := protocol.Finding{
 				Check: p.Name + " can be verified", Warning: true,
 				Detail: p.Name + " has no " + missing[0] + " task, so CI never checks it", Remedy: "add the task to the project (or in smith.toml under [projects." + p.Name + ".tasks])",
-			})
+			}
+			if missing[0] == "lint" && slices.Contains(lintless, p.Name) {
+				verifiable.Fix = addLint
+			}
+			out = append(out, verifiable)
 		}
 		out = append(out, droppedDependencies(p)...)
 	}
@@ -262,6 +291,14 @@ func ignoreFix(root string) *protocol.Fix {
 		text += "\n"
 	}
 	return &protocol.Fix{Description: "ignore the cache directory", Safe: true, Files: []protocol.FileEdit{{Path: ".gitignore", Content: text + "\n# smith\n.smith/\n"}}}
+}
+
+// lines splits git's output into its lines.
+func lines(s string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimSuffix(s, "\n"), "\n")
 }
 
 func sortedKeys(m map[string]string) []string {

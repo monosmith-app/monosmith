@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -191,6 +192,17 @@ func (f Field) Encode(args []string) (string, error) {
 		return "[" + strings.Join(quoted, ", ") + "]", nil
 	}
 	return "", fmt.Errorf("%s has a type smith config does not edit (%s)", f.Path, f.Type)
+}
+
+var bareKey = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
+// TableKey is a project's name as a key in a table path, quoted when it is not
+// a bare TOML key (ms.sharepoint).
+func TableKey(name string) string {
+	if bareKey.MatchString(name) {
+		return name
+	}
+	return Quote(name)
 }
 
 // Quote renders a TOML basic string.

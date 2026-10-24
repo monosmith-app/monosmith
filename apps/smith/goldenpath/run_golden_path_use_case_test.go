@@ -296,6 +296,16 @@ func TestGoldenPath(t *testing.T) {
 	// doctor fixes what smith and the plugins own, showing the diff first.
 	work := w.read("go.work")
 	w.write("go.work", strings.Replace(work, "./libs/core", "./libs/gone", 1))
+	// The report lists the fixes for editors, and does not mix with applying them.
+	if out := w.smith(false, "doctor", "--json"); !strings.Contains(out, `"fixes"`) || !strings.Contains(out, `"ask": false`) || !strings.Contains(out, `"checks"`) {
+		t.Fatalf("doctor --json lists the fixes:\n%s", out)
+	}
+	if out := w.smith(false, "doctor", "--json", "--fix"); !strings.Contains(out, "apply them with --fix, without --json") {
+		t.Fatalf("doctor --json --fix:\n%s", out)
+	}
+	if out := w.smith(false, "doctor", "--fix", "--only", "make go.work use exactly the workspace's Go modules", "--choose", "1"); !strings.Contains(out, "has none") {
+		t.Fatalf("--choose on a fix with no question:\n%s", out)
+	}
 	if out := w.smith(false, "doctor", "--fix"); !strings.Contains(out, "-\t./libs/gone") || !strings.Contains(out, "+\t./libs/core") || !strings.Contains(out, "Pass --yes") {
 		t.Fatalf("doctor --fix without a terminal shows the diff only:\n%s", out)
 	}

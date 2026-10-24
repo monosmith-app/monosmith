@@ -1,4 +1,4 @@
-package doctor
+package doctorfix
 
 import "testing"
 

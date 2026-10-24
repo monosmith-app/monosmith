@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/declaredimports"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -33,5 +34,8 @@ func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Find
 		lines = append(lines, u.String())
 	}
 	f.Detail = strings.Join(lines, "; ")
+	if !f.OK {
+		f.Fix = manifestfixes.DeclareImportsFix(workspaceRoot, p, undeclared)
+	}
 	return f
 }
