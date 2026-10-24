@@ -18,7 +18,8 @@ import (
 // Command is `smith release`.
 func Command(version string) *cobra.Command {
 	var (
-		dryRun, yes, noPush, asJSON, comment, notes, status bool
+		dryRun, yes, noPush, asJSON, comment, notes, status, verbose bool
+		format                                                       string
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
@@ -77,7 +78,7 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				return err
 			}
 			if !asJSON {
-				printPlan(cmd, plan)
+				printPlan(cmd, plan, dryRun, verbose)
 				if notes {
 					for _, item := range plan.Items {
 						fmt.Fprintf(out, "\n# %s %s\n\n%s", item.Project, item.Next, RenderNotes(item))
@@ -105,7 +106,7 @@ published. What was published where is kept in dist/release/<project>/journal.js
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
 			defer stop()
-			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: out})
+			report, err := Execute(ctx, s, plan, Options{DryRun: dryRun, Push: !noPush, Out: out, Terse: format != "markdown"})
 			if dryRun {
 				preview(report.Markdown())
 			}
@@ -115,7 +116,11 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				_ = enc.Encode(report)
 			} else {
 				fmt.Fprintln(out)
-				fmt.Fprint(out, report.Markdown())
+				if format == "markdown" {
+					fmt.Fprint(out, report.Markdown())
+				} else {
+					fmt.Fprint(out, report.Text())
+				}
 			}
 			return err
 		},
@@ -126,12 +131,17 @@ published. What was published where is kept in dist/release/<project>/journal.js
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
 	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the release report as JSON")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "name every unchanged package")
+	cmd.Flags().StringVar(&format, "format", "text", "how the result is printed: text, or markdown (what the CI job summary and --comment use)")
 	cmd.Flags().BoolVar(&comment, "comment", false, "with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment")
 	return cmd
 }
 
-func printPlan(cmd *cobra.Command, plan Plan) {
+func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 	out := cmd.OutOrStdout()
+	if dryRun {
+		fmt.Fprintln(out, "Dry run: nothing is published or tagged.")
+	}
 	if len(plan.Items) == 0 {
 		fmt.Fprintln(out, NothingToRelease())
 	}
@@ -143,6 +153,10 @@ func printPlan(cmd *cobra.Command, plan Plan) {
 		fmt.Fprintf(out, "  %-20s %s → %s  (%s)\n", item.Project, from, item.Next, item.Reason)
 	}
 	if len(plan.Unchanged) > 0 {
-		fmt.Fprintf(out, "  unchanged: %s\n", strings.Join(plan.Unchanged, ", "))
+		if verbose {
+			fmt.Fprintf(out, "Unchanged: %s\n", strings.Join(plan.Unchanged, ", "))
+		} else {
+			fmt.Fprintf(out, "Unchanged: %d packages (--verbose names them)\n", len(plan.Unchanged))
+		}
 	}
 }

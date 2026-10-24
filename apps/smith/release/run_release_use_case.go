@@ -35,6 +35,9 @@ type Options struct {
 	// Push sends tags to the release remote (when it exists).
 	Push bool
 	Out  io.Writer
+	// Terse leaves out the per-package "would release" line of a dry run,
+	// which the plan above it already says.
+	Terse bool
 	// Registries asks the registries before the first publish whether they
 	// would accept the release; nil reads the environment.
 	Registries *RegistryProbe
@@ -159,7 +162,9 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return err
 	}
 	if opts.DryRun {
-		say("would release %s (%s)", item.Next, item.Reason)
+		if !opts.Terse {
+			say("would release %s (%s)", item.Next, item.Reason)
+		}
 		if attach := append(slices.Clone(pr.Assets), packages...); len(attach) > 0 {
 			say("would attach %s", strings.Join(attach, ", "))
 		}

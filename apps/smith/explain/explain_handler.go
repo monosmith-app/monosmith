@@ -15,6 +15,7 @@ import (
 // Command is `smith explain`.
 func Command(version string) *cobra.Command {
 	var asJSON, recipeOnly bool
+	var onlyTask string
 	cmd := &cobra.Command{
 		Use:   "explain <project>[:<task>]",
 		Short: "Show how a project's tasks resolved, and where each setting came from (why-miss says why one reran)",
@@ -25,7 +26,12 @@ For a project made from a recipe, smith explain <project> also lists what the
 recipe decided for it (its choices, the plugin at each level and the plugins'
 settings), each with the recipe file and line it came from. --recipe prints
 only that, and with --json prints it for tools. The tasks' --json output is
-unchanged.`,
+unchanged.
+
+The text starts with one line per task (its command, whether it is cached,
+what it waits for), then each task's fields. Where a value came from is said
+once for all of them, and marked only where it differs. --task build, or
+<project>:build, shows one task.`,
 		Example: "  smith explain web\n  smith explain web:build\n  smith explain web --recipe",
 		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a project name"}, Example: "smith explain web", More: "smith projects lists them; add :<task> for one task, e.g. smith explain web:build"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,7 +41,11 @@ unchanged.`,
 			}
 			defer s.Close()
 			out := cmd.OutOrStdout()
-			project, task, _ := strings.Cut(args[0], ":")
+			target := args[0]
+			if onlyTask != "" && !strings.Contains(target, ":") {
+				target += ":" + onlyTask
+			}
+			project, task, _ := strings.Cut(target, ":")
 			if recipeOnly || (task == "" && !asJSON) {
 				e, ok, err := recipedrift.Explain(s, project)
 				switch {
@@ -54,28 +64,19 @@ unchanged.`,
 					return nil
 				}
 			}
-			tasks, err := Explain(s.Graph, args[0])
+			tasks, err := Explain(s.Graph, target)
 			if err != nil {
 				return err
 			}
 			if asJSON {
 				return encode(out, tasks)
 			}
-			for _, t := range tasks {
-				fmt.Fprintf(out, "%s", t.ID)
-				if t.Description != "" {
-					fmt.Fprintf(out, " — %s", t.Description)
-				}
-				fmt.Fprintln(out)
-				for _, f := range t.Fields {
-					fmt.Fprintf(out, "  %-10s %s\n  %-10s   from %s\n", f.Name, f.Value, "", f.Source)
-				}
-				fmt.Fprintln(out)
-			}
+			printTasks(out, tasks)
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
+	cmd.Flags().StringVar(&onlyTask, "task", "", "explain only this task (same as <project>:<task>)")
 	cmd.Flags().BoolVar(&recipeOnly, "recipe", false, "print only what the project's recipe decided, and where")
 	return cmd
 }
