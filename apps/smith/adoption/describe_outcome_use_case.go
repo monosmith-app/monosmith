@@ -25,6 +25,11 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 			left = append(left, f)
 		}
 	}
+	if len(s.Graph.Projects) == 0 {
+		fmt.Fprintln(out, "✔ workspace created, with no projects yet: nothing in this repository was adopted as one")
+		fmt.Fprintln(out, "  next: smith add app <name> --lang <language>, or move your code into packages/<name> (smith finds it there)")
+		return nil
+	}
 	if len(left) == 0 {
 		fmt.Fprintln(out, "✔ adopted, and smith doctor finds nothing to fix")
 		fmt.Fprintln(out, "  next: smith run build")

@@ -106,7 +106,7 @@ Created demo. Next:
 Report what bringing an existing repository (npm workspaces, Go modules, Python projects) under smith involves, and take the steps. Read-only unless you ask for a step; both steps need a clean git tree.
 
 <!-- smith:begin adopt -->
-Bring an existing repository under smith: report what it involves, then take the steps (start here)
+Bring an existing repository under smith: report what it involves; --init takes the steps (start here)
 
 Usage: `smith adopt [flags]`
 
@@ -132,6 +132,9 @@ C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
   lib                  node     package  packages/lib
 
 ✔ nothing blocks: smith adopt --init makes it a workspace
+
+Nothing changed (adopt only reports). To apply:
+  → smith adopt --init
 ```
 
 ### smith convert

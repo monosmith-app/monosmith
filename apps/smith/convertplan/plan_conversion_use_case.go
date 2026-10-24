@@ -263,6 +263,9 @@ func planRoot(plan *Plan, w *nxworkspace.Workspace, names map[string]string) {
 			}
 		}
 		if !mentionsNx(cmd) {
+			if tools := MissingScriptTools(plan.Root, cmd); len(tools) > 0 {
+				plan.Add(Manual, "", "script "+k, "starts "+strings.Join(tools, ", ")+", which is not installed, and convert keeps the script as it is: install the tool (npm i -D "+strings.Join(tools, " ")+" at the workspace root) or remove the script")
+			}
 			continue
 		}
 		if rewritten, ok := RewriteScript(cmd, names); ok {

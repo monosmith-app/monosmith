@@ -41,7 +41,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Blockers = append(r.Blockers, Item{Message: "this is not a git repository: smith versions from tags and finds files through git", Step: "git init, then commit what you have", Blocks: BlocksAdoption})
 		return r, nil
 	case exists(workspace.FileName):
-		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "smith upgrade, after installing a newer smith", Blocks: BlocksAdoption})
+		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it, smith upgrade brings it up to this smith", Blocks: BlocksAdoption})
 		return r, nil
 	case exists("turbo.json") && !exists("nx.json"):
 		r.Blockers = append(r.Blockers, Item{Message: "this is a Turborepo workspace: its tasks are turbo.json's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption})
@@ -74,7 +74,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	}
 	sort.Slice(r.Projects, func(i, j int) bool { return r.Projects[i].Root < r.Projects[j].Root })
 	if len(r.Projects) == 0 {
-		r.Warnings = append(r.Warnings, Item{Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)", Step: "smith add app <name> --lang <language> after --init"})
+		r.Warnings = append(r.Warnings, noProjectWarning(exists))
 	}
 	for _, f := range release.CheckLineage(s, false) {
 		item := Item{Message: f.Message, Baseline: f.Baseline, Steps: f.Remedy}
@@ -109,6 +109,25 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -w <project> <package> for each project that imports it, then drop it from the root"})
 	}
 	return r, nil
+}
+
+// noProjectWarning explains an empty project list. A package.json at the root
+// is the commonest cause: smith's projects live in apps/, libs/ or packages/,
+// and the root manifest describes the workspace, not a project.
+func noProjectWarning(exists func(string) bool) Item {
+	if exists("package.json") {
+		return Item{
+			Message: "no project found: the package.json at the root describes the workspace, not a project, and smith looks for projects in their own folders (apps/, libs/ or packages/)",
+			Steps: []string{
+				"move the code into packages/<name> (git mv src packages/<name>/src, and its package.json), commit, then run smith adopt again",
+				"or run smith adopt --init now and add projects with smith add app <name> --lang <language>",
+			},
+		}
+	}
+	return Item{
+		Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)",
+		Steps:   []string{"smith adopt --init makes an empty workspace; then smith add app <name> --lang <language>"},
+	}
 }
 
 // workspaceName is the directory's name made a valid workspace name.
