@@ -274,11 +274,18 @@ func (t Tree) line(th theme.Theme, r Row, w int, selected, hovered, focused bool
 		if status != nil {
 			suffix = status(r.Project, "")
 		}
-		lang := ""
-		if p.Language != "" {
+		head := indent + arrow + dot + " "
+		// The name matters more than the language, and neither may run off
+		// the pane: the language goes first, then the name ends in an ellipsis.
+		room := w - 1 - pane.Width(head) - pane.Width(suffix)
+		name, lang := r.Project, ""
+		if p.Language != "" && pane.Width(name)+1+pane.Width(p.Language) <= room {
 			lang = " " + th.Muted(p.Language)
 		}
-		text = indent + arrow + dot + " " + r.Project + lang + suffix
+		if pane.Width(name) > room && room > 1 {
+			name = ansi.Truncate(name, room, "…")
+		}
+		text = head + name + lang + suffix
 	case TaskRow:
 		suffix := ""
 		if status != nil {

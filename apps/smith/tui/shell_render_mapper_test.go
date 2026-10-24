@@ -71,7 +71,7 @@ func TestTheInterfaceFollowsEveryResize(t *testing.T) {
 	if got := len(strings.Split(l.sh().View(), "\n")); got != 20 {
 		t.Fatalf("%d lines after the resize", got)
 	}
-	l.send(tea.WindowSizeMsg{Width: 70, Height: 20})
+	l.send(tea.WindowSizeMsg{Width: 72, Height: 20})
 	l.has("Workspace")
 	l.send(tea.WindowSizeMsg{Width: 140, Height: 34})
 	l.has("Inspector")

@@ -141,6 +141,8 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		}
 		lines = append(lines, th.Muted(help))
 	}
+	// A long line wraps (the unchanged list, the help) instead of being cut.
+	lines, rowOf = pane.WrapRows(lines, rowOf, w, 2)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}

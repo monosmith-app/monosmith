@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/buttons"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/inspector"
@@ -182,15 +183,30 @@ func (s Shell) projectsContent(w, h int) content {
 			affected++
 		}
 	}
-	c.lines = append(c.lines, s.th.Muted("Build, test and lint run on: ")+s.th.Bold(scope),
-		s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s) · ↑ needs, ↓ used by", len(projects), affected, s.th.Icons.Dot)), "")
+	// The explanations wrap instead of running off the pane.
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted("Build, test and lint run on: ")+s.th.Bold(scope), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s)", len(projects), affected, s.th.Icons.Dot)), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted("↑ = projects it needs · ↓ = projects that use it"), w, 0)...)
+	c.lines = append(c.lines, "")
 
-	nameW := 8
+	nameW, tasksW := 8, 0
 	for _, p := range projects {
 		nameW = max(nameW, pane.Width(p.Name))
+		tasksW = max(tasksW, pane.Width(taskList(p)))
 	}
-	nameW = min(nameW, max(w/3, 8))
-	c.lines = append(c.lines, s.th.Muted(pane.Fit("   "+pad("Project", nameW)+" "+pad("Kind", 8)+pad("Language", 10)+pad("Stack", 14)+pad("↑ ↓", 6)+"Tasks", w)))
+	cols := columnsForProjects(w, nameW, tasksW)
+	head := "   " + pane.Cell("Project", cols.name+1)
+	if cols.kind {
+		head += pane.Cell("Kind", kindColW)
+	}
+	if cols.lang {
+		head += pane.Cell("Language", langColW)
+	}
+	if cols.stack {
+		head += pane.Cell("Stack", stackColW)
+	}
+	head += pane.Cell("↑ ↓", depsColW) + "Tasks"
+	c.lines = append(c.lines, s.th.Muted(pane.Fit(head, w)))
 
 	foldedLines := 0
 	var folded []string
@@ -213,11 +229,18 @@ func (s Shell) projectsContent(w, h int) content {
 		if p.Affected {
 			dot = s.th.Warning(s.th.Icons.Dot)
 		}
-		var names []string
-		for _, t := range p.Tasks {
-			names = append(names, t.Name)
+		line := " " + dot + " " + pane.Cell(p.Name, cols.name+1)
+		if cols.kind {
+			line += pane.Cell(p.Kind, kindColW)
 		}
-		line := " " + dot + " " + pad(p.Name, nameW) + " " + pad(p.Kind, 8) + pad(p.Language, 10) + pad(p.Stack, 14) + pad(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), 6) + strings.Join(names, " ")
+		if cols.lang {
+			line += pane.Cell(p.Language, langColW)
+		}
+		if cols.stack {
+			line += pane.Cell(p.Stack, stackColW)
+		}
+		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), depsColW)
+		line += ansi.Truncate(taskList(p), cols.tasks, "…")
 		if p.Name == s.selectedProject() {
 			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 		}
@@ -233,6 +256,15 @@ func (s Shell) projectsContent(w, h int) content {
 		c.lines = append(c.lines, folded...)
 	}
 	return c
+}
+
+// taskList is a project's task names on one line.
+func taskList(p navigator.Project) string {
+	var names []string
+	for _, t := range p.Tasks {
+		names = append(names, t.Name)
+	}
+	return strings.Join(names, " ")
 }
 
 func withLines(c content, lines ...string) content {
@@ -357,8 +389,9 @@ func (s Shell) runContent(w, h int) content {
 		for range c.bars {
 			c.lines = append(c.lines, "")
 		}
-		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."),
-			s.th.Muted("Pick a task in the navigator and press Ctrl+R, or press Ctrl+B to build."), "")
+		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a task in the navigator and press Ctrl+R, or press Ctrl+B to build."), w, 0)...)
+		c.lines = append(c.lines, "")
 		if len(s.history) > 0 {
 			c.lines = append(c.lines, s.th.Title("Command log"))
 			for i := len(s.history) - 1; i >= 0 && len(c.lines) < h; i-- {

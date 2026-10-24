@@ -31,6 +31,20 @@ func labels(t Tree) []string {
 	return out
 }
 
+func TestALongProjectNameEndsInAnEllipsisAndDropsTheLanguageFirst(t *testing.T) {
+	tree := New([]Project{
+		{Name: "ms.sharepoint", Kind: "package", Language: "node"},
+		{Name: "atlassian.confluence-client", Kind: "package", Language: "node"},
+	}).SetHeight(8)
+	out := strings.Join(tree.View(theme.Default(), 24, -1, true, nil), "\n")
+	if !strings.Contains(out, "ms.sharepoint") || strings.Contains(out, "sharepoint node") {
+		t.Fatalf("the language should give way before the name:\n%s", out)
+	}
+	if !strings.Contains(out, "…") || strings.Contains(out, "confluence-client") {
+		t.Fatalf("a name that does not fit should end in an ellipsis:\n%s", out)
+	}
+}
+
 func TestProjectsAreGroupedByKindAndSorted(t *testing.T) {
 	got := strings.Join(labels(sample()), " ")
 	if got != "G:app P:orders P:web G:lib P:kit G:package P:sdk" {
