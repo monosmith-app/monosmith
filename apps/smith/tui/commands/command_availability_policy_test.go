@@ -33,7 +33,8 @@ func TestEveryCommandWithAKeyShowsItsShortcut(t *testing.T) {
 		if len(c.Keys) > 0 && c.Shortcut == "" {
 			t.Errorf("%s has keys but shows no shortcut", c.ID)
 		}
-		if c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
+		// Quit advertises Ctrl+C; Ctrl+Q is accepted silently (terminals may capture it).
+		if c.ID != "file.quit" && c.Shortcut != "" && !strings.EqualFold(c.Shortcut, c.Keys[0]) {
 			t.Errorf("%s shows %q but its first key is %q", c.ID, c.Shortcut, c.Keys[0])
 		}
 	}
