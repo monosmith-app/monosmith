@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // Commands returns `smith graph`, `smith projects` and `smith affected`.
@@ -159,8 +160,18 @@ marks the ones that changed.`,
 				enc.SetIndent("", "  ")
 				return enc.Encode(Nodes(s.Graph, nil))
 			}
-			for _, n := range Nodes(s.Graph, nil) {
-				fmt.Fprintf(cmd.OutOrStdout(), "%-20s %-8s %-7s %s\n", n.Name, n.Kind, n.Language, n.Root)
+			out := cmd.OutOrStdout()
+			nodes := Nodes(s.Graph, nil)
+			width := 20
+			for _, n := range nodes {
+				width = max(width, len(n.Name)+1)
+			}
+			// A header names the columns for a person; a pipe gets only rows.
+			if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+				fmt.Fprintf(out, "%-*s %-8s %-8s %s\n", width, "NAME", "KIND", "LANGUAGE", "PATH")
+			}
+			for _, n := range nodes {
+				fmt.Fprintf(out, "%-*s %-8s %-8s %s\n", width, n.Name, n.Kind, n.Language, n.Root)
 			}
 			return nil
 		},
