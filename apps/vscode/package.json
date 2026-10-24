@@ -778,7 +778,7 @@
     "stack": "vscode-extension"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/apps/vscode/main.js && node -e \"const fs=require('node:fs');fs.cpSync('media','../../dist/apps/vscode/media',{recursive:true});fs.cpSync('CHANGELOG.md','../../dist/apps/vscode/CHANGELOG.md')\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=../../dist/apps/vscode/main.js && node -e \"const fs=require('node:fs');fs.cpSync('media','../../dist/apps/vscode/media',{recursive:true,filter:(f)=>!/screenshot-/.test(f)});fs.cpSync('CHANGELOG.md','../../dist/apps/vscode/CHANGELOG.md')\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p integration/tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
