@@ -1349,4 +1349,4 @@ Load it the way your shell loads completions, for example `source <(smith comple
 
 ### smith (no arguments)
 
-In a terminal, `smith` on its own opens the interactive shell: a menu, every command, the doctor, the release preview and the settings, as tabs. Each action ends as a smith command line, printed before it runs. When stdin or stdout is not a terminal, or `CI` is set, it prints its help instead. See [Getting started](../guides/getting-started.md#7-the-interactive-shell).
+In a terminal, `smith` on its own opens the interactive shell: Home, Projects, Run, Doctor, Deps and Release as tabs, with `:` for every other command, `?` for the keys and `q` to quit. Each action ends as a smith command line, printed before it runs. When stdin is not a terminal, or `CI` is set, it prints its help instead. When stdout is not a terminal, or `SMITH_SCREEN_READER` or `SMITH_THEME=plain` is set, it asks its questions as plain numbered lines (on stderr when stdout is not a terminal). `NO_COLOR` and `SMITH_THEME=plain|light|dark` choose the colours. See [Getting started](../guides/getting-started.md#7-the-interactive-shell).

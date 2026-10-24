@@ -18,7 +18,7 @@ workspace's own tools), so the team controls the version.
 
 | cuppa | For MonoSmith |
 |---|---|
-| Three panes: component palette on the left, canvas in the centre, properties on the right | A navigator (workspace, projects, tasks), a main view, and an inspector for what is selected |
+| Three panes: component palette on the left, canvas in the centre, properties on the right | Proposed: a navigator, a main view and an inspector. Built: a list with the detail of the selection beside it (see "As built") |
 | A menu bar, with undo and redo | No menu bar (a terminal is not a desktop): every action is a single key, listed in a footer that changes with the view, and the command palette lists the rest |
 | Mouse first: click to select, drag to resize, shift-click for several | Click to select, double-click to run, right-click for a context menu, drag the splitters, scroll the logs, hover for help |
 | Built on Bubble Tea, Lip Gloss and Bubbles, and also shipped as a desktop app and a WebAssembly build | smith's shell already uses the same libraries (Bubble Tea 1.3, Lip Gloss, Bubbles); one engine behind a terminal, and IDE views |
@@ -53,6 +53,9 @@ in the palette.
    output mode for screen readers and for terminals without colour.
 
 ## Layout
+
+The drawing is the original proposal: a navigator tree on the left and an inspector on the
+right. It was not built that way; "As built" below is what the shell is.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
@@ -178,7 +181,7 @@ How the components above map to them:
 | Task list and progress | a Bubbles table or list, spinners and progress bars |
 | Log viewer | a Bubbles viewport with follow, search and filter on top |
 | Form (recipe choices, arguments) | Huh |
-| Dialog | Huh confirm in a Lip Gloss double border |
+| Dialog | Huh confirm in the same rounded Lip Gloss border as a pane |
 | Command palette | a Bubbles text input over a Bubbles list |
 | Inspector | a Lip Gloss column of key and value rows; Glamour for long text |
 | Charts (durations, cache hits) | ntcharts |
@@ -253,15 +256,25 @@ Colours are **semantic tokens**, never raw values in components:
 | `muted` | skipped, disabled, secondary text | dim |
 | `accent` | selection, focus, the active tab | bold, reverse |
 
-- Themes: dark, light, a 16-colour fallback and no colour (`NO_COLOR`, or
-  `--plain`). The terminal's own palette is used where possible, so the
-  interface follows the user's theme.
+- Themes: dark, light and plain (no colour). `NO_COLOR` (any value) and
+  `SMITH_THEME=plain` give plain; `SMITH_THEME=light` or `dark` forces one;
+  with none of them the terminal decides (`COLORFGBG`, dark when unknown). The
+  light tokens keep 4.5:1 contrast on white, checked by a test. In plain, the
+  selection is bold and reverse video, and every state keeps its symbol and
+  word.
 - Spacing is in cells: one-cell padding in panes, two-cell gaps between buttons.
-- Borders: rounded for panes, single for the focused pane, double for dialogs.
+- Borders: one weight, rounded, for panes, dialogs and overlays. Only the colour
+  changes: the focused pane or the open dialog has the accent border, the others
+  the faint one.
+- Colour is for state (success, warning, error, info, muted) and for one accent:
+  the active tab, the cursor and the focused border. Titles, key labels and
+  actions are bold, not coloured. Paths are shortened in the middle, and prose
+  wraps to the pane's width.
 - Icons have ASCII fallbacks (`[x]`, `[!]`, `[v]`) for terminals without Unicode.
 - Motion: one spinner for anything running; nothing else animates.
 - **Accessibility:** every state has a symbol and a word, not only a colour; a
-  plain mode prints events one per line for screen readers; all controls are
+  plain mode asks the questions as numbered lines for screen readers (`SMITH_SCREEN_READER=1`,
+  `SMITH_THEME=plain`, or output that is not a terminal); all controls are
   reachable by keyboard; contrast of the default theme meets WCAG AA.
 
 ## Real-time feedback: the event stream

@@ -415,14 +415,8 @@ latest version, then the workspace is installed again.
 smith doctor
 ```
 
-A healthy workspace prints one line per check:
-
-![smith doctor in the interactive shell: 24 checks, all passed, grouped by smith, go, node and python](../assets/tui-doctor.png)
-
-*The doctor tab of the shell lists every check, with the plugin that owns it on
-the right. (`smith doctor` on the command line prints the same list as text.)
-The header says `smith dev` because the screenshot was made from a development
-build.*
+A healthy workspace prints one line per check (the Doctor tab of the shell shows
+the headline, the failing checks and, behind `p`, the passed ones):
 
 When a check fails, the line says what is wrong and the remedy:
 
@@ -533,8 +527,12 @@ that changes the workspace, installs or publishes first shows the line in a
 confirmation you answer with `y` or `n`. A line that has a space in it is
 printed with quotes, so you can paste it into a script as it is.
 
-**With a screen reader.** The full-screen shell redraws the terminal, which a
-screen reader cannot follow. Set `SMITH_SCREEN_READER=1` and a bare `smith`
+**Colours and screen readers.** `NO_COLOR` and `SMITH_THEME=plain` draw the
+shell without colour: the selection is reverse video and every state keeps its
+symbol (`â` `â` `â²`) and its word. `SMITH_THEME=light` suits a light terminal;
+without it smith reads `COLORFGBG` and assumes dark. The full-screen shell
+redraws the terminal, which a screen reader cannot follow. Set
+`SMITH_SCREEN_READER=1` (or `SMITH_THEME=plain`, or send the output to a pipe) and a bare `smith`
 asks the guided questions as plain numbered lines instead (no colour, no mouse,
 nothing drawn over earlier output), prints `Running: smith ...` and runs the
 command in your terminal:
