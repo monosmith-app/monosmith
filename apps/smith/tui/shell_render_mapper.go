@@ -208,26 +208,54 @@ type tabSpan struct {
 	x0, x1 int
 }
 
-// shortTitles are the tab names used when even the unpadded full names do not
-// fit the main view (80 columns, with ten tabs).
+// shortTitles are the shorter tab names, used only for as many tabs as it takes
+// for the row to fit the main view.
 var shortTitles = map[string]string{
 	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabPlugins: "Plug", commands.TabSettings: "Sett",
 }
 
-// tabLabel is a tab's text with a space of padding on each side; the padding is
-// dropped when the tabs would not fit the main view otherwise (80 columns and
-// below), and then the names are shortened if they still do not fit.
+// shortOrder is the order tabs give up their full name in: the ones people
+// meet last go first, so "Projects" is the last to be shortened.
+var shortOrder = []string{commands.TabSettings, commands.TabPlugins, commands.TabRelease, commands.TabProjects}
+
+// tabLabel is a tab's text with a space of padding on each side. The full
+// names win: when they do not fit padded the padding goes, and then as few
+// names as possible are shortened. The choice depends on the width alone, so a
+// badge never changes it.
 func (s Shell) tabLabel(id string) string {
-	padded := s.tabsFit(true, false)
-	return s.tabText(id, padded, !padded && !s.tabsFit(false, false))
+	padded, n := s.tabPlan()
+	return s.tabText(id, padded, s.isShort(id, n))
+}
+
+// isShort is true when id is among the first n tabs to be shortened.
+func (s Shell) isShort(id string, n int) bool {
+	for _, t := range shortOrder[:n] {
+		if t == id {
+			return true
+		}
+	}
+	return false
+}
+
+// tabPlan is whether the tabs are padded and how many of them are shortened.
+func (s Shell) tabPlan() (padded bool, shortened int) {
+	if s.tabsFit(true, 0) {
+		return true, 0
+	}
+	for n := 0; n < len(shortOrder); n++ {
+		if s.tabsFit(false, n) {
+			return false, n
+		}
+	}
+	return false, len(shortOrder)
 }
 
 // tabsFit is true when every tab fits the main view, with or without padding
-// and with the full names or the short ones.
-func (s Shell) tabsFit(padded, short bool) bool {
+// and with the first n shortenable names shortened.
+func (s Shell) tabsFit(padded bool, n int) bool {
 	total := 1
 	for _, id := range s.tabs {
-		total += pane.Width(s.tabName(id, padded, short)) + 1
+		total += pane.Width(s.tabName(id, padded, s.isShort(id, n))) + 1
 		if id == commands.TabRun || id == commands.TabDoctor {
 			total += badgeRoom
 		}

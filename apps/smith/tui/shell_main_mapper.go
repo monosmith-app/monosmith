@@ -152,16 +152,10 @@ func (s Shell) navigatorContent(w, h int) content {
 // the selection. When the inspector is folded away it is drawn below.
 func (s Shell) projectsContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	// The scope is in the labels: a newcomer pressing Build expects the workspace.
-	scoped := func(task string) string {
-		if p := s.selectedProject(); p != "" {
-			return task + " " + p
-		}
-		return task
-	}
+	// The scope is stated once, in the "On:" line below: the buttons stay short.
 	s.addBars(&c, buttons.Bar{
-		s.cmdButton("run.build", scoped("Build"), "▶"), s.cmdButton("run.test", scoped("Test"), "▶"), s.cmdButton("run.lint", scoped("Lint"), "▶"),
-		s.cmdButton("run.typecheck", scoped("Typecheck"), "▶"), s.cmdButton("run.build-all", "Build all", "▶"),
+		s.cmdButton("run.build", "Build", "▶"), s.cmdButton("run.test", "Test", "▶"), s.cmdButton("run.lint", "Lint", "▶"),
+		s.cmdButton("run.typecheck", "Typecheck", "▶"), s.cmdButton("run.build-all", "Build all", "▶"),
 		s.cmdButton("run.affected", "What changed", "⟳"),
 	}, w)
 	if !s.loadedProjects {
@@ -185,17 +179,18 @@ func (s Shell) projectsContent(w, h int) content {
 		}
 	}
 	// The explanations wrap instead of running off the pane.
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted("Build, test and lint run on: ")+s.th.Bold(scope), w, 0)...)
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted("On: ")+s.th.Bold(scope), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s)", len(projects), affected, s.th.Icons.Dot)), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted("↑ = projects it needs · ↓ = projects that use it"), w, 0)...)
 	c.lines = append(c.lines, "")
 
-	nameW, tasksW := 8, 0
+	nameW, tasksW, hasStack := 8, 0, false
 	for _, p := range projects {
+		hasStack = hasStack || p.Stack != ""
 		nameW = max(nameW, pane.Width(p.Name))
 		tasksW = max(tasksW, pane.Width(taskList(p)))
 	}
-	cols := columnsForProjects(w, nameW, tasksW)
+	cols := columnsForProjects(w, nameW, tasksW, hasStack)
 	head := "   " + pane.Cell("Project", cols.name+1)
 	if cols.kind {
 		head += pane.Cell("Kind", kindColW)

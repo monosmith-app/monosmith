@@ -30,6 +30,22 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 	}
 }
 
+func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
+	spelled := func(w int) int {
+		l := newLab(t, true, w, 30)
+		n := 0
+		for _, id := range l.sh().tabs {
+			if name := stripBadge(pane.Strip(l.sh().tabLabel(id))); name == tabTitles[id] {
+				n++
+			}
+		}
+		return n
+	}
+	if got := spelled(120); got < 6 {
+		t.Errorf("at 120 columns only %d tabs keep their full name", got)
+	}
+}
+
 // stripBadge keeps only the name of a tab label.
 func stripBadge(label string) string {
 	f := strings.Fields(label)

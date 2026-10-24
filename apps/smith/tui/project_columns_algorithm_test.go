@@ -8,10 +8,10 @@ func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
 		kind, lang, stack bool
 	}{
 		{140, true, true, true},
-		{64, true, true, false},
-		{50, true, false, false},
+		{64, true, false, false},
+		{50, false, false, false},
 	} {
-		c := columnsForProjects(tc.w, 20, 25)
+		c := columnsForProjects(tc.w, 20, 25, true)
 		if c.kind != tc.kind || c.lang != tc.lang || c.stack != tc.stack {
 			t.Errorf("w=%d: got %+v", tc.w, c)
 		}
@@ -35,7 +35,13 @@ func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
 }
 
 func TestAShortTasksListIsNotAReasonToDropColumns(t *testing.T) {
-	if c := columnsForProjects(80, 10, 4); !c.stack || !c.lang || !c.kind {
+	if c := columnsForProjects(80, 10, 4, true); !c.stack || !c.lang || !c.kind {
+		t.Errorf("got %+v", c)
+	}
+}
+
+func TestTheStackColumnIsHiddenWhenNoProjectHasAStack(t *testing.T) {
+	if c := columnsForProjects(200, 10, 20, false); c.stack || !c.lang || !c.kind {
 		t.Errorf("got %+v", c)
 	}
 }

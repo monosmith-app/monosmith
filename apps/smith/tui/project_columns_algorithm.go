@@ -8,14 +8,15 @@ const (
 	depsColW  = 6
 	// tasksFloorW is the least the Tasks column may get while a droppable
 	// column is still shown.
-	tasksFloorW = 16
+	tasksFloorW = 30
 	// projectLeadW is the dot and the spaces before the name, and the one after.
 	projectLeadW = 4
 )
 
 // projectColumns says how the Projects table spends w cells: the project
 // name (nameWanted at most, ellipsised when short of room), which of the
-// optional columns Stack, Language and Kind stay (they go in that order), and
+// optional columns Stack, Language and Kind stay (they go in that order; Stack
+// only when some project has one, an all-empty column reads as a bug), and
 // what is left for Tasks. Tasks is never squeezed to nothing to keep an
 // optional column.
 type projectColumns struct {
@@ -24,11 +25,11 @@ type projectColumns struct {
 	tasks             int
 }
 
-func columnsForProjects(w, nameWanted, tasksWanted int) projectColumns {
+func columnsForProjects(w, nameWanted, tasksWanted int, hasStack bool) projectColumns {
 	name := min(nameWanted, max(w/3, 8))
 	need := min(tasksWanted, tasksFloorW)
 	for _, c := range []projectColumns{
-		{kind: true, lang: true, stack: true},
+		{kind: true, lang: true, stack: hasStack},
 		{kind: true, lang: true},
 		{kind: true},
 		{},
