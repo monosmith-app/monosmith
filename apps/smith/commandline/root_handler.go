@@ -27,6 +27,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/explain"
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
@@ -102,7 +103,11 @@ func Execute(version string, args []string) int {
 	root := Root(version)
 	root.SetArgs(args)
 	if err := root.Execute(); err != nil {
-		if !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) {
+		var p *problem.Error
+		switch {
+		case errors.As(err, &p):
+			fmt.Fprintln(os.Stderr, p.Error())
+		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid):
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
 		}
 		return 1

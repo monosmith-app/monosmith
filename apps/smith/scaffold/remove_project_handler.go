@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -25,7 +26,7 @@ outside it (the go.work entry, the npm lockfile, the Python venv), drop its
 tables from smith.toml and regenerate the pipelines. A project that others
 import is refused unless --force. Its release tags are kept.`,
 		Example: "  smith remove web --dry-run\n  smith remove web",
-		Args:    cobra.ExactArgs(1),
+		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"the project to remove"}, Example: "smith remove web --dry-run", More: "smith projects lists them"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name = args[0]
 			out := cmd.OutOrStdout()

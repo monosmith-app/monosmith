@@ -133,7 +133,7 @@ published. What was published where is kept in dist/release/<project>/journal.js
 func printPlan(cmd *cobra.Command, plan Plan) {
 	out := cmd.OutOrStdout()
 	if len(plan.Items) == 0 {
-		fmt.Fprintln(out, "Nothing to release.")
+		fmt.Fprintln(out, NothingToRelease())
 	}
 	for _, item := range plan.Items {
 		from := item.Current

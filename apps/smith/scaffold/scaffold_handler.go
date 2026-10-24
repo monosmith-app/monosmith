@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/recipechoice"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -20,7 +21,7 @@ func NewCommand(version string) *cobra.Command {
 		Short: "Create a monorepo: configuration, git, CI pipelines and a first commit",
 		Example: `  smith new acme
   smith new acme --dir . --ci github,azure   # in an existing clone`,
-		Args: cobra.ExactArgs(1),
+		Args: commandargs.Exactly(commandargs.Spec{Names: []string{"a name for the workspace"}, Example: "smith new acme", More: "to bring in a repository you already have, run smith adopt --dry-run instead"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.Name, opts.Version, opts.Out = args[0], version, cmd.OutOrStdout()
 			dir, err := NewWorkspace(opts)
@@ -72,7 +73,7 @@ pipelines are regenerated to install its toolchain.`,
   smith add lib core --lang go
   smith add package sdk --lang python
   smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
-		Args: cobra.ExactArgs(2),
+		Args: commandargs.Exactly(commandargs.Spec{Names: []string{"a kind (app, lib or package)", "a name"}, Example: "smith add app web --lang node", More: "smith kinds lists the kinds and languages"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {

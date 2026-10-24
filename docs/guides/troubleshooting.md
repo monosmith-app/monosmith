@@ -15,8 +15,13 @@ version and workspace in use.
 ## smith says it cannot find the workspace
 
 ```text
-smith: not inside a smith workspace (no smith.toml found); run `smith new <name>` to create one
+✖ this folder is not a smith workspace yet (there is no smith.toml); it already holds a repository
+  → smith adopt --dry-run shows what bringing it under smith involves
 ```
+
+The advice depends on the folder: an Nx or Turborepo workspace is sent to
+`smith convert --dry-run`, any other existing repository to
+`smith adopt --dry-run`, and an empty folder to `smith new <name>`.
 
 smith looks for a `smith.toml` in the current folder, then in each parent.
 Change into the workspace, or set `SMITH_WORKSPACE_ROOT` to its path. Commands
