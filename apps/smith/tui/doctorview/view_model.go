@@ -52,6 +52,9 @@ func (v Model) groups() []Group {
 	} else {
 		groups = GroupByProject(v.Report.Findings, v.Projects)
 	}
+	for _, g := range groups {
+		failuresFirst(v.Report.Findings, g.Indexes)
+	}
 	if v.ShowPassed {
 		return groups
 	}
