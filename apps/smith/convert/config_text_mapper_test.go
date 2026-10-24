@@ -2,6 +2,7 @@ package convert
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -50,5 +51,15 @@ func TestConfigTextRoundTrips(t *testing.T) {
 	}
 	if out.Projects["web.app"].TagPrefix != "@acme/web@" || out.Tasks["test"].DependsOn[0] != "^build" {
 		t.Fatalf("%+v", out)
+	}
+}
+
+func TestConfigTextWritesTheDefaultStacks(t *testing.T) {
+	cfg := workspace.Config{Workspace: workspace.WorkspaceSection{Name: "demo"}, DefaultStacks: map[string]string{"node": "node-jest"}}
+	if text := ConfigText(cfg); !strings.Contains(text, "\n[default_stacks]\nnode = \"node-jest\"\n") {
+		t.Fatalf("%s", text)
+	}
+	if text := ConfigText(workspace.Config{Workspace: workspace.WorkspaceSection{Name: "demo"}}); strings.Contains(text, "default_stacks") {
+		t.Fatalf("no default stack was asked for:\n%s", text)
 	}
 }
