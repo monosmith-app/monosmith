@@ -1,4 +1,4 @@
-package tui
+package projectlist
 
 import "testing"
 
@@ -11,22 +11,22 @@ func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
 		{64, true, false, false},
 		{50, false, false, false},
 	} {
-		c := columnsForProjects(tc.w, 20, 25, true)
-		if c.kind != tc.kind || c.lang != tc.lang || c.stack != tc.stack {
+		c := ColumnsFor(tc.w, 20, 25, true)
+		if c.Kind != tc.kind || c.Lang != tc.lang || c.Stack != tc.stack {
 			t.Errorf("w=%d: got %+v", tc.w, c)
 		}
-		if c.tasks < tasksFloorW && c.tasks < 25 {
-			t.Errorf("w=%d: tasks squeezed to %d", tc.w, c.tasks)
+		if c.Tasks < TasksFloorW && c.Tasks < 25 {
+			t.Errorf("w=%d: tasks squeezed to %d", tc.w, c.Tasks)
 		}
-		used := projectLeadW + c.name + depsColW + c.tasks
-		if c.kind {
-			used += kindColW
+		used := LeadW + c.Name + DepsW + c.Tasks
+		if c.Kind {
+			used += KindW
 		}
-		if c.lang {
-			used += langColW
+		if c.Lang {
+			used += LangW
 		}
-		if c.stack {
-			used += stackColW
+		if c.Stack {
+			used += StackW
 		}
 		if used > tc.w {
 			t.Errorf("w=%d: columns take %d", tc.w, used)
@@ -35,13 +35,13 @@ func TestTheProjectTableDropsOptionalColumnsBeforeCuttingTasks(t *testing.T) {
 }
 
 func TestAShortTasksListIsNotAReasonToDropColumns(t *testing.T) {
-	if c := columnsForProjects(80, 10, 4, true); !c.stack || !c.lang || !c.kind {
+	if c := ColumnsFor(80, 10, 4, true); !c.Stack || !c.Lang || !c.Kind {
 		t.Errorf("got %+v", c)
 	}
 }
 
 func TestTheStackColumnIsHiddenWhenNoProjectHasAStack(t *testing.T) {
-	if c := columnsForProjects(200, 10, 20, false); c.stack || !c.lang || !c.kind {
+	if c := ColumnsFor(200, 10, 20, false); c.Stack || !c.Lang || !c.Kind {
 		t.Errorf("got %+v", c)
 	}
 }

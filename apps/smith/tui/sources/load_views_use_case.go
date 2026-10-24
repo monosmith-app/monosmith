@@ -1,4 +1,4 @@
-package tui
+package sources
 
 import (
 	"context"
@@ -30,7 +30,7 @@ type Sources struct {
 	Release func() releaseview.Result
 	// Projects lists the workspace's projects with their tasks and what the
 	// current changes affect.
-	Projects func() projectsLoaded
+	Projects func() ProjectsLoaded
 	// Deps looks for newer releases and applies the one-version policy.
 	Deps func() depsview.Result
 	// Plan lists the tasks a run command line will start, in order, so the
@@ -42,11 +42,11 @@ type Sources struct {
 	Start func(argv []string) (runner.Handle, error)
 }
 
-// projectsLoaded is the workspace's projects, loaded in the background.
-type projectsLoaded struct {
-	projects []projectlist.Project
-	branch   string
-	err      error
+// ProjectsLoaded is the workspace's projects, loaded in the background.
+type ProjectsLoaded struct {
+	Projects []projectlist.Project
+	Branch   string
+	Err      error
 }
 
 // WorkspaceSources open the workspace in dir for each view, as the CLI
@@ -66,7 +66,7 @@ func WorkspaceSources(dir, version string) Sources {
 		Inline: func(argv []string) *runner.Inline {
 			return runner.NewInline(runner.Spec{Argv: argv, Dir: dir})
 		},
-		Projects: func() projectsLoaded { return loadProjects(open) },
+		Projects: func() ProjectsLoaded { return loadProjects(open) },
 		Deps:     func() depsview.Result { return depsview.Load(open) },
 		Plan:     func(argv []string) []string { return planTasks(open, argv) },
 		Doctor: func() doctorview.Result {
@@ -103,10 +103,10 @@ func WorkspaceSources(dir, version string) Sources {
 
 // loadProjects reads the project graph and what the changes since the release
 // branch affect.
-func loadProjects(open func() (*session.Session, error)) projectsLoaded {
+func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 	s, err := open()
 	if err != nil {
-		return projectsLoaded{err: err}
+		return ProjectsLoaded{Err: err}
 	}
 	defer s.Close()
 	base := affected.BaseFromEnv()
@@ -137,7 +137,7 @@ func loadProjects(open func() (*session.Session, error)) projectsLoaded {
 		}
 		out = append(out, np)
 	}
-	return projectsLoaded{projects: out, branch: s.Git.CurrentBranch()}
+	return ProjectsLoaded{Projects: out, Branch: s.Git.CurrentBranch()}
 }
 
 // planTasks lists the task IDs a run command line will start, in dependency

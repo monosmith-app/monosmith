@@ -1,11 +1,10 @@
-package tui
+package guide
 
 import (
 	"slices"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
@@ -31,7 +30,7 @@ func TestEveryPresentedActionIsAnActionAndIsNotAlsoExcused(t *testing.T) {
 
 func TestEveryGuidedCommandNamesAGuidedForm(t *testing.T) {
 	var titles []string
-	for _, g := range guide.Actions([]string{"node"}, []string{"node"}, nil) {
+	for _, g := range Actions([]string{"node"}, []string{"node"}, nil) {
 		titles = append(titles, g.Title)
 	}
 	for _, c := range commands.All() {

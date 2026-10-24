@@ -20,6 +20,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
@@ -39,7 +40,7 @@ type Config struct {
 	// Commands are every smith command, for the palette.
 	Commands []clicontract.CommandDescription
 	// Sources load the views; nil outside a workspace.
-	Sources *Sources
+	Sources *sources.Sources
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
@@ -62,7 +63,7 @@ type Shell struct {
 
 	inWorkspace bool
 	emptyFolder bool
-	sources     Sources
+	sources     sources.Sources
 	tabs        []string
 	tab         string
 	// detailOpen is true while the detail of the selected project fills the
@@ -308,12 +309,12 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			return tickCmd()
 		}
 		s.ticking = false
-	case projectsLoaded:
-		s.loadedProjects, s.projectsErr = true, msg.err
-		if msg.err == nil {
+	case sources.ProjectsLoaded:
+		s.loadedProjects, s.projectsErr = true, msg.Err
+		if msg.Err == nil {
 			selected := s.list.SelectedName()
-			s.list = projectlist.New(msg.projects).SelectProject(selected)
-			s.branch = msg.branch
+			s.list = projectlist.New(msg.Projects).SelectProject(selected)
+			s.branch = msg.Branch
 		}
 	case doctorview.Result:
 		s.doctor = doctorview.FromResult(msg)

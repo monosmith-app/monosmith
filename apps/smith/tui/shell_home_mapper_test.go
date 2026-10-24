@@ -9,12 +9,13 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func TestAWorkspaceOpensOnHomeAndChecksItselfInTheBackground(t *testing.T) {
-	sh := NewShell(Config{Theme: theme.Default(), Sources: &Sources{Doctor: func() doctorview.Result { return doctorview.Result{} }}})
+	sh := NewShell(Config{Theme: theme.Default(), Sources: &sources.Sources{Doctor: func() doctorview.Result { return doctorview.Result{} }}})
 	if sh.tab != commands.TabHome {
 		t.Fatalf("opens on %q", sh.tab)
 	}
@@ -90,7 +91,7 @@ func healthyShell(t *testing.T, affected bool) *lab {
 			projects = append(projects, p)
 		}
 	}
-	sh.sources.Projects = func() projectsLoaded { return projectsLoaded{projects: projects, branch: "main"} }
+	sh.sources.Projects = func() sources.ProjectsLoaded { return sources.ProjectsLoaded{Projects: projects, Branch: "main"} }
 	sh.sources.Doctor = func() doctorview.Result {
 		return doctorview.Result{Report: doctor.Report{Passed: 3, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "git is installed", OK: true}}}}}
 	}

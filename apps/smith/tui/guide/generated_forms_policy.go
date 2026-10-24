@@ -1,9 +1,8 @@
-package tui
+package guide
 
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
@@ -20,7 +19,7 @@ func Presented() map[string]bool {
 			out[a.ID()] = true
 		}
 	}
-	for _, g := range guide.Actions(nil, nil, nil) {
+	for _, g := range Actions(nil, nil, nil) {
 		if g.Presents != "" {
 			out[g.Presents] = true
 		}
@@ -40,15 +39,15 @@ func addAll(set map[string]bool, ids ...string) map[string]bool {
 // descriptions: a command added to smith has a form in the shell without
 // anyone remembering to write one. An action left out on purpose (its
 // NotInTUI says why) has none.
-func GeneratedForms(described []clicontract.CommandDescription) []guide.Action {
+func GeneratedForms(described []clicontract.CommandDescription) []Action {
 	shown := Presented()
-	var forms []guide.Action
+	var forms []Action
 	for _, a := range catalog.All() {
 		if a.NotInTUI != "" || shown[a.ID()] {
 			continue
 		}
 		if c, ok := describedAt(described, a.Command); ok {
-			forms = append(forms, guide.FormFor(c, a.Command, a.ID()))
+			forms = append(forms, FormFor(c, a.Command, a.ID()))
 		}
 	}
 	return forms

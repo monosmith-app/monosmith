@@ -19,6 +19,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/muesli/termenv"
@@ -141,10 +142,10 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 		Actions:  guide.Actions([]string{"go", "node"}, []string{"go", "node", "python"}, []string{"go", "node"}),
 	}
 	if inWorkspace {
-		cfg.Sources = &Sources{
+		cfg.Sources = &sources.Sources{
 			Doctor:   func() doctorview.Result { return doctorview.Result{Report: report, Projects: sampleDoctorProjects} },
 			Release:  func() releaseview.Result { return releaseview.Result{Plan: plan} },
-			Projects: func() projectsLoaded { return projectsLoaded{projects: sampleProjects, branch: "main"} },
+			Projects: func() sources.ProjectsLoaded { return sources.ProjectsLoaded{Projects: sampleProjects, Branch: "main"} },
 			Deps:     func() depsview.Result { return sampleDeps },
 			Plan: func(argv []string) []string {
 				return []string{"kit:build", "orders:build", "web:build", "sdk:test"}

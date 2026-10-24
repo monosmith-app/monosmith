@@ -113,18 +113,18 @@ func (s Shell) projectsContent(w, h int) content {
 		nameW = max(nameW, pane.Width(p.Name)+2) // the room for the last run's mark
 		tasksW = max(tasksW, pane.Width(taskList(p)))
 	}
-	cols := columnsForProjects(w, nameW, tasksW, hasStack)
-	head := "   " + pane.Cell("Project", cols.name+1)
-	if cols.kind {
-		head += pane.Cell("Kind", kindColW)
+	cols := projectlist.ColumnsFor(w, nameW, tasksW, hasStack)
+	head := "   " + pane.Cell("Project", cols.Name+1)
+	if cols.Kind {
+		head += pane.Cell("Kind", projectlist.KindW)
 	}
-	if cols.lang {
-		head += pane.Cell("Language", langColW)
+	if cols.Lang {
+		head += pane.Cell("Language", projectlist.LangW)
 	}
-	if cols.stack {
-		head += pane.Cell("Stack", stackColW)
+	if cols.Stack {
+		head += pane.Cell("Stack", projectlist.StackW)
 	}
-	head += pane.Cell("↑ ↓", depsColW) + "Tasks"
+	head += pane.Cell("↑ ↓", projectlist.DepsW) + "Tasks"
 	c.lines = append(c.lines, s.th.Muted(pane.Fit(head, w)))
 
 	avail := max(h-len(c.lines), 1)
@@ -136,18 +136,18 @@ func (s Shell) projectsContent(w, h int) content {
 		if p.Affected {
 			dot = s.th.Warning(s.th.Icons.Dot)
 		}
-		line := " " + dot + " " + pane.Cell(p.Name+s.treeStatus(p.Name, ""), cols.name+1)
-		if cols.kind {
-			line += pane.Cell(p.Kind, kindColW)
+		line := " " + dot + " " + pane.Cell(p.Name+s.treeStatus(p.Name, ""), cols.Name+1)
+		if cols.Kind {
+			line += pane.Cell(p.Kind, projectlist.KindW)
 		}
-		if cols.lang {
-			line += pane.Cell(p.Language, langColW)
+		if cols.Lang {
+			line += pane.Cell(p.Language, projectlist.LangW)
 		}
-		if cols.stack {
-			line += pane.Cell(p.Stack, stackColW)
+		if cols.Stack {
+			line += pane.Cell(p.Stack, projectlist.StackW)
 		}
-		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), depsColW)
-		line += ansi.Truncate(taskList(p), cols.tasks, "…")
+		line += pane.Cell(fmt.Sprintf("%d %d", len(p.Deps), len(p.Dependents)), projectlist.DepsW)
+		line += ansi.Truncate(taskList(p), cols.Tasks, "…")
 		if p.Name == s.selectedProject() {
 			line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 		}

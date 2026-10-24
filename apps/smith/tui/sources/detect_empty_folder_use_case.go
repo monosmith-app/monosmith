@@ -1,10 +1,10 @@
-package tui
+package sources
 
 import "os"
 
-// folderIsEmpty is true when dir holds nothing but, at most, an empty git
+// FolderIsEmpty is true when dir holds nothing but, at most, an empty git
 // repository's .git: there is nothing yet to adopt or convert.
-func folderIsEmpty(dir string) bool {
+func FolderIsEmpty(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false

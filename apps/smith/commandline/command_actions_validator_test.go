@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
-	"github.com/monosmith-app/monosmith/apps/smith/tui"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 	"github.com/spf13/cobra"
 )
@@ -41,7 +41,7 @@ func TestEveryCommandIsAnActionAndEveryActionIsACommand(t *testing.T) {
 }
 
 func TestEveryActionHasAFormOrAMenuEntryInTheShellOrIsExcused(t *testing.T) {
-	shown := tui.PresentedWithForms(clicontract.DescribeCommands(Root("0.0.0")))
+	shown := guide.PresentedWithForms(clicontract.DescribeCommands(Root("0.0.0")))
 	for _, a := range catalog.All() {
 		switch {
 		case shown[a.ID()] && a.NotInTUI != "":

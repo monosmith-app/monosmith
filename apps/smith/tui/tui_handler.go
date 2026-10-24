@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/screenreader"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
@@ -44,9 +45,9 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 			}
 		}
 	}
-	empty := !inside && folderIsEmpty(".")
+	empty := !inside && sources.FolderIsEmpty(".")
 	var actions []guide.Action
-	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), GeneratedForms(catalog)...) {
+	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), guide.GeneratedForms(catalog)...) {
 		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) || (a.NeedsContent && empty) {
 			continue
 		}
@@ -70,7 +71,7 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		Theme: theme.New(theme.Choose(os.Getenv, theme.DarkBackground(os.Getenv))),
 	}
 	if inside {
-		s := WorkspaceSources(".", version)
+		s := sources.WorkspaceSources(".", version)
 		cfg.Sources = &s
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
