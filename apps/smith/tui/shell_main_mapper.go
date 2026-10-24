@@ -48,7 +48,7 @@ func (s Shell) cmdButton(id, label, icon string) buttons.Button {
 	if s.running() && len(s.run.Command) > 1 {
 		switch c.Kind {
 		case commands.RunTask:
-			b.Busy = s.run.Command[0] == "run" && s.run.Command[1] == c.Task
+			b.Busy = s.run.Command[0] == "run" && s.run.Command[1] == c.Task && (!c.All || len(s.run.Command) == 2)
 		case commands.Execute:
 			b.Busy = strings.Join(s.run.Command, " ") == strings.Join(c.Argv, " ")
 		}
@@ -150,9 +150,17 @@ func (s Shell) navigatorContent(w, h int) content {
 // the selection. When the inspector is folded away it is drawn below.
 func (s Shell) projectsContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
+	// The scope is in the labels: a newcomer pressing Build expects the workspace.
+	scoped := func(task string) string {
+		if p := s.selectedProject(); p != "" {
+			return task + " " + p
+		}
+		return task
+	}
 	s.addBars(&c, buttons.Bar{
-		s.cmdButton("run.build", "Build", "▶"), s.cmdButton("run.test", "Test", "▶"), s.cmdButton("run.lint", "Lint", "▶"),
-		s.cmdButton("run.typecheck", "Typecheck", "▶"), s.cmdButton("run.affected", "What changed", "⟳"),
+		s.cmdButton("run.build", scoped("Build"), "▶"), s.cmdButton("run.test", scoped("Test"), "▶"), s.cmdButton("run.lint", scoped("Lint"), "▶"),
+		s.cmdButton("run.typecheck", scoped("Typecheck"), "▶"), s.cmdButton("run.build-all", "Build all", "▶"),
+		s.cmdButton("run.affected", "What changed", "⟳"),
 	}, w)
 	if !s.loadedProjects {
 		return withLines(c, s.th.Muted("Reading the workspace…"))
@@ -298,6 +306,10 @@ func (s Shell) runButtons() buttons.Bar {
 		follow.Label, follow.Icon = "Follow log", "⏵"
 	}
 	again := buttons.Button{ID: "x:rerun", Label: "Run again", Icon: "↻", Disabled: s.lastArg == nil || s.running()}
+	if !s.running() {
+		// Stop has nothing to stop: it is shown only while a run goes.
+		return buttons.Bar{follow, again}
+	}
 	return buttons.Bar{s.cmdButton("run.stop", "Stop", "■"), follow, again}
 }
 
