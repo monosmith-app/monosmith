@@ -17,9 +17,11 @@ import (
 	"golang.org/x/term"
 )
 
-// Interactive reports whether a bare `smith` should open the TUI.
+// Interactive reports whether a bare `smith` should ask what to do: someone
+// is typing at a terminal and this is not CI. When standard output is not a
+// terminal the questions are plain lines (see screenreader.Plain).
 func Interactive() bool {
-	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
+	return term.IsTerminal(int(os.Stdin.Fd())) && os.Getenv("CI") == ""
 }
 
 // Choose runs the shell full screen, with the mouse, and returns the smith
@@ -53,9 +55,15 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		}
 		actions = append(actions, a)
 	}
-	if screenreader.Wanted(os.Getenv) {
+	stdoutTTY := term.IsTerminal(int(os.Stdout.Fd()))
+	if screenreader.Plain(os.Getenv, stdoutTTY) {
 		// No full-screen drawing, no mouse and no colour: plain numbered
 		// questions, then the command, which smith runs in this terminal.
+		// With output that is not a terminal the questions go to stderr, where
+		// the person can still read them.
+		if !stdoutTTY {
+			out = os.Stderr
+		}
 		argv, err := screenreader.Ask(os.Stdin, out, actions)
 		if err != nil {
 			return nil, err
