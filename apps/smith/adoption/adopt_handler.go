@@ -16,7 +16,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise, dryRun, install bool
+	var asJSON, tags, initialise, dryRun, install, eslint bool
 	cmd := &cobra.Command{
 		Use:   "adopt",
 		Short: "Bring an existing repository under smith: report what it involves, then take the steps (start here)",
@@ -27,7 +27,9 @@ is asked for, and both steps need a clean git tree:
 
   --tags  creates, locally, the release tags a project needs where its tags
           were made under another name (nothing is pushed)
-  --init  writes smith.toml and the pipelines and commits; a pipeline of yours
+  --init  writes smith.toml and the pipelines and commits (with --install it also
+          runs npm install; with --eslint it writes the root eslint.config.mjs and
+          adds @monosmith/eslint-config to the devDependencies); a pipeline of yours
           at a path smith owns is kept beside it as .pre-smith
 
 An Nx or Turborepo workspace is smith convert's: adopt says so and stops. Exits
@@ -53,7 +55,7 @@ non-zero while something blocks.`,
 				}
 			}
 			if initialise {
-				return Init(report, version, install, out)
+				return Init(report, version, install, eslint, out)
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {
@@ -79,6 +81,7 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only report (this is the default; the flag makes it explicit)")
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
 	cmd.Flags().BoolVar(&install, "install", false, "with --init, also run npm install for the Node projects")
+	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines, and commit")
 	return cmd
 }
@@ -103,7 +106,7 @@ func printReport(w io.Writer, r Report) {
 	}
 	switch {
 	case len(r.Blockers) == 0 && r.Adoptable():
-		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports")
+		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
 	case r.Adoptable():
 		fmt.Fprintln(w, "Nothing blocks --init; the release blockers above need clearing before the first release.")
 	}

@@ -7,11 +7,11 @@ import (
 )
 
 func TestPickLanguageSaysWhenItChoseForYou(t *testing.T) {
-	lang, note, err := pickLanguage("", "site", []string{"go"}, []string{"go", "node"}, nil, nil, false)
+	lang, note, err := pickLanguage("", "site", []string{"go"}, []string{"bicep", "go", "node"}, nil, nil, false)
 	if err != nil || lang != "go" {
 		t.Fatalf("%q %v", lang, err)
 	}
-	if !strings.Contains(note, "No --lang: using go, the only language in this workspace (pass --lang node") {
+	if !strings.Contains(note, "No --lang: using go, the only language in this workspace (pass --lang with another to choose: node, ...; `smith kinds`") || strings.Contains(note, "bicep") {
 		t.Fatalf("%q", note)
 	}
 }

@@ -46,7 +46,7 @@ func CreateBaselines(r Report, out io.Writer) (int, error) {
 // npm workspaces, and with install npm install) are taken, the pipelines are
 // generated for the projects found, and it all becomes one commit. It ends by
 // saying what smith doctor still reports.
-func Init(r Report, version string, install bool, out io.Writer) error {
+func Init(r Report, version string, install, eslint bool, out io.Writer) error {
 	if !r.Adoptable() {
 		return errors.New("something blocks adoption; see smith adopt")
 	}
@@ -68,7 +68,7 @@ func Init(r Report, version string, install bool, out io.Writer) error {
 	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: r.Providers, Version: version, Out: out, NoCommit: true}); err != nil {
 		return err
 	}
-	if err := CompleteWorkspace(r, install, out); err != nil {
+	if err := CompleteWorkspace(r, install, eslint, out); err != nil {
 		return err
 	}
 	s, err := session.Open(session.Options{Dir: r.Root, Version: version, Log: out})

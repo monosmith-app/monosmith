@@ -53,7 +53,7 @@ func pickLanguage(requested, project string, used, available []string, in io.Rea
 		return askLanguage(project, def, used, available, in, out)
 	}
 	if len(used) == 1 {
-		return used[0], fmt.Sprintf("No --lang: using %s, the only language in this workspace (pass --lang %s to choose another).", used[0], otherLanguage(used[0], available)), nil
+		return used[0], fmt.Sprintf("No --lang: using %s, the only language in this workspace (pass --lang with another to choose: %s).", used[0], otherLanguages(used[0], available)), nil
 	}
 	return "", "", fmt.Errorf("choose a language with --lang (%s) or a stack with --stack", strings.Join(available, ", "))
 }
@@ -96,13 +96,18 @@ func askLanguage(project, def string, used, available []string, in io.Reader, ou
 	return "", "", fmt.Errorf("choose a language with --lang (%s) or a stack with --stack", strings.Join(available, ", "))
 }
 
-// otherLanguage names a language other than the one chosen, for the example
-// in the note.
-func otherLanguage(chosen string, available []string) string {
-	for _, l := range available {
-		if l != chosen {
-			return l
+// otherLanguages names the languages a person is likely to want instead of
+// the one chosen (go, python, rust, node first, when installed), for the
+// note; the plugins' own order would start with bicep.
+func otherLanguages(chosen string, available []string) string {
+	var likely []string
+	for _, l := range []string{"go", "python", "rust", "node"} {
+		if l != chosen && slices.Contains(available, l) {
+			likely = append(likely, l)
 		}
 	}
-	return "<language>"
+	if len(likely) == 0 {
+		return "`smith kinds` lists them"
+	}
+	return strings.Join(likely, ", ") + ", ...; `smith kinds` lists them"
 }
