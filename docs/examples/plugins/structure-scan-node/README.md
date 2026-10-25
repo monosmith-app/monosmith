@@ -12,7 +12,8 @@ and warns about any over a mebibyte, and it shows the two things a plugin does w
   in flight, and the SDK runs them together. A plugin that says nothing is called one request at a time.
 
 For the same requests, a cancel included, this plugin and the Go one answer with the same bytes, which
-`packages/plugin-sdk-ts/integration` checks. The rule is in
+`packages/plugin-sdk-ts/integration` checks; the Python twin is [`structure-scan-py`](../structure-scan-py), compared with
+both by `packages/plugin-sdk-py/tests/integration`. The rule is in
 [the plugin protocol](../../../architecture/plugin-protocol.md#cancel-and-concurrency); the SDK in
 [The TypeScript SDK](../../../plugins/creating/typescript-sdk.md#stop-work-when-the-host-cancels-it).
 

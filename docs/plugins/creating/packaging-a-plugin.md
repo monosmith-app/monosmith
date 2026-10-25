@@ -130,7 +130,9 @@ Python examples show the Unix launcher; a Windows install uses the `.cmd`. A Typ
 as it is on Node.js 24 (`./plugin.ts` starting with `#!/usr/bin/env node`), but not from a folder
 called `node_modules`, where Node.js refuses to strip types: install it elsewhere, or build it to
 JavaScript first. Ship its dependency, `@monosmith/plugin-sdk`, with it (`npm install` in the plugin's
-directory).
+directory). A Python plugin on the SDK needs `monosmith-plugin-sdk` importable by the interpreter that
+runs it: `pip install monosmith-plugin-sdk` into the environment the launcher's `python` belongs to (a
+virtual environment, whose interpreter the launcher names).
 
 ## Versions
 
@@ -146,7 +148,7 @@ A version is `major[.minor[.patch]]`; a leading `v` and a `-pre` or `+build` suf
 else fails with `plugin version "x": not a version`. Use semantic versioning: a breaking change to
 what the plugin does is a new major, so users who wrote `^1` do not pick it up unasked.
 
-The **protocol** has its own version (`protocol.Version`, 1; `PROTOCOL_VERSION` in the TypeScript SDK,
+The **protocol** has its own version (`protocol.Version`, 1; `PROTOCOL_VERSION` in the TypeScript and Python SDKs,
 and `x-protocolVersion` in the JSON Schema). A plugin on an SDK is built against a version of the SDK; if smith ever stops speaking the protocol version the plugin was built for, the
 handshake fails and you rebuild with a newer SDK. Additions to the protocol are optional fields and
 new capabilities, which old plugins ignore, so an old plugin keeps working with a newer smith.

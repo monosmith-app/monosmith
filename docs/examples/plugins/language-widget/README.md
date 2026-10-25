@@ -3,7 +3,9 @@
 A smith **language plugin** in Go, on the plugin SDK. It teaches smith the widget project type: a
 directory with a `widget.json` is a project, `uses` in it become graph edges, and each project gets a
 cached `build` and `test` task. It also scaffolds widgets (`smith add lib core --lang widget`),
-writes the release version into `widget.json`, and reports a doctor finding with a fix.
+writes the release version into `widget.json`, and reports a doctor finding with a fix. The same plugin is written in
+[TypeScript](../language-widget-ts) and in [Python](../language-widget-py), on their SDKs; for the same requests the
+three answer with the same bytes (`packages/plugin-sdk-py/tests/integration` checks it).
 
 Guide: [Creating a language plugin](../../../plugins/creating/language-plugin.md).
 

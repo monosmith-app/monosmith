@@ -128,8 +128,8 @@ node "%~dp0plugin.ts" %*
 
 Without a launcher, the path form also takes the absolute path of the interpreter followed by the
 script (`smith plugin check C:\...\node.exe C:\...\plugin.ts`): the first argument exists, so it is run
-as the plugin with the rest as its arguments. The TypeScript SDK's own integration tests check the
-TypeScript examples that way.
+as the plugin with the rest as its arguments. The TypeScript and Python SDKs' own integration tests check
+their examples that way (`smith plugin check <python> plugin.py`).
 
 ## Unit tests that talk to the plugin
 
@@ -181,7 +181,14 @@ params)` is typed by method), and `checkPlugin(client)` runs the conformance che
 command, workspaceRoot })` starts the real process instead. See [The TypeScript SDK](typescript-sdk.md#3-test-it),
 and `structure-layout-node/layout.test.ts` (`node --test`).
 
-In Python, or in Node.js without the SDK, start the plugin as a child process with `SMITH_PLUGIN=1` and
+In Python, the SDK has the same two tools: `connect_in_process(plugin, HostOptions(workspace_root=...))`
+serves a plugin object over pipes (the requests run on worker threads) and returns a client
+(`client.call("contribute", params, timeout=..., cancel=...)`), and `check_plugin(client, workspace)` runs
+the conformance checks. `start_plugin(StartOptions(command=[...], workspace_root=...))` starts the real
+process instead. See [The Python SDK](python-sdk.md#3-test-it), and `structure-layout-py/test_layout.py`
+(`python -m unittest`).
+
+In Python without the SDK, or in Node.js without it, start the plugin as a child process with `SMITH_PLUGIN=1` and
 speak the protocol to it, as `structure-layout-python/test_plugin.py` (`python -m unittest`) does: write
 the framed requests, close stdin, parse the framed answers.
 
@@ -202,9 +209,11 @@ Ran 5 tests in 0.246s
 OK
 ```
 
-If a Go and a TypeScript plugin implement the same logic, the strongest test is that they give the same
-bytes: start both with the same requests and compare the answers. The SDK's
-`integration/cross-language.integration.spec.ts` does that for two of the examples.
+If a Go, a TypeScript and a Python plugin implement the same logic, the strongest test is that they give the
+same bytes: start them with the same requests and compare the answers (by `id`, when requests run together
+and may be answered in any order). The TypeScript SDK's `integration/cross-language.integration.spec.ts`
+does that for Go and TypeScript, and the Python SDK's `tests/integration/test_cross_language.py` for all
+three, over the language, scan and layout examples.
 
 ### Golden files for a scaffold
 

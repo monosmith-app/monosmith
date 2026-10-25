@@ -8,7 +8,8 @@ and keeps standard output for the protocol. It is both the plugin (when smith st
 
 The same plugin with the framing and dispatch written by hand, in about 40 lines of Node.js and no
 SDK, is [`node`](../node) (and [`python`](../python) in Python). For the same requests this plugin and
-the Go one answer with the same bytes, which `packages/plugin-sdk-ts/integration` checks.
+the Go one answer with the same bytes, which `packages/plugin-sdk-ts/integration` checks; the Python twin on the SDK is
+[`structure-layout-py`](../structure-layout-py), compared by `packages/plugin-sdk-py/tests/integration` with both.
 
 Guide: [Creating a structure plugin](../../../plugins/creating/structure-plugin.md); the SDK:
 [The TypeScript SDK](../../../plugins/creating/typescript-sdk.md).

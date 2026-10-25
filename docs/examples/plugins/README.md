@@ -13,8 +13,11 @@ model at a time. Each one is explained step by step in
 | [`structure-layout-node`](structure-layout-node) | the same structure plugin | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`structure-scan-go`](structure-scan-go) | a structure plugin whose `doctor` can be cancelled and runs four at a time | Go, on the SDK | [The plugin protocol](../../architecture/plugin-protocol.md#cancel-and-concurrency) |
 | [`structure-scan-node`](structure-scan-node) | the same plugin | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
-| [`structure-layout-python`](structure-layout-python) | the same structure plugin | Python, standard library | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
+| [`structure-layout-py`](structure-layout-py) | the same structure plugin | Python, on the SDK | [The Python SDK](../../plugins/creating/python-sdk.md) |
+| [`structure-scan-py`](structure-scan-py) | the same cancellable, concurrent plugin as `structure-scan-go` | Python, on the SDK | [The Python SDK](../../plugins/creating/python-sdk.md#stop-work-when-the-host-cancels-it) |
+| [`structure-layout-python`](structure-layout-python) | the same structure plugin | Python, standard library, no SDK | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
 | [`language-widget-ts`](language-widget-ts) | the same language plugin as `language-widget` | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
+| [`language-widget-py`](language-widget-py) | the same language plugin as `language-widget` | Python, on the SDK | [The Python SDK](../../plugins/creating/python-sdk.md) |
 | [`scaffold-widget-service`](scaffold-widget-service) | scaffold plugin: templates, settings, golden test | Go | [Creating a scaffold plugin](../../plugins/creating/scaffold-plugin.md) |
 | [`deploy-widget-bundle`](deploy-widget-bundle) | deploy plugin: a task, `publish`, `ci`, doctor | Go | [Creating a deploy plugin](../../plugins/creating/deploy-plugin.md) |
 | [`recipe-widget-team`](recipe-widget-team) | a recipe choosing the plugins above | TOML | [Creating a recipe and a stack](../../plugins/creating/recipe-and-stack.md) |
@@ -38,9 +41,15 @@ smith plugin check ./smith-plugin-widget --generate
 (`structure-layout-node`, `language-widget-ts`) run as they are on Node.js 24, which only removes the
 types, and test with `node --test`; they import `@monosmith/plugin-sdk`, which inside this repository is
 the neighbouring `packages/plugin-sdk-ts` once the workspace is installed (`npm install` at the root),
-and which in your own project you `npm install`. The Python example tests with `python -m unittest`.
+and which in your own project you `npm install`. The Python examples on the SDK (`language-widget-py`,
+`structure-layout-py`, `structure-scan-py`) test with `python -m unittest` and import
+`monosmith_plugin_sdk`, which inside this repository is the editable install of `packages/plugin-sdk-py` in
+the workspace's `.venv` (`smith ci setup`), and which in your own project you `pip install monosmith-plugin-sdk`;
+check one with the interpreter that has the SDK: `smith plugin check <path of that python> plugin.py`. The
+Python example without an SDK tests with `python -m unittest` too.
 `packages/plugin-sdk-ts/integration` runs both TypeScript examples under `smith plugin check`, in a
-throwaway workspace, and against their Go counterparts.
+throwaway workspace, and against their Go counterparts; `packages/plugin-sdk-py/tests/integration` does the
+same for the Python examples and compares Go, TypeScript and Python.
 
 Every example passes `smith plugin check`, except that `scaffold-widget-service` does not pass
 `--generate`, which asks for an app, a lib and a package and the service is app-only. The commands, the

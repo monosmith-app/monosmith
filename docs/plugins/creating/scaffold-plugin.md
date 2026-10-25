@@ -109,7 +109,8 @@ written paths in sorted order, and **writes nothing if any target already exists
 (`file already exists`). `missingkey=error` makes a typo in a template an error, not an empty string.
 The TypeScript SDK has the same in `writeTemplates(root, files, data)` (the subset of `text/template`
 that templates use: fields, `if`, `with`, `range`, `eq ne lt le gt ge not and or len index print printf`,
-trim markers) and `scaffoldProject`, which fills the data from the `generate` params.
+trim markers) and `scaffoldProject`, which fills the data from the `generate` params. The Python SDK has
+the same as `write_templates(root, files, data)` and `scaffold_project(workspace_root, params, files)`.
 
 ### Step 3: `generate`, with settings
 
@@ -245,4 +246,4 @@ ok  	example.com/smith-plugin-widget-service	0.489s
 - [Creating a language plugin](language-plugin.md): a language plugin is its own default scaffold
 - [Creating a recipe and a stack](recipe-and-stack.md)
 - [The go-smith-plugin scaffold](../using/catalogue/go-smith-plugin.md), [vite](../using/catalogue/vite.md): built-in scaffolds
-- [The plugin protocol cheat sheet](protocol-cheat-sheet.md#generateparams), [The TypeScript SDK](typescript-sdk.md) (`scaffoldProject`)
+- [The plugin protocol cheat sheet](protocol-cheat-sheet.md#generateparams), [The TypeScript SDK](typescript-sdk.md) (`scaffoldProject`), [The Python SDK](python-sdk.md#reference) (`scaffold_project`)

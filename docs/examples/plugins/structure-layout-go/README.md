@@ -3,7 +3,8 @@
 A smith **structure plugin** in Go. For widget projects it adds a `layout-check` task that fails on
 folders named `util`, `utils`, `helper`, `helpers`, `common`, `shared` or `misc`, makes `lint` wait
 for it, and warns in `smith doctor` about a project without a `README.md`. The same plugin is written
-in [TypeScript](../structure-layout-node), on the TypeScript SDK, and in [Python](../structure-layout-python), without an SDK.
+in [TypeScript](../structure-layout-node), on the TypeScript SDK, in [Python](../structure-layout-py), on the Python SDK,
+and in [Python](../structure-layout-python), without an SDK.
 
 Guide: [Creating a structure plugin](../../../plugins/creating/structure-plugin.md).
 
