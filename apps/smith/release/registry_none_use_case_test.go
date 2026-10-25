@@ -1,6 +1,7 @@
 package release
 
 import (
+	"context"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -24,7 +25,7 @@ func TestAPackageWithRegistryNonePublishesNowhere(t *testing.T) {
 		Plugin:  "no-such-plugin",
 	}
 	// The plugin is never asked: publish returns before calling it.
-	res, err := publish(nil, p, Item{Next: "0.1.0"}, false)
+	res, err := publish(context.Background(), nil, p, Item{Next: "0.1.0"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

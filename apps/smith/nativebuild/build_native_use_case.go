@@ -60,14 +60,14 @@ func Run(ctx context.Context, s *session.Session, out io.Writer) error {
 	if !github && !azure {
 		return nil
 	}
-	if err := publishPackages(s, native, out); err != nil {
+	if err := publishPackages(ctx, s, native, out); err != nil {
 		return err
 	}
 	if !github {
 		// Assets go to GitHub Releases, which an Azure pipeline does not create.
 		return nil
 	}
-	return attach(s, native, out)
+	return attach(ctx, s, native, out)
 }
 
 // publishPackages publishes this platform's build of every native package
@@ -75,7 +75,7 @@ func Run(ctx context.Context, s *session.Session, out io.Writer) error {
 // deploy plugin ships (a VS Code extension app). The release job tagged
 // it without publishing; the version is stamped into its manifest here, as
 // the release job stamps it, and restored after.
-func publishPackages(s *session.Session, native []*projectgraph.Project, out io.Writer) error {
+func publishPackages(ctx context.Context, s *session.Session, native []*projectgraph.Project, out io.Writer) error {
 	head, err := s.Git.RevParse("HEAD")
 	if err != nil {
 		return err
@@ -90,16 +90,16 @@ func publishPackages(s *session.Session, native []*projectgraph.Project, out io.
 			fmt.Fprintf(out, "%s was not released by this commit; nothing to publish\n", p.Name)
 			continue
 		}
-		if err := publishPlatform(s, p, version, platform, out); err != nil {
+		if err := publishPlatform(ctx, s, p, version, platform, out); err != nil {
 			return fmt.Errorf("publishing %s %s for %s: %w", p.Name, version, platform, err)
 		}
 	}
 	return nil
 }
 
-func publishPlatform(s *session.Session, p *projectgraph.Project, version, platform string, out io.Writer) error {
+func publishPlatform(ctx context.Context, s *session.Session, p *projectgraph.Project, version, platform string, out io.Writer) error {
 	var vr protocol.VersionResult
-	if _, err := s.Plugins.Call(p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: version}, &vr, time.Minute); err != nil {
+	if _, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: version}, &vr, time.Minute); err != nil {
 		return fmt.Errorf("writing version: %w", err)
 	}
 	if len(vr.Files) > 0 {
@@ -118,7 +118,7 @@ func publishPlatform(s *session.Session, p *projectgraph.Project, version, platf
 	for _, plugin := range publishers {
 		var pr protocol.PublishResult
 		params := protocol.PublishParams{Project: p.Project, Version: version, Platform: platform}
-		if ok, err := s.Plugins.Call(plugin, protocol.MethodPublish, params, &pr, 30*time.Minute); err != nil {
+		if ok, err := s.Plugins.CallContext(ctx, plugin, protocol.MethodPublish, params, &pr, 30*time.Minute); err != nil {
 			return err
 		} else if !ok {
 			pr.Skipped = "published by its tag"
@@ -135,7 +135,7 @@ func publishPlatform(s *session.Session, p *projectgraph.Project, version, platf
 
 // attach adds this platform's assets to the GitHub Release of every native
 // app tagged at HEAD.
-func attach(s *session.Session, native []*projectgraph.Project, out io.Writer) error {
+func attach(ctx context.Context, s *session.Session, native []*projectgraph.Project, out io.Writer) error {
 	head, err := s.Git.RevParse("HEAD")
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func attach(s *session.Session, native []*projectgraph.Project, out io.Writer) e
 		spec.Platforms = []string{runtime.GOOS + "/" + runtime.GOARCH}
 		var built protocol.PublishResult
 		params := protocol.PublishParams{Project: p.Project, Version: version, Assets: spec}
-		if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublish, params, &built, 30*time.Minute); err != nil || !ok {
+		if ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodPublish, params, &built, 30*time.Minute); err != nil || !ok {
 			return fmt.Errorf("building %s's %s asset: %v", p.Name, spec.Platforms[0], err)
 		}
 		client, err := githubrelease.FromEnvironment()

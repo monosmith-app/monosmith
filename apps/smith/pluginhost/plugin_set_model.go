@@ -1,6 +1,7 @@
 package pluginhost
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"sort"
@@ -68,6 +69,21 @@ func (s *PluginSet) Call(plugin, method string, params, result any, timeout time
 		return false, nil
 	}
 	return true, c.Call(method, params, result, timeout)
+}
+
+// CallContext is Call that gives up when ctx is done (Ctrl+C, a cancelled
+// task): a plugin that advertised cancel is asked to stop and has a grace
+// period to answer, and any plugin that does not is killed (see
+// host.Client.CallContext).
+func (s *PluginSet) CallContext(ctx context.Context, plugin, method string, params, result any, timeout time.Duration) (ok bool, err error) {
+	c := s.Get(plugin)
+	if c == nil {
+		return false, fmt.Errorf("plugin %q is not loaded", plugin)
+	}
+	if !c.Supports(method) {
+		return false, nil
+	}
+	return true, c.CallContext(ctx, method, params, result, timeout)
 }
 
 // Close shuts every plugin down.

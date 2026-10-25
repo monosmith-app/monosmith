@@ -99,7 +99,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		if err := mirror(s, p, item, opts, res, say); err != nil {
 			return err
 		}
-		if err := publishGitHubRelease(s, p, item, res, say, nil); err != nil {
+		if err := publishGitHubRelease(ctx, s, p, item, res, say, nil); err != nil {
 			return err
 		}
 		return dispatchPub(s, p, item, res, say)
@@ -114,7 +114,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		}
 	}
 	var vr protocol.VersionResult
-	ok, err := s.Plugins.Call(p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: item.Next, Dependencies: deps, DryRun: opts.DryRun}, &vr, time.Minute)
+	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: item.Next, Dependencies: deps, DryRun: opts.DryRun}, &vr, time.Minute)
 	if err != nil {
 		return fmt.Errorf("writing version: %w", err)
 	}
@@ -146,12 +146,12 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 	if p.Release != nil && !opts.DryRun {
 		say("building assets for %s", item.Next)
 	}
-	pr, err := publish(s, p, item, opts.DryRun)
+	pr, err := publish(ctx, s, p, item, opts.DryRun)
 	if err != nil {
 		return err
 	}
 	res.Published, res.Registry, res.Publish, res.Assets = pr.Published, pr.Registry, pr.Skipped, pr.Assets
-	if err := deploy(s, p, item, opts.DryRun, res, say); err != nil {
+	if err := deploy(ctx, s, p, item, opts.DryRun, res, say); err != nil {
 		return err
 	}
 	if err := distribute(s, p, item, pr, opts.DryRun, res, say); err != nil {
@@ -192,7 +192,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 	}
 	if s.Config.Release.GitHubReleases {
 		assets := append(append(pr.Assets, packages...), packageManifests(s, p, item, pr, say)...)
-		if err := publishGitHubRelease(s, p, item, res, say, assets); err != nil {
+		if err := publishGitHubRelease(ctx, s, p, item, res, say, assets); err != nil {
 			return err
 		}
 		return dispatchPub(s, p, item, res, say)
@@ -292,7 +292,7 @@ func Native(p *projectgraph.Project) bool { return slices.Contains(p.Tags, Nativ
 // configuration gets its assets built instead, except a native app's, which
 // the native jobs build and attach. A native package is published by the
 // native jobs too, each its own platform's build (smith ci native).
-func publish(s *session.Session, p *projectgraph.Project, item Item, dryRun bool) (protocol.PublishResult, error) {
+func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, dryRun bool) (protocol.PublishResult, error) {
 	if Native(p) && p.Kind == protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "published for each platform by the native jobs"}, nil
 	}
@@ -305,7 +305,7 @@ func publish(s *session.Session, p *projectgraph.Project, item Item, dryRun bool
 	}
 	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec}
 	var pr protocol.PublishResult
-	ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
+	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
 	if err != nil {
 		return pr, fmt.Errorf("publishing: %w", err)
 	}
@@ -321,18 +321,18 @@ func publish(s *session.Session, p *projectgraph.Project, item Item, dryRun bool
 // PlannedAssets lists an app's release assets for a version, with each
 // archive's platform and the binary inside, without building them.
 func PlannedAssets(s *session.Session, p *projectgraph.Project, version string) (protocol.PublishResult, error) {
-	return publish(s, p, Item{Project: p.Name, Next: version}, true)
+	return publish(context.Background(), s, p, Item{Project: p.Name, Next: version}, true)
 }
 
 // deploy publishes the project with each deploy plugin that ships it (a
 // container image to push), after its own plugin published it.
-func deploy(s *session.Session, p *projectgraph.Project, item Item, dryRun bool, res *ReportResult, say func(string, ...any)) error {
+func deploy(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, dryRun bool, res *ReportResult, say func(string, ...any)) error {
 	commit, _ := s.Git.RevParse("HEAD")
 	branch := s.Config.Release.Branch
 	for _, plugin := range p.Deployers {
 		params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Commit: commit, Branch: branch}
 		var pr protocol.PublishResult
-		ok, err := s.Plugins.Call(plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
+		ok, err := s.Plugins.CallContext(ctx, plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
 		switch {
 		case err != nil:
 			return fmt.Errorf("deploying with %s: %w", plugin, err)
@@ -508,7 +508,7 @@ func pushTag(s *session.Session, item Item, opts Options, res *ReportResult) err
 // publishGitHubRelease creates the tag's GitHub Release and attaches the
 // assets. When assets is nil (a resumed release), the plugin lists the
 // expected files and they are rebuilt only if the release lacks any.
-func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item, res *ReportResult, say func(string, ...any), assets []string) error {
+func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, res *ReportResult, say func(string, ...any), assets []string) error {
 	if !res.Pushed {
 		say("not creating a GitHub Release: the tag was not pushed")
 		return nil
@@ -526,7 +526,7 @@ func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item
 		if err != nil {
 			return err
 		}
-		planned, err := publish(s, p, item, true)
+		planned, err := publish(ctx, s, p, item, true)
 		if err != nil {
 			return err
 		}
@@ -536,7 +536,7 @@ func publishGitHubRelease(s *session.Session, p *projectgraph.Project, item Item
 		}
 		if !found || missing(existing, append(planned.Assets, packages...)) {
 			say("building assets for %s", item.Next)
-			built, err := publish(s, p, item, false)
+			built, err := publish(ctx, s, p, item, false)
 			if err != nil {
 				return err
 			}
