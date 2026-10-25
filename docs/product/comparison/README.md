@@ -138,7 +138,7 @@ default branch.
 
 | Tool | CI pipeline generation | Release and versioning | Scaffolding | Dependency alignment | Health check | Editor or terminal UI | Plugin model |
 |---|---|---|---|---|---|---|---|
-| **MonoSmith** | ✅ GitHub Actions, Azure Pipelines, GitLab CI | ✅ conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories; Go modules and Packagist by tag | ✅ `smith add`, recipes | ✅ `smith sync`, `smith up` | ✅ `smith doctor`, with fixes | ✅ terminal UI, VS Code extension, MCP | ✅ out-of-process JSON-RPC over stdio: "any executable that speaks the protocol" (the SDK is for Go) |
+| **MonoSmith** | ✅ GitHub Actions, Azure Pipelines, GitLab CI | ✅ conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories; Go modules and Packagist by tag | ✅ `smith add`, recipes | ✅ `smith sync`, `smith up` | ✅ `smith doctor`, with fixes | ✅ terminal UI, VS Code extension, MCP | ✅ out-of-process JSON-RPC over stdio: "any executable that speaks the protocol"; SDKs for Go and TypeScript |
 | Nx | ✅ `nx g ci-workflow` for GitHub, GitLab, CircleCI, Azure and Bitbucket Pipelines | ✅ `nx release`: npm, crates.io, Docker | ✅ generators | ◐ docs recommend a single version policy; `@nx/dependency-checks` lint rule | ◐ `nx report`; a Conformance plugin is an Nx Enterprise feature; no doctor command found | ✅ Nx Console (VS Code, JetBrains) | ✅ plugins |
 | Turborepo | ◐ per-provider guides, no generator found | ◐ no turbo command; the guide uses Changesets | ✅ `turbo gen` | ◐ docs point to syncpack, manypkg, sherif or the package manager | ◐ `turbo boundaries` (experimental) checks workspace violations | ✅ Turborepo LSP (VS Code extension) and a terminal UI (`"ui": "tui"`) | ❔ none found (searched "plugin") |
 | Bazel | ◐ the FAQ says CI integrates by exit code; no generator | ❔ no release command found | ❔ none found | ◐ Minimal Version Selection picks one version per module | ❔ none found | ◐ IntelliJ plugin (FAQ) | ✅ extension language |
@@ -184,6 +184,12 @@ Each tool page has a "Moving from it" section. The honest summary:
 
 ## Pages
 
+- Three deep dives on what smith does best, each with its own table of the fourteen tools:
+  [plugins and flexibility](plugins-and-flexibility.md) (how each tool is extended, in what
+  language, how safely), [languages and ready-made environments](languages-and-environments.md)
+  (a scaffold, a workspace, tasks, CI, dev container and release for each language) and
+  [the dependency graph](dependency-graph.md) (how it is built, what you can ask it, what it
+  drives).
 - [Everything MonoSmith does, against every tool compared](everything-compared.md): one
   table of every smith capability against the fourteen tools, what only smith documents,
   and what other tools do that smith does not yet do.

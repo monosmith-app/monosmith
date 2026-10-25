@@ -14,6 +14,18 @@ flowchart LR
   ci --> release["smith release<br/>from commits"]
 ```
 
+## What to look for
+
+Three things in this tour are worth your attention, because the other tools in the
+[comparison](comparison/README.md) make you build them yourself.
+
+- **Step 3: a project that works on day one**, in any of eleven languages, with CI, a dev container and
+  a release target already wired. See [Languages and environments](comparison/languages-and-environments.md).
+- **The graph in steps 3 and 5**: one graph across languages, with `smith graph --blast-radius` and
+  `--diff`. See [The dependency graph](comparison/dependency-graph.md).
+- **Step 10: plugins in any language**, with SDKs, a conformance check and a trust gate. See
+  [Plugins and flexibility](comparison/plugins-and-flexibility.md).
+
 ## 1. Install
 
 ```sh
@@ -52,7 +64,10 @@ and build, and adding it regenerates the CI pipeline.
 
 To use one project from another you import it; there is no manifest to edit.
 smith reads the imports to learn the graph (`smith graph`, or
-`smith graph --format tui` to browse it).
+`smith graph --format tui` to browse it). Ask the graph what a change reaches with
+`smith graph --blast-radius <project or file>`, and what a branch did to it with
+`smith graph --diff main`. Shared schemas (OpenAPI, protobuf, GraphQL, AsyncAPI) link
+projects of different languages. See [The dependency graph](comparison/dependency-graph.md).
 
 ## 4. Build with a cache
 
@@ -164,11 +179,12 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 
 ## 10. Plugins, stacks and recipes
 
-- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The language
-  plugins (eleven languages, plus one for recipes) and the toolchain plugins ship
-  inside the binary; `smith plugin list`
-  shows them. A plugin for another language can be written in any language and
-  checked with `smith plugin check`.
+- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 24 built-in
+  plugins (eleven language plugins and one for recipes, and twelve add-ons for toolchains,
+  scaffolds, structure rules and deploy targets) ship inside the binary; `smith plugin list`
+  shows them. You can write a plugin in any language (SDKs exist for Go and TypeScript) and
+  check it with `smith plugin check`. A plugin a repository names does not start until you
+  trust it (`smith plugin trust`), and in CI only when its SHA-256 is pinned.
 - A **stack** is the set of plugins one project is built with. `smith stacks` lists
   them (React, Vue, Svelte, Angular, an Astro docs site, a VS Code extension,
   Kotlin, Android, Flutter, a smith plugin in Go, and more).
