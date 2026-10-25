@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -35,15 +36,7 @@ func SearchPath(workspaceRoot string) []string {
 }
 
 // Home is smith's per-user directory: SMITH_HOME, or ~/.smith.
-func Home() string {
-	if h := os.Getenv("SMITH_HOME"); h != "" {
-		return h
-	}
-	if u, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(u, ".smith")
-	}
-	return ""
-}
+func Home() string { return plugintrust.Home() }
 
 // FindInstalled lists the plugins on the search path, one per name: a plugin
 // earlier on the path hides one of the same name later. Each is a directory

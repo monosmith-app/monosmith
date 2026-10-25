@@ -38,3 +38,5 @@ command = ["python", "/path/to/plugin.py"]
 
 [conventions.widget-layout]
 ```
+
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget-layout` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../../plugins/using/plugin-security.md).

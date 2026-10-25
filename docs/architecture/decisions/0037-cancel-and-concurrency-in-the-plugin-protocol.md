@@ -1,4 +1,4 @@
-# ADR 0036: Cancel and a concurrency declaration in the plugin protocol
+# ADR 0037: Cancel and a concurrency declaration in the plugin protocol
 
 - Status: accepted
 - Date: 2026-10-25

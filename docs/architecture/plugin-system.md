@@ -66,7 +66,23 @@ honest (the built-ins are its first and best-tested users) and means a
 built-in can be replaced by an external plugin of the same name in `smith.toml`
 (`[plugins.external.<name>]`) without the core noticing.
 
-## Lifecycle of a command
+## External plugins: trust and environment
+
+A built-in plugin is the smith binary and is trusted by construction. An external plugin is a
+program with the user's privileges, so `pluginhost.Start` treats it differently
+([decision 0036](decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md),
+[what users see](../plugins/using/plugin-security.md)). Three small slices carry it, and
+`pluginhost` depends on them, not the reverse:
+
+| Slice | Outcome |
+|---|---|
+| `pluginenv` | the environment of an external plugin: the baseline, plus the names its manifest and `smith.toml` declare; the variables smith uses for its own credentials only from `smith.toml` |
+| `plugintrust` | the user's trust decisions, kept in the smith home and keyed by workspace, plugin name, command and the SHA-256 of the files the command runs; and the decision itself, on a machine or in CI |
+| `pluginadmit` | asking the person in a terminal, or refusing with a problem and its remedy; the status `smith plugin list` and `smith doctor` show |
+
+`smith plugin check` is for authors: it needs no trust, but it uses the same minimal environment.
+Trust does not make a plugin safe. The plugin still runs with the user's privileges, and there is
+no sandbox.
 
 Almost every command begins with `session.Open` (`apps/smith/session`):
 
@@ -85,8 +101,14 @@ Almost every command begins with `session.Open` (`apps/smith/session`):
      then `$SMITH_HOME/plugins`; the first `<dir>/<name>/plugin.json` wins),
    - the built-in *conventions* (docker, playwright, …), unless an external
      plugin of the same name replaced them.
+   Before any child starts, every external plugin the workspace declares is
+   **admitted** (`apps/smith/pluginadmit`): it must be trusted, or smith asks
+   (in a terminal) or refuses with a remedy (everywhere else; in CI a pin in
+   `smith.toml` is required). See [External plugins: trust and
+   environment](#external-plugins-trust-and-environment).
    Each child gets `SMITH_PLUGIN=1` in its environment and the workspace root in
-   `initialize`.
+   `initialize`. A built-in child keeps the whole environment of the process; an
+   external one gets the minimal one.
 4. **Handshake.** `initialize` returns what the plugin *is* (see below). The
    host checks that an external plugin answers to the name it is declared under
    and that its version satisfies the constraint in `smith.toml`.
@@ -347,6 +369,7 @@ the generate task from a recipe's settings, and gRPC/AsyncAPI/GraphQL defaults.
 | a plugin returns an error | the command stops and shows the error with the plugin's name |
 | two plugins provide one slot, or conflict | the stack or recipe is refused with both names |
 | an external plugin is older or newer than `smith.toml` allows | refused at start-up, with both versions |
+| an external plugin is not trusted (never, or its command or file changed), or in CI is not pinned | no plugin starts; the command stops with a problem and the remedy `smith plugin trust <name>` |
 | a plugin writes to stdout other than protocol messages | the stream is corrupt; the call fails. Log to stderr. |
 
 ## Testing a plugin: the conformance suite

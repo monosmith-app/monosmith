@@ -10,12 +10,20 @@ process, and a workspace test that runs it under smith. The examples in
 smith plugin check <name | path to executable> [args...]
 smith plugin check <name> --generate     # also scaffold an app, a lib and a package
 smith plugin check <name> --json         # the report as JSON
+smith plugin check <name> --env NPM_TOKEN --env 'AWS_*'   # variables the plugin may see
 ```
 
 It starts the plugin the way a workspace would (with `SMITH_PLUGIN=1`), runs the checks below, asks
 it to shut down, and exits non-zero (`smith: the plugin does not conform`) if any failed. A failed
 check prints why under its name. The checks live in `packages/plugin-sdk/conformance` and are the
 same ones `conformance.Check` runs in your tests.
+
+The plugin is yours, so it needs no trust to be checked. It starts with the [minimal
+environment](../using/plugin-security.md#the-environment-an-external-plugin-gets) every external plugin
+gets: if it reads a variable (a token, a registry URL), pass `--env NAME` (repeatable; `--env 'AWS_*'`
+for a prefix) for the run, and declare the same names in the `env` of your `plugin.json`
+([Declaring the environment a plugin needs](packaging-a-plugin.md#declaring-the-environment-a-plugin-needs)).
+A plugin found by name also gets the variables its `plugin.json` and `smith.toml` declare.
 
 | Check | When | Passes when |
 |---|---|---|

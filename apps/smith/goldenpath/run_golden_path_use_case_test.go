@@ -30,7 +30,8 @@ func (w *workspace) smith(wantOK bool, args ...string) string {
 	w.t.Helper()
 	cmd := exec.Command(w.bin, args...)
 	cmd.Dir = w.dir
-	cmd.Env = append(os.Environ(), w.env...)
+	// A smith home of its own, so the trust a test records is not the developer's.
+	cmd.Env = append(append(os.Environ(), "SMITH_HOME="+filepath.Join(filepath.Dir(w.bin), "smith-home")), w.env...)
 	began := time.Now()
 	out, err := cmd.CombinedOutput()
 	w.t.Logf("smith %s (%s)", strings.Join(args, " "), time.Since(began).Round(time.Millisecond))
@@ -38,6 +39,14 @@ func (w *workspace) smith(wantOK bool, args ...string) string {
 		w.t.Fatalf("smith %s: err=%v\n%s", strings.Join(args, " "), err, out)
 	}
 	return string(out)
+}
+
+// trust trusts an external plugin the workspace declares, and pins its digest:
+// smith starts an external plugin only when it is trusted, and in CI only when
+// smith.toml pins it. Call it again after smith.toml is rewritten.
+func (w *workspace) trust(name string) {
+	w.t.Helper()
+	w.smith(true, "plugin", "trust", name, "--yes", "--pin")
 }
 
 func (w *workspace) write(rel, body string) {

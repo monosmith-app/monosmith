@@ -103,6 +103,10 @@ command = ["go", "run", "./[[.Dir]]"]
 [conventions.[[.Name]]]
 ` + "```" + `
 
+smith starts an external plugin only once you trust it: run ` + "`smith plugin trust [[.Name]]`" + `
+(add ` + "`--pin`" + ` to write the digest CI checks). It starts with a minimal environment; name the
+variables it needs in ` + "`env`" + ` under the same table.
+
 ` + "`smith plugin check ./[[.Dir]]`" + ` (on a built binary) runs the conformance suite; the
 test in plugin/ runs it too. To share the plugin, build it and install it with a
 plugin.json on the plugin search path (see the smith docs, "Installing a plugin").

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -218,6 +219,17 @@ func Validate(cfg *Config) error {
 		if len(ext.Command) > 0 && strings.TrimSpace(ext.Command[0]) == "" {
 			return fmt.Errorf("%s: [plugins.external.%s] command starts with an empty program", FileName, name)
 		}
+		if ext.SHA256 != "" && !pluginDigest.MatchString(ext.SHA256) {
+			return fmt.Errorf("%s: [plugins.external.%s] sha256 must be 64 hexadecimal characters, optionally after \"sha256:\"", FileName, name)
+		}
+		for _, v := range ext.Env {
+			if strings.TrimSpace(v) == "" {
+				return fmt.Errorf("%s: [plugins.external.%s] env has an empty name", FileName, name)
+			}
+		}
 	}
 	return nil
 }
+
+// pluginDigest is how a plugin's sha256 pin is written.
+var pluginDigest = regexp.MustCompile(`^(?i:sha256:)?[0-9a-fA-F]{64}$`)

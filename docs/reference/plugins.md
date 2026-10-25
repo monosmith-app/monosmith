@@ -92,6 +92,12 @@ version = "^1.2"                 # installed on the search path; "1.2.3", "~1.2"
 
 An external plugin with the name of a built-in one replaces it.
 
+An external plugin starts only after you have trusted it (`smith plugin trust <name>`), and with a
+minimal environment: the variables smith lists as the baseline, plus the ones the plugin declares
+(`env` in its `plugin.json`) and the ones `smith.toml` grants (`env` under `[plugins.external.<name>]`).
+In CI the plugin starts only when `smith.toml` pins its `sha256`. See
+[Plugin security](../plugins/using/plugin-security.md). The built-in plugins need none of this.
+
 A plugin builds every project into `protocol.ProjectBuildDir(root)`
 (`dist/<project dir>`), and declares that directory as the task's outputs with
 `protocol.BuildDirFromProject(root)` (`../../dist/apps/web`, relative to the
@@ -106,13 +112,15 @@ An installed plugin is a directory holding a `plugin.json`:
   "name": "kiwi",
   "version": "1.2.0",
   "description": "the kiwi language",
-  "command": ["./bin/smith-plugin-kiwi-{os}-{arch}{exe}"]
+  "command": ["./bin/smith-plugin-kiwi-{os}-{arch}{exe}"],
+  "env": ["NPM_TOKEN"]
 }
 ```
 
 A command path starting with `./` or `../` is relative to that directory;
 `{os}`, `{arch}` and `{exe}` (`.exe` on Windows) are filled in, so one
-directory can carry a binary per platform. smith looks for
+directory can carry a binary per platform. `env` is optional: the environment
+variables the plugin needs, as names or prefixes ending in `*`. smith looks for
 `<dir>/<name>/plugin.json` in these directories, the first match winning:
 
 1. the workspace's `.smith/plugins`
@@ -249,7 +257,7 @@ Rules:
   members of the plugin object, so they cannot lie.
 - A breaking change raises the integer protocol version; additions are new
   capabilities or optional fields, which old peers ignore. `cancel` and `concurrency` are such
-  additions ([ADR 0036](../architecture/decisions/0036-cancel-and-concurrency-in-the-plugin-protocol.md)).
+  additions ([ADR 0037](../architecture/decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).
 - `initialize` must come first. A failure the user must act on returns error
   code `-32000` with a message saying what to do.
 - Every call has a timeout. When it runs out, or the command is cancelled, the host sends `cancel` to a plugin

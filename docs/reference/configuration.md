@@ -143,7 +143,21 @@ version = "^1"                        # installed on the plugin search path (doc
 
 [plugins.external.rust]
 command = ["smith-plugin-rust"]        # any executable speaking the protocol
+env = ["CARGO_REGISTRY_TOKEN", "AWS_*"] # variables it may see beyond the baseline (names, or a prefix ending in *)
+sha256 = "f6967352942e34f139256eafee1da615931c1f0e0888ddecead3d9a38c15a239"   # the plugin file's SHA-256; in CI it must match
 ```
+
+The keys of `[plugins.external.<name>]`:
+
+| Key | Meaning |
+|---|---|
+| `command` | the argv that starts the plugin; empty: find it installed on the plugin search path |
+| `version` | a version constraint: `1.2.3`, `^1.2`, `~1.2` or `>=1.2` |
+| `env` | environment variables the plugin may see beyond the baseline every external plugin gets: names, or prefixes ending in `*`. Added to what its `plugin.json` declares. It is the only way to give a plugin a variable smith uses for its own cache or releases (`SMITH_CACHE_KEY` and the like) |
+| `sha256` | the SHA-256 of the plugin's file (the script, when the command runs an interpreter on one), 64 hexadecimal characters. In CI an external plugin starts only when this matches; write it with `smith plugin trust <name> --pin` |
+
+An external plugin also has to be trusted on the machine that runs it before smith starts it:
+`smith plugin trust <name>`. See [Plugin security](../plugins/using/plugin-security.md).
 
 ## Private registries
 
@@ -474,7 +488,7 @@ See [Releasing](releasing.md#apps).
 | `SMITH_RELEASE_ANY_BRANCH` | allow a real release from another branch |
 | `SMITH_PYPI_SIMPLE_URL` | the simple index to check before uploading to a custom Python index |
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
-| `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/` |
+| `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/`, and the external plugins you trust are recorded in its `trust.json` |
 | `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
 | `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
 | `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |

@@ -45,7 +45,7 @@ given there are the design notes' own.
 | Channel | the child's stdin and stdout; stderr is forwarded to the user's terminal, so a plugin logs there | `host.Options.Stderr` |
 | Error codes | the JSON-RPC ones, plus `-32000` (`CodePluginFailure`) for a failure the user must act on and `-32800` (`CodeRequestCancelled`) for a request stopped by `cancel` | `protocol` |
 | Requests in flight | at most the `concurrency` the plugin declared in `initialize` (absent: 1, one request at a time); responses may come in any order, matched by `id` | `protocol/initialize_contract.go`, `protocol/concurrency_policy.go` |
-| Cancel | the notification `cancel` `{id}`, sent only to a plugin that advertised the `cancel` capability ([ADR 0036](decisions/0036-cancel-and-concurrency-in-the-plugin-protocol.md)) | `protocol/cancel_contract.go` |
+| Cancel | the notification `cancel` `{id}`, sent only to a plugin that advertised the `cancel` capability ([ADR 0037](decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)) | `protocol/cancel_contract.go` |
 | Version | one integer, `protocol.Version = 1`; additive changes use capabilities, a breaking change raises it | `protocol/message_contract.go` |
 
 The client never has more calls in flight to one plugin than the plugin declared, so a plugin that
@@ -248,7 +248,7 @@ How the edges are found is the subject of [the project graph page](project-graph
 ## Cancel and concurrency
 
 Two features of the handshake, both additive: the protocol version stays 1, and a plugin that knows
-neither is called as it always was ([ADR 0036](decisions/0036-cancel-and-concurrency-in-the-plugin-protocol.md)).
+neither is called as it always was ([ADR 0037](decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).
 
 **Concurrency.** The `concurrency` member of the `initialize` result says how many requests the plugin can
 work on at once. Absent or `0` is 1: every plugin that says nothing is sent the next request after

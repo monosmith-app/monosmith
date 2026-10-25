@@ -92,6 +92,7 @@ func TestProjectsFromRecipe(t *testing.T) {
 	w.write("recipes/team.recipe.toml", recipeOfTheTeam)
 	w.write(".smith/plugins/kiwi/plugin.json", `{"name": "kiwi", "version": "1.0.0", "command": [`+quote(filepath.ToSlash(plugin))+`]}`)
 	w.write("smith.toml", w.read("smith.toml")+"\n[plugins.external.kiwi]\nversion = \"^1\"\n")
+	w.trust("kiwi")
 	w.write(".gitignore", w.read(".gitignore")+".kiwi-registry\n")
 
 	// Without a terminal a choice with no default and no --choice fails,

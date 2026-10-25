@@ -18,6 +18,25 @@ func TestParseAppliesDefaults(t *testing.T) {
 	}
 }
 
+func TestParseReadsAnExternalPluginsEnvAndPin(t *testing.T) {
+	pin := strings.Repeat("ab", 32)
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[plugins.external.kiwi]\ncommand = [\"kiwi\"]\nenv = [\"NPM_TOKEN\", \"AWS_*\"]\nsha256 = \"" + pin + "\"\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if k := cfg.Plugins.External["kiwi"]; len(k.Env) != 2 || k.SHA256 != pin {
+		t.Fatalf("got %+v", k)
+	}
+	for input, want := range map[string]string{
+		"[workspace]\nname = \"a\"\n[plugins.external.kiwi]\nsha256 = \"abc\"\n":    "sha256 must be 64 hexadecimal",
+		"[workspace]\nname = \"a\"\n[plugins.external.kiwi]\nenv = [\"A\", \"\"]\n": "env has an empty name",
+	} {
+		if _, err := Parse([]byte(input)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%q: %v, want %q", input, err, want)
+		}
+	}
+}
+
 func TestParseRejectsMistakes(t *testing.T) {
 	for input, want := range map[string]string{
 		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n": "nmae",

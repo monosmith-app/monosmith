@@ -16,6 +16,13 @@ A name is looked up the way the workspace would start it: `smith.toml`, then the
 plugins, then the plugin search path. A path runs that executable. Further arguments after
 the plugin are passed to it.
 
+Checking is for the person writing the plugin, so it does not need the plugin to be trusted. The
+plugin does start with the minimal environment every external plugin gets (`PATH`, `HOME`, the
+temporary directory, locale, terminal and proxy variables, and on Windows the variables a process
+needs). `--env NAME` grants a variable for the run; `--env 'AWS_*'` grants a prefix. A plugin found
+by name also gets the variables its `plugin.json` and `smith.toml` declare. A built-in plugin keeps
+the whole environment. See [Plugin security](../plugins/using/plugin-security.md).
+
 ## When to use it
 
 While writing a plugin, and in the plugin's own tests. The `go-smith-plugin` stack scaffolds a
@@ -24,7 +31,7 @@ conformance test that does the same.
 ## Synopsis
 
 ```sh
-smith plugin check <name | path to plugin> [args...] [--generate] [--json]
+smith plugin check <name | path to plugin> [args...] [--generate] [--env NAME]... [--json]
 ```
 
 ## Arguments and flags
@@ -40,6 +47,7 @@ Usage: `smith plugin check <name | path to plugin> [args...] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--env <env>` | string, repeatable |  | an environment variable the plugin may see, beyond the minimal environment: a name, or a prefix ending in * (repeatable) |
 | `--generate` | boolean | off | also generate projects in a temporary directory and discover them |
 | `--json` | boolean | off | print JSON |
 
@@ -54,7 +62,8 @@ Usage: `smith plugin check <name | path to plugin> [args...] [flags]`
 
 ## Files and environment
 
-Starts the plugin process with `SMITH_PLUGIN=1`. With `--generate`, writes into a temporary
+Starts the plugin process with `SMITH_PLUGIN=1` and the minimal environment described above.
+With `--generate`, writes into a temporary
 directory and may run the plugin's package manager.
 
 ## Examples

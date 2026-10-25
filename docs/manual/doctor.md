@@ -148,10 +148,35 @@ not applied: install the Node dependencies needs your decision. Run one of:
   smith doctor --fix --only "install the Node dependencies" --yes
 ```
 
+## External plugins
+
+For every external plugin `smith.toml` declares, doctor shows where it comes from, whether it is
+trusted and pinned, and the environment variables it may see (names, never values):
+
+```text
+✔ external plugin widget is trusted (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
+```
+
+An external plugin smith would refuse to start fails the check, and because no plugin starts until
+it is trusted, doctor shows only the plugin checks and exits non-zero until you trust it:
+
+```text
+✖ external plugin widget is trusted
+    the external plugin "widget" is not trusted yet, so smith did not start it (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
+    → run `smith plugin trust widget` to review it and trust it
+    → run `smith plugin list` to see every external plugin and what it may see
+
+0 passed, 1 failed; the other checks run once these plugins are trusted
+```
+
+A plugin installed on the search path but not declared in `smith.toml` is not needed by the
+workspace and is not checked. See [Plugin security](../plugins/using/plugin-security.md).
+
 ## Common errors
 
 | Message | Cause and remedy |
 |---|---|
+| `external plugin <name> is trusted` fails | smith will not start an external plugin you have not trusted (or that changed since you did). Run `smith plugin trust <name>`; in CI, `smith plugin trust <name> --pin` on your machine and commit the `sha256`. |
 | `--only and --choose pick what to fix, so they go with --fix` | Add `--fix`. |
 | `not applied: <fix> needs your decision. Run one of: smith doctor --fix --only "<fix>" --yes` | A fix with a question or a command is not applied without a terminal; run the command it prints. |
 | Check-specific failures | Each prints its own remedy; the names are stable, for example `go.work exists`, `Node dependencies are installed`, `CI pipelines match the workspace`, `tracked files are not generated files`. |

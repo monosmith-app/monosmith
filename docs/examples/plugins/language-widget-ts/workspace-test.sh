@@ -23,6 +23,9 @@ cat >> smith.toml <<EOF
 command = ["node", "$plugin"]
 EOF
 
+# smith starts an external plugin only once it is trusted (in CI, only when pinned).
+smith plugin trust widget --yes --pin >/dev/null
+
 smith add lib core --lang widget >/dev/null
 smith add app shop --lang widget >/dev/null
 sed -i 's/"license": "MIT"/"license": "MIT",\n  "uses": ["core"]/' apps/shop/widget.json

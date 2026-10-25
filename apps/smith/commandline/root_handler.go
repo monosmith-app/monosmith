@@ -1,6 +1,7 @@
 package commandline
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
@@ -14,8 +15,11 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/npmpolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/npmprune"
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
+	"golang.org/x/term"
 	"os"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachecommand"
@@ -93,6 +97,28 @@ already have), then build and doctor.`,
 	return root
 }
 
+// canAsk is whether a person is at the terminal to be asked to trust an
+// external plugin: stdin and stderr are terminals, this is not CI, and the
+// command is not one that serves other programs (smith serve, smith mcp) or
+// owns the screen (smith tui), which never ask.
+func canAsk(root *cobra.Command, args []string) bool {
+	if plugintrust.InCI(os.Getenv) || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
+		return false
+	}
+	cmd, _, err := root.Find(args)
+	if err != nil || cmd == nil {
+		return true
+	}
+	for cmd.Parent() != nil && cmd.Parent().Parent() != nil {
+		cmd = cmd.Parent()
+	}
+	switch cmd.Name() {
+	case "serve", "mcp", "tui":
+		return false
+	}
+	return true
+}
+
 // Execute runs smith and returns the process exit code.
 func Execute(version string, args []string) int {
 	if len(args) == 0 && tui.Interactive() {
@@ -108,6 +134,9 @@ func Execute(version string, args []string) int {
 	}
 	root := Root(version)
 	root.SetArgs(args)
+	if canAsk(root, args) {
+		pluginadmit.SetPrompter(&pluginadmit.Prompter{Out: os.Stderr, In: bufio.NewReader(os.Stdin)})
+	}
 	if err := root.Execute(); err != nil {
 		var p *problem.Error
 		switch {

@@ -1,12 +1,163 @@
 package session
 
 import (
+	"errors"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/remotecache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
 )
+
+// TestMain lets the test binary stand in for smith: the plugin host starts
+// built-in plugins as `<self> plugin serve <name>`.
+func TestMain(m *testing.M) {
+	if len(os.Args) == 4 && os.Args[1] == "plugin" && os.Args[2] == "serve" {
+		ctor, ok := pluginhost.Builtin(os.Args[3])
+		if !ok {
+			os.Exit(2)
+		}
+		if err := serve.Serve(ctor("test"), os.Stdin, os.Stdout); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
+// widgetWorkspace is a real git workspace that declares the Go example plugin
+// (built from docs/examples/plugins/go) and holds one widget project.
+func widgetWorkspace(t *testing.T) (root, plugin string) {
+	t.Helper()
+	examples, err := filepath.Abs(filepath.Join("..", "..", "..", "docs", "examples", "plugins", "go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(examples); err != nil {
+		t.Skip("the examples are not part of this checkout")
+	}
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go is not installed")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	for _, v := range []string{"CI", "GITHUB_ACTIONS", "TF_BUILD", "SMITH_WORKSPACE_ROOT"} {
+		t.Setenv(v, "")
+	}
+	t.Setenv("SMITH_HOME", t.TempDir())
+	pluginadmit.SetPrompter(nil)
+
+	plugin = filepath.Join(t.TempDir(), "smith-plugin-widget")
+	if runtime.GOOS == "windows" {
+		plugin += ".exe"
+	}
+	build := exec.Command("go", "build", "-o", plugin, ".")
+	build.Dir = examples
+	build.Env = append(os.Environ(), "GOWORK=off")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("building the example plugin: %v\n%s", err, out)
+	}
+
+	root = t.TempDir()
+	toml := "[workspace]\nname = \"wd\"\n\n[plugins.external.widget]\ncommand = ['" + plugin + "']\n"
+	for name, body := range map[string]string{workspace.FileName: toml, "apps/hello/widget.json": `{"name":"hello"}`} {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	return root, plugin
+}
+
+func TestAnExternalPluginIsRefusedUntilItIsTrustedAndAgainWhenItChanges(t *testing.T) {
+	root, plugin := widgetWorkspace(t)
+	open := func() (*Session, error) {
+		return Open(Options{Dir: root, Exact: true, Version: "test", Log: io.Discard})
+	}
+
+	// Untrusted: refused, with the command that fixes it, and nothing runs.
+	_, err := open()
+	if !errors.Is(err, pluginadmit.ErrUntrusted) || !strings.Contains(err.Error(), "smith plugin trust widget") {
+		t.Fatalf("an untrusted plugin was not refused: %v", err)
+	}
+
+	// Trusted: the plugin starts and finds the project.
+	store, err := plugintrust.OpenStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fp, err := plugintrust.Measure([]string{plugin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Trust(root, "widget", fp); err != nil {
+		t.Fatal(err)
+	}
+	s, err := open()
+	if err != nil {
+		t.Fatalf("a trusted plugin did not start: %v", err)
+	}
+	found := false
+	for _, p := range s.Graph.Projects {
+		found = found || p.Name == "hello"
+	}
+	s.Close()
+	if !found {
+		t.Fatal("the external plugin did not discover its project")
+	}
+
+	// Changed: trusted no more.
+	f, err := os.OpenFile(plugin, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = f.WriteString("tampered")
+	_ = f.Close()
+	if _, err := open(); !errors.Is(err, pluginadmit.ErrUntrusted) || !strings.Contains(err.Error(), "changed since you trusted it") {
+		t.Fatalf("a changed plugin was not refused: %v", err)
+	}
+}
+
+func TestInCIAnExternalPluginStartsOnlyWhenPinned(t *testing.T) {
+	root, plugin := widgetWorkspace(t)
+	t.Setenv("CI", "true")
+	open := func() (*Session, error) {
+		return Open(Options{Dir: root, Exact: true, Version: "test", Log: io.Discard})
+	}
+	if _, err := open(); !errors.Is(err, pluginadmit.ErrUntrusted) || !strings.Contains(err.Error(), "not pinned") {
+		t.Fatalf("an unpinned plugin started in CI: %v", err)
+	}
+	fp, err := plugintrust.Measure([]string{plugin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	toml := "[workspace]\nname = \"wd\"\n\n[plugins.external.widget]\ncommand = ['" + plugin + "']\nsha256 = \"" + plugintrust.PinnedDigest(fp) + "\"\n"
+	if err := os.WriteFile(filepath.Join(root, workspace.FileName), []byte(toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := open()
+	if err != nil {
+		t.Fatalf("a pinned plugin did not start in CI: %v", err)
+	}
+	s.Close()
+}
 
 func remoteSession(t *testing.T) *Session {
 	t.Helper()

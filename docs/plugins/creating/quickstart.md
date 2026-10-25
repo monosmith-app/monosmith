@@ -121,6 +121,10 @@ command = ["go", "run", "./apps/my-plugin"]
 [conventions.my-plugin]
 ```
 
+smith starts an external plugin only once you trust it, so the first command below asks (in a
+terminal) whether to trust `my-plugin`; `smith plugin trust my-plugin` does it up front. See
+[Plugin security](../using/plugin-security.md).
+
 ```sh
 smith projects
 smith run hello

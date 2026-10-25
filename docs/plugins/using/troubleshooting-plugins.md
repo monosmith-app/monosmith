@@ -21,6 +21,52 @@ A failed check prints why under the check's name, and the command exits non-zero
 `smith: the plugin does not conform`. The checks are explained in
 [Testing a plugin](../creating/testing-a-plugin.md#what-smith-plugin-check-verifies).
 
+## The plugin is not trusted
+
+smith starts an external plugin only when you have trusted it. The refusal is printed instead of
+the command's output, and the command exits with code 1. These are the messages as printed on
+Windows (the first arrow line is the one to follow):
+
+| You see | Cause and remedy |
+|---|---|
+| `✖ the external plugin "widget" is not trusted yet, so smith did not start it`<br>`→ run `smith plugin trust widget` to review it and trust it` | nobody has trusted this plugin in this workspace on this machine. Run the command; it shows where the plugin comes from, its command, its digest and the variables it may see, and asks |
+| `✖ the external plugin "widget" changed since you trusted it, so smith did not start it (<path>: sha256 was 4332d20df523, now f6967352942e)`<br>`→ run `smith plugin trust widget` to review it and trust it again` | the file the command runs is not the one you trusted. If you did not update the plugin, find out why before you trust it again |
+| `✖ the external plugin "widget" now runs a different command than the one you trusted, so smith did not start it` | the `command` in `smith.toml` or `plugin.json` changed. Review it with `smith plugin trust widget` |
+| `✖ the external plugin "widget" is not pinned, so smith did not start it: in CI an external plugin runs only when smith.toml pins its sha256`<br>`→ run `smith plugin trust widget --pin` on your machine and commit the sha256 it writes to smith.toml` | the message you get in CI (any of `CI`, `GITHUB_ACTIONS` or `TF_BUILD` set). A decision you made on your machine does not exist in CI |
+| `✖ the external plugin "widget" does not match the sha256 pinned in smith.toml, so smith did not start it (smith.toml pins f6967352942e but the file is 8d7583fce90a)`<br>`→ if you changed the plugin on purpose, run `smith plugin trust widget --pin` on your machine and commit the new sha256` | the file in CI is not the one you pinned: a different build of the plugin, or a file that was changed |
+| `✖ the external plugin "widget" cannot be started: the program "x" was not found: ...` | the command names a program smith cannot find. Check the `command` and the installed plugin directory with `smith plugin list` |
+| `✖ refusing to trust a plugin without a terminal to ask in`<br>`→ read what it is with `smith plugin list`, then run `smith plugin trust widget --yes`` | `smith plugin trust` was run where no one can answer. Read the plugin first, then pass `--yes` |
+
+`smith doctor` reports the same thing as a failed check and lists every external plugin the
+workspace uses:
+
+```text
+✖ external plugin widget is trusted
+    the external plugin "widget" is not trusted yet, so smith did not start it (from .smith/plugins, pinned no, sees the baseline plus GITHUB_TOKEN, NPM_TOKEN)
+    → run `smith plugin trust widget` to review it and trust it
+    → run `smith plugin list` to see every external plugin and what it may see
+
+0 passed, 1 failed; the other checks run once these plugins are trusted
+```
+
+`smith serve`, `smith mcp`, the shell and the editor extension never ask: they show the refusal,
+and you trust the plugin once in a terminal. See [Plugin security](plugin-security.md).
+
+### The plugin runs but cannot find a variable
+
+An external plugin starts with a [minimal environment](plugin-security.md#the-environment-an-external-plugin-gets).
+A plugin that used to read `NPM_TOKEN` from the shell, and now says the token is missing, has not
+declared it. Name the variable in the plugin's `plugin.json` (`"env": ["NPM_TOKEN"]`) if you wrote
+the plugin, or grant it for this workspace in `smith.toml`:
+
+```toml
+[plugins.external.widget]
+env = ["NPM_TOKEN"]
+```
+
+`smith plugin list` shows the names a plugin may see. While you are testing a plugin of your own,
+`smith plugin check ./smith-plugin-widget --env NPM_TOKEN` grants one for that run.
+
 ## The plugin does not start
 
 All of these come from `initialize`, the first call, which has **30 seconds**. They are printed as
@@ -125,5 +171,6 @@ names both sides.
 
 - [Installing, enabling and configuring plugins](managing-plugins.md)
 - [What a plugin is and how plugins combine](what-is-a-plugin.md)
+- [Plugin security: what smith protects and what it does not](plugin-security.md)
 - [Testing a plugin](../creating/testing-a-plugin.md)
 - [The plugin system](../../architecture/plugin-system.md): lifecycle and failure modes

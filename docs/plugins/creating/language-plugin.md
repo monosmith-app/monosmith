@@ -422,7 +422,9 @@ plugin has them.
 command = ["/path/to/smith-plugin-widget"]
 ```
 
-Then `smith add lib core --lang widget`, `smith add app shop --lang widget`, and the commands above.
+Trust it once (`smith plugin trust widget`; smith starts an external plugin only after you do, see
+[Plugin security](../using/plugin-security.md)). Then `smith add lib core --lang widget`,
+`smith add app shop --lang widget`, and the commands above.
 To install it by name instead, put it on the search path with a `plugin.json`; see
 [Packaging and distributing a plugin](packaging-a-plugin.md).
 
