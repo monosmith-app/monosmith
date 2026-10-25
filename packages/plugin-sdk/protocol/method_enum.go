@@ -11,6 +11,10 @@ const (
 	MethodPublish    = "publish"
 	MethodCI         = "ci"
 	MethodDoctor     = "doctor"
+	// MethodCancel is a notification: the host asks the plugin to stop the
+	// request with the given id. It is sent only to a plugin that advertised
+	// the cancel capability.
+	MethodCancel = "cancel"
 	// MethodContribute asks a convention plugin for its additions.
 	MethodContribute = "contribute"
 	// MethodRemove lets a plugin clean up after a project is removed.

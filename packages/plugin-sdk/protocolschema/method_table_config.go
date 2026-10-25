@@ -19,6 +19,9 @@ type MethodSpec struct {
 	// be true for the host to call the method. Empty means the method is
 	// always available.
 	Capability string
+	// Notification marks a method the host sends without an id: the plugin
+	// answers nothing, so the row has no result.
+	Notification bool
 }
 
 // noMembers is the params and result of shutdown.
@@ -37,6 +40,12 @@ var Methods = []MethodSpec{
 		Method:      protocol.MethodShutdown,
 		Description: "The last request. The plugin answers an empty object and exits.",
 		Params:      noMembers, Result: noMembers,
+	},
+	{
+		Method:      protocol.MethodCancel,
+		Description: "A notification, so it gets no response: the host asks the plugin to stop the in-flight request with the given id. The plugin then answers that request, with its result if the work was already done or with the request-cancelled error. An id that is unknown or already answered is ignored. The host sends it only to a plugin that advertised the capability.",
+		Params:      reflect.TypeFor[protocol.CancelParams](),
+		Capability:  "Cancel", Notification: true,
 	},
 	{
 		Method:      protocol.MethodDiscover,

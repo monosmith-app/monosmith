@@ -1,12 +1,38 @@
 package serve
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"context"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 // Plugin is the one interface every plugin implements.
 type Plugin interface {
 	// Describe returns the plugin's identity, kind, languages and manifests.
-	// Serve fills in the protocol version and the capabilities.
+	// Serve fills in the protocol version and the capabilities. The plugin
+	// sets the rest, Concurrency included: how many requests it can work on
+	// at the same time (0 or 1: one at a time, in order; -1: unlimited).
 	Describe(params protocol.InitializeParams) (protocol.InitializeResult, error)
+}
+
+// Cancellable is implemented by a plugin whose work stops when the host cancels
+// a request. Serve advertises the cancel capability for it and, for each
+// request, asks it for the plugin as it should serve that request: a copy
+// whose handlers watch ctx, which Serve cancels when the host sends the cancel
+// notification for the request's id (and at shutdown). A handler that stops
+// because of ctx just returns an error, or the result it already has; Serve
+// answers the request with the request-cancelled error in the first case.
+//
+// The plugin WithContext returns must implement every handler interface the
+// receiver does, because Serve calls the handlers on it. Without this
+// interface a plugin is never sent cancel, and the host waits for its answer
+// or kills it.
+type Cancellable interface {
+	Plugin
+	// WithContext returns the plugin bound to the context of one request.
+	// It is called for every request, so it must be cheap: a shallow copy
+	// that holds ctx.
+	WithContext(ctx context.Context) Plugin
 }
 
 // Discoverer describes projects behind manifests.

@@ -17,4 +17,5 @@ var ErrorCodes = []ErrorCodeSpec{
 	{"CodeInvalidParams", "The params do not have the shape the method expects."},
 	{"CodeInternalError", "The plugin failed in a way that is not the user's to act on, for example a result that could not be encoded."},
 	{"CodePluginFailure", "The method ran and failed for a reason the user must act on (a missing toolchain, a bad manifest). The message is shown to the user as it is, so it should say what to do. An error a method of the Go SDK returns becomes this code."},
+	{"CodeRequestCancelled", "The plugin stopped the request because the host sent a cancel notification for its id. A plugin that had finished answers with the result instead. Only a plugin that advertised the cancel capability sends it; when a cancelled request fails with any error, the SDKs answer with this code."},
 }

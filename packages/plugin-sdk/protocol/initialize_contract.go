@@ -18,6 +18,13 @@ type InitializeResult struct {
 	Plugin          Peer         `json:"plugin"`
 	Kind            PluginKind   `json:"kind"`
 	Capabilities    Capabilities `json:"capabilities"`
+	// Concurrency is how many requests the plugin can work on at the same
+	// time; the host never has more in flight. Absent or 0 means 1, which is
+	// what every plugin that says nothing does: the host sends the next
+	// request only after the previous one is answered. N above 1 allows that
+	// many, and ConcurrencyUnlimited (-1) leaves the number to the host. Any
+	// other negative value is invalid and read as 1.
+	Concurrency int `json:"concurrency,omitempty"`
 	// Languages are the values a user passes to --lang to reach this plugin.
 	Languages []string `json:"languages,omitempty"`
 	// Manifests are file base names (package.json, go.mod), or patterns of
@@ -89,6 +96,11 @@ type Capabilities struct {
 	Declarations bool `json:"declarations,omitempty"`
 	// Latest reports the newest releases of dependencies and pinned tools.
 	Latest bool `json:"latest,omitempty"`
+	// Cancel says the plugin stops the work of a request when the host sends
+	// a cancel notification with its id, then answers that request with its
+	// result (if the work was already done) or the request-cancelled error.
+	// A host never sends the notification to a plugin without it.
+	Cancel bool `json:"cancel,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's
