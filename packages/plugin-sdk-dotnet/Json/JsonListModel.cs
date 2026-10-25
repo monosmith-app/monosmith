@@ -17,7 +17,7 @@ public sealed record JsonList : JsonAny, IReadOnlyList<JsonAny>
 
     /// <summary>An empty array.</summary>
     public JsonList()
-        : this([])
+        : this(Array.Empty<JsonAny?>())
     {
     }
 

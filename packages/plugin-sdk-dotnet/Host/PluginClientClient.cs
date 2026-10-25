@@ -177,6 +177,7 @@ public sealed class PluginClient : IAsyncDisposable
         CancellationToken cancellation = default)
     {
         ArgumentNullException.ThrowIfNull(method);
+        ThrowIfClosed(method);
         var span = timeout ?? HostOptions.DefaultCallTimeout;
         if (method == ProtocolMethods.Shutdown)
         {
@@ -204,6 +205,7 @@ public sealed class PluginClient : IAsyncDisposable
         where TParams : IProtocolWritable
     {
         ArgumentNullException.ThrowIfNull(parameters);
+        ThrowIfClosed(method);
         if (_lost is { } lost)
         {
             throw new InvalidOperationException($"{method}: plugin stopped answering: {lost.Message}", lost);
@@ -266,6 +268,14 @@ public sealed class PluginClient : IAsyncDisposable
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync() => await CloseAsync().ConfigureAwait(false);
+
+    private void ThrowIfClosed(string method)
+    {
+        if (Volatile.Read(ref _closed) == 1)
+        {
+            throw new InvalidOperationException($"{method}: the client is closed");
+        }
+    }
 
     private static string Encode(IProtocolWritable message)
     {

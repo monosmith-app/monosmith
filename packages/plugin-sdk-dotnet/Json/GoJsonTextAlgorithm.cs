@@ -15,7 +15,8 @@ public static class GoJsonTextAlgorithm
     /// <summary>Appends a string with its quotes, escaped as Go escapes it.</summary>
     /// <param name="output">Where to append.</param>
     /// <param name="text">The text. A lone surrogate, which has no UTF-8 form, is written as U+FFFD.</param>
-    public static void AppendString(StringBuilder output, string text)
+    /// <param name="escapeHtml">Whether <c>&lt;</c>, <c>&gt;</c> and <c>&amp;</c> are escaped, which Go does unless told not to.</param>
+    public static void AppendString(StringBuilder output, string text, bool escapeHtml = true)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(text);
@@ -46,7 +47,10 @@ public static class GoJsonTextAlgorithm
                 case '\t':
                     output.Append("\\t");
                     break;
-                case '<' or '>' or '&' or '\x2028' or '\x2029':
+                case '\x2028' or '\x2029':
+                    AppendUnicodeEscape(output, c);
+                    break;
+                case '<' or '>' or '&' when escapeHtml:
                     AppendUnicodeEscape(output, c);
                     break;
                 case < ' ':
