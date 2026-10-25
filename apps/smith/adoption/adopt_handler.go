@@ -11,12 +11,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// FullLevelIssue tracks the full level for repositories that are not Nx or
+// Turborepo workspaces.
+const FullLevelIssue = "https://github.com/monosmith-app/monosmith/issues/553"
+
+// The levels --level takes.
+const (
+	LevelConservative = "conservative"
+	LevelFull         = "full"
+)
+
 // ErrBlocked is a report with blockers left.
 var ErrBlocked = errors.New("something blocks; each blocker above names the step that clears it")
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
 	var asJSON, tags, initialise, dryRun, install, eslint bool
+	level := LevelConservative
 	cmd := &cobra.Command{
 		Use:   "adopt",
 		Short: "Bring an existing repository under smith: report what it involves; --init takes the steps (start here)",
@@ -32,6 +43,11 @@ is asked for, and both steps need a clean git tree:
           adds @monosmith/eslint-config to the devDependencies); a pipeline of yours
           at a path smith owns is kept beside it as .pre-smith
 
+--level conservative (the default) keeps the repository's build and lint setup.
+--level full, which makes smith the only tool, applies to Nx and Turborepo
+workspaces and is smith convert --level full's; for a plain repository adopt
+says so and stops.
+
 An Nx or Turborepo workspace is smith convert's: adopt says so and stops. Exits
 non-zero while something blocks.`,
 		Example: `  smith adopt --dry-run
@@ -39,6 +55,16 @@ non-zero while something blocks.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			switch level {
+			case LevelConservative:
+			case LevelFull:
+				return problem.New("--level full makes smith the only tool, which smith does for Nx and Turborepo workspaces (smith convert) and not yet for a plain repository: adopt keeps its build and lint setup",
+					"smith convert --level full --dry-run, in an Nx or Turborepo workspace",
+					"smith adopt (the conservative level) for this repository",
+					"the full level for plain repositories is tracked in "+FullLevelIssue)
+			default:
+				return problem.New(fmt.Sprintf("--level %q is not one of conservative, full", level), "smith adopt --level conservative")
+			}
 			if dryRun && (tags || initialise) {
 				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags or --init", "drop --dry-run to take the steps, or drop the steps to only look")
 			}
@@ -80,6 +106,7 @@ non-zero while something blocks.`,
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&level, "level", LevelConservative, "how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "only report (this is the default; the flag makes it explicit)")
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")

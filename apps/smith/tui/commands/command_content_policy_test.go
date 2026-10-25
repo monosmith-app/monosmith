@@ -2,8 +2,8 @@ package commands
 
 import "testing"
 
-func TestAdoptAndConvertAreHiddenInAnEmptyFolder(t *testing.T) {
-	for _, id := range []string{"file.adopt", "file.convert"} {
+func TestAdoptIsHiddenInAnEmptyFolder(t *testing.T) {
+	for _, id := range []string{"file.adopt"} {
 		c, ok := ByID(id)
 		if !ok {
 			t.Fatalf("%s is gone", id)

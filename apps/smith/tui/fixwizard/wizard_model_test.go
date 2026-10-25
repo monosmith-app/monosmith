@@ -280,3 +280,68 @@ func TestTheDialogFitsAScreenAtTheMinimumSize(t *testing.T) {
 		t.Fatalf("cursor option hidden:\n%s", got)
 	}
 }
+
+func TestAStyledReviewCanDeclineSkipAndGoBackToTheStageBefore(t *testing.T) {
+	st := Style{Name: "Adopt", Apply: "Yes, delete", Decline: "No, keep", Skip: "Skip rest", Back: true}
+	w := New(safe(), show).Styled(st).Place(100, 30)
+	got := text(w)
+	for _, want := range []string{"Adopt · review", "[ Yes, delete  Enter ]", "[ No, keep  n ]", "[ Skip rest  s ]", "[ Back  b ]", "[ Cancel  Esc ]"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q:\n%s", want, got)
+		}
+	}
+	for key, check := range map[string]func(Outcome) bool{
+		"n": func(o Outcome) bool { return o.Decline }, "s": func(o Outcome) bool { return o.Skip },
+		"b": func(o Outcome) bool { return o.Back }, "esc": func(o Outcome) bool { return o.Done }, "enter": func(o Outcome) bool { return o.Apply },
+	} {
+		if _, out := w.Key(key); !check(out) {
+			t.Errorf("%s: %+v", key, out)
+		}
+	}
+	// Without the styles n cancels and s does nothing: the fix wizard is unchanged.
+	plainWizard := New(safe(), show).Place(100, 30)
+	if _, out := plainWizard.Key("n"); !out.Done || out.Decline {
+		t.Errorf("n in the fix wizard: %+v", out)
+	}
+	if _, out := plainWizard.Key("s"); out != (Outcome{}) {
+		t.Errorf("s in the fix wizard: %+v", out)
+	}
+}
+
+func TestAStartedStepShowsItsHeadlineAndAFailureWithoutRetryOffersOnlyClose(t *testing.T) {
+	w := New(safe(), show).Styled(Style{Name: "Adopt", Verb: "Converting…", Working: "reading the files", NoRetry: true}).Place(100, 30).Start("Converting the workspace", 2)
+	if got := text(w); !strings.Contains(got, "Converting…") || !strings.Contains(got, "Converting the workspace") || !strings.Contains(got, "reading the files, then 2 step(s)") {
+		t.Fatalf("started:\n%s", got)
+	}
+	w = w.Progress(1, 2, "convert")
+	if got := text(w); !strings.Contains(got, "step 1 of 2: convert") {
+		t.Fatalf("progress:\n%s", got)
+	}
+	w = w.Fail(errors.New("boom"))
+	got := text(w)
+	if strings.Contains(got, "Retry") || !strings.Contains(got, "Adopt failed") || !strings.Contains(got, "[ Close  Esc ]") {
+		t.Fatalf("failure:\n%s", got)
+	}
+	if _, out := w.Key("r"); out.Apply {
+		t.Fatal("r retried a step that cannot be retried")
+	}
+}
+
+func TestALongOptionWrapsUnderItsNumberAndAClickOnAnyOfItsLinesChoosesIt(t *testing.T) {
+	long := strings.Repeat("a very long label ", 8)
+	p := doctorfix.Planned{Fix: protocol.Fix{Description: "d", Choices: []protocol.FixChoice{{Question: "Which?", Options: []protocol.FixChoiceOption{{Label: "short"}, {Label: long}}}}}}
+	w := New(p, show).Place(60, 30)
+	got := text(w)
+	if !strings.Contains(got, "2) a very long label") || strings.Count(got, "label") < 8 {
+		t.Fatalf("the long option is cut:\n%s", got)
+	}
+	r := w.Rect()
+	_, at := w.rows(plain(), 0)
+	if at[2]-at[1] < 2 {
+		t.Fatalf("the long option did not wrap: %v", at)
+	}
+	w2, _ := w.Click(r.X+5, r.Y+1+at[1]+1) // the second line of option 2
+	if w2.Phase() != Reviewing || w2.Answers()[0] != 2 {
+		t.Fatalf("a click on the wrapped line chose %v in phase %v", w2.Answers(), w2.Phase())
+	}
+}

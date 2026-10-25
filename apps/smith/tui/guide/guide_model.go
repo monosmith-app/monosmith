@@ -22,6 +22,8 @@ type Model struct {
 	err     string
 	// Argv is the chosen command, empty until the questions are answered.
 	Argv []string
+	// Wizard names the wizard an action handed itself to (Action.Wizard).
+	Wizard string
 	// done is set when a command is chosen, or the user backed out of the top.
 	done bool
 }
@@ -157,6 +159,10 @@ func (m Model) confirm() Model {
 			return m
 		}
 		a := m.actions[m.cursor]
+		if a.Wizard != "" {
+			m.Wizard, m.done = a.Wizard, true
+			return m
+		}
 		m.action, m.step, m.answers, m.cursor, m.marked = &a, 0, map[string][]string{}, 0, map[int]bool{}
 		return m.advance()
 	}

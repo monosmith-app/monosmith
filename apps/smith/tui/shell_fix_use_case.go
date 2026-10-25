@@ -30,6 +30,8 @@ type (
 	fixDoneMsg struct {
 		run *fixRun
 		err error
+		// value is what an adopt job returned.
+		value any
 	}
 )
 

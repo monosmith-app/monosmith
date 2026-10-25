@@ -44,3 +44,37 @@ func TestPredictedFailureNamesTheStepThatClearsIt(t *testing.T) {
 		}
 	}
 }
+
+func TestLevelFullSaysItIsConvertsAndNamesTheIssueWithoutTouchingTheRepository(t *testing.T) {
+	cmd := Command("test")
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SilenceUsage, cmd.SilenceErrors = true, true
+	cmd.SetArgs([]string{"--level", "full", "--init"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("--level full succeeded")
+	}
+	for _, want := range []string{"--level full", "smith convert --level full --dry-run", "conservative level", FullLevelIssue} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the problem lacks %q:\n%s", want, err)
+		}
+	}
+	if out.Len() != 0 {
+		t.Errorf("nothing is printed before the refusal, got %q", out.String())
+	}
+}
+
+func TestLevelTakesConservativeAndFullOnly(t *testing.T) {
+	cmd := Command("test")
+	cmd.SetArgs([]string{"--level", "deep"})
+	cmd.SilenceUsage, cmd.SilenceErrors = true, true
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "not one of conservative, full") {
+		t.Fatalf("error %v", err)
+	}
+	if f := cmd.Flags().Lookup("level"); f == nil || f.DefValue != LevelConservative {
+		t.Fatalf("the default level is %+v", f)
+	}
+}

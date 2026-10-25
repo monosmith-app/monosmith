@@ -32,6 +32,28 @@ type Action struct {
 	NeedsContent bool
 	// Presents is the id of the action (see package actions) the form runs.
 	Presents string
+	// Wizard, when set, hands the action to the shell's wizard of that name
+	// instead of asking its Steps: the plain, screen-reader menu still asks
+	// them.
+	Wizard string
+}
+
+// WizardAdopt is the wizard that adopts or converts the folder.
+const WizardAdopt = "adopt"
+
+// AdoptionFirst moves the entries the adopt wizard answers to the top, for a
+// folder that holds something and is not a workspace yet: the first entry is
+// the one the menu starts on, so Enter begins the adoption.
+func AdoptionFirst(actions []Action) []Action {
+	var first, rest []Action
+	for _, a := range actions {
+		if a.Wizard == WizardAdopt && len(first) == 0 {
+			first = append(first, a)
+		} else {
+			rest = append(rest, a)
+		}
+	}
+	return append(first, rest...)
 }
 
 func first(a map[string][]string, key string) string {
@@ -110,7 +132,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		{Title: "Preview the next release", Presents: "release", Hint: "smith release --dry-run", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
 		{Title: "Regenerate CI pipelines", Presents: "ci", Hint: "smith ci generate", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
 		{
-			Title: "Adopt this repository", Presents: "adopt", Hint: "smith adopt: bring an existing repository under smith (start here; Nx and Turborepo go to Convert)", OutsideOnly: true, NeedsContent: true,
+			Title: "Adopt this repository", Wizard: WizardAdopt, Presents: "adopt", Hint: "smith adopt and convert in one wizard: what was found, how far to go, the plan, then the changes", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "step", Prompt: "What should smith do?", Options: []Option{
 				{Label: "Report what adopting involves", Value: "report", Hint: "read-only: the projects smith would see, the blockers and the step that clears each"},
 				{Label: "Create the baseline release tags", Value: "tags", Hint: "local only, nothing is pushed; needs a clean git tree"},
@@ -130,7 +152,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Convert an Nx or Turborepo workspace", Presents: "convert", Hint: "smith convert: Nx, Turborepo or mnci workspaces; Adopt sends you here when it recognises one", OutsideOnly: true, NeedsContent: true,
+			Title: "Convert an Nx or Turborepo workspace", Wizard: WizardAdopt, Presents: "convert", Hint: "smith convert: Nx, Turborepo or mnci workspaces (the same wizard as Adopt)", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "mode", Prompt: "Preview first?", Options: []Option{
 				{Label: "Preview the conversion", Value: "preview", Hint: "smith convert --dry-run: reports what maps and what needs you, changes nothing"},
 				{Label: "Convert now", Value: "convert", Hint: "the old tool is removed and the pipelines are regenerated"},
