@@ -1,7 +1,7 @@
 # Architecture
 
 How smith is built today. The decisions behind it are in
-[decisions.md](decisions.md); the plugin protocol in detail is in
+[decisions](decisions/README.md); the plugin protocol in detail is in
 [plugins.md](../reference/plugins.md).
 
 This page is the overview. The deep dives:

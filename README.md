@@ -96,7 +96,7 @@ in four sections:
   [conventions](docs/reference/conventions.md),
   [plugins and the protocol](docs/reference/plugins.md)
 - **Design:** [architecture](docs/architecture/architecture.md), [plugin system](docs/architecture/plugin-system.md),
-  [decisions](docs/architecture/decisions.md), [research](docs/architecture/research/)
+  [decisions](docs/architecture/decisions/README.md), [research](docs/architecture/research/)
 - **Contributing:** [working on MonoSmith](docs/contributing/development.md)
 
 ## Status

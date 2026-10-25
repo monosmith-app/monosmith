@@ -130,7 +130,7 @@ a minor version (the old mnci released a patch).
 
 `smith convert` also converts a Turborepo workspace (it has a `turbo.json`).
 Turborepo workspaces are usually pnpm or yarn, and smith's Node plugin runs
-npm ([decision 7](../architecture/decisions.md#7-npm-only-for-node)); smith has its own install command,
+npm ([ADR 0007](../architecture/decisions/0007-npm-only-for-node.md)); smith has its own install command,
 `smith install` (`smith i`), whatever the language, and for Node it runs npm.
 So convert does not add pnpm or yarn: it turns the workspace into the npm
 workspace `smith i` installs, and the report says exactly what changed or went.

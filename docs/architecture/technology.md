@@ -2,7 +2,7 @@
 
 A tour of the technical choices, with the reason for each. For the structure of
 the code see [architecture.md](architecture.md); for the decisions log (the
-ones the product owner made) see [decisions.md](decisions.md).
+ones the product owner made) see [decisions](decisions/README.md).
 
 ## One static binary
 

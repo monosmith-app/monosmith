@@ -61,7 +61,7 @@ minute tour with real commands and real output. Stuck on a word? See the
 | see how a run and the cache work | [Execution and cache](architecture/execution-and-cache.md) |
 | see how releases and CI are built | [Release and CI internals](architecture/release-and-ci-internals.md) |
 | see why Go, and what else is in the stack | [Technology](architecture/technology.md) |
-| read what was decided and why | [Decisions](architecture/decisions.md) |
+| read what was decided and why | [Decisions](architecture/decisions/README.md) |
 | read the proposals | [Recipes and CI](architecture/recipes-and-ci.md), [The TUI and the IDE plugins](architecture/tui-and-ide.md) |
 | read the research smith was planned from | [Research](architecture/research/) |
 | work on smith itself | [Working on MonoSmith](contributing/development.md) |
