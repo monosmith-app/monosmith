@@ -76,6 +76,15 @@ func Parse(raw []byte) (Config, error) {
 		}
 		return cfg, fmt.Errorf("%s: %w", FileName, err)
 	}
+	// An absent max_size_mb takes the default; an explicit 0 means no limit.
+	var probe struct {
+		Cache struct {
+			MaxSizeMB *int `toml:"max_size_mb"`
+		} `toml:"cache"`
+	}
+	if toml.Unmarshal(raw, &probe) == nil && probe.Cache.MaxSizeMB != nil && *probe.Cache.MaxSizeMB == 0 {
+		cfg.Cache.MaxSizeMB = -1
+	}
 	return cfg, Validate(&cfg)
 }
 

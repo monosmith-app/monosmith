@@ -134,3 +134,19 @@ func TestFindRootFromIgnoresTheWorkspaceRootOfTheRunningTask(t *testing.T) {
 		t.Fatalf("FindRootFrom must stay on the directory it was given: got %q, %v", got, err)
 	}
 }
+
+func TestCacheSizeLimitIsSetByTheFileAndZeroMeansNoLimit(t *testing.T) {
+	const head = "[workspace]\nname = \"a\"\n"
+	for input, want := range map[string]int{
+		head:                                  2048, // absent: the default
+		head + "[cache]\ndir = \"x\"\n":       2048, // the table without the key
+		head + "[cache]\nmax_size_mb = 512\n": 512,
+		head + "[cache]\nmax_size_mb = 0\n":   -1, // written as 0: no limit
+		head + "[cache]\nmax_size_mb = -5\n":  -5, // negative: no limit
+	} {
+		cfg, err := Parse([]byte(input))
+		if err != nil || cfg.Cache.MaxSizeMB != want {
+			t.Errorf("%q: MaxSizeMB = %d (%v), want %d", input, cfg.Cache.MaxSizeMB, err, want)
+		}
+	}
+}

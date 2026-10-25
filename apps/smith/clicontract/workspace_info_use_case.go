@@ -29,6 +29,7 @@ func WorkspaceReport(version, dir string) Info {
 		if raw, err := os.ReadFile(filepath.Join(root, workspace.FileName)); err == nil {
 			_ = toml.Unmarshal(raw, &ws.Config)
 		}
+		ws.Cache = cacheInfo(root)
 		info.Workspace = ws
 	}
 	return info

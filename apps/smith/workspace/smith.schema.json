@@ -63,7 +63,7 @@
       "additionalProperties": false,
       "properties": {
         "dir": { "type": "string", "description": "The task cache directory, workspace-relative or absolute. Default: .smith/cache." },
-        "max_size_mb": { "type": "integer", "minimum": 1, "description": "Prune the least recently used entries past this size. Default: 2048." },
+        "max_size_mb": { "type": "integer", "minimum": 0, "description": "Keep the local cache under this size: after a run that stored results, the least recently used entries past it are removed. 0 means no limit. Default: 2048." },
         "remote": { "type": "string", "pattern": "^(https?|s3|azblob)://", "description": "A shared cache behind the local one: https://host/path, s3://bucket/prefix or azblob://account/container/prefix. Objects are signed with SMITH_CACHE_KEY; one that fails verification is a miss." },
         "remote_read_only": { "type": "boolean", "description": "Read the remote cache without writing to it (SMITH_CACHE_READ_ONLY=1 does the same). Default: false." }
       }

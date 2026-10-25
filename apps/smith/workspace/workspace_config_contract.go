@@ -188,7 +188,11 @@ type DependenciesSection struct {
 type CacheSection struct {
 	// Dir is workspace-relative. Default: .smith/cache.
 	Dir string `toml:"dir"`
-	// MaxSizeMB triggers pruning of the least recently used entries. Default: 2048.
+	// MaxSizeMB is the size the local cache is kept under: after a run that
+	// stored results, the least recently used entries past it are removed.
+	// Default: 2048. 0 in smith.toml means no limit, and is loaded as -1
+	// (zero is how a missing key reads, and that takes the default); a negative
+	// number means no limit too.
 	MaxSizeMB int `toml:"max_size_mb"`
 	// Remote is a shared cache behind the local one: https://, s3:// or
 	// azblob://. Objects are signed with SMITH_CACHE_KEY. Default: none.

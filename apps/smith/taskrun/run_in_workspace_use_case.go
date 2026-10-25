@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
+	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
@@ -126,9 +129,25 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	if err != nil {
 		return Summary{}, err
 	}
-	return Run(ctx, g, Options{
-		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: store,
+	meter := cachemaintenance.NewWriteMeter(store)
+	summary := Run(ctx, g, Options{
+		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
 		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(),
-	}), nil
+	})
+	pruneAfterRun(s, meter, os.Stderr)
+	return summary, nil
+}
+
+// pruneAfterRun keeps the local cache under [cache] max_size_mb after a run
+// that stored results. It never fails the run: a problem is a warning. The
+// remote tier is never pruned.
+func pruneAfterRun(s *session.Session, meter *cachemaintenance.WriteMeter, warn io.Writer) {
+	if meter.Stored() == 0 {
+		return
+	}
+	_, _, err := cachemaintenance.AfterRun(s.LocalCacheDir(), session.CacheLimitBytes(s.Config), meter.Bytes(), time.Now())
+	if err != nil {
+		fmt.Fprintf(warn, "smith: warning: could not prune the cache to its limit: %v\n  → run `smith cache prune` to try again, or `smith cache verify` to check the store\n", err)
+	}
 }

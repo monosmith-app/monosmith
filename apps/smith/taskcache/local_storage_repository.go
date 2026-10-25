@@ -33,6 +33,9 @@ func NewLocalStorage(dir string) (*LocalStorage, error) {
 	return &LocalStorage{root: root}, nil
 }
 
+// Root is the versioned directory that holds ac/, cas/, last/ and tmp/.
+func (s *LocalStorage) Root() string { return s.root }
+
 func (s *LocalStorage) path(kind Kind, key string) (string, error) {
 	if len(key) < 3 || strings.ContainsAny(key, `/\.`) {
 		return "", fmt.Errorf("invalid cache key %q", key)
@@ -76,6 +79,9 @@ func (s *LocalStorage) Put(kind Kind, key string, content io.Reader) error {
 	}
 	if kind == CAS {
 		if ok, _ := s.Has(kind, key); ok {
+			// A use: a prune running beside this process must not sweep a blob
+			// that an entry written next is about to reference.
+			_ = s.Touch(kind, key)
 			return nil
 		}
 	}
@@ -122,6 +128,9 @@ func (s *LocalStorage) Delete(kind Kind, key string) error {
 // Touch refreshes (access times are unreliable on Windows and noatime mounts).
 func (s *LocalStorage) Walk(kind Kind, visit func(key string, size int64, lastUsed time.Time) error) error {
 	return filepath.WalkDir(filepath.Join(s.root, string(kind)), func(path string, d fs.DirEntry, err error) error {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil // removed concurrently (a prune, a clear)
+		}
 		if err != nil || d.IsDir() {
 			return err
 		}
