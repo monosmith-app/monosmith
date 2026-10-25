@@ -139,7 +139,7 @@ Nothing changed (adopt only reports). To apply:
 
 ### smith convert
 
-Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../guides/converting.md).
+Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../guides/converting.md). `--level full` also deletes the old tooling nothing uses any more (lint packages and configs, the test runner not chosen, the old build, Nx and mnci), one group at a time after asking: `--lint`, `--test`, `--build` and `--ci` are the choices, asked in a terminal and required (or defaulted by `--yes`) elsewhere; `--json` prints the plan with the groups as doctor fixes. See [Going further: `--level full`](../guides/converting.md#going-further---level-full).
 
 <!-- smith:begin convert -->
 Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)
@@ -148,11 +148,17 @@ Usage: `smith convert [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--allow-dirty` | convert even with uncommitted changes | off |
+| `--allow-dirty` | convert even with uncommitted changes (not with --level full) | off |
+| `--build <build>` | full level: build with smith's stack build (smith) or keep the current build setup (keep) | `smith` |
+| `--ci <ci>` | full level: the pipeline smith generates (smith) or keep the current one (keep) | `smith` |
 | `--dry-run` | report the plan without changing anything | off |
 | `--json` | print the plan as JSON | off |
+| `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
+| `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--skip-install` | do not run npm install afterwards | off |
+| `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
+| `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses |
 | `--verbose` | name every project a finding applies to, not just a few | off |
 | `--yes` | apply without asking (a terminal asks before changing anything) | off |
 

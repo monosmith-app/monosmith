@@ -184,6 +184,72 @@ What it cannot map is reported, never dropped silently:
 
 The sections, `--strict`, `--json` and `--dry-run` work as for Nx.
 
+## Going further: `--level full`
+
+A plain `smith convert` is the **conservative** level: it keeps what works,
+maps what can be mapped, and lists the rest under "things to check". Most of
+that list is old tooling that still runs: the shared ESLint config and the
+plugins only it needed, a Rollup or SWC build nothing calls any more, a test
+runner's configs. `--level full` makes smith the only tool: it converts, works
+out which of those files and `devDependencies` nothing uses any more, and
+deletes them, asking first.
+
+```sh
+smith convert --level full --dry-run     # the whole plan, as diffs; nothing changes
+smith convert --level full               # in a terminal: asks, then converts
+smith convert --level full --lint smith --test jest --build smith --ci smith --yes
+```
+
+It is for Node workspaces (npm packages, ESLint, Jest or Vitest, Rollup, SWC,
+Webpack, Nx and mnci); other languages' leftovers are not looked for yet. It
+needs a clean git tree, because `git restore --staged --worktree . && git clean -fd`
+is the way back.
+
+`smith adopt` sends a repository it recognises as Nx here. The full level is
+`smith convert` only for now; other languages' leftovers and an `adopt` for
+repositories with no tool yet follow (issue #548).
+
+### The choices
+
+Four decisions, each with a default taken from what the workspace uses. In a
+terminal the ones you did not give as flags are asked as numbered questions
+(the suggested option first; Enter takes it). Elsewhere (a pipe, CI) it
+prints the plan and stops with a non-zero exit, naming the flags that apply it.
+
+| Flag | Values | What it decides |
+|---|---|---|
+| `--lint` | `smith`, `keep` | `smith`: the root ESLint config uses `@monosmith/eslint-config` (with the vertical-slice rules) and the old lint packages and config files go. If the config imported `@mnci/eslint-config`, only the import and the call change and the rules you wrote beside it stay; a config written by hand is replaced by smith's two lines (the diff shows what is lost). Default: `smith` when the config imports a shared config smith replaces, else `keep`. |
+| `--test` | `jest`, `vitest`, `keep` | The configs and packages of the runner **not** chosen go. A runner is never rewritten to another: if the other one's tests exist, its files stay and the report says why. Default: the runner the workspace uses. |
+| `--build` | `smith`, `keep` | The configs and packages of the old build (Rollup, Webpack, SWC and Babel config files, their loaders and CLIs) go; the build is the one convert wrote, esbuild and `tsc`. Default: `smith`. |
+| `--ci` | `smith`, `keep` | `keep` leaves your pipelines as they are instead of generating smith's; they keep calling the old tool, and `smith doctor` reports the pipelines as not matching until you run `smith ci generate`. Default: `smith`. |
+
+`--yes` accepts every group below without asking; `--dry-run` prints the whole
+plan and changes nothing (`--json` prints it as data); `--skip-install` leaves
+the install, and `--skip-verify` the checks, out.
+
+### What it removes, and when it keeps something
+
+The removals come in groups, each with its reason, and each is asked on its own
+(`y` applies it, anything else leaves it): lint ("remove 3 old lint packages and
+1 other lint config file: you chose smith's ESLint"), the test runner not
+chosen, the old build, and Nx and mnci leftovers. Every group is shown as the
+diffs it makes (a `package.json` edit is a diff too) before you answer, and the
+next group is planned from the files as they are after your answer, so a group
+you decline keeps what it would have removed.
+
+A file or a package is removed only when nothing that stays imports or runs it:
+the scan reads every script, CI file, config and source file left after the
+group (a comment on a line of its own does not count), and a package also stays
+when a package that stays needs it as a peer dependency, or a project lists it as
+a `peerDependency`. Whatever looks like the old tooling but stays is listed with
+what keeps it ("kept rollup: used by packages/a/package.json"). When it cannot be
+sure, it keeps.
+
+Afterwards one `npm install` refreshes `package-lock.json` for everything taken
+out and put in, and the workspace is checked the way a teammate would: it builds,
+tests and lints, and `smith doctor` finds nothing wrong. The step that fails is
+named, with the end of its output.
+
 ## The report
 
 Every finding has a severity:

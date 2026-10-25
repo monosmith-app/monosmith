@@ -55,6 +55,7 @@ each slice's handler; most commands start by opening a `session`.
 | `tui` | the interactive front end of a bare `smith` |
 | `scaffold`, `upgrade` | `smith new` and `smith add`; bringing a workspace up to a newer smith |
 | `convert`, `convertplan`, `nxworkspace`, `adoption` | converting an Nx (or old-mnci) workspace, and adopting a repository that has no tool yet |
+| `convertchoices`, `legacyinventory`, `removalplan`, `fullconversion` | the full level of `smith convert`: the choices (lint, test runner, build, CI), the scan for old tooling nothing uses any more, the removals as doctor fixes asked one group at a time, and the run that applies them |
 | `dependencies`, `devservers`, `explain`, `whymiss`, `graphview`, `stackview`, `configedit`, `clicontract`, `mcpserver`, `slicecheck` | the remaining commands: install/uninstall, `smith dev`, explain, why-miss, graph, stacks, config edits, the `--json` contracts for editors, `smith mcp`, slice checks |
 | `goldenpath` | the end-to-end tests: new workspace, every kind in every language, build, test, release |
 

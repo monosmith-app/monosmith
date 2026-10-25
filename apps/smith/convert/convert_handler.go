@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
@@ -25,7 +26,8 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
-	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes bool
+	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify bool
+	choices := convertchoices.Choices{Level: convertchoices.LevelConservative}
 	cmd := &cobra.Command{
 		Use:   "convert",
 		Short: "Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)",
@@ -45,11 +47,28 @@ Run it with --dry-run first: the report lists what maps, what changes behaviour
 and what needs you. Nothing is dropped silently. An Nx workspace's
 dependencies must be installed (npm ci), because Nx itself describes the
 projects; a Turborepo workspace is read from its files, so nothing needs to be
-installed.`,
-		Example: "  smith convert --dry-run\n  smith convert",
+installed.
+
+--level full goes further: it makes smith the only tool. After the conversion
+it works out which files and devDependencies of the old tooling nothing uses
+any more (ESLint configs and plugins, the test runner you did not choose,
+rollup or webpack, Nx and mnci), and asks about each group before deleting it.
+--lint, --test, --build and --ci are the choices behind it; in a terminal
+the ones you do not give are asked. Elsewhere the plan is printed and the
+command stops, naming the flags that apply it. It needs a clean git tree, so
+git undoes everything.`,
+		Example: "  smith convert --dry-run\n  smith convert\n  smith convert --level full --dry-run\n  smith convert --level full --lint smith --test jest --build smith --ci smith --yes",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			given := convertchoices.Given{
+				Lint: cmd.Flags().Changed("lint"), Test: cmd.Flags().Changed("test"),
+				Build: cmd.Flags().Changed("build"), CI: cmd.Flags().Changed("ci"),
+			}
+			if err := convertchoices.Validate(choices, given); err != nil {
+				return problem.New(err.Error())
+			}
+			full := choices.Level == convertchoices.LevelFull
 			root, err := os.Getwd()
 			if err != nil {
 				return err
@@ -61,8 +80,11 @@ installed.`,
 			if !git.IsRepository() {
 				return problem.New("this folder is not a git repository: convert makes its changes through git, so each one can be reviewed and undone", `git init && git add -A && git commit -m "before smith", then run this again`)
 			}
-			if !dryRun && !allowDirty {
+			if !dryRun && (!allowDirty || full) {
 				if status, err := git.Run("status", "--porcelain"); err == nil && status != "" {
+					if full {
+						return problem.New("the working tree has uncommitted changes: --level full deletes files, and git restore is its way back, so the tree must be clean", "git add -A && git commit -m \"before smith\", then run this again")
+					}
 					return problem.New("the working tree has uncommitted changes, so the conversion would not be one reviewable change", "git add -A && git commit -m \"before smith\", then run this again", "or pass --allow-dirty to convert anyway")
 				}
 			}
@@ -87,6 +109,12 @@ installed.`,
 			blocked := plan.Blocked(strict)
 			options := ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}
 			switch {
+			case full && !blocked && !asJSON && !dryRun:
+				fmt.Fprintf(out, "Converting %s %q, full level\n\n%s", sourceLabel(plan), plan.Config.Workspace.Name, Verdict(plan, strict))
+			case full && !asJSON:
+				fmt.Fprint(out, Report(plan, options))
+			case full:
+				// The JSON holds both plans; runFull prints it.
 			case asJSON:
 				enc := json.NewEncoder(out)
 				enc.SetIndent("", "  ")
@@ -102,6 +130,13 @@ installed.`,
 			}
 			if blocked {
 				return ErrBlocked
+			}
+			if full {
+				return runFull(cmd, fullArgs{
+					Root: root, Git: git, Plan: plan, Version: version, Files: files, Strict: strict,
+					Choices: choices, Given: given, DryRun: dryRun, JSON: asJSON, Yes: yes,
+					SkipInstall: skipInstall, SkipVerify: skipVerify,
+				})
 			}
 			if dryRun {
 				return nil
@@ -137,7 +172,14 @@ installed.`,
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
 	f.BoolVar(&yes, "yes", false, "apply without asking (a terminal asks before changing anything)")
-	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes")
+	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes (not with --level full)")
+	level := (*string)(&choices.Level)
+	f.StringVar(level, "level", string(convertchoices.LevelConservative), "how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking)")
+	f.StringVar(&choices.Lint, "lint", convertchoices.Keep, "full level: lint with smith's ESLint config (smith) or keep the current setup (keep)")
+	f.StringVar(&choices.Test, "test", convertchoices.Keep, "full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep")
+	f.StringVar(&choices.Build, "build", convertchoices.Smith, "full level: build with smith's stack build (smith) or keep the current build setup (keep)")
+	f.StringVar(&choices.CI, "ci", convertchoices.Smith, "full level: the pipeline smith generates (smith) or keep the current one (keep)")
+	f.BoolVar(&skipVerify, "skip-verify", false, "full level: install, but do not build, test, lint and run doctor afterwards")
 	return cmd
 }
 
