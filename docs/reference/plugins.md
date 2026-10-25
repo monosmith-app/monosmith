@@ -193,7 +193,7 @@ await serve({
 
 **The contract is a JSON Schema.** The Go types of the protocol are the source of truth, and
 `packages/plugin-sdk/schema/protocol.schema.json` is generated from them (draft 2020-12): one definition
-per message, `x-methods` (each of the 16 methods with its params, its result and the capability it
+per message, `x-methods` (each of the 17 methods with its params, its result and the capability it
 needs), `x-errorCodes`, `x-roles`, `x-protocolVersion` and `x-transport` (the framing). A member is
 required when its Go field has no `omitempty`. A Go test fails when the file is stale, and the SDKs of other
 languages generate their types from it, so a plugin in a language without an SDK can read it too.
@@ -210,7 +210,7 @@ Content-Length: 85\r\n
 
 | Method | Params → Result | Capability |
 |---|---|---|
-| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names | always |
+| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names, and `concurrency` (how many requests it can work on at once; absent is 1) | always |
 | `discover` | workspace-relative manifest paths the host found → projects | `discover` |
 | `generate` | kind, name, directory, workspace info, stack, `convention` when the plugin is asked as a workspace convention rather than as one of the stack's plugins, and `settings` (the plugin's own table from the recipe the project is created from) → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
@@ -226,6 +226,7 @@ Content-Length: 85\r\n
 | `dependencies/latest` | names, tools → each name's newest stable release, the names the registry could not be asked about, and the pinned tools against their newest releases | `latest` |
 | `contribute` | the projects whose stack includes the plugin, or a convention applies to → new tasks, replaced tasks and extra task dependencies, by project | `contribute` |
 | `shutdown` | → `{}`; the plugin then exits | always |
+| `cancel` | a notification (no `id`, no response): the id of an in-flight request to stop → that request is answered with its result, or with error `-32800` | `cancel` |
 
 A **project** carries its name, root, language, kind (`app`, `lib`,
 `package`), the identifiers other projects import it by (`exports`), the
@@ -247,10 +248,15 @@ Rules:
   capabilities from the interfaces a plugin implements, and the TypeScript SDK from the
   members of the plugin object, so they cannot lie.
 - A breaking change raises the integer protocol version; additions are new
-  capabilities or optional fields, which old peers ignore.
+  capabilities or optional fields, which old peers ignore. `cancel` and `concurrency` are such
+  additions ([ADR 0036](../architecture/decisions/0036-cancel-and-concurrency-in-the-plugin-protocol.md)).
 - `initialize` must come first. A failure the user must act on returns error
   code `-32000` with a message saying what to do.
-- Every call has a timeout; a plugin that does not answer is killed.
+- Every call has a timeout. When it runs out, or the command is cancelled, the host sends `cancel` to a plugin
+  that advertised it and waits five seconds for the answer; a plugin that does not answer, or cannot be
+  asked, is killed.
+- The host never has more requests in flight to a plugin than its `concurrency` allows (absent: one at a
+  time); answers may come in any order and are matched by `id`.
 - Paths in messages are workspace-relative with forward slashes.
 
 ## Edges the host adds

@@ -38,7 +38,8 @@ sequenceDiagram
 
 `initialize` has 30 seconds to answer. Other calls have timeouts too (a minute for `discover`,
 `contribute`, `ci` and `doctor`; twenty minutes for `generate`; thirty for `publish`), and a plugin
-that does not answer in time is killed. See [Troubleshooting plugins](troubleshooting-plugins.md).
+that does not answer in time is killed (one that can be cancelled is asked to stop first). A plugin is called one
+request at a time unless it says it can take more. See [Troubleshooting plugins](troubleshooting-plugins.md).
 
 ## The five roles
 

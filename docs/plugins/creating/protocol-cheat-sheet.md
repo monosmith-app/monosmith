@@ -20,7 +20,9 @@ for a guide, the [quickstart](quickstart.md).
 | Channel | the plugin's standard input (requests) and standard output (responses); standard error is shown to the user |
 | Framing | `Content-Length: <bytes>`, `\r\n\r\n`, then that many bytes of UTF-8 JSON. The length counts bytes. As the Language Server Protocol frames |
 | Largest message | 64 MiB |
-| Order | the host sends `initialize` first and calls one plugin at a time; a request with an `id` gets exactly one response with the same `id`; a request without an `id` is a notification and gets none |
+| Order | the host sends `initialize` first; a request with an `id` gets exactly one response with the same `id`; a request without an `id` is a notification and gets none |
+| Requests in flight | at most the plugin's `concurrency` (absent: 1, so the host sends the next request after the previous is answered); responses may come in any order, matched by `id` |
+| Cancel | the notification `cancel`, `{"id": <in-flight id>}`, sent only to a plugin whose `capabilities.cancel` is true; the plugin answers that request with its result or `-32800` |
 | Environment | the host sets `SMITH_PLUGIN=1` in the plugin's environment |
 | Paths | workspace-relative with forward slashes; only `workspaceRoot` is absolute, with the host's separators |
 | End | the host sends `shutdown`; the plugin answers `{}` and exits. Closing stdin also ends it |
@@ -42,7 +44,8 @@ Content-Length: 85
 | `-32601` | `CodeMethodNotFound` | `method not supported: <method>` |
 | `-32602` | `CodeInvalidParams` | the params do not have the expected shape |
 | `-32603` | `CodeInternalError` | internal error |
-| `-32000` | `CodePluginFailure` | the method ran and failed for a reason the user must act on; put the remedy in `message` and smith shows it. The Go SDK returns this for every error a method returns |
+| `-32000` | `CodePluginFailure` | the method ran and failed for a reason the user must act on; put the remedy in `message` and smith shows it. The Go SDK returns this for every error a method returns, except one of a request the host cancelled |
+| `-32800` | `CodeRequestCancelled` | the plugin stopped the request because the host sent `cancel` for its id. A plugin that had finished answers with the result instead |
 
 ### A real conversation
 
@@ -63,6 +66,21 @@ This is the actual traffic with the Python example `docs/examples/plugins/python
 << {"jsonrpc": "2.0", "id": 4, "result": {}}
 ```
 
+### A cancelled request
+
+The traffic with the example `docs/examples/plugins/structure-scan-go`, which advertises `cancel` and declares a
+`concurrency` of 4 (`WIDGET_SCAN_DELAY_MS=100` makes its scan slow enough to cancel). The notification has no
+`id` and gets no response; the request it names is answered with the cancelled error.
+
+```json
+>> {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersions":[1],"host":{"name":"smith","version":"1.62.0"},"workspaceRoot":"/ws"}}
+<< {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":1,"plugin":{"name":"widget-scan","version":"0.1.0"},"kind":"convention","capabilities":{"doctor":true,"cancel":true},"concurrency":4,"languages":["widget"],"roles":["structure"]}}
+
+>> {"jsonrpc":"2.0","id":2,"method":"doctor","params":{"projects":[{"name":"core","root":"libs/core","language":"widget","kind":"lib"}]}}
+>> {"jsonrpc":"2.0","method":"cancel","params":{"id":2}}
+<< {"jsonrpc":"2.0","id":2,"error":{"code":-32800,"message":"request cancelled: the scan was stopped"}}
+```
+
 ## Methods
 
 The host never calls a method the plugin did not advertise in `capabilities`. `initialize` and
@@ -72,6 +90,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 |---|---|---|---|---|---|
 | `initialize` | always | `Plugin.Describe` | `InitializeParams` → `InitializeResult` | every command that loads plugins | 30 s |
 | `shutdown` | always | built in | `{}` → `{}` | the end of the command | 5 s |
+| `cancel` (a notification) | `cancel` | `Cancellable` | `CancelParams` → no response | a call whose context ends or whose time runs out | none: the plugin has 5 s to answer the request |
 | `discover` | `discover` | `Discoverer` | `DiscoverParams` → `DiscoverResult` | every command that reads the workspace | 1 min |
 | `contribute` | `contribute` | `Contributor` | `ContributeParams` → `ContributeResult` | the same, for stack and convention plugins | 1 min |
 | `generate` | `generate` | `Generator` | `GenerateParams` → `GenerateResult` | `smith add` | 20 min |
@@ -87,8 +106,13 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |
 
-Calls made without a timeout get 2 minutes. A plugin that does not answer in time is killed.
-The timeouts are the ones the host passes today (`apps/smith`); they are not part of the protocol.
+Calls made without a timeout get 2 minutes. When a call runs out of time the host sends `cancel` to a plugin that
+advertised it, waits 5 seconds for the answer, and kills the plugin if none comes; a plugin that cannot be
+asked is killed at once. When the command is cancelled (Ctrl+C) the host does the same with its 5 seconds for
+every plugin. The timeouts are the ones the host passes today (`apps/smith`); they are not part of the protocol.
+
+The host never has more requests in flight to a plugin than its `concurrency` allows, and the plugin may answer
+them in any order.
 
 ## Capabilities
 
@@ -108,6 +132,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
 | `latest` | `dependencies/latest` | language |
+| `cancel` | the `cancel` notification: the plugin stops the work of a request when the host cancels it | any plugin with a method that can run for long |
 
 With the Go SDK the capabilities are derived from the interfaces the plugin type implements
 (`serve.CapabilitiesOf`), so a plugin cannot advertise a method it lacks.
@@ -149,6 +174,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `plugin` | `Peer` | yes |  |
 | `kind` | `PluginKind` | yes |  |
 | `capabilities` | `Capabilities` | yes |  |
+| `concurrency` | `int` | no | Concurrency is how many requests the plugin can work on at the same time; the host never has more in flight. Absent or 0 means 1, which is what every plugin that says nothing does: the host sends the next request only after the previous one is answered. N above 1 allows that many, and -1 leaves the number to the host (it keeps 32 in flight). Any other negative value is invalid and read as 1. |
 | `languages` | `[]string` | no | Languages are the values a user passes to --lang to reach this plugin. |
 | `manifests` | `[]string` | no | Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin. |
 | `roles` | `[]Role` | no | Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). |
@@ -184,6 +210,15 @@ Capabilities are the optional methods a plugin implements.
 | `dependencies` | `bool` | no | Dependencies installs and uninstalls packages in its projects. |
 | `declarations` | `bool` | no | Declarations lists and rewrites declared dependency specs (sync, up). |
 | `latest` | `bool` | no | Latest reports the newest releases of dependencies and pinned tools. |
+| `cancel` | `bool` | no | Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it. |
+
+### CancelParams
+
+CancelParams are the params of the cancel notification, which has no response.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `id` | `int64` | yes | ID is the id of the in-flight request to stop. An id the plugin does not know, or whose request is already answered, is ignored. |
 
 ### PluginRef
 

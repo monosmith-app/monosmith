@@ -97,8 +97,12 @@ Almost every command begins with `session.Open` (`apps/smith/session`):
    exceeds its timeout kills the plugin process, because after a timeout its
    stream can no longer be trusted.
 
-Calls to one plugin are serialised (`host.Client` holds a mutex); calls to
-different plugins can run at the same time. Default timeout is two minutes;
+A plugin is never given more calls at once than it declared (`concurrency` in the
+`initialize` result; absent is one, so such a plugin is called one request at a
+time and the next call waits for the answer), and `host.Client` waits for a
+free place before it sends; calls to different plugins can run at the same time.
+A call whose context ends or whose time runs out is cancelled (see
+[the plugin protocol](plugin-protocol.md#cancel-and-concurrency)). Default timeout is two minutes;
 `generate` and `publish` pass much longer ones because they run real
 toolchains.
 
@@ -339,7 +343,7 @@ the generate task from a recipe's settings, and gRPC/AsyncAPI/GraphQL defaults.
 |---|---|
 | plugin binary missing or fails to start | the command stops, naming the plugin and the command it tried |
 | plugin answers `initialize` with another protocol version | the connection is refused |
-| a method times out | the plugin process is killed and the call fails; other plugins are unaffected |
+| a method times out | a plugin that advertised `cancel` is asked to stop and has five seconds to answer; any other plugin, or one that does not answer, is killed. The call fails; other plugins are unaffected |
 | a plugin returns an error | the command stops and shows the error with the plugin's name |
 | two plugins provide one slot, or conflict | the stack or recipe is refused with both names |
 | an external plugin is older or newer than `smith.toml` allows | refused at start-up, with both versions |

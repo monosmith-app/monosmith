@@ -34,6 +34,11 @@ same ones `conformance.Check` runs in your tests.
 | `contribute answers with no projects` | `contribute` advertised | the same for `contribute` |
 | `ci answers with no projects` | `ci` advertised | the same for `ci` |
 | `doctor answers with no projects` | `doctor` advertised | the same for `doctor` |
+| `declares a concurrency the protocol defines` | always | `concurrency` is absent, 1 or more, or -1 |
+| `answers 3 requests sent together, one at a time` | the plugin declares no concurrency and advertises one of `discover`, `contribute`, `ci`, `doctor` | three requests sent together are all answered, and the host never had more than one in flight |
+| `accepts <n> requests at the same time` | the same, with a `concurrency` above 1 or -1 | n (at most 4) requests sent together are all answered |
+| `answers a cancelled request with its result or the cancelled error` | `cancel` advertised | a request cancelled just after it was sent is answered with its result or `-32800` within 10 seconds, without the host killing the plugin |
+| `ignores a cancel for a request it does not know` | `cancel` advertised | a cancel for an id nobody sent is ignored and the next request is answered |
 | `shuts down when asked` | always | `shutdown` is answered and the process exits within five seconds |
 
 The roles are the *effective* ones: a plugin that declares none gets its kind's default (a language
@@ -66,6 +71,8 @@ widget-layout 0.1.0
   ✔ has a known kind
   ✔ plays a known role: structure
   ✔ a structure plugin does something
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ doctor answers with no projects
   ✔ shuts down when asked

@@ -103,6 +103,8 @@ my-plugin 0.0.0
   ✔ has a known kind
   ✔ plays a known role: structure
   ✔ a structure plugin does something
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ shuts down when asked
 ```

@@ -11,6 +11,8 @@ model at a time. Each one is explained step by step in
 | [`toolchain-widget-lint`](toolchain-widget-lint) | toolchain plugin: the `lint` slot, settings | Go | [Creating a toolchain plugin](../../plugins/creating/toolchain-plugin.md) |
 | [`structure-layout-go`](structure-layout-go) | structure plugin: a layout check, doctor | Go | [Creating a structure plugin](../../plugins/creating/structure-plugin.md) |
 | [`structure-layout-node`](structure-layout-node) | the same structure plugin | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
+| [`structure-scan-go`](structure-scan-go) | a structure plugin whose `doctor` can be cancelled and runs four at a time | Go, on the SDK | [The plugin protocol](../../architecture/plugin-protocol.md#cancel-and-concurrency) |
+| [`structure-scan-node`](structure-scan-node) | the same plugin | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`structure-layout-python`](structure-layout-python) | the same structure plugin | Python, standard library | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
 | [`language-widget-ts`](language-widget-ts) | the same language plugin as `language-widget` | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`scaffold-widget-service`](scaffold-widget-service) | scaffold plugin: templates, settings, golden test | Go | [Creating a scaffold plugin](../../plugins/creating/scaffold-plugin.md) |
