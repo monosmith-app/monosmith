@@ -106,7 +106,7 @@ Trusting a plugin is not sandboxing it. A trusted plugin runs with your privileg
 
 The marks follow the [comparison's legend](README.md#legend): ✅ the tool's documentation says it has it, ◐ partly or with a condition, ❔ not verified in the sources searched (not "absent"), ❌ checked and not provided. These rows are also in the [master table](everything-compared.md).
 
-**MonoSmith lets you write an extension in any language against a documented protocol, with published SDKs for Go and TypeScript, and the extension can add a language, a task, a scaffold, a CI step or a release target.** moon (any language that compiles to WASM) and Cargo (any program named `cargo-<name>`) are the nearest ideas, and each is credited below.
+**MonoSmith lets you write an extension in any language against a documented protocol, with published SDKs for Go, TypeScript and Python, and the extension can add a language, a task, a scaffold, a CI step or a release target.** moon (any language that compiles to WASM) and Cargo (any program named `cargo-<name>`) are the nearest ideas, and each is credited below.
 
 | Row | **MonoSmith** | Nx | Turbo | Bazel | Pants | Lerna | Rush | moon | Buck2 | Gradle | Earthly | Lage | JS pkg mgrs | Cargo | Please |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -126,7 +126,7 @@ The marks follow the [comparison's legend](README.md#legend): ✅ the tool's doc
 
 | Tool | Mechanism | You write it in | Credit and condition |
 |---|---|---|---|
-| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go and TypeScript | no registry yet; not sandboxed |
+| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go, TypeScript and Python | no registry yet; not sandboxed |
 | Nx | plugins with generators, executors, `createNodes` and `createDependencies` | TypeScript or JavaScript: "The plugin is a Node package" | the largest ecosystem in this set: a plugin registry and community plugins; each plugin runs "in a separate forked process" |
 | Turborepo | no plugin API found; custom generators use Plop | JavaScript | focused on tasks and caching; `turbo gen` covers scaffolding |
 | Bazel | macros, rules, repository rules and module extensions in `.bzl` files | Starlark | "Support for a new language is typically done with a rule"; the Bazel Central Registry hosts modules |
@@ -156,7 +156,7 @@ Every tool above is good at its own job. What differs is what you still have to 
 
 - **You want a large ecosystem of ready-made third-party plugins, today.** Nx has a plugin registry and community plugins; Gradle has the Plugin Portal; Bazel has its Central Registry. smith has no registry yet ([#164](https://github.com/monosmith-app/monosmith/issues/164), [#565](https://github.com/monosmith-app/monosmith/issues/565)): plugins are executables you place on a search path or name in `smith.toml`.
 - **You need extensions to be sandboxed.** moon's WASM plugins get a sandboxed file system. smith's trust gate, minimal environment and digest pins reduce the risk and do not remove it: a trusted plugin runs with your privileges ([#565](https://github.com/monosmith-app/monosmith/issues/565)).
-- **You want an SDK in your language.** Go and TypeScript have published SDKs. Python has none: you write the message framing yourself, about 40 lines, as the 102-line example does ([#564](https://github.com/monosmith-app/monosmith/issues/564)).
+- **You want an SDK in your language.** Go, TypeScript and Python have published SDKs. For any other language you write the message framing yourself, about 40 lines, as the 102-line hand-framed Python example does ([#564](https://github.com/monosmith-app/monosmith/issues/564)).
 - **You need a plugin to run tasks in parallel with its own requests, or to be cancelled mid-call.** External plugins can declare both; the built-in plugins are called one request at a time and cannot be cancelled ([decision 0037](../../architecture/decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).
 - **The plugin API must be stable.** The protocol is versioned (today, 1) and the Go SDK is below 1.0, so a minor version may change its API.
 - **You are JavaScript only and want Nx's depth.** Nx's generators, executors and graph plugins are a mature, documented extension surface for that stack.
@@ -175,7 +175,7 @@ Write your first plugin in ten minutes with the [quickstart](../../plugins/creat
 
 - **MonoSmith.** Everything above about smith was checked on 2026-10-25 against smith 1.65.0 and this repository: `smith plugin list`, `smith plugin check`, `smith plugin trust`, `smith stacks`, the protocol documents and decisions 0036 and 0037. The SDKs were checked on their registries the same day: `@monosmith/plugin-sdk` 0.2.0 on npm; `github.com/monosmith-app/monosmith/packages/plugin-sdk` v0.34.0 on the Go module proxy; no `monosmith-plugin-sdk`, `monosmith-sdk` or `smith-plugin-sdk` package on PyPI. The Python example is `docs/examples/plugins/python`, run with Python 3 on Windows.
 - **Other tools.** Read raw from each tool's own documentation source on 2026-10-25 (the repositories named below), searched for "plugin", "extension", "extending", "isolat", "sandbox", "trust" and the tool's own vocabulary. A quoted phrase is the text relied on. ❔ means the sources were searched and neither state nor exclude the feature. Third-party plugins, blogs and commercial services were not searched.
-- **Not verified.** Linux and macOS behaviour of the trust flow; the Go and TypeScript SDK examples were not re-run for this page; Nx, Bazel, Pants, Gradle and moon plugins were read, not built.
+- **Not verified.** Linux and macOS behaviour of the trust flow; the Go, TypeScript and Python SDK examples were not re-run for this page; Nx, Bazel, Pants, Gradle and moon plugins were read, not built.
 
 ### Sources
 

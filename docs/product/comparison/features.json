@@ -1225,7 +1225,7 @@
       "s": {
         "m": "Y",
         "e": "L",
-        "n": "Go (module packages/plugin-sdk, v0.34.0 on the Go proxy) and TypeScript (@monosmith/plugin-sdk 0.2.0 on npm); no Python or C# SDK is published"
+        "n": "Go (module packages/plugin-sdk, v0.34.0 on the Go proxy) TypeScript (@monosmith/plugin-sdk 0.2.0 on npm) and Python (monosmith-plugin-sdk 0.1.0 on PyPI); no C# SDK is published yet"
       },
       "t": "YUYYUPUYYUUUUU"
     },
