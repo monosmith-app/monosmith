@@ -1,0 +1,4 @@
+<Project>
+  <!-- Empty on purpose: the example is a standalone project. Inside this repository it must not inherit the
+       workspace build settings of the root Directory.Build.props (output under dist/, warnings as errors). -->
+</Project>

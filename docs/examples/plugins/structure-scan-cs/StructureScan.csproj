@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Runs on a newer runtime when .NET 8 is not installed. -->
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>StructureScan</RootNamespace>
+    <AssemblyName>StructureScan</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- In your own project: dotnet add package MonoSmith.Plugin.Sdk, and drop this reference. -->
+    <ProjectReference Include="../../../../packages/plugin-sdk-dotnet/MonoSmith.Plugin.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>
