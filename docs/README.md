@@ -5,6 +5,8 @@ C++, Dart, the JVM and Bicep from one command: it scaffolds projects, runs their
 tasks in dependency order from a cache, generates the CI pipeline, and
 releases from conventional commits.
 
+Evaluating smith for your team? Start with [Why MonoSmith](product/README.md).
+
 New here? Read [Getting started](getting-started/README.md). Stuck on a word? See the
 [glossary](reference/glossary.md).
 

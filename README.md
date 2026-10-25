@@ -2,6 +2,26 @@
 
 # MonoSmith
 
+**One command to build, test, ship and release a monorepo in any of eleven languages.**
+
+- **Eleven languages, one tool.** Node, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart, the JVM and Bicep, each a plugin; projects and tasks come from your manifests, not from a config you write.
+- **Cached and affected.** A task whose inputs did not change replays from a content-addressed cache, local or shared (HTTP, S3, Azure Blob). `--affected` runs only what a change can reach.
+- **CI you do not write.** Pipelines for GitHub Actions, Azure Pipelines and GitLab CI are generated, call the same `smith` commands you run locally, and `smith doctor` fails when they drift.
+- **Releases from commits.** Conventional commits version and publish packages to eight registries in dependency order, and a failed release resumes.
+- **A way in and a way to check.** `smith convert` brings Nx, Turborepo and mnci workspaces over and reports what it could not map; one static binary, MIT licensed. smith is young: read the [honest FAQ](docs/product/faq-for-evaluators.md).
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh   # Windows: irm .../install.ps1 | iex
+smith new acme && cd acme
+smith add app web --lang node && smith add lib core --lang go
+smith build        # in dependency order, cached
+smith doctor       # is the workspace healthy?
+```
+
+**New here?** [Why MonoSmith](docs/product/README.md) · [In five minutes](docs/product/how-it-works-in-five-minutes.md) · [Compared with Nx, Turborepo, Bazel and 11 more](docs/product/comparison/README.md) · [Moving from Nx or Turborepo](docs/product/migration-stories.md)
+
+## Overview
+
 MonoSmith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++,
 Dart, the JVM and Bicep from one command, `smith`. It scaffolds projects, runs
 their tasks in dependency order from a cache, generates the CI pipeline from
