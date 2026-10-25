@@ -1,2 +1,2 @@
 @echo off
-node "%~dp0plugin.mjs" %*
+node "%~dp0plugin.ts" %*
