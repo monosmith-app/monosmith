@@ -21,8 +21,9 @@ func TestWorkspaceSummaryAnswersWhatIsGoingOnHere(t *testing.T) {
 		{Project: protocol.Project{Name: "kit", Kind: "package"}, Plugin: "node"},
 		{Project: protocol.Project{Name: "api", Kind: "app"}, Plugin: "go"},
 	}}
-	out := WorkspaceSummary("/work/demo", cfg, graph)
+	out := WorkspaceSummary("/work/demo", cfg, graph, &CacheInfo{Bytes: 312 << 20, LimitBytes: 2048 << 20})
 	for _, want := range []string{
+		"cache     312 MB of 2048 MB (15%)",
 		"workspace demo (/work/demo)",
 		"projects  3 (2 apps, 1 package)",
 		"languages 1 go, 2 node",

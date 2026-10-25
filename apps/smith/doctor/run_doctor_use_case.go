@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
 	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
@@ -162,6 +163,9 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		remote = env
 	}
 	out = append(out, cacheKeyFinding(remote, os.Getenv)...)
+	if status, err := cachemaintenance.Inspect(s.LocalCacheDir(), session.CacheLimitBytes(s.Config)); err == nil {
+		out = append(out, localCacheFindings(status)...)
+	}
 	out = append(out, toolchainPinFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{

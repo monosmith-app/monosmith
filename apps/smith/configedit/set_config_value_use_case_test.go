@@ -21,7 +21,7 @@ func TestSetChecksTheSchemaAndKeepsComments(t *testing.T) {
 		{"ci.providers", []string{"github", "bitbucket"}, `takes github or azure or gitlab, not "bitbucket"`},
 		{"ci.providers", []string{"github", "github"}, "twice"},
 		{"ci.devcontainer", []string{"yes please"}, "true or false"},
-		{"cache.max_size_mb", []string{"0"}, "at least 1"},
+		{"cache.max_size_mb", []string{"-1"}, "at least 0"},
 		{"workspace.name", []string{""}, "cannot be empty"},
 		{"workspace.name", []string{"a", "b"}, "one value"},
 		{"stacks.web", []string{"x"}, "not a setting"},

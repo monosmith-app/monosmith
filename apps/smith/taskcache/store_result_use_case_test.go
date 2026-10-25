@@ -69,7 +69,7 @@ func TestPruneKeepsRecentEntries(t *testing.T) {
 		p, _ := s.path(AC, key)
 		_ = os.Chtimes(p, old, old)
 	}
-	res, err := Prune(s, 700)
+	res, err := Prune(s, 1200) // the entries and last-run pointers count, not only the blobs
 	if err != nil {
 		t.Fatal(err)
 	}

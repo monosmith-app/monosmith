@@ -42,6 +42,7 @@ Core slices in `apps/smith`:
 | `projectgraph` | projects, edges from imports, overrides with provenance, selection |
 | `taskgraph` | expand requested tasks with their dependencies |
 | `taskcache` | cache keys, the `Storage` interface and local backend, save/restore/prune |
+| `cachemaintenance`, `cachecommand` | prune the local cache to its limit after a run; `smith cache status/prune/clear/verify` |
 | `taskrun` | the scheduler, process trees, `smith run/build/test/lint/typecheck` |
 | `affected` | changed projects and their dependents |
 | `release` | plan and execute releases, `smith release` |

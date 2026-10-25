@@ -11,8 +11,9 @@ import (
 
 // WorkspaceSummary describes a workspace in a few lines a newcomer can read:
 // its name, projects by kind and language, the stacks and CI in use, and
-// where releases come from. smith config list has the rest.
-func WorkspaceSummary(root string, cfg workspace.Config, graph *projectgraph.Graph) string {
+// where releases come from, and how full the local cache is. smith config list
+// has the rest.
+func WorkspaceSummary(root string, cfg workspace.Config, graph *projectgraph.Graph, cache *CacheInfo) string {
 	var b strings.Builder
 	row := func(label, value string) {
 		fmt.Fprintf(&b, "  %-9s %s\n", label, value)
@@ -61,6 +62,9 @@ func WorkspaceSummary(root string, cfg workspace.Config, graph *projectgraph.Gra
 		branch = "main"
 	}
 	row("releases", "from "+branch)
+	if cache != nil {
+		row("cache", cache.Line())
+	}
 	b.WriteString("\nsmith config list shows every setting; smith projects lists the projects.\n")
 	return b.String()
 }

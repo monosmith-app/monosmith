@@ -82,7 +82,7 @@ func Commands(version string) []*cobra.Command {
 			}
 			defer s.Close()
 			fmt.Fprintln(out)
-			fmt.Fprint(out, WorkspaceSummary(report.Workspace.Root, s.Config, s.Graph))
+			fmt.Fprint(out, WorkspaceSummary(report.Workspace.Root, s.Config, s.Graph, report.Workspace.Cache))
 			return nil
 		},
 	}

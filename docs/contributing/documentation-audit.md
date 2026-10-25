@@ -29,7 +29,7 @@ Verdicts:
 | `guides/writing-a-plugin.md` | fixed | Replaced a real user path in sample output; timeouts, error codes, doctor fix steps and choices checked against `packages/plugin-sdk`. Restructuring is left to the plugin-manual work. |
 | `reference/ci.md` | fixed | Added the `before-publish` slot of the `pub.yml` workflow. Branches, native, SBOM, provenance, audit policies and the caches checked. |
 | `reference/cli.md` | rewritten | Now a generated quick reference of every command and flag, filled by `reference/cli-generate.mjs` from `smith commands --json`; the hand-written examples moved to the manual. The generator was stale: it exited 1 silently on drift, misreported variadic arguments and had wrong defaults. |
-| `reference/configuration.md` | fixed | Every key of `smith schema` is documented. Added `SMITH_VERBOSE` and the task environment (`SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT`). Marked `[cache] max_size_mb` as not applied. |
+| `reference/configuration.md` | fixed | Every key of `smith schema` is documented. Added `SMITH_VERBOSE` and the task environment (`SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT`). Marked `[cache] max_size_mb` as not applied (applied since smith wired pruning, #559: the page now describes the real behaviour and `0` as no limit). |
 | `reference/conventions.md` | accurate | Slice-check languages, roles and `smith slices check --lang` match the binary. |
 | `reference/glossary.md` | fixed | Added depth level, fix, native project and SBOM. |
 | `reference/plugins.md` | fixed | The `vscode` plugin's roles now include deploy; "a recipe later" became "a stack or a recipe"; pointer to `smith plugin enable/disable/set`. Protocol methods, capabilities, `plugin.json`, search path and `SMITH_HOME` verified against the SDK. Restructuring is left to the plugin-manual work. |
@@ -39,7 +39,7 @@ Verdicts:
 | `reference/stacks.md` | accurate | Built-in stacks match `smith stacks`. |
 | `reference/tasks-and-cache.md` | fixed | Cache layout, `why-miss` format and `affected --paths` verified by running them; the pruning claim corrected. |
 | `architecture/architecture.md` (was `design/`) | fixed | All 45 slice names checked; about 25 core slices and several libraries missing from the tables added; links to the new pages. |
-| `architecture/execution-and-cache.md` | fixed | Corrected the store layout (`<aa>/` shards, `tmp/`), the key example, the affected section and the remote backends; pruning documented as unwired. |
+| `architecture/execution-and-cache.md` | fixed | Corrected the store layout (`<aa>/` shards, `tmp/`), the key example, the affected section and the remote backends; pruning documented as unwired (now wired, #559). |
 | `architecture/plugin-system.md` | fixed | The handshake table listed six plugin kinds; `protocol.PluginKind` has two (`language`, `convention`). Limits, timeouts, `SMITH_PLUGIN=1` and the search path match the code. |
 | `architecture/recipes-and-ci.md` | fixed | Added a status table: built (URL pinning in `smith.recipes.lock`, `[registries]`, one-version), not built (recipe workspace scope, a CI-provider role, deploy environments). |
 | `architecture/release-and-ci-internals.md` | fixed | The build step applies only to projects without a release section; added the journal, the SBOM, the `before-publish` slot and the on-demand `convert` job. |
@@ -78,7 +78,7 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 
 | What | Evidence |
 |---|---|
-| `[cache] max_size_mb` is read but never applied: `taskcache.Prune` has no caller outside tests | `grep` for callers; `smith config list` and the schema still describe pruning |
+| `[cache] max_size_mb` is read but never applied: `taskcache.Prune` has no caller outside tests | **Fixed (#559).** `taskrun` prunes the local store after a run that stored results, and `smith cache` shows and trims it; the pages that said "not applied" were corrected. Was: `grep` for callers; `smith config list` and the schema still described pruning |
 | A project import cycle stops every command that opens the workspace, so `smith doctor`'s cycle check and the warning in `smith graph` cannot be reached | `session.Open` fails with `projects import each other in a cycle: ui → web → ui`; reproduced in a scratch workspace |
 | `smith test --json` (and any `run --json`) prints task log lines before the JSON on standard output | observed; `--json-events` is clean |
 | `smith plugin check <path> --json` prints `"detail": "<nil>"` for one check | observed |

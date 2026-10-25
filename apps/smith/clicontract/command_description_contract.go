@@ -69,4 +69,15 @@ type CLIInfo struct {
 type WorkspaceInfo struct {
 	Root   string         `json:"root"`
 	Config map[string]any `json:"config"`
+	// Cache is the size of the local task cache against its limit; absent
+	// when it could not be read.
+	Cache *CacheInfo `json:"cache,omitempty"`
+}
+
+// CacheInfo is the local task cache at a glance.
+type CacheInfo struct {
+	Dir   string `json:"dir"`
+	Bytes int64  `json:"bytes"`
+	// LimitBytes is [cache] max_size_mb in bytes; 0 means no limit.
+	LimitBytes int64 `json:"limitBytes"`
 }

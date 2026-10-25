@@ -96,15 +96,14 @@ func Open(opts Options) (*Session, error) {
 	return &Session{Root: root, Config: cfg, Git: git, Plugins: plugins, Stacks: catalog, Graph: graph, Files: files, Version: opts.Version}, nil
 }
 
+// LocalCacheDir is the directory of the workspace's local cache.
+func (s *Session) LocalCacheDir() string {
+	return LocalCacheDir(s.Root, s.Config, os.Getenv)
+}
+
 // Storage opens the configured cache.
 func (s *Session) Storage() (taskcache.Storage, error) {
-	dir := s.Config.Cache.Dir
-	if env := os.Getenv("SMITH_CACHE_DIR"); env != "" {
-		dir = env
-	}
-	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(s.Root, filepath.FromSlash(dir))
-	}
+	dir := s.LocalCacheDir()
 	local, err := taskcache.NewLocalStorage(dir)
 	if err != nil {
 		return nil, err

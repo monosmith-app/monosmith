@@ -61,7 +61,7 @@ ci.providers                         ["github"]              Pipelines to genera
 release.branch                       (default)               The only branch a real release runs from. Default: main.
 ...
 cache.dir                            (default)               The task cache directory, workspace-relative or absolute. Default: .smith/cache.
-cache.max_size_mb                    (default)               Prune the least recently used entries past this size. Default: 2048.
+cache.max_size_mb                    (default)               Keep the local cache under this size: after a run that stored results, the least recently used entries past it are removed. 0 means no limit. Default: 2048.
 ...
 plugins.enabled                      (default)               Built-in language plugins to load. Default: all of them.
 default_stacks.node                  "node-jest"             the stack of node projects that record none, and of smith add without --stack (for example node-jest)

@@ -148,6 +148,8 @@ directory: restoring one deletes what the other wrote.
   cas/<aa>/<sha256>      content-addressed blobs: output files and logs
   last/<aa>/<sha256 of task id>   the key of the task's most recent cached run
   tmp/                   writes land here first, then are renamed into place
+  prune-state.json       when the store was last measured, its size then, and what runs added since
+  prune.lock             exists while one smith process prunes
 ```
 
 `<aa>` is the first two characters of the name. Entries point at blobs by digest, so an
@@ -158,13 +160,68 @@ an antivirus scanner holds the file), so an interrupted run never leaves a half-
 `Storage` is an interface (`Has`, `Get`, `Put`, `Delete`, `Walk`, `Touch`) so that other
 backends can be added; the remote tier is one (below).
 
-### Pruning: implemented, not wired
+### Pruning
 
-`taskcache.Prune` keeps a store under a size: it removes the least recently used entries until
-the blobs the remaining entries reference fit, then sweeps blobs no entry references. The size
-setting is `[cache] max_size_mb` (default 2048). In smith 1.62.0 nothing calls `Prune`
-outside its tests, so the local cache grows until you delete `.smith/cache`. Documentation that
-promises automatic pruning is describing the setting's intent, not the behaviour.
+`[cache] max_size_mb` (default 2048; `0` or less means no limit) is the size the **local** store
+is kept under. `taskcache.PruneWith` does the work: it ranks the entries by last use (the
+modification time that `Touch` refreshes on every hit), keeps the most recent ones until the next
+no longer fits, removes the rest, then sweeps the blobs no kept entry names. The size counts
+entries, blobs and the `last/` pointers. `taskrun.RunInWorkspace` calls it, through
+`cachemaintenance.AfterRun`, after a run that stored something; the remote tier is never pruned.
+
+```mermaid
+sequenceDiagram
+  participant R as taskrun (RunInWorkspace)
+  participant M as WriteMeter
+  participant A as cachemaintenance.AfterRun
+  participant S as prune-state.json
+  participant P as taskcache.PruneWith
+  participant L as local store
+  R->>M: run the tasks with the meter as the Storage
+  M->>L: Put entries and blobs (counts bytes, not last/ pointers)
+  R->>A: stored something? AfterRun(dir, limit, bytes added)
+  A->>S: read
+  alt no limit, or the store is not due
+    A->>S: add the bytes to the running total (one small write)
+  else never measured, an hour old, or a big run over the limit
+    A->>L: take prune.lock (skip if another smith holds it)
+    A->>P: PruneWith(limit, grace 5 min)
+    P->>L: Walk ac, cas, last; delete old entries, then unused blobs
+    A->>S: write size after, time, added = 0
+  end
+  A-->>R: error becomes a warning, never a failed run
+```
+
+It is cheap because most runs never walk the store. The state file holds the size at the last
+walk and the bytes added since; a walk happens only when the store was never measured, when
+`CheckInterval` (an hour) has passed (which also corrects the total for what other processes
+stored), or when this run stored `BigRunBytes` (4 MB) or more and the total says the store is
+over its limit. On a store of 4 000 entries a walk takes about 0.2 s and a run that does not walk
+adds about 4 ms (`BenchmarkAfterRunOnALargeStore`).
+
+It is safe beside other smith processes, which can be reading, storing or pruning the same
+directory:
+
+- **Grace.** An entry used, and a blob written or used, within `InUseGrace` (five minutes) is
+  neither removed nor swept, so what the run just stored and what another process is restoring
+  survive. A blob no entry names yet is kept for a minute even in a manual prune, because a task
+  writes its blobs before the entry that names them. A prune that leaves the store over the
+  limit because of this looks again after six minutes rather than an hour.
+- **Touch on store.** Storing a blob that is already there refreshes it, so the new entry that
+  is about to name it is not left with a blob an older prune is about to sweep.
+- **Vanishing and held files.** `Walk` ignores a directory that disappears; a file a prune cannot
+  delete (a reader holds it open on Windows) is skipped and counted, not an error. Deleting an
+  entry or blob under a reader at worst makes that task a miss: `Restore` fails and the runner
+  runs the task.
+- **One pruner.** `prune.lock` (created exclusively, taken over when ten minutes old) keeps two
+  automatic prunes from walking the store together.
+
+`smith cache` is the command line for this: [`status`](../manual/cache-status.md) measures the
+store, [`prune`](../manual/cache-prune.md) runs `PruneWith` now (with a dry run),
+[`clear`](../manual/cache-clear.md) deletes the `v1` folder and
+[`verify`](../manual/cache-verify.md) hashes every blob and checks every entry. All of it works
+on a cache directory and never on the remote tier. [`smith doctor`](../manual/doctor.md) warns
+when the store is over its limit or holds entries that can never hit, from a look that hashes nothing.
 
 ## The remote tier
 
@@ -259,7 +316,8 @@ and where each value came from.
 | lookup, store, restore | `apps/smith/taskcache/store_result_use_case.go` |
 | local store | `local_storage_repository.go`, `storage_contract.go` |
 | last run and diff | `last_run_repository.go`, `diff_key_inputs_algorithm.go` |
-| pruning | `prune_cache_use_case.go` |
+| pruning | `prune_cache_use_case.go`; wired by `apps/smith/cachemaintenance` (`prune_local_cache_use_case.go`, `prune_throttle_policy.go`, `prune_state_store.go`, `write_meter_store.go`) |
+| `smith cache` | `apps/smith/cachecommand` over `cachemaintenance` (`inspect_`, `verify_`, `clear_local_cache_use_case.go`) |
 | remote tier | `apps/smith/remotecache` |
 | choosing local or tiered storage | `apps/smith/session/open_session_use_case.go` |
 | the explanation | `apps/smith/whymiss` |

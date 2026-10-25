@@ -151,10 +151,12 @@ result if it succeeded.
 The store is a directory (`.smith/cache/v1`) split like Bazel's remote cache:
 `ac/` holds one small JSON entry per key; `cas/` holds blobs named by their
 SHA-256, shared between entries. Writes land by rename, so an interrupted run
-never leaves a half-written entry; an entry with a missing blob is a miss. When
-the cache grows, nothing trims it in smith 1.62.0: `max_size_mb` (default 2048) is
-read and the pruning code exists (`taskcache.Prune`), but no command calls it. Delete
-`.smith/cache` to reclaim space.
+never leaves a half-written entry; an entry with a missing blob is a miss. The local
+cache is kept under `[cache] max_size_mb` (default 2048; `0` means no limit): after a run that
+stored new results, smith removes the least recently used entries past the limit, at most about
+once an hour and never what was used in the last five minutes. The remote cache is never
+pruned. [`smith cache`](../manual/cache.md) shows the size (`status`), trims now (`prune`),
+deletes the cache (`clear`) and checks it for damage (`verify`).
 
 Each entry also keeps what its key was computed from (the files and their
 digests, the command, env, upstream sources and dependency keys), and `last/`

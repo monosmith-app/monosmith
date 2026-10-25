@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
 	"os"
 
+	"github.com/monosmith-app/monosmith/apps/smith/cachecommand"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
@@ -88,7 +89,7 @@ already have), then build and doctor.`,
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
 	add("inspect", mcpserver.Command(version), engineserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command())
+	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command())
 	return root
 }
 

@@ -71,10 +71,27 @@ Surprising misses usually come from three places:
   answer a laptop on Node 22. Align the versions (`smith doctor` warns when
   Node or Python differ from CI).
 
-To skip the cache once, use `smith run <task> --no-cache`. To remove it, delete
-`.smith/cache`. `[cache] max_size_mb` (default 2048) is meant to trim the least
-recently used entries, but smith 1.62.0 never applies it: the cache only shrinks
-when you delete it.
+To skip the cache once, use `smith run <task> --no-cache`. To remove it, run
+[`smith cache clear`](../manual/cache-clear.md).
+
+## The cache is using too much disk
+
+smith keeps the local cache under `[cache] max_size_mb` (default 2048) by itself:
+after a run that stored new results it removes the least recently used entries
+past the limit. `smith cache status` shows how big the cache is, how full it is
+against the limit, and which tasks take the room; `smith doctor` warns when it
+is over. Entries and blobs less than five minutes old are kept, so a cache can be
+over its limit for a few minutes after a big run.
+
+- To trim now: `smith cache prune` (`--dry-run` shows what would go, and
+  `--max-size-mb 512` trims below the setting).
+- To lower the limit for good: `smith config set cache.max_size_mb 512`. `0`
+  means no limit, and then nothing is pruned.
+- To delete it all: `smith cache clear`.
+- If `smith cache status` shows unusable entries, or a crash left the store
+  damaged: `smith cache verify --fix`.
+
+See [`smith cache`](../manual/cache.md).
 
 ## A task is wrong, but it passes from the cache
 
@@ -105,6 +122,8 @@ lists them all. The checks, grouped by who owns them:
 |---|---|
 | the cache directory is ignored by git | `.smith/` would be committed. Add `.smith/` to `.gitignore` (`smith doctor --fix` does it) |
 | the repository has commits | releases and `--affected` need history. Make the first commit |
+| the local cache is within its limit (a warning, only once a cache exists) | the cache is bigger than `[cache] max_size_mb`. Run `smith cache prune` |
+| the local cache has no unusable entries (a warning, only once a cache exists) | entries that can never be a hit. Run `smith cache verify --fix` |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
 | tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |

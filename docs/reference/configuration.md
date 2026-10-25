@@ -81,7 +81,7 @@ registry = "libs"                     # where packages publish; default: [worksp
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
-max_size_mb = 2048                     # meant to cap the cache; not applied by smith 1.62.0
+max_size_mb = 2048                     # keep the local cache under this size in MB; 0 = no limit ("The cache size limit")
 remote = "s3://acme-smith-cache/main"  # a shared remote cache: https://, s3://, azblob:// (docs/reference/tasks-and-cache.md)
 remote_read_only = false               # read the remote without writing to it
 
@@ -354,6 +354,23 @@ reads `[projects.<name>.settings.<plugin>]` as its entry in the project's
 `settings` (and gets it as `settings` when it generates the project). `smith
 remove` drops a project's `recipe` and `settings` tables with the rest of its
 tables; the stack stays, since other projects may use it.
+
+## The cache size limit
+
+`[cache] max_size_mb` is the size the local cache is kept under (default 2048). After a `smith
+run` (or `build`, `test`, `lint`, `typecheck`, a `smith ci` phase, `smith release` and the other
+commands that run tasks) that stored new results, smith removes the least recently used entries past the limit,
+then the blobs no entry uses. It does not walk the store every time: it looks at most about once an
+hour, or sooner when one run stored 4 MB or more and the store is probably over. It leaves
+anything used or written in the last five minutes, and a problem while pruning is a warning,
+never a failed run.
+
+- `max_size_mb = 0` (or a negative number) means no limit: smith never prunes by itself.
+- The limit applies to the local cache only. The remote cache is never pruned by smith.
+- It applies in CI too, to that machine's local cache.
+- `smith cache status` shows the size against the limit, `smith cache prune` trims now (and to
+  another size with `--max-size-mb`), and `smith doctor` warns when the cache is over. See
+  [`smith cache`](../manual/cache.md).
 
 ## Overriding a task
 
