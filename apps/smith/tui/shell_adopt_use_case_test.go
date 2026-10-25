@@ -24,14 +24,13 @@ import (
 // adoptFake is smith, for the shell: a repository that is an Nx workspace,
 // one group of removals, and the calls it was given.
 type adoptFake struct {
-	mu       sync.Mutex
-	calls    []string
-	hold     chan struct{}
-	stopped  bool
-	applied  bool
-	closed   bool
-	found    adoptflow.Found
-	finishes int
+	mu      sync.Mutex
+	calls   []string
+	hold    chan struct{}
+	stopped bool
+	applied bool
+	closed  bool
+	found   adoptflow.Found
 }
 
 func (f *adoptFake) note(s string) {
@@ -133,7 +132,7 @@ func newAdoptLab(t *testing.T, f *adoptFake, empty bool, w, h int) *lab {
 	// As Choose makes the menu: what needs a workspace or content is left out.
 	var actions []guide.Action
 	for _, a := range guide.Actions([]string{"go", "node"}, []string{"go", "node"}, []string{"go", "node"}) {
-		if !a.NeedsWorkspace && !(a.NeedsContent && empty) {
+		if !a.NeedsWorkspace && (!a.NeedsContent || !empty) {
 			actions = append(actions, a)
 		}
 	}
@@ -277,7 +276,7 @@ func TestAClickOnTheBannerOpensTheWizard(t *testing.T) {
 	l := newAdoptLab(t, f, false, 110, 34)
 	sh := l.sh()
 	in := sh.mainInner()
-	l.send(tea.MouseMsg{X: in.X + 2, Y: in.Y, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, Type: tea.MouseLeft})
+	l.send(tea.MouseMsg{X: in.X + 2, Y: in.Y, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if l.sh().adopt == nil {
 		t.Fatal("a click on the banner did nothing")
 	}

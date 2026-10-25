@@ -22,8 +22,8 @@ const shownKept = 8
 // foundText is the first screen: what the folder is and what it uses.
 func foundText(f adoptflow.Found) string {
 	var b strings.Builder
-	switch {
-	case f.Kind == adoptflow.KindSmith || f.Kind == adoptflow.KindNotARepo:
+	switch f.Kind {
+	case adoptflow.KindSmith, adoptflow.KindNotARepo:
 		fmt.Fprintf(&b, "● %s\n", f.Name)
 	default:
 		fmt.Fprintf(&b, "● Found a %s: %s\n", f.Source, f.Name)
