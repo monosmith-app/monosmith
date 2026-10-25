@@ -56,6 +56,7 @@ merge dates.
 | [0033](0033-doctor-fixes-with-steps-and-choices.md) | Doctor fixes with steps and choices | accepted | 2026-10-24 | Fixes can run commands and ask questions |
 | [0034](0034-adopt-and-convert-depth-levels.md) | Adopt and convert depth levels | accepted (Nx and Turborepo); proposed (plain repositories) | 2026-10-25 | `--level conservative\|full` |
 | [0035](0035-ci-branches-setting.md) | `[ci] branches` | accepted | 2026-10-25 | Where the generated pipelines run |
+| [0038](0038-a-plugin-is-packed-as-a-checksummed-archive-and-installed-without-running-it.md) | A plugin is packed as a checksummed archive and installed without running it | accepted | 2026-10-26 | `smith plugin pack` and `install`: a deterministic zip with checksums.sha256, verified before anything is written, the pin recorded, trust left to the person |
 | [0037](0037-cancel-and-concurrency-in-the-plugin-protocol.md) | Cancel and concurrency in the plugin protocol | accepted | 2026-10-25 | A `cancel` notification and a `concurrency` declaration, additive, version stays 1 |
 | [0036](0036-external-plugins-are-trusted-and-get-a-minimal-environment.md) | External plugins are trusted and get a minimal environment | accepted | 2026-10-25 | An external plugin starts only once trusted, with the baseline environment plus what it declares |
 

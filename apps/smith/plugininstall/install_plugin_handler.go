@@ -21,7 +21,7 @@ func Command(describe func(dir string) (Described, error)) *cobra.Command {
 		sha                  string
 	)
 	cmd := &cobra.Command{
-		Use:   "install <path|url|github:owner/repo@tag>",
+		Use:   "install <source>",
 		Short: "Install a packaged plugin and pin its digest",
 		Long: `Installs a plugin from an archive made by "smith plugin pack", from a plugin
 directory, from an https URL, or from a GitHub release (github:owner/repo@tag,

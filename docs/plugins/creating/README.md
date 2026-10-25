@@ -48,7 +48,7 @@ no trust, so the commands in the guides that check a plugin work as written.
 | [The Python SDK](python-sdk.md) | you write a plugin in Python: a walk-through, then every function, type and helper of `monosmith-plugin-sdk` |
 | [The C# SDK](csharp-sdk.md) | you write a plugin in C#: a walk-through, then every interface, type and helper of `MonoSmith.Plugin.Sdk` |
 | [Testing a plugin](testing-a-plugin.md) | `smith plugin check`, unit tests, and a workspace test |
-| [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions |
+| [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions, `smith plugin pack` and how users install the result |
 
 ## The example family
 
