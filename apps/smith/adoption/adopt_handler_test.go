@@ -78,3 +78,17 @@ func TestLevelTakesConservativeAndFullOnly(t *testing.T) {
 		t.Fatalf("the default level is %+v", f)
 	}
 }
+
+func TestInitOnAnAdoptedWorkspaceSaysWhyNotThatSomethingBlocks(t *testing.T) {
+	r := Report{Root: t.TempDir(), Clean: true, Blockers: []Item{
+		{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it", Blocks: BlocksAdoption},
+		{Message: "web has no release tag", Blocks: BlocksRelease},
+	}}
+	err := Init(r, "1.0.0", false, false, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "already a smith workspace") || !strings.Contains(err.Error(), "nothing to adopt") {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.Contains(err.Error(), "release tag") || strings.Contains(err.Error(), "something blocks") {
+		t.Errorf("only the adoption blockers belong in it: %v", err)
+	}
+}

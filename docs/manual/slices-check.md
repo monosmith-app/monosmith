@@ -37,7 +37,7 @@ Usage: `smith slices check <project directory>... [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `project directory` | yes | directories of projects of one language |
+| `project directory...` | yes | directories of projects of one language |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|

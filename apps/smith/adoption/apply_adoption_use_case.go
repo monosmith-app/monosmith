@@ -40,6 +40,23 @@ func CreateBaselines(r Report, out io.Writer) (int, error) {
 	return made, nil
 }
 
+// adoptionBlocked names each blocker of --init and the step that clears it, so
+// the error says why (for an adopted workspace: that there is nothing to adopt).
+func adoptionBlocked(r Report) error {
+	var lines []string
+	for _, b := range r.Blockers {
+		if b.Blocks != BlocksAdoption {
+			continue
+		}
+		line := b.Message
+		if b.Step != "" {
+			line += " (" + b.Step + ")"
+		}
+		lines = append(lines, line)
+	}
+	return errors.New("cannot adopt: " + strings.Join(lines, "; "))
+}
+
 // Init makes the repository a workspace: a pipeline file of the user's at a
 // path smith owns is kept beside it as .pre-smith, smith.toml and the root files
 // smith needs are written (theirs kept), the steps doctor would ask for (go.work,
@@ -48,7 +65,7 @@ func CreateBaselines(r Report, out io.Writer) (int, error) {
 // saying what smith doctor still reports.
 func Init(r Report, version string, install, eslint bool, out io.Writer) error {
 	if !r.Adoptable() {
-		return errors.New("something blocks adoption; see smith adopt")
+		return adoptionBlocked(r)
 	}
 	if !r.Clean {
 		return ErrDirty

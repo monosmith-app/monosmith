@@ -28,7 +28,7 @@ Usage: `smith why-miss <project>:<task> [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `project:task` | yes | the task to explain, such as web:build |
+| `project:task` | yes | the task to explain, such as `web:build` |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
