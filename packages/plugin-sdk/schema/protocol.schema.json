@@ -1,0 +1,1362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/packages/plugin-sdk/schema/protocol.schema.json",
+  "title": "smith plugin protocol",
+  "description": "The messages of the smith plugin protocol: JSON-RPC 2.0 between the smith host and a plugin, a separate process. This file is generated from the Go types of packages/plugin-sdk/protocol, which are the source of truth; do not edit it. Regenerate it with `go run ./schemagen` in packages/plugin-sdk.\n\nx-methods maps each method name to the definitions of its params and result and to the capability a plugin advertises to be asked it (null: always available). x-errorCodes, x-roles and x-transport complete the contract. A definition's required members are the ones the Go SDK writes without omitempty.\n\nFraming: each message is the header Content-Length: <bytes of the body>, a blank line (CRLF CRLF) and the body, UTF-8 JSON, as the Language Server Protocol frames. The length counts bytes, not characters. The host sends initialize first, calls one plugin at a time, and a request with an id gets exactly one response with the same id. A request without an id is a notification and gets none. Stdout carries only frames: a plugin logs to stderr. The host sets SMITH_PLUGIN=1 in the plugin's environment.\n\nReading: a receiver ignores members it does not know (the protocol grows by adding members), and treats a null array or object as an empty one, because the Go SDK writes a nil slice or map as null when the member is required. A member that is absent and a member with its zero value are the same for every optional member.\n\nPaths in messages are relative to the workspace and use forward slashes; only workspaceRoot is absolute and uses the host's separators.",
+  "x-protocolVersion": 1,
+  "x-transport": {"framing": "content-length", "encoding": "utf-8", "jsonrpc": "2.0", "maxMessageBytes": 67108864},
+  "x-methods": {
+    "initialize": {
+      "description": "The first request, sent once by the host. The plugin picks a protocol version from the host's list and answers who it is and what it can do.",
+      "params": {"$ref": "#/$defs/InitializeParams"},
+      "result": {"$ref": "#/$defs/InitializeResult"},
+      "capability": null
+    },
+    "shutdown": {
+      "description": "The last request. The plugin answers an empty object and exits.",
+      "params": {"$ref": "#/$defs/Empty"},
+      "result": {"$ref": "#/$defs/Empty"},
+      "capability": null
+    },
+    "discover": {
+      "description": "Describes the projects behind manifests the host found; a language plugin's way into the workspace.",
+      "params": {"$ref": "#/$defs/DiscoverParams"},
+      "result": {"$ref": "#/$defs/DiscoverResult"},
+      "capability": "discover"
+    },
+    "generate": {
+      "description": "Writes the starter files of a new project.",
+      "params": {"$ref": "#/$defs/GenerateParams"},
+      "result": {"$ref": "#/$defs/GenerateResult"},
+      "capability": "generate"
+    },
+    "version/write": {
+      "description": "Records a release version in a project's manifest.",
+      "params": {"$ref": "#/$defs/VersionParams"},
+      "result": {"$ref": "#/$defs/VersionResult"},
+      "capability": "version"
+    },
+    "publish": {
+      "description": "Publishes one project at one version, or builds the files attached to a release.",
+      "params": {"$ref": "#/$defs/PublishParams"},
+      "result": {"$ref": "#/$defs/PublishResult"},
+      "capability": "publish"
+    },
+    "ci": {
+      "description": "Describes what a generated pipeline needs for the plugin's projects.",
+      "params": {"$ref": "#/$defs/CIParams"},
+      "result": {"$ref": "#/$defs/CIResult"},
+      "capability": "ci"
+    },
+    "doctor": {
+      "description": "Checks the plugin's projects and reports findings, each with its remedy and, optionally, a fix.",
+      "params": {"$ref": "#/$defs/DoctorParams"},
+      "result": {"$ref": "#/$defs/DoctorResult"},
+      "capability": "doctor"
+    },
+    "contribute": {
+      "description": "Asks a convention (toolchain, structure, deploy) for the tasks and dependencies it adds to projects other plugins discovered.",
+      "params": {"$ref": "#/$defs/ContributeParams"},
+      "result": {"$ref": "#/$defs/ContributeResult"},
+      "capability": "contribute"
+    },
+    "remove": {
+      "description": "Lets a plugin clean up what it owns outside a project's directory after the project is removed.",
+      "params": {"$ref": "#/$defs/RemoveParams"},
+      "result": {"$ref": "#/$defs/RemoveResult"},
+      "capability": "remove"
+    },
+    "published": {
+      "description": "Asks which version of a project its registry has, so a release can check its tags against it.",
+      "params": {"$ref": "#/$defs/PublishedParams"},
+      "result": {"$ref": "#/$defs/PublishedResult"},
+      "capability": "published"
+    },
+    "dependencies/install": {
+      "description": "Adds packages to a project with the ecosystem's own toolchain, or, with no project, installs every dependency of the projects the plugin serves.",
+      "params": {"$ref": "#/$defs/InstallParams"},
+      "result": {"$ref": "#/$defs/DependencyResult"},
+      "capability": "dependencies"
+    },
+    "dependencies/uninstall": {
+      "description": "Removes packages from a project.",
+      "params": {"$ref": "#/$defs/UninstallParams"},
+      "result": {"$ref": "#/$defs/DependencyResult"},
+      "capability": "dependencies"
+    },
+    "dependencies/declared": {
+      "description": "Lists the dependencies the manifests of the plugin's projects declare.",
+      "params": {"$ref": "#/$defs/DeclaredParams"},
+      "result": {"$ref": "#/$defs/DeclaredResult"},
+      "capability": "declarations"
+    },
+    "dependencies/rewrite": {
+      "description": "Changes declared dependency specs in place.",
+      "params": {"$ref": "#/$defs/RewriteParams"},
+      "result": {"$ref": "#/$defs/DependencyResult"},
+      "capability": "declarations"
+    },
+    "dependencies/latest": {
+      "description": "Asks registries for the newest releases of dependencies, and how the tools the plugin pins compare with theirs.",
+      "params": {"$ref": "#/$defs/LatestParams"},
+      "result": {"$ref": "#/$defs/LatestResult"},
+      "capability": "latest"
+    }
+  },
+  "x-errorCodes": [
+    {
+      "name": "ParseError",
+      "code": -32700,
+      "description": "The message was not valid JSON. The response has a null id."
+    },
+    {
+      "name": "InvalidRequest",
+      "code": -32600,
+      "description": "The request is not valid, or arrived out of order: every request before initialize is refused with this code."
+    },
+    {
+      "name": "MethodNotFound",
+      "code": -32601,
+      "description": "The plugin does not implement the method, or did not advertise the capability. The message is \"method not supported: <method>\"."
+    },
+    {
+      "name": "InvalidParams",
+      "code": -32602,
+      "description": "The params do not have the shape the method expects."
+    },
+    {
+      "name": "InternalError",
+      "code": -32603,
+      "description": "The plugin failed in a way that is not the user's to act on, for example a result that could not be encoded."
+    },
+    {
+      "name": "PluginFailure",
+      "code": -32000,
+      "description": "The method ran and failed for a reason the user must act on (a missing toolchain, a bad manifest). The message is shown to the user as it is, so it should say what to do. An error a method of the Go SDK returns becomes this code."
+    }
+  ],
+  "x-roles": [
+    {
+      "name": "language",
+      "description": "Finds projects from manifests, turns imports into graph edges, writes versions and publishes.",
+      "cardinality": "exclusive",
+      "defaultFor": ["language"]
+    },
+    {
+      "name": "toolchain",
+      "description": "Decides how a project builds, tests and lints.",
+      "cardinality": "perSlot",
+      "defaultFor": ["language"]
+    },
+    {
+      "name": "scaffold",
+      "description": "Writes a new project's starter files.",
+      "cardinality": "exclusive",
+      "defaultFor": ["language"]
+    },
+    {
+      "name": "structure",
+      "description": "Checks layout and code rules.",
+      "cardinality": "additive",
+      "defaultFor": ["convention"]
+    },
+    {
+      "name": "deploy",
+      "description": "Adds pipeline steps and deploy targets.",
+      "cardinality": "additive",
+      "defaultFor": []
+    }
+  ],
+  "$defs": {
+    "ActionStep": {
+      "description": "ActionStep is a provider-native step: a GitHub action or an Azure task, with its inputs in the order they are written.",
+      "type": "object",
+      "properties": {
+        "uses": {
+          "type": "string",
+          "description": "Uses is the action (\"actions/setup-go@v7\") or task (\"GoTool@0\")."
+        },
+        "inputs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Input"}
+        }
+      },
+      "required": ["uses"]
+    },
+    "AssetSpec": {
+      "description": "AssetSpec describes the release files of an app.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the file name pattern; placeholders are {product}, {version}, {os}, {arch} and {ext}."
+        },
+        "product": {
+          "type": "string",
+          "description": "Product fills {product}; it defaults to the project name."
+        },
+        "platforms": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Platforms are \"os/arch\" pairs in the language's own spelling."
+        },
+        "osAlias": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "OSAlias and ArchAlias rename an os or arch in file names only."
+        },
+        "archAlias": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "versionVariable": {
+          "type": "string",
+          "description": "VersionVariable is the symbol the version is stamped into, for languages that stamp at link time (Go: main.version)."
+        },
+        "outDir": {
+          "type": "string",
+          "description": "OutDir is the workspace-relative directory the files go to."
+        }
+      },
+      "required": ["name", "platforms", "outDir"]
+    },
+    "AuditSettings": {
+      "description": "AuditSettings are the workspace's audit policy choices ([ci] audit_*).",
+      "type": "object",
+      "properties": {
+        "policies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Policies are the ecosystems (\"node\", \"go\", \"python\", \"rust\") whose policy checks run in `smith ci audit`, as extra Audit steps."
+        },
+        "warn": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Warn are the policies whose checks only warn instead of blocking."
+        },
+        "allowInstallScripts": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "AllowInstallScripts names npm packages whose install scripts the node policy accepts."
+        },
+        "maxUnsafe": {
+          "type": "integer",
+          "description": "MaxUnsafe is the number of unsafe blocks the rust policy accepts in all (zero: none)."
+        }
+      }
+    },
+    "CIParams": {
+      "description": "CIParams gives the plugin the projects it owns so it can describe what CI needs for them.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        },
+        "audit": {
+          "$ref": "#/$defs/AuditSettings",
+          "description": "Audit is the workspace's opt-in to policy checks beyond the vulnerability scan; the zero value asks for none."
+        }
+      },
+      "required": ["projects"]
+    },
+    "CIResult": {
+      "description": "CIResult is the plugin's contribution to every generated pipeline.",
+      "type": "object",
+      "properties": {
+        "stores": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/PackageStore"},
+          "description": "Stores are the package managers' download stores the pipeline caches between runs, keyed on the lockfiles that decide what is in them."
+        },
+        "toolchains": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Toolchain"},
+          "description": "Toolchains are rendered as provider-native setup steps."
+        },
+        "setup": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Step"},
+          "description": "Setup steps run in `smith ci setup`, in order, from the workspace root."
+        },
+        "audit": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Step"},
+          "description": "Audit steps run in `smith ci audit`."
+        },
+        "postRelease": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Step"},
+          "description": "PostRelease steps run at the end of `smith ci release`, whether or not anything was released, with the release's credentials: work that must follow every push to the release branch (setting a registry description from a file). They run only after a release that did not fail, from the workspace root, and a step that is not Blocking only warns."
+        },
+        "credentials": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Credential"},
+          "description": "Credentials names the environment variables `smith ci release` needs."
+        },
+        "permissions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Permissions are the GitHub Actions token permissions the release needs beyond the defaults (\"packages: write\" to push to ghcr.io). Other providers have no such permissions and ignore them."
+        },
+        "authenticate": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Toolchain"},
+          "description": "Authenticate are provider-native steps that sign in to a private registry before setup (Azure Pipelines' npmAuthenticate@0, say). A provider the plugin gives no step for gets none: its credentials come from the environment instead."
+        }
+      }
+    },
+    "Capabilities": {
+      "description": "Capabilities are the optional methods a plugin implements.",
+      "type": "object",
+      "properties": {
+        "discover": {"type": "boolean"},
+        "generate": {"type": "boolean"},
+        "version": {"type": "boolean"},
+        "publish": {"type": "boolean"},
+        "ci": {"type": "boolean"},
+        "doctor": {"type": "boolean"},
+        "contribute": {
+          "type": "boolean",
+          "description": "Contribute is a convention plugin's: it adds tasks to projects other plugins discovered."
+        },
+        "remove": {
+          "type": "boolean",
+          "description": "Remove cleans up a removed project's traces outside its directory."
+        },
+        "published": {"type": "boolean", "description": "Published reports what a registry has of a project."},
+        "dependencies": {
+          "type": "boolean",
+          "description": "Dependencies installs and uninstalls packages in its projects."
+        },
+        "declarations": {
+          "type": "boolean",
+          "description": "Declarations lists and rewrites declared dependency specs (sync, up)."
+        },
+        "latest": {
+          "type": "boolean",
+          "description": "Latest reports the newest releases of dependencies and pinned tools."
+        }
+      }
+    },
+    "ContributeParams": {
+      "description": "ContributeParams hands a plugin the projects it applies to: those whose stack includes it, or, for a workspace-wide convention, those of the languages it supports that smith.toml enables it for.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        }
+      },
+      "required": ["projects"]
+    },
+    "ContributeResult": {
+      "description": "ContributeResult is what a convention adds, by project name.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/Contribution"}
+        }
+      }
+    },
+    "Contribution": {
+      "description": "Contribution is a convention's addition to one project.",
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/Task"},
+          "description": "Tasks are new tasks. A task the project already has is kept as it is."
+        },
+        "replace": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/Task"},
+          "description": "Replace are tasks that replace the project's task of the same name, or are added when it has none."
+        },
+        "dependsOn": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "description": "DependsOn adds dependencies to tasks the project already has, by task name ({\"lint\": [\"slice-check\"]})."
+        }
+      }
+    },
+    "Credential": {
+      "description": "Credential is a secret the release phase needs.",
+      "type": "object",
+      "properties": {
+        "env": {"type": "string"},
+        "description": {"type": "string"},
+        "required": {
+          "type": "boolean",
+          "description": "Required false means release works without it (e.g. a dry run target)."
+        },
+        "setup": {
+          "type": "boolean",
+          "description": "Setup gives it to `smith ci setup` (and the native job's setup) as well: installs from a private registry need it, not only the release."
+        },
+        "tasks": {
+          "type": "boolean",
+          "description": "Tasks gives it to every step that runs tasks (verify, pack, native) as well: the remote cache's key and credentials are read there, not only by the release."
+        }
+      },
+      "required": ["env", "description", "required"]
+    },
+    "Declaration": {
+      "description": "Declaration is one dependency one manifest declares.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the declaring project's name, \"\" for the root manifest."
+        },
+        "file": {"type": "string", "description": "File is the manifest, workspace-relative."},
+        "name": {
+          "type": "string",
+          "description": "Name is the dependency's name as the ecosystem compares names."
+        },
+        "spec": {
+          "type": "string",
+          "description": "Spec is the declared range or version (^1.2.3, >=2.31), \"\" when the manifest gives none."
+        },
+        "section": {
+          "type": "string",
+          "description": "Section is where it is declared: dependencies, devDependencies, dev..."
+        },
+        "peer": {
+          "type": "boolean",
+          "description": "Peer declarations state what a package works with, not what is installed: sync and up leave them alone."
+        },
+        "rewritable": {
+          "type": "boolean",
+          "description": "Rewritable is false for a spec smith must not rewrite: a URL, a git ref, a workspace alias, a compound range, environment markers."
+        }
+      },
+      "required": ["file", "name", "spec", "section", "rewritable"]
+    },
+    "DeclaredParams": {
+      "description": "DeclaredParams asks for the dependencies the plugin's projects declare (and the workspace root's manifest, when the ecosystem has one).",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        }
+      },
+      "required": ["projects"]
+    },
+    "DeclaredResult": {
+      "description": "DeclaredResult is every declaration, and the version installed of each name where the plugin can tell.",
+      "type": "object",
+      "properties": {
+        "declarations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Declaration"}
+        },
+        "installed": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "required": ["declarations"]
+    },
+    "DependencyResult": {
+      "description": "DependencyResult lists the workspace-relative files the plugin changed and notes for the user.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "notes": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "DevcontainerFeature": {
+      "description": "DevcontainerFeature is a dev container feature and its options (https://containers.dev/features).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID is the feature reference, e.g. \"ghcr.io/devcontainers/features/go:1\"."
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "required": ["id"]
+    },
+    "DiscoverParams": {
+      "description": "DiscoverParams asks a plugin to describe the projects behind manifests the host found. Paths are workspace-relative and use forward slashes.",
+      "type": "object",
+      "properties": {
+        "manifests": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["manifests"]
+    },
+    "DiscoverResult": {
+      "description": "DiscoverResult describes every manifest that is a project of this plugin. A manifest the plugin does not own is simply left out.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        }
+      },
+      "required": ["projects"]
+    },
+    "DoctorParams": {
+      "description": "DoctorParams gives the plugin its projects to check.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"}
+        }
+      },
+      "required": ["projects"]
+    },
+    "DoctorResult": {
+      "description": "DoctorResult carries the plugin's findings.",
+      "type": "object",
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Finding"}
+        }
+      },
+      "required": ["findings"]
+    },
+    "Empty": {"description": "An object with no members.", "type": "object"},
+    "FileEdit": {
+      "description": "FileEdit is one file's new content, workspace-relative; Delete removes it.",
+      "type": "object",
+      "properties": {
+        "path": {"type": "string"},
+        "content": {"type": "string"},
+        "delete": {"type": "boolean"}
+      },
+      "required": ["path"]
+    },
+    "Finding": {
+      "description": "Finding is one check. Every failed finding names its remedy.",
+      "type": "object",
+      "properties": {
+        "check": {"type": "string"},
+        "ok": {"type": "boolean"},
+        "detail": {"type": "string"},
+        "remedy": {"type": "string"},
+        "warning": {"type": "boolean", "description": "Warning true reports a problem without failing doctor."},
+        "fix": {
+          "$ref": "#/$defs/Fix",
+          "description": "Fix is the change that clears a failed finding, when the plugin can write it; smith doctor --fix shows it as a diff before applying it."
+        }
+      },
+      "required": ["check", "ok"]
+    },
+    "Fix": {
+      "description": "Fix is a change that clears a failed finding: files' new contents, then commands to run, and questions the user answers first. Every part is optional; the host shows all of it before applying anything.\n\nA host that does not know Steps or Choices ignores them, so a plugin marks a fix Safe only when its Files alone are sound.",
+      "type": "object",
+      "properties": {
+        "description": {"type": "string"},
+        "safe": {
+          "type": "boolean",
+          "description": "Safe marks a fix that only restores what smith or the plugin owns and loses nothing of the user's; doctor --fix --yes applies only safe fixes with no Choices. Any other fix is asked about before it runs."
+        },
+        "files": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/FileEdit"},
+          "description": "Files are written first, as whole new contents."
+        },
+        "steps": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/FixStep"},
+          "description": "Steps run after the files, in order, from the workspace root; the first one that fails stops the rest."
+        },
+        "choices": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/FixChoice"},
+          "description": "Choices are questions the user answers before the fix applies, in order. The answer's Fix is added to this one: its files and steps come after this fix's own. A fix with Choices is never applied unasked."
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "AppliesTo names the projects the fix is for. The host folds fixes that share a Description and name projects into one (\"applies to 22 projects\"), so give the same Description to the same kind of fix on every project. A fix that edits one shared file for many projects lists them all here."
+        }
+      },
+      "required": ["description", "safe"]
+    },
+    "FixChoice": {
+      "description": "FixChoice is a question with options, one wizard step.",
+      "type": "object",
+      "properties": {
+        "question": {"type": "string"},
+        "options": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/FixChoiceOption"}
+        }
+      },
+      "required": ["question", "options"]
+    },
+    "FixChoiceOption": {
+      "description": "FixChoiceOption is one answer: a label, and the Fix it adds when picked. The first option is the suggested one.",
+      "type": "object",
+      "properties": {
+        "label": {"type": "string"},
+        "fix": {"$ref": "#/$defs/Fix"}
+      },
+      "required": ["label", "fix"]
+    },
+    "FixStep": {
+      "description": "FixStep is a command to run in the workspace.",
+      "type": "object",
+      "properties": {
+        "description": {"type": "string", "description": "Description says in words what the command does."},
+        "argv": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Argv is the program and its arguments; no shell is involved."
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir is where it runs, workspace-relative; empty is the workspace root."
+        }
+      },
+      "required": ["description", "argv"]
+    },
+    "GenerateParams": {
+      "description": "GenerateParams asks a plugin to scaffold a project. The host chooses the directory from the kind (apps/, libs/, packages/).",
+      "type": "object",
+      "properties": {
+        "kind": {"$ref": "#/$defs/ProjectKind"},
+        "name": {"type": "string"},
+        "directory": {
+          "type": "string",
+          "description": "Directory is workspace-relative, forward slashes; it does not exist yet."
+        },
+        "workspace": {
+          "$ref": "#/$defs/WorkspaceInfo",
+          "description": "Workspace carries what a template needs to know about the monorepo."
+        },
+        "stack": {
+          "type": "string",
+          "description": "Stack is the stack the project is created with. The plugin that writes the manifest records it there, so discovery reports it back."
+        },
+        "convention": {
+          "type": "boolean",
+          "description": "Convention is true when the plugin is asked as a workspace convention ([conventions.<name>] applying to the new project), not as one of the stack's plugins. A plugin adds only what every matching project needs then: a suite or starter files belong to the stack that names it."
+        },
+        "settings": {
+          "type": "object",
+          "description": "Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.<plugin> table); the same table is later the plugin's entry in Project.Settings. Nil when there are none."
+        }
+      },
+      "required": ["kind", "name", "directory", "workspace"]
+    },
+    "GenerateResult": {
+      "description": "GenerateResult lists what the plugin wrote, workspace-relative.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "notes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Notes are printed to the user after generation."
+        }
+      },
+      "required": ["files"]
+    },
+    "InitializeParams": {
+      "description": "InitializeParams is sent once, first, by the host.",
+      "type": "object",
+      "properties": {
+        "protocolVersions": {
+          "type": "array",
+          "items": {"type": "integer"},
+          "description": "ProtocolVersions lists every major version the host can speak."
+        },
+        "host": {"$ref": "#/$defs/Peer"},
+        "workspaceRoot": {
+          "type": "string",
+          "description": "WorkspaceRoot is an absolute path using the host OS separators."
+        }
+      },
+      "required": ["protocolVersions", "host", "workspaceRoot"]
+    },
+    "InitializeResult": {
+      "description": "InitializeResult tells the host who the plugin is and what it can do.",
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "type": "integer",
+          "description": "ProtocolVersion is the version the plugin chose from the host's list."
+        },
+        "plugin": {"$ref": "#/$defs/Peer"},
+        "kind": {"$ref": "#/$defs/PluginKind"},
+        "capabilities": {"$ref": "#/$defs/Capabilities"},
+        "languages": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Languages are the values a user passes to --lang to reach this plugin."
+        },
+        "manifests": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Manifests are file base names (package.json, go.mod), or patterns of them (*.csproj), whose presence in a directory may make it a project of this plugin."
+        },
+        "roles": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Role"},
+          "description": "Roles are the levels the plugin can be chosen for in a project's make-up (a stack, a recipe). Empty means the default of its kind (see DefaultRoles). A role is a level: there is no separate level field, because one plugin can play several (a scaffold that is also a toolchain)."
+        },
+        "provides": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Provides are the slots a toolchain plugin fills: the task names it owns (\"test\" for a test runner). A slot is exclusive: two plugins of one project may not provide the same task."
+        },
+        "requires": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/PluginRef"},
+          "description": "Requires are plugins that must also be in the project for this one to work: a Node toolchain requires the node language plugin."
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/PluginRef"},
+          "description": "Conflicts are plugins that must not be in the same project."
+        },
+        "stacks": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Stack"},
+          "description": "Stacks are ready-made stacks the plugin publishes."
+        }
+      },
+      "required": ["protocolVersion", "plugin", "kind", "capabilities"]
+    },
+    "Input": {
+      "description": "Input is one input of an ActionStep. Values are written as quoted YAML strings, except true and false.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "value": {"type": "string"}
+      },
+      "required": ["name", "value"]
+    },
+    "InstallParams": {
+      "description": "InstallParams asks a plugin to add packages to one of its projects with the ecosystem's own toolchain, or, with no project, to install every dependency of the projects it serves (a fresh clone's first step).",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project",
+          "description": "Project is the project the packages go into; nil installs everything."
+        },
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"},
+          "description": "Projects are the projects the plugin serves, when Project is nil."
+        },
+        "packages": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Packages are names or pinned specs as the ecosystem writes them (left-pad, requests>=2.31, github.com/pkg/errors@v0.9.1)."
+        },
+        "dev": {
+          "type": "boolean",
+          "description": "Dev adds them as development dependencies where the ecosystem has such a thing; a plugin without one says so in a note."
+        }
+      }
+    },
+    "LatestParams": {
+      "description": "LatestParams asks for the newest stable release of each dependency, and, with Tools, how the tools the plugin pins compare with their latest.",
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "tools": {"type": "boolean"}
+      }
+    },
+    "LatestResult": {
+      "description": "LatestResult maps each name to its newest stable version. A name the registry could not be asked about is in Unreachable, with the reason; a name the registry does not have is in neither.",
+      "type": "object",
+      "properties": {
+        "latest": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "unreachable": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "tools": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ToolPin"}
+        }
+      }
+    },
+    "PackageStore": {
+      "description": "PackageStore is where a package manager keeps what it downloaded (npm's ~/.npm, Go's module cache). A generated pipeline restores it before setup and saves it after a run, keyed on Files, so `npm ci` or `go mod download` fetches only what changed. A pull request from a fork restores it and never writes the base repository's cache.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name identifies the store (\"npm\", \"go\") and is part of its cache key."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is the store's default location, which GitHub Actions caches as it is (\"~/.npm\")."
+        },
+        "env": {
+          "type": "string",
+          "description": "Env is the environment variable that moves the store (NPM_CONFIG_CACHE, GOMODCACHE). Azure Pipelines and GitLab CI cache only directories under their own workspace, so they set it to one and cache that instead."
+        },
+        "files": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Files are the lockfiles that key the store: workspace-relative paths or globs. GitLab CI keys on the first two."
+        }
+      },
+      "required": ["name", "path", "env", "files"]
+    },
+    "Peer": {
+      "description": "Peer names one side of the connection.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"}
+      },
+      "required": ["name", "version"]
+    },
+    "PluginKind": {
+      "description": "PluginKind separates plugins that understand a language from plugins that add to projects a language plugin discovered (toolchains, structure rules, scaffolds, deploy targets), which are all of kind convention.\n\nPlugin kinds.",
+      "type": "string",
+      "enum": ["language", "convention"]
+    },
+    "PluginRef": {
+      "description": "PluginRef names the plugins a requirement or a conflict is about. Every field set must match; at least one must be set.",
+      "type": "object",
+      "properties": {
+        "level": {
+          "$ref": "#/$defs/Role",
+          "description": "Level is the role the plugin is chosen for in the project."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name is the plugin's name, or for a language plugin one of its languages (\"node\", \"javascript\")."
+        },
+        "slot": {"type": "string", "description": "Slot is a task the plugin provides (\"test\")."}
+      }
+    },
+    "Project": {
+      "description": "Project is one unit of the monorepo as a plugin sees it.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is unique across the workspace; it is what users type."
+        },
+        "root": {
+          "type": "string",
+          "description": "Root is the workspace-relative directory, forward slashes."
+        },
+        "language": {"type": "string"},
+        "kind": {"$ref": "#/$defs/ProjectKind"},
+        "exports": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Exports are the identifiers other projects import this one by: an npm package name, a Go module path, a Python import name."
+        },
+        "imports": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Imports are identifiers this project's sources import. The host keeps the ones another project exports and turns them into graph edges."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version is the version recorded in the manifest, if it has one."
+        },
+        "toolchain": {
+          "type": "string",
+          "description": "Toolchain is the version of the compiler or runtime the project's tasks run with (\"node 20.11.0\", \"go 1.23.4\"), as the plugin probed it. It goes into every task's cache key, so a result from another version is a miss. Empty when the plugin cannot tell, and then it is left out."
+        },
+        "publishTo": {
+          "type": "string",
+          "description": "PublishTo is where a package publishes, when its manifest says: \"pub.dev\" for the public registry that takes a package only from a run on its tag (so a release does not publish it itself), \"none\" for a package that is never published, or a repository URL. Empty when the plugin does not say."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description is the one-line description the manifest records (package.json description, pyproject.toml project.description, the pom's <description>), if it has one. Conventions use it where a registry asks for a summary."
+        },
+        "tagPrefix": {
+          "type": "string",
+          "description": "TagPrefix overrides the release tag prefix; empty means \"<name>@\". Go modules use \"<root>/v\" so `go get` can resolve the tag."
+        },
+        "tasks": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/Task"}
+        },
+        "tags": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "stack": {
+          "type": "string",
+          "description": "Stack is the stack recorded in the project's manifest, if any."
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {"type": "object"},
+          "description": "Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.<project>.settings.<name>] (what a recipe's settings became when it created the project), and for a convention its [conventions.<name>] settings and the project's [projects.<project>.<name>] on top. Set by the host; a plugin reads its own entry."
+        },
+        "registries": {
+          "$ref": "#/$defs/Registries",
+          "description": "Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. Set by the host."
+        }
+      },
+      "required": ["name", "root", "language", "kind"]
+    },
+    "ProjectKind": {
+      "description": "ProjectKind is the universal kind vocabulary.\n\nProject kinds. An app is deployed, never published; a lib is internal and never published; a package is published.",
+      "type": "string",
+      "enum": ["app", "lib", "package"]
+    },
+    "PublishParams": {
+      "description": "PublishParams asks a plugin to publish one project at one version.",
+      "type": "object",
+      "properties": {
+        "project": {"$ref": "#/$defs/Project"},
+        "version": {"type": "string"},
+        "dryRun": {"type": "boolean"},
+        "assets": {
+          "$ref": "#/$defs/AssetSpec",
+          "description": "Assets, when set, asks the plugin to build the files attached to the release (an app's per-platform binaries) instead of publishing to a registry."
+        },
+        "platform": {
+          "type": "string",
+          "description": "Platform, when set, is the \"os/arch\" (Go's spelling) of the runner a native project is published from: each native job publishes its own platform's build (a VS Code extension's target) and nothing else."
+        },
+        "tagged": {
+          "type": "boolean",
+          "description": "Tagged says the publish runs on the project's own tag, in the run the registry trusts (pub.dev's automated publishing); a registry that takes a package only from such a run is published to only then."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Commit is the full hash of the commit being released, and Branch the release branch, for a plugin that tags what it publishes with them (a container image's sha-<short> and branch tags). Empty when unknown."
+        },
+        "branch": {"type": "string"}
+      },
+      "required": ["project", "version"]
+    },
+    "PublishResult": {
+      "description": "PublishResult reports what happened. Skipped with a reason is a success: an already-published version makes a re-run safe.",
+      "type": "object",
+      "properties": {
+        "published": {"type": "boolean"},
+        "skipped": {"type": "string"},
+        "registry": {"type": "string"},
+        "assets": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Assets are the workspace-relative files built for the release, in upload order; in a dry run, the files that would be built."
+        },
+        "assetPlatforms": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "AssetPlatforms maps each archive among Assets to the \"os/arch\" it was built for, so the host can describe them (package manager manifests)."
+        },
+        "binary": {
+          "type": "string",
+          "description": "Binary is the executable's name inside each archive, without \".exe\"."
+        },
+        "images": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/PublishedImage"},
+          "description": "Images are the container images pushed, one per registry, for a deploy step or a GitOps manifest to refer to by digest."
+        }
+      },
+      "required": ["published"]
+    },
+    "PublishedImage": {
+      "description": "PublishedImage is one container image a release pushed.",
+      "type": "object",
+      "properties": {
+        "reference": {"type": "string", "description": "Reference is the image without a tag: ghcr.io/acme/api."},
+        "tags": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Tags are the tags pushed, in the order they were."
+        },
+        "digest": {
+          "type": "string",
+          "description": "Digest is the manifest digest the registry holds (\"sha256:...\"); empty when it could not be read."
+        }
+      },
+      "required": ["reference", "tags"]
+    },
+    "PublishedParams": {
+      "description": "PublishedParams asks which version of a project its registry has.",
+      "type": "object",
+      "properties": {
+        "project": {"$ref": "#/$defs/Project"}
+      },
+      "required": ["project"]
+    },
+    "PublishedResult": {
+      "description": "PublishedResult is the newest version the registry has of a project.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Version is empty when the registry does not know the project: its first release is still to come."
+        },
+        "registry": {"type": "string", "description": "Registry names where the plugin looked, for messages."},
+        "unreachable": {
+          "type": "boolean",
+          "description": "Unreachable is true when the registry could not be asked (offline, an error), so nothing can be concluded; Detail says why."
+        },
+        "detail": {"type": "string"}
+      }
+    },
+    "Registries": {
+      "description": "Registries are the registries a project uses, set by the host from smith.toml: Install is where the workspace installs packages from, Publish where the project is published. Nil, or a nil member, means the public registry, as before.",
+      "type": "object",
+      "properties": {
+        "install": {"$ref": "#/$defs/Registry"},
+        "publish": {"$ref": "#/$defs/Registry"},
+        "noPublish": {
+          "type": "boolean",
+          "description": "NoPublish means smith.toml says registry = \"none\": the release versions and tags the project and publishes it to no registry (a registry that builds from the tag, such as JitPack, does the rest)."
+        }
+      }
+    },
+    "Registry": {
+      "description": "Registry is a package registry smith.toml names in [registries.<name>]: a private feed (Azure Artifacts, GitHub Packages, any token-protected registry) a language plugin installs from or publishes to. Each URL is optional; a plugin reads the one for its ecosystem.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "auth": {
+          "type": "string",
+          "description": "Auth is how the registry is signed in to: AuthAzureArtifacts, AuthGitHubPackages or AuthToken."
+        },
+        "tokenEnv": {
+          "type": "string",
+          "description": "TokenEnv is the environment variable holding the token, for AuthToken."
+        },
+        "npm": {"type": "string", "description": "NPM is the npm registry URL."},
+        "pypi": {
+          "type": "string",
+          "description": "PyPI is the simple index pip installs from; PyPIUpload is where twine uploads."
+        },
+        "pypiUpload": {"type": "string"},
+        "nuget": {"type": "string", "description": "NuGet is the NuGet v3 service index."},
+        "maven": {
+          "type": "string",
+          "description": "Maven is the Maven repository packages deploy to: an https URL, or MavenGitHub for the GitHub Packages repository of the repository the release runs in."
+        }
+      },
+      "required": ["name", "auth"]
+    },
+    "RemoveParams": {
+      "description": "RemoveParams tells a plugin a project is being removed. The host deletes the project's directory first; the plugin cleans what it owns outside it (a go.work entry, a lockfile, an installed package).",
+      "type": "object",
+      "properties": {
+        "project": {"$ref": "#/$defs/Project"},
+        "dryRun": {"type": "boolean", "description": "DryRun asks what would change, without changing it."}
+      },
+      "required": ["project"]
+    },
+    "RemoveResult": {
+      "description": "RemoveResult lists the workspace-relative files the plugin changed (or, in a dry run, would change), and notes for the user.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "notes": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "Request": {
+      "description": "Request is a JSON-RPC 2.0 request, or a notification when ID is nil.",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {"type": "string"},
+        "id": {"type": "integer"},
+        "method": {"type": "string"},
+        "params": {}
+      },
+      "required": ["jsonrpc", "method"]
+    },
+    "Response": {
+      "description": "Response is a JSON-RPC 2.0 response. Exactly one of Result and Error is set.",
+      "type": "object",
+      "properties": {
+        "jsonrpc": {"type": "string"},
+        "id": {"type": ["integer", "null"]},
+        "result": {},
+        "error": {"$ref": "#/$defs/ResponseError"}
+      },
+      "required": ["jsonrpc", "id"]
+    },
+    "ResponseError": {
+      "description": "ResponseError is a JSON-RPC 2.0 error object.",
+      "type": "object",
+      "properties": {
+        "code": {"type": "integer"},
+        "message": {"type": "string"}
+      },
+      "required": ["code", "message"]
+    },
+    "Rewrite": {
+      "description": "Rewrite changes one declaration's spec.",
+      "type": "object",
+      "properties": {
+        "declaration": {"$ref": "#/$defs/Declaration"},
+        "spec": {"type": "string"}
+      },
+      "required": ["declaration", "spec"]
+    },
+    "RewriteParams": {
+      "description": "RewriteParams asks a plugin to change declared specs in place.",
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Rewrite"}
+        }
+      },
+      "required": ["changes"]
+    },
+    "Role": {
+      "description": "Role is a part a plugin plays in a project's make-up: its level. Some levels are exclusive (one plugin per project, or per slot) and the others additive (any number, and they only add).",
+      "type": "string",
+      "enum": ["language", "toolchain", "structure", "scaffold", "deploy"],
+      "x-enumDescriptions": {
+        "language": "Finds projects from manifests, turns imports into graph edges, writes versions and publishes.",
+        "toolchain": "Decides how a project builds, tests and lints.",
+        "structure": "Checks layout and code rules.",
+        "scaffold": "Writes a new project's starter files.",
+        "deploy": "Adds pipeline steps and deploy targets."
+      }
+    },
+    "Stack": {
+      "description": "Stack is a named set of plugins a project is built with: one language plugin, and the toolchain, structure, scaffold and deploy plugins on top. Plugins are named, never assumed to be built in.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "language": {
+          "type": "string",
+          "description": "Language is the language plugin that discovers the stack's projects."
+        },
+        "toolchain": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Toolchain plugins decide how projects build, test and lint, in order: a later one may replace a task an earlier one added."
+        },
+        "structure": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "scaffold": {
+          "type": "string",
+          "description": "Scaffold generates new projects; empty means the language plugin does."
+        },
+        "deploy": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["name", "language"]
+    },
+    "Step": {
+      "description": "Step is one command a CI phase runs.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "command": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "dir": {
+          "type": "string",
+          "description": "Dir is the workspace-relative directory to run in; empty means the workspace root."
+        },
+        "blocking": {
+          "type": "boolean",
+          "description": "Blocking false makes a failure a warning instead of an error."
+        },
+        "cacheFiles": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "CacheFiles are workspace-relative files whose content decides what an audit step finds (a lockfile). When any exists, smith remembers a passing run per content of these files and per day, in the task cache, and skips the step while both are unchanged; a failing run is always repeated. Only the audit phase reads it."
+        }
+      },
+      "required": ["name", "command", "blocking"]
+    },
+    "Task": {
+      "description": "Task is a command the host can run, hash and cache.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Command is an argv array; it is never passed through a shell."
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Cwd is workspace-relative; empty means the project root."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "inputs": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Inputs are globs relative to the project root. Empty means every tracked or untracked-but-not-ignored file of the project."
+        },
+        "outputs": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Outputs are directories relative to the project root, restored on a cache hit."
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "DependsOn lists task names: \"build\" runs this project's build first, \"^build\" runs the build of every project this one imports first."
+        },
+        "cache": {"type": "boolean"},
+        "description": {"type": "string", "description": "Description is shown by `smith explain` and the TUI."},
+        "verify": {
+          "type": "boolean",
+          "description": "Verify asks CI's verify phase (smith ci verify) to run the task too, after lint, typecheck, test and build, for the affected projects that have it: an app's container image, so a broken Dockerfile fails the pull request, not the release. It is skipped, with a warning, where its program is not installed."
+        },
+        "serve": {
+          "type": "string",
+          "description": "Serve names a task (\"web:start\", or \"start\" in the same project) that smith starts before this one and stops after it, whatever the result: the app an end-to-end suite tests. Its own dependsOn run first."
+        },
+        "serveUrl": {
+          "type": "string",
+          "description": "ServeURL is what smith waits for (an HTTP 2xx) before it runs the task, and passes to it as E2E_BASE_URL. Empty: the task starts at once."
+        },
+        "serveTimeout": {
+          "type": "string",
+          "description": "ServeTimeout is how long to wait for ServeURL, as a Go duration (\"60s\"); empty means 60s."
+        }
+      },
+      "required": ["command"]
+    },
+    "ToolPin": {
+      "description": "ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv) against the newest release; informational.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "pinned": {"type": "string"},
+        "latest": {
+          "type": "string",
+          "description": "Latest is empty when its release feed could not be reached."
+        },
+        "newer": {
+          "type": "boolean",
+          "description": "Newer is true when Latest is a release the pin does not cover."
+        }
+      },
+      "required": ["name", "pinned"]
+    },
+    "Toolchain": {
+      "description": "Toolchain is a runtime the pipeline must install, and how. Plugins asking for the same name share one setup step (the first plugin's).",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "github": {
+          "$ref": "#/$defs/ActionStep",
+          "description": "GitHub is the GitHub Actions step that installs it (an action)."
+        },
+        "azure": {
+          "$ref": "#/$defs/ActionStep",
+          "description": "Azure is the Azure Pipelines step that installs it (a task)."
+        },
+        "install": {
+          "type": "string",
+          "description": "Install is a shell command that installs it, run on a provider the plugin gives no native step for."
+        },
+        "devcontainer": {
+          "$ref": "#/$defs/DevcontainerFeature",
+          "description": "Devcontainer is the dev container feature that installs it at the same version, so the editor's container matches CI."
+        }
+      },
+      "required": ["name", "version"]
+    },
+    "UninstallParams": {
+      "description": "UninstallParams asks a plugin to remove packages from one of its projects.",
+      "type": "object",
+      "properties": {
+        "project": {"$ref": "#/$defs/Project"},
+        "packages": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["project", "packages"]
+    },
+    "VersionParams": {
+      "description": "VersionParams asks a plugin to record a new version in a project manifest.",
+      "type": "object",
+      "properties": {
+        "project": {"$ref": "#/$defs/Project"},
+        "version": {"type": "string"},
+        "dependencies": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Dependencies maps exported identifiers of other workspace projects to their new versions, so the plugin can update dependency ranges."
+        },
+        "dryRun": {"type": "boolean"}
+      },
+      "required": ["project", "version"]
+    },
+    "VersionResult": {
+      "description": "VersionResult lists the files that were (or, in a dry run, would be) changed.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["files"]
+    },
+    "WorkspaceInfo": {
+      "description": "WorkspaceInfo is the subset of workspace settings plugins may use.",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "scope": {
+          "type": "string",
+          "description": "Scope is the npm scope for packages, with its @ (e.g. \"@acme\")."
+        },
+        "modulePrefix": {
+          "type": "string",
+          "description": "ModulePrefix is the Go module path prefix, e.g. github.com/acme/repo."
+        }
+      },
+      "required": ["name"]
+    }
+  }
+}

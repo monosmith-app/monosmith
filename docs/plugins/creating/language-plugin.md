@@ -3,7 +3,10 @@
 A language plugin teaches smith a project type: how to find its projects, what they import, which
 tasks they run, how to scaffold a new one, how to write its version and how to publish it. Once a
 language plugin exists, the graph, the cache, `affected`, the pipelines and releases work for its
-projects with nothing else. This guide builds a small one, `widget`, step by step.
+projects with nothing else. This guide builds a small one, `widget`, step by step, in Go. The same plugin
+in TypeScript, on [the TypeScript SDK](typescript-sdk.md), is
+[`language-widget-ts`](../../examples/plugins/language-widget-ts): it has the same methods, passes the
+same 27 checks of `smith plugin check --generate` and answers with the same bytes.
 
 ## When to write one
 
@@ -252,7 +255,7 @@ func (w *widget) Generate(p protocol.GenerateParams) (protocol.GenerateResult, e
 | **record `p.Stack` in the manifest** | `discover` must report it back (`Stack`); the conformance check `the generated lib records its stack` fails otherwise |
 | report every file in `Files`, workspace-relative | smith lists them, and the conformance check verifies each exists |
 | never overwrite | `templating.Write` writes nothing if any target exists and returns `file already exists` |
-| use the SDK's `templating` package | templates use `[[ ]]` delimiters, so `{{ }}` in your output is untouched; target paths can be templates too |
+| use the SDK's `templating` package | templates use `[[ ]]` delimiters, so `{{ }}` in your output is untouched; target paths can be templates too. In TypeScript: `writeTemplates` or `scaffoldProject` |
 | `p.Convention` | true when the plugin is asked as a workspace convention rather than as part of a stack; a language plugin ignores it |
 | `Notes` | lines printed to the user after generation |
 
@@ -284,7 +287,7 @@ func (w *widget) WriteVersion(p protocol.VersionParams) (protocol.VersionResult,
 A dry run lists the files it would change and changes none. `p.Dependencies` maps the identifiers of
 other workspace projects to their new versions, for a manifest that records dependency ranges; the
 example has none. The SDK's `jsondoc` package edits JSON in place and keeps the key order and layout,
-so a release does not reformat the file.
+so a release does not reformat the file (in TypeScript, `JsonDocument`).
 
 ## Step 6: health checks with fixes (`doctor`)
 
@@ -451,7 +454,7 @@ See [Testing a plugin](testing-a-plugin.md) for the approach and the golden-file
 
 ## See also
 
-- [The plugin protocol cheat sheet](protocol-cheat-sheet.md)
+- [The plugin protocol cheat sheet](protocol-cheat-sheet.md), [The TypeScript SDK](typescript-sdk.md)
 - [Testing a plugin](testing-a-plugin.md), [Packaging and distributing a plugin](packaging-a-plugin.md)
 - The built-in language plugins: [the catalogue](../using/catalogue/README.md), and their source in `libs/plugin-*`
 - [Creating a toolchain plugin](toolchain-plugin.md), the next level up

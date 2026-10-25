@@ -68,3 +68,15 @@ command = ["go", "run", "github.com/air-verse/air@v1.61.7", "--build.cmd", "go b
 
 [projects.smith.tasks.start]
 command = ["go", "run", "."]
+
+# Regenerates schema/protocol.schema.json from the Go types of the protocol (the
+# source of truth for the plugin SDKs of other languages). A Go test fails when
+# the committed file is stale; plugin-sdk-ts then regenerates its types (smith
+# run generate --project plugin-sdk-ts).
+[projects.plugin-sdk.tasks.schema]
+command = ["go", "run", "./schemagen"]
+
+# The SDK for plugins in TypeScript lints with ESLint like the other Node package; the
+# workspace-wide lint above is golangci-lint, for the Go projects.
+[projects.plugin-sdk-ts.tasks.lint]
+command = ["npm", "run", "lint", "--silent"]

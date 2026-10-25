@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -63,8 +64,29 @@ func (s *LocalStorage) Get(kind Kind, key string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	f, err := os.Open(p)
+	if errors.Is(err, fs.ErrPermission) && runtime.GOOS == "windows" {
+		// A file another smith is pruning answers "Access is denied" until
+		// the delete finishes: wait for it, and call what is left a miss.
+		f, err = openWhileBeingDeleted(p)
+	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, ErrMiss
+	}
+	return f, err
+}
+
+// openWhileBeingDeleted retries an open that Windows refused, because the
+// file is pending deletion. A file that is still refused after the retries is
+// a miss, not an error: the entry is going away, and a run can rebuild it.
+func openWhileBeingDeleted(p string) (*os.File, error) {
+	var f *os.File
+	err := retry(func() error {
+		var openErr error
+		f, openErr = os.Open(p)
+		return openErr
+	})
+	if errors.Is(err, fs.ErrPermission) {
+		return nil, fs.ErrNotExist
 	}
 	return f, err
 }

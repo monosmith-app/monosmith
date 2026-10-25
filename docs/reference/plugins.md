@@ -71,7 +71,7 @@ see [`smith plugin`](../manual/plugin.md) and
 ## Writing a plugin
 
 This section is the reference. For a guide to each kind of plugin, with working
-examples in Go, Python and Node.js, read [Creating plugins](../plugins/creating/README.md)
+examples in Go, TypeScript, Python and Node.js, read [Creating plugins](../plugins/creating/README.md)
 (start with the [quickstart](../plugins/creating/quickstart.md)); for every method and
 field in tables, [the protocol cheat sheet](../plugins/creating/protocol-cheat-sheet.md);
 for using, installing and configuring plugins, [Using plugins](../plugins/using/README.md);
@@ -141,7 +141,7 @@ package in a temporary directory, and a language plugin must discover them as
 generated, with their kinds, the stack they were asked to record, and tasks
 that have commands. In Go, run the same checks in your tests with
 `conformance.Check` (`packages/plugin-sdk/conformance`) over an in-process
-connection. Every built-in plugin passes it.
+connection; in TypeScript, with `checkPlugin`. Every built-in plugin passes it.
 
 The quickest start is a scaffold: `smith add app my-plugin --stack
 go-smith-plugin` writes a Go module that is a working plugin (a structure
@@ -177,6 +177,26 @@ func main() { serve.Main(&rust{}) }
 
 `host.Connect` drives a plugin in-process over pipes, which is how to test one
 (see `packages/plugin-sdk/host/plugin_client_test.go`).
+
+In TypeScript, `@monosmith/plugin-sdk` does the same: a plugin is an object, its capabilities are
+the members it has, and `connectInProcess` and `checkPlugin` test it
+([The TypeScript SDK](../plugins/creating/typescript-sdk.md)):
+
+```ts
+import { serve } from '@monosmith/plugin-sdk'
+
+await serve({
+  describe: () => ({ plugin: { name: 'rust', version: '0.1.0' }, kind: 'language', languages: ['rust'], manifests: ['Cargo.toml'] }),
+  discover: (params) => ({ projects: [ /* ... */ ] }),
+})
+```
+
+**The contract is a JSON Schema.** The Go types of the protocol are the source of truth, and
+`packages/plugin-sdk/schema/protocol.schema.json` is generated from them (draft 2020-12): one definition
+per message, `x-methods` (each of the 16 methods with its params, its result and the capability it
+needs), `x-errorCodes`, `x-roles`, `x-protocolVersion` and `x-transport` (the framing). A member is
+required when its Go field has no `omitempty`. A Go test fails when the file is stale, and the SDKs of other
+languages generate their types from it, so a plugin in a language without an SDK can read it too.
 
 ## The protocol (version 1)
 
@@ -224,7 +244,8 @@ installed.
 Rules:
 
 - The host never calls a method the plugin did not advertise. The Go SDK derives
-  capabilities from the interfaces a plugin implements, so it cannot lie.
+  capabilities from the interfaces a plugin implements, and the TypeScript SDK from the
+  members of the plugin object, so they cannot lie.
 - A breaking change raises the integer protocol version; additions are new
   capabilities or optional fields, which old peers ignore.
 - `initialize` must come first. A failure the user must act on returns error

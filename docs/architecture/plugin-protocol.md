@@ -53,6 +53,34 @@ for `generate` and `publish`, which run toolchains. On a timeout the plugin proc
 killed, because its stream can no longer be trusted. At the end of a command `shutdown` is sent
 and the process is killed if it does not exit within five seconds.
 
+## The schema is the contract
+
+The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol, and a JSON
+Schema (draft 2020-12) generated from them,
+[`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
+is the contract for every other language. It has one definition per message (a member is required
+when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
+definitions `x-methods` (each of the 16 methods with its params, its result and the capability it needs,
+`null` for `initialize` and `shutdown`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
+kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
+
+| Step | Where | Fails when |
+|---|---|---|
+| reflect over the types and read the package's source for comments and enumerations | `packages/plugin-sdk/protocolschema`, run by `go run ./schemagen` (`smith run schema -p plugin-sdk`) | the protocol has a method, an error code or a capability that `protocolschema`'s tables do not describe |
+| compare the committed file with what the generator writes | the Go test `TestCommittedSchemaIsCurrent` | someone changed `protocol` and not the schema |
+| generate each SDK's types from the schema | the TypeScript SDK: `tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
+| check that the SDKs agree on the wire | `packages/plugin-sdk-ts/integration`: a TypeScript and a Go plugin with the same logic answer the same requests with the same bytes | an SDK writes members in another order, leaves out different zero values, or escapes differently |
+
+Three things about the wire that the schema cannot say, and that a new SDK must do (the Go SDK does
+them and the host relies on them):
+
+- A required array or object that is empty in Go is written as `null` when the Go value is nil, so a
+  receiver treats `null` as empty.
+- Optional members follow `omitempty`: a zero value (`""`, `0`, `false`, an empty array or map) and a
+  nil pointer are left out, a struct is not, and a required member is always written, `false` included.
+- Maps are written with their keys sorted, and Go escapes `<`, `>` and `&` in strings; both are only
+  needed to make the bytes of two SDKs equal.
+
 ## Who is started, and how
 
 `pluginhost.Start` (`apps/smith/pluginhost/start_plugins_use_case.go`) builds a list of launches
@@ -97,7 +125,9 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 
 The host calls a method only if the plugin advertised it; an unadvertised method means "nothing to
 say here", not an error. The Go SDK derives the flags from the interfaces a plugin implements
-(`packages/plugin-sdk/serve/plugin_contract.go`). A plugin in another language sets the booleans by hand.
+(`packages/plugin-sdk/serve/plugin_contract.go`), and the TypeScript SDK from the members of the plugin
+object. A plugin without an SDK sets the booleans by hand. The schema's methods table (below) says
+which capability each method needs.
 
 | Capability flag | Methods | Go interface | Called by |
 |---|---|---|---|
@@ -235,6 +265,8 @@ The six checks and their output are shown in that page.
 | Host client (spawn, call, timeout, kill) | `packages/plugin-sdk/host` |
 | Plugin-side loop and interfaces | `packages/plugin-sdk/serve` |
 | Conformance | `packages/plugin-sdk/conformance` |
+| The JSON Schema, and what writes it | `packages/plugin-sdk/schema`, `protocolschema`, `schemagen` |
+| The TypeScript SDK | `packages/plugin-sdk-ts` |
 | Starting, search path, `plugin.json`, stacks | `apps/smith/pluginhost` |
 | Built-in list | `apps/smith/pluginhost/builtin_plugins_config.go`; plugins in `libs/plugin-*` |
 | Assembling projects | `apps/smith/projectgraph` |

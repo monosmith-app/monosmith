@@ -2,18 +2,21 @@
 
 A plugin is any program that speaks the protocol on its standard input and output, so it can be
 written in any language. What differs is how much of the protocol you write yourself. This page says
-exactly what exists, what each choice costs, and shows the same plugin in all three.
+exactly what exists, what each choice costs, and shows the same plugin in Go, TypeScript and Python.
 
 ## What exists
 
 | Language | Support | You write |
 |---|---|---|
 | **Go** | the plugin SDK, `github.com/monosmith-app/monosmith/packages/plugin-sdk`: typed messages, the serving loop, the host side for tests, the conformance suite, templating and JSON helpers | the plugin's methods |
-| **Node.js** | no SDK. Working examples that frame the messages by hand: [`node`](../../examples/plugins/node) (a language plugin) and [`structure-layout-node`](../../examples/plugins/structure-layout-node) (a structure plugin with tests) | the framing loop and the dispatch, about 40 lines, plus the methods |
-| **Python** | no SDK. [`python`](../../examples/plugins/python) and [`structure-layout-python`](../../examples/plugins/structure-layout-python), standard library only | the same |
-| anything else | no SDK, no example. The protocol is the contract; the Go types in `packages/plugin-sdk/protocol` are the schema | everything. Not tried here |
+| **TypeScript** (and JavaScript) | the plugin SDK, [`@monosmith/plugin-sdk`](typescript-sdk.md) on npm: the same, with the types generated from the protocol's JSON Schema. Examples: [`structure-layout-node`](../../examples/plugins/structure-layout-node) (a structure plugin) and [`language-widget-ts`](../../examples/plugins/language-widget-ts) (a language plugin) | the plugin's methods |
+| **Node.js** without the SDK | working example that frames the messages by hand: [`node`](../../examples/plugins/node) (a language plugin) | the framing loop and the dispatch, about 40 lines, plus the methods |
+| **Python** | no SDK yet. [`python`](../../examples/plugins/python) and [`structure-layout-python`](../../examples/plugins/structure-layout-python), standard library only | the same |
+| anything else (C# next) | no SDK, no example. The protocol is the contract: [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json) is its JSON Schema, generated from the Go types, with a methods table, the error codes and the roles | everything. Not tried here |
 
-There is a Go SDK only. Do not look for `npm` or `pip` packages: they do not exist.
+The SDKs for the other languages are tracked in [#564](https://github.com/monosmith-app/monosmith/issues/564):
+TypeScript first, then Python, then C#. All of them are generated from the same JSON Schema, so a
+protocol change reaches every language. Do not look for a `pip` package: it does not exist yet.
 
 ## Go, with the SDK
 
@@ -59,9 +62,33 @@ The interfaces in `serve` are `Discoverer`, `Generator`, `Versioner`, `Publisher
 method. An error a method returns becomes a `-32000` response with your message. `serve.Main` also
 answers `shutdown`, rejects calls before `initialize` and answers an unknown method with `-32601`.
 
-## Node.js and Python, by hand
+## TypeScript, with the SDK
 
-There are three things to write, and they are the same in every language.
+```sh
+npm install @monosmith/plugin-sdk
+```
+
+A plugin is an object with `describe` and one member for each method it has. The SDK does everything the
+Go `serve.Main` does, and derives the capabilities from the members:
+
+```ts
+#!/usr/bin/env node
+import { serve } from '@monosmith/plugin-sdk'
+
+await serve({
+  describe: () => ({ plugin: { name: 'kiwi', version: '0.1.0' }, kind: 'language', languages: ['kiwi'], manifests: ['kiwi.toml'] }),
+  discover: ({ manifests }) => ({ projects: [] }),
+})
+```
+
+The types are generated from the protocol's JSON Schema, a test host and the conformance checks are
+included, and for the same requests the plugin answers with the same bytes as the Go one. [The
+TypeScript SDK](typescript-sdk.md) has the walk-through and the whole API.
+
+## Without an SDK: Node.js and Python, by hand
+
+There are three things to write, and they are the same in every language. (In TypeScript the SDK
+writes them for you; this is what it does, and what a language without an SDK has to do.)
 
 ### 1. Read and write frames
 
@@ -204,17 +231,19 @@ decides whether its argument is a path or a name.
 
 `widget-layout` (a [structure plugin](structure-plugin.md)):
 
-| | Go | Node.js | Python |
+| | Go | TypeScript | Python |
 |---|---|---|---|
-| source | `plugin.go`, `check.go`, `main.go` (146 lines) | `plugin.mjs` (138 lines) | `plugin.py` (153 lines) |
-| framing and dispatch | `serve.Main` | written in the file | written in the file |
-| capabilities | derived from the methods | written in the `initialize` answer | written in the `initialize` answer |
-| tests | `go test` with `conformance.Check` and `host.Connect` | `node --test`, speaking the protocol through a child process | `python -m unittest`, the same |
+| source | `plugin.go`, `check.go`, `main.go` (146 lines) | `plugin.ts`, `layout.ts` (102 lines) | `plugin.py` (153 lines) |
+| framing and dispatch | `serve.Main` | `serve` | written in the file |
+| capabilities | derived from the methods | derived from the members | written in the `initialize` answer |
+| tests | `go test` with `conformance.Check` and `host.Connect` | `node --test` with `checkPlugin` and `connectInProcess` | `python -m unittest`, speaking the protocol through a child process |
 | launcher on Windows | the `.exe` | `plugin.cmd` | `plugin.cmd` |
-| dependencies | the SDK | none | none |
+| dependencies | the SDK | `@monosmith/plugin-sdk` | none |
 
 All three give the same seven lines from `smith plugin check`, the same tasks and the same
-`smith doctor` finding.
+`smith doctor` finding, and the Go and the TypeScript plugin answer the same requests with the same
+bytes. The Node.js plugin that frames the messages by hand is the smaller
+[`node`](../../examples/plugins/node), a language plugin without tests.
 
 ## Common mistakes
 
