@@ -25,7 +25,10 @@ type ApplyOptions struct {
 	Version string
 	// SkipInstall leaves the lockfile alone (npm install is not run).
 	SkipInstall bool
-	Out         io.Writer
+	// KeepPipelines leaves the CI pipelines as they are instead of
+	// regenerating them (the full level's --ci keep).
+	KeepPipelines bool
+	Out           io.Writer
 }
 
 // Result is what Apply changed.
@@ -92,37 +95,11 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		return res, err
 	}
 
-	for _, rel := range []string{cipipeline.GitHubPath, cipipeline.AzurePath} {
-		raw, err := os.ReadFile(file(rel))
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return res, err
-		}
-		renamed, orphans := RenameSlots(string(raw))
-		for _, o := range orphans {
-			res.LostSlots = append(res.LostSlots, rel+": "+o)
-		}
-		if err := os.WriteFile(file(rel), []byte(renamed), 0o644); err != nil {
-			return res, err
-		}
-	}
-	s, err := session.Open(session.Options{Dir: root, Version: opts.Version, Log: opts.Out})
-	if err != nil {
-		return res, fmt.Errorf("the converted workspace does not load: %w", err)
-	}
-	changed, lost, err := cipipeline.Regenerate(s)
-	s.Close()
-	if err != nil {
+	if opts.KeepPipelines {
+		say("✔ kept the CI pipelines as they are")
+	} else if err := regeneratePipelines(root, plan, opts, &res); err != nil {
 		return res, err
 	}
-	res.Pipelines = changed
-	res.LostSlots = append(res.LostSlots, lost...)
-	if len(changed) > 0 {
-		say("✔ generated %s", strings.Join(changed, ", "))
-	}
-	res.Created = append(res.Created, changed...)
 
 	if !opts.SkipInstall {
 		say("… reinstalling dependencies (this can take a minute)")
@@ -132,6 +109,45 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 		say("✔ reinstalled dependencies and updated package-lock.json")
 	}
 	return res, nil
+}
+
+// regeneratePipelines renames the pipeline slots to smith's and regenerates
+// the pipelines for the converted workspace.
+func regeneratePipelines(root string, plan *convertplan.Plan, opts ApplyOptions, res *Result) error {
+	file := func(rel string) string { return filepath.Join(root, filepath.FromSlash(rel)) }
+	say := func(format string, args ...any) { fmt.Fprintf(opts.Out, format+"\n", args...) }
+	for _, rel := range []string{cipipeline.GitHubPath, cipipeline.AzurePath} {
+		raw, err := os.ReadFile(file(rel))
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		renamed, orphans := RenameSlots(string(raw))
+		for _, o := range orphans {
+			res.LostSlots = append(res.LostSlots, rel+": "+o)
+		}
+		if err := os.WriteFile(file(rel), []byte(renamed), 0o644); err != nil {
+			return err
+		}
+	}
+	s, err := session.Open(session.Options{Dir: root, Version: opts.Version, Log: opts.Out})
+	if err != nil {
+		return fmt.Errorf("the converted workspace does not load: %w", err)
+	}
+	changed, lost, err := cipipeline.Regenerate(s)
+	s.Close()
+	if err != nil {
+		return err
+	}
+	res.Pipelines = changed
+	res.LostSlots = append(res.LostSlots, lost...)
+	if len(changed) > 0 {
+		say("✔ generated %s", strings.Join(changed, ", "))
+	}
+	res.Created = append(res.Created, changed...)
+	return nil
 }
 
 // SmithPackage is the npm package that installs smith.
