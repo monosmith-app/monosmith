@@ -206,12 +206,15 @@ describe.skipIf(!go)('a TypeScript plugin and a Go plugin with the same logic', 
     })
 
     it('stop a scan that is cancelled midway, and answer it with the cancelled error and the same bytes', async () => {
-      const { go, ts } = await both(pairOf('structure-scan-go', 'structure-scan-node'), files, root => [
+      const { go: goBodies, ts: tsBodies } = await both(pairOf('structure-scan-go', 'structure-scan-node'), files, root => [
         initialize(root),
         { method: 'doctor', params: { projects }, thenWaitMs: 250 },
         { method: 'cancel', params: { id: 2 }, notification: true, thenWaitMs: 150 },
         { method: 'doctor', params: { projects: [] } },
       ], { WIDGET_SCAN_DELAY_MS: '100' })
+      // Two concurrent requests may be answered in either order; each frame must be equal.
+      const go = byId(goBodies)
+      const ts = byId(tsBodies)
       expect(ts).toEqual(go)
       expect(go).toHaveLength(4)
       expect(go[1]).toBe('{"jsonrpc":"2.0","id":2,"error":{"code":-32800,"message":"request cancelled: the scan was stopped"}}')
