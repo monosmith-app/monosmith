@@ -580,6 +580,26 @@ Usage: `smith why-miss <project>:<task> [flags]`
 
 <!-- smith:end why-miss -->
 
+### smith cache
+
+[Manual page](../manual/cache.md)
+
+<!-- smith:begin cache -->
+Look after the local task cache: status, prune, clear, verify
+
+Usage: `smith cache <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
+| `smith cache status` | Show the local cache: where it is, how big, how full, and the largest entries |
+| `smith cache verify` | Check the local cache for damage; --fix removes what is broken |
+
+No flags.
+
+<!-- smith:end cache -->
+
 ### smith doctor
 
 [Manual page](../manual/doctor.md)

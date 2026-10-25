@@ -172,10 +172,13 @@ passes.
 **Pruning.** `taskcache.Prune` keeps the store under a size: the least recently
 used *entries* go first until the blobs the remaining entries reference fit, then
 every blob no entry references is swept. Using an entry (`Touch`) counts as use.
-The size comes from `[cache] max_size_mb` (default 2048). **Status in 1.62.0:
-`Prune` is implemented and tested, but nothing calls it** (a search of
-`apps/smith` finds no caller outside tests), so the local cache is
-not pruned automatically. Delete `.smith/cache` to reclaim space.
+The size comes from `[cache] max_size_mb` (default 2048; 0 means no limit). After a
+run that stored new results, `taskrun` calls it for the **local** store through
+`cachemaintenance.AfterRun`, which walks the store at most about once an hour (a small
+state file keeps the running size) and leaves anything used in the last five minutes. A
+failure is a warning, never a failed run. `smith cache prune` runs it on demand. How it is
+wired, with a sequence diagram, is in
+[The cache key, hits and misses](cache.md#pruning).
 
 ## 6. The remote cache
 

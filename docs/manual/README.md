@@ -89,6 +89,7 @@ Python package). Paths in output are shortened.
 | [`smith affected`](affected.md) | List the projects affected by changes since a base branch. |
 | [`smith explain`](explain.md) | Show how a project's tasks resolved, and where each setting came from. |
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
+| [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md) | What `smith add` accepts. |

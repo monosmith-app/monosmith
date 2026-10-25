@@ -57,7 +57,8 @@ const defaults = {
   'new|scope': '`@<name>`',
   'pipeline|ci': "the workspace's providers",
   'release|format': '`text`',
-  'slices check|lang': '`go`'
+  'slices check|lang': '`go`',
+  'cache prune|max-size-mb': '`[cache] max_size_mb`'
 }
 for (const run of ['run', 'build', 'lint', 'test', 'typecheck']) {
   defaults[`${run}|base`] = 'the pull request target, else the release branch'
@@ -86,7 +87,8 @@ const types = {
   'graph|diff': 'revision',
   'add|choice': 'name=answer, repeatable',
   'recipe check|choice': 'name=answer, repeatable',
-  'slices check|lang': 'language name'
+  'slices check|lang': 'language name',
+  'cache prune|max-size-mb': 'integer (megabytes)'
 }
 
 // Say which binary answered: a stale smith earlier on the PATH (an old install in
