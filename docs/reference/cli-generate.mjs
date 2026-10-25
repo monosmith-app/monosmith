@@ -152,6 +152,8 @@ const argumentMeanings = {
   'plugin enable|name': 'built-in plugin names',
   'plugin disable|name': 'built-in plugin names',
   'plugin set|name': 'built-in plugin names',
+  'plugin trust|name': 'the external plugin, as `smith.toml` or `smith plugin list` names it',
+  'plugin untrust|name': 'the external plugin, as `smith plugin list` names it',
   'plugin check|name | path to plugin': 'a plugin by name, or the path of its executable (further arguments are passed to it)',
   'recipe check|file-or-url': 'the recipe file or https URL',
   'recipe new|path': 'where to write the recipe; default `<name>.recipe.toml`',

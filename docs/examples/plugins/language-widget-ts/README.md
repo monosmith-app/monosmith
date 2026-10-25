@@ -48,6 +48,8 @@ PS> smith plugin check .\plugin.cmd --generate
 command = ["node", "/path/to/plugin.ts"]
 ```
 
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../../plugins/using/plugin-security.md).
+
 ```sh
 smith add lib core --lang widget
 smith add app shop --lang widget      # then add "uses": ["core"] to apps/shop/widget.json

@@ -15,6 +15,8 @@ installed ones live on a search path. The protocol is described in
   [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md).
 - To verify a plugin you wrote keeps the protocol's promises:
   [`smith plugin check`](plugin-check.md).
+- To trust an external plugin so smith may start it, or take the trust back:
+  [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md).
 
 ## Subcommands
 
@@ -28,8 +30,10 @@ Usage: `smith plugin <command>`
 | `smith plugin check` | Check that a plugin keeps the protocol's promises |
 | `smith plugin disable` | Disable built-in plugins in smith.toml |
 | `smith plugin enable` | Enable built-in plugins in smith.toml |
-| `smith plugin list` | List the built-in plugins and the ones installed on the plugin search path |
+| `smith plugin list` | List the built-in plugins, the external ones the workspace uses (trusted or not) and the ones installed on the plugin search path |
 | `smith plugin set` | Enable exactly these built-in plugins in smith.toml |
+| `smith plugin trust` | Review an external plugin and trust it, so smith may start it |
+| `smith plugin untrust` | Forget that you trust an external plugin |
 
 No flags.
 
@@ -47,13 +51,23 @@ Each plugin is a directory directly under one of them, holding a `plugin.json`. 
 declared in `smith.toml` with a command are started from there. A plugin process is started
 with `SMITH_PLUGIN=1` in its environment.
 
+## External plugins: trust and environment
+
+A built-in plugin is the smith binary. An external plugin is another program, so smith starts it
+only after you have trusted it (`smith plugin trust <name>`; in CI, when `smith.toml` pins its
+`sha256`), and gives it a minimal environment plus the variables it declares. The plugins the
+workspace needs are the ones `smith.toml` declares under `[plugins.external]`; one that is only
+installed on the search path is never started. Trust is not a sandbox: a trusted plugin runs with
+your privileges. See [Plugin security](../plugins/using/plugin-security.md).
+
 ## Exit codes
 
 0 for the help; see the subcommands.
 
 ## Files and environment
 
-`smith.toml` (`[plugins] enabled`), the search path above. Variables: `SMITH_PLUGIN_PATH`,
+`smith.toml` (`[plugins] enabled`, `[plugins.external.<name>]`), the search path above, and
+`trust.json` in the smith home, where trust decisions are kept. Variables: `SMITH_PLUGIN_PATH`,
 `SMITH_HOME`.
 
 ## Related

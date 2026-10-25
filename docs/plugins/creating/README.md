@@ -23,6 +23,14 @@ writing.
 A **recipe** is not a plugin: it is data that chooses and configures plugins. If a recipe can say
 what you want, you do not need to write code.
 
+One rule applies to every guide below: when you declare your plugin in a workspace, smith starts it
+only after you [trust it](../using/managing-plugins.md#trusting-an-external-plugin) (the first command
+that needs it asks in a terminal, or run `smith plugin trust <name>`), and it starts with a [minimal
+environment](../using/plugin-security.md#the-environment-an-external-plugin-gets): a variable your
+plugin reads must be named in `env` of its `plugin.json`
+([how](packaging-a-plugin.md#declaring-the-environment-a-plugin-needs)). `smith plugin check` needs
+no trust, so the commands in the guides that check a plugin work as written.
+
 ## The pages
 
 | Page | Read it when |

@@ -38,6 +38,8 @@ command = ["/path/to/smith-plugin-widget-lint"]
 require = ["description", "license", "homepage"]
 ```
 
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget-lint` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../../plugins/using/plugin-security.md).
+
 ```sh
 smith add lib extra --stack widget-linted
 smith run lint
