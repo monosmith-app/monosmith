@@ -109,7 +109,7 @@ Everything is in [docs/](docs/README.md), in six sections:
   [terminal interface](docs/manual/tui.md) and the
   [VS Code extension](docs/manual/vscode.md)
 - **Guides:** [editors](docs/guides/editors.md),
-  [writing a plugin](docs/guides/writing-a-plugin.md),
+  [writing a plugin](docs/plugins/creating/README.md),
   [troubleshooting](docs/guides/troubleshooting.md), [FAQ](docs/guides/faq.md)
 - **Reference:** [configuration (`smith.toml`)](docs/reference/configuration.md),
   [glossary](docs/reference/glossary.md),

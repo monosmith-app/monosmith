@@ -299,7 +299,7 @@ and has no choices; every other fix is asked about, in a terminal as numbered
 prompts, and elsewhere named with the command that applies it. The host owns
 applying (writing, running steps, stopping at the first failure), so a plugin in
 any language only describes the change. See
-[Writing a plugin](../guides/writing-a-plugin.md#doctor-fixes-files-steps-and-choices).
+[Creating a language plugin](../plugins/creating/language-plugin.md#doctor-fixes-files-steps-and-choices).
 
 ## How plugins affect the cache
 
