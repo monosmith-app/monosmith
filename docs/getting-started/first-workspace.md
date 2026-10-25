@@ -225,7 +225,8 @@ it), `json` and `dot`. `--blast-radius <project or file>` lists everything a cha
 it reaches, across languages and through shared schemas. `--focus web` keeps web and everything connected to it,
 `--affected` keeps what a change touches, and `--diff v1.4.0` shows how the
 graph changed since a revision. Projects that import each other in a cycle
-cannot be ordered: `smith graph` warns with the path (`ui → core → ui`).
+cannot be ordered: every command that opens the workspace stops with the path
+(`smith: projects import each other in a cycle: ui → web → ui`) until you break the cycle.
 
 ## 4. Run tasks and see the cache
 
@@ -284,7 +285,7 @@ cache key, the remote cache that shares results between machines, and how to
 override a task in `smith.toml`. `smith explain web:test` shows how a task
 resolved and which plugin or setting each value came from:
 
-![smith explain web:test: command, cwd, dependsOn, inputs, outputs, env and cache, each followed by "from plugin node"](../assets/explain.png)
+![smith explain web:test: command, cwd, dependsOn, inputs, outputs, env and cache, then the line "Every value above comes from plugin node, except where marked"](../assets/explain.png)
 
 *Every value of a task, with where it came from. When you override a setting in
 `smith.toml`, that line says so.*
@@ -358,17 +359,10 @@ smith doctor
 A healthy workspace prints one line per check and a count (the Doctor tab of the
 shell shows the headline, the failing checks and, behind `p`, the passed ones):
 
-```text
-✔ the cache directory is ignored by git
-✔ the repository has commits
-...
-✔ the venv's Python is 3.12, as in CI
-✔ Node projects are checked for vertical slices (@monosmith/eslint-config)
+![smith doctor on a healthy workspace: a check mark per check and the line "31 passed, 0 failed, 0 warning(s)"](../assets/doctor.png)
 
-31 passed, 0 failed, 0 warning(s)
-```
-
-The checks that run depend on the languages in the workspace.
+*The middle of the list is cut here. The checks that run depend on the languages
+in the workspace.*
 
 When a check fails, the line says what is wrong and the remedy:
 
@@ -455,10 +449,10 @@ git commit -m "feat(sdk): add retries"
 smith release --dry-run
 ```
 
-![smith release --dry-run: sdk goes from unreleased to 0.1.0 with 2 releasing commits, and a markdown table with the package, version, why and status](../assets/release-preview.png)
+![smith release --dry-run: sdk goes from unreleased to 0.1.0 with 1 releasing commit, and a markdown table with the package, version, why and status](../assets/release-preview.png)
 
 *A preview that changes nothing. The table at the bottom is what the pull
-request comment shows (`smith release --dry-run --comment`).*
+request comment shows (`smith release --dry-run --comment`); `--format markdown` prints it in your terminal.*
 
 Only packages release. Libs are released inside the packages that use them, and
 apps release only if you give them a release section. The real release runs

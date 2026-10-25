@@ -92,10 +92,10 @@ flowchart LR
   session --> host["pluginhost"]
   host -- "JSON-RPC over stdio" --> lang["language plugins<br/>node, go, python, …"]
   host -- "JSON-RPC over stdio" --> tool["toolchain / structure / deploy plugins<br/>eslint, jest, vertical-slices, docker, …"]
-  lang -- "discover" --> graph["projectgraph"]
-  tool -- "contribute" --> graph
-  ws -- "overrides" --> graph
-  graph --> tasks["taskgraph"] --> run["taskrun"]
+  lang -- "discover" --> pgraph["projectgraph"]
+  tool -- "contribute" --> pgraph
+  ws -- "overrides" --> pgraph
+  pgraph --> tasks["taskgraph"] --> run["taskrun"]
   run <--> cache["taskcache<br/>.smith/cache/v1"]
   cache <--> remote["remotecache"]
 ```

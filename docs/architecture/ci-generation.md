@@ -27,7 +27,7 @@ flowchart LR
   end
   p1 & p2 & p3 -->|"protocol.CIResult"| collect["cipipeline.Collect"]
   cfg["smith.toml<br/>[ci] [release] [cache]"] --> collect
-  graph["project graph<br/>kinds, tags, release sections"] --> collect
+  pgraph["project graph<br/>kinds, tags, release sections"] --> collect
   collect -->|"Contributions"| model["cipipeline.NewModel<br/>provider-neutral Model"]
   model --> gh["RenderGitHub<br/>RenderGitHubPub"]
   model --> az["RenderAzure"]

@@ -72,8 +72,9 @@ Surprising misses usually come from three places:
   Node or Python differ from CI).
 
 To skip the cache once, use `smith run <task> --no-cache`. To remove it, delete
-`.smith/cache`; or `[cache] max_size_mb` (default 2048) trims the least recently
-used entries first.
+`.smith/cache`. `[cache] max_size_mb` (default 2048) is meant to trim the least
+recently used entries, but smith 1.62.0 never applies it: the cache only shrinks
+when you delete it.
 
 ## A task is wrong, but it passes from the cache
 
@@ -109,7 +110,7 @@ lists them all. The checks, grouped by who owns them:
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |
-| projects do not import each other in a cycle | smith cannot order a cycle. Move what both need into a project neither imports back, or merge the two. The finding prints the path (`ui → core → ui`) |
+| projects do not import each other in a cycle | smith cannot order a cycle, so in 1.62.0 every command that opens the workspace (this one included) stops with `smith: projects import each other in a cycle: ui → web → ui` before the check can list it. Move what both need into a project neither imports back, or merge the two |
 | CI pipelines match the workspace | the generated pipeline is stale. Run `smith ci generate` and commit it (`smith doctor --fix` does the same) |
 | release tags resolve under each project's tag prefix | a project's release tags use another name, so its next release would start from scratch. `smith adopt --tags` creates them |
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |

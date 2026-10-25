@@ -81,7 +81,7 @@ registry = "libs"                     # where packages publish; default: [worksp
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
-max_size_mb = 2048
+max_size_mb = 2048                     # meant to cap the cache; not applied by smith 1.62.0
 remote = "s3://acme-smith-cache/main"  # a shared remote cache: https://, s3://, azblob:// (docs/reference/tasks-and-cache.md)
 remote_read_only = false               # read the remote without writing to it
 

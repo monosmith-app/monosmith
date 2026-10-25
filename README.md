@@ -78,26 +78,29 @@ and Turborepo workspaces and those made by mnci.
 
 ## Documentation
 
-Start with [getting started](docs/getting-started/first-workspace.md), a hands-on tour.
-Everything is in [docs/](docs/README.md), organised by what you want to do, and
-in four sections:
+Start with [getting started](docs/getting-started/README.md), a hands-on tour.
+Everything is in [docs/](docs/README.md), in six sections:
 
-- **Guides:** [installing](docs/getting-started/installing.md),
-  [getting started](docs/getting-started/first-workspace.md),
-  [converting from Nx](docs/getting-started/converting.md),
-  [editors](docs/guides/editors.md),
+- **Getting started:** [installing](docs/getting-started/installing.md),
+  [your first workspace](docs/getting-started/first-workspace.md),
+  [adopting a repository](docs/getting-started/adopting.md),
+  [converting from Nx or Turborepo](docs/getting-started/converting.md)
+- **Manual:** [every command, one page each](docs/manual/README.md), the
+  [terminal interface](docs/manual/tui.md) and the
+  [VS Code extension](docs/manual/vscode.md)
+- **Guides:** [editors](docs/guides/editors.md),
   [writing a plugin](docs/guides/writing-a-plugin.md),
   [troubleshooting](docs/guides/troubleshooting.md), [FAQ](docs/guides/faq.md)
-- **Reference:** [CLI](docs/reference/cli.md), [glossary](docs/reference/glossary.md),
-  [configuration (`smith.toml`)](docs/reference/configuration.md),
+- **Reference:** [configuration (`smith.toml`)](docs/reference/configuration.md),
+  [glossary](docs/reference/glossary.md),
   [tasks, cache and affected](docs/reference/tasks-and-cache.md),
   [CI pipelines](docs/reference/ci.md), [releasing](docs/reference/releasing.md),
   [stacks](docs/reference/stacks.md), [recipes](docs/reference/recipes.md),
   [conventions](docs/reference/conventions.md),
-  [plugins and the protocol](docs/reference/plugins.md)
-- **Design:** [architecture](docs/architecture/architecture.md), [plugin system](docs/architecture/plugin-system.md),
-  [decisions](docs/architecture/decisions/README.md), [research](docs/architecture/research/)
-- **Contributing:** [working on MonoSmith](docs/contributing/development.md)
+  [plugins and the protocol](docs/reference/plugins.md), [CLI](docs/reference/cli.md)
+- **Architecture:** [the architecture manual](docs/architecture/README.md),
+  [decision records](docs/architecture/decisions/README.md)
+- **Contributing:** [working on MonoSmith](docs/contributing/README.md)
 
 ## Status
 
