@@ -33,10 +33,12 @@ converts from most completely. This page is neutral by intent; the tables in
 | Affected | task-level, from declared inputs | project-level: the projects owning a changed file and everything depending on them; everything when smith cannot be sure |
 | Remote cache | Nx Cloud, or a self-hosted server built to Nx's OpenAPI specification | a server, S3 bucket or Azure Blob container you run, objects signed with HMAC-SHA256; no hosted service |
 | Distributed execution | Nx Cloud | none: tasks run on one machine and only results are shared |
-| CI pipelines | Nx Cloud CI features; whether Nx generates pipeline files was not verified | smith generates GitHub Actions, Azure Pipelines and GitLab CI and `doctor` fails on drift |
+| CI pipelines | `nx g @nx/workspace:ci-workflow --ci=<provider>` generates a starting workflow for GitHub, GitLab, CircleCI, Azure Pipelines and Bitbucket Pipelines (the documentation says the generator does not support Jenkins); Nx Cloud adds CI features | smith generates GitHub Actions, Azure Pipelines and GitLab CI and `doctor` fails on drift (tried: an edited generated workflow made `smith doctor` and `smith ci generate --check` exit 1) |
+| Dependency alignment | the documentation recommends a single version policy and points to catalogs, `syncpack` or the `@nx/dependency-checks` lint rule, which compares a project's `package.json` with what it imports | `smith sync` aligns a shared dependency, and `smith doctor` checks one version per production dependency |
+| Health check | `nx report` prints the versions of Nx and its plugins; a Conformance plugin that enforces workspace rules is described as an Nx Enterprise feature; no doctor command was found | `smith doctor`, with `--fix` |
 | Implementation | built with Rust and extensible via TypeScript, per its README | one static Go binary |
-| Editors | Nx Console for VS Code and JetBrains | a VS Code extension, a terminal interface and an MCP server; no JetBrains plugin was found in the repository |
-| Maturity | not assessed here | release 1.62.0, ten days of repository history |
+| Editors | Nx Console for VS Code and JetBrains, "built and maintained by the Nx team" | a VS Code extension, a terminal interface and an MCP server; no JetBrains plugin was found in the repository |
+| Repository status | MIT, not archived, last push 2026-10-23 (GitHub API, 2026-10-25) | MIT, not archived, first commit 2026-10-15; release 1.62.0 |
 
 ## When to choose Nx instead
 
@@ -73,13 +75,18 @@ workspace, so that is the likely starting point. This was not tried.
 
 ## Sources
 
-Retrieved 2026-10-25.
+Retrieved 2026-10-25. The documentation was read as Markdoc source files from the
+repository's `astro-docs/src/content/docs` folder (the published pages are the
+same files), not through a summarising tool.
 
 - Nx introduction: <https://nx.dev/docs/getting-started/intro>
-- `nx release`: <https://nx.dev/docs/features/manage-releases>
-- Remote cache: <https://nx.dev/docs/features/ci-features/remote-cache>
+- `nx release`: <https://nx.dev/docs/features/manage-releases>, which says publishing goes to a registry "such as npm for TypeScript/JavaScript libraries, crates.io for Rust, or Docker registries".
+- Remote cache: <https://nx.dev/docs/features/ci-features/remote-cache>, which links a guide to "Run your own cache server against the OpenAPI specification".
 - Affected: <https://nx.dev/docs/features/ci-features/affected>
 - Running tasks: <https://nx.dev/docs/features/run-tasks>
-- Editor setup (Nx Console): <https://nx.dev/docs/getting-started/editor-setup>
-- Pricing (free tier exists): <https://nx.dev/pricing>
-- Repository and README (licence, `nx init`, plugins): <https://github.com/nrwl/nx>
+- CI workflow generator: <https://nx.dev/docs/getting-started/setup-ci> ("nx g @nx/workspace:ci-workflow --ci=<provider>") and <https://nx.dev/docs/kb/ci-workflow-examples> ("The CI workflow generator doesn't support Jenkins").
+- Dependency alignment: <https://nx.dev/docs/getting-started/tutorials/managing-dependencies> (single version policy; "the `@nx/dependency-checks` ESLint rule to catch version mismatches") and <https://nx.dev/docs/kb/dependency-checks>.
+- Conformance plugin: <https://nx.dev/docs/reference/conformance/overview> ("allows Nx Enterprise users to write and apply rules").
+- Editor setup (Nx Console): <https://nx.dev/docs/getting-started/editor-setup> ("built and maintained by the Nx team").
+- Nx Cloud plans: <https://nx.dev/docs/features/ci-features> ("starts on the free Hobby plan"); self-hosted caching: <https://nx.dev/docs/enterprise/activate-license> ("Self-hosted caching is now free for everyone"). Nx's pricing page itself was not read.
+- Repository and README (licence, `nx init`, plugins): <https://github.com/nrwl/nx>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-23.

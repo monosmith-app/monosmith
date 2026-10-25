@@ -25,7 +25,12 @@ for scale and correctness.
 | What you write | BUILD files in Starlark | `smith.toml` with a name; the rest is inferred |
 | Hermetic sandboxing | configurable | none: tasks run the project's own tools as child processes |
 | Remote execution | yes | no |
-| Release and CI | not covered by the pages read | generated pipelines and releases from commits |
+| Affected | no changed-files command found; `bazel query` can compute reverse dependencies (`rdeps`, `allrdeps`) of targets you name | `smith affected` from a base branch, with everything affected when unsure |
+| CI | the FAQ says Bazel "returns a non-zero exit code if the build or test invocation fails", enough for basic CI integration; no generator found | generated pipelines for three providers |
+| Release | no release or versioning command found (searched "publish", "versioning", "release") | releases from commits |
+| Editors | an IntelliJ plugin, per the FAQ | a VS Code extension, a terminal interface and an MCP server |
+| Dependency versions | bzlmod resolves versions with Minimal Version Selection; no alignment or lint command found | `smith sync`; `smith doctor` checks one version per production dependency |
+| Repository status | Apache-2.0, not archived, last push 2026-10-25 (GitHub API, 2026-10-25) | MIT, not archived, first commit 2026-10-15; release 1.62.0 |
 | Tools | rules, written in Starlark or provided with Bazel | runs the language's own tools (`npm`, `go`, `cargo`, `dotnet`) as child processes |
 
 ## When to choose Bazel instead
@@ -51,6 +56,13 @@ moving to Bazel means writing BUILD files. Neither was tried for this page.
 
 Retrieved 2026-10-25.
 
-- About Bazel: <https://bazel.build/about/intro>
+The documentation was read as MDX source files from the repository's `docs` folder
+(the current docs, not the `versions/` archives), not through a summarising tool.
+
+- About Bazel: <https://bazel.build/about/intro> (builds with "100k+" source files)
 - Remote execution overview: <https://bazel.build/remote/rbe>
-- Repository (licence, README): <https://github.com/bazelbuild/bazel>
+- FAQ: <https://bazel.build/about/faq> (CI by exit code; the IntelliJ plugin)
+- Query language: <https://bazel.build/query/language> (`rdeps`, `allrdeps`)
+- Local cache: <https://bazel.build/reference/flag-cheatsheet> (`--disk_cache`)
+- Module versions: <https://bazel.build/external/faq> ("Bazel instead uses Minimal Version Selection")
+- Repository (licence, README): <https://github.com/bazelbuild/bazel>. GitHub API on 2026-10-25: licence Apache-2.0, archived false, last push 2026-10-25.
