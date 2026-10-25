@@ -52,6 +52,9 @@ license = "MIT"
 [projects.eslint-config.tasks.lint]
 command = ["npm", "run", "lint", "--silent"]
 
+[projects.jest-preset.tasks.lint]
+command = ["npm", "run", "lint", "--silent"]
+
 # The extension is an app: it is versioned by its tag, and the vscode plugin
 # packs it into a .vsix and publishes it to the Marketplace (and Open VSX).
 [projects.vscode.release]
