@@ -3,7 +3,7 @@
 A tour of what `smith` does, in commands you can run. The commands and the
 output shown here were run on 2026-10-25 with smith 1.62.0 in a scratch
 directory, on Windows with Go installed. The twenty-minute version, with Node and
-Python, is [Getting started](../guides/getting-started.md).
+Python, is [Getting started](../getting-started/first-workspace.md).
 
 ```mermaid
 flowchart LR
@@ -25,7 +25,7 @@ smith --version
 
 The binary is static; you also need git and the toolchain of each language you
 use. smith does not install compilers, and `smith doctor` tells you what is
-missing. See [Installing](../guides/installing.md).
+missing. See [Installing](../getting-started/installing.md).
 
 ## 2. Start a workspace: new, adopt or convert
 

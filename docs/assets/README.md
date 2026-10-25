@@ -10,7 +10,8 @@ mocked up.
 | `run-cache-hit.png` | `smith test` replaying every task from the cache | terminal output, rendered by `render-terminal.mjs` |
 | `why-miss.png` | `smith why-miss` after a change to `ui` | terminal output, rendered |
 | `explain.png` | `smith explain web:test` | terminal output, rendered |
-| `doctor-failing.png`, `doctor-fix.png` | `smith doctor` and `smith doctor --fix` with a stale pipeline and a `go.work` missing a module | terminal output, rendered |
+| `doctor.png` | `smith doctor` on a healthy workspace (the middle of the list cut to `...`) | terminal output, rendered |
+| `doctor-failing.png`, `doctor-fix.png` | `smith doctor` and `smith doctor --fix` with a stale pipeline and a `go.work` missing a module (the passed checks cut to `...` in the first) | terminal output, rendered; re-captured October 2026 with smith 1.62.0 because doctor now lists the passed checks after the failed ones |
 | `release-preview.png` | `smith release --dry-run` | terminal output, rendered |
 | `graph-text.png` | `smith graph` | terminal output, rendered |
 | `ci-yml.png` | lines of the generated `.github/workflows/ci.yml` | `sed -n '35,76p'`, rendered |
@@ -31,3 +32,11 @@ It needs the `playwright` package in the directory you run it from
 name ending in `.html` writes the page instead.
 
 Keep each image under about 300 KB.
+
+## Last checked
+
+October 2026, smith 1.62.0. `doctor.png`, `doctor-failing.png`, `doctor-fix.png`,
+`explain.png`, `why-miss.png`, `release-preview.png` (now captured with
+`--format markdown`) and `ci-yml.png` (the install step is pinned to the version that
+generated the file) were captured again because the output they show had changed.
+`run-cache-hit.png`, `graph-text.png` and `graph-html.png` still match what smith prints.

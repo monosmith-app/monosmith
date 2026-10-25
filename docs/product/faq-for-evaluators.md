@@ -59,7 +59,7 @@ rehearse it on a branch before relying on it.
 
 MIT, in the repository's `LICENSE` file (copyright 2026 Eduardo Russo). The
 third-party libraries smith uses are listed in
-[Technology](../design/technology.md); their licences were not audited here.
+[Technology](../architecture/technology.md); their licences were not audited here.
 
 ### Who owns it?
 
@@ -75,7 +75,7 @@ Young, and it is better to hear that here. The repository's first commit is date
 1.62.0: the repository holds 102 tags named `smith@<version>`, and almost all of the
 commits are by one author. smith continues mnci, an earlier tool built on Nx, whose
 workflows it replaces, but the engine was rewritten from scratch in Go
-([Decisions](../design/decisions.md), entry 1).
+([Decisions](../architecture/decisions/README.md), entry 1).
 
 What the project can show:
 
@@ -130,7 +130,7 @@ SBOM, and SLSA provenance on GitHub; the install scripts check the archive again
 (`npm audit signatures`). The binaries are **not signed** with an Apple or Microsoft
 certificate: a zip downloaded in a browser meets Gatekeeper on macOS and SmartScreen
 on Windows. The install scripts and package managers avoid that prompt. See
-[Installing](../guides/installing.md).
+[Installing](../getting-started/installing.md).
 
 ### How does CI treat vulnerable dependencies?
 
@@ -175,7 +175,7 @@ board; no dated roadmap is published. What the documentation itself lists as not
 done yet:
 
 - **Plugin discovery.** How plugins are published, found and installed by name is open
-  ([Decisions](../design/decisions.md)); plugins are found on a search path or
+  ([Decisions](../architecture/decisions/README.md)); plugins are found on a search path or
   declared by command.
 - **More install channels.** Homebrew, Scoop, winget, Chocolatey, the AUR, Snap and an
   apt or dnf repository are tracked in issue #225; manifests are generated but no
@@ -183,11 +183,11 @@ done yet:
 - **SBOMs for more ecosystems,** and provenance outside GitHub Actions
   ([Releasing](../reference/releasing.md)).
 - **`convert` beyond Node, Go and Python,** and the `--level full` clean-up beyond Node
-  workspaces ([Converting](../guides/converting.md)).
+  workspaces ([Converting](../getting-started/converting.md)).
 - **Not planned: distributed execution and hermetic sandboxing.** The design notes
   record both as deliberately not done: tasks run on one machine, only results are
   shared, and smith trusts a task's declared inputs instead of sandboxing it
-  ([Execution and cache](../design/execution-and-cache.md), section 9; [Decisions](../design/decisions.md), entry 18).
+  ([Execution and cache](../architecture/execution-and-cache.md), section 9; [Decisions](../architecture/decisions/README.md), entry 18).
   The price, in the design notes' words: wrong `inputs` give wrong cache hits.
 
 Treat all of this as intent, not commitment.

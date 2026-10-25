@@ -21,12 +21,16 @@ version and workspace in use.
 
 The advice depends on the folder: an Nx or Turborepo workspace is sent to
 `smith convert --dry-run`, any other existing repository to
-`smith adopt --dry-run`, and an empty folder to `smith new <name>`.
+`smith adopt --dry-run`, and an empty folder to `smith new <name>`. In an empty
+folder the message reads "there is no smith workspace here (no smith.toml in
+this folder or above it)".
 
 smith looks for a `smith.toml` in the current folder, then in each parent.
 Change into the workspace, or set `SMITH_WORKSPACE_ROOT` to its path. Commands
-that make or inspect a workspace (`new`, `convert`, `adopt`, `help`) work
-outside one.
+that make or inspect a workspace, or need none, work outside one: `new`,
+`convert`, `adopt`, `info`, `kinds`, `schema`, `commands`, `plugin`,
+`completion` and `help`. In a terminal, a bare `smith` outside a workspace
+opens the Start menu instead.
 
 ## A task ran again and I expected the cache
 
@@ -68,8 +72,9 @@ Surprising misses usually come from three places:
   Node or Python differ from CI).
 
 To skip the cache once, use `smith run <task> --no-cache`. To remove it, delete
-`.smith/cache`; or `[cache] max_size_mb` (default 2048) trims the least recently
-used entries first.
+`.smith/cache`. `[cache] max_size_mb` (default 2048) is meant to trim the least
+recently used entries, but smith 1.62.0 never applies it: the cache only shrinks
+when you delete it.
 
 ## A task is wrong, but it passes from the cache
 
@@ -105,7 +110,7 @@ lists them all. The checks, grouped by who owns them:
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |
-| projects do not import each other in a cycle | smith cannot order a cycle. Move what both need into a project neither imports back, or merge the two. The finding prints the path (`ui → core → ui`) |
+| projects do not import each other in a cycle | smith cannot order a cycle, so in 1.62.0 every command that opens the workspace (this one included) stops with `smith: projects import each other in a cycle: ui → web → ui` before the check can list it. Move what both need into a project neither imports back, or merge the two |
 | CI pipelines match the workspace | the generated pipeline is stale. Run `smith ci generate` and commit it (`smith doctor --fix` does the same) |
 | release tags resolve under each project's tag prefix | a project's release tags use another name, so its next release would start from scratch. `smith adopt --tags` creates them |
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |
@@ -129,7 +134,12 @@ lists them all. The checks, grouped by who owns them:
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 
 `smith doctor --fix` shows each fix first (diffs, the commands it runs, the
-questions it asks) and applies the safe ones once you confirm. These have a fix
+questions it asks) and applies the safe ones once you confirm. `--only "<check>"`
+applies one fix by name and `--choose 1,2` answers its questions by option number,
+so a script can apply a fix that needs a decision; in the terminal interface the
+Doctor tab does the same with the fix wizard (`f` for one check, `x` for every
+fix that needs no decision; see [the terminal interface](../manual/tui.md#the-doctor-fix-wizard)
+and [`smith doctor`](../manual/doctor.md)). These have a fix
 beyond the safe ones, which doctor asks about:
 
 | Check | The fix |
@@ -161,7 +171,7 @@ outside `dist/`) needs a decision only you can make; its remedy says what.
 - **Ctrl+C** stops every process smith started, through a Job Object.
 - **SmartScreen** warns about an unknown publisher the first time a downloaded
   `smith.exe` runs. Choose More info, then Run anyway, or install with the script
-  or a package manager. See [installing](installing.md).
+  or a package manager. See [installing](../getting-started/installing.md).
 - **Plugins written in Python or Node.** Windows cannot execute a `.py` file
   ("%1 is not a valid Win32 application"). Launch it with a `.cmd` file, and write
   that path with backslashes. See [writing a plugin](writing-a-plugin.md).

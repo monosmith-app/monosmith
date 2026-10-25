@@ -6,7 +6,7 @@ This page walks through the three cases as scenarios: what you run, what changes
 what is reported to you and what stays your job.
 
 These are descriptions of the tool's documented behaviour, taken from
-[Converting](../guides/converting.md) and `smith convert --help` (smith 1.62.0).
+[Converting](../getting-started/converting.md) and `smith convert --help` (smith 1.62.0).
 They are not customer case studies. No claim is made here about how long a real
 conversion takes, or how many projects convert cleanly; that depends on the
 workspace, and the report tells you before anything changes.

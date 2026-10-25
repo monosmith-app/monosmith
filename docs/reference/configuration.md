@@ -81,7 +81,7 @@ registry = "libs"                     # where packages publish; default: [worksp
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
-max_size_mb = 2048
+max_size_mb = 2048                     # meant to cap the cache; not applied by smith 1.62.0
 remote = "s3://acme-smith-cache/main"  # a shared remote cache: https://, s3://, azblob:// (docs/reference/tasks-and-cache.md)
 remote_read_only = false               # read the remote without writing to it
 
@@ -258,7 +258,7 @@ node = "22"      # any 22.x
 go = "1.23"      # any 1.23.x
 ```
 
-A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([decision 20](../design/decisions.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding.
+A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding.
 
 ## Leaving directories out
 
@@ -458,6 +458,8 @@ See [Releasing](releasing.md#apps).
 | `SMITH_PYPI_SIMPLE_URL` | the simple index to check before uploading to a custom Python index |
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/` |
+| `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
+| `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
 | `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |

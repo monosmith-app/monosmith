@@ -1,6 +1,6 @@
 # Serve and the event stream
 
-> Terms such as project, task and cache key are defined in the [glossary](glossary.md). Design: [a rich terminal interface and the IDE plugins](../design/tui-and-ide.md). For editors, see the [editors guide](../guides/editors.md#the-engine-over-json-rpc-smith-serve).
+> Terms such as project, task and cache key are defined in the [glossary](glossary.md). Design: [a rich terminal interface and the IDE plugins](../architecture/tui-and-ide.md). For editors, see the [editors guide](../guides/editors.md#the-engine-over-json-rpc-smith-serve).
 
 Everything that takes time is a **run**, and a run tells what it does as
 **events**. The same events come out two ways, so a terminal interface, an
@@ -171,9 +171,10 @@ A recipe file must be inside the workspace. `recipe.check` still validates a
 recipe against the installed plugins, and `explain` with `recipe` shows what
 the recipe decided for a project.
 
-Not yet served: recipe creation (`smith recipe new`), and `smith mcp` and
-`smith lsp` as views on this server: they still run their own process, with
-the same functions behind them.
+Not yet served: recipe creation (`smith recipe new`), and `smith mcp` as a view
+on this server: it still runs its own process, with the same functions behind
+it. A `smith lsp` command (a language server for `smith.toml` and recipes,
+issue #303) is planned and does not exist in 1.62.0.
 
 ### A client in a few lines
 

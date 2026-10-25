@@ -5,5 +5,5 @@ package release
 // commit messages do not count.
 func NothingToRelease() string {
 	return "Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).\n" +
-		"  → Releases come from conventional commits: commit with a message like \"feat: add search\" or \"fix: handle empty input\" (see Conventional Commits at https://github.com/monosmith-app/monosmith/blob/main/docs/guides/getting-started.md), then run this again."
+		"  → Releases come from conventional commits: commit with a message like \"feat: add search\" or \"fix: handle empty input\" (see https://github.com/monosmith-app/monosmith/blob/main/docs/getting-started/first-workspace.md), then run this again."
 }

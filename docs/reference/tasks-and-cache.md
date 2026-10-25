@@ -1,6 +1,6 @@
 # Tasks, cache and affected
 
-> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [execution and cache](../design/execution-and-cache.md). Why a task missed the cache: `smith why-miss`, and the [troubleshooting guide](../guides/troubleshooting.md).
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [execution and cache](../architecture/execution-and-cache.md). Why a task missed the cache: `smith why-miss`, and the [troubleshooting guide](../guides/troubleshooting.md).
 
 ## Tasks
 
@@ -152,7 +152,9 @@ The store is a directory (`.smith/cache/v1`) split like Bazel's remote cache:
 `ac/` holds one small JSON entry per key; `cas/` holds blobs named by their
 SHA-256, shared between entries. Writes land by rename, so an interrupted run
 never leaves a half-written entry; an entry with a missing blob is a miss. When
-the cache grows past `max_size_mb`, the least recently used entries go first.
+the cache grows, nothing trims it in smith 1.62.0: `max_size_mb` (default 2048) is
+read and the pruning code exists (`taskcache.Prune`), but no command calls it. Delete
+`.smith/cache` to reclaim space.
 
 Each entry also keeps what its key was computed from (the files and their
 digests, the command, env, upstream sources and dependency keys), and `last/`

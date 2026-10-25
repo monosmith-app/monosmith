@@ -1,21 +1,22 @@
 # Recipes
 
-> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). The design behind recipes: [recipes and CI](../design/recipes-and-ci.md).
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). The design behind recipes: [recipes and CI](../architecture/recipes-and-ci.md).
 
 A recipe is a team's description of which plugin fills each level of a project
 and with what settings. It is data: a TOML file with no code, so it can only
 choose and configure plugins, never run anything. Recipes can extend one
 another and ask a few choices, and the answers decide the rest.
 
-Recipes are being built in steps (epic #312). What exists today is the file
-format, loading, resolving, validating, `smith recipe check`, creating
+Recipes were built in steps (epic #312, closed). What exists is the file
+format, loading, resolving, validating, `smith recipe check`
+([manual](../manual/recipe-check.md)), creating
 projects from a recipe with `smith add` (below), and keeping those projects
 current: `smith doctor` reports drift, `smith upgrade` brings them up to date
 and `smith explain` shows where each value came from (see
 [Keeping projects current](#keeping-projects-current)), writing a recipe with
 the wizard (`smith recipe new`) and releasing recipes like packages
 ([Versioned recipes](#versioned-recipes)). The whole design is in
-[recipes and CI](../design/recipes-and-ci.md).
+[recipes and CI](../architecture/recipes-and-ci.md).
 
 ## Using a recipe
 

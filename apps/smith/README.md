@@ -12,4 +12,4 @@ go run . --help
 
 It builds inside the repository's `go.work`, which ties it to `libs/plugin-*`
 and `packages/plugin-sdk`; `go install` from outside the repository does not
-work. Released as `smith@<version>`: see [installing](../../docs/guides/installing.md).
+work. Released as `smith@<version>`: see [installing](../../docs/getting-started/installing.md).

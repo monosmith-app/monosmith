@@ -60,7 +60,16 @@ smith test --affected      # only what a change since main can break
 ```sh
 smith run start -p web     # one app
 smith dev web api          # several together; Ctrl+C stops all of them
+smith dev --all            # every project that has a start task
 ```
+
+### Do I have to remember all these commands?
+
+Run `smith` with no arguments in a terminal. The interactive shell shows the
+workspace's health and the one thing to do next, runs tasks with single keys,
+and shows the `smith` command line behind every action. See
+[the terminal interface](../manual/tui.md); every command is in the
+[manual](../manual/README.md).
 
 ### Can I run a task that is not `build`, `test`, `lint` or `typecheck`?
 
@@ -153,7 +162,7 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 The generated pipeline downloads the `smith` binary with `install.sh`, pinned
 to the version that generated it (a development build writes
 `SMITH_VERSION: latest`). Change that value to pin another version. See
-[installing](installing.md).
+[installing](../getting-started/installing.md).
 
 ### How does CI cache package downloads?
 
@@ -201,13 +210,13 @@ module's version. See [releasing](../reference/releasing.md#tags).
 
 No, by decision: smith is built from the repository's `go.work`, which
 `go install` does not read. Use the install script, a package manager or a
-download. See [installing](installing.md).
+download. See [installing](../getting-started/installing.md).
 
 ### How do I upgrade smith?
 
 Install the newer one (rerun the install script, or use your package manager),
 then run `smith upgrade` in each workspace. See
-[getting started](getting-started.md#10-upgrade-smith).
+[getting started](../getting-started/first-workspace.md#10-upgrade-smith).
 
 ### Is there an editor or AI assistant integration?
 
@@ -217,15 +226,16 @@ over the Model Context Protocol. See [editors](editors.md).
 
 ## Coming from somewhere else
 
-### I have an Nx workspace.
+### I have an Nx or Turborepo workspace.
 
 `smith convert` turns it into a smith workspace, keeping its projects and
-release tags, and reports what it cannot map. See [converting](converting.md).
+release tags, and reports what it cannot map. `--level full` also removes the
+old tooling nothing uses any more. See [converting](../getting-started/converting.md).
 
 ### I have a repository with no monorepo tool.
 
 `smith adopt` reports what bringing it under smith involves, then takes the
-steps. See [getting started](getting-started.md#or-adopt-an-existing-repository).
+steps. See [adopting an existing repository](../getting-started/adopting.md).
 
 ## Extending smith
 

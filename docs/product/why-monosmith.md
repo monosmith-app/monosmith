@@ -44,9 +44,9 @@ a new project that is made differently every time.
 | **CI pipelines drift from the repository** | The pipeline is generated for GitHub Actions, Azure Pipelines or GitLab CI from the plugins in use. Each step calls `smith ci <phase>`, so CI runs what you run locally. `smith doctor` fails when the committed pipeline is out of date. Your own steps survive regeneration between `smith:slot` markers | [CI pipelines](../reference/ci.md) |
 | **Releases are manual and different per registry** | Versions come from conventional commits (`feat` minor, `fix` patch, breaking major). Packages release in dependency order to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev, a Maven repository or as Go module tags. A failed release resumes when run again, because a version a registry already has is skipped. `smith release --dry-run` shows the plan | [Releasing](../reference/releasing.md) |
 | **Supply-chain questions from security reviews** | Every app released to GitHub Releases gets a CycloneDX SBOM and SHA-256 checksums; on GitHub Actions the generated workflow attests the release files with SLSA build provenance. This is partial: only npm and Go apps get an SBOM today, and Azure Pipelines and GitLab CI produce no provenance | [Releasing: SBOM and build provenance](../reference/releasing.md#sbom-and-build-provenance) |
-| **Dependency versions drift between projects** | `smith sync` makes projects declare a shared dependency at the same version (`--check` reports for CI); `smith up` lists newer releases; `smith doctor` checks the one-version policy | [Getting started, dependencies](../guides/getting-started.md#5-add-dependencies) |
+| **Dependency versions drift between projects** | `smith sync` makes projects declare a shared dependency at the same version (`--check` reports for CI); `smith up` lists newer releases; `smith doctor` checks the one-version policy | [Getting started, dependencies](../getting-started/first-workspace.md#5-add-dependencies) |
 | **New projects are made differently each time** | `smith add` scaffolds a project that passes lint, type-check, test and build at once. A recipe records a team's choice of plugins and asks the questions when someone adds a project. The `vertical-slices` convention checks that code is laid out by what it does, in each language's own naming style | [Recipes](../reference/recipes.md), [Conventions](../reference/conventions.md) |
-| **Setup breaks and nobody can say what is wrong** | `smith doctor` checks the workspace; each failing check names its remedy. `smith doctor --fix` shows the fix as a diff and applies the safe ones | [Getting started, doctor](../guides/getting-started.md#6-check-the-workspace) |
+| **Setup breaks and nobody can say what is wrong** | `smith doctor` checks the workspace; each failing check names its remedy. `smith doctor --fix` shows the fix as a diff and applies the safe ones | [Getting started, doctor](../getting-started/first-workspace.md#6-check-the-workspace) |
 | **Editors and assistants need a stable interface** | `--json` output for the main commands, a JSON Schema for `smith.toml` (`smith schema`), `smith serve` (JSON-RPC over stdio) for editor plugins, `smith mcp` for AI assistants, a terminal interface (`smith` with no arguments) and a VS Code extension in the repository | [Editors](../guides/editors.md) |
 
 ## Four things that set smith apart
@@ -57,7 +57,7 @@ a new project that is made differently every time.
 2. **Language-neutral by construction.** smith's core knows no language. Built-in
    plugins are separate processes that speak a versioned JSON-RPC protocol, the
    same one an external plugin uses, so the languages beyond JavaScript are not an
-   afterthought ([Plugin system](../design/plugin-system.md)).
+   afterthought ([Plugin system](../architecture/plugin-system.md)).
 3. **Low-friction start.** `smith adopt --dry-run` reports what bringing an
    existing repository under smith involves and changes nothing.
    `smith convert --dry-run` does the same for an Nx or Turborepo workspace.
@@ -86,7 +86,7 @@ Say these before you spend a day evaluating.
 
 - **You need remote execution or hermetic builds.** smith runs tasks on one
   machine and shares results only
-  ([Execution and cache](../design/execution-and-cache.md)). Bazel, Buck2 and
+  ([Execution and cache](../architecture/execution-and-cache.md)). Bazel, Buck2 and
   Pants support remote execution (Please offers it as an experimental feature); see the
   [comparison](comparison/README.md).
 - **You need a sandbox.** smith trusts a task's declared inputs and does not run it
@@ -105,7 +105,7 @@ Say these before you spend a day evaluating.
   contributor. See the [evaluator FAQ](faq-for-evaluators.md).
 - **Your language is not covered** and you do not want to write a plugin. The
   eleven languages are built in; anything else is a plugin you write or find.
-  There is no plugin registry yet ([Decisions, open questions](../design/decisions.md)).
+  There is no plugin registry yet ([Decisions, open questions](../architecture/decisions/README.md)).
 
 ## Try it without committing
 

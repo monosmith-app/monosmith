@@ -9,5 +9,5 @@
 // recipe line it came from, and Validate checks the result with the same
 // rules a stack is checked with.
 //
-// See docs/reference/recipes.md and docs/design/recipes-and-ci.md.
+// See docs/reference/recipes.md and docs/architecture/recipes-and-ci.md.
 package recipe
