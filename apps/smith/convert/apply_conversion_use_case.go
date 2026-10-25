@@ -132,7 +132,7 @@ func regeneratePipelines(root string, plan *convertplan.Plan, opts ApplyOptions,
 			return err
 		}
 	}
-	s, err := session.Open(session.Options{Dir: root, Version: opts.Version, Log: opts.Out})
+	s, err := session.Open(session.Options{Dir: root, Exact: true, Version: opts.Version, Log: opts.Out})
 	if err != nil {
 		return fmt.Errorf("the converted workspace does not load: %w", err)
 	}

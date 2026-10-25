@@ -23,6 +23,11 @@ type Outcome struct {
 	Apply bool
 	// Stop is true when the user asked to cancel the step that is running.
 	Stop bool
+	// Decline and Skip answer a review of a Style that offers them: this one
+	// is declined, or this one and all that follow.
+	Decline, Skip bool
+	// Back asks for the stage before the dialog's first screen (Style.Back).
+	Back bool
 	// Copy is text for the clipboard ("" for none).
 	Copy string
 }

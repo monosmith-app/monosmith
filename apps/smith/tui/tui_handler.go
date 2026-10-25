@@ -55,6 +55,11 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		}
 		actions = append(actions, a)
 	}
+	if !inside && !empty {
+		// A folder with files that is not a workspace yet: adoption is the
+		// first entry, so Enter starts it.
+		actions = guide.AdoptionFirst(actions)
+	}
 	stdoutTTY := term.IsTerminal(int(os.Stdout.Fd()))
 	if screenreader.Plain(os.Getenv, stdoutTTY) {
 		// No full-screen drawing, no mouse and no colour: plain numbered
@@ -81,6 +86,8 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 	if inside {
 		s := sources.WorkspaceSources(".", version)
 		cfg.Sources = &s
+	} else {
+		cfg.Adopt = sources.AdoptionOpener(".", version)
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
 	// user's screen back on exit. Cell-motion mouse reports (clicks, drags,

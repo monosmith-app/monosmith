@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
@@ -37,6 +38,8 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch {
+	case s.adopt != nil:
+		return s.adoptKey(name)
 	case s.fix != nil:
 		return s.fixKey(name)
 	case s.confirm != nil:
@@ -252,6 +255,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.activateSelection(c.Action)
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
+	case commands.OpenAdoptWizard:
+		return s.openAdopt()
 	case commands.OpenFixWizard:
 		if p, ok := s.doctor.FixAll(); ok {
 			return s.openFix(p)
@@ -338,8 +343,11 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		g, cmd := s.guide.Handle(msg)
 		s.guide = g
 		if g.Done() {
-			argv := g.Argv
+			argv, wizard := g.Argv, g.Wizard
 			s.guide = g.Reset()
+			if wizard == guide.WizardAdopt {
+				return s.openAdopt()
+			}
 			if len(argv) > 0 {
 				return s.execute(argv, false)
 			}

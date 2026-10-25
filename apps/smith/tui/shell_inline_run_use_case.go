@@ -101,6 +101,9 @@ func (s *Shell) inlineDone(msg inlineDoneMsg) tea.Cmd {
 // ExitSummary is the line printed in the scrollback when the interface ends: how
 // the last run went and the command that repeats it. It is empty when nothing ran.
 func (s Shell) ExitSummary() string {
+	if s.exitNote != "" {
+		return s.exitNote
+	}
 	if len(s.runs) == 0 {
 		return ""
 	}

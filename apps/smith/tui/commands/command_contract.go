@@ -34,6 +34,9 @@ const (
 	// OpenFixWizard opens the doctor fix wizard on the fixes that need no
 	// decision (or, when all of them ask, on the first).
 	OpenFixWizard
+	// OpenAdoptWizard opens the adopt wizard on the folder: what was found,
+	// the level, the plan, the conversion and the closing checks.
+	OpenAdoptWizard
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey

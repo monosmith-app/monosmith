@@ -71,11 +71,15 @@ func (s Shell) mainContent(w, h int) content {
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabGuide:
+		banner := s.adoptBanner(w)
+		for i := range banner {
+			c.hits[i] = hit{kind: "action", id: "file.adopt"}
+		}
 		lines, optionAt := s.guide.Body(s.th, w)
 		for row, i := range optionAt {
-			c.hits[row] = hit{kind: "option", index: i}
+			c.hits[len(banner)+row] = hit{kind: "option", index: i}
 		}
-		c.lines = lines
+		c.lines = append(banner, lines...)
 	}
 	return c
 }

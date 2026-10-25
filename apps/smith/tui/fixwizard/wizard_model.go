@@ -19,8 +19,11 @@ type Show func(doctorfix.Planned) (string, error)
 // stops the step, as Ctrl+C does); b or Left goes back one question.
 type Wizard struct {
 	// Fix is the planned fix being walked, before any answer.
-	Fix  doctorfix.Planned
-	show Show
+	Fix   doctorfix.Planned
+	show  Show
+	style Style
+	// busy is the headline of a step that was started with Start.
+	busy string
 
 	phase    Phase
 	answers  []int
@@ -50,6 +53,24 @@ func New(p doctorfix.Planned, show Show) Wizard {
 
 // Phase is where the walk is.
 func (w Wizard) Phase() Phase { return w.phase }
+
+// Styled words the dialog for another walk than a doctor fix.
+func (w Wizard) Styled(s Style) Wizard {
+	w.style = s
+	return w
+}
+
+// Answers are the options picked so far, counted from 1.
+func (w Wizard) Answers() []int { return append([]int(nil), w.answers...) }
+
+// Start shows a step that is running, not asked for by the review: headline
+// says what it does and total is how many steps will report (0 when they do
+// not). Progress and Fail work as after Outcome.Apply.
+func (w Wizard) Start(headline string, total int) Wizard {
+	w = w.begin()
+	w.busy, w.total = headline, total
+	return w
+}
 
 // Resolved is the fix with the answers' files and steps added: what Apply runs.
 func (w Wizard) Resolved() protocol.Fix { return w.resolved }
@@ -163,6 +184,9 @@ func (w Wizard) askingKey(name string) (Wizard, Outcome) {
 		if w.canGoBack() {
 			return w.back(), Outcome{}
 		}
+		if w.style.Back {
+			return w, Outcome{Back: true}
+		}
 	case "enter", " ":
 		return w.choose(w.cursor), Outcome{}
 	default:
@@ -183,11 +207,23 @@ func (w Wizard) reviewKey(name string) (Wizard, Outcome) {
 	switch name {
 	case "enter", "y":
 		return w.begin(), Outcome{Apply: true}
-	case "esc", "ctrl+c", "q", "n":
+	case "n":
+		if w.style.Decline != "" {
+			return w, Outcome{Decline: true}
+		}
+		return w, Outcome{Done: true}
+	case "s":
+		if w.style.Skip != "" {
+			return w, Outcome{Skip: true}
+		}
+	case "esc", "ctrl+c", "q":
 		return w, Outcome{Done: true}
 	case "left", "b", "backspace":
 		if w.canGoBack() {
 			return w.back(), Outcome{}
+		}
+		if w.style.Back {
+			return w, Outcome{Back: true}
 		}
 	default:
 		w = w.scrollKey(name)
@@ -198,6 +234,9 @@ func (w Wizard) reviewKey(name string) (Wizard, Outcome) {
 func (w Wizard) failedKey(name string) (Wizard, Outcome) {
 	switch name {
 	case "r", "enter":
+		if w.style.NoRetry {
+			return w, Outcome{}
+		}
 		return w.begin(), Outcome{Apply: true}
 	case "y":
 		return w, Outcome{Copy: w.FailureText()}

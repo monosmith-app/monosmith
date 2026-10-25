@@ -22,20 +22,29 @@ func (w Wizard) buttons() []button {
 	var out []button
 	switch w.phase {
 	case Asking:
-		if w.canGoBack() {
+		if w.canGoBack() || w.style.Back {
 			out = append(out, button{spell("Back", "b"), "b"})
 		}
 		out = append(out, button{spell("Cancel", "Esc"), "esc"})
 	case Reviewing:
-		out = append(out, button{spell("Apply", "Enter"), "enter"})
-		if w.canGoBack() {
+		out = append(out, button{spell(w.style.apply(), "Enter"), "enter"})
+		if w.style.Decline != "" {
+			out = append(out, button{spell(w.style.Decline, "n"), "n"})
+		}
+		if w.style.Skip != "" {
+			out = append(out, button{spell(w.style.Skip, "s"), "s"})
+		}
+		if w.canGoBack() || w.style.Back {
 			out = append(out, button{spell("Back", "b"), "b"})
 		}
 		out = append(out, button{spell("Cancel", "Esc"), "esc"})
 	case Applying:
 		out = append(out, button{spell("Stop", "Ctrl+C"), "ctrl+c"})
 	case Failed:
-		out = append(out, button{spell("Retry", "r"), "r"}, button{spell("Copy output", "y"), "y"}, button{spell("Close", "Esc"), "esc"})
+		if !w.style.NoRetry {
+			out = append(out, button{spell("Retry", "r"), "r"})
+		}
+		out = append(out, button{spell("Copy output", "y"), "y"}, button{spell("Close", "Esc"), "esc"})
 	}
 	return out
 }
@@ -97,13 +106,13 @@ func (w Wizard) bodyRows() []string {
 func (w Wizard) title() string {
 	switch w.phase {
 	case Asking:
-		return fmt.Sprintf("Fix · question %d of %d", len(w.answers)+1, len(w.answers)+len(w.resolved.Choices))
+		return fmt.Sprintf("%s · question %d of %d", w.style.name(), len(w.answers)+1, len(w.answers)+len(w.resolved.Choices))
 	case Reviewing:
-		return "Fix · review"
+		return w.style.name() + " · review"
 	case Applying:
-		return "Fixing…"
+		return w.style.verb()
 	}
-	return "Fix failed"
+	return w.style.name() + " failed"
 }
 
 // rows is the whole body, before it is windowed, and for Asking the line each
@@ -141,27 +150,39 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 		if i == 0 {
 			label += "  (suggested)"
 		}
-		line := pane.Fit("  "+label, inner)
+		mark := "  "
 		if i == w.cursor {
-			line = th.Selected(pane.Fit("▸ "+label, inner))
+			mark = "▸ "
 		}
 		optionRow = append(optionRow, len(rows))
-		rows = append(rows, line)
+		// A long label wraps under its number, so no option is cut off.
+		for _, part := range pane.Wrap(mark+label, inner, 5) {
+			if i == w.cursor {
+				part = th.Selected(pane.Fit(part, inner))
+			}
+			rows = append(rows, part)
+		}
 	}
+	// The row after the last option closes the last one's extent.
+	optionRow = append(optionRow, len(rows))
 	rows = append(rows, "", th.Muted("Up Down or a number picks · Enter chooses · Esc cancels"))
 	return rows, optionRow
 }
 
 func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
-	rows := pane.Wrap(th.Bold(w.resolved.Description), inner, 0)
+	headline := w.resolved.Description
+	if w.busy != "" {
+		headline = w.busy
+	}
+	rows := pane.Wrap(th.Bold(headline), inner, 0)
 	rows = append(rows, "")
 	switch {
-	case w.total == 0:
-		rows = append(rows, th.Accent(th.Spin(tick))+" writing the files…")
+	case w.total == 0 && w.step == 0:
+		rows = append(rows, th.Accent(th.Spin(tick))+" "+w.style.working()+"…")
 	case w.step == 0:
-		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" writing the files, then %d step(s)…", w.total))
+		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" %s, then %d step(s)…", w.style.working(), w.total))
 	default:
-		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, w.total, w.stepName))
+		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, max(w.total, w.step), w.stepName))
 	}
 	return append(rows, "", th.Muted("Ctrl+C stops the step that is running."))
 }
@@ -173,15 +194,15 @@ func (w Wizard) follow() Wizard {
 		return w
 	}
 	_, at := w.rows(theme.Default(), 0)
-	if w.cursor >= len(at) {
+	if w.cursor+1 >= len(at) {
 		return w
 	}
-	row, vis := at[w.cursor], w.visible()
+	row, last, vis := at[w.cursor], at[w.cursor+1]-1, w.visible()
 	if row < w.top+1 {
 		w.top = max(row-1, 0)
 	}
-	if row > w.top+vis-2 {
-		w.top = row - vis + 2
+	if last > w.top+vis-2 {
+		w.top = last - vis + 2
 	}
 	return w
 }
@@ -200,8 +221,8 @@ func (w Wizard) optionAt(y int) (int, bool) {
 	if len(rows) > w.visible() {
 		line += detail.ClampTop(w.top, len(rows), w.visible())
 	}
-	for i, row := range at {
-		if row == line {
+	for i := 0; i+1 < len(at); i++ {
+		if line >= at[i] && line < at[i+1] {
 			return i, true
 		}
 	}

@@ -34,6 +34,10 @@ type Session struct {
 type Options struct {
 	Dir     string
 	Version string
+	// Exact looks for smith.toml from Dir upwards only, ignoring
+	// SMITH_WORKSPACE_ROOT: for a directory that is not the workspace the
+	// process runs in, such as the scratch copy of a conversion.
+	Exact bool
 	// Log receives plugin output; nil means stderr.
 	Log io.Writer
 	// Preview opens Dir itself with this configuration instead of finding
@@ -53,7 +57,11 @@ func Open(opts Options) (*Session, error) {
 		}
 		root, cfg = dir, *opts.Preview
 	} else {
-		found, err := workspace.FindRoot(opts.Dir)
+		find := workspace.FindRoot
+		if opts.Exact {
+			find = workspace.FindRootFrom
+		}
+		found, err := find(opts.Dir)
 		if err != nil {
 			return nil, err
 		}

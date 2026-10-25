@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
@@ -44,6 +45,8 @@ type Config struct {
 	Sources *sources.Sources
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// Adopt reads the folder for the adopt wizard; nil outside a folder to adopt.
+	Adopt adoptwizard.Opener
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
 }
@@ -105,7 +108,13 @@ type Shell struct {
 	// applied in the background.
 	fix    *fixwizard.Wizard
 	fixing *fixRun
-	toast  toast.Toast
+	// adopt is the adopt wizard while it is open; adopting is the job it
+	// has running; adopter reads the folder; exitNote is told on leaving.
+	adopt    *adoptwizard.Model
+	adopting *fixRun
+	adopter  adoptwizard.Opener
+	exitNote string
+	toast    toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
@@ -146,7 +155,7 @@ func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1,
-		list: projectlist.New(nil), clip: cfg.Clipboard,
+		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt,
 	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
@@ -306,7 +315,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.toast.Shown() || s.hintTicks > 0
+	return s.running() || s.fixApplying() || s.adopting != nil || s.toast.Shown() || s.hintTicks > 0
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {
@@ -339,8 +348,14 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)
 	case fixProgressMsg:
+		if s.adopting != nil && msg.run == s.adopting {
+			return s.adoptProgress(msg)
+		}
 		return s.fixProgress(msg)
 	case fixDoneMsg:
+		if s.adopting != nil && msg.run == s.adopting {
+			return s.adoptDone(msg)
+		}
 		return s.fixDone(msg)
 	case depsview.Result:
 		s.deps = depsview.FromResult(msg)
@@ -366,6 +381,10 @@ func (s *Shell) resize(w, h int) {
 	if s.fix != nil {
 		placed := s.fix.Place(w, h)
 		s.fix = &placed
+	}
+	if s.adopt != nil {
+		placed := s.adopt.Place(w, h)
+		s.adopt = &placed
 	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {
