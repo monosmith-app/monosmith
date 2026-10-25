@@ -219,14 +219,15 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Remedy: "serve names a task (web:start) that exists; serve_url is an http(s) URL and serve_timeout a duration like 60s, both only with serve",
 	})
 	cycles := s.Graph.Cycles()
-	var paths []string
+	var paths, edges []string
 	for _, c := range cycles {
 		paths = append(paths, strings.Join(c, " → "))
+		edges = append(edges, projectgraph.CycleRemedy(c))
 	}
 	out = append(out, protocol.Finding{
 		Check: "projects do not import each other in a cycle", OK: len(cycles) == 0,
 		Detail: "import cycles: " + strings.Join(paths, "; ") + ". Tasks cannot be ordered and a release cannot version them",
-		Remedy: "move what both sides need into a project of its own that neither imports back, or merge the projects",
+		Remedy: strings.Join(edges, "; ") + ", or move what both sides need into a project of its own that neither imports back, or merge the projects",
 	})
 	out = append(out, protocol.Finding{
 		Check: "the clone has full history", OK: !s.Git.IsShallow(), Warning: true,

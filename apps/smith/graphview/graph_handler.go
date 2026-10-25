@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -38,13 +39,13 @@ marks the ones that changed.`,
 			return "graph takes no project name", "use --focus " + arg + " to show one project and what it is connected to"
 		}),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 			for _, c := range s.Graph.Cycles() {
-				fmt.Fprintln(cmd.ErrOrStderr(), "⚠ import cycle: "+strings.Join(c, " → "))
+				fmt.Fprintln(cmd.ErrOrStderr(), "⚠ import cycle: "+strings.Join(c, " → ")+"; "+projectgraph.CycleRemedy(c))
 			}
 			if diffFrom != "" {
 				prefix, _ := s.Git.Run("rev-parse", "--show-prefix")

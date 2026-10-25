@@ -234,3 +234,67 @@ func TestThePushToTheReleaseBranchWritesTheRemote(t *testing.T) {
 		t.Errorf("storage is %T, want a writable remote", storage)
 	}
 }
+
+// cyclicWorkspace is a git workspace whose two Node projects import each other.
+func cyclicWorkspace(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	for _, v := range []string{"CI", "GITHUB_ACTIONS", "TF_BUILD", "SMITH_WORKSPACE_ROOT"} {
+		t.Setenv(v, "")
+	}
+	t.Setenv("SMITH_HOME", t.TempDir())
+	root := t.TempDir()
+	files := map[string]string{
+		workspace.FileName:      "[workspace]\nname = \"cyc\"\n",
+		"package.json":          `{"name":"root","private":true,"workspaces":["libs/*"]}`,
+		"libs/ui/package.json":  `{"name":"ui","version":"1.0.0","dependencies":{"web":"*"}}`,
+		"libs/web/package.json": `{"name":"web","version":"1.0.0","dependencies":{"ui":"*"}}`,
+	}
+	for name, body := range files {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	return root
+}
+
+func TestACycleStopsEveryCommandThatNeedsAnOrder(t *testing.T) {
+	root := cyclicWorkspace(t)
+	s, err := Open(Options{Dir: root, Exact: true, Version: "test", Log: io.Discard})
+	if err == nil {
+		s.Close()
+		t.Fatal("a workspace with an import cycle opened")
+	}
+	if !strings.Contains(err.Error(), "projects import each other in a cycle: ui → web → ui") {
+		t.Fatalf("the error does not name the cycle: %v", err)
+	}
+}
+
+func TestACycleLeavesTheWorkspaceOpenForTheCommandsThatReportIt(t *testing.T) {
+	root := cyclicWorkspace(t)
+	s, err := Open(Options{Dir: root, Exact: true, Version: "test", Log: io.Discard, AllowCycles: true})
+	if err != nil {
+		t.Fatalf("doctor and graph could not open a cyclic workspace: %v", err)
+	}
+	defer s.Close()
+	cycles := s.Graph.Cycles()
+	if len(cycles) != 1 || strings.Join(cycles[0], " ") != "ui web ui" {
+		t.Fatalf("cycles %v", cycles)
+	}
+	if _, err := s.Graph.Order(); err == nil {
+		t.Fatal("Order must still refuse a cycle")
+	}
+	// A refresh keeps the choice.
+	if err := s.Refresh(); err != nil {
+		t.Fatalf("refresh of a cyclic workspace: %v", err)
+	}
+}

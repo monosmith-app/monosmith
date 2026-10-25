@@ -18,7 +18,24 @@ import (
 // [workspace] exclude), then resolves
 // edges, applies each project's stack, the configured conventions and then
 // smith.toml overrides.
+//
+// It fails when projects import each other in a cycle, because tasks cannot be
+// ordered; DiscoverAllowingCycles is for the commands that explain the cycle.
 func Discover(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost.Catalog, cfg workspace.Config) (*Graph, error) {
+	g, err := DiscoverAllowingCycles(files, plugins, catalog, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := g.Order(); err != nil {
+		return nil, err
+	}
+	return g, nil
+}
+
+// DiscoverAllowingCycles is Discover for a workspace whose projects may import
+// each other in a cycle: the graph opens, Cycles names them, and Order is the
+// call that refuses. smith doctor and smith graph use it to report the cycle.
+func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost.Catalog, cfg workspace.Config) (*Graph, error) {
 	var projects []*Project
 	for _, c := range plugins.Clients {
 		if !c.Info.Capabilities.Discover {
@@ -76,9 +93,6 @@ func Discover(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost
 	}
 	g, err := New(projects)
 	if err != nil {
-		return nil, err
-	}
-	if _, err := g.Order(); err != nil {
 		return nil, err
 	}
 	g.SetExcluded(cfg.Excluded)
