@@ -23,6 +23,13 @@ func FindRoot(dir string) (string, error) {
 	if env := os.Getenv("SMITH_WORKSPACE_ROOT"); env != "" {
 		dir = env
 	}
+	return FindRootFrom(dir)
+}
+
+// FindRootFrom is FindRoot for a directory the caller chose: it ignores
+// SMITH_WORKSPACE_ROOT, which smith sets for its own tasks and which would
+// otherwise send a copy of a workspace back to the real one.
+func FindRootFrom(dir string) (string, error) {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return "", err
