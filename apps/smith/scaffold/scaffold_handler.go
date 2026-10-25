@@ -73,7 +73,10 @@ often as needed, without asking), shows the plugins it picks, then makes the
 project as a stack's project is made. --stack bypasses the recipe.
 
 The project lints, type-checks, tests and builds immediately, and the CI
-pipelines are regenerated to install its toolchain.`,
+pipelines are regenerated to install its toolchain.
+
+smith add leaves the files it wrote uncommitted (smith new commits what it
+wrote): review them with git status, then commit.`,
 		Example: `  smith add app web --lang node
   smith add app api --stack node-vitest
   smith add lib core --lang go
@@ -126,4 +129,17 @@ pipelines are regenerated to install its toolchain.`,
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return cmd
+}
+
+// nextSteps is what smith new prints last: a cd only when the workspace is not
+// the current directory, then the first project to add (smith kinds lists the
+// languages).
+func nextSteps(name, rel string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "\nCreated %s. Next:\n", name)
+	if rel != "." {
+		fmt.Fprintf(&b, "  cd %s\n", rel)
+	}
+	b.WriteString("  smith add app web --lang <language>   # smith kinds lists the languages\n")
+	return b.String()
 }

@@ -31,6 +31,24 @@ Each plugin contributes, for its own projects:
 smith merges them into one provider-neutral model, and a renderer per provider
 writes the YAML. Every provider carries the same phases, in the same order.
 
+## Branches
+
+The GitHub and Azure pipelines run on pushes to, and pull requests into, the
+release branch (`[release] branch`, default `main`). A workspace with another
+long-lived branch lists it:
+
+```toml
+[ci]
+branches = ["main", "dev"]   # push and pull_request triggers; default: the release branch only
+```
+
+The release branch is always one of them, even if the list leaves it out. It
+stays the only branch a release runs from: the pack, upload and release steps
+keep their condition on it, so a push to `dev` runs verify and nothing more.
+Pull requests into any of the listed branches get the release preview comment.
+`smith doctor` reports a pipeline that does not match the list, and
+`smith ci generate` rewrites it. GitLab is not affected.
+
 ## GitLab CI
 
 With `"gitlab"` in `[ci] providers`, smith writes `.gitlab-ci.yml`. It has
