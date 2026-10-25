@@ -65,5 +65,5 @@ func (p *Vite) Generate(params protocol.GenerateParams) (protocol.GenerateResult
 	}
 	dev := maps.Clone(devDependencies)
 	maps.Copy(dev, app.DevDependencies)
-	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: app.templates(), DevDependencies: dev})
+	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: app.templates(), DevDependencies: dev, Overrides: app.Overrides})
 }

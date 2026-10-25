@@ -181,7 +181,7 @@ Seven of the cells are worth reading closely.
 - **You need hermetic builds or remote execution.** Bazel, Pants and Buck2 are built for it; smith runs tasks on one machine.
 - **Your language is not on the list.** Swift, Scala, Haskell, Bun and Deno have no built-in plugin. You can [write one](plugins-and-flexibility.md) in any language, or use moon (Bun, Deno) or Gradle (Scala, Swift).
 - **What was not verified for this page.** Gradle, Kotlin and Android projects were not run (no Gradle on the test machine); only Maven ran. Linux and macOS were not run. Dependency alignment with `smith sync` covers Node and Python; the dependency audit covers Node, Python and Go, with Rust opt-in. On 2026-10-25 `dart analyze` crashed here, as above.
-- **A known wrinkle.** Adding the `react` stack to a workspace whose Node project already used the default Jest stack failed on 2026-10-25 with an npm `ERESOLVE` peer-dependency conflict (`@vitejs/plugin-react` against Jest's Babel 7). The reverse order, and a clean workspace, worked.
+- **A fixed wrinkle.** Adding the `react` stack to a workspace whose Node project already used the default Jest stack failed on 2026-10-25 with an npm `ERESOLVE` peer-dependency conflict (`@vitejs/plugin-react` against Jest's Babel 7). The react stacks now write an npm `overrides` entry that settles it (issue 584); both orders and a clean workspace install.
 
 ## Try it
 

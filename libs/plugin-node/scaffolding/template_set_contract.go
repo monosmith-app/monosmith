@@ -14,4 +14,9 @@ type TemplateSet struct {
 	Root map[string]string
 	// DevDependencies join the root package.json when absent.
 	DevDependencies map[string]string
+	// Overrides join the root package.json "overrides" (npm) when absent: a
+	// version npm must use for a dependency a stack's own packages reach
+	// through an optional peer, so adding the stack to a workspace that
+	// already has other tooling can still install.
+	Overrides map[string]string
 }

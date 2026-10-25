@@ -29,16 +29,8 @@ func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (proto
 	}
 	rootChanged, err := edit(filepath.Join(workspaceRoot, "package.json"), func(doc *jsondoc.Document) (bool, error) {
 		changed := addStrings(doc.Object("devDependencies", true), s.DevDependencies)
-		for _, key := range sortedKeys(s.RootFields) {
-			if doc.Has(key) {
-				continue
-			}
-			if err := doc.SetJSON(key, s.RootFields[key]); err != nil {
-				return false, err
-			}
-			changed = true
-		}
-		return changed, nil
+		added, err := addFields(doc, s.RootFields)
+		return changed || added, err
 	})
 	if err != nil {
 		return protocol.GenerateResult{Files: written}, fmt.Errorf("root package.json: %w", err)
@@ -54,16 +46,8 @@ func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (proto
 	manifest := path.Join(params.Directory, "package.json")
 	projectChanged, err := edit(filepath.Join(workspaceRoot, filepath.FromSlash(manifest)), func(doc *jsondoc.Document) (bool, error) {
 		changed := addStrings(doc.Object("scripts", true), s.Scripts)
-		for _, key := range sortedKeys(s.Fields) {
-			if doc.Has(key) {
-				continue
-			}
-			if err := doc.SetJSON(key, s.Fields[key]); err != nil {
-				return false, err
-			}
-			changed = true
-		}
-		return changed, nil
+		added, err := addFields(doc, s.Fields)
+		return changed || added, err
 	})
 	if err != nil {
 		return protocol.GenerateResult{Files: written}, fmt.Errorf("%s: %w", manifest, err)
@@ -138,4 +122,31 @@ func sortedKeys[V any](m map[string]V) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// addFields adds the fields doc lacks. A field doc has stays as it is, except
+// that an object gains the entries it lacks: two toolchains can each add their
+// own npm "overrides" without the second finding the field taken.
+func addFields(doc *jsondoc.Document, fields map[string]any) (bool, error) {
+	changed := false
+	for _, key := range sortedKeys(fields) {
+		if !doc.Has(key) {
+			if err := doc.SetJSON(key, fields[key]); err != nil {
+				return false, err
+			}
+			changed = true
+			continue
+		}
+		wanted, isObject := fields[key].(map[string]any)
+		existing := doc.Object(key, false)
+		if !isObject || existing == nil {
+			continue
+		}
+		added, err := addFields(existing, wanted)
+		if err != nil {
+			return false, err
+		}
+		changed = changed || added
+	}
+	return changed, nil
 }

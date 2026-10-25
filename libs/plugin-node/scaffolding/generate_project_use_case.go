@@ -104,7 +104,7 @@ func ensureWorkspace(root, workspaceName string, set TemplateSet) ([]string, err
 		}
 		written = append(written, name)
 	}
-	changed, err := ensureRootManifest(filepath.Join(root, "package.json"), workspaceName, set.DevDependencies)
+	changed, err := ensureRootManifest(filepath.Join(root, "package.json"), workspaceName, set.DevDependencies, set.Overrides)
 	if err != nil {
 		return written, err
 	}
@@ -115,12 +115,12 @@ func ensureWorkspace(root, workspaceName string, set TemplateSet) ([]string, err
 	return written, nil
 }
 
-func ensureRootManifest(path, workspaceName string, devDependencies map[string]string) (bool, error) {
+func ensureRootManifest(path, workspaceName string, devDependencies, overrides map[string]string) (bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return false, err
 	}
-	out, changed, err := completeRootManifest(raw, workspaceName, devDependencies)
+	out, changed, err := completeRootManifest(raw, workspaceName, devDependencies, overrides)
 	if err != nil {
 		return false, fmt.Errorf("root package.json: %w", err)
 	}
