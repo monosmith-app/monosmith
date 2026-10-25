@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -56,5 +57,36 @@ func TestAnEmptyPanelSaysSo(t *testing.T) {
 	lines, _ := Panel{}.View(theme.Default(), 30, "")
 	if !strings.Contains(lines[0], "Nothing selected") {
 		t.Fatal(lines)
+	}
+}
+
+func TestALongHeadingAndALongActionWrapInsteadOfBeingCut(t *testing.T) {
+	const heading = "the scripts of the root package.json call files and tools that exist"
+	const label = "Fix: install the tools the scripts start, or remove those scripts"
+	p := Panel{
+		Sections: []Section{{Heading: heading, Rows: []Row{{"state", "warning"}}}},
+		Actions:  []Action{{ID: "fix", Label: label}, {ID: "again", Label: "Check again", Shortcut: "r"}},
+	}
+	const w = 40
+	lines, hits := p.View(theme.Default(), w, "")
+	text := strings.Join(lines, " ")
+	for _, word := range strings.Fields(heading + " " + label) {
+		if !strings.Contains(text, word) {
+			t.Fatalf("the word %q was cut off:\n%s", word, strings.Join(lines, "\n"))
+		}
+	}
+	for _, l := range lines {
+		if got := pane.Width(l); got > w {
+			t.Fatalf("line %q is %d cells, wider than %d", l, got, w)
+		}
+	}
+	var fixRows int
+	for _, id := range hits {
+		if id == "fix" {
+			fixRows++
+		}
+	}
+	if fixRows < 2 {
+		t.Fatalf("a wrapped action must be clickable on every line, got %d rows: %v", fixRows, hits)
 	}
 }

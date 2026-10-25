@@ -94,22 +94,30 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 		}
 		lines = append(lines, " "+th.Title("Actions"))
 		for _, a := range p.Actions {
-			text := a.Label
+			// A long label wraps under itself, the shortcut stays on its first line,
+			// and every line of the action is clickable.
+			room := max(w-2-pane.Width(a.Shortcut), 4)
 			if a.Shortcut != "" {
-				gap := max(w-3-pane.Width(a.Label)-pane.Width(a.Shortcut), 1)
-				text += strings.Repeat(" ", gap) + a.Shortcut
+				room = max(room-1, 4)
 			}
-			text = pane.Fit(" "+text, w)
-			switch {
-			case a.Disabled:
-				text = th.Muted(text)
-			case a.ID == hover:
-				text = th.Selected(text)
-			default:
-				text = th.Bold(text)
+			for n, part := range pane.Wrap(a.Label, room, 2) {
+				text := part
+				if n == 0 && a.Shortcut != "" {
+					gap := max(w-3-pane.Width(part)-pane.Width(a.Shortcut), 1)
+					text += strings.Repeat(" ", gap) + a.Shortcut
+				}
+				text = pane.Fit(" "+text, w)
+				switch {
+				case a.Disabled:
+					text = th.Muted(text)
+				case a.ID == hover:
+					text = th.Selected(text)
+				default:
+					text = th.Bold(text)
+				}
+				hits[len(lines)] = a.ID
+				lines = append(lines, text)
 			}
-			hits[len(lines)] = a.ID
-			lines = append(lines, text)
 		}
 	}
 	for _, s := range p.After {
@@ -125,12 +133,21 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 	}
 	folded := s.Collapse > 0 && !p.Expanded && len(s.Items) > s.Collapse
 	if s.Heading != "" {
-		heading := " " + th.Title(s.Heading)
+		// A long heading (a doctor check's name is a sentence) wraps instead of being cut.
+		parts := pane.Wrap(s.Heading, max(w-1, 4), 0)
+		for _, part := range parts {
+			lines = append(lines, " "+th.Title(part))
+		}
 		if folded {
 			// Said at the top too: the count under the list can be below the fold.
-			heading += th.Muted(fmt.Sprintf("  %d, e shows all", len(s.Items)))
+			count := fmt.Sprintf("  %d, e shows all", len(s.Items))
+			last := len(lines) - 1
+			if pane.Width(parts[len(parts)-1])+pane.Width(count) < w {
+				lines[last] += th.Muted(count)
+			} else {
+				lines = append(lines, " "+th.Muted(strings.TrimLeft(count, " ")))
+			}
 		}
-		lines = append(lines, heading)
 	}
 	for _, r := range s.Rows {
 		// A long value wraps under itself instead of running off the pane.
