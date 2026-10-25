@@ -14,7 +14,8 @@ export function implementsMethod (plugin: SmithPlugin, method: string): boolean 
  * The capabilities a plugin advertises, derived from the methods it
  * implements: a plugin cannot advertise a method it lacks, or implement one
  * it does not advertise. The capability of each method is read from the
- * schema's methods table.
+ * schema's methods table; `cancel` comes from the plugin saying it is
+ * `cancellable`.
  */
 export function capabilitiesOf (plugin: SmithPlugin): Capabilities {
   const capabilities: Capabilities = {}
@@ -22,6 +23,7 @@ export function capabilitiesOf (plugin: SmithPlugin): Capabilities {
   for (const [method, row] of methods) {
     if (row.capability !== null && implementsMethod(plugin, method)) capabilities[row.capability as CapabilityName] = true
   }
+  if (plugin.cancellable === true) capabilities.cancel = true
 
   return capabilities
 }

@@ -36,6 +36,13 @@ export const ERROR_CODES = {
    * method of the Go SDK returns becomes this code.
    */
   PluginFailure: -32000,
+  /**
+   * The plugin stopped the request because the host sent a cancel notification for its id. A plugin
+   * that had finished answers with the result instead. Only a plugin that advertised the cancel
+   * capability sends it; when a cancelled request fails with any error, the SDKs answer with this
+   * code.
+   */
+  RequestCancelled: -32800,
 } as const
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES]
@@ -131,6 +138,15 @@ export interface CIResult {
   authenticate?: Toolchain[]
 }
 
+/** CancelParams are the params of the cancel notification. */
+export interface CancelParams {
+  /**
+   * ID is the id of the in-flight request to stop. An id the plugin does not know, or whose request
+   * is already answered, is ignored.
+   */
+  id: number
+}
+
 /** Capabilities are the optional methods a plugin implements. */
 export interface Capabilities {
   discover?: boolean
@@ -151,6 +167,12 @@ export interface Capabilities {
   declarations?: boolean
   /** Latest reports the newest releases of dependencies and pinned tools. */
   latest?: boolean
+  /**
+   * Cancel says the plugin stops the work of a request when the host sends a cancel notification
+   * with its id, then answers that request with its result (if the work was already done) or the
+   * request-cancelled error. A host never sends the notification to a plugin without it.
+   */
+  cancel?: boolean
 }
 
 /**
@@ -422,6 +444,14 @@ export interface InitializeResult {
   plugin: Peer
   kind: PluginKind
   capabilities: Capabilities
+  /**
+   * Concurrency is how many requests the plugin can work on at the same time; the host never has
+   * more in flight. Absent or 0 means 1, which is what every plugin that says nothing does: the
+   * host sends the next request only after the previous one is answered. N above 1 allows that
+   * many, and ConcurrencyUnlimited (-1) leaves the number to the host. Any other negative value is
+   * invalid and read as 1.
+   */
+  concurrency?: number
   /** Languages are the values a user passes to --lang to reach this plugin. */
   languages?: string[]
   /**
@@ -985,6 +1015,17 @@ export interface ProtocolMethods {
     params: Empty
     result: Empty
     capability: null
+  }
+  /**
+   * A notification, so it gets no response: the host asks the plugin to stop the in-flight request
+   * with the given id. The plugin then answers that request, with its result if the work was
+   * already done or with the request-cancelled error. An id that is unknown or already answered is
+   * ignored. The host sends it only to a plugin that advertised the capability.
+   */
+  cancel: {
+    params: CancelParams
+    result: null
+    capability: 'cancel'
   }
   /**
    * Describes the projects behind manifests the host found; a language plugin's way into the

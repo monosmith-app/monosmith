@@ -59,7 +59,7 @@ function declaration (name: string, node: SchemaNode): string {
 export function mapSchemaToTypes (schema: SchemaDocument): string {
   const codes = schema['x-errorCodes'].map(row => `${jsdocComment(row.description, '  ')}  ${key(row.name)}: ${row.code},\n`)
   const rows = Object.entries(schema['x-methods']).map(([method, row]) =>
-    `${jsdocComment(row.description, '  ')}  ${key(method)}: {\n    params: ${typeOf(row.params)}\n    result: ${typeOf(row.result)}\n` +
+    `${jsdocComment(row.description, '  ')}  ${key(method)}: {\n    params: ${typeOf(row.params)}\n    result: ${row.result === null ? 'null' : typeOf(row.result)}\n` +
     `    capability: ${row.capability === null ? 'null' : literal(row.capability)}\n  }\n`)
 
   return [

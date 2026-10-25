@@ -1,11 +1,16 @@
-import { MessageParseError, parseRequest, writeFailure, writeResult } from '../codec/index.ts'
+import { MessageParseError, ParamsError, decodeParams, parseRequest, writeFailure, writeResult } from '../codec/index.ts'
+import type { ReceivedRequest } from '../codec/index.ts'
+import { workerLimit } from '../concurrency/index.ts'
 import { FrameReader, frameMessage } from '../framing/index.ts'
 import { ERROR_CODES } from '../protocol/index.ts'
+import type { CancelParams } from '../protocol/index.ts'
 import { halfImplemented } from './capabilities-of.algorithm.ts'
 import { claimStdout } from './claim-stdout.use-case.ts'
 import { dispatchRequest } from './dispatch-request.use-case.ts'
 import type { SmithPlugin } from './plugin.contract.ts'
 import type { FrameSink, ServeStreams } from './protocol-streams.contract.ts'
+import { RequestPool } from './request-pool.store.ts'
+import type { PooledRequest } from './request-pool.store.ts'
 
 /**
  * Runs a plugin on the process's standard input and output, and exits when the
@@ -36,7 +41,11 @@ export async function serve (plugin: SmithPlugin): Promise<never> {
 
 /** What the loop remembers between requests. */
 interface Session {
-  initialized: boolean
+  initialized:          boolean
+  readonly plugin:      SmithPlugin
+  readonly output:      FrameSink
+  readonly pool:        RequestPool
+  readonly cancellable: boolean
 }
 
 /**
@@ -44,10 +53,14 @@ interface Session {
  * or the input ends, then resolves. This is the loop {@link serve} runs, on
  * streams you choose: a test serves a plugin in-process over pipes with it.
  *
- * Semantics of the Go SDK's `serve.Serve`: requests are answered one at a time,
- * in order; a request before `initialize` is refused (InvalidRequest);
- * a notification (no `id`) gets no answer; an unreadable frame body is answered
- * with ParseError and the loop goes on; an unreadable header ends it with an error.
+ * Semantics of the Go SDK's `serve.Serve`: requests are answered by a bounded
+ * pool of as many at a time as the plugin declared in `concurrency` (one, in
+ * order, when it said nothing), and the answers may be written in any order;
+ * a request before `initialize` is refused (InvalidRequest); a notification
+ * (no `id`) gets no answer; an unreadable frame body is answered with
+ * ParseError and the loop goes on; an unreadable header ends it with an error.
+ * A `cancellable` plugin has the signal of a request aborted when the host
+ * sends `cancel` for it, and at shutdown or the end of the input.
  */
 export async function serveStreams (plugin: SmithPlugin, streams: ServeStreams): Promise<void> {
   const log = streams.log ?? ((message: string) => process.stderr.write(`${message}\n`))
@@ -55,38 +68,119 @@ export async function serveStreams (plugin: SmithPlugin, streams: ServeStreams):
     log(`plugin: ${member} needs its pair (install with uninstall, declared with rewrite) to be advertised; it will not be called`)
   }
   const reader = new FrameReader()
-  const session: Session = { initialized: false }
-  for await (const chunk of streams.input) {
-    for (const body of reader.push(chunk)) {
-      const shutdown = await answer(plugin, streams.output, session, body)
-      if (shutdown) return
+  const pool: RequestPool = new RequestPool(async pooled => { await run(session, pooled) })
+  const session: Session = { initialized: false, plugin, output: streams.output, pool, cancellable: plugin.cancellable === true }
+  try {
+    for await (const chunk of streams.input) {
+      for (const body of reader.push(chunk)) {
+        if (pool.failure !== undefined) throw pool.failure
+        const shutdown = await receive(session, body)
+        if (shutdown) return
+      }
     }
+  } finally {
+    await drain(session)
   }
+  if (pool.failure !== undefined) throw pool.failure
 }
 
-/** Answers one frame. Returns whether it was `shutdown`, after which the loop ends. */
-async function answer (plugin: SmithPlugin, output: FrameSink, session: Session, body: string): Promise<boolean> {
+/** Handles one frame. Returns whether it was `shutdown`, after which the loop ends. */
+async function receive (session: Session, body: string): Promise<boolean> {
   let request
   try {
     request = parseRequest(body)
   } catch (error) {
     if (!(error instanceof MessageParseError)) throw error
-    await send(output, writeFailure(null, ERROR_CODES.ParseError, error.message))
+    await send(session.output, writeFailure(null, ERROR_CODES.ParseError, error.message))
 
     return false
   }
-  // A notification has no reply; version 1 defines none for plugins.
-  if (request.id === null) return false
+  if (request.id === null) {
+    await notified(session, request)
+
+    return false
+  }
+  const id = request.id
   if (!session.initialized && request.method !== 'initialize') {
-    await send(output, writeFailure(request.id, ERROR_CODES.InvalidRequest, 'initialize must come first'))
+    await send(session.output, writeFailure(id, ERROR_CODES.InvalidRequest, 'initialize must come first'))
 
     return false
   }
-  const outcome = await dispatchRequest(plugin, request)
-  if (request.method === 'initialize' && outcome.ok) session.initialized = true
-  await send(output, outcome.ok ? writeResult(request.id, outcome.resultJson) : writeFailure(request.id, outcome.code, outcome.message))
+  if (request.method === 'initialize') {
+    const outcome = await dispatchRequest(session.plugin, request)
+    if (outcome.ok) {
+      session.initialized = true
+      session.pool.setLimit(workerLimit((JSON.parse(outcome.resultJson) as { concurrency?: number }).concurrency))
+    }
+    await send(session.output, outcome.ok ? writeResult(id, outcome.resultJson) : writeFailure(id, outcome.code, outcome.message))
 
-  return request.method === 'shutdown'
+    return false
+  }
+  if (request.method === 'shutdown') {
+    await drain(session)
+    await send(session.output, writeResult(id, '{}'))
+
+    return true
+  }
+  switch (session.pool.submit({ ...request, id })) {
+    case 'duplicate': {
+      await send(session.output, writeFailure(id, ERROR_CODES.InvalidRequest, `request id ${id} is already in flight`))
+      break
+    }
+    case 'full': {
+      await send(session.output, writeFailure(id, ERROR_CODES.InvalidRequest, 'too many requests in flight: the host must not send more than the plugin\'s declared concurrency'))
+      break
+    }
+    case 'admitted': {
+      break
+    }
+  }
+
+  return false
+}
+
+/**
+ * Handles a message without an `id`. `cancel` is the only one the protocol
+ * defines for a plugin; every other is ignored, and so is a `cancel` to a
+ * plugin that is not `cancellable`, or one that names no request.
+ */
+async function notified (session: Session, request: ReceivedRequest): Promise<void> {
+  if (request.method !== 'cancel' || !session.cancellable) return
+  let params: CancelParams
+  try {
+    params = decodeParams('cancel', request.params) as CancelParams
+  } catch (error) {
+    if (error instanceof ParamsError) return
+    throw error
+  }
+  const waiting = session.pool.cancel(params.id)
+  if (waiting !== undefined) await answerCancelled(session.output, waiting)
+}
+
+/** A worker's job: handle one request and answer it. */
+async function run (session: Session, pooled: PooledRequest): Promise<void> {
+  const outcome = await dispatchRequest(session.plugin, pooled.request, pooled.controller.signal)
+  const answer = !outcome.ok && outcome.code === ERROR_CODES.PluginFailure && pooled.cancelled
+    ? { ok: false as const, code: ERROR_CODES.RequestCancelled, message: `request cancelled: ${outcome.message}` }
+    : outcome
+  session.pool.release(pooled)
+  await send(session.output, answer.ok ? writeResult(pooled.request.id, answer.resultJson) : writeFailure(pooled.request.id, answer.code, answer.message))
+}
+
+function answerCancelled (output: FrameSink, pooled: PooledRequest): Promise<void> {
+  return send(output, writeFailure(pooled.request.id, ERROR_CODES.RequestCancelled, 'request cancelled before it started'))
+}
+
+/**
+ * Ends the work in flight before shutdown is answered or the loop returns: a
+ * cancellable plugin is asked to stop and what had not started is refused;
+ * any other finishes what it is doing.
+ */
+async function drain (session: Session): Promise<void> {
+  if (session.cancellable) {
+    for (const waiting of session.pool.cancelAll()) await answerCancelled(session.output, waiting)
+  }
+  await session.pool.idle()
 }
 
 function send (output: FrameSink, body: string): Promise<void> {

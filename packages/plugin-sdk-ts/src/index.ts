@@ -5,6 +5,7 @@ export * from './protocol/index.ts'
 
 // Writing a plugin.
 export * from './serve/index.ts'
+export * from './concurrency/index.ts'
 export * from './tasks/index.ts'
 export * from './scaffold/index.ts'
 export * from './ci/index.ts'

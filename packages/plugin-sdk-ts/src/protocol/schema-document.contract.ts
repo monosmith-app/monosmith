@@ -18,11 +18,14 @@ export interface SchemaNode {
 
 /** One row of the methods table: what a method takes, gives and needs. */
 export interface MethodRow {
-  description: string
-  params:      SchemaNode
-  result:      SchemaNode
+  description:  string
+  params:       SchemaNode
+  /** The shape of the answer; `null` for a notification, which gets none. */
+  result:       SchemaNode | null
   /** The capability a plugin advertises to be asked the method; `null` when it is always available. */
-  capability:  string | null
+  capability:   string | null
+  /** Whether the host sends the method without an id, so that it gets no response. */
+  notification: boolean
 }
 
 export interface ErrorCodeRow {

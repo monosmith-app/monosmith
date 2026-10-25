@@ -19,9 +19,10 @@ export function messageOf (thrown: unknown): string {
  * MethodNotFound for a method the plugin does not implement, InvalidParams
  * for params of the wrong shape, PluginFailure for an exception the method
  * threw (its message is shown to the user), InternalError for a result that
- * cannot be written as the schema describes.
+ * cannot be written as the schema describes. `signal` is passed to the method as its
+ * second argument; it aborts when the host cancels the request.
  */
-export async function dispatchRequest (plugin: SmithPlugin, request: ReceivedRequest): Promise<RequestOutcome> {
+export async function dispatchRequest (plugin: SmithPlugin, request: ReceivedRequest, signal: AbortSignal = new AbortController().signal): Promise<RequestOutcome> {
   if (request.method === 'shutdown') return { ok: true, resultJson: '{}' }
 
   let params: unknown
@@ -40,7 +41,7 @@ export async function dispatchRequest (plugin: SmithPlugin, request: ReceivedReq
       result = await initializePlugin(plugin, params as InitializeParams)
     } else if (implementsMethod(plugin, request.method)) {
       const member = PLUGIN_MEMBERS[request.method].member
-      result = await (plugin[member] as (params: unknown) => unknown).call(plugin, params)
+      result = await (plugin[member] as (params: unknown, signal: AbortSignal) => unknown).call(plugin, params, signal)
     } else {
       return { ok: false, code: ERROR_CODES.MethodNotFound, message: `method not supported: ${request.method}` }
     }
