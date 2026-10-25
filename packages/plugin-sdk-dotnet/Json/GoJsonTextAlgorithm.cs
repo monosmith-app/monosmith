@@ -46,7 +46,7 @@ public static class GoJsonTextAlgorithm
                 case '\t':
                     output.Append("\\t");
                     break;
-                case '<' or '>' or '&' or ' ' or ' ':
+                case '<' or '>' or '&' or '\x2028' or '\x2029':
                     AppendUnicodeEscape(output, c);
                     break;
                 case < ' ':
@@ -60,7 +60,7 @@ public static class GoJsonTextAlgorithm
                     }
                     else if (char.IsSurrogate(c))
                     {
-                        output.Append('�');
+                        output.Append('\xFFFD');
                     }
                     else
                     {

@@ -1,0 +1,1 @@
+# MonoSmith.Plugin.Sdk

@@ -8,7 +8,7 @@ namespace MonoSmith.Plugin.Sdk;
 /// sorts them, as Go sorts the keys of a map. A key that is set twice keeps its first place and takes the
 /// last value, as Go's decoder does.
 /// </summary>
-public sealed class JsonMap : JsonAny, IEnumerable<KeyValuePair<string, JsonAny>>
+public sealed record JsonMap : JsonAny, IEnumerable<KeyValuePair<string, JsonAny>>
 {
     private readonly List<string> _keys = [];
     private readonly Dictionary<string, JsonAny> _values = new(StringComparer.Ordinal);
@@ -55,6 +55,15 @@ public sealed class JsonMap : JsonAny, IEnumerable<KeyValuePair<string, JsonAny>
 
     /// <inheritdoc />
     public override string Describe() => "an object";
+
+    /// <summary>Whether another object holds equal members in the same order.</summary>
+    /// <param name="other">The other object.</param>
+    /// <returns>Whether they are equal.</returns>
+    public bool Equals(JsonMap? other) =>
+        other is not null && _keys.SequenceEqual(other._keys) && _keys.All(key => _values[key].Equals(other._values[key]));
+
+    /// <inheritdoc />
+    public override int GetHashCode() => _keys.Aggregate(17, (hash, key) => HashCode.Combine(hash, key, _values[key]));
 
     /// <inheritdoc />
     public IEnumerator<KeyValuePair<string, JsonAny>> GetEnumerator() =>

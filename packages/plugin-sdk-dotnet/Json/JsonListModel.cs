@@ -3,7 +3,7 @@ using System.Collections;
 namespace MonoSmith.Plugin.Sdk;
 
 /// <summary>A JSON array.</summary>
-public sealed class JsonList : JsonAny, IReadOnlyList<JsonAny>
+public sealed record JsonList : JsonAny, IReadOnlyList<JsonAny>
 {
     private readonly List<JsonAny> _items;
 
@@ -29,6 +29,14 @@ public sealed class JsonList : JsonAny, IReadOnlyList<JsonAny>
 
     /// <inheritdoc />
     public override string Describe() => "an array";
+
+    /// <summary>Whether another list holds equal items in the same order.</summary>
+    /// <param name="other">The other list.</param>
+    /// <returns>Whether they are equal.</returns>
+    public bool Equals(JsonList? other) => other is not null && _items.SequenceEqual(other._items);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => _items.Aggregate(17, (hash, item) => HashCode.Combine(hash, item));
 
     /// <inheritdoc />
     public IEnumerator<JsonAny> GetEnumerator() => _items.GetEnumerator();

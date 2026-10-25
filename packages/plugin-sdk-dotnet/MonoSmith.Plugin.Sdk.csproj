@@ -32,7 +32,7 @@
   <ItemGroup>
     <Compile Remove="tests/**" />
     <None Remove="tests/**" />
-    <None Remove="tools/**" />
+    <None Remove="Generator/**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,7 +8,7 @@ namespace MonoSmith.Plugin.Sdk;
 /// <see cref="JsonList"/> and <see cref="JsonMap"/>. <see cref="Parse"/> reads text the way Go's
 /// <c>encoding/json</c> does and <see cref="Encode"/> writes it the way Go writes a <c>map[string]any</c>.
 /// </remarks>
-public abstract class JsonAny
+public abstract record JsonAny
 {
     private protected JsonAny()
     {

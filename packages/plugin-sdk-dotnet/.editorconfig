@@ -52,6 +52,18 @@ dotnet_diagnostic.CA1720.severity = none
 dotnet_diagnostic.CA1819.severity = none
 dotnet_diagnostic.CA1812.severity = none
 
-# Generated code carries the schema's own member names and documentation.
-[**/Protocol/*Contract.cs]
-generated_code = true
+# JsonAny converts implicitly from the four scalar types; the conversions are the alternate.
+dotnet_diagnostic.CA2225.severity = none
+
+
+# The SDK runs plugin code and answers any failure of it as an error response, so a general catch is the design.
+dotnet_diagnostic.CA1031.severity = none
+
+# MessageParseError never leaves the assembly: the serve loop and the host turn it into an answer.
+dotnet_diagnostic.CA1064.severity = none
+
+# The few operating system calls (kernel32, libc) that take the standard handles are declared in one file and load
+# from the system.
+[Stdio/StdioNativeClient.cs]
+dotnet_diagnostic.CA5392.severity = none
+dotnet_diagnostic.SYSLIB1054.severity = none

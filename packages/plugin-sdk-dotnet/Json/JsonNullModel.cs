@@ -1,7 +1,7 @@
 namespace MonoSmith.Plugin.Sdk;
 
 /// <summary>The JSON value <c>null</c>.</summary>
-public sealed class JsonNull : JsonAny
+public sealed record JsonNull : JsonAny
 {
     private JsonNull()
     {
