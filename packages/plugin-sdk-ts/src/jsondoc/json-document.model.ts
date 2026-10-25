@@ -59,7 +59,7 @@ export class JsonDocument {
 
   /** The keys, in order. */
   keys (): string[] {
-    // Iterator#toArray needs Node 22; the SDK runs on 20.
+    // The es2023 lib this package compiles with has no Iterator#toArray.
     // eslint-disable-next-line unicorn/prefer-spread
     return Array.from(this.#entries.keys())
   }
