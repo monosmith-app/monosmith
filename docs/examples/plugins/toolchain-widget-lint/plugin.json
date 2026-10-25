@@ -1,0 +1,6 @@
+{
+  "name": "widget-lint",
+  "version": "0.1.0",
+  "description": "the lint slot of widget projects",
+  "command": ["./smith-plugin-widget-lint{exe}"]
+}

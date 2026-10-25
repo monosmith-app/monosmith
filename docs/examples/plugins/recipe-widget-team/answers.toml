@@ -1,0 +1,26 @@
+# The answers `smith recipe new --from-answers answers.toml` reads: what the
+# wizard would learn by asking. Pass a path to write the recipe elsewhere.
+name = "widget-team-generated"
+version = "0.1.0"
+
+[choices.kind]
+ask = "What are you creating?"
+options = ["library", "service"]
+default = "library"
+
+[levels.language]
+fixed = ["widget"]
+
+[levels.lint]
+fixed = ["widget-lint"]
+
+[levels.structure]
+fixed = ["widget-layout"]
+
+[levels.scaffold]
+choice = "kind"
+plugins = { service = "widget-service" }
+
+[levels.deploy]
+choice = "kind"
+plugins = { service = "widget-bundle" }

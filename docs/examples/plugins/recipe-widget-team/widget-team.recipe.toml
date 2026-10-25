@@ -1,0 +1,27 @@
+# The widget team's recipe: which plugin fills each level of a widget project,
+# and with what settings. A recipe is data, it runs nothing.
+#
+# Check it for every answer:  smith recipe check widget-team.recipe.toml --all
+name = "widget-team"
+version = "0.1.0"
+
+[choices.kind]
+ask = "What are you creating?"
+options = ["library", "service"]
+default = "library"
+
+# Whatever the answer: the widget language, the house linter in the lint
+# slot, and the layout rules.
+[use]
+language = "widget"
+lint = "widget-lint"
+structure = "widget-layout"
+
+# A service is made by the widget-service scaffold, listens on 9000 and
+# is deployed by the bundle plugin.
+[when.kind.service.use]
+scaffold = "widget-service"
+deploy = "widget-bundle"
+
+[when.kind.service.settings.widget-service]
+port = 9000

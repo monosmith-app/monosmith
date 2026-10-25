@@ -1,0 +1,3 @@
+# the plugin binary `go build` writes
+/smith-plugin-widget-layout
+/smith-plugin-widget-layout.exe

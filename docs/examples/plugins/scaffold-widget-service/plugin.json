@@ -1,0 +1,6 @@
+{
+  "name": "widget-service",
+  "version": "0.1.0",
+  "description": "a widget service starter",
+  "command": ["./smith-plugin-widget-service{exe}"]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "widget-bundle",
+  "version": "0.1.0",
+  "description": "deploys widget apps as a bundle",
+  "command": ["./smith-plugin-widget-bundle{exe}"]
+}

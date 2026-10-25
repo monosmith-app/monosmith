@@ -1,0 +1,6 @@
+{
+  "name": "widget-layout",
+  "version": "0.1.0",
+  "description": "no junk-drawer folders in widget projects",
+  "command": ["./smith-plugin-widget-layout{exe}"]
+}
