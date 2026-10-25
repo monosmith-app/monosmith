@@ -1011,7 +1011,7 @@
       "s": {
         "m": "P",
         "e": "T",
-        "n": "Go only",
+        "n": "Go and TypeScript (@monosmith/plugin-sdk 0.1.0); Python and C# are planned",
         "p": "#564"
       },
       "t": "YUYYUPUYYUUUUU"
