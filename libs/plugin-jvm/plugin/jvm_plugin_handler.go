@@ -46,6 +46,11 @@ func (j *JVM) Generate(params protocol.GenerateParams) (protocol.GenerateResult,
 	return scaffolding.Generate(j.root, params)
 }
 
+// Remove implements serve.Remover.
+func (j *JVM) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
+	return scaffolding.Remove(j.root, params)
+}
+
 // WriteVersion implements serve.Versioner.
 func (j *JVM) WriteVersion(params protocol.VersionParams) (protocol.VersionResult, error) {
 	return releasing.WriteVersion(j.root, params)

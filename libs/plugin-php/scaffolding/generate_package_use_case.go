@@ -141,13 +141,14 @@ func ignoreVendor(workspaceRoot string) (bool, error) {
 	return true, os.WriteFile(path, []byte(text+"\n# PHP\n/vendor/\n"), 0o644)
 }
 
-// Remove takes a removed package out of the root composer.json: its
-// requirement and its path repository.
+// Remove takes a removed package out of the root composer.json (its
+// requirement and its path repository) and out of composer.lock, which would
+// otherwise still name it and make composer install fail.
 func Remove(workspaceRoot string, params protocol.RemoveParams) (protocol.RemoveResult, error) {
 	if _, err := os.Stat(filepath.Join(workspaceRoot, rootManifest)); errors.Is(err, fs.ErrNotExist) {
 		return protocol.RemoveResult{}, nil
 	}
-	res := protocol.RemoveResult{Files: []string{rootManifest}}
+	res := protocol.RemoveResult{Files: []string{rootManifest, "composer.lock"}}
 	if params.DryRun {
 		return res, nil
 	}
@@ -158,6 +159,7 @@ func Remove(workspaceRoot string, params protocol.RemoveParams) (protocol.Remove
 	for _, argv := range [][]string{
 		{"composer", "remove", name, "--no-update", "--no-interaction"},
 		{"composer", "config", "--unset", "repositories." + RepositoryKey(params.Project.Root)},
+		{"composer", "update", "--no-interaction", "--no-progress"},
 	} {
 		if err := Runner(workspaceRoot, argv); err != nil {
 			return res, err
