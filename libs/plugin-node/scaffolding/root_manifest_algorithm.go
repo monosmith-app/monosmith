@@ -14,12 +14,12 @@ type manifestMember struct {
 	value json.RawMessage
 }
 
-// completeRootManifest adds to a root package.json the workspaces and
-// devDependencies it lacks and says whether anything was added. Everything
+// completeRootManifest adds to a root package.json the workspaces,
+// devDependencies and overrides it lacks and says whether anything was added. Everything
 // already there stays as written: the order of its keys, its scripts and the
 // characters in them (&& is not escaped), so the edit shows in a diff as the
 // lines it added. An empty raw starts a new manifest.
-func completeRootManifest(raw []byte, workspaceName string, devDependencies map[string]string) ([]byte, bool, error) {
+func completeRootManifest(raw []byte, workspaceName string, devDependencies, overrides map[string]string) ([]byte, bool, error) {
 	changed := len(bytes.TrimSpace(raw)) == 0
 	var members []manifestMember
 	if changed {
@@ -37,16 +37,25 @@ func completeRootManifest(raw []byte, workspaceName string, devDependencies map[
 		members = append(members, manifestMember{"workspaces", json.RawMessage(`["apps/*", "libs/*", "packages/*"]`)})
 		changed = true
 	}
-	dev, added, err := withDevDependencies(members, devDependencies)
-	if err != nil {
-		return nil, false, err
-	}
-	if added {
+	for _, field := range []struct {
+		key    string
+		wanted map[string]string
+	}{{"devDependencies", devDependencies}, {"overrides", overrides}} {
+		if len(field.wanted) == 0 {
+			continue
+		}
+		value, added, err := withMissingEntries(members, field.key, field.wanted)
+		if err != nil {
+			return nil, false, err
+		}
+		if !added {
+			continue
+		}
 		changed = true
-		if i := indexOfMember(members, "devDependencies"); i >= 0 {
-			members[i].value = dev
+		if i := indexOfMember(members, field.key); i >= 0 {
+			members[i].value = value
 		} else {
-			members = append(members, manifestMember{"devDependencies", dev})
+			members = append(members, manifestMember{field.key, value})
 		}
 	}
 	if !changed {
@@ -56,11 +65,12 @@ func completeRootManifest(raw []byte, workspaceName string, devDependencies map[
 	return out, true, err
 }
 
-// withDevDependencies is the devDependencies object with the missing ones
-// added, and whether any was. Its keys stay sorted when they were.
-func withDevDependencies(members []manifestMember, wanted map[string]string) (json.RawMessage, bool, error) {
+// withMissingEntries is the object under key with the missing entries added,
+// and whether any was. An entry already there is kept, whatever its value.
+// Its keys stay sorted when they were.
+func withMissingEntries(members []manifestMember, key string, wanted map[string]string) (json.RawMessage, bool, error) {
 	var existing []manifestMember
-	if i := indexOfMember(members, "devDependencies"); i >= 0 {
+	if i := indexOfMember(members, key); i >= 0 {
 		var err error
 		if existing, err = readManifestMembers(members[i].value); err != nil {
 			return nil, false, err

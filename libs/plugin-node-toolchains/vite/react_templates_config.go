@@ -6,6 +6,14 @@ var reactDevDependencies = map[string]string{
 	"@vitejs/plugin-react": "^6.1.2",
 }
 
+// reactOverrides settle a peer conflict that makes npm refuse to install.
+// @vitejs/plugin-react optionally peers @rolldown/plugin-babel, which
+// optionally peers @babel/plugin-transform-runtime ^7 || ^8; the newest is 8,
+// which wants @babel/core 8. When the workspace already holds Babel 7 (Jest
+// brings it) npm cannot place both and fails with ERESOLVE (issue 584). The
+// Babel the Jest stack brings is 7, so the workspace stays on 7.
+var reactOverrides = map[string]string{"@babel/plugin-transform-runtime": "^7.29.0"}
+
 // reactMain mounts the app slice's root component.
 const reactMain = `import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -28,6 +36,7 @@ var react = webApp{
 	PluginImport: "import react from '@vitejs/plugin-react'", PluginCall: "react()",
 	Dependencies:    map[string]string{"react": "^19.3.1", "react-dom": "^19.3.1"},
 	DevDependencies: reactDevDependencies,
+	Overrides:       reactOverrides,
 	Files: map[string]string{
 		"[[.Dir]]/src/main.tsx": reactMain,
 		"[[.Dir]]/src/app/app.component.tsx": `import { greet } from '../greeting'
@@ -50,6 +59,7 @@ var reactP5 = webApp{
 	PluginImport: "import react from '@vitejs/plugin-react'", PluginCall: "react()",
 	Dependencies:    map[string]string{"@p5-wrapper/react": "^5.0.4", "p5": "^2.3.4", "react": "^19.3.1", "react-dom": "^19.3.1"},
 	DevDependencies: reactDevDependencies,
+	Overrides:       reactOverrides,
 	Files: map[string]string{
 		"[[.Dir]]/src/main.tsx": reactMain,
 		"[[.Dir]]/src/app/app.component.tsx": `import { BouncingBall } from '../bouncing-ball'

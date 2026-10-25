@@ -81,7 +81,7 @@ func read(t *testing.T, root, rel string) string {
 	return string(b)
 }
 
-func TestApplyAddsRootFieldsOnlyWhenTheWorkspaceHasNone(t *testing.T) {
+func TestApplyAddsRootFieldsAndEntriesTheWorkspaceLacks(t *testing.T) {
 	Installer = func(string) error { return nil }
 	fields := map[string]any{"overrides": map[string]any{"eslint-plugin-jsx-a11y": map[string]any{"eslint": "$eslint"}}}
 	params := protocol.GenerateParams{Name: "web", Directory: "apps/web"}
@@ -102,7 +102,17 @@ func TestApplyAddsRootFieldsOnlyWhenTheWorkspaceHasNone(t *testing.T) {
 	if _, err := Apply(own, params, Setup{RootFields: fields}); err != nil {
 		t.Fatal(err)
 	}
-	if root := read(t, own, "package.json"); strings.Contains(root, "eslint-plugin-jsx-a11y") {
-		t.Fatalf("a workspace's own overrides are left alone:\n%s", root)
+	if root := read(t, own, "package.json"); !strings.Contains(root, "eslint-plugin-jsx-a11y") || !strings.Contains(root, `"semver": "7.5.2"`) {
+		t.Fatalf("an object field gains the entries it lacks and keeps its own:\n%s", root)
+	}
+
+	chosen := t.TempDir()
+	write(t, chosen, "package.json", `{"name": "acme", "overrides": {"eslint-plugin-jsx-a11y": "1.0.0"}}`)
+	write(t, chosen, "apps/web/package.json", `{"name": "@acme/web"}`)
+	if _, err := Apply(chosen, params, Setup{RootFields: fields}); err != nil {
+		t.Fatal(err)
+	}
+	if root := read(t, chosen, "package.json"); strings.Contains(root, "$eslint") || !strings.Contains(root, `"eslint-plugin-jsx-a11y": "1.0.0"`) {
+		t.Fatalf("an entry the workspace chose is left alone:\n%s", root)
 	}
 }

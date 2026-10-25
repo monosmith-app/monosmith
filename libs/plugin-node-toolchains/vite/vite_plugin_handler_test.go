@@ -96,3 +96,40 @@ func TestGenerateRefuses(t *testing.T) {
 		t.Error("an unknown stack is refused")
 	}
 }
+
+// A React app next to a Jest project: npm cannot install while the optional
+// peer chain of @vitejs/plugin-react reaches Babel 8 and Jest holds Babel 7
+// (issue 584), so the root pins that chain to Babel 7 and keeps the overrides
+// another toolchain wrote.
+func TestReactPinsTheBabelPeerChainBesideTheWorkspacesOwnOverrides(t *testing.T) {
+	real := scaffolding.Installer
+	defer func() { scaffolding.Installer = real }()
+	scaffolding.Installer = func(string) error { return nil }
+	for stack, wantOverride := range map[string]bool{"react": true, "react-p5": true, "vue": false, "svelte": false, "html": false} {
+		t.Run(stack, func(t *testing.T) {
+			ws := t.TempDir()
+			if err := os.WriteFile(filepath.Join(ws, "package.json"), []byte(`{"name":"acme","workspaces":["apps/*"],"overrides":{"eslint-plugin-jsx-a11y":{"eslint":"$eslint"}}}`), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			p := New("1.0.0")
+			_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+			if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: stack, Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}}); err != nil {
+				t.Fatal(err)
+			}
+			raw, err := os.ReadFile(filepath.Join(ws, "package.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var root struct{ Overrides map[string]json.RawMessage }
+			if err := json.Unmarshal(raw, &root); err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := root.Overrides["eslint-plugin-jsx-a11y"]; !ok {
+				t.Errorf("the workspace's own override was lost:\n%s", raw)
+			}
+			if got := string(root.Overrides["@babel/plugin-transform-runtime"]); wantOverride != (got == `"^7.29.0"`) {
+				t.Errorf("Babel override %q, want it %v:\n%s", got, wantOverride, raw)
+			}
+		})
+	}
+}
