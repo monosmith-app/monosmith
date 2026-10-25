@@ -1,70 +1,58 @@
 # CLI reference
 
-Every `smith` command and flag, grouped by what you want to do. Each command
-has one example whose output was copied from a real run in a scratch workspace
-(a Go app and lib, two Node projects and a Python package, as in
-[Getting started](../getting-started/first-workspace.md)). Paths and timings will differ
-on your machine, and where an output is long it is cut with `...` and said so.
+Every `smith` command with its usage line, aliases and a table of its flags, grouped as
+`smith --help` groups them. For what a command is for, when to use it, its exit codes, files,
+environment variables, worked examples and errors, follow the link to its page in
+[the manual](../manual/README.md).
 
-> **Keeping this page current.** The usage line and flag table of each command
-> sit between `<!-- smith:begin <command> -->` and `<!-- smith:end <command> -->`
-> markers and are generated from `smith commands --json`. Everything else is
-> written by hand. After changing a command, build smith and run, from the
-> repository root:
+> **Keeping this page current.** The usage line and flag table of each command sit between
+> `<!-- smith:begin <command> -->` and `<!-- smith:end <command> -->` markers and are
+> generated from `smith commands --json`, as are the fuller tables in the manual. Everything
+> else is written by hand. After changing a command, build smith and run, from the repository
+> root:
 >
 > ```sh
 > node docs/reference/cli-generate.mjs           # rewrite the blocks
-> node docs/reference/cli-generate.mjs --check   # fail if the page is out of date
+> node docs/reference/cli-generate.mjs --check   # fail if a page is out of date
 > ```
 >
-> The script names the binary with `SMITH` (default: `smith` on the PATH) and
-> fails when a command has no block, so a new command cannot be forgotten.
+> The script names the binary with `SMITH` (default: `smith` on the PATH) and fails when a
+> command has no block, here or in the manual, so a new command cannot be forgotten.
 > `smith <command> --help` always has the last word.
-
-## Contents
-
-- [Everywhere](#everywhere): flags and conventions every command shares
-- [Create and change a workspace](#create-and-change-a-workspace): `new`, `adopt`, `convert`, `upgrade`, `add`, `remove`, `config`
-- [Work on projects](#work-on-projects): `run`, `build`, `test`, `lint`, `typecheck`, `dev`, `install`, `uninstall`, `sync`, `up`
-- [Look at the workspace](#look-at-the-workspace): `projects`, `graph`, `affected`, `explain`, `why-miss`, `doctor`, `info`, `kinds`, `stacks`, `slices`, `schema`, `commands`, `mcp`, `plugin`, `recipe`
-- [Ship](#ship): `ci`, `pipeline`, `docker`, `release`
-- [Shell](#shell): `completion`, `help`, and `smith` on its own
 
 ## Everywhere
 
 ```sh
-$ smith --version
+smith --version
 ```
 
 ```text
-smith version dev
+smith version 1.62.0
 ```
-
-(`dev` is a development build; a release prints its number.)
 
 | Flag | Meaning |
 |---|---|
 | `-h`, `--help` | help for `smith` or for any command: `smith <command> --help` |
 | `-v`, `--version` | print the version |
 
-- **Workspace.** Almost every command works on the workspace it finds by looking
-  for `smith.toml` in the current folder and then in each parent.
-  `SMITH_WORKSPACE_ROOT` overrides that. Outside one, `smith` says so and
-  suggests `smith new`.
-- **`--json`.** Commands that report something print a stable JSON document
-  with `--json`, for editors and scripts. See [Editors](../guides/editors.md).
+- **Workspace.** Almost every command works on the workspace it finds by looking for
+  `smith.toml` in the current folder and then in each parent. `SMITH_WORKSPACE_ROOT`
+  overrides that. Outside one, `smith` says so and suggests `smith new`.
+- **`--json`.** Commands that report something print a stable JSON document with `--json`, for
+  editors and scripts. See [Editors](../guides/editors.md).
 - **Environment variables** are listed in [configuration](configuration.md#environment-variables).
-- **Exit codes.** 0 on success; non-zero when a check fails, a task fails, or
-  something blocks.
-- **Project selection** (`-p`): a name, a glob over names or directories
-  (`apps/*`), `kind:app`, `lang:go`, `tag:x`, and a leading `!` to exclude.
-  Comma-separated or repeated.
+- **Exit codes.** 0 on success; 1 on any failure (a failed check or task, a refusal, an invalid
+  flag).
+- **Project selection** (`-p`): a name, a glob over names or directories (`apps/*`),
+  `kind:app`, `lang:go`, `tag:x`, and a leading `!` to exclude. Comma-separated or repeated.
+- **Bare `smith`** in a terminal opens [the terminal interface](../manual/tui.md); `smith
+  completion <shell>` prints a completion script ([manual](../manual/completion.md)).
 
-## Create and change a workspace
+## Create
 
 ### smith new
 
-Make a workspace: `smith.toml`, `.gitignore`, `.gitattributes`, a README, the CI pipeline and a dev container, then `git init` on `main` and a first commit.
+[Manual page](../manual/new.md)
 
 <!-- smith:begin new -->
 Create a monorepo: configuration, git, CI pipelines and a first commit
@@ -81,29 +69,9 @@ Usage: `smith new <name> [flags]`
 
 <!-- smith:end new -->
 
-With `--dir .` in an existing clone, files smith does not own are kept and the first commit holds only the files smith wrote. `--ci` also accepts `gitlab`, although the flag's help text lists only `github` and `azure`.
-
-```sh
-$ smith new demo --module-prefix github.com/acme/demo --scope @demo
-```
-
-```text
-  wrote .gitignore
-  wrote .gitattributes
-  wrote smith.toml
-  wrote README.md
-  wrote .github/workflows/ci.yml
-  wrote .devcontainer/devcontainer.json
-  committed
-
-Created demo. Next:
-  cd demo
-  smith add app web --lang <language>   # smith kinds lists the languages
-```
-
 ### smith adopt
 
-Report what bringing an existing repository (npm workspaces, Go modules, Python projects) under smith involves, and take the steps. Read-only unless you ask for a step; both steps need a clean git tree.
+[Manual page](../manual/adopt.md)
 
 <!-- smith:begin adopt -->
 Bring an existing repository under smith: report what it involves; --init takes the steps (start here)
@@ -117,29 +85,14 @@ Usage: `smith adopt [flags]`
 | `--init` | write smith.toml and the pipelines, and commit | off |
 | `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
+| `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
 
 <!-- smith:end adopt -->
 
-`--tags` creates, locally, the release tags a project needs where its tags were made under another name (nothing is pushed). `--init` writes `smith.toml` and the pipelines and commits; a pipeline of yours at a path smith owns is kept beside it as `<file>.pre-smith`. An Nx workspace is for `smith convert`. See [Getting started](../getting-started/first-workspace.md#or-adopt-an-existing-repository).
-
-```sh
-$ smith adopt
-```
-
-```text
-C:\work\old3 would be workspace "old3" (scope @old3, CI github) with:
-  lib                  node     package  packages/lib
-
-✔ nothing blocks: smith adopt --init makes it a workspace
-
-Nothing changed (adopt only reports). To apply:
-  → smith adopt --init
-```
-
 ### smith convert
 
-Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../getting-started/converting.md). `--level full` also deletes the old tooling nothing uses any more (lint packages and configs, the test runner not chosen, the old build, Nx and mnci), one group at a time after asking: `--lint`, `--test`, `--build` and `--ci` are the choices, asked in a terminal and required (or defaulted by `--yes`) elsewhere; `--json` prints the plan with the groups as doctor fixes. See [Going further: `--level full`](../getting-started/converting.md#going-further---level-full).
+[Manual page](../manual/convert.md)
 
 <!-- smith:begin convert -->
 Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)
@@ -154,54 +107,19 @@ Usage: `smith convert [flags]`
 | `--dry-run` | report the plan without changing anything | off |
 | `--json` | print the plan as JSON | off |
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
-| `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
+| `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `keep` |
 | `--skip-install` | do not run npm install afterwards | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
-| `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses |
+| `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | `keep` |
 | `--verbose` | name every project a finding applies to, not just a few | off |
 | `--yes` | apply without asking (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
-```sh
-$ smith convert --dry-run
-```
-
-```text
-smith: smith.toml already exists: this workspace is already a smith workspace
-```
-
-That is the real answer in a workspace that already has a `smith.toml`. This repository had no Nx workspace to convert, so a conversion report is not shown here; [Converting from Nx](../getting-started/converting.md) describes it.
-
-### smith upgrade
-
-After installing a newer smith, migrate `smith.toml` to the current schema (comments and layout kept), regenerate the files smith owns (the pipelines), and bring recipe-made projects up to date with their recipe.
-
-<!-- smith:begin upgrade -->
-Bring the workspace up to this smith and its recipes: migrate smith.toml, regenerate the files smith owns
-
-Usage: `smith upgrade [flags]`
-
-| Flag | Meaning | Default |
-|---|---|---|
-| `--check` | change nothing; fail when something would change | off |
-| `--dry-run` | show the plan, with the change to smith.toml, and change nothing | off |
-| `--json` | print the result as JSON | off |
-
-<!-- smith:end upgrade -->
-
-```sh
-$ smith upgrade --dry-run
-```
-
-```text
-The workspace is up to date.
-```
-
 ### smith add
 
-Add a project. The kind says what happens to it: `app` (deployed, never published, in `apps/`), `lib` (imported by other projects, never published, in `libs/`) or `package` (published on release, in `packages/`).
+[Manual page](../manual/add.md)
 
 <!-- smith:begin add -->
 Add an app, an internal lib or a publishable package
@@ -217,26 +135,9 @@ Usage: `smith add <kind> <name> [flags]`
 
 <!-- smith:end add -->
 
-A combined kind from `smith kinds` names the language as well: `smith add node-app web` is `smith add app web --lang node`. When `smith.toml` names a recipe, the recipe creates the project and asks its choices; `--choice name=answer` answers one without asking, and `--stack` bypasses the recipe. The new project lints, type-checks, tests and builds straight away, and the CI pipelines are regenerated to install its toolchain. `smith add` leaves the files it wrote uncommitted (`smith new` commits what it wrote): review them with `git status`, then commit. With `smith new --dir .` the workspace is the current directory, so the `cd` line is left out.
-
-```sh
-$ smith add lib core --lang go
-```
-
-```text
-go: creating new go.mod: module github.com/acme/demo/libs/core
-  libs/core/greeting/greet_use_case.go
-  libs/core/greeting/greet_use_case_test.go
-  libs/core/greeting/greeting_contract.go
-Import it from another Go project as github.com/acme/demo/libs/core/<slice>.
-Try: smith test -p core
-```
-
-Only the last lines are shown; earlier lines list every file written.
-
 ### smith remove
 
-Remove a project: delete its directory, let its plugin clean what it owns outside it (the `go.work` entry, the npm lockfile, the Python venv), drop its tables from `smith.toml` and regenerate the pipelines.
+[Manual page](../manual/remove.md)
 
 <!-- smith:begin remove -->
 Remove a project: its directory, its traces in the workspace, its CI
@@ -252,72 +153,48 @@ Usage: `smith remove <project> [flags]`
 
 <!-- smith:end remove -->
 
-A project other projects import is refused unless `--force`. Its release tags are kept. Without `--yes` it asks first.
-
-```sh
-$ smith remove web --dry-run
-```
-
-```text
-Would remove web (apps/web)
-  changes package-lock.json
-  would run npm install to update the lockfile
-  the pipelines would be regenerated
-```
-
 ### smith config
 
-Read and change the settings of `smith.toml`'s `[workspace]`, `[ci]`, `[release]`, `[cache]` and `[plugins]` tables. Values are checked against the schema, and only the setting's value changes in the file: comments and every other line stay as they are. Stacks, conventions, tasks and projects are edited in the file itself.
+[Manual page](../manual/config.md)
 
 <!-- smith:begin config -->
 Read and change settings of smith.toml
 
-Usage: `smith config`
+Usage: `smith config <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith config get` | Print one setting's value as written in smith.toml |
+| `smith config list` | List the settings, their values and what they do |
+| `smith config set` | Change one setting (a list takes several values) |
+| `smith config unset` | Remove one setting, so it takes its default |
 
 No flags.
 
 <!-- smith:end config -->
 
-| Subcommand | Does |
-|---|---|
-| `smith config list [--json]` | every setting, its value (or `(default)`) and what it does |
-| `smith config get <setting>` | one setting's value as written in `smith.toml` |
-| `smith config set <setting> <value...>` | change one setting; a list takes several values |
-| `smith config unset <setting>` | remove a setting so it takes its default |
+### smith upgrade
 
-```sh
-$ smith config set release.branch trunk
-$ smith config get release.branch
-$ smith config unset release.branch
-$ smith config get release.branch
-```
+[Manual page](../manual/upgrade.md)
 
-```text
-✔ release.branch = "trunk"
-"trunk"
-✔ release.branch removed: it has its default
-smith: release.branch is not set; it has its default (see https://github.com/monosmith-app/monosmith/blob/main/docs/reference/configuration.md)
-```
+<!-- smith:begin upgrade -->
+Bring the workspace up to this smith and its recipes: migrate smith.toml, regenerate the files smith owns
 
-`smith config list` (the description column is left out here, and the list is cut after six settings):
+Usage: `smith upgrade [flags]`
 
-```text
-workspace.exclude         (default)
-workspace.module_prefix   "example.com/acme"
-workspace.name            "acme"
-workspace.recipe          (default)
-workspace.registry        (default)
-workspace.scope           "@acme"
-...
-```
+| Flag | Meaning | Default |
+|---|---|---|
+| `--check` | change nothing; fail when something would change | off |
+| `--dry-run` | show the plan, with the change to smith.toml, and change nothing | off |
+| `--json` | print the result as JSON | off |
 
-All settings are explained in [configuration](configuration.md).
+<!-- smith:end upgrade -->
 
-## Work on projects
+## Work
 
 ### smith run
 
-Run tasks on projects, in dependency order, from the cache when nothing changed. `smith build`, `test`, `lint` and `typecheck` are `smith run` with the task name filled in and take the same flags.
+[Manual page](../manual/run.md)
 
 <!-- smith:begin run -->
 Run tasks on projects, in dependency order, from cache when nothing changed
@@ -337,34 +214,14 @@ Usage: `smith run <task> [flags]`
 
 <!-- smith:end run -->
 
-`--json-events` prints the run as [JSON lines](serve.md#the-event-stream), one event each, and nothing else (it cannot be combined with `--json`).
-
-Tasks run in parallel, one per CPU by default. A failed task skips the tasks that depend on it; independent ones keep going unless `--bail`. A cache hit prints `✔ from cache`. See [Tasks, cache and affected](tasks-and-cache.md).
-
-```sh
-$ smith run test -p core
-```
-
-```text
-core:test │ ?   	example.com/acme/libs/core	[no test files]
-core:test │ ok  	example.com/acme/libs/core/greeting	0.449s
-core:test ✔ from cache
-✔ 1/1 tasks succeeded (1 from cache, 1.024s saved) in 8ms
-```
-
-```sh
-$ smith run lint test --affected      # only what changed since main
-$ smith build -p kind:package         # every publishable package
-```
-
 ### smith build
 
-Same as `smith run build`; a project name may follow instead of `-p`.
+[Manual page](../manual/build.md)
 
 <!-- smith:begin build -->
 Run the build task (same as `smith run build`)
 
-Usage: `smith build [project] [flags]`
+Usage: `smith build [project]... [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -379,24 +236,14 @@ Usage: `smith build [project] [flags]`
 
 <!-- smith:end build -->
 
-```sh
-$ smith build -p core,api
-```
-
-```text
-core:build ✔ from cache
-api:build ✔ from cache
-✔ 2/2 tasks succeeded (2 from cache, 1.064s saved) in 96ms
-```
-
 ### smith test
 
-Same as `smith run test`; a project name may follow instead of `-p`.
+[Manual page](../manual/test.md)
 
 <!-- smith:begin test -->
 Run the test task (same as `smith run test`)
 
-Usage: `smith test [project] [flags]`
+Usage: `smith test [project]... [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -411,29 +258,14 @@ Usage: `smith test [project] [flags]`
 
 <!-- smith:end test -->
 
-```sh
-$ smith test ui
-```
-
-```text
-ui:test ▶ npm run test --silent
-ui:test │ Test Suites: 1 passed, 1 total
-ui:test │ Tests:       1 passed, 1 total
-ui:test │ Snapshots:   0 total
-ui:test │ Time:        1.945 s
-ui:test │ Ran all test suites.
-ui:test ✔ 4.502s
-✔ 1/1 tasks succeeded (0 from cache) in 4.534s
-```
-
 ### smith lint
 
-Same as `smith run lint`; a project name may follow instead of `-p`.
+[Manual page](../manual/lint.md)
 
 <!-- smith:begin lint -->
 Run the lint task (same as `smith run lint`)
 
-Usage: `smith lint [project] [flags]`
+Usage: `smith lint [project]... [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -448,24 +280,14 @@ Usage: `smith lint [project] [flags]`
 
 <!-- smith:end lint -->
 
-```sh
-$ smith lint -p ui
-```
-
-```text
-ui:lint ▶ npm run lint --silent
-ui:lint ✔ 4.164s
-✔ 1/1 tasks succeeded (0 from cache) in 4.17s
-```
-
 ### smith typecheck
 
-Same as `smith run typecheck`; a project name may follow instead of `-p`.
+[Manual page](../manual/typecheck.md)
 
 <!-- smith:begin typecheck -->
 Run the typecheck task (same as `smith run typecheck`)
 
-Usage: `smith typecheck [project] [flags]`
+Usage: `smith typecheck [project]... [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -480,19 +302,9 @@ Usage: `smith typecheck [project] [flags]`
 
 <!-- smith:end typecheck -->
 
-```sh
-$ smith typecheck -p ui
-```
-
-```text
-ui:typecheck ▶ npm run typecheck --silent
-ui:typecheck ✔ 1.255s
-✔ 1/1 tasks succeeded (0 from cache) in 1.259s
-```
-
 ### smith dev
 
-Start several projects together, such as a frontend and the API it calls. What they depend on is built first, then every `start` task runs at once with its output prefixed by the project's name; Ctrl+C stops them all.
+[Manual page](../manual/dev.md)
 
 <!-- smith:begin dev -->
 Start several projects together, such as a frontend and the API it calls
@@ -506,19 +318,9 @@ Usage: `smith dev [projects...] [flags]`
 
 <!-- smith:end dev -->
 
-Name the projects, pass `--all` for every project with a `start` task, or pick from a list in a terminal. It is `smith run start -p <projects>` with room for every one to run at once; `--dry-run` prints that command.
-
-```sh
-$ smith dev web api --dry-run
-```
-
-```text
-→ smith run start -p web,api --parallel 6
-```
-
 ### smith install
 
-Add packages to one project with its own toolchain (`npm install --workspace`, the project's `pyproject.toml` and the workspace venv, `go get`), or install everything a fresh clone needs. Alias: `smith i`.
+[Manual page](../manual/install.md)
 
 <!-- smith:begin install -->
 Add packages to a project, or install the whole workspace (up updates, sync aligns versions)
@@ -534,27 +336,9 @@ Alias: `smith i`
 
 <!-- smith:end install -->
 
-Each project owns its dependencies, so a package needs a target: `-w <project>`. Without packages, `smith install` installs the whole workspace. Works for Node, Python, Go, Dart, PHP and Ruby projects; for the others use their own tool in the project's folder.
-
-```sh
-$ smith install -w ui zod  &&  smith uninstall -w ui zod
-```
-
-```text
-
-up to date in 1s
-✔ ui: added zod (libs/ui/package.json, package-lock.json)
----
-
-up to date in 1s
-✔ ui: removed zod (libs/ui/package.json, package-lock.json)
-```
-
-Only the last lines of each are shown (npm prints more).
-
 ### smith uninstall
 
-Remove packages from one project; the counterpart of `smith install`. Alias: `smith un`.
+[Manual page](../manual/uninstall.md)
 
 <!-- smith:begin uninstall -->
 Remove packages from a project (the opposite of install)
@@ -569,11 +353,9 @@ Alias: `smith un`
 
 <!-- smith:end uninstall -->
 
-See the example under `smith install`.
-
 ### smith sync
 
-Make every project declare a shared dependency at the same version, language by language. The target is the version installed, with the operator most declarations use; otherwise the highest version declared. Then it installs, so lockfiles and the venv follow.
+[Manual page](../manual/sync.md)
 
 <!-- smith:begin sync -->
 Make every project declare a shared dependency at the same version (same as up --align)
@@ -588,20 +370,9 @@ Usage: `smith sync [flags]`
 
 <!-- smith:end sync -->
 
-Peer dependencies, the workspace's own packages and specs smith cannot safely rewrite (URLs, git refs, compound ranges) are left alone and reported. `smith sync --check` only reports and fails when declarations disagree: use it in CI.
-
-```sh
-$ smith sync --check
-```
-
-```text
-✔ Every project agrees on every shared dependency version.
-⊘ go: not compared; its plugin does not list declarations (a go.work builds every module with the highest version any of them requires, so differing requirements never ship two copies)
-```
-
 ### smith up
 
-List every declared dependency with a newer release, grouped as patch, minor and major with the projects that declare it, then update the ones you pick.
+[Manual page](../manual/up.md)
 
 <!-- smith:begin up -->
 Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync)
@@ -618,57 +389,115 @@ Usage: `smith up [packages...] [flags]`
 
 <!-- smith:end up -->
 
-Each chosen declaration keeps its operator (`^`, `~`, `>=`) and moves to the latest version; then the workspace is installed again. Named packages update without a prompt, `--yes` takes everything, and without a terminal (or with `--check`) it only reports. A last section compares the tools smith pins with their newest releases.
-
-```sh
-$ smith up --check
-```
-
-```text
-patch
-  @monosmith/eslint-config     1.0.0 → 1.0.2  (root)
-minor
-  eslint                       10.12.0 → 10.13.0  (root)
-major
-  @types/node                  24.19.2 → 26.6.5  (root)
-  typescript                   6.0.3 → 7.0.2  (root)
-
-Tools smith pins (informational):
-  Go               1.27 ✔ (latest 1.27.2)
-  golangci-lint    2.14.0 → 2.15.0 available
-  Node.js (LTS)    24 ✔ (latest 24.22.0)
-```
-
-Needs network access to the registries.
-
 ### smith deps
 
-Work on dependencies across the workspace. See [One version per dependency](configuration.md#dependencies).
+[Manual page](../manual/deps.md)
 
 <!-- smith:begin deps -->
 Group for dependency work across projects; deps up is the same as up
 
-Usage: `smith deps`
+Usage: `smith deps <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith deps up` | Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync) |
 
 No flags.
 
 <!-- smith:end deps -->
 
-| Subcommand | Does |
+## Ship
+
+### smith ci
+
+[Manual page](../manual/ci.md)
+
+<!-- smith:begin ci -->
+Run a CI phase, or regenerate the pipelines
+
+Usage: `smith ci <command>`
+
+| Subcommand | Meaning |
 |---|---|
-| `smith deps up [packages...] [--check] [--yes] [--json] [--no-install]` | the same as `smith up`: a named package is updated in every project that declares it, in one change |
-| `smith deps up --align [packages...] [--check] [--json] [--no-install]` | bring a dependency that projects of one ecosystem declare at different versions to one (the installed version, else the highest declared), instead of updating. The packages named, or every fragmented one; the ones `[dependencies] allow` lists are left alone. With `--check` it only reports and fails when any differ |
+| `smith ci audit` | Run the audit phase |
+| `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci native` | Run the native phase |
+| `smith ci pack` | Run the pack phase |
+| `smith ci release` | Run the release phase |
+| `smith ci setup` | Run the setup phase |
+| `smith ci verify` | Run the verify phase |
 
-```sh
-$ smith deps up axios
-$ smith deps up --align
-```
+No flags.
 
-## Look at the workspace
+<!-- smith:end ci -->
+
+### smith pipeline
+
+[Manual page](../manual/pipeline.md)
+
+<!-- smith:begin pipeline -->
+Add a ready-made pipeline: e2e, package-zip, deploy-pages, deploy-azure-function
+
+Usage: `smith pipeline [template] [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--ci <ci>` | github, azure or both (default: the workspace's providers) | the workspace's providers |
+| `--force` | replace a pipeline file that exists | off |
+| `--project <project>` | the app a deploy template builds |  |
+
+<!-- smith:end pipeline -->
+
+### smith docker
+
+[Manual page](../manual/docker.md)
+
+<!-- smith:begin docker -->
+Docker image commands
+
+Usage: `smith docker <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith docker description` | Set the Docker Hub descriptions of the apps' images |
+
+No flags.
+
+<!-- smith:end docker -->
+
+### smith release
+
+[Manual page](../manual/release.md)
+
+<!-- smith:begin release -->
+Version, publish and tag every package with releasable commits
+
+Usage: `smith release <command> [flags]`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith release pub` | Publish a released app to pub.dev from its GitHub Release (the generated pub workflow runs it) |
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
+| `--dry-run` | show what would be released; change nothing | off |
+| `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) | `text` |
+| `--json` | print the release report as JSON | off |
+| `--no-push` | create tags locally only | off |
+| `--notes` | also print each release's notes (what its GitHub Release says) | off |
+| `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
+| `--verbose` | name every unchanged package | off |
+| `-y, --yes` | do not ask for confirmation | off |
+
+<!-- smith:end release -->
+
+## Inspect
 
 ### smith projects
 
-List the workspace's projects: name, kind, language and directory.
+[Manual page](../manual/projects.md)
 
 <!-- smith:begin projects -->
 List the workspace's projects
@@ -681,21 +510,9 @@ Usage: `smith projects [flags]`
 
 <!-- smith:end projects -->
 
-```sh
-$ smith projects
-```
-
-```text
-api                  app      go      apps/api
-core                 lib      go      libs/core
-sdk                  package  python  packages/sdk
-ui                   lib      node    libs/ui
-web                  app      node    apps/web
-```
-
 ### smith graph
 
-Show how projects depend on each other, as a tree (`text`), `json`, Graphviz `dot`, a static `html` page, or an interactive browser (`tui`). Every format shows the same projects; `--focus` and `--affected` narrow all of them the same way.
+[Manual page](../manual/graph.md)
 
 <!-- smith:begin graph -->
 Show how projects depend on each other
@@ -714,48 +531,9 @@ Usage: `smith graph [flags]`
 
 <!-- smith:end graph -->
 
-`--diff <revision>` discovers the graph at another revision in a temporary git worktree and lists projects and imports added (`+`) and removed (`-`) and kinds, stacks, plugins and directories that changed (`~`). Projects that import each other in a cycle are reported with the path.
-
-`--blast-radius <project|file>` lists everything a change to a project or a file reaches, across languages and through [shared schemas](tasks-and-cache.md#shared-schemas); `--format json` prints it as data.
-
-```sh
-$ smith graph
-```
-
-```text
-api  app · go · apps/api
-  └─ core
-core  lib · go · libs/core
-sdk  package · python · packages/sdk
-ui  lib · node · libs/ui
-web  app · node · apps/web
-  └─ ui
-```
-
-```sh
-$ smith graph --focus web
-```
-
-```text
-ui  lib · node · libs/ui
-web *  app · node · apps/web
-  └─ ui
-```
-
-The `*` marks the project you focused on.
-
-```sh
-$ smith graph --diff HEAD~2
-```
-
-```text
-project graph from HEAD~2 to the working tree
-  no change
-```
-
 ### smith affected
 
-List the projects affected by changes since a base branch, one per line: the ones that own a changed file and everything that depends on them. When smith cannot be sure (no base, a shallow clone, a changed `smith.toml` or lockfile) every project is affected.
+[Manual page](../manual/affected.md)
 
 <!-- smith:begin affected -->
 List the projects affected by changes since a base branch
@@ -770,35 +548,14 @@ Usage: `smith affected [flags]`
 
 <!-- smith:end affected -->
 
-`--paths` prints, for each app, the directories a deployment platform should watch (the app's own and those of everything it depends on): for Railway or Render watch paths and GitOps path filters. `--json` prints the whole answer with a `watch` entry per app. `--paths` and `--json` list every app, affected or not. The base is `--base`, else `SMITH_BASE`, else the pull request target, else the release branch.
-
-```sh
-$ smith affected
-```
-
-```text
-no project changed since main
-```
-
-Nothing changed since `main` in this workspace. The watch paths, one app per line (the app, a tab, then its directories):
-
-```sh
-$ smith affected --paths
-```
-
-```text
-api	apps/api libs/core
-web	apps/web libs/ui
-```
-
 ### smith explain
 
-Show how a project's tasks resolved and where each field came from: the language plugin, a stack's plugin, a convention, or `smith.toml`.
+[Manual page](../manual/explain.md)
 
 <!-- smith:begin explain -->
 Show how a project's tasks resolved, and where each setting came from (why-miss says why one reran)
 
-Usage: `smith explain <project> [flags]`
+Usage: `smith explain <project>[:<task>] [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -808,37 +565,14 @@ Usage: `smith explain <project> [flags]`
 
 <!-- smith:end explain -->
 
-For a project made from a recipe it also lists what the recipe decided for it; `--recipe` prints only that. Without a task name it lists every task of the project; the output here is cut after the first fields.
-
-```sh
-$ smith explain web:test
-```
-
-```text
-web:test — Run unit tests
-  command    npm run test --silent
-               from plugin node
-  cwd        apps/web
-               from plugin node
-  dependsOn  ^build
-               from plugin node
-  inputs     **/*, {workspaceRoot}/package-lock.json, {workspaceRoot}/tsconfig.base.json, {workspaceRoot}/eslint.config.mjs
-               from plugin node
-  outputs    —
-               from plugin node
-  env        —
-               from plugin node
-  cache      true
-```
-
 ### smith why-miss
 
-Say why a task would run instead of coming from the cache, by comparing its key with its last cached run. It runs nothing.
+[Manual page](../manual/why-miss.md)
 
 <!-- smith:begin why-miss -->
 Say why a task would run again instead of coming from the cache (a cache miss; explain shows its settings)
 
-Usage: `smith why-miss <project> <task> [flags]`
+Usage: `smith why-miss <project>:<task> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
@@ -846,21 +580,9 @@ Usage: `smith why-miss <project> <task> [flags]`
 
 <!-- smith:end why-miss -->
 
-It names added, removed and changed input files, a changed command or environment variable, upstream projects whose sources changed, dependency tasks whose keys changed, a new smith or plugin version, and a new toolchain. The argument is `<project>:<task>`.
-
-```sh
-$ smith why-miss core:test
-```
-
-```text
-core:test would come from the cache: nothing changed since its last cached run.
-```
-
-After a change to `ui`, `smith why-miss web:test` answers `web:test would run: 1 change(s) since its last cached run` and `upstream   ui changed`.
-
 ### smith doctor
 
-Check the workspace's health: smith's own invariants and each plugin's checks. Every problem names its remedy.
+[Manual page](../manual/doctor.md)
 
 <!-- smith:begin doctor -->
 Check the workspace's health; every problem names its remedy
@@ -878,29 +600,9 @@ Usage: `smith doctor [flags]`
 
 <!-- smith:end doctor -->
 
-With `--fix`, doctor shows the fixes it can make: file changes as unified diffs, the commands it would run (`npm install`, `git rm --cached`), and the questions it would ask. The same fix on many projects is one fix that says which projects it applies to ("applies to 23 projects"), and a plain `smith doctor` ends with how many fixes are available.
-
-- **Safe fixes** only restore what smith or a plugin owns, like `go.work`, a generated pipeline with its slots kept, or the build outputs declared in `smith.toml`. doctor applies them once you confirm, or with `--yes`.
-- **Every other fix asks.** In a terminal, doctor asks each question as a numbered list (`0` skips the fix), shows what your answers add, and asks before it applies. Without a terminal it applies nothing, prints the exact command for each option, and exits non-zero when you named the fix with `--only` (otherwise the exit code is the workspace's health, as without `--fix`): `smith doctor --fix --only "<check or fix>" --choose 2 --yes`. `--only` names a check as doctor prints it, or a fix by its description; `--choose` answers the fix's questions by option number, in order (`--choose 1,2`); `--yes` with `--only` applies the named fix without a prompt.
-- **Steps** run from the workspace root in order, their output captured. The first one that fails stops the fix, and doctor says which step failed and what it printed.
-
-doctor then checks again and prints the new counts. If a fix changes a file another fix was made from (two edits of `smith.toml`), the second is made again from the new content. `--json` prints the report with a `fixes` list (each fix's `checks`, `applies_to`, `ask`, `steps` and `choices`) and applies nothing; `--json` cannot be combined with `--fix`. The checks and their remedies are in [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do); the fix format a plugin returns is in [Writing a plugin](../guides/writing-a-plugin.md#doctor-fixes-files-steps-and-choices).
-
-```sh
-$ smith doctor
-```
-
-```text
-✔ the venv's Python is 3.12, as in CI
-
-24 passed, 0 failed, 0 warning(s)
-```
-
-The last lines of a healthy workspace: 24 checks, one line each above them. A failing one starts with `✖` and is followed by a `→` line with the fix.
-
 ### smith info
 
-Show the installed smith, the newest released one, and this workspace's settings. `SMITH_NO_UPDATE_CHECK=1` stops it asking GitHub for the newest release.
+[Manual page](../manual/info.md)
 
 <!-- smith:begin info -->
 Show the installed smith, the newest released one, and this workspace's settings
@@ -913,19 +615,9 @@ Usage: `smith info [flags]`
 
 <!-- smith:end info -->
 
-```sh
-$ smith info
-```
-
-```text
-smith dev
-latest release: 1.30.0
-workspace: /work/acme
-```
-
 ### smith kinds
 
-List the project kinds `smith add` accepts: one per language and kind (`node-app`, `go-lib`, `python-package`, ...). Not to be confused with the three kinds `app`, `lib` and `package`.
+[Manual page](../manual/kinds.md)
 
 <!-- smith:begin kinds -->
 List the project kinds smith add accepts (--json for editors)
@@ -938,22 +630,9 @@ Usage: `smith kinds [flags]`
 
 <!-- smith:end kinds -->
 
-```sh
-$ smith kinds
-```
-
-```text
-bicep-app        Bicep: an app: deployed or run, never published. Built with the workspace's default stack, or --stack.
-bicep-lib        Bicep: an internal library: imported by other projects, never published. Built with the workspace's default stack, or --stack.
-bicep-package    Bicep: a package: published to its registry on release. Built with the workspace's default stack, or --stack.
-cpp-app          Cpp: an app: deployed or run, never published. Built with the workspace's default stack, or --stack.
-```
-
-Cut after four lines; there is one per language and kind (33 in all).
-
 ### smith stacks
 
-List the stacks projects can be built with and which projects use each. A stack is the set of plugins a project is built with. Plugins publish stacks and `smith.toml` can declare more under `[stacks.<name>]`. See [Stacks](stacks.md).
+[Manual page](../manual/stacks.md)
 
 <!-- smith:begin stacks -->
 List the stacks projects can be built with, and who uses each
@@ -966,57 +645,65 @@ Usage: `smith stacks [flags]`
 
 <!-- smith:end stacks -->
 
-```sh
-$ smith stacks
-```
+### smith plugin
 
-```text
-android  (plugin jvm)
-  an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint
-  language   jvm
+[Manual page](../manual/plugin.md)
 
-angular  (plugin angular)
-  an Angular app in TypeScript, built with the Angular CLI, linted by eslint, tested with Vitest
-  language   node
-  toolchain  angular, eslint, vitest
-  scaffold   angular
+<!-- smith:begin plugin -->
+Inspect plugins, or serve a built-in plugin
 
-docs-site  (plugin astro)
-  a documentation site with Astro Starlight, checked and built by Astro, linted by eslint
-```
+Usage: `smith plugin <command>`
 
-Cut after twelve lines.
+| Subcommand | Meaning |
+|---|---|
+| `smith plugin check` | Check that a plugin keeps the protocol's promises |
+| `smith plugin disable` | Disable built-in plugins in smith.toml |
+| `smith plugin enable` | Enable built-in plugins in smith.toml |
+| `smith plugin list` | List the built-in plugins and the ones installed on the plugin search path |
+| `smith plugin set` | Enable exactly these built-in plugins in smith.toml |
+
+No flags.
+
+<!-- smith:end plugin -->
+
+### smith recipe
+
+[Manual page](../manual/recipe.md)
+
+<!-- smith:begin recipe -->
+Check recipes: a team's choice of plugins and settings
+
+Usage: `smith recipe <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith recipe check` | Resolve and validate a recipe, showing what it would use and where each value came from |
+| `smith recipe new` | Write a recipe by answering questions |
+
+No flags.
+
+<!-- smith:end recipe -->
 
 ### smith slices
 
-Check the vertical-slice layout of projects.
+[Manual page](../manual/slices.md)
 
 <!-- smith:begin slices -->
 Check the vertical-slice layout of projects
 
-Usage: `smith slices`
+Usage: `smith slices <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith slices check` | Check that files are role-named and no folder is a junk drawer |
 
 No flags.
 
 <!-- smith:end slices -->
 
-| Subcommand | Does |
-|---|---|
-| `smith slices check <project directory>... [--lang <language>]` | check that files are named for their role and no folder is a junk drawer. `--lang` is one of cpp, dart, dotnet, go, jvm, php, python, ruby, rust (default `go`) |
-
-The vertical-slices convention runs this as each project's `slice-check` task. See [Conventions](conventions.md).
-
-```sh
-$ smith slices check libs/core
-```
-
-```text
-vertical-slice layout OK
-```
-
 ### smith schema
 
-Print the JSON Schema of `smith.toml`, for editors. `smith new` writes its address as the first line of `smith.toml`.
+[Manual page](../manual/schema.md)
 
 <!-- smith:begin schema -->
 Print the JSON Schema of smith.toml, for editors
@@ -1027,22 +714,9 @@ No flags.
 
 <!-- smith:end schema -->
 
-```sh
-$ smith schema | head -n 6
-```
-
-```text
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/apps/smith/workspace/smith.schema.json",
-  "title": "smith.toml",
-  "description": "The configuration of a smith workspace (schema 1). Every setting has a default; a key smith does not know is an error.",
-  "type": "object",
-```
-
 ### smith commands
 
-List every command with its arguments and options. With `--json` it is the contract editors read; see [Editors](../guides/editors.md).
+[Manual page](../manual/commands.md)
 
 <!-- smith:begin commands -->
 List smith's commands with their arguments and options (--json for editors)
@@ -1055,36 +729,9 @@ Usage: `smith commands [flags]`
 
 <!-- smith:end commands -->
 
-```sh
-$ smith commands --json | head -c 300
-```
-
-```text
-[
-  {
-    "name": "add",
-```
-
-### smith mcp
-
-Serve the workspace to an AI assistant over the Model Context Protocol, on stdin and stdout. Each tool runs the smith command it stands for. Register `smith mcp` as the server's command, started in the workspace. The tools are listed in [Editors](../guides/editors.md#ai-assistants-mcp).
-
-<!-- smith:begin mcp -->
-Serve the workspace to an AI assistant over the Model Context Protocol (stdio)
-
-Usage: `smith mcp`
-
-No flags.
-
-<!-- smith:end mcp -->
-
-```json
-{ "mcpServers": { "smith": { "command": "smith", "args": ["mcp"] } } }
-```
-
 ### smith serve
 
-Serve the engine over JSON-RPC on stdin and stdout, one JSON message per line, in the workspace smith is started in. It opens no network port. A method per function, and a run's events as notifications. The protocol is in [Serve and the event stream](serve.md).
+[Manual page](../manual/serve.md)
 
 <!-- smith:begin serve -->
 Serve the engine to an editor or a terminal interface over JSON-RPC (stdio)
@@ -1095,274 +742,15 @@ No flags.
 
 <!-- smith:end serve -->
 
-```sh
-$ echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | smith serve
-```
+### smith mcp
 
-### smith plugin
+[Manual page](../manual/mcp.md)
 
-Inspect plugins, or check one you wrote. (`smith plugin serve <name>` also exists: smith starts each built-in plugin as a process with it. You do not run it yourself.)
+<!-- smith:begin mcp -->
+Serve the workspace to an AI assistant over the Model Context Protocol (stdio)
 
-<!-- smith:begin plugin -->
-Inspect plugins, or serve a built-in plugin
-
-Usage: `smith plugin`
+Usage: `smith mcp`
 
 No flags.
 
-<!-- smith:end plugin -->
-
-| Subcommand | Does |
-|---|---|
-| `smith plugin list [--json]` | the built-in plugins and the ones installed on the plugin search path, with their levels, slots and requirements |
-| `smith plugin enable <name>...` | enable built-in plugins in `smith.toml` |
-| `smith plugin disable <name>...` | disable built-in plugins in `smith.toml` |
-| `smith plugin set <name>...` | enable exactly these built-in plugins |
-| `smith plugin check <name \| path> [args...] [--generate] [--json]` | run the conformance suite against a plugin: it names itself, its roles match what it implements, its stacks are complete, and every method it advertises answers. `--generate` also scaffolds an app, a lib and a package in a temporary directory |
-
-```sh
-$ smith plugin list | head -8
-```
-
-```text
-PLUGIN           LEVELS                       SLOTS                REQUIRES
-bicep            language,toolchain,scaffold  -                    -
-cpp              language,toolchain,scaffold  -                    -
-dart             language,toolchain,scaffold  -                    -
-dotnet           language,toolchain,scaffold  -                    -
-go               language,toolchain,scaffold  -                    -
-jvm              language,toolchain,scaffold  -                    -
-node             language,toolchain,scaffold  -                    -
-...
-```
-
-```sh
-$ smith plugin disable bicep
-$ smith plugin enable bicep
-```
-
-```text
-enabled plugins: cpp, dart, dotnet, go, jvm, node, php, python, recipe, ruby, rust
-enabled plugins: bicep, cpp, dart, dotnet, go, jvm, node, php, python, recipe, ruby, rust
-```
-
-`smith plugin check` is explained, with three working plugins, in [Writing a plugin](../guides/writing-a-plugin.md#testing-smith-plugin-check).
-
-### smith recipe
-
-Check recipes: a team's choice of plugins and settings. See [Recipes](recipes.md).
-
-<!-- smith:begin recipe -->
-Check recipes: a team's choice of plugins and settings
-
-Usage: `smith recipe`
-
-No flags.
-
-<!-- smith:end recipe -->
-
-| Subcommand | Does |
-|---|---|
-| `smith recipe check <file-or-url> [--choice name=answer]... [--all] [--json]` | load a recipe and the recipes it extends, answer its choices, and check the result: one plugin per exclusive level and slot, requirements met, no conflicts. Prints the choices, the plugin for each level and where each value came from. Non-zero exit when the recipe is not valid. `--all` checks every combination of answers (up to 64) |
-| `smith recipe new [path] [--force] [--from-answers <file>]` | write a recipe by answering questions, checked for every combination before it is written. Without a terminal, `--from-answers` reads the answers from a file |
-
-```sh
-$ smith recipe check team.recipe.toml --choice language=node
-```
-
-```text
-Recipe team 1.0.0
-  chain: team 1.0.0 (team.recipe.toml)
-
-Choices
-  language     node           (answered; options python, node) Language?
-
-Plugins
-  language     node                     team.recipe.toml:14 (recipe team)
-  lint         eslint                   team.recipe.toml:15 (recipe team)
-  test         vitest                   team.recipe.toml:16 (recipe team)
-
-The recipe is valid.
-```
-
-## Ship
-
-### smith ci
-
-The generated pipelines call these phases, so CI runs exactly what you can run locally. See [CI pipelines](ci.md).
-
-<!-- smith:begin ci -->
-Run a CI phase, or regenerate the pipelines
-
-Usage: `smith ci`
-
-No flags.
-
-<!-- smith:end ci -->
-
-| Subcommand | Does |
-|---|---|
-| `smith ci setup` | install every toolchain dependency the workspace's plugins need |
-| `smith ci audit` | check dependencies for known vulnerabilities |
-| `smith ci verify` | lint, typecheck, test and build; only affected projects on a pull request |
-| `smith ci pack` | run every project's `package` task into `dist/drop`, kept as the pipeline's "drop" artifact on pushes to the release branch |
-| `smith ci native` | lint, test, build and package the projects tagged native (cgo) on this OS; the pipeline runs it on each OS and, on a release, attaches the build |
-| `smith ci release` | version, publish and tag every package with releasable commits |
-| `smith ci generate [--check]` | rewrite the pipelines from the workspace's projects; `--check` only reports drift |
-| `smith ci check` | list what to set up by hand: secrets, and each private registry's permissions |
-
-```sh
-$ smith ci generate --check
-$ smith ci check
-```
-
-```text
-pipelines are up to date
-To set up by hand before the pipelines run:
-  - GitHub: add the repository secrets PYPI_TOKEN (Settings → Secrets and variables → Actions)
-```
-
-### smith pipeline
-
-Add a ready-made pipeline file beside the generated CI. It starts the way every generated job does (toolchains, smith, `smith ci setup`), then does one thing. It is written once and yours from then on: `smith upgrade` never rewrites it, and an existing file is kept unless `--force`. With no template it lists them.
-
-<!-- smith:begin pipeline -->
-Add a ready-made pipeline: e2e, package-zip, deploy-pages, deploy-azure-function
-
-Usage: `smith pipeline [template] [flags]`
-
-| Flag | Meaning | Default |
-|---|---|---|
-| `--ci <ci>` | github, azure or both (default: the workspace's providers) | the workspace's providers |
-| `--force` | replace a pipeline file that exists | off |
-| `--project <project>` | the app a deploy template builds |  |
-
-<!-- smith:end pipeline -->
-
-```sh
-$ smith pipeline
-```
-
-```text
-e2e                                      github, azure  run every project's e2e task, one at a time, on a push to the release branch, on pull requests (GitHub) and on demand
-package-zip                              github, azure  pack the projects (smith ci pack) and keep dist/drop as a build artifact, the input of a classic release pipeline
-deploy-pages (--project <app>)           github         build an app and deploy its build output to GitHub Pages
-deploy-azure-function (--project <app>)  github, azure  build a function app and deploy it to an Azure Function App
-```
-
-### smith docker
-
-Docker image commands.
-
-<!-- smith:begin docker -->
-Docker image commands
-
-Usage: `smith docker`
-
-No flags.
-
-<!-- smith:end docker -->
-
-| Subcommand | Does |
-|---|---|
-| `smith docker description [--dry-run] [--strict] [-p <project>]...` | set the Docker Hub repository descriptions of each app whose registries include a `docker.io` entry: the full one from its `description_from` file, the short one from `short_description` or the project's description. Needs `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (or the variables the registry entry names). A failure is a warning unless `--strict` |
-
-Building and pushing images is part of `smith release` (see [Releasing](releasing.md#container-images)), not a command of its own.
-
-```sh
-$ smith docker description --dry-run
-```
-
-```text
-no app has a description_from file or a short description for a docker.io registry
-```
-
-### smith release
-
-Version, publish and tag every package with releasable commits since its last tag: `feat` is a minor bump, `fix` and `perf` a patch, a breaking change a major (a minor before 1.0). Packages release in dependency order; each is stamped, built, published and tagged, and manifests are restored afterwards (the tag is the record). A re-run after a failure resumes where it stopped.
-
-<!-- smith:begin release -->
-Version, publish and tag every package with releasable commits
-
-Usage: `smith release [flags]`
-
-| Flag | Meaning | Default |
-|---|---|---|
-| `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
-| `--dry-run` | show what would be released; change nothing | off |
-| `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |  |
-| `--json` | print the release report as JSON | off |
-| `--no-push` | create tags locally only | off |
-| `--notes` | also print each release's notes (what its GitHub Release says) | off |
-| `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
-| `--verbose` | name every unchanged package | off |
-| `-y, --yes` | do not ask for confirmation | off |
-
-<!-- smith:end release -->
-
-Without `--dry-run` it asks for confirmation (`--yes` skips the question). In CI, the pipeline runs `smith ci release`. `--comment` with `--dry-run` posts the preview on the pull request, updating smith's earlier comment. `--json` prints the report (below, cut). See [Releasing](releasing.md).
-
-```sh
-$ smith release --dry-run
-```
-
-```text
-Dry run: nothing is published or tagged.
-  sdk                  unreleased → 0.1.0  (2 releasing commit(s))
-
-→ Push to the release branch and CI releases these; or run smith release here to publish them yourself.
-```
-
-That is what the terminal shows. `--format markdown` prints the table that `--comment` posts and the CI job summary shows:
-
-```text
-### Release preview
-
-| Package | Version | Why | Status |
-|---|---|---|---|
-| sdk | new → **0.1.0** | 2 releasing commit(s) | planned |
-```
-
-```sh
-$ smith release --dry-run --json | head -c 700
-```
-
-```text
-{
-  "dryRun": true,
-  "started": "2026-10-19T07:06:13.8132743Z",
-  "finished": "0001-01-01T00:00:00Z",
-  "results": [
-    {
-      "project": "sdk",
-      "plugin": "python",
-      "next": "0.1.0",
-      "level": "minor",
-      "tag": "sdk@0.1.0",
-```
-
-## Shell
-
-### smith completion
-
-Generate the autocompletion script for `bash`, `zsh`, `fish` or `powershell`.
-
-```sh
-$ smith completion bash | head -n 3
-```
-
-```text
-# bash completion V2 for smith                                -*- shell-script -*-
-
-__smith_debug()
-```
-
-Load it the way your shell loads completions, for example `source <(smith completion bash)` in `~/.bashrc`, or `smith completion powershell | Out-String | Invoke-Expression` in a PowerShell profile. `smith completion <shell> --help` has the details.
-
-### smith help
-
-`smith help <command>` is `smith <command> --help`.
-
-### smith (no arguments)
-
-In a terminal, `smith` on its own opens the interactive shell: Home, Projects, Run, Doctor, Deps and Release as tabs, with `:` for every other command, `?` for the keys and `q` to quit. Each action ends as a smith command line, printed before it runs. When stdin is not a terminal, or `CI` is set, it prints its help instead. When stdout is not a terminal, or `SMITH_SCREEN_READER` or `SMITH_THEME=plain` is set, it asks its questions as plain numbered lines (on stderr when stdout is not a terminal). `NO_COLOR` and `SMITH_THEME=plain|light|dark` choose the colours. See [Getting started](../getting-started/first-workspace.md#7-the-interactive-shell).
+<!-- smith:end mcp -->

@@ -1,0 +1,224 @@
+# smith ci
+
+`smith ci` runs one phase of the pipeline, or regenerates the pipeline files. The generated
+pipelines (GitHub Actions, Azure Pipelines, GitLab CI) call these phases, so CI runs exactly
+what you can run locally.
+
+| Phase | What it does |
+|---|---|
+| `setup` | Installs every toolchain dependency the workspace's plugins need. |
+| `audit` | Checks dependencies for known vulnerabilities, plus the policies in `ci.audit_policies`. |
+| `verify` | Runs `lint`, `typecheck`, `test` and `build`, only for the affected projects on a pull request. |
+| `pack` | Runs every project's `package` task into `dist/drop`, kept as the pipeline's `drop` artifact on pushes to the release branch. |
+| `native` | Lints, tests, builds and packages the projects tagged `native` (cgo) on this OS; the pipeline runs it on each OS and, on a release, attaches the build. |
+| `release` | Versions, publishes and tags every package with releasable commits (see [`smith release`](release.md)). |
+
+## When to use it
+
+- To reproduce a CI failure locally: `smith ci verify`.
+- To regenerate the pipelines after a change that affects them (a new project, a new
+  provider): [`smith ci generate`](ci-generate.md).
+- To learn what CI needs configured by hand: [`smith ci check`](ci-check.md).
+
+The phases are meant for CI. On a laptop prefer `smith build`, `smith test` and the other
+shortcuts, which do not run installs or the tracked-changes guard.
+
+## Synopsis
+
+```sh
+smith ci setup | audit | verify | pack | native | release
+smith ci generate [--check]
+smith ci check
+```
+
+## Subcommands
+
+<!-- smith:begin ci -->
+Run a CI phase, or regenerate the pipelines
+
+Usage: `smith ci <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith ci audit` | Run the audit phase |
+| `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci native` | Run the native phase |
+| `smith ci pack` | Run the pack phase |
+| `smith ci release` | Run the release phase |
+| `smith ci setup` | Run the setup phase |
+| `smith ci verify` | Run the verify phase |
+
+No flags.
+
+<!-- smith:end ci -->
+
+The phases take no flags. [`smith ci generate`](ci-generate.md) has `--check`;
+[`smith ci check`](ci-check.md) has none.
+
+### setup
+
+<!-- smith:begin ci setup -->
+Run the setup phase
+
+Usage: `smith ci setup`
+
+No flags.
+
+<!-- smith:end ci setup -->
+
+Collects the setup steps the plugins contribute (Go modules, Node dependencies, the Python
+venv and toolchain, other tools) and runs them in order. With nothing to do it prints
+`nothing to setup`.
+
+### audit
+
+<!-- smith:begin ci audit -->
+Run the audit phase
+
+Usage: `smith ci audit`
+
+No flags.
+
+<!-- smith:end ci audit -->
+
+Runs the audit steps the plugins contribute (`govulncheck`, `npm audit` for runtime
+dependencies, `pip-audit`, and so on). A step whose inputs did not change since it last
+passed is skipped with `✓ <step>: no change in <files> since it passed on <date>`. A step
+that is configured as warn-only (`ci.audit_warn`) reports without failing: `warning:
+pip-audit (exit 1) — not blocking`.
+
+### verify
+
+<!-- smith:begin ci verify -->
+Run the verify phase
+
+Usage: `smith ci verify`
+
+No flags.
+
+<!-- smith:end ci verify -->
+
+Runs `lint`, `typecheck`, `test` and `build` on every project except the ones tagged
+`native`. When the environment names a pull request target (`SMITH_BASE`, `GITHUB_BASE_REF`,
+`SYSTEM_PULLREQUEST_TARGETBRANCH`, `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`), only the affected
+projects run. Then it runs the tasks a plugin marked for verify (an app's container image,
+say), skipping with a warning when the program is not installed.
+
+Finally the **tracked-changes guard** checks the working tree: if the tasks left tracked
+files modified or deleted, verify fails, because a release refuses a dirty tree and the pull
+request is where to find that out. A file that was already changed before verify started fails
+it only when `CI` is set; on a laptop it is taken for your own edit.
+
+### pack
+
+<!-- smith:begin ci pack -->
+Run the pack phase
+
+Usage: `smith ci pack`
+
+No flags.
+
+<!-- smith:end ci pack -->
+
+Creates `dist/drop` (always, so the artifact upload has a path), then runs every project's
+`package` task except the native ones. With no `package` task anywhere it prints
+`nothing to pack: no project has a package task`; on success, `packed into dist/drop`.
+
+### native
+
+<!-- smith:begin ci native -->
+Run the native phase
+
+Usage: `smith ci native`
+
+No flags.
+
+<!-- smith:end ci native -->
+
+Builds the projects tagged `native` for the current OS. See [CI pipelines](../reference/ci.md).
+
+### release
+
+<!-- smith:begin ci release -->
+Run the release phase
+
+Usage: `smith ci release`
+
+No flags.
+
+<!-- smith:end ci release -->
+
+Plans and executes the release with pushing of tags on, prints the report as markdown, then runs the post-release steps plugins want after every push to the
+release branch, released or not.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | The phase passed. |
+| 1 | A step or task failed, or the guard found tracked changes. |
+
+Every phase prints `smith ci <phase> passed in <duration>` or `... failed in <duration>`, and
+when `GITHUB_STEP_SUMMARY` is set appends a line to the job summary.
+
+## Files and environment
+
+Reads `smith.toml`, the project graph and the plugins' CI contributions. `generate` writes
+the pipeline files (see its page). Variables: `CI` (changes the guard), the pull request
+target variables above, `GITHUB_STEP_SUMMARY`, and the release credentials of
+[`smith release`](release.md#files-and-environment).
+
+## Examples
+
+A short phase:
+
+```sh
+smith ci audit
+```
+
+```text
+✓ govulncheck api: no change in apps/api/go.mod, apps/api/go.sum since it passed on 2026-10-25
+▶ govulncheck web2
+=== Symbol Results ===
+
+No vulnerabilities found.
+...
+✓ npm audit (runtime dependencies): no change in package-lock.json since it passed on 2026-10-25
+▶ pip-audit
+Found 1 known vulnerability in 1 package
+...
+warning: pip-audit (exit 1) — not blocking
+1 non-blocking step(s) reported problems
+smith ci audit passed in 5.5s
+```
+
+```sh
+smith ci setup
+```
+
+```text
+▶ Download Go modules
+▶ Install Node dependencies
+...
+▶ Create the Python venv
+▶ Install the Python toolchain
+▶ Install tools
+smith ci setup passed in 53s
+```
+
+`smith ci pack` runs the `package` task of the apps (here two Go apps and a Node app) and
+ends with `packed into dist/drop`.
+
+## Common errors
+
+| Message | Cause and remedy |
+|---|---|
+| A task failure in `verify` | See the task's output, then `smith why-miss <project>:<task>`. |
+| The tracked-changes message listing files and the tasks that likely wrote them | A task rewrote a tracked file. Commit it with the change, stop tracking it (`git rm --cached <file>`), or fix the task. |
+| `unknown phase "x" (phases: setup, audit, verify, pack, native, release)` | Only those six exist. |
+
+## Related
+
+[`smith ci generate`](ci-generate.md), [`smith ci check`](ci-check.md), [`smith release`](release.md),
+[`smith pipeline`](pipeline.md), [CI pipelines](../reference/ci.md).
