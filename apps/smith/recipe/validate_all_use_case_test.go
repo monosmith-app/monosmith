@@ -33,12 +33,16 @@ test = "jest"
 `
 
 func TestValidateAllChecksEveryAnswersBranch(t *testing.T) {
-	if err := ValidateAll(loadedFrom(t, twoLanguages), fakePlugins()); err != nil {
+	n, err := ValidateAll(loadedFrom(t, twoLanguages), fakePlugins())
+	if err != nil {
 		t.Fatal(err)
+	}
+	if n != 2 {
+		t.Errorf("checked %d combinations, want 2 (python, node)", n)
 	}
 	// The default branch (python) is fine; node's is broken: two tests.
 	broken := strings.Replace(twoLanguages, `test = "jest"`, "test = \"jest\"\nstructure = \"karma\"", 1)
-	err := ValidateAll(loadedFrom(t, broken), fakePlugins())
+	_, err = ValidateAll(loadedFrom(t, broken), fakePlugins())
 	if err == nil {
 		t.Fatal("a broken node branch was accepted, because the default branch is python")
 	}
@@ -49,7 +53,7 @@ func TestValidateAllChecksEveryAnswersBranch(t *testing.T) {
 
 func TestValidateAllAsksChoicesThatHaveNoDefault(t *testing.T) {
 	text := strings.Replace(twoLanguages, `default = "python"`, "", 1)
-	if err := ValidateAll(loadedFrom(t, text), fakePlugins()); err != nil {
+	if _, err := ValidateAll(loadedFrom(t, text), fakePlugins()); err != nil {
 		t.Errorf("a choice without a default must be checked through its options: %v", err)
 	}
 }
@@ -64,7 +68,7 @@ default = "none"
 deploy = "docker"
 structure = "docker"
 `
-	err := ValidateAll(loadedFrom(t, text), fakePlugins())
+	_, err := ValidateAll(loadedFrom(t, text), fakePlugins())
 	if err == nil || !strings.Contains(err.Error(), "shipping=image") {
 		t.Errorf("err = %v; docker is not a structure plugin, in the image branch", err)
 	}

@@ -3,13 +3,24 @@ package cipipeline
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
+
+// changeVerb says what Write did to a file it reports as changed: a file that
+// is gone was removed (a provider dropped from [ci] providers), not written.
+func changeVerb(root, path string) string {
+	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(path))); errors.Is(err, fs.ErrNotExist) {
+		return "removed"
+	}
+	return "wrote"
+}
 
 // Command is `smith ci`.
 func Command(version string) *cobra.Command {
@@ -71,7 +82,7 @@ func Command(version string) *cobra.Command {
 				return err
 			}
 			for _, f := range changed {
-				fmt.Fprintln(c.OutOrStdout(), "wrote "+f)
+				fmt.Fprintln(c.OutOrStdout(), changeVerb(s.Root, f)+" "+f)
 			}
 			for _, l := range lost {
 				fmt.Fprintln(c.ErrOrStderr(), "warning: slot no longer exists, its content was not kept: "+l)
