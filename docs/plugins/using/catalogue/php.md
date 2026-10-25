@@ -233,9 +233,9 @@ What is generated:
 
 `smith add` fails if the target directory already exists. It needs `composer`
 on `PATH`. The `kind` can be `app`, `lib` or `package`; no stacks are involved.
-Unlike most plugins, the php plugin streams Composer's output (as shown
-above) whether or not `--verbose` is given, because it runs Composer through
-`toolrun.Run`, not `toolrun.Quiet`.
+Composer's output is shown only when it fails or with `--verbose`; otherwise
+smith prints one `Running composer ...` line per command (the plugin runs
+Composer through `toolrun.Quiet`).
 
 ## Settings
 

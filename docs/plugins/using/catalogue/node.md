@@ -340,22 +340,12 @@ Removal: `smith remove <project>` deletes the directory, drops its entries from 
 - Every script becomes a task, but only the six well-known names are cached and ordered. Cache any other by overriding it in `smith.toml` (`[projects.<p>.tasks.<t>] cache = true`).
 - A Node app's release assets cannot be cross-built; they are built per OS with `"native": true`.
 - Plain-JavaScript projects (`--stack none`) have no `build`, `lint` or `test`; that is the toolchain add-ons' job.
-- `smith run package` for an app without a `build` script fails if `dist/drop` does not exist yet (see Verified).
 
 ## Verified
 
 Windows 11 Pro 10.0.26300, smith 1.62.0, node v24.12.0, npm 11.6.2. Two throw-away workspaces: `js-demo` (`--stack none`, plain JavaScript) and `ts-demo` (default stack `node-jest`: TypeScript ~6.0.3, ESLint 10.12.0 with `@monosmith/eslint-config`, Jest 30). Run: `smith add app|lib|package ... --lang node` (both stacks), `smith projects`, `smith graph`, `smith explain`, `smith run build|typecheck|lint|test|deps-check|prune|package|start`, `smith ci pack`, `smith doctor` (clean; missing lint tasks; a wrong `[toolchains] node`; an undeclared import; a registry in `.npmrc`), `smith doctor --fix --yes` (`.npmrc`), `smith ci generate`, `smith ci setup`, `smith ci audit` (with and without the `node` policy), `smith ci check`, `smith release --dry-run [--json]` (including a Node app with release assets), `smith install -w`, `smith up --check`, `smith remove util --dry-run --force`, `smith plugin list --json`.
 
-Defect found while verifying: with `dist/drop` absent, `smith run package -p web` (an app without a `build` script) failed:
-
-```
-web:package │ npm error code ENOENT
-web:package │ npm error syscall open
-web:package │ npm error enoent ENOENT: no such file or directory, open '...\dist\drop\js-demo-web-0.0.0.tgz'
-web:package ✖ exited with code 4294963238
-```
-
-`smith ci pack` on the same workspace succeeded and wrote `dist/drop/js-demo-web-0.0.0.tgz`; after `dist/drop` existed, `smith run package` worked too.
+`smith run package` creates `dist/drop` before it runs, so an app without a `build` script packs on a fresh checkout as `smith ci pack` does.
 
 Not verified:
 

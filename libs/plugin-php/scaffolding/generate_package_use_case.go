@@ -15,8 +15,11 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// Runner runs composer; tests replace it.
-var Runner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
+// Runner runs composer, showing its output only when it fails or smith add
+// --verbose asks; tests replace it.
+var Runner = runComposer
+
+func runComposer(dir string, argv []string) error { return toolrun.Quiet(dir, argv) }
 
 type templateData struct {
 	Dir, Up, Name, Vendor, Package, Namespace, NamespaceJSON, Kind, Stack string

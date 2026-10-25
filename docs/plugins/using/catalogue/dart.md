@@ -296,13 +296,10 @@ Dry run: nothing is published or tagged.
 `PUB_TOKEN: ${{ secrets.PUB_TOKEN }}` on the release step; `smith ci check`
 then listed `PUB_TOKEN` among the secrets to set up by hand.
 
-Defect found: a package whose pubspec says `publish_to: none` is still planned
-for pub.dev. The dry-run JSON said `"registry": "https://pub.dev"`, and
-the CI workflow asked for `PUB_TOKEN` (`publishTo` returns `"none"`, which
-`registry()` does not treat as a URL and so falls back to pub.dev). A
-`registry = "none"` under `[projects.<name>]` in `smith.toml` is the working way
-to say a package is not published: the plan then said
-`published by its tag (registry = "none")` and `PUB_TOKEN` disappeared.
+A package whose pubspec says `publish_to: none` is never published: the plan
+says `published by its tag`, the plugin asks no registry about it, and the CI
+workflow does not ask for `PUB_TOKEN` (the same as `registry = "none"` under
+`[projects.<name>]` in `smith.toml`).
 
 pub.dev itself needs setup that smith cannot do: publish the first version by
 hand, then enable automated publishing for the repository with the tag pattern;
