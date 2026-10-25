@@ -14,8 +14,10 @@ They make two promises.
   "not verified".
 - **Every claim about another tool comes from that tool's own documentation
   or repository.** Each comparison page ends with its sources and the date they
-  were read. A cell in the comparison tables is never marked "absent" for a
-  competitor unless that was checked.
+  were read. A cell in the comparison tables is marked "absent" (❌) for a
+  competitor only where a documentation page says so, or describes a
+  different mechanism for the same job and a search found nothing else, and "not verified" (❔)
+  where the sources were searched and say nothing either way.
 
 smith is young. Its repository's first commit is dated 2026-10-15 and this
 folder was written on 2026-10-25, at release 1.62.0. The

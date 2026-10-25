@@ -87,7 +87,8 @@ Say these before you spend a day evaluating.
 - **You need remote execution or hermetic builds.** smith runs tasks on one
   machine and shares results only
   ([Execution and cache](../design/execution-and-cache.md)). Bazel, Buck2 and
-  Pants support remote execution; see the [comparison](comparison/README.md).
+  Pants support remote execution (Please offers it as an experimental feature); see the
+  [comparison](comparison/README.md).
 - **You need a sandbox.** smith trusts a task's declared inputs and does not run it
   in a sandbox, which is what lets it run `npm`, `dotnet` and `cargo` unmodified.
   The design notes state the price: wrong `inputs` give wrong cache hits.

@@ -157,9 +157,9 @@ runs. `smith graph --format tui` browses the dependency graph.
 
 The repository also holds a VS Code extension (`apps/vscode`) that shows the
 projects, what the changes affect, task results in the Problems panel, health and
-the release preview, using the smith your team installed. Whether it is published
-to the Marketplace was not verified; its README says the release workflow
-publishes it there. For AI assistants, `smith mcp` serves the workspace over the
+the release preview, using the smith your team installed. The Visual Studio
+Marketplace lists it (MonoSmith 0.2.0, last updated 2026-10-24, checked through the
+Marketplace API on 2026-10-25); Open VSX had no entry on that date. For AI assistants, `smith mcp` serves the workspace over the
 Model Context Protocol. See [Editors](../guides/editors.md).
 
 ## 10. Plugins, stacks and recipes

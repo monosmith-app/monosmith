@@ -19,10 +19,15 @@ page as a comparison with a tool that says it is still settling.
 
 | | Buck2 | MonoSmith |
 |---|---|---|
-| Status | the README: "does not have a stable release tag at this time"; the docs: "early-stage" | release 1.62.0, repository history of ten days |
+| Status | the README: "does not have a stable release tag at this time"; the docs: "early-stage". GitHub lists dated tags (the newest, 2026-10-15) and a `latest` tag, all flagged pre-release | release 1.62.0, repository history of ten days |
 | Remote execution | yes | no |
-| What you write | BUCK files and rules in Starlark | `smith.toml`; the rest inferred |
-| Release, CI generation | not covered by the pages read | both |
+| Remote cache | the remote-execution action cache and content-addressable storage | HTTP, S3 or Azure Blob, signed |
+| What you write | BUCK files and rules in Starlark; `buck2 init` creates a project | `smith.toml`; the rest inferred |
+| Languages | a prelude with rules for C/C++, Erlang, Go, Haskell, Java, Kotlin, OCaml, Python and Rust; the language-support table marks C#, Objective-C and Swift "Unavailable" and every language's "Documented" column reads "no" | eleven languages built in |
+| Affected | `cquery` can select reverse dependencies (`rdeps`); the docs mention a "Target Determinator" only in passing | `smith affected` |
+| Editors | the Starlark library gives LSP and DAP bindings; no editor extension is documented | a VS Code extension, a terminal interface and an MCP server |
+| Release, CI generation | none found (searched the documentation source) | both |
+| Repository status | MIT and Apache-2.0 (two licence files), not archived, last push 2026-10-25 (GitHub API, 2026-10-25) | MIT, not archived, first commit 2026-10-15; release 1.62.0 |
 
 ## When to choose Buck2 instead
 
@@ -42,5 +47,11 @@ No automated path in either direction, and neither was tried.
 
 Retrieved 2026-10-25.
 
-- Why Buck2: <https://buck2.build/docs/about/why/>
-- Repository (licence, status): <https://github.com/facebook/buck2>
+The documentation was read as Markdown source files from the repository's `docs`
+folder, not through a summarising tool.
+
+- Why Buck2: <https://buck2.build/docs/about/why/> ("it is early-stage software")
+- Language support: <https://buck2.build/docs/about/language_support/>
+- Architecture and remote execution: <https://buck2.build/docs/concepts/architecture/> ("RE action cache") and <https://buck2.build/docs/users/remote_execution/> ("Buck2 can use services that expose Bazel's remote execution API")
+- Tutorial: <https://buck2.build/docs/getting_started/tutorial_first_build/> (`buck2 init`)
+- Repository (licence, status): <https://github.com/facebook/buck2>. The README says Buck2 "does not have a stable release tag at this time" and "is licensed under both the MIT license and Apache-2.0 license". GitHub API on 2026-10-25: archived false, last push 2026-10-25; the licence field shows Apache-2.0 only, because it reports one; the repository holds both licence files. The releases API lists tags `latest` (2023-04-13), 2026-10-15, 2026-10-01 and 2026-09-15, each flagged pre-release.

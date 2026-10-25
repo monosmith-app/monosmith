@@ -17,6 +17,12 @@ by design: one `turbo.json` on top of the package manager's workspaces.
 - **Git-aware selection.** `turbo run --affected` filters to packages changed on the
   current branch (by default `--filter=...[main...HEAD]`), and `--filter` accepts
   git ranges.
+- **Other toolchains.** A multi-language guide runs other toolchains through
+  `package.json` scripts (its example combines JavaScript with a .NET console app
+  and a C# library). Native workspace discovery for Rust (Cargo), Python (uv) and Go
+  (`go.work`) is documented, each marked experimental by its own page.
+- **Editor and terminal.** A Turborepo language server (a VS Code extension, usable
+  from other editors that speak LSP) and a terminal UI selected with `"ui": "tui"`.
 - **Generators.** `turbo gen workspace` adds an app or package, optionally copying an
   existing one, and custom generators use Plop.
 - **Open source.** MIT.
@@ -25,20 +31,22 @@ by design: one `turbo.json` on top of the package manager's workspaces.
 
 | | Turborepo | MonoSmith |
 |---|---|---|
-| Languages | the npm ecosystem; no other language is mentioned in the docs read | eleven languages built in, plus plugins |
+| Languages | JavaScript and TypeScript natively; other toolchains through `package.json` scripts; Cargo, uv and Go workspaces are experimental | eleven languages built in, plus plugins |
 | Package manager | npm, Yarn or pnpm | npm for Node (a decision recorded in the design docs) |
-| Environment variables in the cache key | `globalEnv` values are in the global hash (task-level `env` was not read) | a task's declared `env` table |
-| Release | not covered by the pages read | conventional commits to eight registries |
+| Environment variables in the cache key | `globalEnv` values are in every task's hash, and a task's `env` lists the variables it depends on, with wildcards | a task's declared `env` table |
+| Release | no turbo command; the publishing guide uses Changesets ("We recommend `changesets`" for versioning, changelogs and publishing) | conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories, Go modules and Packagist by tag |
 | CI | guides per provider (Vercel, GitHub Actions, CircleCI, GitLab CI, Travis CI, Buildkite) | generated pipelines for GitHub Actions, Azure Pipelines and GitLab CI |
-| Health check, dependency alignment | not covered by the pages read | `smith doctor`, `smith sync` |
-| Maturity | not assessed here | release 1.62.0, ten days of repository history |
+| Dependency alignment | the documentation points to `syncpack`, `manypkg` and `sherif`, or to the package manager | `smith sync`; `smith doctor` checks one version per production dependency |
+| Health check | `turbo boundaries` (experimental) checks workspace dependency violations; `turbo scan` is documented as removed | `smith doctor`, with `--fix` |
+| Remote execution | no mention in the documentation (searched "remote execution" and "distributed") | none |
+| Repository status | MIT, not archived, last push 2026-10-23 (GitHub API, 2026-10-25) | MIT, not archived, first commit 2026-10-15; release 1.62.0 |
 
 ## When to choose Turborepo instead
 
 - Your repository is JavaScript or TypeScript only, you use pnpm or Yarn, and all you
   want is an orderly, cached script runner that adds as little as possible.
 - You deploy on Vercel and want its remote cache by default.
-- You rely on Turborepo's environment-variable hashing, which smith's cache does not reproduce.
+- You rely on Turborepo's environment-variable hashing (`globalEnv`, wildcards). smith's cache hashes a task's declared `env` table, and its reference documents nothing like `globalEnv` or wildcards.
 
 ## When MonoSmith is the better fit
 
@@ -66,9 +74,17 @@ not tried.
 
 Retrieved 2026-10-25.
 
+The documentation was read as MDX source files from the repository's
+`apps/docs/content/docs` folder, not through a summarising tool.
+
 - Introduction: <https://turborepo.dev/docs>
 - Caching: <https://turborepo.dev/docs/crafting-your-repository/caching>
 - `turbo run` reference (`--affected`, `--filter`): <https://turborepo.dev/docs/reference/run>
+- Multi-language support: <https://turborepo.dev/docs/guides/multi-language> ("Turborepo can run other language toolchains through scripts"); experimental native support: <https://turborepo.dev/docs/guides/tools/rust>, <https://turborepo.dev/docs/guides/tools/python> and <https://turborepo.dev/docs/guides/tools/go> ("Native Go workspace support is experimental").
 - Generating code: <https://turborepo.dev/docs/guides/generating-code>
 - CI vendors: <https://turborepo.dev/docs/guides/ci-vendors>
-- Repository (licence): <https://github.com/vercel/turborepo>
+- Publishing: <https://turborepo.dev/docs/guides/publishing-libraries> and <https://turborepo.dev/docs/core-concepts/internal-packages> ("We recommend changesets for managing versioning, changelogs, and the publishing process").
+- Dependency alignment: <https://turborepo.dev/docs/crafting-your-repository/managing-dependencies> ("Tools like syncpack, manypkg, and sherif can be used for this specific purpose").
+- Boundaries: <https://turborepo.dev/docs/reference/boundaries> ("the experimental turbo boundaries command"); removed command: <https://turborepo.dev/docs/support-policy> ("This command has been removed").
+- Editor integration: <https://turborepo.dev/docs/getting-started/editor-integration> ("Turborepo LSP"); terminal UI: <https://turborepo.dev/docs/reference/configuration> ("Select a terminal UI for the repository").
+- Repository: <https://github.com/vercel/turborepo>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-23.

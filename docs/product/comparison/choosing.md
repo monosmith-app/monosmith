@@ -46,14 +46,14 @@ The chart is a starting point. Read the cases below before you rely on it.
 
 | Your situation | Look at | Why |
 |---|---|---|
-| You need **remote execution** or **hermetic, sandboxed** builds | [Bazel](bazel.md), [Pants](pants.md), [Buck2](buck2.md) | smith runs tasks on one machine and shares only results |
+| You need **remote execution** or **hermetic, sandboxed** builds | [Bazel](bazel.md), [Pants](pants.md), [Buck2](buck2.md) (and [Please](please.md), where remote execution is experimental) | smith runs tasks on one machine and shares only results |
 | Your codebase is **very large** and needs a build system that models it exactly | [Bazel](bazel.md) | Bazel documents builds with 100k+ source files; smith's unit is the project |
 | The repository is **JavaScript or TypeScript only** and you want the largest plugin ecosystem, **distributed task execution** or JetBrains editor support | [Nx](nx.md) | smith has none of these; its editor support is VS Code |
-| You are **JavaScript only, on pnpm or Yarn**, and want a small cached script runner | [Turborepo](turborepo.md) or [Lage](lage.md) | smith's Node plugin runs npm; moving would change your package manager |
-| You depend on **Turborepo's environment-variable cache keys** | [Turborepo](turborepo.md) | smith's cache covers a declared `env` table, not `env` or `globalEnv` from `turbo.json` |
+| You are **JavaScript only, on pnpm or Yarn**, and want a small cached script runner | [Turborepo](turborepo.md) or [Lage](lage.md); pnpm 12 documents an experimental task cache of its own ([workspaces](workspaces.md)) | smith's Node plugin runs npm; moving would change your package manager |
+| You depend on **Turborepo's environment-variable cache keys** | [Turborepo](turborepo.md) | smith's cache hashes a task's declared `env` table; its reference documents nothing like `globalEnv` or wildcards, and convert reports `env` and `globalEnv` as not supported |
 | You want the tool to **install and pin the Node, Bun or Deno version** | [moon](moon.md) | smith does not install compilers; it reports what is missing |
 | You use **Bun or Deno** | [moon](moon.md) | smith has no Bun or Deno plugin |
-| You publish only **npm packages** and want just versioning | [Lerna](lerna.md) or [Rush](rush.md) | smaller scope, and Rush has a change-file workflow |
+| You publish only **npm packages** and want just versioning | [Lerna](lerna.md) or [Rush](rush.md) | smaller scope; Lerna can derive versions from conventional commits, and Rush has a change-file workflow |
 | The repository is **JVM or Android only** | [Gradle](gradle.md) | keep Gradle; smith would only wrap it |
 | The repository is **Rust only** | [Cargo workspaces](cargo.md) | Cargo already provides the workspace, the lockfile and inherited dependencies |
 | You have **a few packages and a single language** and builds are short | [workspaces](workspaces.md) | a cache, generator and release tool are costs you may not need yet |
