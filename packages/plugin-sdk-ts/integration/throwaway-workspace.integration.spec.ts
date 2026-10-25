@@ -41,10 +41,10 @@ describe.skipIf(!smith)('a throwaway workspace using the TypeScript example plug
       '[conventions.widget-layout]',
       '',
     ].join('\n'))
-    // External plugins run only once trusted; this is the user saying yes to both.
+    // External plugins run only once trusted; this is the user saying yes to both. --pin writes the digest to smith.toml, which is what CI requires.
     // A smith from before trust existed has no such command and needs no trust.
     for (const name of ['widget', 'widget-layout']) {
-      const trusted = run('plugin', 'trust', name, '--yes')
+      const trusted = run('plugin', 'trust', name, '--yes', '--pin')
       if (trusted.status !== 0) expect(trusted.out).toMatch(/unknown command/)
     }
   })
