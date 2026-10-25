@@ -267,7 +267,7 @@ id is ignored, and a request that had not started is answered `-32800` without r
 cancelled request fails with any error, the SDKs answer `-32800` rather than `-32000`. In the Go SDK
 the capability comes from implementing `serve.Cancellable` (`WithContext(ctx)`, the plugin as it serves
 one request); in the TypeScript SDK from `cancellable: true`, with an `AbortSignal` as the second argument
-of every method. `shutdown` cancels what is in flight before it is answered.
+of every method. `shutdown` is answered after everything read before it, running or waiting, has been answered with its result (only a `cancel` stops a request); the end of the input, the host being gone, cancels what is in flight.
 
 What the host does when it gives up on a call (`host.Client.CallContext`, `PluginSet.CallContext`):
 

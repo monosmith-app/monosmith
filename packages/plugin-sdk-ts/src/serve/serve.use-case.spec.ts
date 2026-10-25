@@ -429,31 +429,34 @@ describe('cancel', () => {
     await host.served
   })
 
-  it('is applied to what is in flight when the host sends shutdown, which is then answered', async () => {
+  it('answers what is in flight and what is waiting with their results before it answers shutdown, whatever the plugin', async () => {
+    for (const cancellable of [true, false]) {
+      const { plugin, state } = lab({ cancellable, concurrency: 1 })
+      const host = live(plugin)
+      await host.initialize()
+      host.discover(1, 'stubborn-running')
+      host.discover(2, 'stubborn-waiting')
+      host.request(3, 'shutdown')
+      await until(() => state.started.length === 1)
+      await host.silent() // shutdown waits for the latch: nothing is cancelled and nothing is answered yet
+      state.release()
+      const answers = await host.next(3)
+      expect(answers.map(a => a.id)).toEqual([1, 2, 3])
+      expect(answers[0].result.projects[0].name).toBe('stubborn-running')
+      expect(answers[1].result.projects[0].name).toBe('stubborn-waiting')
+      await host.served
+    }
+  })
+
+  it('cancels what is in flight when the input ends, the host being gone', async () => {
     const { plugin, state } = lab({ cancellable: true })
     const host = live(plugin)
     await host.initialize()
     host.discover(1, 'block-a')
     await until(() => state.started.length === 1)
-    host.request(2, 'shutdown')
-    const answers = await host.next(2)
-    expect(answers[0]).toMatchObject({ id: 1, error: { code: -32800 } })
-    expect(answers[1]).toEqual({ jsonrpc: '2.0', id: 2, result: {} })
+    host.end()
     await host.served
-  })
-
-  it('lets a plugin that cannot be cancelled finish before shutdown is answered', async () => {
-    const { plugin, state } = lab()
-    const host = live(plugin)
-    await host.initialize()
-    host.discover(1, 'stubborn')
-    await until(() => state.started.length === 1)
-    host.request(2, 'shutdown')
-    await host.silent()
-    state.release()
-    const answers = await host.next(2)
-    expect(answers.map(a => a.id)).toEqual([1, 2])
-    await host.served
+    expect(state.aborted).toBe(1)
   })
 
   it('answers each of a stress of concurrent and cancelled requests exactly once, within the pool\'s bound', async () => {

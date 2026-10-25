@@ -69,7 +69,7 @@ says in its `initialize` result.
 - In the Go SDK a plugin advertises `cancel` by implementing `serve.Cancellable`, one method,
   `WithContext(ctx) serve.Plugin`, which returns the plugin as it serves one request; every handler
   interface stays as it was. `Serve` calls it for each request, cancels the context when the
-  cancel arrives (and at shutdown or the end of the input), and, when a cancelled request fails with
+  cancel arrives (and at the end of the input, when the host is gone), and, when a cancelled request fails with
   any error, answers `-32800` instead of `-32000`. In the TypeScript SDK a plugin says
   `cancellable: true`, and every method receives an `AbortSignal` as its second argument. Anything
   else keeps the old behaviour, signal included: it never aborts.
@@ -107,8 +107,13 @@ command. Built-in plugins stay non-cancellable.
   workers (1024 for `-1`), keeps up to 1024 more waiting in order and refuses the rest with `-32600`
   (as it refuses an id that is already in flight). Nothing is written on the stream but whole
   frames, so answers do not interleave.
-- `shutdown` first cancels what is in flight when the plugin is cancellable, then waits for the
-  workers, then answers.
+- `shutdown` waits for everything read before it, running or still waiting in the queue, and answers
+  each with its result before it answers itself, in both SDKs and cancellable or not: only a `cancel`
+  message stops a request. (An earlier draft cancelled in-flight work at shutdown; whether a short request
+  finished first then depended on scheduling, which differed between Go and TypeScript.) The host sends
+  shutdown with nothing in flight and kills a plugin that does not exit in five seconds. When the input
+  ends instead, the host is gone: a cancellable plugin has its in-flight requests cancelled and waiting
+  ones refused with `-32800`.
 
 **Conformance.** `conformance.Check` gains, in both SDKs, under the same names: a declared
 concurrency is one the protocol defines; a plugin that declares nothing answers three requests

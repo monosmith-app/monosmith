@@ -380,42 +380,58 @@ func TestAPluginThatCannotBeCancelledIgnoresCancel(t *testing.T) {
 	}
 }
 
-func TestShutdownCancelsWhatIsInFlightOfACancellablePluginAndWaitsForTheRest(t *testing.T) {
-	p := cancellableLab{newLab(2)}
+func TestShutdownAnswersWhatIsInFlightAndWaitingWithTheirResultsFirst(t *testing.T) {
+	for name, p := range map[string]interface {
+		serve.Plugin
+		unlatch()
+		waitStarted(*testing.T, int) []string
+	}{"cancellable": cancellableLab{newLab(1)}, "plain": plainLab{newLab(1)}} {
+		w := start(t, p)
+		w.initialize()
+		w.discover(1, "stubborn-running")
+		w.discover(2, "stubborn-waiting")
+		w.request(3, protocol.MethodShutdown, struct{}{})
+		p.waitStarted(t, 1)
+		w.silent(50 * time.Millisecond) // shutdown waits on the latch: nothing is cancelled, nothing answered
+		p.unlatch()
+		for _, want := range []int64{1, 2, 3} {
+			resp := w.next()
+			if *resp.ID != want || resp.Error != nil {
+				t.Fatalf("%s: want a result for %d, got %+v", name, want, resp)
+			}
+		}
+		select {
+		case <-w.done:
+			if w.serveErr != nil {
+				t.Fatal(w.serveErr)
+			}
+		case <-time.After(bound):
+			t.Fatalf("%s: Serve did not return after shutdown", name)
+		}
+	}
+}
+
+func TestTheEndOfTheInputCancelsWhatIsInFlightOfACancellablePlugin(t *testing.T) {
+	p := cancellableLab{newLab(0)}
 	w := start(t, p)
 	w.initialize()
 	w.discover(1, "block-a")
 	p.waitStarted(t, 1)
-	w.request(2, protocol.MethodShutdown, struct{}{})
-	first, second := w.next(), w.next()
-	if *first.ID != 1 || first.Error == nil || first.Error.Code != protocol.CodeRequestCancelled || *second.ID != 2 || second.Error != nil {
-		t.Fatalf("the in-flight request is cancelled, then shutdown answers: %+v %+v", first, second)
-	}
+	w.closeIn()
 	select {
 	case <-w.done:
-		err := w.serveErr
-		if err != nil {
-			t.Fatal(err)
-		}
 	case <-time.After(bound):
-		t.Fatal("Serve did not return after shutdown")
+		t.Fatal("Serve did not return after the host closed the stream")
 	}
-
-	plain := newLab(0)
-	w = start(t, plain)
-	w.initialize()
-	w.discover(1, "stubborn")
-	plain.waitStarted(t, 1)
-	w.request(2, protocol.MethodShutdown, struct{}{})
-	w.silent(50 * time.Millisecond)
-	close(plain.release)
-	if first := w.next(); *first.ID != 1 || first.Error != nil {
-		t.Fatalf("a plain plugin finishes the request first: %+v", first)
-	}
-	if second := w.next(); *second.ID != 2 || second.Error != nil {
-		t.Fatalf("then answers shutdown: %+v", second)
+	if p.cancelled != 1 {
+		t.Fatalf("cancelled %d", p.cancelled)
 	}
 }
+
+// plainLab is a lab that does not advertise cancel (lab itself has no WithContext).
+type plainLab struct{ lab }
+
+func (l lab) unlatch() { close(l.release) }
 
 func TestARequestIdAlreadyInFlightAndAFloodAreRefused(t *testing.T) {
 	p := newLab(1)

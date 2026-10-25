@@ -82,7 +82,11 @@ func (s *server) loop() error {
 			}
 			s.reply(req.ID, result, rpcErr)
 		case protocol.MethodShutdown:
-			s.drain()
+			// Everything read before shutdown, started or still waiting, is
+			// answered with its result first, in both SDKs; only a cancel
+			// message stops a request. The host sends shutdown with nothing in
+			// flight, and kills a plugin that takes longer than its timeout.
+			s.pool.wait()
 			s.reply(req.ID, struct{}{}, nil)
 			return s.writeFailure()
 		default:
@@ -134,9 +138,9 @@ func (s *server) answerCancelled(pr *pooledRequest) {
 	s.reply(pr.req.ID, nil, &protocol.ResponseError{Code: protocol.CodeRequestCancelled, Message: "request cancelled before it started"})
 }
 
-// drain ends the work in flight before shutdown is answered: a cancellable
-// plugin is asked to stop and what had not started is refused; any other
-// finishes what it is doing.
+// drain ends the work in flight when the input ends (the host is gone): a
+// cancellable plugin is asked to stop and what had not started is refused;
+// any other finishes what it is doing.
 func (s *server) drain() {
 	if s.cancellable {
 		for _, pr := range s.pool.cancelAll() {

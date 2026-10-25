@@ -117,7 +117,8 @@ async function receive (session: Session, body: string): Promise<boolean> {
     return false
   }
   if (request.method === 'shutdown') {
-    await drain(session)
+    // Everything read before shutdown, started or still waiting, is answered with its result first, as in the Go SDK; only a cancel message stops a request.
+    await session.pool.idle()
     await send(session.output, writeResult(id, '{}'))
 
     return true
@@ -172,7 +173,7 @@ function answerCancelled (output: FrameSink, pooled: PooledRequest): Promise<voi
 }
 
 /**
- * Ends the work in flight before shutdown is answered or the loop returns: a
+ * Ends the work in flight when the loop returns (the input ended, the host is gone): a
  * cancellable plugin is asked to stop and what had not started is refused;
  * any other finishes what it is doing.
  */
