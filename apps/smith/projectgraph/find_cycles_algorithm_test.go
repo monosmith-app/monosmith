@@ -27,3 +27,16 @@ func TestCycles(t *testing.T) {
 		t.Fatalf("an acyclic graph has none: %v", got)
 	}
 }
+
+func TestCycleRemedyNamesTheEdgeThatClosesTheLoop(t *testing.T) {
+	cases := map[string][]string{
+		"remove web's import of ui (web → ui)": {"ui", "web", "ui"},
+		"remove a's import of a (a → a)":       {"a", "a"},
+		"":                                     {"a"},
+	}
+	for want, cycle := range cases {
+		if got := CycleRemedy(cycle); got != want {
+			t.Errorf("CycleRemedy(%v) = %q, want %q", cycle, got, want)
+		}
+	}
+}

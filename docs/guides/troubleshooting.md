@@ -129,7 +129,7 @@ lists them all. The checks, grouped by who owns them:
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
 | every task that serves an app can start it | `serve` must name an existing task, `serve_url` must be an `http(s)` URL, `serve_timeout` a duration like `60s`, and both only with `serve` |
-| projects do not import each other in a cycle | smith cannot order a cycle, so in 1.62.0 every command that opens the workspace (this one included) stops with `smith: projects import each other in a cycle: ui → web → ui` before the check can list it. Move what both need into a project neither imports back, or merge the two |
+| projects do not import each other in a cycle | smith cannot order a cycle: `smith doctor` and `smith graph` still open the workspace and list it with the import to remove, while `run`, `build`, `affected` and releases stop with `smith: projects import each other in a cycle: ui → web → ui`. Remove that import, move what both need into a project neither imports back, or merge the two |
 | CI pipelines match the workspace | the generated pipeline is stale. Run `smith ci generate` and commit it (`smith doctor --fix` does the same) |
 | release tags resolve under each project's tag prefix | a project's release tags use another name, so its next release would start from scratch. `smith adopt --tags` creates them |
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |

@@ -127,10 +127,13 @@ web:test ✔ 1.327s
 
 ```text
 $ smith graph
+⚠ import cycle: ui → web → ui; remove web's import of ui (web → ui)
+
+$ smith run build
 smith: projects import each other in a cycle: ui → web → ui
 ```
 
-The command stops with that error until one import is removed, and the [architecture notes](../../architecture/project-discovery.md) say every other command does too, so a cycle cannot reach CI unnoticed.
+`smith graph` and `smith doctor` open the workspace anyway and report the cycle with the import to remove; every command that needs an order (`run`, `build`, `affected`, a release) stops with the cycle until one import is removed, so a cycle cannot reach CI unnoticed. See the [architecture notes](../../architecture/project-discovery.md).
 
 ## Compared with fourteen tools
 

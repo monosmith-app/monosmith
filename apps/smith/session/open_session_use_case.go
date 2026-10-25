@@ -28,6 +28,9 @@ type Session struct {
 	// Files are tracked files plus untracked files that are not ignored.
 	Files   []string
 	Version string
+	// allowCycles keeps the graph open when projects import each other in a
+	// cycle (Options.AllowCycles).
+	allowCycles bool
 }
 
 // Options configure Open.
@@ -43,6 +46,10 @@ type Options struct {
 	// Preview opens Dir itself with this configuration instead of finding
 	// smith.toml: a look at a repository before it is a workspace (smith adopt).
 	Preview *workspace.Config
+	// AllowCycles opens the workspace although projects import each other in
+	// a cycle, for the commands that report it (doctor, graph). Without it
+	// Open fails with the cycle, as every command that needs an order must.
+	AllowCycles bool
 }
 
 // Open finds the workspace containing opts.Dir and loads everything a command
@@ -88,12 +95,20 @@ func Open(opts Options) (*Session, error) {
 		plugins.Close()
 		return nil, err
 	}
-	graph, err := projectgraph.Discover(files, plugins, catalog, cfg)
+	graph, err := discover(opts.AllowCycles, files, plugins, catalog, cfg)
 	if err != nil {
 		plugins.Close()
 		return nil, err
 	}
-	return &Session{Root: root, Config: cfg, Git: git, Plugins: plugins, Stacks: catalog, Graph: graph, Files: files, Version: opts.Version}, nil
+	return &Session{Root: root, Config: cfg, Git: git, Plugins: plugins, Stacks: catalog, Graph: graph, Files: files, Version: opts.Version, allowCycles: opts.AllowCycles}, nil
+}
+
+// discover builds the project graph, refusing a cycle unless allowed.
+func discover(allowCycles bool, files []string, plugins *pluginhost.PluginSet, catalog *pluginhost.Catalog, cfg workspace.Config) (*projectgraph.Graph, error) {
+	if allowCycles {
+		return projectgraph.DiscoverAllowingCycles(files, plugins, catalog, cfg)
+	}
+	return projectgraph.Discover(files, plugins, catalog, cfg)
 }
 
 // LocalCacheDir is the directory of the workspace's local cache.
@@ -142,7 +157,7 @@ func (s *Session) Refresh() error {
 	if err != nil {
 		return err
 	}
-	graph, err := projectgraph.Discover(files, s.Plugins, s.Stacks, s.Config)
+	graph, err := discover(s.allowCycles, files, s.Plugins, s.Stacks, s.Config)
 	if err != nil {
 		return err
 	}

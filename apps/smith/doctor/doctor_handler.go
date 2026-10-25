@@ -49,7 +49,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 			if fix && asJSON {
 				return errors.New("--json prints the report and its fixes; apply them with --fix, without --json")
 			}
-			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
 			if errors.Is(err, pluginadmit.ErrUntrusted) {
 				return reportUntrusted(cmd, asJSON)
 			}
@@ -99,7 +99,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 			}
 			if fix {
 				if report, err = fixAll(cmd, s, report, yes, only, choose, func() (*session.Session, error) {
-					return session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+					return session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
 				}); err != nil {
 					return err
 				}

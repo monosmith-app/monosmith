@@ -79,7 +79,7 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 | What | Evidence |
 |---|---|
 | `[cache] max_size_mb` is read but never applied: `taskcache.Prune` has no caller outside tests | **Fixed (#559).** `taskrun` prunes the local store after a run that stored results, and `smith cache` shows and trims it; the pages that said "not applied" were corrected. Was: `grep` for callers; `smith config list` and the schema still described pruning |
-| A project import cycle stops every command that opens the workspace, so `smith doctor`'s cycle check and the warning in `smith graph` cannot be reached | `session.Open` fails with `projects import each other in a cycle: ui → web → ui`; reproduced in a scratch workspace |
+| A project import cycle stops every command that opens the workspace, so `smith doctor`'s cycle check and the warning in `smith graph` cannot be reached | **Fixed (#558).** `session.Open` failed with `projects import each other in a cycle: ui → web → ui`; `doctor` and `graph` now open with `AllowCycles` and report it, the commands that need an order still fail |
 | `smith test --json` (and any `run --json`) prints task log lines before the JSON on standard output | observed; `--json-events` is clean |
 | `smith plugin check <path> --json` prints `"detail": "<nil>"` for one check | observed |
 | `smith doctor --fix --yes` regenerated pipelines with `go-version: '1.24'` where they had `'1.27'` when `go.work` was missing | observed |
