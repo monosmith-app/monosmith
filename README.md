@@ -4,10 +4,10 @@
 
 **One command to build, test, ship and release a monorepo in any of eleven languages.**
 
-- **Eleven languages, one tool.** Node, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart, the JVM and Bicep, each a plugin; projects and tasks come from your manifests, not from a config you write.
-- **Cached and affected.** A task whose inputs did not change replays from a content-addressed cache, local or shared (HTTP, S3, Azure Blob). `--affected` runs only what a change can reach.
-- **CI you do not write.** Pipelines for GitHub Actions, Azure Pipelines and GitLab CI are generated, call the same `smith` commands you run locally, and `smith doctor` fails when they drift.
-- **Releases from commits.** Conventional commits version and publish packages to eight registries in dependency order, and a failed release resumes.
+- **Eleven languages, ready-made.** `smith add` scaffolds a Node, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart, JVM or Bicep project that lints, tests and builds on its first run, and CI, a dev container and the release already know about it. No BUILD files, no per-language rules. [Compared with 14 tools](docs/product/comparison/languages-and-environments.md)
+- **One dependency graph for all of them.** Read from your manifests, imports and shared schemas, it orders tasks, keys the cache, selects `--affected`, and answers `smith graph --blast-radius <file>` and `--diff main`. [Compared](docs/product/comparison/dependency-graph.md)
+- **Extend it in any language.** A plugin is any program that speaks JSON-RPC; 24 ship in the binary, with SDKs for Go and TypeScript, `smith plugin check`, stacks and recipes for team standards, and a trust gate for plugins a repository names. [Compared](docs/product/comparison/plugins-and-flexibility.md)
+- **Cached, affected, and CI and releases you do not write.** Tasks replay from a content-addressed cache, local or shared (HTTP, S3, Azure Blob); GitHub Actions, Azure Pipelines and GitLab CI are generated and `smith doctor` fails when they drift; conventional commits version and publish in dependency order, and a failed release resumes.
 - **A way in and a way to check.** `smith convert` brings Nx, Turborepo and mnci workspaces over and reports what it could not map; one static binary, MIT licensed. smith is young: read the [honest FAQ](docs/product/faq-for-evaluators.md).
 
 ```sh

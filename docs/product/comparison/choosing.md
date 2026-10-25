@@ -28,7 +28,17 @@ The chart is a starting point. Read the cases below before you rely on it.
 
 - Your repository has **two or more of** Node, Python, Go, Rust, .NET, Ruby, PHP,
   C or C++, Dart, the JVM or Bicep, and you want one command, one cache and one
-  pipeline for them.
+  pipeline for them. A new project in any of them arrives passing lint, tests and
+  build, with CI, a dev container and a release target wired
+  ([Languages and environments](languages-and-environments.md)).
+- You do **not want to write BUILD files or per-language rules**, and you want the
+  dependency graph read from `package.json`, `go.mod`, `Cargo.toml`, your
+  imports and your shared schemas, with a blast-radius query and a graph diff
+  ([The dependency graph](dependency-graph.md)).
+- You want to **extend the tool in a language your team already writes**: a plugin
+  is any program that speaks JSON-RPC, 24 ship in the binary, SDKs exist for Go and
+  TypeScript, and a recipe sets a team standard with no code
+  ([Plugins and flexibility](plugins-and-flexibility.md)).
 - You **publish packages** to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev, a
   Maven repository or as Go module tags, and want the release derived from
   conventional commits and resumable after a failure.
@@ -51,7 +61,10 @@ The chart is a starting point. Read the cases below before you rely on it.
 | The repository is **JavaScript or TypeScript only** and you want the largest plugin ecosystem, **distributed task execution** or JetBrains editor support | [Nx](nx.md) | smith has none of these; its editor support is VS Code |
 | You are **JavaScript only, on pnpm or Yarn**, and want a small cached script runner | [Turborepo](turborepo.md) or [Lage](lage.md); pnpm 12 documents an experimental task cache of its own ([workspaces](workspaces.md)) | smith's Node plugin runs npm; moving would change your package manager |
 | You depend on **Turborepo's environment-variable cache keys** | [Turborepo](turborepo.md) | smith's cache hashes a task's declared `env` table; its reference documents nothing like `globalEnv` or wildcards, and convert reports `env` and `globalEnv` as not supported |
-| You want the tool to **install and pin the Node, Bun or Deno version** | [moon](moon.md) | smith does not install compilers; it reports what is missing |
+| You want the tool to **install and pin the Node, Bun or Deno version** | [moon](moon.md) | smith does not install compilers; it pins and checks versions and reports what is missing |
+| You want a **registry of ready-made third-party plugins**, or plugins in a **sandbox** | [Nx](nx.md) (a plugin registry), [Gradle](gradle.md) (the Plugin Portal), [moon](moon.md) (WASM plugins with a sandboxed file system) | smith has no registry yet, and a trusted plugin runs with your privileges ([plugins page](plugins-and-flexibility.md)) |
+| You need a **file-level graph**, or **rules on who may depend on whom** | [Bazel](bazel.md), [Pants](pants.md), [Buck2](buck2.md); [Nx](nx.md) or [moon](moon.md) for boundary rules | smith's graph is per project, and dependency rules are open ([graph page](dependency-graph.md)) |
+| Your repository is **one ecosystem with a first-class native tool** and you want its depth | [Gradle](gradle.md) for the JVM, [Cargo](cargo.md) for Rust, [Nx](nx.md) for JavaScript | each is as ready-made as smith inside its own ecosystem ([languages page](languages-and-environments.md)) |
 | You use **Bun or Deno** | [moon](moon.md) | smith has no Bun or Deno plugin |
 | You publish only **npm packages** and want just versioning | [Lerna](lerna.md) or [Rush](rush.md) | smaller scope; Lerna can derive versions from conventional commits, and Rush has a change-file workflow |
 | The repository is **JVM or Android only** | [Gradle](gradle.md) | keep Gradle; smith would only wrap it |

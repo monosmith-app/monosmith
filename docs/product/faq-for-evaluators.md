@@ -2,8 +2,47 @@
 
 Questions a team lead, a security reviewer or a procurement contact asks before
 adopting a tool. Answers are checked against the repository and the reference
-pages as of smith 1.62.0 (2026-10-25). Where something could not be checked, the
-answer says so.
+pages as of smith 1.62.0 (2026-10-25); the answers on languages, plugins and the
+graph were checked again against smith 1.65.0 the same day. Where something could
+not be checked, the answer says so.
+
+## Languages, plugins and the graph
+
+### Which languages work out of the box, and what does "out of the box" mean?
+
+Node and TypeScript, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart and Flutter, the
+JVM (Java, Kotlin, Android) and Azure Bicep. `smith add <kind> <name> --lang <language>` writes
+the project with a worked example and a test, adds the root files the language wants once per
+repository, and regenerates the CI pipeline and the dev container with that language's toolchain.
+In a scratch workspace with all eleven on 2026-10-25, every test and build passed. Two cells are
+not fully proven: Gradle, Kotlin and Android were not run, and the Dart lint task did not pass on
+the test machine because `dart analyze` itself crashed. See
+[Languages and environments](comparison/languages-and-environments.md).
+
+### Can we add a language or a rule smith does not have?
+
+Yes. A plugin is any program that speaks JSON-RPC 2.0 on stdin and stdout, so it can be written in
+any language; SDKs are published for Go and TypeScript, and a 102-line Python plugin with no SDK
+passes `smith plugin check`. A plugin can add a language, tasks, a scaffold, CI steps or a release
+target. A team standard that needs no code is a recipe. There is no plugin registry yet, and plugins
+are placed on a search path or named in `smith.toml`. See
+[Plugins and flexibility](comparison/plugins-and-flexibility.md).
+
+### Can a plugin in a repository I cloned run code on my machine?
+
+Not before you allow it. An external plugin named in `smith.toml` does not start until you run
+`smith plugin trust`; it then starts with a minimal environment, and in CI only when `smith.toml`
+pins its SHA-256. Trusting is not sandboxing: a trusted plugin runs with your privileges, and
+smith has no sandbox yet (issue #565).
+
+### How does smith know what depends on what, across languages?
+
+Each language plugin reports a project's imports and exports, and smith matches them; shared
+OpenAPI, AsyncAPI, protobuf and GraphQL files link projects of different languages when a
+consumer names the schema in `smith.toml`. The graph is per project, not per file.
+`smith graph --blast-radius <file>` lists what a change reaches and `smith graph --diff <rev>` shows
+what a branch changed in the graph. Bazel, Pants and Buck2 model individual targets and files;
+smith does not. See [The dependency graph](comparison/dependency-graph.md).
 
 ## Cost
 
@@ -174,9 +213,9 @@ Plans and bugs are tracked in the repository's issues and on the MonoSmith proje
 board; no dated roadmap is published. What the documentation itself lists as not
 done yet:
 
-- **Plugin discovery.** How plugins are published, found and installed by name is open
+- **Plugin discovery and sandboxing.** How plugins are published, found and installed by name is open
   ([Decisions](../architecture/decisions/README.md)); plugins are found on a search path or
-  declared by command.
+  declared by command. A registry and a sandbox are tracked in #565, SDKs for Python and C# in #564.
 - **More install channels.** Homebrew, Scoop, winget, Chocolatey, the AUR, Snap and an
   apt or dnf repository are tracked in issue #225; manifests are generated but no
   tap, bucket or submission uses them yet.
