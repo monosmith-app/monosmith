@@ -38,19 +38,37 @@ func SearchPath(workspaceRoot string) []string {
 // Home is smith's per-user directory: SMITH_HOME, or ~/.smith.
 func Home() string { return plugintrust.Home() }
 
+// InstalledProblem is a plugin directory whose plugin.json cannot be used.
+type InstalledProblem struct {
+	// Dir is the plugin's directory.
+	Dir string
+	// Problem says what is wrong with its plugin.json.
+	Problem string
+}
+
 // FindInstalled lists the plugins on the search path, one per name: a plugin
 // earlier on the path hides one of the same name later. Each is a directory
-// holding a plugin.json, directly under a search directory.
+// holding a plugin.json, directly under a search directory. A directory whose
+// plugin.json is invalid is left out (FindInstalledReport says which).
 func FindInstalled(workspaceRoot string) ([]Installed, error) {
+	out, _, err := FindInstalledReport(workspaceRoot)
+	return out, err
+}
+
+// FindInstalledReport is FindInstalled, and also the directories it skipped
+// because their plugin.json is invalid: one broken plugin does not hide the
+// others.
+func FindInstalledReport(workspaceRoot string) ([]Installed, []InstalledProblem, error) {
 	seen := map[string]bool{}
 	var out []Installed
+	var problems []InstalledProblem
 	for _, dir := range SearchPath(workspaceRoot) {
 		entries, err := os.ReadDir(dir)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for _, e := range entries {
 			if !e.IsDir() {
@@ -61,7 +79,8 @@ func FindInstalled(workspaceRoot string) ([]Installed, error) {
 				continue
 			}
 			if err != nil {
-				return nil, err
+				problems = append(problems, InstalledProblem{Dir: filepath.Join(dir, e.Name()), Problem: err.Error()})
+				continue
 			}
 			if !seen[p.Name] {
 				seen[p.Name] = true
@@ -70,12 +89,12 @@ func FindInstalled(workspaceRoot string) ([]Installed, error) {
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	return out, nil
+	return out, problems, nil
 }
 
 // FindPlugin returns the installed plugin with a name.
 func FindPlugin(workspaceRoot, name string) (Installed, error) {
-	all, err := FindInstalled(workspaceRoot)
+	all, problems, err := FindInstalledReport(workspaceRoot)
 	if err != nil {
 		return Installed{}, err
 	}
@@ -84,7 +103,11 @@ func FindPlugin(workspaceRoot, name string) (Installed, error) {
 			return p, nil
 		}
 	}
-	return Installed{}, fmt.Errorf("plugin %q is not installed: no %s/%s in %s; give its command in smith.toml, or install it there", name, name, ManifestFile, strings.Join(SearchPath(workspaceRoot), ", "))
+	skipped := ""
+	for _, p := range problems {
+		skipped += "; skipped: " + p.Problem
+	}
+	return Installed{}, fmt.Errorf("plugin %q is not installed: no %s/%s in %s; give its command in smith.toml, or install it there%s", name, name, ManifestFile, strings.Join(SearchPath(workspaceRoot), ", "), skipped)
 }
 
 // LaunchCommand is how a plugin is started by name: the command smith.toml

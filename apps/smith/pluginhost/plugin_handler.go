@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -107,7 +108,7 @@ func Command(version string) *cobra.Command {
 				rows = append(rows, row{Name: name, Source: "built-in", Roles: info.EffectiveRoles(), Provides: info.Provides, Requires: info.Requires, Conflicts: info.Conflicts, Capabilities: serve.CapabilitiesOf(p)})
 			}
 			root, _ := workspace.FindRoot(".")
-			installed, err := FindInstalled(root)
+			installed, broken, err := FindInstalledReport(root)
 			if err != nil {
 				return err
 			}
@@ -127,6 +128,9 @@ func Command(version string) *cobra.Command {
 				if !used[p.Name] {
 					rows = append(rows, row{Name: p.Name, Version: p.Version, Source: p.Dir, Env: pluginenv.Visible(p.Env, nil)})
 				}
+			}
+			for _, b := range broken {
+				rows = append(rows, row{Name: filepath.Base(b.Dir), Source: b.Dir, Problem: b.Problem})
 			}
 			out := cmd.OutOrStdout()
 			if asJSON {
@@ -165,11 +169,14 @@ func Command(version string) *cobra.Command {
 				}
 			}
 			fmt.Fprintf(out, "\nInstalled (search path: %s):\n", strings.Join(SearchPath(root), ", "))
-			if len(installed) == 0 {
+			if len(installed) == 0 && len(broken) == 0 {
 				fmt.Fprintln(out, "  none")
 			}
 			for _, p := range installed {
 				fmt.Fprintf(out, "  %-14s %-10s %s\n", p.Name, p.Version, p.Dir)
+			}
+			for _, b := range broken {
+				fmt.Fprintf(out, "  %-14s %-10s %s\n      %s\n", filepath.Base(b.Dir), "invalid", b.Dir, b.Problem)
 			}
 			return nil
 		},

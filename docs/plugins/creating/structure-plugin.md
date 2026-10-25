@@ -312,7 +312,7 @@ structure = ["widget-layout"]
 | `smith.toml [conventions.x]: x is not a convention plugin` (from the code) | `Kind` is `language`; a structure plugin is kind `convention` |
 | `smith.toml [conventions.x]: it does not apply to "go"; it supports [widget]` (from the code) | `languages = [...]` in the convention names a language the plugin does not list |
 | `lint` does not wait for the check | `DependsOn` named a task that does not exist yet; emit it unconditionally and let smith ignore it |
-| `plugin.cmd` fails to start on Windows | a bare name is looked up on `PATH`; write `.\plugin.cmd` |
+| `plugin.cmd` fails to start on Windows from a `command` in `smith.toml` | a bare name is looked up on `PATH`; write `.\plugin.cmd` (`smith plugin check plugin.cmd` starts a file in the current directory from there) |
 | a plugin that frames the messages itself prints a banner and smith stops answering | stdout is the protocol; use `console.error`. (The TypeScript, Python and C# SDKs send whatever else is written to stdout to stderr, so a stray `console.log`, `print` or `Console.WriteLine` cannot corrupt it) |
 | the check passes locally and fails in CI | the task command contains the plugin's absolute path (as this example's does); in a shared plugin put the tool on `PATH` and name it in the command |
 
