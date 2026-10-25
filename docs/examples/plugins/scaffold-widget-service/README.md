@@ -34,5 +34,7 @@ Do not add `--generate`: it asks for an app, a lib and a package, and a service 
 command = ["/path/to/smith-plugin-widget-service"]
 ```
 
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget-service` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../../plugins/using/plugin-security.md).
+
 The stack names the `widget-lint` toolchain, so declare
 [`toolchain-widget-lint`](../toolchain-widget-lint) as well. Then `smith add app api --stack widget-service`.

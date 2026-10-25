@@ -37,6 +37,8 @@ command = ["/path/to/smith-plugin-widget-bundle"]
 target = "dist/deploy"
 ```
 
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget-bundle` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../../plugins/using/plugin-security.md).
+
 ```sh
 smith release --dry-run
 smith release --no-push --yes       # deploys to dist/deploy and tags locally

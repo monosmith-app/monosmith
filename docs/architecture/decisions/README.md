@@ -56,6 +56,7 @@ merge dates.
 | [0033](0033-doctor-fixes-with-steps-and-choices.md) | Doctor fixes with steps and choices | accepted | 2026-10-24 | Fixes can run commands and ask questions |
 | [0034](0034-adopt-and-convert-depth-levels.md) | Adopt and convert depth levels | accepted (Nx and Turborepo); proposed (plain repositories) | 2026-10-25 | `--level conservative\|full` |
 | [0035](0035-ci-branches-setting.md) | `[ci] branches` | accepted | 2026-10-25 | Where the generated pipelines run |
+| [0036](0036-external-plugins-are-trusted-and-get-a-minimal-environment.md) | External plugins are trusted and get a minimal environment | accepted | 2026-10-25 | An external plugin starts only once trusted, with the baseline environment plus what it declares |
 
 Records 0004, 0005, 0008 and 0016 state their rationale as not recorded; so do parts of
 0002, 0009, 0011 to 0015 and 0032.

@@ -51,6 +51,7 @@ func TestRecipeDriftAndUpgrade(t *testing.T) {
 	w.write("recipes/team.recipe.toml", teamRecipeAt("1.2.0", "hello from 1.2.0"))
 	w.write(".smith/plugins/kiwi/plugin.json", `{"name": "kiwi", "version": "1.0.0", "command": [`+quote(filepath.ToSlash(plugin))+`]}`)
 	w.write("smith.toml", w.read("smith.toml")+"\n[plugins.external.kiwi]\nversion = \"^1\"\n")
+	w.trust("kiwi")
 	w.write(".gitignore", w.read(".gitignore")+".kiwi-registry\n")
 
 	w.smith(true, "add", "app", "basket", "--choice", "language=kiwi")

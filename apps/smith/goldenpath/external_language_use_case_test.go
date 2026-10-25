@@ -30,10 +30,12 @@ func TestExternalLanguagePlugin(t *testing.T) {
 	w.write(".smith/plugins/kiwi/plugin.json", `{"name": "kiwi", "version": "1.0.0", "command": [`+quote(filepath.ToSlash(plugin))+`]}`)
 	toml, _ := os.ReadFile(filepath.Join(w.dir, "smith.toml"))
 	w.write("smith.toml", string(toml)+"\n[plugins.external.kiwi]\nversion = \"^2\"\n")
+	w.trust("kiwi")
 	if out := w.smith(false, "projects"); !strings.Contains(out, "wants version ^2, but the plugin is 1.0.0") {
 		t.Fatalf("a version smith.toml does not accept must fail:\n%s", out)
 	}
 	w.write("smith.toml", string(toml)+"\n[plugins.external.kiwi]\nversion = \"^1\"\n")
+	w.trust("kiwi")
 	if out := w.smith(true, "plugin", "list"); !strings.Contains(out, "kiwi           1.0.0") {
 		t.Fatalf("plugin list:\n%s", out)
 	}
@@ -76,7 +78,7 @@ func TestExternalLanguagePlugin(t *testing.T) {
 			t.Fatalf("%s does not install kiwi:\n%s", f, body)
 		}
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "kiwi project fruit has a kiwi.toml") {
+	if out := w.smith(true, "doctor", "--verbose"); !strings.Contains(out, "kiwi project fruit has a kiwi.toml") || !strings.Contains(out, "external plugin kiwi is trusted") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 
@@ -102,6 +104,7 @@ func TestExternalLanguagePlugin(t *testing.T) {
 	}
 	toml, _ = os.ReadFile(filepath.Join(w.dir, "smith.toml"))
 	w.write("smith.toml", string(toml)+"\n[plugins.external.hello-rules]\ncommand = [\"go\", \"run\", \"./apps/hello-rules\"]\n\n[conventions.hello-rules]\nlanguages = [\"go\"]\n")
+	w.trust("hello-rules")
 	if out := w.smith(true, "run", "hello", "-p", "hello-rules"); !strings.Contains(out, "hello-rules:hello ✔") {
 		t.Fatalf("the plugin's task:\n%s", out)
 	}

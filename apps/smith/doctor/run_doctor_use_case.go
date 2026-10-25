@@ -14,11 +14,15 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
 	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/toolchainpin"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -40,6 +44,42 @@ type Finding struct {
 	Source string `json:"source"`
 }
 
+// trustFindings are the findings about the external plugins the workspace
+// needs: where each comes from, whether it is trusted and pinned, and what it
+// may see.
+func trustFindings(root string, cfg workspace.Config) []Finding {
+	var out []Finding
+	for _, f := range pluginadmit.Findings(pluginhost.ExternalStatuses(root, cfg), plugintrust.InCI(os.Getenv)) {
+		out = append(out, Finding{Finding: f, Source: "smith"})
+	}
+	return out
+}
+
+// tally counts the passed, failed and warning findings.
+func (r *Report) tally() {
+	for _, f := range r.Findings {
+		switch {
+		case f.OK:
+			r.Passed++
+		case f.Warning:
+			r.Warnings++
+		default:
+			r.Failed++
+		}
+	}
+}
+
+// UntrustedReport is the report when the workspace cannot be opened because an
+// external plugin it needs is not trusted: smith did not start the plugin, so
+// no other check can run until it is.
+func UntrustedReport(root string, cfg workspace.Config) Report {
+	findings := trustFindings(root, cfg)
+	report := Report{Findings: findings}
+	report.tally()
+	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
+	return report
+}
+
 // Run collects every finding.
 func Run(s *session.Session) Report {
 	var findings []Finding
@@ -53,18 +93,10 @@ func Run(s *session.Session) Report {
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
+	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	report := Report{Findings: findings}
-	for _, f := range findings {
-		switch {
-		case f.OK:
-			report.Passed++
-		case f.Warning:
-			report.Warnings++
-		default:
-			report.Failed++
-		}
-	}
+	report.tally()
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
 	report.Fixes = Plan(report)
 	return report

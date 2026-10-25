@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 
+	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/conformance"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
@@ -13,9 +15,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// isDeclared is whether smith.toml declares an external plugin of that name,
+// which then wins over a built-in one.
+func isDeclared(external map[string]workspace.ExternalPlugin, name string) bool {
+	_, ok := external[name]
+	return ok
+}
+
 // checkCommand is `smith plugin check`: the conformance suite.
 func checkCommand(version string) *cobra.Command {
 	var generate, asJSON bool
+	var grant []string
 	cmd := &cobra.Command{
 		Use:   "check <name | path to plugin> [args...]",
 		Short: "Check that a plugin keeps the protocol's promises",
@@ -26,12 +36,22 @@ an app, a lib and a package in a temporary directory, which a language plugin
 must then discover as generated (this may install dependencies).
 
 A name is looked up the way the workspace would start it: smith.toml, then the
-built-in plugins, then the plugin search path. A path runs that executable.`,
-		Example: "  smith plugin check kiwi --generate\n  smith plugin check ./bin/smith-plugin-kiwi",
+built-in plugins, then the plugin search path. A path runs that executable.
+
+Checking is for the author of a plugin, so it does not need the plugin to be
+trusted. The plugin still starts with the minimal environment external plugins
+get (PATH, HOME, the temporary directory, locale and proxy variables): pass
+--env NAME (or a prefix such as --env 'AWS_*') for each variable it needs. A
+plugin found by name also gets the variables its plugin.json and smith.toml
+declare. A built-in plugin keeps the whole environment.`,
+		Example: "  smith plugin check kiwi --generate\n  smith plugin check ./bin/smith-plugin-kiwi\n  smith plugin check ./bin/smith-plugin-kiwi --env NPM_TOKEN --env 'AWS_*'",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			argv := args
-			if _, err := os.Stat(args[0]); err != nil {
+			env := append(os.Environ(), "SMITH_PLUGIN=1")
+			if _, err := os.Stat(args[0]); err == nil {
+				env = append(pluginenv.Build(os.Environ(), nil, grant, runtime.GOOS), "SMITH_PLUGIN=1")
+			} else {
 				root, external := ".", map[string]workspace.ExternalPlugin{}
 				if r, err := workspace.FindRoot("."); err == nil {
 					root = r
@@ -42,6 +62,13 @@ built-in plugins, then the plugin search path. A path runs that executable.`,
 				if argv, err = LaunchCommand(root, external, args[0]); err != nil {
 					return err
 				}
+				if _, builtin := Builtin(args[0]); !builtin || isDeclared(external, args[0]) {
+					var declared, workspaceGrant []string
+					if p, err := ResolveExternal(root, external, args[0]); err == nil {
+						declared, workspaceGrant = p.ManifestEnv, p.WorkspaceEnv
+					}
+					env = append(pluginenv.Build(os.Environ(), declared, append(workspaceGrant, grant...), runtime.GOOS), "SMITH_PLUGIN=1")
+				}
 			}
 			ws, err := os.MkdirTemp("", "smith-plugin-check-")
 			if err != nil {
@@ -49,7 +76,7 @@ built-in plugins, then the plugin search path. A path runs that executable.`,
 			}
 			defer func() { _ = os.RemoveAll(ws) }()
 			c, err := host.Start(host.Options{
-				Command: argv, Env: append(os.Environ(), "SMITH_PLUGIN=1"), WorkspaceRoot: ws,
+				Command: argv, Env: env, WorkspaceRoot: ws,
 				Stderr: cmd.ErrOrStderr(), Host: protocol.Peer{Name: "smith", Version: version},
 			})
 			if err != nil {
@@ -90,5 +117,6 @@ built-in plugins, then the plugin search path. A path runs that executable.`,
 	}
 	cmd.Flags().BoolVar(&generate, "generate", false, "also generate projects in a temporary directory and discover them")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
+	cmd.Flags().StringArrayVar(&grant, "env", nil, "an environment variable the plugin may see, beyond the minimal environment: a name, or a prefix ending in * (repeatable)")
 	return cmd
 }

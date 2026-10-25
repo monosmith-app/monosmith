@@ -95,6 +95,8 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 | how it is started | `smith plugin serve <name>` (a child of smith) | its `command` from `smith.toml`, or its `plugin.json` on the search path |
 | how many | 12 language plugins and 12 add-ons | as many as you declare |
 | switch | `[plugins] enabled` (the language plugins) | declare or remove `[plugins.external.<name>]` |
+| trust | none needed: it is the smith binary | you trust it before smith starts it: `smith plugin trust <name>` |
+| environment | the whole environment smith runs in | a minimal one, plus the variables it declares and you grant |
 
 The **12 language plugins** are `bicep`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `node`, `php`,
 `python`, `recipe`, `ruby` and `rust`. They load unless `[plugins] enabled` names fewer.
@@ -109,6 +111,12 @@ convention you configure with `[conventions.<name>]`. They cannot be enabled or 
 Every one has a page in the [catalogue](catalogue/README.md).
 
 An external plugin with the name of a built-in plugin **replaces** it.
+
+An external plugin is a program that runs with your privileges, so smith starts it only after you
+have trusted it, and hands it only the environment it needs. Which plugins the workspace needs is what
+`smith.toml` declares under `[plugins.external]`; a plugin that is merely installed on the search path
+is never started and needs no trust. What smith protects against, and what it does not, is on
+[Plugin security](plugin-security.md).
 
 ### How smith finds a plugin
 

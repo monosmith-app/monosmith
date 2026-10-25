@@ -70,6 +70,8 @@ command = ["/path/to/smith-plugin-widget-service"]
 command = ["/path/to/smith-plugin-widget-bundle"]
 ```
 
+smith starts an external plugin only after you trust it: the first command that needs it asks, or run `smith plugin trust widget` (`--yes` in a script, `--pin` to also write the digest CI checks). It starts with a minimal environment; see [Plugin security](../../plugins/using/plugin-security.md).
+
 The tasks of the Go examples run the plugin's own executable, so they need no other tool; a real
 plugin names the tool it wraps. A build output (`smith-plugin-*`) is ignored by each example's
 `.gitignore`.

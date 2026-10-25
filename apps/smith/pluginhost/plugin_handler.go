@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
+	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
@@ -18,6 +22,38 @@ func orDash(s string) string {
 		return "-"
 	}
 	return s
+}
+
+// yesNo prints a flag as a table cell.
+func yesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
+}
+
+// ExternalStatuses describes the external plugins smith.toml declares; a plugin
+// smith cannot even resolve is a status with its problem.
+func ExternalStatuses(root string, cfg workspace.Config) []pluginadmit.Status {
+	store, err := plugintrust.OpenStore()
+	if err != nil {
+		return nil
+	}
+	var out []pluginadmit.Status
+	names := make([]string, 0, len(cfg.Plugins.External))
+	for name := range cfg.Plugins.External {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		p, err := ResolveExternal(root, cfg.Plugins.External, name)
+		if err != nil {
+			out = append(out, pluginadmit.Status{Plugin: pluginadmit.Plugin{Name: name, Source: workspace.FileName}, Problem: err.Error()})
+			continue
+		}
+		out = append(out, pluginadmit.Describe(store, root, []pluginadmit.Plugin{p})...)
+	}
+	return out
 }
 
 // Command is `smith plugin`: list plugins, and serve a built-in one over stdio.
@@ -39,7 +75,7 @@ func Command(version string) *cobra.Command {
 	var asJSON bool
 	list := &cobra.Command{
 		Use:   "list",
-		Short: "List the built-in plugins and the ones installed on the plugin search path",
+		Short: "List the built-in plugins, the external ones the workspace uses (trusted or not) and the ones installed on the plugin search path",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			type row struct {
 				Name         string               `json:"name"`
@@ -50,6 +86,15 @@ func Command(version string) *cobra.Command {
 				Requires     []protocol.PluginRef `json:"requires,omitempty"`
 				Conflicts    []protocol.PluginRef `json:"conflicts,omitempty"`
 				Capabilities any                  `json:"capabilities,omitempty"`
+				// The rest is set for an external plugin: Used is true when
+				// the workspace declares it, and Env, Trusted and Pinned say
+				// what it may see and whether smith may start it.
+				Used    bool     `json:"used,omitempty"`
+				Command []string `json:"command,omitempty"`
+				Env     []string `json:"env,omitempty"`
+				Trusted *bool    `json:"trusted,omitempty"`
+				Pinned  *bool    `json:"pinned,omitempty"`
+				Problem string   `json:"problem,omitempty"`
 			}
 			var rows []row
 			for _, name := range append(BuiltinNames(), sortedNames(BuiltinAddons)...) {
@@ -66,8 +111,22 @@ func Command(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var statuses []pluginadmit.Status
+			if root != "" {
+				if cfg, err := workspace.Load(root); err == nil {
+					statuses = ExternalStatuses(root, cfg)
+				}
+			}
+			used := map[string]bool{}
+			for _, st := range statuses {
+				used[st.Name] = true
+				trusted, pinned := st.Trusted, st.Pinned
+				rows = append(rows, row{Name: st.Name, Source: st.Source, Used: true, Command: st.Command, Env: st.Env, Trusted: &trusted, Pinned: &pinned, Problem: st.Problem})
+			}
 			for _, p := range installed {
-				rows = append(rows, row{Name: p.Name, Version: p.Version, Source: p.Dir})
+				if !used[p.Name] {
+					rows = append(rows, row{Name: p.Name, Version: p.Version, Source: p.Dir, Env: pluginenv.Visible(p.Env, nil)})
+				}
 			}
 			out := cmd.OutOrStdout()
 			if asJSON {
@@ -93,6 +152,18 @@ func Command(version string) *cobra.Command {
 				}
 				fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), orDash(strings.Join(needs, "; ")))
 			}
+			fmt.Fprintf(out, "\nExternal plugins this workspace uses (smith starts them only when trusted):\n")
+			if len(statuses) == 0 {
+				fmt.Fprintln(out, "  none")
+			} else {
+				fmt.Fprintf(out, "  %-14s %-18s %-8s %-7s %s\n", "PLUGIN", "FROM", "TRUSTED", "PINNED", "MAY SEE BEYOND THE BASELINE")
+			}
+			for _, st := range statuses {
+				fmt.Fprintf(out, "  %-14s %-18s %-8s %-7s %s\n", st.Name, st.Source, yesNo(st.Trusted), yesNo(st.Pinned), orDash(strings.Join(st.Env, ", ")))
+				if st.Problem != "" {
+					fmt.Fprintf(out, "      %s\n", st.Problem)
+				}
+			}
 			fmt.Fprintf(out, "\nInstalled (search path: %s):\n", strings.Join(SearchPath(root), ", "))
 			if len(installed) == 0 {
 				fmt.Fprintln(out, "  none")
@@ -105,6 +176,7 @@ func Command(version string) *cobra.Command {
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.AddCommand(list, checkCommand(version))
+	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
 		cmd.AddCommand(&cobra.Command{

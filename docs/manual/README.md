@@ -93,7 +93,7 @@ Python package). Paths in output are shortened.
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md) | What `smith add` accepts. |
-| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md). |
+| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
 | [`smith slices`](slices.md) | Check the vertical-slice layout: [`slices check`](slices-check.md). |
 | [`smith schema`](schema.md) | Print the JSON Schema of `smith.toml`. |

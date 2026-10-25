@@ -23,7 +23,8 @@ with a `plugin.json` on the search path is an install channel.
   "name": "widget",
   "version": "0.1.0",
   "description": "projects described by a widget.json",
-  "command": ["./bin/smith-plugin-widget-{os}-{arch}{exe}"]
+  "command": ["./bin/smith-plugin-widget-{os}-{arch}{exe}"],
+  "env": ["NPM_TOKEN"]
 }
 ```
 
@@ -33,9 +34,46 @@ with a `plugin.json` on the search path is an install channel.
 | `command` | required; an argv. `{os}` and `{arch}` are Go's `GOOS` and `GOARCH` (`windows`, `linux`, `darwin`, `amd64`, `arm64`, ...); `{exe}` is `.exe` on Windows and empty elsewhere. **Only the first element** is made relative to the plugin's directory, and only when it starts with `./` or `../`; later elements are passed as they are, to a process started in the directory where you ran smith |
 | `version` | shown by `smith plugin list`. Keep it equal to the version the program reports: that is the one `version` constraints in `smith.toml` and recipes are checked against, and it goes into task cache keys |
 | `description` | shown by `smith plugin list` |
+| `env` | optional; the environment variables the plugin needs, as names or prefixes ending in `*`. See [Declaring the environment a plugin needs](#declaring-the-environment-a-plugin-needs) |
 
 A `plugin.json` without a `name` or a `command` fails with `<dir>\plugin.json: name and command are
 required`, and stops `smith plugin list` altogether.
+
+### Declaring the environment a plugin needs
+
+smith starts an external plugin with a small environment, not the shell's: `PATH`, the home and
+temporary directories, locale, terminal and proxy variables, `SMITH_PLUGIN`, and on Windows the
+variables a process needs to run. The full list is in [Plugin
+security](../using/plugin-security.md#the-environment-an-external-plugin-gets). Anything else your plugin
+reads has to be declared, or it is not there:
+
+```json
+{
+  "name": "widget",
+  "version": "0.1.0",
+  "command": ["./bin/smith-plugin-widget-{os}-{arch}{exe}"],
+  "env": ["NPM_TOKEN", "AWS_*"]
+}
+```
+
+- Each entry is a variable name, or a prefix ending in `*` (`AWS_*` is every variable that starts with
+  `AWS_`). A variable that is not set is not passed.
+- Declare what the plugin needs and no more. The declaration is shown to the person who is asked to
+  trust the plugin, and by `smith plugin list`; a plugin that asks for everything will not be trusted.
+- A manifest cannot ask for the variables smith uses for its own cache and releases (`SMITH_CACHE_KEY`,
+  `SMITH_RELEASE_*` and the like). The workspace owner can grant those, by name, in `smith.toml`.
+- The workspace owner can add to the list for one workspace with `env = [...]` under
+  `[plugins.external.<name>]`; the two lists are joined.
+- A plugin declared with a `command` in `smith.toml` has no `plugin.json`; its variables come from
+  the `env` key there.
+- Test with the environment your users will have: `smith plugin check ./bin/smith-plugin-widget --env
+  NPM_TOKEN` runs the check with the baseline plus the variables you name, and needs no trust. Without
+  `--env` your plugin sees the baseline only, which is what a user who declared nothing gets.
+
+Users must also trust the plugin before smith starts it: on first use in a terminal they are shown
+its command, the SHA-256 of its file and the variables above, and asked. A new build of your plugin
+is a new file, so they are asked again; CI runs pin the digest with `smith plugin trust <name> --pin`.
+See [Installing, enabling and configuring plugins](../using/managing-plugins.md#trusting-an-external-plugin).
 
 ### Where it goes
 
@@ -147,6 +185,8 @@ how it is released.
 | `starting plugin [...]: fork/exec ...: %1 is not a valid Win32 application.` | the first element of `command` is a script; use a `.cmd` launcher |
 | the plugin works from the repository and not when installed | a later element of `command` is a relative path; only the first is resolved against the plugin's directory |
 | a built-in behaviour changed after installing | an external plugin with a built-in's name replaces it |
+| the plugin cannot find a token or a cloud credential it used to read | it is not in `env` of the `plugin.json`: external plugins start with a minimal environment |
+| `✖ the external plugin "x" is not trusted yet, so smith did not start it` | the workspace has not trusted this command and file yet: `smith plugin trust x` |
 
 ## See also
 

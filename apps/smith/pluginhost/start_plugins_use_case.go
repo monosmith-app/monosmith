@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sort"
 	"sync"
 
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -28,9 +31,13 @@ func Start(opts Options) (*PluginSet, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Built-in plugins are this binary and keep the whole environment;
+	// external ones get the minimal one built below.
+	builtinEnv := append(os.Environ(), "SMITH_PLUGIN=1")
 	type launch struct {
 		name    string
 		command []string
+		env     []string
 	}
 	var launches []launch
 	enabled := opts.Config.Plugins.Enabled
@@ -44,19 +51,27 @@ func Start(opts Options) (*PluginSet, error) {
 		if _, replaced := opts.Config.Plugins.External[name]; replaced {
 			continue
 		}
-		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}})
+		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}, builtinEnv})
 	}
+	var approved []pluginadmit.Plugin
 	external := make([]string, 0, len(opts.Config.Plugins.External))
 	for name := range opts.Config.Plugins.External {
 		external = append(external, name)
 	}
 	sort.Strings(external)
 	for _, name := range external {
-		command, err := LaunchCommand(opts.WorkspaceRoot, opts.Config.Plugins.External, name)
+		p, err := ResolveExternal(opts.WorkspaceRoot, opts.Config.Plugins.External, name)
 		if err != nil {
 			return nil, fmt.Errorf("smith.toml [plugins.external.%s]: %w", name, err)
 		}
-		launches = append(launches, launch{name, command})
+		approved = append(approved, p)
+		env := append(pluginenv.Build(os.Environ(), p.ManifestEnv, p.WorkspaceEnv, runtime.GOOS), "SMITH_PLUGIN=1")
+		launches = append(launches, launch{name, p.Command, env})
+	}
+	// No plugin starts until every external one the workspace needs is
+	// trusted.
+	if err := pluginadmit.Admit(opts.WorkspaceRoot, approved); err != nil {
+		return nil, err
 	}
 	for _, name := range sortedNames(opts.Config.Conventions) {
 		_, external := opts.Config.Plugins.External[name]
@@ -69,7 +84,7 @@ func Start(opts Options) (*PluginSet, error) {
 		if _, ok := opts.Config.Plugins.External[name]; ok {
 			continue
 		}
-		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}})
+		launches = append(launches, launch{name, []string{self, "plugin", "serve", name}, builtinEnv})
 	}
 
 	log := opts.Log
@@ -85,7 +100,7 @@ func Start(opts Options) (*PluginSet, error) {
 			defer wg.Done()
 			clients[i], errs[i] = host.Start(host.Options{
 				Command:       l.command,
-				Env:           append(os.Environ(), "SMITH_PLUGIN=1"),
+				Env:           l.env,
 				WorkspaceRoot: opts.WorkspaceRoot,
 				Stderr:        log,
 				Host:          protocol.Peer{Name: "smith", Version: opts.Version},
