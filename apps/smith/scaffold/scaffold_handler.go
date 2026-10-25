@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/recipechoice"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -120,7 +121,9 @@ wrote): review them with git status, then commit.`,
 			for _, n := range res.Notes {
 				fmt.Fprintln(out, n)
 			}
-			fmt.Fprintf(out, "Try: smith test -p %s\n", args[1])
+			if hint := tryHint(s.Graph.Get(args[1])); hint != "" {
+				fmt.Fprintln(out, hint)
+			}
 			return nil
 		},
 	}
@@ -129,6 +132,21 @@ wrote): review them with git status, then commit.`,
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return cmd
+}
+
+// tryHint is the command smith add suggests for the new project: its test
+// task, else its build (a Bicep project or a plain JavaScript library has no
+// test task), else nothing.
+func tryHint(p *projectgraph.Project) string {
+	if p == nil {
+		return ""
+	}
+	for _, task := range []string{"test", "build"} {
+		if _, ok := p.Tasks[task]; ok {
+			return "Try: smith " + task + " -p " + p.Name
+		}
+	}
+	return ""
 }
 
 // nextSteps is what smith new prints last: a cd only when the workspace is not

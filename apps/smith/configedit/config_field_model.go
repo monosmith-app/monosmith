@@ -149,6 +149,20 @@ func editDistance(a, b string) int {
 	return prev[len(b)]
 }
 
+// splitChoices splits each argument at commas, so github,azure and github azure
+// are the same list.
+func splitChoices(args []string) []string {
+	var out []string
+	for _, a := range args {
+		for _, part := range strings.Split(a, ",") {
+			if part = strings.TrimSpace(part); part != "" {
+				out = append(out, part)
+			}
+		}
+	}
+	return out
+}
+
 // Encode checks args against the field and renders them as a TOML value: one
 // arg for a scalar, any number for an array.
 func (f Field) Encode(args []string) (string, error) {
@@ -177,6 +191,10 @@ func (f Field) Encode(args []string) (string, error) {
 		}
 		return Quote(args[0]), nil
 	case "array":
+		if len(f.Enum) > 0 {
+			// Choices never contain a comma, so "a,b,c" is three of them.
+			args = splitChoices(args)
+		}
 		quoted := make([]string, 0, len(args))
 		var seen []string
 		for _, a := range args {

@@ -16,7 +16,7 @@ smith config set <setting> <value>...
 ## Arguments and flags
 
 <!-- smith:begin config set -->
-Change one setting (a list takes several values)
+Change one setting (a list takes several values, or one comma-separated)
 
 Usage: `smith config set <setting> <value...>`
 
