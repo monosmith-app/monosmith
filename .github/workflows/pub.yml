@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
       - uses: dart-lang/setup-dart@v1
       - name: Install smith
         run: curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh -s -- "$SMITH_VERSION"

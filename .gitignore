@@ -1,5 +1,13 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
+# Python
+.venv
+__pycache__
+*.egg-info
+.mypy_cache
+.ruff_cache
+.pytest_cache
+
 # compiled output
 dist
 tmp
