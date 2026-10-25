@@ -13,6 +13,10 @@ This page is the overview. The deep dives:
 | [Releases and CI](release-and-ci-internals.md) | the release plan, lineage and preflight, one project's release step by step, assets and distribution, the provider-neutral pipeline model, slots, the phases |
 | [Technology](technology.md) | why Go and a single binary, libraries, process boundaries, cross-platform handling, the security model, the test layers |
 | [Recipes and CI](recipes-and-ci.md), [TUI and IDE](tui-and-ide.md) | the design notes for those features |
+| [System context and containers](system-context.md) | who and what smith talks to, and the programs it is made of |
+| [Discovery](project-discovery.md), [project graph](project-graph.md), [task graph](task-graph.md), [cache](cache.md), [affected](affected.md) | how projects are found and ordered, how a task's result is keyed, and what a change touches |
+| [The repository's slice architecture](slice-architecture.md) | how the Go code is organised and which way the dependencies point |
+| [Decision records](decisions/README.md) | each major decision, with its context and sources |
 
 ## The repository
 
@@ -22,8 +26,11 @@ releases this repository itself.
 | Path | What it is |
 |---|---|
 | `apps/smith` | the `smith` command: the core, the CLI, the TUI, and every built-in plugin linked in |
-| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, vite, angular, astro, vscode), `python`, `go`, `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `docker`, `vertical-slices` |
-| `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates and tool runs. Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
+| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode), `python`, `go` (which also holds `pluginkit`, the plugin that scaffolds plugins), `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `docker`, `recipe`, `vertical-slices` |
+| `libs/actions` | the one catalogue of what smith can do (`catalog`), read by the command line, the shell, the MCP server and the engine server ([ADR 0029](decisions/0029-one-list-of-actions.md)) |
+| `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates (`templating`), tool runs (`toolrun`), JSON documents (`jsondoc`) and project kinds (`projectkind`). Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
+| `packages/eslint-config` | `@monosmith/eslint-config`, the shared ESLint config with the vertical-slice rules (an npm package) |
+| `apps/vscode` | the VS Code extension, a client of `smith serve` ([VS Code architecture](vscode-architecture.md)) |
 | `docs/` | the user documentation, these notes, and the research the project started from (`docs/architecture/research/`) |
 | `install.sh`, `install.ps1` | install the newest `smith@` GitHub Release |
 
@@ -41,7 +48,7 @@ each slice's handler; most commands start by opening a `session`.
 | `projectgraph` | the project graph: projects from the language plugins' `discover`, edges from what each project imports matched to what others export, stacks and conventions applied, `smith.toml` overrides on top; cycle detection and project selection |
 | `taskgraph` | expanding the requested tasks into every task they depend on (`build` in the same project, `^build` in every project imported) |
 | `taskrun` | running a task graph: dependencies first, cache replay on a hit, otherwise a child process whose whole tree is killed on cancel (Windows included); a failure skips its dependents |
-| `taskcache` | the cache key (SHA-256 over a versioned, canonical encoding of command, env, inputs, upstream sources, dependency keys, OS/arch and plugin versions), the local store (`ac/` entries and `cas/` blobs) behind a `Storage` interface, pruning, and what `smith why-miss` compares |
+| `taskcache` | the cache key (SHA-256 over a versioned, canonical encoding of command, env, input files, upstream sources, dependency keys, OS/arch, smith and plugin versions, and the toolchain version when the plugin reports one), the local store (`ac/` entries and `cas/` blobs) behind a `Storage` interface, pruning, and what `smith why-miss` compares |
 | `remotecache` | a remote tier behind the local store (HTTP object store, S3, Azure Blob); every object signed with HMAC-SHA256; a failed check or an unreachable store is a miss |
 | `affected` | which projects a change can break: owners of changed files, their dependents, everything when a workspace file changed |
 | `release` | conventional commits to versions, in dependency order: stamp manifests, publish through the language plugin, distribute an app's binaries to registries, tag, push, GitHub Release; resumable and previewable (`--dry-run` is the same path) |
@@ -57,6 +64,12 @@ each slice's handler; most commands start by opening a `session`.
 | `convert`, `convertplan`, `nxworkspace`, `adoption` | converting an Nx (or old-mnci) workspace, and adopting a repository that has no tool yet |
 | `convertchoices`, `legacyinventory`, `removalplan`, `fullconversion` | the full level of `smith convert`: the choices (lint, test runner, build, CI), the scan for old tooling nothing uses any more, the removals as doctor fixes asked one group at a time, and the run that applies them |
 | `dependencies`, `devservers`, `explain`, `whymiss`, `graphview`, `stackview`, `configedit`, `clicontract`, `mcpserver`, `slicecheck` | the remaining commands: install/uninstall, `smith dev`, explain, why-miss, graph, stacks, config edits, the `--json` contracts for editors, `smith mcp`, slice checks |
+| `engineserver`, `runevents` | `smith serve`: the engine as JSON-RPC on stdio, and the event stream of a run (`--json-events`) |
+| `doctorfix`, `corefixes` | applying the fixes doctor's findings carry: folding, questions, diffs, steps |
+| `adoptflow`, `turboplan`, `turboworkspace` | the adopt/convert wizard's steps, and converting Turborepo workspaces |
+| `recipe`, `recipecatalog`, `recipechoice`, `recipestack`, `recipewizard`, `recipedrift`, `recipereleases` | recipes: reading and resolving them, their choices and stacks, `smith recipe new`, drift checks, recipe releases |
+| `sbom`, `linuxpackages`, `pubpackage`, `pubrelease`, `splitrepo` | release outputs: CycloneDX SBOMs, `.deb`/`.rpm`, pub.dev packages, mirroring a package to its own repository |
+| `buildoutputs`, `cachecredentials`, `toolchainpin`, `npm*`, `pypolicy`, `rustpolicy` | smaller pieces: where builds write, remote-cache secrets for pipelines, tool version pins, per-ecosystem audit and pack policies |
 | `goldenpath` | the end-to-end tests: new workspace, every kind in every language, build, test, release |
 
 ## Plugins

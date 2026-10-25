@@ -1,8 +1,19 @@
 # Design: recipes, and CI as part of them
 
-Status: **proposal**, for discussion. Decisions already taken are marked
-**Decided**; the rest are **Open**, each with a recommendation. Nothing here
-is built yet unless it says so.
+Status: **mostly built** (checked against smith 1.62.0, October 2026). This
+page began as a proposal and keeps its argument. Decisions taken are marked
+**Decided**; the rest were **Open**, each with a recommendation.
+
+| Item | State in 1.62.0 |
+|---|---|
+| Recipes as data, one parent, choices and `when` blocks, levels and slots | built; epic #312 is closed; see [Recipes](../reference/recipes.md) and [ADR 0023](decisions/0023-recipes-with-levels-and-slots.md) |
+| URL recipes pinned by hash (`smith.recipes.lock`) | built |
+| `smith recipe new`, `smith recipe check`, versioned recipes | built |
+| Named private registries (`[registries]`, auth `azure-artifacts`, `github-packages`, `token`) | built |
+| One version per production dependency | built ([ADR 0027](decisions/0027-one-version-per-production-dependency.md)) |
+| A recipe's workspace scope (`[workspace.ci]`, `[workspace.cache]`, `[workspace.registries]` inside a recipe) | **not built**: the recipe file has `name`, `version`, `extends`, `choices`, `use`, `settings` and `when` only |
+| A CI-provider plugin role | **not built**; the three renderers stay in the core |
+| Deploy environments with approvals | **not built**; no document exists |
 
 Built so far (epic #312): plugins declare their level, requirements and
 conflicts (#307); the recipe file, its loading with URL pinning, resolving and
@@ -224,7 +235,7 @@ recipe = "./recipes/team.recipe.toml"   # or a URL
 
 ### Workspace settings in a recipe
 
-**Proposed.** A recipe has two scopes. Everything above is **per project**:
+**Proposed, not built.** A recipe has two scopes. Everything above is **per project**:
 which plugin fills each level. Some settings belong to the **whole
 workspace**, and a team wants them set once, for every repository made from
 the recipe:
@@ -282,10 +293,10 @@ With the recipe and its version recorded in each project:
 recipes in a repository and points at a raw URL, pinned by tag. No registry
 until one is needed (#164 stays open for plugins).
 
-Open: whether a URL recipe is cached and pinned in a lockfile, so a build
-does not change because a URL's content did. Recommendation: yes. Record the
-content's hash beside the URL, as a lockfile does, and refuse a changed hash
-until `smith upgrade`.
+Was open: whether a URL recipe is cached and pinned in a lockfile, so a build
+does not change because a URL's content did. Built as recommended: the content's
+hash is recorded beside the URL in `smith.recipes.lock`, and a changed hash is
+refused until `smith upgrade`.
 
 ### Creating a recipe
 
@@ -334,12 +345,15 @@ nothing beyond what smith already does for packages.
   - release publishes only what the commits since each project's last tag
     say changed, never everything
 
-### What is missing: private registries
+### Private registries (built as #310)
 
 Installing from and publishing to an internal feed is the hardest part of
 monorepo CI today (Azure Artifacts with npm, PyPI and NuGet feeds is the
-common case). smith knows public registries and a few tokens, and nothing about
-"our feed". Proposal:
+common case). When this was written smith knew public registries and a few
+tokens, and nothing about "our feed". The proposal below was built as the
+`[registries]` tables and `[workspace] registry` / `[release] registry`
+(see [Configuration](../reference/configuration.md)); the example is the proposal as
+written:
 
 ```toml
 # in a recipe, or smith.toml
@@ -396,9 +410,9 @@ Not a plugin question, but the same philosophy, and a pain point:
 - `smith deps up axios` updates it in every project that uses it, in one
   change, and `doctor` flags two projects on different versions.
 
-**Open:** whether the version policy is on by default. Recommendation: on, with
-a per-dependency exception list. The plugin protocol already has the
-`dependencies/*` and `declarations` methods it needs.
+Built: `[dependencies] one_version` (off unless set; `smith new` turns it on), with an allow list, and
+`smith deps up --align` ([ADR 0027](decisions/0027-one-version-per-production-dependency.md)).
+The plugin protocol's `dependencies/*` and `declarations` methods carry it.
 
 ## Summary of decisions
 

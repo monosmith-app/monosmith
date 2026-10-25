@@ -21,7 +21,7 @@ installing it:
 - goroutines make the scheduler ("one goroutine per task, gated by a semaphore")
   nearly the whole of its implementation.
 
-`go install` is deliberately not a supported way to install it (decision 19):
+`go install` is deliberately not a supported way to install it ([ADR 0019](decisions/0019-no-go-install.md)):
 the install channels (script, npm, PyPI, NuGet, RubyGems, pub.dev, `.deb`,
 `.rpm`, GitHub Release) all carry the stamped binary.
 
@@ -37,12 +37,13 @@ Few, and each does one thing:
 | `charmbracelet/bubbletea`, `lipgloss`, `bubbles` | the terminal UI (a bare `smith`) and the interactive graph browser |
 | `google/rpmpack` | building `.rpm` packages without `rpmbuild` |
 | `golang.org/x/sys`, `x/term` | Windows Job Objects, terminal detection |
+| `go.yaml.in/yaml/v3` | reading `pnpm-workspace.yaml` when converting a Turborepo workspace (`turboworkspace`) |
+| `santhosh-tekuri/jsonschema` | validating the generated SBOM against the CycloneDX schema, in a test (`sbom`) |
 
 Everything else is the standard library: HTTP clients, `crypto/hmac` for the
 remote cache, ZIP/TAR/GZIP for release archives, `encoding/json` for the
-protocol. S3 request signing (AWS Signature V4) is implemented in ~150 lines
-rather than pulling in an SDK.
-
+protocol. S3 request signing (AWS Signature V4) is implemented in about 100 lines
+(`remotecache/sign_s3_request_algorithm.go`) rather than pulling in an SDK.
 ## Process boundaries
 
 | Boundary | Mechanism | Why |
@@ -89,7 +90,10 @@ The recurring problems and their answers:
 - Machine output: `--json` on every reporting command, with a stable
   contract (`clicontract`) that editors and `smith mcp` rely on.
 - The cache: JSON entries plus content-addressed blobs.
-- Release records: `.smith/release-report.json`.
+- Release records: the tags themselves, and `.smith/release-report.json`, the report of
+  the last release run (`release.writeReport`).
+- Run events: JSON lines (`--json-events`) or `event` notifications of `smith serve`
+  ([Serve and the event stream](../reference/serve.md)).
 
 ## Security model
 
@@ -100,15 +104,18 @@ The recurring problems and their answers:
 - **The remote cache cannot make a build wrong:** signed objects, verified
   content hashes, failures are misses.
 - **Publishing uses short-lived identity where the registry allows it:** npm
-  provenance and pub.dev through GitHub's OIDC token; PyPI, NuGet and RubyGems
-  through scoped tokens.
+  provenance and pub.dev through GitHub's OIDC token; RubyGems too when
+  `[release] rubygems_trusted_publishing` is on, and the VS Code Marketplace
+  through Microsoft Entra ID when `[release] vsce_entra` is on
+  ([ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md)); PyPI,
+  NuGet and RubyGems otherwise through scoped tokens.
 - **Plugins are code you run.** An external plugin is a program on your
   `PATH`-like search path; smith.toml pins its version. The built-ins are part
   of the binary. `smith plugin check` verifies behaviour, not trustworthiness.
 - **MCP tools** refuse inputs that look like options and never take a path where
   a name suffices.
-- No code signing or notarisation yet (decision log); checksums are published
-  with every release.
+- No code signing or notarisation ([ADR 0011](decisions/0011-no-paid-code-signing.md));
+  checksums, an SBOM and build provenance are published with every release.
 
 ## Testing
 
@@ -117,12 +124,15 @@ The recurring problems and their answers:
 | Unit | pure policies, algorithms, mappers, use cases with fakes | next to the code (`*_test.go`), run on three OSes on every pull request |
 | Plugin conformance | a plugin obeys the protocol | `packages/plugin-sdk/conformance`, `smith plugin check` |
 | Golden path | the real thing: a new workspace, every project kind in every language, build, test, release | `apps/smith/goldenpath`, daily and on demand |
-| Convert | Nx and old-mnci workspaces convert and still build | `apps/smith/convert` fixtures on three OSes |
+| Convert | Nx and old-mnci workspaces convert and still build | the `golden-path` workflow, on demand only ([ADR 0014](decisions/0014-convert-end-to-end-test-on-demand.md)) |
 | Self-hosting | smith builds, lints, tests and releases itself | this repository's CI |
 
-The code layout is enforced by a tool, too: `smith slices check` verifies
-every file's name carries its role and every package has a public surface
-(`slicecheck`), and CI runs it on every Go module.
+The code layout is enforced by a tool, too: `smith slices check` verifies that
+every Go file is named `<snake>_<role>.go`, that no folder is a junk drawer and
+that no slice grows past the size limit (`slicecheck`,
+`libs/plugin-vertical-slices`). The repository's `smith.toml` turns the
+convention on, so every Go project gets a `slice-check` task that runs before lint
+([The repository's own slice architecture](slice-architecture.md)).
 
 ## Why a monorepo tool needs all of this in one program
 

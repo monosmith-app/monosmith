@@ -68,8 +68,10 @@ npm package is already out.
    versions of the project's dependencies so ranges can be updated. The plugin
    returns the files it changed. A deferred call restores them with git: **no
    commit is ever made**. The tag is the record.
-3. **Build.** Run the project's `build` task through the task runner (without
-   cache if files were stamped, since the manifest differs).
+3. **Build.** For a project without a release section, run its `build` task
+   through the task runner (without cache if files were stamped, since the
+   manifest differs). An app with a release section builds its archives in the
+   next step instead.
 4. **Publish.** Ask the language plugin to `publish`. A registry that already has
    the version reports "skipped". For an *app* the plugin is asked for release
    assets instead of a registry upload (below).
@@ -80,8 +82,14 @@ npm package is already out.
    manifests, from the archives step 4 built.
 7. **Tag** the commit (annotated), **push** the tag, **create the GitHub
    Release** with notes rendered from the commits and the archives,
-   `checksums.txt` and manifests attached, mirror to a split repository if
-   configured, and dispatch the pub.dev workflow.
+   `checksums.txt`, manifests and a CycloneDX SBOM attached, mirror to a split
+   repository if configured, and dispatch the pub.dev workflow.
+
+Each step that completes or fails is also appended to
+`dist/release/<project>/journal.json`, a record that only grows, which
+`smith release --status` prints and the registry checks use to tell "published
+by this release" from "already there". The full walk-through of the release is
+[How a release is decided and published](release-design.md).
 
 The result is written to `.smith/release-report.json` (printed by `--json`) and
 rendered as Markdown for the CI step summary: per project, the version, why, the
@@ -130,7 +138,9 @@ need. Each answers a `CIResult`:
 credential once with the union of where it is needed, steps appended in plugin
 order. `NewModel` sorts everything so the output is deterministic — regenerating
 an unchanged workspace changes nothing, which is what lets
-`smith ci generate --check` be a CI gate.
+`smith ci generate --check` be a CI gate. The CI half is explained in more
+detail, with the tracked-changes guard and drift checks, in
+[How CI pipelines are generated](ci-generation.md).
 
 The core adds what is not a plugin's business: whether anything needs
 `dist/drop` packing, whether there are native projects, whether a package
@@ -163,7 +173,8 @@ laptop and gets what CI will get.
 
 A generated file is smith's, but a team always has one more step.
 `smith:slot <name>` / `smith:slot-end <name>` comment markers in the YAML
-(`before-setup`, `after-verify`) mark regions that regeneration **preserves**:
+(`before-setup` and `after-verify` in every provider's file, `before-publish` in the
+pub.dev workflow) mark regions that regeneration **preserves**:
 `generate` reads the existing file, lifts the text between each pair of markers,
 renders the new file and puts it back (re-indented when the slot moved, as when
 an Azure pipeline gains a native job and nests its steps). A slot the new file
@@ -193,7 +204,9 @@ every module on three operating systems on every pull request, and the
 end-to-end suites (`goldenpath`: a new workspace, every kind in every language,
 build, test, release) once a day and on demand — they take up to 45 minutes on
 Windows, so they gate changes that touch release, discovery, doctor, the
-plugin protocol or generated pipelines, by hand, before merging.
+plugin protocol or generated pipelines, by hand, before merging. A third job,
+`convert`, converts an Nx, an old-mnci and a Turborepo workspace and runs only when
+started by hand ([ADR 0014](decisions/0014-convert-end-to-end-test-on-demand.md)).
 
 A merge to `main` releases: the conventional commits since the last tag decide
 the version of `smith` (an app: six archives, npm, PyPI, NuGet, RubyGems, `.deb`

@@ -110,7 +110,7 @@ self-description, and it is the only thing the host trusts:
 | Field | Meaning |
 |---|---|
 | `plugin` | name and version. The version goes into cache keys. |
-| `kind` | `language`, `toolchain`, `scaffold`, `structure`, `deploy` or `convention`: the *default* roles |
+| `kind` | `language` or `convention` (`protocol.PluginKind`). It sets the *default* roles: a language plugin is language, toolchain and scaffold; a convention plugin is a structure rule |
 | `roles` | the levels the plugin can be chosen for in a project. Empty means the default for its kind. One plugin can play several (a scaffold that is also a toolchain). |
 | `languages` | values of `--lang` that reach this plugin |
 | `manifests` | file names or patterns (`package.json`, `*.csproj`) whose presence may make a directory a project of this plugin |

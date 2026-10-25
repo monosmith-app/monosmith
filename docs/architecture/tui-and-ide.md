@@ -1,7 +1,28 @@
 # Design: the TUI and the IDE plugins
 
-Status: **proposal**, for discussion. Nothing here is built unless it says so.
-It extends the TUI issue (#302) and the IDE plugins issue (#303).
+Status: **proposal, partly built**. It extends the TUI issue (#302) and the IDE plugins issue
+(#303). Read the status box first; the sections below keep the original argument, and where
+they disagree with the box, the box is right.
+
+> **As built, October 2026 (smith 1.62.0), checked against the code**
+>
+> | Part of the proposal | State |
+> |---|---|
+> | Terminal shell with Home, Projects, Run, Doctor, Deps, Release | built; one keymap, no menu bar ([ADR 0032](decisions/0032-single-key-tui-keymap.md), [architecture](tui-architecture.md)) |
+> | Navigator tree and permanent inspector | not built; replaced by a list with a detail pane beside it (from 100 columns) |
+> | Right-click context menu | not built; removed with the menu bar in the redesign (ADR 0032) |
+> | Drag a pane border to resize | not built; `[` and `]` make the detail narrower or wider |
+> | Huh, Glamour and ntcharts | not used; the shell uses Bubble Tea, Bubbles and Lip Gloss |
+> | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
+> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab does **not** consume it: it parses smith's text output (`tui/runview`) |
+> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands use the real terminal (`tea.Exec`) |
+> | Recipes as a form in the interface | partly: `a` opens a guided form, and the recipe's choices are asked by `smith add` |
+> | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
+> | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
+> | `smith lsp` (completion and validation of `smith.toml` and recipes) | **planned, not built** (issue #303); there is no such command |
+> | JetBrains plugin | **planned, not built** (issue #303) |
+> | A `smith` version range in `smith.toml` | not built; still an open question below |
+> | Keys | the table under "Interaction" is a proposal; `Tab` and `Shift+Tab` move between buttons in dialogs and wizards, not between panes. The authoritative list is [the manual](../manual/tui.md) |
 
 ## The goal
 
@@ -200,7 +221,7 @@ How the components above map to them:
 is for the design stage: the screens above (the main layout, a run in progress,
 a failed run, the recipe form, doctor's findings, the release preview, and the
 compact layout) are drawn in it from this palette, saved as `.cuppa` files and
-exported as images, and kept in `docs/architecture/tui/`. The Go interface is built
+exported as images, and would be kept in `docs/architecture/tui/` (the folder does not exist). The Go interface is built
 from the same libraries and checked against those pictures.
 
 ## Interaction
@@ -332,7 +353,7 @@ so a task gives the same result, cache key and release preview everywhere.
 
 How the plugin finds smith, first match wins:
 
-1. a setting (`smith.path`), for a smith somewhere unusual
+1. a setting (`monosmith.path` in the VS Code extension), for a smith somewhere unusual
 2. the workspace's own install: `node_modules/.bin/smith` (the npm package
    `monosmith` as a dev dependency) or `.smith/bin/smith`, which pins the
    version per repository
@@ -420,6 +441,6 @@ and releasing show a dialog with the command first.
   interface should feel like; the screens listed above are the brief. Cuppa's
   file format is specified (`docs/spec/cuppa-format.md` in its repository), so
   a first draft of each can also be generated as a `.cuppa` file to refine by
-  hand.
+  hand. (Not done: see the status box.)
 - **A desktop app:** cuppa also ships one. Not planned; the IDE plugins cover
   the graphical case.

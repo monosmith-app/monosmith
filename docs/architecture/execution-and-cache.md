@@ -102,7 +102,7 @@ inputs always give the same key, on any machine.
 | key schema | `smith-task-key-v1` | a change to the encoding bumps it so old entries can never be mistaken for new ones |
 | task id | `web:build` | |
 | platform | `linux/amd64` | a binary built on one OS is not another's |
-| tool | `smith 1.28.1 / node@1.28.1+eslint@1.28.1` | upgrading smith or any plugin that shaped the project invalidates its results |
+| tool | `1.62.0/node@1.62.0+jest@1.62.0` (smith's version, then the project's language plugin and the other plugins that shape it, each with its version) | upgrading smith or any plugin that shaped the project invalidates its results |
 | toolchain (if reported) | `node 20.11.0` | a build cached on Node 20 is a miss on Node 22 |
 | serve (if set) | `web:start http://127.0.0.1:5173` | the app under test |
 | command | the argv **before** placeholders are expanded | so keys do not depend on where the repository is checked out |
@@ -153,10 +153,14 @@ cached.
 
 ```
 .smith/cache/v1/
-  ac/<key>      action cache: one small JSON entry per key
-  cas/<sha256>  content-addressed blobs: files and logs, shared between entries
-  last/<sha256 of task id>   the key of the task's most recent cached run
+  ac/<aa>/<key>      action cache: one small JSON entry per key
+  cas/<aa>/<sha256>  content-addressed blobs: files and logs, shared between entries
+  last/<aa>/<sha256 of task id>   the key of the task's most recent cached run
+  tmp/               same volume, so writes land by rename
 ```
+
+`<aa>` is the first two characters of the name, a shard directory. `[cache] dir`
+(or `SMITH_CACHE_DIR`) moves the root.
 
 This is the layout of Bazel's remote cache: entries point at blobs by digest, so
 an identical file produced by a hundred tasks is stored once. Writes land by
@@ -165,10 +169,13 @@ blob is missing is simply a miss. `Storage` is an interface
 (`Has/Get/Put/Delete/Walk/Touch`) with a conformance test that every backend
 passes.
 
-**Pruning.** When the store grows past `[cache] max_size_mb` (default 2048), the
-least recently used *entries* go first until the blobs the remaining entries
-reference fit, then every blob no entry references is swept. Using an entry
-(`Touch`) counts as use.
+**Pruning.** `taskcache.Prune` keeps the store under a size: the least recently
+used *entries* go first until the blobs the remaining entries reference fit, then
+every blob no entry references is swept. Using an entry (`Touch`) counts as use.
+The size comes from `[cache] max_size_mb` (default 2048). **Status in 1.62.0:
+`Prune` is implemented and tested, but nothing calls it** (a search of
+`apps/smith` finds no caller outside tests), so the local cache is
+not pruned automatically. Delete `.smith/cache` to reclaim space.
 
 ## 6. The remote cache
 
@@ -177,8 +184,12 @@ remote **behind** the local store:
 
 - *read:* local first; on a local miss the remote is asked, the object is
   **verified**, and a good one is copied into the local store;
-- *write:* both, unless the session is read-only. Pull requests read the
-  remote and never write it; a push to the release branch writes it.
+- *write:* both, unless the session is read-only. A session is read-only when
+  `[cache] remote_read_only` or `SMITH_CACHE_READ_ONLY` says so, or when the CI
+  environment says the run is for a pull request (`GITHUB_EVENT_NAME` is
+  `pull_request`, `BUILD_REASON` is `PullRequest`, or `CI_PIPELINE_SOURCE` is
+  `merge_request_event`); any other run writes. Without `SMITH_CACHE_KEY` the
+  remote is switched off with a warning, because nothing is shared unsigned.
 
 Trust is the central design point. The remote is a place anyone with write
 access to the bucket could poison, so **every object is signed** with an
@@ -189,8 +200,12 @@ digest. An object that fails verification, an unreachable store, a timeout: all
 are a **miss**, reported once as a warning. A remote cache can make a run
 slower; it can never make it wrong.
 
-Backends: an HTTP object store, S3 (AWS Signature V4, implemented in
-`sign_s3_request_algorithm.go`, so no SDK), Azure Blob (SAS token).
+Backends (`remotecache.Open`, chosen by the URL scheme of `[cache] remote` or
+`SMITH_CACHE_REMOTE`): an HTTP object store (`https://`, optional bearer token in
+`SMITH_CACHE_TOKEN`), S3 (`s3://`, AWS Signature V4, implemented in
+`sign_s3_request_algorithm.go`, so no SDK; needs `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY`), Azure Blob (`azblob://`, SAS token in
+`AZURE_STORAGE_SAS_TOKEN`).
 `last/` stays local: it exists to explain misses on *this* machine.
 
 Credentials reach the generated pipelines as secrets: `smith ci check` lists
@@ -201,13 +216,18 @@ what each remote scheme needs, and only the steps that run tasks receive them.
 `smith affected` answers "which projects can this change break?" cheaply and
 conservatively.
 
-1. Pick a base: `--base`, else `SMITH_BASE`, else the pull-request target the CI
-   provider exports, else the release branch.
-2. `git diff` against the **merge base** with it, plus uncommitted and
-   untracked files.
-3. Each changed file belongs to the project whose root contains it. Documents
-   (`*.md`, `docs/**`) belong to no one. A changed **workspace-level** file
-   (`smith.toml`, a lockfile) affects everything.
+1. Pick a base: `--base`, else the pull-request target the CI provider exports
+   (`SMITH_BASE`, `GITHUB_BASE_REF`, `SYSTEM_PULLREQUEST_TARGETBRANCH` or
+   `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`, in that order), else `[release] branch`.
+2. `git diff` against the **merge base** with it (`origin/<base>` is tried first),
+   plus uncommitted and untracked files.
+3. Each changed file belongs to the project whose root contains it (the deepest
+   one when roots nest); a shared schema file also belongs to the project that
+   owns it. A file that belongs to no project and is not neutral (`*.md`,
+   `docs/**`, `LICENSE`, `.github/ISSUE_TEMPLATE/**`, `.vscode/**`,
+   `*.code-workspace`) or excluded by `[workspace] exclude` is a
+   **workspace-level** change (`smith.toml`, a lockfile, a pipeline) and affects
+   everything. [How affected projects are computed](affected.md) has the detail.
 4. Add every project that depends on an owner, transitively.
 
 Whenever smith cannot be sure — no base, an unknown base, a shallow clone, no
@@ -222,8 +242,8 @@ paths" need.
 
 Each entry stores the key's inputs. `smith why-miss project:task` recomputes the
 key as a run would now (`taskrun.KeyOf`), loads the inputs of the task's last
-cached run, and prints the **difference**, in a stable order: tool and
-toolchain, platform, command, env, files added / removed / changed (by path),
+cached run, and prints the **difference**, in a stable order: tool, toolchain,
+serve, platform, command, env, files added / removed / changed (by path),
 upstream projects whose sources changed, dependency tasks whose keys changed.
 It follows the chain: a changed dependency is itself explained with
 `smith why-miss core:build`. It runs nothing.
