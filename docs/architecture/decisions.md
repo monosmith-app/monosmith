@@ -317,7 +317,7 @@ those tags before it tags smith itself.
 
 **Decision.** `go install` is not a supported way to install smith. The
 supported ways are the install script, npm, PyPI, NuGet, RubyGems, pub.dev, the
-`.deb` and `.rpm` packages and the GitHub Release (docs/guides/installing.md).
+`.deb` and `.rpm` packages and the GitHub Release (docs/getting-started/installing.md).
 Those carry a stamped, reproducible binary; `go install` would build one with
 no version.
 

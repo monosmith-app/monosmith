@@ -1,6 +1,6 @@
 # Serve and the event stream
 
-> Terms such as project, task and cache key are defined in the [glossary](glossary.md). Design: [a rich terminal interface and the IDE plugins](../design/tui-and-ide.md). For editors, see the [editors guide](../guides/editors.md#the-engine-over-json-rpc-smith-serve).
+> Terms such as project, task and cache key are defined in the [glossary](glossary.md). Design: [a rich terminal interface and the IDE plugins](../architecture/tui-and-ide.md). For editors, see the [editors guide](../guides/editors.md#the-engine-over-json-rpc-smith-serve).
 
 Everything that takes time is a **run**, and a run tells what it does as
 **events**. The same events come out two ways, so a terminal interface, an

@@ -54,7 +54,7 @@ dart pub global activate monosmith
 Or download a zip from the [releases](https://github.com/monosmith-app/monosmith/releases).
 Each release also carries a `.deb` and an `.rpm`. Linux, macOS and Windows on
 x64 and arm64 are supported.
-[Installing](docs/guides/installing.md) covers each channel, upgrading, checking a
+[Installing](docs/getting-started/installing.md) covers each channel, upgrading, checking a
 download, and the unsigned-binary prompts a browser download gets.
 
 MonoSmith continues mnci, which was built on Nx; `smith convert` converts Nx
@@ -78,13 +78,13 @@ and Turborepo workspaces and those made by mnci.
 
 ## Documentation
 
-Start with [getting started](docs/guides/getting-started.md), a hands-on tour.
+Start with [getting started](docs/getting-started/first-workspace.md), a hands-on tour.
 Everything is in [docs/](docs/README.md), organised by what you want to do, and
 in four sections:
 
-- **Guides:** [installing](docs/guides/installing.md),
-  [getting started](docs/guides/getting-started.md),
-  [converting from Nx](docs/guides/converting.md),
+- **Guides:** [installing](docs/getting-started/installing.md),
+  [getting started](docs/getting-started/first-workspace.md),
+  [converting from Nx](docs/getting-started/converting.md),
   [editors](docs/guides/editors.md),
   [writing a plugin](docs/guides/writing-a-plugin.md),
   [troubleshooting](docs/guides/troubleshooting.md), [FAQ](docs/guides/faq.md)
@@ -95,8 +95,8 @@ in four sections:
   [stacks](docs/reference/stacks.md), [recipes](docs/reference/recipes.md),
   [conventions](docs/reference/conventions.md),
   [plugins and the protocol](docs/reference/plugins.md)
-- **Design:** [architecture](docs/design/architecture.md), [plugin system](docs/design/plugin-system.md),
-  [decisions](docs/design/decisions.md), [research](docs/design/research/)
+- **Design:** [architecture](docs/architecture/architecture.md), [plugin system](docs/architecture/plugin-system.md),
+  [decisions](docs/architecture/decisions.md), [research](docs/architecture/research/)
 - **Contributing:** [working on MonoSmith](docs/contributing/development.md)
 
 ## Status

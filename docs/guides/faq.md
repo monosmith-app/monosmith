@@ -153,7 +153,7 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 The generated pipeline downloads the `smith` binary with `install.sh`, pinned
 to the version that generated it (a development build writes
 `SMITH_VERSION: latest`). Change that value to pin another version. See
-[installing](installing.md).
+[installing](../getting-started/installing.md).
 
 ### How does CI cache package downloads?
 
@@ -201,13 +201,13 @@ module's version. See [releasing](../reference/releasing.md#tags).
 
 No, by decision: smith is built from the repository's `go.work`, which
 `go install` does not read. Use the install script, a package manager or a
-download. See [installing](installing.md).
+download. See [installing](../getting-started/installing.md).
 
 ### How do I upgrade smith?
 
 Install the newer one (rerun the install script, or use your package manager),
 then run `smith upgrade` in each workspace. See
-[getting started](getting-started.md#10-upgrade-smith).
+[getting started](../getting-started/first-workspace.md#10-upgrade-smith).
 
 ### Is there an editor or AI assistant integration?
 
@@ -220,12 +220,12 @@ over the Model Context Protocol. See [editors](editors.md).
 ### I have an Nx workspace.
 
 `smith convert` turns it into a smith workspace, keeping its projects and
-release tags, and reports what it cannot map. See [converting](converting.md).
+release tags, and reports what it cannot map. See [converting](../getting-started/converting.md).
 
 ### I have a repository with no monorepo tool.
 
 `smith adopt` reports what bringing it under smith involves, then takes the
-steps. See [getting started](getting-started.md#or-adopt-an-existing-repository).
+steps. See [getting started](../getting-started/first-workspace.md#or-adopt-an-existing-repository).
 
 ## Extending smith
 

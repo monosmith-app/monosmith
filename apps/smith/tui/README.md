@@ -1,7 +1,7 @@
 # tui
 
 The interactive shell a bare `smith` opens. The design is in
-[docs/design/tui-and-ide.md](../../../docs/design/tui-and-ide.md).
+[docs/architecture/tui-and-ide.md](../../../docs/architecture/tui-and-ide.md).
 
 ## Layout
 

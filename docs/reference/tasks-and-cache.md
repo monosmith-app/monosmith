@@ -1,6 +1,6 @@
 # Tasks, cache and affected
 
-> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [execution and cache](../design/execution-and-cache.md). Why a task missed the cache: `smith why-miss`, and the [troubleshooting guide](../guides/troubleshooting.md).
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [execution and cache](../architecture/execution-and-cache.md). Why a task missed the cache: `smith why-miss`, and the [troubleshooting guide](../guides/troubleshooting.md).
 
 ## Tasks
 

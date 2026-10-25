@@ -4,7 +4,7 @@ This guide takes you from nothing to a working smith plugin, in Go, Python or
 Node.js, and shows how any other language does the same. Every example in it
 was run, and every `smith plugin check` result below is real output.
 
-You need `smith` (see [installing](installing.md)) and git. For the examples,
+You need `smith` (see [installing](../getting-started/installing.md)) and git. For the examples,
 Go 1.26+, Python 3 or Node.js (they were run with Go 1.27, Python 3.13 and
 Node 24, on Windows).
 
@@ -30,7 +30,7 @@ Write a plugin when you want smith to:
 - scaffold projects your team's way. For that, a [recipe](../reference/recipes.md)
   is usually enough, and it needs no code.
 
-The deep dive is [the plugin system](../design/plugin-system.md). The reference
+The deep dive is [the plugin system](../architecture/plugin-system.md). The reference
 for the built-in ones is [plugins](../reference/plugins.md). Words such as
 role, slot and stack are in the [glossary](../reference/glossary.md).
 
@@ -1019,7 +1019,7 @@ Test with `smith plugin check`, then with a real workspace and
 
 ## See also
 
-- [The plugin system](../design/plugin-system.md): lifecycle, failure modes, why
+- [The plugin system](../architecture/plugin-system.md): lifecycle, failure modes, why
   out-of-process.
 - [Plugins](../reference/plugins.md): the built-in plugins and roles.
 - [Stacks](../reference/stacks.md) and [recipes](../reference/recipes.md): how

@@ -75,7 +75,7 @@ and crates.io are tracked in #225. Each GitHub Release already carries a
 Homebrew formula, a Scoop manifest and winget manifests, but no tap, bucket or
 winget-pkgs submission uses them yet. `go install` is not supported, by
 decision: smith is built from the repository's `go.work`, which `go install`
-ignores (docs/design/decisions.md, entry 19).
+ignores (docs/architecture/decisions.md, entry 19).
 
 ## Checking a download
 

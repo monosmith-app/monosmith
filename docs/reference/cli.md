@@ -3,7 +3,7 @@
 Every `smith` command and flag, grouped by what you want to do. Each command
 has one example whose output was copied from a real run in a scratch workspace
 (a Go app and lib, two Node projects and a Python package, as in
-[Getting started](../guides/getting-started.md)). Paths and timings will differ
+[Getting started](../getting-started/first-workspace.md)). Paths and timings will differ
 on your machine, and where an output is long it is cut with `...` and said so.
 
 > **Keeping this page current.** The usage line and flag table of each command
@@ -121,7 +121,7 @@ Usage: `smith adopt [flags]`
 
 <!-- smith:end adopt -->
 
-`--tags` creates, locally, the release tags a project needs where its tags were made under another name (nothing is pushed). `--init` writes `smith.toml` and the pipelines and commits; a pipeline of yours at a path smith owns is kept beside it as `<file>.pre-smith`. An Nx workspace is for `smith convert`. See [Getting started](../guides/getting-started.md#or-adopt-an-existing-repository).
+`--tags` creates, locally, the release tags a project needs where its tags were made under another name (nothing is pushed). `--init` writes `smith.toml` and the pipelines and commits; a pipeline of yours at a path smith owns is kept beside it as `<file>.pre-smith`. An Nx workspace is for `smith convert`. See [Getting started](../getting-started/first-workspace.md#or-adopt-an-existing-repository).
 
 ```sh
 $ smith adopt
@@ -139,7 +139,7 @@ Nothing changed (adopt only reports). To apply:
 
 ### smith convert
 
-Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../guides/converting.md). `--level full` also deletes the old tooling nothing uses any more (lint packages and configs, the test runner not chosen, the old build, Nx and mnci), one group at a time after asking: `--lint`, `--test`, `--build` and `--ci` are the choices, asked in a terminal and required (or defaulted by `--yes`) elsewhere; `--json` prints the plan with the groups as doctor fixes. See [Going further: `--level full`](../guides/converting.md#going-further---level-full).
+Turn an Nx workspace (or one made by the old Nx-based mnci) into a smith workspace, in place. Run it with `--dry-run` first. See [Converting from Nx](../getting-started/converting.md). `--level full` also deletes the old tooling nothing uses any more (lint packages and configs, the test runner not chosen, the old build, Nx and mnci), one group at a time after asking: `--lint`, `--test`, `--build` and `--ci` are the choices, asked in a terminal and required (or defaulted by `--yes`) elsewhere; `--json` prints the plan with the groups as doctor fixes. See [Going further: `--level full`](../getting-started/converting.md#going-further---level-full).
 
 <!-- smith:begin convert -->
 Convert an Nx, Turborepo or mnci workspace to smith (adopt sends you here when it recognises one)
@@ -172,7 +172,7 @@ $ smith convert --dry-run
 smith: smith.toml already exists: this workspace is already a smith workspace
 ```
 
-That is the real answer in a workspace that already has a `smith.toml`. This repository had no Nx workspace to convert, so a conversion report is not shown here; [Converting from Nx](../guides/converting.md) describes it.
+That is the real answer in a workspace that already has a `smith.toml`. This repository had no Nx workspace to convert, so a conversion report is not shown here; [Converting from Nx](../getting-started/converting.md) describes it.
 
 ### smith upgrade
 
@@ -1189,7 +1189,7 @@ The recipe is valid.
 
 ### smith ci
 
-The generated pipelines call these phases, so CI runs exactly what you can run locally. See [CI pipelines](../reference/ci.md).
+The generated pipelines call these phases, so CI runs exactly what you can run locally. See [CI pipelines](ci.md).
 
 <!-- smith:begin ci -->
 Run a CI phase, or regenerate the pipelines
@@ -1365,4 +1365,4 @@ Load it the way your shell loads completions, for example `source <(smith comple
 
 ### smith (no arguments)
 
-In a terminal, `smith` on its own opens the interactive shell: Home, Projects, Run, Doctor, Deps and Release as tabs, with `:` for every other command, `?` for the keys and `q` to quit. Each action ends as a smith command line, printed before it runs. When stdin is not a terminal, or `CI` is set, it prints its help instead. When stdout is not a terminal, or `SMITH_SCREEN_READER` or `SMITH_THEME=plain` is set, it asks its questions as plain numbered lines (on stderr when stdout is not a terminal). `NO_COLOR` and `SMITH_THEME=plain|light|dark` choose the colours. See [Getting started](../guides/getting-started.md#7-the-interactive-shell).
+In a terminal, `smith` on its own opens the interactive shell: Home, Projects, Run, Doctor, Deps and Release as tabs, with `:` for every other command, `?` for the keys and `q` to quit. Each action ends as a smith command line, printed before it runs. When stdin is not a terminal, or `CI` is set, it prints its help instead. When stdout is not a terminal, or `SMITH_SCREEN_READER` or `SMITH_THEME=plain` is set, it asks its questions as plain numbered lines (on stderr when stdout is not a terminal). `NO_COLOR` and `SMITH_THEME=plain|light|dark` choose the colours. See [Getting started](../getting-started/first-workspace.md#7-the-interactive-shell).

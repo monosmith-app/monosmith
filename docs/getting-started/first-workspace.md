@@ -438,7 +438,7 @@ it only shows:
 without losing anything of yours. A fix that could lose something is shown,
 never applied.*
 
-The [troubleshooting guide](troubleshooting.md) lists the checks and what to do
+The [troubleshooting guide](../guides/troubleshooting.md) lists the checks and what to do
 about each.
 
 ## 7. The interactive shell
@@ -648,6 +648,6 @@ regenerated with your slot contents kept. Files smith wrote once, like
 | look up a command or a flag | [CLI reference](../reference/cli.md) |
 | change a setting | [Configuration](../reference/configuration.md) |
 | understand a word | [Glossary](../reference/glossary.md) |
-| fix a problem | [Troubleshooting](troubleshooting.md), [FAQ](faq.md) |
-| write a plugin for a language smith lacks | [Writing a plugin](writing-a-plugin.md) |
-| know how smith works inside | [Architecture](../design/architecture.md), [plugin system](../design/plugin-system.md), [execution and cache](../design/execution-and-cache.md) |
+| fix a problem | [Troubleshooting](../guides/troubleshooting.md), [FAQ](../guides/faq.md) |
+| write a plugin for a language smith lacks | [Writing a plugin](../guides/writing-a-plugin.md) |
+| know how smith works inside | [Architecture](../architecture/architecture.md), [plugin system](../architecture/plugin-system.md), [execution and cache](../architecture/execution-and-cache.md) |

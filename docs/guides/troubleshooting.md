@@ -161,7 +161,7 @@ outside `dist/`) needs a decision only you can make; its remedy says what.
 - **Ctrl+C** stops every process smith started, through a Job Object.
 - **SmartScreen** warns about an unknown publisher the first time a downloaded
   `smith.exe` runs. Choose More info, then Run anyway, or install with the script
-  or a package manager. See [installing](installing.md).
+  or a package manager. See [installing](../getting-started/installing.md).
 - **Plugins written in Python or Node.** Windows cannot execute a `.py` file
   ("%1 is not a valid Win32 application"). Launch it with a `.cmd` file, and write
   that path with backslashes. See [writing a plugin](writing-a-plugin.md).

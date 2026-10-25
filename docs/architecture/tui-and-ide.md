@@ -30,7 +30,7 @@ workspace's own tools), so the team controls the version.
 Doctor, Deps, Release) and `smith graph --format tui`. It is keyboard and mouse
 driven, one view at a time, and **never acts by itself**: an action ends as a
 smith command line, printed before it runs, and a task run uses the terminal
-itself (see docs/guides/getting-started.md and "As built" below). What the
+itself (see docs/getting-started/first-workspace.md and "As built" below). What the
 Plugins, Recipes, Settings and Guide tabs showed is a smith command now, listed
 in the palette.
 
@@ -200,7 +200,7 @@ How the components above map to them:
 is for the design stage: the screens above (the main layout, a run in progress,
 a failed run, the recipe form, doctor's findings, the release preview, and the
 compact layout) are drawn in it from this palette, saved as `.cuppa` files and
-exported as images, and kept in `docs/design/tui/`. The Go interface is built
+exported as images, and kept in `docs/architecture/tui/`. The Go interface is built
 from the same libraries and checked against those pictures.
 
 ## Interaction

@@ -1,6 +1,6 @@
 # Releasing
 
-> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [release and CI internals](../design/release-and-ci-internals.md). Things that go wrong: [troubleshooting](../guides/troubleshooting.md#a-release-did-not-do-what-i-expected).
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [release and CI internals](../architecture/release-and-ci-internals.md). Things that go wrong: [troubleshooting](../guides/troubleshooting.md#a-release-did-not-do-what-i-expected).
 
 ```sh
 smith release --dry-run    # the plan; changes nothing

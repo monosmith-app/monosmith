@@ -29,7 +29,7 @@ so the whole conversion is one change you can review and undo.
 | `--json` | print the plan as JSON, for tools |
 
 If your repository is not an Nx workspace at all, you want
-[`smith adopt`](getting-started.md#or-adopt-an-existing-repository) instead.
+[`smith adopt`](first-workspace.md#or-adopt-an-existing-repository) instead.
 Words used below (project, kind, task, stack) are defined in the
 [glossary](../reference/glossary.md).
 

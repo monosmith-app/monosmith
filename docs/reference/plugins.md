@@ -67,7 +67,7 @@ This section is the reference. For a walk-through with working examples in Go,
 Python and Node.js, read the guide
 [Writing a plugin](../guides/writing-a-plugin.md); for why plugins are
 processes and how smith loads them, read
-[the plugin system](../design/plugin-system.md).
+[the plugin system](../architecture/plugin-system.md).
 
 A plugin is any executable that speaks the protocol on stdin/stdout; anything
 it wants the user to see goes to stderr. Declare it in `smith.toml`, with its

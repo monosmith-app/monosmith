@@ -1,6 +1,6 @@
 # CI pipelines
 
-> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [release and CI internals](../design/release-and-ci-internals.md). Things that go wrong: [troubleshooting](../guides/troubleshooting.md#ci-differs-from-my-machine).
+> Terms such as project, kind, task and stack are defined in the [glossary](glossary.md). How it works inside: [release and CI internals](../architecture/release-and-ci-internals.md). Things that go wrong: [troubleshooting](../guides/troubleshooting.md#ci-differs-from-my-machine).
 
 smith generates the pipeline from what is in the workspace and keeps it in step:
 `smith new` writes it, every `smith add` regenerates it, and `smith ci generate`

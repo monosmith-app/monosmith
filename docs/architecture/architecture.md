@@ -24,7 +24,7 @@ releases this repository itself.
 | `apps/smith` | the `smith` command: the core, the CLI, the TUI, and every built-in plugin linked in |
 | `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, vite, angular, astro, vscode), `python`, `go`, `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `docker`, `vertical-slices` |
 | `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates and tool runs. Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
-| `docs/` | the user documentation, these notes, and the research the project started from (`docs/design/research/`) |
+| `docs/` | the user documentation, these notes, and the research the project started from (`docs/architecture/research/`) |
 | `install.sh`, `install.ps1` | install the newest `smith@` GitHub Release |
 
 ## The core
