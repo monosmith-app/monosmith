@@ -1,7 +1,7 @@
 {
   "version": 1,
   "date": "2026-10",
-  "smithVersion": "1.63.0",
+  "smithVersion": "1.65.0",
   "tools": [
     "nx",
     "turborepo",
@@ -19,7 +19,7 @@
     "please"
   ],
   "evidenceCodes": {
-    "R": "run by the author of this page in a scratch workspace, 2026-10-25",
+    "R": "run by the author of this page in a scratch workspace, 2026-10-25 (smith 1.65.0 for the plugin, environment and graph rows)",
     "C": "run by the plugin catalogue's authors on 1.62.0 (docs/plugins/using/catalogue)",
     "L": "live public evidence: a package on its registry or an asset on smith's own release",
     "T": "covered by a test in the repository (read, not re-run)",
@@ -32,8 +32,16 @@
       "title": "Languages and stacks"
     },
     {
+      "id": "env",
+      "title": "Ready-made environments, by language"
+    },
+    {
       "id": "find",
       "title": "Project discovery and scaffolding"
+    },
+    {
+      "id": "graph",
+      "title": "The dependency graph"
     },
     {
       "id": "task",
@@ -208,6 +216,162 @@
       "searched": "framework names in each tool's guides were not searched beyond Nx's technologies section"
     },
     {
+      "id": "env-js",
+      "g": "env",
+      "label": "Ready-made environment: JavaScript and TypeScript",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPPPPPPUUPPPNU",
+      "n": "Nx: generators (`nx g`) create libraries and apps and plugins infer their tasks; the others run package.json scripts you write, or need rules."
+    },
+    {
+      "id": "env-py",
+      "g": "env",
+      "label": "Ready-made environment: Python",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPPPNNPPUPNUNP",
+      "n": "Pants: `tailor` generates BUILD files for code that exists; it does not create a project."
+    },
+    {
+      "id": "env-go",
+      "g": "env",
+      "label": "Ready-made environment: Go",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPPPNNPPUPNNNP"
+    },
+    {
+      "id": "env-rs",
+      "g": "env",
+      "label": "Ready-made environment: Rust",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPPUNNPPUPNUYP",
+      "n": "Cargo: `cargo new` and `cargo init`, with its own workspace and lockfile."
+    },
+    {
+      "id": "env-jvm",
+      "g": "env",
+      "label": "Ready-made environment: Java, Kotlin and Android",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "Maven (Java) ran on 1.65.0; Gradle, Kotlin and Android were not run here",
+        "p": "not yet verified end to end"
+      },
+      "t": "PUPPNNPPYPNNNP",
+      "n": "Gradle: `gradle init` creates Java, Kotlin, Groovy and Scala applications and libraries."
+    },
+    {
+      "id": "env-net",
+      "g": "env",
+      "label": "Ready-made environment: .NET",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPUUNNPNUPNNNU"
+    },
+    {
+      "id": "env-rb",
+      "g": "env",
+      "label": "Ready-made environment: Ruby",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUNNPUUPNNNU"
+    },
+    {
+      "id": "env-php",
+      "g": "env",
+      "label": "Ready-made environment: PHP",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUNNPUUPNNNU"
+    },
+    {
+      "id": "env-cpp",
+      "g": "env",
+      "label": "Ready-made environment: C and C++ (CMake)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUPUNNPPYPNNNP",
+      "n": "Gradle: `gradle init` creates C++ applications and libraries."
+    },
+    {
+      "id": "env-dart",
+      "g": "env",
+      "label": "Ready-made environment: Dart and Flutter",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "`dart analyze` crashed on the test machine (Dart 3.12.0 on Windows, reproduced outside smith), so the lint task did not pass; scaffold, test and build did",
+        "p": "not yet verified end to end"
+      },
+      "t": "UUUUNNUUUPNNNU"
+    },
+    {
+      "id": "env-bicep",
+      "g": "env",
+      "label": "Ready-made environment: Azure Bicep",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUNNUUUPNNNU"
+    },
+    {
+      "id": "env-first",
+      "g": "env",
+      "label": "A new project lints, type-checks, tests and builds on its first run (a worked example is included)",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "on 1.65.0, eleven languages in one workspace: test 14 of 14 tasks, build 10 of 10, lint 21 of 22 (the one failure is the Dart SDK crash noted on the Dart row)"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "weak": true,
+      "searched": "\"new project\", \"first run\", \"generate\" with the tool's scaffold commands in all fourteen sources; no page says what a generated project passes"
+    },
+    {
+      "id": "env-devcontainer",
+      "g": "env",
+      "label": "Writes a dev container with the toolchains CI installs",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"devcontainer\", \"dev container\" in all fourteen sources (Pants, moon and Earthly mention dev containers as places to run the tool, not as something they generate)"
+    },
+    {
+      "id": "env-ci",
+      "g": "env",
+      "label": "The generated pipeline installs each language's toolchain and caches its package store",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "one GitHub workflow for eleven languages: eleven toolchain installs and seven package-store caches"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "weak": true,
+      "searched": "\"setup-node\", \"setup-go\", \"setup-python\", \"setup-java\" in all fourteen sources: they appear in hand-written examples, not as generator output; Nx's `ci-workflow` generator exists but its output is not described"
+    },
+    {
       "id": "find-manifest",
       "g": "find",
       "label": "Projects found from the manifests you already have",
@@ -217,51 +381,6 @@
       },
       "t": "YPNPPPPNPNPYYN",
       "n": "◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); ❌ means per-target BUILD files or Earthfiles."
-    },
-    {
-      "id": "find-imports",
-      "g": "find",
-      "label": "Dependencies between projects read from source imports, in several languages",
-      "s": {
-        "m": "Y",
-        "e": "T"
-      },
-      "t": "PNUYNNNNNNNNNP",
-      "n": "Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages \"Nx does not detect dependencies from source code imports\". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies."
-    },
-    {
-      "id": "find-schema",
-      "g": "find",
-      "label": "Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages",
-      "s": {
-        "m": "Y",
-        "e": "T",
-        "n": "#343 is still open although the feature shipped (ADR 0028)"
-      },
-      "t": "UUPPUUUUUUUUUU",
-      "n": "Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend."
-    },
-    {
-      "id": "find-graph",
-      "g": "find",
-      "label": "Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected",
-      "s": {
-        "m": "Y",
-        "e": "R"
-      },
-      "t": "YYPUPUYUUUYUUU",
-      "n": "Lerna: through the Nx project graph; Bazel: query output formats."
-    },
-    {
-      "id": "find-diff",
-      "g": "find",
-      "label": "Graph diff between two revisions (projects and imports added or removed)",
-      "s": {
-        "m": "Y",
-        "e": "R"
-      },
-      "t": "UUUUUUUUUUUUUU",
-      "searched": "\"graph\" with \"between\", \"since\" and \"compare\""
     },
     {
       "id": "find-scaffold",
@@ -309,8 +428,53 @@
       "searched": "\"folder\", \"file\" with \"naming\", \"layout\", \"structure\" and \"enforce\" or \"lint\""
     },
     {
+      "id": "find-imports",
+      "g": "graph",
+      "label": "Dependencies between projects read from source imports, in several languages",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "PNUYNNNNNNNNNP",
+      "n": "Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages \"Nx does not detect dependencies from source code imports\". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies."
+    },
+    {
+      "id": "find-schema",
+      "g": "graph",
+      "label": "Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages",
+      "s": {
+        "m": "Y",
+        "e": "T",
+        "n": "#343 is still open although the feature shipped (ADR 0028)"
+      },
+      "t": "UUPPUUUUUUUUUU",
+      "n": "Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend."
+    },
+    {
+      "id": "find-graph",
+      "g": "graph",
+      "label": "Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYPUPUYUUUYUUU",
+      "n": "Lerna: through the Nx project graph; Bazel: query output formats."
+    },
+    {
+      "id": "find-diff",
+      "g": "graph",
+      "label": "Graph diff between two revisions (projects and imports added or removed)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"graph\" with \"between\", \"since\" and \"compare\""
+    },
+    {
       "id": "find-bounds",
-      "g": "find",
+      "g": "graph",
       "label": "Rules for which projects may depend on which (boundaries, visibility)",
       "s": {
         "m": "N",
@@ -319,6 +483,56 @@
       },
       "t": "YPYYUUYYUUUPUY",
       "n": "Turborepo: `turbo boundaries` is experimental; Yarn: constraints; moon: constraints and boundaries; Bazel, Buck2, Please, Pants: visibility."
+    },
+    {
+      "id": "graph-xlang",
+      "g": "graph",
+      "label": "Edges between projects of different languages",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "import edges stay inside one language; across languages, edges come from shared schemas you name in smith.toml (ADR 0028)",
+        "p": "by design, ADR 0028"
+      },
+      "t": "YUYPNNPYUPNNNY",
+      "n": "Nx: plugins \"connect cross-language boundaries too\"; Buck2: rules \"can combine languages\"; Please: \"Cross-language support is a big advantage\"; moon: explicit `dependsOn`, implicit discovery per language; Earthly: targets of any language reference each other; Pants: code generators link languages.",
+      "searched": "\"cross-language\", \"multi-language\" in Turborepo, Gradle"
+    },
+    {
+      "id": "graph-rdeps",
+      "g": "graph",
+      "label": "Asks what depends on a project or a file, transitively",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPYYUPPPUUPUPY",
+      "n": "Nx: \"pass `--files` to any affected command\"; Bazel: `rdeps`, `allrdeps`; Pants: `pants dependents --transitive`; Please: `reverseDeps`, `whatinputs`; Turborepo: a filter that includes dependents; Rush: `--impacted-by`; moon: `--dependents`; Lage: the scope includes dependents; Cargo: `cargo tree --invert`; Buck2: `rdeps` in cquery.",
+      "searched": "\"dependents\", \"reverse\", \"rdeps\" in Lerna, Gradle, Earthly and the JavaScript package managers"
+    },
+    {
+      "id": "graph-json",
+      "g": "graph",
+      "label": "The graph as JSON for scripts",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPPYYPYPUUUPYY",
+      "n": "Turborepo: `--graph` JSON output is deprecated in favour of `turbo query`; Bazel and Buck2: query output formats; Rush: `rush list --json` lists projects; the JavaScript package managers print dependency trees as JSON.",
+      "searched": "\"json\" with \"graph\" in Gradle, Earthly and Lage"
+    },
+    {
+      "id": "graph-plug",
+      "g": "graph",
+      "label": "A plugin can contribute graph edges for its own language",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "YUUYUUUUUUUUUU",
+      "n": "Nx: a plugin exports `createDependencies`; Pants: \"Add new forms of dependency inference\".",
+      "searched": "\"dependency inference\", \"createDependencies\", \"dependencies\" in extension pages of the others"
     },
     {
       "id": "task-order",
@@ -1001,18 +1215,17 @@
         "m": "Y",
         "e": "R"
       },
-      "t": "UUUUUUPUUUUUPU",
-      "n": "moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand."
+      "t": "PUUUUUPUUUUUPU",
+      "n": "Nx: \"plugin isolation runs each plugin in a separate forked process\", but a plugin is a Node package; moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand."
     },
     {
       "id": "plug-sdk",
       "g": "plug",
       "label": "An SDK for writing plugins",
       "s": {
-        "m": "P",
-        "e": "T",
-        "n": "Go and TypeScript (@monosmith/plugin-sdk 0.1.0); Python and C# are planned",
-        "p": "#564"
+        "m": "Y",
+        "e": "L",
+        "n": "Go (module packages/plugin-sdk, v0.34.0 on the Go proxy) and TypeScript (@monosmith/plugin-sdk 0.2.0 on npm); no Python or C# SDK is published"
       },
       "t": "YUYYUPUYYUUUUU"
     },
@@ -1025,20 +1238,21 @@
         "e": "I",
         "p": "#164, #565"
       },
-      "t": "YUPUUUPUUUUUUU",
-      "n": "Bazel: the Central Registry hosts rule sets; moon: a community plugin registry for its proto tool manager."
+      "t": "YUPUUUPUYUUUUU",
+      "n": "Bazel: the Central Registry hosts modules; moon: a community plugin registry for its proto tool manager; Gradle: the Gradle Plugin Portal."
     },
     {
       "id": "plug-sec",
       "g": "plug",
-      "label": "Plugins are integrity-checked or sandboxed",
+      "label": "Extensions are integrity-checked or sandboxed",
       "s": {
-        "m": "N",
-        "e": "I",
+        "m": "P",
+        "e": "T",
+        "n": "a plugin the workspace names must be trusted, runs with a minimal environment and is pinned by SHA-256 in CI (ADR 0036); it is not sandboxed",
         "p": "#565"
       },
-      "t": "UUUUUUPUUUUUUU",
-      "n": "moon: WASM plugins get a sandboxed file system."
+      "t": "UUUUUUYUUUUUUU",
+      "n": "moon: WASM plugins \"have access to a sandboxed file system\"; see also the trust row."
     },
     {
       "id": "plug-stack",
@@ -1051,6 +1265,68 @@
       "t": "UUUUUUUUUUUUUU",
       "searched": "\"stack\", \"preset\" were not searched; treat as not documented",
       "weak": true
+    },
+    {
+      "id": "plug-newlang",
+      "g": "plug",
+      "label": "Extensions can add support for a new language",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YUYYUUPYYUUUUY",
+      "n": "moon: toolchain plugins, experimental; Bazel: \"Support for a new language is typically done with a rule\"; Pants: \"Add support for new languages\"; Gradle: language plugins; Please: \"build rules for additional languages\".",
+      "searched": "\"plugin\", \"extension\", \"extending\" in Turborepo, Lerna, Rush, Earthly, Lage, the JavaScript package managers and Cargo (Rush plugins share configuration and add features; Cargo subcommands add commands, not languages)"
+    },
+    {
+      "id": "plug-anylang",
+      "g": "plug",
+      "label": "An extension can be written in any language, not only the tool's own",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "a 102-line Python plugin with no SDK passes smith plugin check"
+      },
+      "t": "NUNNUNPNNUUNYN",
+      "n": "Nx: \"The plugin is a Node package\"; Bazel and Buck2: Starlark; Pants: \"typed Python 3 code\"; Rush: an npm package; Gradle: Java, Groovy or Kotlin; Yarn plugins and pnpm hooks are JavaScript; Please: its build language; moon: \"any language that compiles to WASM\"; Cargo: any program named cargo-<name>. The programs an extension launches can be in any language; this row is about the extension itself.",
+      "searched": "\"plugin\" in Turborepo, Lerna, Earthly and Lage"
+    },
+    {
+      "id": "plug-proc",
+      "g": "plug",
+      "label": "Each extension runs in a process of its own",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YUUUUUUUUUUUYU",
+      "n": "Nx: \"Plugin isolation runs each plugin in a separate forked process\"; Cargo: a subcommand is an external executable.",
+      "searched": "\"isolat\", \"separate process\", \"in-process\" in the extension pages of the other tools"
+    },
+    {
+      "id": "plug-trust",
+      "g": "plug",
+      "label": "A trust step before an extension named by the repository can run, with pins for CI",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUPUPUUUUU",
+      "weak": true,
+      "n": "moon: its proto tool manager says a plugin \"must be trusted with `proto trust` before the plugin is loaded\"; Gradle: dependency verification covers the plugins a build consumes.",
+      "searched": "\"trust\", \"checksum\", \"sha256\", \"signature\" near \"plugin\" in all fourteen documentation sources; the search was narrow, so the row is not claimed as unique"
+    },
+    {
+      "id": "plug-check",
+      "g": "plug",
+      "label": "A command that checks an extension keeps the protocol's promises",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "weak": true,
+      "searched": "\"conformance\", \"validate plugin\", \"test your plugin\" were searched in the extension pages; Gradle documents TestKit and Nx testing helpers for plugin authors, which are libraries, not a checking command"
     },
     {
       "id": "ui-tui",

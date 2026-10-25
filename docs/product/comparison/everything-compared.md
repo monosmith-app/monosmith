@@ -2,7 +2,7 @@
 
 One table with every capability MonoSmith (`smith`) has, set against the fourteen
 other tools and tool families in the [comparison](README.md), as of **2026-10**,
-smith 1.63.0. Below it: what only smith does in this set, what other tools do that
+smith 1.65.0 for the rows added on 2026-10-25 (plugins and flexibility, ready-made environments by language, the dependency graph) and 1.62.0 to 1.63.0 for the rest. Below it: what only smith does in this set, what other tools do that
 smith does not yet do, and where the two are equal or behind.
 
 This is the seller's view, and it says so. The author of this page is the smith
@@ -37,12 +37,22 @@ Rules the table follows:
   is ◐ at most. A single-language tool (Lerna, Rush, Lage, Cargo, the JavaScript
   package managers) is ❌ in the other languages' rows, because its documentation
   states that scope.
+- **Environment rows** ("ready-made environment", by language) are ✅ for a tool only where its
+  documentation shows a built-in generator for a new project in that language and tasks that run it,
+  with no rules for you to write; ◐ means the language is supported but you write BUILD files, rules,
+  scripts or configuration, or add a plugin. The reasoning is on
+  [Languages and environments](languages-and-environments.md).
+- **Plugin rows** compare the extension surface; [Plugins and flexibility](plugins-and-flexibility.md)
+  has a page of evidence per tool. **Graph rows** are explained in
+  [The dependency graph](dependency-graph.md).
 - **The `JS pkg mgrs` column** is npm, pnpm and Yarn workspaces together, marked by the
   best of the three; the [workspaces page](workspaces.md) says which.
 - **CI rows**: ◐ means guides or recipes for running the tool in CI, with no generator.
 - Cells copied from the [comparison tables](README.md) keep their sources on the tool
   pages. Cells new to this page are sourced in the "Added for the master table"
-  section of each tool page.
+  section of each tool page; the plugin, ready-made-environment and graph rows added on
+  2026-10-25 are sourced in the Sources of [plugins and flexibility](plugins-and-flexibility.md),
+  [languages and environments](languages-and-environments.md) and [the dependency graph](dependency-graph.md).
 
 | Code | How a smith cell was checked |
 |---|---|
@@ -76,17 +86,37 @@ The table is generated from [`features.json`](features.json) by
 | Dart and Flutter | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
 | Azure Bicep (infrastructure) | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | C |
 | Front-end frameworks (React, Angular, Vue, Vite, Astro) | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| **Ready-made environments, by language** | | | | | | | | | | | | | | | | |
+| Ready-made environment: JavaScript and TypeScript | **✅** | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ◐ | ◐ | ❌ | ❔ | R |
+| Ready-made environment: Python | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ❌ | ◐ | R |
+| Ready-made environment: Go | **✅** | ◐ | ◐ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❌ | ❌ | ◐ | R |
+| Ready-made environment: Rust | **✅** | ◐ | ◐ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ❔ | ◐ | ❌ | ❔ | ✅ | ◐ | R |
+| Ready-made environment: Java, Kotlin and Android | **◐** | ◐ | ❔ | ◐ | ◐ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ | R, not yet verified end to end |
+| Ready-made environment: .NET | **✅** | ◐ | ◐ | ❔ | ❔ | ❌ | ❌ | ◐ | ❌ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
+| Ready-made environment: Ruby | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
+| Ready-made environment: PHP | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ◐ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
+| Ready-made environment: C and C++ (CMake) | **✅** | ❔ | ❔ | ◐ | ❔ | ❌ | ❌ | ◐ | ◐ | ✅ | ◐ | ❌ | ❌ | ❌ | ◐ | R |
+| Ready-made environment: Dart and Flutter | **◐** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R, not yet verified end to end |
+| Ready-made environment: Azure Bicep | **✅** | ❔ | ❔ | ❔ | ❔ | ❌ | ❌ | ❔ | ❔ | ❔ | ◐ | ❌ | ❌ | ❌ | ❔ | R |
+| A new project lints, type-checks, tests and builds on its first run (a worked example is included) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Writes a dev container with the toolchains CI installs | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| The generated pipeline installs each language's toolchain and caches its package store | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Project discovery and scaffolding** | | | | | | | | | | | | | | | | |
 | Projects found from the manifests you already have | **✅** | ✅ | ◐ | ❌ | ◐ | ◐ | ◐ | ◐ | ❌ | ◐ | ❌ | ◐ | ✅ | ✅ | ❌ | R |
-| Dependencies between projects read from source imports, in several languages | **✅** | ◐ | ❌ | ❔ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ◐ | T |
-| Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages | **✅** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected | **✅** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | R |
-| Graph diff between two revisions (projects and imports added or removed) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | Scaffold apps, libraries and packages | **✅** | ✅ | ✅ | ❔ | ◐ | ✅ | ◐ | ✅ | ◐ | ✅ | ❔ | ◐ | ◐ | ✅ | ◐ | R |
 | Team recipes: a shared preset of plugins and settings, with questions at add time | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Existing projects checked against their recipe, owned files upgraded | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Code layout checked inside projects (vertical slices) in nine languages | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| **The dependency graph** | | | | | | | | | | | | | | | | |
+| Dependencies between projects read from source imports, in several languages | **✅** | ◐ | ❌ | ❔ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ◐ | T |
+| Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages | **✅** | ❔ | ❔ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
+| Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected | **✅** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | R |
+| Graph diff between two revisions (projects and imports added or removed) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | Rules for which projects may depend on which (boundaries, visibility) | **❌** | ✅ | ◐ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | I, #570 |
+| Edges between projects of different languages | **◐** | ✅ | ❔ | ✅ | ◐ | ❌ | ❌ | ◐ | ✅ | ❔ | ◐ | ❌ | ❌ | ❌ | ✅ | R, by design, ADR 0028 |
+| Asks what depends on a project or a file, transitively | **✅** | ✅ | ◐ | ✅ | ✅ | ❔ | ◐ | ◐ | ◐ | ❔ | ❔ | ◐ | ❔ | ◐ | ✅ | R |
+| The graph as JSON for scripts | **✅** | ✅ | ◐ | ◐ | ✅ | ✅ | ◐ | ✅ | ◐ | ❔ | ❔ | ❔ | ◐ | ✅ | ✅ | R |
+| A plugin can contribute graph edges for its own language | **✅** | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | **Tasks, graph and affected** | | | | | | | | | | | | | | | | |
 | Tasks run in dependency order, in parallel | **✅** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | R |
 | Only what changed since a git base (affected) | **✅** | ✅ | ✅ | ◐ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ | ✅ | ✅ | ❔ | ✅ | R |
@@ -152,11 +182,16 @@ The table is generated from [`features.json`](features.json) by
 | Config and generated files migrate when the tool upgrades | **✅** | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | **Plugins and extensibility** | | | | | | | | | | | | | | | | |
 | A plugin model | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ◐ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | R |
-| Plugins are separate programs speaking a documented protocol | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | R |
-| An SDK for writing plugins | **◐** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | T, #564 |
-| A registry or catalogue of third-party plugins | **❌** | ✅ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #164, #565 |
-| Plugins are integrity-checked or sandboxed | **❌** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #565 |
+| Plugins are separate programs speaking a documented protocol | **✅** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | R |
+| An SDK for writing plugins | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
+| A registry or catalogue of third-party plugins | **❌** | ✅ | ❔ | ◐ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #164, #565 |
+| Extensions are integrity-checked or sandboxed | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T, #565 |
 | Named stacks: a per-project choice of toolchain plugins | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| Extensions can add support for a new language | **✅** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ◐ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | R |
+| An extension can be written in any language, not only the tool's own | **✅** | ❌ | ❔ | ❌ | ❌ | ❔ | ❌ | ◐ | ❌ | ❌ | ❔ | ❔ | ❌ | ✅ | ❌ | R |
+| Each extension runs in a process of its own | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | R |
+| A trust step before an extension named by the repository can run, with pins for CI | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
+| A command that checks an extension keeps the protocol's promises | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Interfaces** | | | | | | | | | | | | | | | | |
 | Full-screen terminal interface (dashboard, doctor, deps, release, settings) | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | VS Code extension | **✅** | ✅ | ✅ | ✅ | ❌ | ✅ | ❔ | ◐ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ✅ | L |
@@ -166,8 +201,8 @@ The table is generated from [`features.json`](features.json) by
 | A hosted service (remote cache, analytics, CI features) | **❌** | ✅ | ✅ | ◐ | ❔ | ◐ | ❔ | ✅ | ❔ | ✅ | ❌ | ❔ | ❔ | ❔ | ❔ | D, deliberate: no hosted service |
 | **Operations** | | | | | | | | | | | | | | | | |
 | Native Windows support | **✅** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❌ | L |
-| **Score: rows marked ✅** (of 92) | **63** | 32 | 14 | 18 | 20 | 11 | 10 | 17 | 14 | 16 | 5 | 7 | 10 | 8 | 16 | ◐ 16, ❌ 13 |
-| **Rows marked ❔** (not verified, not counted as absent) | – | 42 | 58 | 61 | 57 | 56 | 60 | 42 | 71 | 67 | 67 | 69 | 59 | 66 | 66 | |
+| **Score: rows marked ✅** (of 115) | **84** | 39 | 14 | 21 | 24 | 12 | 10 | 19 | 16 | 20 | 5 | 7 | 10 | 12 | 20 | ◐ 19, ❌ 12 |
+| **Rows marked ❔** (not verified, not counted as absent) | – | 51 | 74 | 73 | 70 | 66 | 68 | 50 | 83 | 84 | 78 | 79 | 70 | 73 | 79 | |
 
 <!-- everything-compared:table:end -->
 
@@ -192,18 +227,37 @@ comparison tables and the tool pages.
 - *Azure Bicep (infrastructure).* Searched for ❔: "bicep".
 - *Front-end frameworks (React, Angular, Vue, Vite, Astro).* MonoSmith: stacks listed with smith stacks. Searched for ❔: framework names in each tool's guides were not searched beyond Nx's technologies section.
 
+**Ready-made environments, by language**
+
+- *Ready-made environment: JavaScript and TypeScript.* Nx: generators (`nx g`) create libraries and apps and plugins infer their tasks; the others run package.json scripts you write, or need rules.
+- *Ready-made environment: Python.* Pants: `tailor` generates BUILD files for code that exists; it does not create a project.
+- *Ready-made environment: Rust.* Cargo: `cargo new` and `cargo init`, with its own workspace and lockfile.
+- *Ready-made environment: Java, Kotlin and Android.* MonoSmith: Maven (Java) ran on 1.65.0; Gradle, Kotlin and Android were not run here. Gradle: `gradle init` creates Java, Kotlin, Groovy and Scala applications and libraries.
+- *Ready-made environment: C and C++ (CMake).* Gradle: `gradle init` creates C++ applications and libraries.
+- *Ready-made environment: Dart and Flutter.* MonoSmith: `dart analyze` crashed on the test machine (Dart 3.12.0 on Windows, reproduced outside smith), so the lint task did not pass; scaffold, test and build did.
+- *A new project lints, type-checks, tests and builds on its first run (a worked example is included).* MonoSmith: on 1.65.0, eleven languages in one workspace: test 14 of 14 tasks, build 10 of 10, lint 21 of 22 (the one failure is the Dart SDK crash noted on the Dart row). Searched for ❔: "new project", "first run", "generate" with the tool's scaffold commands in all fourteen sources; no page says what a generated project passes.
+- *Writes a dev container with the toolchains CI installs.* Searched for ❔: "devcontainer", "dev container" in all fourteen sources (Pants, moon and Earthly mention dev containers as places to run the tool, not as something they generate).
+- *The generated pipeline installs each language's toolchain and caches its package store.* MonoSmith: one GitHub workflow for eleven languages: eleven toolchain installs and seven package-store caches. Searched for ❔: "setup-node", "setup-go", "setup-python", "setup-java" in all fourteen sources: they appear in hand-written examples, not as generator output; Nx's `ci-workflow` generator exists but its output is not described.
+
 **Project discovery and scaffolding**
 
 - *Projects found from the manifests you already have.* ◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); ❌ means per-target BUILD files or Earthfiles.
-- *Dependencies between projects read from source imports, in several languages.* Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages "Nx does not detect dependencies from source code imports". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies.
-- *Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages.* MonoSmith: #343 is still open although the feature shipped (ADR 0028). Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend.
-- *Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected.* Lerna: through the Nx project graph; Bazel: query output formats.
-- *Graph diff between two revisions (projects and imports added or removed).* Searched for ❔: "graph" with "between", "since" and "compare".
 - *Scaffold apps, libraries and packages.* Pants: tailor writes BUILD files, not code.
 - *Team recipes: a shared preset of plugins and settings, with questions at add time.* ◐: custom generators (Nx, Turborepo) or templates (moon); none documents levels, slots or versions.
 - *Existing projects checked against their recipe, owned files upgraded.* Searched for ❔: "template" with "update", "upgrade", "drift" and "sync".
 - *Code layout checked inside projects (vertical slices) in nine languages.* MonoSmith: Node through ESLint rules; Bicep has none. Searched for ❔: "folder", "file" with "naming", "layout", "structure" and "enforce" or "lint".
+
+**The dependency graph**
+
+- *Dependencies between projects read from source imports, in several languages.* Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages "Nx does not detect dependencies from source code imports". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies.
+- *Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages.* MonoSmith: #343 is still open although the feature shipped (ADR 0028). Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend.
+- *Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected.* Lerna: through the Nx project graph; Bazel: query output formats.
+- *Graph diff between two revisions (projects and imports added or removed).* Searched for ❔: "graph" with "between", "since" and "compare".
 - *Rules for which projects may depend on which (boundaries, visibility).* Turborepo: `turbo boundaries` is experimental; Yarn: constraints; moon: constraints and boundaries; Bazel, Buck2, Please, Pants: visibility.
+- *Edges between projects of different languages.* MonoSmith: import edges stay inside one language; across languages, edges come from shared schemas you name in smith.toml (ADR 0028). Nx: plugins "connect cross-language boundaries too"; Buck2: rules "can combine languages"; Please: "Cross-language support is a big advantage"; moon: explicit `dependsOn`, implicit discovery per language; Earthly: targets of any language reference each other; Pants: code generators link languages. Searched for ❔: "cross-language", "multi-language" in Turborepo, Gradle.
+- *Asks what depends on a project or a file, transitively.* Nx: "pass `--files` to any affected command"; Bazel: `rdeps`, `allrdeps`; Pants: `pants dependents --transitive`; Please: `reverseDeps`, `whatinputs`; Turborepo: a filter that includes dependents; Rush: `--impacted-by`; moon: `--dependents`; Lage: the scope includes dependents; Cargo: `cargo tree --invert`; Buck2: `rdeps` in cquery. Searched for ❔: "dependents", "reverse", "rdeps" in Lerna, Gradle, Earthly and the JavaScript package managers.
+- *The graph as JSON for scripts.* Turborepo: `--graph` JSON output is deprecated in favour of `turbo query`; Bazel and Buck2: query output formats; Rush: `rush list --json` lists projects; the JavaScript package managers print dependency trees as JSON. Searched for ❔: "json" with "graph" in Gradle, Earthly and Lage.
+- *A plugin can contribute graph edges for its own language.* Nx: a plugin exports `createDependencies`; Pants: "Add new forms of dependency inference". Searched for ❔: "dependency inference", "createDependencies", "dependencies" in extension pages of the others.
 
 **Tasks, graph and affected**
 
@@ -274,11 +328,16 @@ comparison tables and the tool pages.
 
 **Plugins and extensibility**
 
-- *Plugins are separate programs speaking a documented protocol.* moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand.
-- *An SDK for writing plugins.* MonoSmith: Go and TypeScript (@monosmith/plugin-sdk 0.1.0); Python and C# are planned.
-- *A registry or catalogue of third-party plugins.* Bazel: the Central Registry hosts rule sets; moon: a community plugin registry for its proto tool manager.
-- *Plugins are integrity-checked or sandboxed.* moon: WASM plugins get a sandboxed file system.
+- *Plugins are separate programs speaking a documented protocol.* Nx: "plugin isolation runs each plugin in a separate forked process", but a plugin is a Node package; moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand.
+- *An SDK for writing plugins.* MonoSmith: Go (module packages/plugin-sdk, v0.34.0 on the Go proxy) and TypeScript (@monosmith/plugin-sdk 0.2.0 on npm); no Python or C# SDK is published.
+- *A registry or catalogue of third-party plugins.* Bazel: the Central Registry hosts modules; moon: a community plugin registry for its proto tool manager; Gradle: the Gradle Plugin Portal.
+- *Extensions are integrity-checked or sandboxed.* MonoSmith: a plugin the workspace names must be trusted, runs with a minimal environment and is pinned by SHA-256 in CI (ADR 0036); it is not sandboxed. moon: WASM plugins "have access to a sandboxed file system"; see also the trust row.
 - *Named stacks: a per-project choice of toolchain plugins.* Searched for ❔: "stack", "preset" were not searched; treat as not documented.
+- *Extensions can add support for a new language.* moon: toolchain plugins, experimental; Bazel: "Support for a new language is typically done with a rule"; Pants: "Add support for new languages"; Gradle: language plugins; Please: "build rules for additional languages". Searched for ❔: "plugin", "extension", "extending" in Turborepo, Lerna, Rush, Earthly, Lage, the JavaScript package managers and Cargo (Rush plugins share configuration and add features; Cargo subcommands add commands, not languages).
+- *An extension can be written in any language, not only the tool's own.* MonoSmith: a 102-line Python plugin with no SDK passes smith plugin check. Nx: "The plugin is a Node package"; Bazel and Buck2: Starlark; Pants: "typed Python 3 code"; Rush: an npm package; Gradle: Java, Groovy or Kotlin; Yarn plugins and pnpm hooks are JavaScript; Please: its build language; moon: "any language that compiles to WASM"; Cargo: any program named cargo-<name>. The programs an extension launches can be in any language; this row is about the extension itself. Searched for ❔: "plugin" in Turborepo, Lerna, Earthly and Lage.
+- *Each extension runs in a process of its own.* Nx: "Plugin isolation runs each plugin in a separate forked process"; Cargo: a subcommand is an external executable. Searched for ❔: "isolat", "separate process", "in-process" in the extension pages of the other tools.
+- *A trust step before an extension named by the repository can run, with pins for CI.* moon: its proto tool manager says a plugin "must be trusted with `proto trust` before the plugin is loaded"; Gradle: dependency verification covers the plugins a build consumes. Searched for ❔: "trust", "checksum", "sha256", "signature" near "plugin" in all fourteen documentation sources; the search was narrow, so the row is not claimed as unique.
+- *A command that checks an extension keeps the protocol's promises.* Searched for ❔: "conformance", "validate plugin", "test your plugin" were searched in the extension pages; Gradle documents TestKit and Nx testing helpers for plugin authors, which are libraries, not a checking command.
 
 **Interfaces**
 
@@ -295,9 +354,9 @@ comparison tables and the tool pages.
 
 ## Only MonoSmith, in this set
 
-<!-- rows:only-smith find-diff, find-recdrift, find-layout, ci-drift, ci-dirty, ci-comment, rel-nuget, rel-gems, rel-pub, rel-brew, rel-vsce -->
-<!-- rows:weak ci-slot, ci-tpl, plug-stack -->
-<!-- rows:nearly-only lang-rb, lang-php, lang-dart, lang-bicep, find-schema, find-recipe, cache-why, cache-manage, rel-pypi, rel-linux, rel-resume, health-doctor, health-fix, health-dry, plug-oop, ui-tui, ops-win -->
+<!-- rows:only-smith env-devcontainer, find-recdrift, find-layout, find-diff, ci-drift, ci-dirty, ci-comment, rel-nuget, rel-gems, rel-pub, rel-brew, rel-vsce -->
+<!-- rows:weak env-first, env-ci, ci-slot, ci-tpl, plug-stack, plug-check -->
+<!-- rows:nearly-only lang-rb, lang-php, lang-dart, lang-bicep, env-py, env-go, env-net, env-rb, env-php, env-bicep, find-recipe, find-schema, cache-why, cache-manage, rel-pypi, rel-linux, rel-resume, health-doctor, health-fix, health-dry, plug-oop, ui-tui, ops-win -->
 
 These are the rows where smith is ✅ and every other tool is ❌, ❔ or not applicable.
 The wording is deliberate: **no other tool in this comparison documents it, in the
@@ -319,10 +378,13 @@ not searched.
 | **Publishing to NuGet, RubyGems and pub.dev** from the same release | L: `monosmith` is live on nuget.org (1.2.0 to the current version), rubygems.org and pub.dev, 1.63.0 | Nx and Pants document other registries; none of the fourteen documents these three |
 | **Homebrew, Scoop and winget manifests generated from the release archives** | L: `monosmith.rb`, `monosmith.json` and three winget files are assets of release `smith@1.63.0` | Pointing at the release's own archives with their SHA-256 |
 | **Publishing a VS Code extension to the Marketplace** with the release | L: the MonoSmith extension is on the Visual Studio Marketplace, 0.2.0, updated 2026-10-24 | |
+| A **dev container written from the workspace**, with the toolchains CI installs at the same versions | R: `smith new` and `smith add` wrote `.devcontainer/devcontainer.json` with one feature per toolchain for eleven languages (1.65.0) | Pants, moon and Earthly mention dev containers as places to run the tool; none documents generating one |
 
-Three more rows have only smith at ✅ but were searched too little to claim: generated
+Six more rows have only smith at ✅ but were searched too little to claim: generated
 pipelines whose hand-written steps survive regeneration (named slots), ready-made
-pipelines beyond CI (e2e, GitHub Pages, Azure Function) and per-project stacks. They are
+pipelines beyond CI (e2e, GitHub Pages, Azure Function), per-project stacks, a command that
+checks a plugin keeps the protocol's promises, a new project that passes lint, test and build on
+its first run, and a generated pipeline that installs each language's toolchain. They are
 in the table; this page does not call them unique.
 
 ### Nearly only smith
@@ -340,7 +402,8 @@ Here smith is ✅ and no other tool is better than ◐. The ◐ holders are name
 | PyPI, `.deb` and `.rpm` | Pants, in experimental backends |
 | A failed release resumes | Nx, for npm |
 | Health check; applies fixes; adoption dry run | See the notes; none previews diffs, asks about risky fixes or reports what blocks adoption |
-| Out-of-process plugins in any language | moon (WASM, experimental), Cargo (`cargo-*` programs) |
+| Ready-made environment: Python, Go, .NET, Ruby, PHP, Bicep | Nobody is ✅; Nx, Bazel, Pants, moon, Buck2, Please and Earthly are ◐ where they support the language at all: you write BUILD files, rules, `moon.yml` or a plugin |
+| Out-of-process plugins in any language | moon (WASM, experimental), Cargo (`cargo-*` programs), Nx (plugins run in forked processes, but are Node packages) |
 | Terminal interface | Nx and Turborepo, for task output |
 | Native Windows | Pants (WSL 2), Earthly (experimental native) |
 
@@ -350,14 +413,17 @@ The composite claim, "scaffold, run, cache, generate CI and release, across many
 languages, in one tool", does not survive as "only smith". Nx is ✅ for scaffolding,
 cached tasks, CI file generation and release, and is the only other tool ✅ for CI
 generation. The difference is breadth: in the language rows smith is ✅ for 11 of 12 and
-◐ for the twelfth (Gradle, Kotlin and Android were not run); Nx is ✅ for 4. Nx publishes to npm, crates.io and Docker registries;
+◐ for the twelfth (Gradle, Kotlin and Android were not run); Nx is ✅ for 4. In the
+ready-made-environment rows, which ask for a generator and tasks with no rules to write, smith is
+✅ for nine of eleven languages and ◐ for two (JVM and Dart), and Nx is ✅ for one (JavaScript and
+TypeScript), with Gradle ✅ for the JVM and C++ and Cargo for Rust. Nx publishes to npm, crates.io and Docker registries;
 smith to the registries in the table. That is a difference of degree, and the table shows
 it row by row.
 
 ## What others do that MonoSmith does not do yet
 
-<!-- rows:not-yet lang-jvm, find-bounds, task-granular, task-file, cache-reapi, cache-rexec, cache-hermetic, cache-toolchain, cache-watch, ci-more, ci-audit, rel-crates, rel-maven, rel-image, rel-sbom, rel-prov, rel-oidc, dep-sync, dep-decl, plug-sdk, plug-reg, ui-jb, ui-cloud -->
-<!-- rows:no-rival rel-tag, rel-assets, rel-preflight, rel-journal, health-other, plug-sec -->
+<!-- rows:not-yet lang-jvm, env-jvm, find-bounds, graph-xlang, task-granular, task-file, cache-reapi, cache-rexec, cache-hermetic, cache-toolchain, cache-watch, ci-more, ci-audit, rel-crates, rel-maven, rel-image, rel-sbom, rel-prov, rel-oidc, dep-sync, dep-decl, plug-reg, plug-sec, ui-jb, ui-cloud -->
+<!-- rows:no-rival env-dart, rel-tag, rel-assets, rel-preflight, rel-journal, health-other -->
 
 Every row where at least one tool is ✅ and smith is ❌ or ◐. "How much it matters" is
 the author's judgement for a typical team, not a fact; "deliberate" means a written
@@ -386,7 +452,10 @@ These are recorded in
 | Rules for which projects may depend on which | Nx, Bazel, Pants, Buck2, moon, Please; Turborepo (experimental) and Yarn (constraints) in part | **Medium to high**: architecture governance as the repository grows | #570 |
 | JetBrains IDE plugin | Nx, Lerna, Bazel, Gradle, Please | **Medium to high**: many JVM and .NET teams use JetBrains | #303 |
 | Speaking the Bazel Remote Execution API for caching | Bazel, Pants, Buck2, moon; Please (experimental) | Medium: reuse of existing cache servers | #345 asks first which servers already work over HTTP |
-| Plugin SDKs beyond Go | Nx, Pants, Bazel, Buck2, Gradle ship SDKs in their own languages | Medium: writing a plugin is the route to a missing language | #564 |
+| Plugin SDKs for Python and C# | Nx, Pants, Bazel, Buck2, Gradle ship SDKs in their own languages | Medium: writing a plugin is the route to a missing language | Go and TypeScript are published; Python and C# are planned: #564 |
+| Sandboxed plugins | moon (WASM plugins get a sandboxed file system) | Medium to high for teams that run plugins from outside | smith trusts, pins and limits the environment of a plugin but does not sandbox it: #565, [decision 0036](../../architecture/decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md) |
+| Import edges between languages in the graph | Nx, Bazel, Buck2, Please | Medium for polyglot repositories | Edges across languages come from shared schemas you name; by design, [decision 0028](../../architecture/decisions/0028-graph-edges-from-shared-schemas.md) |
+| Gradle, Kotlin and Android environments verified end to end | Gradle (`gradle init`) | Medium for JVM teams | Maven was run on 1.65.0; Gradle was not run (not installed); the `jvm` plugin supports both |
 | A plugin registry or catalogue | Nx; Bazel for rule sets | Medium; grows with third-party plugins | #164, #565 |
 | SBOM and provenance beyond npm and Go apps, and beyond GitHub Actions | npm and pnpm generate SBOMs; Nx and pnpm document npm provenance | **High** for supply-chain reviews | #348 |
 | Trusted publishing (no long-lived key) for more registries | npm (`npm trust`) | Medium to high | RubyGems, pub.dev and PyPI done; no issue for the rest |
@@ -402,7 +471,7 @@ Rows where smith is ◐ or ❌ and no tool is ✅. They are shortfalls in smith,
 advantages of a rival: per-platform release archives for apps outside Go (#573); Go-module and
 Packagist release by tag verified live; a registry preflight (#347, #380) and a release
 journal (#347) across every registry; an importer for Lerna, Rush, Bazel or Gradle
-workspaces (#553 is the nearest); and integrity checks or sandboxing for plugins (#565).
+workspaces (#553 is the nearest); and the Dart lint task, which did not pass on the test machine because `dart analyze` itself crashed there.
 
 ## Where we are equal
 
@@ -444,7 +513,10 @@ yet proven against the live registry.
   plugin; the Azure Pipelines and GitLab CI renderers; `smith adopt` outside a scratch
   repository; a remote cache against a live bucket; the terminal interface in an interactive
   session; build provenance attestation checked with `gh attestation verify`.
-- **Dropped.** Candidates for "only smith" that did not survive checking: signed remote
+- **Dropped.** Candidates for "only smith" that did not survive checking: a trust step before a repository-named
+  plugin runs (moon's proto tool manager documents one, and Gradle's dependency verification covers plugins);
+  writing extensions in any language (moon and Cargo); one process per extension (Nx's plugin isolation); a
+  graph built from manifests across ecosystems without per-target build files (Nx); signed remote
   cache objects (Turborepo documents HMAC-SHA256 signing, and pnpm signs its pipeline cache);
   an MCP server (Nx, Rush and moon have one); conversion from Nx or Turborepo (moon
   ships migration extensions for both); SBOM generation (npm and pnpm have an `sbom`
