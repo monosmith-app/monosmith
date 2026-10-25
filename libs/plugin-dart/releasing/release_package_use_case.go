@@ -72,6 +72,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if err != nil {
 		return protocol.PublishResult{}, err
 	}
+	if pub.PublishTo == "none" {
+		return protocol.PublishResult{Skipped: "publish_to: none, so the package is released by its tag"}, nil
+	}
 	result := protocol.PublishResult{Registry: registry(pub)}
 	if params.DryRun {
 		result.Skipped = "dry run"
@@ -110,6 +113,9 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 	_, pub, err := pubspec(workspaceRoot, params.Project)
 	if err != nil {
 		return protocol.PublishedResult{}, err
+	}
+	if pub.PublishTo == "none" {
+		return protocol.PublishedResult{}, nil
 	}
 	result := protocol.PublishedResult{Registry: registry(pub)}
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(result.Registry + "/api/packages/" + params.Project.Exports[0])

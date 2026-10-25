@@ -155,3 +155,12 @@ func TestAFileInTheCurrentDirectoryIsStartedFromThere(t *testing.T) {
 		t.Fatalf("the plugin was not started from the current directory: %v\n%s\n%s", err, stdout.String(), stderr.String())
 	}
 }
+
+func TestAnErrorDetailIsEmptyWhenThereIsNoError(t *testing.T) {
+	if got := errorDetail(nil); got != "" {
+		t.Fatalf("detail %q, want empty (not <nil>)", got)
+	}
+	if got := errorDetail(os.ErrClosed); got != os.ErrClosed.Error() {
+		t.Fatalf("detail %q", got)
+	}
+}

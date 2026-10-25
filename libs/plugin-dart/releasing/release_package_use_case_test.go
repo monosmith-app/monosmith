@@ -68,3 +68,23 @@ func TestPublished(t *testing.T) {
 		t.Fatalf("%+v", res)
 	}
 }
+
+func TestAPackageWithPublishToNoneIsNeverPlannedForAnyRegistry(t *testing.T) {
+	var ran []string
+	real := PubRunner
+	defer func() { PubRunner = real }()
+	PubRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
+	ws, core := writeCore(t, "name: acme_core\nversion: 1.0.0\npublish_to: none\n")
+	for _, p := range []protocol.PublishParams{{Project: core, Version: "1.0.0", DryRun: true}, {Project: core, Version: "1.0.0", Tagged: true}} {
+		res, err := Publish(ws, p)
+		if err != nil || res.Published || res.Registry != "" || res.Skipped == "" {
+			t.Fatalf("publish_to: none was planned for a registry: %v %+v", err, res)
+		}
+	}
+	if len(ran) != 0 {
+		t.Errorf("pub ran: %q", ran)
+	}
+	if res, err := Published(ws, protocol.PublishedParams{Project: core}); err != nil || res.Registry != "" || res.Unreachable {
+		t.Errorf("no registry is asked about it: %v %+v", err, res)
+	}
+}

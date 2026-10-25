@@ -31,7 +31,7 @@ Capabilities are from `smith plugin list --json`.
 | Description | `[project] description`, trimmed |
 | Exports | the import name: the distribution name lower-cased with `-` and `.` replaced by `_` (`py-demo-util` exports `py_demo_util`) |
 | Imports (graph edges) | the first segment of every `import x` / `from x import y` in every `.py` file under the project (absolute imports only; relative imports are ignored), plus the import name of every `[project].dependencies` requirement. Skipped directories: `dist`, `build`, `node_modules`, `__pycache__`, anything starting with `.`, and `*.egg-info`. |
-| Toolchain | `python <version>` from the first interpreter that answers: `py -3 --version`, then `python --version`, then `python3 --version` |
+| Toolchain | `python <version>` from the venv's interpreter when `.venv` exists, else from the first system interpreter that answers: `py -3 --version`, then `python --version`, then `python3 --version` |
 
 The edge to another project is made when an import name equals another project's export. Real output after `apps/web` imported `py_demo_util`:
 
@@ -43,7 +43,7 @@ web  app · python · apps/web
   └─ util
 ```
 
-Note that the toolchain probe looks at the system interpreters, not at `.venv`. On the test machine `py -3` answered 3.12.0 while `python` on PATH was 3.13.14, and `[toolchains] python = "3.13"` was rejected because the probe returned 3.12.0 (see [Toolchain](#toolchain)).
+The toolchain probe asks `.venv`'s interpreter first, since that is the Python the tasks run with; before the venv exists it looks at the system interpreters, so `py -3` can answer 3.12.0 while `python` on PATH is 3.13.14 (see [Toolchain](#toolchain)).
 
 ## Tasks
 
@@ -144,7 +144,7 @@ mypy==2.4.0
 pip-audit==2.10.1
 pytest==9.1.1
 ruff==0.17.0
-setuptools==84.0.0
+setuptools==84.2.1
 twine==7.0.0
 ```
 
@@ -176,7 +176,7 @@ The tool versions in `requirements-dev.txt` and the Python version `3.12` are co
 
 - One virtual environment per workspace, `.venv` at the root. Everything, including the pinned tools, lives there; there is no per-project environment.
 - The interpreter that creates it must exist on the machine: `py -3` / `python` / `python3` on Windows, `python3` / `python` elsewhere. When none is found: `no Python found on PATH (tried ...); install Python 3.12 or newer`.
-- `[toolchains] python = "..."` is compared with the version of the first system interpreter that answers `--version` (the probe order is in the table above), not with `.venv`. Real output with a pin of `3.13` on a machine where `py -3` is 3.12.0:
+- `[toolchains] python = "..."` is compared with the version of the venv's interpreter, or without a venv the first system interpreter that answers `--version` (the probe order is in the table above). Real output, on a machine without a venv, with a pin of `3.13` on a machine where `py -3` is 3.12.0:
 
 ```
 ✖ python matches the pinned version 3.13
@@ -241,17 +241,12 @@ Real output of `smith ci generate` for the test workspace (GitHub):
 | Credentials | `PYPI_TOKEN` (required; only when a `package` publishes to PyPI itself). `smith ci check` printed `GitHub: add the repository secrets PYPI_TOKEN` and the Azure equivalent. |
 | Private index (Azure Artifacts) | `PipAuthenticate@1` (`artifactFeeds: 'libs'`) for installs and `TwineAuthenticate@1` (`artifactFeed: 'libs'`) for publishing, no secret. Real, with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`; `smith ci check` then asked for the Feed Publisher role on the build service. A `token` registry adds the variable named in `token_env` as a secret (given to setup when installs need it). |
 
-Real audit output (note the finding in the toolchain smith itself pins):
+Real audit output (before `setuptools` moved from 84.0.0 to 84.2.1 the pinned toolchain itself was flagged):
 
 ```
 ▶ pip-audit
-Found 1 known vulnerability in 1 package
-Name       Version ID                  Fix Versions
----------- ------- ------------------- ------------
-setuptools 84.0.0  GHSA-xmj3-9gf7-h52w 84.1.0
-...
-warning: pip-audit (exit 1) — not blocking
-smith ci audit passed in 6.2s
+No known vulnerabilities found
+smith ci audit passed
 ```
 
 With the `python` audit policy turned on, the files smith itself generates fail it, because `requirements-dev.txt` carries no hashes:
@@ -313,7 +308,7 @@ Removal: `smith remove <project>` deletes the directory and runs `pip uninstall 
 - The editable install makes a project's own `.egg-info` appear under `src/`; it is git-ignored by `smith new`.
 - Only `pyproject.toml` projects are discovered. `setup.py`-only and `requirements.txt`-only directories are not, and a `pyproject.toml` that has no `[project]` table is skipped silently.
 - There is no `format` task and the apps have no `build`.
-- Known rough edge, found by running it: the tool set smith pins includes `setuptools==84.0.0`, which `pip-audit` flags (GHSA-xmj3-9gf7-h52w, fixed in 84.1.0); and `requirements-dev.txt` has no hashes, so the opt-in `python` audit policy fails on a workspace smith itself created.
+- Known rough edge, found by running it: `requirements-dev.txt` has no hashes (the tool set smith pins is clean in `pip-audit` since `setuptools` moved to 84.2.1, past GHSA-xmj3-9gf7-h52w), so the opt-in `python` audit policy fails on a workspace smith itself created.
 
 ## Verified
 

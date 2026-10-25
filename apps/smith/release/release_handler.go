@@ -78,7 +78,9 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				return err
 			}
 			if !asJSON {
-				printPlan(cmd, plan, dryRun, verbose)
+				if printsTextPlan(asJSON, format) {
+					printPlan(cmd, plan, dryRun, verbose)
+				}
 				if notes {
 					for _, item := range plan.Items {
 						fmt.Fprintf(out, "\n# %s %s\n\n%s", item.Project, item.Next, RenderNotes(item))
@@ -135,6 +137,13 @@ published. What was published where is kept in dist/release/<project>/journal.js
 	cmd.Flags().StringVar(&format, "format", "text", "how the result is printed: text, or markdown (what the CI job summary and --comment use)")
 	cmd.Flags().BoolVar(&comment, "comment", false, "with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment")
 	return cmd
+}
+
+// printsTextPlan is whether the text plan comes before the result: not for JSON,
+// and not for markdown, which is the whole result by itself (a job summary or
+// a pull request comment).
+func printsTextPlan(asJSON bool, format string) bool {
+	return !asJSON && format != "markdown"
 }
 
 func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {

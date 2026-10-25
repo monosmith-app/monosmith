@@ -22,7 +22,7 @@ Usage: `smith plugin enable <name>...`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `name` | yes | built-in plugin names |
+| `name...` | yes | built-in plugin names |
 
 No flags.
 

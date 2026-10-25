@@ -57,7 +57,7 @@ func (c Creator) Render(p Plan, target string) (string, error) {
 		}
 		chain = parent.Chain
 	}
-	if err := recipe.ValidateAll(recipe.Loaded{Chain: append(chain, doc)}, c.Lookup); err != nil {
+	if _, err := recipe.ValidateAll(recipe.Loaded{Chain: append(chain, doc)}, c.Lookup); err != nil {
 		return "", err
 	}
 	return text, nil

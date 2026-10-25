@@ -33,6 +33,14 @@ func explicitPath(name string) string {
 	return "." + string(filepath.Separator) + name
 }
 
+// errorDetail is an error's text, or nothing for no error (fmt.Sprint would say <nil>).
+func errorDetail(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
 // checkCommand is `smith plugin check`: the conformance suite.
 func checkCommand(version string) *cobra.Command {
 	var generate, asJSON bool
@@ -103,7 +111,7 @@ declare. A built-in plugin keeps the whole environment.`,
 			}
 			report := conformance.Check(c, opts)
 			closeErr := c.Close()
-			report.Results = append(report.Results, conformance.Result{Check: "shuts down when asked", OK: closeErr == nil, Detail: fmt.Sprint(closeErr)})
+			report.Results = append(report.Results, conformance.Result{Check: "shuts down when asked", OK: closeErr == nil, Detail: errorDetail(closeErr)})
 			out := cmd.OutOrStdout()
 			if asJSON {
 				enc := json.NewEncoder(out)

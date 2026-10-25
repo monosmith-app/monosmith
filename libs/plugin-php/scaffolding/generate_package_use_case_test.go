@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-php/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 func TestGenerate(t *testing.T) {
@@ -50,7 +52,25 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("cli %+v", cli)
 	}
 	ran = nil
-	if _, err := Remove(ws, protocol.RemoveParams{Project: cli}); err != nil || strings.Join(ran, "|") != "composer remove acme-corp/web-cli --no-update --no-interaction|composer config --unset repositories.apps-web-cli" {
+	removed, err := Remove(ws, protocol.RemoveParams{Project: cli})
+	if err != nil || strings.Join(ran, "|") != "composer remove acme-corp/web-cli --no-update --no-interaction|composer config --unset repositories.apps-web-cli|composer update --no-interaction --no-progress" {
 		t.Fatal(err, ran)
+	}
+	if strings.Join(removed.Files, ",") != "composer.json,composer.lock" {
+		t.Errorf("the lockfile is rewritten too: %v", removed.Files)
+	}
+}
+
+func TestComposerOutputIsHiddenUnlessItFailsOrVerbose(t *testing.T) {
+	t.Setenv(toolrun.VerboseEnv, "")
+	var log bytes.Buffer
+	previous := toolrun.Log
+	toolrun.Log = &log
+	t.Cleanup(func() { toolrun.Log = previous })
+	if err := runComposer(t.TempDir(), []string{"go", "version"}); err != nil {
+		t.Fatal(err)
+	}
+	if text := log.String(); !strings.Contains(text, "Running go version") || strings.Contains(text, "go version go") {
+		t.Fatalf("the tool's output must not stream when it succeeds: %q", text)
 	}
 }

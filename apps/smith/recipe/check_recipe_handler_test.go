@@ -105,3 +105,17 @@ func TestParseAnswersWantsNameAndAnswer(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckAllSaysHowManyCombinationsItChecked(t *testing.T) {
+	dir := t.TempDir()
+	path := writeFile(t, dir, "team.toml", strings.TrimPrefix(teamRecipe, "\n"))
+	t.Chdir(dir)
+	var out, errOut bytes.Buffer
+	err := runCheck(&out, &errOut, path, map[string]string{"language": "csharp", "kind": "service"}, false, true, "1.0.0")
+	if err != nil {
+		t.Fatalf("err = %v, stderr = %q", err, errOut.String())
+	}
+	if !strings.Contains(out.String(), "Checked 5 combination(s) of answers: every one is valid.") {
+		t.Errorf("output must say what --all checked:\n%s", out.String())
+	}
+}

@@ -26,6 +26,15 @@ func Commands(version string) []*cobra.Command {
 	return cmds
 }
 
+// textOutput is where task output and progress lines go. With --json stdout
+// carries the summary and nothing else, so the text moves to stderr.
+func textOutput(stdout, stderr io.Writer, asJSON bool) io.Writer {
+	if asJSON {
+		return stderr
+	}
+	return stdout
+}
+
 func command(version, use, short string, fixed []string) *cobra.Command {
 	var (
 		req    Request
@@ -47,7 +56,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			} else if len(args) > 0 {
 				req.Projects = append(req.Projects, args...)
 			}
-			req.Out = cmd.OutOrStdout()
+			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
 				// output arrives as task.output events.

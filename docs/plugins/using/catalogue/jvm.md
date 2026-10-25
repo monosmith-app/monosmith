@@ -20,8 +20,8 @@ install.
 | `--lang` values | `jvm`, `java` |
 | Manifests that make a directory a candidate project | `pom.xml`, `build.gradle.kts`, `build.gradle` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published` |
-| Not advertised | `remove`, `dependencies`, `declarations`, `latest`: `smith install`, `smith sync` and `smith up` skip JVM, and `smith remove` cleans nothing outside the module's directory (see the defect below) |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published` |
+| Not advertised | `dependencies`, `declarations`, `latest`: `smith install`, `smith sync` and `smith up` skip JVM |
 | Stacks it publishes | `kotlin` ("a Kotlin module built with Gradle, linted with ktlint"), `android` ("an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint") |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `jvm-app`, `jvm-lib`, `jvm-package`); the `android` stack makes apps only |
 | Tasks | `build`, `test`, `lint`, `start` |
@@ -414,8 +414,10 @@ machine (no Gradle, no Android SDK) the real output was:
 **Dependencies.** None: the plugin does not manage dependencies. Edit the pom
 or the build script. `smith install -w` and `smith sync` do nothing for JVM.
 
-**Remove.** The plugin has no remove support, so `smith remove <project>` only
-deletes the directory and regenerates the pipelines.
+**Remove.** `smith remove <project>` deletes the directory, then the plugin takes
+the module's `<module>` line out of the root `pom.xml` and its `include(...)` line
+out of `settings.gradle.kts` (`--dry-run` lists the files it would change), and
+smith regenerates the pipelines.
 
 ## Requirements and limits
 
@@ -428,18 +430,6 @@ deletes the directory and regenerates the pipelines.
 - Maven `build` installs into `~/.m2`.
 - Release assets for apps are not built.
 - No `format` or `typecheck` task.
-- **Defect found: `smith remove` leaves the module in the build.** After
-  `smith remove tool` in a Maven workspace the root `pom.xml` still lists
-  `<module>apps/tool</module>`, and every Maven task of the other modules fails:
-
-```text
-core:build │ [ERROR] Child module C:\...\jvm-demo\apps\tool of C:\...\jvm-demo\pom.xml does not exist
-core:build ✖ exited with code 1
-```
-
-  The same happens to `include(":apps:tool")` in `settings.gradle.kts` (the line
-  stayed; what Gradle then does was not run by me). Remove the `<module>` or
-  `include` line by hand.
 - Android and Kotlin: the scaffolds name AGP 9.4.1, Kotlin 2.4.21, ktlint
   plugin 14.2.0 and JUnit BOM 6.1.3; I could not check that these resolve,
   because Gradle was not available.

@@ -18,7 +18,10 @@ var groups = map[string]string{"start": "workspace", "work": "projects", "ship":
 // as the TypeScript smith grouped them.
 var regrouped = map[string]string{"doctor": "workspace", "add": "projects", "remove": "projects", "install": "dependencies", "uninstall": "dependencies", "sync": "dependencies", "up": "dependencies"}
 
-var argPattern = regexp.MustCompile(`<([^>]+)>|\[([^\]]+)\]`)
+// argPattern reads one positional argument of a usage line: <name> or [name],
+// optionally joined to a second part (<project>:<task> or <project>[:<task>]),
+// optionally followed by "..." outside the brackets ([project]...).
+var argPattern = regexp.MustCompile(`(?:<([^>]+)>|\[([^\]]+)\])(?::<([^>]+)>|\[:<([^>]+)>\])?(\.\.\.)?`)
 
 // DescribeCommands describes root's visible commands, sorted by name, each with
 // its own visible subcommands.
@@ -72,8 +75,14 @@ func arguments(use string) []ArgumentDescription {
 		if name == "" {
 			name, required = m[2], false
 		}
-		variadic := strings.HasSuffix(name, "...")
+		variadic := strings.HasSuffix(name, "...") || m[5] != ""
 		name = strings.TrimSuffix(name, "...")
+		switch {
+		case m[3] != "":
+			name += ":" + m[3]
+		case m[4] != "":
+			name += "[:" + m[4] + "]"
+		}
 		if strings.HasPrefix(name, ":") || name == "args" || name == "flags" {
 			continue
 		}
