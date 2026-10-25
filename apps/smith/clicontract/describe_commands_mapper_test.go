@@ -124,3 +124,19 @@ func TestDescribeCommandsDescribesSubcommandsInTheirParentsGroup(t *testing.T) {
 		t.Error("a command without subcommands must not carry the key")
 	}
 }
+
+func TestArgumentsOfTheUsageLinesThatWereReadWrong(t *testing.T) {
+	for use, want := range map[string][]ArgumentDescription{
+		"why-miss <project>:<task>":               {{Name: "project:task", Description: "project:task", Required: true}},
+		"explain <project>[:<task>]":              {{Name: "project[:task]", Description: "project[:task]", Required: true}},
+		"build [project]...":                      {{Name: "project", Description: "project", Variadic: true}},
+		"set <name>...":                           {{Name: "name", Description: "name", Required: true, Variadic: true}},
+		"check <project directory>...":            {{Name: "project directory", Description: "project directory", Required: true, Variadic: true}},
+		"set <setting> <value...>":                {{Name: "setting", Description: "setting", Required: true}, {Name: "value", Description: "value", Required: true, Variadic: true}},
+		"check <name | path to plugin> [args...]": {{Name: "name | path to plugin", Description: "name | path to plugin", Required: true}},
+	} {
+		if got := arguments("cmd " + use); !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: %+v, want %+v", use, got, want)
+		}
+	}
+}

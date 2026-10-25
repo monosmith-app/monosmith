@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
@@ -47,5 +48,26 @@ func TestGenerate(t *testing.T) {
 	}
 	if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "x", Directory: "libs/x", Stack: Stack}); err == nil {
 		t.Error("a lib is refused")
+	}
+}
+
+func TestTheGeneratedReadmeNamesEveryWayToPublish(t *testing.T) {
+	real := scaffolding.Installer
+	defer func() { scaffolding.Installer = real }()
+	scaffolding.Installer = func(string) error { return nil }
+	ws := t.TempDir()
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectPackage, Name: "helper-tools", Directory: "packages/helper-tools", Stack: Stack, Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(ws, "packages", "helper-tools", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"VSCE_PAT", "vsce_entra", "OVSX_PAT"} {
+		if !strings.Contains(string(raw), want) {
+			t.Errorf("README must mention %s:\n%s", want, raw)
+		}
 	}
 }

@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,18 +19,49 @@ const GolangciLintVersion = "v2.14.0"
 // DefaultGoVersion is used when go.work does not say.
 const DefaultGoVersion = "1.24"
 
+// toolchainVersion is the Go version the pipelines install: go.work's, and
+// without one (or without a go directive in it) the newest a project's go.mod
+// asks for, so a missing go.work does not downgrade the pipelines to the default.
+func toolchainVersion(workspaceRoot string, projects []protocol.Project) string {
+	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work")); err == nil {
+		if v := ParseGoWork(string(src)).GoVersion; v != "" {
+			return v
+		}
+	}
+	newest := ""
+	for _, p := range projects {
+		src, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), "go.mod"))
+		if err != nil {
+			continue
+		}
+		if m := goDirective.FindStringSubmatch(string(src)); m != nil && versionLess(newest, m[1]) {
+			newest = m[1]
+		}
+	}
+	if newest == "" {
+		return DefaultGoVersion
+	}
+	return newest
+}
+
+// versionLess compares two major.minor versions numerically ("1.9" < "1.24").
+func versionLess(a, b string) bool {
+	if a == "" {
+		return true
+	}
+	var am, an, bm, bn int
+	_, _ = fmt.Sscanf(a, "%d.%d", &am, &an)
+	_, _ = fmt.Sscanf(b, "%d.%d", &bm, &bn)
+	return am < bm || (am == bm && an < bn)
+}
+
 // CI returns the Go contribution: the toolchain at go.work's version and a
 // non-blocking vulnerability scan of every module.
 func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
-	version := DefaultGoVersion
-	if src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work")); err == nil {
-		if v := ParseGoWork(string(src)).GoVersion; v != "" {
-			version = v
-		}
-	}
+	version := toolchainVersion(workspaceRoot, params.Projects)
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(version)},
 		Setup:      []protocol.Step{{Name: "Download Go modules", Command: []string{"go", "mod", "download"}, Blocking: true}},

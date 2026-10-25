@@ -28,7 +28,7 @@ Usage: `smith lint [project]... [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `project` | no | projects to run (the same as `-p`) |
+| `project...` | no | projects to run (the same as `-p`) |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|

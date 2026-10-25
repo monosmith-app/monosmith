@@ -32,7 +32,7 @@ Usage: `smith explain <project>[:<task>] [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `project[:task]` | yes | the project, optionally with one of its tasks, such as web:build |
+| `project[:task]` | yes | the project, optionally with one of its tasks, such as `web:build` |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|

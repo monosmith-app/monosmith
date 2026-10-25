@@ -199,7 +199,7 @@ Usage: `smith upgrade [flags]`
 <!-- smith:begin run -->
 Run tasks on projects, in dependency order, from cache when nothing changed
 
-Usage: `smith run <task> [flags]`
+Usage: `smith run <task>... [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
