@@ -115,7 +115,7 @@ instead of your plugin's name. Use the path form with a launcher, or the name fo
 | Where | Command |
 |---|---|
 | Linux, macOS | `chmod +x plugin.py` (the file starts with `#!/usr/bin/env python3`), then `smith plugin check ./plugin.py`. Not run on Linux or macOS for this page |
-| Windows, path form | `smith plugin check .\plugin.cmd`, a launcher next to the script. Write the leading `.\` and use backslashes (Git Bash drops them: use PowerShell or `cmd`) |
+| Windows, path form | `smith plugin check plugin.cmd` (or `.\plugin.cmd`), a launcher next to the script; a file in the current directory is started from there, not looked up on `PATH` |
 | anywhere, name form | declare it in `smith.toml`, or install it on the search path, and run `smith plugin check widget` |
 
 On Windows a `.py`, `.mjs` or `.ts` is not an executable: `smith plugin check .\plugin.py` fails with

@@ -116,3 +116,42 @@ func TestTheNodeExamplesStillPassCheckUnderTheMinimalEnvironment(t *testing.T) {
 		checkExample(t, path)
 	})
 }
+
+func TestAFileInTheCurrentDirectoryIsStartedFromThere(t *testing.T) {
+	if got := explicitPath("plugin.cmd"); got != "."+string(filepath.Separator)+"plugin.cmd" {
+		t.Errorf("explicitPath = %q", got)
+	}
+	if got := explicitPath(filepath.Join("bin", "plugin")); got != filepath.Join("bin", "plugin") {
+		t.Errorf("a path stays as it is: %q", got)
+	}
+	// End to end: the plugin is a copy of this test binary beside the caller,
+	// named without a directory, as `smith plugin check plugin.cmd` is typed.
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	name := "envdump-plugin"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), body, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(t.TempDir(), "env.txt")
+	t.Setenv("ENVDUMP_OUT", out)
+	t.Chdir(dir)
+	cmd := checkCommand("test")
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{name, "__envdump", "--env", "ENVDUMP_OUT"})
+	_ = cmd.Execute() // the conformance verdict is not what is under test
+	if _, err := os.Stat(out); err != nil {
+		t.Fatalf("the plugin was not started from the current directory: %v\n%s\n%s", err, stdout.String(), stderr.String())
+	}
+}
