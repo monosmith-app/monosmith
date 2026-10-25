@@ -275,7 +275,7 @@ comparison tables and the tool pages.
 **Plugins and extensibility**
 
 - *Plugins are separate programs speaking a documented protocol.* moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand.
-- *An SDK for writing plugins.* MonoSmith: Go, and TypeScript since @monosmith/plugin-sdk 0.1.0 (2026-10-25); Python and C# are planned.
+- *An SDK for writing plugins.* MonoSmith: Go and TypeScript (@monosmith/plugin-sdk 0.1.0); Python and C# are planned.
 - *A registry or catalogue of third-party plugins.* Bazel: the Central Registry hosts rule sets; moon: a community plugin registry for its proto tool manager.
 - *Plugins are integrity-checked or sandboxed.* moon: WASM plugins get a sandboxed file system.
 - *Named stacks: a per-project choice of toolchain plugins.* Searched for ❔: "stack", "preset" were not searched; treat as not documented.
