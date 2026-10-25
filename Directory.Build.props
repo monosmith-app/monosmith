@@ -1,0 +1,11 @@
+<Project>
+  <!-- Every build goes to the workspace's dist/ (smith): bin/ and obj/ of
+       every project live under dist/dotnet, never in a source tree. -->
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)dist/dotnet</ArtifactsPath>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

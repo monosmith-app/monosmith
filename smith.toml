@@ -94,3 +94,31 @@ command = ["python", "-m", "tools.run_in_venv.run_in_venv_handler", "-m", "tools
 
 [projects.plugin-sdk-py.tasks.generate-check]
 command = ["python", "-m", "tools.run_in_venv.run_in_venv_handler", "-m", "tools.generate_protocol.generate_protocol_handler", "--check"]
+
+# The SDK for plugins in C# lints with dotnet format (style and analyzers) over the SDK and its tests; the
+# workspace-wide lint above is golangci-lint, for the Go projects. A solution in tests/ names both projects.
+[projects.plugin-sdk-dotnet.tasks.lint]
+command = ["dotnet", "format", "tests/MonoSmith.Plugin.Sdk.sln", "--verify-no-changes", "--no-restore"]
+
+# Regenerates the protocol types, the plugin interfaces and the host calls from the schema (after
+# `smith run schema -p plugin-sdk`); generate-check fails when they are stale (a test of the package does too).
+[projects.plugin-sdk-dotnet.tasks.generate]
+command = ["node", "Generator/generate-protocol.handler.mjs"]
+
+[projects.plugin-sdk-dotnet.tasks.generate-check]
+command = ["node", "Generator/generate-protocol.handler.mjs", "--check"]
+
+# The tests start the examples of every SDK and smith itself, so they depend on those too, not only on this project's files.
+[projects.plugin-sdk-dotnet.tasks.test]
+inputs = [
+  "**/*",
+  "!bin/**",
+  "!obj/**",
+  "{workspaceRoot}/Directory.Build.props",
+  "{workspaceRoot}/Directory.Packages.props",
+  "{workspaceRoot}/global.json",
+  "{workspaceRoot}/docs/examples/plugins/**",
+  "{workspaceRoot}/packages/plugin-sdk/**",
+  "{workspaceRoot}/packages/plugin-sdk-ts/src/**",
+  "{workspaceRoot}/packages/plugin-sdk-py/src/**",
+]

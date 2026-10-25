@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net8.0 is the oldest long-term-support release; it runs on every later runtime too. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>MonoSmith.Plugin.Sdk</RootNamespace>
+    <AssemblyName>MonoSmith.Plugin.Sdk</AssemblyName>
+    <PackageId>MonoSmith.Plugin.Sdk</PackageId>
+    <Description>The C# SDK for writing smith plugins: the protocol's types, the serve loop, a host to test a plugin with, the conformance checks of smith plugin check, [[ ]] templating and key-order-keeping JSON editing. No dependencies.</Description>
+    <Authors>Eduardo Russo</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>smith;monosmith;plugin;sdk;json-rpc</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/monosmith-app/monosmith/tree/main/packages/plugin-sdk-dotnet#readme</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/monosmith-app/monosmith</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Version>0.0.0</Version>
+    <SmithKind>package</SmithKind>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- The tests project lives beside the code, in its own project; the generator is a Node script. -->
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <None Remove="tests/**" />
+    <None Remove="Generator/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MonoSmith.Plugin.Sdk.Tests" />
+  </ItemGroup>
+
+</Project>

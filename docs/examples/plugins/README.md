@@ -18,6 +18,9 @@ model at a time. Each one is explained step by step in
 | [`structure-layout-python`](structure-layout-python) | the same structure plugin | Python, standard library, no SDK | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
 | [`language-widget-ts`](language-widget-ts) | the same language plugin as `language-widget` | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`language-widget-py`](language-widget-py) | the same language plugin as `language-widget` | Python, on the SDK | [The Python SDK](../../plugins/creating/python-sdk.md) |
+| [`structure-layout-cs`](structure-layout-cs) | the same structure plugin | C#, on the SDK | [The C# SDK](../../plugins/creating/csharp-sdk.md) |
+| [`structure-scan-cs`](structure-scan-cs) | the same cancellable, concurrent plugin as `structure-scan-go` | C#, on the SDK | [The C# SDK](../../plugins/creating/csharp-sdk.md#stop-work-when-the-host-cancels-it) |
+| [`language-widget-cs`](language-widget-cs) | the same language plugin as `language-widget` | C#, on the SDK | [The C# SDK](../../plugins/creating/csharp-sdk.md) |
 | [`scaffold-widget-service`](scaffold-widget-service) | scaffold plugin: templates, settings, golden test | Go | [Creating a scaffold plugin](../../plugins/creating/scaffold-plugin.md) |
 | [`deploy-widget-bundle`](deploy-widget-bundle) | deploy plugin: a task, `publish`, `ci`, doctor | Go | [Creating a deploy plugin](../../plugins/creating/deploy-plugin.md) |
 | [`recipe-widget-team`](recipe-widget-team) | a recipe choosing the plugins above | TOML | [Creating a recipe and a stack](../../plugins/creating/recipe-and-stack.md) |
@@ -46,10 +49,17 @@ and which in your own project you `npm install`. The Python examples on the SDK 
 `monosmith_plugin_sdk`, which inside this repository is the editable install of `packages/plugin-sdk-py` in
 the workspace's `.venv` (`smith ci setup`), and which in your own project you `pip install monosmith-plugin-sdk`;
 check one with the interpreter that has the SDK: `smith plugin check <path of that python> plugin.py`. The
-Python example without an SDK tests with `python -m unittest` too.
+Python example without an SDK tests with `python -m unittest` too. The C# examples (`language-widget-cs`,
+`structure-layout-cs`, `structure-scan-cs`) are projects of their own with an empty `Directory.Build.props`, so they do not
+inherit the repository's build settings; each has a `tests` project (`dotnet test tests`) and refers to the neighbouring
+`packages/plugin-sdk-dotnet` inside this repository, which in your own project you replace with `dotnet add package
+MonoSmith.Plugin.Sdk`. Check one with the path of the `dotnet` program and then the assembly (`smith plugin check "$(which
+dotnet)" bin/Release/net8.0/LanguageWidget.dll --generate`): a bare `dotnet` would be looked up as the name of the built-in
+plugin.
 `packages/plugin-sdk-ts/integration` runs both TypeScript examples under `smith plugin check`, in a
 throwaway workspace, and against their Go counterparts; `packages/plugin-sdk-py/tests/integration` does the
-same for the Python examples and compares Go, TypeScript and Python.
+same for the Python examples and compares Go, TypeScript and Python; `packages/plugin-sdk-dotnet/tests/Integration` does it for
+the C# examples and compares all four.
 
 Every example passes `smith plugin check`, except that `scaffold-widget-service` does not pass
 `--generate`, which asks for an app, a lib and a package and the service is app-only. The commands, the

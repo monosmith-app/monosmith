@@ -1,0 +1,6 @@
+{
+  "name": "widget-scan",
+  "version": "0.1.0",
+  "description": "a doctor that walks the files of widget projects, can be cancelled and runs four at a time (C#, on MonoSmith.Plugin.Sdk)",
+  "command": ["./StructureScan"]
+}

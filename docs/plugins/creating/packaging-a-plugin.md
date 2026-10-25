@@ -134,6 +134,13 @@ directory). A Python plugin on the SDK needs `monosmith-plugin-sdk` importable b
 runs it: `pip install monosmith-plugin-sdk` into the environment the launcher's `python` belongs to (a
 virtual environment, whose interpreter the launcher names).
 
+A C# plugin is a program that needs the .NET runtime. Publish it as one file, so that `command` is a single
+executable whose digest covers the whole plugin: `dotnet publish -c Release -p:PublishSingleFile=true -o publish`, then
+`"command": ["./LanguageWidget"]` in `plugin.json` (the `.exe` on Windows, which the `{exe}` placeholder gives). A
+plugin that is the assembly run by `dotnet` (`["dotnet", "Plugin.dll"]` in `smith.toml`) cannot be a `plugin.json`
+for the same reason `["python", "plugin.py"]` cannot: the second element is not made relative; and the digest
+`smith plugin trust --pin` writes covers `dotnet` and the `.dll`, not the SDK's assembly next to it.
+
 ## Versions
 
 smith checks the version a plugin reports in `initialize`:
@@ -148,7 +155,7 @@ A version is `major[.minor[.patch]]`; a leading `v` and a `-pre` or `+build` suf
 else fails with `plugin version "x": not a version`. Use semantic versioning: a breaking change to
 what the plugin does is a new major, so users who wrote `^1` do not pick it up unasked.
 
-The **protocol** has its own version (`protocol.Version`, 1; `PROTOCOL_VERSION` in the TypeScript and Python SDKs,
+The **protocol** has its own version (`protocol.Version`, 1; `PROTOCOL_VERSION` in the TypeScript and Python SDKs, `ProtocolInfo.Version` in the C# one,
 and `x-protocolVersion` in the JSON Schema). A plugin on an SDK is built against a version of the SDK; if smith ever stops speaking the protocol version the plugin was built for, the
 handshake fails and you rebuild with a newer SDK. Additions to the protocol are optional fields and
 new capabilities, which old plugins ignore, so an old plugin keeps working with a newer smith.

@@ -26,6 +26,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
       - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
@@ -50,6 +53,13 @@ jobs:
           key: smith-npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             smith-npm-${{ runner.os }}-
+      - name: Cache the nuget download store
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: smith-nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.fsproj') }}
+          restore-keys: |
+            smith-nuget-${{ runner.os }}-
       - name: Cache the pip download store
         uses: actions/cache@v6
         with:
