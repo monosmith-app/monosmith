@@ -26,3 +26,10 @@ func AddModule(src, dir string) (string, bool) {
 	}
 	return src, false
 }
+
+// RemoveModule takes dir out of the aggregator pom's <modules>, with its line.
+func RemoveModule(src, dir string) (string, bool) {
+	line := regexp.MustCompile(`(?m)^[ \t]*<module>\s*` + regexp.QuoteMeta(dir) + `\s*</module>[ \t]*\r?\n?`)
+	out := line.ReplaceAllString(src, "")
+	return out, out != src
+}

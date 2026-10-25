@@ -375,9 +375,9 @@ printed `⊘ php: not compared; its plugin does not list declarations`, and
 
 **Remove.** `smith remove <project>` deletes the directory, then the plugin
 runs `composer remove <name> --no-update` and
-`composer config --unset repositories.<dir-dashed>` at the root, so the root
-manifest loses the requirement and the path repository (`--dry-run` only
-lists `composer.json`).
+`composer config --unset repositories.<dir-dashed>` at the root, then
+`composer update` so `composer.lock` stops naming the package too (`--dry-run`
+only lists `composer.json` and `composer.lock`).
 
 ## Requirements and limits
 
@@ -386,19 +386,6 @@ lists `composer.json`).
   package without `tests/`.
 - The php plugin does not upload anything; Packagist needs a mirror repository
   (`split_repo`) to read versions.
-- **Defect found: `smith remove` leaves a stale lock file.** After
-  `smith remove cli`, `composer.lock` still lists `php-demo/cli`, because the
-  plugin removes it with `--no-update` and does not run `composer update`.
-  The next `smith ci setup` (or any `composer install`) then fails:
-
-```text
-Warning: The lock file is not up to date with the latest changes in composer.json. ...
-In PathDownloader.php line 51:
-  Source path "apps/cli" is not found for package php-demo/cli
-smith ci setup failed in 1s
-```
-
-  Running `composer update` fixes it (not run by me).
 - The `[toolchains] php` pin is checked by doctor but not used by CI generation
   (see Toolchain).
 - The root `composer.json` that `smith add` writes sets
