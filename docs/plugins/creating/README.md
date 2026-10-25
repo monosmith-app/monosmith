@@ -43,8 +43,9 @@ no trust, so the commands in the guides that check a plugin work as written.
 | [Creating a scaffold plugin](scaffold-plugin.md) | |
 | [Creating a deploy plugin](deploy-plugin.md) | |
 | [Creating a recipe and a stack](recipe-and-stack.md) | you want your team's choice of plugins as a file |
-| [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) | you choose a language: which have an SDK, and what you write yourself in Python and in Node.js without one |
+| [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) | you choose a language: which have an SDK, and what you write yourself in Node.js and in Python without one |
 | [The TypeScript SDK](typescript-sdk.md) | you write a plugin in TypeScript: a walk-through, then every function, type and helper of `@monosmith/plugin-sdk` |
+| [The Python SDK](python-sdk.md) | you write a plugin in Python: a walk-through, then every function, type and helper of `monosmith-plugin-sdk` |
 | [Testing a plugin](testing-a-plugin.md) | `smith plugin check`, unit tests, and a workspace test |
 | [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions |
 
@@ -66,10 +67,12 @@ flowchart LR
 
 Each plugin is a Go program on the SDK. The structure plugin is also written in
 [TypeScript](../../examples/plugins/structure-layout-node), on the TypeScript SDK, and in
-[Python](../../examples/plugins/structure-layout-python), which has no SDK yet; the language plugin
-too, in [TypeScript](../../examples/plugins/language-widget-ts). So the same behaviour can be compared
-across languages: the Go and the TypeScript plugin answer the same requests with the same bytes. The
-SDKs are Go and TypeScript; Python and C# are next
+[Python](../../examples/plugins/structure-layout-py), on the Python SDK (and once more in
+[Python without an SDK](../../examples/plugins/structure-layout-python)); the language plugin
+too, in [TypeScript](../../examples/plugins/language-widget-ts) and
+[Python](../../examples/plugins/language-widget-py). So the same behaviour can be compared
+across languages: the Go, the TypeScript and the Python plugin answer the same requests with the same bytes. The
+SDKs are Go, TypeScript and Python; C# is next
 ([#564](https://github.com/monosmith-app/monosmith/issues/564)).
 
 ## See also

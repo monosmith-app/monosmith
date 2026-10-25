@@ -75,8 +75,8 @@ kinds that default to it), `x-protocolVersion` and `x-transport` (the framing an
 |---|---|---|
 | reflect over the types and read the package's source for comments and enumerations | `packages/plugin-sdk/protocolschema`, run by `go run ./schemagen` (`smith run schema -p plugin-sdk`) | the protocol has a method, an error code or a capability that `protocolschema`'s tables do not describe |
 | compare the committed file with what the generator writes | the Go test `TestCommittedSchemaIsCurrent` | someone changed `protocol` and not the schema |
-| generate each SDK's types from the schema | the TypeScript SDK: `tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
-| check that the SDKs agree on the wire | `packages/plugin-sdk-ts/integration`: a TypeScript and a Go plugin with the same logic answer the same requests with the same bytes | an SDK writes members in another order, leaves out different zero values, or escapes differently |
+| generate each SDK's types from the schema | the TypeScript SDK: `tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`); the Python SDK: `tools/generate_protocol` (`smith run generate -p plugin-sdk-py`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
+| check that the SDKs agree on the wire | `packages/plugin-sdk-ts/integration` (a TypeScript and a Go plugin) and `packages/plugin-sdk-py/tests/integration` (a Go, a TypeScript and a Python plugin): the same logic answers the same requests with the same bytes, compared by response id where requests run together | an SDK writes members in another order, leaves out different zero values, or escapes differently |
 
 Three things about the wire that the schema cannot say, and that a new SDK must do (the Go SDK does
 them and the host relies on them):
@@ -133,7 +133,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 
 The host calls a method only if the plugin advertised it; an unadvertised method means "nothing to
 say here", not an error. The Go SDK derives the flags from the interfaces a plugin implements
-(`packages/plugin-sdk/serve/plugin_contract.go`), and the TypeScript SDK from the members of the plugin
+(`packages/plugin-sdk/serve/plugin_contract.go`), and the TypeScript and Python SDKs from the members of the plugin
 object. A plugin without an SDK sets the booleans by hand. The schema's methods table (below) says
 which capability each method needs.
 
@@ -267,7 +267,8 @@ id is ignored, and a request that had not started is answered `-32800` without r
 cancelled request fails with any error, the SDKs answer `-32800` rather than `-32000`. In the Go SDK
 the capability comes from implementing `serve.Cancellable` (`WithContext(ctx)`, the plugin as it serves
 one request); in the TypeScript SDK from `cancellable: true`, with an `AbortSignal` as the second argument
-of every method. `shutdown` is answered after everything read before it, running or waiting, has been answered with its result (only a `cancel` stops a request); the end of the input, the host being gone, cancels what is in flight.
+of every method; in the Python SDK from `cancellable = True`, with a `CancelToken` as the optional second parameter
+of a method (the SDK runs requests on a bounded pool of worker threads). `shutdown` is answered after everything read before it, running or waiting, has been answered with its result (only a `cancel` stops a request); the end of the input, the host being gone, cancels what is in flight.
 
 What the host does when it gives up on a call (`host.Client.CallContext`, `PluginSet.CallContext`):
 
@@ -318,6 +319,7 @@ The checks and their output are shown in that page.
 | Conformance | `packages/plugin-sdk/conformance` |
 | The JSON Schema, and what writes it | `packages/plugin-sdk/schema`, `protocolschema`, `schemagen` |
 | The TypeScript SDK | `packages/plugin-sdk-ts` |
+| The Python SDK | `packages/plugin-sdk-py` |
 | Starting, search path, `plugin.json`, stacks | `apps/smith/pluginhost` |
 | Built-in list | `apps/smith/pluginhost/builtin_plugins_config.go`; plugins in `libs/plugin-*` |
 | Assembling projects | `apps/smith/projectgraph` |

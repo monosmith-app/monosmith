@@ -4,7 +4,7 @@ A structure plugin checks and enforces how a team lays out and writes code: no j
 folders, a README in every project, a naming rule, a license header. It adds tasks to the projects
 it applies to, makes existing tasks (usually `lint`) wait for them, and reports health findings
 with `smith doctor`. It needs no new language and no new tool, which makes it the best first plugin
-to write. This guide builds `widget-layout`, in Go, TypeScript and Python.
+to write. This guide builds `widget-layout`, in Go, TypeScript and Python (on an SDK, or by hand).
 
 ## When to write one
 
@@ -40,14 +40,15 @@ and nothing says so. Name the languages in the handshake.
 
 `widget-layout` fails a project that contains a folder called `util`, `utils`, `helper`, `helpers`,
 `common`, `shared` or `misc` (build output and `node_modules` are skipped), makes `lint` wait for
-the check, and warns about a project without a `README.md`. The same plugin, three ways (a fourth, in
+the check, and warns about a project without a `README.md`. The same plugin, four ways (a fifth, in
 Node.js with the framing written by hand, is the smaller [`node`](../../examples/plugins/node)):
 
 | Language | Directory | Files | How the protocol is spoken |
 |---|---|---|---|
 | Go | [`structure-layout-go`](../../examples/plugins/structure-layout-go) | `main.go`, `plugin.go`, `check.go`, `plugin_test.go` | the SDK (`serve.Main`) |
 | TypeScript | [`structure-layout-node`](../../examples/plugins/structure-layout-node) | `plugin.ts`, `layout.ts`, `layout.test.ts`, `plugin.cmd`, `plugin.json` | the [TypeScript SDK](typescript-sdk.md) (`serve`) |
-| Python | [`structure-layout-python`](../../examples/plugins/structure-layout-python) | `plugin.py`, `test_plugin.py`, `plugin.cmd`, `plugin.json` | by hand, standard library only |
+| Python, on the SDK | [`structure-layout-py`](../../examples/plugins/structure-layout-py) | `plugin.py`, `layout.py`, `test_layout.py`, `plugin.cmd`, `plugin.json` | the [Python SDK](python-sdk.md) (`serve`) |
+| Python, by hand | [`structure-layout-python`](../../examples/plugins/structure-layout-python) | `plugin.py`, `test_plugin.py`, `plugin.cmd`, `plugin.json` | by hand, standard library only |
 
 ### Step 1: the handshake
 
@@ -65,8 +66,8 @@ func (l *layout) Describe(p protocol.InitializeParams) (protocol.InitializeResul
 }
 ```
 
-The TypeScript version returns the same object and the SDK adds the version and the capabilities; the
-Python version, which has no SDK, returns the JSON with them spelled out:
+The TypeScript and Python-SDK versions return the same object (a dict in Python) and the SDK adds the version
+and the capabilities; the Python version without an SDK returns the JSON with them spelled out:
 
 ```json
 {
@@ -203,8 +204,26 @@ if (process.env.SMITH_PLUGIN === '1') await serve(createLayoutPlugin())
 else if (process.argv[2] === 'layout-check') { /* run the check */ }
 ```
 
-[The TypeScript SDK](typescript-sdk.md) walks through it. The Python version has no SDK: the framing is
-yours, and the file is one program that is both the plugin and the checker. Its core:
+[The TypeScript SDK](typescript-sdk.md) walks through it. The Python version on the SDK is the same shape,
+a class with `describe`, `contribute` and `doctor` returning plain dicts (`layout.py`, with `plugin.py` as
+the entry point); [The Python SDK](python-sdk.md#a-plugin-step-by-step) walks through it:
+
+```python
+class LayoutPlugin:
+    def describe(self, params): ...
+    def contribute(self, params):
+        return contribute_to(params["projects"], lambda project: {
+            "tasks": {"layout-check": task([sys.executable, SELF, "layout-check"], cache=True)},
+            "dependsOn": {"lint": ["layout-check"]},
+        })
+    def doctor(self, params): ...
+
+if os.environ.get("SMITH_PLUGIN") == "1":
+    serve(LayoutPlugin())
+```
+
+The Python version without an SDK is the framing yours, and the file is one program that is both the plugin
+and the checker. Its core:
 
 ```python
 def contribute(params):
@@ -240,7 +259,7 @@ widget-layout 0.1.0
 The TypeScript and Python versions give the same lines (`smith plugin check .\plugin.cmd` on
 Windows; see [Testing a plugin](testing-a-plugin.md#checking-an-interpreted-plugin)). Each ships its
 own tests: `go test ./...`, `node --test` and `python -m unittest`, all passing. For the same
-requests the TypeScript plugin and the Go plugin answer with the same bytes.
+requests the TypeScript plugin, the Python plugin on the SDK and the Go plugin answer with the same bytes.
 
 ## Use it
 
@@ -273,7 +292,7 @@ structure = ["widget-layout"]
 | `smith.toml [conventions.x]: it does not apply to "go"; it supports [widget]` (from the code) | `languages = [...]` in the convention names a language the plugin does not list |
 | `lint` does not wait for the check | `DependsOn` named a task that does not exist yet; emit it unconditionally and let smith ignore it |
 | `plugin.cmd` fails to start on Windows | a bare name is looked up on `PATH`; write `.\plugin.cmd` |
-| a plugin that frames the messages itself prints a banner and smith stops answering | stdout is the protocol; use `console.error`. (The TypeScript SDK sends whatever else is written to stdout to stderr, so a stray `console.log` cannot corrupt it) |
+| a plugin that frames the messages itself prints a banner and smith stops answering | stdout is the protocol; use `console.error`. (The TypeScript and Python SDKs send whatever else is written to stdout to stderr, so a stray `console.log` or `print` cannot corrupt it) |
 | the check passes locally and fails in CI | the task command contains the plugin's absolute path (as this example's does); in a shared plugin put the tool on `PATH` and name it in the command |
 
 ## See also

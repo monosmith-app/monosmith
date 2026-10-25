@@ -80,3 +80,17 @@ command = ["go", "run", "./schemagen"]
 # workspace-wide lint above is golangci-lint, for the Go projects.
 [projects.plugin-sdk-ts.tasks.lint]
 command = ["npm", "run", "lint", "--silent"]
+
+# The SDK for plugins in Python lints with ruff, from the workspace's .venv. The venv's
+# interpreter is .venv/Scripts/python.exe on Windows and .venv/bin/python elsewhere, and a
+# command here cannot be both, so tools/run_in_venv hands over to whichever exists.
+[projects.plugin-sdk-py.tasks.lint]
+command = ["python", "-m", "tools.run_in_venv.run_in_venv_handler", "-m", "ruff", "check", "."]
+
+# Regenerates the protocol types from the schema (after `smith run schema -p plugin-sdk`);
+# generate-check fails when they are stale (a test of the package does too).
+[projects.plugin-sdk-py.tasks.generate]
+command = ["python", "-m", "tools.run_in_venv.run_in_venv_handler", "-m", "tools.generate_protocol.generate_protocol_handler"]
+
+[projects.plugin-sdk-py.tasks.generate-check]
+command = ["python", "-m", "tools.run_in_venv.run_in_venv_handler", "-m", "tools.generate_protocol.generate_protocol_handler", "--check"]

@@ -12,9 +12,10 @@ any over a mebibyte. It exists to show the two things a plugin does when a call 
   requests in flight; `Serve` runs them on four workers. A plugin that says nothing is called one request at
   a time, which is the right default for a plugin that shares state.
 
-The same plugin is written in [TypeScript](../structure-scan-node), on the TypeScript SDK; for the same
-requests, a cancel included, the two answer with the same bytes, which `packages/plugin-sdk-ts/integration`
-checks. The rule is in [the plugin protocol](../../../architecture/plugin-protocol.md#cancel-and-concurrency).
+The same plugin is written in [TypeScript](../structure-scan-node), on the TypeScript SDK, and in
+[Python](../structure-scan-py), on the Python SDK; for the same requests, a cancel included, they answer with the
+same bytes, which `packages/plugin-sdk-ts/integration` (Go and TypeScript) and
+`packages/plugin-sdk-py/tests/integration` (Go, TypeScript and Python) check. The rule is in [the plugin protocol](../../../architecture/plugin-protocol.md#cancel-and-concurrency).
 
 ## Files
 

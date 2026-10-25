@@ -8,7 +8,8 @@ writes the release version into `widget.json` keeping its key order, and reports
 a fix.
 
 For the same requests it gives the same bytes as the Go plugin, which
-`packages/plugin-sdk-ts/integration` checks.
+`packages/plugin-sdk-ts/integration` checks. The Python twin is [`language-widget-py`](../language-widget-py), compared
+with both by `packages/plugin-sdk-py/tests/integration`.
 
 Guide: [Creating a language plugin](../../../plugins/creating/language-plugin.md); the SDK:
 [The TypeScript SDK](../../../plugins/creating/typescript-sdk.md).

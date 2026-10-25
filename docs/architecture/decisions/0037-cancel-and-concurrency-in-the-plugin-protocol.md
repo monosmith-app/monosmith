@@ -133,6 +133,9 @@ and ignores a cancel for a request it does not know. `smith plugin check` runs t
   at a time), but the plugin that declares a concurrency above 1 owns its locking.
 - The two examples `structure-scan-go` and `structure-scan-node` show both features and are
   compared by the cross-language test, which sends them the same cancel and gets the same bytes.
+- The Python SDK (`packages/plugin-sdk-py`) has since joined them: `cancellable = True` and a `CancelToken` as
+  the optional second parameter of a method, a bounded pool of worker threads, and `structure-scan-py`, which the
+  cross-language test compares with the Go and TypeScript plugins by response id.
 - The Python and C# SDKs are generated from a schema that now has the `cancel` method (a row with
   `notification: true` and no result), the `cancel` capability, `concurrency` and the error code.
 - Not done: the built-in plugins do not support `cancel`, because their handlers run toolchains

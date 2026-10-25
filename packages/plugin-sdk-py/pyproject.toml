@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monosmith-plugin-sdk"
+version = "0.0.0"
+description = "The Python SDK for writing smith plugins: the protocol's types, the serve loop, a test host, the conformance checks, templating and key-order-keeping JSON editing. No runtime dependencies."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Eduardo Russo" }]
+keywords = ["smith", "monosmith", "plugin", "sdk", "json-rpc"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/monosmith-app/monosmith/tree/main/packages/plugin-sdk-py#readme"
+Documentation = "https://github.com/monosmith-app/monosmith/blob/main/docs/plugins/creating/python-sdk.md"
+Repository = "https://github.com/monosmith-app/monosmith"
+Issues = "https://github.com/monosmith-app/monosmith/issues"
+
+[tool.smith]
+kind = "package"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+monosmith_plugin_sdk = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The tools folder (the schema generator) is a package at the project root; the tests
+# of slices with the same file name in different folders do not clash.
+pythonpath = ["."]
+addopts = "--import-mode=importlib"
+markers = ["integration: starts real processes (smith, go, the example plugins)"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src", "tools", "tests"]
+mypy_path = "src"
+explicit_package_bases = true
+warn_unreachable = true
+
+[tool.ruff]
+extend = "../../ruff.toml"
+# The SDK runs on Python 3.10 and later, whatever the workspace's own interpreter is.
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.format]
+# Written by tools/generate_protocol; the drift check compares them byte for byte.
+exclude = ["src/monosmith_plugin_sdk/protocol/protocol_*_contract.py"]

@@ -11,12 +11,13 @@ exactly what exists, what each choice costs, and shows the same plugin in Go, Ty
 | **Go** | the plugin SDK, `github.com/monosmith-app/monosmith/packages/plugin-sdk`: typed messages, the serving loop, the host side for tests, the conformance suite, templating and JSON helpers | the plugin's methods |
 | **TypeScript** (and JavaScript) | the plugin SDK, [`@monosmith/plugin-sdk`](typescript-sdk.md) on npm: the same, with the types generated from the protocol's JSON Schema. Examples: [`structure-layout-node`](../../examples/plugins/structure-layout-node) (a structure plugin) and [`language-widget-ts`](../../examples/plugins/language-widget-ts) (a language plugin) | the plugin's methods |
 | **Node.js** without the SDK | working example that frames the messages by hand: [`node`](../../examples/plugins/node) (a language plugin) | the framing loop and the dispatch, about 40 lines, plus the methods |
-| **Python** | no SDK yet. [`python`](../../examples/plugins/python) and [`structure-layout-python`](../../examples/plugins/structure-layout-python), standard library only | the same |
+| **Python** | the plugin SDK, [`monosmith-plugin-sdk`](python-sdk.md) on PyPI (import `monosmith_plugin_sdk`, Python 3.10 or later, no dependencies): the same, with the types generated from the protocol's JSON Schema. Examples: [`structure-layout-py`](../../examples/plugins/structure-layout-py) (a structure plugin), [`language-widget-py`](../../examples/plugins/language-widget-py) (a language plugin) and [`structure-scan-py`](../../examples/plugins/structure-scan-py) (cancel and concurrency) | the plugin's methods |
+| **Python** without the SDK | working examples that frame the messages by hand, standard library only: [`python`](../../examples/plugins/python) and [`structure-layout-python`](../../examples/plugins/structure-layout-python) | the framing loop and the dispatch, plus the methods |
 | anything else (C# next) | no SDK, no example. The protocol is the contract: [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json) is its JSON Schema, generated from the Go types, with a methods table, the error codes and the roles | everything. Not tried here |
 
 The SDKs for the other languages are tracked in [#564](https://github.com/monosmith-app/monosmith/issues/564):
 TypeScript first, then Python, then C#. All of them are generated from the same JSON Schema, so a
-protocol change reaches every language. Do not look for a `pip` package: it does not exist yet.
+protocol change reaches every language.
 
 ## Go, with the SDK
 
@@ -90,10 +91,44 @@ The types are generated from the protocol's JSON Schema, a test host and the con
 included, and for the same requests the plugin answers with the same bytes as the Go one. [The
 TypeScript SDK](typescript-sdk.md) has the walk-through and the whole API.
 
+## Python, with the SDK
+
+```sh
+pip install monosmith-plugin-sdk
+```
+
+A plugin is an object with `describe` and one method for each thing it does; the messages are plain
+dicts, typed by `TypedDict`s generated from the protocol's JSON Schema. The SDK does everything the Go
+`serve.Main` does and derives the capabilities from the methods (`write_version` is `version/write`):
+
+```python
+from monosmith_plugin_sdk import serve
+
+
+class Kiwi:
+    def describe(self, params):
+        return {"plugin": {"name": "kiwi", "version": "0.1.0"}, "kind": "language",
+                "languages": ["kiwi"], "manifests": ["kiwi.toml"]}
+
+    def discover(self, params):
+        return {"projects": []}
+
+
+if __name__ == "__main__":
+    serve(Kiwi())
+```
+
+`serve` keeps standard output for the protocol at the file-descriptor level: a `print`, a library or a child
+process that writes to standard output reaches standard error instead, and standard input is the null
+device. Requests run on a bounded pool of worker threads; a plugin that sets `cancellable = True` has a
+`CancelToken` passed as an optional second parameter. A test host, the conformance checks, templating and
+key-order-keeping JSON editing are included, and for the same requests the plugin answers with the same
+bytes as the Go and TypeScript ones. [The Python SDK](python-sdk.md) has the walk-through and the whole API.
+
 ## Without an SDK: Node.js and Python, by hand
 
-There are three things to write, and they are the same in every language. (In TypeScript the SDK
-writes them for you; this is what it does, and what a language without an SDK has to do.)
+There are three things to write, and they are the same in every language. (In Go, TypeScript and Python
+the SDK writes them for you; this is what it does, and what a language without an SDK has to do.)
 
 ### 1. Read and write frames
 
@@ -251,22 +286,22 @@ reads the next frame while a handler runs is what they need:
 [The protocol cheat sheet](protocol-cheat-sheet.md#a-cancelled-request) has the traffic of a cancelled
 request, and the [architecture page](../../architecture/plugin-protocol.md#cancel-and-concurrency) the whole rule.
 
-## The same plugin three ways
+## The same plugin four ways
 
 `widget-layout` (a [structure plugin](structure-plugin.md)):
 
-| | Go | TypeScript | Python |
-|---|---|---|---|
-| source | `plugin.go`, `check.go`, `main.go` (146 lines) | `plugin.ts`, `layout.ts` (102 lines) | `plugin.py` (153 lines) |
-| framing and dispatch | `serve.Main` | `serve` | written in the file |
-| capabilities | derived from the methods | derived from the members | written in the `initialize` answer |
-| tests | `go test` with `conformance.Check` and `host.Connect` | `node --test` with `checkPlugin` and `connectInProcess` | `python -m unittest`, speaking the protocol through a child process |
-| launcher on Windows | the `.exe` | `plugin.cmd` | `plugin.cmd` |
-| dependencies | the SDK | `@monosmith/plugin-sdk` | none |
+| | Go | TypeScript | Python, SDK | Python, by hand |
+|---|---|---|---|---|
+| source | `plugin.go`, `check.go`, `main.go` (146 lines) | `plugin.ts`, `layout.ts` (102 lines) | `plugin.py`, `layout.py` | `plugin.py` (153 lines) |
+| framing and dispatch | `serve.Main` | `serve` | `serve` | written in the file |
+| capabilities | derived from the methods | derived from the members | derived from the methods | written in the `initialize` answer |
+| tests | `go test` with `conformance.Check` and `host.Connect` | `node --test` with `checkPlugin` and `connectInProcess` | `python -m unittest` with `check_plugin` and `connect_in_process` | `python -m unittest`, speaking the protocol through a child process |
+| launcher on Windows | the `.exe` | `plugin.cmd` | `plugin.cmd` | `plugin.cmd` |
+| dependencies | the SDK | `@monosmith/plugin-sdk` | `monosmith-plugin-sdk` | none |
 
-All three give the same lines from `smith plugin check`, the same tasks and the same
-`smith doctor` finding, and the Go and the TypeScript plugin answer the same requests with the same
-bytes. The Node.js plugin that frames the messages by hand is the smaller
+All of them give the same lines from `smith plugin check`, the same tasks and the same
+`smith doctor` finding, and the Go, TypeScript and Python-on-SDK plugins answer the same requests with the
+same bytes. The Node.js plugin that frames the messages by hand is the smaller
 [`node`](../../examples/plugins/node), a language plugin without tests.
 
 ## Common mistakes

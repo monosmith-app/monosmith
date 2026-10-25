@@ -33,6 +33,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
       - name: Cache the go download store
         uses: actions/cache@v6
         with:
@@ -47,6 +50,13 @@ jobs:
           key: smith-npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             smith-npm-${{ runner.os }}-
+      - name: Cache the pip download store
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: smith-pip-${{ runner.os }}-${{ hashFiles('requirements-dev.txt', 'packages/plugin-sdk-py/pyproject.toml') }}
+          restore-keys: |
+            smith-pip-${{ runner.os }}-
       - name: Install smith
         run: curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh -s -- "$SMITH_VERSION"
         env:
