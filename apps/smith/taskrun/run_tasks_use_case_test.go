@@ -26,6 +26,12 @@ func TestMain(m *testing.M) {
 		if arg == "fail" {
 			os.Exit(3)
 		}
+		if arg == "needs-drop" {
+			// The project is two levels below the workspace root.
+			if _, err := os.Stat(filepath.Join("..", "..", "dist", "drop")); err != nil {
+				os.Exit(6)
+			}
+		}
 		if arg == "sleep" {
 			time.Sleep(time.Minute)
 		}
@@ -218,5 +224,21 @@ func TestAProjectThatReportsNoToolchainKeepsItsKeys(t *testing.T) {
 	f.pg.Get("web").Toolchain = ""
 	if again, _ := KeyOf(g, opts, "web:build"); again != without {
 		t.Fatal("an empty toolchain leaves the key as it was")
+	}
+}
+
+func TestAPackageTaskFindsDistDropAlreadyThere(t *testing.T) {
+	f := newFixture(t, "core")
+	self, _ := os.Executable()
+	web := f.pg.Get("web")
+	web.Tasks["package"] = protocol.Task{Command: []string{self, "-test.run=^$", "needs-drop"}, Env: map[string]string{"SMITH_HELPER": "1"}}
+	g, err := taskgraph.Build(f.pg, []string{"web"}, []string{"package"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	s := Run(context.Background(), g, Options{Root: f.root, Files: f.files, Projects: f.pg, Storage: f.store, Out: &out, ToolVersion: "test"})
+	if !s.OK() {
+		t.Fatalf("a fresh workspace has no dist/drop, and npm pack does not create it: %s\n%s", s, out.String())
 	}
 }

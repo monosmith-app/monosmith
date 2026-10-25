@@ -19,6 +19,13 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
 )
 
+// packageTask is the task that builds what a project deploys, and dropDir is
+// where it writes (cipipeline.PackTask and cipipeline.DropDir).
+const (
+	packageTask = "package"
+	dropDir     = "dist/drop"
+)
+
 // Options configure a run.
 type Options struct {
 	Root string
@@ -157,6 +164,11 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			// A generator writes into its output directory, so it exists.
 			_ = os.MkdirAll(dir, 0o755)
 		}
+	}
+	if t.Name == packageTask {
+		// A package task writes into the drop, which smith ci pack makes
+		// but a tool such as npm pack does not.
+		_ = os.MkdirAll(filepath.Join(r.opts.Root, filepath.FromSlash(dropDir)), 0o755)
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
 	out.onLine = r.outputOf(t.ID)
