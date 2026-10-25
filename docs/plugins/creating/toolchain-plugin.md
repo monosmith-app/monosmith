@@ -262,4 +262,4 @@ ok  	example.com/smith-plugin-widget-lint	0.369s
 - [Creating a structure plugin](structure-plugin.md), [Creating a language plugin](language-plugin.md)
 - [Creating a recipe and a stack](recipe-and-stack.md): choosing `widget-lint` at the `lint` slot
 - The built-in toolchains: [eslint](../using/catalogue/eslint.md), [vitest](../using/catalogue/vitest.md), [playwright](../using/catalogue/playwright.md)
-- [The plugin protocol cheat sheet](protocol-cheat-sheet.md)
+- [The plugin protocol cheat sheet](protocol-cheat-sheet.md), [The TypeScript SDK](typescript-sdk.md) (a toolchain plugin in TypeScript implements `contribute` and, to scaffold, `generate`)

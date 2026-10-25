@@ -10,12 +10,13 @@ model at a time. Each one is explained step by step in
 | [`language-widget`](language-widget) | language plugin: discover, generate, version/write, doctor | Go, on the SDK | [Creating a language plugin](../../plugins/creating/language-plugin.md) |
 | [`toolchain-widget-lint`](toolchain-widget-lint) | toolchain plugin: the `lint` slot, settings | Go | [Creating a toolchain plugin](../../plugins/creating/toolchain-plugin.md) |
 | [`structure-layout-go`](structure-layout-go) | structure plugin: a layout check, doctor | Go | [Creating a structure plugin](../../plugins/creating/structure-plugin.md) |
-| [`structure-layout-node`](structure-layout-node) | the same structure plugin | Node.js, no dependencies | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
+| [`structure-layout-node`](structure-layout-node) | the same structure plugin | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`structure-layout-python`](structure-layout-python) | the same structure plugin | Python, standard library | [Writing a plugin in Go, Node.js or Python](../../plugins/creating/plugin-sdks.md) |
+| [`language-widget-ts`](language-widget-ts) | the same language plugin as `language-widget` | TypeScript, on the SDK | [The TypeScript SDK](../../plugins/creating/typescript-sdk.md) |
 | [`scaffold-widget-service`](scaffold-widget-service) | scaffold plugin: templates, settings, golden test | Go | [Creating a scaffold plugin](../../plugins/creating/scaffold-plugin.md) |
 | [`deploy-widget-bundle`](deploy-widget-bundle) | deploy plugin: a task, `publish`, `ci`, doctor | Go | [Creating a deploy plugin](../../plugins/creating/deploy-plugin.md) |
 | [`recipe-widget-team`](recipe-widget-team) | a recipe choosing the plugins above | TOML | [Creating a recipe and a stack](../../plugins/creating/recipe-and-stack.md) |
-| [`go`](go), [`node`](node), [`python`](python) | the smallest language plugin (discovery only), three ways | Go, Node.js, Python | [Writing a plugin](../../guides/writing-a-plugin.md) |
+| [`go`](go), [`node`](node), [`python`](python) | the smallest language plugin (discovery only), three ways; `node` and `python` write the framing by hand, with no SDK | Go, Node.js, Python | [Writing a plugin](../../guides/writing-a-plugin.md) |
 
 ## Building and checking
 
@@ -31,8 +32,13 @@ smith plugin check ./smith-plugin-widget --generate
 ```
 
 (On Windows the binary is `smith-plugin-widget.exe`, and `smith plugin check` of a script needs a
-`.cmd` launcher: `smith plugin check .\plugin.cmd` in PowerShell.) The Node.js example tests with
-`node --test`, the Python one with `python -m unittest`.
+`.cmd` launcher: `smith plugin check .\plugin.cmd` in PowerShell.) The TypeScript examples
+(`structure-layout-node`, `language-widget-ts`) run as they are on Node.js 24, which only removes the
+types, and test with `node --test`; they import `@monosmith/plugin-sdk`, which inside this repository is
+the neighbouring `packages/plugin-sdk-ts` once the workspace is installed (`npm install` at the root),
+and which in your own project you `npm install`. The Python example tests with `python -m unittest`.
+`packages/plugin-sdk-ts/integration` runs both TypeScript examples under `smith plugin check`, in a
+throwaway workspace, and against their Go counterparts.
 
 Every example passes `smith plugin check`, except that `scaffold-widget-service` does not pass
 `--generate`, which asks for an app, a lib and a package and the service is app-only. The commands, the

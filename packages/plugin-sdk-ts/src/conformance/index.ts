@@ -1,0 +1,5 @@
+export { checkPlugin } from './check-plugin.use-case.ts'
+export type { CheckOptions } from './check-plugin.use-case.ts'
+export { CONFORMANCE_STACK } from './check-generation.use-case.ts'
+export { ConformanceReport } from './conformance-report.model.ts'
+export type { CheckResult } from './conformance-report.model.ts'

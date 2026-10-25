@@ -102,14 +102,19 @@ form.
 | Windows, path form | `smith plugin check .\plugin.cmd`, a launcher next to the script. Write the leading `.\` and use backslashes (Git Bash drops them: use PowerShell or `cmd`) |
 | anywhere, name form | declare it in `smith.toml`, or install it on the search path, and run `smith plugin check widget` |
 
-On Windows a `.py` or `.mjs` is not an executable: `smith plugin check .\plugin.py` fails with
+On Windows a `.py`, `.mjs` or `.ts` is not an executable: `smith plugin check .\plugin.py` fails with
 `fork/exec .\plugin.py: %1 is not a valid Win32 application.` The launchers in the examples are
 two lines:
 
 ```bat
 @echo off
-node "%~dp0plugin.mjs" %*
+node "%~dp0plugin.ts" %*
 ```
+
+Without a launcher, the path form also takes the absolute path of the interpreter followed by the
+script (`smith plugin check C:\...\node.exe C:\...\plugin.ts`): the first argument exists, so it is run
+as the plugin with the rest as its arguments. The TypeScript SDK's own integration tests check the
+TypeScript examples that way.
 
 ## Unit tests that talk to the plugin
 
@@ -155,26 +160,36 @@ on the typed result. What is worth asserting:
 With `conformance.Options{Workspace: ws}` the suite also runs the `--generate` checks in process, as
 `language-widget`'s `TestConforms` does.
 
-In Node.js and Python, start the plugin as a child process with `SMITH_PLUGIN=1` and speak the
-protocol to it, as `structure-layout-node/plugin.test.mjs` (`node --test`) and
-`structure-layout-python/test_plugin.py` (`python -m unittest`) do: write the framed requests,
-close stdin, parse the framed answers.
+In TypeScript, the SDK has the same two tools: `connectInProcess(plugin, { workspaceRoot })` serves a
+plugin object over pipes with the real handshake and returns a client (`client.call('contribute',
+params)` is typed by method), and `checkPlugin(client)` runs the conformance checks. `startPlugin({
+command, workspaceRoot })` starts the real process instead. See [The TypeScript SDK](typescript-sdk.md#3-test-it),
+and `structure-layout-node/layout.test.ts` (`node --test`).
+
+In Python, or in Node.js without the SDK, start the plugin as a child process with `SMITH_PLUGIN=1` and
+speak the protocol to it, as `structure-layout-python/test_plugin.py` (`python -m unittest`) does: write
+the framed requests, close stdin, parse the framed answers.
 
 ```text
 $ node --test
-✔ the handshake advertises exactly what is implemented (49.146ms)
-✔ contribute adds layout-check and makes lint wait for it (45.1015ms)
-✔ an unknown method is -32601 (44.3015ms)
-✔ doctor warns about a missing README (46.9645ms)
-✔ findJunkDrawers skips build output (2.6811ms)
-ℹ tests 5
-ℹ pass 5
+✔ the plugin conforms (5.9366ms)
+✔ the handshake advertises exactly what is implemented (1.8395ms)
+✔ lint waits for the layout check (1.5453ms)
+✔ an unknown method is -32601 (1.5749ms)
+✔ doctor warns about a missing README (2.0646ms)
+✔ findJunkDrawers skips build output (2.474ms)
+ℹ tests 6
+ℹ pass 6
 ℹ fail 0
 $ python -m unittest
 .....
 Ran 5 tests in 0.246s
 OK
 ```
+
+If a Go and a TypeScript plugin implement the same logic, the strongest test is that they give the same
+bytes: start both with the same requests and compare the answers. The SDK's
+`integration/cross-language.integration.spec.ts` does that for two of the examples.
 
 ### Golden files for a scaffold
 

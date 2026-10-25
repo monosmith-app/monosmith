@@ -1,0 +1,39 @@
+{
+  "name": "@monosmith/plugin-sdk",
+  "version": "0.0.0",
+  "description": "The TypeScript SDK for writing smith plugins: the protocol's types, the serve loop, a test host, the conformance checks, templating and key-order-keeping JSON editing. No runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "generate": "node tools/generate-protocol/generate-protocol.handler.ts",
+    "generate-check": "node tools/generate-protocol/generate-protocol.handler.ts --check"
+  },
+  "keywords": [
+    "smith",
+    "monosmith",
+    "plugin",
+    "sdk",
+    "json-rpc"
+  ],
+  "author": "Eduardo Russo",
+  "homepage": "https://github.com/monosmith-app/monosmith/tree/main/packages/plugin-sdk-ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monosmith-app/monosmith.git",
+    "directory": "packages/plugin-sdk-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/monosmith-app/monosmith/issues"
+  }
+}
