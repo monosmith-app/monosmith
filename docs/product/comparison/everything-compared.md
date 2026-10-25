@@ -86,12 +86,12 @@ The table is generated from [`features.json`](features.json) by
 | Team recipes: a shared preset of plugins and settings, with questions at add time | **✅** | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Existing projects checked against their recipe, owned files upgraded | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Code layout checked inside projects (vertical slices) in nine languages | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Rules for which projects may depend on which (boundaries, visibility) | **❌** | ✅ | ◐ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | I, needs an issue |
+| Rules for which projects may depend on which (boundaries, visibility) | **❌** | ✅ | ◐ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ✅ | I, #570 |
 | **Tasks, graph and affected** | | | | | | | | | | | | | | | | |
 | Tasks run in dependency order, in parallel | **✅** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | R |
 | Only what changed since a git base (affected) | **✅** | ✅ | ✅ | ◐ | ✅ | ✅ | ✅ | ✅ | ◐ | ◐ | ◐ | ✅ | ✅ | ❔ | ✅ | R |
 | Runs everything when it cannot be sure (no base, shallow clone, changed lockfile) | **✅** | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
-| Affected selection by task, finer than a project | **❌** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | D, design choice: the unit is the project |
+| Affected selection by task, finer than a project | **❌** | ✅ | ❔ | ✅ | ✅ | ❔ | ❔ | ✅ | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | ✅ | D, #574 to decide; the unit is the project today |
 | Dependency graph of single source files and targets (Bazel and Pants style) | **❌** | ❔ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | D, design choice: not planned |
 | Compiler and runtime versions are part of the cache key | **✅** | ✅ | ◐ | ❔ | ✅ | ✅ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | **Cache and execution** | | | | | | | | | | | | | | | | |
@@ -110,10 +110,10 @@ The table is generated from [`features.json`](features.json) by
 | **CI generation and verification** | | | | | | | | | | | | | | | | |
 | Writes the CI pipeline files for you | **✅** | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | R |
 | GitHub Actions, Azure Pipelines and GitLab CI generated | **✅** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| CircleCI, Bitbucket Pipelines or Jenkins generated | **❌** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, needs an issue |
+| CircleCI, Bitbucket Pipelines or Jenkins generated | **❌** | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | I, #571 |
 | CI fails when the committed pipeline is out of date, and a fix regenerates it | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
 | Your own steps survive regeneration (named slots) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
-| Dependency vulnerability audit | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, needs an issue |
+| Dependency vulnerability audit | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, #572 |
 | CI fails when a task leaves a tracked file modified | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Release preview posted on the pull request | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | T |
 | Ready-made pipelines beyond CI (e2e, GitHub Pages, Azure Function) | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
@@ -130,7 +130,7 @@ The table is generated from [`features.json`](features.json) by
 | Builds and pushes container images | **◐** | ◐ | ❔ | ❔ | ✅ | ❔ | ❔ | ❌ | ❔ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | D, run unverified |
 | Homebrew, Scoop and winget manifests from the release archives | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
 | .deb and .rpm packages attached to the release | **✅** | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
-| Per-platform app archives with checksums on a GitHub Release | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L, needs an issue |
+| Per-platform app archives with checksums on a GitHub Release | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❌ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L, #573 |
 | SBOM generation | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ◐ | ❔ | L, #348 |
 | Signed provenance for what you publish | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, #348 |
 | Publishes without a long-lived key (trusted publishing) | **◐** | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ✅ | ❔ | ❔ | D, needs an issue |
@@ -139,8 +139,8 @@ The table is generated from [`features.json`](features.json) by
 | Release journal of what was published where | **◐** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R, #347 |
 | Publishes a VS Code extension to the Marketplace with the release | **✅** | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | L |
 | **Dependencies** | | | | | | | | | | | | | | | | |
-| One version of each shared dependency across projects | **◐** | ◐ | ◐ | ◐ | ◐ | ❔ | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | R, needs an issue |
-| Checks that a package declares what it imports | **◐** | ✅ | ❔ | ✅ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T, needs an issue |
+| One version of each shared dependency across projects | **◐** | ◐ | ◐ | ◐ | ◐ | ❔ | ✅ | ❔ | ❔ | ✅ | ❔ | ❔ | ✅ | ✅ | ❔ | R, #572 |
+| Checks that a package declares what it imports | **◐** | ✅ | ❔ | ✅ | ◐ | ❔ | ✅ | ❔ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | T, #572 |
 | **Health and migration** | | | | | | | | | | | | | | | | |
 | Read-only health check, each finding with a remedy | **✅** | ◐ | ◐ | ❔ | ◐ | ◐ | ◐ | ◐ | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ❔ | R |
 | Applies fixes: diffs for file changes, questions for risky ones | **✅** | ❔ | ❔ | ❔ | ❔ | ◐ | ❔ | ◐ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | ❔ | R |
@@ -374,7 +374,7 @@ These are recorded in
 | Remote or distributed task execution | Bazel, Pants, Buck2; Nx and Lerna through Nx Cloud; experimental or partial in Rush, moon, Please, Lage, Earthly | **High** for very large repositories, low for most | Tasks run on one machine and only results are shared |
 | Hermetic or sandboxed execution | Bazel, Pants, Please, Earthly; partly Buck2, Lage | **High** where cache correctness is paramount | A task's declared inputs are trusted, which lets smith run `npm`, `dotnet` and `cargo` unmodified; wrong `inputs` give wrong cache hits. An opt-in strict mode that reports files read but not declared is proposed in #563 |
 | Dependency graph of single files and targets | Bazel, Pants, Buck2, Please | **High** at very large scale, low below it | The unit is the project, not the file |
-| Affected selection by task, finer than a project | Nx, Bazel, Pants, Buck2, moon, Gradle, Please | Medium: fewer tasks run in a large project | A design choice (project-level affected, everything when unsure); no issue |
+| Affected selection by task, finer than a project | Nx, Bazel, Pants, Buck2, moon, Gradle, Please | Medium: fewer tasks run in a large project | A design choice (project-level affected, everything when unsure); #574 asks whether to change it |
 | Watch mode | Nx, Turborepo, Rush, Gradle, Lage, Please | Low to medium | smith recomputes from git each run; `smith dev` starts dev servers |
 | Downloading and pinning toolchains | moon, Gradle; Rush and pnpm for their package manager | Medium for onboarding | [ADR 0020](../../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md): smith pins and checks versions, and writes `.tool-versions` for mise and asdf |
 | A hosted service (remote cache, analytics, CI features) | Nx Cloud, Vercel Remote Cache, Gradle's Develocity, moon's hosted option | Medium: zero-ops sharing and analytics | The remote cache is a bucket or server you run; a reference cache server is proposed in #563 |
@@ -383,23 +383,23 @@ These are recorded in
 
 | Capability | Who has it | Matters | Status |
 |---|---|---|---|
-| Rules for which projects may depend on which | Nx, Bazel, Pants, Buck2, moon, Please; Turborepo (experimental) and Yarn (constraints) in part | **Medium to high**: architecture governance as the repository grows | Not planned in any issue |
+| Rules for which projects may depend on which | Nx, Bazel, Pants, Buck2, moon, Please; Turborepo (experimental) and Yarn (constraints) in part | **Medium to high**: architecture governance as the repository grows | #570 |
 | JetBrains IDE plugin | Nx, Lerna, Bazel, Gradle, Please | **Medium to high**: many JVM and .NET teams use JetBrains | #303 |
 | Speaking the Bazel Remote Execution API for caching | Bazel, Pants, Buck2, moon; Please (experimental) | Medium: reuse of existing cache servers | #345 asks first which servers already work over HTTP |
 | Plugin SDKs beyond Go | Nx, Pants, Bazel, Buck2, Gradle ship SDKs in their own languages | Medium: writing a plugin is the route to a missing language | #564 |
 | A plugin registry or catalogue | Nx; Bazel for rule sets | Medium; grows with third-party plugins | #164, #565 |
 | SBOM and provenance beyond npm and Go apps, and beyond GitHub Actions | npm and pnpm generate SBOMs; Nx and pnpm document npm provenance | **High** for supply-chain reviews | #348 |
 | Trusted publishing (no long-lived key) for more registries | npm (`npm trust`) | Medium to high | RubyGems, pub.dev and PyPI done; no issue for the rest |
-| CircleCI, Bitbucket Pipelines or Jenkins pipelines | Nx (CircleCI, Bitbucket Pipelines; not Jenkins) | Medium | No issue |
-| One version of each shared dependency across projects, in every language | Rush, Gradle, Cargo, pnpm and Yarn, Bazel | Medium | `smith sync` covers Node and Python; Rust, .NET, Dart and Go are skipped. No issue |
-| Checking that a package declares what it imports | Nx, Rush, Bazel, Pants | Medium | smith checks Node packages only (`deps-check`). No issue |
-| Dependency vulnerability audit | npm, pnpm, Yarn | Medium to high | Node, Python and Go; no issue for other ecosystems |
+| CircleCI, Bitbucket Pipelines or Jenkins pipelines | Nx (CircleCI, Bitbucket Pipelines; not Jenkins) | Medium | #571 |
+| One version of each shared dependency across projects, in every language | Rush, Gradle, Cargo, pnpm and Yarn, Bazel | Medium | `smith sync` covers Node and Python; Rust, .NET, Dart and Go are skipped. #572 |
+| Checking that a package declares what it imports | Nx, Rush, Bazel, Pants | Medium | smith checks Node packages only (`deps-check`). #572 |
+| Dependency vulnerability audit | npm, pnpm, Yarn | Medium to high | Node, Python and Go; other ecosystems in #572 |
 | Container images, Maven, crates.io, Go tags and Packagist releases verified end to end | Pants and Earthly (images); Gradle (Maven); Nx and Cargo (crates.io) | Medium | Shipped and covered by tests; not run against the live registry or a Docker daemon for this page |
 
 ### Gaps no other tool fills either
 
 Rows where smith is ◐ or ❌ and no tool is ✅. They are shortfalls in smith, not
-advantages of a rival: per-platform release archives for apps outside Go; Go-module and
+advantages of a rival: per-platform release archives for apps outside Go (#573); Go-module and
 Packagist release by tag verified live; a registry preflight (#347, #380) and a release
 journal (#347) across every registry; an importer for Lerna, Rush, Bazel or Gradle
 workspaces (#553 is the nearest); and integrity checks or sandboxing for plugins (#565).

@@ -34,16 +34,16 @@ Decision 1 below asks whether to keep it that way.
 | 3 | Registry checks before the first publish; dry-run uploads; a journal that stops a bad key from half-releasing | H | M | extends a lead | #347, #380 | Now |
 | 4 | SBOM and provenance for every ecosystem and for Azure and GitLab | H | M | closes a gap (npm and pnpm have `sbom`) and extends a lead | #348 | Now |
 | 5 | Cache: hit-rate report, file outputs, compression, a reference cache server, an opt-in strict-inputs check | M to H | S to M | closes small gaps; the strict check narrows the sandbox gap without a sandbox | #563 | Now |
-| 6 | Rules for which projects may depend on which | M to H | M | closes a gap with six tools | {BOUNDS} | Next |
+| 6 | Rules for which projects may depend on which | M to H | M | closes a gap with six tools | #570 | Next |
 | 7 | Plugin SDKs beyond Go, TypeScript first | M | M to L | enables the ecosystem; closes a gap | #564 | Next (after #565 step 1) |
-| 8 | Dependency tooling beyond Node and Python: `sync`, `up`, `deps-check`, audit | M | M | closes a gap | {DEPS} | Next |
-| 9 | CircleCI and Bitbucket Pipelines generation | M | S to M | closes a gap with Nx | {CI} | Next |
-| 10 | Per-platform release archives for apps that are not Go | M | M | extends a lead | {ASSETS} | Next |
+| 8 | Dependency tooling beyond Node and Python: `sync`, `up`, `deps-check`, audit | M | M | closes a gap | #572 | Next |
+| 9 | CircleCI and Bitbucket Pipelines generation | M | S to M | closes a gap with Nx | #571 | Next |
+| 10 | Per-platform release archives for apps that are not Go | M | M | extends a lead | #573 | Next |
 | 11 | Trusted publishing (OIDC) for npm, NuGet and crates.io | M to H | S per registry | closes a gap with npm | needs an issue | Next |
 | 12 | JetBrains support: a language server first, then the plugin | M to H | L | closes a gap with five tools | #303 | Next, started with the language server |
 | 13 | Adopt at the full level for plain repositories | M | M | extends a lead | #553, #548 | Next |
 | 14 | Remote Execution API for caching: first check which servers work over HTTP | M | S for the note, L for gRPC | closes a gap | #345 | Next as research, Later as code |
-| 15 | Task-level affected selection | M | L | closes a gap with Nx and Bazel | {TASKS} | Later, after Decision 2 |
+| 15 | Task-level affected selection | M | L | closes a gap with Nx and Bazel | #574 | Later, after Decision 2 |
 | 16 | Plugin packager and an install-from-GitHub path; a registry only when third-party plugins exist | M | M to L | closes a gap with Nx | #565 (steps 2 and 3), #164 | Later |
 | 17 | OS package managers and signing and notarisation | L to M | M | closes a gap | #225, #124 | Later |
 | 18 | Importers for Lerna, Rush, Bazel and Gradle workspaces | L | L | no rival documents one either | #553 is the nearest | Later, if asked |
@@ -104,10 +104,10 @@ maintainer (#565 proposes a curated index and install-from-GitHub first).
 
 ## Issues for this proposal
 
-The epic [{EPIC}](https://github.com/monosmith-app/monosmith/issues/{EPIC_N}) links this page and the issues
-above. The five gaps that had no issue each have one: boundary rules ({BOUNDS}), dependency
-tooling beyond Node and Python ({DEPS}), CircleCI and Bitbucket Pipelines ({CI}), release
-archives for apps that are not Go ({ASSETS}) and task-level affected ({TASKS}). Trusted
+The epic [#575](https://github.com/monosmith-app/monosmith/issues/575) links this page and the issues
+above. The five gaps that had no issue each have one: boundary rules (#570), dependency
+tooling beyond Node and Python (#572), CircleCI and Bitbucket Pipelines (#571), release
+archives for apps that are not Go (#573) and task-level affected (#574). Trusted
 publishing for more registries (item 11) has no issue yet.
 
 See also: [Everything compared](../product/comparison/everything-compared.md),

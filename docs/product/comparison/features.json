@@ -315,7 +315,7 @@
       "s": {
         "m": "N",
         "e": "I",
-        "p": "needs an issue"
+        "p": "#570"
       },
       "t": "YPYYUUYYUUUPUY",
       "n": "Turborepo: `turbo boundaries` is experimental; Yarn: constraints; moon: constraints and boundaries; Bazel, Buck2, Please, Pants: visibility."
@@ -360,7 +360,7 @@
       "s": {
         "m": "N",
         "e": "D",
-        "p": "design choice: the unit is the project"
+        "p": "#574 to decide; the unit is the project today"
       },
       "t": "YUYYUUYYYUUUUY"
     },
@@ -554,7 +554,7 @@
       "s": {
         "m": "N",
         "e": "I",
-        "p": "needs an issue"
+        "p": "#571"
       },
       "t": "YUUUUUUUUUUUUU",
       "n": "Nx generates CircleCI and Bitbucket Pipelines; its documentation says the generator does not support Jenkins."
@@ -590,7 +590,7 @@
         "m": "P",
         "e": "D",
         "n": "Node (blocking when fixable), Python, Go; other ecosystems have none",
-        "p": "needs an issue"
+        "p": "#572"
       },
       "t": "UUUUUUUUUUUYUU",
       "n": "npm, pnpm and Yarn each document an audit command."
@@ -771,7 +771,7 @@
         "m": "P",
         "e": "L",
         "n": "Go apps only; other languages are tagged without assets",
-        "p": "needs an issue"
+        "p": "#573"
       },
       "t": "UUUUUUNUUUUUUU",
       "searched": "not searched beyond release and publish pages"
@@ -875,7 +875,7 @@
         "m": "P",
         "e": "R",
         "n": "Node (run) and Python (code read, not driven); Rust, .NET, Dart and Go are skipped",
-        "p": "needs an issue"
+        "p": "#572"
       },
       "t": "PPPPUYUUYUUYYU",
       "n": "Rush: `rush check`; Yarn: constraints; pnpm: catalogs; Cargo: inherited dependencies; Gradle: platforms and catalogs; Bazel: one version per module."
@@ -888,7 +888,7 @@
         "m": "P",
         "e": "T",
         "n": "Node packages only",
-        "p": "needs an issue"
+        "p": "#572"
       },
       "t": "YUYPUYUUUUUPUU",
       "n": "Nx: @nx/dependency-checks; Rush: `rush scan` finds phantom dependencies; Bazel: strict dependencies; npm documents catching phantom dependencies."
