@@ -21,7 +21,7 @@ projects, their tasks, scaffolding, versions, publishing, CI needs, health check
 | Installing a plugin: `plugin.json` and the search path | [Installing, enabling and configuring plugins](../plugins/using/managing-plugins.md) and [Packaging and distributing a plugin](../plugins/creating/packaging-a-plugin.md) |
 | Testing: `smith plugin check` | [Testing a plugin](../plugins/creating/testing-a-plugin.md) |
 | The widget example in Go, Python and Node.js | [Writing a plugin in Go, Node.js or Python](../plugins/creating/plugin-sdks.md), and the [`go`](../examples/plugins/go), [`node`](../examples/plugins/node) and [`python`](../examples/plugins/python) examples, which are unchanged |
-| Other languages | [Writing a plugin in Go, Node.js or Python](../plugins/creating/plugin-sdks.md#what-exists): only Go has an SDK |
+| Other languages | [Writing a plugin in Go, Node.js or Python](../plugins/creating/plugin-sdks.md#what-exists): Go and TypeScript have an SDK ([The TypeScript SDK](../plugins/creating/typescript-sdk.md)), Python and C# are next |
 | Troubleshooting a plugin | [Troubleshooting plugins](../plugins/using/troubleshooting-plugins.md) |
 
 ## Pick a guide

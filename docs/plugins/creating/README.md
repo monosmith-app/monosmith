@@ -35,7 +35,8 @@ what you want, you do not need to write code.
 | [Creating a scaffold plugin](scaffold-plugin.md) | |
 | [Creating a deploy plugin](deploy-plugin.md) | |
 | [Creating a recipe and a stack](recipe-and-stack.md) | you want your team's choice of plugins as a file |
-| [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) | you choose a language: what the Go SDK gives you, and what you write yourself in Node.js and Python |
+| [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) | you choose a language: which have an SDK, and what you write yourself in Python and in Node.js without one |
+| [The TypeScript SDK](typescript-sdk.md) | you write a plugin in TypeScript: a walk-through, then every function, type and helper of `@monosmith/plugin-sdk` |
 | [Testing a plugin](testing-a-plugin.md) | `smith plugin check`, unit tests, and a workspace test |
 | [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions |
 
@@ -55,10 +56,13 @@ flowchart LR
   stack --> D["deploy-widget-bundle<br/>bundle task, publish, ci"]
 ```
 
-Each plugin is a Go program on the SDK; the structure plugin is also written without an SDK in
-[Node.js](../../examples/plugins/structure-layout-node) and
-[Python](../../examples/plugins/structure-layout-python), so the same behaviour can be compared
-across all three. There is a Go SDK only: no other language has one.
+Each plugin is a Go program on the SDK. The structure plugin is also written in
+[TypeScript](../../examples/plugins/structure-layout-node), on the TypeScript SDK, and in
+[Python](../../examples/plugins/structure-layout-python), which has no SDK yet; the language plugin
+too, in [TypeScript](../../examples/plugins/language-widget-ts). So the same behaviour can be compared
+across languages: the Go and the TypeScript plugin answer the same requests with the same bytes. The
+SDKs are Go and TypeScript; Python and C# are next
+([#564](https://github.com/monosmith-app/monosmith/issues/564)).
 
 ## See also
 

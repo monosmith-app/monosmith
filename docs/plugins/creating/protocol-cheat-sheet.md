@@ -5,7 +5,9 @@ messages are generated from the Go types in `packages/plugin-sdk/protocol` (the 
 JSON names, the descriptions are the doc comments of the fields), and the method tables are
 checked against `method_enum.go`, `initialize_contract.go` and `serve/plugin_contract.go`, so they
 follow the protocol. Version 1 of the protocol is described; it was checked against the SDK in the
-smith 1.62.0 source tree.
+smith 1.62.0 source tree. The same information, machine-readable, is the JSON Schema
+[`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json),
+which the [TypeScript SDK](typescript-sdk.md) generates its types from.
 
 For the reasoning behind the protocol read [the plugin protocol](../../architecture/plugin-protocol.md);
 for a guide, the [quickstart](quickstart.md).
