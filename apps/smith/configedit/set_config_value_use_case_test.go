@@ -109,3 +109,20 @@ func TestAnUnknownSettingSuggestsInsteadOfListingEverything(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestAListOfChoicesCanBeOneCommaSeparatedValue(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, workspace.FileName)
+	_ = os.WriteFile(file, []byte("schema = 1\n\n[workspace]\nname = \"acme\"\n\n[ci]\nproviders = [\"github\"]\n"), 0o644)
+	if err := Set(root, "ci.providers", []string{"github,azure, gitlab"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(file)
+	cfg, err := workspace.Parse(raw)
+	if err != nil || strings.Join(cfg.CI.Providers, ",") != "github,azure,gitlab" {
+		t.Fatalf("%v %+v\n%s", err, cfg.CI.Providers, raw)
+	}
+	if err := Set(root, "ci.providers", []string{"github,bitbucket"}); err == nil || !strings.Contains(err.Error(), `not "bitbucket"`) {
+		t.Errorf("each part is still checked: %v", err)
+	}
+}

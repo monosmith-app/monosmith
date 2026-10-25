@@ -110,7 +110,7 @@ itself.`,
 
 	set := &cobra.Command{
 		Use:   "set <setting> <value...>",
-		Short: "Change one setting (a list takes several values)",
+		Short: "Change one setting (a list takes several values, or one comma-separated)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := root()

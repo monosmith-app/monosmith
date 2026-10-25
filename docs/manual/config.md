@@ -36,7 +36,7 @@ Usage: `smith config <command>`
 |---|---|
 | `smith config get` | Print one setting's value as written in smith.toml |
 | `smith config list` | List the settings, their values and what they do |
-| `smith config set` | Change one setting (a list takes several values) |
+| `smith config set` | Change one setting (a list takes several values, or one comma-separated) |
 | `smith config unset` | Remove one setting, so it takes its default |
 
 No flags.
