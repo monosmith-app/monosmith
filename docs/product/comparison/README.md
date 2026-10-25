@@ -184,6 +184,9 @@ Each tool page has a "Moving from it" section. The honest summary:
 
 ## Pages
 
+- [Everything MonoSmith does, against every tool compared](everything-compared.md): one
+  table of every smith capability against the fourteen tools, what only smith documents,
+  and what other tools do that smith does not yet do.
 - [Choosing a monorepo tool](choosing.md): the decision guide.
 - One page per tool: [Nx](nx.md), [Turborepo](turborepo.md), [Bazel](bazel.md),
   [Pants](pants.md), [Lerna](lerna.md), [Rush](rush.md), [moon](moon.md),

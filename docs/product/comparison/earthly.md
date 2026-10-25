@@ -73,3 +73,9 @@ folder, not through a summarising tool. Paths are relative to `docs`.
 - Remote runners: `basics/part-7-using-remote-runners.md`.
 - CI: `ci-integration/overview.md` and its guides.
 - Examples: `examples/examples.md` (the VS Code extension build).
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `alt-installation/alt-installation.md` ("Our native Windows release is currently in the **Experimental** stage"); `caching/caching-in-earthfiles.md` (garbage collection of layers and cache mounts).

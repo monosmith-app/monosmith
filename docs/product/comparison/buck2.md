@@ -55,3 +55,9 @@ folder, not through a summarising tool.
 - Architecture and remote execution: <https://buck2.build/docs/concepts/architecture/> ("RE action cache") and <https://buck2.build/docs/users/remote_execution/> ("Buck2 can use services that expose Bazel's remote execution API")
 - Tutorial: <https://buck2.build/docs/getting_started/tutorial_first_build/> (`buck2 init`)
 - Repository (licence, status): <https://github.com/facebook/buck2>. The README says Buck2 "does not have a stable release tag at this time" and "is licensed under both the MIT license and Apache-2.0 license". GitHub API on 2026-10-25: archived false, last push 2026-10-25; the licence field shows Apache-2.0 only, because it reports one; the repository holds both licence files. The releases API lists tags `latest` (2023-04-13), 2026-10-15, 2026-10-01 and 2026-09-15, each flagged pre-release.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `about/benefits/compared_to_buck1.md` (sandboxed remote execution); `concepts/build_rule.md` (visibility).

@@ -88,3 +88,11 @@ The documentation was read as MDX source files from the repository's
 - Boundaries: <https://turborepo.dev/docs/reference/boundaries> ("the experimental turbo boundaries command"); removed command: <https://turborepo.dev/docs/support-policy> ("This command has been removed").
 - Editor integration: <https://turborepo.dev/docs/getting-started/editor-integration> ("Turborepo LSP"); terminal UI: <https://turborepo.dev/docs/reference/configuration> ("Select a terminal UI for the repository").
 - Repository: <https://github.com/vercel/turborepo>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-23.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same MDX source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `core-concepts/remote-caching.mdx` (artifacts signed with `HMAC-SHA256`; artifacts that fail to verify are treated as a cache miss).
+- `crafting-your-repository/constructing-ci.mdx` ("`--affected` ... falls back to running all tasks" on shallow clones).
+- `crafting-your-repository/caching.mdx` and `reference/run.mdx` (`--summarize`, `--dry`, `--graph`); `core-concepts/package-and-task-graph.mdx`; `crafting-your-repository/developing-applications.mdx` (terminal UI, watch mode); `reference/configuration.mdx` (cache eviction by age).

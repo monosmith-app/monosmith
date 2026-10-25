@@ -68,3 +68,9 @@ summarising tool.
 - Scaffolding: <https://lerna.js.org/docs/faq> ("use the `lerna create` command")
 - Editors: <https://lerna.js.org/docs/features/editor-integrations>
 - Repository: <https://github.com/lerna/lerna>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `website/docs/faq.md` ("lerna publish may have left the repository in an inconsistent state"); `website/docs/getting-started.md` (`lerna init --dryRun` previews the changes); `website/docs/features/share-your-cache.md` (investigating cache misses in Nx Cloud); `website/docs/concepts/how-caching-works.md` ("Runtime Hash Inputs").

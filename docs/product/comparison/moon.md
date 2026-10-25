@@ -72,3 +72,10 @@ folder, not through a summarising tool.
 - Migration extensions: <https://moonrepo.dev/docs/guides/extensions> (`migrate-nx`, `migrate-turborepo`)
 - `moon init`: <https://moonrepo.dev/docs/setup-workspace> ("Creates a `.moon` folder")
 - Repository (licence, features): <https://github.com/moonrepo/moon>. The README lists "Action distribution" and adds "Not all features are currently supported". GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-24.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same MDX source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `intro.mdx` (the language tiers table: Bun, Deno, Go, Node and Rust at tier 3; PHP at tier 1; Python and Ruby partial; tier 3 means the toolchain "will automatically be downloaded and installed"); `commands/clean.mdx`; `guides/debug-task.mdx`.
+- `config/workspace.mdx` (`constraints`); `guides/ci.mdx` (an action posts the `moon ci` results as a pull request comment); `guides/wasm-plugins.mdx` ("sandboxed file system").

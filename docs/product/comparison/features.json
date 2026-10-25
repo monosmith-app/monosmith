@@ -1,0 +1,1134 @@
+{
+  "version": 1,
+  "date": "2026-10",
+  "smithVersion": "1.63.0",
+  "tools": [
+    "nx",
+    "turborepo",
+    "bazel",
+    "pants",
+    "lerna",
+    "rush",
+    "moon",
+    "buck2",
+    "gradle",
+    "earthly",
+    "lage",
+    "workspaces",
+    "cargo",
+    "please"
+  ],
+  "evidenceCodes": {
+    "R": "run by the author of this page in a scratch workspace, 2026-10-25",
+    "C": "run by the plugin catalogue's authors on 1.62.0 (docs/plugins/using/catalogue)",
+    "L": "live public evidence: a package on its registry or an asset on smith's own release",
+    "T": "covered by a test in the repository (read, not re-run)",
+    "D": "documented and read in the code; not exercised",
+    "I": "an open issue only"
+  },
+  "groups": [
+    {
+      "id": "lang",
+      "title": "Languages and stacks"
+    },
+    {
+      "id": "find",
+      "title": "Project discovery and scaffolding"
+    },
+    {
+      "id": "task",
+      "title": "Tasks, graph and affected"
+    },
+    {
+      "id": "cache",
+      "title": "Cache and execution"
+    },
+    {
+      "id": "ci",
+      "title": "CI generation and verification"
+    },
+    {
+      "id": "rel",
+      "title": "Release and publishing"
+    },
+    {
+      "id": "dep",
+      "title": "Dependencies"
+    },
+    {
+      "id": "health",
+      "title": "Health and migration"
+    },
+    {
+      "id": "plug",
+      "title": "Plugins and extensibility"
+    },
+    {
+      "id": "ui",
+      "title": "Interfaces"
+    },
+    {
+      "id": "ops",
+      "title": "Operations"
+    }
+  ],
+  "rows": [
+    {
+      "id": "lang-js",
+      "g": "lang",
+      "label": "JavaScript and TypeScript",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYPPYYYUUPYYNU",
+      "n": "Bazel: through separately maintained rules; Pants: beta; Earthly: any language, as containers (no language awareness)."
+    },
+    {
+      "id": "lang-go",
+      "g": "lang",
+      "label": "Go",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPYYNNYYUPNNNY",
+      "n": "Nx: named in its README, no Go page found; Turborepo: experimental. A tool whose documented scope is another single language is marked ❌."
+    },
+    {
+      "id": "lang-py",
+      "g": "lang",
+      "label": "Python",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "PPPYNNPYUPNPNY",
+      "n": "Nx: a walkthrough adds Python with uv; Turborepo: experimental; Bazel: external rules_python; moon: partial; pnpm 12 can add `pypi:` packages (a package source, not Python projects)."
+    },
+    {
+      "id": "lang-rs",
+      "g": "lang",
+      "label": "Rust",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "PPPUNNYYUPNPYP",
+      "n": "Nx: a guide publishes crates; Turborepo: experimental; Bazel: external rules_rust; pnpm 12 can add `crate:` packages; Please: rules in its plugin repository."
+    },
+    {
+      "id": "lang-jvm",
+      "g": "lang",
+      "label": "Java, Kotlin, Android",
+      "s": {
+        "m": "P",
+        "e": "C",
+        "n": "Maven (Java) was run; Gradle, Kotlin and Android were not",
+        "p": "not yet verified: Gradle run"
+      },
+      "t": "YUYYNNPYYPNNNY",
+      "n": "moon: only as a \"system\" task."
+    },
+    {
+      "id": "lang-net",
+      "g": "lang",
+      "label": ".NET (C#, F#)",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "YPUUNNPNUPNNNU",
+      "n": "Buck2: its language table lists C# as unavailable; Turborepo: a guide runs a .NET app through scripts."
+    },
+    {
+      "id": "lang-cpp",
+      "g": "lang",
+      "label": "C and C++",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUYUNNPYYPNNNY"
+    },
+    {
+      "id": "lang-rb",
+      "g": "lang",
+      "label": "Ruby",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUUUNNPUUPNNNU",
+      "n": "moon: partial and experimental."
+    },
+    {
+      "id": "lang-php",
+      "g": "lang",
+      "label": "PHP",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUUUNNPUUPNNNU",
+      "n": "moon: tier 1, project categorisation only."
+    },
+    {
+      "id": "lang-dart",
+      "g": "lang",
+      "label": "Dart and Flutter",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUUUNNUUUPNNNU",
+      "searched": "\"dart\", \"flutter\", \"pubspec\""
+    },
+    {
+      "id": "lang-bicep",
+      "g": "lang",
+      "label": "Azure Bicep (infrastructure)",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUUUNNUUUPNNNU",
+      "searched": "\"bicep\""
+    },
+    {
+      "id": "lang-fw",
+      "g": "lang",
+      "label": "Front-end frameworks (React, Angular, Vue, Vite, Astro)",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "stacks listed with smith stacks"
+      },
+      "t": "YUUUUUUUUUUUUU",
+      "searched": "framework names in each tool's guides were not searched beyond Nx's technologies section"
+    },
+    {
+      "id": "find-manifest",
+      "g": "find",
+      "label": "Projects found from the manifests you already have",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPNPPPPNPNPYYN",
+      "n": "◐ means one root file or one file per project to write (turbo.json, lerna.json, rush.json, moon.yml, settings.gradle, lage.config.js); ❌ means per-target BUILD files or Earthfiles."
+    },
+    {
+      "id": "find-imports",
+      "g": "find",
+      "label": "Dependencies between projects read from source imports, in several languages",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "PNUYNNNNNNNNNP",
+      "n": "Nx: imports are parsed for JavaScript and TypeScript only; its guide says that for other languages \"Nx does not detect dependencies from source code imports\". Please: the puku tool diagnoses missing imports. ❌: the tool's documented mechanism is declared dependencies."
+    },
+    {
+      "id": "find-schema",
+      "g": "find",
+      "label": "Shared schemas (OpenAPI, AsyncAPI, protobuf, GraphQL) link producer and consumer projects across languages",
+      "s": {
+        "m": "Y",
+        "e": "T",
+        "n": "#343 is still open although the feature shipped (ADR 0028)"
+      },
+      "t": "UUPPUUUUUUUUUU",
+      "n": "Bazel and Pants model protobuf through rules and code generation; Pants has an experimental OpenAPI backend."
+    },
+    {
+      "id": "find-graph",
+      "g": "find",
+      "label": "Graph views: tree, JSON, DOT, HTML page, interactive, focus, affected",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYPUPUYUUUYUUU",
+      "n": "Lerna: through the Nx project graph; Bazel: query output formats."
+    },
+    {
+      "id": "find-diff",
+      "g": "find",
+      "label": "Graph diff between two revisions (projects and imports added or removed)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"graph\" with \"between\", \"since\" and \"compare\""
+    },
+    {
+      "id": "find-scaffold",
+      "g": "find",
+      "label": "Scaffold apps, libraries and packages",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYUPYPYPYUPPYP",
+      "n": "Pants: tailor writes BUILD files, not code."
+    },
+    {
+      "id": "find-recipe",
+      "g": "find",
+      "label": "Team recipes: a shared preset of plugins and settings, with questions at add time",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "PPUUUUPUUUUUUU",
+      "n": "◐: custom generators (Nx, Turborepo) or templates (moon); none documents levels, slots or versions."
+    },
+    {
+      "id": "find-recdrift",
+      "g": "find",
+      "label": "Existing projects checked against their recipe, owned files upgraded",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"template\" with \"update\", \"upgrade\", \"drift\" and \"sync\""
+    },
+    {
+      "id": "find-layout",
+      "g": "find",
+      "label": "Code layout checked inside projects (vertical slices) in nine languages",
+      "s": {
+        "m": "Y",
+        "e": "T",
+        "n": "Node through ESLint rules; Bicep has none"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"folder\", \"file\" with \"naming\", \"layout\", \"structure\" and \"enforce\" or \"lint\""
+    },
+    {
+      "id": "find-bounds",
+      "g": "find",
+      "label": "Rules for which projects may depend on which (boundaries, visibility)",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "needs an issue"
+      },
+      "t": "YPYYUUYYUUUPUY",
+      "n": "Turborepo: `turbo boundaries` is experimental; Yarn: constraints; moon: constraints and boundaries; Bazel, Buck2, Please, Pants: visibility."
+    },
+    {
+      "id": "task-order",
+      "g": "task",
+      "label": "Tasks run in dependency order, in parallel",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYYYYYYYYYYYYY"
+    },
+    {
+      "id": "task-affected",
+      "g": "task",
+      "label": "Only what changed since a git base (affected)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYPYYYYPPPYYUY",
+      "n": "◐: reverse-dependency queries or up-to-date checks, no changed-files selection found (Bazel, Buck2, Gradle); Earthly's auto-skip needed Earthly Cloud. Cargo: no changed-since selection found."
+    },
+    {
+      "id": "task-fallback",
+      "g": "task",
+      "label": "Runs everything when it cannot be sure (no base, shallow clone, changed lockfile)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UYUUUUUUUUUUUU",
+      "n": "Turborepo documents that `--affected` falls back to running all tasks on a shallow clone. Nx, Turborepo and Pants otherwise document shallow clones as a CI setting.",
+      "searched": "\"fall back\", \"shallow\", \"fetch-depth\", \"no base\" in the other thirteen"
+    },
+    {
+      "id": "task-granular",
+      "g": "task",
+      "label": "Affected selection by task, finer than a project",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "design choice: the unit is the project"
+      },
+      "t": "YUYYUUYYYUUUUY"
+    },
+    {
+      "id": "task-file",
+      "g": "task",
+      "label": "Dependency graph of single source files and targets (Bazel and Pants style)",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "design choice: not planned"
+      },
+      "t": "UUYYUUUYUUUUUY"
+    },
+    {
+      "id": "task-toolver",
+      "g": "task",
+      "label": "Compiler and runtime versions are part of the cache key",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPUYYUUUPUUUUU",
+      "n": "Nx and Lerna: runtime values can be hash inputs; Pants: documents not downloading an unfingerprinted Go toolchain."
+    },
+    {
+      "id": "cache-local",
+      "g": "cache",
+      "label": "Local content-addressed cache that restores outputs and replays logs",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YYYYYYYPYYYPYY",
+      "n": "Buck2: artifacts in buck-out plus an in-memory cache; pnpm: experimental task cache."
+    },
+    {
+      "id": "cache-remote",
+      "g": "cache",
+      "label": "Remote cache you host yourself, no vendor service required",
+      "s": {
+        "m": "Y",
+        "e": "T",
+        "n": "HTTP, S3 and Azure Blob; not run against a live bucket"
+      },
+      "t": "YYYYPYYYYYYPPY",
+      "n": "Lerna: build your own or use Nx Cloud; pnpm: experimental, from 12.12; Cargo: third-party sccache."
+    },
+    {
+      "id": "cache-sign",
+      "g": "cache",
+      "label": "Remote cache objects signed; a bad signature is a miss",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "UYUUUUUUUUUPUU",
+      "n": "Turborepo documents HMAC-SHA256 signing and treats failures as misses; pnpm signs results of its experimental pipeline cache."
+    },
+    {
+      "id": "cache-why",
+      "g": "cache",
+      "label": "Explains a cache miss with one command that runs nothing",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPPUPUPUPUUUUU",
+      "n": "◐ means a documented procedure: Nx (troubleshooting guide), Turborepo (--summarize and comparison), Bazel (--explain writes a log during a build), Gradle (a debugging chapter), moon (a debugging guide), Lerna (links to Nx Cloud)."
+    },
+    {
+      "id": "cache-manage",
+      "g": "cache",
+      "label": "Commands to see, trim, clear and verify the local cache",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PUPUPPPUPUUPPP",
+      "n": "◐: a clear or purge command (nx reset, bazel clean, rush purge, moon clean, cargo clean, plz clean); npm has `cache verify`, pnpm `cache prune`."
+    },
+    {
+      "id": "cache-limit",
+      "g": "cache",
+      "label": "Local cache kept under a size limit automatically",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPUUPUUUUPUUUU",
+      "n": "Nx: maxCacheSize; Turborepo: eviction by age; Earthly: garbage collection of layers."
+    },
+    {
+      "id": "cache-saved",
+      "g": "cache",
+      "label": "Reports the time a cache hit saved",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "time saved per run; no hit-rate report yet"
+      },
+      "t": "PYUYPUUUPUUUUU",
+      "n": "Turborepo prints it; Pants logs cache statistics; Nx and Lerna through Nx Cloud; Gradle compares times in a guide."
+    },
+    {
+      "id": "cache-reapi",
+      "g": "cache",
+      "label": "Speaks the Bazel Remote Execution API",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "#345"
+      },
+      "t": "UUYYUUYYUUUUUP",
+      "n": "Please: experimental, from v15."
+    },
+    {
+      "id": "cache-rexec",
+      "g": "cache",
+      "label": "Remote or distributed task execution",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "deliberate non-goal (execution-and-cache.md, section 9)"
+      },
+      "t": "PUYYPPPYUPPUUP",
+      "n": "◐: through Nx Cloud (Nx, Lerna), experimental cobuilds (Rush), unfinished action distribution (moon), remote runners (Earthly), BuildXL (Lage), experimental (Please). Workspaces: npm ❌, pnpm and Yarn ❔."
+    },
+    {
+      "id": "cache-hermetic",
+      "g": "cache",
+      "label": "Hermetic or sandboxed execution",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "deliberate non-goal; opt-in strict mode proposed in #563"
+      },
+      "t": "UUYYUUUPUYPUUY"
+    },
+    {
+      "id": "cache-toolchain",
+      "g": "cache",
+      "label": "Pins language toolchains and downloads them for you",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "pins checked by doctor and written to .tool-versions; never downloaded (ADR 0020)",
+        "p": "deliberate (ADR 0020)"
+      },
+      "t": "UUUUUPYUYUUPUU",
+      "n": "moon downloads tool versions (its tier 3); Gradle provisions JDK toolchains; Rush and pnpm manage their package manager's version."
+    },
+    {
+      "id": "cache-watch",
+      "g": "cache",
+      "label": "Watch mode: re-run tasks when files change",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "deliberate non-goal (execution-and-cache.md, section 9)"
+      },
+      "t": "YYUUUYUUYUYUUY",
+      "n": "smith dev starts dev servers but does not rebuild."
+    },
+    {
+      "id": "ci-gen",
+      "g": "ci",
+      "label": "Writes the CI pipeline files for you",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YPPPPPPUPPPPPP",
+      "n": "◐ means guides or recipes, no generator found."
+    },
+    {
+      "id": "ci-providers",
+      "g": "ci",
+      "label": "GitHub Actions, Azure Pipelines and GitLab CI generated",
+      "s": {
+        "m": "Y",
+        "e": "T",
+        "n": "GitHub Actions run here; Azure and GitLab renderers read"
+      },
+      "t": "YUUUUUUUUUUUUU"
+    },
+    {
+      "id": "ci-more",
+      "g": "ci",
+      "label": "CircleCI, Bitbucket Pipelines or Jenkins generated",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "needs an issue"
+      },
+      "t": "YUUUUUUUUUUUUU",
+      "n": "Nx generates CircleCI and Bitbucket Pipelines; its documentation says the generator does not support Jenkins."
+    },
+    {
+      "id": "ci-drift",
+      "g": "ci",
+      "label": "CI fails when the committed pipeline is out of date, and a fix regenerates it",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"out of date\", \"drift\", \"stale\" next to \"workflow\", \"pipeline\" or \"CI\""
+    },
+    {
+      "id": "ci-slot",
+      "g": "ci",
+      "label": "Your own steps survive regeneration (named slots)",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "no generator documents regeneration",
+      "weak": true
+    },
+    {
+      "id": "ci-audit",
+      "g": "ci",
+      "label": "Dependency vulnerability audit",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "Node (blocking when fixable), Python, Go; other ecosystems have none",
+        "p": "needs an issue"
+      },
+      "t": "UUUUUUUUUUUYUU",
+      "n": "npm, pnpm and Yarn each document an audit command."
+    },
+    {
+      "id": "ci-dirty",
+      "g": "ci",
+      "label": "CI fails when a task leaves a tracked file modified",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"git diff --exit-code\", \"uncommitted changes\", \"dirty\""
+    },
+    {
+      "id": "ci-comment",
+      "g": "ci",
+      "label": "Release preview posted on the pull request",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "n": "moon's CI action posts the result of `moon ci`; Nx posts self-healing fixes; neither posts a release plan.",
+      "searched": "\"comment\" next to \"pull request\""
+    },
+    {
+      "id": "ci-tpl",
+      "g": "ci",
+      "label": "Ready-made pipelines beyond CI (e2e, GitHub Pages, Azure Function)",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "not searched beyond the CI guides",
+      "weak": true
+    },
+    {
+      "id": "rel-cc",
+      "g": "rel",
+      "label": "Versions from conventional commits",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "YNUPYNNUNUUNNU",
+      "n": "Turborepo: Changesets; Rush: change files; moon: \"At this time, no\"; Gradle and Cargo leave versions to you; Pants: version strings from git state."
+    },
+    {
+      "id": "rel-npm",
+      "g": "rel",
+      "label": "Publishes to npm",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "YPUUYYNUUUUYNU",
+      "n": "Turborepo: through Changesets. moon: its FAQ says it does not version or publish."
+    },
+    {
+      "id": "rel-pypi",
+      "g": "rel",
+      "label": "Publishes to PyPI",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUPUUNUUUUUUU",
+      "n": "Pants: experimental Python backend."
+    },
+    {
+      "id": "rel-crates",
+      "g": "rel",
+      "label": "Publishes to crates.io",
+      "s": {
+        "m": "P",
+        "e": "T",
+        "n": "unit-tested; monosmith itself is not on crates.io",
+        "p": "none needed; live publish unverified"
+      },
+      "t": "YUUUUUNUUUUUYU"
+    },
+    {
+      "id": "rel-nuget",
+      "g": "rel",
+      "label": "Publishes to NuGet",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUUUUNUUUUUUU"
+    },
+    {
+      "id": "rel-gems",
+      "g": "rel",
+      "label": "Publishes to RubyGems",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUUUUNUUUUUUU"
+    },
+    {
+      "id": "rel-pub",
+      "g": "rel",
+      "label": "Publishes to pub.dev",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUUUUNUUUUUUU"
+    },
+    {
+      "id": "rel-maven",
+      "g": "rel",
+      "label": "Publishes to Maven repositories",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "GitHub Packages and private feeds; JitPack by tag; Central not verified",
+        "p": "live publish unverified"
+      },
+      "t": "UUUUUUNUYUUUUU"
+    },
+    {
+      "id": "rel-tag",
+      "g": "rel",
+      "label": "Releases Go modules and Packagist packages by tag",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "tag-based; not run against Packagist here",
+        "p": "live publish unverified"
+      },
+      "t": "UUUUUUNUUUUUUU"
+    },
+    {
+      "id": "rel-image",
+      "g": "rel",
+      "label": "Builds and pushes container images",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "no Docker daemon was available to run it",
+        "p": "run unverified"
+      },
+      "t": "PUUYUUNUUYUUUU",
+      "n": "Nx: experimental; Pants: docker publish; Earthly: builds and pushes images."
+    },
+    {
+      "id": "rel-brew",
+      "g": "rel",
+      "label": "Homebrew, Scoop and winget manifests from the release archives",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUUUUNUUUUUUU"
+    },
+    {
+      "id": "rel-linux",
+      "g": "rel",
+      "label": ".deb and .rpm packages attached to the release",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "UUUPUUNUUUUUUU",
+      "n": "Pants: an experimental backend that builds .deb files (packaging, not release)."
+    },
+    {
+      "id": "rel-assets",
+      "g": "rel",
+      "label": "Per-platform app archives with checksums on a GitHub Release",
+      "s": {
+        "m": "P",
+        "e": "L",
+        "n": "Go apps only; other languages are tagged without assets",
+        "p": "needs an issue"
+      },
+      "t": "UUUUUUNUUUUUUU",
+      "searched": "not searched beyond release and publish pages"
+    },
+    {
+      "id": "rel-sbom",
+      "g": "rel",
+      "label": "SBOM generation",
+      "s": {
+        "m": "P",
+        "e": "L",
+        "n": "CycloneDX on the release for npm and Go apps only",
+        "p": "#348"
+      },
+      "t": "UUUUUUUUUUUYPU",
+      "n": "npm and pnpm have an `sbom` command; Cargo lists an unstable SBOM option."
+    },
+    {
+      "id": "rel-prov",
+      "g": "rel",
+      "label": "Signed provenance for what you publish",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "GitHub Actions only: npm provenance and SLSA attestation of release files",
+        "p": "#348"
+      },
+      "t": "PUUUUUUUUUUYUU",
+      "n": "Nx: a CI guide grants id-token for npm provenance; pnpm documents `publish --provenance`."
+    },
+    {
+      "id": "rel-oidc",
+      "g": "rel",
+      "label": "Publishes without a long-lived key (trusted publishing)",
+      "s": {
+        "m": "P",
+        "e": "D",
+        "n": "RubyGems, pub.dev, PyPI and the Marketplace; not every registry",
+        "p": "needs an issue"
+      },
+      "t": "PUUUUUUUUUUYUU",
+      "n": "Nx: a CI guide grants id-token for npm provenance; npm documents `npm trust` (OIDC trust relationships with CI providers); pnpm can use the CI identity for dist-tags."
+    },
+    {
+      "id": "rel-resume",
+      "g": "rel",
+      "label": "A failed release resumes: versions a registry already has are skipped, in every registry",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "PUUUUUUUUUUUUU",
+      "n": "Nx: for npm, it looks the version up before publishing so that the same publish can run again; Lerna: its FAQ says a partly failed publish may leave the repository in an inconsistent state.",
+      "searched": "\"already published\", \"skip\", \"re-run\" next to \"publish\" or \"release\""
+    },
+    {
+      "id": "rel-preflight",
+      "g": "rel",
+      "label": "Asks every registry whether it accepts the credential and the names before the first publish",
+      "s": {
+        "m": "P",
+        "e": "T",
+        "n": "npm, PyPI, NuGet, RubyGems",
+        "p": "#347, #380"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"preflight\", \"credential\" and \"before publish\" were not searched in every tool; treat as not documented",
+      "weak": true
+    },
+    {
+      "id": "rel-journal",
+      "g": "rel",
+      "label": "Release journal of what was published where",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "--status reads dist/release/<project>/journal.json",
+        "p": "#347"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "not searched beyond release pages",
+      "weak": true
+    },
+    {
+      "id": "rel-vsce",
+      "g": "rel",
+      "label": "Publishes a VS Code extension to the Marketplace with the release",
+      "s": {
+        "m": "Y",
+        "e": "L",
+        "n": "MonoSmith's own extension is on the Marketplace"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"vsce\", \"publish\" next to \"extension\""
+    },
+    {
+      "id": "dep-sync",
+      "g": "dep",
+      "label": "One version of each shared dependency across projects",
+      "s": {
+        "m": "P",
+        "e": "R",
+        "n": "Node (run) and Python (code read, not driven); Rust, .NET, Dart and Go are skipped",
+        "p": "needs an issue"
+      },
+      "t": "PPPPUYUUYUUYYU",
+      "n": "Rush: `rush check`; Yarn: constraints; pnpm: catalogs; Cargo: inherited dependencies; Gradle: platforms and catalogs; Bazel: one version per module."
+    },
+    {
+      "id": "dep-decl",
+      "g": "dep",
+      "label": "Checks that a package declares what it imports",
+      "s": {
+        "m": "P",
+        "e": "T",
+        "n": "Node packages only",
+        "p": "needs an issue"
+      },
+      "t": "YUYPUYUUUUUPUU",
+      "n": "Nx: @nx/dependency-checks; Rush: `rush scan` finds phantom dependencies; Bazel: strict dependencies; npm documents catching phantom dependencies."
+    },
+    {
+      "id": "health-doctor",
+      "g": "health",
+      "label": "Read-only health check, each finding with a remedy",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "PPUPPPPUUUUPUU",
+      "n": "◐: nx report, turbo boundaries, tailor --check, lerna repair, rush check and scan, moon sync, npm and pnpm doctor, Yarn constraints."
+    },
+    {
+      "id": "health-fix",
+      "g": "health",
+      "label": "Applies fixes: diffs for file changes, questions for risky ones",
+      "s": {
+        "m": "Y",
+        "e": "R",
+        "n": "an edited workflow was regenerated by doctor --fix"
+      },
+      "t": "UUUUPUPUUUUUUU",
+      "n": "Lerna repair and moon sync repair configuration; neither previews a diff or asks."
+    },
+    {
+      "id": "health-adopt",
+      "g": "health",
+      "label": "Bring an existing repository under the tool",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "YYUYYPUUUUUUUU",
+      "n": "Rush documents adding projects one at a time."
+    },
+    {
+      "id": "health-dry",
+      "g": "health",
+      "label": "A dry-run report of what adopting involves (what maps, what blocks), changing nothing",
+      "s": {
+        "m": "Y",
+        "e": "C"
+      },
+      "t": "UUUUPUUUUUUUUU",
+      "n": "Lerna's `init --dryRun` previews the file changes only."
+    },
+    {
+      "id": "health-nx",
+      "g": "health",
+      "label": "Automated conversion from Nx",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "-PUUUUYUUUUUUU",
+      "n": "Turborepo: a migration guide; moon: `moon ext migrate-nx`."
+    },
+    {
+      "id": "health-turbo",
+      "g": "health",
+      "label": "Automated conversion from Turborepo",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "P-UUUUYUUUUUUU",
+      "n": "Nx has a guide for coming from Turborepo; moon: `moon ext migrate-turborepo`."
+    },
+    {
+      "id": "health-other",
+      "g": "health",
+      "label": "Importer for Lerna, Rush, Bazel or Gradle workspaces",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "#553"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "not searched; no tool is known to document one"
+    },
+    {
+      "id": "health-upgrade",
+      "g": "health",
+      "label": "Config and generated files migrate when the tool upgrades",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "YUUUPUUUUUUUUU",
+      "n": "Nx: `nx migrate`; Lerna: `lerna repair`."
+    },
+    {
+      "id": "plug-model",
+      "g": "plug",
+      "label": "A plugin model",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YUYYUPPYYUUPYY"
+    },
+    {
+      "id": "plug-oop",
+      "g": "plug",
+      "label": "Plugins are separate programs speaking a documented protocol",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUPUUUUUPU",
+      "n": "moon: WASM plugins in any language that compiles to WASM, called experimental; Cargo: any program named cargo-<name> becomes a subcommand."
+    },
+    {
+      "id": "plug-sdk",
+      "g": "plug",
+      "label": "An SDK for writing plugins",
+      "s": {
+        "m": "P",
+        "e": "T",
+        "n": "Go only",
+        "p": "#564"
+      },
+      "t": "YUYYUPUYYUUUUU"
+    },
+    {
+      "id": "plug-reg",
+      "g": "plug",
+      "label": "A registry or catalogue of third-party plugins",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "#164, #565"
+      },
+      "t": "YUPUUUPUUUUUUU",
+      "n": "Bazel: the Central Registry hosts rule sets; moon: a community plugin registry for its proto tool manager."
+    },
+    {
+      "id": "plug-sec",
+      "g": "plug",
+      "label": "Plugins are integrity-checked or sandboxed",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "#565"
+      },
+      "t": "UUUUUUPUUUUUUU",
+      "n": "moon: WASM plugins get a sandboxed file system."
+    },
+    {
+      "id": "plug-stack",
+      "g": "plug",
+      "label": "Named stacks: a per-project choice of toolchain plugins",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UUUUUUUUUUUUUU",
+      "searched": "\"stack\", \"preset\" were not searched; treat as not documented",
+      "weak": true
+    },
+    {
+      "id": "ui-tui",
+      "g": "ui",
+      "label": "Full-screen terminal interface (dashboard, doctor, deps, release, settings)",
+      "s": {
+        "m": "Y",
+        "e": "T"
+      },
+      "t": "PPUUUUUUUUUUUU",
+      "n": "Nx and Turborepo document a terminal UI for task output."
+    },
+    {
+      "id": "ui-vsc",
+      "g": "ui",
+      "label": "VS Code extension",
+      "s": {
+        "m": "Y",
+        "e": "L"
+      },
+      "t": "YYYNYUPUUPUUUY",
+      "n": "Pants: \"We have not yet developed tight IDE integrations\"; moon: \"early stages\"; Earthly: an extension for Earthfiles."
+    },
+    {
+      "id": "ui-jb",
+      "g": "ui",
+      "label": "JetBrains IDE plugin",
+      "s": {
+        "m": "N",
+        "e": "I",
+        "p": "#303"
+      },
+      "t": "YUYNYUUUYUUUUY"
+    },
+    {
+      "id": "ui-mcp",
+      "g": "ui",
+      "label": "MCP server for AI assistants",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "YUUUUYYUUUUUUU"
+    },
+    {
+      "id": "ui-serve",
+      "g": "ui",
+      "label": "A documented protocol for editors to drive the engine",
+      "s": {
+        "m": "Y",
+        "e": "R"
+      },
+      "t": "UPYPUUUUYUUUUP",
+      "n": "Turborepo: a language server; Bazel: the Build Event Protocol; Pants: BSP for IntelliJ; Gradle: the Tooling API; Please: a language server for BUILD files."
+    },
+    {
+      "id": "ui-cloud",
+      "g": "ui",
+      "label": "A hosted service (remote cache, analytics, CI features)",
+      "s": {
+        "m": "N",
+        "e": "D",
+        "p": "deliberate: no hosted service"
+      },
+      "t": "YYPUPUYUYNUUUU",
+      "n": "Earthly: its cloud was shut down in 2025; Bazel: commercial services are linked from its documentation."
+    },
+    {
+      "id": "ops-win",
+      "g": "ops",
+      "label": "Native Windows support",
+      "s": {
+        "m": "Y",
+        "e": "L",
+        "n": "x64 and arm64 archives on the release; this page's runs were on Windows 11"
+      },
+      "t": "UUUPUUUUUPUUUN",
+      "n": "Pants lists Windows 10 with WSL 2; Earthly calls native Windows experimental; Please: \"not supported natively\"."
+    }
+  ]
+}

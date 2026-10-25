@@ -63,3 +63,9 @@ The documentation was read as Markdown source files from the repository's
 - Distributed builds: `guides/buildxl.md` ("`lage` itself is a single-node build orchestrator").
 - Quick start: `quick-start.md` (`npx lage init`).
 - Repository (licence, description): <https://github.com/microsoft/lage>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-24.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `reference/cli.md` (`--watch` "runs in watch mode").
