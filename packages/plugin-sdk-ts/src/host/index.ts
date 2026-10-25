@@ -1,0 +1,7 @@
+export { PluginClient } from './plugin-client.client.ts'
+export type { PluginConnection } from './plugin-client.client.ts'
+export { startPlugin } from './start-plugin.use-case.ts'
+export { connectInProcess, connectPlugin } from './connect-plugin.use-case.ts'
+export type { PluginStreams } from './connect-plugin.use-case.ts'
+export { DEFAULT_CALL_TIMEOUT_MS } from './host-options.contract.ts'
+export type { CallOptions, HostOptions, StartOptions } from './host-options.contract.ts'

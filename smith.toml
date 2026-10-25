@@ -75,3 +75,8 @@ command = ["go", "run", "."]
 # run generate --project plugin-sdk-ts).
 [projects.plugin-sdk.tasks.schema]
 command = ["go", "run", "./schemagen"]
+
+# The SDK for plugins in TypeScript lints with ESLint like the other Node package; the
+# workspace-wide lint above is golangci-lint, for the Go projects.
+[projects.plugin-sdk-ts.tasks.lint]
+command = ["npm", "run", "lint", "--silent"]
