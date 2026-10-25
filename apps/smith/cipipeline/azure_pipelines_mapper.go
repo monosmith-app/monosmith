@@ -22,7 +22,7 @@ pr:
   branches:
     include: [%[1]s]
 
-`, m.ReleaseBranch)
+`, strings.Join(m.TriggerBranches(), ", "))
 	b.WriteString(azureVariables(m))
 	steps := azureSteps(m)
 	if !m.Native {

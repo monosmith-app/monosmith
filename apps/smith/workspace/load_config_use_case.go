@@ -128,6 +128,11 @@ func Validate(cfg *Config) error {
 			}
 		}
 	}
+	for _, b := range cfg.CI.Branches {
+		if strings.TrimSpace(b) == "" {
+			return fmt.Errorf("%s: [ci] branches must not hold an empty branch name", FileName)
+		}
+	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
 		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
 	}

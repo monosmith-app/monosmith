@@ -15,7 +15,11 @@ type Model struct {
 	// SmithVersion is installed by the pipeline; "latest" when smith is a dev build.
 	SmithVersion  string
 	ReleaseBranch string
-	Toolchains    []protocol.Toolchain
+	// Branches are the branches the GitHub and Azure pipelines trigger on
+	// (push and pull request), from [ci] branches. Empty means the release
+	// branch only.
+	Branches   []string
+	Toolchains []protocol.Toolchain
 	// Authenticate are the steps that sign in to private registries, run
 	// after the toolchains and before setup.
 	Authenticate []protocol.Toolchain
@@ -155,6 +159,16 @@ func (c *Contributions) Add(r protocol.CIResult) {
 			}
 		}
 	}
+}
+
+// TriggerBranches are the branches the pipelines trigger on: Branches, with the
+// release branch first when they leave it out, or the release branch alone.
+func (m Model) TriggerBranches() []string {
+	out := []string{}
+	if !slices.Contains(m.Branches, m.ReleaseBranch) {
+		out = append(out, m.ReleaseBranch)
+	}
+	return append(out, m.Branches...)
 }
 
 // NewModel builds the model, sorted so the YAML is deterministic.
