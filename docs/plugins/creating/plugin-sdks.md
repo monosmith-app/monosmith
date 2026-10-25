@@ -59,7 +59,12 @@ func main() { serve.Main(&widget{}) }
 The interfaces in `serve` are `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`,
 `CIContributor`, `DoctorContributor`, `Remover`, `DependencyManager`, `DeclarationEditor`,
 `LatestReader` and `Contributor`; [the cheat sheet](protocol-cheat-sheet.md#methods) maps each to its
-method. An error a method returns becomes a `-32000` response with your message. `serve.Main` also
+method. An error a method returns becomes a `-32000` response with your message. Two optional features are
+opt-in: a `Concurrency` in what `Describe` returns (the host then sends up to that many requests at once, and
+`Serve` runs them on a bounded pool), and `serve.Cancellable`, whose `WithContext(ctx)` returns the plugin as it
+serves one request, with handlers that stop when `ctx` ends (the plugin then advertises `cancel`). A plugin
+without either is called one request at a time and never sent a cancel;
+[`structure-scan-go`](../../examples/plugins/structure-scan-go) shows both. `serve.Main` also
 answers `shutdown`, rejects calls before `initialize` and answers an unknown method with `-32601`.
 
 ## TypeScript, with the SDK
@@ -219,6 +224,8 @@ widget 0.1.0
   ✔ has a known kind
   ✔ plays a known role: language
   ✔ a language plugin discovers projects
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ discover answers with no manifests
   ✔ shuts down when asked
 ```
@@ -226,6 +233,23 @@ widget 0.1.0
 The same six lines for `python\plugin.cmd` and for the Go example. See
 [Testing a plugin](testing-a-plugin.md#checking-an-interpreted-plugin) for how `smith plugin check`
 decides whether its argument is a path or a name.
+
+### Optional: concurrency and cancel
+
+A plugin written as above handles one request at a time and never hears of cancel, which is what smith
+expects of a plugin that says nothing. Two members of the `initialize` answer change that, and a loop that
+reads the next frame while a handler runs is what they need:
+
+- `"concurrency": 4` in the result says up to four requests may be in flight; smith never sends more.
+  Answers may then be written in any order, each with the `id` of its request. `-1` leaves the number to
+  smith, `0` or absent is one.
+- `"cancel": true` in `capabilities` says the plugin stops a request when it reads the notification
+  `{"jsonrpc":"2.0","method":"cancel","params":{"id":2}}` (no `id`, no answer to it). It then answers request 2
+  with its result, if it had finished, or with the error `{"code":-32800,"message":"..."}`. A cancel for an id it does not know
+  is ignored. smith waits five seconds for that answer and then kills the process.
+
+[The protocol cheat sheet](protocol-cheat-sheet.md#a-cancelled-request) has the traffic of a cancelled
+request, and the [architecture page](../../architecture/plugin-protocol.md#cancel-and-concurrency) the whole rule.
 
 ## The same plugin three ways
 
@@ -240,7 +264,7 @@ decides whether its argument is a path or a name.
 | launcher on Windows | the `.exe` | `plugin.cmd` | `plugin.cmd` |
 | dependencies | the SDK | `@monosmith/plugin-sdk` | none |
 
-All three give the same seven lines from `smith plugin check`, the same tasks and the same
+All three give the same lines from `smith plugin check`, the same tasks and the same
 `smith doctor` finding, and the Go and the TypeScript plugin answer the same requests with the same
 bytes. The Node.js plugin that frames the messages by hand is the smaller
 [`node`](../../examples/plugins/node), a language plugin without tests.

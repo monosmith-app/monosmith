@@ -169,3 +169,317 @@ describe('serveStreams', () => {
     await expect(serveStreams({ describe: describeWidget }, { input, output: new PassThrough() })).rejects.toThrow('malformed header')
   })
 })
+
+/** The host's end of a serve loop running in this process: requests go in as they are written, answers come out as they are written. */
+function live (plugin: SmithPlugin) {
+  const input = new PassThrough()
+  const output = new PassThrough()
+  const reader = new FrameReader()
+  const received: Array<Record<string, any>> = []
+  const waiting: Array<() => void> = []
+  output.on('data', (chunk: Buffer) => {
+    for (const body of reader.push(chunk)) received.push(JSON.parse(body) as Record<string, any>)
+    for (const wake of waiting.splice(0)) wake()
+  })
+  const served = serveStreams(plugin, { input, output, log: () => {} })
+  const host = {
+    served,
+    send (message: unknown) { input.write(frameMessage(JSON.stringify(message))) },
+    request (id: number, method: string, params: unknown = {}) { host.send({ jsonrpc: '2.0', id, method, params }) },
+    notify (method: string, params: unknown) { host.send({ jsonrpc: '2.0', method, params }) },
+    discover (id: number, manifest: string) { host.request(id, 'discover', { manifests: [manifest] }) },
+    /** The next n answers that have not been taken yet. */
+    async next (n = 1): Promise<Array<Record<string, any>>> {
+      const deadline = Date.now() + 5000
+      while (received.length < n) {
+        if (Date.now() > deadline) throw new Error(`only ${received.length} of ${n} answers`)
+        await new Promise<void>((resolve) => {
+          waiting.push(resolve)
+          setTimeout(resolve, 20)
+        })
+      }
+
+      return received.splice(0, n)
+    },
+    /** The next answer that has not been taken yet. */
+    async one (): Promise<Record<string, any>> {
+      const [answer] = await host.next()
+
+      return answer
+    },
+    async silent (ms = 50): Promise<void> {
+      await new Promise(resolve => setTimeout(resolve, ms))
+      expect(received.splice(0)).toEqual([])
+    },
+    async initialize (): Promise<Record<string, any>> {
+      host.send(initialize)
+
+      const [answer] = await host.next()
+
+      return answer
+    },
+    end () { input.end() },
+  }
+
+  return host
+}
+
+/** A plugin whose discover does what the manifest name says: `block*` waits to be released (or aborted), `stubborn*` waits and ignores the abort, `fail*` throws, anything else answers at once. */
+function lab (options: { concurrency?: number, cancellable?: boolean } = {}) {
+  const state = { active: 0, peak: 0, started: [] as string[], release: () => {}, aborted: 0 }
+  const released = new Promise<void>((resolve) => { state.release = resolve })
+  const plugin: SmithPlugin = {
+    ...(options.cancellable === true) && { cancellable: true as const },
+    describe: () => ({ plugin: { name: 'lab', version: '1.0.0' }, kind: 'language', manifests: ['lab.json'], ...options.concurrency !== undefined && { concurrency: options.concurrency } }),
+    discover: async ({ manifests }, signal) => {
+      const name = manifests[0] ?? ''
+      state.active++
+      state.peak = Math.max(state.peak, state.active)
+      state.started.push(name)
+      try {
+        if (name.startsWith('fail')) throw new Error('the manifest is broken')
+        if (name.startsWith('block')) {
+          await new Promise<void>((resolve, reject) => {
+            void released.then(resolve)
+            signal.addEventListener('abort', () => {
+              state.aborted++
+              reject(new Error('aborted'))
+            }, { once: true })
+          })
+        }
+        if (name.startsWith('stubborn')) await released
+        if (name.startsWith('slow')) await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 3)))
+      } finally {
+        state.active--
+      }
+
+      return { projects: [{ name, root: name, language: 'lab', kind: 'lib' as const }] }
+    },
+  }
+
+  return { plugin, state }
+}
+
+async function until (condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + 5000
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error('the condition did not hold within 5 seconds')
+    await new Promise(resolve => setTimeout(resolve, 5))
+  }
+}
+
+describe('concurrency', () => {
+  it('handles one request at a time, in order, for a plugin that declares nothing', async () => {
+    const { plugin, state } = lab()
+    const host = live(plugin)
+    const { result } = await host.initialize()
+    expect(result.concurrency).toBeUndefined()
+    expect(result.capabilities.cancel).toBeUndefined()
+    for (let id = 1; id <= 6; id++) host.discover(id, `slow-${id}`)
+    const answered = await host.next(6)
+    expect(answered.map(a => a.id)).toEqual([1, 2, 3, 4, 5, 6])
+    expect(state.peak).toBe(1)
+    host.end()
+    await host.served
+  })
+
+  it('runs as many handlers together as the plugin declared, and no more', async () => {
+    const { plugin, state } = lab({ concurrency: 3 })
+    const host = live(plugin)
+    const { result } = await host.initialize()
+    expect(result.concurrency).toBe(3)
+    for (let id = 1; id <= 8; id++) host.discover(id, `block-${id}`)
+    await until(() => state.started.length === 3)
+    await host.silent(50)
+    expect(state.peak).toBe(3)
+    expect(state.started).toHaveLength(3)
+    state.release()
+    const answered = await host.next(8)
+    expect(new Set(answered.map(a => a.id)).size).toBe(8)
+    expect(state.peak).toBe(3)
+    host.end()
+    await host.served
+  })
+
+  it('may answer out of order, each answer carrying the id of its request', async () => {
+    const { plugin, state } = lab({ concurrency: 2 })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'block-first')
+    host.discover(2, 'quick')
+    expect(await host.one()).toMatchObject({ id: 2, result: { projects: [{ name: 'quick' }] } })
+    state.release()
+    expect(await host.one()).toMatchObject({ id: 1 })
+    host.end()
+    await host.served
+  })
+
+  it('refuses a request id that is already in flight and a host that floods it', async () => {
+    const { plugin, state } = lab({ concurrency: 1 })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'block-a')
+    await until(() => state.started.length === 1)
+    host.discover(1, 'block-again')
+    const { error } = await host.one()
+    expect(error.code).toBe(-32600)
+    for (let id = 2; id < 2 + 1024 + 5; id++) host.discover(id, 'block-queued')
+    const refused = await host.next(5)
+    for (const answer of refused) expect(answer.error).toMatchObject({ code: -32600, message: expect.stringContaining('too many requests') as string })
+    state.release()
+    expect(await host.next(1 + 1024)).toHaveLength(1025)
+    host.end()
+    await host.served
+  })
+})
+
+describe('cancel', () => {
+  it('is advertised by a plugin that says it is cancellable', async () => {
+    const host = live(lab({ cancellable: true }).plugin)
+    const { result } = await host.initialize()
+    expect(result.capabilities.cancel).toBe(true)
+    host.end()
+    await host.served
+  })
+
+  it('aborts the signal of a running request and answers it with the cancelled error', async () => {
+    const { plugin, state } = lab({ cancellable: true })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'block-a')
+    await until(() => state.started.length === 1)
+    host.notify('cancel', { id: 1 })
+    expect(await host.one()).toEqual({ jsonrpc: '2.0', id: 1, error: { code: -32800, message: 'request cancelled: aborted' } })
+    host.discover(2, 'quick')
+    const { result } = await host.one()
+    expect(result.projects[0].name).toBe('quick')
+    host.end()
+    await host.served
+  })
+
+  it('ignores a cancel for an unknown or finished request, or with bad params', async () => {
+    const host = live(lab({ cancellable: true }).plugin)
+    await host.initialize()
+    host.discover(1, 'quick')
+    await host.next()
+    host.notify('cancel', { id: 1 })
+    host.notify('cancel', { id: 424_242 })
+    host.notify('cancel', 'not params')
+    await host.silent()
+    host.discover(2, 'quick')
+    const { id } = await host.one()
+    expect(id).toBe(2)
+    host.end()
+    await host.served
+  })
+
+  it('answers with the result a request produced despite the cancel', async () => {
+    const { plugin, state } = lab({ cancellable: true })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'stubborn')
+    await until(() => state.started.length === 1)
+    host.notify('cancel', { id: 1 })
+    await host.silent()
+    state.release()
+    const { result } = await host.one()
+    expect(result.projects[0].name).toBe('stubborn')
+    host.end()
+    await host.served
+  })
+
+  it('keeps the plugin failure code for an error nobody asked for', async () => {
+    const host = live(lab({ cancellable: true }).plugin)
+    await host.initialize()
+    host.discover(1, 'fail-by-itself')
+    const { error } = await host.one()
+    expect(error).toEqual({ code: -32000, message: 'the manifest is broken' })
+    host.end()
+    await host.served
+  })
+
+  it('answers a request that had not started at once, and never starts it', async () => {
+    const { plugin, state } = lab({ cancellable: true, concurrency: 1 })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'block-running')
+    host.discover(2, 'block-waiting')
+    await until(() => state.started.length === 1)
+    host.notify('cancel', { id: 2 })
+    expect(await host.one()).toMatchObject({ id: 2, error: { code: -32800 } })
+    state.release()
+    expect(await host.one()).toMatchObject({ id: 1 })
+    expect(state.started).toEqual(['block-running'])
+    host.end()
+    await host.served
+  })
+
+  it('is ignored by a plugin that did not say it is cancellable, and its signal never aborts', async () => {
+    const { plugin, state } = lab()
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'stubborn')
+    await until(() => state.started.length === 1)
+    host.notify('cancel', { id: 1 })
+    await host.silent()
+    state.release()
+    const { result } = await host.one()
+    expect(result.projects[0].name).toBe('stubborn')
+    host.end()
+    await host.served
+  })
+
+  it('answers what is in flight and what is waiting with their results before it answers shutdown, whatever the plugin', async () => {
+    for (const cancellable of [true, false]) {
+      const { plugin, state } = lab({ cancellable, concurrency: 1 })
+      const host = live(plugin)
+      await host.initialize()
+      host.discover(1, 'stubborn-running')
+      host.discover(2, 'stubborn-waiting')
+      host.request(3, 'shutdown')
+      await until(() => state.started.length === 1)
+      await host.silent() // shutdown waits for the latch: nothing is cancelled and nothing is answered yet
+      state.release()
+      const answers = await host.next(3)
+      expect(answers.map(a => a.id)).toEqual([1, 2, 3])
+      expect(answers[0].result.projects[0].name).toBe('stubborn-running')
+      expect(answers[1].result.projects[0].name).toBe('stubborn-waiting')
+      await host.served
+    }
+  })
+
+  it('cancels what is in flight when the input ends, the host being gone', async () => {
+    const { plugin, state } = lab({ cancellable: true })
+    const host = live(plugin)
+    await host.initialize()
+    host.discover(1, 'block-a')
+    await until(() => state.started.length === 1)
+    host.end()
+    await host.served
+    expect(state.aborted).toBe(1)
+  })
+
+  it('answers each of a stress of concurrent and cancelled requests exactly once, within the pool\'s bound', async () => {
+    const total = 400
+    const { plugin, state } = lab({ cancellable: true, concurrency: 8 })
+    const host = live(plugin)
+    await host.initialize()
+    for (let id = 1; id <= total; id++) {
+      host.discover(id, id % 3 === 0 ? 'block-x' : 'slow-x')
+      if (id % 6 === 0) setTimeout(() => { host.notify('cancel', { id }) }, Math.floor(Math.random() * 5))
+    }
+    setTimeout(() => { state.release() }, 200)
+    const answers = await host.next(total)
+    const counts = new Map<number, number>()
+    for (const answer of answers) {
+      counts.set(answer.id as number, (counts.get(answer.id as number) ?? 0) + 1)
+      if (answer.error !== undefined) expect(answer.error.code).toBe(-32800)
+    }
+    expect(counts.size).toBe(total)
+    for (const count of counts.values()) expect(count).toBe(1)
+    await host.silent(30)
+    expect(state.peak).toBeLessThanOrEqual(8)
+    host.end()
+    await host.served
+  })
+})

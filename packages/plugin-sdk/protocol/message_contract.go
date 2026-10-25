@@ -41,4 +41,8 @@ const (
 	// CodePluginFailure is returned when a method ran but failed for a
 	// reason the user must act on (a missing toolchain, a bad manifest).
 	CodePluginFailure = -32000
+	// CodeRequestCancelled answers a request the plugin stopped because the
+	// host sent a cancel notification for its id. A plugin that finished the
+	// work before it saw the cancel answers with the result instead.
+	CodeRequestCancelled = -32800
 )

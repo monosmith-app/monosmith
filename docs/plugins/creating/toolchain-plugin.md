@@ -182,6 +182,8 @@ widget-lint 0.1.0
   ✔ a toolchain names the slots it fills
   ✔ requires language plugin widget: a known reference
   ✔ stack widget-linted is complete
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ shuts down when asked
 ```

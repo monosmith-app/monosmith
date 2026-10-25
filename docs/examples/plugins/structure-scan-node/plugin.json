@@ -1,0 +1,6 @@
+{
+  "name": "widget-scan",
+  "version": "0.1.0",
+  "description": "warns about big files in widget projects; stops when cancelled and takes four scans at once (TypeScript, on @monosmith/plugin-sdk)",
+  "command": ["./plugin.ts"]
+}

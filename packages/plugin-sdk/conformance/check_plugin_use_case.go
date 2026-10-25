@@ -66,6 +66,8 @@ func Check(c *host.Client, opts Options) Report {
 		names[st.Name] = true
 	}
 
+	checkScheduling(c, &r)
+
 	call := func(check, method string, params, result any) bool {
 		if !c.Supports(method) {
 			return false

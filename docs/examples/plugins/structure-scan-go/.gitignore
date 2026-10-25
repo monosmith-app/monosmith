@@ -1,0 +1,3 @@
+# the plugin binary `go build` writes
+/smith-plugin-widget-scan
+/smith-plugin-widget-scan.exe

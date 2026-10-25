@@ -230,12 +230,14 @@ widget-layout 0.1.0
   ✔ has a known kind
   ✔ plays a known role: structure
   ✔ a structure plugin does something
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ doctor answers with no projects
   ✔ shuts down when asked
 ```
 
-The TypeScript and Python versions give the same seven lines (`smith plugin check .\plugin.cmd` on
+The TypeScript and Python versions give the same lines (`smith plugin check .\plugin.cmd` on
 Windows; see [Testing a plugin](testing-a-plugin.md#checking-an-interpreted-plugin)). Each ships its
 own tests: `go test ./...`, `node --test` and `python -m unittest`, all passing. For the same
 requests the TypeScript plugin and the Go plugin answer with the same bytes.

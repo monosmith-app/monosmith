@@ -22,8 +22,10 @@ var rootDescription = strings.Join([]string{
 		"(null: always available). x-errorCodes, x-roles and x-transport complete the contract. A definition's required members are the ones " +
 		"the Go SDK writes without omitempty.",
 	"Framing: each message is the header Content-Length: <bytes of the body>, a blank line (CRLF CRLF) and the body, UTF-8 JSON, as the Language Server Protocol frames. " +
-		"The length counts bytes, not characters. The host sends initialize first, calls one plugin at a time, and a request with an id gets exactly one response with the same id. " +
-		"A request without an id is a notification and gets none. Stdout carries only frames: a plugin logs to stderr. The host sets SMITH_PLUGIN=1 in the plugin's environment.",
+		"The length counts bytes, not characters. The host sends initialize first, and a request with an id gets exactly one response with the same id. " +
+		"A request without an id is a notification and gets none. The host has at most as many requests in flight to a plugin as its initialize result declares in concurrency (absent: 1, the next request is sent after the previous is answered); " +
+		"responses may come in any order, matched by id. A plugin that advertised the cancel capability is sent the cancel notification for a request the host gives up on, and answers that request with its result or the request-cancelled error; " +
+		"a plugin without it is never sent cancel. Stdout carries only frames: a plugin logs to stderr. The host sets SMITH_PLUGIN=1 in the plugin's environment.",
 	"Reading: a receiver ignores members it does not know (the protocol grows by adding members), and treats a null array or object as an empty one, " +
 		"because the Go SDK writes a nil slice or map as null when the member is required. A member that is absent and a member with its zero value are the same for every optional member.",
 	"Paths in messages are relative to the workspace and use forward slashes; only workspaceRoot is absolute and uses the host's separators.",
@@ -83,9 +85,12 @@ func methodsTable(m *typeMapper) (Object, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s params: %w", spec.Method, err)
 		}
-		result, err := m.schema(spec.Result)
-		if err != nil {
-			return nil, fmt.Errorf("%s result: %w", spec.Method, err)
+		var result any
+		if !spec.Notification {
+			result, err = m.schema(spec.Result)
+			if err != nil {
+				return nil, fmt.Errorf("%s result: %w", spec.Method, err)
+			}
 		}
 		var capability any
 		if spec.Capability != "" {
@@ -97,6 +102,7 @@ func methodsTable(m *typeMapper) (Object, error) {
 			{Key: "params", Value: params},
 			{Key: "result", Value: result},
 			{Key: "capability", Value: capability},
+			{Key: "notification", Value: spec.Notification},
 		})
 	}
 	return table, nil

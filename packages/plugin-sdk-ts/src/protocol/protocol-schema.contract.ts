@@ -7,7 +7,7 @@ export const protocolSchema: SchemaDocument = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/monosmith-app/monosmith/main/packages/plugin-sdk/schema/protocol.schema.json",
   "title": "smith plugin protocol",
-  "description": "The messages of the smith plugin protocol: JSON-RPC 2.0 between the smith host and a plugin, a separate process. This file is generated from the Go types of packages/plugin-sdk/protocol, which are the source of truth; do not edit it. Regenerate it with `go run ./schemagen` in packages/plugin-sdk.\n\nx-methods maps each method name to the definitions of its params and result and to the capability a plugin advertises to be asked it (null: always available). x-errorCodes, x-roles and x-transport complete the contract. A definition's required members are the ones the Go SDK writes without omitempty.\n\nFraming: each message is the header Content-Length: <bytes of the body>, a blank line (CRLF CRLF) and the body, UTF-8 JSON, as the Language Server Protocol frames. The length counts bytes, not characters. The host sends initialize first, calls one plugin at a time, and a request with an id gets exactly one response with the same id. A request without an id is a notification and gets none. Stdout carries only frames: a plugin logs to stderr. The host sets SMITH_PLUGIN=1 in the plugin's environment.\n\nReading: a receiver ignores members it does not know (the protocol grows by adding members), and treats a null array or object as an empty one, because the Go SDK writes a nil slice or map as null when the member is required. A member that is absent and a member with its zero value are the same for every optional member.\n\nPaths in messages are relative to the workspace and use forward slashes; only workspaceRoot is absolute and uses the host's separators.",
+  "description": "The messages of the smith plugin protocol: JSON-RPC 2.0 between the smith host and a plugin, a separate process. This file is generated from the Go types of packages/plugin-sdk/protocol, which are the source of truth; do not edit it. Regenerate it with `go run ./schemagen` in packages/plugin-sdk.\n\nx-methods maps each method name to the definitions of its params and result and to the capability a plugin advertises to be asked it (null: always available). x-errorCodes, x-roles and x-transport complete the contract. A definition's required members are the ones the Go SDK writes without omitempty.\n\nFraming: each message is the header Content-Length: <bytes of the body>, a blank line (CRLF CRLF) and the body, UTF-8 JSON, as the Language Server Protocol frames. The length counts bytes, not characters. The host sends initialize first, and a request with an id gets exactly one response with the same id. A request without an id is a notification and gets none. The host has at most as many requests in flight to a plugin as its initialize result declares in concurrency (absent: 1, the next request is sent after the previous is answered); responses may come in any order, matched by id. A plugin that advertised the cancel capability is sent the cancel notification for a request the host gives up on, and answers that request with its result or the request-cancelled error; a plugin without it is never sent cancel. Stdout carries only frames: a plugin logs to stderr. The host sets SMITH_PLUGIN=1 in the plugin's environment.\n\nReading: a receiver ignores members it does not know (the protocol grows by adding members), and treats a null array or object as an empty one, because the Go SDK writes a nil slice or map as null when the member is required. A member that is absent and a member with its zero value are the same for every optional member.\n\nPaths in messages are relative to the workspace and use forward slashes; only workspaceRoot is absolute and uses the host's separators.",
   "x-protocolVersion": 1,
   "x-transport": {
     "framing": "content-length",
@@ -24,7 +24,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/InitializeResult"
       },
-      "capability": null
+      "capability": null,
+      "notification": false
     },
     "shutdown": {
       "description": "The last request. The plugin answers an empty object and exits.",
@@ -34,7 +35,17 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/Empty"
       },
-      "capability": null
+      "capability": null,
+      "notification": false
+    },
+    "cancel": {
+      "description": "A notification, so it gets no response: the host asks the plugin to stop the in-flight request with the given id. The plugin then answers that request, with its result if the work was already done or with the request-cancelled error. An id that is unknown or already answered is ignored. The host sends it only to a plugin that advertised the capability.",
+      "params": {
+        "$ref": "#/$defs/CancelParams"
+      },
+      "result": null,
+      "capability": "cancel",
+      "notification": true
     },
     "discover": {
       "description": "Describes the projects behind manifests the host found; a language plugin's way into the workspace.",
@@ -44,7 +55,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DiscoverResult"
       },
-      "capability": "discover"
+      "capability": "discover",
+      "notification": false
     },
     "generate": {
       "description": "Writes the starter files of a new project.",
@@ -54,7 +66,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/GenerateResult"
       },
-      "capability": "generate"
+      "capability": "generate",
+      "notification": false
     },
     "version/write": {
       "description": "Records a release version in a project's manifest.",
@@ -64,7 +77,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/VersionResult"
       },
-      "capability": "version"
+      "capability": "version",
+      "notification": false
     },
     "publish": {
       "description": "Publishes one project at one version, or builds the files attached to a release.",
@@ -74,7 +88,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/PublishResult"
       },
-      "capability": "publish"
+      "capability": "publish",
+      "notification": false
     },
     "ci": {
       "description": "Describes what a generated pipeline needs for the plugin's projects.",
@@ -84,7 +99,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/CIResult"
       },
-      "capability": "ci"
+      "capability": "ci",
+      "notification": false
     },
     "doctor": {
       "description": "Checks the plugin's projects and reports findings, each with its remedy and, optionally, a fix.",
@@ -94,7 +110,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DoctorResult"
       },
-      "capability": "doctor"
+      "capability": "doctor",
+      "notification": false
     },
     "contribute": {
       "description": "Asks a convention (toolchain, structure, deploy) for the tasks and dependencies it adds to projects other plugins discovered.",
@@ -104,7 +121,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/ContributeResult"
       },
-      "capability": "contribute"
+      "capability": "contribute",
+      "notification": false
     },
     "remove": {
       "description": "Lets a plugin clean up what it owns outside a project's directory after the project is removed.",
@@ -114,7 +132,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/RemoveResult"
       },
-      "capability": "remove"
+      "capability": "remove",
+      "notification": false
     },
     "published": {
       "description": "Asks which version of a project its registry has, so a release can check its tags against it.",
@@ -124,7 +143,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/PublishedResult"
       },
-      "capability": "published"
+      "capability": "published",
+      "notification": false
     },
     "dependencies/install": {
       "description": "Adds packages to a project with the ecosystem's own toolchain, or, with no project, installs every dependency of the projects the plugin serves.",
@@ -134,7 +154,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DependencyResult"
       },
-      "capability": "dependencies"
+      "capability": "dependencies",
+      "notification": false
     },
     "dependencies/uninstall": {
       "description": "Removes packages from a project.",
@@ -144,7 +165,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DependencyResult"
       },
-      "capability": "dependencies"
+      "capability": "dependencies",
+      "notification": false
     },
     "dependencies/declared": {
       "description": "Lists the dependencies the manifests of the plugin's projects declare.",
@@ -154,7 +176,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DeclaredResult"
       },
-      "capability": "declarations"
+      "capability": "declarations",
+      "notification": false
     },
     "dependencies/rewrite": {
       "description": "Changes declared dependency specs in place.",
@@ -164,7 +187,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/DependencyResult"
       },
-      "capability": "declarations"
+      "capability": "declarations",
+      "notification": false
     },
     "dependencies/latest": {
       "description": "Asks registries for the newest releases of dependencies, and how the tools the plugin pins compare with theirs.",
@@ -174,7 +198,8 @@ export const protocolSchema: SchemaDocument = {
       "result": {
         "$ref": "#/$defs/LatestResult"
       },
-      "capability": "latest"
+      "capability": "latest",
+      "notification": false
     }
   },
   "x-errorCodes": [
@@ -207,6 +232,11 @@ export const protocolSchema: SchemaDocument = {
       "name": "PluginFailure",
       "code": -32000,
       "description": "The method ran and failed for a reason the user must act on (a missing toolchain, a bad manifest). The message is shown to the user as it is, so it should say what to do. An error a method of the Go SDK returns becomes this code."
+    },
+    {
+      "name": "RequestCancelled",
+      "code": -32800,
+      "description": "The plugin stopped the request because the host sent a cancel notification for its id. A plugin that had finished answers with the result instead. Only a plugin that advertised the cancel capability sends it; when a cancelled request fails with any error, the SDKs answer with this code."
     }
   ],
   "x-roles": [
@@ -428,6 +458,19 @@ export const protocolSchema: SchemaDocument = {
         }
       }
     },
+    "CancelParams": {
+      "description": "CancelParams are the params of the cancel notification.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "ID is the id of the in-flight request to stop. An id the plugin does not know, or whose request is already answered, is ignored."
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
     "Capabilities": {
       "description": "Capabilities are the optional methods a plugin implements.",
       "type": "object",
@@ -473,6 +516,10 @@ export const protocolSchema: SchemaDocument = {
         "latest": {
           "type": "boolean",
           "description": "Latest reports the newest releases of dependencies and pinned tools."
+        },
+        "cancel": {
+          "type": "boolean",
+          "description": "Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it."
         }
       }
     },
@@ -994,6 +1041,10 @@ export const protocolSchema: SchemaDocument = {
         },
         "capabilities": {
           "$ref": "#/$defs/Capabilities"
+        },
+        "concurrency": {
+          "type": "integer",
+          "description": "Concurrency is how many requests the plugin can work on at the same time; the host never has more in flight. Absent or 0 means 1, which is what every plugin that says nothing does: the host sends the next request only after the previous one is answered. N above 1 allows that many, and ConcurrencyUnlimited (-1) leaves the number to the host. Any other negative value is invalid and read as 1."
         },
         "languages": {
           "type": "array",

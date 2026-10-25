@@ -156,6 +156,7 @@ widget-service 0.1.0
   ✔ a scaffold generates projects
   ✔ requires language plugin widget: a known reference
   ✔ stack widget-service is complete
+  ✔ declares a concurrency the protocol defines
   ✔ shuts down when asked
 ```
 

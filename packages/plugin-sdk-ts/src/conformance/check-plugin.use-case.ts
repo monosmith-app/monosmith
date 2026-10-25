@@ -3,6 +3,7 @@ import { describeRef, isEmptyRef } from '../plugin-refs/index.ts'
 import { ROLES, effectiveRoles, isKnownRole } from '../plugin-roles/index.ts'
 import type { PluginRef, Role } from '../protocol/index.ts'
 import { checkGeneration } from './check-generation.use-case.ts'
+import { checkScheduling } from './check-scheduling.use-case.ts'
 import { ConformanceReport } from './conformance-report.model.ts'
 import { goList, goQuote } from './go-list.mapper.ts'
 
@@ -24,7 +25,8 @@ const CALL_TIMEOUT_MS = 20 * 60 * 1000
  * itself, has a known kind and known roles, its roles match what it
  * implements, it names the slots it fills, its references and stacks are
  * well-formed, every advertised method answers a request with nothing in it,
- * and, with `workspace`, the projects it generates are found again by its own
+ * requests sent together are answered as the declared `concurrency` allows, a
+ * plugin that advertises `cancel` stops a cancelled request, and, with `workspace`, the projects it generates are found again by its own
  * `discover`. A port of the Go SDK's `conformance.Check`, with the same checks
  * under the same names. (`smith plugin check` adds one more, "shuts down when
  * asked", after closing the plugin: call {@link PluginClient.close} and add it
@@ -62,6 +64,8 @@ export async function checkPlugin (client: PluginClient, options: CheckOptions =
     report.add(`stack ${stack.name} is complete`, stack.name !== '' && stack.language !== '' && !names.has(stack.name), 'a stack needs a unique name and a language plugin')
     names.add(stack.name)
   }
+
+  await checkScheduling(client, report)
 
   const answers = async (check: string, method: 'discover' | 'contribute' | 'ci' | 'doctor', params: Record<string, unknown>): Promise<void> => {
     if (!client.supports(method)) return

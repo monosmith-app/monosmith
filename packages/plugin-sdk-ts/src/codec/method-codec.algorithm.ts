@@ -31,13 +31,13 @@ export function decodeResult (method: string, result: unknown): unknown {
 }
 
 function encode (method: string, side: Side, value: unknown): string {
-  const row = rowOf(method)
+  const schema = rowOf(method)?.[side]
 
-  return row === undefined ? encodeJsonValue(value, side) : encodeBySchema(protocolSchema, row[side], value, side)
+  return schema === undefined || schema === null ? encodeJsonValue(value, side) : encodeBySchema(protocolSchema, schema, value, side)
 }
 
 function decode (method: string, side: Side, value: unknown): unknown {
-  const row = rowOf(method)
+  const schema = rowOf(method)?.[side]
 
-  return row === undefined ? value : normalizeBySchema(protocolSchema, row[side], value, side)
+  return schema === undefined || schema === null ? value : normalizeBySchema(protocolSchema, schema, value, side)
 }

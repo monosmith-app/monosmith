@@ -255,6 +255,8 @@ widget-bundle 0.1.0
   ✔ has a known kind
   ✔ plays a known role: deploy
   ✔ a deploy plugin does something
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ ci answers with no projects
   ✔ doctor answers with no projects

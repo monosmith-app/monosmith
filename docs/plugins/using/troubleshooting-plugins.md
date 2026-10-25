@@ -93,7 +93,8 @@ and type a framed `initialize` (or use `smith plugin check`, which does the same
 
 | You see | Cause and remedy |
 |---|---|
-| `discover: plugin did not answer within 1m0s` (or `contribute`, `ci`, `doctor`) | the call took longer than its limit. smith kills the plugin, because its stream can no longer be trusted. Limits: `initialize` 30 s; `discover`, `contribute`, `ci`, `doctor`, `published` and the native `version/write` 1 min; `generate`, `remove` and the dependency methods 20 min; `publish` 30 min; `shutdown` 5 s; any call made without a limit 2 min. Do slow work in tasks, which smith runs, not in the answers |
+| `discover: plugin did not answer within 1m0s` (or `contribute`, `ci`, `doctor`) | the call took longer than its limit. If the plugin advertised `cancel`, smith asks it to stop and gives it five seconds to answer; otherwise, or when it does not answer, smith kills it, because its stream can no longer be trusted (and fails every other call in flight to it). Limits: `initialize` 30 s; `discover`, `contribute`, `ci`, `doctor`, `published` and the native `version/write` 1 min; `generate`, `remove` and the dependency methods 20 min; `publish` 30 min; `shutdown` 5 s; any call made without a limit 2 min. Do slow work in tasks, which smith runs, not in the answers |
+| `<method>: cancelled; the plugin did not stop within 5s and was killed` | you pressed Ctrl+C during a call and the plugin did not answer in five seconds. A plugin that advertises `cancel` must stop and answer within that time; one that does not advertise it is killed after the same wait |
 | `<method>: plugin stopped answering: EOF` | the plugin crashed or exited in the middle of a call; read its stderr above |
 | `<method>: plugin is not accepting requests: ...` | the plugin had already exited when smith wrote the request |
 | `<method>: plugin stopped answering: malformed response: ...` (from the code) | the plugin wrote JSON that is not a JSON-RPC response |

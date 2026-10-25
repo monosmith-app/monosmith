@@ -43,15 +43,22 @@ given there are the design notes' own.
 | Framing | `Content-Length: N`, a blank line, N bytes of JSON, as the Language Server Protocol frames | `transport/stream_client.go` |
 | Largest message | 64 MiB (`MaxMessageSize = 64 << 20`); a larger header closes the stream | `transport` |
 | Channel | the child's stdin and stdout; stderr is forwarded to the user's terminal, so a plugin logs there | `host.Options.Stderr` |
-| Error codes | the JSON-RPC ones, plus `-32000` (`CodePluginFailure`) for a failure the user must act on | `protocol` |
+| Error codes | the JSON-RPC ones, plus `-32000` (`CodePluginFailure`) for a failure the user must act on and `-32800` (`CodeRequestCancelled`) for a request stopped by `cancel` | `protocol` |
+| Requests in flight | at most the `concurrency` the plugin declared in `initialize` (absent: 1, one request at a time); responses may come in any order, matched by `id` | `protocol/initialize_contract.go`, `protocol/concurrency_policy.go` |
+| Cancel | the notification `cancel` `{id}`, sent only to a plugin that advertised the `cancel` capability ([ADR 0037](decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)) | `protocol/cancel_contract.go` |
 | Version | one integer, `protocol.Version = 1`; additive changes use capabilities, a breaking change raises it | `protocol/message_contract.go` |
 
-Calls to one plugin are serialised by the client; calls to different plugins run in parallel.
-The default call timeout is two minutes (`host.DefaultTimeout`); `initialize` is given 30 seconds;
+The client never has more calls in flight to one plugin than the plugin declared, so a plugin that
+declares nothing is called one request at a time and the next call waits for the answer to the previous
+one; calls to different plugins run in parallel. The default call timeout is two minutes (`host.DefaultTimeout`); `initialize` is given 30 seconds;
 the core passes its own timeout on some calls (`ci` and `version/write` one minute), and longer ones
-for `generate` and `publish`, which run toolchains. On a timeout the plugin process is
-killed, because its stream can no longer be trusted. At the end of a command `shutdown` is sent
-and the process is killed if it does not exit within five seconds.
+for `generate` and `publish`, which run toolchains. When a call runs out of time, or its context ends
+(Ctrl+C, a cancelled command), the host stops waiting: a plugin that advertised `cancel` is sent the
+notification and has five seconds to answer, with its result or `-32800`; one that cannot be asked is
+killed at once on a timeout and after the same five seconds on a cancel. A plugin that does not answer
+in time is killed, because its stream can no longer be trusted, and so are the other calls in flight to
+it. At the end of a command `shutdown` is sent and the process is killed if it does not exit within five
+seconds. [Cancel and concurrency](#cancel-and-concurrency) has the whole rule.
 
 ## The schema is the contract
 
@@ -60,8 +67,8 @@ Schema (draft 2020-12) generated from them,
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
 is the contract for every other language. It has one definition per message (a member is required
 when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
-definitions `x-methods` (each of the 16 methods with its params, its result and the capability it needs,
-`null` for `initialize` and `shutdown`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
+definitions `x-methods` (each of the 17 methods with its params, its result and the capability it needs,
+`null` for `initialize` and `shutdown`, and `notification: true` with no result for `cancel`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
 kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
 
 | Step | Where | Fails when |
@@ -120,6 +127,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `provides` | slots: task names the plugin owns (`test`, `lint`) |
 | `requires`, `conflicts` | plugins that must or must not share a project |
 | `stacks` | ready-made stacks the plugin publishes |
+| `concurrency` | how many requests the plugin can work on at once: absent or `0` is 1, `N` is N, `-1` leaves the number to the host (which keeps 32 in flight) |
 
 ### Capabilities
 
@@ -143,6 +151,7 @@ which capability each method needs.
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | `DependencyManager` | `smith install`, `uninstall` |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | `DeclarationEditor` | `smith sync`, `smith up --align` |
 | `latest` | `dependencies/latest` | `LatestReader` | `smith up` |
+| `cancel` | `cancel` (a notification) | `Cancellable` | the host, when a call's context ends or its time runs out |
 
 `initialize` and `shutdown` are always available.
 
@@ -182,6 +191,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `dependencies/install`, `uninstall` | `InstallParams`, `UninstallParams` | `DependencyResult` | adds or removes packages in one project |
 | `dependencies/declared`, `rewrite` | `DeclaredParams`, `RewriteParams` | `DeclaredResult`, `DependencyResult` | reads and edits declared specs |
 | `dependencies/latest` | `LatestParams` | `LatestResult{latest, unreachable, tools}` (`tools` are `ToolPin`s) | newest releases and pinned tools |
+| `cancel` | `CancelParams{id}`, a notification | none | stops the in-flight request with that id |
 
 ### Tasks
 
@@ -235,13 +245,51 @@ what they share goes through the project (`exports`, `imports`, `tags`, `setting
 names. The result therefore depends on the set of plugins and the stack's order, not on timing.
 How the edges are found is the subject of [the project graph page](project-graph.md).
 
+## Cancel and concurrency
+
+Two features of the handshake, both additive: the protocol version stays 1, and a plugin that knows
+neither is called as it always was ([ADR 0037](decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).
+
+**Concurrency.** The `concurrency` member of the `initialize` result says how many requests the plugin can
+work on at once. Absent or `0` is 1: every plugin that says nothing is sent the next request after
+the previous is answered, which is what they all did. `N` above 1 allows N; `-1` leaves the number to the
+host, which keeps 32 in flight. Any other negative value is invalid, is read as 1, and is reported by
+the conformance suite. The host waits for a free place before it sends, so it never exceeds the
+declaration; `shutdown` does not wait. Responses may come in any order and are matched by `id`; a
+plugin starts requests in the order they arrive. The Go `serve.Serve` runs them on a bounded pool
+of that many workers, keeps up to 1024 more waiting, and refuses with `-32600` an id that is already
+in flight and a host that sends more than the queue holds.
+
+**Cancel.** The host sends the notification `cancel` with the id of an in-flight request to a plugin that
+advertised the `cancel` capability, and only to one. The plugin stops that request's work and answers
+the request with its result, if it had finished, or with the error `-32800`. An unknown or answered
+id is ignored, and a request that had not started is answered `-32800` without running. When a
+cancelled request fails with any error, the SDKs answer `-32800` rather than `-32000`. In the Go SDK
+the capability comes from implementing `serve.Cancellable` (`WithContext(ctx)`, the plugin as it serves
+one request); in the TypeScript SDK from `cancellable: true`, with an `AbortSignal` as the second argument
+of every method. `shutdown` is answered after everything read before it, running or waiting, has been answered with its result (only a `cancel` stops a request); the end of the input, the host being gone, cancels what is in flight.
+
+What the host does when it gives up on a call (`host.Client.CallContext`, `PluginSet.CallContext`):
+
+| Event | The plugin advertised `cancel` | The plugin did not |
+|---|---|---|
+| the context ends (Ctrl+C, a cancelled command) | send `cancel`; wait 5 seconds for the answer; kill the process only if none comes | wait 5 seconds for the answer; then kill the process |
+| the call's timeout runs out | the same | kill the process at once |
+| the answer comes in time | a result is the call's result; an error is returned, and `errors.Is` sees the context error and the plugin's `-32800` | the same |
+
+Killing the process fails every other call in flight to that plugin. `smith release` and the native
+builds pass their context to the plugin calls; the other commands call without one, and a cancelled
+command ends them with the process, as before. `taskrun` does not call plugins at all: tasks are
+processes smith starts and kills itself.
+
 ## Failure modes
 
 | What goes wrong | What the host does |
 |---|---|
 | plugin missing or failing to start | the command stops, naming the plugin and its command |
 | a protocol version the host does not speak | the connection is refused |
-| a call exceeds its timeout | the process is killed and the call fails; other plugins are unaffected |
+| a call exceeds its timeout | a plugin that advertised `cancel` is asked to stop and has five seconds; any other plugin, or one that does not answer, is killed. The call fails; other plugins are unaffected |
+| the command is cancelled (Ctrl+C) during a call | the same, with the five seconds for every plugin: it is sent `cancel` if it can be, and killed if it has not answered by then |
 | the plugin returns an error | the command stops with the plugin's name and message (`-32000` means act on it) |
 | two plugins provide one slot, or conflict | the stack or recipe is refused, naming both |
 | an external plugin's name or version differs from `smith.toml` | refused at start-up, with both versions |
@@ -251,10 +299,13 @@ How the edges are found is the subject of [the project graph page](project-graph
 
 `packages/plugin-sdk/conformance.Check` starts a plugin as the host would and verifies that it
 identifies itself, that its roles match what it implements, that its stacks are complete, that
-every advertised method answers a well-formed request, and, with generation enabled, that the
+every advertised method answers a well-formed request, that requests sent together are answered
+(one at a time unless it declared a concurrency, and that many at once if it did), that a plugin which
+advertised `cancel` stops a cancelled request within a bound and ignores a cancel for a request it
+does not know, and, with generation enabled, that the
 projects it generates are found again by its own `discover`. Authors call it from their tests;
 `smith plugin check <name|path>` runs it against any plugin ([`smith plugin check`](../manual/plugin-check.md)).
-The six checks and their output are shown in that page.
+The checks and their output are shown in that page.
 
 ## Where in the code
 

@@ -20,7 +20,7 @@ by smith like the other packages.
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 16 methods with its params, its result and the
+one definition per message, a methods table (each of the 17 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The TypeScript types are
 generated from that file, so they cannot drift from the Go ones: a Go test fails when the schema is
 stale, a TypeScript test fails when the generated types are, and a test fails when the schema has a
@@ -115,6 +115,37 @@ Params reach your method shaped as the types promise: where the Go host writes a
 you get `[]`, a required member that is absent is its zero value, and members the SDK does not know are
 kept.
 
+### Stop work when the host cancels it
+
+A method that can run for long, `publish` or `doctor` over a big tree, should stop when smith gives up
+on it (Ctrl+C, a timeout). Say the plugin is `cancellable`: the SDK then passes every method an
+`AbortSignal` as its second argument, aborts it when the host sends the `cancel` notification for that
+request, and advertises the `cancel` capability. A method that stops throws (the host sees the
+request-cancelled error `-32800`, whatever the message) or returns the result it already has.
+
+```ts
+const plugin: SmithPlugin = {
+  cancellable: true,
+  describe:    () => ({ plugin: { name: 'widget-scan', version: '0.1.0' }, kind: 'convention', roles: ['structure'], languages: ['widget'], concurrency: 4 }),
+  doctor:      async ({ projects }, signal) => {
+    for (const project of projects) {
+      signal.throwIfAborted() // check between units of work, and pass the signal to what you call (fetch, timers.promises, child processes)
+      // ... scan the project
+    }
+
+    return { findings: [] }
+  },
+}
+```
+
+`concurrency` in what `describe` returns says how many requests the plugin can work on at the same time.
+Leave it out for one at a time, in order, which is what a plugin that says nothing gets; the SDK then runs
+the requests of a number above 1 together, in the order they arrive, and writes the answers in the order
+they finish. `-1` leaves the number to the host. A plugin without `cancellable` is never sent a cancel and
+its signal never aborts. [`structure-scan-node`](../../examples/plugins/structure-scan-node) is the whole
+example, and the Go twin [`structure-scan-go`](../../examples/plugins/structure-scan-go) answers the same
+requests with the same bytes.
+
 ### 3. Test it
 
 `connectInProcess` serves the plugin object in your test process over pipes, with the real framing,
@@ -166,6 +197,8 @@ widget-layout 0.1.0
   ✔ has a known kind
   ✔ plays a known role: structure
   ✔ a structure plugin does something
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ contribute answers with no projects
   ✔ doctor answers with no projects
   ✔ shuts down when asked
@@ -238,7 +271,7 @@ Everything is exported from `@monosmith/plugin-sdk`. The messages (`Project`, `T
 | `serveStreams(plugin, { input, output, log? })` | the same loop on streams you give it; resolves at `shutdown` or the end of the input |
 | `capabilitiesOf(plugin)` | the `Capabilities` the plugin would advertise |
 | `implementsMethod(plugin, method)` | whether the plugin has the members a protocol method needs |
-| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader`, `PluginDescription`, `Awaitable` | the types of the plugin object |
+| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
 
 ### Testing a plugin
 
@@ -247,13 +280,18 @@ Everything is exported from `@monosmith/plugin-sdk`. The messages (`Project`, `T
 | `connectInProcess(plugin, options)` | serves a plugin object in this process over pipes and connects to it |
 | `startPlugin({ command, workspaceRoot, env?, cwd?, stderr?, ... })` | starts a plugin process with `SMITH_PLUGIN=1`, performs the handshake, forwards its standard error |
 | `connectPlugin({ input, output }, options)` | the handshake over streams you have |
-| `PluginClient` | `info` (the `initialize` result), `call(method, params, { timeoutMs? })`, `supports(method)`, `close()` |
+| `PluginClient` | `info` (the `initialize` result), `call(method, params, { timeoutMs?, signal? })`, `notify(method, params)`, `supports(method)`, `peakInFlight`, `close()` |
+| `CallInterruptedError` | a call given up on because its `signal` aborted or its time ran out: `reason` (`cancelled` or `timeout`), `killed`, and `response` (the plugin's `-32800`, when it answered) |
 | `checkPlugin(client, { workspace? })` | the checks of `smith plugin check`; with `workspace` (the directory the plugin was started in) also `--generate` |
 | `ConformanceReport` | `plugin`, `results`, `ok`, `failures()`; `JSON.stringify(report)` is the shape of `smith plugin check --json` |
 | `RpcError` | an error answer, with its `code` |
 
 `options` are `workspaceRoot` (required, absolute), `host` (name and version, default `smith` `dev`) and
-`initializeTimeoutMs` (30 seconds). Calls to one client are serialised, as smith serialises them.
+`initializeTimeoutMs` (30 seconds) and `cancelGraceMs` (5 seconds: how long a plugin has to answer after it was asked to
+stop). A client never has more calls in flight than the plugin declared in `concurrency`, as smith does: with
+the default of one, calls are serialised. Abort the `signal` of a call and the plugin is sent `cancel` if it
+advertised it; the call ends with a `CallInterruptedError`, or with the result if the plugin had finished.
+A plugin that does not answer within the grace period is killed.
 `checkPlugin` is a port of the Go `conformance.Check` with the same check names;
 `smith plugin check` adds one more, "shuts down when asked", which is `client.close()` not rejecting. To
 run the real command from a test, spawn `smith plugin check` as
@@ -316,7 +354,9 @@ For a tool that speaks the protocol itself: `encodeParams`, `encodeResult`, `dec
 | | Go | TypeScript |
 |---|---|---|
 | a plugin | a struct with methods; `serve.Main(&plugin{})` | an object with members; `await serve(plugin)` |
-| async | methods block | members may return a promise; requests are still answered one at a time, in order |
+| async | methods block | members may return a promise; requests are answered one at a time, in order, unless `describe` declares a `concurrency` |
+| cancel | `serve.Cancellable` (`WithContext(ctx)`) | `cancellable: true`, and an `AbortSignal` as the second argument of every member |
+| concurrency | `Concurrency` in what `Describe` returns | `concurrency` in what `describe` returns |
 | error codes | an error becomes `-32000` | the same; the SDK also uses `-32602` for params of the wrong type and `-32603` for a result it cannot write |
 | a result with a required member missing | writes the zero value | `-32603`, naming the member |
 | `null` in params | a nil slice or map | `[]` or `{}` for a required member, removed for an optional one |
@@ -333,6 +373,7 @@ For a tool that speaks the protocol itself: `encodeParams`, `encodeResult`, `dec
 | `-32603` with `result.x is required` | a required member of the result is missing: the type says which |
 | `plugin stopped answering: EOF` in a test | the plugin process died: its standard error is on yours, unless you passed `stderr: 'ignore'` |
 | a test hangs | a plugin that never answers is killed after the call's timeout (two minutes); pass `{ timeoutMs }` to fail sooner |
+| the signal never aborts | the plugin is not `cancellable`, or the host did not send `cancel`: only a call made with a `signal` that aborts (or whose time runs out) sends it |
 
 ## See also
 

@@ -391,6 +391,8 @@ widget 0.1.0
   ✔ plays a known role: scaffold
   ✔ a language plugin discovers projects
   ✔ a scaffold generates projects
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ discover answers with no manifests
   ✔ doctor answers with no projects
   ✔ generates an app

@@ -5,6 +5,9 @@ parent: plugin.md
 
 `smith plugin check` runs the conformance suite against a plugin: it names itself, its roles
 match what it implements, its stacks are complete, and every method it advertises answers.
+It also checks how the plugin wants to be called: requests sent together are answered (one at a
+time unless the plugin declares a `concurrency`), and a plugin that advertises `cancel` stops a
+cancelled request within a bound and goes on serving.
 With `--generate`, a plugin that generates projects makes an app, a lib and a package in a
 temporary directory, which a language plugin must then discover as generated (this may
 install dependencies).
@@ -80,6 +83,8 @@ node 1.62.0
   ✔ plays a known role: scaffold
   ✔ a language plugin discovers projects
   ✔ a scaffold generates projects
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ discover answers with no manifests
   ✔ ci answers with no projects
   ✔ doctor answers with no projects
@@ -98,6 +103,8 @@ widget 0.1.0
   ✔ has a known kind
   ✔ plays a known role: language
   ✔ a language plugin discovers projects
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ discover answers with no manifests
   ✔ shuts down when asked
 ```

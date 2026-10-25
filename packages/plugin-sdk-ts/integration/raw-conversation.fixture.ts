@@ -3,8 +3,12 @@ import { FrameReader, frameMessage } from '../src/framing/index.ts'
 
 /** A request to send as it is: the id is the position in the conversation, from 1. */
 export interface RawRequest {
-  method:  string
-  params?: unknown
+  method:        string
+  params?:       unknown
+  /** Send it as a notification (no id). The ids of the requests after it are still their positions in the conversation. */
+  notification?: boolean
+  /** Wait this many milliseconds before sending the next message, so that the plugin is busy with this one. */
+  thenWaitMs?:   number
 }
 
 /** Whether a program runs: `smith version`-like probes for tests that need a tool on the path. */
@@ -18,9 +22,9 @@ export function isAvailable (program: string, args: string[] = ['--version']): b
  * the plugin wrote it. The conversation ends when the plugin answers
  * `shutdown`, which this adds to the end.
  */
-export async function converse (command: string[], cwd: string, requests: RawRequest[]): Promise<string[]> {
+export async function converse (command: string[], cwd: string, requests: RawRequest[], env: Record<string, string> = {}): Promise<string[]> {
   const [program = '', ...args] = command
-  const child = spawn(program, args, { cwd, env: { ...process.env, SMITH_PLUGIN: '1' }, stdio: ['pipe', 'pipe', 'inherit'] })
+  const child = spawn(program, args, { cwd, env: { ...process.env, SMITH_PLUGIN: '1', ...env }, stdio: ['pipe', 'pipe', 'inherit'] })
   const reader = new FrameReader()
   const bodies: string[] = []
   const closed = new Promise<void>((resolve, reject) => {
@@ -33,7 +37,10 @@ export async function converse (command: string[], cwd: string, requests: RawReq
     })
   })
   const all = [...requests, { method: 'shutdown', params: {} }]
-  for (const [i, request] of all.entries()) child.stdin.write(frameMessage(JSON.stringify({ jsonrpc: '2.0', id: i + 1, ...request })))
+  for (const [i, { notification, thenWaitMs, ...request }] of all.entries()) {
+    child.stdin.write(frameMessage(JSON.stringify(notification === true ? { jsonrpc: '2.0', ...request } : { jsonrpc: '2.0', id: i + 1, ...request })))
+    if (thenWaitMs !== undefined) await new Promise(resolve => setTimeout(resolve, thenWaitMs))
+  }
   // A plugin that refused every request (none came after initialize) does not stop at shutdown: closing its input does.
   child.stdin.end()
   await closed

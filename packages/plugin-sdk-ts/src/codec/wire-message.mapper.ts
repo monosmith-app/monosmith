@@ -22,7 +22,12 @@ export function writeRequest (id: number, method: string, paramsJson: string | u
   return `{"jsonrpc":"2.0","id":${id},"method":${encodeJsonString(method)}${params}}`
 }
 
-/** A successful response: `id` is `null` only when the request could not be read. */
+/** A notification as the Go SDK writes it: a request with no `id`, which gets no response. */
+export function writeNotification (method: string, paramsJson: string): string {
+  return `{"jsonrpc":"2.0","method":${encodeJsonString(method)},"params":${paramsJson}}`
+}
+
+/** A successful response:`id` is `null` only when the request could not be read. */
 export function writeResult (id: number | null, resultJson: string): string {
   return `{"jsonrpc":"2.0","id":${id === null ? 'null' : id},"result":${resultJson}}`
 }

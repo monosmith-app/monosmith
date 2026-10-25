@@ -68,8 +68,9 @@ serve (`PLUGIN_MEMBERS`), so a new method has to be given its place in the plugi
 | `protocol` | the generated types, the schema as data, `RpcError` |
 | `codec` | the wire form of the messages: key order, `omitempty`, sorted maps and escaping as the Go SDK writes them, so the bytes are equal; params shaped as the types promise |
 | `framing` | `Content-Length` framing over a byte stream |
-| `serve` | `serve`, `serveStreams`, the plugin interfaces, capability derivation |
-| `host` | `startPlugin`, `connectPlugin`, `connectInProcess`, `PluginClient`: the host side, for tests |
+| `serve` | `serve`, `serveStreams` (a bounded pool of workers, `cancel` and the plugin's `concurrency`), the plugin interfaces, capability derivation |
+| `concurrency` | what a declared `concurrency` means: one at a time by default, a count, or unlimited |
+| `host` | `startPlugin`, `connectPlugin`, `connectInProcess`, `PluginClient`: the host side, for tests; it keeps to the plugin's concurrency and cancels a call with an `AbortSignal` |
 | `conformance` | `checkPlugin`: the checks of `smith plugin check` |
 | `templating`, `jsondoc` | ports of the Go SDK's `templating` and `jsondoc` |
 | `tasks`, `scaffold`, `ci` | helpers to build the answers of contribute, generate and ci |

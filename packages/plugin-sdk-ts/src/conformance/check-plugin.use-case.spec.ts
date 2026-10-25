@@ -94,7 +94,7 @@ describe('checkPlugin', () => {
 
   it('reports a method that fails, with the plugin\'s message', async () => {
     const plugin: SmithPlugin = { describe: () => ({ plugin: { name: 'x', version: '1' }, kind: 'convention' }), doctor: () => { throw new Error('toolchain missing') } }
-    expect(await failuresOf(plugin)).toBe('doctor answers with no projects: toolchain missing')
+    expect(await failuresOf(plugin)).toContain('doctor answers with no projects: toolchain missing')
   })
 
   it('reports a generated project that discovery does not find, or finds with the wrong stack', async () => {

@@ -62,8 +62,8 @@ func TestSchemaDescribesEveryMethodAndResolvesEveryReference(t *testing.T) {
 	if s.Version != protocol.Version {
 		t.Errorf("x-protocolVersion = %d, the protocol speaks %d", s.Version, protocol.Version)
 	}
-	if len(s.Methods) != 16 {
-		t.Errorf("want the 16 methods of version 1, got %d", len(s.Methods))
+	if len(s.Methods) != 17 {
+		t.Errorf("want the 17 methods of version 1, got %d", len(s.Methods))
 	}
 	for name, row := range s.Methods {
 		var m struct {
@@ -73,6 +73,12 @@ func TestSchemaDescribesEveryMethodAndResolvesEveryReference(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, r := range []map[string]string{m.Params, m.Result} {
+			if r == nil {
+				if name != protocol.MethodCancel {
+					t.Errorf("method %s has no params or result", name)
+				}
+				continue // a notification has no result
+			}
 			def := strings.TrimPrefix(r["$ref"], "#/$defs/")
 			if _, ok := s.Defs[def]; !ok {
 				t.Errorf("method %s refers to the undefined %q", name, r["$ref"])
@@ -86,7 +92,7 @@ func TestSchemaDescribesEveryMethodAndResolvesEveryReference(t *testing.T) {
 			t.Errorf("$ref to the undefined definition %q", def)
 		}
 	}
-	if len(s.Codes) != 6 || len(s.Roles) != 5 {
+	if len(s.Codes) != 7 || len(s.Roles) != 5 {
 		t.Errorf("error codes %d, roles %d", len(s.Codes), len(s.Roles))
 	}
 	if s.Transport["maxMessageBytes"] != float64(64<<20) {
@@ -105,5 +111,25 @@ func TestOmitemptyDecidesWhatIsRequired(t *testing.T) {
 	}
 	if got := strings.Join(s.Defs["Step"].Required, ","); got != "name,command,blocking" {
 		t.Errorf("Step requires %q: a bool without omitempty is required", got)
+	}
+}
+
+func TestCancelIsTheOnlyNotificationAndHasNoResult(t *testing.T) {
+	s, _ := buildAndParse(t)
+	for name, row := range s.Methods {
+		var m struct {
+			Result       json.RawMessage `json:"result"`
+			Capability   *string         `json:"capability"`
+			Notification bool            `json:"notification"`
+		}
+		if err := json.Unmarshal(row, &m); err != nil {
+			t.Fatal(err)
+		}
+		if m.Notification != (name == protocol.MethodCancel) {
+			t.Errorf("%s: notification = %v", name, m.Notification)
+		}
+		if name == protocol.MethodCancel && (string(m.Result) != "null" || m.Capability == nil || *m.Capability != "cancel") {
+			t.Errorf("cancel row: result %s, capability %v", m.Result, m.Capability)
+		}
 	}
 }

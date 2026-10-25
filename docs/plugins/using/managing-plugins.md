@@ -112,6 +112,8 @@ go 1.62.0
   ✔ plays a known role: scaffold
   ✔ a language plugin discovers projects
   ✔ a scaffold generates projects
+  ✔ declares a concurrency the protocol defines
+  ✔ answers 3 requests sent together, one at a time
   ✔ discover answers with no manifests
   ✔ ci answers with no projects
   ✔ doctor answers with no projects
@@ -243,6 +245,7 @@ smith plugin check widget
 
 ```text
 widget 0.1.0
+  ✔ declares a concurrency the protocol defines
   ✔ names itself
   ...
   ✔ shuts down when asked
