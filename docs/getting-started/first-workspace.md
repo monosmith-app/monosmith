@@ -225,7 +225,8 @@ it), `json` and `dot`. `--blast-radius <project or file>` lists everything a cha
 it reaches, across languages and through shared schemas. `--focus web` keeps web and everything connected to it,
 `--affected` keeps what a change touches, and `--diff v1.4.0` shows how the
 graph changed since a revision. Projects that import each other in a cycle
-cannot be ordered: every command that opens the workspace stops with the path
+cannot be ordered: `smith graph` and `smith doctor` still open the workspace and report the path and the import to remove,
+while the commands that need an order stop with it
 (`smith: projects import each other in a cycle: ui → web → ui`) until you break the cycle.
 
 ## 4. Run tasks and see the cache

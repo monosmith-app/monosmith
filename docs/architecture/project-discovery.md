@@ -200,12 +200,13 @@ happens to the tasks afterwards.
 
 ## Step 7: the checks that end discovery
 
-After overrides, `projectgraph.New` rejects duplicate names and `Graph.Order` rejects an
-import cycle, naming it (`projects import each other in a cycle: ui → web → ui`). In 1.62.0
-this error ends `session.Open`, so every command stops with it, `smith graph` and
-`smith doctor` included, even though both contain code that would print the cycle as a
-warning. Remove one of the imports and run the command again. (Observed by creating a cycle
-between two projects in a scratch workspace.)
+After overrides, `projectgraph.New` rejects duplicate names. `Discover` then calls
+`Graph.Order`, which rejects an import cycle, naming it
+(`projects import each other in a cycle: ui → web → ui`), so `session.Open` fails and every
+command that needs an order stops with it. `smith graph` and `smith doctor` open the session
+with `AllowCycles` (`projectgraph.DiscoverAllowingCycles`): they skip the `Order` check,
+list the cycles with `Graph.Cycles` and name the import to remove (`projectgraph.CycleRemedy`).
+Before the fix for issue 558 (up to 1.65.0) the error ended `session.Open` for them too.
 
 ## What `plugins.enabled` and external plugins change
 

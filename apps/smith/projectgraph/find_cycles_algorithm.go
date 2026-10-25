@@ -102,3 +102,13 @@ func (g *Graph) cycleThrough(start string, in map[string]bool) []string {
 	walk(start)
 	return path
 }
+
+// CycleRemedy names the import to remove to break a cycle (a path that ends
+// where it starts): the last edge, the one that closes the loop.
+func CycleRemedy(cycle []string) string {
+	if len(cycle) < 2 {
+		return ""
+	}
+	from, to := cycle[len(cycle)-2], cycle[len(cycle)-1]
+	return "remove " + from + "'s import of " + to + " (" + from + " → " + to + ")"
+}

@@ -30,7 +30,9 @@ type webApp struct {
 	Components      []string
 	Dependencies    map[string]string
 	DevDependencies map[string]string
-	Files           map[string]string
+	// Overrides are npm overrides the app needs in the workspace root.
+	Overrides map[string]string
+	Files     map[string]string
 }
 
 // templates are the app's files: the greeting slice, the manifest,
