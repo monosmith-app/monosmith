@@ -11,6 +11,7 @@ func Fit(s string, w int) string {
 	if w <= 0 {
 		return ""
 	}
+	s = Printable(s)
 	cut := ansi.Truncate(s, w, "")
 	if cut != s {
 		cut += "\x1b[m" // a style that was cut short must not run on into the padding
@@ -28,7 +29,7 @@ func Wrap(s string, w, indent int) []string {
 	if w <= indent+1 {
 		return []string{Cut(s, w)}
 	}
-	parts := strings.Split(ansi.Wrap(s, w-indent, ""), "\n")
+	parts := strings.Split(ansi.Wrap(Printable(s), w-indent, ""), "\n")
 	pad := strings.Repeat(" ", indent)
 	for i := 1; i < len(parts); i++ {
 		parts[i] = pad + strings.TrimLeft(parts[i], " ")
@@ -50,7 +51,7 @@ func Block(lines []string, w, h int) []string {
 }
 
 // Width is the number of cells a string takes.
-func Width(s string) int { return ansi.StringWidth(s) }
+func Width(s string) int { return ansi.StringWidth(Printable(s)) }
 
 // Overlay draws over on top of base starting at cell (x, y); both are blocks
 // of equal-width lines. Cells under over are replaced.
@@ -75,7 +76,7 @@ func Cut(s string, w int) string {
 	if w <= 0 {
 		return ""
 	}
-	return ansi.Truncate(s, w, "")
+	return ansi.Truncate(Printable(s), w, "")
 }
 
 // Strip removes the colour codes from s.
