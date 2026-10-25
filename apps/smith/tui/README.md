@@ -13,6 +13,30 @@ views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
 `adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `layout` and
 `progress`.
 
+## The Run tab
+
+Every task run (build, test, lint, typecheck, `run <task>`, "Lint all", "changed", from the keys,
+the palette or the Home next action) stays inside the interface. The shell starts the same smith as
+a child (`runner`), captures its output and shows, like Nx does, one row per task with its state
+(queued, running with a spinner and the elapsed time, passed, failed, cached, skipped), a progress
+bar with totals, and the output of the selected row. Failed tasks are listed first and the first
+failed one is selected when the run ends. `Ctrl+C` stops the run, `r` repeats the run shown, `R`
+runs only the failed and skipped tasks again, `,` and `.` show the previous and the next run of the
+session (the last 20 are kept), `y` copies the command line and `Y` the log shown. The footer lists
+only the keys that work at that moment. The command line shown is the one to type in a shell to get
+the same run.
+
+`tea.Exec` (leaving the interface) is used only for a command that needs a terminal of its own, one
+that asks questions or takes over the screen (`catalog.NeedsTerminal`). A task run no longer does:
+the old way gave real scrollback, which this replaces with the copy keys. The full logs can still
+be viewed and selected: `Y` copies the whole log (or one task's) to the clipboard, `m` turns mouse
+reporting off so a plain drag selects text, and the command line, run in a terminal, prints
+everything again.
+
+A task run is started with `--json-events` (one JSON event per line, see
+[ADR 0026](../../../docs/architecture/decisions/0026-event-stream-and-smith-serve.md)), which
+`runview` reads; any other line, and every other command, is read as text.
+
 ## Exception: the shell's own files stay in the package root
 
 - **Path:** `apps/smith/tui/*.go` (21 production files, plus `doc.go`: `shell_*.go`,

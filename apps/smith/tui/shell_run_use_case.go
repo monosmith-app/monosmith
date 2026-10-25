@@ -22,7 +22,8 @@ const maxHistory = 200
 // execute runs a smith command line the way the user would from a shell:
 // commands that need a terminal hand over to it, commands that change the
 // workspace or publish ask first in a dialog that shows the line, and the
-// rest start at once in the Run tab. confirmed is true once the dialog said yes.
+// rest (task runs included) start at once in the Run tab, which captures
+// their output and shows each task's state. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	switch catalog.Classify(argv) {
 	case catalog.NeedsTerminal:
@@ -47,15 +48,13 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		s.say("A run is in progress (Ctrl+C stops it)")
 		return nil
 	}
-	if s.runsInline(argv) {
-		return s.startInline(argv)
-	}
 	return s.start(argv)
 }
 
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
 	s.run = runview.NewRun(argv, nil, s.now())
+	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {
 		s.history = s.history[len(s.history)-maxHistory:]
@@ -117,12 +116,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	s.run.End(exit.Code, exit.Cancelled, now)
 	s.proc, s.stopping = nil, false
 	if s.runSel == "" {
-		for _, t := range s.run.Ordered() {
-			if t.Status == runview.Failed {
-				s.runSel = t.ID
-				break
-			}
-		}
+		s.runSel = s.firstFailed()
 	}
 	s.finished()
 	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))

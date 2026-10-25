@@ -138,19 +138,14 @@ func TestOutdatedDependenciesAreCountedOnceTheyAreKnown(t *testing.T) {
 }
 
 func TestHomeTellsHowTheLastRunEnded(t *testing.T) {
-	l, made := inlineLab(t, 0)
+	l := newLab(t, true, 140, 30)
 	l.keys("b")
-	c := (*made)[0]
-	_ = c.Run()
-	l.send(inlineDoneMsg{cmd: c})
 	l.keys("1")
 	l.has("Last run", "passed  run build -p orders")
 
-	l, made = inlineLab(t, 2)
+	l = newLab(t, true, 140, 30)
+	l.next = failingRun()
 	l.keys("b")
-	c = (*made)[0]
-	_ = c.Run()
-	l.send(inlineDoneMsg{cmd: c})
 	l.keys("1")
 	l.has("failed  run build -p orders")
 }

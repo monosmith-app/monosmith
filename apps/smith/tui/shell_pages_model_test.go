@@ -12,28 +12,19 @@ func footerOf(l *lab) string {
 	return lines[len(lines)-2]
 }
 
-func TestThePagesThatLeftTheInterfaceAreCommandsOfThePaletteRunInTheTerminal(t *testing.T) {
+func TestThePagesThatLeftTheInterfaceAreCommandsOfThePaletteShownInTheRunTab(t *testing.T) {
 	for name, want := range map[string]string{
 		"Plugins":           "plugin list",
 		"Recipes":           "recipe",
 		"Settings":          "config list",
 		"Commands and docs": "help",
 	} {
-		l, made := inlineLab(t, 0)
+		l := newLab(t, true, 140, 30)
 		l.keys("ctrl+p").typeText(name).keys("enter")
-		if len(*made) != 1 || strings.Join((*made)[0].Argv, " ") != want {
-			t.Fatalf("%s ran %d inline commands, want %q", name, len(*made), want)
+		if l.lastStarted() != want {
+			t.Fatalf("%s started %q, want %q", name, l.lastStarted(), want)
 		}
-		if len(l.started) != 0 {
-			t.Fatalf("%s started the captured runner: %v", name, l.started)
-		}
-		// They print and end: they are not task runs, so the interface stays where it was.
-		c := (*made)[0]
-		_ = c.Run()
-		l.send(inlineDoneMsg{cmd: c})
-		if l.sh().tab != "projects" || len(l.sh().runs) != 0 {
-			t.Fatalf("%s moved to %q or was listed as a run", name, l.sh().tab)
-		}
+		l.has("$ smith " + want)
 	}
 }
 
@@ -43,38 +34,48 @@ func TestThePluginsCommandOfThePaletteSaysWhatItDoes(t *testing.T) {
 	l.has("Plugins", "smith plugin list")
 }
 
-func TestChangingASettingFromTheCliAsksFirstAndThenUsesTheTerminal(t *testing.T) {
-	l, made := inlineLab(t, 0)
+func TestChangingASettingFromTheCliAsksFirstAndThenRunsInTheRunTab(t *testing.T) {
+	l := newLab(t, true, 140, 30)
 	sh := l.sh()
 	cmd := sh.execute([]string{"config", "set", "ci.devcontainer", "false"}, false)
 	l.m = sh
 	l.drive(cmd)
 	l.has("The command that will run:", "$ smith config set ci.devcontainer false")
-	if len(*made) != 0 {
+	if len(l.started) != 0 {
 		t.Fatal("config set ran before the answer")
 	}
 	l.keys("y")
-	if len(*made) != 1 || (*made)[0].Argv[0] != "config" || len(l.started) != 0 {
-		t.Fatalf("the confirmed command did not use the terminal: %v", *made)
+	if len(l.started) != 1 || l.started[0][0] != "config" {
+		t.Fatalf("the confirmed command did not run in the Run tab: %v", l.started)
 	}
 }
 
-func TestTheRunFooterDoesNotOfferFollowOrTasksWhenTheOutputIsInTheTerminal(t *testing.T) {
-	l, made := inlineLab(t, 0)
+func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
+	l := newLab(t, true, 160, 30)
 	l.keys("3")
-	if footer := footerOf(l); strings.Contains(footer, "follow") || strings.Contains(footer, "task") || strings.Contains(footer, "again") {
-		t.Fatalf("nothing has run, and the footer offers: %q", footer)
-	}
-	l.keys("b")
-	c := (*made)[0]
-	_ = c.Run()
-	l.send(inlineDoneMsg{cmd: c})
 	footer := footerOf(l)
-	if !strings.Contains(footer, "r again") || strings.Contains(footer, "f follow") || strings.Contains(footer, "↑↓ task") {
-		t.Fatalf("an inline run can be run again, and has no log to follow: %q", footer)
+	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "runs"} {
+		if strings.Contains(footer, key) {
+			t.Fatalf("nothing has run, and the footer offers %q: %q", key, footer)
+		}
 	}
-	l.keys("f")
-	l.has("scrollback")
+	l.next = failingRun()
+	l.keys("b")
+	footer = footerOf(l)
+	for _, key := range []string{"r again", "R failed", "Y copy log", "f follow", "task"} {
+		if !strings.Contains(footer, key) {
+			t.Fatalf("a failed run offers %q: %q", key, footer)
+		}
+	}
+	if strings.Contains(footer, "runs") {
+		t.Fatalf("there is one run, so there is no other to show: %q", footer)
+	}
+	l.keys("r")
+	l.next = &scripted{lines: []string{"kit:build ✔ 1ms"}}
+	l.keys("r")
+	if footer = footerOf(l); strings.Contains(footer, "R failed") || !strings.Contains(footer, "runs") {
+		t.Fatalf("a run that passed has no failed tasks, and three runs can be browsed: %q", footer)
+	}
 }
 
 func TestTheDoctorExpandsACheckInPlaceOnANarrowScreen(t *testing.T) {

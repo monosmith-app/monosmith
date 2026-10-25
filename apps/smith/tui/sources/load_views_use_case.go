@@ -26,9 +26,6 @@ import (
 
 // Sources load what the shell's views show; tests replace them.
 type Sources struct {
-	// Inline prepares a task run that takes over the terminal (see
-	// shell_inline_run_use_case.go); nil runs it captured in the Run tab.
-	Inline  func(argv []string) *runner.Inline
 	Doctor  func() doctorview.Result
 	Release func() releaseview.Result
 	// Projects lists the workspace's projects with their tasks and what the
@@ -67,14 +64,11 @@ func WorkspaceSources(dir, version string) Sources {
 	}
 	return Sources{
 		Start: func(argv []string) (runner.Handle, error) {
-			p, err := runner.Start(context.Background(), runner.Spec{Argv: argv, Dir: dir})
+			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})
 			if err != nil {
 				return nil, err
 			}
 			return p, nil
-		},
-		Inline: func(argv []string) *runner.Inline {
-			return runner.NewInline(runner.Spec{Argv: argv, Dir: dir})
 		},
 		ShowFix: func(p doctorfix.Planned) (string, error) {
 			root, err := fixRoot(dir)
@@ -213,4 +207,20 @@ func planTasks(open func() (*session.Session, error), argv []string) []string {
 		return nil
 	}
 	return slices.Clone(g.Order)
+}
+
+// withEventStream asks a task run for its event stream (`--json-events`): the
+// Run tab then reads each task's state and output as structured events instead
+// of parsing smith's text. The command shown and copied stays the one the user
+// would type; any other command is started as it is.
+func withEventStream(argv []string) []string {
+	if _, ok := commands.ParseRun(argv); !ok {
+		return argv
+	}
+	for _, a := range argv {
+		if a == "--json" || a == "--json-events" {
+			return argv
+		}
+	}
+	return append(append([]string(nil), argv...), "--json-events")
 }

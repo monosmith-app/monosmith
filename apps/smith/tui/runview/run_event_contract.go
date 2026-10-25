@@ -46,6 +46,10 @@ const (
 	Failure
 	// Summary is "✔ 3/4 tasks succeeded (...) in 1.2s".
 	Summary
+	// Plan is the list of tasks a run will start (the event stream's
+	// run.started); Queue is one of them (task.queued).
+	Plan
+	Queue
 )
 
 // Event is one parsed line.
@@ -63,4 +67,12 @@ type Event struct {
 	// is the success form.
 	Done, Total int
 	OK          bool
+	// Tasks is the plan of a run (Plan).
+	Tasks []string
+	// Display is the line as the log shows it, when the line read was not the
+	// text smith prints (an event of the stream): empty means the line itself.
+	Display string
+	// Hidden is set for an event that says something to the state but has no
+	// line of its own in the log.
+	Hidden bool
 }

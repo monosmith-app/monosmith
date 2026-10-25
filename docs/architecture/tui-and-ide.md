@@ -14,8 +14,8 @@ they disagree with the box, the box is right.
 > | Drag a pane border to resize | not built; `[` and `]` make the detail narrower or wider |
 > | Huh, Glamour and ntcharts | not used; the shell uses Bubble Tea, Bubbles and Lip Gloss |
 > | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
-> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab does **not** consume it: it parses smith's text output (`tui/runview`) |
-> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands use the real terminal (`tea.Exec`) |
+> | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |
+> | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands stay in the Run tab (captured, with live status per task); only a command that asks questions takes the terminal |
 > | Recipes as a form in the interface | partly: `a` opens a guided form, and the recipe's choices are asked by `smith add` |
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
 > | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
@@ -165,9 +165,8 @@ update, view for a width and a height).
 | Settings | `smith config list`, `get`, `set`, `unset`, checked against the schema | Settings |
 | Guide | `smith help`; the forms open from `a` (add), the palette and the CLI | Commands and docs |
 
-These run in the terminal like a task run (the inline runner): the interface
-steps aside, the command prints into the scrollback, a key brings the interface
-back. A command that changes `smith.toml` still asks first.
+These run in the Run tab like a task run: the interface stays, the output is
+captured and shown there. A command that changes `smith.toml` still asks first.
 
 ## Components
 
@@ -258,7 +257,7 @@ keyboard; `Ctrl+P` and `F1` still do.
 | `p` `n` `x` | Release: preview, notes, release (asks first) | Release |
 | `Space` `s` `a` `u` `v` | Deps: mark, mark the safe ones, mark all, update the marked, align versions | Deps |
 | `Enter` | Home: do the suggested next action | Home |
-| `f` `r` | Run: follow or pause the log (when the output is captured), run the last command again | Run |
+| `f` `r` `R` `,` `.` `Y` | Run: follow or pause the log, run the shown run again, run the failed and skipped tasks again, show the previous or next run, copy the log shown | Run |
 
 | Mouse | Keyboard |
 |---|---|
