@@ -66,3 +66,11 @@ The documentation was read as MDX source files from the repository's `docs` fold
 - Local cache: <https://bazel.build/reference/flag-cheatsheet> (`--disk_cache`)
 - Module versions: <https://bazel.build/external/faq> ("Bazel instead uses Minimal Version Selection")
 - Repository (licence, README): <https://github.com/bazelbuild/bazel>. GitHub API on 2026-10-25: licence Apache-2.0, archived false, last push 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same MDX source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `docs/user-manual.mdx` (`--explain`: "explain, for each build step, either why it is being executed, or that it is up-to-date").
+- `basics/artifact-based-builds.mdx` (`visibility`); `about/faq.mdx` (sandboxed execution); `advanced/performance/build-performance-metrics.mdx` (Build Event Protocol); `install/ide.mdx` (a VS Code plugin on the Visual Studio Marketplace).
+- `docs/bazel-and-javascript.mdx`, `external/overview.mdx` and `concepts/runfiles.mdx` (separately maintained `rules_nodejs`, `rules_rust` and `rules_python`).

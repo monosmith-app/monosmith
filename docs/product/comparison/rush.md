@@ -74,3 +74,9 @@ repository (`websites/rushjs.io/docs/pages`), not through a summarising tool.
 - Enabling CI builds: <https://rushjs.io/pages/maintainer/enabling_ci_builds/>; adding a project: <https://rushjs.io/pages/maintainer/add_to_repo/>; `rush init`: <https://rushjs.io/pages/commands/rush_init/>
 - MCP server: <https://rushjs.io/pages/ai/rush_mcp/>
 - Rush Stack repository: <https://github.com/microsoft/rushstack>. Its LICENSE file says "The projects in this monorepo are licensed under the MIT license". GitHub API on 2026-10-25: archived false, last push 2026-10-23.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `advanced/incremental_builds.md` links `advanced/watch_mode.md` (watch mode); `advanced/subspaces.md` (`rush purge`); `ai/rush_mcp.md` (the MCP server).

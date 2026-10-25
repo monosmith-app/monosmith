@@ -31,6 +31,7 @@ folder was written on 2026-10-25, at release 1.62.0. The
 | [MonoSmith in five minutes](how-it-works-in-five-minutes.md) | see the product in commands you can run | 5 min |
 | [Migration stories](migration-stories.md) | know what converting from Nx, Turborepo or mnci really does | 8 min |
 | [Monorepo tools compared](comparison/README.md) | compare smith with 14 other tools in tables, and read a page on each | 10 min |
+| [Everything compared](comparison/everything-compared.md) | see one table of every smith capability against 14 tools, what only smith documents and where it is behind | 10 min |
 | [Choosing a monorepo tool](comparison/choosing.md) | get a decision guide, including the cases where another tool wins | 5 min |
 | [FAQ for evaluators](faq-for-evaluators.md) | get answers on cost, lock-in, licence, security, support and the roadmap | 5 min |
 

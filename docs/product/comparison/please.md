@@ -65,3 +65,9 @@ are relative to `docs`.
 - Plugins: `plugins.html` ("Plugins are a way to extend Please with build rules for additional languages").
 - Windows: `faq.html` ("Windows is unfortunately not supported natively").
 - CI: `codelabs/github_actions.md` ("Running Please on GitHub Actions").
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same HTML and Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `commands.html` (`plz watch`, `plz clean`); `codelabs/genrule.md` ("builds are hermetic"); `tooling.html` (a language server for BUILD files); `faq.html` ("Windows is unfortunately not supported natively"); `codelabs/puku.md` (diagnosing missing imports).

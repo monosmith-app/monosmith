@@ -76,3 +76,9 @@ it), not through a summarising tool.
 - `gradle init`: `best-practices/best_practices_general.adoc` ("Kotlin DSL is the default for new builds created with `gradle init`").
 - Publishing: `fundamentals/developing-plugins/publishing_binary_plugin_advanced.adoc` (the `maven-publish` plugin).
 - Repository (licence, languages): <https://github.com/gradle/gradle>. GitHub API on 2026-10-25: licence Apache-2.0, archived false, last push 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same AsciiDoc source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `optimizing-builds/build-cache/build_cache_debugging.adoc` ("finding out why a cache miss happened"); `reference/runtime-configuration/command_line_interface.adoc` (continuous build re-executes tasks when inputs change); `integration/third_party_integration.adoc` (the Tooling API); `fundamentals/authoring-builds/gradle_directories_intermediate.adoc` ("JDKs downloaded by the toolchain support") and `reference/core-plugins/checkstyle_plugin.adoc` ("Gradle's toolchain support automatically provisions the specified JDK").

@@ -71,3 +71,10 @@ folder, not through a summarising tool.
 - IDE: <https://www.pantsbuild.org/stable/docs/using-pants/setting-up-an-ide> ("We have not yet developed tight IDE integrations")
 - Dependency rules: <https://www.pantsbuild.org/stable/docs/using-pants/validating-dependencies>
 - Repository: <https://github.com/pantsbuild/pants>. GitHub API on 2026-10-25: licence Apache-2.0, archived false, last push 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same MDX source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `using-pants/key-concepts/backends.mdx` (experimental OpenAPI backend; experimental backend packaging `.deb` files); `jvm/java-and-scala.mdx` (BSP for IntelliJ).
+- `getting-started/prerequisites.mdx` ("Microsoft Windows 10 with WSL 2"); `using-pants/using-pants-in-ci.mdx` (`[stats].log` prints cache statistics); `ad-hoc-tools/integrating-new-tools-without-plugins.mdx` (the Pants sandbox).

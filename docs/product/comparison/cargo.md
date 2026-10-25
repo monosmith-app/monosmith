@@ -74,3 +74,9 @@ The Cargo book was read as Markdown source files from the repository's
 - Subcommands: `reference/environment-variables.md` ("3rd party subcommands (ie. programs named `cargo-foobar` placed in `$PATH`)").
 - CI: `guide/continuous-integration.md`.
 - Cargo repository (licence): <https://github.com/rust-lang/cargo>. It holds `LICENSE-MIT` and `LICENSE-APACHE`; the GitHub API on 2026-10-25 reports Apache-2.0 (one value), archived false, last push 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `reference/unstable.md` (an unstable `sbom` option); `commands/cargo-clean.md`.

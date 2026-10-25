@@ -90,3 +90,15 @@ same files), not through a summarising tool.
 - Editor setup (Nx Console): <https://nx.dev/docs/getting-started/editor-setup> ("built and maintained by the Nx team").
 - Nx Cloud plans: <https://nx.dev/docs/features/ci-features> ("starts on the free Hobby plan"); self-hosted caching: <https://nx.dev/docs/enterprise/activate-license> ("Self-hosted caching is now free for everyone"). Nx's pricing page itself was not read.
 - Repository and README (licence, `nx init`, plugins): <https://github.com/nrwl/nx>. GitHub API on 2026-10-25: licence MIT, archived false, last push 2026-10-23.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdoc source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- `technologies/` (`dotnet`, `java`, `node`, `react`, `angular`, `vue`): the technologies Nx documents; `kb/nx-vs-bazel.mdoc` ("JS/TS native, plugins for Gradle, Maven, .NET").
+- `features/multi-language-support.mdoc` ("parses source files and creates dependencies from `import` statements") and `getting-started/Tutorials/managing-dependencies.mdoc` ("For non-JS languages, Nx does not detect dependencies from source code imports").
+- `core-features/code-organization/enforce-module-boundaries` (boundary rules).
+- `features/enhance-AI.mdoc` and `getting-started/ai-setup.mdoc` (the Nx MCP server); `features/enhance-AI.mdoc` links the plugin registry (`/docs/plugin-registry`).
+- `kb/release-npm-packages.mdoc` ("run the same publish action multiple times without any negative side-effects"); `guides/Nx Release/publish-in-ci-cd.mdoc` (`id-token: write` for provenance; Docker images marked experimental); `kb/publish-rust-crates.mdoc`.
+- `reference/environment-variables.mdoc` (`NX_MAX_CACHE_SIZE`); `getting-started/Tutorials/caching.mdoc` (`nx reset`; runtime values in the hash); `features/cache-task-results.mdoc` and `getting-started/Tutorials/understanding-your-workspace.mdoc` (debugging cache misses).
+- `features/CI Features/affected.mdoc` (task-based affected; `fetch-depth: 0` is required); `kb/workspace-watching.mdoc` (`nx watch`); `features/automate-updating-dependencies.mdoc` (`nx migrate`); `kb/from-turborepo.mdoc`.

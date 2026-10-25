@@ -81,3 +81,11 @@ folder of that repository (`npm/cli: docs/lib/content`, `pnpm/pnpm.io: docs`,
 - pnpm workspaces: <https://pnpm.io/workspaces>; `filtering.md` ("Selects all the packages changed since the specified commit/branch"); `workspace-task-orchestration.md` (`tasks`, `dependsOn`); `cli/pipeline.md` ("experimental"; "with cached results restored instead of re-run"; "Added in: v12.12.0" for the shared cache); `catalogs.md`; `cli/change.md`; `cli/version.md`; `cli/doctor.md`; `pnpmfile.md`; `cli/ci.md`. pnpm's GitHub releases on 2026-10-25: v12.15.0 (2026-10-21) and v11.28.8 (2026-10-22), neither flagged pre-release.
 - Yarn workspaces: <https://yarnpkg.com/features/workspaces>; `features/constraints.mdx` ("Ensuring the same version of dependencies across packages"); `features/release-workflow.mdx` (flagged "Experimental"); `features/caching.mdx` (the install cache); `features/extensibility.mdx` (plugins); `features/catalogs.mdx` ("The catalog plugin is included by default starting from Yarn 4.10.0").
 - Licences: the `LICENSE` files of `npm/cli` ("Licensed on the terms of The Artistic License 2.0"), `pnpm/pnpm` (MIT) and `yarnpkg/berry` (`LICENSE.md`, BSD 2-Clause), and the GitHub API on 2026-10-25.
+
+### Added for the master table
+
+Retrieved 2026-10-25, from the same Markdown or MDX source files as above, for the cells of [Everything compared](everything-compared.md) that the other tables do not cover. Paths are relative to the documentation folder named above.
+
+- npm: `commands/npm-sbom.md`, `commands/npm-audit.md`, `commands/npm-cache.md` (`npm cache verify`), `commands/npm-trust.md` (OIDC trust relationships with CI providers), `using-npm/developers.md` (catching phantom dependencies).
+- pnpm: `cli/sbom.md`, `cli/audit.md`, `cli/publish.md` (`--provenance`), `cli/pipeline.md` ("Results are signed artifacts"), `cli/cache-prune.md`, `cli/dist-tag.md` (the CI identity in place of a stored token), `package-sources.md` (`crate:` and `pypi:` package sources).
+- Yarn: `features/security.mdx` (audits), `features/constraints.mdx` ("Restrict dependencies between workspaces").
