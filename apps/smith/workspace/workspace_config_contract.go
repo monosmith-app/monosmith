@@ -114,6 +114,10 @@ type CISection struct {
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
+	// Branches are the branches the generated GitHub and Azure pipelines run
+	// on, for pushes and pull requests. The release branch is always one of
+	// them, and the only one a release runs from. Default: the release branch.
+	Branches []string `toml:"branches"`
 	// AzurePool is the agent pool an Azure Pipelines definition runs on (a
 	// self-hosted or managed pool's name). Default: Microsoft's hosted
 	// ubuntu-latest image.

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -82,5 +83,42 @@ func TestContributionsMergeSetupCredentialsAndSignIns(t *testing.T) {
 	}
 	if m := NewModel(c, "1.0.0", "main"); len(m.Authenticate) != 1 || len(m.SetupCredentials()) != 1 {
 		t.Errorf("model: %+v", m)
+	}
+}
+func TestWithoutBranchesThePipelinesTriggerOnTheReleaseBranchOnly(t *testing.T) {
+	m := model()
+	for name, out := range map[string]string{"github": RenderGitHub(m), "azure": RenderAzure(m)} {
+		if strings.Count(out, "[main]") != 2 {
+			t.Errorf("%s: want push and pull request on [main] only:\n%s", name, out)
+		}
+	}
+}
+
+func TestBranchesAreTheTriggersAndTheReleaseBranchStaysTheReleaseOne(t *testing.T) {
+	cfg := workspace.Config{}
+	cfg.CI.Providers = []string{"github", "azure"}
+	cfg.CI.Branches = []string{"dev", "next"}
+	m := model()
+	m.Pack = true
+	files := Rendered(cfg, m)
+	for path, out := range files {
+		if strings.Count(out, "[main, dev, next]") != 2 {
+			t.Errorf("%s: want the release branch first, then dev and next, for push and pull request:\n%s", path, out)
+		}
+		if strings.Contains(out, "'dev'") || strings.Contains(out, "refs/heads/dev") {
+			t.Errorf("%s: a push to dev must not pack or release", path)
+		}
+	}
+	if !strings.Contains(files[GitHubPath], "github.ref_name == 'main'") {
+		t.Error("the pack step stays limited to the release branch")
+	}
+}
+
+func TestTheReleaseBranchIsNotRepeatedWhenListed(t *testing.T) {
+	cfg := workspace.Config{}
+	cfg.CI.Providers = []string{"github"}
+	cfg.CI.Branches = []string{"dev", "main"}
+	if out := Rendered(cfg, model())[GitHubPath]; strings.Count(out, "[dev, main]") != 2 {
+		t.Errorf("want [dev, main] twice:\n%s", out)
 	}
 }

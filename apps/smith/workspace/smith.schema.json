@@ -29,6 +29,7 @@
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },
         "native_linux_packages": { "type": "array", "items": { "type": "string" }, "description": "apt packages the native job installs on Linux before building." },
+        "branches": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "description": "Branches the generated GitHub and Azure pipelines run on, for pushes and pull requests. The release branch is always included and still the only one a release runs from. Default: the release branch." },
         "azure_pool": { "type": "string", "description": "The agent pool an Azure Pipelines definition runs on (a self-hosted or managed pool's name). Default: Microsoft's hosted ubuntu-latest image." },
         "azure_variable_groups": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Variable groups of the Library an Azure Pipelines definition links, for the secrets its steps read. Default: none." },
         "audit_policies": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Ecosystem policy checks smith ci audit runs beyond the vulnerability scan. Default: none." },

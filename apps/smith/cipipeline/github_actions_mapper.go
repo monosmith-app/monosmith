@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, m.ReleaseBranch, idToken(m))
+`, strings.Join(m.TriggerBranches(), ", "), idToken(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}

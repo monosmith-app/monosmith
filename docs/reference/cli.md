@@ -98,7 +98,7 @@ $ smith new demo --module-prefix github.com/acme/demo --scope @demo
 
 Created demo. Next:
   cd demo
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
 
 ### smith adopt
@@ -217,7 +217,7 @@ Usage: `smith add <kind> <name> [flags]`
 
 <!-- smith:end add -->
 
-A combined kind from `smith kinds` names the language as well: `smith add node-app web` is `smith add app web --lang node`. When `smith.toml` names a recipe, the recipe creates the project and asks its choices; `--choice name=answer` answers one without asking, and `--stack` bypasses the recipe. The new project lints, type-checks, tests and builds straight away, and the CI pipelines are regenerated to install its toolchain.
+A combined kind from `smith kinds` names the language as well: `smith add node-app web` is `smith add app web --lang node`. When `smith.toml` names a recipe, the recipe creates the project and asks its choices; `--choice name=answer` answers one without asking, and `--stack` bypasses the recipe. The new project lints, type-checks, tests and builds straight away, and the CI pipelines are regenerated to install its toolchain. `smith add` leaves the files it wrote uncommitted (`smith new` commits what it wrote): review them with `git status`, then commit. With `smith new --dir .` the workspace is the current directory, so the `cd` line is left out.
 
 ```sh
 $ smith add lib core --lang go
