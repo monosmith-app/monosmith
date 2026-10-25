@@ -15,9 +15,9 @@ const toml = (path: string): string => JSON.stringify(path.replaceAll('\\', '/')
 let root = ''
 let workspace = ''
 
-/** Runs smith in the workspace, without the variable that would send a session elsewhere. */
+/** Runs smith in the workspace, without the variable that would send a session elsewhere, and with its own smith home so the trust it records is not the user's. */
 function run (...args: string[]): { status: number | null, out: string } {
-  const env: NodeJS.ProcessEnv = { ...process.env, NO_COLOR: '1' }
+  const env: NodeJS.ProcessEnv = { ...process.env, NO_COLOR: '1', SMITH_HOME: join(root, 'smith-home') }
   delete env.SMITH_WORKSPACE_ROOT
   const result = spawnSync('smith', args, { cwd: workspace === '' ? root : workspace, encoding: 'utf8', env })
 
@@ -41,6 +41,12 @@ describe.skipIf(!smith)('a throwaway workspace using the TypeScript example plug
       '[conventions.widget-layout]',
       '',
     ].join('\n'))
+    // External plugins run only once trusted; this is the user saying yes to both.
+    // A smith from before trust existed has no such command and needs no trust.
+    for (const name of ['widget', 'widget-layout']) {
+      const trusted = run('plugin', 'trust', name, '--yes')
+      if (trusted.status !== 0) expect(trusted.out).toMatch(/unknown command/)
+    }
   })
 
   afterAll(() => {
