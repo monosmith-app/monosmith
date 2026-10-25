@@ -11,16 +11,20 @@ const ManifestFile = "plugin.json"
 //	  "name": "kiwi",
 //	  "version": "1.2.0",
 //	  "description": "the kiwi language",
-//	  "command": ["./bin/smith-plugin-kiwi-{os}-{arch}{exe}"]
+//	  "command": ["./bin/smith-plugin-kiwi-{os}-{arch}{exe}"],
+//	  "env": ["NPM_TOKEN", "AWS_*"]
 //	}
 //
 // A command path starting with ./ or ../ is relative to the plugin's
-// directory; {os}, {arch} and {exe} (".exe" on Windows) are filled in.
+// directory; {os}, {arch} and {exe} (".exe" on Windows) are filled in. env
+// lists the environment variables the plugin needs beyond the baseline every
+// external plugin gets: names, or prefixes ending in *.
 type Manifest struct {
 	Name        string   `json:"name"`
 	Version     string   `json:"version"`
 	Description string   `json:"description,omitempty"`
 	Command     []string `json:"command"`
+	Env         []string `json:"env,omitempty"`
 }
 
 // Installed is a plugin found on the search path.

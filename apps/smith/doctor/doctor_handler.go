@@ -11,7 +11,9 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +50,9 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				return errors.New("--json prints the report and its fixes; apply them with --fix, without --json")
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if errors.Is(err, pluginadmit.ErrUntrusted) {
+				return reportUntrusted(cmd, asJSON)
+			}
 			if err != nil {
 				return err
 			}
@@ -112,6 +117,42 @@ option number. Steps run in the workspace root and stop at the first that fails.
 	cmd.Flags().IntSliceVar(&choose, "choose", nil, "with --fix and --only, answer the fix's questions by option number, in order (1,2)")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
 	return cmd
+}
+
+// reportUntrusted prints the external plugins and which of them smith will not
+// start, when that is why the workspace could not be opened.
+func reportUntrusted(cmd *cobra.Command, asJSON bool) error {
+	root, err := workspace.FindRoot(".")
+	if err != nil {
+		return err
+	}
+	cfg, err := workspace.Load(root)
+	if err != nil {
+		return err
+	}
+	report := UntrustedReport(root, cfg)
+	out := cmd.OutOrStdout()
+	if asJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		_ = enc.Encode(report)
+		return ErrUnhealthy
+	}
+	for _, f := range report.Findings {
+		mark := "✔"
+		if !f.OK {
+			mark = "✖"
+		}
+		fmt.Fprintf(out, "%s %s\n", mark, f.Check)
+		if !f.OK {
+			fmt.Fprintf(out, "    %s\n", f.Detail)
+			for _, step := range strings.Split(f.Remedy, "\n") {
+				fmt.Fprintf(out, "    → %s\n", step)
+			}
+		}
+	}
+	fmt.Fprintf(out, "\n%d passed, %d failed; the other checks run once these plugins are trusted\n", report.Passed, report.Failed)
+	return ErrUnhealthy
 }
 
 // fixesAvailable tells how many fixes `doctor --fix` offers and how many ask.

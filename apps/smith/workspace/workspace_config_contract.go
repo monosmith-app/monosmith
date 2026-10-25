@@ -219,6 +219,15 @@ type ExternalPlugin struct {
 	// Version constrains the plugin's version: "1.2.3", "^1.2", "~1.2",
 	// ">=1.2". Empty means any.
 	Version string `toml:"version"`
+	// Env lists the environment variables the plugin may see beyond the
+	// baseline smith gives every external plugin: names, or prefixes ending
+	// in * (AWS_*). It adds to what the plugin's own plugin.json declares and
+	// is the only way to give it a variable smith itself uses for a secret.
+	Env []string `toml:"env"`
+	// SHA256 pins the SHA-256 of the plugin's file (the script, when the
+	// command runs an interpreter on one). In CI an external plugin starts
+	// only when this matches. `smith plugin trust <name> --pin` writes it.
+	SHA256 string `toml:"sha256"`
 }
 
 // ConventionConfig chooses the projects a convention applies to.

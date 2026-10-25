@@ -86,7 +86,9 @@
             "additionalProperties": false,
             "properties": {
               "command": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "The executable and its arguments. Empty: find it installed on the plugin search path." },
-              "version": { "type": "string", "description": "A version constraint: 1.2.3, ^1.2, ~1.2 or >=1.2." }
+              "version": { "type": "string", "description": "A version constraint: 1.2.3, ^1.2, ~1.2 or >=1.2." },
+              "env": { "type": "array", "items": { "type": "string" }, "description": "Environment variables the plugin may see beyond the baseline smith gives every external plugin: names, or prefixes ending in * (AWS_*). Adds to what the plugin's own plugin.json declares." },
+              "sha256": { "type": "string", "pattern": "^(sha256:)?[0-9a-fA-F]{64}$", "description": "The SHA-256 of the plugin's file. In CI an external plugin starts only when this matches. smith plugin trust <name> --pin writes it." }
             }
           }
         }
