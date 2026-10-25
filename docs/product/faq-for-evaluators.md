@@ -22,7 +22,7 @@ the test machine because `dart analyze` itself crashed. See
 ### Can we add a language or a rule smith does not have?
 
 Yes. A plugin is any program that speaks JSON-RPC 2.0 on stdin and stdout, so it can be written in
-any language; SDKs are published for Go and TypeScript, and a 102-line Python plugin with no SDK
+any language; SDKs are published for Go, TypeScript and Python, and a 102-line hand-framed plugin with no SDK
 passes `smith plugin check`. A plugin can add a language, tasks, a scaffold, CI steps or a release
 target. A team standard that needs no code is a recipe. There is no plugin registry yet, and plugins
 are placed on a search path or named in `smith.toml`. See
@@ -215,7 +215,7 @@ done yet:
 
 - **Plugin discovery and sandboxing.** How plugins are published, found and installed by name is open
   ([Decisions](../architecture/decisions/README.md)); plugins are found on a search path or
-  declared by command. A registry and a sandbox are tracked in #565, SDKs for Python and C# in #564.
+  declared by command. A registry and a sandbox are tracked in #565, an SDK for C# in #564.
 - **More install channels.** Homebrew, Scoop, winget, Chocolatey, the AUR, Snap and an
   apt or dnf repository are tracked in issue #225; manifests are generated but no
   tap, bucket or submission uses them yet.
