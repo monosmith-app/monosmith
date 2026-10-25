@@ -34,7 +34,7 @@ per message, a methods table (`x-methods`: each of the 17 methods with its param
 definitions and the capability a plugin advertises to be asked it; `cancel` is a notification, without a result), the error codes (`x-errorCodes`),
 the roles (`x-roles`), the protocol version (`x-protocolVersion`) and the framing (`x-transport`).
 The SDKs of other languages generate their types from it (see
-[`packages/plugin-sdk-ts`](../plugin-sdk-ts/README.md) and [`packages/plugin-sdk-py`](../plugin-sdk-py/README.md)), and a plugin in a language without an SDK can
+[`packages/plugin-sdk-ts`](../plugin-sdk-ts/README.md), [`packages/plugin-sdk-py`](../plugin-sdk-py/README.md) and [`packages/plugin-sdk-dotnet`](../plugin-sdk-dotnet/README.md)), and a plugin in a language without an SDK can
 read it as the contract. A member is required when the Go field has no `omitempty`; the field and
 type doc comments are the descriptions.
 
@@ -46,6 +46,7 @@ cd packages/plugin-sdk
 go run ./schemagen                  # or: smith run schema -p plugin-sdk
 smith run generate -p plugin-sdk-ts # the TypeScript types follow the schema
 smith run generate -p plugin-sdk-py # and the Python types
+smith run generate -p plugin-sdk-dotnet # and the C#
 ```
 
 `go run ./schemagen -check` writes nothing and fails when the file is stale. A Go test

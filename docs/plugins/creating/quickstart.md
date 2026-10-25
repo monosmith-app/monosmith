@@ -161,7 +161,7 @@ project files.
 |---|---|
 | a worked example of your kind | [language](language-plugin.md), [toolchain](toolchain-plugin.md), [structure](structure-plugin.md), [scaffold](scaffold-plugin.md), [deploy](deploy-plugin.md) |
 | every method and field | [the cheat sheet](protocol-cheat-sheet.md) |
-| not writing Go | [The TypeScript SDK](typescript-sdk.md) or [The Python SDK](python-sdk.md) (the same plugin in TypeScript or Python, on an SDK), or [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) (Node.js and Python without the SDK) |
+| not writing Go | [The TypeScript SDK](typescript-sdk.md), [The Python SDK](python-sdk.md) or [The C# SDK](csharp-sdk.md) (the same plugin in TypeScript, Python or C#, on an SDK), or [Writing a plugin in Go, Node.js or Python](plugin-sdks.md) (Node.js and Python without the SDK) |
 | share it | [Packaging and distributing a plugin](packaging-a-plugin.md) |
 
 ## Common mistakes

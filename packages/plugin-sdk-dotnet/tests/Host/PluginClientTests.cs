@@ -1,5 +1,5 @@
-using MonoSmith.Plugin.Sdk.Tests.Testing;
 using MonoSmith.Plugin.Sdk.Testing;
+using MonoSmith.Plugin.Sdk.Tests.Testing;
 
 namespace MonoSmith.Plugin.Sdk.Tests.Host;
 

@@ -296,4 +296,4 @@ target = "dist/deploy"
 
 - [The docker plugin](../using/catalogue/docker.md): registries, tags, credentials and a Dockerfile scaffold in one deploy plugin
 - [Releasing](../../reference/releasing.md), [CI pipelines](../../reference/ci.md)
-- [Creating a structure plugin](structure-plugin.md), [the cheat sheet](protocol-cheat-sheet.md#publishparams), [The TypeScript SDK](typescript-sdk.md) and [The Python SDK](python-sdk.md#reference) (`publish` and `ci` are members of the plugin object, with `actionStep`/`action_step`, `ciStep`/`ci_step` and `credential` for the answer)
+- [Creating a structure plugin](structure-plugin.md), [the cheat sheet](protocol-cheat-sheet.md#publishparams), [The TypeScript SDK](typescript-sdk.md), [The Python SDK](python-sdk.md#reference) and [The C# SDK](csharp-sdk.md#reference) (`publish` and `ci` are members of the plugin object, or `IPublisher` and `ICiContributor` in C#, with `actionStep`/`action_step`/`CiSteps.Action`, `ciStep`/`ci_step`/`CiSteps.Command` and `credential`/`CiSteps.Credential` for the answer)

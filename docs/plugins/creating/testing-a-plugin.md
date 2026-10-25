@@ -106,8 +106,9 @@ smith: the plugin does not conform
 
 So `smith plugin check python plugin.py` runs your script only if a file or folder called `python`
 exists in the current directory; otherwise `python` is looked up as a name and finds the *built-in*
-Python plugin, and you are checking the wrong plugin. Use the path form with a launcher, or the name
-form.
+Python plugin, and you are checking the wrong plugin. The same goes for `dotnet`, which is also the name of a
+built-in plugin: `smith plugin check dotnet Plugin.dll` checks the built-in .NET plugin, and prints `dotnet dev`
+instead of your plugin's name. Use the path form with a launcher, or the name form.
 
 ### Checking an interpreted plugin
 
@@ -129,7 +130,9 @@ node "%~dp0plugin.ts" %*
 Without a launcher, the path form also takes the absolute path of the interpreter followed by the
 script (`smith plugin check C:\...\node.exe C:\...\plugin.ts`): the first argument exists, so it is run
 as the plugin with the rest as its arguments. The TypeScript and Python SDKs' own integration tests check
-their examples that way (`smith plugin check <python> plugin.py`).
+their examples that way (`smith plugin check <python> plugin.py`), and the C# SDK's check theirs with the path of
+the `dotnet` program and then the assembly (`smith plugin check /usr/bin/dotnet bin/Release/net8.0/Plugin.dll`;
+the path of the program, because a bare `dotnet` is a name).
 
 ## Unit tests that talk to the plugin
 
@@ -187,6 +190,13 @@ serves a plugin object over pipes (the requests run on worker threads) and retur
 the conformance checks. `start_plugin(StartOptions(command=[...], workspace_root=...))` starts the real
 process instead. See [The Python SDK](python-sdk.md#3-test-it), and `structure-layout-py/test_layout.py`
 (`python -m unittest`).
+
+In C#, the SDK has the same two tools: `PluginClient.ConnectInProcessAsync(plugin, new HostOptions { WorkspaceRoot = ... })`
+serves a plugin object over in-memory pipes (the requests run on the thread pool) and returns a client with one typed
+call per method (`await client.DoctorAsync(params, cancellation, timeout)`), and
+`ConformanceChecks.CheckPluginAsync(client, workspace)` runs the conformance checks. `PluginClient.StartAsync(new
+StartOptions { Command = [...], WorkspaceRoot = ... })` starts the real process instead. See [The C#
+SDK](csharp-sdk.md#3-test-it), and `structure-layout-cs/tests/LayoutPluginTests.cs` (`dotnet test`).
 
 In Python without the SDK, or in Node.js without it, start the plugin as a child process with `SMITH_PLUGIN=1` and
 speak the protocol to it, as `structure-layout-python/test_plugin.py` (`python -m unittest`) does: write

@@ -196,7 +196,8 @@ internal static class ProcessConversation
     /// <summary>The program that runs Python with the SDK importable, or <c>null</c>.</summary>
     public static string? PythonWithSdk()
     {
-        foreach (var candidate in new[] { "python3", "python" })
+        var venv = Path.Combine(RepositoryRoot, ".venv", OperatingSystem.IsWindows() ? "Scripts" : "bin", OperatingSystem.IsWindows() ? "python.exe" : "python");
+        foreach (var candidate in new[] { venv, "python3", "python" })
         {
             if (Runs(candidate, "-c", "import monosmith_plugin_sdk"))
             {

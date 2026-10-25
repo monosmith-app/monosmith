@@ -17,8 +17,10 @@ public sealed class LayoutPlugin : IPlugin, IContributor, IDoctorContributor
     {
         get
         {
-            var location = typeof(LayoutPlugin).Assembly.Location;
-            return location.Length > 0 ? ["dotnet", location] : [Environment.ProcessPath ?? "StructureLayout"];
+            // Run as an assembly (`dotnet StructureLayout.dll`) the program is dotnet and the assembly; published as a single file
+            // there is no assembly beside it and the program is the executable.
+            var assembly = Path.Combine(AppContext.BaseDirectory, "StructureLayout.dll");
+            return File.Exists(assembly) ? ["dotnet", assembly] : [Environment.ProcessPath ?? "StructureLayout"];
         }
     }
 

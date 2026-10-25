@@ -71,7 +71,7 @@ see [`smith plugin`](../manual/plugin.md) and
 ## Writing a plugin
 
 This section is the reference. For a guide to each kind of plugin, with working
-examples in Go, TypeScript, Python and Node.js, read [Creating plugins](../plugins/creating/README.md)
+examples in Go, TypeScript, Python, C# and Node.js, read [Creating plugins](../plugins/creating/README.md)
 (start with the [quickstart](../plugins/creating/quickstart.md)); for every method and
 field in tables, [the protocol cheat sheet](../plugins/creating/protocol-cheat-sheet.md);
 for using, installing and configuring plugins, [Using plugins](../plugins/using/README.md);
@@ -149,7 +149,7 @@ package in a temporary directory, and a language plugin must discover them as
 generated, with their kinds, the stack they were asked to record, and tasks
 that have commands. In Go, run the same checks in your tests with
 `conformance.Check` (`packages/plugin-sdk/conformance`) over an in-process
-connection; in TypeScript, with `checkPlugin`; in Python, with `check_plugin`. Every built-in plugin passes it.
+connection; in TypeScript, with `checkPlugin`; in Python, with `check_plugin`; in C#, with `ConformanceChecks.CheckPluginAsync`. Every built-in plugin passes it.
 
 The quickest start is a scaffold: `smith add app my-plugin --stack
 go-smith-plugin` writes a Go module that is a working plugin (a structure
@@ -220,6 +220,31 @@ if __name__ == "__main__":
     serve(Rust())
 ```
 
+In C#, `MonoSmith.Plugin.Sdk` does the same: a plugin is a class, its capabilities are the interfaces it implements, and
+`PluginClient.ConnectInProcessAsync` and `ConformanceChecks.CheckPluginAsync` test it
+([The C# SDK](../plugins/creating/csharp-sdk.md)):
+
+```csharp
+using MonoSmith.Plugin.Sdk;
+using MonoSmith.Plugin.Sdk.Protocol;
+
+return await PluginServer.RunAsync(new Rust());
+
+internal sealed class Rust : IPlugin, IDiscoverer
+{
+    public PluginDescription Describe(InitializeParams parameters) => new()
+    {
+        Plugin = new Peer { Name = "rust", Version = "0.1.0" },
+        Kind = PluginKind.Language,
+        Languages = ["rust"],
+        Manifests = ["Cargo.toml"],
+    };
+
+    public Task<DiscoverResult> DiscoverAsync(DiscoverParams parameters, CancellationToken cancellation) =>
+        Task.FromResult(new DiscoverResult { Projects = [] }); // ...
+}
+```
+
 **The contract is a JSON Schema.** The Go types of the protocol are the source of truth, and
 `packages/plugin-sdk/schema/protocol.schema.json` is generated from them (draft 2020-12): one definition
 per message, `x-methods` (each of the 17 methods with its params, its result and the capability it
@@ -275,7 +300,7 @@ Rules:
 
 - The host never calls a method the plugin did not advertise. The Go SDK derives
   capabilities from the interfaces a plugin implements, and the TypeScript and Python SDKs from the
-  members of the plugin object, so they cannot lie.
+  members of the plugin object, and the C# SDK from the interfaces of the class, so they cannot lie.
 - A breaking change raises the integer protocol version; additions are new
   capabilities or optional fields, which old peers ignore. `cancel` and `concurrency` are such
   additions ([ADR 0037](../architecture/decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).

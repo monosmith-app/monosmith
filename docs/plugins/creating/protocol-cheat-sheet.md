@@ -7,7 +7,7 @@ checked against `method_enum.go`, `initialize_contract.go` and `serve/plugin_con
 follow the protocol. Version 1 of the protocol is described; it was checked against the SDK in the
 smith 1.62.0 source tree. The same information, machine-readable, is the JSON Schema
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json),
-which the [TypeScript SDK](typescript-sdk.md) and the [Python SDK](python-sdk.md) generate their types from.
+which the [TypeScript SDK](typescript-sdk.md), the [Python SDK](python-sdk.md) and the [C# SDK](csharp-sdk.md) generate their types from.
 
 For the reasoning behind the protocol read [the plugin protocol](../../architecture/plugin-protocol.md);
 for a guide, the [quickstart](quickstart.md).

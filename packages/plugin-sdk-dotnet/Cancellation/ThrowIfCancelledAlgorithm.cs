@@ -2,7 +2,7 @@ namespace MonoSmith.Plugin.Sdk;
 
 /// <summary>
 /// Cooperative cancellation: the <see cref="CancellationToken"/> every method of a plugin receives is cancelled when
-/// the host cancels the request (a plugin that is <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.
+/// the host cancels the request (a plugin that is <c>IPlugin.Cancellable</c>) or the plugin shuts down.
 /// </summary>
 /// <remarks>
 /// The usual loop checks the token between steps and waits on it instead of sleeping:

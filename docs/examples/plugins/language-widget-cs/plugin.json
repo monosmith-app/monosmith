@@ -1,0 +1,6 @@
+{
+  "name": "widget",
+  "version": "0.1.0",
+  "description": "projects described by a widget.json (C#, on MonoSmith.Plugin.Sdk)",
+  "command": ["./LanguageWidget"]
+}

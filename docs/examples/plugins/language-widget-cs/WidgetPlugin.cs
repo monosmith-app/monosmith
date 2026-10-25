@@ -37,8 +37,10 @@ public sealed class WidgetPlugin : IPlugin, IDiscoverer, IGenerator, IVersioner,
     {
         get
         {
-            var location = typeof(WidgetPlugin).Assembly.Location;
-            return location.Length > 0 ? ["dotnet", location] : [Environment.ProcessPath ?? "LanguageWidget"];
+            // Run as an assembly (`dotnet LanguageWidget.dll`) the program is dotnet and the assembly; published as a single file
+            // there is no assembly beside it and the program is the executable.
+            var assembly = Path.Combine(AppContext.BaseDirectory, "LanguageWidget.dll");
+            return File.Exists(assembly) ? ["dotnet", assembly] : [Environment.ProcessPath ?? "LanguageWidget"];
         }
     }
 

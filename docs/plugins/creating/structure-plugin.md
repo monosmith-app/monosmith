@@ -4,7 +4,7 @@ A structure plugin checks and enforces how a team lays out and writes code: no j
 folders, a README in every project, a naming rule, a license header. It adds tasks to the projects
 it applies to, makes existing tasks (usually `lint`) wait for them, and reports health findings
 with `smith doctor`. It needs no new language and no new tool, which makes it the best first plugin
-to write. This guide builds `widget-layout`, in Go, TypeScript and Python (on an SDK, or by hand).
+to write. This guide builds `widget-layout`, in Go, TypeScript, Python (on an SDK, or by hand) and C#.
 
 ## When to write one
 
@@ -48,6 +48,7 @@ Node.js with the framing written by hand, is the smaller [`node`](../../examples
 | Go | [`structure-layout-go`](../../examples/plugins/structure-layout-go) | `main.go`, `plugin.go`, `check.go`, `plugin_test.go` | the SDK (`serve.Main`) |
 | TypeScript | [`structure-layout-node`](../../examples/plugins/structure-layout-node) | `plugin.ts`, `layout.ts`, `layout.test.ts`, `plugin.cmd`, `plugin.json` | the [TypeScript SDK](typescript-sdk.md) (`serve`) |
 | Python, on the SDK | [`structure-layout-py`](../../examples/plugins/structure-layout-py) | `plugin.py`, `layout.py`, `test_layout.py`, `plugin.cmd`, `plugin.json` | the [Python SDK](python-sdk.md) (`serve`) |
+| C# | [`structure-layout-cs`](../../examples/plugins/structure-layout-cs) | `Program.cs`, `LayoutPlugin.cs`, `tests/LayoutPluginTests.cs`, `plugin.json` | the [C# SDK](csharp-sdk.md) (`PluginServer.RunAsync`) |
 | Python, by hand | [`structure-layout-python`](../../examples/plugins/structure-layout-python) | `plugin.py`, `test_plugin.py`, `plugin.cmd`, `plugin.json` | by hand, standard library only |
 
 ### Step 1: the handshake
@@ -182,7 +183,7 @@ $ smith doctor
 
 (`legacy`, listed in `exclude = ["legacy"]`, has no README and is not reported.)
 
-### Step 4: TypeScript and Python
+### Step 4: TypeScript, Python and C#
 
 The protocol is the same. The TypeScript version is on the SDK, which frames the messages and derives
 the capabilities from the two methods the object has (`layout.ts` is the plugin, `plugin.ts` the entry
@@ -220,6 +221,26 @@ class LayoutPlugin:
 
 if os.environ.get("SMITH_PLUGIN") == "1":
     serve(LayoutPlugin())
+```
+
+The C# version on the SDK is a class that implements `IPlugin`, `IContributor` and `IDoctorContributor`
+(`LayoutPlugin.cs`, with `Program.cs` as the entry point); [The C# SDK](csharp-sdk.md#a-plugin-step-by-step)
+walks through it:
+
+```csharp
+public sealed class LayoutPlugin : IPlugin, IContributor, IDoctorContributor
+{
+    public PluginDescription Describe(InitializeParams parameters) { /* the object above */ }
+
+    public Task<ContributeResult> ContributeAsync(ContributeParams parameters, CancellationToken cancellation) =>
+        Task.FromResult(Contribute.To(parameters.Projects, project => new Contribution
+        {
+            Tasks = new Dictionary<string, ProjectTask> { ["layout-check"] = ProjectTasks.Create([.. Self, "layout-check"], cache: true) },
+            DependsOn = new Dictionary<string, IReadOnlyList<string>> { ["lint"] = ["layout-check"] },
+        }));
+
+    public Task<DoctorResult> DoctorAsync(DoctorParams parameters, CancellationToken cancellation) { /* one finding per project */ }
+}
 ```
 
 The Python version without an SDK is the framing yours, and the file is one program that is both the plugin
@@ -292,7 +313,7 @@ structure = ["widget-layout"]
 | `smith.toml [conventions.x]: it does not apply to "go"; it supports [widget]` (from the code) | `languages = [...]` in the convention names a language the plugin does not list |
 | `lint` does not wait for the check | `DependsOn` named a task that does not exist yet; emit it unconditionally and let smith ignore it |
 | `plugin.cmd` fails to start on Windows | a bare name is looked up on `PATH`; write `.\plugin.cmd` |
-| a plugin that frames the messages itself prints a banner and smith stops answering | stdout is the protocol; use `console.error`. (The TypeScript and Python SDKs send whatever else is written to stdout to stderr, so a stray `console.log` or `print` cannot corrupt it) |
+| a plugin that frames the messages itself prints a banner and smith stops answering | stdout is the protocol; use `console.error`. (The TypeScript, Python and C# SDKs send whatever else is written to stdout to stderr, so a stray `console.log`, `print` or `Console.WriteLine` cannot corrupt it) |
 | the check passes locally and fails in CI | the task command contains the plugin's absolute path (as this example's does); in a shared plugin put the tool on `PATH` and name it in the command |
 
 ## See also
