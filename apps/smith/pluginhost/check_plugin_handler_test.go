@@ -116,3 +116,12 @@ func TestTheNodeExamplesStillPassCheckUnderTheMinimalEnvironment(t *testing.T) {
 		checkExample(t, path)
 	})
 }
+
+func TestAnErrorDetailIsEmptyWhenThereIsNoError(t *testing.T) {
+	if got := errorDetail(nil); got != "" {
+		t.Fatalf("detail %q, want empty (not <nil>)", got)
+	}
+	if got := errorDetail(os.ErrClosed); got != os.ErrClosed.Error() {
+		t.Fatalf("detail %q", got)
+	}
+}

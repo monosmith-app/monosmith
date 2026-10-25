@@ -21,8 +21,10 @@ var ErrInvalid = errors.New("the recipe is not valid")
 type checkReport struct {
 	Resolution
 	// Pinned says URL recipes were pinned in the workspace's lockfile.
-	Pinned bool     `json:"pinned"`
-	Errors []string `json:"errors"`
+	Pinned bool `json:"pinned"`
+	// Checked is how many combinations of answers --all resolved and validated.
+	Checked int      `json:"checked,omitempty"`
+	Errors  []string `json:"errors"`
 }
 
 // Command is `smith recipe`.
@@ -88,7 +90,7 @@ func runCheck(out, errOut io.Writer, ref string, answers map[string]string, asJS
 	if err == nil && all {
 		// Every combination of answers; the report below still shows the one
 		// given or defaulted, when it resolves.
-		err = ValidateAll(loaded, lookup)
+		report.Checked, err = ValidateAll(loaded, lookup)
 	}
 	resolved := false
 	if err == nil {
@@ -174,6 +176,9 @@ func printReport(out io.Writer, r checkReport) {
 		}
 	}
 	if len(r.Errors) == 0 {
+		if r.Checked > 0 {
+			fmt.Fprintf(out, "\nChecked %d combination(s) of answers: every one is valid.\n", r.Checked)
+		}
 		fmt.Fprintln(out, "\nThe recipe is valid.")
 	}
 }
