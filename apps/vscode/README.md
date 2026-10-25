@@ -133,4 +133,11 @@ one `VSCODE_EXECUTABLE_PATH` names) with the extension loaded and a stand-in
 that is not trusted. On Linux without a display run them under `xvfb-run -a`.
 
 `smith run package -p vscode` packs a .vsix into dist/drop, and a release
-publishes it to the Marketplace with the token in `VSCE_PAT`.
+publishes it to the Marketplace, with the token in `VSCE_PAT` or, when the
+workspace's `smith.toml` sets `[release] vsce_entra = true`, as a Microsoft Entra
+ID app signed in by the workflow (no token). When `OVSX_PAT` is set it also
+publishes to Open VSX. See
+[Releasing](https://github.com/monosmith-app/monosmith/blob/main/docs/reference/releasing.md#the-marketplace-without-a-token-microsoft-entra-id).
+
+The full list of commands, views and keys is in the
+[manual](https://github.com/monosmith-app/monosmith/blob/main/docs/manual/vscode.md).

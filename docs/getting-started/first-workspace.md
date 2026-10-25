@@ -1,4 +1,4 @@
-# Getting started
+# Your first workspace
 
 This is a hands-on tour. In about twenty minutes you will install `smith`,
 make a workspace with projects in two languages, run tasks and watch the cache
@@ -92,79 +92,15 @@ Options (see [`smith new`](../reference/cli.md#smith-new)):
 | `--dir .` | `./<name>` | create the workspace in an existing clone |
 | `--recipe <path or URL>` | none | the [recipe](../reference/recipes.md) `smith add` builds projects from |
 
-With `--dir .`, files smith does not own are kept, and the first commit holds
-only the files smith wrote, so your other changes stay uncommitted. A workspace
-made in a folder below the top of an existing repository is left uncommitted;
-commit it yourself.
+With `--dir .`, files smith does not own are kept. In a folder that is not a git
+repository smith runs `git init`, and the first commit holds everything in the
+folder. In a clone you already have, the first commit holds only the files smith
+wrote, so your other changes stay uncommitted. A workspace made in a folder below
+the top of an existing repository is left uncommitted; commit it yourself.
 
-### Or adopt an existing repository
+If you already have a repository with code in it, do not run `smith new` over it:
+see [Adopting an existing repository](adopting.md).
 
-A repository with npm workspaces, Go modules or Python projects but no
-`smith.toml` can be adopted. (An Nx workspace is for
-[`smith convert`](converting.md).) First ask what adopting would involve; this
-changes nothing:
-
-```sh
-smith adopt --dry-run
-```
-
-```text
-C:\work\old would be workspace "old" (scope @old, CI github) with:
-  PROJECT              LANGUAGE KIND     FOLDER
-  lib                  node     package  packages/lib
-  api                  go       app      services/api
-  kind: apps/ holds apps, libs/ libs, packages/ packages; elsewhere a Go main package is an app,
-  a public Node package is a package and the rest are libs. To change one: "smith": {"kind": "app"}
-  in its package.json, or a // smith:kind app comment in its go.mod.
-
-! smith doctor will report: the workspace has Go projects but no go.work
-  → --init runs go work init and go work use for you
-! smith doctor will report: node_modules is missing at the workspace root
-  → --init --install runs npm install for you (or run it yourself afterwards)
-✔ nothing blocks: smith adopt --init makes it a workspace, then says what smith doctor still reports
-
-Nothing changed (adopt only reports). To apply:
-  → smith adopt --init
-```
-
-Then take the steps:
-
-```sh
-smith adopt --tags --init
-```
-
-```text
-  wrote .gitignore
-  wrote .gitattributes
-  wrote smith.toml
-  wrote README.md
-  wrote .github/workflows/ci.yml
-  wrote .devcontainer/devcontainer.json
-  wrote go.work: ./services/api
-  committed: chore: adopt smith
-✔ adopted, and smith doctor finds nothing to fix
-  next: smith run build
-```
-
-`--init` also takes the steps `smith doctor` would otherwise ask for: it runs
-`go work init` and `go work use` for the Go projects and adds the Node projects
-to the root `package.json` `"workspaces"` (`--install` runs `npm install` too).
-It ends by checking the workspace as `smith doctor` does, so anything left over
-is listed with its first step and nothing comes as a surprise afterwards.
-
-When something blocks, the report lists each blocker and warning with the step
-that clears it, and `smith adopt` exits non-zero. Blockers include a folder that
-is not a git repository, one that is already a smith workspace, and an Nx
-workspace (that is `smith convert`'s). Warnings include a root `package.json`
-with runtime dependencies (in smith each project declares what it uses) and a
-pipeline of yours at a path smith's uses, which `--init` keeps as
-`<file>.pre-smith`. When a project's existing release tags are named differently
-from the way smith names them (`<project>@<version>`, for example `sdk@0.1.0`;
-`<dir>/v<version>` for a Go package), its next release would start from scratch; `--tags` creates the missing tags
-locally, on the same commits, and pushing them is yours. Both steps need a clean
-git tree. `--init` takes the workspace name from the directory, the npm scope
-from the root `package.json` and the CI providers from the ones the repository
-already uses, and adds `.smith/` to your `.gitignore`.
 
 ## 3. Add projects
 
@@ -285,7 +221,8 @@ point at what a project depends on; blue is an app, grey a lib, green a
 package.*
 
 The other formats are `--format tui` (browse: what a project uses, what uses
-it), `json` and `dot`. `--focus web` keeps web and everything connected to it,
+it), `json` and `dot`. `--blast-radius <project or file>` lists everything a change to
+it reaches, across languages and through shared schemas. `--focus web` keeps web and everything connected to it,
 `--affected` keeps what a change touches, and `--diff v1.4.0` shows how the
 graph changed since a revision. Projects that import each other in a cycle
 cannot be ordered: `smith graph` warns with the path (`ui → core → ui`).
@@ -418,8 +355,20 @@ latest version, then the workspace is installed again.
 smith doctor
 ```
 
-A healthy workspace prints one line per check (the Doctor tab of the shell shows
-the headline, the failing checks and, behind `p`, the passed ones):
+A healthy workspace prints one line per check and a count (the Doctor tab of the
+shell shows the headline, the failing checks and, behind `p`, the passed ones):
+
+```text
+✔ the cache directory is ignored by git
+✔ the repository has commits
+...
+✔ the venv's Python is 3.12, as in CI
+✔ Node projects are checked for vertical slices (@monosmith/eslint-config)
+
+31 passed, 0 failed, 0 warning(s)
+```
+
+The checks that run depend on the languages in the workspace.
 
 When a check fails, the line says what is wrong and the remedy:
 
@@ -443,129 +392,20 @@ about each.
 
 ## 7. The interactive shell
 
-Run `smith` with no arguments, in a terminal. The shell has a header (the workspace, its branch and what doctor found, such as
-`✖2 ▲2`), the views as tabs, one pane for the open view, a row of key hints and
-a status bar, and it works with the mouse too. From 100 columns the selection's
-detail sits beside the list; below that the list has the whole width, Enter
-opens the detail over it and Esc goes back. It has no menu bar: every action is one key, and the row above
-the status bar always shows the keys of the view you are in (click a hint to
-press its key). The number keys open the tabs, in the order of the tab row, and
-clicking a tab name does the same:
+Run `smith` with no arguments, in a terminal, and it opens a full-screen shell for the
+workspace: Home, Projects, Run, Doctor, Deps and Release as tabs (keys `1` to `6`),
+one key for each action (`b` build, `t` test, `l` lint, `c` typecheck, `w` lint and test
+what changed, `d` doctor, `a` add a project), a command palette on `:` and a help
+overlay on `?`. Nothing the shell does happens on its own: every action ends as an
+ordinary `smith` command line, shown in the status bar before it runs, and one that
+changes the workspace asks first. Home names the one thing to do next, for example
+"press d" when checks fail or "all good: press b to build".
 
-- **Home** (`1`): the first thing you see. A headline for the workspace's
-  health ("2 checks fail"), the one thing to do next with its key ("press d",
-  "press w to lint and test them", "all good: press b to build"; Enter or a
-  click does it), and the facts behind it: the checks, the projects the changes
-  affect, how the last run ended and how many dependencies have newer releases.
-  Doctor runs in the background when the shell opens, so the health in the
-  header is filled before you open any tab.
-- **Projects** (`2`): every project with its language, kind, stack or
-  recipe and tasks, how many projects it needs (↑) and how many use it (↓), and
-  a mark on the ones the current changes affect. `b`, `t`, `l` and `c` build, test,
-  lint and typecheck the selected project; `w` lints and tests
-  what changed (`smith run lint test --affected`); the detail lists the project's
-  tasks (each can be run from it), what it depends on and what
-  depends on it, and shows its graph (`smith graph --focus <project>`).
-- **Run** (`3`): the runs you started (a task run uses the terminal itself, so
-  its output stays in your scrollback), and the task graph and log of a command
-  that ran captured. `r` runs the last command again; `f` follows a captured
-  log or pauses it.
-- **Doctor** (`4`, or `d` from anywhere): "2 failed · 2 warnings", then the
-  failing checks, one line each (`p` shows the ones that passed; `g` groups them
-  by project). Beside the list the detail tells the selected check in full: the
-  problem, the remedy and the fix (the files it writes, the commands it runs,
-  the questions it asks); on a narrow screen Enter expands the check in place
-  instead. A check that has a fix shows the action "Fix: <what it does>" (`f`),
-  or "Fix all N projects" when one fix covers several; a check without one shows
-  only its remedy. `f` opens the fix wizard: it asks the fix's questions as
-  numbered options (arrows or `j` `k` and Enter, a number key, or a click; Esc
-  cancels), then shows what will change, the files as diffs, the commands to
-  run and the projects it covers (scroll with the arrows, PgUp and PgDn or the
-  wheel), and applies it when you press Enter. A fix with no questions skips
-  straight to that review. While it applies the wizard shows the step it is on,
-  and Ctrl+C stops it; if a step fails, it shows that step's output (`y` copies
-  it) with Retry and Close. When it finishes, doctor checks again and the list
-  refreshes. `x` (and "Fix with doctor" in the palette, and the suggestion on
-  Home when checks fail and fixes are ready) opens the same wizard on every fix
-  that needs no decision at once, still showing the review before it applies.
-  `r` checks again. In plain or screen-reader mode, and when output is not a
-  terminal, there is no shell: `smith doctor --fix` asks the same questions as
-  numbered prompts.
-- **Deps** (`5`): the dependencies with a newer release, patch before minor
-  before major, with the projects that declare them, and what the one-version
-  policy says. `Space` marks a row, `s` marks the patch and
-  minor ones and `a` marks all; `u` or Enter updates the marked ones, or the row under the cursor (`smith deps up <packages>`), and
-  `v` brings dependencies that projects declare at different versions to one
-  (`smith deps up --align`).
-- **Release** (`6`): what the next release would do, project by project, or
-  why it is blocked. Enter on a project shows the commits behind its bump (the
-  tag, the level, each commit with its type, scope and author, and a breaking
-  change's note); `n` prints the release notes (`smith release --dry-run
-  --notes`), `p` previews it and `x` releases (after you confirm).
+In a folder that is not a workspace the shell offers to create one, or to adopt the
+repository you are in. When standard input or output is not a terminal, or `CI` is
+set, a bare `smith` prints its help instead. Every key, screen and wizard is listed in
+[The smith terminal interface](../manual/tui.md).
 
-The tabs for plugins, recipes, settings and the guide are gone: each is a smith
-command, and the palette (`:` or `Ctrl+P`) lists it. *Plugins* runs `smith plugin
-list` (`plugin enable`, `disable` and `set` change them), *Recipes* runs `smith
-recipe` (`recipe check` and `recipe new`; `smith add` asks the recipe's choices),
-*Settings* runs `smith config list` (`config set` and `unset` change `smith.toml`
-and refuse a value the schema rejects, keeping the file's comments) and *Commands
-and docs* runs `smith help`. These run in your terminal like a task run: the
-interface steps aside, the command prints into the scrollback, and a key brings
-the interface back. A command that changes the workspace asks first.
-
-The guided questions are still there when a command needs them. `a` adds a
-project, and the palette's *Add project…*, *Remove project…* and *Manage
-plugins…* open a form that asks one question at a time and ends as a smith
-command; so does every other command that takes arguments or options, with a
-form built from the command itself (the required arguments are asked first, then
-the optional ones, the switches in one list and each option that takes a value;
-Enter on an optional question skips it). A command added to smith appears there
-without anyone writing its form. Outside a workspace the guide is the only view:
-it offers to create a workspace, or to adopt or convert the repository you are in.
-
-The keys are the same in every tab: the arrows (or `j` and `k`), `PgUp`,
-`PgDn`, `Home` and `End` move, Enter acts on the row, `r` loads the view again,
-`Tab` moves between the panes, `Esc` goes back, `:` or `Ctrl+P` (or `/`) opens
-the command palette with every smith command, `i` installs the dependencies,
-`a` adds a project (and `n` starts a workspace in a folder that has none),
-`y` copies the focused item, `m` turns the mouse off so the terminal can select
-text, `q` quits, and `?` (or `F1`) lists the keys of the tab you are in and the
-rest. A key never fires while you are typing in a field or a form. The hints
-row and the help are drawn from the same list as the keys, so they cannot name
-a key that does nothing. Everything fits 72 columns; the tab names are shortened
-(Proj, Rel) before the row of tabs would scroll, with `‹` and `›` to click, so the
-open tab is always in view. On a terminal shorter than 24 rows the tabs are one plain
-row instead of boxes.
-
-Nothing the shell does happens on its own. Every action ends as a smith
-command line, printed in the status bar and the terminal before it runs; one
-that changes the workspace, installs or publishes first shows the line in a
-confirmation you answer with `y` or `n`. A line that has a space in it is
-printed with quotes, so you can paste it into a script as it is.
-
-**Colours and screen readers.** `NO_COLOR` and `SMITH_THEME=plain` draw the
-shell without colour: the selection is reverse video and every state keeps its
-symbol (`â` `â` `â²`) and its word. `SMITH_THEME=light` suits a light terminal;
-without it smith reads `COLORFGBG` and assumes dark. The full-screen shell
-redraws the terminal, which a screen reader cannot follow. Set
-`SMITH_SCREEN_READER=1` (or `SMITH_THEME=plain`, or send the output to a pipe) and a bare `smith`
-asks the guided questions as plain numbered lines instead (no colour, no mouse,
-nothing drawn over earlier output), prints `Running: smith ...` and runs the
-command in your terminal:
-
-```text
-smith. What do you want to do? Type a number and press Enter, or q to quit.
-1. Run tasks - build, test, lint, typecheck
-2. Add a project - app, lib or package
-...
-Your choice: 2
-What kind? Type the number of one.
-1. app - deployed, never published
-...
-```
-
-Every tab appears only inside a workspace. When stdin or
-stdout is not a terminal, or `CI` is set, `smith` prints its help instead.
 
 ## 8. CI
 
@@ -590,6 +430,7 @@ locally:
 | `smith ci audit` | checks dependencies for known vulnerabilities |
 | `smith ci verify` | lint, typecheck, test and build; only affected projects on a pull request |
 | `smith ci pack` | collects what each project packages into `dist/drop` |
+| `smith ci native` | lints, tests, builds and packages the projects tagged native (cgo) on this operating system; the pipeline runs it on each OS |
 | `smith ci release` | versions, publishes and tags every package with releasable commits |
 
 `smith ci check` lists what to set up by hand: the repository secrets and each

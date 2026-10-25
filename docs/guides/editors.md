@@ -1,7 +1,8 @@
 # Editors
 
-Editors and tools build on four commands whose `--json` output is a stable
-contract. They keep the shapes the mnci VS Code extension reads, which was
+The [VS Code extension](../manual/vscode.md) is the editor integration smith
+ships; it talks to `smith serve` (below). Other editors and tools build on four
+commands whose `--json` output is a stable contract. They keep the shapes the mnci VS Code extension reads, which was
 written against the old TypeScript mnci.
 
 | Command | Prints |

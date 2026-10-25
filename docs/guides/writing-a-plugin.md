@@ -898,7 +898,7 @@ whose command is `["./plugin.cmd"]`, `smith plugin list` shows (and
 `smith plugin check widget` passes):
 
 ```
-Installed (search path: ...\searchpath, C:\Users\russo\.smith\plugins):
+Installed (search path: ...\searchpath, C:\Users\you\.smith\plugins):
   widget         0.1.0      ...\searchpath\widget
 ```
 

@@ -7,8 +7,9 @@ and with what settings. It is data: a TOML file with no code, so it can only
 choose and configure plugins, never run anything. Recipes can extend one
 another and ask a few choices, and the answers decide the rest.
 
-Recipes are being built in steps (epic #312). What exists today is the file
-format, loading, resolving, validating, `smith recipe check`, creating
+Recipes were built in steps (epic #312, closed). What exists is the file
+format, loading, resolving, validating, `smith recipe check`
+([manual](../manual/recipe-check.md)), creating
 projects from a recipe with `smith add` (below), and keeping those projects
 current: `smith doctor` reports drift, `smith upgrade` brings them up to date
 and `smith explain` shows where each value came from (see

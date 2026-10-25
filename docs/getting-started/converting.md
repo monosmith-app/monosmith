@@ -23,13 +23,18 @@ so the whole conversion is one change you can review and undo.
 | `--dry-run` | report the plan; change nothing. Always run this first |
 | `--yes` | apply without asking. In a terminal convert shows its verdict and asks `Apply? [y/N]`; scripts and CI are not asked |
 | `--verbose` | name every project a finding applies to, not just a few |
-| `--allow-dirty` | convert even with uncommitted changes |
+| `--allow-dirty` | convert even with uncommitted changes (not with `--level full`) |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported |
 | `--skip-install` | do not run `npm install` afterwards |
 | `--json` | print the plan as JSON, for tools |
+| `--level conservative\|full` | how far to go; see [Going further](#going-further---level-full). Default `conservative` |
+| `--lint`, `--test`, `--build`, `--ci` | the choices behind the full level |
+| `--skip-verify` | full level: do not build, test, lint and run doctor afterwards |
 
-If your repository is not an Nx workspace at all, you want
-[`smith adopt`](first-workspace.md#or-adopt-an-existing-repository) instead.
+Every flag, its default and its errors are in [`smith convert`](../manual/convert.md).
+If your repository is not an Nx or Turborepo workspace at all, you want
+[`smith adopt`](adopting.md) instead; in a terminal, a bare `smith` in the folder opens a
+wizard that does either (see [the adopt wizard](../manual/tui.md#the-adopt-wizard)).
 Words used below (project, kind, task, stack) are defined in the
 [glossary](../reference/glossary.md).
 
@@ -125,7 +130,7 @@ a minor version (the old mnci released a patch).
 
 `smith convert` also converts a Turborepo workspace (it has a `turbo.json`).
 Turborepo workspaces are usually pnpm or yarn, and smith's Node plugin runs
-npm (decision 7 in the design decisions); smith has its own install command,
+npm ([decision 7](../architecture/decisions.md#7-npm-only-for-node)); smith has its own install command,
 `smith install` (`smith i`), whatever the language, and for Node it runs npm.
 So convert does not add pnpm or yarn: it turns the workspace into the npm
 workspace `smith i` installs, and the report says exactly what changed or went.
@@ -205,9 +210,16 @@ Webpack, Nx and mnci); other languages' leftovers are not looked for yet. It
 needs a clean git tree, because `git restore --staged --worktree . && git clean -fd`
 is the way back.
 
-`smith adopt` sends a repository it recognises as Nx here. The full level is
-`smith convert` only for now; other languages' leftovers and an `adopt` for
-repositories with no tool yet follow (issue #548).
+`smith adopt` sends a repository it recognises as Nx or Turborepo here, and
+`smith adopt --level full` in one is `smith convert --level full`. The full level
+for a repository with no such tool (`smith adopt --level full`) is not built
+yet: it is tracked in issue #553, and the depth levels as a whole in #548. Other
+languages' leftovers are not looked for yet.
+
+In a terminal, a bare `smith` in the folder asks the same four questions in the
+adopt wizard, converts on a scratch copy first to show what would be left, and
+asks about each group of removals; see
+[the adopt wizard](../manual/tui.md#the-adopt-wizard).
 
 ### The choices
 

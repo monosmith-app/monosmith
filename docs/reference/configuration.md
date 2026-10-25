@@ -458,6 +458,8 @@ See [Releasing](releasing.md#apps).
 | `SMITH_PYPI_SIMPLE_URL` | the simple index to check before uploading to a custom Python index |
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/` |
+| `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
+| `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
 | `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |

@@ -26,7 +26,7 @@ with through its [stack](stacks.md).
 | `vite` | scaffold and toolchain, provides `build`, `typecheck`; publishes `react`, `react-p5`, `vue`, `svelte`, `html` | scaffolds browser apps in TypeScript (React, React with p5, Vue, Svelte, or a page with no framework) that Vite serves (`start`) and builds into `dist/<app dir>`; type-checked by `tsc`, `vue-tsc` or `svelte-check`; each stack lints with eslint and tests with Vitest | released by its tag |
 | `angular` | scaffold and toolchain, provides `build`, `typecheck`; publishes `angular` | scaffolds an Angular app (standalone root component, no zone.js) that the Angular CLI serves (`ng serve`) and builds into `dist/<app dir>`; `ngc` type-checks its templates; linted by eslint, tested with Vitest | released by its tag |
 | `astro` | scaffold and toolchain, provides `build`; publishes `docs-site` | scaffolds an Astro Starlight documentation site (a splash page, guides and reference with generated sidebars); `build` runs `astro check` then `astro build` into `dist/<app dir>`, `start` runs `astro dev`; linted by eslint | released by its tag |
-| `vscode` | scaffold and toolchain, provides `build`, `typecheck`; publishes `vscode-extension` | scaffolds a VS Code extension in TypeScript (a command showing the greeting) that esbuild bundles into `dist/<dir>/main.js`; the node plugin's `package` packs it into `dist/drop/<name>-<version>.vsix`; linted by eslint, tested with Vitest | `vsce publish` of the staged build to the Marketplace (`VSCE_PAT`), skipping a version it has; for an extension app (deploy role) the release stamps its version, packs the .vsix and publishes it to the Marketplace and, with `OVSX_PAT`, to Open VSX |
+| `vscode` | scaffold, toolchain and deploy, provides `build`, `typecheck`; publishes `vscode-extension` | scaffolds a VS Code extension in TypeScript (a command showing the greeting) that esbuild bundles into `dist/<dir>/main.js`; the node plugin's `package` packs it into `dist/drop/<name>-<version>.vsix`; linted by eslint, tested with Vitest | `vsce publish` of the staged build to the Marketplace (`VSCE_PAT`), skipping a version it has; for an extension app (deploy role) the release stamps its version, packs the .vsix and publishes it to the Marketplace and, with `OVSX_PAT`, to Open VSX |
 | `eslint` | toolchain, provides `lint` | Node projects lint with ESLint and `@monosmith/eslint-config` (TypeScript rules, Standard style, vertical slices) | — |
 | `jest` | toolchain, provides `test`; publishes `node-jest` | Node projects test with Jest (`ts-jest`) | — |
 | `vitest` | toolchain, provides `test`; publishes `node-vitest` | Node projects test with Vitest | — |
@@ -59,7 +59,9 @@ Built-in plugins ship inside the `smith` binary but still run as separate
 processes (`smith plugin serve <name>`), speaking the same protocol an external
 plugin does. `smith plugin list` shows each one's levels (roles), the slots it
 fills and what it requires (`--json` adds its conflicts and capabilities), and
-`smith stacks` the stacks they publish.
+`smith stacks` the stacks they publish. `smith plugin enable`, `disable` and
+`set` change which built-in plugins load (`[plugins] enabled` in `smith.toml`);
+see [`smith plugin`](../manual/plugin.md).
 
 ## Writing a plugin
 
@@ -299,7 +301,7 @@ Conflicts: []protocol.PluginRef{protocol.ConflictsWith("karma")},
 ```
 
 smith checks a project's plugins in one place, whatever chose them: a stack
-today, a recipe later. It checks that:
+or a recipe. It checks that:
 - there is one language plugin and at most one scaffold
 - every plugin plays the level it is chosen for and applies to the language
 - each slot has one plugin

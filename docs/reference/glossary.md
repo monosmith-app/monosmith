@@ -49,12 +49,26 @@ One step of the generated pipeline. Every phase is a command you can run
 yourself: `smith ci setup`, `audit`, `verify`, `pack`, `native` and `release`.
 See [CI pipelines](ci.md).
 
+## depth level
+
+How far `smith adopt` and `smith convert` go (`--level`). `conservative`, the
+default, keeps the repository's own build and lint setup and lists what is left.
+`full` makes smith the only tool and deletes the old tooling nothing uses any
+more, after asking. See [Converting](../getting-started/converting.md#going-further---level-full).
+
 ## dist
 
 The one directory at the workspace root where every build writes, in a path
 that mirrors the project's (`apps/web` builds into `dist/apps/web`). Delete
 `dist/` to clean everything. `smith doctor` fails a task whose output goes
 anywhere else.
+
+## fix
+
+What `smith doctor --fix` applies for a failed check: new file contents, commands
+to run (steps) and questions to ask (choices). A **safe** fix only restores what
+smith or a plugin owns and is applied after one confirmation; any other, and any
+with a question, is asked about. See [`smith doctor`](../manual/doctor.md).
 
 ## kind
 
@@ -79,6 +93,12 @@ edges and writes versions. A project has exactly one. See [Roles](#role-or-level
 
 One of the three [kinds](#kind). A lib is imported by other projects and never
 published by itself. It lives in `libs/<name>`.
+
+## native project
+
+A project that must be built on each operating system instead of cross-compiled
+(a Go app using cgo, a Node project with per-platform builds). `smith ci native`
+builds it in a job per OS. See [CI pipelines](ci.md#native-projects).
 
 ## package
 
@@ -129,6 +149,12 @@ field `roles`.
 | `toolchain` | decides how a project builds, tests and lints | any number, one per [slot](#slot) |
 | `structure` | checks layout and code rules | any number |
 | `deploy` | adds pipeline steps and deploy targets | any number |
+
+## SBOM
+
+The CycloneDX software bill of materials `smith release` attaches to the GitHub
+Release of an app, listing its dependencies. See
+[Releasing](releasing.md#sbom-and-build-provenance).
 
 ## slice
 

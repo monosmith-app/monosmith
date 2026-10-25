@@ -107,11 +107,11 @@ Usage: `smith convert [flags]`
 | `--dry-run` | report the plan without changing anything | off |
 | `--json` | print the plan as JSON | off |
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
-| `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `keep` |
+| `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
 | `--skip-install` | do not run npm install afterwards | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
-| `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | `keep` |
+| `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
 | `--verbose` | name every project a finding applies to, not just a few | off |
 | `--yes` | apply without asking (a terminal asks before changing anything) | off |
 

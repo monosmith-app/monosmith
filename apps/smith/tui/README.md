@@ -10,12 +10,12 @@ The pieces that stand alone are subfeatures with their own `doc.go`: `commands`
 truncation), `dialog`, `palette`, `tabs`, `footer`, `statusbar`, `toast`, the
 views (`dashboard`, `doctorview`, `depsview`, `releaseview`, `projectlist`,
 `detail`, `runview`, `logview`, `guide`), `fixwizard` (the doctor fix dialog),
-`runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `layout` and
+`adoptwizard` (the adopt and convert dialog), `runner`, `sources`, `screenreader`, `clipboard`, `pointer`, `layout` and
 `progress`.
 
 ## Exception: the shell's own files stay in the package root
 
-- **Path:** `apps/smith/tui/*.go` (20 production files: `shell_*.go`,
+- **Path:** `apps/smith/tui/*.go` (21 production files, plus `doc.go`: `shell_*.go`,
   `tui_handler.go`, `page_contract.go`, `confirm_details_mapper.go`,
   `release_preview_mapper.go`, `no_workspace_hint_mapper.go`).
 - **Rule waived:** a subfeature holds at most 12 production files

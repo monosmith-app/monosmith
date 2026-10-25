@@ -8,7 +8,11 @@ released by the smith it contains.
 
 ```
 apps/smith/                     the CLI: the language-agnostic core, one package per slice
+apps/vscode/                    the VS Code extension (TypeScript; talks to `smith serve`)
 packages/plugin-sdk/            the plugin protocol, framing, runtime, host client and helpers (published)
+packages/eslint-config/         @monosmith/eslint-config: the shared ESLint config with the vertical-slice rules (published)
+libs/actions/                   the catalog of what smith can do, read by the CLI, the shell, the MCP server and `smith serve`
+libs/plugin-recipe/             the recipe language plugin (a `*.recipe.toml` is a project, released as `name@x.y.z`)
 libs/plugin-node/               the Node language plugin
 libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright, vite, angular, astro and vscode plugins and their stacks
 libs/plugin-go/                 the Go language plugin, and the go-smith-plugin scaffold
@@ -50,7 +54,17 @@ Core slices in `apps/smith`:
 | `upgrade` | `smith upgrade`: migrate smith.toml, regenerate what smith owns, bring recipe projects up to date |
 | `recipe`, `recipechoice`, `recipestack` | load, resolve and validate a recipe (`smith recipe check`); ask its choices; turn it into a stack and the declarations `smith add` writes |
 | `recipedrift` | compare each recipe project with its recipe as it is now (`smith doctor`), plan the upgrade, and list where a recipe's values came from (`smith explain`) |
-| `nxworkspace`, `convertplan`, `convert` | read an Nx workspace, plan its conversion, apply it (`smith convert`) |
+| `nxworkspace`, `turboworkspace`, `convertplan`, `turboplan`, `convert` | read an Nx or Turborepo workspace, plan its conversion, apply it (`smith convert`) |
+| `legacyinventory`, `convertchoices`, `removalplan`, `fullconversion` | the full level of `smith convert --level full`: what the old tooling leaves, the four choices, the groups of removals, and the trial on a scratch copy |
+| `adoptflow` | what the TUI's adopt wizard asks of `adoption` and `convert`, as data and calls |
+| `doctorfix`, `corefixes` | turn the fixes doctor's findings carry into a plan (questions, files, steps) and apply it; the fixes of smith's own checks |
+| `engineserver`, `runevents` | `smith serve` and the event stream of runs, installs and releases |
+| `sbom`, `linuxpackages` | the CycloneDX SBOM and the `.deb` and `.rpm` packages attached to a release |
+| `pubrelease`, `dockerdescription` | `smith release pub` and `smith docker description` |
+| `recipecatalog`, `recipewizard`, `recipereleases` | list and describe a workspace's recipes, `smith recipe new`, and whether a recipe URL has a newer release |
+| `toolchainpin`, `cachecredentials`, `buildoutputs`, `declarationspecifiers` | `[toolchains]` pins, the secrets a remote cache needs, the build-output check, the declaration fix-up convert writes |
+| `npmaudit`, `npmpolicy`, `npmdepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-policy` and `rust-policy` steps the language plugins' tasks call |
+| `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |
 | `packagemanifests` | the Homebrew, Scoop and winget manifests attached to an app's GitHub Release |
 | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems` | an app's binaries as npm packages, PyPI wheels, a .NET tool and platform gems |
@@ -112,10 +126,11 @@ and builds six static binaries (`CGO_ENABLED=0`, `-trimpath`), as configured in
 The map is [docs/README.md](../README.md). Three parts are generated or checked
 against the binary, so refresh them when a command changes:
 
-- **The CLI reference** ([reference/cli.md](../reference/cli.md)): its flag tables
-  come from `smith commands --json`. Regenerate them with
-  `node docs/reference/cli-generate.mjs` (the note at the top of the page says
-  how).
+- **The CLI reference and the manual** ([reference/cli.md](../reference/cli.md) and
+  the pages of the [manual](../manual/README.md)): their flag tables come from
+  `smith commands --json`. Regenerate them with
+  `node docs/reference/cli-generate.mjs`, and check them with `--check`. Set
+  `SMITH` to the binary you built if the `smith` on your `PATH` is not it.
 - **The screenshots** ([assets/](../assets/README.md)): captured from real runs;
   `assets/README.md` says how each was made.
 - **The plugin examples** ([examples/plugins](../examples/plugins)): a Go, a Python

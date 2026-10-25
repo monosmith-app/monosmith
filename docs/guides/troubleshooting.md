@@ -21,12 +21,16 @@ version and workspace in use.
 
 The advice depends on the folder: an Nx or Turborepo workspace is sent to
 `smith convert --dry-run`, any other existing repository to
-`smith adopt --dry-run`, and an empty folder to `smith new <name>`.
+`smith adopt --dry-run`, and an empty folder to `smith new <name>`. In an empty
+folder the message reads "there is no smith workspace here (no smith.toml in
+this folder or above it)".
 
 smith looks for a `smith.toml` in the current folder, then in each parent.
 Change into the workspace, or set `SMITH_WORKSPACE_ROOT` to its path. Commands
-that make or inspect a workspace (`new`, `convert`, `adopt`, `help`) work
-outside one.
+that make or inspect a workspace, or need none, work outside one: `new`,
+`convert`, `adopt`, `info`, `kinds`, `schema`, `commands`, `plugin`,
+`completion` and `help`. In a terminal, a bare `smith` outside a workspace
+opens the Start menu instead.
 
 ## A task ran again and I expected the cache
 
@@ -129,7 +133,12 @@ lists them all. The checks, grouped by who owns them:
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 
 `smith doctor --fix` shows each fix first (diffs, the commands it runs, the
-questions it asks) and applies the safe ones once you confirm. These have a fix
+questions it asks) and applies the safe ones once you confirm. `--only "<check>"`
+applies one fix by name and `--choose 1,2` answers its questions by option number,
+so a script can apply a fix that needs a decision; in the terminal interface the
+Doctor tab does the same with the fix wizard (`f` for one check, `x` for every
+fix that needs no decision; see [the terminal interface](../manual/tui.md#the-doctor-fix-wizard)
+and [`smith doctor`](../manual/doctor.md)). These have a fix
 beyond the safe ones, which doctor asks about:
 
 | Check | The fix |

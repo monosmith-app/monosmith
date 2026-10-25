@@ -150,5 +150,5 @@ smith adopt --json
 ## Related
 
 [`smith convert`](convert.md), [`smith doctor`](doctor.md), [`smith upgrade`](upgrade.md),
-[Adopting an existing repository](../getting-started/first-workspace.md#or-adopt-an-existing-repository),
+[Adopting an existing repository](../getting-started/adopting.md),
 [Converting from Nx or Turborepo](../getting-started/converting.md).

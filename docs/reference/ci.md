@@ -450,4 +450,5 @@ Put team steps between the slot markers; regeneration keeps them:
       # smith:slot-end after-verify
 ```
 
-Slots: `before-setup`, `after-verify`.
+Slots: `before-setup` and `after-verify` in the ci workflow, and `before-publish`
+in the `pub.yml` workflow (see [Secrets](#secrets)).
