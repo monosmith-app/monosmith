@@ -36,7 +36,7 @@ ci:
 	for _, t := range m.Toolchains {
 		b.WriteString(gitlabSetup(t))
 	}
-	fmt.Fprintf(&b, "    - curl -fsSL %s | sh -s -- \"$SMITH_VERSION\"\n", InstallScriptURL)
+	fmt.Fprintf(&b, "    - sh %s \"$SMITH_VERSION\"\n", InstallScriptPath)
 	b.WriteString("    - export PATH=\"$HOME/.local/bin:$PATH\"\n")
 	b.WriteString(slot("    ", "before-setup"))
 	b.WriteString(`  script:

@@ -159,8 +159,9 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 
 ### Why does CI install smith from a script?
 
-The generated pipeline downloads the `smith` binary with `install.sh`, pinned
-to the version that generated it (a development build writes
+The generated pipeline downloads the `smith` binary by running `tools/smith/install.sh`,
+a copy of the installer that `smith ci generate` commits into your project (never edit
+it; `smith doctor --fix` refreshes it), pinned to the version that generated the pipeline (a development build writes
 `SMITH_VERSION: latest`). Change that value to pin another version. See
 [installing](../getting-started/installing.md).
 

@@ -18,13 +18,13 @@ func GitHubSetup(m Model) string {
 		b.WriteString(githubSetup(t))
 	}
 	fmt.Fprintf(&b, `      - name: Install smith
-        run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
+        run: sh %s "$SMITH_VERSION"
         env:
           SMITH_VERSION: %s
           GITHUB_TOKEN: ${{ github.token }}
       - name: Setup
         run: smith ci setup
-`, InstallScriptURL, m.SmithVersion)
+`, InstallScriptPath, m.SmithVersion)
 	return b.String()
 }
 
@@ -38,10 +38,10 @@ func AzureSetup(m Model) string {
 	for _, t := range m.Toolchains {
 		b.WriteString(azureSetup(t))
 	}
-	fmt.Fprintf(&b, `  - bash: curl -fsSL %s | sh -s -- "%s"
+	fmt.Fprintf(&b, `  - bash: sh %s "%s"
     displayName: Install smith
   - bash: smith ci setup
     displayName: Setup
-`, InstallScriptURL, m.SmithVersion)
+`, InstallScriptPath, m.SmithVersion)
 	return b.String()
 }

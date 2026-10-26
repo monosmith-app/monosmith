@@ -40,7 +40,7 @@ func RenderDevcontainer(name string, m Model) string {
 		Post     string                       `json:"postCreateCommand"`
 	}{
 		Name: name, Image: DevcontainerImage, Features: features,
-		Post: `curl -fsSL ` + InstallScriptURL + ` | sh -s -- "` + m.SmithVersion + `" && "$HOME/.local/bin/smith" ci setup`,
+		Post: `sh ` + InstallScriptPath + ` "` + m.SmithVersion + `" && "$HOME/.local/bin/smith" ci setup`,
 	}
 	var b strings.Builder
 	b.WriteString(header("//"))
