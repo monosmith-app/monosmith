@@ -62,10 +62,11 @@ Try: smith test -p a-ts
 
 The starter is a `greeting` slice (a use case and a contract) in the vertical-slice layout. The
 manifest records the stack: `"smith": { "kind": "lib", "stack": "node-ts" }`. The workspace gets a
-`tsconfig.base.json` (target `es2023`, `module: nodenext`, `strict`, `verbatimModuleSyntax`,
-`erasableSyntaxOnly`, `rewriteRelativeImportExtensions`), and the root `package.json` gets the
-`typescript` and `@types/node` dev dependencies. Each project's `tsconfig.json` extends the base
-and sends `outDir` to `dist/<project dir>`.
+`tsconfig.base.json`, which only extends `@monosmith/tsconfig/node.json` (target `es2023`, `module: nodenext`, `strict`,
+`verbatimModuleSyntax`, `erasableSyntaxOnly`, `rewriteRelativeImportExtensions`: the options live in that package, so you
+adapt them by setting a value in the base), and the root `package.json` gets the `typescript`, `@types/node` and
+`@monosmith/tsconfig` dev dependencies. Each project's `tsconfig.json` extends the base and holds only `rootDir` and `include`;
+its `build` script passes `--outDir` for `dist/<project dir>`, so no tsconfig names an output folder.
 
 ## Settings
 

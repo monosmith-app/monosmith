@@ -199,7 +199,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 | `package.json` | `engines.vscode` | marks a VS Code extension: gets `package`, is published to the Marketplace, not npm | `discovery/`, `releasing/publish_extension_use_case.go` |
 | `package.json` | `main`, `module`, `types`, `typings`, `exports` | what doctor checks a built package has produced | `pipeline/check_entry_files_use_case.go` |
 | root `package.json` | `workspaces` | which directories npm links; doctor checks every project is covered | `pipeline/check_workspace_use_case.go` |
-| `tsconfig.build.json` / `tsconfig.json` | `compilerOptions.outDir` | doctor checks it is inside `dist/` | `pipeline/check_build_dir_use_case.go` |
+| `package.json` build script / `tsconfig.build.json` / `tsconfig.json` | `--outDir` (wins) or `compilerOptions.outDir` | doctor checks it is inside `dist/` | `pipeline/check_build_dir_use_case.go` |
 | `smith.toml` | `[workspace] scope` | npm scope of new packages | host, `scaffolding/generate_project_use_case.go` |
 | `smith.toml` | `[toolchains] node = "24"` | version pin checked by doctor | host |
 | `smith.toml` | `[ci] audit_policies = ["node"]`, `audit_warn`, `audit_allow_install_scripts` | lockfile policy in the audit | `pipeline/ci_contribution_use_case.go` |
@@ -292,7 +292,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 | `the scripts of <project> call files and tools that exist` | a script runs a file (`node x.js`, `--config x`) that does not exist, or starts a tool that is installed neither in a `node_modules/.bin` nor on PATH. Files under a build output are "not built yet", not missing. Judged once dependencies are installed; a failure when the broken script is one of `build`, `test`, `lint`, `typecheck`, `prebuild`, `postbuild`, `pretest`, `start`, `dev`, otherwise a warning. The fix asks whether to install the tools or remove the scripts. |
 | `the packages the ESLint config imports are installed` | the root `eslint.config.*` imports something not in `node_modules`; the fix installs it |
 | `npm workspaces include <dir>` | the root `workspaces` does not match the project (remedy also names `[workspace] exclude`) |
-| `<project> compiles into dist/<dir>` | `outDir` of `tsconfig.build.json` / `tsconfig.json` is inside the source tree |
+| `<project> compiles into dist/<dir>` | the `--outDir` of the build script, or the `outDir` of `tsconfig.build.json` / `tsconfig.json`, is inside the source tree |
 | `<dir> declares the packages it imports` | a package (`kind = package`) fails `deps-check`; the fix declares the imports in `package.json` |
 | `<project> builds every file its package.json names` | only after a build: `main`, `module`, `types`, `exports` entries inside `dist/` that the build did not produce. A `.d.ts` entry that nothing writes (a bundler such as esbuild emits none) gets a remedy that names the `tsc --emitDeclarationOnly` step to append to the `build` script, and a fix that appends it (`tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the types entry's directory>`; asked about, never `--yes` alone). A build script that already runs `tsc` or a dts option is told its declarations land elsewhere than `package.json` says. |
 

@@ -33,7 +33,7 @@ func TestTypeScriptScaffoldsAndRecordsTheStack(t *testing.T) {
 		}
 	}
 	manifest, _ := os.ReadFile(filepath.Join(ws, "packages", "sdk", "package.json"))
-	for _, want := range []string{`"stack": "node-ts"`, `"build": "tsc -p tsconfig.build.json"`, `"name": "@acme/sdk"`} {
+	for _, want := range []string{`"stack": "node-ts"`, `"build": "tsc -p tsconfig.build.json --outDir ../../dist/packages/sdk"`, `"name": "@acme/sdk"`} {
 		if !strings.Contains(string(manifest), want) {
 			t.Errorf("package.json lacks %s:\n%s", want, manifest)
 		}

@@ -22,6 +22,14 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project) (protocol.Finding, 
 		return protocol.Finding{}, false
 	}
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root))
+	if out := buildScriptOutDir(dir); out != "" {
+		resolved := path.Clean(path.Join(p.Root, filepath.ToSlash(out)))
+		return protocol.Finding{
+			Check: p.Name + " compiles into " + protocol.ProjectBuildDir(p.Root), OK: protocol.InBuildDir(resolved),
+			Detail: p.Root + "/package.json builds into " + resolved + ", inside the source tree",
+			Remedy: "pass --outDir \"" + protocol.BuildDirFromProject(p.Root) + "\" in the build script, and point package.json's main, types and start script there",
+		}, true
+	}
 	for _, name := range []string{"tsconfig.build.json", "tsconfig.json"} {
 		raw, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
@@ -43,4 +51,26 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project) (protocol.Finding, 
 		}, true
 	}
 	return protocol.Finding{}, false
+}
+
+// outDirFlag finds "--outDir <dir>" (or --outDir=<dir>) in a script.
+var outDirFlag = regexp.MustCompile(`--outDir[= ]+"?([^"\s&;|]+)`)
+
+// buildScriptOutDir is the --outDir flag of the build script of the package
+// in dir, which wins over the tsconfig's outDir; "" when there is none.
+func buildScriptOutDir(dir string) string {
+	raw, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		return ""
+	}
+	var manifest struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if json.Unmarshal(raw, &manifest) != nil {
+		return ""
+	}
+	if m := outDirFlag.FindStringSubmatch(manifest.Scripts["build"]); m != nil {
+		return m[1]
+	}
+	return ""
 }

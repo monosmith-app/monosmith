@@ -29,3 +29,21 @@ func TestCheckBuildDir(t *testing.T) {
 		t.Fatal("a project without a build has nothing to check")
 	}
 }
+
+func TestTheBuildScriptsOutDirFlagIsTheOutputFolder(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "libs", "kit")
+	_ = os.MkdirAll(dir, 0o755)
+	builds := map[string]protocol.Task{"build": {}}
+	p := protocol.Project{Name: "kit", Root: "libs/kit", Tasks: builds}
+	_ = os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{"compilerOptions": {"outDir": "dist"}}`), 0o644)
+
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"tsc -p tsconfig.build.json --outDir ../../dist/libs/kit"}}`), 0o644)
+	if f, ok := CheckBuildDir(ws, p); !ok || !f.OK {
+		t.Fatalf("the flag wins over the tsconfig: %+v %v", f, ok)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"tsc --outDir=lib"}}`), 0o644)
+	if f, ok := CheckBuildDir(ws, p); !ok || f.OK || f.Remedy == "" {
+		t.Fatalf("a flag inside the source tree is flagged: %+v %v", f, ok)
+	}
+}

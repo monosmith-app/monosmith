@@ -1,0 +1,33 @@
+{
+  "name": "@monosmith/tsconfig",
+  "version": "0.0.0",
+  "description": "The TypeScript compiler options every MonoSmith monorepo starts from. A project extends one of them; smith passes the output folder, so a tsconfig never names one.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "smith": { "kind": "package" },
+  "files": [
+    "base.json",
+    "node.json",
+    "react.json"
+  ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./node.json": "./node.json",
+    "./react.json": "./react.json",
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "tsconfig",
+    "typescript",
+    "monosmith"
+  ],
+  "author": "Eduardo Russo",
+  "license": "MIT",
+  "homepage": "https://github.com/monosmith-app/monosmith/tree/main/packages/tsconfig#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monosmith-app/monosmith.git",
+    "directory": "packages/tsconfig"
+  }
+}

@@ -42,12 +42,6 @@
     "typescript": ">=5"
   },
   "peerDependenciesMeta": {
-    "ts-jest": {
-      "optional": true
-    },
-    "typescript": {
-      "optional": true
-    },
     "babel-jest": {
       "optional": true
     },
