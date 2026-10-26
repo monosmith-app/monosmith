@@ -544,3 +544,21 @@ func TestAWorkspaceThatCannotBeReadShowsWhy(t *testing.T) {
 		t.Fatalf("%s", out)
 	}
 }
+
+func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
+	m := opened(t, sample())
+	m, _ = press(m, "left", "down", "down", "right") // Workspace section
+	var rows []string
+	for _, l := range strings.Split(text(m, 120, 30), "\n") {
+		rows = append(rows, strings.Join(strings.Fields(l), " "))
+	}
+	screenText := strings.Join(rows, "\n")
+	for _, want := range []string{"ci.devcontainer false", "ci.branches the release branch", "cache.max_size_mb 512", "release.branch main"} {
+		if !strings.Contains(screenText, want) {
+			t.Fatalf("the list lacks %q:\n%s", want, screenText)
+		}
+	}
+	if strings.Contains(screenText, "devcontainer default") {
+		t.Fatalf("an unset setting is shown as the word default:\n%s", screenText)
+	}
+}

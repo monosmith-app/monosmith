@@ -63,11 +63,7 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + m.radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(iconsAbout[it.key])
 	case kindSetting:
 		st := m.snap.Settings[it.idx]
-		value := th.Muted("default")
-		if st.Set {
-			value = st.Value
-		}
-		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + value
+		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + shownValue(th, st)
 	case kindRecipe:
 		r := m.snap.Recipes[it.idx]
 		if r.Error != "" {
@@ -184,9 +180,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if len(st.Choices) > 0 {
 			add(th.Muted("Choices: ") + strings.Join(st.Choices, ", "))
 		}
-		now := th.Muted("default")
-		if st.Set {
-			now = st.Value
+		now := shownValue(th, st)
+		if !st.Set {
+			now += th.Muted(" (the default)")
 		}
 		keys := "Enter changes it"
 		if st.Set {
@@ -274,4 +270,18 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 	}
 	lines = lines[:min(len(lines), max(h-1, 0))]
 	return append(lines, " "+th.Muted(fmt.Sprint(keys)))
+}
+
+// shownValue is what a setting is now: the value written in smith.toml, or,
+// when none is, the default in the muted colour, so a set value stands out
+// from one that is only the default. A setting whose default is not known is
+// shown as the word "default".
+func shownValue(th theme.Theme, st Setting) string {
+	switch {
+	case st.Set:
+		return st.Value
+	case st.Default != "":
+		return th.Muted(st.Default)
+	}
+	return th.Muted("default")
 }
