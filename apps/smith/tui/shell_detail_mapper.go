@@ -211,6 +211,8 @@ func (s Shell) projectPanel() detail.Panel {
 		actions = append(actions, a)
 	}
 	actions = append(actions,
+		detail.Action{ID: "x:install", Label: "Install a package…", Hint: "adds packages to " + p.Name + " with its own toolchain (npm, the Python venv, go get)"},
+		detail.Action{ID: "x:uninstall", Label: "Remove a package…"},
 		detail.Action{ID: "x:explain", Label: "Explain"},
 		detail.Action{ID: "x:graph", Label: "Graph: needs and used by"},
 	)

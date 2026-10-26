@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/packageprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"io"
 	"time"
@@ -111,7 +112,9 @@ type Shell struct {
 	runAt int
 
 	confirm *dialog.Confirm
-	help    *dialog.Help
+	// pkg asks which packages to install on, or remove from, the selected project.
+	pkg  *packageprompt.Prompt
+	help *dialog.Help
 	// fix is the doctor fix wizard while it is open; fixing is the fix being
 	// applied in the background.
 	fix    *fixwizard.Wizard

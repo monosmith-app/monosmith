@@ -115,6 +115,8 @@ all, Test all and Lint all.
 | Home | `Enter` | Do the suggested next action. |
 | any workspace view | `d` | Open Doctor (shown in the footer of Home and Projects). |
 | Projects | `a` | Add project (a guided form). |
+| Projects | `+` | Install packages on the selected project: asks which (and whether they are development dependencies), shows the `smith install -w <project> ...` line, then runs it in the Run view. The detail's "Install a package…" does the same. |
+| Projects | `-` | Remove packages from the selected project (`smith uninstall -w <project> ...`). |
 | any workspace view | `i` | Install dependencies (asks to confirm the command). |
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
@@ -274,7 +276,10 @@ prints `→ smith <command line>`.
 ## The mouse
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
-button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. Only
+button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
+a list and never moves the selection; a click selects a row without moving the list. In Deps, click a row's box to
+mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
+and click the box in the heading to mark all or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
 turns the mouse off.
 

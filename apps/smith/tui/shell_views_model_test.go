@@ -363,3 +363,31 @@ func TestTheHeaderNamesTheWorkspaceAndTheStatusBarTheVersion(t *testing.T) {
 		t.Fatalf("the first row is the header: %q", first)
 	}
 }
+
+func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("+")
+	l.has("Install packages on orders", "Packages, separated by spaces", "development dependency")
+	l.typeText("zod").keys("enter")
+	if got := l.lastStarted(); got != "install -w orders zod" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.has("Install a package…", "Remove a package…")
+	l.clickText("Install a package")
+	l.has("Install packages on orders")
+	l.keys("esc")
+	l.hasNot("Install packages on orders")
+	if len(l.started) != 0 {
+		t.Fatalf("cancelling started %v", l.started)
+	}
+	l.clickText("Remove a package")
+	l.has("Remove packages from orders")
+	l.typeText("left-pad").keys("enter")
+	if got := l.lastStarted(); got != "uninstall -w orders left-pad" {
+		t.Fatalf("started %q", got)
+	}
+}
