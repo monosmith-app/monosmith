@@ -46,6 +46,9 @@ func (s *Shell) hover(x, y int) {
 	case s.fix != nil:
 		w := s.fix.Hover(x, y)
 		s.fix = &w
+	case s.pkg != nil:
+		p := s.pkg.Hover(x, y)
+		s.pkg = &p
 	case s.confirm != nil:
 		c := s.confirm.Hover(x, y)
 		s.confirm = &c
@@ -74,6 +77,10 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		w, out := s.fix.Click(x, y)
 		s.fix = &w
 		return s.afterFix(out)
+	case s.pkg != nil:
+		p, out := s.pkg.Click(x, y)
+		s.pkg = &p
+		return s.afterPackages(p, out)
 	case s.confirm != nil:
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
@@ -196,7 +203,7 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		w := s.fix.Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
-	case s.confirm != nil:
+	case s.pkg != nil, s.confirm != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))

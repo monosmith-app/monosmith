@@ -145,6 +145,10 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.help.Rect()
 		rows = pane.Overlay(rows, s.help.Lines(s.th), r.X, r.Y)
 	}
+	if s.pkg != nil {
+		r := s.pkg.Rect()
+		rows = pane.Overlay(rows, s.pkg.Lines(s.th), r.X, r.Y)
+	}
 	if s.confirm != nil {
 		r := s.confirm.Rect()
 		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)

@@ -49,6 +49,8 @@ var all = []Command{
 
 	{ID: "projects.move", Group: GroupRun, Title: "Move in the list", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey, Views: vProjects},
 	{ID: "projects.open", Group: GroupRun, Title: "Open the detail of the project (narrow terminals)", Keys: []string{"enter"}, Kind: PaneKey, Views: vProjects, NeedsNarrowList: true, Footer: "detail", Glyph: "Enter"},
+	{ID: "projects.install-package", Group: GroupProjects, Title: "Install a package on the project…", Hint: "smith install -w <project> <package>: asks which, then adds it with the project's own toolchain", Keys: []string{"+"}, Kind: ViewAction, Action: "install", Views: vProjects, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "projects.remove-package", Group: GroupProjects, Title: "Remove a package from the project…", Hint: "smith uninstall -w <project> <package>", Keys: []string{"-"}, Kind: ViewAction, Action: "uninstall", Views: vProjects, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "projects.back", Group: GroupRun, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsDetailOpen: true, Footer: "back"},
 
 	{ID: "run.again", Group: GroupRun, Title: "Run the last command again", Hint: "the last command line, as it was", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "again"},

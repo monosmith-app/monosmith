@@ -278,9 +278,12 @@ func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
 }
 
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
-	l := newLab(t, true, 100, 40)
+	l := newLab(t, true, 100, 44)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Move in a list", "Stop", "Ctrl+C")
+	l.has("Keyboard shortcuts", "Move in a list", "Install a package on the project")
+	l.keys("pgdown")
+	l.has("Stop", "Ctrl+C")
+	l.keys("pgup")
 	l.keys("end")
 	l.has(": / Ctrl+P", "? / F1", "Quit", "Esc", "Mouse", "Double-click", "footer")
 	l.hasNot("Right-click", "Alt+", "F10", "menu")

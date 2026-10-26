@@ -1,0 +1,315 @@
+package packageprompt
+
+import (
+	"strings"
+
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+)
+
+// Prompt asks which packages to install on, or remove from, one project, and
+// ends as the command line that does it: `smith install -w <project> [-D]
+// <packages>` or `smith uninstall -w <project> <packages>`. It shows that
+// line as it will run, as the confirmation dialog does.
+//
+// Keys: typing fills the packages; Tab and Shift+Tab move between the
+// packages, the development box and the buttons; Space or a click flips the
+// box; Enter on the packages or on Install goes ahead; Esc cancels.
+type Prompt struct {
+	project string
+	remove  bool
+	dev     bool
+	input   textinput.Model
+	// focus is the packages (0), the development box (1) and the buttons (2 and 3).
+	focus int
+	// hover is the control under the pointer, with the same numbers, or -1.
+	hover int
+	// err says why Install did not go ahead.
+	err  string
+	rect dialog.Rect
+}
+
+const (
+	focusPackages = iota
+	focusDev
+	focusInstall
+	focusCancel
+)
+
+// NewInstall asks for the packages to install on project.
+func NewInstall(project string) Prompt { return newPrompt(project, false) }
+
+// NewRemove asks for the packages to remove from project.
+func NewRemove(project string) Prompt { return newPrompt(project, true) }
+
+func newPrompt(project string, remove bool) Prompt {
+	in := textinput.New()
+	in.Prompt = "› "
+	in.Placeholder = "zod  react@19  @types/node"
+	in.CharLimit = 200
+	in.Focus()
+	return Prompt{project: project, remove: remove, input: in, hover: -1}
+}
+
+// Title is the heading of the dialog.
+func (p Prompt) Title() string {
+	if p.remove {
+		return "Remove packages from " + p.project
+	}
+	return "Install packages on " + p.project
+}
+
+// Argv is the command line, without the program name, for what is typed now;
+// nil while no package is typed.
+func (p Prompt) Argv() []string {
+	names, err := ParsePackages(p.input.Value())
+	if err != nil {
+		return nil
+	}
+	if p.remove {
+		return append([]string{"uninstall", "-w", p.project}, names...)
+	}
+	argv := []string{"install", "-w", p.project}
+	if p.dev {
+		argv = append(argv, "-D")
+	}
+	return append(argv, names...)
+}
+
+// Dev reports whether the packages go to the development dependencies.
+func (p Prompt) Dev() bool { return p.dev }
+
+const (
+	minWidth      = 46
+	buttonInstall = "[ Install  Enter ]"
+	buttonRemove  = "[ Remove  Enter ]"
+	buttonCancel  = "[ Cancel  Esc ]"
+)
+
+func (p Prompt) goLabel() string {
+	if p.remove {
+		return buttonRemove
+	}
+	return buttonInstall
+}
+
+// Place centres the dialog on a screen of sw by sh cells.
+func (p Prompt) Place(sw, sh int) Prompt {
+	w := min(max(sw-8, minWidth), min(max(sw-2, 10), 76))
+	p.input.Width = max(w-8, 8)
+	h := min(len(p.body(w-4))+4, max(sh, 3))
+	p.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	return p
+}
+
+// Rect is where the dialog sits after Place.
+func (p Prompt) Rect() dialog.Rect { return p.rect }
+
+// body is the dialog's lines between the borders, before the buttons.
+func (p Prompt) body(inner int) []string {
+	lines := []string{"Packages, separated by spaces:", " " + p.input.View(), ""}
+	if !p.remove {
+		lines = append(lines, p.devLine(), "")
+	}
+	if p.err != "" {
+		lines = append(lines, p.err, "")
+	}
+	lines = append(lines, "The command that will run:")
+	command := "(type a package first)"
+	if argv := p.Argv(); argv != nil {
+		command = commands.Line(argv)
+	}
+	for _, l := range wrap(command, inner-4) {
+		lines = append(lines, "  $ "+l)
+	}
+	return lines
+}
+
+func (p Prompt) devLine() string {
+	box := "[ ]"
+	if p.dev {
+		box = "[x]"
+	}
+	return " " + box + " a development dependency (-D)"
+}
+
+// rowOf finds the line of the body that starts with prefix, or -1.
+func (p Prompt) rowOf(prefix string, inner int) int {
+	for i, l := range p.body(inner) {
+		if strings.HasPrefix(strings.TrimLeft(l, " "), prefix) {
+			return i
+		}
+	}
+	return -1
+}
+
+// Lines draws the dialog: Rect().H lines of Rect().W cells.
+func (p Prompt) Lines(th theme.Theme) []string {
+	r := p.rect
+	if r.W < 6 || r.H < 3 {
+		return nil
+	}
+	inner := r.W - 4
+	rows := make([]string, 0, r.H-2)
+	row := func(content string) string { return " " + pane.Fit(content, inner) }
+	for _, l := range p.body(inner) {
+		if len(rows) >= r.H-4 {
+			break
+		}
+		switch {
+		case p.err != "" && l == p.err:
+			l = th.Failure(l)
+		case strings.HasPrefix(strings.TrimLeft(l, " "), "[") && !p.remove && strings.Contains(l, "development"):
+			switch {
+			case p.focus == focusDev:
+				l = th.Selected(l)
+			case p.hover == focusDev:
+				l = th.Hover(l)
+			}
+		case strings.HasPrefix(l, "  $ "):
+			l = th.Bold(l)
+		}
+		rows = append(rows, row(l))
+	}
+	rows = append(rows, row(""))
+	line := strings.Repeat(" ", p.buttonsRow(inner)[0][0]-2)
+	for i, label := range []string{p.goLabel(), buttonCancel} {
+		text := th.Muted(label)
+		switch id := focusInstall + i; {
+		case p.focus == id:
+			text = th.Selected(label)
+		case p.hover == id:
+			text = th.Hover(label)
+		}
+		line += text
+		if i == 0 {
+			line += "  "
+		}
+	}
+	rows = append(rows, row(line))
+	return pane.Frame(th, p.Title(), rows, r.W, r.H, true)
+}
+
+// buttonsRow is the span (from the dialog's left edge) of each button.
+func (p Prompt) buttonsRow(inner int) [2][2]int {
+	run, stop := ansi.StringWidth(p.goLabel()), ansi.StringWidth(buttonCancel)
+	start := 2 + max((inner-(run+2+stop))/2, 0)
+	return [2][2]int{{start, start + run}, {start + run + 2, start + run + 2 + stop}}
+}
+
+// controlAt is the control at a cell: the development box, a button, or -1.
+func (p Prompt) controlAt(x, y int) int {
+	r := p.rect
+	inner := r.W - 4
+	if y == r.Y+r.H-2 {
+		for i, s := range p.buttonsRow(inner) {
+			if x-r.X >= s[0] && x-r.X < s[1] {
+				return focusInstall + i
+			}
+		}
+		return -1
+	}
+	if !p.remove && y-r.Y-1 == p.rowOf("[", inner) && x > r.X && x < r.X+r.W-1 {
+		return focusDev
+	}
+	return -1
+}
+
+// Hover highlights the control under the pointer.
+func (p Prompt) Hover(x, y int) Prompt { p.hover = p.controlAt(x, y); return p }
+
+// Click handles a left press: the box flips, Install goes ahead, Cancel and a
+// press outside the dialog cancel.
+func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
+	switch p.controlAt(x, y) {
+	case focusDev:
+		p.dev, p.focus = !p.dev, focusDev
+		return p, dialog.Outcome{}
+	case focusInstall:
+		return p.submit()
+	case focusCancel:
+		return p, dialog.Outcome{Done: true}
+	}
+	if !p.rect.Contains(x, y) {
+		return p, dialog.Outcome{Done: true}
+	}
+	return p, dialog.Outcome{}
+}
+
+// Key handles a key.
+func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
+	switch msg.String() {
+	case "esc", "ctrl+c":
+		return p, dialog.Outcome{Done: true}
+	case "tab", "down":
+		return p.move(1), dialog.Outcome{}
+	case "shift+tab", "up":
+		return p.move(-1), dialog.Outcome{}
+	case "enter":
+		switch p.focus {
+		case focusDev:
+			p.dev = !p.dev
+			return p, dialog.Outcome{}
+		case focusCancel:
+			return p, dialog.Outcome{Done: true}
+		}
+		return p.submit()
+	}
+	switch {
+	case p.focus == focusPackages:
+		p.input, _ = p.input.Update(msg)
+		p.err = ""
+	case p.focus == focusDev && (msg.String() == " " || msg.String() == "space"):
+		p.dev = !p.dev
+	case p.focus >= focusInstall && (msg.String() == "left" || msg.String() == "right"):
+		p.focus = focusInstall + focusCancel - p.focus
+	}
+	return p, dialog.Outcome{}
+}
+
+// move goes to the next (or, with dir -1, the previous) control, skipping the
+// development box when it is not there.
+func (p Prompt) move(dir int) Prompt {
+	for {
+		p.focus = (p.focus + dir + 4) % 4
+		if p.focus == focusDev && p.remove {
+			continue
+		}
+		break
+	}
+	if p.focus == focusPackages {
+		p.input.Focus()
+	} else {
+		p.input.Blur()
+	}
+	return p
+}
+
+// submit goes ahead when the packages are good, and says why not otherwise.
+func (p Prompt) submit() (Prompt, dialog.Outcome) {
+	if _, err := ParsePackages(p.input.Value()); err != nil {
+		p.err = err.Error()
+		p.focus = focusPackages
+		p.input.Focus()
+		return p, dialog.Outcome{}
+	}
+	return p, dialog.Outcome{Done: true, Confirmed: true}
+}
+
+// wrap breaks s into lines of at most w cells, cutting words that are longer.
+func wrap(s string, w int) []string {
+	if w < 1 || ansi.StringWidth(s) <= w {
+		return []string{s}
+	}
+	var out []string
+	for ansi.StringWidth(s) > w {
+		out = append(out, ansi.Truncate(s, w, ""))
+		s = ansi.TruncateLeft(s, w, "")
+	}
+	return append(out, s)
+}

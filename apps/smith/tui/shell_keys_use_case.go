@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/packageprompt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -42,6 +43,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		return s.adoptKey(name)
 	case s.fix != nil:
 		return s.fixKey(name)
+	case s.pkg != nil:
+		p, out := s.pkg.Key(msg)
+		s.pkg = &p
+		return s.afterPackages(p, out)
 	case s.confirm != nil:
 		c, out := s.confirm.Key(name)
 		s.confirm = &c
@@ -88,6 +93,34 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		msg = tea.KeyMsg{Type: map[string]tea.KeyType{"j": tea.KeyDown, "k": tea.KeyUp}[name]}
 	}
 	return s.page().Update(msg)
+}
+
+// openPackages asks which packages to install on, or remove from, the
+// selected project.
+func (s *Shell) openPackages(remove bool) {
+	project := s.selectedProject()
+	if project == "" {
+		s.say("Select a project first: packages are installed on one project")
+		return
+	}
+	p := packageprompt.NewInstall(project)
+	if remove {
+		p = packageprompt.NewRemove(project)
+	}
+	p = p.Place(s.w, s.h)
+	s.pkg = &p
+}
+
+// afterPackages acts on the package prompt's outcome: the command it shows runs.
+func (s *Shell) afterPackages(p packageprompt.Prompt, out dialog.Outcome) tea.Cmd {
+	if !out.Done {
+		return nil
+	}
+	s.pkg = nil
+	if out.Confirmed {
+		return s.execute(p.Argv(), true)
+	}
+	return nil
 }
 
 // afterConfirm acts on the confirmation dialog's outcome.
@@ -148,6 +181,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.execute(commands.RunArgv(task, project), false)
 	}
 	switch action {
+	case "install", "uninstall":
+		s.openPackages(action == "uninstall")
 	case "explain":
 		if project != "" {
 			return s.execute([]string{"explain", project}, false)
