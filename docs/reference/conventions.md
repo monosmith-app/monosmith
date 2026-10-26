@@ -16,8 +16,8 @@ languages it supports, in a workspace that turns it on in `smith.toml`:
 You need not edit the file for this one: it is the workspace's **architecture**, and
 [`smith architecture`](../manual/architecture.md) (or the Architecture section of the Settings
 tab in [`smith tui`](../manual/tui.md)) lists the architectures smith knows, shows the one in
-use and switches between them. Today they are `vertical-slices`, `hexagonal`, `clean` and
-`none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
+use and switches between them. Today they are `vertical-slices`, `hexagonal`, `clean`, `ddd`,
+`modular-monolith` and `none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
 
 `smith new` turns on `vertical-slices`. A converted workspace does not get it
 until you add the line, because an existing codebase rarely follows it yet.
@@ -29,7 +29,7 @@ structure plugin such as `vertical-slices` can be either.
 | Convention | Languages | What it does |
 |---|---|---|
 | `vertical-slices` | Go, Python, Dart, Rust, Ruby, C++, .NET, JVM, PHP | a `slice-check` task, run before `lint` |
-| `hexagonal`, `clean` | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby, C++ | an `architecture-check` task, run before `lint`, and a `smith doctor` warning for a project with no folder named for a layer (see below) |
+| `hexagonal`, `clean`, `ddd`, `modular-monolith` | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby, C++ | an `architecture-check` task, run before `lint`, and a `smith doctor` warning for a project with no folder named for a layer (see below) |
 | `vertical-slices` | Node | `smith doctor` checks that the root ESLint config loads `@monosmith/eslint-config`, where Node's slice rules live (see below); nothing is written |
 
 ## How a convention combines with a project
@@ -82,7 +82,7 @@ again only when one of them changes, appears or disappears.
 
 ## Architectures that check imports
 
-`hexagonal` and `clean` (and the architectures that follow) differ from `vertical-slices`:
+`hexagonal`, `clean`, `ddd` and `modular-monolith` (and the architectures that follow) differ from `vertical-slices`:
 they do not look at file names, they look at what each file imports. smith places every source
 file in a **layer** by the folder names on its path, reads the imports of the project's own
 code, and reports an import that goes where the architecture forbids. It runs as
@@ -129,6 +129,38 @@ The dependency rule: source code depends only inward. From the inside out the la
 
 A layer may import itself and the layers inside it, never one outside it
 (`entities code must not depend on use-cases code`).
+
+### ddd
+
+Domain-driven design. Each **bounded context** is a folder (`sales/`, `billing/`, or under
+`contexts/`) holding its own layers, from the inside out: `domain`, `application`,
+`infrastructure` (or `infra`).
+
+| Rule | Reported as |
+|---|---|
+| domain never imports application or infrastructure; application never imports infrastructure | `domain code must not depend on infrastructure code` |
+| a context never imports a layer of another context; it may import what sits at that context's root (its public API file or package) | `reaches into the domain layer of the billing context` |
+
+The context is the folder just above the layer folder. `src`, `main`, `java`, `kotlin`,
+`internal`, `lib`, `app`, `pkg`, `cmd` and `contexts` do not count as one, so a project with a
+single `domain/`, `application/`, `infrastructure/` is one context and only the layer rule
+applies. A layout that puts the layer first (`domain/sales/`) is one context to the check.
+Aggregates, value objects and the ubiquitous language are not checked; they are not visible in
+imports.
+
+### modular-monolith
+
+One program split into **modules**, the folders directly inside a `modules/` folder
+(`modules/orders/`, `src/modules/billing/`). A module's public face is what sits directly in
+its folder, and its `api/` (or `public/`) folder; everything deeper is internal.
+
+| Rule | Reported as |
+|---|---|
+| code outside a module, including `main` and other modules, imports only a module's public face | `reaches into the internals of the orders module` |
+
+A module may import all of its own code. The check does not look inside a module, so it combines
+with a layer naming of your own but does not enforce one. Dependencies between modules that
+form a cycle are not reported.
 
 ### What is checked, and the limits
 

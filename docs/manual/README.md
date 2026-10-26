@@ -57,7 +57,7 @@ Python package). Paths in output are shortened.
 | [`smith add`](add.md) | Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install). |
 | [`smith remove`](remove.md) | Remove a project: its directory, its traces in the workspace, its CI. |
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
-| [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean` or `none`), or choose another. |
+| [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean`, `ddd`, `modular-monolith` or `none`), or choose another. |
 | [`smith upgrade`](upgrade.md) | Bring the workspace up to this smith and its recipes. |
 
 ## Work

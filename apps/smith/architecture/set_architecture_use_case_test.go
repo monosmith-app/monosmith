@@ -92,7 +92,7 @@ func TestChoosingNoneRemovesTheTableAndWhatItHeld(t *testing.T) {
 func TestAnUnknownArchitectureIsRefusedWithTheChoices(t *testing.T) {
 	root := workspaceWith(t, plain)
 	err := Set(root, "onion")
-	if err == nil || !strings.Contains(err.Error(), "vertical-slices, hexagonal, clean, none") {
+	if err == nil || !strings.Contains(err.Error(), "vertical-slices, hexagonal, clean, ddd, modular-monolith, none") {
 		t.Fatalf("%v", err)
 	}
 	if fileOf(t, root) != plain {
