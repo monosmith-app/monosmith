@@ -418,10 +418,11 @@ func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a") // Add project…
 	l.has("Add a project", "What are you adding?")
+	// Enter on the language keeps the default: what most projects here use (Go).
 	l.keys("down", "down", "enter", "enter").typeText("sdk").keys("enter")
-	l.has("The command that will run:", "$ smith add package sdk --lang node")
+	l.has("The command that will run:", "$ smith add package sdk --lang go")
 	l.keys("y")
-	if l.lastStarted() != "add package sdk --lang node" {
+	if l.lastStarted() != "add package sdk --lang go" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 }

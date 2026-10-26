@@ -123,7 +123,10 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 		s.runSel = s.firstFailed()
 	}
 	s.finished()
-	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
+	if name, ok := addedProject(s.run.Command); ok && s.run.OK() {
+		s.justAdded = name
+	}
+	s.last =lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
 	return s.refreshAfter(s.run.Command)
 }
 

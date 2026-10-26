@@ -13,6 +13,13 @@ type Step struct {
 	Multi bool
 	// Optional lets a free-text step be left empty; the answer is then empty.
 	Optional bool
+	// Filter lets typing narrow the options of a long list.
+	Filter bool
+	// PlaceholderFor, when set, picks the placeholder from the earlier answers.
+	PlaceholderFor func(answers map[string][]string) string
+	// Check says what is wrong with a typed answer ("" when it is fine); it
+	// runs as the person types and again on enter.
+	Check func(answers map[string][]string, value string) string
 }
 
 // Option is one answer.
@@ -71,7 +78,7 @@ func first(a map[string][]string, key string) string {
 func Actions(languages, plugins, enabled []string) []Action {
 	var langs, pluginOpts []Option
 	for _, l := range languagenames.Order(languages) {
-		langs = append(langs, Option{Label: languagenames.Of(l), Value: l})
+		langs = append(langs, Option{Label: languagenames.Of(l), Value: l, Hint: languagenames.Describe(l)})
 	}
 	isEnabled := map[string]bool{}
 	for _, p := range enabled {
@@ -116,8 +123,8 @@ func Actions(languages, plugins, enabled []string) []Action {
 					{Label: "A library", Value: "lib", Hint: "code other projects here share; it stays in this workspace"},
 					{Label: "A package", Value: "package", Hint: "code you publish for others to install (npm, PyPI, crates.io and so on)"},
 				}},
-				{Key: "lang", Prompt: "Which language is it written in?", Options: langs},
-				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web"},
+				{Key: "lang", Prompt: "Which language is it written in?", Options: langs, Filter: true},
+				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web", PlaceholderFor: namePlaceholder, Check: checkProjectName},
 			},
 			Argv: func(a map[string][]string) []string {
 				return []string{"add", first(a, "kind"), first(a, "name"), "--lang", first(a, "lang")}

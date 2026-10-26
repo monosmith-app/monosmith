@@ -20,6 +20,10 @@ type Model struct {
 	input   textinput.Model
 	answers map[string][]string
 	err     string
+	// filter is what was typed to narrow a Filter step's options.
+	filter string
+	// defaults are the options a step starts on, by step key.
+	defaults map[string]string
 	// Argv is the chosen command, empty until the questions are answered.
 	Argv []string
 	// Wizard names the wizard an action handed itself to (Action.Wizard).
@@ -49,13 +53,30 @@ func (m Model) Title() string {
 }
 
 // Reset returns the guide to its first screen, to be used again.
-func (m Model) Reset() Model { return NewModel(m.actions) }
+func (m Model) Reset() Model {
+	r := NewModel(m.actions)
+	r.defaults = m.defaults
+	return r
+}
+
+// WithDefault makes the step with a key start on the option with a value, for
+// the questions whose best answer depends on the workspace (the language the
+// workspace mostly uses).
+func (m Model) WithDefault(key, value string) Model {
+	d := make(map[string]string, len(m.defaults)+1)
+	for k, v := range m.defaults {
+		d[k] = v
+	}
+	d[key] = value
+	m.defaults = d
+	return m
+}
 
 // Editing reports whether a text field has the keyboard, so letters that are
 // shortcuts elsewhere must go to it.
 func (m Model) Editing() bool {
 	s := m.current()
-	return s != nil && s.Options == nil
+	return s != nil && (s.Options == nil || s.Filter)
 }
 
 // Pick starts the action with a title, as if chosen from the list; ok is
@@ -78,9 +99,28 @@ func (m Model) current() *Step {
 	return &m.action.Steps[m.step]
 }
 
+// options are the answers on offer: all of them, or for a Filter step those
+// that match what was typed.
+func (m Model) options() []Option {
+	s := m.current()
+	if s == nil {
+		return nil
+	}
+	if !s.Filter || m.filter == "" {
+		return s.Options
+	}
+	var out []Option
+	for _, o := range s.Options {
+		if MatchesFilter(o, m.filter) {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
 func (m Model) optionCount() int {
 	if s := m.current(); s != nil {
-		return len(s.Options)
+		return len(m.options())
 	}
 	if m.action != nil {
 		return 0
@@ -106,6 +146,24 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		return m, cmd
+	}
+	if step != nil && step.Filter && step.Options != nil {
+		switch key.Type {
+		case tea.KeyRunes, tea.KeySpace:
+			m.filter += string(key.Runes)
+			m.cursor = 0
+			return m, nil
+		case tea.KeyBackspace:
+			if r := []rune(m.filter); len(r) > 0 {
+				m.filter, m.cursor = string(r[:len(r)-1]), 0
+			}
+			return m, nil
+		case tea.KeyEsc:
+			if m.filter != "" {
+				m.filter, m.cursor = "", 0
+				return m, nil
+			}
+		}
 	}
 	switch key.String() {
 	case "ctrl+c":
@@ -177,6 +235,10 @@ func (m Model) confirm() Model {
 			m.err = "type a value, or esc to go back"
 			return m
 		}
+		if problem := m.problem(step, value); problem != "" {
+			m.err = problem
+			return m
+		}
 		m.answers[step.Key] = []string{value}
 		m.input.SetValue("")
 	case step.Multi:
@@ -192,10 +254,15 @@ func (m Model) confirm() Model {
 		}
 		m.answers[step.Key] = picked
 	default:
-		m.answers[step.Key] = []string{step.Options[min(m.cursor, len(step.Options)-1)].Value}
+		opts := m.options()
+		if len(opts) == 0 {
+			m.err = "nothing matches \"" + m.filter + "\": backspace to widen the list"
+			return m
+		}
+		m.answers[step.Key] = []string{opts[min(m.cursor, len(opts)-1)].Value}
 	}
 	m.step++
-	m.cursor, m.marked, m.err = 0, map[int]bool{}, ""
+	m.cursor, m.marked, m.err, m.filter = 0, map[int]bool{}, "", ""
 	return m.advance()
 }
 
@@ -215,9 +282,26 @@ func (m Model) advance() Model {
 	}
 	if step.Options == nil {
 		m.input.Placeholder = step.Placeholder
+		if step.PlaceholderFor != nil {
+			m.input.Placeholder = step.PlaceholderFor(m.answers)
+		}
 		m.input.Focus()
+	} else if want := m.defaults[step.Key]; want != "" {
+		for i, o := range step.Options {
+			if o.Value == want {
+				m.cursor = i
+			}
+		}
 	}
 	return m
+}
+
+// problem is what is wrong with a typed answer, or "" when it is fine.
+func (m Model) problem(step *Step, value string) string {
+	if step.Check == nil {
+		return ""
+	}
+	return step.Check(m.answers, value)
 }
 
 // View implements tea.Model. It can be called in any state, including the
@@ -247,11 +331,25 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 	case step == nil:
 		lines = append(lines, th.Muted("Done: "+m.action.Title))
 	case step.Options == nil:
-		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "", m.input.View(), "",
-			th.Muted("enter confirm · esc back"))
+		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "", m.input.View(), "")
+		if v := strings.TrimSpace(m.input.Value()); v != "" {
+			if problem := m.problem(step, v); problem != "" {
+				lines = append(lines, th.Failure(problem))
+			} else if step.Check != nil {
+				lines = append(lines, th.Success(th.Icons.Passed+" that name works"))
+			}
+		}
+		lines = append(lines, th.Muted("enter confirm · esc back"))
 	default:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "")
-		for i, o := range step.Options {
+		if step.Filter {
+			if m.filter == "" {
+				lines = append(lines, th.Muted("Type to narrow the list"), "")
+			} else {
+				lines = append(lines, th.Muted("Showing matches for ")+th.Bold(m.filter)+th.Muted(" (esc clears it)"), "")
+			}
+		}
+		for i, o := range m.options() {
 			box := ""
 			if step.Multi {
 				box = "[ ] "
@@ -261,7 +359,13 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 			}
 			add(i, Row(th, i == m.cursor, box, o.Label, o.Hint))
 		}
+		if step.Filter && len(m.options()) == 0 {
+			lines = append(lines, th.Muted("  nothing matches"))
+		}
 		help := "up/down choose · enter select · esc back"
+		if step.Filter {
+			help = "type to filter · up/down choose · enter select · esc back"
+		}
 		if step.Multi {
 			help = "up/down move · space or click toggles · enter confirm · esc back"
 		}

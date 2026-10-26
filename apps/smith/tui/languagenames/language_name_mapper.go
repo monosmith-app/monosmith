@@ -66,3 +66,48 @@ func KindOf(kind string) string {
 	}
 	return kind
 }
+
+var descriptions = map[string]string{
+	"node":   "runs on Node, with tests and linting set up",
+	"python": "scripts, services and libraries",
+	"go":     "services and command-line tools",
+	"rust":   "fast, safe programs and libraries",
+	"jvm":    "built with Gradle or Maven",
+	"dotnet": ".NET apps and libraries",
+	"cpp":    "native programs and libraries",
+	"dart":   "Flutter apps and Dart packages",
+	"ruby":   "gems and web apps",
+	"php":    "web apps and Composer packages",
+	"swift":  "Apple platform apps and packages",
+	"bicep":  "Azure infrastructure as code",
+	"docker": "container images",
+	"recipe": "A ready-made set of projects that work together",
+}
+
+// Describe is a one-line description of what a language gives a new project,
+// or "" for a language it does not know.
+func Describe(id string) string { return descriptions[strings.ToLower(id)] }
+
+// MostUsed is the language that most of the given projects use, for the
+// default of a new project; a tie goes to the one seen first, and "" means
+// there is none.
+func MostUsed(used []string) string {
+	count := map[string]int{}
+	var seen []string
+	for _, id := range used {
+		if id == "" {
+			continue
+		}
+		if count[id] == 0 {
+			seen = append(seen, id)
+		}
+		count[id]++
+	}
+	best := ""
+	for _, id := range seen {
+		if best == "" || count[id] > count[best] {
+			best = id
+		}
+	}
+	return best
+}

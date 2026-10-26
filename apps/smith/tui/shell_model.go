@@ -98,6 +98,9 @@ type Shell struct {
 
 	// last is how the last command ended, for Home.
 	last *dashboard.Run
+	// justAdded is the project a finished `smith add` made, to be selected
+	// once the project list has been read again.
+	justAdded string
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
 	proc runner.Handle
@@ -370,6 +373,10 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.loadedProjects, s.projectsErr = true, msg.Err
 		if msg.Err == nil {
 			selected := s.list.SelectedName()
+			if s.justAdded != "" {
+				// The project a finished add made is the one the next keys act on.
+				selected, s.justAdded = s.justAdded, ""
+			}
 			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
 			s.branch = msg.Branch
 		}
