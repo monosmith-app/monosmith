@@ -180,7 +180,7 @@ type walk struct {
 
 func start(t *testing.T, f *fakeFlow) *walk {
 	t.Helper()
-	m, job := New(func() (Flow, error) { return f, nil })
+	m, job := New(func(io.Writer) (Flow, error) { return f, nil })
 	w := &walk{t: t, m: m.Place(100, 34)}
 	w.runJob(&job)
 	return w
@@ -430,7 +430,7 @@ func TestAFailedConversionCannotBeRetriedBlindlyAndClosesWithTheWayBack(t *testi
 
 func TestAnErrorReadingTheRepositoryOffersRetry(t *testing.T) {
 	calls := 0
-	m, job := New(func() (Flow, error) {
+	m, job := New(func(io.Writer) (Flow, error) {
 		calls++
 		if calls == 1 {
 			return nil, errors.New("git is not installed")
@@ -474,7 +474,7 @@ func TestEscAfterTheConversionStopsWithTheWayBack(t *testing.T) {
 }
 
 func TestWhileAJobRunsEscAndCtrlCStopItAndNothingElseDoes(t *testing.T) {
-	m, _ := New(func() (Flow, error) { return nil, nil })
+	m, _ := New(func(io.Writer) (Flow, error) { return nil, nil })
 	m = m.Place(100, 34)
 	if !m.Running() {
 		t.Fatal("not running while reading")
@@ -491,7 +491,7 @@ func TestWhileAJobRunsEscAndCtrlCStopItAndNothingElseDoes(t *testing.T) {
 
 func TestProgressNamesTheStepOfTheFinishAndTheDialogFitsASmallScreen(t *testing.T) {
 	f := &fakeFlow{found: nxFound()}
-	m, job := New(func() (Flow, error) { return f, nil })
+	m, job := New(func(io.Writer) (Flow, error) { return f, nil })
 	w := &walk{t: t, m: m.Place(40, 12)}
 	w.runJob(&job)
 	w.press("enter", "1", "enter")
@@ -547,5 +547,22 @@ func TestEachScreenIsTitledByWhatItShowsNotByTheKindOfForm(t *testing.T) {
 	w.want("Bring in · how far to go")
 	if strings.Contains(w.screen(), "question 1 of 1") {
 		t.Fatal("a generated form title: question 1 of 1")
+	}
+}
+
+func TestReadingTheRepositoryShowsWhatTheOpenerSaysItIsReading(t *testing.T) {
+	m, job := New(func(out io.Writer) (Flow, error) {
+		fmt.Fprintln(out, "… reading 1,240 files")
+		return &fakeFlow{found: nxFound()}, nil
+	})
+	var out bytes.Buffer
+	if _, err := job.Run(context.Background(), &out); err != nil {
+		t.Fatal(err)
+	}
+	name, _ := strings.CutPrefix(strings.TrimSpace(out.String()), "… ")
+	m = m.Place(100, 34).Progress(1, name)
+	got := pane.Strip(strings.Join(m.Lines(plain(), 0), "\n"))
+	if !strings.Contains(got, "Reading 1,240 files…") {
+		t.Fatalf("the reading stage:\n%s", got)
 	}
 }

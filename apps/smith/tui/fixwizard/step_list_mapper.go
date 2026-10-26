@@ -2,6 +2,7 @@ package fixwizard
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -37,6 +38,15 @@ func stepListRows(th theme.Theme, steps []protocol.FixStep, current, inner int) 
 		rows = append(rows, pane.Wrap(fmt.Sprintf("%s step %d: %s", mark, n, s.Description), inner, 2)...)
 	}
 	return rows
+}
+
+// capitalFirst starts a step name with a capital, for a line that stands alone.
+func capitalFirst(s string) string {
+	r := []rune(s)
+	if len(r) == 0 {
+		return s
+	}
+	return strings.ToUpper(string(r[0])) + string(r[1:])
 }
 
 // elapsedText says how long the step has been running, once it is long enough
