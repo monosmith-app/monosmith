@@ -6,12 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func TestESLintAddsConfigAndLintScript(t *testing.T) {
-	tooling.Installer = func(string) error { return nil }
 	ws := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(ws, "apps", "web"), 0o755)
 	_ = os.WriteFile(filepath.Join(ws, "package.json"), []byte(`{"name": "acme"}`), 0o644)

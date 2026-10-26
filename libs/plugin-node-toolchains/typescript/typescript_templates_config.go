@@ -56,7 +56,8 @@ var sliceTemplates = withGreetingSlice(map[string]string{
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "[[.Build]]",
-    "rewriteRelativeImportExtensions": true
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"]
   },
   "include": ["src"]
 }

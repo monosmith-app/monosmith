@@ -6,13 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
 )
 
 func TestJestSetsUpTheStarterProject(t *testing.T) {
-	tooling.Installer = func(string) error { return nil }
 	ws := t.TempDir()
 	write(t, ws, "package.json", `{"name": "acme"}`)
 	write(t, ws, "apps/web/package.json", `{"name": "@acme/web", "scripts": {"build": "tsc"}}`)

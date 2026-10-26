@@ -49,13 +49,39 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if err := venv.InstallEditable(workspaceRoot, params.Directory); err != nil {
 		return protocol.GenerateResult{Files: files}, err
 	}
-	return protocol.GenerateResult{Files: files, Notes: []string{"Import it from another Python project as `import " + data.Import + "`."}}, nil
+	notes := []string{"Import it from another Python project as `import " + data.Import + "`."}
+	var shared []string
+	for _, f := range files {
+		if f == venv.RequirementsFile || f == "ruff.toml" {
+			shared = append(shared, f)
+		}
+	}
+	if len(shared) > 0 {
+		notes = append(notes, "Created at the workspace root, shared by every Python project: "+strings.Join(shared, ", ")+" and .venv/ (the environment, ignored by git).")
+	}
+	return protocol.GenerateResult{Files: files, Notes: notes}, nil
+}
+
+// distributionIdentifier lowercases a workspace name and turns each run of
+// characters other than letters and digits (the dots of jato.auto.packages)
+// into one dash.
+func distributionIdentifier(name string) string {
+	var b strings.Builder
+	for _, c := range strings.ToLower(strings.TrimSpace(name)) {
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9':
+			b.WriteRune(c)
+		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
+			b.WriteByte('-')
+		}
+	}
+	return strings.TrimSuffix(b.String(), "-")
 }
 
 // distributionName prefixes the workspace name so packages are unique on a
 // shared index: workspace "acme" and project "sdk" give "acme-sdk".
 func distributionName(workspace, project string) string {
-	ws := strings.ToLower(strings.TrimSpace(workspace))
+	ws := distributionIdentifier(workspace)
 	if ws == "" || strings.HasPrefix(project, ws+"-") {
 		return project
 	}

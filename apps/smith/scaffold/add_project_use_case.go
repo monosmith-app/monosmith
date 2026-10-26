@@ -104,6 +104,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
 		return nil, err
 	}
+	pending := res.InstallPending
 	if err := s.Refresh(); err != nil {
 		return &res, err
 	}
@@ -114,7 +115,10 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if project.Stack != st.Name {
 		return &res, fmt.Errorf("%s generated %s, but its manifest does not record stack %s", generator.Info.Plugin.Name, opts.Name, st.Name)
 	}
-	if err := addParts(s, project, st, params, settings, &res, opts.Out); err != nil {
+	if err := addParts(s, project, st, params, settings, &res, &pending, opts.Out); err != nil {
+		return &res, err
+	}
+	if err := installPending(language, pending, &res, opts.Out); err != nil {
 		return &res, err
 	}
 	changed, _, err := cipipeline.Regenerate(s)
@@ -173,7 +177,7 @@ func chooseStack(s *session.Session, opts AddOptions) (*host.Client, protocol.St
 // addParts asks the stack's other plugins, then each configured convention
 // that applies to the new project, to add their files, then rediscovers. Each
 // is given the recipe's settings for it, when the project came from a recipe.
-func addParts(s *session.Session, project *projectgraph.Project, st protocol.Stack, params protocol.GenerateParams, settings map[string]map[string]any, res *protocol.GenerateResult, out io.Writer) error {
+func addParts(s *session.Session, project *projectgraph.Project, st protocol.Stack, params protocol.GenerateParams, settings map[string]map[string]any, res *protocol.GenerateResult, pending *bool, out io.Writer) error {
 	var parts []*host.Client
 	for _, n := range st.Plugins() {
 		if n != st.Scaffold { // it generated the project
@@ -211,10 +215,33 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		}
 		res.Files = append(res.Files, added.Files...)
 		res.Notes = append(res.Notes, added.Notes...)
+		if added.InstallPending {
+			*pending = true
+		}
 		ran = true
 	}
 	if !ran {
 		return nil
 	}
 	return s.Refresh()
+}
+
+// installPending has the language plugin install the workspace once, when any
+// plugin of the project left its install to the host: a Node stack of four
+// plugins runs npm install once, not four times.
+func installPending(language *host.Client, pending bool, res *protocol.GenerateResult, out io.Writer) error {
+	if !pending {
+		return nil
+	}
+	name := language.Info.Plugin.Name
+	if !language.Supports(protocol.MethodInstall) {
+		return fmt.Errorf("plugin %s left the dependencies to install but cannot install them", name)
+	}
+	var installed protocol.DependencyResult
+	if err := language.Call(protocol.MethodInstall, protocol.InstallParams{Quiet: true}, &installed, 20*time.Minute); err != nil {
+		return fmt.Errorf("installing dependencies with %s: %w", name, err)
+	}
+	res.Files = append(res.Files, installed.Files...)
+	res.Notes = append(res.Notes, installed.Notes...)
+	return nil
 }
