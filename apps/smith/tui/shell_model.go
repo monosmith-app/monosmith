@@ -102,8 +102,9 @@ type Shell struct {
 	log     logview.Log
 	lastArg []string
 	history []string
-	// runs are the task runs that used the terminal, oldest first.
-	runs []inlineRun
+	// runs are the runs of the session, oldest first; runAt is the one shown (run).
+	runs  []*runview.Run
+	runAt int
 
 	confirm *dialog.Confirm
 	help    *dialog.Help
@@ -223,13 +224,8 @@ func (s Shell) viewReasons() map[string]string {
 			r["home.next"] = "nothing to do yet"
 		}
 	case commands.TabRun:
-		if s.run == nil {
-			// The output of a run stays in the terminal's scrollback: there is no log to follow, no tasks to pick.
-			r["run.follow"] = "the output is in your terminal's scrollback"
-			r["run.scroll"] = "the output is in your terminal's scrollback"
-			if s.lastArg == nil {
-				r["run.again"] = "nothing has run yet"
-			}
+		for id, why := range s.runReasons() {
+			r[id] = why
 		}
 	}
 	return r
@@ -379,8 +375,6 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case outputMsg:
 		return s.output(msg)
-	case inlineDoneMsg:
-		return s.inlineDone(msg)
 	}
 	return nil
 }

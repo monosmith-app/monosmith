@@ -46,9 +46,8 @@ flowchart TD
   shell --> exec["execute(argv)"]
   exec -->|"catalog.Classify"| classify["libs/actions/catalog"]
   exec --> runner["tui/runner<br/>child smith process"]
-  exec --> inline["runner.Inline<br/>tea.Exec: real terminal"]
   shell --> sources["tui/sources<br/>load views in process"]
-  runner --> runview["runview.ParseOutputLine"]
+  runner --> runview["runview.ParseLine<br/>events or text"]
 ```
 
 | Package | Responsibility |
@@ -107,7 +106,7 @@ sequenceDiagram
   participant P as person
   participant S as Shell
   participant C as libs/actions/catalog
-  participant R as runner or Inline
+  participant R as runner
   participant X as child: smith argv
   P->>S: press b
   S->>S: commands.ByKey -> RunTask build
@@ -120,38 +119,49 @@ sequenceDiagram
   else needs a terminal
     S-->>P: quit the shell, smith runs argv in the terminal
   end
-  alt task run or a printing command
-    S->>R: Inline: tea.Exec hands the terminal over
-    R->>X: smith build (inherits the terminal)
-    X-->>P: output in the real scrollback
-    R-->>S: exit, then a key brings the shell back
-  else other commands
-    S->>R: runner.Process
-    R->>X: smith argv
-    X-->>R: lines
-    R-->>S: runview parses lines into task states
-  end
+  S->>R: runner.Process (a task run adds --json-events)
+  R->>X: smith argv
+  X-->>R: lines: events or text
+  R-->>S: runview turns them into task states
+  S-->>P: Run tab: rows, progress, log
 ```
 
 `Shell.execute` (`shell_run_use_case.go`) classifies the command line with
 `libs/actions/catalog.Classify` into three kinds: needs a terminal (a command that asks questions;
-the shell quits and smith runs it), changes the workspace (ask first), and the rest. A task run, and
-the commands in `cliVerbs` that print and end (`plugin`, `recipe`, `config`, `info`, `graph`,
-`affected`, `explain`, `projects`, `stacks`, `kinds`, `commands`, `help`), use `runner.Inline`: Bubble
-Tea gives the terminal to the child through `tea.Exec`, so output goes to the real scrollback with
-the child's own status line and stays after the interface ends. Everything else runs through
-`runner.Process` and appears in the Run tab. Outside a workspace there is no Run tab, so `smith new`,
-`adopt` and `convert` quit the shell and run in the terminal.
+the shell quits and smith runs it), changes the workspace (ask first), and the rest. The rest,
+which includes every task run and the commands that print and end (`plugin`, `config`, `graph`,
+`explain`...), runs through `runner.Process` and stays in the Run tab: the interface never gives up
+the terminal for them (`tea.Exec` is not used for runs). Outside a workspace there is no Run tab,
+so `smith new`, `adopt` and `convert` quit the shell and run in the terminal.
 
-### runview parses lines, not events
+### The Run tab
 
-The Run tab turns the child's output into task states with `runview.ParseOutputLine`, which
-recognises `<task> ▶ <command>`, `<task> ✔ <duration>`, `<task> ✔ from cache`, `<task> ✖ <reason>`,
-`<task> ■ stopped`, `<task> ! <message>`, the skip and failure lines of the closing summary and the
-`✔ 3/4 tasks succeeded` line. It does not use the JSON event stream that `smith run --json-events`
-and `smith serve` emit ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md)). The package
-comment says so, and the shell therefore depends on smith's text format; moving it to the event
-stream is possible but is not recorded as planned or decided.
+A run shows one row per task (queued, running with a spinner and its elapsed time, passed, failed,
+cached, skipped), a progress bar with totals, and the captured log of the selected row (all output
+when none is selected). Failures are listed first and the first failed task is selected when the
+run ends, so its output is the first thing read. The runs of the session (the last 20) are kept
+in memory and shown again with `,` and `.`; `r` runs the shown run again, `R` runs the tasks that
+failed or were skipped, `Ctrl+C` stops the run. `y` copies the command line, `Y` the log shown (one
+task's output or all of it). The status bar and the Run header keep the exact command line, as
+typed. Full logs stay reachable: `Y` puts them on the clipboard, `m` turns mouse reporting off so
+the terminal selects text with a plain drag, and `smith run ...` with the copied command line
+prints them in any terminal.
+
+### runview reads events, and text as a fallback
+
+For a task run the shell starts the child with `--json-events`
+([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), `sources.withEventStream`): the output
+is one JSON event per line (`run.started` with the planned tasks, `task.queued`, `task.started`,
+`task.output`, `task.finished`, `run.finished`), so a task's own output cannot be mistaken for a
+status, and the plan arrives with the first line. `runview.ParseLine` reads such a line
+(`parse_run_event_algorithm.go`) and turns it into the same events the text lines give; any line
+that is not an event (smith's own messages and errors before the run starts) is read as text. The
+text parser (`<task> ▶ <command>`, `<task> ✔ <duration>`, `<task> ✔ from cache`, `<task> ✖ <reason>`,
+the skip and failure lines of the closing summary, the `✔ 3/4 tasks succeeded` line) stays for
+every command that has no event stream (`smith doctor`, `plugin list`...) and for tests. The log
+shows each event as the text format would print it. `smith run --json` was not used: since #589 it
+prints the task output to stderr and the summary as one JSON document at the end, which gives no
+live status.
 
 ## Wizards
 
@@ -202,7 +212,7 @@ terminal sequence, which also works over SSH.
 |---|---|
 | Single-key keymap, one adaptive pane, no menu bar | [ADR 0032](decisions/0032-single-key-tui-keymap.md) |
 | One list of actions shared by shell, MCP and serve | [ADR 0029](decisions/0029-one-list-of-actions.md) |
-| Event stream and `smith serve` (not used by the shell's Run tab) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
+| Event stream and `smith serve` (the Run tab reads it for task runs) | [ADR 0026](decisions/0026-event-stream-and-smith-serve.md) |
 | Doctor fixes with steps and choices | [ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md) |
 | Adopt and convert depth levels | [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md) |
 

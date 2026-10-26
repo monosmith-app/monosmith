@@ -167,10 +167,7 @@ func (s Shell) runPanel() detail.Panel {
 		rows = append(rows, detail.Row{Label: "log", Value: fmt.Sprintf("%d lines", len(t.Log))})
 		return detail.Panel{
 			Sections: []detail.Section{{Heading: t.ID, Rows: rows}},
-			Actions: []detail.Action{
-				{ID: "x:rerun", Label: "Run again", Disabled: s.running() || s.lastArg == nil},
-				{ID: "x:projects", Label: "Show the projects"},
-			},
+			Actions:  s.runActions(),
 		}
 	}
 	counts := s.run.Counts()
@@ -181,10 +178,7 @@ func (s Shell) runPanel() detail.Panel {
 	rows = append(rows, detail.Row{Label: "output", Value: fmt.Sprintf("%d lines", len(s.run.Lines))})
 	return detail.Panel{
 		Sections: []detail.Section{{Heading: "This run", Rows: rows}},
-		Actions: []detail.Action{
-			{ID: "x:rerun", Label: "Run again", Disabled: s.running() || s.lastArg == nil},
-			{ID: "x:projects", Label: "Show the projects"},
-		},
+		Actions:  s.runActions(),
 	}
 }
 

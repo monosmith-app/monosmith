@@ -211,7 +211,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
-	if got := line(TabRun); !strings.HasPrefix(got, "r again · f follow") {
+	if got := line(TabRun); !strings.HasPrefix(got, "r again · R failed · Y copy log · , . runs · f follow") {
 		t.Errorf("Run footer %q", got)
 	}
 }
@@ -355,9 +355,9 @@ func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 	}
 }
 
-func TestTheRunFooterDoesNotOfferFollowOrTasksWhenTheOutputIsInTheTerminal(t *testing.T) {
+func TestTheRunFooterDoesNotOfferFollowOrTasksBeforeAnythingRan(t *testing.T) {
 	s := State{InWorkspace: true, View: TabRun, Reasons: map[string]string{
-		"run.follow": "the output is in your terminal's scrollback", "run.scroll": "the output is in your terminal's scrollback",
+		"run.follow": "nothing has run yet", "run.scroll": "nothing has run yet",
 	}}
 	v, _ := Hints(s)
 	for _, h := range v {

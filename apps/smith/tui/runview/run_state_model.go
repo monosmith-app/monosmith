@@ -81,7 +81,13 @@ func (r *Run) Task(id string) *Task { return r.index[id] }
 // Feed reads one line of output at time now and updates the run.
 func (r *Run) Feed(line string, now time.Time) Event {
 	ev := ParseLine(line)
-	r.Lines = appendCapped(r.Lines, strings.TrimRight(line, "\r\n"), maxRunLines)
+	switch {
+	case ev.Hidden:
+	case ev.Display != "":
+		r.Lines = appendCapped(r.Lines, ev.Display, maxRunLines)
+	default:
+		r.Lines = appendCapped(r.Lines, strings.TrimRight(line, "\r\n"), maxRunLines)
+	}
 	switch ev.Kind {
 	case Output:
 		t := r.task(ev.Task)
@@ -118,6 +124,10 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		t.Log = appendCapped(t.Log, "! "+ev.Text, maxTaskLines)
 	case Summary:
 		r.total = ev.Total
+	case Plan:
+		r.Plan(ev.Tasks)
+	case Queue:
+		r.task(ev.Task)
 	}
 	return ev
 }

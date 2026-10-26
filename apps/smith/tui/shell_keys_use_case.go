@@ -153,9 +153,18 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute([]string{"explain", project}, false)
 		}
 	case "rerun":
-		if s.lastArg != nil {
-			return s.execute(s.lastArg, false)
+		if argv := s.repeatArgv(); argv != nil {
+			return s.execute(argv, false)
 		}
+	case "rerun-failed":
+		if argv := s.failedArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("No task failed or was skipped")
+	case "copy-log":
+		s.copyLog()
+	case "run-older", "run-newer":
+		s.stepRun(map[string]int{"run-older": -1, "run-newer": 1}[action])
 	case "projects":
 		return s.gotoTab(commands.TabProjects)
 	case "log":

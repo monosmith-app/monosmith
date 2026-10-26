@@ -52,6 +52,10 @@ var all = []Command{
 	{ID: "projects.back", Group: GroupRun, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsDetailOpen: true, Footer: "back"},
 
 	{ID: "run.again", Group: GroupRun, Title: "Run the last command again", Hint: "the last command line, as it was", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "again"},
+	{ID: "run.again-failed", Group: GroupRun, Title: "Run the failed and skipped tasks again", Hint: "smith run on just the tasks that did not pass", Keys: []string{"R"}, Kind: ViewAction, Action: "rerun-failed", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "failed"},
+	{ID: "run.copy-log", Group: GroupRun, Title: "Copy the log shown", Hint: "the output of the selected task, or all of it, to the clipboard", Keys: []string{"Y"}, Kind: ViewAction, Action: "copy-log", Views: vRun, Footer: "copy log"},
+	{ID: "run.older", Group: GroupRun, Title: "Show the previous run", Hint: "the runs of this session are kept", Keys: []string{","}, Kind: ViewAction, Action: "run-older", Views: vRun, NeedsIdle: true, Footer: "runs", Glyph: ", ."},
+	{ID: "run.newer", Group: GroupRun, Title: "Show the next run", Keys: []string{"."}, Kind: ViewAction, Action: "run-newer", Views: vRun, NeedsIdle: true},
 	{ID: "run.follow", Group: GroupRun, Title: "Follow the log, or pause it", Hint: "stay at the end of the log, or pause to read", Keys: []string{"f"}, Kind: Follow, Views: vRun, Footer: "follow"},
 	{ID: "run.all-output", Group: GroupRun, Title: "Show all output", Keys: []string{"esc"}, Kind: PaneKey, Views: vRun},
 	{ID: "run.scroll", Group: GroupRun, Title: "Pick a task, scroll its log", Keys: []string{"down", "up", "pgdown", "pgup"}, Shortcut: "Up Down PgUp PgDn", Glyph: "↑↓", Kind: PaneKey, Views: vRun, Footer: "task"},
