@@ -37,6 +37,9 @@ func Build(t *legacyinventory.Tree, c convertchoices.Choices, declined map[strin
 		plan.Notes = append(plan.Notes, "--ci keep: your pipeline is not regenerated, so it still calls the old tool, and doctor reports \"CI pipelines match the workspace\" as failed until you run smith ci generate")
 	}
 	builders := []groupBuilder{}
+	if c.Build == convertchoices.Smith {
+		builders = append(builders, groupBuilder{GroupOutput, buildOutputGroup})
+	}
 	if c.Lint == convertchoices.Smith {
 		builders = append(builders, groupBuilder{GroupLint, buildLintGroup})
 	}
