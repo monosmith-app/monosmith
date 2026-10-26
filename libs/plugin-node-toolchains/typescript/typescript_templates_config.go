@@ -18,7 +18,7 @@ var templates = scaffolding.TemplateSet{
 var devDependencies = map[string]string{
 	"@types/node":         "^24.19.2",
 	"typescript":          "~6.0.3",
-	"@monosmith/tsconfig": "^1.0.0",
+	"@monosmith/tsconfig": "^0.1.0",
 }
 
 // GreetingSlice is the greeting slice every TypeScript project starts with:
