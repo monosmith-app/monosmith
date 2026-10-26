@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -44,11 +45,7 @@ func elapsedText(d time.Duration) string {
 	if d < 3*time.Second {
 		return ""
 	}
-	s := int(d.Seconds())
-	if s < 60 {
-		return fmt.Sprintf("Running for %ds", s)
-	}
-	return fmt.Sprintf("Running for %dm %02ds", s/60, s%60)
+	return "Running for " + progress.Elapsed(d)
 }
 
 // elapsed is how long the applying phase has lasted.

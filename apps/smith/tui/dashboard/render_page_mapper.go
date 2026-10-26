@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -45,7 +46,7 @@ func headline(th theme.Theme, f Facts) string {
 	case f.CheckErr != "":
 		return th.Failure(th.Icons.Failed + " doctor could not run")
 	case !f.Checked:
-		return th.Muted("Checking the workspace…")
+		return th.Muted(progress.Waiting("Running the health checks on every project…", f.Waited))
 	case f.Failed > 0:
 		return th.Failure(th.Icons.Failed+" "+count(f.Failed, "check fails", "checks fail")) + warnTail(th, f)
 	case f.Warnings > 0:

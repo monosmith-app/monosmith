@@ -33,6 +33,7 @@ func (s Shell) dashboardFacts() dashboard.Facts {
 		f.Checked, f.Failed, f.Warnings, f.Passed = true, r.Failed, r.Warnings, r.Passed
 		f.Fixable = len(s.doctor.Plan())
 	}
+	f.Waited = s.waited()
 	if s.doctor.Err != nil {
 		f.CheckErr = s.doctor.Err.Error()
 	}

@@ -1,10 +1,14 @@
 package dashboard
 
+import "time"
+
 // Facts is what the page is drawn from; the shell fills it from what it has
 // already loaded, so drawing never waits for anything.
 type Facts struct {
 	// Checked is true once doctor has run; Failed, Warnings and Passed count its findings.
-	Checked                  bool
+	Checked bool
+	// Waited is how long the first doctor run has taken so far.
+	Waited                   time.Duration
 	CheckErr                 string
 	Failed, Warnings, Passed int
 	// Fixable is how many fixes doctor can make; the fix wizard opens on them.

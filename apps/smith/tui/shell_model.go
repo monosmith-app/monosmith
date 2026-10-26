@@ -139,9 +139,13 @@ type Shell struct {
 	hint      string
 	hintTicks int
 
-	tick    int
-	ticking bool
-	mouseX  int
+	// waitFor and waitSince say which load the open tab waits for and since
+	// when (see trackWait).
+	waitFor   string
+	waitSince time.Time
+	tick      int
+	ticking   bool
+	mouseX    int
 	// mouseShift is whether shift was held at the last mouse event.
 	mouseShift bool
 	mouseY     int
@@ -327,6 +331,7 @@ func (s Shell) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmd := s.handle(msg)
 	s.forgetDetailPlace()
 	s.refreshPalette()
+	s.trackWait()
 	if s.quit {
 		return s, tea.Quit
 	}
@@ -346,7 +351,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.toast.Shown() || s.hintTicks > 0
+	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {

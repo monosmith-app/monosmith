@@ -3,11 +3,13 @@ package doctorview
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -27,6 +29,8 @@ type Model struct {
 	Grouped bool
 	// Loading is true while doctor runs for the first time.
 	Loading bool
+	// Waited is how long that run has taken so far, set by the shell for drawing.
+	Waited time.Duration
 	// ShowPassed lists the checks that passed; by default they are one
 	// collapsed line after the problems.
 	ShowPassed bool
@@ -171,7 +175,7 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	}
 	if v.Report == nil {
-		return []string{th.Muted("Checking the workspace…")}, rowOf
+		return []string{th.Muted(progress.Waiting("Running the health checks on every project…", v.Waited))}, rowOf
 	}
 	lines = append(lines, " "+v.Headline(th), "")
 	position := 0
