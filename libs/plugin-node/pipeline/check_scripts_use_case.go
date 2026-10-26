@@ -93,7 +93,11 @@ func CheckScripts(workspaceRoot, dir, label string, project protocol.Project) (p
 			failing = true
 		}
 	}
-	finding := protocol.Finding{Check: "the scripts of " + label + " call files and tools that exist", OK: len(problems) == 0}
+	what := "call files and tools that exist"
+	if len(problems) > 0 {
+		what = "call files or tools that are missing"
+	}
+	finding := protocol.Finding{Check: "the scripts of " + label + " " + what, OK: len(problems) == 0}
 	if len(unbuilt) > 0 {
 		finding.Check += " (" + strings.Join(unbuilt, ", ") + " is built by " + label + ":build; run `smith build` first)"
 	}

@@ -38,7 +38,7 @@ func sourceLabel(plan *convertplan.Plan) string {
 	case plan.Source == convertplan.SourceTurborepo:
 		return "Turborepo workspace"
 	case plan.Legacy:
-		return "Nx workspace made by the old mnci"
+		return "Nx workspace (set up by an earlier version of this tool)"
 	}
 	return "Nx workspace"
 }

@@ -249,25 +249,36 @@ workspace. It combines [`smith adopt`](adopt.md) and [`smith convert`](convert.m
 the fix wizard's keys and drawing. The stages:
 
 1. **Reading** the repository.
-2. **What was found**: the kind of repository (Nx, Turborepo, mnci, or plain), the projects
-   (the first twelve), the old tooling in use, and blockers (`✖`) and warnings (`!`). Nothing
-   has changed yet.
+2. **What was found**: the kind of repository (Nx, Turborepo, or plain), the projects
+   (the first twelve, with their language in words), the tools in use today, and blockers
+   (`✖`) and warnings (`!`). Nothing has changed yet. When the packages are not installed, or
+   are not the ones the repository lists, the button is **Install the packages and
+   continue**: smith runs `npm ci` (or `npm install` without a lockfile), reads the
+   repository again and goes on. git cannot take an install back, and the screen says so.
 3. **How far to go**: conservative (keep the build and lint setup) or full (make smith the
    only tool; Nx and Turborepo only, like `--level full`).
 4. For the full level: a **trial conversion on a scratch copy** to see what would be left, then
    **the four choices** (lint, test runner, build, CI), as in `smith convert --lint --test
    --build --ci`.
-5. **The whole plan**, for confirmation: `Enter` converts. Nothing is written before.
+5. **The whole plan**, for confirmation: the files the conversion creates, edits and removes
+   (a file that changes in many folders is one line), then the plan. For the conservative
+   level the same list comes from a trial conversion on a scratch copy. `Enter` converts.
+   Nothing is written before.
 6. **Converting**, then, for the full level, a question per **group of removals** (`We are
    going to delete N packages and M files. ... ok?`): `y` deletes them, `n` keeps them,
    `s` keeps these and skips the groups after.
 7. **Finishing**: the install and the checks (build, test, lint, doctor).
-8. **Done**: what was converted, the old tooling removed, what was left as you chose, files
-   that look like old tooling but stay because something still uses them, and notes. `Enter`
-   closes; run `smith` again to open the workspace.
+8. **Done**, in three parts: what is done, **Needs you** (what the conversion could not decide
+   for you, each with its reason) and **Behaves differently now** (the first five, the rest
+   in `.smith/convert-report.txt`), then the files that look like old tooling but stay.
+   **Open the workspace** (`Enter`) reopens the interface inside the new workspace; **Open it
+   and build everything** (`n`) also starts the build to check the conversion.
 
 While a job runs, `Ctrl+C` or `Esc` stops it. A failed step shows its output with Retry.
-Everything is in the working tree and git undoes it.
+Everything is in the working tree and git undoes it (installed packages stay installed).
+
+A new workspace made from the Start menu (`n`) opens the same way: when `smith new` ends, the
+interface starts again inside the new folder, and Home offers to add the first project.
 
 ### Guided forms
 

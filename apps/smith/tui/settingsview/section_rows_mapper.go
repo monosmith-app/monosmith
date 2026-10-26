@@ -132,9 +132,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	}
 	switch it.kind {
 	case kindPlugin:
-		add(th.Bold(it.key)+th.Muted("  built-in language plugin"),
-			"Space turns it on or off: smith plugin enable|disable "+it.key+". At least one must stay on.",
-			th.Muted("Always loaded: "+strings.Join(m.snap.Addons, ", ")))
+		add(th.Bold(it.key)+th.Muted("  support for a language, built into smith"),
+			"Space turns it on or off for this workspace; at least one must stay on. Projects in a language that is off are not built, tested or checked.",
+			th.Muted("Tools that are always on: "+strings.Join(m.snap.Addons, ", ")+". The same as: smith plugin enable|disable "+it.key))
 	case kindExternal:
 		p := m.snap.External[it.idx]
 		add(th.Bold(p.Name)+th.Muted("  from "+p.Source), th.Muted("runs   ")+p.Command)

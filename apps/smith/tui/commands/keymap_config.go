@@ -81,6 +81,7 @@ var all = []Command{
 	{ID: "deps.mark-all", Group: GroupProjects, Title: "Mark all, or none", Keys: []string{"a"}, Kind: PaneKey, Views: vDeps, Footer: "all"},
 	{ID: "deps.update", Group: GroupProjects, Title: "Update the marked ones", Hint: "smith deps up", Keys: []string{"u", "enter"}, Kind: ViewAction, Action: "deps-up", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "update"},
 	{ID: "deps.align", Group: GroupProjects, Title: "Bring drifting versions to one", Hint: "smith deps up --align", Keys: []string{"v"}, Kind: ViewAction, Action: "deps-align", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "align"},
+	{ID: "deps.one-version", Group: GroupProjects, Title: "Require one version of each dependency", Hint: "smith config set dependencies.one_version true", Keys: []string{"o"}, Kind: Execute, Argv: []string{"config", "set", "dependencies.one_version", "true"}, Confirm: true, Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "one version"},
 
 	{ID: "settings.move", Group: GroupWorkspace, Title: "Move in the list of sections or its rows", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Glyph: "↑↓", Kind: PaneKey, Views: vSettings, Footer: "move"},
 	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{" ", "enter"}, Kind: PaneKey, Views: vSettings, Footer: "change"},
@@ -121,7 +122,7 @@ var all = []Command{
 	// Start
 	{ID: "file.new", Group: GroupStart, Title: "New workspace…", Hint: "smith new: create a monorepo", Keys: []string{"n"}, Kind: Guided, Guide: "Create a workspace", OnlyOutside: true, Footer: "new workspace", ShowIn: vGuide},
 	{ID: "file.add", Group: GroupStart, Title: "Add project…", Hint: "smith add: an app, lib or package", Keys: []string{"a"}, Kind: Guided, Guide: "Add a project", NeedsWorkspace: true, NeedsIdle: true, OnlyInside: true, Footer: "add project", ShowIn: vProjects},
-	{ID: "file.adopt", Group: GroupStart, Title: "Adopt…", Hint: "the adopt wizard: what was found, how far to go, the whole plan, then the conversion and the checks (Nx, Turborepo, mnci or a plain repository)", Keys: []string{"a"}, Kind: OpenAdoptWizard, Views: vGuide, NeedsIdle: true, OnlyOutside: true, NeedsContent: true, Footer: "adopt"},
+	{ID: "file.adopt", Group: GroupStart, Title: "Adopt…", Hint: "bring this folder under smith: what it found, how far to go, every file that changes, then the checks", Keys: []string{"a"}, Kind: OpenAdoptWizard, Views: vGuide, NeedsIdle: true, OnlyOutside: true, NeedsContent: true, Footer: "adopt"},
 
 	// Projects
 	{ID: "proj.install", Group: GroupProjects, Title: "Install dependencies…", Hint: "smith install: a fresh clone's npm install, venv, go mod download", Keys: []string{"i"}, Kind: Execute, Argv: []string{"install"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},

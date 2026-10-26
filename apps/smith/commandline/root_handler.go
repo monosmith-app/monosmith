@@ -121,7 +121,13 @@ func canAsk(root *cobra.Command, args []string) bool {
 
 // Execute runs smith and returns the process exit code.
 func Execute(version string, args []string) int {
-	if len(args) == 0 && tui.Interactive() {
+	if len(args) > 0 || !tui.Interactive() {
+		return run(version, args)
+	}
+	// A bare smith at a terminal opens the interface. A command it hands back
+	// runs here, and when that command made a workspace the interface opens
+	// again inside it: nobody should have to cd and start smith a second time.
+	for {
 		chosen, err := tui.Choose(version, os.Stdout, clicontract.DescribeCommands(Root(version)))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
@@ -130,8 +136,17 @@ func Execute(version string, args []string) int {
 		if len(chosen) == 0 {
 			return 0
 		}
-		args = chosen
+		if code := run(version, chosen); code != 0 || len(chosen) < 2 || chosen[0] != "new" {
+			return code
+		}
+		if err := os.Chdir(chosen[1]); err != nil {
+			return 0
+		}
 	}
+}
+
+// run executes one smith command line and returns the exit code.
+func run(version string, args []string) int {
 	root := Root(version)
 	root.SetArgs(args)
 	if canAsk(root, args) {

@@ -106,7 +106,7 @@ func TestKeysDoNotFireWhileATextFieldIsEditing(t *testing.T) {
 func TestKeysDoNotFireInsideAGuideForm(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a")
-	l.has("Add a project", "What kind?")
+	l.has("Add a project", "What are you adding?")
 	l.keys("b", "t", "3")
 	if len(l.started) != 0 || l.sh().tab != "guide" {
 		t.Fatalf("a form option list ran %v in %q", l.started, l.sh().tab)
@@ -417,8 +417,8 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a") // Add project…
-	l.has("Add a project", "What kind?")
-	l.keys("down", "down", "enter", "down", "enter").typeText("sdk").keys("enter")
+	l.has("Add a project", "What are you adding?")
+	l.keys("down", "down", "enter", "enter").typeText("sdk").keys("enter")
 	l.has("The command that will run:", "$ smith add package sdk --lang node")
 	l.keys("y")
 	if l.lastStarted() != "add package sdk --lang node" {
@@ -430,11 +430,11 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 	// Issue #472: Ctrl+N was "new workspace" here and "add project" inside.
 	l := newLab(t, false, 120, 30)
 	l.keys("ctrl+n")
-	l.hasNot("Workspace name")
+	l.hasNot("What should the new workspace be called?")
 	l.hasNot("a add project")
 	l.has("n new workspace")
 	l.keys("n")
-	l.has("Create a workspace", "Workspace name")
+	l.has("Create a workspace", "What should the new workspace be called?")
 	l.typeText("acme").keys("enter")
 	l.has("$ smith new acme")
 }
@@ -442,7 +442,7 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 func TestInsideAWorkspaceNDoesNotStartAWorkspaceAndAAddsAProject(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("n")
-	l.hasNot("Create a workspace", "Workspace name")
+	l.hasNot("Create a workspace", "What should the new workspace be called?")
 	l.hasNot("n new workspace")
 	l.keys("a")
 	l.has("Add a project")

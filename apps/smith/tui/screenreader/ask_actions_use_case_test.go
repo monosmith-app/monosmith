@@ -21,15 +21,15 @@ func converse(t *testing.T, input string) (argv []string, output string, err err
 }
 
 func TestAnActionWithQuestionsEndsAsItsCommandLine(t *testing.T) {
-	// 3 is "Add a project": kind (2: lib), language (2: node), name.
-	argv, out, err := converse(t, "3\n2\n2\ncore\n")
+	// 3 is "Add a project": kind (2: lib), language (1: node leads), name.
+	argv, out, err := converse(t, "3\n2\n1\ncore\n")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if want := []string{"add", "lib", "core", "--lang", "node"}; !reflect.DeepEqual(argv, want) {
 		t.Fatalf("argv %v, want %v\n%s", argv, want, out)
 	}
-	for _, want := range []string{"2. Run tasks - build, test, lint, typecheck", "3. Add a project - app, lib or package", "What kind? Type the number of one.", "2. lib - internal, never published", "Which language? Type the number of one.", "Name (kebab-case). For example web."} {
+	for _, want := range []string{"2. Run tasks - build, test, lint, typecheck", "3. Add a project - app, lib or package", "What are you adding? Type the number of one.", "2. A library - code other projects here share; it stays in this workspace", "Which language is it written in? Type the number of one.", "Name it (lowercase words joined by dashes). For example web."} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in:\n%s", want, out)
 		}
@@ -70,7 +70,7 @@ func TestAWrongNumberIsSaidAndAskedAgainThenGivenUp(t *testing.T) {
 	if want := fmt.Sprintf(`"nine" is not one of the numbers 1 to %d.`, len(sampleActions())); !strings.Contains(out, want) {
 		t.Fatalf("the mistake was not said:\n%s", out)
 	}
-	argv, out, err = converse(t, "3\n9\n1\n1\nweb\n")
+	argv, out, err = converse(t, "3\n9\n1\n2\nweb\n")
 	if err != nil || !reflect.DeepEqual(argv, []string{"add", "app", "web", "--lang", "go"}) {
 		t.Fatalf("a mistake is asked again: %v %v\n%s", argv, err, out)
 	}

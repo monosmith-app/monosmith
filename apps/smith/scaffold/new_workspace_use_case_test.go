@@ -3,6 +3,7 @@ package scaffold
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -171,5 +172,25 @@ func TestSplitKind(t *testing.T) {
 		if _, _, ok := SplitKind(in); ok {
 			t.Errorf("SplitKind(%q) must not split", in)
 		}
+	}
+}
+
+func TestAWorkspaceWithoutARemoteHasNoModulePrefixToDerive(t *testing.T) {
+	dir := t.TempDir()
+	if out, err := exec.Command("git", "-C", dir, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	git := gitclient.New(dir)
+	if got := remoteModulePrefix(git); got != "" {
+		t.Fatalf("no remote, no prefix: %q", got)
+	}
+	if got := modulePrefixFromRemote(git, "acme"); got != "example.com/acme" {
+		t.Fatalf("new workspaces still fall back: %q", got)
+	}
+	if out, err := exec.Command("git", "-C", dir, "remote", "add", "origin", "git@github.com:Acme/Tools.git").CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	if got := remoteModulePrefix(git); got != "github.com/Acme/Tools" {
+		t.Fatalf("from the remote: %q", got)
 	}
 }

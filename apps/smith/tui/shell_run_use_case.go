@@ -161,7 +161,10 @@ func (s *Shell) summary() string {
 	took := shortDuration(r.RunTime(s.now()))
 	c := r.Counts()
 	if c.Total == 0 {
-		return fmt.Sprintf("exit %d in %s", r.Exit, took)
+		if r.Exit == 0 {
+			return "done in " + took
+		}
+		return fmt.Sprintf("failed (code %d) in %s", r.Exit, took)
 	}
 	var parts []string
 	for _, p := range []struct {

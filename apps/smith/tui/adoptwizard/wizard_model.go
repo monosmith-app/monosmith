@@ -53,6 +53,8 @@ type Model struct {
 	rest  []string
 	kept  []legacyinventory.Kept
 	notes []string
+	// changes are the files the conversion writes, once they were worked out.
+	changes adoptflow.Changes
 }
 
 // prepared is what Prepare returned.
@@ -156,6 +158,8 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 		return m.cancel()
 	case out.Apply:
 		return m.confirm()
+	case out.Decline && m.stage == StageDone:
+		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: true}
 	case out.Decline:
 		return m.decline(false)
 	case out.Skip:
@@ -170,10 +174,12 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 // cancel closes the dialog; what was changed already stays, and is told.
 func (m Model) cancel() (Model, Outcome) {
 	switch m.stage {
-	case StageGroup, StageChecking, StageDone:
-		return m, Outcome{Close: true, Note: "Stopped. The conversion and the groups you agreed are in the working tree; git restore --staged --worktree . && git clean -fd undoes them."}
+	case StageDone:
+		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+	case StageGroup, StageChecking:
+		return m, Outcome{Close: true, Note: "Stopped. The conversion is in your files; git status shows it, and git restore --staged --worktree . && git clean -fd takes it back (installed packages stay installed)."}
 	case StageFinishing, StageRemoving, StageConverting:
-		return m, Outcome{Close: true, Note: "Closed. Whatever ran is in the working tree; git status shows it and git undoes it."}
+		return m, Outcome{Close: true, Note: "Closed. Whatever ran is in your files; git status shows it and git can take it back (installed packages stay installed)."}
 	}
 	return m, Outcome{Close: true}
 }
@@ -202,12 +208,14 @@ func (m Model) confirm() (Model, Outcome) {
 	switch m.stage {
 	case StageFound:
 		switch {
+		case m.found.NeedsInstall:
+			return m.install()
 		case len(m.found.Blockers) > 0:
 			return m, Outcome{Close: true}
 		case m.found.Full:
 			return m.askLevel(), Outcome{}
 		}
-		return m.reviewConservative(), Outcome{}
+		return m.reviewConservative()
 	case StageReview:
 		return m.startConversion()
 	case StageGroup:
@@ -219,7 +227,7 @@ func (m Model) confirm() (Model, Outcome) {
 		style.Verb = "Removing…"
 		return m.runFix(StageRemoving, g.Fix, job, style), Outcome{Job: &job}
 	case StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready: run smith again to open it."}
+		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
 	}
 	// A failure: run the job again.
 	if m.retry != nil {
@@ -259,6 +267,18 @@ func (m Model) Done(result any, err error) (Model, Outcome) {
 		m.flow = flow
 		m.found = flow.Found()
 		return m.showFound(), Outcome{}
+	case StageInstalling:
+		flow, _ := result.(Flow)
+		if flow == nil {
+			m.fw = m.fw.Fail(fmt.Errorf("could not read the repository again"))
+			return m, Outcome{}
+		}
+		m.flow = flow
+		m.found = flow.Found()
+		return m.showFound(), Outcome{}
+	case StageListing:
+		m.changes, _ = result.(adoptflow.Changes)
+		return m.showConservative(), Outcome{}
 	case StagePreparing:
 		p, _ := result.(prepared)
 		m.defaults = p.defaults
@@ -343,6 +363,9 @@ func (m Model) showFound() Model {
 	if len(m.found.Blockers) > 0 {
 		style.Apply = "Close"
 	}
+	if m.found.NeedsInstall {
+		style.Apply = "Install the packages and continue"
+	}
 	return m.reviewOf(StageFound, "found", foundText(m.found), style)
 }
 
@@ -396,7 +419,7 @@ func (m Model) answered() (Model, Outcome) {
 			return m.prepare()
 		}
 		m.full = false
-		return m.reviewConservative(), Outcome{}
+		return m.reviewConservative()
 	}
 	c := m.choices
 	c.Level = convertchoices.LevelFull
@@ -445,8 +468,25 @@ func (m Model) reviewFull() Model {
 	return m.reviewOf(StageReview, "full conversion", reviewHeader+m.preview.Text, style)
 }
 
-// reviewConservative shows what the conservative level does.
-func (m Model) reviewConservative() Model {
+// reviewConservative works out the files a conservative conversion changes
+// (on a scratch copy), then shows them; a plain repository shows its adoption.
+func (m Model) reviewConservative() (Model, Outcome) {
+	if !m.found.Kind.Convertible() {
+		return m.showConservative(), Outcome{}
+	}
+	flow := m.flow
+	job := Job{Name: "working out which files change", Run: func(context.Context, io.Writer) (any, error) {
+		if _, _, err := flow.Prepare(); err != nil {
+			return nil, err
+		}
+		return flow.Changes()
+	}}
+	m = m.running(StageListing, "Working out which files change…", job, withWorking(adoptStyle, "trying the conversion on a copy"))
+	return m, Outcome{Job: &job}
+}
+
+// showConservative shows what the conservative level does.
+func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
 		fix := m.flow.AdoptFix()
@@ -454,15 +494,31 @@ func (m Model) reviewConservative() Model {
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
 		}
-		text = conservativeText(m.found, shown)
+		text = conservativeText(m.found, shown, adoptflow.Changes{})
 	} else {
-		text = conservativeText(m.found, "")
+		text = conservativeText(m.found, "", m.changes)
 	}
 	style := adoptStyle
 	style.Apply, style.Back = "Go ahead", true
 	m = m.reviewOf(StageReview, "conservative", text, style)
 	m.full = false
 	return m
+}
+
+// install installs the packages the repository lists and reads it again.
+func (m Model) install() (Model, Outcome) {
+	flow, open := m.flow, m.open
+	job := Job{Name: "installing the packages", Steps: 1, Run: func(ctx context.Context, out io.Writer) (any, error) {
+		if err := flow.Install(ctx, out); err != nil {
+			return nil, err
+		}
+		flow.Close()
+		return open()
+	}}
+	style := adoptStyle
+	style.Verb = "Installing…"
+	m = m.running(StageInstalling, "Installing the packages", job, withWorking(style, "starting npm"))
+	return m, Outcome{Job: &job}
 }
 
 // startConversion starts the conversion (or the adoption of a plain repository).
@@ -532,7 +588,7 @@ func (m Model) finish() (Model, Outcome) {
 		return nil, flow.ApplyFix(ctx, fix.Fix, out)
 	}}
 	style := adoptStyle
-	style.Verb = "Checking…"
+	style.Verb = "Installing and checking…"
 	style.Working = "starting"
 	m = m.runFix(StageFinishing, fix, job, style)
 	return m, Outcome{Job: &job}
@@ -541,7 +597,7 @@ func (m Model) finish() (Model, Outcome) {
 // done tells what happened.
 func (m Model) done() Model {
 	style := adoptStyle
-	style.Apply = "Done"
-	text := doneText(m.found, m.summary, m.applied, m.declinedN, m.kept, m.notes)
+	style.Apply, style.Decline = "Open the workspace", "Open it and build everything"
+	text := doneText(m.found, m.flow.Result(), m.applied, m.declinedN, m.kept, m.notes)
 	return m.reviewOf(StageDone, "done", strings.TrimLeft(text, "\n"), style)
 }

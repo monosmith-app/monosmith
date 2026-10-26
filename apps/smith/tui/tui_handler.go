@@ -31,10 +31,27 @@ func Interactive() bool {
 // or nil when the user quit; every other command already ran inside the shell.
 // catalog feeds the palette. A panic restores the terminal and comes back as
 // an error.
-func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription) (argv []string, err error) {
+func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription) ([]string, error) {
+	var start []string
+	for {
+		argv, reopen, err := chooseOnce(version, out, catalog, start)
+		if err != nil || reopen == nil {
+			return argv, err
+		}
+		start = reopen.Start
+	}
+}
+
+// reopening asks for the shell to start again, now inside the workspace the
+// last one made; Start is a command to run as soon as it is open.
+type reopening struct{ Start []string }
+
+// chooseOnce is one run of the shell. reopen is set when the folder became a
+// workspace inside it (adoption), so the shell starts again to open it.
+func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string) (argv []string, reopen *reopening, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			argv, err = nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
+			argv, reopen, err = nil, nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
 		}
 	}()
 	name := "no workspace"
@@ -73,12 +90,12 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		}
 		argv, err := screenreader.Ask(os.Stdin, out, actions)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if len(argv) > 0 {
 			fmt.Fprintf(out, "Running: %s\n\n", commands.Line(argv))
 		}
-		return argv, nil
+		return argv, nil, nil
 	}
 	// What the person saved in the Settings tab; the environment still wins over it.
 	prefs, _ := userprefs.Load(pluginhost.Home())
@@ -91,6 +108,7 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		s := sources.WorkspaceSources(".", version)
 		s.Settings = settingssource.New(".", pluginhost.Home(), os.Getenv)
 		cfg.Sources = &s
+		cfg.Start = start
 	} else {
 		cfg.Adopt = sources.AdoptionOpener(".", version)
 	}
@@ -100,9 +118,12 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 	// selection, and `m` turns the mouse off altogether.
 	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	sh := final.(Shell)
+	if sh.reopen {
+		return nil, &reopening{Start: sh.reopenStart}, nil
+	}
 	if line := sh.ExitSummary(); line != "" {
 		fmt.Fprintf(out, "%s\n", line)
 	}
@@ -110,5 +131,5 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 	if len(argv) > 0 {
 		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
 	}
-	return argv, nil
+	return argv, nil, nil
 }

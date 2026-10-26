@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
@@ -109,6 +110,16 @@ func (f *adoptFake) FinishFix(verify bool) doctorfix.Planned {
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Install, then check", Steps: []protocol.FixStep{{Description: "install", Argv: []string{"npm", "install"}}}}}
 }
 
+func (f *adoptFake) Changes() (adoptflow.Changes, error) {
+	return adoptflow.Changes{Created: []string{"smith.toml"}}, nil
+}
+
+func (f *adoptFake) Result() convert.Highlights {
+	return convert.Highlights{Projects: "2 projects"}
+}
+
+func (f *adoptFake) Install(context.Context, io.Writer) error { return nil }
+
 func (f *adoptFake) AdoptFix() doctorfix.Planned { return doctorfix.Planned{} }
 
 func (f *adoptFake) Close() {
@@ -156,7 +167,7 @@ func TestAFolderThatIsNotAWorkspaceLeadsWithAdoptionAndEnterStartsIt(t *testing.
 	l := newAdoptLab(t, f, false, 110, 34)
 	l.has("Not a smith workspace yet: Enter starts adoption", "Adopt this repository", "Not a smith workspace yet. Press a to adopt this folder")
 	l.keys("enter")
-	l.has("Adopt · review", "Found a Nx workspace: acme", "2 projects", "Old tooling in use: Nx, ESLint, Jest", "[ Continue  Enter ]")
+	l.has("Adopt · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
 	if l.sh().adopt == nil {
 		t.Fatal("the wizard is not open")
 	}
@@ -166,7 +177,7 @@ func TestTheAKeyAndThePaletteOpenTheSameWizard(t *testing.T) {
 	f := &adoptFake{found: nxRepository()}
 	l := newAdoptLab(t, f, false, 110, 34)
 	l.keys("a")
-	l.has("Found a Nx workspace")
+	l.has("Found an Nx workspace")
 	l.keys("esc")
 	if l.sh().adopt != nil {
 		t.Fatal("esc left the wizard open")
@@ -176,7 +187,7 @@ func TestTheAKeyAndThePaletteOpenTheSameWizard(t *testing.T) {
 	l.typeText("Adopt")
 	l.has("Adopt…")
 	l.keys("enter")
-	l.has("Found a Nx workspace")
+	l.has("Found an Nx workspace")
 }
 
 func TestAnEmptyFolderHasNoAdoptionToOffer(t *testing.T) {
@@ -200,7 +211,7 @@ func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing
 	l.keys("enter") // convert, then the group is asked
 	l.has("We are going to delete 4 packages and 3 files", "ok?")
 	l.keys("y") // delete it, then the closing steps run and the summary shows
-	l.has("is a smith workspace now", "Converted 2 projects.", "Old tooling removed: lint")
+	l.has("is a smith workspace now", "2 projects", "Old tools removed: lint")
 	calls := f.Calls()
 	for _, want := range []string{"prepare", "plan --level full --lint smith --test jest --build smith --ci smith", "convert full", "apply Use smith's ESLint config", "finish verify=true", "apply Install, then check"} {
 		if !strings.Contains(calls, want) {
@@ -208,8 +219,8 @@ func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing
 		}
 	}
 	l.keys("enter")
-	if !l.quit || !strings.Contains(l.sh().ExitSummary(), "run smith again to open it") {
-		t.Fatalf("quit=%v summary=%q", l.quit, l.sh().ExitSummary())
+	if !l.quit || !l.sh().reopen || len(l.sh().reopenStart) != 0 {
+		t.Fatalf("quit=%v reopen=%v start=%v: the shell should leave only to open the workspace", l.quit, l.sh().reopen, l.sh().reopenStart)
 	}
 	if !f.closed {
 		t.Fatal("the flow was not closed")

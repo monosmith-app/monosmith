@@ -50,7 +50,10 @@ func (s *Shell) afterAdopt(out adoptwizard.Outcome) tea.Cmd {
 	case out.Finished != "":
 		s.adopt.Dispose()
 		s.adopt = nil
-		s.exitNote = out.Finished
+		s.reopen = true
+		if out.Build {
+			s.reopenStart = []string{"run", "build"}
+		}
 		s.quit = true
 	case out.Close:
 		s.adopt.Dispose()

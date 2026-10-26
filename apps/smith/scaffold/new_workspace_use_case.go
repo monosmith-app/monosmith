@@ -179,9 +179,18 @@ func ignoreCache(path string, out io.Writer) (bool, error) {
 // modulePrefixFromRemote derives github.com/<owner>/<repo> from the origin
 // remote, falling back to example.com/<name>.
 func modulePrefixFromRemote(git *gitclient.Git, name string) string {
+	if prefix := remoteModulePrefix(git); prefix != "" {
+		return prefix
+	}
+	return "example.com/" + name
+}
+
+// remoteModulePrefix is github.com/<owner>/<repo> from the origin remote, or
+// "" when the repository has none.
+func remoteModulePrefix(git *gitclient.Git) string {
 	url, err := git.RemoteURL("origin")
-	if err != nil || url == "" {
-		return "example.com/" + name
+	if err != nil || strings.TrimSpace(url) == "" {
+		return ""
 	}
 	url = strings.TrimSuffix(strings.TrimSpace(url), ".git")
 	for _, prefix := range []string{"https://", "http://", "ssh://", "git@"} {
@@ -190,6 +199,9 @@ func modulePrefixFromRemote(git *gitclient.Git, name string) string {
 	url = strings.Replace(url, ":", "/", 1)
 	if i := strings.Index(url, "@"); i >= 0 {
 		url = url[i+1:]
+	}
+	if url == "" {
+		return ""
 	}
 	return strings.ToLower(url[:1]) + url[1:]
 }

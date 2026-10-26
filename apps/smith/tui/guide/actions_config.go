@@ -1,5 +1,7 @@
 package guide
 
+import "github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+
 // Step is one question: a choice from options, or free text when Options is nil.
 type Step struct {
 	Key     string
@@ -67,8 +69,8 @@ func first(a map[string][]string, key string) string {
 // plugin.
 func Actions(languages, plugins, enabled []string) []Action {
 	var langs, pluginOpts []Option
-	for _, l := range languages {
-		langs = append(langs, Option{Label: l, Value: l})
+	for _, l := range languagenames.Order(languages) {
+		langs = append(langs, Option{Label: languagenames.Of(l), Value: l})
 	}
 	isEnabled := map[string]bool{}
 	for _, p := range enabled {
@@ -84,7 +86,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 	return []Action{
 		{
 			Title: "Create a workspace", Presents: "new", Hint: "smith new", OutsideOnly: true,
-			Steps: []Step{{Key: "name", Prompt: "Workspace name (kebab-case)", Placeholder: "acme"}},
+			Steps: []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio"}},
 			Argv:  func(a map[string][]string) []string { return []string{"new", first(a, "name")} },
 		},
 		{
@@ -108,13 +110,13 @@ func Actions(languages, plugins, enabled []string) []Action {
 		{
 			Title: "Add a project", Presents: "add", Hint: "app, lib or package", NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "kind", Prompt: "What kind?", Options: []Option{
-					{Label: "app", Value: "app", Hint: "deployed, never published"},
-					{Label: "lib", Value: "lib", Hint: "internal, never published"},
-					{Label: "package", Value: "package", Hint: "published on release"},
+				{Key: "kind", Prompt: "What are you adding?", Options: []Option{
+					{Label: "An app", Value: "app", Hint: "something you run or deploy, like a website or an API (web, api)"},
+					{Label: "A library", Value: "lib", Hint: "code other projects here share; it stays in this workspace"},
+					{Label: "A package", Value: "package", Hint: "code you publish for others to install (npm, PyPI, crates.io and so on)"},
 				}},
-				{Key: "lang", Prompt: "Which language?", Options: langs},
-				{Key: "name", Prompt: "Name (kebab-case)", Placeholder: "web"},
+				{Key: "lang", Prompt: "Which language is it written in?", Options: langs},
+				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web"},
 			},
 			Argv: func(a map[string][]string) []string {
 				return []string{"add", first(a, "kind"), first(a, "name"), "--lang", first(a, "lang")}
@@ -132,7 +134,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		{Title: "Preview the next release", Presents: "release", Hint: "smith release --dry-run", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
 		{Title: "Regenerate CI pipelines", Presents: "ci", Hint: "smith ci generate", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
 		{
-			Title: "Adopt this repository", Wizard: WizardAdopt, Presents: "adopt", Hint: "smith adopt and convert in one wizard: what was found, how far to go, the plan, then the changes", OutsideOnly: true, NeedsContent: true,
+			Title: "Adopt this repository", Wizard: WizardAdopt, Presents: "adopt", Hint: "bring this folder under smith: it shows what it found and every file it would change before anything is written", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "step", Prompt: "What should smith do?", Options: []Option{
 				{Label: "Report what adopting involves", Value: "report", Hint: "read-only: the projects smith would see, the blockers and the step that clears each"},
 				{Label: "Create the baseline release tags", Value: "tags", Hint: "local only, nothing is pushed; needs a clean git tree"},
@@ -152,10 +154,10 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Convert an Nx or Turborepo workspace", Wizard: WizardAdopt, Presents: "convert", Hint: "smith convert: Nx, Turborepo or mnci workspaces (the same wizard as Adopt)", OutsideOnly: true, NeedsContent: true,
+			Title: "Convert an Nx or Turborepo workspace", Wizard: WizardAdopt, Presents: "convert", Hint: "the same wizard as Adopt, for a folder that Nx or Turborepo manages today", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "mode", Prompt: "Preview first?", Options: []Option{
 				{Label: "Preview the conversion", Value: "preview", Hint: "smith convert --dry-run: reports what maps and what needs you, changes nothing"},
-				{Label: "Convert now", Value: "convert", Hint: "the old tool is removed and the pipelines are regenerated"},
+				{Label: "Convert now", Value: "convert", Hint: "the old tool goes and smith generates the CI pipelines"},
 			}}},
 			Argv: func(a map[string][]string) []string {
 				if first(a, "mode") == "convert" {
