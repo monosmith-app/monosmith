@@ -165,9 +165,9 @@ func newAdoptLab(t *testing.T, f *adoptFake, empty bool, w, h int) *lab {
 func TestAFolderThatIsNotAWorkspaceLeadsWithAdoptionAndEnterStartsIt(t *testing.T) {
 	f := &adoptFake{found: nxRepository()}
 	l := newAdoptLab(t, f, false, 110, 34)
-	l.has("Not a smith workspace yet: Enter starts adoption", "Adopt this repository", "Not a smith workspace yet. Press a to adopt this folder")
+	l.has("Not a smith workspace yet: Enter brings it in", "Bring this repository into MonoSmith", "Not a smith workspace yet. Press a to bring this folder in")
 	l.keys("enter")
-	l.has("Adopt · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
+	l.has("Bring in · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
 	if l.sh().adopt == nil {
 		t.Fatal("the wizard is not open")
 	}
@@ -184,8 +184,8 @@ func TestTheAKeyAndThePaletteOpenTheSameWizard(t *testing.T) {
 	}
 	l.has("Cancelled: nothing was changed")
 	l.keys("ctrl+p")
-	l.typeText("Adopt")
-	l.has("Adopt…")
+	l.typeText("Bring")
+	l.has("Bring into MonoSmith…")
 	l.keys("enter")
 	l.has("Found an Nx workspace")
 }
@@ -193,7 +193,7 @@ func TestTheAKeyAndThePaletteOpenTheSameWizard(t *testing.T) {
 func TestAnEmptyFolderHasNoAdoptionToOffer(t *testing.T) {
 	f := &adoptFake{found: nxRepository()}
 	l := newAdoptLab(t, f, true, 110, 34)
-	l.hasNot("Enter starts adoption", "Adopt this repository")
+	l.hasNot("Enter brings it in", "Bring this repository into MonoSmith")
 	l.keys("a")
 	if l.sh().adopt != nil {
 		t.Fatal("a opened the wizard in an empty folder")
@@ -269,7 +269,7 @@ func TestTheAdoptKeyIsInTheHelpTheFooterAndTheKeymapOfTheGuide(t *testing.T) {
 	for _, r := range commands.HelpRows(st, "Guide") {
 		help += r.Title + "|" + r.Shortcut + "\n"
 	}
-	if !strings.Contains(help, "Adopt…|a") {
+	if !strings.Contains(help, "Bring into MonoSmith…|a") {
 		t.Fatalf("the help lacks the adopt key:\n%s", help)
 	}
 	view, _ := commands.Hints(st)

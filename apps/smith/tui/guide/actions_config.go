@@ -40,7 +40,8 @@ type Action struct {
 	Wizard string
 }
 
-// WizardAdopt is the wizard that adopts or converts the folder.
+// WizardAdopt is the one wizard that brings a folder in, whether it is a plain
+// repository or an Nx or Turborepo workspace.
 const WizardAdopt = "adopt"
 
 // AdoptionFirst moves the entries the adopt wizard answers to the top, for a
@@ -134,11 +135,11 @@ func Actions(languages, plugins, enabled []string) []Action {
 		{Title: "Preview the next release", Presents: "release", Hint: "smith release --dry-run", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"release", "--dry-run"} }},
 		{Title: "Regenerate CI pipelines", Presents: "ci", Hint: "smith ci generate", NeedsWorkspace: true, Argv: func(map[string][]string) []string { return []string{"ci", "generate"} }},
 		{
-			Title: "Adopt this repository", Wizard: WizardAdopt, Presents: "adopt", Hint: "bring this folder under smith: it shows what it found and every file it would change before anything is written", OutsideOnly: true, NeedsContent: true,
+			Title: "Bring this repository into MonoSmith", Wizard: WizardAdopt, Presents: "adopt", Hint: "smith reads what is here (a plain repository, or one that Nx or Turborepo manages today), asks how far to go and shows every file it would change before anything is written", OutsideOnly: true, NeedsContent: true,
 			Steps: []Step{{Key: "step", Prompt: "What should smith do?", Options: []Option{
-				{Label: "Report what adopting involves", Value: "report", Hint: "read-only: the projects smith would see, the blockers and the step that clears each"},
+				{Label: "Report what bringing it in involves", Value: "report", Hint: "read-only: the projects smith would see, what blocks and the step that clears each"},
 				{Label: "Create the baseline release tags", Value: "tags", Hint: "local only, nothing is pushed; needs a clean git tree"},
-				{Label: "Write smith.toml and the pipelines, and commit", Value: "init", Hint: "needs a clean git tree"},
+				{Label: "Write smith.toml and the pipelines, and commit", Value: "init", Hint: "needs a clean git tree; an Nx or Turborepo workspace is converted"},
 				{Label: "Tags, then smith.toml and the pipelines", Value: "both", Hint: "both steps; needs a clean git tree"},
 			}}},
 			Argv: func(a map[string][]string) []string {
@@ -151,19 +152,6 @@ func Actions(languages, plugins, enabled []string) []Action {
 					return []string{"adopt", "--tags", "--init"}
 				}
 				return []string{"adopt"}
-			},
-		},
-		{
-			Title: "Convert an Nx or Turborepo workspace", Wizard: WizardAdopt, Presents: "convert", Hint: "the same wizard as Adopt, for a folder that Nx or Turborepo manages today", OutsideOnly: true, NeedsContent: true,
-			Steps: []Step{{Key: "mode", Prompt: "Preview first?", Options: []Option{
-				{Label: "Preview the conversion", Value: "preview", Hint: "smith convert --dry-run: reports what maps and what needs you, changes nothing"},
-				{Label: "Convert now", Value: "convert", Hint: "the old tool goes and smith generates the CI pipelines"},
-			}}},
-			Argv: func(a map[string][]string) []string {
-				if first(a, "mode") == "convert" {
-					return []string{"convert"}
-				}
-				return []string{"convert", "--dry-run"}
 			},
 		},
 		{
