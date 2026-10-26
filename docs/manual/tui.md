@@ -327,7 +327,6 @@ turns the mouse off.
 | `NO_COLOR` | Any value gives the plain colours. |
 | `SMITH_ASCII` | Any value (or `TERM=dumb` or `TERM=linux`) uses ASCII symbols instead of Unicode. Without it the symbols saved in the Settings tab decide. |
 | `SMITH_HOME` | Where the smith home is (`~/.smith` by default): installed plugins, trust decisions and `tui.json`, the theme and symbols chosen in the Settings tab. |
-| `SMITH_NONINTERACTIVE` | Read by the runner that starts the shell's child commands (its exact effect was not verified). |
 
 When standard output is not a terminal the plain questions go to standard error so you can
 still read them. The plain questions have no Settings tab: there, change plugins and settings

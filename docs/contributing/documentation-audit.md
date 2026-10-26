@@ -87,7 +87,6 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 | `smith release --format markdown` prints the text plan line before the markdown | observed |
 | `smith recipe check --all` printed the same as without `--all` | observed |
 | `smith adopt --init` on an adopted workspace says "something blocks adoption; see smith adopt", and `smith adopt` then says "already a smith workspace" | observed |
-| `SMITH_NONINTERACTIVE` is set by the terminal interface's runner but nothing reads it | `grep` |
 | `libs/plugin-node-toolchains` generates a VS Code extension README that names only `VSCE_PAT` | `extension_templates_config.go:92` |
 | `smith commands --json` lists the arguments of `why-miss` and `explain` as separate, but both take `project:task`; variadic arguments of `build`, `test`, `lint`, `typecheck`, `plugin enable/disable/set` and `slices check` are not marked variadic | compared with `--help`; the generator carries overrides |
 | Seven slices exceed the 12-file review threshold with no written exception (`convertplan` 29, `release` 21, `cipipeline` 17, `projectgraph` 15, `workspace` 14, `doctor` 13, `plugin-sdk/protocol` 17); only `tui` has one | `smith slices check`; see [the slice architecture](../architecture/slice-architecture.md) |
@@ -106,7 +105,7 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 - The 30 Mermaid diagrams were checked against the code by reading, and all parse with
   Mermaid 10.9.1 (two used the reserved word `graph` as a node name and were fixed);
   none was rendered to an image.
-- `SMITH_NONINTERACTIVE`, an Nx conversion and `smith new` inside an existing repository
+- An Nx conversion and `smith new` inside an existing repository
   were not exercised.
 
 ## Re-running the checks
