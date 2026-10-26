@@ -67,8 +67,12 @@ func (s *Session) PlanFull(c convertchoices.Choices, verify bool) (Preview, erro
 	var b strings.Builder
 	changes, err := s.Changes()
 	if err == nil {
-		b.WriteString("● The files, in detail\n")
-		b.WriteString(changes.Details())
+		// The same preview as the Doctor fix dialog: a diff of every file.
+		shown, serr := s.ShowChanges(changes)
+		if serr != nil {
+			shown = "● The files smith writes\n  could not show the changes: " + serr.Error() + "\n"
+		}
+		b.WriteString(shown)
 		b.WriteString("\n")
 	}
 	if err := fullconversion.Describe(&b, s.view.Dir, report, true); err != nil {

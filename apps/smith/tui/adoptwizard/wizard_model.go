@@ -56,11 +56,18 @@ type Model struct {
 	notes []string
 	// checked are the closing checks that passed, with their times.
 	checked []checkedStep
-	// changes are the files the conversion writes, once they were worked out.
-	changes adoptflow.Changes
+	// changes are the files the conversion writes, once they were worked out;
+	// changesDiff shows them as diffs, the way the Doctor fix dialog does.
+	changes     adoptflow.Changes
+	changesDiff string
 }
 
 // prepared is what Prepare returned.
+type listed struct {
+	changes adoptflow.Changes
+	diff    string
+}
+
 type prepared struct {
 	defaults  convertchoices.Choices
 	questions []convertchoices.Question
@@ -286,7 +293,8 @@ func (m Model) Done(result any, err error) (Model, Outcome) {
 		m.found = flow.Found()
 		return m.showFound(), Outcome{}
 	case StageListing:
-		m.changes, _ = result.(adoptflow.Changes)
+		l, _ := result.(listed)
+		m.changes, m.changesDiff = l.changes, l.diff
 		return m.showConservative(), Outcome{}
 	case StagePreparing:
 		p, _ := result.(prepared)
@@ -491,7 +499,17 @@ func (m Model) reviewConservative() (Model, Outcome) {
 		if _, _, err := flow.Prepare(); err != nil {
 			return nil, err
 		}
-		return flow.Changes()
+		c, err := flow.Changes()
+		if err != nil {
+			return nil, err
+		}
+		diff, err := flow.ShowChanges(c)
+		if err != nil {
+			diff = `● The files smith writes
+  could not show the changes: ` + err.Error() + `
+`
+		}
+		return listed{changes: c, diff: diff}, nil
 	}}
 	m = m.running(StageListing, "Working out which files change…", job, withWorking(adoptStyle, "trying the conversion on a copy"))
 	return m, Outcome{Job: &job}
@@ -506,9 +524,9 @@ func (m Model) showConservative() Model {
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
 		}
-		text = conservativeText(m.found, shown, adoptflow.Changes{}, convert.Highlights{})
+		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{})
 	} else {
-		text = conservativeText(m.found, "", m.changes, m.flow.Result())
+		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result())
 	}
 	style := adoptStyle
 	style.Apply, style.Back, style.Review = "Go ahead", true, "what will change"

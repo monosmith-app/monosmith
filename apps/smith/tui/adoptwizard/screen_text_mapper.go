@@ -98,7 +98,7 @@ func projectsLine(f adoptflow.Found) string {
 }
 
 // conservativeText is the review of the conservative level.
-func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, r convert.Highlights) string {
+func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, diffs string, r convert.Highlights) string {
 	var b strings.Builder
 	if f.Kind.Convertible() {
 		tool := strings.TrimSuffix(f.Source, " workspace")
@@ -110,7 +110,8 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 		fmt.Fprintf(&b, "  take it back.\n\n")
 		b.WriteString(planSummaryText(changes, r))
 		if changes.Total() > 0 {
-			fmt.Fprintf(&b, "\n● The files, in detail\n%s", changes.Details())
+			// The same diffs as the Doctor fix dialog shows for a fix.
+			b.WriteString("\n" + diffs)
 		}
 		return b.String()
 	}

@@ -122,6 +122,10 @@ func (s *Session) openConvertible(exists func(string) bool) error {
 		}
 	}
 	s.found.Tooling = legacyinventory.ToolsInUse(legacyinventory.NewTree(s.Root, a.Files))
+	if s.found.Kind == KindTurborepo {
+		// Turborepo is the tool smith replaces; the inventory names the tools around it.
+		s.found.Tooling = append([]string{"Turborepo"}, s.found.Tooling...)
+	}
 	s.found.Full = true
 	if a.Blocked {
 		s.found.Blockers = append(s.found.Blockers, strings.TrimSpace(a.Verdict)+" smith convert --dry-run lists them.")

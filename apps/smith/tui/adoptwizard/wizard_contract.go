@@ -26,6 +26,9 @@ type Flow interface {
 	// Changes lists the files the conversion creates, edits and removes; it
 	// needs Prepare to have run.
 	Changes() (adoptflow.Changes, error)
+	// ShowChanges writes the files Changes listed as diffs, the way the review
+	// of a fix shows them; it needs Prepare to have run.
+	ShowChanges(c adoptflow.Changes) (string, error)
 	// Result is what the applied conversion found worth telling.
 	Result() convert.Highlights
 	// Install installs the packages the repository lists.
