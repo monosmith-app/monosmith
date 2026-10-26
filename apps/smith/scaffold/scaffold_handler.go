@@ -62,9 +62,9 @@ func AddCommand(version string) *cobra.Command {
 		Short: "Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)",
 		Long: `Add a project. The kind says what happens to it:
 
-  app      deployed, never published         → apps/<name>
-  lib      imported internally, never published → libs/<name>
-  package  published to its registry on release → packages/<name>
+  app      something you run or deploy (a website, an API) → apps/<name>
+  lib      code the other projects here import           → libs/<name>
+  package  published to a registry on release            → packages/<name>
 
 A combined kind from ` + "`smith kinds`" + ` names the language too: node-app is
 app --lang node.

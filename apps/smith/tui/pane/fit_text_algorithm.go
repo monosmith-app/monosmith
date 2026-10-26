@@ -29,7 +29,7 @@ func Wrap(s string, w, indent int) []string {
 	if w <= indent+1 {
 		return []string{Cut(s, w)}
 	}
-	parts := strings.Split(ansi.Wrap(Printable(s), w-indent, ""), "\n")
+	parts := strings.Split(ansi.Wrap(Printable(s), w-indent, "/\\"), "\n")
 	pad := strings.Repeat(" ", indent)
 	for i := 1; i < len(parts); i++ {
 		parts[i] = pad + strings.TrimLeft(parts[i], " ")

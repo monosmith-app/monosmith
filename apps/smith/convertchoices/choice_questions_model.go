@@ -6,7 +6,7 @@ import "github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 // (the one in def) first.
 func Questions(u legacyinventory.Usage, def Choices) []Question {
 	lint := []Option{
-		{Smith, "smith's ESLint config with the vertical-slice rules; the old lint packages and config files are removed"},
+		{Smith, "smith's ESLint config, which also keeps code organised by feature; the old lint packages and config files are removed"},
 		{Keep, "keep the current lint setup"},
 	}
 	if !u.ESLint {
