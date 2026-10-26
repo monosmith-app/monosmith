@@ -172,6 +172,18 @@ func (k *kiwi) Contribute(params protocol.ContributeParams) (protocol.Contribute
 		if greeting, ok := p.Settings["kiwi"]["greeting"].(string); ok {
 			c.Tasks["greet"] = protocol.Task{Command: []string{self(), "greet", greeting}}
 		}
+		// A schema setting becomes a generate task: kiwi names the schema it
+		// reads, and smith orders it before the project's build and links the
+		// project to the schema's owner.
+		if schema, ok := p.Settings["kiwi"]["schema"].(string); ok {
+			c.Tasks["generate-schema"] = protocol.Task{
+				Command:     []string{"protoc", "-I", "{workspaceRoot}/" + path.Dir(schema), "--python_out=gen", "{workspaceRoot}/" + schema},
+				Inputs:      []string{"{workspaceRoot}/" + schema},
+				Outputs:     []string{"gen"},
+				Cache:       true,
+				Description: "Generate code from " + schema,
+			}
+		}
 		res.Projects[p.Name] = c
 	}
 	return res, nil
