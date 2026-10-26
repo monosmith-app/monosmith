@@ -269,7 +269,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		}
 		return s.execute(commands.RunArgv(c.Task, project), false)
 	case commands.Guided:
-		if g, ok := s.guide.Pick(c.Guide); ok {
+		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
 			s.guide = g
 		}
 		return s.gotoTab(commands.TabGuide)

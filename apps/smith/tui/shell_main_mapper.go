@@ -338,6 +338,8 @@ func (s Shell) runContent(w, h int) content {
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))
+	} else if name, ok := addedProject(s.run.Command); ok && s.run.Finished && s.run.OK() {
+		c.lines = append(c.lines, pane.Fit(addedNextSteps(s.th, name), w))
 	} else {
 		c.lines = append(c.lines, "")
 	}
