@@ -54,12 +54,16 @@ type Action struct {
 	Label    string
 	Shortcut string
 	Disabled bool
+	// Hint says, under the label, what the action does or what it needs.
+	Hint string
 }
 
 // Panel is what the detail shows.
 type Panel struct {
 	Sections []Section
 	Actions  []Action
+	// ActionsTitle is the heading over the actions; "Actions" when empty.
+	ActionsTitle string
 	// After are the sections drawn under the actions: what is long and
 	// secondary, so it can never push the actions off the screen.
 	After []Section
@@ -92,7 +96,11 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 		if len(lines) > 0 {
 			lines = append(lines, "")
 		}
-		lines = append(lines, " "+th.Title("Actions"))
+		title := p.ActionsTitle
+		if title == "" {
+			title = "Actions"
+		}
+		lines = append(lines, " "+th.Title(title))
 		for _, a := range p.Actions {
 			// A long label wraps under itself, the shortcut stays on its first line,
 			// and every line of the action is clickable.
@@ -117,6 +125,13 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 				}
 				hits[len(lines)] = a.ID
 				lines = append(lines, text)
+			}
+			// What the action does, muted under it; the lines click like the action.
+			if a.Hint != "" {
+				for _, part := range pane.Wrap(a.Hint, max(w-5, 4), 0) {
+					hits[len(lines)] = a.ID
+					lines = append(lines, pane.Fit("    "+th.Muted(part), w))
+				}
 			}
 		}
 	}

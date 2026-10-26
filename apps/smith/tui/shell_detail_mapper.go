@@ -198,9 +198,6 @@ func (s Shell) projectPanel() detail.Panel {
 	}
 	rows = append(rows, detail.Row{Label: "affected", Value: yesNoMark(s, p.Affected)})
 	secs := []detail.Section{{Heading: p.Name, Rows: rows}}
-	if len(p.Tasks) > 0 {
-		secs = append(secs, detail.Section{Heading: "Tasks", Items: taskItems(p), OneLine: true})
-	}
 	if len(p.Deps) > 0 {
 		secs = append(secs, detail.Section{Heading: "Depends on", Items: p.Deps})
 	}
@@ -209,36 +206,35 @@ func (s Shell) projectPanel() detail.Panel {
 	}
 	var actions []detail.Action
 	for _, t := range p.Tasks {
-		actions = append(actions, s.taskAction(t.Name))
+		a := s.taskAction(t.Name)
+		a.Hint = taskHint(t)
+		actions = append(actions, a)
 	}
 	actions = append(actions,
 		detail.Action{ID: "x:explain", Label: "Explain"},
 		detail.Action{ID: "x:graph", Label: "Graph: needs and used by"},
 	)
-	return detail.Panel{Sections: secs, Actions: actions}
+	title := ""
+	if len(p.Tasks) > 0 {
+		title = "Run on " + p.Name
+	}
+	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title}
 }
 
-// taskItems is one line per task: its name, its command and what matters to a cache.
-func taskItems(p projectlist.Project) []string {
-	var out []string
-	for _, t := range p.Tasks {
-		line := t.Name
-		if t.Command != "" {
-			line += "  " + t.Command
-		}
-		var notes []string
-		if t.Cache {
-			notes = append(notes, "cached")
-		}
-		if len(t.DependsOn) > 0 {
-			notes = append(notes, "needs "+strings.Join(t.DependsOn, ", "))
-		}
-		if len(notes) > 0 {
-			line += "  (" + strings.Join(notes, "; ") + ")"
-		}
-		out = append(out, line)
+// taskHint says in plain words what running a task does: the command it runs,
+// what has to run before it, and whether smith remembers its result.
+func taskHint(t projectlist.Task) string {
+	var parts []string
+	if t.Command != "" {
+		parts = append(parts, "runs "+t.Command)
 	}
-	return out
+	if len(t.DependsOn) > 0 {
+		parts = append(parts, "after "+strings.Join(t.DependsOn, ", "))
+	}
+	if t.Cache {
+		parts = append(parts, "result remembered: skipped when nothing changed")
+	}
+	return strings.Join(parts, " · ")
 }
 
 // taskAction is the action that runs a task on the selected project; the
