@@ -241,7 +241,7 @@ Real output of `smith ci generate` for the test workspace (GitHub):
 | Toolchain | Python `3.12`: `actions/setup-python@v7` (GitHub), `UsePythonVersion@0` (Azure), `uv python install 3.12` plus symlinks for other providers, the `python` dev container feature at 3.12 |
 | Package store | `~/.cache/pip` (`PIP_CACHE_DIR`), keyed on `requirements-dev.txt` and each project's `pyproject.toml` |
 | Setup (`smith ci setup`) | `Create the Python venv` (`<launcher> -m venv --upgrade-deps .venv`), then, if a private index is configured, `Point pip at the private index` (`pip config --site set global.index-url <index>`), `Install the Python toolchain` (`pip install -r requirements-dev.txt`), and `Install <project>` (`pip install -e ./<root>`) per project. All blocking. Real: five steps, `smith ci setup passed in 58.9s`. |
-| Audit | `pip-audit --skip-editable`, non-blocking, cached on `requirements-dev.txt` and the `pyproject.toml` files. With `[ci] audit_policies = ["python"]` also `smith py-policy` over `requirements-dev.txt` and each project's `requirements.txt`: every requirement must have a `--hash`, none may be a URL or git reference, and the only index is the workspace's. |
+| Audit | `pip-audit --skip-editable`, non-blocking, cached on `requirements-dev.txt` and the `pyproject.toml` files. With `[ci] audit_policies = ["python"]` also `smith py-policy` over `requirements-dev.txt` and each project's `requirements.txt`: every requirement in a project's `requirements.txt` must have a `--hash` (the generated `requirements-dev.txt` is exempt: it lists top-level pins only, and hash-checking mode needs a hash for every transitive dependency), none may be a URL or git reference, and the only index is the workspace's. |
 | Credentials | `PYPI_TOKEN` (required; only when a `package` publishes to PyPI itself). `smith ci check` printed `GitHub: add the repository secrets PYPI_TOKEN` and the Azure equivalent. |
 | Private index (Azure Artifacts) | `PipAuthenticate@1` (`artifactFeeds: 'libs'`) for installs and `TwineAuthenticate@1` (`artifactFeed: 'libs'`) for publishing, no secret. Real, with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`; `smith ci check` then asked for the Feed Publisher role on the build service. A `token` registry adds the variable named in `token_env` as a secret (given to setup when installs need it). |
 
@@ -253,14 +253,7 @@ No known vulnerabilities found
 smith ci audit passed
 ```
 
-With the `python` audit policy turned on, the files smith itself generates fail it, because `requirements-dev.txt` carries no hashes:
-
-```
-requirements-dev.txt: build==1.6.1 has no --hash
-...
-smith: python policy: 7 violation(s)
-smith ci audit failed in 5s
-```
+With the `python` audit policy turned on, the generated `requirements-dev.txt` passes: the hash rule applies to each project's `requirements.txt`, while the index and URL rules still cover the toolchain file.
 
 ## Doctor, dependencies and removal
 
@@ -312,7 +305,6 @@ Removal: `smith remove <project>` deletes the directory and runs `pip uninstall 
 - The editable install makes a project's own `.egg-info` appear under `src/`; it is git-ignored by `smith new`.
 - Only `pyproject.toml` projects are discovered. `setup.py`-only and `requirements.txt`-only directories are not, and a `pyproject.toml` that has no `[project]` table is skipped silently.
 - There is no `format` task and the apps have no `build`.
-- Known rough edge, found by running it: `requirements-dev.txt` has no hashes (the tool set smith pins is clean in `pip-audit` since `setuptools` moved to 84.2.1, past GHSA-xmj3-9gf7-h52w), so the opt-in `python` audit policy fails on a workspace smith itself created.
 
 ## Verified
 

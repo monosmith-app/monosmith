@@ -323,9 +323,9 @@ audit_max_unsafe = 0                     # rust: unsafe blocks allowed in all (d
 
 | Policy | Check | Fails on |
 |---|---|---|
-| `node` | `smith npm-policy` reads `package-lock.json` | a registry package with no integrity hash, a package fetched from git or over plain `http://`, a package with an install script that is not in `audit_allow_install_scripts` |
+| `node` | `smith npm-policy` reads `package-lock.json` | a registry package with no integrity hash, a package fetched from git or over plain `http://`, a package with an install script that is not in `audit_allow_install_scripts` (the install scripts of the default stack's own tools, `@parcel/watcher` and `unrs-resolver` from Jest and `@monosmith/eslint-config`, are allowed without it) |
 | `go` | `go mod verify` in every Go module | a downloaded module that no longer matches `go.sum` |
-| `python` | `smith py-policy` reads `requirements-dev.txt` and each Python project's `requirements.txt` (a missing file is skipped) | a requirement with no `--hash`, one fetched from a direct URL or `git+`, an `--extra-index-url`, or an `--index-url` other than the expected index (the workspace's private registry, else PyPI) |
+| `python` | `smith py-policy` reads `requirements-dev.txt` and each Python project's `requirements.txt` (a missing file is skipped) | a requirement with no `--hash` (not in the generated `requirements-dev.txt`, which holds top-level tool pins and is exempt from the hash rule), one fetched from a direct URL or `git+`, an `--extra-index-url`, or an `--index-url` other than the expected index (the workspace's private registry, else PyPI) |
 | `rust` | `cargo deny check licenses bans` (a setup step installs cargo-deny; your `deny.toml` decides what is allowed) and `smith rust-policy`, which counts `unsafe` blocks, functions, impls and traits in each Rust project's `.rs` files (not `target/`, comments or strings) | a licence or ban cargo-deny rejects, or more `unsafe` than `audit_max_unsafe` |
 
 Each check is an ordinary audit step, so it is cached like the others (see

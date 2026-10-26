@@ -29,8 +29,8 @@ func CI(workspaceRoot string, params protocol.CIParams, nodeVersion string) prot
 		// Opt-in ([ci] audit_policies): lockfile integrity, no git/http
 		// dependencies, install scripts only from the allow-list.
 		command := []string{"{smith}", "npm-policy"}
-		if len(params.Audit.AllowInstallScripts) > 0 {
-			command = append(command, "--allow-scripts="+strings.Join(params.Audit.AllowInstallScripts, ","))
+		if allowed := AllowedInstallScripts(workspaceRoot, params.Audit.AllowInstallScripts); len(allowed) > 0 {
+			command = append(command, "--allow-scripts="+strings.Join(allowed, ","))
 		}
 		result.Audit = append(result.Audit, protocol.Step{Name: "npm policy (lockfile)", Command: command, Blocking: params.Audit.Blocks("node"), CacheFiles: []string{"package-lock.json"}})
 	}
