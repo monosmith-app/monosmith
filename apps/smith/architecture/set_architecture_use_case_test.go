@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/libs/plugin-architectures/rules"
 )
 
 const plain = "schema = 1\n\n[workspace]\nname = \"acme\" # stays\n\n[ci]\nproviders = [\"github\"]\n"
@@ -90,8 +91,8 @@ func TestChoosingNoneRemovesTheTableAndWhatItHeld(t *testing.T) {
 
 func TestAnUnknownArchitectureIsRefusedWithTheChoices(t *testing.T) {
 	root := workspaceWith(t, plain)
-	err := Set(root, "hexagonal")
-	if err == nil || !strings.Contains(err.Error(), "vertical-slices, none") {
+	err := Set(root, "onion")
+	if err == nil || !strings.Contains(err.Error(), "vertical-slices, hexagonal, clean, none") {
 		t.Fatalf("%v", err)
 	}
 	if fileOf(t, root) != plain {
@@ -103,6 +104,23 @@ func TestACommentedTableIsNotTheArchitectureInUse(t *testing.T) {
 	root := workspaceWith(t, plain+"\n# [conventions.vertical-slices]\n")
 	if got := currentName(t, root); got != None {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestEveryChoiceThatChecksSomethingHasRules(t *testing.T) {
+	for _, a := range Catalog() {
+		name, ok := strings.CutPrefix(a.Table, "conventions.")
+		if !ok || name == "vertical-slices" {
+			continue
+		}
+		if _, ok := rules.For(name); !ok {
+			t.Errorf("%s turns on [%s], which no ruleset serves", a.Name, a.Table)
+		}
+	}
+	for _, name := range rules.Names() {
+		if _, err := Find(name); err != nil {
+			t.Errorf("%s has rules but is not offered: %v", name, err)
+		}
 	}
 }
 

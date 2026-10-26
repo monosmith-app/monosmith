@@ -26,7 +26,7 @@ func TestChoosingAnArchitectureInTheTabWritesTheBytesSmithArchitectureWrites(t *
 	if !strings.Contains(read(t, tab), "[conventions.vertical-slices]") || !strings.Contains(read(t, tab), `name = "acme"   # stays`) {
 		t.Fatalf("the table is in and the rest stayed:\n%s", read(t, tab))
 	}
-	if err := b.SetArchitecture("hexagonal"); err == nil {
+	if err := b.SetArchitecture("onion"); err == nil {
 		t.Fatal("an unknown architecture was accepted")
 	}
 }

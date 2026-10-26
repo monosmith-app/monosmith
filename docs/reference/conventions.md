@@ -16,8 +16,8 @@ languages it supports, in a workspace that turns it on in `smith.toml`:
 You need not edit the file for this one: it is the workspace's **architecture**, and
 [`smith architecture`](../manual/architecture.md) (or the Architecture section of the Settings
 tab in [`smith tui`](../manual/tui.md)) lists the architectures smith knows, shows the one in
-use and switches between them. Today they are `vertical-slices` and `none` (no table, no
-checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
+use and switches between them. Today they are `vertical-slices`, `hexagonal`, `clean` and
+`none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
 
 `smith new` turns on `vertical-slices`. A converted workspace does not get it
 until you add the line, because an existing codebase rarely follows it yet.
@@ -29,6 +29,7 @@ structure plugin such as `vertical-slices` can be either.
 | Convention | Languages | What it does |
 |---|---|---|
 | `vertical-slices` | Go, Python, Dart, Rust, Ruby, C++, .NET, JVM, PHP | a `slice-check` task, run before `lint` |
+| `hexagonal`, `clean` | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby, C++ | an `architecture-check` task, run before `lint`, and a `smith doctor` warning for a project with no folder named for a layer (see below) |
 | `vertical-slices` | Node | `smith doctor` checks that the root ESLint config loads `@monosmith/eslint-config`, where Node's slice rules live (see below); nothing is written |
 
 ## How a convention combines with a project
@@ -78,3 +79,74 @@ write the exception down in the project's README.
 
 `slice-check` is cached on the project's source files, so it runs
 again only when one of them changes, appears or disappears.
+
+## Architectures that check imports
+
+`hexagonal` and `clean` (and the architectures that follow) differ from `vertical-slices`:
+they do not look at file names, they look at what each file imports. smith places every source
+file in a **layer** by the folder names on its path, reads the imports of the project's own
+code, and reports an import that goes where the architecture forbids. It runs as
+`smith slices check --architecture <name>`, the project's `architecture-check` task, and fails
+the project like `slice-check` does. Only one architecture is in force at a time: choosing
+another with `smith architecture` removes the table of the first.
+
+A layer is named by a folder anywhere on the path (`src/domain/...`, `internal/adapters/...`,
+`com/acme/domain/...`). Names are compared without case, dashes or underscores, so `use-cases`,
+`use_cases` and `UseCases` are the same folder. Test files and the folders `test`, `tests`,
+`spec`, `e2e`, `testing`, `testdata`, `fixtures`, `vendor`, `node_modules`, `dist`, `build`,
+`target`, `bin`, `obj` and dot-folders are not checked, so tests may cross layers. Code outside
+every layer (a `main.go`, an `index.ts`, a composition root) may import anything.
+
+If a project has source files but no folder named for a layer, the check prints a `review:`
+line and passes: there is nothing to apply the rules to. `smith doctor` shows the same thing
+as a warning.
+
+### hexagonal
+
+Ports and adapters. The **core** is `domain`, `application`, `core` or `ports`: business rules
+and the interfaces (ports) they need, with no framework, database or transport. **Adapters**
+are `adapters` or `infrastructure`: web handlers, databases, queues, clients, optionally under
+`inbound/` and `outbound/` (or `driving/` and `driven/`).
+
+| Rule | Reported as |
+|---|---|
+| the core never imports an adapter | `core code must not depend on adapters code` |
+| an adapter never imports another adapter (`adapters/http` into `adapters/postgres`); they meet only through the core's ports | `adapters http must not depend on adapters postgres` |
+
+An adapter may import the core. Code directly in `adapters/`, not in a sub-folder, belongs to
+no adapter in particular.
+
+### clean
+
+The dependency rule: source code depends only inward. From the inside out the layers are
+
+| Layer | Folders that mean it |
+|---|---|
+| entities | `entities`, `entity`, `enterprise` |
+| use-cases | `use-cases`, `usecase`, `interactors` |
+| interface-adapters | `interface-adapters`, `adapters`, `controllers`, `presenters`, `gateways` |
+| frameworks | `frameworks`, `drivers`, `frameworks-and-drivers`, `infrastructure` |
+
+A layer may import itself and the layers inside it, never one outside it
+(`entities code must not depend on use-cases code`).
+
+### What is checked, and the limits
+
+An import is read as text, so the check cannot see what is built at run time (reflection,
+`import()` of a variable, dependency-injection containers), and it does not follow re-exports.
+Per language, an import counts as the project's own code when:
+
+| Language | The project's own imports |
+|---|---|
+| Go | under the module path of `go.mod` (read with Go's own parser) |
+| Python | `from x import y` and `import x` where `x` is a top-level package or module of the project, and relative imports |
+| Node (JavaScript, TypeScript) | relative paths and the `@/`, `~/`, `#/` and `src/` aliases, in `import`, `export from`, `import()` and `require()`; other `tsconfig` path aliases are not known |
+| JVM (Java, Kotlin) | an `import` that starts like the file's own package (its first one or two names) |
+| .NET, PHP | a `using` or `use` that starts like the file's own namespace (its first name or two) |
+| Dart | `package:` imports of the project's own package, and relative paths |
+| Rust | `use crate::`, `super::` and `self::` |
+| Ruby | `require_relative` (a `require` through the load path is not followed) |
+| C++ | quoted `#include "..."`, as written from the include root, or relative |
+
+The layer of an import comes from the folder names in its path. Two packages of the project that
+use a layer name in different places are the same layer to the check.

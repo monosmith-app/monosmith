@@ -28,13 +28,23 @@ func (a Architecture) Writes() string {
 }
 
 // catalog is every architecture smith knows, in the order they are offered.
-// Adding one (DDD, MVC, hexagonal...) is adding a row here and the plugin that
-// checks it; nothing else lists the architectures.
+// Adding one (DDD, MVC...) is adding a row here and the ruleset that
+// checks it (libs/plugin-architectures/rules); nothing else lists them.
 var catalog = []Architecture{
 	{
 		Name:    "vertical-slices",
 		Meaning: "code grouped by what it does: one flat folder per outcome, files named for their role",
 		Table:   "conventions.vertical-slices",
+	},
+	{
+		Name:    "hexagonal",
+		Meaning: "ports and adapters: the core knows nothing of databases or the web, and adapters never import each other",
+		Table:   "conventions.hexagonal",
+	},
+	{
+		Name:    "clean",
+		Meaning: "the dependency rule: frameworks, interface adapters, use cases, entities, and code depends only inward",
+		Table:   "conventions.clean",
 	},
 	{
 		Name:    None,
