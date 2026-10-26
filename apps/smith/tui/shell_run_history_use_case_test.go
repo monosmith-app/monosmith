@@ -163,7 +163,7 @@ func TestTheExitSummaryNamesTheLastRunAndItsCommand(t *testing.T) {
 	}
 	l.next = failingRun()
 	l.keys("t")
-	if got := l.sh().ExitSummary(); got != "✖ failed (exit 1) in 0s · smith run test -p orders" {
+	if got := l.sh().ExitSummary(); got != "✖ failed (code 1) in 0s · smith run test -p orders" {
 		t.Fatalf("summary %q", got)
 	}
 }

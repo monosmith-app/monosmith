@@ -175,7 +175,7 @@ func (s Shell) ExitSummary() string {
 	case !last.Finished || last.Cancelled:
 		return fmt.Sprintf("■ stopped after %s · %s", took, line)
 	case !last.OK():
-		return fmt.Sprintf("✖ failed (exit %d) in %s · %s", last.Exit, took, line)
+		return fmt.Sprintf("✖ failed (code %d) in %s · %s", last.Exit, took, line)
 	}
 	return fmt.Sprintf("✔ done in %s · %s", took, line)
 }

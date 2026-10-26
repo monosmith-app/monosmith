@@ -3,6 +3,7 @@ package scaffold
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"io"
 	"os"
 	"path/filepath"
@@ -97,8 +98,14 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	fmt.Fprintf(opts.Out, "Adding %s %s (%s) in %s\n", opts.Kind, opts.Name, how, dir)
 	var res protocol.GenerateResult
+	// A workspace without a module prefix (a converted one) takes the one its
+	// git remote gives, so the Go module path is the repository's own.
+	modulePrefix := s.Config.Workspace.ModulePrefix
+	if modulePrefix == "" {
+		modulePrefix = remoteModulePrefix(gitclient.New(s.Root))
+	}
 	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
-		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: s.Config.Workspace.ModulePrefix,
+		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
 	params.Settings = settings[generator.Info.Plugin.Name]
 	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
