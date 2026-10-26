@@ -66,6 +66,10 @@ Interactions:
   the default for each (`lint: keep   tests: keep   build: smith   CI: smith`) and the
   output ends with the exact command that applies them. Giving any of them with
   the conservative level is an error (`--lint only apply with --level full, ...`).
+- `--build smith` (the default) also moves every project that compiles with `tsc` to the
+  workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
+  passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
+  group (nothing is deleted, files are edited) and is skipped with `--build keep`.
 - `--allow-dirty` converts with uncommitted changes. It is refused with
   `--level full`, which needs a clean git tree so that git can undo everything.
 - `--strict` turns any item that needs manual work or is unsupported into a failure.

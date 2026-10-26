@@ -116,6 +116,12 @@ const reviewHeader = "● Nothing has changed yet. The files below are what the 
 // groupText is the question about one group of removals, above its diffs.
 func groupText(g removalplan.Group, reviewed string) string {
 	var b strings.Builder
+	if g.Files == 0 && g.Packages == 0 {
+		fmt.Fprintf(&b, "● %s — ok?\n", g.Reason)
+		b.WriteString("  y changes them · n keeps them as they are · s keeps these and skips the groups after\n\n")
+		b.WriteString(reviewed)
+		return b.String()
+	}
 	fmt.Fprintf(&b, "● We are going to delete %s. %s — ok?\n", groupCounts(g), g.Reason)
 	if len(g.Removes) > 0 {
 		fmt.Fprintf(&b, "  packages: %s\n", strings.Join(g.Removes, ", "))

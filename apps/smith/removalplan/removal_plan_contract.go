@@ -8,10 +8,11 @@ import (
 
 // The group IDs, in the order they are asked.
 const (
-	GroupLint  = "lint"
-	GroupTests = "tests"
-	GroupBuild = "build"
-	GroupNx    = "nx"
+	GroupOutput = "output"
+	GroupLint   = "lint"
+	GroupTests  = "tests"
+	GroupBuild  = "build"
+	GroupNx     = "nx"
 )
 
 // Group is one set of deletions with the reason that follows from a choice.

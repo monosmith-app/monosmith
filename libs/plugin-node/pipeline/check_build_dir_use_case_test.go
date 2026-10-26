@@ -25,6 +25,9 @@ func TestCheckBuildDir(t *testing.T) {
 	if !ok || f.OK || f.Remedy == "" {
 		t.Fatalf("old: %+v", f)
 	}
+	if f.Fix != nil {
+		t.Fatalf("a package without a package.json has nothing to edit: %+v", f.Fix)
+	}
 	if _, ok := CheckBuildDir(ws, protocol.Project{Name: "ui", Root: "libs/ui"}); ok {
 		t.Fatal("a project without a build has nothing to check")
 	}
