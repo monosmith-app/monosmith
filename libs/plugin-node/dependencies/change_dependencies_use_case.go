@@ -8,8 +8,9 @@ import (
 // NpmRunner runs npm; tests replace it.
 var NpmRunner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
 
-// QuietNpmRunner runs npm keeping its output unless it fails; tests replace it.
-var QuietNpmRunner = func(dir string, argv []string) error { return toolrun.Quiet(dir, argv) }
+// FoldedNpmRunner runs npm and returns its warnings folded into one-line
+// notes; its output is shown only when it fails. Tests replace it.
+var FoldedNpmRunner = func(dir string, argv []string) ([]string, error) { return toolrun.Folded(dir, argv) }
 
 var quiet = []string{"--no-audit", "--no-fund"}
 
@@ -27,14 +28,11 @@ func Install(workspaceRoot string, params protocol.InstallParams) (protocol.Depe
 			files = append([]string{params.Project.Root + "/package.json"}, files...)
 		}
 	}
-	run := NpmRunner
-	if params.Quiet {
-		run = QuietNpmRunner
-	}
-	if err := run(workspaceRoot, append(argv, quiet...)); err != nil {
+	notes, err := FoldedNpmRunner(workspaceRoot, append(argv, quiet...))
+	if err != nil {
 		return protocol.DependencyResult{}, err
 	}
-	return protocol.DependencyResult{Files: files}, nil
+	return protocol.DependencyResult{Files: files, Notes: notes}, nil
 }
 
 // Uninstall removes packages from one project's package.json.

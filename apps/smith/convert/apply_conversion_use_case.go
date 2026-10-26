@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // ApplyOptions configure Apply.
@@ -103,10 +104,14 @@ func Apply(plan *convertplan.Plan, opts ApplyOptions) (Result, error) {
 
 	if !opts.SkipInstall {
 		say("… reinstalling dependencies (this can take a minute)")
-		if err := refreshLockfile(root, opts.Out, plan.Source != convertplan.SourceTurborepo); err != nil {
+		notes, err := refreshLockfile(root, opts.Out, plan.Source != convertplan.SourceTurborepo)
+		if err != nil {
 			return res, err
 		}
 		say("✔ reinstalled dependencies and updated package-lock.json")
+		for _, n := range notes {
+			fmt.Fprintln(opts.Out, "  "+n)
+		}
 	}
 	return res, nil
 }
@@ -160,23 +165,23 @@ var releasedVersion = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 // removed, and checks that npm ci accepts the result. npm 11 can reuse the
 // installed tree on the first run and leave the lockfile out of step, so a
 // second install re-resolves it when the check fails.
-func refreshLockfile(root string, out io.Writer, pruneNx bool) error {
+func refreshLockfile(root string, out io.Writer, pruneNx bool) ([]string, error) {
 	if _, err := os.Stat(filepath.Join(root, "package.json")); err != nil {
-		return nil
+		return nil, nil
 	}
 	if _, err := exec.LookPath("npm"); err != nil {
 		fmt.Fprintln(out, "! npm is not installed: run npm install to update package-lock.json")
-		return nil
+		return nil, nil
 	}
 	lock := filepath.Join(root, "package-lock.json")
 	if raw, err := os.ReadFile(lock); err == nil && pruneNx {
 		pruned, dropped, err := PruneLockfile(raw, convertplan.NxPackage)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(dropped) > 0 {
 			if err := os.WriteFile(lock, pruned, 0o644); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -193,14 +198,15 @@ func refreshLockfile(root string, out io.Writer, pruneNx bool) error {
 	for attempt := 1; attempt <= 2; attempt++ {
 		if err := run("install", "--no-audit", "--no-fund"); err != nil {
 			_, _ = out.Write(log.Bytes())
-			return fmt.Errorf("npm install failed (%w); fix it and run npm install again, the conversion itself is complete", err)
+			return nil, fmt.Errorf("npm install failed (%w); fix it and run npm install again, the conversion itself is complete", err)
 		}
+		installed := log.String()
 		if run("ci", "--dry-run", "--ignore-scripts", "--no-audit", "--no-fund") == nil {
-			return nil
+			return toolrun.FoldWarnings(installed, "run npm install to see them"), nil
 		}
 	}
 	_, _ = out.Write(log.Bytes())
-	return errors.New("package-lock.json is still out of step with package.json after npm install; run npm install until `npm ci --dry-run` passes")
+	return nil, errors.New("package-lock.json is still out of step with package.json after npm install; run npm install until `npm ci --dry-run` passes")
 }
 
 // editRootPackage removes Nx from the root package.json and rewrites its

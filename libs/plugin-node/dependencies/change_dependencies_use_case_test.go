@@ -9,8 +9,12 @@ import (
 
 func TestNpmCommands(t *testing.T) {
 	var ran []string
-	real := NpmRunner
-	defer func() { NpmRunner = real }()
+	real, realFolded := NpmRunner, FoldedNpmRunner
+	defer func() { NpmRunner, FoldedNpmRunner = real, realFolded }()
+	FoldedNpmRunner = func(_ string, argv []string) ([]string, error) {
+		ran = append(ran, strings.Join(argv, " "))
+		return []string{"2 packages want a newer Node than this one"}, nil
+	}
 	NpmRunner = func(_ string, argv []string) error {
 		ran = append(ran, strings.Join(argv, " "))
 		return nil
@@ -26,6 +30,9 @@ func TestNpmCommands(t *testing.T) {
 	}
 	if strings.Join(ran, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("ran:\n%s", strings.Join(ran, "\n"))
+	}
+	if len(res.Notes) != 1 {
+		t.Fatalf("the folded warning belongs in the result's notes: %v", res.Notes)
 	}
 	if strings.Join(res.Files, ",") != "apps/web/package.json,package-lock.json" {
 		t.Fatalf("files %v", res.Files)
