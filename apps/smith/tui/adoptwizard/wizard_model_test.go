@@ -236,7 +236,7 @@ func TestTheFirstScreenTellsWhatWasFoundAndNothingHasChanged(t *testing.T) {
 	if w.m.Stage() != StageFound {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
-	w.want("Bring in · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "[ Continue  Enter ]")
+	w.want("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "[ Continue  Enter ]")
 }
 
 func TestABlockedRepositoryExplainsAndClosesOnEnter(t *testing.T) {
@@ -259,7 +259,7 @@ func TestACancelBeforeAnythingChangesClosesWithoutANote(t *testing.T) {
 
 func TestTheLevelQuestionOffersConservativeFirstAndFull(t *testing.T) {
 	w := start(t, &fakeFlow{found: nxFound()}).press("enter")
-	w.want("question 1 of 1", "How far should smith go?", "1) Conservative", "(suggested)", "2) Full")
+	w.want("Bring in · how far to go", "How far should smith go?", "1) Conservative", "(suggested)", "2) Full")
 	w.press("b")
 	if w.m.Stage() != StageFound {
 		t.Fatalf("Back from the first question: stage %v", w.m.Stage())
@@ -275,7 +275,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if w.m.Stage() != StageChoices {
 		t.Fatalf("stage %v after the level", w.m.Stage())
 	}
-	w.want("question 1 of 4", "Lint with:", "1) smith's ESLint  (suggested)")
+	w.want("your choices 1 of 4", "Lint with:", "1) smith's ESLint  (suggested)")
 	w.press("enter", "2", "enter", "enter") // lint smith, test vitest, build smith (default), ci smith (default)
 	if w.m.Stage() != StageReview {
 		t.Fatalf("stage %v after the choices", w.m.Stage())
@@ -283,7 +283,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "plan --level full --lint smith --test vitest --build smith --ci smith verify=true") {
 		t.Fatalf("the choices were not planned as answered: %s", got)
 	}
-	w.want("Bring in · review", "Nothing has changed yet", "! Check these before you go ahead (1)", "Behaves differently afterwards (1)", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
+	w.want("Bring in · what will change", "Nothing has changed yet", "! Check these before you go ahead (1)", "Behaves differently afterwards (1)", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
 
 	w.press("enter") // convert, then the first group is asked
 	if w.m.Stage() != StageGroup {
@@ -307,7 +307,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 
 	// The report opens inside the wizard, and Enter comes back to the result.
 	w.press("s")
-	w.want("Bring in · review", "Conversion report for acme", "Rollup becomes esbuild", "[ Back to the result  Enter ]")
+	w.want("Bring in · the report", "Conversion report for acme", "Rollup becomes esbuild", "[ Back to the result  Enter ]")
 	if w.m.Stage() != StageReport {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
@@ -538,6 +538,16 @@ func TestMissingPackagesAreOneClickToInstallThenTheWizardGoesOn(t *testing.T) {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
 	w.want("Found an Nx workspace", "[ Continue  Enter ]")
+}
+
+func TestEachScreenIsTitledByWhatItShowsNotByTheKindOfForm(t *testing.T) {
+	w := start(t, &fakeFlow{found: nxFound()})
+	w.want("Bring in · what smith found")
+	w.press("enter")
+	w.want("Bring in · how far to go")
+	if strings.Contains(w.screen(), "question 1 of 1") {
+		t.Fatal("a generated form title: question 1 of 1")
+	}
 }
 
 func TestReadingTheRepositoryShowsWhatTheOpenerSaysItIsReading(t *testing.T) {

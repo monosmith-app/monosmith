@@ -5,6 +5,9 @@ package fixwizard
 type Style struct {
 	// Name starts the titles: "Fix · review" becomes "Adopt · review".
 	Name string
+	// Review says what the review shows, in place of "review": "Bring in ·
+	// what smith found". Ask does the same for a question ("question").
+	Review, Ask string
 	// Verb is the title while a step runs ("Fixing…").
 	Verb string
 	// Working says what happens before the first step reports ("writing the files").
@@ -28,6 +31,20 @@ func (s Style) name() string {
 		return "Fix"
 	}
 	return s.Name
+}
+
+func (s Style) review() string {
+	if s.Review == "" {
+		return "review"
+	}
+	return s.Review
+}
+
+func (s Style) ask() string {
+	if s.Ask == "" {
+		return "question"
+	}
+	return s.Ask
 }
 
 func (s Style) verb() string {
