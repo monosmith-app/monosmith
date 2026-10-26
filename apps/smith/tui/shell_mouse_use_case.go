@@ -144,6 +144,9 @@ func (s *Shell) tabClick(x int) tea.Cmd {
 // contentClick handles a click at (rx, ry) in the main body.
 func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	in := s.mainInner()
+	if s.tab == commands.TabSettings {
+		return s.settingsClick(in.W, in.H, rx, ry, double)
+	}
 	c := s.mainContent(in.W, in.H)
 	h, ok := c.hits[ry]
 	if !ok {
@@ -225,6 +228,8 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 			}
 		case commands.TabProjects:
 			s.list = s.list.Move(dir * wheelStep)
+		case commands.TabSettings:
+			s.settings = s.settings.Wheel(dir)
 		case commands.TabDoctor, commands.TabGuide, commands.TabDeps, commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {

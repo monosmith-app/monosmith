@@ -195,15 +195,8 @@ func Command(version string) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cfg, err := workspace.Load(root)
+				enabled, err := EnablePlugins(root, args, enable)
 				if err != nil {
-					return err
-				}
-				enabled, err := Toggle(cfg.Plugins.Enabled, args, enable)
-				if err != nil {
-					return err
-				}
-				if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
 					return err
 				}
 				fmt.Fprintf(c.OutOrStdout(), "enabled plugins: %s\n", strings.Join(enabled, ", "))
@@ -260,4 +253,23 @@ func Toggle(current, names []string, enable bool) ([]string, error) {
 		return nil, fmt.Errorf("at least one plugin must stay enabled")
 	}
 	return out, nil
+}
+
+// EnablePlugins turns built-in plugins on or off in the smith.toml at root:
+// what `smith plugin enable|disable` does. It returns the list now enabled;
+// the file changes only on its `enabled = [...]` line, and an error (an
+// unknown plugin, the last one switched off) leaves it alone.
+func EnablePlugins(root string, names []string, enable bool) ([]string, error) {
+	cfg, err := workspace.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	enabled, err := Toggle(cfg.Plugins.Enabled, names, enable)
+	if err != nil {
+		return nil, err
+	}
+	if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
+		return nil, err
+	}
+	return enabled, nil
 }

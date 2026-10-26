@@ -48,7 +48,7 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 		t.Fatalf("the headline (row %d) comes before the next action (row %d)", headline, next)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"Enter next", "b build", "w changed", "d doctor", "1-6 views"} {
+	for _, want := range []string{"Enter next", "b build", "w changed", "d doctor", "1-7 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
@@ -138,19 +138,14 @@ func TestOutdatedDependenciesAreCountedOnceTheyAreKnown(t *testing.T) {
 }
 
 func TestHomeTellsHowTheLastRunEnded(t *testing.T) {
-	l, made := inlineLab(t, 0)
+	l := newLab(t, true, 140, 30)
 	l.keys("b")
-	c := (*made)[0]
-	_ = c.Run()
-	l.send(inlineDoneMsg{cmd: c})
 	l.keys("1")
 	l.has("Last run", "passed  run build -p orders")
 
-	l, made = inlineLab(t, 2)
+	l = newLab(t, true, 140, 30)
+	l.next = failingRun()
 	l.keys("b")
-	c = (*made)[0]
-	_ = c.Run()
-	l.send(inlineDoneMsg{cmd: c})
 	l.keys("1")
 	l.has("failed  run build -p orders")
 }

@@ -1,6 +1,7 @@
 package runview
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -28,7 +29,7 @@ func TestParseLineReadsWhatSmithPrints(t *testing.T) {
 		{"nothing to run", Event{Kind: Plain, Text: "nothing to run"}},
 	}
 	for _, c := range cases {
-		if got := ParseLine(c.line); got != c.want {
+		if got := ParseLine(c.line); !reflect.DeepEqual(got, c.want) {
 			t.Errorf("%q\n got  %+v\n want %+v", c.line, got, c.want)
 		}
 	}

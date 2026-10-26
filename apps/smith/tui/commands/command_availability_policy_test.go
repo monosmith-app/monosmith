@@ -202,15 +202,16 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		TabHome:     "Enter next · r reload · b build · t test · w changed · d doctor",
 		TabDeps:     "Space mark · s safe · a all · u update · v align · r reload · b build · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · t test",
+		TabSettings: "↑↓ move · Space change · Tab sections · Esc back · t trust · f forget · u reset · r reload",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {
 			t.Errorf("%s footer is\n%s\nwant\n%s", view, got, want)
 		}
-		if got := line(view); !strings.HasSuffix(got, "1-6 views · m mouse · : palette · ? help · q quit") {
+		if got := line(view); !strings.HasSuffix(got, "1-7 views · m mouse · : palette · ? help · q quit") {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
-	if got := line(TabRun); !strings.HasPrefix(got, "r again · f follow") {
+	if got := line(TabRun); !strings.HasPrefix(got, "r again · R failed · Y copy log · , . runs · f follow") {
 		t.Errorf("Run footer %q", got)
 	}
 }
@@ -305,7 +306,7 @@ func TestQuitCopyAndMouseAreSingleKeys(t *testing.T) {
 }
 
 func TestNumberKeysSwitchViewsInTheOrderOfTheTabs(t *testing.T) {
-	want := []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease}
+	want := []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease, TabSettings}
 	for i, tab := range want {
 		key := string(rune('1' + i))
 		if c, _, ok := ByKey(key, inside); !ok || c.Tab != tab {
@@ -354,9 +355,9 @@ func TestTheDoctorExpandsInPlaceOnlyWhenNoDetailIsBesideIt(t *testing.T) {
 	}
 }
 
-func TestTheRunFooterDoesNotOfferFollowOrTasksWhenTheOutputIsInTheTerminal(t *testing.T) {
+func TestTheRunFooterDoesNotOfferFollowOrTasksBeforeAnythingRan(t *testing.T) {
 	s := State{InWorkspace: true, View: TabRun, Reasons: map[string]string{
-		"run.follow": "the output is in your terminal's scrollback", "run.scroll": "the output is in your terminal's scrollback",
+		"run.follow": "nothing has run yet", "run.scroll": "nothing has run yet",
 	}}
 	v, _ := Hints(s)
 	for _, h := range v {
@@ -366,13 +367,35 @@ func TestTheRunFooterDoesNotOfferFollowOrTasksWhenTheOutputIsInTheTerminal(t *te
 	}
 }
 
-func TestWhatTheRemovedViewsShowedIsStillACommandOfThePalette(t *testing.T) {
-	for id, argv := range map[string][]string{
-		"cli.plugins": {"plugin", "list"}, "cli.recipes": {"recipe"}, "cli.settings": {"config", "list"}, "cli.guide": {"help"},
-	} {
-		c, ok := ByID(id)
-		if !ok || !slices.Equal(c.Argv, argv) || c.Kind != Execute {
-			t.Errorf("%s: %+v", id, c)
+func TestPluginsRecipesAndSettingsAreATabNotACommandThatLeavesTheInterface(t *testing.T) {
+	for _, id := range []string{"cli.plugins", "cli.recipes", "cli.settings"} {
+		if _, ok := ByID(id); ok {
+			t.Errorf("%s still leaves the interface for the terminal", id)
 		}
+	}
+	c, ok := ByID("view.settings")
+	if !ok || c.Kind != ShowTab || c.Tab != TabSettings || !slices.Contains(c.Presents, "config set") || !slices.Contains(c.Presents, "plugin enable") || !slices.Contains(c.Presents, "recipe") {
+		t.Fatalf("the Settings tab stands for the commands it replaced: %+v", c)
+	}
+	if c, ok := ByID("cli.guide"); !ok || !slices.Equal(c.Argv, []string{"help"}) || c.Kind != Execute {
+		t.Errorf("cli.guide: %+v", c)
+	}
+}
+
+func TestTheSettingsFooterOffersOnlyTheKeysThatDoSomethingForTheRow(t *testing.T) {
+	labels := func(reasons map[string]string) []string {
+		v, _ := Hints(State{InWorkspace: true, View: TabSettings, Reasons: reasons})
+		var out []string
+		for _, h := range v {
+			out = append(out, h.Label)
+		}
+		return out
+	}
+	if got := strings.Join(labels(nil), " "); got != "move change sections back trust forget reset reload" {
+		t.Fatalf("every key: %q", got)
+	}
+	got := labels(map[string]string{"settings.trust": "x", "settings.forget": "x", "settings.unset": "x"})
+	if strings.Join(got, " ") != "move change sections back reload" {
+		t.Fatalf("a built-in plugin: %q", got)
 	}
 }
