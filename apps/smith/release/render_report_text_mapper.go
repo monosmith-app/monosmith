@@ -35,7 +35,14 @@ func (r Report) Text() string {
 			fmt.Fprintf(&b, "%s %s to %s\n", verb, res.Project, res.Mirror)
 		}
 	}
-	if r.Error != "" {
+	if r.Error != "" && r.DryRun {
+		b.WriteString("\nThe real release would fail for:\n")
+		for _, res := range r.Results {
+			if res.Status == "failed" {
+				fmt.Fprintf(&b, "  %s: %s\n", res.Project, res.Error)
+			}
+		}
+	} else if r.Error != "" {
 		fmt.Fprintf(&b, "\nStopped: %s\nRe-run the release: finished packages are kept and the rest resume.\n", r.Error)
 	}
 	if r.DryRun && len(r.Results) > 0 && r.Error == "" {

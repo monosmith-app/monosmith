@@ -19,6 +19,18 @@ func TestTextOfADryRunHasNoTableAndSaysWhatNext(t *testing.T) {
 	}
 }
 
+func TestTextOfADryRunNamesEachProjectThatWouldFail(t *testing.T) {
+	r := Report{DryRun: true, Error: "web: cannot", Results: []ReportResult{
+		{Item: Item{Project: "web", Next: "1.0.0"}, Status: "failed", Error: "cannot build linux/arm64"},
+		{Item: Item{Project: "tool", Next: "1.0.0"}, Status: "planned"},
+	}}
+	for name, text := range map[string]string{"text": r.Text(), "markdown": r.Markdown()} {
+		if !strings.Contains(text, "would fail") || !strings.Contains(text, "web: cannot build linux/arm64") || strings.Contains(text, "Stopped") || strings.Contains(text, "Re-run") {
+			t.Fatalf("%s:\n%s", name, text)
+		}
+	}
+}
+
 func TestTextOfARealReleaseListsEachPackage(t *testing.T) {
 	r := Report{Results: []ReportResult{{Item: Item{Project: "kit", Next: "1.1.0"}, Status: "released"}}, Error: "boom"}
 	text := r.Text()

@@ -69,17 +69,28 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 		report.Error = err.Error()
 		return report, err
 	}
+	var failures []string
 	for _, item := range plan.Items {
 		res := ReportResult{Item: item, Status: "planned"}
 		if err := releaseOne(ctx, s, item, versions, opts, &res); err != nil {
 			res.Status, res.Error = "failed", err.Error()
 			report.Results = append(report.Results, res)
 			journalRelease(s, res, opts.Out)
-			report.Error = item.Project + ": " + err.Error()
+			failures = append(failures, item.Project+": "+err.Error())
+			if opts.DryRun {
+				// A dry run changes nothing, so every project's plan is shown
+				// and the run still fails at the end.
+				continue
+			}
+			report.Error = failures[0]
 			return report, errors.New(report.Error)
 		}
 		report.Results = append(report.Results, res)
 		journalRelease(s, res, opts.Out)
+	}
+	if len(failures) > 0 {
+		report.Error = strings.Join(failures, "; ")
+		return report, errors.New(report.Error)
 	}
 	return report, nil
 }
