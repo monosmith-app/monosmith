@@ -263,7 +263,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Execute:
 		return s.execute(c.Argv, false)
 	case commands.RunTask:
-		project := s.selectedProject()
+		project := s.state().RunProject()
 		if c.All {
 			project = ""
 		}

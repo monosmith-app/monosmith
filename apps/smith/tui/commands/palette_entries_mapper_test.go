@@ -27,7 +27,7 @@ func TestThePaletteListsEachIntentOnceWithAUniqueKeyInEveryView(t *testing.T) {
 
 func TestThePaletteNamesTheScopeOfARunAndTheCommandBehindIt(t *testing.T) {
 	var build, all, install PaletteEntry
-	for _, e := range PaletteEntries(State{View: TabHome, InWorkspace: true, Project: "web", Projects: 23}) {
+	for _, e := range PaletteEntries(State{View: TabProjects, InWorkspace: true, Project: "web", Projects: 23}) {
 		switch e.ID {
 		case "run.build":
 			build = e
@@ -60,7 +60,7 @@ func TestThePaletteHasNoRawCommandNamesAndNoFreeTextInstall(t *testing.T) {
 }
 
 func TestTheFooterNamesTheScopeOfTheRunKeys(t *testing.T) {
-	view, _ := Hints(State{View: TabHome, InWorkspace: true, Project: "markobot-vscode-extension", Projects: 23})
+	view, _ := Hints(State{View: TabProjects, InWorkspace: true, Project: "markobot-vscode-extension", Projects: 23})
 	var labels []string
 	for _, h := range view {
 		labels = append(labels, h.Glyph+" "+h.Label)

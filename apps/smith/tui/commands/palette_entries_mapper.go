@@ -62,6 +62,10 @@ func PaletteEntries(s State) []PaletteEntry {
 			if paletteSections[c.ID] != section || !c.Visible(s) || (c.NeedsWorkspace && !s.InWorkspace) {
 				continue
 			}
+			if c.Kind == RunTask && !c.All && s.RunProject() == "" && hasAllSibling(c) {
+				// Off Projects the scoped command would only repeat "Build all N".
+				continue
+			}
 			title, hint := paletteText(c, s)
 			out = append(out, PaletteEntry{ID: c.ID, Section: section, Title: title, Hint: hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(s)})
 		}
@@ -79,16 +83,29 @@ func paletteText(c Command, s State) (title, hint string) {
 		}
 		return c.verb() + " all", Line(RunArgv(c.Task, ""))
 	case c.Kind == RunTask:
-		if s.Project == "" {
+		if s.RunProject() == "" {
+			if s.Projects > 0 {
+				return fmt.Sprintf("%s all %d", c.verb(), s.Projects), Line(RunArgv(c.Task, ""))
+			}
 			return c.verb() + " all", Line(RunArgv(c.Task, ""))
 		}
-		return c.verb() + " " + s.Project, Line(RunArgv(c.Task, s.Project))
+		return c.verb() + " " + s.RunProject(), Line(RunArgv(c.Task, s.RunProject()))
 	case c.Kind == ShowTab:
 		return "Go to " + c.Title, c.Hint
 	case len(c.Argv) > 0:
 		return c.Title, Line(c.Argv)
 	}
 	return c.Title, c.Hint
+}
+
+// hasAllSibling is true when another command runs the same task on every project.
+func hasAllSibling(c Command) bool {
+	for _, o := range all {
+		if o.Kind == RunTask && o.All && o.Task == c.Task {
+			return true
+		}
+	}
+	return false
 }
 
 // verb is the first word of a task's title: "Build", "Test"...

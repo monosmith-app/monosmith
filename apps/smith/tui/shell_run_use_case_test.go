@@ -39,7 +39,7 @@ func TestARunShowsEveryTaskItsStateAndAProgressBar(t *testing.T) {
 	if l.lastStarted() != "run build -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
-	l.has("$ smith run build -p orders", "failed", "4/4 100%", "orders:build", "exited with code 2", "kit:build", "passed", "106ms",
+	l.has("$ smith run build", "failed", "4/4 100%", "orders:build", "exited with code 2", "kit:build", "passed", "106ms",
 		"web:build", "skipped", "because orders:build did not succeed", "sdk:test")
 	// Failures come first in the list.
 	if rowOf(l, "orders:build  ") > rowOf(l, "kit:build  ") && rowOf(l, "kit:build  ") > 0 {
@@ -58,7 +58,7 @@ func TestTheStatusBarShowsTheExactCommandWhileAndAfterItRuns(t *testing.T) {
 	l.keys("b")
 	last := strings.Split(l.view(), "\n")
 	status := last[len(last)-1]
-	if !strings.Contains(status, "$ smith run build -p orders") || !strings.Contains(status, "running") {
+	if !strings.Contains(status, "$ smith run build") || !strings.Contains(status, "running") {
 		t.Fatalf("status bar: %q", status)
 	}
 }
@@ -195,7 +195,7 @@ func TestEveryRunIsKeptInTheCommandLog(t *testing.T) {
 	l.keys("b")
 	l.keys("t")
 	l.keys("1", "2")
-	if got := strings.Join(l.sh().history, " | "); got != "smith run build -p orders | smith run test -p orders" {
+	if got := strings.Join(l.sh().history, " | "); got != "smith run build -p orders | smith run test" {
 		t.Fatalf("history %q", got)
 	}
 }

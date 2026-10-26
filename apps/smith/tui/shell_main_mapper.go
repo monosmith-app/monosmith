@@ -292,12 +292,12 @@ func (s Shell) runContent(w, h int) content {
 		c.lines = append(c.lines, "")
 		// The scope of every key is spelled out; the buttons run on every project.
 		scope := "Press " + commands.ShortcutOf("run.build") + " to build"
-		if name := s.selectedProject(); name != "" {
+		if name := s.state().RunProject(); name != "" {
 			scope += " " + name + " (the project selected on Projects)"
 		} else {
 			scope += " every project"
 		}
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted(scope+", "+commands.ShortcutOf("run.test")+" to test it, or start one on every project:"), w, 0)...)
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted(scope+", "+commands.ShortcutOf("run.test")+" to test, or start one on every project:"), w, 0)...)
 		c.lines = append(c.lines, "")
 		for _, b := range []struct{ id, label string }{
 			{"run.build-all", fmt.Sprintf("Build everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.build-all"))},
@@ -334,7 +334,11 @@ func (s Shell) runContent(w, h int) content {
 	if len(s.runs) > 1 {
 		which = "  " + s.th.Muted(fmt.Sprintf("run %d/%d", s.runAt+1, len(s.runs)))
 	}
-	c.lines = append(c.lines, pane.Fit(" "+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took)+which, w))
+	scope := ""
+	if label := commands.RunScopeLabel(s.run.Command, s.list.Len()); label != "" {
+		scope = s.th.Title(label) + "  "
+	}
+	c.lines = append(c.lines, pane.Fit(" "+scope+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took)+which, w))
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))

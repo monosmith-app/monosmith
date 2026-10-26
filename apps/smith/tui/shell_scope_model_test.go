@@ -28,6 +28,30 @@ func TestShiftBBuildsEveryProjectAndBBuildsTheSelectedOne(t *testing.T) {
 	}
 }
 
+func TestOnHomeTheRunKeysCoverTheWholeWorkspaceAndSayWhichScope(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.openTab("home")
+	footer := l.lines()[len(l.lines())-2]
+	if !strings.Contains(footer, "b build all 4") || strings.Contains(footer, "build orders") {
+		t.Fatalf("the Home footer is %q", footer)
+	}
+	l.keys("b")
+	if got := l.lastStarted(); got != "run build" {
+		t.Fatalf("b on Home started %q", got)
+	}
+	l.has("Build · all 4 projects")
+}
+
+func TestOnProjectsTheBuildKeyNamesAndRunsTheSelectedProject(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.openTab("projects")
+	l.keys("b")
+	if got := l.lastStarted(); got != "run build -p orders" {
+		t.Fatalf("b on Projects started %q", got)
+	}
+	l.has("Build · orders")
+}
+
 func TestTheRunTabOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("run")
