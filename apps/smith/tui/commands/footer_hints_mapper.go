@@ -19,6 +19,10 @@ func Hints(s State) (view, tail []Hint) {
 		if c.Footer == "" || c.Unavailable(s) != "" || (c.Kind != PaneKey && !c.Visible(s)) {
 			continue
 		}
+		if c.All && c.Kind == RunTask && s.RunProject() == "" && s.Projects > 0 && hasScopedSibling(c) {
+			// The scoped key is labelled "build all N" here too: one hint, not two.
+			continue
+		}
 		show := c.ShowIn
 		if len(show) == 0 {
 			show = c.Views
@@ -55,10 +59,24 @@ func scopedLabel(c Command, s State) string {
 	switch {
 	case c.All && s.Projects > 0:
 		return fmt.Sprintf("%s %d", c.Footer, s.Projects)
-	case !c.All && c.ScopeInFooter && s.Project != "":
-		return c.Footer + " " + clip(s.Project, maxScopeName)
+	case !c.All && c.ScopeInFooter && s.RunProject() != "":
+		return c.Footer + " " + clip(s.RunProject(), maxScopeName)
+	case !c.All && c.ScopeInFooter && s.Projects > 0:
+		// Off the Projects view the key runs on the whole workspace.
+		return fmt.Sprintf("%s all %d", c.Footer, s.Projects)
 	}
 	return c.Footer
+}
+
+// hasScopedSibling is true when another command runs the same task on the
+// selected project and shows its scope in the footer.
+func hasScopedSibling(c Command) bool {
+	for _, o := range all {
+		if o.Kind == RunTask && !o.All && o.ScopeInFooter && o.Task == c.Task {
+			return true
+		}
+	}
+	return false
 }
 
 // clip shortens a name to n cells with an ellipsis.
