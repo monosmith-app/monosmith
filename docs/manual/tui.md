@@ -23,7 +23,7 @@ command.
 |---|---|
 | Inside a workspace (a folder with `smith.toml`, or below one) | The **Home** view, with the seven views as tabs. |
 | In an empty folder | The **Start** menu: create a workspace (`smith new`). |
-| In a folder that holds files but is not a workspace | The Start menu with **Adopt this repository** first, so Enter starts the adopt wizard. |
+| In a folder that holds files but is not a workspace | The Start menu with **Bring this repository into MonoSmith** first, so Enter starts the wizard. |
 
 When the shell cannot be drawn (standard output is not a terminal, `SMITH_SCREEN_READER` is
 set, or `SMITH_THEME=plain`), smith asks the same questions as plain numbered lines and runs
@@ -152,7 +152,7 @@ each title (`Build orders`, `Build all 23`).
 | Settings | `u` | Reset the selected setting to its default. |
 | Settings | `Esc` | Back to the list of sections, or cancel the editor. |
 | Start menu | `n` | New workspace… (outside a workspace). |
-| Start menu | `a` | Adopt… (opens the adopt wizard). |
+| Start menu | `a` | Bring into MonoSmith… (opens the wizard). |
 
 A key is refused with a reason in the toast when the view cannot do it now (nothing to
 update, no safe fix), and its hint leaves the footer.

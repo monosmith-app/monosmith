@@ -74,7 +74,7 @@ func New(open Opener) (Model, Job) {
 		}
 		return f, nil
 	}}
-	return m.running(StageReading, "Reading the repository…", job, fixwizard.Style{Name: "Adopt", Verb: "Adopting…", Working: "reading the files"}), job
+	return m.running(StageReading, "Reading the repository…", job, fixwizard.Style{Name: "Bring in", Verb: "Bringing in…", Working: "reading the files"}), job
 }
 
 // Stage is where the walk is.
@@ -345,7 +345,7 @@ func (m Model) runFix(stage Stage, p doctorfix.Planned, job Job, style fixwizard
 	return m
 }
 
-var adoptStyle = fixwizard.Style{Name: "Adopt", Verb: "Adopting…"}
+var adoptStyle = fixwizard.Style{Name: "Bring in", Verb: "Bringing in…"}
 
 // reviewOf makes a review screen of a text.
 func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) Model {

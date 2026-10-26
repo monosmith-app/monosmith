@@ -21,7 +21,7 @@ flowchart TD
 ```
 
 In a terminal, a bare `smith` in a folder that holds files but no workspace offers
-"Adopt this repository", and the adopt wizard handles both cases
+"Bring this repository into MonoSmith", and that one wizard handles both cases (so does `smith adopt`, which hands an Nx or Turborepo workspace to `smith convert`)
 ([the terminal interface](../manual/tui.md#the-adopt-wizard)).
 
 After these pages, the [manual](../manual/README.md) documents every command and flag, the

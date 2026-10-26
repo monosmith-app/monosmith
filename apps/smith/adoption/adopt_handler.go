@@ -48,13 +48,18 @@ is asked for, and both steps need a clean git tree:
 workspaces and is smith convert --level full's; for a plain repository adopt
 says so and stops.
 
-An Nx or Turborepo workspace is smith convert's: adopt says so and stops. Exits
+An Nx or Turborepo workspace is converted rather than adopted: adopt hands it to
+smith convert (a report stays a --dry-run, --init applies), and --level, --json and
+--dry-run carry over, so one command brings in either kind of repository. Exits
 non-zero while something blocks.`,
 		Example: `  smith adopt --dry-run
   smith adopt --tags --init`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			if Convertible(".") {
+				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint)
+			}
 			switch level {
 			case LevelConservative:
 			case LevelFull:

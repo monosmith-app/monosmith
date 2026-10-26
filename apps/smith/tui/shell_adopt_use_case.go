@@ -118,7 +118,7 @@ func (s Shell) adoptBanner(w int) []string {
 	if s.inWorkspace || s.emptyFolder || s.adopter == nil || s.guide.Title() != "" {
 		return nil
 	}
-	lines := pane.Wrap(s.th.Warning("Not a smith workspace yet: ")+s.th.Bold("Enter starts adoption")+s.th.Muted(" (or press "+commands.ShortcutOf("file.adopt")+")"), w, 0)
+	lines := pane.Wrap(s.th.Warning("Not a smith workspace yet: ")+s.th.Bold("Enter brings it in")+s.th.Muted(" (or press "+commands.ShortcutOf("file.adopt")+")"), w, 0)
 	lines = append(lines, pane.Wrap(s.th.Muted("It reads the folder first, asks how far to go, and shows every change before anything is written."), w, 0)...)
 	return append(lines, "")
 }

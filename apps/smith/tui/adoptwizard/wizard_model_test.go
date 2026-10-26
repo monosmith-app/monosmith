@@ -230,7 +230,7 @@ func TestTheFirstScreenTellsWhatWasFoundAndNothingHasChanged(t *testing.T) {
 	if w.m.Stage() != StageFound {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
-	w.want("Adopt · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "[ Continue  Enter ]")
+	w.want("Bring in · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, mnci, ESLint, Jest, rollup", "api  TypeScript / JavaScript app", "Nothing has changed", "[ Continue  Enter ]")
 }
 
 func TestABlockedRepositoryExplainsAndClosesOnEnter(t *testing.T) {
@@ -277,7 +277,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "plan --level full --lint smith --test vitest --build smith --ci smith verify=true") {
 		t.Fatalf("the choices were not planned as answered: %s", got)
 	}
-	w.want("Adopt · review", "Nothing has changed yet", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
+	w.want("Bring in · review", "Nothing has changed yet", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
 
 	w.press("enter") // convert, then the first group is asked
 	if w.m.Stage() != StageGroup {
@@ -370,7 +370,7 @@ func TestAPlainRepositoryAdoptsConservativelyAndSaysWhyThereIsNoFullLevel(t *tes
 func TestAFailedStepShowsItsOutputAndRetryRunsTheFinishAgain(t *testing.T) {
 	f := &fakeFlow{found: nxFound(), failOn: map[string]error{"build every project": errors.New("exited with code 1")}}
 	w := start(t, f).press("enter", "1", "enter")
-	w.want("Adopt failed", "build every project", "npm ERR! it broke", "[ Retry  r ]", "[ Close  Esc ]")
+	w.want("Bring in failed", "build every project", "npm ERR! it broke", "[ Retry  r ]", "[ Close  Esc ]")
 	w.press("r")
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v after the retry", w.m.Stage())

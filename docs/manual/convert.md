@@ -22,7 +22,7 @@ and asks about each group before deleting it.
   accepts, the pnpm and yarn lockfiles and settings go, and scripts that call
   `turbo`, `pnpm` or `yarn` call `smith` and `npm`).
 
-Do not use it on a plain repository (use [`smith adopt`](adopt.md)) or on a folder that
+Do not use it on a plain repository (use [`smith adopt`](adopt.md), which also hands an Nx or Turborepo workspace to convert) or on a folder that
 already has a `smith.toml` (use [`smith upgrade`](upgrade.md)).
 
 ## Synopsis

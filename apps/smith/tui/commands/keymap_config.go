@@ -122,7 +122,7 @@ var all = []Command{
 	// Start
 	{ID: "file.new", Group: GroupStart, Title: "New workspace…", Hint: "smith new: create a monorepo", Keys: []string{"n"}, Kind: Guided, Guide: "Create a workspace", OnlyOutside: true, Footer: "new workspace", ShowIn: vGuide},
 	{ID: "file.add", Group: GroupStart, Title: "Add project…", Hint: "smith add: an app, lib or package", Keys: []string{"a"}, Kind: Guided, Guide: "Add a project", NeedsWorkspace: true, NeedsIdle: true, OnlyInside: true, Footer: "add project", ShowIn: vProjects},
-	{ID: "file.adopt", Group: GroupStart, Title: "Adopt…", Hint: "bring this folder under smith: what it found, how far to go, every file that changes, then the checks", Keys: []string{"a"}, Kind: OpenAdoptWizard, Views: vGuide, NeedsIdle: true, OnlyOutside: true, NeedsContent: true, Footer: "adopt"},
+	{ID: "file.adopt", Group: GroupStart, Title: "Bring into MonoSmith…", Hint: "bring this folder under smith: what it found, how far to go, every file that changes, then the checks", Keys: []string{"a"}, Kind: OpenAdoptWizard, Views: vGuide, NeedsIdle: true, OnlyOutside: true, NeedsContent: true, Footer: "adopt"},
 
 	// Projects
 	{ID: "proj.install", Group: GroupProjects, Title: "Install dependencies…", Hint: "smith install: a fresh clone's npm install, venv, go mod download", Keys: []string{"i"}, Kind: Execute, Argv: []string{"install"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
