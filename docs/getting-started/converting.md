@@ -80,13 +80,28 @@ something that behaves differently.
 
 | File | Becomes |
 |---|---|
-| `jest.preset.js` building on `@nx/jest/preset` | the `require('@nx/jest/preset')` line becomes the same preset values written out; everything else in the file (your `setupFilesAfterEnv`, `transformIgnorePatterns`, ...) is kept. A file that is only a re-export is replaced by the values; one convert cannot read is replaced and reported, since what it added is gone |
-| `@nx/jest/plugins/resolver` | `jest.resolver.cjs` (written at the root): Jest's own resolution first, then TypeScript's, which finds a module that only has types (`jest.mock('vscode')` with just `@types/vscode` installed) and what a tsconfig `paths` entry names; a `./x.js` import of a TypeScript file resolves to `./x` |
+| `jest.preset.js` building on `@nx/jest/preset` | the `require('@nx/jest/preset')` line becomes `require('@monosmith/jest-preset')`, the published package with the same preset values; everything else in the file (your `setupFilesAfterEnv`, `transformIgnorePatterns`, ...) is kept, and `@monosmith/jest-preset` becomes a root devDependency. A file that is only a re-export becomes a one-line re-export of the package; one convert cannot read is replaced the same way and reported, since what it added is gone. The file stays because your projects' Jest configs name it as their `preset` |
+| `@nx/jest/plugins/resolver` | nothing is written: `@monosmith/jest-preset` wires in a resolver that asks Jest's own resolution first, then TypeScript's, which finds a module that only has types (`jest.mock('vscode')` with just `@types/vscode` installed) and what a tsconfig `paths` entry names; a `./x.js` import of a TypeScript file resolves to `./x`. Older versions of convert wrote this as `jest.resolver.cjs` at the root: see below |
 | a root `jest.config.ts` listing projects for Nx | removed; smith runs each project's tests |
-| a project's `jest.config` using `@nx/react/plugins/jest` and `@nx/react/babel` | the transformer written out as `jest.asset-transform.cjs` at the root, and the Babel presets `@nx/react/babel` stood for (`preset-env`, `preset-typescript`, `preset-react`) |
+| a project's `jest.config` using `@nx/react/plugins/jest` and `@nx/react/babel` | the transformer becomes `'@monosmith/jest-preset/asset-transform'` (an SVG import is a React component, any other asset is its file name), and the Babel presets `@nx/react/babel` stood for (`preset-env`, `preset-typescript`, `preset-react`) are written into the config. No helper file is written; the package is a root devDependency. Older versions wrote `jest.asset-transform.cjs` at the root: see below |
 | `@nx/react/typings/*.d.ts` in a tsconfig's `types` | in a Vite project, `vite/client`, which declares the same CSS-module and image imports (an SVG import is its URL, with no `ReactComponent` export); elsewhere, reported for you to declare them in the project |
 | an ESLint config using `@nx/eslint-plugin` presets | `@eslint/js` and `typescript-eslint`, which those presets wrap; the module-boundary and dependency-check rules read the Nx graph, so they are removed; every package's `deps-check` task does the dependency check instead (see tasks and cache) |
 | a library built by `@nx/rollup`'s `withNx` (it needs the Nx graph) | `esbuild` for the bundle and `tsc` for the declarations, into the same files `package.json` already publishes; then `declaration-specifiers.mjs` (written at the root) gives each relative specifier in the declarations its file (`./hooks` → `./hooks.js` or `./hooks/index.js`), as the old mnci's rollup plugin did, so a `nodenext` consumer can follow them. A config with several entries (Rollup's `input`, or `additionalEntryPoints`) builds them all in one `esbuild --splitting` run, sharing code in `dist/chunks` as Rollup did; entries it cannot read are reported, never dropped. `main` counts as an entry beside `additionalEntryPoints`; a one-line config that builds through a shared base (`module.exports = require('../../rollup.base.cjs')()`) is read through it, and the base is removed once every project that used it is converted |
+
+A workspace without Nx still needs what Nx's Jest plugins did, so convert adds
+[`@monosmith/jest-preset`](../../packages/jest-preset/README.md) at `^0.1.0`
+instead of leaving files at the root that a tidy teammate would delete. A
+project that only needs the defaults says `preset: '@monosmith/jest-preset'`,
+and a React project can say `preset: '@monosmith/jest-preset/react'`.
+
+**Converted with an older smith?** Then `jest.resolver.cjs`, `jest.asset-transform.cjs`
+and a `jest.preset.js` with the values written out are at your root. `smith doctor`
+reports them ("Jest helper files of an older convert are replaced by
+@monosmith/jest-preset") and `smith doctor --fix` replaces them: it points the Jest
+configs at the package, adds the package to the root devDependencies, runs
+`npm install` and deletes the two files. It asks first, and does nothing unless it
+recognises every file as one convert wrote; if you changed the preset's values or a
+config of yours still names a helper, doctor says which and leaves it to you.
 
 Then it removes `nx.json`, `.nx/`, every `project.json` of a converted project,
 the `nx` fields of `package.json` files, and the `nx`, `@nx/*`, `@nx-go/*` and

@@ -30,6 +30,7 @@ releases this repository itself.
 | `libs/actions` | the one catalogue of what smith can do (`catalog`), read by the command line, the shell, the MCP server and the engine server ([ADR 0029](decisions/0029-one-list-of-actions.md)) |
 | `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates (`templating`), tool runs (`toolrun`), JSON documents (`jsondoc`) and project kinds (`projectkind`). Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
 | `packages/eslint-config` | `@monosmith/eslint-config`, the shared ESLint config with the vertical-slice rules (an npm package) |
+| `packages/jest-preset` | `@monosmith/jest-preset`, the Jest preset (values, TypeScript-aware resolver, React asset transform) that `smith convert` adds in place of Nx's Jest plugins (an npm package) |
 | `apps/vscode` | the VS Code extension, a client of `smith serve` ([VS Code architecture](vscode-architecture.md)) |
 | `docs/` | the user documentation, these notes, and the research the project started from (`docs/architecture/research/`) |
 | `install.sh`, `install.ps1` | install the newest `smith@` GitHub Release |
