@@ -24,7 +24,7 @@ func plain() theme.Theme { return theme.New(theme.Choice{Tokens: theme.Plain, Ic
 func screen(p Prompt) string { return pane.Strip(strings.Join(p.Lines(plain()), "\n")) }
 
 func TestTypedPackagesEndAsTheInstallCommandOfTheProject(t *testing.T) {
-	p := typeText(NewInstall("web").Place(100, 30), "zod @types/node")
+	p := typeText(NewInstall("web", []string{"web"}).Place(100, 30), "zod @types/node")
 	if got := strings.Join(p.Argv(), " "); got != "install -w web zod @types/node" {
 		t.Fatalf("argv %q", got)
 	}
@@ -38,23 +38,23 @@ func TestTypedPackagesEndAsTheInstallCommandOfTheProject(t *testing.T) {
 }
 
 func TestTheDevelopmentBoxAddsDAndRemoveHasNoBox(t *testing.T) {
-	p := typeText(NewInstall("api").Place(100, 30), "pytest-cov")
+	p := typeText(NewInstall("api", []string{"api"}).Place(100, 30), "pytest-cov")
 	p, _ = key(p, tea.KeyTab) // to the box
 	p, _ = p.Key(tea.KeyMsg{Type: tea.KeySpace})
 	if got := strings.Join(p.Argv(), " "); got != "install -w api -D pytest-cov" || !strings.Contains(screen(p), "[x] a development") {
 		t.Fatalf("argv %q\n%s", got, screen(p))
 	}
-	r := typeText(NewRemove("api").Place(100, 30), "left-pad")
+	r := typeText(NewRemove("api", []string{"api"}).Place(100, 30), "left-pad")
 	if got := strings.Join(r.Argv(), " "); got != "uninstall -w api left-pad" || strings.Contains(screen(r), "development") {
 		t.Fatalf("argv %q\n%s", got, screen(r))
 	}
-	if !strings.Contains(r.Title(), "Remove packages from api") {
+	if r.Title() != "Remove packages" || !strings.Contains(screen(r), "Project: api") {
 		t.Fatal(r.Title())
 	}
 }
 
 func TestNothingTypedOrAFlagKeepsThePromptOpenAndSaysWhy(t *testing.T) {
-	p := NewInstall("web").Place(100, 30)
+	p := NewInstall("web", []string{"web"}).Place(100, 30)
 	p, out := key(p, tea.KeyEnter)
 	if out.Done || !strings.Contains(screen(p), "type at least one package") {
 		t.Fatalf("an empty prompt went ahead or did not say why: %+v\n%s", out, screen(p))
@@ -67,7 +67,7 @@ func TestNothingTypedOrAFlagKeepsThePromptOpenAndSaysWhy(t *testing.T) {
 }
 
 func TestEscAndTheCancelButtonAndAClickOutsideCancel(t *testing.T) {
-	p := typeText(NewInstall("web").Place(100, 30), "zod")
+	p := typeText(NewInstall("web", []string{"web"}).Place(100, 30), "zod")
 	if _, out := key(p, tea.KeyEsc); !out.Done || out.Confirmed {
 		t.Fatalf("Esc: %+v", out)
 	}
@@ -85,7 +85,7 @@ func TestEscAndTheCancelButtonAndAClickOutsideCancel(t *testing.T) {
 }
 
 func TestClickingTheBoxFlipsItAndTheLabelIsClickableToo(t *testing.T) {
-	p := typeText(NewInstall("web").Place(100, 30), "zod")
+	p := typeText(NewInstall("web", []string{"web"}).Place(100, 30), "zod")
 	r := p.Rect()
 	row := -1
 	for i, l := range strings.Split(screen(p), "\n") {
@@ -99,5 +99,24 @@ func TestClickingTheBoxFlipsItAndTheLabelIsClickableToo(t *testing.T) {
 	p, out := p.Click(r.X+20, r.Y+row)
 	if out.Done || !p.Dev() {
 		t.Fatalf("clicking the line did not tick the box: %+v dev=%v", out, p.Dev())
+	}
+}
+
+func TestTheProjectIsPreselectedAndLeftRightChooseAnother(t *testing.T) {
+	p := NewInstall("orders", []string{"web", "orders", "kit"}).Place(100, 30)
+	if p.Project() != "orders" || !strings.Contains(screen(p), "Project: ‹ orders ›") {
+		t.Fatalf("the project on screen is preselected: %s", screen(p))
+	}
+	p, _ = p.Key(tea.KeyMsg{Type: tea.KeyShiftTab}) // from the packages to the project
+	p, _ = key(p, tea.KeyRight)
+	if p.Project() != "kit" {
+		t.Fatalf("Right chose %q", p.Project())
+	}
+	p, _ = key(p, tea.KeyRight)
+	p, _ = key(p, tea.KeyLeft)
+	p, _ = key(p, tea.KeyEnter) // from the project to the packages
+	p = typeText(p, "zod")
+	if got := strings.Join(p.Argv(), " "); got != "install -w kit zod" {
+		t.Fatalf("argv %q", got)
 	}
 }

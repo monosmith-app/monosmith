@@ -12,20 +12,23 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Prompt asks which packages to install on, or remove from, one project, and
-// ends as the command line that does it: `smith install -w <project> [-D]
+// Prompt asks which project and which packages to install on, or remove from,
+// and ends as the command line that does it: `smith install -w <project> [-D]
 // <packages>` or `smith uninstall -w <project> <packages>`. It shows that
 // line as it will run, as the confirmation dialog does.
 //
-// Keys: typing fills the packages; Tab and Shift+Tab move between the
-// packages, the development box and the buttons; Space or a click flips the
+// Keys: typing fills the packages; Left and Right on the project choose
+// another project; Tab and Shift+Tab move between the project, the packages, the development box and the buttons; Space or a click flips the
 // box; Enter on the packages or on Install goes ahead; Esc cancels.
 type Prompt struct {
 	project string
-	remove  bool
-	dev     bool
-	input   textinput.Model
-	// focus is the packages (0), the development box (1) and the buttons (2 and 3).
+	// projects are the projects to choose from (project is one of them).
+	projects []string
+	remove   bool
+	dev      bool
+	input    textinput.Model
+	// focus is the packages (0), the development box (1), the buttons (2 and 3)
+	// and the project (4).
 	focus int
 	// hover is the control under the pointer, with the same numbers, or -1.
 	hover int
@@ -39,29 +42,53 @@ const (
 	focusDev
 	focusInstall
 	focusCancel
+	focusProject
 )
 
-// NewInstall asks for the packages to install on project.
-func NewInstall(project string) Prompt { return newPrompt(project, false) }
+// NewInstall asks for the packages to install on project, which can be
+// changed to any of projects.
+func NewInstall(project string, projects []string) Prompt { return newPrompt(project, projects, false) }
 
-// NewRemove asks for the packages to remove from project.
-func NewRemove(project string) Prompt { return newPrompt(project, true) }
+// NewRemove asks for the packages to remove from project, which can be
+// changed to any of projects.
+func NewRemove(project string, projects []string) Prompt { return newPrompt(project, projects, true) }
 
-func newPrompt(project string, remove bool) Prompt {
+func newPrompt(project string, projects []string, remove bool) Prompt {
 	in := textinput.New()
 	in.Prompt = "› "
 	in.Placeholder = "zod  react@19  @types/node"
 	in.CharLimit = 200
 	in.Focus()
-	return Prompt{project: project, remove: remove, input: in, hover: -1}
+	return Prompt{project: project, projects: append([]string(nil), projects...), remove: remove, input: in, hover: -1}
 }
 
 // Title is the heading of the dialog.
 func (p Prompt) Title() string {
 	if p.remove {
-		return "Remove packages from " + p.project
+		return "Remove packages"
 	}
-	return "Install packages on " + p.project
+	return "Install packages"
+}
+
+// Project is the project the packages go to or come from.
+func (p Prompt) Project() string { return p.project }
+
+// choosable is true when there is a project to change to.
+func (p Prompt) choosable() bool { return len(p.projects) > 1 }
+
+// step moves the project to the next (or, with dir -1, the previous) one.
+func (p Prompt) step(dir int) Prompt {
+	if !p.choosable() {
+		return p
+	}
+	at := 0
+	for i, name := range p.projects {
+		if name == p.project {
+			at = i
+		}
+	}
+	p.project = p.projects[(at+dir+len(p.projects))%len(p.projects)]
+	return p
 }
 
 // Argv is the command line, without the program name, for what is typed now;
@@ -112,7 +139,7 @@ func (p Prompt) Rect() dialog.Rect { return p.rect }
 
 // body is the dialog's lines between the borders, before the buttons.
 func (p Prompt) body(inner int) []string {
-	lines := []string{"Packages, separated by spaces:", " " + p.input.View(), ""}
+	lines := []string{p.projectLine(), "", "Packages, separated by spaces:", " " + p.input.View(), ""}
 	if !p.remove {
 		lines = append(lines, p.devLine(), "")
 	}
@@ -128,6 +155,13 @@ func (p Prompt) body(inner int) []string {
 		lines = append(lines, "  $ "+l)
 	}
 	return lines
+}
+
+func (p Prompt) projectLine() string {
+	if p.choosable() {
+		return "Project: ‹ " + p.project + " ›  (Left and Right change it)"
+	}
+	return "Project: " + p.project
 }
 
 func (p Prompt) devLine() string {
@@ -162,6 +196,13 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			break
 		}
 		switch {
+		case strings.HasPrefix(l, "Project:"):
+			switch {
+			case p.focus == focusProject:
+				l = th.Selected(l)
+			case p.hover == focusProject:
+				l = th.Hover(l)
+			}
 		case p.err != "" && l == p.err:
 			l = th.Failure(l)
 		case strings.HasPrefix(strings.TrimLeft(l, " "), "[") && !p.remove && strings.Contains(l, "development"):
@@ -214,6 +255,9 @@ func (p Prompt) controlAt(x, y int) int {
 		}
 		return -1
 	}
+	if y-r.Y-1 == 0 && p.choosable() && x > r.X && x < r.X+r.W-1 {
+		return focusProject
+	}
 	if !p.remove && y-r.Y-1 == p.rowOf("[", inner) && x > r.X && x < r.X+r.W-1 {
 		return focusDev
 	}
@@ -227,6 +271,9 @@ func (p Prompt) Hover(x, y int) Prompt { p.hover = p.controlAt(x, y); return p }
 // press outside the dialog cancel.
 func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
 	switch p.controlAt(x, y) {
+	case focusProject:
+		p.focus = focusProject
+		return p.step(1), dialog.Outcome{}
 	case focusDev:
 		p.dev, p.focus = !p.dev, focusDev
 		return p, dialog.Outcome{}
@@ -252,6 +299,10 @@ func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 		return p.move(-1), dialog.Outcome{}
 	case "enter":
 		switch p.focus {
+		case focusProject:
+			p.focus = focusPackages
+			p.input.Focus()
+			return p, dialog.Outcome{}
 		case focusDev:
 			p.dev = !p.dev
 			return p, dialog.Outcome{}
@@ -264,24 +315,38 @@ func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 	case p.focus == focusPackages:
 		p.input, _ = p.input.Update(msg)
 		p.err = ""
+	case p.focus == focusProject && msg.String() == "left":
+		p = p.step(-1)
+	case p.focus == focusProject && (msg.String() == "right" || msg.String() == " " || msg.String() == "space"):
+		p = p.step(1)
 	case p.focus == focusDev && (msg.String() == " " || msg.String() == "space"):
 		p.dev = !p.dev
-	case p.focus >= focusInstall && (msg.String() == "left" || msg.String() == "right"):
+	case (p.focus == focusInstall || p.focus == focusCancel) && (msg.String() == "left" || msg.String() == "right"):
 		p.focus = focusInstall + focusCancel - p.focus
 	}
 	return p, dialog.Outcome{}
 }
 
 // move goes to the next (or, with dir -1, the previous) control, skipping the
-// development box when it is not there.
+// project when there is nothing to choose and the development box when it is
+// not there.
 func (p Prompt) move(dir int) Prompt {
-	for {
-		p.focus = (p.focus + dir + 4) % 4
-		if p.focus == focusDev && p.remove {
-			continue
-		}
-		break
+	order := []int{}
+	if p.choosable() {
+		order = append(order, focusProject)
 	}
+	order = append(order, focusPackages)
+	if !p.remove {
+		order = append(order, focusDev)
+	}
+	order = append(order, focusInstall, focusCancel)
+	at := 0
+	for i, f := range order {
+		if f == p.focus {
+			at = i
+		}
+	}
+	p.focus = order[(at+dir+len(order))%len(order)]
 	if p.focus == focusPackages {
 		p.input.Focus()
 	} else {

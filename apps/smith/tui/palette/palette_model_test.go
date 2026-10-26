@@ -5,19 +5,14 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-var cli = []clicontract.CommandDescription{
-	{Name: "affected", Description: "List projects a change touches, before a release"},
-	{Name: "doctor", Description: "Check the workspace"},
-	{Name: "release", Description: "Version, tag and publish", Options: []clicontract.OptionDescription{{Name: "dry-run"}}},
-}
-
 var ui = []Entry{
-	{ID: "run.build", Title: "Build", Hint: "smith build", Shortcut: "Ctrl+B"},
-	{ID: "run.stop", Title: "Stop", Hint: "cancel the run", Shortcut: "Ctrl+C", Unavailable: "nothing is running"},
+	{ID: "run.build", Section: "Build", Title: "Build web", Hint: "smith run build -p web", Shortcut: "b"},
+	{ID: "run.stop", Section: "Build", Title: "Stop", Hint: "cancel the run", Shortcut: "Ctrl+C", Unavailable: "nothing is running"},
+	{ID: "ws.doctor", Section: "Health", Title: "Doctor", Hint: "smith doctor", Shortcut: "d"},
 }
 
 func typed(p Palette, text string) Palette {
@@ -29,64 +24,67 @@ func typed(p Palette, text string) Palette {
 
 func enter() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyEnter} }
 
-func TestTheListHasEveryShellCommandAndEverySmithCommand(t *testing.T) {
-	text := strings.Join(New(ui, cli).Lines(theme.Default(), 70, 12), "\n")
-	for _, want := range []string{"Build", "Ctrl+B", "affected", "doctor", "release"} {
+func TestTheListIsGroupedBySectionWithShortcutsAndCommandHints(t *testing.T) {
+	text := strings.Join(New(ui).Lines(theme.Default(), 70, 12), "\n")
+	for _, want := range []string{"Build", "Build web", "smith run build -p web", "Health", "Doctor"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
 	}
+	if strings.Contains(text, "Stop") {
+		t.Fatalf("a command that cannot work now is hidden until searched:\n%s", text)
+	}
 }
 
-func TestTypingFindsASmithCommandAndEnterAsksForItsArguments(t *testing.T) {
-	p := typed(New(ui, cli), "rel")
-	if text := strings.Join(p.Lines(theme.Default(), 70, 12), "\n"); !strings.Contains(text, "release") {
-		t.Fatalf("release should match:\n%s", text)
-	}
-	p, res := p.Key(enter())
-	if res.Closed || p.Chosen() == nil || p.Chosen().Name != "release" {
+func TestSearchingFindsByTitleByCommandLineAndBySectionAndShowsTheUnusableLast(t *testing.T) {
+	if _, res := typed(New(ui), "doc").Key(enter()); res.CommandID != "ws.doctor" {
 		t.Fatalf("%+v", res)
 	}
-	p = typed(p, "--dry-run")
-	_, res = p.Key(enter())
-	if strings.Join(res.Argv, " ") != "release --dry-run" || !res.Closed {
-		t.Fatalf("%+v", res)
+	if _, res := typed(New(ui), "run build").Key(enter()); res.CommandID != "run.build" {
+		t.Fatalf("the command line is searchable: %+v", res)
+	}
+	if _, res := typed(New(ui), "health").Key(enter()); res.CommandID != "ws.doctor" {
+		t.Fatalf("the section is searchable: %+v", res)
 	}
 }
 
 func TestPickingAShellCommandReportsItsID(t *testing.T) {
-	_, res := typed(New(ui, cli), "build").Key(enter())
+	_, res := typed(New(ui), "build").Key(enter())
 	if res.CommandID != "run.build" || !res.Closed {
 		t.Fatalf("%+v", res)
 	}
 }
 
 func TestAnUnavailableShellCommandSaysWhyAndStaysOpen(t *testing.T) {
-	_, res := typed(New(ui, cli), "stop").Key(enter())
+	_, res := typed(New(ui), "stop").Key(enter())
 	if res.CommandID != "" || res.Closed || !strings.Contains(res.Refused, "nothing is running") {
 		t.Fatalf("%+v", res)
 	}
 }
 
-func TestEscBacksOutOfArgumentsThenClosesThePalette(t *testing.T) {
-	p, _ := typed(New(ui, cli), "doctor").Key(enter())
-	p, res := p.Key(tea.KeyMsg{Type: tea.KeyEsc})
-	if res.Closed || p.Chosen() != nil {
-		t.Fatal("first esc goes back")
-	}
-	if _, res = p.Key(tea.KeyMsg{Type: tea.KeyEsc}); !res.Closed {
-		t.Fatal("second esc closes")
+func TestNothingMatchingOffersNoCommandToConfirm(t *testing.T) {
+	p := typed(New(ui), "lodash")
+	if _, res := p.Key(enter()); res.CommandID != "" || res.Closed || res.Refused != "" {
+		t.Fatalf("free text must not become a command: %+v", res)
 	}
 }
 
-func TestClickingARowChoosesIt(t *testing.T) {
-	p := New(ui, cli)
-	i := p.RowAt(0, 9)
-	if i != 0 {
-		t.Fatalf("row 0 is match %d", i)
+func TestEscClosesThePalette(t *testing.T) {
+	if _, res := New(ui).Key(tea.KeyMsg{Type: tea.KeyEsc}); !res.Closed {
+		t.Fatal("esc closes")
 	}
-	_, res := p.Choose(i)
-	if res.CommandID != "run.build" {
+}
+
+func TestClickingARowChoosesItAndAHeadingIsNoRow(t *testing.T) {
+	p := New(ui)
+	if p.RowAt(0, 9) != -1 {
+		t.Fatal("the first line is the Build heading")
+	}
+	i := p.RowAt(1, 9)
+	if i != 0 {
+		t.Fatalf("line 1 is match %d", i)
+	}
+	if _, res := p.Choose(i); res.CommandID != "run.build" {
 		t.Fatalf("%+v", res)
 	}
 	if p.RowAt(50, 9) != -1 {
@@ -95,26 +93,31 @@ func TestClickingARowChoosesIt(t *testing.T) {
 }
 
 func TestTheWheelAndTheArrowsMoveTheCursor(t *testing.T) {
-	p := New(ui, cli).Scroll(2)
-	if p.cursor != 2 {
-		t.Fatalf("%d", p.cursor)
-	}
-	p, _ = p.Key(tea.KeyMsg{Type: tea.KeyUp})
+	p := New(ui).Scroll(1)
 	if p.cursor != 1 {
 		t.Fatalf("%d", p.cursor)
 	}
-	if New(ui, cli).Scroll(99).cursor != 3 || New(ui, cli).Scroll(-9).cursor != 0 {
+	p, _ = p.Key(tea.KeyMsg{Type: tea.KeyUp})
+	if p.cursor != 0 {
+		t.Fatalf("%d", p.cursor)
+	}
+	if New(ui).Scroll(99).cursor != 1 || New(ui).Scroll(-9).cursor != 0 {
 		t.Fatal("clamped")
 	}
 }
 
-func TestRenderingNeverPanicsAtAnySize(t *testing.T) {
-	for _, s := range [][2]int{{0, 0}, {1, 1}, {5, 2}, {20, 5}, {80, 24}} {
-		p := New(ui, cli)
-		_ = p.Lines(theme.Default(), s[0], s[1])
-		p = typed(p, "zzzz")
-		_ = p.Lines(theme.Default(), s[0], s[1])
-		p, _ = New(ui, cli).Choose(2)
-		_ = p.Lines(theme.Default(), s[0], s[1])
+func TestEveryLineFitsTheWidthAtAnySize(t *testing.T) {
+	for _, s := range [][2]int{{0, 0}, {1, 1}, {5, 2}, {20, 5}, {30, 9}, {74, 18}, {136, 20}} {
+		p := New(ui)
+		for _, lines := range [][]string{p.Lines(theme.Default(), s[0], s[1]), typed(p, "zzzz").Lines(theme.Default(), s[0], s[1])} {
+			if s[0] < 1 || s[1] < 1 {
+				continue
+			}
+			for _, l := range lines {
+				if pane.Width(l) > s[0] {
+					t.Fatalf("%v: %q is %d wide", s, l, pane.Width(l))
+				}
+			}
+		}
 	}
 }

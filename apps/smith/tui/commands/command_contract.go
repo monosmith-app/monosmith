@@ -37,6 +37,9 @@ const (
 	// OpenAdoptWizard opens the adopt wizard on the folder: what was found,
 	// the level, the plan, the conversion and the closing checks.
 	OpenAdoptWizard
+	// OpenPackagePrompt opens the guided form that asks which project and which
+	// packages to install (Action "install") or remove (Action "uninstall").
+	OpenPackagePrompt
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey
@@ -75,8 +78,11 @@ type Command struct {
 	// out of the footer. ShowIn are the views whose footer shows it (Views when
 	// empty); Tail puts it at the end of every footer.
 	Footer string
-	ShowIn []string
-	Tail   bool
+	// ScopeInFooter puts the project a run acts on in the footer label
+	// ("build web"), so the scope is known before the key is pressed.
+	ScopeInFooter bool
+	ShowIn        []string
+	Tail          bool
 	// WhileEditing means the key still works while a text field has the keyboard.
 	WhileEditing bool
 	// Action is the view action for ViewAction.
@@ -125,6 +131,11 @@ type State struct {
 	Running bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// Project is the project the run keys act on (the one selected in the list),
+	// and Projects how many the workspace has; the footer and the palette name
+	// the scope of a run with them.
+	Project  string
+	Projects int
 	// Reasons say, by command id, why the open view cannot do something now
 	// (nothing to update, no safe fix): the command is refused with that
 	// reason and the footer leaves its hint out.
