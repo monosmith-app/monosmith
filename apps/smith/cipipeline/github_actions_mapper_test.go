@@ -175,7 +175,7 @@ func TestWriteKeepsSlotsAndReportsDrift(t *testing.T) {
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github", "azure"}}}
 	m := model()
 	changed, _, err := Write(root, cfg, m)
-	if err != nil || len(changed) != 2 {
+	if err != nil || len(changed) != 3 {
 		t.Fatalf("changed %v err %v", changed, err)
 	}
 	if drift := Drift(root, cfg, m); len(drift) != 0 {
