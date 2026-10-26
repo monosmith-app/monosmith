@@ -10,7 +10,7 @@ type Icons struct {
 
 // Unicode symbols for terminals that draw them.
 var Unicode = Icons{
-	Passed: "✔", Failed: "✖", Warning: "▲", Running: "●", Queued: "○", Cached: "⚡", Skipped: "↷",
+	Passed: "✓", Failed: "✗", Warning: "▲", Running: "●", Queued: "○", Cached: "⚡", Skipped: "↷",
 	Dot: "●", Open: "▾", Closed: "▸", Pointer: "›", Bar: "█", BarEmpty: "░",
 	Spinner: []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
 }

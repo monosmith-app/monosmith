@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"io"
 	"time"
 
@@ -76,6 +77,9 @@ type Shell struct {
 	detailOpen bool
 
 	list projectlist.List
+	// projScroll is where the project list's window starts, apart from its
+	// cursor, so the wheel scrolls without selecting.
+	projScroll *pane.Scroll
 	// loadedProjects is true once the project list arrived (or failed).
 	loadedProjects bool
 	projectsErr    error
@@ -126,7 +130,9 @@ type Shell struct {
 	tick    int
 	ticking bool
 	mouseX  int
-	mouseY  int
+	// mouseShift is whether shift was held at the last mouse event.
+	mouseShift bool
+	mouseY     int
 	// detailCursor is the highlighted action while the detail fills the pane.
 	detailCursor int
 	// zoom is set while the detail fills the pane on a wide screen (z).
@@ -158,7 +164,7 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1,
+		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt,
 	}
 	if sh.th.Icons.Spinner == nil {

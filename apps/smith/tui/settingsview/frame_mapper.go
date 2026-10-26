@@ -113,7 +113,7 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	}
 	top := 0
 	if cursor < len(lineOf) {
-		top = clamp(lineOf[cursor]-listH/2, 0, len(all)-listH)
+		top = m.scroll[m.section].Show(lineOf[cursor], listH, len(all))
 	}
 	for i := 0; i < listH && top+i < len(all); i++ {
 		rows[1+i] = all[top+i]
@@ -236,13 +236,14 @@ func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
 
 // Wheel scrolls the rows (or the review) by notches.
 func (m Model) Wheel(dir int) Model {
+	if m.ed == nil {
+		// The list scrolls and the selection stays where it is.
+		m.scroll[m.section].By(dir * 3)
+		return m
+	}
 	key := map[bool]string{true: "up", false: "down"}[dir < 0]
 	for range 3 {
-		if m.ed != nil {
-			m, _ = m.editorKey(keyOf(key))
-		} else {
-			m = m.move(key)
-		}
+		m, _ = m.editorKey(keyOf(key))
 	}
 	return m
 }

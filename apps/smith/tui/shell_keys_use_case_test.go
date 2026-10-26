@@ -337,7 +337,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("✖ go.work lists every module", "x fix all", "r reload")
+	l.has("✗ go.work lists every module", "x fix all", "r reload")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "Problem", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")

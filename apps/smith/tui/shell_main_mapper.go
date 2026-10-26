@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
@@ -139,7 +140,7 @@ func (s Shell) projectsContent(w, h int) content {
 
 	avail := max(h-len(c.lines), 1)
 	sel := s.list.Cursor()
-	top := min(max(sel-avail/2, 0), max(len(projects)-avail, 0))
+	top := s.projScroll.Show(sel, avail, len(projects))
 	for i := top; i < len(projects) && i < top+avail; i++ {
 		p := projects[i]
 		dot := s.th.Muted(s.th.Icons.Queued)
@@ -253,6 +254,11 @@ func (s Shell) runGeom(w, h int) runGeom {
 }
 
 // logHeight is the number of log lines visible in the Run tab.
+// logTotal is how many rows the log shown takes at the width of the Run tab.
+func (s Shell) logTotal() int {
+	return len(logview.Rows(s.th, s.logLines(), s.mainInner().W))
+}
+
 func (s Shell) logHeight() int {
 	in := s.mainInner()
 	return s.runGeom(in.W, in.H).logRows
@@ -335,7 +341,7 @@ func (s Shell) runContent(w, h int) content {
 	}
 	sep := "── Log: " + title + " (" + follow + ") "
 	c.lines = append(c.lines, s.th.Faint(pane.Fit(sep+strings.Repeat("─", max(w-pane.Width(sep), 0)), w)))
-	c.lines = append(c.lines, s.log.Render(s.th, s.logLines(), w, g.logRows)...)
+	c.lines = append(c.lines, s.log.Render(logview.Rows(s.th, s.logLines(), w), w, g.logRows)...)
 	return c
 }
 

@@ -2,6 +2,7 @@ package settingsview
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -20,6 +21,9 @@ type Model struct {
 	// is in the list of sections.
 	onItems bool
 	cursor  [5]int
+	// scroll is where the window of each section's list starts, apart from
+	// the cursor, so the wheel scrolls without selecting (see pane.Scroll).
+	scroll [5]*pane.Scroll
 	// ed is the editor over the right pane, nil when none is open.
 	ed *editor
 	// note is the last thing that happened, shown under the list; failed makes it an error.
@@ -34,6 +38,7 @@ type Model struct {
 func New(b Backend, forms []Form) Model {
 	return Model{
 		b: b, forms: forms, onItems: true,
+		scroll:     [5]*pane.Scroll{{}, {}, {}, {}, {}},
 		savedTheme: normalise(b.Style.Theme), savedIcons: normalise(b.Style.Icons), tipSeen: b.TipSeen,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -66,7 +67,7 @@ func TestPagesAndHome(t *testing.T) {
 }
 
 func TestAShortLogIsPaddedToTheHeight(t *testing.T) {
-	out := Log{}.Render(theme.Default(), lines(2), 20, 5)
+	out := Log{}.Render(Rows(theme.Default(), lines(2), 20), 20, 5)
 	if len(out) != 5 || !strings.Contains(out[1], "line 1") {
 		t.Fatalf("%q", out)
 	}
@@ -78,8 +79,39 @@ func TestAShortLogIsPaddedToTheHeight(t *testing.T) {
 }
 
 func TestLinesAreDrawnFromTheTopOfThePausedView(t *testing.T) {
-	out := Log{}.Home().Render(theme.Default(), lines(50), 30, 3)
+	out := Log{}.Home().Render(Rows(theme.Default(), lines(50), 30), 30, 3)
 	if !strings.Contains(out[0], "line 0") || !strings.Contains(out[2], "line 2") {
 		t.Fatalf("%q", out)
+	}
+}
+
+func TestALongLineWrapsOntoIndentedRowsAndIsNeverCut(t *testing.T) {
+	line := "web:build │ src/confluence/confluence.client.ts(284,39): error TS2322: Type 'Buffer<ArrayBufferLike>' is not assignable to type 'BlobPart'."
+	rows := Rows(theme.Default(), []string{line}, 40)
+	if len(rows) < 3 {
+		t.Fatalf("a %d-cell line in 40 cells took %d rows: %q", len(line), len(rows), rows)
+	}
+	var plain []string
+	for _, r := range rows {
+		if w := pane.Width(r); w > 40 {
+			t.Fatalf("a row is %d cells: %q", w, r)
+		}
+		plain = append(plain, strings.TrimSpace(pane.Strip(r)))
+	}
+	joined := strings.Join(strings.Fields(strings.Join(plain, " ")), " ")
+	if !strings.Contains(joined, "is not assignable to type 'BlobPart'.") {
+		t.Fatalf("the end of the line is gone: %q", joined)
+	}
+	if !strings.HasPrefix(rows[1], "  ") && !strings.HasPrefix(pane.Strip(rows[1]), "  ") {
+		t.Fatalf("a continuation row is not indented: %q", rows[1])
+	}
+}
+
+func TestTheStatusGlyphsOfTheOutputAreTheThemesOwn(t *testing.T) {
+	th := theme.Default()
+	rows := Rows(th, []string{"  ✖ web:build exited with code 1", "✔ 3/4 tasks succeeded in 1s"}, 60)
+	text := pane.Strip(strings.Join(rows, " "))
+	if strings.Contains(text, "✖") || strings.Contains(text, "✔") || !strings.Contains(text, th.Icons.Failed) {
+		t.Fatalf("%q", text)
 	}
 }

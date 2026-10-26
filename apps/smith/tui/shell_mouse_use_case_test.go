@@ -35,7 +35,7 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "✖ go.work lists every module", "x fix all")
+	l.has("2 failed", "✗ go.work lists every module", "x fix all")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
@@ -184,7 +184,7 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("d")
 	l.has("How to fix", "go work use ./libs/x") // the detail beside the list tells the selected check
-	x, y := l.find("✖ Docker registries")
+	x, y := l.find("✗ Docker registries")
 	l.hasNot("write web's registry")
 	l.send(click(x+3, y)) // selecting a check shows its fix in the detail
 	l.has("Fix", "write web's registry")
@@ -234,7 +234,7 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	for i := 0; i < 150; i++ {
 		lines = append(lines, "kit:build │ output line "+strconv.Itoa(i))
 	}
-	lines = append(lines, "kit:build ✔ 1s")
+	lines = append(lines, "kit:build ✓ 1s")
 	l.next = &scripted{lines: lines}
 	l.keys("b", "esc")
 	l.has("output line 149", "following")
@@ -248,15 +248,15 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	l.has("following", "output line 149")
 }
 
-func TestTheWheelMovesTheSelectionOfTheList(t *testing.T) {
+func TestTheWheelScrollsTheProjectListAndNeverMovesTheSelection(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.send(wheel(5, 10, 1))
-	if got := l.sh().list.SelectedName(); got != "sdk" {
-		t.Fatalf("a notch of the wheel moves three rows: %q", got)
+	before := l.sh().list.SelectedName()
+	for range 3 {
+		l.send(wheel(5, 10, 1))
 	}
 	l.send(wheel(5, 10, -1))
-	if got := l.sh().list.SelectedName(); got != "orders" {
-		t.Fatalf("%q", got)
+	if got := l.sh().list.SelectedName(); got != before {
+		t.Fatalf("the wheel moved the selection from %q to %q", before, got)
 	}
 }
 
@@ -265,7 +265,7 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	l.has("main.go:12")
-	x, y := l.find("✔ kit:build")
+	x, y := l.find("✓ kit:build")
 	l.send(click(x+3, y))
 	l.has("Log: kit:build", "ok example.com/kit")
 	l.hasNot("main.go:12")
