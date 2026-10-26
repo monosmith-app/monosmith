@@ -127,7 +127,7 @@ Each command installs what the project needs (the first Node project runs
 how to import it and what to try. For the Go library:
 
 ```text
-Adding lib core (go) in libs/core
+Creating lib core in libs/core: go
 go: creating new go.mod: module example.com/acme/libs/core
 Wrote 9 file(s):
   .devcontainer/devcontainer.json

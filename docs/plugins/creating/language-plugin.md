@@ -264,7 +264,7 @@ func (w *widget) Generate(p protocol.GenerateParams) (protocol.GenerateResult, e
 
 ```text
 $ smith add lib core --lang widget
-Adding lib core (widget) in libs/core
+Creating lib core in libs/core: widget
 Wrote 2 file(s):
   libs/core/README.md
   libs/core/widget.json

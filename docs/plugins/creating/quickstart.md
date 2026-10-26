@@ -26,7 +26,7 @@ smith add app my-plugin --stack go-smith-plugin
 ```
 
 ```text
-Adding app my-plugin (stack go-smith-plugin) in apps/my-plugin
+Creating app my-plugin in apps/my-plugin: go-smith-plugin
 go: creating new go.mod: module example.com/demo/apps/my-plugin
 go: downloading github.com/monosmith-app/monosmith/packages/plugin-sdk v0.33.0
 go: added github.com/monosmith-app/monosmith/packages/plugin-sdk v0.33.0
