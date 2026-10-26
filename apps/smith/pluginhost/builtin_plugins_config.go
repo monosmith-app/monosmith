@@ -3,6 +3,7 @@ package pluginhost
 import (
 	"sort"
 
+	archp "github.com/monosmith-app/monosmith/libs/plugin-architectures/plugin"
 	bicepp "github.com/monosmith-app/monosmith/libs/plugin-bicep/plugin"
 	cppp "github.com/monosmith-app/monosmith/libs/plugin-cpp/plugin"
 	dartp "github.com/monosmith-app/monosmith/libs/plugin-dart/plugin"
@@ -63,6 +64,14 @@ var BuiltinAddons = map[string]func(version string) serve.Plugin{
 	vscode.Name:     func(v string) serve.Plugin { return vscode.New(v) },
 	pluginkit.Name:  func(v string) serve.Plugin { return pluginkit.New(v) },
 	dockerp.Name:    func(v string) serve.Plugin { return dockerp.New(v) },
+}
+
+// Each architecture beyond vertical slices is the same plugin under its own
+// name: [conventions.hexagonal], [conventions.clean] and so on.
+func init() {
+	for _, name := range archp.Names() {
+		BuiltinAddons[name] = func(v string) serve.Plugin { return archp.New(name, v) }
+	}
 }
 
 // Builtin returns the constructor of a built-in plugin.

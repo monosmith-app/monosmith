@@ -17,6 +17,21 @@ JVM or PHP projects against the vertical-slice rules:
 The vertical-slices convention (`[conventions.vertical-slices]` in `smith.toml`) runs this
 as each project's `slice-check` task, so [`smith ci verify`](ci.md#verify) catches a violation.
 
+With `--architecture <name>` the command checks another [architecture](architecture.md)
+instead: it reads the imports of the project's sources and reports the ones the architecture
+forbids, for Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby and C++ projects. The rules
+and their limits are in [conventions](../reference/conventions.md#architectures-that-check-imports);
+the convention of the architecture runs it as each project's `architecture-check` task.
+
+```sh
+smith slices check --architecture hexagonal --lang go apps/api
+```
+
+```text
+domain/order.go - imports example.com/shop/adapters/sql: core code must not depend on adapters code (the core never imports an adapter; one adapter never imports another)
+smith: 1 import(s) break the hexagonal architecture; an exception is written in the project README
+```
+
 ## When to use it
 
 Directly, to check a folder that is not yet a project, or to see violations without the
@@ -41,7 +56,8 @@ Usage: `smith slices check <project directory>... [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--lang <lang>` | language name | `go` | language of the projects: cpp, dart, dotnet, go, jvm, php, python, ruby, rust |
+| `--lang <lang>` | language name | `go` | language of the projects: cpp, dart, dotnet, go, jvm, php, python, ruby, rust; with --architecture also node |
+| `--architecture <name>` | architecture name | none | check this architecture's import rules instead: hexagonal, clean |
 
 <!-- smith:end slices check -->
 
