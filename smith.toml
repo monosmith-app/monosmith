@@ -20,9 +20,6 @@ smith_version = "latest"
 # no junk-drawer folders (see docs/reference/conventions.md).
 [conventions.vertical-slices]
 
-[tasks.lint]
-command = ["golangci-lint", "run", "--allow-serial-runners"]
-
 [release]
 github_releases = true
 # VS Code extensions publish as a Microsoft Entra ID app signed in with the workflow

@@ -27,10 +27,13 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	all := strings.Join(res.Files, ",")
-	for _, want := range []string{"apps/api/pyproject.toml", "apps/api/src/acme_api/__main__.py", "apps/api/src/acme_api/greeting/greet_use_case.py", "ruff.toml", "requirements-dev.txt"} {
+	for _, want := range []string{"apps/api/pyproject.toml", "apps/api/src/acme_api/__main__.py", "apps/api/src/acme_api/greeting/greet_use_case.py", "requirements-dev.txt"} {
 		if !strings.Contains(all, want) {
 			t.Errorf("missing %s in %v", want, res.Files)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(ws, "ruff.toml")); err == nil {
+		t.Error("ruff's defaults are smith's: no ruff.toml is scaffolded")
 	}
 	pyproject, _ := os.ReadFile(filepath.Join(ws, "apps", "api", "pyproject.toml"))
 	if !strings.Contains(string(pyproject), `name = "acme-api"`) || !strings.Contains(string(pyproject), `kind = "app"`) {

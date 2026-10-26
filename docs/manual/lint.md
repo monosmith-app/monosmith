@@ -1,8 +1,14 @@
 # smith lint
 
 `smith lint` runs the `lint` task of each selected project: ESLint with
-`@monosmith/eslint-config` for Node stacks, `go vet` for Go, `ruff check` for Python, and
+`@monosmith/eslint-config` for Node stacks, `golangci-lint` for Go, `ruff check` for Python, and
 the linter each other stack names. It is [`smith run lint`](run.md) with the task fixed.
+
+smith owns the lint setup, so a repository needs no linter configuration: for Go and
+Python smith writes its default to `.smith/defaults/` and passes it to the tool. A
+`.golangci.yml` (Go) or a `ruff.toml` / `[tool.ruff]` table (Python) in the repository is the
+override and replaces the default; see [Go](../plugins/using/catalogue/go.md#lint-configuration)
+and [Python](../plugins/using/catalogue/python.md#lint-configuration).
 
 A lint task is also how the vertical-slice rules are enforced: for Node, the shared
 ESLint config carries them; Go, Python and the other languages get a separate
@@ -56,8 +62,8 @@ command `smith explain <project>:lint` prints.
 
 ## Files and environment
 
-Reads source files and lint configuration (`eslint.config.mjs`, `ruff.toml`); writes the
-task cache. Environment variables are those of [`smith run`](run.md#files-and-environment).
+Reads source files and lint configuration (`eslint.config.mjs`, `.golangci.yml`, `ruff.toml`); writes the
+task cache and, for Go and Python, smith's default config under `.smith/defaults/`. Environment variables are those of [`smith run`](run.md#files-and-environment).
 
 ## Examples
 

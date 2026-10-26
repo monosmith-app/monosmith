@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -36,6 +37,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		}
 		name := path.Base(root)
 		kind := projectkind.Resolve(mod.Kind, root, fallbackKind(dir))
+		lint, err := linting.Command(workspaceRoot, root)
+		if err != nil {
+			return result, fmt.Errorf("%s: %w", manifest, err)
+		}
 		project := protocol.Project{
 			Name:     name,
 			Root:     root,
@@ -43,7 +48,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Kind:     kind,
 			Exports:  []string{mod.Path},
 			Imports:  imports,
-			Tasks:    Tasks(name, root, kind, mod.Native),
+			Tasks:    Tasks(name, root, kind, mod.Native, lint),
 			Stack:    mod.Stack,
 		}
 		if mod.Native {
