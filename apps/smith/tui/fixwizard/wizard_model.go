@@ -3,6 +3,7 @@ package fixwizard
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
@@ -36,9 +37,11 @@ type Wizard struct {
 	top int
 
 	step, total int
-	stepName    string
-	headline    string
-	output      []string
+	// started is when the applying phase began, for the elapsed time.
+	started  time.Time
+	stepName string
+	headline string
+	output   []string
 
 	sw, sh int
 	hover  int
@@ -135,6 +138,7 @@ func (w Wizard) Progress(n, total int, name string) Wizard {
 func (w Wizard) begin() Wizard {
 	w.phase, w.step, w.total, w.stepName, w.top = Applying, 0, len(w.resolved.Steps), "", 0
 	w.headline, w.output = "", nil
+	w.started = time.Now()
 	return w
 }
 
