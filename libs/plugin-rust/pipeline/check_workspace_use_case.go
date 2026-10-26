@@ -27,6 +27,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		Check: "cargo is installed", OK: err == nil,
 		Detail: "cargo is not on PATH", Remedy: "install Rust " + Version(workspaceRoot) + " with rustup (https://rustup.rs)",
 	})
+	if f, ok := CheckRustVersion(workspaceRoot); ok {
+		findings = append(findings, f)
+	}
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "Cargo.toml"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: append(findings, protocol.Finding{

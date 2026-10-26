@@ -395,6 +395,7 @@ Kotlin plus Android workspace:
 | Check | Fails when |
 |---|---|
 | `a JDK is installed` | `java -version` fails |
+| `JDK is <release>, as in CI` | the JDK's major is older than the release CI installs (`.java-version`, the pom's `maven.compiler.release`, else `21`); a newer JDK is a warning |
 | `Maven is installed` | (only with a `pom.xml` module) `mvn -v` fails |
 | `Gradle is installed` | (only with a Gradle script) `gradle --version` fails |
 | `the Android SDK is installed` | (only with `com.android.` in a script) neither `ANDROID_HOME`, `ANDROID_SDK_ROOT` nor `local.properties`' `sdk.dir` names an existing directory |

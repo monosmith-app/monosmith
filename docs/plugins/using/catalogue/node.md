@@ -221,7 +221,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
     → install node 22 (`mise use node@22`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] node
 ```
 
-- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it and warns (`Node.js is 24, as in CI`); it does not read `.nvmrc` or `engines.node`.
+- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: newer warns, older fails); it does not read `.nvmrc` or `engines.node`.
 - Output: `build` writes `dist/<project dir>` (set by each project's `outDir`, which doctor checks: `kit compiles into dist/packages/kit`); `package` writes `dist/drop/<name>-<version>.tgz` (a VS Code extension: `.vsix`); `prune` writes into `dist/<app dir>`; a release asset goes to `dist/release/<app>/`.
 
 ## Releasing
@@ -286,7 +286,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 
 | Check | Fails when |
 |---|---|
-| `Node.js is <major>, as in CI` | a warning when your Node major differs from `24`; a failure when `node` is not on PATH |
+| `Node.js is <major>, as in CI` | a warning when your Node is newer than major `24`; a failure when it is older, or when `node` is not on PATH |
 | `Node dependencies are installed` | no `node_modules` at the root; the fix runs `npm install --no-audit --no-fund` |
 | `.npmrc points at the registries smith.toml names` | only with a registry named; the fix rewrites smith's block |
 | `the scripts of <project> call files and tools that exist` | a script runs a file (`node x.js`, `--config x`) that does not exist, or starts a tool that is installed neither in a `node_modules/.bin` nor on PATH. Files under a build output are "not built yet", not missing. Judged once dependencies are installed; a failure when the broken script is one of `build`, `test`, `lint`, `typecheck`, `prebuild`, `postbuild`, `pretest`, `start`, `dev`, otherwise a warning. The fix asks whether to install the tools or remove the scripts. |

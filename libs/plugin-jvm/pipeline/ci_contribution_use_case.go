@@ -122,8 +122,33 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	return result
 }
 
-// probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+// probe runs a tool for its output, stdout then stderr (java prints its
+// version to stderr); tests replace it.
+var probe = func(dir string, argv []string) (string, error) {
+	out, errOut, err := toolrun.Capture(dir, argv)
+	return out + errOut, err
+}
+
+var javaVersion = regexp.MustCompile(`version "(\d+(?:\.\d+)*)`)
+
+// javaVersionFinding compares the JDK on PATH with the release the generated
+// CI and dev container install; it says nothing when java prints no version.
+func javaVersionFinding(output, ci string) (protocol.Finding, bool) {
+	m := javaVersion.FindStringSubmatch(output)
+	if m == nil {
+		return protocol.Finding{}, false
+	}
+	have := m[1]
+	if rest, ok := strings.CutPrefix(have, "1."); ok { // Java 8 prints 1.8.0
+		have = rest
+	}
+	major, _, _ := strings.Cut(have, ".")
+	f, ok := toolrun.CIPinFinding("JDK", major, ci)
+	if ok && !f.OK {
+		f.Remedy = "install JDK " + ci + " (https://adoptium.net), or set the release in .java-version and run `smith ci generate` to move CI and the dev container"
+	}
+	return f, ok
+}
 
 // Doctor checks that a JDK is installed, Maven or Gradle for the modules
 // that build with them, and the Android SDK for an Android module.
@@ -132,9 +157,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
 	version := Version(workspaceRoot)
-	_, javaErr := probe(workspaceRoot, []string{"java", "-version"})
+	javaOut, javaErr := probe(workspaceRoot, []string{"java", "-version"})
 	findings := []protocol.Finding{
 		{Check: "a JDK is installed", OK: javaErr == nil, Detail: "java is not on PATH", Remedy: "install JDK " + version + " (https://adoptium.net)"},
+	}
+	if f, ok := javaVersionFinding(javaOut, version); ok && javaErr == nil {
+		findings = append(findings, f)
 	}
 	used := usedBuildTools(workspaceRoot, params.Projects)
 	if used.maven {

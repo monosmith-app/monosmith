@@ -13,7 +13,8 @@ import (
 var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
 
 // CheckPythonVersion compares the venv's Python with the version CI
-// installs. A difference warns: tests may behave differently in CI.
+// installs. A newer one warns, an older one fails: the code may use what the
+// venv's Python lacks.
 func CheckPythonVersion(workspaceRoot string) protocol.Finding {
 	f := protocol.Finding{
 		Check: "the venv's Python is " + venv.PythonVersion + ", as in CI", Warning: true,
@@ -26,7 +27,10 @@ func CheckPythonVersion(workspaceRoot string) protocol.Finding {
 		return f
 	}
 	have := strings.TrimSpace(got)
-	f.OK = have == venv.PythonVersion
+	if found, ok := toolrun.CIPinFinding("Python", have, venv.PythonVersion); ok {
+		found.Check, found.Remedy = f.Check, f.Remedy
+		return found
+	}
 	f.Detail = "found Python " + have
 	return f
 }

@@ -10,8 +10,9 @@ import (
 // probe runs a tool for its version; tests replace it.
 var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
 
-// CheckNodeVersion compares the installed Node.js major with the one CI
-// installs. A difference warns: the workspace may build differently in CI.
+// CheckNodeVersion compares the installed Node.js with the major CI
+// installs. A newer one warns, an older one fails: a dependency's engines
+// can need what the machine lacks.
 func CheckNodeVersion(workspaceRoot, pin string) protocol.Finding {
 	f := protocol.Finding{Check: "Node.js is " + pin + ", as in CI", Warning: true, Remedy: "install Node.js " + pin + " (https://nodejs.org)"}
 	got, err := probe(workspaceRoot, []string{"node", "--version"})
@@ -20,8 +21,10 @@ func CheckNodeVersion(workspaceRoot, pin string) protocol.Finding {
 		return f
 	}
 	have := strings.TrimPrefix(strings.TrimSpace(got), "v")
-	major, _, _ := strings.Cut(have, ".")
-	f.OK = major == pin
+	if found, ok := toolrun.CIPinFinding("Node.js", have, pin); ok {
+		found.Remedy = f.Remedy
+		return found
+	}
 	f.Detail = "found Node.js " + have
 	return f
 }

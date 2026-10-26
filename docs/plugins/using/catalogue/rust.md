@@ -172,7 +172,7 @@ The pin label is `rustc`, probed with `rustc --version`. Real output with `[tool
     → install rustc 1.90 (`mise use rust@1.90`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] rustc
 ```
 
-smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks only that `cargo` exists; it does not compare your Rust with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`). On the test machine (1.76.0) every command worked and doctor said nothing about the gap, so a newer-Rust-only feature would fail only in CI.
+smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): older fails, newer warns. A machine on 1.76.0 fails the check instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
 
 Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes): `dist/cargo/debug/` for builds, `dist/cargo/package/` for `cargo package`.
 
@@ -240,12 +240,13 @@ Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the work
 | Check | Fails when |
 |---|---|
 | `cargo is installed` | `cargo --version` fails; remedy: install Rust with rustup |
+| `Rust is <version>, as in CI` | `rustc --version`, as rustup resolves it in the workspace (so a `rust-toolchain.toml` counts), is older than the version CI and the dev container install (`1.90`, or the `channel` of `rust-toolchain.toml`); a newer local Rust is a warning. Nothing is reported when `rustc` is absent (the `cargo` check says so) or the channel is `stable` or `nightly`. Fix: write `rust-toolchain.toml` (never over an existing one) and `rustup toolchain install` the pinned version; for a newer local Rust, pin what the machine runs |
 | `the root Cargo.toml is a workspace` | there is no root `Cargo.toml` |
 | `the root Cargo.toml is valid TOML` | it does not parse |
 | `workspace member <path> exists` | a (non-glob) `members` entry has no `Cargo.toml`; remedy: remove it from `members` |
 | `the Cargo workspace lists <dir>` | a crate directory is not in `members` (a glob member matches), so `cargo -p` cannot find it |
 
-All passed in the test run (`21 passed, 0 failed`). The doctor findings have no automatic `--fix`.
+All passed in the test run (`21 passed, 0 failed`). Only the version check has a `--fix`, and it runs `rustup`, so it is asked about, never applied by `--yes`.
 
 Dependencies: the plugin has no `dependencies` capability. `smith install -w kit serde` answers `smith: plugin rust cannot change kit's dependencies; edit its manifest instead` (real), and `smith up` has nothing to list for Rust (`Every declared dependency is at its latest release.`). Use `cargo add` / edit `Cargo.toml`.
 
@@ -258,7 +259,6 @@ Removal: `smith remove <project>` deletes the directory and takes its entry out 
 - The root `Cargo.toml` is yours after the first write; smith edits only the `members` array and, at release time, the version lines.
 - `build` is a debug, uncached build with no declared outputs; there is no release build task and no Rust release assets.
 - No vulnerability audit by default (no `cargo audit`), no private cargo registries, no dependency management through smith.
-- Doctor does not compare the local Rust with CI's.
 
 ## Verified
 
