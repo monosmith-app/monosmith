@@ -30,7 +30,7 @@ func TestTheTabNamesDoNotChangeWhenABadgeAppears(t *testing.T) {
 	}
 	for w := 72; w <= 150; w++ {
 		l := newLab(t, true, w, 30)
-		l.next = &scripted{lines: []string{"kit:build ✖ exited with code 2"}, exit: runner.Exit{Code: 1}}
+		l.next = &scripted{lines: []string{"kit:build ✗ exited with code 2"}, exit: runner.Exit{Code: 1}}
 		before := spelled(stripText(l))
 		l.keys("b")
 		l.advance(time.Second)
@@ -53,10 +53,10 @@ func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.keys("4")
-	if text := stripText(l); !strings.Contains(text, "Doctor ✖2") {
+	if text := stripText(l); !strings.Contains(text, "Doctor ✗2") {
 		t.Fatalf("the Doctor tab should carry its failures:\n%s", text)
 	}
-	if first := l.lines()[0]; !strings.Contains(first, "✖2") {
+	if first := l.lines()[0]; !strings.Contains(first, "✗2") {
 		t.Fatalf("the header carries the health: %q", first)
 	}
 }

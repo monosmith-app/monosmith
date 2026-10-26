@@ -20,7 +20,22 @@ type Model struct {
 	Err    error
 	Cursor int
 	Marked map[string]bool
+	// Anchor is the row a shift-click or shift-arrow extends the marks from.
+	Anchor int
+	// scroll is where the list's window starts, apart from the cursor, so the
+	// wheel can scroll without moving it (see pane.Scroll).
+	scroll *pane.Scroll
 }
+
+// HeadingRow is the row number the table's heading stands for in the map View
+// returns: its box marks or unmarks every row.
+const HeadingRow = -1
+
+// BoxColumns is where the box of a row is, in cells from the left of the view.
+const (
+	BoxFrom = 2
+	BoxTo   = 5
+)
 
 // FromResult is the model for a loaded result.
 func FromResult(r Result) Model {
@@ -29,7 +44,7 @@ func FromResult(r Result) Model {
 	slices.SortStableFunc(rows, func(a, b Row) int {
 		return levelRank(a.Level) - levelRank(b.Level)
 	})
-	return Model{Loaded: true, Rows: rows, Policy: r.Policy, Err: r.Err}
+	return Model{Loaded: true, Rows: rows, Policy: r.Policy, Err: r.Err, scroll: &pane.Scroll{}}
 }
 
 func levelRank(level string) int {
@@ -51,9 +66,126 @@ func (v Model) Update(key tea.KeyMsg, page int) Model {
 		return v.markAll()
 	case "s":
 		return v.markSafe()
+	case "shift+up":
+		return v.extend(-1)
+	case "shift+down":
+		return v.extend(1)
 	}
 	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), key.String(), page)
+	v.Anchor = v.Cursor
 	return v
+}
+
+// Wheel scrolls the list by delta rows; the cursor and the marks stay.
+func (v Model) Wheel(delta int) Model {
+	if v.scroll == nil {
+		v.scroll = &pane.Scroll{}
+	}
+	v.scroll.By(delta)
+	return v
+}
+
+// extend moves the cursor by delta and marks exactly the rows from the anchor
+// to it, so reversing the arrow shrinks the marks again.
+func (v Model) extend(delta int) Model {
+	if len(v.Rows) == 0 {
+		return v
+	}
+	v.Anchor = min(max(v.Anchor, 0), len(v.Rows)-1)
+	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), map[int]string{-1: "up", 1: "down"}[delta], 1)
+	return v.markRange(v.Anchor, v.Cursor, true, false)
+}
+
+// markRange marks (or, with on false, unmarks) the rows from a to b, both
+// included; with replace the marks elsewhere are dropped first.
+func (v Model) markRange(a, b int, on, keep bool) Model {
+	if a > b {
+		a, b = b, a
+	}
+	marked := map[string]bool{}
+	if keep {
+		for k := range v.Marked {
+			marked[k] = true
+		}
+	}
+	for i := max(a, 0); i <= b && i < len(v.Rows); i++ {
+		if on {
+			marked[v.Rows[i].Name] = true
+		} else {
+			delete(marked, v.Rows[i].Name)
+		}
+	}
+	v.Marked = marked
+	return v
+}
+
+// MarkState is 0 when no row is marked, 2 when every row is, and 1 between.
+func (v Model) MarkState() int {
+	n := 0
+	for _, r := range v.Rows {
+		if v.Marked[r.Name] {
+			n++
+		}
+	}
+	switch {
+	case n == 0:
+		return 0
+	case n == len(v.Rows):
+		return 2
+	}
+	return 1
+}
+
+// TickRow is a click on the box of row i: it flips the row's mark, or, with
+// extend, marks or unmarks every row from the anchor to it as that row will be.
+func (v Model) TickRow(i int, extend bool) Model {
+	if i < 0 || i >= len(v.Rows) {
+		return v
+	}
+	on := !v.Marked[v.Rows[i].Name]
+	if extend {
+		v = v.markRange(v.Anchor, i, on, true)
+	} else {
+		v.Cursor = i
+		v.Anchor = i
+		v.Marked = withMark(v.Marked, v.Rows[i].Name, on)
+		return v
+	}
+	v.Cursor = i
+	return v
+}
+
+// ChooseRow is a click on a row away from its box: the cursor goes there and
+// nothing is marked or unmarked, or, with extend, the rows from the anchor to
+// it are marked (the anchor stays, as in a list of mail).
+func (v Model) ChooseRow(i int, extend bool) Model {
+	if i < 0 || i >= len(v.Rows) {
+		return v
+	}
+	if extend {
+		v = v.markRange(v.Anchor, i, true, true)
+	} else {
+		v.Anchor = i
+	}
+	v.Cursor = i
+	return v
+}
+
+// TickAll is a click on the box of the heading: it marks every row, or
+// unmarks them all when every row is marked.
+func (v Model) TickAll() Model { return v.markAll() }
+
+func withMark(marked map[string]bool, name string, on bool) map[string]bool {
+	out := map[string]bool{}
+	for k := range marked {
+		out[k] = true
+	}
+	if on {
+		out[name] = true
+	} else {
+		delete(out, name)
+	}
+	return out
 }
 
 // toggle marks or unmarks the row under the cursor.
@@ -126,18 +258,6 @@ func (v Model) markAll() Model {
 		}
 	}
 	v.Marked = marked
-	return v
-}
-
-// SelectRow moves the cursor to row i and marks it when it was already there.
-func (v Model) SelectRow(i int) Model {
-	if i < 0 || i >= len(v.Rows) {
-		return v
-	}
-	if v.Cursor == i {
-		return v.toggle()
-	}
-	v.Cursor = i
 	return v
 }
 
@@ -251,10 +371,12 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		cols := func(name, now, latest, level, projects string) string {
 			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
 		}
-		lines = append(lines, th.Muted(pane.Fit("      "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
+		headBox := [3]string{"[ ]", "[-]", "[x]"}[v.MarkState()]
+		rowOf[len(lines)] = HeadingRow
+		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
 		// Two group headings may sit among the rows: they take room too.
 		avail := max(h-len(lines)-len(tail)-2, 3)
-		top := pane.WindowTop(v.Cursor, len(v.Rows), avail)
+		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
 		prevMajor := top > 0 && v.Rows[top-1].Level == "major"
 		for i := top; i < len(v.Rows) && i < top+avail; i++ {
 			r := v.Rows[i]

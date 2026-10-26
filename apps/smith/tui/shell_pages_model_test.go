@@ -89,7 +89,7 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 		t.Fatalf("there is one run, so there is no other to show: %q", footer)
 	}
 	l.keys("r")
-	l.next = &scripted{lines: []string{"kit:build ✔ 1ms"}}
+	l.next = &scripted{lines: []string{"kit:build ✓ 1ms"}}
 	l.keys("r")
 	if footer = footerOf(l); strings.Contains(footer, "R failed") || !strings.Contains(footer, "runs") {
 		t.Fatalf("a run that passed has no failed tasks, and three runs can be browsed: %q", footer)

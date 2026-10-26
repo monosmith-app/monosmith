@@ -125,7 +125,7 @@ func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 	for _, sz := range [][2]int{{140, 40}, {100, 30}, {80, 24}, {60, 20}, {20, 5}, {1, 1}} {
 		for _, inside := range []bool{true, false} {
 			l := newLab(t, inside, sz[0], sz[1])
-			l.next = &scripted{lines: []string{"kit:build ▶ go build", "kit:build │ hello", "kit:build ✖ exited with code 2"}, exit: runner.Exit{Code: 1}}
+			l.next = &scripted{lines: []string{"kit:build ▶ go build", "kit:build │ hello", "kit:build ✗ exited with code 2"}, exit: runner.Exit{Code: 1}}
 			for i, ev := range events {
 				switch e := ev.(type) {
 				case string:
@@ -157,7 +157,7 @@ func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 		"help":    func(l *lab) { l.keys("f1") },
 		"confirm": func(l *lab) { l.keys("6", "x") },
 		"run": func(l *lab) {
-			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s", "x:y │ z"}}
+			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s", "x:y │ z"}}
 			l.keys("b")
 		},
 		"home":   func(l *lab) { l.keys("1") },

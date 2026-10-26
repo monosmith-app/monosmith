@@ -11,7 +11,7 @@ import (
 func TestAToastShowsItsTextWithASymbolAndExpires(t *testing.T) {
 	to := New("3 projects installed", Success)
 	lines := to.Lines(theme.Default(), 60)
-	if len(lines) != 3 || !strings.Contains(lines[1], "3 projects installed") || !strings.Contains(lines[1], "✔") {
+	if len(lines) != 3 || !strings.Contains(lines[1], "3 projects installed") || !strings.Contains(lines[1], "✓") {
 		t.Fatalf("%q", lines)
 	}
 	for _, l := range lines {

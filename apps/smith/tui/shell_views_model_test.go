@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -217,21 +219,128 @@ func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l.has("Next:")
 }
 
-func TestClickingADependencyRowMarksItOnTheSecondClick(t *testing.T) {
+// longDeps is a lab with n outdated dependencies named pkg00, pkg01, ...
+func longDeps(t *testing.T, n int) *lab {
+	t.Helper()
 	l := newLab(t, true, 140, 34)
+	sh := l.sh()
+	var rows []depsview.Row
+	for i := 0; i < n; i++ {
+		rows = append(rows, depsview.Row{Name: fmt.Sprintf("pkg%02d", i), Current: "1.0.0", Latest: "1.0.1", Level: "patch", Projects: []string{"web"}})
+	}
+	sh.sources.Deps = func() depsview.Result { return depsview.Result{Rows: rows} }
+	l.m = sh
 	l.keys("5")
-	l.clickText("zod")
-	l.clickText("zod") // a second click on the row marks it
-	l.has("[x] zod")
+	l.keys("r")
+	return l
 }
 
-func TestTheWheelMovesTheCursorOfDeps(t *testing.T) {
-	l := newLab(t, true, 140, 34)
-	l.keys("5")
-	x, y := l.find("react")
-	l.send(wheel(x+5, y, 1))
-	l.keys("space")
-	l.has("[x] zod")
+func (l *lab) shiftClick(x, y int) *lab {
+	m := click(x, y)
+	m.Shift = true
+	return l.send(m)
+}
+
+func TestClickingADependencyRowOnlySelectsItAndItsBoxMarksIt(t *testing.T) {
+	l := longDeps(t, 8)
+	l.clickText("pkg03")
+	if d := l.sh().deps; d.Cursor != 3 || len(d.Marked) != 0 {
+		t.Fatalf("a click on the name selects the row and marks nothing: cursor %d, marked %v", d.Cursor, d.Marked)
+	}
+	l.clickText("pkg03")
+	if len(l.sh().deps.Marked) != 0 {
+		t.Fatal("a second click on the name marked the row")
+	}
+	x, y := l.find("[ ] pkg03")
+	l.send(click(x+1, y))
+	l.has("[x] pkg03")
+}
+
+func TestTheWheelScrollsTheDepsListAndNeverMovesItsCursor(t *testing.T) {
+	l := longDeps(t, 60)
+	l.has("pkg00")
+	x, y := l.find("pkg05")
+	for range 4 {
+		l.send(wheel(x+5, y, 1))
+	}
+	if d := l.sh().deps; d.Cursor != 0 {
+		t.Fatalf("the wheel moved the cursor to %d", d.Cursor)
+	}
+	l.hasNot("pkg00")
+	l.hasNot("pkg01 ")
+}
+
+func TestClickingARowAfterScrollingDoesNotCenterTheList(t *testing.T) {
+	l := longDeps(t, 60)
+	x, y := l.find("pkg05")
+	for range 4 {
+		l.send(wheel(x+5, y, 1))
+	}
+	first := ""
+	for _, line := range l.lines() {
+		if i := strings.Index(line, "pkg"); i >= 0 {
+			first = line[i : i+5]
+			break
+		}
+	}
+	x, _ = l.find("[ ] " + first)
+	_, below := l.find("[ ] " + fmt.Sprintf("pkg%02d", mustAtoi(first[3:])+6))
+	l.send(click(x+8, below))
+	l.has(first)
+	if d := l.sh().deps; d.Cursor != mustAtoi(first[3:])+6 {
+		t.Fatalf("cursor %d", d.Cursor)
+	}
+}
+
+func mustAtoi(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+func TestShiftClickMarksTheRowsBetweenTwoClicksAndShiftArrowsExtendThem(t *testing.T) {
+	l := longDeps(t, 12)
+	x, y := l.find("[ ] pkg03")
+	l.send(click(x+1, y))
+	_, y6 := l.find("[ ] pkg06")
+	l.shiftClick(x+1, y6)
+	d := l.sh().deps
+	for i := 3; i <= 6; i++ {
+		if !d.Marked[fmt.Sprintf("pkg%02d", i)] {
+			t.Fatalf("pkg%02d is not marked: %v", i, d.Marked)
+		}
+	}
+	if len(d.Marked) != 4 {
+		t.Fatalf("marked %v, want pkg03..pkg06", d.Marked)
+	}
+	l.keys("home", "shift+down", "shift+down")
+	d = l.sh().deps
+	if len(d.Marked) != 3 || !d.Marked["pkg00"] || !d.Marked["pkg02"] {
+		t.Fatalf("shift+down from the top marked %v", d.Marked)
+	}
+	l.keys("shift+up")
+	if d = l.sh().deps; len(d.Marked) != 2 || d.Marked["pkg02"] {
+		t.Fatalf("reversing shrinks the marks: %v", d.Marked)
+	}
+}
+
+func TestTheBoxInTheHeadingMarksEveryRowThenNoneAndShowsSome(t *testing.T) {
+	l := longDeps(t, 6)
+	x, y := l.find("[ ] Package")
+	l.send(click(x+1, y))
+	if n := len(l.sh().deps.Marked); n != 6 {
+		t.Fatalf("the heading box marked %d of 6", n)
+	}
+	l.has("[x] Package")
+	l.send(click(x+1, y))
+	if n := len(l.sh().deps.Marked); n != 0 {
+		t.Fatalf("a second click left %d marked", n)
+	}
+	bx, by := l.find("[ ] pkg02")
+	l.send(click(bx+1, by))
+	l.has("[-] Package")
 }
 
 func TestTheHelpOfDepsListsItsOwnKeysFirst(t *testing.T) {
