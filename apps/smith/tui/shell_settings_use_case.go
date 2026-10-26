@@ -96,6 +96,10 @@ func settingsSectionFor(argv []string) (settingsview.Section, bool) {
 		if len(rest) == 0 || (rest[0] == "list" && len(rest) == 1) {
 			return settingsview.Plugins, true
 		}
+	case "architecture":
+		if len(rest) == 0 {
+			return settingsview.Architecture, true
+		}
 	case "recipe":
 		if len(rest) == 0 {
 			return settingsview.Recipes, true

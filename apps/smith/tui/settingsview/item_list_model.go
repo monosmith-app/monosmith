@@ -12,6 +12,7 @@ type Section int
 // The sections, in the order of the list.
 const (
 	Plugins Section = iota
+	Architecture
 	Style
 	Workspace
 	Recipes
@@ -19,17 +20,18 @@ const (
 )
 
 // Sections lists them in order.
-var Sections = []Section{Plugins, Style, Workspace, Recipes, Forms}
+var Sections = []Section{Plugins, Architecture, Style, Workspace, Recipes, Forms}
 
 // Title is the name in the list.
 func (s Section) Title() string {
-	return [...]string{"Plugins", "Style", "Workspace", "Recipes", "Forms"}[s]
+	return [...]string{"Plugins", "Architecture", "Style", "Workspace", "Recipes", "Forms"}[s]
 }
 
 // About is the line under the heading of the open section.
 func (s Section) About() string {
 	return [...]string{
 		"which plugins this workspace uses",
+		"how the code of this workspace is laid out",
 		"the colours and symbols of this interface, yours alone",
 		"the settings of smith.toml",
 		"the recipes of this workspace",
@@ -47,6 +49,7 @@ const (
 	kindExternal
 	kindInstalled
 	kindInstall
+	kindArchitecture
 	kindTheme
 	kindIcons
 	kindSetting
@@ -80,6 +83,10 @@ func (m Model) items(s Section) []item {
 			add(kindInstalled, "Installed on the search path", p.Name+"\x00"+p.Dir, i)
 		}
 		add(kindInstall, "Install", "install", 0)
+	case Architecture:
+		for i, a := range m.snap.Architectures {
+			add(kindArchitecture, "Code layout", a.Name, i)
+		}
 	case Style:
 		for i, t := range theme.ThemeNames {
 			add(kindTheme, "Theme", t, i)

@@ -100,6 +100,8 @@ func (m Model) activate() (Model, Result) {
 			return m, Result{}
 		}
 		m.ed = newInstall()
+	case kindArchitecture:
+		return m, Result{Cmd: m.setArchitecture(it.key)}
 	case kindTheme:
 		return m, Result{Cmd: m.saveStyle(normalise(it.key), m.savedIcons)}
 	case kindIcons:
@@ -204,6 +206,19 @@ func (m Model) setPlugin(name string, enable bool) tea.Cmd {
 			return "", err
 		}
 		return name + map[bool]string{true: " is on", false: " is off"}[enable], nil
+	})
+}
+
+func (m Model) setArchitecture(name string) tea.Cmd {
+	set := m.b.SetArchitecture
+	if set == nil {
+		return unavailable()
+	}
+	return m.run(func() (string, error) {
+		if err := set(name); err != nil {
+			return "", err
+		}
+		return "Architecture: " + name, nil
 	})
 }
 

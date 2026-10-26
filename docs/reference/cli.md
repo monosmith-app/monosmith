@@ -173,6 +173,19 @@ No flags.
 
 <!-- smith:end config -->
 
+### smith architecture
+
+[Manual page](../manual/architecture.md)
+
+<!-- smith:begin architecture -->
+Show the architecture of the workspace, or choose another
+
+Usage: `smith architecture [name]`
+
+No flags.
+
+<!-- smith:end architecture -->
+
 ### smith upgrade
 
 [Manual page](../manual/upgrade.md)

@@ -19,6 +19,17 @@ type Snapshot struct {
 	// Settings are every setting `smith config list` knows.
 	Settings []Setting
 	Recipes  []Recipe
+	// Architectures are the choices of the Architecture section, and
+	// Architecture the name of the one the workspace uses.
+	Architectures []ArchitectureChoice
+	Architecture  string
+}
+
+// ArchitectureChoice is a way the workspace's code can be laid out.
+type ArchitectureChoice struct {
+	Name string
+	// Meaning is one line in plain words; Writes what choosing it changes in smith.toml.
+	Meaning, Writes string
 }
 
 // Plugin is a built-in language plugin and whether the workspace uses it.

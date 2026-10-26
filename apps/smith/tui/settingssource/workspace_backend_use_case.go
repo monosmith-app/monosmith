@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
@@ -34,6 +35,13 @@ func New(dir, home string, getenv func(string) string) settingsview.Backend {
 			}
 			_, err = pluginhost.EnablePlugins(r, []string{name}, enable)
 			return err
+		},
+		SetArchitecture: func(name string) error {
+			r, err := root()
+			if err != nil {
+				return err
+			}
+			return architecture.Set(r, name)
 		},
 		Review: func(name string) (settingsview.TrustReview, error) {
 			r, cfg, err := load(root)

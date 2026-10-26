@@ -57,6 +57,9 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 			row += "  " + th.Muted("smith plugin install <name|path>")
 		}
 		return row
+	case kindArchitecture:
+		a := m.snap.Architectures[it.idx]
+		return "   " + m.radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
 	case kindTheme:
 		return "   " + m.radio(th, normalise(it.key) == m.savedTheme) + " " + pane.Cell(it.key, 8) + th.Muted(themeAbout[it.key])
 	case kindIcons:
@@ -105,6 +108,8 @@ func (m Model) summary(it item) string {
 		return oneLine(m.snap.Settings[it.idx].Explanation)
 	case kindTheme, kindIcons:
 		return "Enter applies it at once"
+	case kindArchitecture:
+		return "Enter chooses it and saves it in smith.toml"
 	}
 	return ""
 }
@@ -167,6 +172,12 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		} else {
 			add("Enter asks for the name or path and installs it.")
 		}
+	case kindArchitecture:
+		a := m.snap.Architectures[it.idx]
+		add(th.Bold(a.Name)+th.Muted("  "+a.Meaning),
+			"The architecture is how the code of this workspace is laid out. smith checks that the code follows the one you choose, and the check fails when it does not.",
+			"Enter chooses it and saves it at once: it "+a.Writes+". Choose none to stop the checks.",
+			th.Muted("The same as: smith architecture "+a.Name))
 	case kindTheme:
 		add(m.previewLines(th, it, w)...)
 	case kindIcons:
