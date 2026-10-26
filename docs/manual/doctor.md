@@ -11,6 +11,17 @@ other fix, and any fix with a question, is asked about in a terminal. Without a 
 is shown with the command that applies it. The same fix on many projects is one fix that
 says which projects it applies to.
 
+## Local toolchain versus CI
+
+For Node, Python, Go, Rust, .NET and the JDK, doctor compares the tool on this machine with
+the version the generated CI workflow and dev container install, so no setting is needed
+(`Rust is 1.90, as in CI`). A newer local tool is a warning; an older one fails, because
+the build can then fail with an error that reads like a dependency problem. A tool that is
+absent gives no version finding (the plugin's "installed" check already says so). Where smith
+can apply a fix it offers one: for Rust, a `rust-toolchain.toml` pinning the version plus
+`rustup toolchain install`, which also makes CI and the dev container follow the pin. A
+`[toolchains]` pin in `smith.toml` is a separate check, against the same probed version.
+
 ## When to use it
 
 - After cloning, after a merge, after changing tools, and before a release.

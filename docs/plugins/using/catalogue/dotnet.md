@@ -156,7 +156,7 @@ The pin label is `dotnet`, probed with `dotnet --version`. Real output with `[to
     → install dotnet 9 (`mise use dotnet@9`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] dotnet
 ```
 
-The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it does not compare against CI's channel.
+The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (older fails, newer warns).
 
 Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.props` the plugin writes: `dist/dotnet/bin/<Project>/debug/...`); `pack` writes the `.nupkg` to `dist/<project dir>` (real: `dist/packages/kit/NetDemo.Kit.0.0.0.nupkg`).
 
@@ -215,6 +215,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `registries/check_nuget_c
 | Check | Fails when |
 |---|---|
 | `the .NET SDK is installed` | `dotnet --version` fails; remedy: install the SDK of the CI channel |
+| `.NET SDK is <channel>, as in CI` | `dotnet --version` is older than the channel CI installs (`10.0`, or the `global.json` SDK's major.minor); a newer SDK is a warning. Nothing is reported when `dotnet` is absent |
 | `nuget.config lists the feeds smith.toml names` | only when `smith.toml` names a NuGet feed (or a smith-written `nuget.config` is stale). A `nuget.config` that carries smith's marker comment is rewritten by `smith doctor --fix`; one without the marker is yours, and the fix is shown but marked not safe. |
 
 Real, with an Azure Artifacts feed named in `smith.toml`:

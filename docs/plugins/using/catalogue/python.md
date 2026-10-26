@@ -270,7 +270,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use
 |---|---|---|
 | `Python venv exists` | `.venv/Scripts/python.exe` (or `.venv/bin/python`) is missing | run `smith ci setup` |
 | `requirements-dev.txt exists` | the file is missing | run `smith add` for a Python project, or restore it |
-| `the venv's Python is 3.12, as in CI` | a warning, not a failure: the venv's `sys.version_info` is not `3.12` | delete `.venv`, then `smith ci setup` |
+| `the venv's Python is 3.12, as in CI` | a warning when the venv's Python is newer than `3.12` (or has none); a failure when it is older | delete `.venv`, then `smith ci setup` |
 
 All three passed in the test run (`17 passed, 0 failed, 0 warning(s)`).
 
