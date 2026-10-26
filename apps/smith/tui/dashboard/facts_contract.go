@@ -16,6 +16,8 @@ type Facts struct {
 	// ProjectsLoaded is true once the project list arrived.
 	ProjectsLoaded     bool
 	Projects, Affected int
+	// Languages is the language of each project, to say what the workspace holds.
+	Languages []string
 	// Last is the last command that ran, nil before the first.
 	Last *Run
 	// DepsChecked is true once the Deps view looked for newer releases.

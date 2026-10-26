@@ -40,6 +40,9 @@ func (s Shell) dashboardFacts() dashboard.Facts {
 	projects := s.list.Projects()
 	f.Projects = len(projects)
 	for _, p := range projects {
+		f.Languages = append(f.Languages, p.Language)
+	}
+	for _, p := range projects {
 		if p.Affected {
 			f.Affected++
 		}
