@@ -115,14 +115,14 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 
 func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "x")
+	l.keys("4", "F")
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "[ Apply  Enter ]")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
 		t.Fatal("x applied before the review was confirmed")
 	}
 	l.keys("esc")
 	l.has("nothing was changed")
-	l.keys("x", "enter")
+	l.keys("F", "enter")
 	if got := l.appliedFixes(); len(got) != 1 || got[0].Description != "write web's registry" {
 		t.Fatalf("applied %+v", got)
 	}
@@ -141,7 +141,7 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 		return doctorview.Result{Report: doctor.Report{Passed: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{Check: "git", OK: true}}}}}
 	}
 	l.m = sh
-	l.keys("4", "r", "x")
+	l.keys("4", "r", "F")
 	if l.sh().fix != nil {
 		t.Fatal("a wizard opened with nothing to fix")
 	}

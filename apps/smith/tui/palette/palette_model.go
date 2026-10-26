@@ -6,110 +6,132 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Entry is a shell command (an id) listed with its shortcut. Unavailable is
-// the reason it cannot be used now, or "".
+// Entry is a shell command (an id) listed with its shortcut, under a section.
+// Hint is the command line it runs. Unavailable is the reason it cannot be
+// used now, or "".
 type Entry struct {
-	ID, Title, Hint, Shortcut, Unavailable string
+	ID, Section, Title, Hint, Shortcut, Unavailable string
 }
 
 // Result is what a key or a click did.
 type Result struct {
 	// CommandID is the shell command chosen.
 	CommandID string
-	// Argv is the smith command line confirmed (without the program name).
-	Argv []string
 	// Refused is the reason a shell command could not be chosen.
 	Refused string
 	// Closed is true when the palette should close.
 	Closed bool
 }
 
-// item is one line of the list: a shell command or a smith command.
-type item struct {
-	entry *Entry
-	cli   *clicontract.CommandDescription
+func (e Entry) unavailable() bool { return e.Unavailable != "" }
+
+// row is one line of the list: a section heading (index -1) or a match.
+type row struct {
+	heading string
+	index   int
 }
 
-func (i item) name() string {
-	if i.entry != nil {
-		return i.entry.Title
-	}
-	return i.cli.Name
-}
-
-func (i item) description() string {
-	if i.entry != nil {
-		return i.entry.Hint
-	}
-	return i.cli.Description
-}
-
-// Palette finds any command by typing part of its name or description;
-// Enter takes it, then, for a smith command, the rest of the command line can
-// be typed.
+// Palette finds any command by typing part of its title, its command line or
+// its section. With nothing typed the commands are listed by section.
 type Palette struct {
-	items  []item
-	cli    []clicontract.CommandDescription
+	items  []Entry
 	filter textinput.Model
 	cursor int
 	top    int
-	// chosen is set once a smith command is picked; filter then holds its arguments.
-	chosen *clicontract.CommandDescription
 }
 
-// New builds a palette of the shell's commands followed by smith's.
-func New(entries []Entry, commands []clicontract.CommandDescription) Palette {
+// New builds a palette of the shell's commands.
+func New(entries []Entry) Palette {
 	in := textinput.New()
 	in.Placeholder = "type to find a command"
 	in.Focus()
-	return Palette{filter: in, cli: commands}.WithEntries(entries)
+	return Palette{filter: in}.WithEntries(entries)
 }
 
-// WithEntries replaces the shell commands (their availability changes with
+// WithEntries replaces the commands (their availability and scope change with
 // the state) and keeps what was typed.
 func (p Palette) WithEntries(entries []Entry) Palette {
-	p.items = nil
-	for i := range entries {
-		p.items = append(p.items, item{entry: &entries[i]})
-	}
-	for i := range p.cli {
-		p.items = append(p.items, item{cli: &p.cli[i]})
-	}
-	p.cursor = min(p.cursor, max(len(p.items)-1, 0))
+	p.items = append([]Entry(nil), entries...)
+	p.cursor = min(p.cursor, max(len(p.matches())-1, 0))
 	return p
 }
 
-// matches are the items the filter finds: names starting with it first, then
-// names containing it, then descriptions mentioning it.
-func (p Palette) matches() []item {
+// matches are the entries the filter finds: titles starting with it first,
+// then titles containing it, then hints and sections mentioning it. Nothing
+// typed lists the usable ones in section order.
+func (p Palette) matches() []Entry {
 	q := strings.ToLower(strings.TrimSpace(p.filter.Value()))
-	var prefix, name, described []item
-	for _, it := range p.items {
-		n := strings.ToLower(it.name())
+	if q == "" {
+		var usable []Entry
+		for _, e := range p.items {
+			if !e.unavailable() {
+				usable = append(usable, e)
+			}
+		}
+		return usable
+	}
+	var prefix, name, described, blocked []Entry
+	for _, e := range p.items {
+		n := strings.ToLower(e.Title)
+		var bucket *[]Entry
 		switch {
 		case strings.HasPrefix(n, q):
-			prefix = append(prefix, it)
+			bucket = &prefix
 		case strings.Contains(n, q):
-			name = append(name, it)
-		case strings.Contains(strings.ToLower(it.description()), q):
-			described = append(described, it)
+			bucket = &name
+		case strings.Contains(strings.ToLower(e.Hint), q) || strings.Contains(strings.ToLower(e.Section), q):
+			bucket = &described
+		default:
+			continue
 		}
+		if e.unavailable() {
+			bucket = &blocked
+		}
+		*bucket = append(*bucket, e)
 	}
-	found := append(append(prefix, name...), described...)
-	return arrange(found, q == "")
+	return append(append(append(prefix, name...), described...), blocked...)
 }
 
-// Reset clears the filter and the choice, for reopening.
+// rows are the lines of the list: the matches, under their section headings
+// when nothing is typed.
+func (p Palette) rows() []row {
+	found := p.matches()
+	grouped := strings.TrimSpace(p.filter.Value()) == ""
+	var out []row
+	last := ""
+	for i, e := range found {
+		if grouped && e.Section != last && e.Section != "" {
+			out = append(out, row{heading: e.Section, index: -1})
+			last = e.Section
+		}
+		out = append(out, row{index: i})
+	}
+	return out
+}
+
+// Entries are the commands the palette was given.
+func (p Palette) Entries() []Entry { return append([]Entry(nil), p.items...) }
+
+// hidden counts the commands left out of the list because they cannot be used now.
+func (p Palette) hidden() int {
+	n := 0
+	for _, e := range p.items {
+		if e.unavailable() {
+			n++
+		}
+	}
+	return n
+}
+
+// Reset clears the filter, for reopening.
 func (p Palette) Reset() Palette {
 	p.filter.SetValue("")
-	p.filter.Placeholder = "type to find a command"
 	p.filter.Focus()
-	p.chosen, p.cursor, p.top = nil, 0, 0
+	p.cursor, p.top = 0, 0
 	return p
 }
 
@@ -117,9 +139,6 @@ func (p Palette) Reset() Palette {
 func (p Palette) Key(msg tea.KeyMsg) (Palette, Result) {
 	switch msg.String() {
 	case "esc", "ctrl+c":
-		if p.chosen != nil {
-			return p.Reset(), Result{}
-		}
 		return p, Result{Closed: true}
 	case "up":
 		p.cursor = max(p.cursor-1, 0)
@@ -138,32 +157,22 @@ func (p Palette) Key(msg tea.KeyMsg) (Palette, Result) {
 	return p, Result{}
 }
 
-// Choose picks the item at index i of the matches (a click).
+// Choose picks the match at index i (a click).
 func (p Palette) Choose(i int) (Palette, Result) { return p.choose(i) }
 
 func (p Palette) choose(i int) (Palette, Result) {
-	if p.chosen != nil {
-		return p, Result{Argv: append([]string{p.chosen.Name}, strings.Fields(p.filter.Value())...), Closed: true}
-	}
 	found := p.matches()
 	if len(found) == 0 || i < 0 {
 		return p, Result{}
 	}
-	it := found[min(i, len(found)-1)]
-	if it.entry != nil {
-		if it.entry.Unavailable != "" {
-			return p, Result{Refused: it.entry.Title + " is unavailable: " + it.entry.Unavailable}
-		}
-		return p, Result{CommandID: it.entry.ID, Closed: true}
+	e := found[min(i, len(found)-1)]
+	if e.unavailable() {
+		return p, Result{Refused: e.Title + " is unavailable: " + e.Unavailable}
 	}
-	c := *it.cli
-	p.chosen = &c
-	p.filter.SetValue("")
-	p.filter.Placeholder = usage(c)
-	return p, Result{}
+	return p, Result{CommandID: e.ID, Closed: true}
 }
 
-// Scroll moves the list by delta rows (the wheel).
+// Scroll moves the cursor by delta matches (the wheel).
 func (p Palette) Scroll(delta int) Palette {
 	p.cursor = min(max(p.cursor+delta, 0), max(len(p.matches())-1, 0))
 	return p
@@ -171,83 +180,64 @@ func (p Palette) Scroll(delta int) Palette {
 
 // Hover highlights the match at index i.
 func (p Palette) Hover(i int) Palette {
-	if p.chosen == nil && i >= 0 && i < len(p.matches()) {
+	if i >= 0 && i < len(p.matches()) {
 		p.cursor = i
 	}
 	return p
 }
 
 // RowAt maps a line of the list area (0 is the first list line, below the
-// input) to the index of the match drawn there, or -1; height is the number of
-// list lines.
+// input) to the index of the match drawn there, or -1 (a heading is no match);
+// height is the number of list lines.
 func (p Palette) RowAt(y, height int) int {
-	top := p.windowTop(height)
-	i := top + y
-	if p.chosen != nil || y < 0 || y >= height || i >= len(p.matches()) {
+	rows := p.rows()
+	i := p.windowTop(rows, height) + y
+	if y < 0 || y >= height || i >= len(rows) {
 		return -1
 	}
-	return i
+	return rows[i].index
 }
 
-func (p Palette) windowTop(height int) int {
-	top := p.top
-	if p.cursor < top {
-		top = p.cursor
+// windowTop is the first row shown so that the cursor is in the window; the
+// heading above the first match of a section stays with it.
+func (p Palette) windowTop(rows []row, height int) int {
+	at := 0
+	for i, r := range rows {
+		if r.index == p.cursor {
+			at = i
+		}
 	}
-	if p.cursor >= top+height {
-		top = p.cursor - height + 1
+	top := min(p.top, at)
+	if at >= top+height {
+		top = at - height + 1
+	}
+	if top == at && at > 0 && rows[at-1].index < 0 {
+		top = at - 1
 	}
 	return max(top, 0)
 }
 
-// usage is a command's arguments and options as a placeholder.
-func usage(c clicontract.CommandDescription) string {
-	var parts []string
-	for _, a := range c.Arguments {
-		if a.Required {
-			parts = append(parts, "<"+a.Name+">")
-		} else {
-			parts = append(parts, "["+a.Name+"]")
-		}
-	}
-	for _, o := range c.Options {
-		parts = append(parts, "[--"+o.Name+"]")
-		if len(parts) > 6 {
-			parts = append(parts, "…")
-			break
-		}
-	}
-	if len(parts) == 0 {
-		return "enter to run"
-	}
-	return strings.Join(parts, " ")
-}
-
-// Chosen is the smith command being completed, or nil.
-func (p Palette) Chosen() *clicontract.CommandDescription { return p.chosen }
-
-// Lines draws the palette in w cells and h lines: the input, a rule, the
-// list, and a footer of key hints.
+// Lines draws the palette in w cells and h lines: the input, the list, and a
+// footer of key hints.
 func (p Palette) Lines(th theme.Theme, w, h int) []string {
-	var out []string
-	if p.chosen != nil {
-		out = append(out, th.Title("smith "+p.chosen.Name)+" "+p.filter.View(), "", th.Muted(p.chosen.Description))
-		out = append(out, "", th.Muted("enter run · esc back"))
-		return pane.Block(out, w, h)
-	}
-	out = append(out, th.Accent(th.Icons.Pointer+" ")+p.filter.View())
-	height := max(h-3, 1)
+	out := []string{th.Accent(th.Icons.Pointer+" ") + p.filter.View()}
+	height := max(h-2, 1)
 	found := p.matches()
 	if len(found) == 0 {
 		out = append(out, th.Muted(" no command matches"))
 	}
-	top := p.windowTop(height)
-	for i := top; i < len(found) && i < top+height; i++ {
-		out = append(out, p.line(th, found[i], i == p.cursor, w))
+	rows := p.rows()
+	top := p.windowTop(rows, height)
+	for i := top; i < len(rows) && i < top+height; i++ {
+		if r := rows[i]; r.index < 0 {
+			out = append(out, " "+th.Bold(th.Accent(r.heading)))
+		} else {
+			out = append(out, p.line(th, found[r.index], r.index == p.cursor, w))
+		}
 	}
 	footer := "up/down choose · enter pick · esc close"
 	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
-		footer = fmt.Sprintf("%d commands unusable here are hidden: type to find them", n)
+		footer = fmt.Sprintf("%d more not usable here: type to find them", n)
 	}
 	for len(out) < h-1 {
 		out = append(out, "")
@@ -256,23 +246,22 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 	return pane.Block(out, w, h)
 }
 
-func (p Palette) line(th theme.Theme, it item, selected bool, w int) string {
-	right, desc := "", it.description()
-	switch {
-	case it.entry != nil && it.entry.Unavailable != "":
-		right, desc = "unavailable", it.entry.Unavailable
-	case it.entry != nil:
-		right = it.entry.Shortcut
+func (p Palette) line(th theme.Theme, e Entry, selected bool, w int) string {
+	right, desc := e.Shortcut, e.Hint
+	if e.unavailable() {
+		right, desc = "unavailable", e.Unavailable
 	}
-	name := it.name()
 	// One cell on each side, two after the name and one before the shortcut.
-	room := max(w-2-2-1-pane.Width(name)-pane.Width(right), 0)
+	room := max(w-2-2-1-pane.Width(e.Title)-pane.Width(right), 0)
 	if pane.Width(desc) > room {
-		desc = strings.TrimRight(pane.Cell(desc, room), " ")
+		desc = strings.TrimRight(pane.Cell(desc, max(room-1, 0)), " ") + "…"
+		if room < 2 {
+			desc = ""
+		}
 	}
-	gap := max(w-2-2-pane.Width(name)-pane.Width(desc)-pane.Width(right), 1)
+	gap := max(w-2-2-pane.Width(e.Title)-pane.Width(desc)-pane.Width(right), 1)
 	if selected {
-		return th.Selected(pane.Fit(" "+name+"  "+desc+strings.Repeat(" ", gap)+right+" ", w))
+		return th.Selected(pane.Fit(" "+e.Title+"  "+desc+strings.Repeat(" ", gap)+right+" ", w))
 	}
-	return pane.Fit(" "+name+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
+	return pane.Fit(" "+e.Title+"  "+th.Muted(desc)+strings.Repeat(" ", gap)+th.Bold(right)+" ", w)
 }

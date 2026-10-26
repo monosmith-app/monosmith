@@ -53,7 +53,7 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}
 	}
-	if strings.Contains(footer, "f follow") || strings.Contains(footer, "x fix all") {
+	if strings.Contains(footer, "f follow") || strings.Contains(footer, "F fix all") {
 		t.Fatalf("keys of other views on Home: %q", footer)
 	}
 }

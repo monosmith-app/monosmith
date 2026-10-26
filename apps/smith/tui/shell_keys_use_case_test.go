@@ -21,14 +21,14 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 		t.Fatalf("the views are tabs under the header: %q", tabs)
 	}
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"b build", "t test", "l lint", "c typecheck", "w changed", "d doctor", "a add project", "y copy", ": palette", "? help", "q quit", "m mouse"} {
+	for _, want := range []string{"b build", "t test", "l lint", "c typecheck", "w changed", "d doctor", "a add project", ": palette", "? help", "q quit", "m mouse"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
 	}
 	l.keys("4")
 	footer = l.lines()[len(l.lines())-2]
-	for _, want := range []string{"x fix all", "g group", "r reload", "q quit"} {
+	for _, want := range []string{"F fix all", "g group", "r reload", "q quit"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the Doctor footer lacks %q: %q", want, footer)
 		}
@@ -130,23 +130,22 @@ func TestAViewsLettersAreItsOwnNotTheGlobalOnes(t *testing.T) {
 func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p")
-	l.has("Command palette", "Build", "Doctor")
+	l.has("Command palette", "Build", "Build orders", "smith run build -p orders", "Build all 4")
 	l.typeText("typec")
 	l.has("Typecheck")
 	l.hasNot("Quit")
-	l.keys("esc", "ctrl+p").typeText("affect") // smith's own commands are listed too
-	l.has("affected", "List projects a change touches")
+	l.keys("esc", "ctrl+p").typeText("affect") // one entry per intent, in plain words
+	l.has("Show what changed", "smith affected")
+	l.hasNot("List projects a change touches")
 	l.keys("esc")
 	l.hasNot("Command palette")
 }
 
-func TestThePaletteRunsAShellCommandAndASmithCommand(t *testing.T) {
+func TestThePaletteRunsAShellCommandAndACommandLine(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p").typeText("doctor").keys("enter") // the shell's Doctor comes first
 	l.has("2 failed")
-	l.keys("ctrl+p").typeText("affected").keys("enter") // a smith command: it asks for arguments, then runs
-	l.has("smith affected")
-	l.keys("enter")
+	l.keys("ctrl+p").typeText("show what").keys("enter") // a command line: it runs
 	if l.lastStarted() != "affected" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
@@ -280,7 +279,7 @@ func TestHelpTellsHowToSelectTextAndHasNoStaleKeys(t *testing.T) {
 func TestF1ListsEveryShortcutAndTheMouse(t *testing.T) {
 	l := newLab(t, true, 100, 44)
 	l.keys("f1")
-	l.has("Keyboard shortcuts", "Move in a list", "Install a package on the project")
+	l.has("Keyboard shortcuts", "Move in a list", "Build all")
 	l.keys("pgdown")
 	l.has("Stop", "Ctrl+C")
 	l.keys("pgup")
@@ -340,7 +339,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("✗ go.work lists every module", "x fix all", "r reload")
+	l.has("✗ go.work lists every module", "F fix all", "r reload")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "Problem", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")
@@ -412,17 +411,6 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 		if len(l.started) != 0 {
 			t.Fatalf("%s ran without a confirmation", name)
 		}
-	}
-}
-
-func TestCommandsThatNeedATerminalHandOverToIt(t *testing.T) {
-	l := newLab(t, true, 120, 30)
-	l.keys("ctrl+p").typeText("mcp").keys("enter", "enter")
-	if got := strings.Join(l.sh().Argv, " "); got != "mcp" || !l.quit {
-		t.Fatalf("argv %q quit %v", got, l.quit)
-	}
-	if len(l.started) != 0 {
-		t.Fatal("it must not run inside the shell")
 	}
 }
 

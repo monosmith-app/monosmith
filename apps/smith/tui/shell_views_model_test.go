@@ -100,7 +100,7 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4", "g")
-	l.has("workspace", "web  1 failed", "2 checks passed", "x fix all")
+	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
 	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
 	l.keys("f")
@@ -367,7 +367,7 @@ func TestTheHeaderNamesTheWorkspaceAndTheStatusBarTheVersion(t *testing.T) {
 func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("+")
-	l.has("Install packages on orders", "Packages, separated by spaces", "development dependency")
+	l.has("Install packages", "Project: ‹ orders ›", "Packages, separated by spaces", "development dependency")
 	l.typeText("zod").keys("enter")
 	if got := l.lastStarted(); got != "install -w orders zod" {
 		t.Fatalf("started %q", got)
@@ -378,14 +378,14 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.has("Install a package…", "Remove a package…")
 	l.clickText("Install a package")
-	l.has("Install packages on orders")
+	l.has("Install packages")
 	l.keys("esc")
-	l.hasNot("Install packages on orders")
+	l.hasNot("Install packages")
 	if len(l.started) != 0 {
 		t.Fatalf("cancelling started %v", l.started)
 	}
 	l.clickText("Remove a package")
-	l.has("Remove packages from orders")
+	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
 	if got := l.lastStarted(); got != "uninstall -w orders left-pad" {
 		t.Fatalf("started %q", got)

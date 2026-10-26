@@ -133,9 +133,21 @@ func (s Shell) body(strip tabs.Strip) []string {
 	return append(out, cut(main[len(main)-1])+edge("┴"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╯"))
 }
 
+// modalOpen is true while a box that takes the keyboard is drawn over the screen.
+func (s Shell) modalOpen() bool {
+	return s.palOpen || s.help != nil || s.pkg != nil || s.confirm != nil || s.fix != nil || s.adopt != nil
+}
+
 // overlays composes the palette, dialogs and toast over the rendered
-// screen by cell, so nothing underneath is pushed down.
+// screen by cell, so nothing underneath is pushed down. Behind a modal the
+// content area is emptied (its frame stays), so no half word of the view shows
+// at the modal's edges; the toast sits inside the content area, never on its
+// frame.
 func (s Shell) overlays(rows []string) []string {
+	l := s.lay()
+	if s.modalOpen() {
+		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y)
+	}
 	if s.palOpen {
 		box := s.paletteBox()
 		lines := pane.Frame(s.th, "Command palette", s.pal.Lines(s.th, box.W-2, box.H-2), box.W, box.H, true)
@@ -161,8 +173,11 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.adopt.Rect()
 		rows = pane.Overlay(rows, s.adopt.Lines(s.th, s.tick), r.X, r.Y)
 	}
-	if lines := s.toast.Lines(s.th, s.w-2); lines != nil {
-		rows = pane.Overlay(rows, lines, max(s.w-pane.Width(lines[0])-1, 0), max(s.h-2-len(lines), 1))
+	if lines := s.toast.Lines(s.th, s.w-4); lines != nil {
+		// The frame's bottom edge is the row above the footer: the toast sits
+		// on the rows above it, one cell clear of the right edge.
+		y := max(l.Footer.Y-1-len(lines), l.Main.Y+1)
+		rows = pane.Overlay(rows, lines, max(s.w-2-pane.Width(lines[0]), 1), y)
 	}
 	return rows
 }

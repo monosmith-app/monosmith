@@ -49,8 +49,8 @@ var all = []Command{
 
 	{ID: "projects.move", Group: GroupRun, Title: "Move in the list", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey, Views: vProjects},
 	{ID: "projects.open", Group: GroupRun, Title: "Open the detail of the project (narrow terminals)", Keys: []string{"enter"}, Kind: PaneKey, Views: vProjects, NeedsNarrowList: true, Footer: "detail", Glyph: "Enter"},
-	{ID: "projects.install-package", Group: GroupProjects, Title: "Install a package on the project…", Hint: "smith install -w <project> <package>: asks which, then adds it with the project's own toolchain", Keys: []string{"+"}, Kind: ViewAction, Action: "install", Views: vProjects, NeedsWorkspace: true, NeedsIdle: true},
-	{ID: "projects.remove-package", Group: GroupProjects, Title: "Remove a package from the project…", Hint: "smith uninstall -w <project> <package>", Keys: []string{"-"}, Kind: ViewAction, Action: "uninstall", Views: vProjects, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "projects.install-package", Group: GroupProjects, Title: "Install a package…", Hint: "smith install -w <project> <package>: asks which project and package, then adds it with the project's own toolchain", Keys: []string{"+"}, Kind: OpenPackagePrompt, Action: "install", NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "projects.remove-package", Group: GroupProjects, Title: "Remove a package…", Hint: "smith uninstall -w <project> <package>: asks which project and package", Keys: []string{"-"}, Kind: OpenPackagePrompt, Action: "uninstall", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "projects.back", Group: GroupRun, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsDetailOpen: true, Footer: "back"},
 
 	{ID: "run.again", Group: GroupRun, Title: "Run the last command again", Hint: "the last command line, as it was", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "again"},
@@ -64,7 +64,7 @@ var all = []Command{
 
 	{ID: "doctor.open", Group: GroupWorkspace, Title: "Expand the check: its problem, remedy and fix", Keys: []string{"enter"}, Kind: PaneKey, Views: vDoctor, NeedsNarrowList: true, Footer: "expand", Glyph: "Enter"},
 	{ID: "doctor.fix", Group: GroupWorkspace, Title: "Fix this check: the wizard asks, shows what changes, then applies", Keys: []string{"f"}, Kind: ViewAction, Action: "doctor-fix", Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix"},
-	{ID: "ws.fix", Group: GroupWorkspace, Title: "Fix with doctor…", Hint: "the fix wizard: review the fixes doctor can make, then apply them", Keys: []string{"x"}, Kind: OpenFixWizard, Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix all"},
+	{ID: "ws.fix", Group: GroupWorkspace, Title: "Fix with doctor…", Hint: "the fix wizard: review the fixes doctor can make, then apply them", Keys: []string{"F"}, Kind: OpenFixWizard, Views: vDoctor, NeedsWorkspace: true, NeedsIdle: true, Footer: "fix all"},
 	{ID: "doctor.back", Group: GroupWorkspace, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vDoctor, NeedsDetailOpen: true, Footer: "back"},
 	{ID: "doctor.page-up", Group: GroupWorkspace, Title: "Scroll the detail up", Keys: []string{"pgup"}, Kind: ViewAction, Action: "detail-up", Views: vDoctor},
 	{ID: "doctor.page-down", Group: GroupWorkspace, Title: "Scroll the detail down", Keys: []string{"pgdown"}, Kind: ViewAction, Action: "detail-down", Views: vDoctor},
@@ -101,14 +101,14 @@ var all = []Command{
 	{ID: "move.esc", Group: GroupMoving, Title: "Back, close, clear (never quits)", Keys: []string{"esc"}, Kind: PaneKey},
 
 	// Run
-	{ID: "run.build", Group: GroupRun, Title: "Build", Hint: "smith build, on the selected project or all", Keys: []string{"b"}, Kind: RunTask, Task: "build", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}, Footer: "build", ShowIn: vWorkspace},
-	{ID: "run.test", Group: GroupRun, Title: "Test", Hint: "smith test, on the selected project or all", Keys: []string{"t"}, Kind: RunTask, Task: "test", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}, Footer: "test", ShowIn: vWorkspace},
-	{ID: "run.lint", Group: GroupRun, Title: "Lint", Hint: "smith lint, on the selected project or all", Keys: []string{"l"}, Kind: RunTask, Task: "lint", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}, Footer: "lint", ShowIn: vProjects},
-	{ID: "run.typecheck", Group: GroupRun, Title: "Typecheck", Hint: "smith typecheck, on the selected project or all", Keys: []string{"c"}, Kind: RunTask, Task: "typecheck", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"typecheck"}, Footer: "typecheck", ShowIn: vProjects},
+	{ID: "run.build", Group: GroupRun, Title: "Build", Hint: "smith run build, on the project selected in the list", Keys: []string{"b"}, Kind: RunTask, Task: "build", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}, Footer: "build", ScopeInFooter: true, ShowIn: vWorkspace},
+	{ID: "run.build-all", Group: GroupRun, Title: "Build all", Hint: "smith run build, on every project", Keys: []string{"B"}, Kind: RunTask, Task: "build", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}, Footer: "build all", ShowIn: vWorkspace},
+	{ID: "run.test", Group: GroupRun, Title: "Test", Hint: "smith run test, on the project selected in the list", Keys: []string{"t"}, Kind: RunTask, Task: "test", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}, Footer: "test", ScopeInFooter: true, ShowIn: vWorkspace},
+	{ID: "run.lint", Group: GroupRun, Title: "Lint", Hint: "smith run lint, on the project selected in the list", Keys: []string{"l"}, Kind: RunTask, Task: "lint", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}, Footer: "lint", ShowIn: vProjects},
+	{ID: "run.typecheck", Group: GroupRun, Title: "Typecheck", Hint: "smith run typecheck, on the project selected in the list", Keys: []string{"c"}, Kind: RunTask, Task: "typecheck", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"typecheck"}, Footer: "typecheck", ShowIn: vProjects},
 	{ID: "run.affected", Group: GroupRun, Title: "Lint and test what changed", Hint: "smith run lint test --affected", Keys: []string{"w"}, Kind: Execute, Argv: []string{"run", "lint", "test", "--affected"}, NeedsWorkspace: true, NeedsIdle: true, Footer: "changed", ShowIn: []string{TabHome, TabProjects}},
-	{ID: "run.build-all", Group: GroupRun, Title: "Build all", Hint: "smith run build, on every project", Kind: RunTask, Task: "build", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"build"}},
-	{ID: "run.test-all", Group: GroupRun, Title: "Test all", Hint: "smith run test, on every project", Kind: RunTask, Task: "test", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}},
-	{ID: "run.lint-all", Group: GroupRun, Title: "Lint all", Hint: "smith run lint, on every project", Kind: RunTask, Task: "lint", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}},
+	{ID: "run.test-all", Group: GroupRun, Title: "Test all", Hint: "smith run test, on every project", Keys: []string{"T"}, Kind: RunTask, Task: "test", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}},
+	{ID: "run.lint-all", Group: GroupRun, Title: "Lint all", Hint: "smith run lint, on every project", Keys: []string{"L"}, Kind: RunTask, Task: "lint", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}},
 	{ID: "run.stop", Group: GroupRun, Title: "Stop", Hint: "stops the run; pressing it again quits", Keys: []string{"ctrl+c"}, Kind: Stop, NeedsRunning: true, Footer: "stop", ShowIn: vWorkspace},
 
 	// Workspace

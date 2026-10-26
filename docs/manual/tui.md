@@ -98,15 +98,18 @@ that does nothing. Esc never quits.
 
 | Key | Does | Where |
 |---|---|---|
-| `b` | `smith build` on the selected project, or all | footer in every workspace view |
-| `t` | `smith test`, same | footer in every workspace view |
+| `b` | `smith run build -p <project>` on the project selected in the list; the footer names it (`b build orders`) | footer in every workspace view |
+| `B` | `smith run build` on every project; the footer counts them (`B build all 23`) | footer in every workspace view |
+| `t` | `smith run test -p <project>`, same; `T` tests every project | footer in every workspace view |
+| `L` | `smith run lint` on every project | palette |
 | `l` | `smith lint` | footer in Projects |
 | `c` | `smith typecheck` | footer in Projects |
 | `w` | `smith run lint test --affected` | footer in Home, Projects |
 
 The run opens the Run view. The keys work in every workspace view; the footer shows only
-the ones that make sense for the open view (the column above). The palette also has Build
-all, Test all and Lint all.
+the ones that make sense for the open view (the column above). The Run view's empty state
+also has Build everything and Test everything as buttons, and the palette names the scope in
+each title (`Build orders`, `Build all 23`).
 
 ### Per view
 
@@ -115,8 +118,8 @@ all, Test all and Lint all.
 | Home | `Enter` | Do the suggested next action. |
 | any workspace view | `d` | Open Doctor (shown in the footer of Home and Projects). |
 | Projects | `a` | Add project (a guided form). |
-| Projects | `+` | Install packages on the selected project: asks which (and whether they are development dependencies), shows the `smith install -w <project> ...` line, then runs it in the Run view. The detail's "Install a package…" does the same. |
-| Projects | `-` | Remove packages from the selected project (`smith uninstall -w <project> ...`). |
+| any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -w <project> ...` line, then runs it in the Run view. The palette's and the detail's "Install a package…" open the same form. |
+| any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. |
 | any workspace view | `i` | Install dependencies (asks to confirm the command). |
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
@@ -127,7 +130,7 @@ all, Test all and Lint all.
 | Run | `Esc` | Show all output. |
 | Doctor | `Enter` | Expand the check (narrow terminals), or unfold the detail (wide). |
 | Doctor | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
-| Doctor | `x` | Fix with doctor: the wizard on all the fixes that need no decision. |
+| Doctor | `F` | Fix with doctor: the wizard on all the fixes that need no decision. |
 | Doctor | `g` | Group the checks by project, or list them flat. |
 | Doctor | `p` | Show or hide the passed checks. |
 | Doctor | `e` | Show every line of the problem, or fewer. |
@@ -156,14 +159,17 @@ update, no safe fix), and its hint leaves the footer.
 
 ### In the palette
 
-`:`, `Ctrl+P` or `/` opens a palette: type to find any command, the shell's own with their
-shortcuts and every smith command; Up, Down, PgUp and PgDn choose, Enter picks, Esc or
-`Ctrl+C` closes. For a smith command you then type its arguments. It ends as a shell action
-or a smith command line. Commands that have no key are reached here: Regenerate CI pipelines
-(asks to confirm), Info, Settings (the tab), Show what changed (`smith affected`),
+`:`, `Ctrl+P` or `/` opens a palette: type to find a command; Up, Down, PgUp and PgDn choose,
+Enter picks, Esc or `Ctrl+C` closes. There is one line per intent, in plain words, grouped
+under Build, Projects, Dependencies, Release and Health (then Go to and Help), each with its
+key at the right and the command it runs as a muted hint. What cannot work now is hidden
+until you type; searching finds it with the reason. Nothing is typed as a raw command line:
+a command that needs an answer opens its own form, such as Install a package (project
+preselected, then the packages) or Add project. Commands that have no key are reached here:
+Regenerate CI pipelines (asks to confirm), Info, Show what changed (`smith affected`),
 Project graph, Manage plugins, Upgrade workspace (asks to confirm) and Remove project.
-Typing `smith plugin`, `plugin list`, `recipe` or `config list` opens the Settings tab on the
-matching section instead of leaving the terminal.
+The palette and every box drawn over the screen stay inside the frame; behind a box the
+view is emptied so no text shows at its edges, and a toast sits inside the content area.
 
 ### In a confirmation
 
@@ -223,7 +229,7 @@ Home points at the tab (`New here? ...`) until you have opened it once; that is 
 
 ### The doctor fix wizard
 
-Opened by `f` or `x` in Doctor. It is the interactive form of
+Opened by `f` or `F` in Doctor. It is the interactive form of
 [`smith doctor --fix`](doctor.md) and asks the same questions.
 
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).
