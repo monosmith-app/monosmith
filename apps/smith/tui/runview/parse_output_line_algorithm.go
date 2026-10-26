@@ -20,9 +20,13 @@ var (
 // fromCache is how smith says a task was replayed.
 const fromCache = "from cache"
 
-// ParseLine reads one line of `smith run` output (without its newline).
+// ParseLine reads one line of `smith run` output (without its newline): a line
+// of the event stream (`--json-events`, see parseEventLine) or of the text.
 func ParseLine(line string) Event {
 	line = strings.TrimRight(line, "\r\n")
+	if ev, ok := parseEventLine(line); ok {
+		return ev
+	}
 	if m := taskLine.FindStringSubmatch(line); m != nil {
 		task, marker, rest := m[1], m[2], m[3]
 		switch marker {

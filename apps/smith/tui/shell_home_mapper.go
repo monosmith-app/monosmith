@@ -28,7 +28,7 @@ func (s Shell) nextAction() dashboard.Next { return dashboard.NextAction(s.dashb
 
 // dashboardFacts gathers what the shell already knows; nothing is loaded here.
 func (s Shell) dashboardFacts() dashboard.Facts {
-	f := dashboard.Facts{ProjectsLoaded: s.loadedProjects && s.projectsErr == nil, Last: s.last}
+	f := dashboard.Facts{ProjectsLoaded: s.loadedProjects && s.projectsErr == nil, Last: s.last, SettingsTip: s.settings.TipWanted()}
 	if r := s.doctor.Report; r != nil {
 		f.Checked, f.Failed, f.Warnings, f.Passed = true, r.Failed, r.Warnings, r.Passed
 		f.Fixable = len(s.doctor.Plan())

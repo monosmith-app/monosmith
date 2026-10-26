@@ -112,13 +112,14 @@ const paths = []
 
 const escapeCell = (s) => s.replace(/\|/g, '\\|')
 
-// `smith commands --json` does not carry everything a usage line says: it lists
-// why-miss and explain with separate arguments (the commands take project:task),
-// and drops the "..." of some variadic arguments. These usage lines are the ones
-// each command prints in its own `--help`.
+// `smith commands --json` carries every argument and which are variadic, but
+// not where a usage line spells the "..." (after the bracket) or the arguments
+// plugin check passes on. These usage lines are the ones each command prints
+// in its own `--help`.
 const usageLines = {
   'why-miss': 'smith why-miss <project>:<task> [flags]',
   explain: 'smith explain <project>[:<task>] [flags]',
+  run: 'smith run <task>... [flags]',
   build: 'smith build [project]... [flags]',
   test: 'smith test [project]... [flags]',
   lint: 'smith lint [project]... [flags]',
@@ -136,6 +137,8 @@ const argumentMeanings = {
   'add|kind': '`app`, `lib` or `package`, or a combined kind such as `go-lib` (`smith kinds`)',
   'add|name': "the project's name, in kebab-case",
   'remove|project': 'the project to remove',
+  'why-miss|project:task': 'the task to explain, such as `web:build`',
+  'explain|project[:task]': 'the project, optionally with one of its tasks, such as `web:build`',
   'run|task': 'the tasks to run, in order, such as `lint test`',
   'build|project': 'projects to run (the same as `-p`)',
   'test|project': 'projects to run (the same as `-p`)',
@@ -162,11 +165,6 @@ const argumentMeanings = {
   'recipe new|path': 'where to write the recipe; default `<name>.recipe.toml`',
   'slices check|project directory': 'directories of projects of one language',
   'pipeline|template': 'the template to add; none lists them'
-}
-
-const argumentOverrides = {
-  'why-miss': [{ name: 'project:task', required: true, variadic: false, description: 'the task to explain, such as web:build' }],
-  explain: [{ name: 'project[:task]', required: true, variadic: false, description: 'the project, optionally with one of its tasks, such as web:build' }]
 }
 
 function usage (path, c) {
@@ -198,7 +196,7 @@ function typeOf (path, o) {
 function block (path, c, compact) {
   const lines = [c.description, '', `Usage: \`${usage(path, c)}\``]
   if (c.aliases?.length) lines.push('', `Alias: ${c.aliases.map((a) => `\`smith ${a}\``).join(', ')}`)
-  const args = argumentOverrides[path] ?? c.arguments
+  const args = c.arguments
   if (!compact && args.length) {
     lines.push('', '| Argument | Required | Meaning |', '|---|---|---|')
     for (const a of args) {

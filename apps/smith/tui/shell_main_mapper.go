@@ -70,6 +70,9 @@ func (s Shell) mainContent(w, h int) content {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
+	case commands.TabSettings:
+		in := s.mainInner()
+		c.lines = s.settings.View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
 	case commands.TabGuide:
 		banner := s.adoptBanner(w)
 		for i := range banner {
@@ -276,13 +279,6 @@ func (s *Shell) keepRunVisible() {
 
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	if s.run == nil && len(s.runs) > 0 {
-		c.lines = append(c.lines, "", s.th.Title("Runs"))
-		c.lines = append(c.lines, s.inlineRunLines(w, h)...)
-		c.lines = append(c.lines, "")
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted("The output of a run stays in your terminal's scrollback. "+commands.ShortcutOf("run.again")+" runs the last one again."), w, 0)...)
-		return c
-	}
 	if s.run == nil {
 		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
 		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a project in the list and press "+commands.ShortcutOf("run.build")+" to build it, or "+commands.ShortcutOf("run.test")+" to test."), w, 0)...)
@@ -310,7 +306,11 @@ func (s Shell) runContent(w, h int) content {
 	case s.run.Finished:
 		state = s.th.Failure(s.th.Icons.Failed + " failed")
 	}
-	c.lines = append(c.lines, pane.Fit(" "+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took), w))
+	which := ""
+	if len(s.runs) > 1 {
+		which = "  " + s.th.Muted(fmt.Sprintf("run %d/%d", s.runAt+1, len(s.runs)))
+	}
+	c.lines = append(c.lines, pane.Fit(" "+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took)+which, w))
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))

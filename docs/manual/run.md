@@ -32,11 +32,11 @@ smith run <task>... [-p <projects>] [--affected [--base <branch>]] [--parallel <
 <!-- smith:begin run -->
 Run tasks on projects, in dependency order, from cache when nothing changed
 
-Usage: `smith run <task> [flags]`
+Usage: `smith run <task>... [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `task` | yes | the tasks to run, in order, such as `lint test` |
+| `task...` | yes | the tasks to run, in order, such as `lint test` |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|

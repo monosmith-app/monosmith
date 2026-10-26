@@ -42,8 +42,10 @@ node = "node-jest"     # ESLint with @monosmith/eslint-config, and Jest
 # toolchain = ["vitest"]
 
 # Conventions apply a plugin to every project of the languages it supports.
-# vertical-slices gives Go and Python projects a slice-check task, run before
-# lint: role-named files, no junk-drawer folders. See https://github.com/monosmith-app/monosmith/blob/main/docs/reference/conventions.md.
+# vertical-slices gives Go, Python, Dart, Rust, Ruby, C++, .NET, JVM and PHP
+# projects a slice-check task, run before lint (role-named files, no
+# junk-drawer folders), and has smith doctor check that Node projects' ESLint
+# config loads the same rules. See https://github.com/monosmith-app/monosmith/blob/main/docs/reference/conventions.md.
 [conventions.vertical-slices]
 
 # [release]

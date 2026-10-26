@@ -29,7 +29,7 @@ var mouseHelp = []string{
 
 // editing is true while a text field has the keyboard.
 func (s Shell) editing() bool {
-	return s.tab == commands.TabGuide && s.guide.Editing()
+	return (s.tab == commands.TabGuide && s.guide.Editing()) || (s.tab == commands.TabSettings && s.settings.Modal())
 }
 
 // formOpen is true while a guided form is open: its keys are the form's.
@@ -153,9 +153,18 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute([]string{"explain", project}, false)
 		}
 	case "rerun":
-		if s.lastArg != nil {
-			return s.execute(s.lastArg, false)
+		if argv := s.repeatArgv(); argv != nil {
+			return s.execute(argv, false)
 		}
+	case "rerun-failed":
+		if argv := s.failedArgv(); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("No task failed or was skipped")
+	case "copy-log":
+		s.copyLog()
+	case "run-older", "run-newer":
+		s.stepRun(map[string]int{"run-older": -1, "run-newer": 1}[action])
 	case "projects":
 		return s.gotoTab(commands.TabProjects)
 	case "log":
@@ -294,6 +303,10 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 			s.doctor.Loading = true
 			return func() tea.Msg { return load() }
 		}
+	case commands.TabSettings:
+		var cmd tea.Cmd
+		s.settings, cmd = s.settings.Open()
+		return cmd
 	case commands.TabRelease:
 		if !s.release.Loaded && s.sources.Release != nil {
 			load := s.sources.Release
@@ -329,6 +342,8 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		return s.runKey(name)
 	case commands.TabRelease:
 		s.release = s.release.Update(msg)
+	case commands.TabSettings:
+		return s.settingsKey(msg)
 	case commands.TabDoctor:
 		switch {
 		case s.detailFull():
@@ -498,6 +513,10 @@ func (s *Shell) reload() tea.Cmd {
 		s.release = releaseview.Model{}
 	case commands.TabDeps:
 		s.deps = depsview.Model{}
+	case commands.TabSettings:
+		var cmd tea.Cmd
+		s.settings, cmd = s.settings.Reload()
+		return cmd
 	default:
 		return nil
 	}

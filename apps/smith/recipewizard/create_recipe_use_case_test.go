@@ -42,7 +42,7 @@ func TestTheAnswersFileWritesARecipeThatChecksOutForEveryAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := recipe.ValidateAll(recipe.Loaded{Chain: []recipe.Document{doc}}, fakeLookup); err != nil {
+	if _, err := recipe.ValidateAll(recipe.Loaded{Chain: []recipe.Document{doc}}, fakeLookup); err != nil {
 		t.Errorf("the recipe the wizard wrote does not check out: %v", err)
 	}
 }

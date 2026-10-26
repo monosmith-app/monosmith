@@ -21,7 +21,7 @@ Usage: `smith plugin set <name>...`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `name` | yes | built-in plugin names |
+| `name...` | yes | built-in plugin names |
 
 No flags.
 

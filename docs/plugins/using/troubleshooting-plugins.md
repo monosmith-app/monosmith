@@ -79,7 +79,7 @@ All of these come from `initialize`, the first call, which has **30 seconds**. T
 | `initialize: plugin stopped answering: EOF` | the process exited before replying. Read the lines printed above the message: a plugin's stderr is shown to you. With a `.cmd` launcher on Windows, a forward-slash path is the usual cause |
 | `initialize: plugin stopped answering: malformed header "hello from my plugin"` | something other than a protocol frame reached **stdout**. Only `Content-Length: N`, a blank line and N bytes of JSON may go there. Send logs, banners and `print` output to stderr |
 | `starting plugin [.\plugin.py]: fork/exec .\plugin.py: %1 is not a valid Win32 application.` | Windows cannot run a script. Point at a `.cmd` launcher (`@echo off` then `python "%~dp0plugin.py" %*`) or declare it in `smith.toml` with the interpreter as the first element |
-| `starting plugin [plugin.cmd]: exec: "plugin.cmd": executable file not found in %PATH%` | a bare file name is looked up on `PATH`. Write `.\plugin.cmd` |
+| `starting plugin [plugin.cmd]: exec: "plugin.cmd": executable file not found in %PATH%` | a bare file name in a `command` of `smith.toml` is looked up on `PATH`. Write `.\plugin.cmd` (`smith plugin check plugin.cmd` does this itself) |
 | `starting plugin [.]: exec: ".": executable file not found in %PATH%` | the path is a directory. Point at the executable |
 | `plugin chose protocol version 2, host speaks 1` (`plugin <name> chose protocol version <n>, host speaks <n>`, from the code) | the plugin answered `initialize` with a `protocolVersion` smith does not speak. smith lists `[1]` in `protocolVersions`; choose one of them |
 | `no common protocol version: host speaks [2], plugin speaks 1` (from the code) | the other way round, from a plugin built on the Go SDK: smith is newer than the SDK in the plugin and lists no version the plugin speaks. Upgrade the plugin |
@@ -112,7 +112,7 @@ deploy: `deploying with widget-bundle: no build output at <path>: run smith run 
 | You see | Cause and remedy |
 |---|---|
 | `plugin "nosuch" is not installed: no nosuch/plugin.json in <dirs>; give its command in smith.toml, or install it there` | the name is not on the search path. The message lists the directories looked in: `<workspace>/.smith/plugins`, each directory of `SMITH_PLUGIN_PATH`, `$SMITH_HOME/plugins`. Prefixed with `smith.toml [plugins.external.nosuch]:` when it comes from a declaration |
-| `<dir>\plugin.json: name and command are required` | the file lacks a `name` or a `command`. It also stops `smith plugin list`, so fix or remove it |
+| `<dir>\plugin.json: name and command are required` | the file lacks a `name` or a `command`. `smith plugin list` shows it as invalid with this message and lists the other plugins; a plugin by that name cannot be started until it is fixed |
 | `no built-in plugin "typescript" (built-in: bicep, cpp, ...)` | `smith plugin enable` and `disable` change the 12 language plugins only; the add-ons are always loaded |
 | `smith.toml enables unknown plugin "nope"; built-in plugins are [bicep cpp ...]` | a hand-written `[plugins] enabled` names a plugin that does not exist |
 | `no plugin handles language "go"; available: bicep, cpp, ...` | the language plugin is not enabled, or `--lang` is not one of its languages. `smith plugin list` shows the names, `smith plugin enable go` turns it on |

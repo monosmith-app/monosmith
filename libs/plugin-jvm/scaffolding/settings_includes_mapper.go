@@ -34,3 +34,11 @@ func RootProjectName(src string) string {
 	}
 	return ""
 }
+
+// RemoveInclude takes the include of the project at path (":apps:api") out of
+// the settings, with its line.
+func RemoveInclude(src, path string) (string, bool) {
+	line := regexp.MustCompile(`(?m)^include\(\s*["']` + regexp.QuoteMeta(path) + `["']\s*\)[ \t]*\r?\n?`)
+	out := line.ReplaceAllString(src, "")
+	return out, out != src
+}

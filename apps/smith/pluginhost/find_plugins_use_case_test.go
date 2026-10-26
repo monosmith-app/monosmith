@@ -58,15 +58,16 @@ func TestFindInstalledFollowsTheSearchPath(t *testing.T) {
 	}
 }
 
-func TestFindInstalledRejectsABadManifest(t *testing.T) {
+func TestFindInstalledReportsABadManifestAsAProblem(t *testing.T) {
 	ws := t.TempDir()
 	t.Setenv("SMITH_PLUGIN_PATH", "")
 	t.Setenv("SMITH_HOME", t.TempDir())
 	dir := filepath.Join(ws, ".smith", "plugins", "bad")
 	_ = os.MkdirAll(dir, 0o755)
 	_ = os.WriteFile(filepath.Join(dir, ManifestFile), []byte(`{"name": "bad"}`), 0o644)
-	if _, err := FindInstalled(ws); err == nil || !strings.Contains(err.Error(), "command are required") {
-		t.Fatalf("%v", err)
+	all, problems, err := FindInstalledReport(ws)
+	if err != nil || len(all) != 0 || len(problems) != 1 || !strings.Contains(problems[0].Problem, "command are required") {
+		t.Fatalf("%v %+v %+v", err, all, problems)
 	}
 }
 
@@ -88,5 +89,32 @@ func TestSatisfies(t *testing.T) {
 	}
 	if _, err := Satisfies("1.0.0", "^banana"); err == nil {
 		t.Fatal("a bad constraint is an error")
+	}
+}
+
+func TestOneInvalidManifestDoesNotHideTheOtherPlugins(t *testing.T) {
+	ws, home := t.TempDir(), t.TempDir()
+	t.Setenv("SMITH_PLUGIN_PATH", "")
+	t.Setenv("SMITH_HOME", home)
+	local := filepath.Join(ws, ".smith", "plugins")
+	install(t, local, "kiwi", "2.0.0", "kiwi")
+	if err := os.MkdirAll(filepath.Join(local, "bad"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(local, "bad", ManifestFile), []byte("{ nope"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	all, problems, err := FindInstalledReport(ws)
+	if err != nil || len(all) != 1 || all[0].Name != "kiwi" {
+		t.Fatalf("%v %+v", err, all)
+	}
+	if len(problems) != 1 || problems[0].Dir != filepath.Join(local, "bad") || !strings.Contains(problems[0].Problem, ManifestFile) {
+		t.Fatalf("problems %+v", problems)
+	}
+	if kiwi, err := FindPlugin(ws, "kiwi"); err != nil || kiwi.Version != "2.0.0" {
+		t.Fatalf("a plugin beside the broken one still starts: %v %+v", err, kiwi)
+	}
+	if _, err := FindPlugin(ws, "bad"); err == nil || !strings.Contains(err.Error(), "skipped") {
+		t.Fatalf("the error for the broken one says why: %v", err)
 	}
 }

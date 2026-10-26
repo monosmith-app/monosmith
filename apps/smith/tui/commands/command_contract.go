@@ -50,6 +50,7 @@ const (
 	TabDoctor   = "doctor"
 	TabDeps     = "deps"
 	TabRelease  = "release"
+	TabSettings = "settings"
 	TabGuide    = "guide"
 )
 

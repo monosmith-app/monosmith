@@ -17,6 +17,8 @@ type Facts struct {
 	// DepsChecked is true once the Deps view looked for newer releases.
 	DepsChecked bool
 	Outdated    int
+	// SettingsTip is true until the person has opened the Settings tab: Home points at it.
+	SettingsTip bool
 }
 
 // Run is how the last command ended.

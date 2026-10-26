@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
@@ -20,6 +21,24 @@ import (
 func isDeclared(external map[string]workspace.ExternalPlugin, name string) bool {
 	_, ok := external[name]
 	return ok
+}
+
+// explicitPath makes a file in the current directory (plugin.cmd) a path
+// (.\plugin.cmd), so the program is started from where it is and not looked up
+// on PATH, which Windows would refuse for the current directory.
+func explicitPath(name string) string {
+	if filepath.Base(name) != name {
+		return name
+	}
+	return "." + string(filepath.Separator) + name
+}
+
+// errorDetail is an error's text, or nothing for no error (fmt.Sprint would say <nil>).
+func errorDetail(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // checkCommand is `smith plugin check`: the conformance suite.
@@ -50,9 +69,10 @@ declare. A built-in plugin keeps the whole environment.`,
 		Example: "  smith plugin check kiwi --generate\n  smith plugin check ./bin/smith-plugin-kiwi\n  smith plugin check ./bin/smith-plugin-kiwi --env NPM_TOKEN --env 'AWS_*'",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			argv := args
+			var argv []string
 			env := append(os.Environ(), "SMITH_PLUGIN=1")
 			if _, err := os.Stat(args[0]); err == nil {
+				argv = append([]string{explicitPath(args[0])}, args[1:]...)
 				env = append(pluginenv.Build(os.Environ(), nil, grant, runtime.GOOS), "SMITH_PLUGIN=1")
 			} else {
 				root, external := ".", map[string]workspace.ExternalPlugin{}
@@ -91,7 +111,7 @@ declare. A built-in plugin keeps the whole environment.`,
 			}
 			report := conformance.Check(c, opts)
 			closeErr := c.Close()
-			report.Results = append(report.Results, conformance.Result{Check: "shuts down when asked", OK: closeErr == nil, Detail: fmt.Sprint(closeErr)})
+			report.Results = append(report.Results, conformance.Result{Check: "shuts down when asked", OK: closeErr == nil, Detail: errorDetail(closeErr)})
 			out := cmd.OutOrStdout()
 			if asJSON {
 				enc := json.NewEncoder(out)

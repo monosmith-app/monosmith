@@ -303,6 +303,9 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 	if spec == nil && p.Registries != nil && p.Registries.NoPublish {
 		return protocol.PublishResult{Skipped: "published by its tag (registry = \"none\")"}, nil
 	}
+	if spec == nil && p.PublishTo == "none" {
+		return protocol.PublishResult{Skipped: "published by its tag (the manifest says it is never published)"}, nil
+	}
 	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec}
 	var pr protocol.PublishResult
 	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
