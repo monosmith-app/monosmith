@@ -97,7 +97,7 @@ func Init(r Report, version string, install, eslint bool, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, version, s.Config.Release.Branch)); err != nil {
+	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
 		return err
 	}
 	if err := git.CommitAll("chore: adopt smith"); err != nil {

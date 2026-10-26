@@ -71,7 +71,7 @@ func Command(version string) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if drift := Drift(s.Root, s.Config, NewModel(contributions, s.Version, s.Config.Release.Branch)); len(drift) > 0 {
+				if drift := Drift(s.Root, s.Config, NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)); len(drift) > 0 {
 					return errors.New("pipelines are out of date: " + strings.Join(drift, "; ") + " — run `smith ci generate`")
 				}
 				fmt.Fprintln(c.OutOrStdout(), "pipelines are up to date")
@@ -109,7 +109,7 @@ func Command(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			steps := ManualSteps(s.Config, NewModel(contributions, s.Version, s.Config.Release.Branch))
+			steps := ManualSteps(s.Config, NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch))
 			if len(steps) == 0 {
 				fmt.Fprintln(c.OutOrStdout(), "nothing to set up by hand")
 				return nil

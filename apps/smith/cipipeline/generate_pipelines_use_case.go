@@ -219,5 +219,5 @@ func Regenerate(s *session.Session) (changed, lost []string, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return Write(s.Root, s.Config, NewModel(c, s.Version, s.Config.Release.Branch))
+	return Write(s.Root, s.Config, NewModel(c, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch))
 }
