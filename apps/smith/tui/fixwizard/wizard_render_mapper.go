@@ -238,7 +238,9 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	}
 	inner := r.W - 4
 	rows, _ := w.rows(th, tick)
+	total := len(rows)
 	rows, _ = detail.Window(th, rows, nil, w.top, w.visible())
+	rows = pane.Scrollbar(th, rows, inner, detail.ClampTop(w.top, total, w.visible()), total)
 	out := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, inner) }
 	for i, l := range rows {

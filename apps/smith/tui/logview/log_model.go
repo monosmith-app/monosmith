@@ -72,15 +72,16 @@ func Rows(th theme.Theme, lines []string, w int) []string {
 	return out
 }
 
-// Render draws h rows of w cells from rows (see Rows). A short log is padded
-// with blank rows.
-func (l Log) Render(rows []string, w, h int) []string {
+// Render draws h rows of w cells from rows (see Rows), with a scrollbar in the
+// last column when the log is longer than the view. A short log is padded with
+// blank rows.
+func (l Log) Render(th theme.Theme, rows []string, w, h int) []string {
 	top := l.Top(len(rows), h)
 	out := make([]string, 0, h)
 	for i := top; i < len(rows) && len(out) < h; i++ {
 		out = append(out, pane.Fit(rows[i], w))
 	}
-	return pane.Block(out, w, h)
+	return pane.Scrollbar(th, pane.Block(out, w, h), w, top, len(rows))
 }
 
 // Style colours a line of smith's output by what it says: a task that passed,

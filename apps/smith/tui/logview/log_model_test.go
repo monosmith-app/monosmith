@@ -67,7 +67,7 @@ func TestPagesAndHome(t *testing.T) {
 }
 
 func TestAShortLogIsPaddedToTheHeight(t *testing.T) {
-	out := Log{}.Render(Rows(theme.Default(), lines(2), 20), 20, 5)
+	out := Log{}.Render(theme.Default(), Rows(theme.Default(), lines(2), 20), 20, 5)
 	if len(out) != 5 || !strings.Contains(out[1], "line 1") {
 		t.Fatalf("%q", out)
 	}
@@ -79,7 +79,7 @@ func TestAShortLogIsPaddedToTheHeight(t *testing.T) {
 }
 
 func TestLinesAreDrawnFromTheTopOfThePausedView(t *testing.T) {
-	out := Log{}.Home().Render(Rows(theme.Default(), lines(50), 30), 30, 3)
+	out := Log{}.Home().Render(theme.Default(), Rows(theme.Default(), lines(50), 30), 30, 3)
 	if !strings.Contains(out[0], "line 0") || !strings.Contains(out[2], "line 2") {
 		t.Fatalf("%q", out)
 	}

@@ -377,6 +377,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		// Two group headings may sit among the rows: they take room too.
 		avail := max(h-len(lines)-len(tail)-2, 3)
 		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
+		first := len(lines)
 		prevMajor := top > 0 && v.Rows[top-1].Level == "major"
 		for i := top; i < len(v.Rows) && i < top+avail; i++ {
 			r := v.Rows[i]
@@ -407,6 +408,11 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			}
 			rowOf[len(lines)] = i
 			lines = append(lines, line)
+		}
+		if len(v.Rows) > avail {
+			// The rows and the group headings between them scroll as one block.
+			block := pane.Scrollbar(th, lines[first:], w, top, len(v.Rows)+len(lines[first:])-min(avail, len(v.Rows)-top))
+			copy(lines[first:], block)
 		}
 	}
 	lines = append(lines, tail...)

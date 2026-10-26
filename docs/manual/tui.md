@@ -277,7 +277,7 @@ prints `→ smith <command line>`.
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection; a click selects a row without moving the list. In Deps, click a row's box to
+a list and never moves the selection, and a thin scrollbar on the right edge shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. In Deps, click a row's box to
 mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
 and click the box in the heading to mark all or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
