@@ -19,7 +19,7 @@ func Commands(version string) []*cobra.Command {
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
-		Short:   "Add packages to a project, or install the whole workspace (up updates, sync aligns versions)",
+		Short:   "Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)",
 		Long: `Add packages to one project with its own toolchain: npm install --workspace,
 the project's pyproject.toml and the workspace venv, go get. Each project owns
 its dependencies, so a package needs a target: smith install -w <project>

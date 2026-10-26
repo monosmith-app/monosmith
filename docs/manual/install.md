@@ -25,7 +25,7 @@ smith install -w <project> [-D] <package>...
 ## Arguments and flags
 
 <!-- smith:begin install -->
-Add packages to a project, or install the whole workspace (up updates, sync aligns versions)
+Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)
 
 Usage: `smith install [packages...] [flags]`
 

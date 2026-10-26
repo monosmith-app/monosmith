@@ -120,7 +120,7 @@ each title (`Build orders`, `Build all 23`).
 | Projects | `a` | Add project (a guided form). |
 | any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -w <project> ...` line, then runs it in the Run view. The palette's and the detail's "Install a package…" open the same form. |
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. |
-| any workspace view | `i` | Install dependencies (asks to confirm the command). |
+| any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
 | Projects, Run, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |

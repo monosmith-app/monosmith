@@ -91,7 +91,7 @@ func addQuestions() []argQuestion {
 			if _, _, combined := SplitKind(a); combined || a == "app" || a == "lib" || a == "package" {
 				return nil
 			}
-			return fmt.Errorf("%q is not a kind: app, lib or package (smith kinds lists the combined ones)", a)
+			return fmt.Errorf("%q is not a kind: app, lib or package (smith kinds lists the combined ones). To add a package to a project, use: smith install -w <project> <package>", a)
 		}},
 		{Label: "Name of the project", Validate: func(a string) error { return ValidateName("project", a) }},
 	}
