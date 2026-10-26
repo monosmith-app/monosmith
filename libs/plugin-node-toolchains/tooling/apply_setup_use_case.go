@@ -11,17 +11,11 @@ import (
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// Installer runs npm install at the workspace root; tests replace it.
-var Installer = func(workspaceRoot string) error {
-	return toolrun.Quiet(workspaceRoot, []string{"npm", "install", "--no-audit", "--no-fund"})
-}
-
-// Apply adds s to the workspace and to the project params names, and installs
-// when the root devDependencies changed. It returns what it wrote,
-// workspace-relative.
+// Apply adds s to the workspace and to the project params names, and reports
+// InstallPending when the root devDependencies changed. It returns what it
+// wrote, workspace-relative.
 func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (protocol.GenerateResult, error) {
 	written, err := writeAbsent(workspaceRoot, "", s.RootFiles)
 	if err != nil {
@@ -56,12 +50,8 @@ func Apply(workspaceRoot string, params protocol.GenerateParams, s Setup) (proto
 		written = append(written, manifest)
 	}
 	sort.Strings(written)
-	if rootChanged {
-		if err := Installer(workspaceRoot); err != nil {
-			return protocol.GenerateResult{Files: written}, fmt.Errorf("installing dependencies: %w", err)
-		}
-	}
-	return protocol.GenerateResult{Files: written}, nil
+	// The host installs once, after every plugin of the stack has generated.
+	return protocol.GenerateResult{Files: written, InstallPending: rootChanged}, nil
 }
 
 // edit rewrites a package.json when change reports a change. The file must

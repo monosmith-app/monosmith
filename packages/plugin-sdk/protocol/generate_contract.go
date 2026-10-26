@@ -38,4 +38,10 @@ type GenerateResult struct {
 	Files []string `json:"files"`
 	// Notes are printed to the user after generation.
 	Notes []string `json:"notes,omitempty"`
+	// InstallPending is true when the plugin changed what the workspace
+	// depends on and left installing it to the host. A project is made by
+	// several plugins in turn; the host asks each plugin that reported this
+	// to install once (dependencies/install with Quiet set) after the last of
+	// them has generated, instead of once per plugin.
+	InstallPending bool `json:"installPending,omitempty"`
 }

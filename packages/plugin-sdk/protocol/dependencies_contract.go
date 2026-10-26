@@ -14,6 +14,9 @@ type InstallParams struct {
 	// Dev adds them as development dependencies where the ecosystem has
 	// such a thing; a plugin without one says so in a note.
 	Dev bool `json:"dev,omitempty"`
+	// Quiet keeps the package manager's output unless it fails: the host sets
+	// it when it installs as one step of a larger job (smith add).
+	Quiet bool `json:"quiet,omitempty"`
 }
 
 // UninstallParams asks a plugin to remove packages from one of its projects.

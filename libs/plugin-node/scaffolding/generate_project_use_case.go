@@ -37,8 +37,8 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 }
 
 // GenerateFrom scaffolds one Node project from a template set, adds the
-// workspace's Node tooling the first time, and installs so the new package
-// is linked into node_modules.
+// workspace's Node tooling the first time. It reports InstallPending: the
+// host installs once, so the new package is linked into node_modules.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
 	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot)}
 
@@ -66,12 +66,11 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 	}
 	files = append(files, written...)
 
-	if err := Installer(workspaceRoot); err != nil {
-		return protocol.GenerateResult{Files: files}, fmt.Errorf("installing dependencies: %w", err)
-	}
+	// The host installs once, after every plugin of the stack has had its say.
 	return protocol.GenerateResult{
-		Files: files,
-		Notes: []string{fmt.Sprintf("Import it from another Node project as '%s'.", data.Package)},
+		Files:          files,
+		Notes:          []string{fmt.Sprintf("Import it from another Node project as '%s'.", data.Package)},
+		InstallPending: true,
 	}, nil
 }
 

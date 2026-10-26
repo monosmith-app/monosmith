@@ -638,6 +638,13 @@ class GenerateResult(_GenerateResultRequired, total=False):
 
     notes: list[str]
     """Notes are printed to the user after generation."""
+    installPending: bool
+    """
+    InstallPending is true when the plugin changed what the workspace depends on and left
+    installing it to the host. A project is made by several plugins in turn; the host asks each
+    plugin that reported this to install once (dependencies/install with Quiet set) after the
+    last of them has generated, instead of once per plugin.
+    """
 
 
 class InitializeParams(TypedDict):
@@ -729,6 +736,11 @@ class InstallParams(TypedDict, total=False):
     """
     Dev adds them as development dependencies where the ecosystem has such a thing; a plugin
     without one says so in a note.
+    """
+    quiet: bool
+    """
+    Quiet keeps the package manager's output unless it fails: the host sets it when it installs
+    as one step of a larger job (smith add).
     """
 
 

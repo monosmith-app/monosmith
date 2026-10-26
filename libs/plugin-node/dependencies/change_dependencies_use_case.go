@@ -8,6 +8,9 @@ import (
 // NpmRunner runs npm; tests replace it.
 var NpmRunner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
 
+// QuietNpmRunner runs npm keeping its output unless it fails; tests replace it.
+var QuietNpmRunner = func(dir string, argv []string) error { return toolrun.Quiet(dir, argv) }
+
 var quiet = []string{"--no-audit", "--no-fund"}
 
 // Install adds packages to one project's package.json with npm's workspace
@@ -24,7 +27,11 @@ func Install(workspaceRoot string, params protocol.InstallParams) (protocol.Depe
 			files = append([]string{params.Project.Root + "/package.json"}, files...)
 		}
 	}
-	if err := NpmRunner(workspaceRoot, append(argv, quiet...)); err != nil {
+	run := NpmRunner
+	if params.Quiet {
+		run = QuietNpmRunner
+	}
+	if err := run(workspaceRoot, append(argv, quiet...)); err != nil {
 		return protocol.DependencyResult{}, err
 	}
 	return protocol.DependencyResult{Files: files}, nil

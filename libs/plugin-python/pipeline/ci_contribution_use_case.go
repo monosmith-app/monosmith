@@ -79,6 +79,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if venvErr == nil {
 		findings = append(findings, CheckPythonVersion(workspaceRoot))
 	}
+	if f, ok := CheckVenvIgnored(workspaceRoot); ok {
+		findings = append(findings, f)
+	}
 	return protocol.DoctorResult{Findings: findings}
 }
 
