@@ -8,7 +8,7 @@ they disagree with the box, the box is right.
 >
 > | Part of the proposal | State |
 > |---|---|
-> | Terminal shell with Home, Projects, Run, Doctor, Deps, Release | built; one keymap, no menu bar ([ADR 0032](decisions/0032-single-key-tui-keymap.md), [architecture](tui-architecture.md)) |
+> | Terminal shell with Home, Projects, Run, Doctor, Deps, Release, Settings | built; one keymap, no menu bar ([ADR 0032](decisions/0032-single-key-tui-keymap.md), [architecture](tui-architecture.md)) |
 > | Navigator tree and permanent inspector | not built; replaced by a list with a detail pane beside it (from 100 columns) |
 > | Right-click context menu | not built; removed with the menu bar in the redesign (ADR 0032) |
 > | Drag a pane border to resize | not built; `[` and `]` make the detail narrower or wider |
@@ -16,7 +16,7 @@ they disagree with the box, the box is right.
 > | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
 > | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab does **not** consume it: it parses smith's text output (`tui/runview`) |
 > | Install, doctor and release inside the interface | built as commands the shell starts; task runs and printing commands use the real terminal (`tea.Exec`) |
-> | Recipes as a form in the interface | partly: `a` opens a guided form, and the recipe's choices are asked by `smith add` |
+> | Recipes in the interface | partly: the Settings tab lists the workspace's recipes and whether each is valid; `a` opens a guided form, and the recipe's choices are asked by `smith add` |
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
 > | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
 > | `smith lsp` (completion and validation of `smith.toml` and recipes) | **planned, not built** (issue #303); there is no such command |
@@ -47,13 +47,14 @@ workspace's own tools), so the team controls the version.
 
 ## What exists today
 
-`smith` with no arguments opens a shell with six tabs (Home, Projects, Run,
-Doctor, Deps, Release) and `smith graph --format tui`. It is keyboard and mouse
+`smith` with no arguments opens a shell with seven tabs (Home, Projects, Run,
+Doctor, Deps, Release, Settings) and `smith graph --format tui`. It is keyboard and mouse
 driven, one view at a time, and **never acts by itself**: an action ends as a
 smith command line, printed before it runs, and a task run uses the terminal
-itself (see docs/getting-started/first-workspace.md and "As built" below). What the
-Plugins, Recipes, Settings and Guide tabs showed is a smith command now, listed
-in the palette.
+itself (see docs/getting-started/first-workspace.md and "As built" below). The
+Settings tab is where plugins, the colour theme and the settings of `smith.toml` are
+changed without leaving the interface (see "What the Settings tab does" below); the
+guided forms of the old Guide tab are its last section.
 
 ## Principles
 
@@ -108,7 +109,7 @@ right. It was not built that way; "As built" below is what the shell is.
 - **Inspector** (right): properties of the selection and its actions, as in
   cuppa's properties panel; where an option can be changed, it is edited here.
 - **Footer** (second row from the bottom): the keys of the open view, then the
-  keys every view ends with (`1-6` views, `m` mouse, `:` palette, `?` help,
+  keys every view ends with (`1-7` views, `m` mouse, `:` palette, `?` help,
   `q` quit). Only what can be done now is listed, and a hint that is one key
   can be clicked.
 - **Status bar** (bottom): the exact command running or last run, the result,
@@ -123,8 +124,8 @@ pane is the list and, beside it, the detail of the selection (a project's
 tasks, dependencies and actions, a doctor finding's fix, a run's task); below,
 only the list, Enter opens the detail over it and Esc goes back. The tabs shorten
 their names and then scroll (`‹` `›`) so the open one is always in view, and are
-one row on a terminal under 24 rows high (six tabs fit the 72-column minimum, so
-they no longer scroll there). Views implement a small `Page` (title, footer keys,
+one row on a terminal under 24 rows high (seven tabs fit the 72-column minimum by shortening the longest names to
+`Proj`, `Rel` and `Sett`, so they do not scroll there). Views implement a small `Page` (title, footer keys,
 update, view for a width and a height).
 
 **Pages.** Each page leads with its headline, then the detail.
@@ -156,18 +157,24 @@ update, view for a width and a height).
   lists only the keys that work now (no `u update` with nothing to update, no
   `x release` without a plan; the key says why when pressed).
 
-**What left the tabs.** Each has a command, so none became unreachable:
+**What the Settings tab does.** The last tab (key `7`) is a list of sections on the left
+and the editor or detail of the open section on the right; `Tab` moves between the two.
+It calls the same functions the commands call, in the process, so a change leaves
+`smith.toml` byte for byte as the command would (a test compares them).
 
-| Was a tab | Is now | Palette entry |
+| Section | What it does | The command it stands for |
 |---|---|---|
-| Plugins | `smith plugin list`, `plugin enable`, `disable`, `set` | Plugins; Manage plugins… (form) |
-| Recipes | `smith recipe check`, `recipe new`; `smith add` asks a recipe's choices | Recipes; Add project… (form) |
-| Settings | `smith config list`, `get`, `set`, `unset`, checked against the schema | Settings |
-| Guide | `smith help`; the forms open from `a` (add), the palette and the CLI | Commands and docs |
+| Plugins | Switch the built-in language plugins on and off (`Space`); see the external plugins the workspace declares with their trust and pin; `t` shows the same review `smith plugin trust` shows (what it is, the files it runs with their sha256, the environment it sees) and trusts it (`p` also pins the sha256 for CI), `f` forgets the decision; the plugins installed on the search path; and a marked row for installing a plugin, a hint (`smith plugin install <name\|path>`) until `smith plugin install` exists in this smith | `smith plugin list`, `enable`, `disable`, `trust`, `untrust` |
+| Style | The theme (auto, dark, light, plain) and the symbols (auto, unicode, ascii) with a preview of the highlighted choice; `Enter` applies it at once and keeps it for you in `$SMITH_HOME/tui.json` (`~/.smith/tui.json`), never in `smith.toml`. `SMITH_THEME`, `NO_COLOR`, `SMITH_ASCII` and `TERM=dumb\|linux` still win, and the section says so when one is set | the environment variables of "Themes, plain mode, mouse" |
+| Workspace | Every setting `smith config list` knows, each with an editor for its type: a switch flips, a fixed list (`ci.providers`) is ticked, text and numbers are typed and checked against the schema; what it does and its default are shown; `u` resets it to its default | `smith config list`, `set`, `unset` |
+| Recipes | The `*.recipe.toml` files of the workspace with their name, version and whether each is valid | `smith recipe` (`smith recipe check <file>` shows what a recipe would use) |
+| Forms | The guided forms (add a project, remove a project...) that end as a smith command line | the guided forms |
 
-These run in the terminal like a task run (the inline runner): the interface
-steps aside, the command prints into the scrollback, a key brings the interface
-back. A command that changes `smith.toml` still asks first.
+The palette lists one **Settings** entry; a `smith plugin`, `plugin list`, `recipe` or
+`config list` typed in the palette opens the tab on the matching section instead of leaving
+the terminal. Home points a new user at the tab until it has been opened once (kept in
+`tui.json` as `settingsTipSeen`). Not in the tab: `smith recipe new` (its wizard asks on the
+terminal), and `smith plugin set`, which the Plugins section does one plugin at a time.
 
 ## Components
 

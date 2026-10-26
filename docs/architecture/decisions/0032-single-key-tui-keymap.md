@@ -40,7 +40,10 @@ Not recorded beyond the issues: the redesign epic discussion is in the thread of
 
 `tui/` still exceeds the slice size threshold and carries a written exception in
 `apps/smith/tui/README.md`. The Plugins, Recipes, Settings and guide tabs were dropped;
-those jobs are smith commands reached from the palette.
+those jobs were smith commands reached from the palette. That left a first-time user with
+no way to switch a plugin or pick a style without leaving the interface, so a Settings tab
+(plugins, style, the settings of `smith.toml`, recipes, the guided forms) brought them back as
+one tab; see "What the Settings tab does" in [the interface design](../tui-and-ide.md).
 
 ## Sources
 

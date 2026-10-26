@@ -1,8 +1,8 @@
 # The smith terminal interface
 
 Typing `smith` with no arguments in a terminal opens an interactive shell: a full-screen
-view of the workspace with tabs for its health, projects, runs, dependencies and release,
-single-key commands, a command palette, and wizards for the jobs that ask questions. It is
+view of the workspace with tabs for its health, projects, runs, dependencies, release and
+settings, single-key commands, a command palette, and wizards for the jobs that ask questions. It is
 a front end for the same commands this manual documents. It never does what a command line
 could not: every action runs the equivalent `smith` command, shows it in the status bar,
 and can be repeated in a script or in CI.
@@ -21,7 +21,7 @@ command.
 
 | Where you start it | What you see |
 |---|---|
-| Inside a workspace (a folder with `smith.toml`, or below one) | The **Home** view, with the six views as tabs. |
+| Inside a workspace (a folder with `smith.toml`, or below one) | The **Home** view, with the seven views as tabs. |
 | In an empty folder | The **Start** menu: create a workspace (`smith new`). |
 | In a folder that holds files but is not a workspace | The Start menu with **Adopt this repository** first, so Enter starts the adopt wizard. |
 
@@ -37,7 +37,7 @@ From top to bottom:
    `smith new` and `smith adopt` outside a workspace), the git branch, and a health summary:
    `checking…` until the first doctor run has finished (it starts with the shell), then
    the counts of failed checks and warnings, or a check mark when everything passed.
-2. **Tabs**: Home, Projects, Run, Doctor, Deps, Release, numbered 1 to 6. When the names do
+2. **Tabs**: Home, Projects, Run, Doctor, Deps, Release, Settings, numbered 1 to 7. When the names do
    not fit, they are shortened, then the strip scrolls with `‹` and `›`. On a short terminal
    the tabs are one row of names.
 3. **The view.** Projects, Run and Doctor show a list with a **detail pane** beside it; on a
@@ -60,6 +60,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
 | Deps | `5` | Dependencies with newer releases, grouped patch, minor and major, and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. |
+| Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 
 Home chooses the **next action** by priority: what is broken first (`doctor could not run`,
 failing checks with a fix ready, failing checks), then a last run that failed, then work the
@@ -67,7 +68,7 @@ changes left (`N projects affected: press w to lint and test them`), then warnin
 outdated dependencies, and when there is nothing, `all good: press b to build`. Enter does
 the suggested action.
 
-Doctor and Release load the first time you open them; Deps loads its data on first open too.
+Doctor and Release load the first time you open them; Deps and Settings load their data on first open too.
 `r` reads a view again.
 
 ## Keys
@@ -138,6 +139,13 @@ all, Test all and Lint all.
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
 | Release | `n` | Print the release notes (`smith release --dry-run --notes`). |
 | Release | `x` | Release… (`smith release`, after a confirmation). |
+| Settings | `Up` `Down` | Move in the list of sections, or in its rows. |
+| Settings | `Tab`, `Left` `Right` | Switch between the list of sections and its rows. |
+| Settings | `Space`, `Enter` | Change the selected plugin or setting. |
+| Settings | `t` | Review the selected external plugin and trust it. |
+| Settings | `f` | Forget that an external plugin is trusted. |
+| Settings | `u` | Reset the selected setting to its default. |
+| Settings | `Esc` | Back to the list of sections, or cancel the editor. |
 | Start menu | `n` | New workspace… (outside a workspace). |
 | Start menu | `a` | Adopt… (opens the adopt wizard). |
 
@@ -150,8 +158,10 @@ update, no safe fix), and its hint leaves the footer.
 shortcuts and every smith command; Up, Down, PgUp and PgDn choose, Enter picks, Esc or
 `Ctrl+C` closes. For a smith command you then type its arguments. It ends as a shell action
 or a smith command line. Commands that have no key are reached here: Regenerate CI pipelines
-(asks to confirm), Info, Plugins, Recipes, Settings, Show what changed (`smith affected`),
+(asks to confirm), Info, Settings (the tab), Show what changed (`smith affected`),
 Project graph, Manage plugins, Upgrade workspace (asks to confirm) and Remove project.
+Typing `smith plugin`, `plugin list`, `recipe` or `config list` opens the Settings tab on the
+matching section instead of leaving the terminal.
 
 ### In a confirmation
 
@@ -159,6 +169,53 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons.
+
+## Settings
+
+The Settings tab (key `7`) is where you change things without leaving the interface. A list
+of sections is on the left; the open section's rows and, under them, what the selected row is
+and does are on the right. `Tab` (or `Left` and `Right`) moves between the two; a click does
+the same, and a double-click does what `Enter` does. Everything it writes is what the
+matching command writes: a test compares `smith.toml` byte for byte with the result of
+`smith plugin disable`, `smith plugin trust --pin` and `smith config set`, and comments and
+every other line stay as they are.
+
+**Plugins.** The built-in language plugins, each on or off (`Space`; at least one must stay
+on, as with `smith plugin disable`). Below them, the external plugins the workspace declares
+in `smith.toml`, with whether each is trusted and pinned: `Enter` (or `t`) shows the review
+`smith plugin trust` shows, which is what the plugin is, where it comes from, the files its
+command runs with their sha256 and the environment it may see, and `y` trusts it, `p` trusts
+it and writes its sha256 to `smith.toml` for CI, `Esc` leaves it untrusted; `f` forgets a
+decision (`smith plugin untrust`). A trusted plugin runs with your privileges and is not
+sandboxed. Then the plugins installed on the plugin search path, and a row to install a
+plugin: until `smith plugin install` exists in your smith it shows the command as a hint, and
+then it asks for the name or path here.
+
+**Style.** The colour theme (`auto`, `dark`, `light`, `plain`) and the symbols (`auto`,
+`unicode`, `ascii`), with a preview of the highlighted choice. `Enter` applies the choice at
+once to the whole interface and keeps it for you, in `tui.json` in the smith home
+(`SMITH_HOME`, or `~/.smith`), not in `smith.toml`: it is a personal preference. The terminal
+interface reads it when it starts; the command line does not use it. The variables in
+[Plain mode and environment](#plain-mode-and-environment) still win over it, and the section
+says so when one is set. `auto` means what smith did before: the terminal's background and
+`TERM` decide.
+
+**Workspace.** Every setting [`smith config list`](config-list.md) knows, grouped by the
+table of `smith.toml` it belongs to, with what it does and its default. A switch flips with
+`Space`; a list with fixed choices (`ci.providers`) is ticked with `Space` and saved with
+`Enter`; text, numbers and lists without fixed choices (separate the items with commas) are
+typed. The value is checked against the schema before anything is written, and the reason
+stays in the editor when it is refused. `u` removes the setting, so it has its default.
+`plugins.enabled` is edited in Plugins, and stacks, tasks and projects are edited in the file.
+
+**Recipes.** The `*.recipe.toml` files in the workspace, with their name and version and why
+one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a recipe would use.
+
+**Forms.** The guided forms (add a project, remove a project and the rest of the Start menu)
+that end as a smith command line.
+
+Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in
+`tui.json`.
 
 ## Wizards
 
@@ -217,7 +274,7 @@ prints `→ smith <command line>`.
 ## The mouse
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
-button; double-click a project or a guide option to open it; use the wheel to scroll. Only
+button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
 turns the mouse off.
 
@@ -227,9 +284,10 @@ turns the mouse off.
 |---|---|
 | `CI` | Any value stops a bare `smith` from opening the shell. |
 | `SMITH_SCREEN_READER` | Anything but empty, `0`, `false`, `no` or `off` draws no full-screen shell, no colour and no mouse: plain numbered questions, then the command, which smith runs in the terminal. |
-| `SMITH_THEME` | `light`, `dark` or `plain`. `plain` also selects plain mode. By default the terminal's background decides. |
+| `SMITH_THEME` | `light`, `dark` or `plain`. `plain` also selects plain mode. Without it the choice saved in the Settings tab decides, and without that the terminal's background. |
 | `NO_COLOR` | Any value gives the plain colours. |
-| `SMITH_ASCII` | Any value (or `TERM=dumb` or `TERM=linux`) uses ASCII symbols instead of Unicode. |
+| `SMITH_ASCII` | Any value (or `TERM=dumb` or `TERM=linux`) uses ASCII symbols instead of Unicode. Without it the symbols saved in the Settings tab decide. |
+| `SMITH_HOME` | Where the smith home is (`~/.smith` by default): installed plugins, trust decisions and `tui.json`, the theme and symbols chosen in the Settings tab. |
 | `SMITH_NONINTERACTIVE` | Read by the runner that starts the shell's child commands (its exact effect was not verified). |
 
 When standard output is not a terminal the plain questions go to standard error so you can

@@ -170,6 +170,7 @@ The stages and calls are in [How adopt and convert work](adopt-and-convert.md).
 
 | Setting | Effect | Code |
 |---|---|---|
+| the choice saved in the Settings tab (`$SMITH_HOME/tui.json`: `theme`, `icons`) | tokens and symbols, under the variables below | `userprefs`, `theme.ChooseWith` |
 | `NO_COLOR` (any value) | plain tokens | `theme.Choose` |
 | `SMITH_THEME=light\|dark\|plain` | forces tokens; `plain` also requests plain mode | `theme.Choose`, `screenreader.Plain` |
 | terminal background | decides light or dark when `SMITH_THEME` is unset | `theme/dark_background_policy.go` |
@@ -192,6 +193,7 @@ terminal sequence, which also works over SSH.
 | Classifying actions | `libs/actions/catalog` |
 | Runner | `apps/smith/tui/runner` |
 | Output parsing | `apps/smith/tui/runview` |
+| Settings tab | `apps/smith/tui/settingsview` (the view), `settingssource` (what it reads and calls), `userprefs` (the personal preferences file), `shell_settings_use_case.go` |
 | Wizards | `apps/smith/tui/fixwizard`, `apps/smith/tui/adoptwizard`, `apps/smith/adoptflow`, `apps/smith/doctorfix` |
 
 ## Decisions
