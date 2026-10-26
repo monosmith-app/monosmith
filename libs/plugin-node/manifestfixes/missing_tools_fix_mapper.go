@@ -86,11 +86,29 @@ func MissingToolsFix(workspaceRoot, dir, label string, byTool map[string][]strin
 		Choices: []protocol.FixChoice{{
 			Question: question,
 			Options: []protocol.FixChoiceOption{
-				{Label: "install " + strings.Join(tools, ", ") + " (the package named like the command)", Fix: install},
+				{Label: "install " + strings.Join(tools, ", ") + ": " + installCommand(dir, add, declared), Fix: install},
 				{Label: "remove the script(s): " + strings.Join(removed, "; "), Fix: remove},
 			},
 		}},
 	}
+}
+
+// installCommand is the command the install option runs, as a person would
+// type it: `npm i -D oxfmt`, `npm i -D --workspace packages/a prettier`, or
+// `npm install` when package.json already declares the tool.
+func installCommand(dir string, add []string, declared bool) string {
+	var parts []string
+	if declared {
+		parts = append(parts, "npm install")
+	}
+	if len(add) > 0 {
+		cmd := "npm i -D"
+		if dir != "" {
+			cmd += " --workspace " + dir
+		}
+		parts = append(parts, cmd+" "+strings.Join(add, " "))
+	}
+	return strings.Join(parts, " && ")
 }
 
 func readFile(workspaceRoot, rel string) ([]byte, error) {

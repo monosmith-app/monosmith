@@ -74,8 +74,14 @@ func (s Shell) tabBadge(id string) string {
 			}
 		}
 	case commands.TabDoctor:
-		if s.doctor.Report != nil && s.doctor.Report.Failed > 0 {
-			return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, s.doctor.Report.Failed))
+		// The same marks as the header: ✗ counts failures only, ▲ warnings.
+		if r := s.doctor.Report; r != nil {
+			if r.Failed > 0 {
+				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, r.Failed))
+			}
+			if r.Warnings > 0 {
+				return s.th.Warning(fmt.Sprintf("%s%d", s.th.Icons.Warning, r.Warnings))
+			}
 		}
 	}
 	return ""

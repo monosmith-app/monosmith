@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Model lists doctor's failing checks, one line each, failures before
@@ -233,6 +234,10 @@ func Text(th theme.Theme, f doctor.Finding, indent int) []string {
 		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f shows what changes, then applies it)"))
 	case f.Fix != nil:
 		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (f asks, shows what changes, then applies it)"))
+		// The first answer is the suggested one: say it, so f then Enter is known to do it.
+		if s := suggestion(*f.Fix); s != "" {
+			out = append(out, pad+"  "+th.Muted("f, Enter takes the suggestion: "+s))
+		}
 	}
 	if f.Fix != nil {
 		for _, e := range f.Fix.Files {
@@ -244,6 +249,16 @@ func Text(th theme.Theme, f doctor.Finding, indent int) []string {
 		}
 	}
 	return out
+}
+
+// suggestion is the first option of a fix's only question: the answer the
+// wizard has under its cursor. A fix with several questions has none, since
+// one key cannot answer them all.
+func suggestion(fix protocol.Fix) string {
+	if len(fix.Choices) != 1 || len(fix.Choices[0].Options) == 0 {
+		return ""
+	}
+	return fix.Choices[0].Options[0].Label
 }
 
 // header is a group's title line with what is wrong in it.

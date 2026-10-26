@@ -2,6 +2,7 @@ package releaselineage
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -44,6 +45,11 @@ func Assess(subjects []Subject) []Finding {
 				},
 				Baseline: &Baseline{Name: s.Prefix + alt, Target: altTag + "^{commit}"}})
 			continue
+		case s.Unreachable && NotPublishedYet(s.Detail):
+			// A registry answers 401 or 404 for a name nobody has published: a
+			// new package, not a network fault, and there is nothing to compare
+			// its tags with yet.
+			continue
 		case s.Unreachable:
 			out = append(out, Finding{Project: s.Project, Check: CheckRegistry, Message: fmt.Sprintf(
 				"could not ask %s about %s (%s), so its tags were not checked against what is published.", orRegistry(s.Registry), s.Project, s.Detail),
@@ -69,6 +75,16 @@ func Assess(subjects []Subject) []Finding {
 	}
 	return out
 }
+
+// NotPublishedYet reports whether a registry's failure detail is the answer a
+// registry gives for a package that was never published: HTTP 401 or 404
+// (npm's E401, E404, "401 Unauthorized", "404 Not Found"). Private feeds such
+// as Azure Artifacts answer 401, not 404, for a name they do not hold.
+func NotPublishedYet(detail string) bool {
+	return notPublished.MatchString(detail)
+}
+
+var notPublished = regexp.MustCompile(`(?i)\bE?40[14]\b|\b40[14] (not found|unauthorized)\b`)
 
 func describe(v, prefix string) string {
 	if v == "" {
