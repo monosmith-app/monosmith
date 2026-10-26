@@ -43,11 +43,22 @@ func TestNoLineOfAReviewStartsWithAPlusOrAMinus(t *testing.T) {
 	r := convert.Highlights{Checks: []string{"x"}, Changed: []string{"y"}}
 	c := adoptflow.Changes{Created: []string{"smith.toml"}, Removed: []string{"nx.json"}}
 	f := adoptflow.Found{Kind: adoptflow.KindNx, Source: "Nx workspace", Name: "acme"}
-	for _, text := range []string{planSummaryText(c, r), conservativeText(f, "", c, r)} {
+	for _, text := range []string{planSummaryText(c, r), conservativeText(f, "", c, "", r)} {
 		for _, line := range strings.Split(text, "\n") {
 			if strings.HasPrefix(line, "+") || strings.HasPrefix(line, "-") {
 				t.Errorf("the review would paint %q as a diff", line)
 			}
 		}
+	}
+}
+
+func TestTheConservativeReviewShowsTheFilesAsTheDiffsOfTheDoctorFixDialog(t *testing.T) {
+	c := adoptflow.Changes{Created: []string{"smith.toml"}}
+	f := adoptflow.Found{Kind: adoptflow.KindNx, Source: "Nx workspace", Name: "acme"}
+	diff := "● The files smith writes: 1 created, 0 edited, 0 removed\n--- a/smith.toml\n+++ b/smith.toml\n+[workspace]\n"
+	text := conservativeText(f, "", c, diff, convert.Highlights{})
+	summary, files, ok := strings.Cut(text, "● The files smith writes")
+	if !ok || !strings.Contains(summary, "● In short") || !strings.Contains(files, "+++ b/smith.toml") {
+		t.Fatalf("the review:\n%s", text)
 	}
 }

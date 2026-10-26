@@ -115,6 +115,15 @@ func (f *adoptFake) Changes() (adoptflow.Changes, error) {
 	return adoptflow.Changes{Created: []string{"smith.toml"}}, nil
 }
 
+func (f *adoptFake) ShowChanges(adoptflow.Changes) (string, error) {
+	return `● The files smith writes: 1 created
+--- a/smith.toml
++++ b/smith.toml
+@@ -0,0 +1 @@
++[workspace]
+`, nil
+}
+
 func (f *adoptFake) Result() convert.Highlights {
 	return convert.Highlights{Projects: "2 projects"}
 }

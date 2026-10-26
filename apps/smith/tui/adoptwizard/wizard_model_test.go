@@ -138,6 +138,18 @@ func (f *fakeFlow) Changes() (adoptflow.Changes, error) {
 	return adoptflow.Changes{Created: []string{"smith.toml"}, Edited: []string{"apps/api/package.json", "libs/ui/package.json"}, Removed: []string{"nx.json"}}, f.fail("changes")
 }
 
+func (f *fakeFlow) ShowChanges(adoptflow.Changes) (string, error) {
+	f.note("show changes")
+	return `● The files smith writes: 1 created, 2 edited, 1 removed
+--- a/nx.json
++++ b/nx.json
+@@ -1 +0,0 @@
+-{}
++++ b/smith.toml
++[workspace]
+`, nil
+}
+
 func (f *fakeFlow) Result() convert.Highlights {
 	return convert.Highlights{Projects: "2 projects (1 app, 1 library)", Changed: []string{"build: Rollup becomes esbuild (2 projects)"}, Checks: []string{"azure-pipelines.yml: replaced by a generated pipeline"}}
 }
@@ -366,7 +378,7 @@ func TestTheConservativeLevelOfAnNxWorkspaceConvertsThenInstallsWithoutTheChecks
 	}
 	w.want("It works: everything builds (", "[ Read the report  s ]")
 	got := strings.Join(f.calls, "|")
-	if !strings.Contains(got, "convert conservative") || !strings.Contains(got, "finish lint=false") || !strings.Contains(got, "changes") {
+	if !strings.Contains(got, "convert conservative") || !strings.Contains(got, "finish lint=false") || !strings.Contains(got, "changes") || !strings.Contains(got, "show changes") {
 		t.Fatalf("calls: %s", got)
 	}
 }

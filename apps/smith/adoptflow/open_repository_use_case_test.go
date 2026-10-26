@@ -102,7 +102,7 @@ func TestATurborepoWorkspaceIsReadForTheWizard(t *testing.T) {
 	if len(f.Projects) != 1 || f.Projects[0].Name != "a" || f.Projects[0].Root != "packages/a" {
 		t.Fatalf("projects %+v", f.Projects)
 	}
-	for _, tool := range []string{"ESLint", "Jest", "rollup"} {
+	for _, tool := range []string{"Turborepo", "ESLint", "Jest", "rollup"} {
 		found := false
 		for _, got := range f.Tooling {
 			found = found || got == tool
