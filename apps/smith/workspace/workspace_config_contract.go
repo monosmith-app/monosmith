@@ -114,6 +114,11 @@ type CISection struct {
 	// NativeLinuxPackages are apt packages the native job installs on
 	// Linux before building (libraries a cgo app links).
 	NativeLinuxPackages []string `toml:"native_linux_packages"`
+	// SmithVersion is the smith the generated pipelines install: "latest" or
+	// an exact version. Default: the version of the smith that generates them,
+	// so a workspace whose pipelines build smith from source (smith itself)
+	// sets "latest" and does not change with every release.
+	SmithVersion string `toml:"smith_version"`
 	// Branches are the branches the generated GitHub and Azure pipelines run
 	// on, for pushes and pull requests. The release branch is always one of
 	// them, and the only one a release runs from. Default: the release branch.

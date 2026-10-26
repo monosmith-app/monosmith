@@ -62,6 +62,7 @@ azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines defini
 azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
 native_linux_packages = []            # apt packages the native job installs on Linux
+smith_version = "latest"              # the smith the pipelines install: "latest" or an exact version; default: the version that generates them (docs/reference/ci.md)
 audit_policies = []                    # "node", "go", "python", "rust": policy checks smith ci audit runs beyond the vulnerability scan (docs/reference/ci.md)
 audit_warn = []                        # audit policies that only report
 audit_allow_install_scripts = []       # npm packages the node policy lets run install scripts

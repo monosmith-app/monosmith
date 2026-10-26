@@ -28,6 +28,7 @@
         "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },
+        "smith_version": { "type": "string", "pattern": "^(latest|[0-9]+[.][0-9]+[.][0-9]+.*)$", "description": "The smith the generated pipelines install: latest, or an exact version. Default: the version of the smith that generates them." },
         "native_linux_packages": { "type": "array", "items": { "type": "string" }, "description": "apt packages the native job installs on Linux before building." },
         "branches": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "description": "Branches the generated GitHub and Azure pipelines run on, for pushes and pull requests. The release branch is always included and still the only one a release runs from. Default: the release branch." },
         "azure_pool": { "type": "string", "description": "The agent pool an Azure Pipelines definition runs on (a self-hosted or managed pool's name). Default: Microsoft's hosted ubuntu-latest image." },

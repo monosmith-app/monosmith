@@ -12,6 +12,9 @@ exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
 
 [ci]
 providers = ["github"]
+# Every step of this repository's pipelines runs the smith built from the commit:
+# the installed one only bootstraps, so it need not change with every release.
+smith_version = "latest"
 
 # Every Go project gets a slice-check task, run before lint: role-named files,
 # no junk-drawer folders (see docs/reference/conventions.md).
