@@ -9,9 +9,9 @@ import (
 )
 
 var kindText = map[protocol.ProjectKind]string{
-	protocol.ProjectApp:     "an app: deployed or run, never published",
-	protocol.ProjectLib:     "an internal library: imported by other projects, never published",
-	protocol.ProjectPackage: "a package: published to its registry on release",
+	protocol.ProjectApp:     "an app: something you run or deploy, such as a website or an API",
+	protocol.ProjectLib:     "a library: code the other projects in this workspace import",
+	protocol.ProjectPackage: "a package: published to a registry for others to install, on release",
 }
 
 // languages names a plugin's projects as the editor's icons know them.

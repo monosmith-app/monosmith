@@ -18,7 +18,7 @@ func Describe(argv []string) (title, why string) {
 	case verb == "install":
 		return "Install everything", "This installs what every project already declares, with its own toolchain (as after a fresh clone). To add one package, use Install a package instead."
 	case verb == "upgrade":
-		return "Upgrade the workspace", "This migrates smith.toml and regenerates the files smith owns."
+		return "Upgrade the workspace", "This updates smith.toml to the current format and rewrites the files smith manages."
 	case verb == "ci":
 		return "Regenerate CI pipelines", "This rewrites the pipeline files smith owns."
 	case verb == "add":

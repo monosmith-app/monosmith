@@ -15,7 +15,7 @@ func TestAskMissingArgumentsAsksOnlyForWhatIsMissing(t *testing.T) {
 	if err != nil || strings.Join(got, " ") != "app web-site" {
 		t.Fatalf("%v %v", got, err)
 	}
-	if strings.Contains(out.String(), "Kind") || !strings.Contains(out.String(), "must be kebab-case") {
+	if strings.Contains(out.String(), "Kind") || !strings.Contains(out.String(), "must be lowercase letters and digits") {
 		t.Errorf("only the name is asked, and a bad one is explained:\n%s", out.String())
 	}
 }

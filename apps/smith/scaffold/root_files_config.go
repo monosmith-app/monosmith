@@ -98,8 +98,8 @@ A monorepo managed by [smith](https://github.com/monosmith-app/monosmith).
 ## Everyday commands
 
 ` + "```sh" + `
-smith add app web --lang node        # an app: deployed, never published
-smith add lib core --lang go         # an internal library: imported, never published
+smith add app web --lang node        # an app: something you run or deploy
+smith add lib core --lang go         # a library: code the other projects import
 smith add package sdk --lang python  # a package: published on release
 
 smith build | test | lint            # every project, in dependency order, cached

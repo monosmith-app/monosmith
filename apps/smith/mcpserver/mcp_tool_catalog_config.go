@@ -214,7 +214,7 @@ var Tools = []Tool{
 	{Name: "smith_add_project", Action: "add", Description: "Add a project: kind app (deployed), lib (imported internally) or package (published), or a combined kind from smith_kinds (node-app). Writes files, installs packages and regenerates the pipelines.",
 		InputSchema: object(map[string]any{
 			"kind":    str("app, lib, package, or a combined kind such as node-app"),
-			"name":    str("the project name, kebab-case"),
+			"name":    str("the project name: lowercase words joined by hyphens"),
 			"lang":    str("node, go, python, or a language a plugin adds"),
 			"stack":   str("the stack to build it with (see smith_stacks); none for the language plugin alone"),
 			"choices": list("answers to the workspace recipe's choices, each name=answer (language=python); check them first with smith_recipe_check"),
