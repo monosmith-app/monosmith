@@ -56,7 +56,7 @@ func TestFixWizardShowsProgressWhileAStepRunsAndCtrlCStopsIt(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
 	l.applyHold = make(chan struct{})
 	l.keys("f", "enter", "enter") // npm, then apply
-	l.has("Fixing…", "step 1 of 1: npm install", "Ctrl+C stops")
+	l.has("Fixing…", "step 1 of 1: npm install", "Ctrl+C or Esc stops")
 	if !l.sh().fixApplying() || l.sh().fix.Phase() != fixwizard.Applying {
 		t.Fatal("the fix is not applying")
 	}

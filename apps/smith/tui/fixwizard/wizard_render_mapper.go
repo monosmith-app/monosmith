@@ -184,8 +184,16 @@ func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
 	default:
 		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, max(w.total, w.step), w.stepName))
 	}
-	return append(rows, "", th.Muted("Ctrl+C stops the step that is running."))
+	rows = append(rows, stepListRows(th, w.resolved.Steps, w.step, inner)...)
+	if e := elapsedText(w.elapsed()); e != "" {
+		rows = append(rows, "", th.Muted(e))
+	}
+	return append(rows, "", th.Muted(applyingHint))
 }
+
+// applyingHint tells what the keys do while a step runs, so a key that waits
+// is not mistaken for a key that was lost.
+const applyingHint = "Ctrl+C or Esc stops the step that is running. Other keys do nothing until it is done."
 
 // follow scrolls the question so the option under the cursor shows, clear of
 // the "more" markers.
