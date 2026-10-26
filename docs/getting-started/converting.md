@@ -7,7 +7,6 @@ they are described and run. A Turborepo workspace is converted too; see
 [Converting from Turborepo](#converting-from-turborepo).
 
 ```sh
-npm ci                    # Nx must be installed: it describes the projects
 smith convert --dry-run    # the report; changes nothing
 smith convert              # applies it
 smith ci setup             # toolchains, the Python venv

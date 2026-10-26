@@ -498,7 +498,10 @@ func TestMissingPackagesAreOneClickToInstallThenTheWizardGoesOn(t *testing.T) {
 	found.Blockers = []string{"The packages are not installed, and smith needs them to read your projects."}
 	f := &fakeFlow{found: found}
 	w := start(t, f)
-	w.want("The packages are not installed", "[ Install the packages and continue  Enter ]")
+	w.want("● The packages are not installed", "None of your own files are touched", "[ Install the packages and continue  Enter ]")
+	if strings.Contains(w.screen(), "✖") {
+		t.Fatalf("a step smith takes itself is not shown as a failure: %s", w.screen())
+	}
 	if strings.Contains(w.screen(), "No projects found yet") {
 		t.Fatalf("the failure that caused it should not be shown as an empty result: %s", w.screen())
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -108,7 +107,7 @@ func (s *Session) openConvertible(exists func(string) bool) error {
 			// smith reads an Nx workspace's projects from Nx itself, which needs
 			// the packages the repository lists to be the ones installed.
 			s.found.NeedsInstall = true
-			s.found.Blockers = append(s.found.Blockers, "The packages are not installed, or are not the ones this repository lists, and smith needs them to read your projects. Installing them fixes it.")
+			s.found.Blockers = append(s.found.Blockers, "smith needs to read your projects before it can move them, and Nx describes them, so the packages this repository lists have to be installed first. smith can do that for you (about 2 minutes).")
 		default:
 			s.found.Blockers = append(s.found.Blockers, err.Error())
 		}
@@ -173,19 +172,6 @@ func (s *Session) openPlain() error {
 // Install installs the packages the repository lists, the way its lockfile
 // says (npm ci when there is one), and reads the repository again.
 func (s *Session) Install(ctx context.Context, out io.Writer) error {
-	args := []string{"install"}
-	if _, err := os.Stat(filepath.Join(s.Root, "package-lock.json")); err == nil {
-		args = []string{"ci"}
-	}
-	fmt.Fprintln(out, "… install the packages (npm "+args[0]+")")
-	cmd := exec.CommandContext(ctx, "npm", append(args, "--no-audit", "--no-fund")...)
-	cmd.Dir = s.Root
-	if raw, err := cmd.CombinedOutput(); err != nil {
-		tail := strings.TrimSpace(string(raw))
-		if len(tail) > 600 {
-			tail = tail[len(tail)-600:]
-		}
-		return fmt.Errorf("npm %s failed: %w: %s", args[0], err, tail)
-	}
-	return nil
+	fmt.Fprintln(out, "… install the packages")
+	return convert.InstallPackages(ctx, s.Root)
 }

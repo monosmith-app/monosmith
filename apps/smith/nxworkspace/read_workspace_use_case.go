@@ -18,7 +18,7 @@ import (
 var ErrNotNx = problem.New("there is no nx.json here: convert runs at the root of an Nx workspace", "cd to the folder that holds nx.json, then run this again")
 
 // ErrNxNotInstalled is returned when Nx cannot describe the workspace.
-var ErrNxNotInstalled = problem.New("Nx is not installed in node_modules, and Nx itself describes this workspace's projects", "npm ci, then run this again")
+var ErrNxNotInstalled = problem.New("smith needs to read your projects before it can move them, and Nx describes them, so its packages must be installed first", "npm ci, then run this again")
 
 // Read loads an Nx workspace: nx.json and the root package.json from disk,
 // and every project with its fully resolved targets - inferred ones
