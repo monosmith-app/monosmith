@@ -38,8 +38,8 @@ func menu() Model {
 }
 
 func TestAddAProject(t *testing.T) {
-	// Add a project (2nd entry) → package (3rd) → node (2nd) → name.
-	m := keys(menu(), "down", "enter", "down", "down", "enter", "down", "enter", "s", "d", "k", "enter")
+	// Add a project (2nd entry) → package (3rd) → node (1st: the popular languages lead) → name.
+	m := keys(menu(), "down", "enter", "down", "down", "enter", "enter", "s", "d", "k", "enter")
 	got := strings.Join(m.(Model).Argv, " ")
 	if got != "add package sdk --lang node" {
 		t.Fatalf("argv %q", got)

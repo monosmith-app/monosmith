@@ -200,7 +200,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		TabProjects: "Enter detail · b build · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
 		TabDoctor:   "Enter expand · f fix · x fix all · g group · p passed · r reload · b build · t test · z zoom · y copy",
 		TabHome:     "Enter next · r reload · b build · t test · w changed · d doctor",
-		TabDeps:     "Space mark · s safe · a all · u update · v align · r reload · b build · t test · y copy",
+		TabDeps:     "Space mark · s safe · a all · u update · v align · o one version · r reload · b build · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · t test",
 		TabSettings: "↑↓ move · Space change · Tab sections · Esc back · t trust · f forget · u reset · r reload",
 	} {

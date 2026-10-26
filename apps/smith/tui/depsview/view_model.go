@@ -321,12 +321,12 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	case v.Err != nil:
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	case !v.Loaded:
-		return []string{th.Muted("Looking for newer releases…")}, rowOf
+		return pane.Wrap(th.Muted("Asking the package registries for newer releases of every dependency. On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
 	}
 	var tail []string
 	tail = append(tail, "", th.Title("One version"))
 	if len(v.Policy) == 0 {
-		tail = append(tail, "  "+th.Muted("not required: set [dependencies] one_version = true in smith.toml"))
+		tail = append(tail, "  "+th.Muted("not required yet: press o to make every project use the same version of a shared dependency"))
 	}
 	for _, p := range v.Policy {
 		mark := th.Success(th.Icons.Passed)
@@ -358,7 +358,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		patch, minor, major := v.levelCounts()
 		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
 		if safe := patch + minor; safe > 0 {
-			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press S).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
+			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
 		}
 		lines = append(lines, "")
 		nameW := 8

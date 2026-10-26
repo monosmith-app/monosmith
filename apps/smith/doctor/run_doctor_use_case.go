@@ -183,6 +183,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Remedy: "stop tracking generated files: `git rm --cached <file>` (keep or add its .gitignore rule) and commit; a file a task updates on purpose is committed with the change",
 	}
 	if len(generated) > 0 {
+		untrack.Check = "git tracks files that a build rewrites"
 		files := make([]corefixes.TrackedFile, len(generatedFiles))
 		for i, f := range generatedFiles {
 			files[i] = f.TrackedFile

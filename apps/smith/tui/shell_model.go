@@ -50,6 +50,8 @@ type Config struct {
 	EmptyFolder bool
 	// Adopt reads the folder for the adopt wizard; nil outside a folder to adopt.
 	Adopt adoptwizard.Opener
+	// Start is a command to run as soon as the shell opens in a workspace.
+	Start []string
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
 }
@@ -125,7 +127,11 @@ type Shell struct {
 	adopting *fixRun
 	adopter  adoptwizard.Opener
 	exitNote string
-	toast    toast.Toast
+	// reopen is true when the shell leaves only to start again inside the workspace it made.
+	reopen bool
+	// reopenStart is the command the reopened shell starts with; start is the one this shell starts with.
+	reopenStart, startWith []string
+	toast                  toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
@@ -168,7 +174,7 @@ func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{},
-		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt,
+		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
@@ -273,6 +279,10 @@ func (s Shell) Init() tea.Cmd {
 		return nil
 	}
 	var cmds []tea.Cmd
+	if len(s.startWith) > 0 {
+		argv := s.startWith
+		cmds = append(cmds, func() tea.Msg { return startRunMsg{argv: argv} })
+	}
 	if load := s.sources.Projects; load != nil {
 		cmds = append(cmds, func() tea.Msg { return load() })
 	}
@@ -285,6 +295,8 @@ func (s Shell) Init() tea.Cmd {
 // Messages the shell sends itself.
 type (
 	tickMsg struct{}
+	// startRunMsg starts a command as the shell opens.
+	startRunMsg struct{ argv []string }
 	// startedMsg reports that a command's process started (or why it could not).
 	startedMsg struct {
 		proc runner.Handle
@@ -376,6 +388,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.deps = depsview.FromResult(msg)
 	case releaseview.Result:
 		s.release = releaseview.FromResult(msg)
+	case startRunMsg:
+		return s.execute(msg.argv, true)
 	case startedMsg:
 		return s.started(msg)
 	case plannedMsg:

@@ -225,12 +225,18 @@ func (s Shell) projectPanel() detail.Panel {
 	return detail.Panel{Sections: secs, Actions: actions, ActionsTitle: title}
 }
 
-// taskHint says in plain words what running a task does: the command it runs,
-// what has to run before it, and whether smith remembers its result.
+// taskHint says in plain words what running a task does, what has to run
+// before it, and whether smith remembers its result. The command behind it is
+// in the Run tab once it ran.
 func taskHint(t projectlist.Task) string {
 	var parts []string
-	if t.Command != "" {
-		parts = append(parts, "runs "+t.Command)
+	switch {
+	case t.Description != "":
+		parts = append(parts, t.Description)
+	case taskMeanings[t.Name] != "":
+		parts = append(parts, taskMeanings[t.Name])
+	default:
+		parts = append(parts, "a task of this project")
 	}
 	if len(t.DependsOn) > 0 {
 		parts = append(parts, "after "+strings.Join(t.DependsOn, ", "))
@@ -239,6 +245,16 @@ func taskHint(t projectlist.Task) string {
 		parts = append(parts, "result remembered: skipped when nothing changed")
 	}
 	return strings.Join(parts, " · ")
+}
+
+// taskMeanings say what the common tasks do.
+var taskMeanings = map[string]string{
+	"build":     "turns the source into what gets shipped",
+	"lint":      "checks the code for mistakes and style",
+	"test":      "runs the tests",
+	"typecheck": "checks the types without building",
+	"package":   "bundles the build for publishing",
+	"format":    "rewrites the files to the house style",
 }
 
 // taskAction is the action that runs a task on the selected project; the

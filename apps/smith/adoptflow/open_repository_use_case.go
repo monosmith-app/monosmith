@@ -1,9 +1,12 @@
 package adoptflow
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -94,17 +97,20 @@ func (s *Session) openConvertible(exists func(string) bool) error {
 	a, err := convert.Analyse(s.Root, s.Version)
 	if err != nil {
 		var p *problem.Error
-		if errors.As(err, &p) {
+		switch {
+		case errors.As(err, &p):
 			text := p.Problem
 			if len(p.Remedy) > 0 {
 				text += " → " + strings.Join(p.Remedy, "; or ")
 			}
 			s.found.Blockers = append(s.found.Blockers, text)
-		} else {
+		case s.found.Kind == KindNx && (!exists("node_modules/nx") || strings.Contains(err.Error(), "nx graph failed")):
+			// smith reads an Nx workspace's projects from Nx itself, which needs
+			// the packages the repository lists to be the ones installed.
+			s.found.NeedsInstall = true
+			s.found.Blockers = append(s.found.Blockers, "The packages are not installed, or are not the ones this repository lists, and smith needs them to read your projects. Installing them fixes it.")
+		default:
 			s.found.Blockers = append(s.found.Blockers, err.Error())
-			if s.found.Kind == KindNx && !exists("node_modules/nx") {
-				s.found.Blockers[0] += " Run npm ci first, so Nx can describe the projects."
-			}
 		}
 		return nil
 	}
@@ -161,5 +167,25 @@ func (s *Session) openPlain() error {
 		s.found.Tooling = legacyinventory.ToolsInUse(legacyinventory.NewTree(s.Root, files))
 	}
 	s.found.NoFull = NoFullForPlain
+	return nil
+}
+
+// Install installs the packages the repository lists, the way its lockfile
+// says (npm ci when there is one), and reads the repository again.
+func (s *Session) Install(ctx context.Context, out io.Writer) error {
+	args := []string{"install"}
+	if _, err := os.Stat(filepath.Join(s.Root, "package-lock.json")); err == nil {
+		args = []string{"ci"}
+	}
+	fmt.Fprintln(out, "… install the packages (npm "+args[0]+")")
+	cmd := exec.CommandContext(ctx, "npm", append(args, "--no-audit", "--no-fund")...)
+	cmd.Dir = s.Root
+	if raw, err := cmd.CombinedOutput(); err != nil {
+		tail := strings.TrimSpace(string(raw))
+		if len(tail) > 600 {
+			tail = tail[len(tail)-600:]
+		}
+		return fmt.Errorf("npm %s failed: %w: %s", args[0], err, tail)
+	}
 	return nil
 }

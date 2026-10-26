@@ -81,6 +81,7 @@ var all = []Command{
 	{ID: "deps.mark-all", Group: GroupProjects, Title: "Mark all, or none", Keys: []string{"a"}, Kind: PaneKey, Views: vDeps, Footer: "all"},
 	{ID: "deps.update", Group: GroupProjects, Title: "Update the marked ones", Hint: "smith deps up", Keys: []string{"u", "enter"}, Kind: ViewAction, Action: "deps-up", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "update"},
 	{ID: "deps.align", Group: GroupProjects, Title: "Bring drifting versions to one", Hint: "smith deps up --align", Keys: []string{"v"}, Kind: ViewAction, Action: "deps-align", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "align"},
+	{ID: "deps.one-version", Group: GroupProjects, Title: "Require one version of each dependency", Hint: "smith config set dependencies.one_version true", Keys: []string{"o"}, Kind: Execute, Argv: []string{"config", "set", "dependencies.one_version", "true"}, Confirm: true, Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "one version"},
 
 	{ID: "settings.move", Group: GroupWorkspace, Title: "Move in the list of sections or its rows", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Glyph: "↑↓", Kind: PaneKey, Views: vSettings, Footer: "move"},
 	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{" ", "enter"}, Kind: PaneKey, Views: vSettings, Footer: "change"},

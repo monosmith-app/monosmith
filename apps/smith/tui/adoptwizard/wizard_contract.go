@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
@@ -22,6 +23,13 @@ type Flow interface {
 	// Convert applies the conversion, writing "… name" as its step starts, and
 	// returns its summary.
 	Convert(ctx context.Context, c convertchoices.Choices, out io.Writer) (string, error)
+	// Changes lists the files the conversion creates, edits and removes; it
+	// needs Prepare to have run.
+	Changes() (adoptflow.Changes, error)
+	// Result is what the applied conversion found worth telling.
+	Result() convert.Highlights
+	// Install installs the packages the repository lists.
+	Install(ctx context.Context, out io.Writer) error
 	// NextGroup plans the removals again from the files as they are.
 	NextGroup(c convertchoices.Choices, declined map[string]bool) (removalplan.Plan, error)
 	// ShowFix writes a fix as the review shows it.
@@ -61,9 +69,11 @@ type Outcome struct {
 	Stop bool
 	// Copy is text for the clipboard ("" for none).
 	Copy string
-	// Finished is set when the repository is a workspace now: the shell tells
-	// it and leaves, because it was opened outside one.
+	// Finished is set when the repository is a workspace now: the shell opens
+	// it, because it was started outside one.
 	Finished string
+	// Build asks the shell to start building everything once it is open.
+	Build bool
 }
 
 // Stage is where the walk is.
@@ -79,6 +89,10 @@ const (
 	StageLevel
 	// StagePreparing converts a scratch copy to see what would be left.
 	StagePreparing
+	// StageInstalling installs the packages the repository lists, then reads it again.
+	StageInstalling
+	// StageListing works out the files a conservative conversion changes.
+	StageListing
 	// StageChoices asks the full level's choices.
 	StageChoices
 	// StagePlanning plans the removals for the choices.

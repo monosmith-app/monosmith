@@ -90,7 +90,7 @@ func TestAnOpenDetailClosesWhenTheScreenGrowsWideEnoughToShowItBesideTheList(t *
 
 func TestTheFirstProjectIsSelectedAndShownInTheDetail(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.has("orders", "kind", "language", "go", "Run on orders", "Run build", "runs go build", "Run test", "Explain")
+	l.has("orders", "kind", "language", "go", "Run on orders", "Run build", "turns the source into what gets shipped", "Run test", "Explain")
 }
 
 func TestALongPathInTheDetailIsShortenedInTheMiddle(t *testing.T) {

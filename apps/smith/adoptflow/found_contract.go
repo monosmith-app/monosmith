@@ -37,7 +37,11 @@ type Found struct {
 	// Blockers stop the wizard before anything changes, each with the step
 	// that clears it. Warnings are told and do not stop it.
 	Blockers []string `json:"blockers,omitempty"`
-	Warnings []string `json:"warnings,omitempty"`
+	// NeedsInstall is true when the one blocker is that the packages are not
+	// installed, or are not the ones the repository asks for: installing them
+	// clears it, and the wizard offers to.
+	NeedsInstall bool     `json:"needsInstall,omitempty"`
+	Warnings     []string `json:"warnings,omitempty"`
 	// Full is true when the full level is offered; NoFull says why not.
 	Full   bool   `json:"full"`
 	NoFull string `json:"noFull,omitempty"`

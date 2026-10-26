@@ -12,10 +12,12 @@ import (
 func NextAction(f Facts) Next {
 	press := func(id string) string { return "press " + commands.ShortcutOf(id) }
 	switch {
+	case f.ProjectsLoaded && f.Projects == 0:
+		return Next{Text: "this workspace has no projects yet: " + press("file.add") + " to add your first one", CommandID: "file.add"}
 	case f.CheckErr != "":
 		return Next{Text: "doctor could not run: " + press("ws.doctor") + " to try again", CommandID: "ws.doctor"}
 	case !f.Checked:
-		return Next{Text: "checking the workspace…"}
+		return Next{Text: "checking the workspace: this takes a few seconds the first time…"}
 	case f.Failed > 0 && f.Fixable > 0:
 		return Next{Text: fmt.Sprintf("%s, %s: Enter opens the fix wizard", count(f.Failed, "check fails", "checks fail"), count(f.Fixable, "fix is ready", "fixes are ready")), CommandID: "ws.fix"}
 	case f.Failed > 0:

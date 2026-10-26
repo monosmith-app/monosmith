@@ -60,6 +60,10 @@ func (s *Session) PlanFull(c convertchoices.Choices, verify bool) (Preview, erro
 	report := fullconversion.MakeReport(s.view.Tree, c, verify)
 	report.Finish = removalplan.Finish(convert.SmithCommand(), verify)
 	var b strings.Builder
+	if changes, err := s.Changes(); err == nil {
+		b.WriteString(changes.Text())
+		b.WriteString("\n")
+	}
 	if err := fullconversion.Describe(&b, s.view.Dir, report, true); err != nil {
 		return Preview{}, err
 	}
@@ -76,6 +80,14 @@ func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Wr
 	fmt.Fprintln(out, "… "+ConvertStepName)
 	log := io.Discard
 	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
+}
+
+// Result is what the conversion found worth telling, once it was applied.
+func (s *Session) Result() convert.Highlights {
+	if s.analysis == nil {
+		return convert.Highlights{}
+	}
+	return convert.HighlightsOf(s.analysis.Plan)
 }
 
 // ConvertStepName is the one step Convert reports.
