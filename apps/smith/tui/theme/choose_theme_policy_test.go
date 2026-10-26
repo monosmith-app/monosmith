@@ -122,3 +122,42 @@ func TestTheDarkThemeKeepsReadableContrast(t *testing.T) {
 		}
 	}
 }
+
+func TestASavedChoiceBeatsTheTerminalAndTheEnvironmentBeatsTheSavedChoice(t *testing.T) {
+	cases := []struct {
+		name         string
+		env          map[string]string
+		dark         bool
+		theme, icons string
+		wantTheme    string
+		wantAscii    bool
+	}{
+		{"nothing saved follows the terminal", nil, true, "", "", "dark", false},
+		{"auto is nothing saved", nil, false, "auto", "auto", "light", false},
+		{"a saved theme beats the background", nil, true, "light", "", "light", false},
+		{"saved icons", nil, true, "", "ascii", "dark", true},
+		{"SMITH_THEME beats the saved theme", map[string]string{"SMITH_THEME": "plain"}, true, "light", "", "plain", false},
+		{"NO_COLOR beats the saved theme", map[string]string{"NO_COLOR": "1"}, true, "dark", "", "plain", false},
+		{"SMITH_ASCII beats saved unicode", map[string]string{"SMITH_ASCII": "1"}, true, "", "unicode", "dark", true},
+		{"an unknown saved name is ignored", nil, true, "neon", "braille", "dark", false},
+	}
+	for _, c := range cases {
+		got := ChooseWith(env(c.env), c.dark, c.theme, c.icons)
+		if got.Tokens.Name != c.wantTheme || (got.Icons.Passed == ASCII.Passed) != c.wantAscii {
+			t.Errorf("%s: %s, ascii=%v", c.name, got.Tokens.Name, got.Icons.Passed == ASCII.Passed)
+		}
+	}
+}
+
+func TestOverridesNameTheVariableThatWins(t *testing.T) {
+	themeVar, iconsVar := Overrides(env(map[string]string{"SMITH_THEME": "Dark", "TERM": "dumb"}))
+	if themeVar != "SMITH_THEME" || iconsVar != "TERM=dumb" {
+		t.Fatalf("%q %q", themeVar, iconsVar)
+	}
+	if themeVar, iconsVar = Overrides(env(map[string]string{"SMITH_THEME": "neon"})); themeVar != "" || iconsVar != "" {
+		t.Fatalf("an unknown theme overrides nothing: %q %q", themeVar, iconsVar)
+	}
+	if themeVar, _ = Overrides(env(map[string]string{"NO_COLOR": "1", "SMITH_THEME": "dark"})); themeVar != "NO_COLOR" {
+		t.Fatalf("%q", themeVar)
+	}
+}
