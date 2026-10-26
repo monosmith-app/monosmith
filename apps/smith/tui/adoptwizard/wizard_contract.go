@@ -36,8 +36,11 @@ type Flow interface {
 	ShowFix(p doctorfix.Planned) (string, error)
 	// ApplyFix applies a fix's files and steps, writing "… name" as each starts.
 	ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer) error
-	// FinishFix is the install and the checks that close a conversion.
-	FinishFix(verify bool) doctorfix.Planned
+	// FinishFix is the install and the checks that close a conversion: the
+	// build, the tests and doctor, and the lint too with withLint.
+	FinishFix(withLint bool) doctorfix.Planned
+	// Report is the full report of the applied conversion, as it was saved.
+	Report() (string, error)
 	// AdoptFix is the conservative adoption of a plain repository.
 	AdoptFix() doctorfix.Planned
 	// Close releases what the flow holds (a scratch copy).
@@ -111,4 +114,7 @@ const (
 	StageFinishing
 	// StageDone tells what happened.
 	StageDone
+	// StageReport shows the saved report of the conversion; Enter goes back to
+	// the result.
+	StageReport
 )

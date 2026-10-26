@@ -279,12 +279,17 @@ the fix wizard's keys and drawing. The stages:
 6. **Converting**, then, for the full level, a question per **group of removals** (`We are
    going to delete N packages and M files. ... ok?`): `y` deletes them, `n` keeps them,
    `s` keeps these and skips the groups after.
-7. **Finishing**: the install and the checks (build, test, lint, doctor).
-8. **Done**, in three parts: what is done, **Needs you** (what the conversion could not decide
-   for you, each with its reason) and **Behaves differently now** (the first five, the rest
-   in `.smith/convert-report.txt`), then the files that look like old tooling but stay.
-   **Open the workspace** (`Enter`) reopens the interface inside the new workspace; **Open it
-   and build everything** (`n`) also starts the build to check the conversion.
+7. **Finishing**: the install, then the proof that the conversion works, at both levels:
+   the build, the tests and doctor (and lint at the full level, where smith owns it). A
+   failed check stops here with its output and Retry.
+8. **Done**, in three parts: what is done and what was proven (`It works: everything builds
+   (9.8s), every test passes (31s), doctor finds nothing wrong (4s)`, then how many things
+   need you), **Needs you** (what the conversion could not decide for you, each with its
+   reason) and **Behaves differently now** (the first five, the rest in
+   `.smith/convert-report.txt`), then the files that look like old tooling but stay.
+   **Open the workspace** (`Enter`) reopens the interface inside the new workspace; **Read
+   the report** (`s`) shows `.smith/convert-report.txt` inside the wizard. When no check
+   ran, **Open it and build everything** (`n`) starts the build once the workspace is open.
 
 While a job runs, `Ctrl+C` or `Esc` stops it. A failed step shows its output with Retry.
 Everything is in the working tree and git undoes it (installed packages stay installed).

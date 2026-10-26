@@ -164,13 +164,24 @@ func plural(n int, noun string) string {
 
 // doneText is the last screen, in three parts: what is done, what behaves
 // differently now, and what needs the person.
-func doneText(f adoptflow.Found, r convert.Highlights, applied, declined []string, kept []legacyinventory.Kept, notes []string) string {
+func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, declined []string, kept []legacyinventory.Kept, notes []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "✓ %q is a smith workspace now", f.Name)
 	if r.Projects != "" {
 		fmt.Fprintf(&b, ": %s", r.Projects)
 	}
 	b.WriteString("\n")
+	if checked != "" {
+		fmt.Fprintf(&b, "  It works: %s.\n", checked)
+		switch len(r.Checks) {
+		case 0:
+			b.WriteString("  Nothing needs you.\n")
+		case 1:
+			b.WriteString("  1 thing needs you (listed below).\n")
+		default:
+			fmt.Fprintf(&b, "  %d things need you (listed below).\n", len(r.Checks))
+		}
+	}
 	if len(applied) > 0 {
 		fmt.Fprintf(&b, "  Old tools removed: %s\n", strings.Join(applied, ", "))
 	}
@@ -207,6 +218,10 @@ func doneText(f adoptflow.Found, r convert.Highlights, applied, declined []strin
 			fmt.Fprintf(&b, "  • %s: %s\n", k.What, k.Why)
 		}
 	}
-	fmt.Fprintf(&b, "\nOpen the workspace to see it, or let smith build everything first to check that the conversion works.\n")
+	if checked != "" {
+		fmt.Fprintf(&b, "\nEnter opens the workspace. The full report is saved in %s; press s to read it here.\n", convert.ReportFile)
+	} else {
+		fmt.Fprintf(&b, "\nOpen the workspace to see it, or let smith build everything first to check that it works.\n")
+	}
 	return b.String()
 }

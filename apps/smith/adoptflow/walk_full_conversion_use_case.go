@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
@@ -125,9 +127,19 @@ func (s *Session) ApplyFix(ctx context.Context, fix protocol.Fix, out io.Writer)
 }
 
 // FinishFix is the last stage of a conversion: one install, the lockfile
-// check and, with verify, the build, tests, lint and doctor.
-func (s *Session) FinishFix(verify bool) doctorfix.Planned {
-	return removalplan.Finish(convert.SmithCommand(), verify)
+// check, then the proof that it works: the build, the tests and doctor, and
+// the lint too when withLint (the full level, where smith owns the lint).
+func (s *Session) FinishFix(withLint bool) doctorfix.Planned {
+	if withLint {
+		return removalplan.Finish(convert.SmithCommand(), true)
+	}
+	return removalplan.FinishBuildAndTest(convert.SmithCommand())
+}
+
+// Report is the full report of the applied conversion, as it was saved.
+func (s *Session) Report() (string, error) {
+	raw, err := os.ReadFile(filepath.Join(s.Root, filepath.FromSlash(convert.ReportFile)))
+	return string(raw), err
 }
 
 // AdoptFix is the conservative adoption of a plain repository as a fix: one

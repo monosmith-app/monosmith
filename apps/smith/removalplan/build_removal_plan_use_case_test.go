@@ -137,6 +137,17 @@ func TestBuildExplainsWhatAKeptConfigNeeds(t *testing.T) {
 	}
 }
 
+func TestTheConservativeFinishBuildsAndTestsButDoesNotLint(t *testing.T) {
+	f := FinishBuildAndTest("smith")
+	var got []string
+	for _, s := range f.Steps[3:] {
+		got = append(got, s.Description)
+	}
+	if strings.Join(got, "|") != StepBuild+"|"+StepTest+"|"+StepDoctor {
+		t.Fatalf("checks = %v", got)
+	}
+}
+
 func TestFinishInstallsOnceThenChecksTheWorkspace(t *testing.T) {
 	f := Finish("smith", true)
 	if f.Ask || !f.Safe || len(f.Steps) != 7 || f.Steps[0].Argv[1] != "install" || f.Steps[6].Argv[1] != "doctor" {

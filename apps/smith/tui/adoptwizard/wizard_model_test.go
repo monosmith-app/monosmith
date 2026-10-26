@@ -113,12 +113,13 @@ func (f *fakeFlow) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer) 
 			delete(f.failOn, s.Description)
 			return &doctorfix.StepError{Number: 1, Total: len(fix.Steps), Step: s, Err: err, Output: "npm ERR! it broke\nline two"}
 		}
+		fmt.Fprintln(out, "✔ "+s.Description)
 	}
 	return f.fail("apply " + fix.Description)
 }
 
-func (f *fakeFlow) FinishFix(verify bool) doctorfix.Planned {
-	f.note(fmt.Sprintf("finish verify=%v", verify))
+func (f *fakeFlow) FinishFix(withLint bool) doctorfix.Planned {
+	f.note(fmt.Sprintf("finish lint=%v", withLint))
 	steps := f.finish
 	if steps == nil {
 		steps = []protocol.FixStep{{Description: "install", Argv: []string{"npm", "install"}}, {Description: "build every project", Argv: []string{"smith", "run", "build"}}}
@@ -139,6 +140,11 @@ func (f *fakeFlow) Changes() (adoptflow.Changes, error) {
 
 func (f *fakeFlow) Result() convert.Highlights {
 	return convert.Highlights{Projects: "2 projects (1 app, 1 library)", Changed: []string{"build: Rollup becomes esbuild (2 projects)"}, Checks: []string{"azure-pipelines.yml: replaced by a generated pipeline"}}
+}
+
+func (f *fakeFlow) Report() (string, error) {
+	f.note("report")
+	return "Conversion report for acme\n\n• build: Rollup becomes esbuild (2 projects)\n", f.fail("report")
 }
 
 func (f *fakeFlow) Install(_ context.Context, out io.Writer) error {
@@ -294,14 +300,29 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v after the groups", w.m.Stage())
 	}
-	w.want("is a smith workspace now", "2 projects (1 app, 1 library)", "Needs you (1)", "azure-pipelines.yml", "Behaves differently now (1)", "Old tools removed: lint", "Left as they were, as you chose: nx", "rollup.config.js: build.sh runs rollup", "[ Open the workspace  Enter ]", "Open it and build everything")
+	w.want("is a smith workspace now", "2 projects (1 app, 1 library)", "Needs you (1)", "azure-pipelines.yml", "Behaves differently now (1)", "Old tools removed: lint", "Left as they were, as you chose: nx", "rollup.config.js: build.sh runs rollup", "It works: everything builds (", "1 thing needs you (listed below).", "[ Open the workspace  Enter ]", "[ Read the report  s ]")
+	if strings.Contains(w.screen(), "Open it and build everything") {
+		t.Fatalf("the checks already built it: no need to offer a build:\n%s", w.screen())
+	}
+
+	// The report opens inside the wizard, and Enter comes back to the result.
+	w.press("s")
+	w.want("Bring in · review", "Conversion report for acme", "Rollup becomes esbuild", "[ Back to the result  Enter ]")
+	if w.m.Stage() != StageReport {
+		t.Fatalf("stage %v", w.m.Stage())
+	}
+	w.press("enter")
+	if w.m.Stage() != StageDone {
+		t.Fatalf("stage %v after the report", w.m.Stage())
+	}
+	w.want("It works: everything builds (")
 
 	// The declined group stayed out of the next plan, and the checks ran with verify.
 	last := f.declined[len(f.declined)-1]
 	if !last["nx"] || last["lint"] {
 		t.Fatalf("the last plan was made with declined=%v", last)
 	}
-	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "finish verify=true") {
+	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "finish lint=true") {
 		t.Fatalf("calls: %s", got)
 	}
 	w.press("enter")
@@ -311,7 +332,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 }
 
 func TestOpenItAndBuildEverythingAsksTheShellToBuild(t *testing.T) {
-	f := &fakeFlow{found: nxFound()}
+	f := &fakeFlow{found: nxFound(), finish: []protocol.FixStep{{Description: "install", Argv: []string{"npm", "install"}}}} // no check ran
 	w := start(t, f).press("enter", "1", "enter")
 	w.press("n")
 	if !w.last.Close || w.last.Finished == "" || !w.last.Build {
@@ -343,8 +364,9 @@ func TestTheConservativeLevelOfAnNxWorkspaceConvertsThenInstallsWithoutTheChecks
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v", w.m.Stage())
 	}
+	w.want("It works: everything builds (", "[ Read the report  s ]")
 	got := strings.Join(f.calls, "|")
-	if !strings.Contains(got, "convert conservative") || !strings.Contains(got, "finish verify=false") || !strings.Contains(got, "changes") {
+	if !strings.Contains(got, "convert conservative") || !strings.Contains(got, "finish lint=false") || !strings.Contains(got, "changes") {
 		t.Fatalf("calls: %s", got)
 	}
 }

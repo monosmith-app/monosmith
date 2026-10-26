@@ -54,6 +54,8 @@ type Model struct {
 	rest  []string
 	kept  []legacyinventory.Kept
 	notes []string
+	// checked are the closing checks that passed, with their times.
+	checked []checkedStep
 	// changes are the files the conversion writes, once they were worked out.
 	changes adoptflow.Changes
 }
@@ -163,6 +165,8 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: true}
 	case out.Decline:
 		return m.decline(false)
+	case out.Skip && m.stage == StageDone:
+		return m.showReport(), Outcome{}
 	case out.Skip:
 		return m.decline(true)
 	}
@@ -177,6 +181,8 @@ func (m Model) cancel() (Model, Outcome) {
 	switch m.stage {
 	case StageDone:
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+	case StageReport:
+		return m.done(), Outcome{}
 	case StageGroup, StageChecking:
 		return m, Outcome{Close: true, Note: "Stopped. The conversion is in your files; git status shows it, and git restore --staged --worktree . && git clean -fd takes it back (installed packages stay installed)."}
 	case StageFinishing, StageRemoving, StageConverting:
@@ -229,6 +235,8 @@ func (m Model) confirm() (Model, Outcome) {
 		return m.runFix(StageRemoving, g.Fix, job, style), Outcome{Job: &job}
 	case StageDone:
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+	case StageReport:
+		return m.done(), Outcome{}
 	}
 	// A failure: run the job again.
 	if m.retry != nil {
@@ -323,6 +331,7 @@ func (m Model) Done(result any, err error) (Model, Outcome) {
 		m.applied = append(m.applied, m.group.ID)
 		return m.check()
 	case StageFinishing:
+		m.checked, _ = result.([]checkedStep)
 		return m.done(), Outcome{}
 	}
 	return m, Outcome{}
@@ -587,7 +596,11 @@ func (m Model) finish() (Model, Outcome) {
 	}
 	fix := flow.FinishFix(m.full)
 	job := Job{Name: "installing and checking", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
-		return nil, flow.ApplyFix(ctx, fix.Fix, out)
+		timer := newStepTimer(out)
+		if err := flow.ApplyFix(ctx, fix.Fix, timer); err != nil {
+			return nil, err
+		}
+		return timer.Steps(), nil
 	}}
 	style := adoptStyle
 	style.Verb = "Installing and checking…"
@@ -599,7 +612,26 @@ func (m Model) finish() (Model, Outcome) {
 // done tells what happened.
 func (m Model) done() Model {
 	style := adoptStyle
-	style.Apply, style.Decline = "Open the workspace", "Open it and build everything"
-	text := doneText(m.found, m.flow.Result(), m.applied, m.declinedN, m.kept, m.notes)
+	style.Apply = "Open the workspace"
+	checked := checkedText(m.checked)
+	if checked == "" {
+		// Nothing proved that it works: offer to build everything on opening.
+		style.Decline = "Open it and build everything"
+	}
+	if m.found.Kind.Convertible() {
+		style.Skip = "Read the report"
+	}
+	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes)
 	return m.reviewOf(StageDone, "done", strings.TrimLeft(text, "\n"), style)
+}
+
+// showReport shows the report of the conversion, saved when it was applied.
+func (m Model) showReport() Model {
+	text, err := m.flow.Report()
+	if err != nil || strings.TrimSpace(text) == "" {
+		text = "The report could not be read: " + convert.ReportFile + " is missing or empty.\n"
+	}
+	style := adoptStyle
+	style.Apply = "Back to the result"
+	return m.reviewOf(StageReport, "report", text, style)
 }
