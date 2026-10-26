@@ -5,15 +5,23 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-var inputs = []string{"**/*", "{workspaceRoot}/requirements-dev.txt", "{workspaceRoot}/ruff.toml"}
+var inputs = []string{"**/*", "{workspaceRoot}/requirements-dev.txt", "{workspaceRoot}/ruff.toml", "{workspaceRoot}/.ruff.toml", "{workspaceRoot}/pyproject.toml"}
 
 // Tasks returns the tasks of a Python project. Every project is installed in
 // the venv in editable mode, so none needs another project built first. A
 // project that configures mypy ([tool.mypy]) is also type-checked.
-func Tasks(root string, kind protocol.ProjectKind, importName string, mypy bool) map[string]protocol.Task {
+//
+// ruffArgs come from the linting slice: --config with smith's default, or
+// nothing when the repository configures ruff itself.
+func Tasks(root string, kind protocol.ProjectKind, importName string, mypy bool, ruffArgs []string) map[string]protocol.Task {
 	py := venv.Interpreter()
+	lint := append([]string{py, "-m", "ruff", "check"}, ruffArgs...)
+	lintDescription := "ruff check (the repository's ruff config)"
+	if len(ruffArgs) > 0 {
+		lintDescription = "ruff check (smith's default config)"
+	}
 	tasks := map[string]protocol.Task{
-		"lint": {Command: []string{py, "-m", "ruff", "check", "."}, Inputs: inputs, Cache: true, Description: "ruff check"},
+		"lint": {Command: append(lint, "."), Inputs: inputs, Cache: true, Description: lintDescription},
 		"test": {Command: []string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, Inputs: inputs, Cache: true, Description: "pytest"},
 	}
 	if mypy {

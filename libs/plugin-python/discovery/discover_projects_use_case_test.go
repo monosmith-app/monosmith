@@ -47,6 +47,9 @@ func TestDiscover(t *testing.T) {
 	if sdk.Kind != protocol.ProjectPackage || sdk.Exports[0] != "acme_sdk" || sdk.Tasks["build"].Outputs[0] != "../../dist/packages/sdk" || sdk.Version != "1.2.0" {
 		t.Fatalf("sdk %+v", sdk)
 	}
+	if lint := api.Tasks["lint"].Command; len(lint) != 5 || lint[3] != "check" {
+		t.Fatalf("the root pyproject.toml configures ruff, so smith passes no --config: %v", lint)
+	}
 }
 
 func TestModuleNames(t *testing.T) {

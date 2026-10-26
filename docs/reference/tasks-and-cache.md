@@ -33,6 +33,21 @@ skips the tasks that depend on it; independent tasks keep going unless `--bail`.
 Ctrl+C stops every process tree smith started — on Windows through a Job Object,
 elsewhere through a process group.
 
+### Default lint configuration
+
+smith owns the lint of a repository, so the repository holds only overrides. A Go
+module lints with `golangci-lint run --config .smith/defaults/golangci.yml` and a
+Python project with `ruff check --config .smith/defaults/ruff.toml`, unless the
+repository configures the tool itself (`.golangci.{yml,yaml,toml,json}`;
+`ruff.toml`, `.ruff.toml` or `[tool.ruff]` in a `pyproject.toml`), in the project or
+above it, up to the workspace root. That configuration then replaces smith's default
+whole and smith passes no `--config`. The default is written from the smith binary
+into `.smith/defaults/` (ignored by git) whenever it differs, and the smith version
+is part of the cache key, so a release that changes a default reruns the lint. Node
+works the same way through `@monosmith/eslint-config`. See
+[Go](../plugins/using/catalogue/go.md#lint-configuration) and
+[Python](../plugins/using/catalogue/python.md#lint-configuration).
+
 ### deps-check
 
 A Node package (`kind = package`) gets a `deps-check` task, and its `lint` (or,

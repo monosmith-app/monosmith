@@ -1,11 +1,7 @@
 package scaffolding
 
 import (
-	"errors"
-	"io/fs"
 	"maps"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
@@ -35,12 +31,6 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	if err != nil {
 		return protocol.GenerateResult{}, err
 	}
-	if _, err := os.Stat(filepath.Join(workspaceRoot, "ruff.toml")); errors.Is(err, fs.ErrNotExist) {
-		if err := os.WriteFile(filepath.Join(workspaceRoot, "ruff.toml"), []byte(ruffConfig), 0o644); err != nil {
-			return protocol.GenerateResult{}, err
-		}
-		files = append(files, "ruff.toml")
-	}
 	created, err := venv.Ensure(workspaceRoot)
 	if err != nil {
 		return protocol.GenerateResult{Files: files}, err
@@ -52,7 +42,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	notes := []string{"Import it from another Python project as `import " + data.Import + "`."}
 	var shared []string
 	for _, f := range files {
-		if f == venv.RequirementsFile || f == "ruff.toml" {
+		if f == venv.RequirementsFile {
 			shared = append(shared, f)
 		}
 	}

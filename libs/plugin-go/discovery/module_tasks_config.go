@@ -3,10 +3,16 @@ package discovery
 import (
 	"runtime"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 var inputs = []string{"**/*", "{workspaceRoot}/go.work", "{workspaceRoot}/go.work.sum"}
+
+// lintInputs add the repository's golangci-lint configuration to the sources,
+// so editing it reruns the lint. A configuration inside the module is already
+// one of its files.
+var lintInputs = append(append([]string{}, inputs...), "{workspaceRoot}/.golangci.{yml,yaml,toml,json}")
 
 // NativeTag marks a module built on each OS (cgo): smith ci verify leaves it
 // to smith ci native, which runs on every runner.
@@ -14,11 +20,13 @@ const NativeTag = "native"
 
 // Tasks returns the tasks of a Go module. Go builds its dependencies itself,
 // so no task depends on another project's build; the cache key still follows
-// every dependency's sources. A native module builds with cgo.
-func Tasks(name, root string, kind protocol.ProjectKind, native bool) map[string]protocol.Task {
+// every dependency's sources. A native module builds with cgo. Lint is
+// golangci-lint: with smith's default configuration unless the repository has
+// its own (see the linting slice).
+func Tasks(name, root string, kind protocol.ProjectKind, native bool, lint linting.Lint) map[string]protocol.Task {
 	tasks := map[string]protocol.Task{
 		"test": {Command: []string{"go", "test", "./..."}, Inputs: inputs, Cache: true, Description: "go test ./..."},
-		"lint": {Command: []string{"go", "vet", "./..."}, Inputs: inputs, Cache: true, Description: "go vet ./..."},
+		"lint": {Command: lint.Command, Inputs: lintInputs, Cache: true, Description: lint.Description},
 	}
 	if kind == protocol.ProjectApp {
 		binary := name

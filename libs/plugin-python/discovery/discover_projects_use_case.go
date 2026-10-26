@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-python/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/pelletier/go-toml/v2"
@@ -46,6 +47,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		sort.Strings(imports)
 		importName := ImportName(py.Project.Name)
 		kind := projectkind.Resolve(py.Tool.Smith.Kind, root, protocol.ProjectLib)
+		ruffArgs, _, err := linting.Args(workspaceRoot, root)
+		if err != nil {
+			return result, fmt.Errorf("%s: %w", manifest, err)
+		}
 		result.Projects = append(result.Projects, protocol.Project{
 			Name:        path.Base(root),
 			Root:        root,
@@ -56,7 +61,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     dedupe(imports),
 			Version:     py.Project.Version,
 			Description: strings.TrimSpace(py.Project.Description),
-			Tasks:       Tasks(root, kind, importName, py.Tool.Mypy != nil),
+			Tasks:       Tasks(root, kind, importName, py.Tool.Mypy != nil, ruffArgs),
 		})
 	}
 	result.SetToolchain(func() string { return pythonToolchain(workspaceRoot) })

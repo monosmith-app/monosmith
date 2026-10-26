@@ -1,6 +1,6 @@
 # The go plugin
 
-The go plugin makes every `go.mod` below the workspace root a smith project. It gives each module the commands you would type yourself (`go build`, `go test`, `go vet`), adds the module to `go.work` when it creates one, keeps `go.work` honest in `smith doctor`, installs Go and a module cache in CI, scans modules for known vulnerabilities, and releases Go packages by tag and Go apps as zipped binaries. It is a built-in plugin: it needs no installation and runs in-process with smith.
+The go plugin makes every `go.mod` below the workspace root a smith project. It gives each module the commands you would type yourself (`go build`, `go test`, and `golangci-lint` with a default configuration smith supplies), adds the module to `go.work` when it creates one, keeps `go.work` honest in `smith doctor`, installs Go and a module cache in CI, scans modules for known vulnerabilities, and releases Go packages by tag and Go apps as zipped binaries. It is a built-in plugin: it needs no installation and runs in-process with smith.
 
 ## At a glance
 
@@ -69,13 +69,13 @@ The plugin contributes these tasks (`libs/plugin-go/discovery/module_tasks_confi
 | `build` | `go build -trimpath -o {workspaceRoot}/dist/<dir>/<name>[.exe] .` | app | yes | `dist/<dir>` (for `apps/api`: `dist/apps/api`) |
 | `build` | `go build ./...` | lib, package | yes | none (compiles, writes nothing) |
 | `test` | `go test ./...` | every module | yes | none |
-| `lint` | `go vet ./...` | every module | yes | none |
+| `lint` | `golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml` (no `--config` when the repository has its own, see [Lint configuration](#lint-configuration)) | every module | yes | none |
 | `start` | `go run .` | app | no | none |
 | `package` | `go build -trimpath -o {workspaceRoot}/dist/drop/<name>/<name>[.exe] .` | app | no | none declared; the binary lands in `dist/drop/<name>/` and `smith ci pack` keeps it |
 
 `.exe` is added to the binary name only when smith itself runs on Windows. Every cached task has the inputs `**/*`, `{workspaceRoot}/go.work` and `{workspaceRoot}/go.work.sum`. A `native` module gets `CGO_ENABLED=1` in the environment of every task.
 
-There is no `typecheck` and no `format` task: `smith run typecheck` and `smith run format` answer `no selected project has a [typecheck] task` (and `[format]`). `go vet` is the lint; the compiler is the type check inside `build`.
+There is no `typecheck` and no `format` task: `smith run typecheck` and `smith run format` answer `no selected project has a [typecheck] task` (and `[format]`). `golangci-lint` is the lint (it includes `go vet`); the compiler is the type check inside `build`.
 
 A convention adds tasks on top. With `[conventions.vertical-slices]` (written by `smith new`) every Go module also gets `slice-check`, and `lint` depends on it; see [vertical-slices](vertical-slices.md). Real `smith explain` output:
 
@@ -83,7 +83,7 @@ A convention adds tasks on top. With `[conventions.vertical-slices]` (written by
 $ smith explain api
 api has 6 tasks:
   build        go build -trimpath -o {workspaceRoot}/dist/apps/api/api.exe .  (cached)
-  lint         go vet ./...  (cached, after slice-check)
+  lint         golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml  (cached, after slice-check)
   package      go build -trimpath -o {workspaceRoot}/dist/drop/api/api.exe .
   slice-check  smith slices check --lang go .  (cached)
   start        go run .
@@ -107,7 +107,13 @@ sdk:build — Compile every package
   cache      true
 ```
 
-To change any of them for one project, or for all, use `[projects.<name>.tasks.<task>]` or `[tasks.<task>]` in `smith.toml` (see [tasks and cache](../../../reference/tasks-and-cache.md)). For example, a `lint` command that starts with `golangci-lint` changes what CI installs; see [CI](#ci).
+To change any of them for one project, or for all, use `[projects.<name>.tasks.<task>]` or `[tasks.<task>]` in `smith.toml` (see [tasks and cache](../../../reference/tasks-and-cache.md)). A `lint` command that starts with `golangci-lint` (the default) is what makes CI install it; see [CI](#ci).
+
+### Lint configuration
+
+smith owns the lint of a Go repository, so the repository need not carry a linter configuration. When no `.golangci.yml`, `.golangci.yaml`, `.golangci.toml` or `.golangci.json` exists in the module or in a directory above it (up to the workspace root), smith writes its default to `.smith/defaults/golangci.yml` (git ignores `.smith/`; the file is rewritten whenever it differs from the one in the smith binary) and passes it with `--config`. The default is golangci-lint v2 with its standard linters and `errcheck` told that `fmt.Fprint`, `fmt.Fprintf` and `fmt.Fprintln` need no error check.
+
+Your own file is the override and replaces the default whole, because golangci-lint has no way to extend another file. When one exists smith passes no `--config` and golangci-lint finds it, as it would without smith. To start from the default, copy `.smith/defaults/golangci.yml` (it exists after any `smith run lint`) to `.golangci.yml` in the repository root and edit it. The workspace-root file is an input of the cached task, so editing it reruns the lint.
 
 ## Creating a project
 
@@ -195,7 +201,7 @@ To pin it, put the version in `[toolchains]` (a prefix on dot boundaries). Real 
 
 smith does not download Go. What must be on the machine: `go`. Separately from the pin, the Go version that CI installs and that `smith doctor` requires comes from `go.work` (default `1.24` when `go.work` has no `go` line).
 
-Where output goes: an app's `build` writes `dist/<module dir>/<name>[.exe]` (outside the module, so `go test ./...` and `go vet ./...` never walk it); `package` writes `dist/drop/<name>/`; a release writes `dist/release/<app>/`. A lib or package build writes nothing.
+Where output goes: an app's `build` writes `dist/<module dir>/<name>[.exe]` (outside the module, so `go test ./...` and `golangci-lint run` never walk it); `package` writes `dist/drop/<name>/`; a release writes `dist/release/<app>/`. A lib or package build writes nothing.
 
 ## Releasing
 
@@ -259,7 +265,7 @@ variables:
 |---|---|
 | Toolchain | Go at the `go.work` version (`1.24` when none): `actions/setup-go@v7` (with `cache: false`; the module cache is handled as a store), `GoTool@0` on Azure (a `major.minor` version gets `.0` appended), a `curl` of the release tarball for other providers, and the `go` dev container feature with `golangciLintVersion` set to the pinned version |
 | Package store | `~/go/pkg/mod` (`GOMODCACHE` on Azure), keyed on each module's `go.sum` |
-| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. If any module's `lint` command starts with `golangci-lint`, also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0` |
+| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0` |
 | Audit (`smith ci audit`) | `govulncheck` v1.9.0 (`go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`), once per module, non-blocking, cached on that module's `go.mod` and `go.sum`. With `[ci] audit_policies = ["go"]` also `go mod verify` per module, blocking unless `"go"` is in `audit_warn` |
 | Credentials, permissions | none; the plugin asks for no secret. The workflow-level `permissions` come from smith, not from this plugin. |
 
@@ -275,7 +281,7 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work entry <dir> exists` | a `use` entry has no `go.mod` | `go work edit -dropuse=./<dir>`; `smith doctor --fix` rewrites `go.work` |
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
-| `golangci-lint is <v>, as in CI` | only when a `lint` command starts with `golangci-lint`; a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
+| `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
 
 Real output after `go work edit -dropuse=./libs/util`:
 
@@ -316,7 +322,7 @@ Removal: `smith remove <project>` deletes the directory and the plugin drops its
 - `go` on `PATH` (the plugin shells out to `go`; there is no embedded compiler). Generation also needs it: `smith add` fails if `go work init`, `go mod init` or `go work use` fails.
 - A workspace with Go modules needs a root `go.work`; the generator creates it, `smith doctor` demands it. A Go project outside the `go.work` is a doctor failure.
 - Only `go.mod` marks a project. Not supported: a `go.mod` at the workspace root as a project (skipped by design), module-less Go code.
-- The plugin has no `typecheck` and `format` tasks and no formatter; `gofmt` and `golangci-lint` are not run unless you override `lint`.
+- The plugin has no `typecheck` and `format` tasks and no formatter; `gofmt` is not run (golangci-lint's `fmt` formatters are not enabled by the default).
 - Tags: a Go app is tagged `<name>@<version>` while a package is tagged `<dir>/v<version>`. The plugin does nothing for a module whose import path needs a major-version suffix (`/v2`); not verified.
 - Release assets are cross-compiled only when `CGO_ENABLED=0` is possible; a cgo app must declare `// smith:native`.
 - `go` kind inference for a module outside `apps/`, `libs/` and `packages/` reads only the files directly in the module directory.
@@ -329,7 +335,7 @@ Not verified by a run:
 
 - The release asset build itself (`BuildAssets` cross-compiling, zipping, checksums): a real `smith release` would tag and push; only the dry run, which lists names, was run. The behaviour above is read from `releasing/build_assets_use_case.go`.
 - A `// smith:native` module and `smith ci native` (code and unit tests only).
-- A `golangci-lint` lint override (not installed here); the CI and doctor behaviour for it is from the code.
+- The `lint` task as `go vet` was verified; the move to golangci-lint with smith's default config was verified only by `smith run lint` on this repository (golangci-lint 2.x installed) and the unit tests.
 - GitLab CI output and the devcontainer feature on a non-Windows machine. The dev container file written for the demo workspace contained `ghcr.io/devcontainers/features/go:1` with `version` `1.27.0` and `golangciLintVersion` `2.14.0`.
 
 ## See also

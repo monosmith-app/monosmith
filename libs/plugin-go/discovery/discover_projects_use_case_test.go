@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-go/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -53,6 +54,26 @@ func TestDiscover(t *testing.T) {
 	if _, ok := sdk.Tasks["start"]; ok {
 		t.Fatal("a package has no start task")
 	}
+	lint := api.Tasks["lint"].Command
+	if lint[0] != "golangci-lint" || lint[len(lint)-2] != "--config" {
+		t.Fatalf("a module without a golangci config lints with smith's default: %v", lint)
+	}
+}
+
+func TestARepositoryGolangciConfigReplacesTheDefault(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, ".golangci.yml", "version: \"2\"\n")
+	write(t, ws, "apps/api/go.mod", "module example.com/acme/apps/api\n")
+	write(t, ws, "apps/api/main.go", "package main\nfunc main(){}\n")
+	res, err := Discover(ws, []string{"apps/api/go.mod"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range res.Projects[0].Tasks["lint"].Command {
+		if a == "--config" {
+			t.Fatalf("smith passes no --config over the repository's own: %v", res.Projects[0].Tasks["lint"].Command)
+		}
+	}
 }
 
 func TestParseModule(t *testing.T) {
@@ -73,7 +94,7 @@ func TestANativeModuleIsTaggedAndBuildsWithCgo(t *testing.T) {
 	if plain, _ := ParseModule("module example.com/x\n"); plain.Native {
 		t.Fatal("a module without the comment is not native")
 	}
-	for name, task := range Tasks("probe", "apps/probe", protocol.ProjectApp, true) {
+	for name, task := range Tasks("probe", "apps/probe", protocol.ProjectApp, true, linting.Lint{}) {
 		if task.Env["CGO_ENABLED"] != "1" {
 			t.Errorf("%s does not build with cgo", name)
 		}

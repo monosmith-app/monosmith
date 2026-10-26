@@ -81,7 +81,7 @@ commits what it wrote): review them with `git status`, then commit.
 
 Writes the project's files under its folder, and workspace files the plugin owns: the
 CI pipeline, `go.work` (Go), the root `package.json`, `package-lock.json`, `tsconfig.base.json`
-and `eslint.config.mjs` (Node), `requirements-dev.txt` and `ruff.toml` (Python), the
+and `eslint.config.mjs` (Node), `requirements-dev.txt` (Python), the
 dev container. It runs the package manager (`npm install --no-audit --no-fund`,
 `go mod init`, and so on); its output is shown only when it fails, unless `--verbose`.
 Reads `[default_stacks]`, `[workspace] recipe` and `[plugins]` from `smith.toml`.

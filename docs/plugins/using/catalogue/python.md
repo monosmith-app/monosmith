@@ -51,7 +51,7 @@ All tasks run in the project directory with the venv interpreter, written `{work
 
 | Task | Command (after `<py>`) | Appears for | Cached | Outputs |
 |---|---|---|---|---|
-| `lint` | `-m ruff check .` | every project | yes | none |
+| `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .` (no `--config` when the repository configures ruff, see [Lint configuration](#lint-configuration)) | every project | yes | none |
 | `test` | `-m pytest -q -p no:cacheprovider` | every project | yes | none |
 | `typecheck` | `-m mypy .` | a project whose `pyproject.toml` has a `[tool.mypy]` table | yes | none |
 | `build` | `-m build --outdir {workspaceRoot}/dist/<project dir> .` | `package` only | yes | `dist/<project dir>` (wheel and sdist) |
@@ -67,7 +67,7 @@ Real output (project names from the test workspace `py-demo`):
 ```
 $ smith explain web
 web has 5 tasks:
-  lint         {workspaceRoot}/.venv/Scripts/python.exe -m ruff check .  (cached, after slice-check)
+  lint         {workspaceRoot}/.venv/Scripts/python.exe -m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .  (cached, after slice-check)
   package      {workspaceRoot}/.venv/Scripts/python.exe -m build --wheel --outdir {workspaceRo...
   slice-check  smith slices check --lang python .  (cached)
   start        {workspaceRoot}/.venv/Scripts/python.exe -m py_demo_web
@@ -78,7 +78,7 @@ sdk:build — Build the wheel and sdist into dist/packages/sdk/
   command    {workspaceRoot}/.venv/Scripts/python.exe -m build --outdir {workspaceRoot}/dist/packages/sdk .
   cwd        packages/sdk
   dependsOn  —
-  inputs     **/*, {workspaceRoot}/requirements-dev.txt, {workspaceRoot}/ruff.toml
+  inputs     **/*, {workspaceRoot}/requirements-dev.txt, {workspaceRoot}/ruff.toml, {workspaceRoot}/.ruff.toml, {workspaceRoot}/pyproject.toml
   outputs    ../../dist/packages/sdk
   env        —
   cache      true
@@ -90,13 +90,19 @@ util:typecheck │ Success: no issues found in 5 source files
 
 Running the build leaves `build/` and `<name>.egg-info` directories in the project source tree (setuptools's own); `smith new` writes `*.egg-info/` into `.gitignore`, and the build output itself goes to `dist/`.
 
+### Lint configuration
+
+smith owns the lint of a Python repository, so a new project carries no ruff configuration. When ruff finds none for a project (no `ruff.toml` or `.ruff.toml` in the project or a directory above it, up to the workspace root, and no `[tool.ruff]` table in a `pyproject.toml` there), smith writes its default to `.smith/defaults/ruff.toml` (git ignores `.smith/`; the file is rewritten whenever it differs from the one in the smith binary) and passes it with `--config`. The default is `line-length = 100`, `target-version = "py312"` and the rules `E F I UP B N`.
+
+Your own file is the override and replaces the default whole: create `ruff.toml` at the workspace root (shared by every project) or a `[tool.ruff]` table in a project's `pyproject.toml`. When one exists smith passes no `--config` and ruff finds it, as it would without smith. To start from the default, copy `.smith/defaults/ruff.toml` (it exists after any `smith run lint`). pytest needs no configuration: smith runs it as `-m pytest -q -p no:cacheprovider` and a `[tool.pytest.ini_options]` table in the project's `pyproject.toml` still applies.
+
 ## Creating a project
 
 ```
 smith add app|lib|package <name> --lang python
 ```
 
-The first `smith add` of a workspace also writes `requirements-dev.txt` and `ruff.toml`, creates `.venv` with `<launcher> -m venv --upgrade-deps .venv` (the launcher is `py -3`, `python`, `python3` on Windows and `python3`, `python` elsewhere; the first that is on PATH and succeeds) and installs the pinned tools. Every `smith add` then installs the new project with `pip install -e ./<dir>`. This took 59 seconds on the first project (network) in the test run.
+The first `smith add` of a workspace also writes `requirements-dev.txt`, creates `.venv` with `<launcher> -m venv --upgrade-deps .venv` (the launcher is `py -3`, `python`, `python3` on Windows and `python3`, `python` elsewhere; the first that is on PATH and succeeds) and installs the pinned tools. Every `smith add` then installs the new project with `pip install -e ./<dir>`. This took 59 seconds on the first project (network) in the test run.
 
 Real output:
 
@@ -113,7 +119,6 @@ Wrote 10 file(s):
   libs/util/src/py_demo_util/greeting/greeting_contract.py
   libs/util/tests/test_greet_use_case.py
   requirements-dev.txt
-  ruff.toml
 Import it from another Python project as `import py_demo_util`.
 Try: smith test -p util
 
@@ -130,10 +135,9 @@ An app adds `src/<import>/__main__.py`, which prints `Hello, world!`; a package 
 
 | Generated | What it is |
 |---|---|
-| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the workspace name is prefixed so the name is unique on a shared index; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]`, `[tool.pytest.ini_options] testpaths = ["tests"]` |
+| `pyproject.toml` | setuptools build backend (`setuptools>=75`), `name = "<workspace>-<project>"` (the workspace name is prefixed so the name is unique on a shared index; `acme` + `sdk` is `acme-sdk`), `version = "0.0.0"`, `requires-python = ">=3.12"`, empty `dependencies`, `[tool.smith] kind` (and `stack`), `[tool.setuptools.packages.find] where = ["src"]` |
 | `src/<import>/greeting/` | a worked slice: `greeting_contract.py` (a frozen `Greeting` dataclass), `greet_use_case.py` (`greet(name)`), `__init__.py` re-exporting both |
 | `tests/test_greet_use_case.py` | a pytest test of `greet` |
-| `ruff.toml` (once, at the root) | `line-length = 100`, `target-version = "py312"`, rules `E F I UP B N` |
 | `requirements-dev.txt` (once, at the root) | the pinned toolchain, below |
 
 `requirements-dev.txt` as written by smith 1.62.0:
@@ -159,7 +163,7 @@ The plugin has no `[projects.<p>.settings.python]` keys. What it reads:
 | `pyproject.toml` | `[tool.smith] kind`, `stack` | kind and stack | `discovery/pyproject_contract.go` |
 | `pyproject.toml` | `[tool.mypy]` (a table with at least one key; tried with `strict = true`) | adds the `typecheck` task | `discovery/discover_projects_use_case.go` |
 | `pyproject.toml` | `[project] version`, `description`, `dependencies` | version, description, graph edges | same |
-| `requirements-dev.txt`, `ruff.toml` | whole file | part of every cached task's inputs; edit them freely, smith only creates them when missing | `discovery/project_tasks_config.go` |
+| `requirements-dev.txt`, `ruff.toml`, `.ruff.toml`, root `pyproject.toml` | whole file | part of every cached task's inputs; `ruff.toml`, `.ruff.toml` and a `[tool.ruff]` table are the repository's ruff override (smith creates none); edit `requirements-dev.txt` freely, smith only creates it when missing | `discovery/project_tasks_config.go` |
 | `smith.toml` | `[registries.<name>] pypi`, `pypi_upload`, `auth`, `token_env` plus `[workspace] registry`, `[release] registry`, `[projects.<p>] registry` | private index for installs and for publishing | `registries/`, `releasing/upload_target_policy.go` |
 | `smith.toml` | `[ci] audit_policies = ["python"]`, `audit_warn = ["python"]` | adds the requirements policy to the audit | `pipeline/ci_contribution_use_case.go` |
 | `smith.toml` | `[toolchains] python = "3.12"` | pin checked by doctor | host |

@@ -49,7 +49,6 @@ Wrote 11 file(s):
   packages/sdk/src/acme_sdk/greeting/greeting_contract.py
   packages/sdk/tests/test_greet_use_case.py
   requirements-dev.txt
-  ruff.toml
 Import it from another Python project as `import acme_sdk`.
 
 $ smith add lib engine --lang rust
@@ -83,7 +82,7 @@ sdk:build ✔ 24.157s
 ✔ 12/12 tasks succeeded (0 from cache) in 24.173s
 ```
 
-The twelve tasks include a layout check per project. The commands behind them are the language's own: `go vet` and `go test`, `cargo clippy -D warnings` and `cargo test`, `ruff check`, `pytest` and PyPA `build` through the workspace `.venv`. `smith explain sdk:build` shows each one, and where each setting came from.
+The twelve tasks include a layout check per project. The commands behind them are the language's own: `golangci-lint` and `go test`, `cargo clippy -D warnings` and `cargo test`, `ruff check`, `pytest` and PyPA `build` through the workspace `.venv`. `smith explain sdk:build` shows each one, and where each setting came from.
 
 ## All eleven languages in one workspace
 
@@ -103,8 +102,8 @@ The one lint failure is `dart analyze`, which crashed with an analysis-server er
 | Language | `smith add` writes | Workspace root | Default tasks | CI installs | Audit, then release |
 |---|---|---|---|---|---|
 | Node, TypeScript | `package.json`, `tsconfig`, a slice with a spec | npm workspaces, `eslint.config.mjs`, `tsconfig.base.json` | `lint`, `typecheck`, `test`, `build` | Node 24, `~/.npm` cache | `npm audit`, then npm |
-| Python | `pyproject.toml`, `src/<name>`, `tests` | one `.venv`, `requirements-dev.txt`, `ruff.toml` | `lint` (Ruff), `test` (pytest), `typecheck` (mypy, when configured), `build` | Python 3.12, pip cache | `pip-audit`, then PyPI |
-| Go | `go.mod`, a slice with a test | `go.work` | `build`, `test`, `lint` (`go vet`) | Go at the `go.work` version, module cache | `govulncheck`, then a module tag |
+| Python | `pyproject.toml`, `src/<name>`, `tests` | one `.venv`, `requirements-dev.txt` | `lint` (Ruff), `test` (pytest), `typecheck` (mypy, when configured), `build` | Python 3.12, pip cache | `pip-audit`, then PyPI |
+| Go | `go.mod`, a slice with a test | `go.work` | `build`, `test`, `lint` (`golangci-lint`, smith's default config) | Go at the `go.work` version, module cache | `govulncheck`, then a module tag |
 | Rust | crate `Cargo.toml`, `src` | root Cargo workspace, `.cargo/config.toml` | `build`, `test`, `lint` (Clippy, deny warnings), `typecheck`, `format` | Rust with Clippy and rustfmt, `~/.cargo/registry` | none by default, then crates.io |
 | .NET | `.csproj`, a tests project | `Directory.Build.props` | `build`, `lint` (`dotnet format`), `test`, `pack` | .NET SDK from `global.json`, NuGet cache | none by default, then NuGet |
 | Ruby | gemspec, `lib`, `spec` | root `Gemfile`, `.rubocop.yml` | `lint` (RuboCop), `test` (RSpec) | Ruby from `.ruby-version` | none by default, then RubyGems |
