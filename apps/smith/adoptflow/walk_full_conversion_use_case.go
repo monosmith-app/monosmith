@@ -26,6 +26,9 @@ var ErrNotConvertible = errors.New("this repository is not an Nx or Turborepo wo
 type Preview struct {
 	Report fullconversion.Report
 	Text   string
+	// Changes are the files the conversion itself writes, for the summary above
+	// the review (Text lists them, then the removals).
+	Changes Changes
 }
 
 // Prepare converts the workspace on a scratch copy, so what the old tooling
@@ -60,14 +63,16 @@ func (s *Session) PlanFull(c convertchoices.Choices, verify bool) (Preview, erro
 	report := fullconversion.MakeReport(s.view.Tree, c, verify)
 	report.Finish = removalplan.Finish(convert.SmithCommand(), verify)
 	var b strings.Builder
-	if changes, err := s.Changes(); err == nil {
-		b.WriteString(changes.Text())
+	changes, err := s.Changes()
+	if err == nil {
+		b.WriteString("● The files, in detail\n")
+		b.WriteString(changes.Details())
 		b.WriteString("\n")
 	}
 	if err := fullconversion.Describe(&b, s.view.Dir, report, true); err != nil {
 		return Preview{}, err
 	}
-	return Preview{Report: report, Text: b.String()}, nil
+	return Preview{Report: report, Text: b.String(), Changes: changes}, nil
 }
 
 // Convert applies the conversion to the repository, without installing: the

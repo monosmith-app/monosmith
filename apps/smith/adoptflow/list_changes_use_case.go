@@ -76,8 +76,13 @@ func (s *Session) Changes() (Changes, error) {
 // Text lists the changes by what happens to the files, a file that changes in
 // several folders on one line.
 func (c Changes) Text() string {
+	return fmt.Sprintf("● smith will create %d files, edit %d and remove %d\n", len(c.Created), len(c.Edited), len(c.Removed)) + c.Details()
+}
+
+// Details lists the files by what happens to them, without the count line
+// that Text starts with.
+func (c Changes) Details() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "● smith will create %d files, edit %d and remove %d\n", len(c.Created), len(c.Edited), len(c.Removed))
 	section := func(title string, files []string) {
 		if len(files) == 0 {
 			return

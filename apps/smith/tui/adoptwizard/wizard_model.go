@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
+	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
@@ -465,7 +466,8 @@ func (m Model) planFull() (Model, Outcome) {
 func (m Model) reviewFull() Model {
 	style := adoptStyle
 	style.Apply, style.Back = "Convert", true
-	return m.reviewOf(StageReview, "full conversion", reviewHeader+m.preview.Text, style)
+	text := reviewHeader + planSummaryText(m.preview.Changes, m.flow.Result()) + "\n" + m.preview.Text
+	return m.reviewOf(StageReview, "full conversion", text, style)
 }
 
 // reviewConservative works out the files a conservative conversion changes
@@ -494,9 +496,9 @@ func (m Model) showConservative() Model {
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
 		}
-		text = conservativeText(m.found, shown, adoptflow.Changes{})
+		text = conservativeText(m.found, shown, adoptflow.Changes{}, convert.Highlights{})
 	} else {
-		text = conservativeText(m.found, "", m.changes)
+		text = conservativeText(m.found, "", m.changes, m.flow.Result())
 	}
 	style := adoptStyle
 	style.Apply, style.Back = "Go ahead", true
