@@ -70,6 +70,9 @@ func (s Shell) mainContent(w, h int) content {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}
 		c.lines = append(c.lines, lines...)
+	case commands.TabSettings:
+		in := s.mainInner()
+		c.lines = s.settings.View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
 	case commands.TabGuide:
 		banner := s.adoptBanner(w)
 		for i := range banner {

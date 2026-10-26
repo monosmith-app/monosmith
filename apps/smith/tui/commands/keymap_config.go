@@ -29,8 +29,9 @@ var (
 	vRelease  = []string{TabRelease}
 	vDeps     = []string{TabDeps}
 	vGuide    = []string{TabGuide}
+	vSettings = []string{TabSettings}
 	// vReloadable are the views that read something and can read it again.
-	vReloadable = []string{TabHome, TabDoctor, TabRelease, TabDeps}
+	vReloadable = []string{TabHome, TabDoctor, TabRelease, TabDeps, TabSettings}
 	// vWorkspace are the views of a workspace where the run keys are shown.
 	vWorkspace = []string{TabHome, TabProjects, TabRun, TabDoctor, TabDeps, TabRelease}
 	vCopy      = []string{TabProjects, TabRun, TabDoctor, TabDeps}
@@ -75,6 +76,14 @@ var all = []Command{
 	{ID: "deps.update", Group: GroupProjects, Title: "Update the marked ones", Hint: "smith deps up", Keys: []string{"u", "enter"}, Kind: ViewAction, Action: "deps-up", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "update"},
 	{ID: "deps.align", Group: GroupProjects, Title: "Bring drifting versions to one", Hint: "smith deps up --align", Keys: []string{"v"}, Kind: ViewAction, Action: "deps-align", Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "align"},
 
+	{ID: "settings.move", Group: GroupWorkspace, Title: "Move in the list of sections or its rows", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Glyph: "↑↓", Kind: PaneKey, Views: vSettings, Footer: "move"},
+	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{" ", "enter"}, Kind: PaneKey, Views: vSettings, Footer: "change"},
+	{ID: "settings.sections", Group: GroupWorkspace, Title: "Switch between the list of sections and its rows", Keys: []string{"tab", "left", "right"}, Shortcut: "Tab / Left Right", Glyph: "Tab", Kind: PaneKey, Views: vSettings, Footer: "sections"},
+	{ID: "settings.back", Group: GroupWorkspace, Title: "Back to the list of sections, or cancel the editor", Keys: []string{"esc"}, Kind: PaneKey, Views: vSettings, Footer: "back"},
+	{ID: "settings.trust", Group: GroupWorkspace, Title: "Review an external plugin and trust it", Hint: "smith plugin trust: what it is, what it runs, what it sees", Keys: []string{"t"}, Kind: PaneKey, Views: vSettings, Footer: "trust"},
+	{ID: "settings.forget", Group: GroupWorkspace, Title: "Forget that an external plugin is trusted", Hint: "smith plugin untrust", Keys: []string{"f"}, Kind: PaneKey, Views: vSettings, Footer: "forget"},
+	{ID: "settings.unset", Group: GroupWorkspace, Title: "Reset a setting to its default", Hint: "smith config unset", Keys: []string{"u"}, Kind: PaneKey, Views: vSettings, Footer: "reset"},
+
 	{ID: "guide.choose", Group: GroupStart, Title: "Choose and go on", Keys: []string{"enter"}, Kind: PaneKey, Views: vGuide, Footer: "choose", Glyph: "Enter"},
 	{ID: "guide.back", Group: GroupStart, Title: "Back one step", Keys: []string{"esc"}, Kind: PaneKey, Views: vGuide, Footer: "back"},
 
@@ -101,11 +110,6 @@ var all = []Command{
 	{ID: "ws.ci", Group: GroupWorkspace, Title: "Regenerate CI pipelines…", Hint: "smith ci generate", Kind: Execute, Argv: []string{"ci", "generate"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.info", Group: GroupWorkspace, Title: "Info", Hint: "smith info: the installed smith and the workspace's settings", Kind: Execute, Argv: []string{"info"}, NeedsIdle: true},
 
-	// What the tabs of earlier versions showed is a smith command now: the
-	// palette runs it in the terminal, so nothing became unreachable.
-	{ID: "cli.plugins", Group: GroupWorkspace, Title: "Plugins", Hint: "smith plugin list; plugin enable|disable|set change them", Kind: Execute, Argv: []string{"plugin", "list"}, Presents: []string{"plugin", "plugin enable", "plugin disable"}, NeedsWorkspace: true, NeedsIdle: true},
-	{ID: "cli.recipes", Group: GroupWorkspace, Title: "Recipes", Hint: "smith recipe: check a recipe, or write one; smith add asks a recipe's choices", Kind: Execute, Argv: []string{"recipe"}, Presents: []string{"recipe"}, NeedsWorkspace: true, NeedsIdle: true},
-	{ID: "cli.settings", Group: GroupWorkspace, Title: "Settings", Hint: "smith config list; config set and unset change smith.toml, checked against its schema", Kind: Execute, Argv: []string{"config", "list"}, Presents: []string{"config", "config set", "config unset"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "cli.guide", Group: GroupHelp, Title: "Commands and docs", Hint: "smith help: every command, with its examples", Kind: Execute, Argv: []string{"help"}, NeedsIdle: true},
 
 	// Start
@@ -124,12 +128,15 @@ var all = []Command{
 	// Release
 
 	// Views: the number is the position in the tab row.
-	{ID: "view.home", Group: GroupViews, Title: "Home", Hint: "the health of the workspace and what to do next", Keys: []string{"1"}, Glyph: "1-6", Kind: ShowTab, Tab: TabHome, NeedsWorkspace: true, Footer: "views", Tail: true},
+	{ID: "view.home", Group: GroupViews, Title: "Home", Hint: "the health of the workspace and what to do next", Keys: []string{"1"}, Glyph: "1-7", Kind: ShowTab, Tab: TabHome, NeedsWorkspace: true, Footer: "views", Tail: true},
 	{ID: "view.projects", Group: GroupViews, Title: "Projects", Keys: []string{"2"}, Kind: ShowTab, Tab: TabProjects, NeedsWorkspace: true, Presents: []string{"projects"}},
 	{ID: "view.run", Group: GroupViews, Title: "Run", Keys: []string{"3"}, Kind: ShowTab, Tab: TabRun, NeedsWorkspace: true},
 	{ID: "view.doctor", Group: GroupViews, Title: "Doctor", Keys: []string{"4"}, Kind: ShowTab, Tab: TabDoctor, NeedsWorkspace: true},
 	{ID: "view.deps", Group: GroupViews, Title: "Dependencies", Hint: "newer releases and the one-version policy", Keys: []string{"5"}, Kind: ShowTab, Tab: TabDeps, NeedsWorkspace: true, Presents: []string{"up"}},
 	{ID: "view.release", Group: GroupViews, Title: "Release", Hint: "what the next release would do", Keys: []string{"6"}, Kind: ShowTab, Tab: TabRelease, NeedsWorkspace: true, Presents: []string{"release"}},
+	// The Settings tab is where plugins, recipes and smith.toml settings are
+	// listed and changed (smith plugin, recipe and config in the terminal).
+	{ID: "view.settings", Group: GroupViews, Title: "Settings", Hint: "plugins, style and the settings of smith.toml", Keys: []string{"7"}, Kind: ShowTab, Tab: TabSettings, NeedsWorkspace: true, Presents: []string{"plugin", "plugin enable", "plugin disable", "recipe", "config", "config set", "config unset"}},
 	{ID: "detail.zoom", Group: GroupViews, Title: "Zoom the detail to the full width, and back", Hint: "the detail alone fills the pane; on a narrow screen it replaces the list", Keys: []string{"z"}, Kind: ViewAction, Action: "detail-zoom", Views: vZoom, Footer: "zoom"},
 	{ID: "detail.expand", Group: GroupViews, Title: "Show every line of the problem, or fewer", Keys: []string{"e"}, Kind: ViewAction, Action: "detail-expand", Views: vDoctor},
 	{ID: "detail.wider", Group: GroupViews, Title: "Make the detail wider", Hint: "kept until smith closes", Keys: []string{"]"}, Kind: ViewAction, Action: "detail-wider", Views: vSplit},

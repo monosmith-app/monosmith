@@ -24,6 +24,10 @@ const maxHistory = 200
 // workspace or publish ask first in a dialog that shows the line, and the
 // rest start at once in the Run tab. confirmed is true once the dialog said yes.
 func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
+	if section, ok := settingsSectionFor(argv); ok && s.inWorkspace {
+		// What plugin, recipe and config list print is the Settings tab.
+		return s.showSettings(section)
+	}
 	switch catalog.Classify(argv) {
 	case catalog.NeedsTerminal:
 		s.Argv, s.quit = argv, true

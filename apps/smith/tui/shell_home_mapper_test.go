@@ -48,7 +48,7 @@ func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 		t.Fatalf("the headline (row %d) comes before the next action (row %d)", headline, next)
 	}
 	footer := lines[len(lines)-2]
-	for _, want := range []string{"Enter next", "b build", "w changed", "d doctor", "1-6 views"} {
+	for _, want := range []string{"Enter next", "b build", "w changed", "d doctor", "1-7 views"} {
 		if !strings.Contains(footer, want) {
 			t.Errorf("the Home footer lacks %q: %q", want, footer)
 		}

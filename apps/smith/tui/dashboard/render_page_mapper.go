@@ -30,6 +30,9 @@ func Lines(th theme.Theme, f Facts, w int) (lines []string, actionRow int, comma
 	row("Affected", affectedText(th, f))
 	row("Last run", lastRunText(th, f))
 	row("Updates", updatesText(th, f))
+	if f.SettingsTip {
+		row("Settings", th.Accent("New here?")+" Plugins, the colour theme and the settings of smith.toml are in the Settings tab: press "+commands.ShortcutOf("view.settings"))
+	}
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}

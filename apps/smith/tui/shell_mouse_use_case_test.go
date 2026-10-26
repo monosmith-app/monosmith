@@ -73,7 +73,7 @@ func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 
 func TestAHintThatStandsForSeveralKeysIsNotClickable(t *testing.T) {
 	l := newLab(t, true, 160, 34)
-	x, y := l.find("1-6 views")
+	x, y := l.find("1-7 views")
 	l.send(click(x+1, y))
 	if l.sh().tab != "projects" || len(l.started) != 0 {
 		t.Fatal("nothing happens")

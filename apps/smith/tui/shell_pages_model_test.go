@@ -4,7 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 )
 
 func footerOf(l *lab) string {
@@ -12,35 +14,48 @@ func footerOf(l *lab) string {
 	return lines[len(lines)-2]
 }
 
-func TestThePagesThatLeftTheInterfaceAreCommandsOfThePaletteRunInTheTerminal(t *testing.T) {
-	for name, want := range map[string]string{
-		"Plugins":           "plugin list",
-		"Recipes":           "recipe",
-		"Settings":          "config list",
-		"Commands and docs": "help",
+func TestTheCommandsAndDocsEntryOfThePaletteStillRunsInTheTerminal(t *testing.T) {
+	l, made := inlineLab(t, 0)
+	l.keys("ctrl+p").typeText("Commands and docs").keys("enter")
+	if len(*made) != 1 || strings.Join((*made)[0].Argv, " ") != "help" || len(l.started) != 0 {
+		t.Fatalf("help ran %d inline commands", len(*made))
+	}
+	// It prints and ends: it is not a task run, so the interface stays where it was.
+	c := (*made)[0]
+	_ = c.Run()
+	l.send(inlineDoneMsg{cmd: c})
+	if l.sh().tab != "projects" || len(l.sh().runs) != 0 {
+		t.Fatalf("it moved to %q or was listed as a run", l.sh().tab)
+	}
+}
+
+func TestPluginsRecipesAndSettingsOpenTheSettingsTabInsteadOfLeavingTheInterface(t *testing.T) {
+	l, made := inlineLab(t, 0)
+	l.keys("ctrl+p").typeText("Settings").keys("enter")
+	if l.sh().tab != commands.TabSettings || len(*made) != 0 {
+		t.Fatalf("the palette entry opens the tab: %q, %d inline runs", l.sh().tab, len(*made))
+	}
+	for line, want := range map[string]settingsview.Section{
+		"plugin list": settingsview.Plugins, "recipe": settingsview.Recipes, "config list": settingsview.Workspace,
 	} {
-		l, made := inlineLab(t, 0)
-		l.keys("ctrl+p").typeText(name).keys("enter")
-		if len(*made) != 1 || strings.Join((*made)[0].Argv, " ") != want {
-			t.Fatalf("%s ran %d inline commands, want %q", name, len(*made), want)
+		l.keys("2")
+		sh := l.sh()
+		cmd := sh.execute(strings.Fields(line), false)
+		l.m = sh
+		l.drive(cmd)
+		if l.sh().tab != commands.TabSettings || l.sh().settings.Section() != want {
+			t.Fatalf("smith %s shows the tab %q on section %v", line, l.sh().tab, l.sh().settings.Section())
 		}
-		if len(l.started) != 0 {
-			t.Fatalf("%s started the captured runner: %v", name, l.started)
-		}
-		// They print and end: they are not task runs, so the interface stays where it was.
-		c := (*made)[0]
-		_ = c.Run()
-		l.send(inlineDoneMsg{cmd: c})
-		if l.sh().tab != "projects" || len(l.sh().runs) != 0 {
-			t.Fatalf("%s moved to %q or was listed as a run", name, l.sh().tab)
+		if len(*made) != 0 || len(l.started) != 0 {
+			t.Fatalf("smith %s left the interface: %d inline, %v started", line, len(*made), l.started)
 		}
 	}
 }
 
-func TestThePluginsCommandOfThePaletteSaysWhatItDoes(t *testing.T) {
+func TestThePaletteFindsTheSettingsTabByWhatItHolds(t *testing.T) {
 	l := newLab(t, true, 120, 30)
-	l.keys("ctrl+p").typeText("Plugins")
-	l.has("Plugins", "smith plugin list")
+	l.keys("ctrl+p").typeText("plugins")
+	l.has("Settings", "plugins, style and the settings of smith.toml")
 }
 
 func TestChangingASettingFromTheCliAsksFirstAndThenUsesTheTerminal(t *testing.T) {

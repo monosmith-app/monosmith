@@ -22,6 +22,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
@@ -29,7 +30,7 @@ import (
 
 var tabTitles = map[string]string{
 	commands.TabHome: "Home", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabGuide: "Guide",
+	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
 }
 
 // Config is what the shell is built from.
@@ -85,6 +86,8 @@ type Shell struct {
 	doctor  doctorview.Model
 	release releaseview.Model
 	deps    depsview.Model
+	// settings is the Settings tab: plugins, style and the settings of smith.toml.
+	settings settingsview.Model
 
 	// last is how the last command ended, for Home.
 	last *dashboard.Run
@@ -164,6 +167,7 @@ func NewShell(cfg Config) Shell {
 	if cfg.Sources != nil {
 		sh.inWorkspace = true
 		sh.sources = *cfg.Sources
+		sh.settings = settingsview.New(sh.sources.Settings, settingsForms(cfg.Actions))
 		sh.tab = commands.TabHome
 		// Doctor runs in the background from the start (see Init).
 		sh.doctor.Loading = sh.sources.Doctor != nil
@@ -210,6 +214,10 @@ func (s Shell) viewReasons() map[string]string {
 			r["rel.notes"] = "there is no release to show the notes of"
 			r["rel.release"] = "there is nothing to release"
 		}
+	case commands.TabSettings:
+		for id, why := range s.settings.Reasons() {
+			r[id] = why
+		}
 	case commands.TabHome:
 		if s.nextAction().CommandID == "" {
 			r["home.next"] = "nothing to do yet"
@@ -232,7 +240,7 @@ func (s Shell) running() bool { return s.run != nil && !s.run.Finished }
 // tabList is the tabs of the strip: the views of a workspace; outside one, only the guide.
 func (s Shell) tabList() []string {
 	if s.inWorkspace {
-		return []string{commands.TabHome, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabDeps, commands.TabRelease}
+		return []string{commands.TabHome, commands.TabProjects, commands.TabRun, commands.TabDoctor, commands.TabDeps, commands.TabRelease, commands.TabSettings}
 	}
 	return []string{commands.TabGuide}
 }
@@ -347,6 +355,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)
+	case settingsview.Msg:
+		return s.settingsMsg(msg)
 	case fixProgressMsg:
 		if s.adopting != nil && msg.run == s.adopting {
 			return s.adoptProgress(msg)

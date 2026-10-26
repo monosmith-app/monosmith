@@ -20,6 +20,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -47,6 +48,8 @@ type Sources struct {
 	// root, stopping at the first that fails (a *doctorfix.StepError). It
 	// writes a line "… name" to out as each step starts, and honours ctx.
 	ApplyFix func(ctx context.Context, fix protocol.Fix, out io.Writer) error
+	// Settings is what the Settings tab reads and changes.
+	Settings settingsview.Backend
 	// Start launches a smith command line as a child process (the smith
 	// binary itself) in the workspace.
 	Start func(argv []string) (runner.Handle, error)

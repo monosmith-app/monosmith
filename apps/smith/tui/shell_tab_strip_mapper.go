@@ -10,12 +10,12 @@ import (
 // shortTitles are the shorter tab names, used only for as many tabs as it takes
 // for the strip to fit.
 var shortTitles = map[string]string{
-	commands.TabProjects: "Proj", commands.TabRelease: "Rel",
+	commands.TabProjects: "Proj", commands.TabRelease: "Rel", commands.TabSettings: "Sett",
 }
 
 // shortOrder is the order tabs give up their full name in: the ones people
 // meet last go first, so "Projects" is the last to be shortened.
-var shortOrder = []string{commands.TabRelease, commands.TabProjects}
+var shortOrder = []string{commands.TabSettings, commands.TabRelease, commands.TabProjects}
 
 // badgeRoom is what a status badge (spinner, check, cross and count) may add
 // to a tab. It is reserved in every state, so a badge appearing never changes
