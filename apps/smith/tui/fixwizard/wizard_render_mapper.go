@@ -106,9 +106,13 @@ func (w Wizard) bodyRows() []string {
 func (w Wizard) title() string {
 	switch w.phase {
 	case Asking:
-		return fmt.Sprintf("%s · question %d of %d", w.style.name(), len(w.answers)+1, len(w.answers)+len(w.resolved.Choices))
+		n, total := len(w.answers)+1, len(w.answers)+len(w.resolved.Choices)
+		if total == 1 && w.style.Ask != "" {
+			return w.style.name() + " · " + w.style.Ask
+		}
+		return fmt.Sprintf("%s · %s %d of %d", w.style.name(), w.style.ask(), n, total)
 	case Reviewing:
-		return w.style.name() + " · review"
+		return w.style.name() + " · " + w.style.review()
 	case Applying:
 		return w.style.verb()
 	}

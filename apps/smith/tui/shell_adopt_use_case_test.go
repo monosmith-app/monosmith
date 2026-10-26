@@ -170,7 +170,7 @@ func TestAFolderThatIsNotAWorkspaceLeadsWithAdoptionAndEnterStartsIt(t *testing.
 	l := newAdoptLab(t, f, false, 110, 34)
 	l.has("Not a smith workspace yet: Enter brings it in", "Bring this repository into MonoSmith", "Not a smith workspace yet. Press a to bring this folder in")
 	l.keys("enter")
-	l.has("Bring in · review", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
+	l.has("Bring in · what smith found", "Found an Nx workspace: acme", "2 projects", "Tools it uses today: Nx, ESLint, Jest", "[ Continue  Enter ]")
 	if l.sh().adopt == nil {
 		t.Fatal("the wizard is not open")
 	}
@@ -207,9 +207,9 @@ func TestAnEmptyFolderHasNoAdoptionToOffer(t *testing.T) {
 func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing.T) {
 	f := &adoptFake{found: nxRepository()}
 	l := newAdoptLab(t, f, false, 120, 36)
-	l.keys("a", "enter", "2")              // continue, then the full level
-	l.has("question 1 of 1", "Lint with:") // the choices
-	l.keys("enter")                        // smith's ESLint, the suggested one
+	l.keys("a", "enter", "2")                      // continue, then the full level
+	l.has("Bring in · your choices", "Lint with:") // the choices
+	l.keys("enter")                                // smith's ESLint, the suggested one
 	l.has("Nothing has changed yet", "[ Convert  Enter ]")
 	l.keys("enter") // convert, then the group is asked
 	l.has("We are going to delete 4 packages and 3 files", "ok?")

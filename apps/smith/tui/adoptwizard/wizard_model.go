@@ -369,6 +369,7 @@ func (m Model) reviewOf(stage Stage, title, text string, style fixwizard.Style) 
 // showFound is the first screen.
 func (m Model) showFound() Model {
 	style := adoptStyle
+	style.Review = "what smith found"
 	style.Apply = "Continue"
 	if len(m.found.Blockers) > 0 {
 		style.Apply = "Close"
@@ -395,7 +396,7 @@ func (m Model) askLevel() Model {
 		},
 	}}}
 	style := adoptStyle
-	style.Back = true
+	style.Back, style.Ask = true, "how far to go"
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: fix}, nil).Styled(style).Place(m.sw, m.sh)
 	return m
 }
@@ -415,7 +416,7 @@ func (m Model) askChoices() Model {
 	}
 	desc := "Full level: smith becomes the only tool. The first option of each question is the one this repository's own tooling suggests."
 	style := adoptStyle
-	style.Back = true
+	style.Back, style.Ask = true, "your choices"
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
 	return m
 }
@@ -474,7 +475,7 @@ func (m Model) planFull() (Model, Outcome) {
 // reviewFull shows the whole plan.
 func (m Model) reviewFull() Model {
 	style := adoptStyle
-	style.Apply, style.Back = "Convert", true
+	style.Apply, style.Back, style.Review = "Convert", true, "what will change"
 	text := reviewHeader + planSummaryText(m.preview.Changes, m.flow.Result()) + "\n" + m.preview.Text
 	return m.reviewOf(StageReview, "full conversion", text, style)
 }
@@ -510,7 +511,7 @@ func (m Model) showConservative() Model {
 		text = conservativeText(m.found, "", m.changes, m.flow.Result())
 	}
 	style := adoptStyle
-	style.Apply, style.Back = "Go ahead", true
+	style.Apply, style.Back, style.Review = "Go ahead", true, "what will change"
 	m = m.reviewOf(StageReview, "conservative", text, style)
 	m.full = false
 	return m
@@ -580,6 +581,7 @@ func (m Model) askGroup(g removalplan.Group) Model {
 	flow := m.flow
 	style := adoptStyle
 	style.Apply, style.Decline, style.Skip = "Yes, delete", "No, keep", "Skip rest"
+	style.Review = "delete old tooling?"
 	show := func(p doctorfix.Planned) (string, error) {
 		text, err := flow.ShowFix(p)
 		return groupText(g, text), err
@@ -612,7 +614,7 @@ func (m Model) finish() (Model, Outcome) {
 // done tells what happened.
 func (m Model) done() Model {
 	style := adoptStyle
-	style.Apply = "Open the workspace"
+	style.Apply, style.Review = "Open the workspace", "the result"
 	checked := checkedText(m.checked)
 	if checked == "" {
 		// Nothing proved that it works: offer to build everything on opening.
@@ -632,6 +634,6 @@ func (m Model) showReport() Model {
 		text = "The report could not be read: " + convert.ReportFile + " is missing or empty.\n"
 	}
 	style := adoptStyle
-	style.Apply = "Back to the result"
+	style.Apply, style.Review = "Back to the result", "the report"
 	return m.reviewOf(StageReport, "report", text, style)
 }
