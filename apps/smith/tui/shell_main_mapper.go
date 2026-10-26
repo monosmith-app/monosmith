@@ -53,20 +53,26 @@ func (s Shell) mainContent(w, h int) content {
 			return s.detailContent(w, h)
 		}
 		// Beside the list the detail tells a check in full; alone, the list expands it.
-		lines, rowOf := s.doctor.View(s.th, w, !s.lay().HasDetail())
+		doctor := s.doctor
+		doctor.Waited = s.waited()
+		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 	case commands.TabRelease:
-		lines, rowOf := s.release.View(s.th, w)
+		release := s.release
+		release.Waited = s.waited()
+		lines, rowOf := release.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
 		}
 		c.lines = append(c.lines, lines...)
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
-		lines, rowOf := s.deps.View(s.th, w, max(h-len(c.lines), 1))
+		deps := s.deps
+		deps.Waited = s.waited()
+		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
 		}

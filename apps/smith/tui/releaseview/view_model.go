@@ -3,10 +3,12 @@ package releaseview
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -18,7 +20,9 @@ const maxCommits = 12
 // drills down to the commits behind the selected bump; releasing itself runs
 // `smith release` in the run view, after a confirmation that shows the command.
 type Model struct {
-	Loaded   bool
+	Loaded bool
+	// Waited is how long the plan has taken so far, set by the shell for drawing.
+	Waited   time.Duration
 	Plan     release.Plan
 	Blockers []string
 	Warnings []string
@@ -91,7 +95,7 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 	case v.Err != nil:
 		lines = append(lines, th.Failure(v.Err.Error()))
 	case !v.Loaded:
-		lines = append(lines, pane.Wrap(th.Muted("Reading the commits since the last release to work out each version. This takes a few seconds, up to half a minute on a large workspace; you can use the other tabs meanwhile."), w, 0)...)
+		lines = append(lines, pane.Wrap(th.Muted(progress.Waiting("Reading the commits since the last release to work out each version.", v.Waited)+" This takes a few seconds, up to half a minute on a large workspace; you can use the other tabs meanwhile."), w, 0)...)
 	case len(v.Blockers) > 0:
 		lines = append(lines, th.Failure(th.Icons.Failed+" The release is blocked: its tags would give wrong versions."), "")
 		for _, m := range v.Warnings {
