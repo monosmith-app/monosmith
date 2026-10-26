@@ -102,6 +102,9 @@ func TestBranchesAreTheTriggersAndTheReleaseBranchStaysTheReleaseOne(t *testing.
 	m.Pack = true
 	files := Rendered(cfg, m)
 	for path, out := range files {
+		if path == InstallScriptPath {
+			continue
+		}
 		if strings.Count(out, "[main, dev, next]") != 2 {
 			t.Errorf("%s: want the release branch first, then dev and next, for push and pull request:\n%s", path, out)
 		}

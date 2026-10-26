@@ -294,7 +294,7 @@ Doctor checks (`pipeline/`; shown when the workspace has Node projects):
 | `npm workspaces include <dir>` | the root `workspaces` does not match the project (remedy also names `[workspace] exclude`) |
 | `<project> compiles into dist/<dir>` | `outDir` of `tsconfig.build.json` / `tsconfig.json` is inside the source tree |
 | `<dir> declares the packages it imports` | a package (`kind = package`) fails `deps-check`; the fix declares the imports in `package.json` |
-| `<project> builds every file its package.json names` | only after a build: `main`, `module`, `types`, `exports` entries inside `dist/` that the build did not produce |
+| `<project> builds every file its package.json names` | only after a build: `main`, `module`, `types`, `exports` entries inside `dist/` that the build did not produce. A `.d.ts` entry that nothing writes (a bundler such as esbuild emits none) gets a remedy that names the `tsc --emitDeclarationOnly` step to append to the `build` script, and a fix that appends it (`tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the types entry's directory>`; asked about, never `--yes` alone). A build script that already runs `tsc` or a dts option is told its declarations land elsewhere than `package.json` says. |
 
 27 checks passed on the default-stack workspace. Findings in the plain-JavaScript workspace that come from the host and the vertical-slices convention rather than from the node plugin:
 

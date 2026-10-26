@@ -3,8 +3,10 @@ package pipeline
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -80,5 +82,60 @@ func TestCheckEntryFilesWaitsForABuild(t *testing.T) {
 	root, _ = readerWorkspace(t, "dist/index.esm.js")
 	if _, ok := CheckEntryFiles(root, p); ok {
 		t.Fatal("only packages are installed by others")
+	}
+}
+
+// bundledPackage is a package built by esbuild alone: the bundle exists, the
+// declarations its package.json names do not unless withDeclarations.
+func bundledPackage(t *testing.T, build string, withDeclarations bool) (string, protocol.Project) {
+	t.Helper()
+	root := t.TempDir()
+	dir := filepath.Join(root, "packages", "atlassian")
+	_ = os.MkdirAll(filepath.Join(dir, "dist", "src"), 0o755)
+	manifest := `{
+  "name": "@acme/atlassian",
+  "scripts": {"build": "` + build + `"},
+  "types": "./dist/src/index.d.ts",
+  "exports": {".": {"types": "./dist/src/index.d.ts", "import": "./dist/index.js", "default": "./dist/index.js"}}
+}
+`
+	files := map[string]string{"package.json": manifest, "tsconfig.build.json": "{}", "dist/index.js": ""}
+	if withDeclarations {
+		files["dist/src/index.d.ts"] = ""
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root, protocol.Project{Name: "atlassian", Root: "packages/atlassian", Kind: protocol.ProjectPackage, Tasks: map[string]protocol.Task{"build": {}}}
+}
+
+func TestCheckEntryFilesOffersDeclarationsToABundledPackage(t *testing.T) {
+	root, p := bundledPackage(t, "esbuild src/index.ts --bundle --outfile=dist/index.js", false)
+	f, ok := CheckEntryFiles(root, p)
+	if !ok || f.OK || !strings.Contains(f.Remedy, "tsc -p") || !strings.Contains(f.Remedy, "smith doctor --fix") {
+		t.Fatalf("a bundled package names declarations nothing writes: %+v %v", f, ok)
+	}
+	if f.Fix == nil || f.Fix.Description != manifestfixes.EmitDeclarationsDescription || len(f.Fix.Files) != 1 {
+		t.Fatalf("fix %+v", f.Fix)
+	}
+	if got := f.Fix.Files[0].Content; !strings.Contains(got, `esbuild src/index.ts --bundle --outfile=dist/index.js && tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir dist/src"`) {
+		t.Fatalf("build script not extended: %s", got)
+	}
+}
+
+func TestCheckEntryFilesPassesWhenTheBuildEmitsDeclarations(t *testing.T) {
+	root, p := bundledPackage(t, "esbuild src/index.ts --bundle --outfile=dist/index.js && tsc -p tsconfig.build.json --emitDeclarationOnly", true)
+	if f, ok := CheckEntryFiles(root, p); !ok || !f.OK || f.Fix != nil {
+		t.Fatalf("declarations built: %+v %v", f, ok)
+	}
+}
+
+func TestCheckEntryFilesPointsAtTscWhenItDoesNotWriteWhereNamed(t *testing.T) {
+	root, p := bundledPackage(t, "esbuild src/index.ts --bundle --outfile=dist/index.js && tsc -p tsconfig.build.json --emitDeclarationOnly", false)
+	f, ok := CheckEntryFiles(root, p)
+	if !ok || f.OK || f.Fix != nil || !strings.Contains(f.Remedy, "already writes declarations") {
+		t.Fatalf("tsc runs but the files are elsewhere: %+v %v", f, ok)
 	}
 }

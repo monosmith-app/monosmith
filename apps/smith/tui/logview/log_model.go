@@ -51,12 +51,34 @@ func (l Log) Toggle(total, h int) Log {
 	return Log{top: l.Top(total, h), paused: true}
 }
 
-// Render draws h rows of w cells from lines. A short log is padded with blank rows.
-func (l Log) Render(th theme.Theme, lines []string, w, h int) []string {
-	top := l.Top(len(lines), h)
+// Rows are the rows that show lines in w cells: each line coloured by what it
+// says and, when it is wider than w, wrapped onto continuation rows indented
+// two cells under the line's own indentation, so a long compiler error is read
+// whole instead of cut at the edge. Scrolling counts these rows, not the lines.
+// The status glyphs of smith's own output are drawn with the theme's icons,
+// which the terminal is known to draw one cell wide.
+func Rows(th theme.Theme, lines []string, w int) []string {
+	glyphs := strings.NewReplacer("✔", th.Icons.Passed, "✖", th.Icons.Failed)
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		styled := glyphs.Replace(Style(th, line))
+		if pane.Width(styled) <= w {
+			out = append(out, styled)
+			continue
+		}
+		indent := min(len(line)-len(strings.TrimLeft(line, " 	"))+2, max(w/4, 2))
+		out = append(out, pane.Wrap(styled, w, indent)...)
+	}
+	return out
+}
+
+// Render draws h rows of w cells from rows (see Rows). A short log is padded
+// with blank rows.
+func (l Log) Render(rows []string, w, h int) []string {
+	top := l.Top(len(rows), h)
 	out := make([]string, 0, h)
-	for i := top; i < len(lines) && len(out) < h; i++ {
-		out = append(out, pane.Fit(Style(th, lines[i]), w))
+	for i := top; i < len(rows) && len(out) < h; i++ {
+		out = append(out, pane.Fit(rows[i], w))
 	}
 	return pane.Block(out, w, h)
 }

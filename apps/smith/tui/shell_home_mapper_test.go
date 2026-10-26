@@ -30,7 +30,7 @@ func TestAWorkspaceOpensOnHomeAndChecksItselfInTheBackground(t *testing.T) {
 func TestHomeLeadsWithTheHealthAndOneNextActionWithItsKey(t *testing.T) {
 	l := newHomeLab(t, 140, 34)
 	// The header badge is filled without the Doctor view having been opened.
-	if first := l.lines()[0]; !strings.Contains(first, "✖2") {
+	if first := l.lines()[0]; !strings.Contains(first, "✗2") {
 		t.Fatalf("the header carries the health: %q", first)
 	}
 	l.has("2 checks fail", "Next: 2 checks fail, 1 fix is ready: Enter opens the fix wizard", "1 of 4 projects changed", "nothing has run yet", "not checked: 5 opens Deps")
@@ -116,7 +116,7 @@ func healthyShell(t *testing.T, affected bool) *lab {
 func TestWhenAllIsWellHomeSuggestsABuild(t *testing.T) {
 	l := healthyShell(t, false)
 	l.has("The workspace is healthy", "Next: all good: press b to build")
-	if first := l.lines()[0]; strings.Contains(first, "✖") || !strings.Contains(first, "✔") {
+	if first := l.lines()[0]; strings.Contains(first, "✗") || !strings.Contains(first, "✓") {
 		t.Fatalf("the header shows a clean bill: %q", first)
 	}
 }

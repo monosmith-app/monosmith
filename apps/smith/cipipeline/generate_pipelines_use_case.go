@@ -98,6 +98,11 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 	if cfg.CI.Devcontainer {
 		out[DevcontainerPath] = RenderDevcontainer(cfg.Workspace.Name, m)
 	}
+	if len(out) > 0 {
+		// Every pipeline runs this file instead of fetching a script from a
+		// mutable branch, so it is committed with them.
+		out[InstallScriptPath] = InstallScript()
+	}
 	return out
 }
 
@@ -127,12 +132,21 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return changed, lost, err
 		}
-		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(full, []byte(content), fileMode(path)); err != nil {
 			return changed, lost, err
 		}
 		changed = append(changed, path)
 	}
 	return changed, lost, nil
+}
+
+// fileMode is 0755 for the installer (where the OS has modes) and 0644 for
+// the rest.
+func fileMode(path string) os.FileMode {
+	if path == InstallScriptPath {
+		return 0o755
+	}
+	return 0o644
 }
 
 // OwnedPaths are the files smith generates and may rewrite or delete. A file

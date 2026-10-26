@@ -68,7 +68,7 @@ jobs:
           restore-keys: |
             smith-pip-${{ runner.os }}-
       - name: Install smith
-        run: curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh -s -- "$SMITH_VERSION"
+        run: sh tools/smith/install.sh "$SMITH_VERSION"
         env:
           SMITH_VERSION: latest
           GITHUB_TOKEN: ${{ github.token }}

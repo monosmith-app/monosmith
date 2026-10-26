@@ -44,11 +44,11 @@ jobs:
 	}
 	b.WriteString(githubStores(m.Stores))
 	fmt.Fprintf(&b, `      - name: Install smith
-        run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
+        run: sh %s "$SMITH_VERSION"
         env:
           SMITH_VERSION: %s
           GITHUB_TOKEN: ${{ github.token }}
-`, InstallScriptURL, m.SmithVersion)
+`, InstallScriptPath, m.SmithVersion)
 	b.WriteString(slot("      ", "before-setup"))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
@@ -174,13 +174,13 @@ func githubNativeJob(m Model) string {
 	}
 	fmt.Fprintf(&b, `      - name: Install smith
         shell: bash
-        run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
+        run: sh %s "$SMITH_VERSION"
         env:
           SMITH_VERSION: %s
           GITHUB_TOKEN: ${{ github.token }}
       - name: Setup
         run: smith ci setup
-`, InstallScriptURL, m.SmithVersion)
+`, InstallScriptPath, m.SmithVersion)
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(githubRubyGemsSignIn(m, "native"))
 	b.WriteString(githubAzureSignIn(m, "native"))
@@ -265,11 +265,11 @@ jobs:
 	}
 	fmt.Fprintf(&b, `      - uses: dart-lang/setup-dart@v1
       - name: Install smith
-        run: curl -fsSL %s | sh -s -- "$SMITH_VERSION"
+        run: sh %s "$SMITH_VERSION"
         env:
           SMITH_VERSION: %s
           GITHUB_TOKEN: ${{ github.token }}
-`, InstallScriptURL, m.SmithVersion)
+`, InstallScriptPath, m.SmithVersion)
 	b.WriteString(slot("      ", "before-publish"))
 	b.WriteString(`      - name: Publish to pub.dev
         run: smith release pub --project "$PROJECT" --version "$VERSION"

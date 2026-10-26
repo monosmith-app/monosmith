@@ -3,8 +3,10 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/footer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/tabs"
 )
@@ -20,7 +22,7 @@ func (s Shell) paletteBox() layout.Rect {
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {
 	e := tea.MouseEvent(msg)
-	s.mouseX, s.mouseY = e.X, e.Y
+	s.mouseX, s.mouseY, s.mouseShift = e.X, e.Y, e.Shift
 	switch {
 	case e.Action == tea.MouseActionMotion:
 		s.hover(e.X, e.Y)
@@ -174,7 +176,17 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	case "release":
 		s.release = s.release.SelectRow(h.index)
 	case "dep":
-		s.deps = s.deps.SelectRow(h.index)
+		inBox := rx >= depsview.BoxFrom && rx < depsview.BoxTo
+		switch {
+		case h.index == depsview.HeadingRow:
+			if inBox {
+				s.deps = s.deps.TickAll()
+			}
+		case inBox:
+			s.deps = s.deps.TickRow(h.index, s.mouseShift)
+		default:
+			s.deps = s.deps.ChooseRow(h.index, s.mouseShift)
+		}
 	case "option":
 		if double {
 			return s.paneKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -229,15 +241,20 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 			}
 			g := s.runGeom(in.W, in.H)
 			if y-in.Y >= g.logTop {
-				s.log = s.log.Scroll(dir*wheelStep, len(s.logLines()), g.logRows)
+				s.log = s.log.Scroll(dir*wheelStep, s.logTotal(), g.logRows)
 			} else {
 				s.runTop = max(min(s.runTop+dir, len(s.runIDs())-g.listRows), 0)
 			}
+		case commands.TabDeps:
+			s.deps = s.deps.Wheel(dir * wheelStep)
 		case commands.TabProjects:
-			s.list = s.list.Move(dir * wheelStep)
+			if s.projScroll == nil {
+				s.projScroll = &pane.Scroll{}
+			}
+			s.projScroll.By(dir * wheelStep)
 		case commands.TabSettings:
 			s.settings = s.settings.Wheel(dir)
-		case commands.TabDoctor, commands.TabGuide, commands.TabDeps, commands.TabRelease:
+		case commands.TabDoctor, commands.TabGuide, commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}

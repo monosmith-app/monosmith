@@ -7,8 +7,10 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// InstallScriptURL serves the smith installer used by generated pipelines.
-const InstallScriptURL = "https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh"
+// InstallScriptPath is where `smith ci generate` writes the smith installer
+// inside the project; generated pipelines run that file with sh instead of
+// fetching a script from a mutable branch on every run.
+const InstallScriptPath = "tools/smith/install.sh"
 
 // Model is a pipeline independent of any CI provider.
 type Model struct {

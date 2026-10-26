@@ -138,10 +138,10 @@ func TestABadgeSitsInsideTheTabAndNeverChangesTheNamesSpelledOut(t *testing.T) {
 	without := props(52, true, "run")
 	with := without
 	with.Tabs = sample()
-	with.Tabs[2].Badge = "✖2"
+	with.Tabs[2].Badge = "✗2"
 	a := strings.Join(plain(Render(without).Lines), "\n")
 	b := strings.Join(plain(Render(with).Lines), "\n")
-	if !strings.Contains(b, "Doctor ✖2") {
+	if !strings.Contains(b, "Doctor ✗2") {
 		t.Fatalf("the badge is in the tab:\n%s", b)
 	}
 	for _, name := range []string{"Sett", "Rel", "Proj"} {

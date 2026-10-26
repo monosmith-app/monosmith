@@ -285,7 +285,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Stop:
 		s.stop()
 	case commands.Follow:
-		s.log = s.log.Toggle(len(s.logLines()), s.logHeight())
+		s.log = s.log.Toggle(s.logTotal(), s.logHeight())
 		if s.log.Following() {
 			s.say("Following the log")
 		} else {
@@ -483,9 +483,9 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	case "esc":
 		s.runSel = ""
 	case "pgup":
-		s.log = s.log.Page(-1, len(s.logLines()), s.logHeight())
+		s.log = s.log.Page(-1, s.logTotal(), s.logHeight())
 	case "pgdown":
-		s.log = s.log.Page(1, len(s.logLines()), s.logHeight())
+		s.log = s.log.Page(1, s.logTotal(), s.logHeight())
 	case "home":
 		s.log = s.log.Home()
 	case "end":
