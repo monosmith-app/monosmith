@@ -10,6 +10,8 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
+	"github.com/monosmith-app/monosmith/apps/smith/plugininstall"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginpack"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -182,7 +184,7 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.AddCommand(list, checkCommand(version))
+	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand())
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
@@ -253,6 +255,28 @@ func Toggle(current, names []string, enable bool) ([]string, error) {
 		return nil, fmt.Errorf("at least one plugin must stay enabled")
 	}
 	return out, nil
+}
+
+// packCommand is `smith plugin pack`, reading manifests the way the host does.
+func packCommand() *cobra.Command {
+	return pluginpack.Command(func(dir string) (pluginpack.Plugin, error) {
+		m, err := readInstalled(dir)
+		if err != nil {
+			return pluginpack.Plugin{}, err
+		}
+		return pluginpack.Plugin{Name: m.Name, Version: m.Version, Command: m.Command}, nil
+	})
+}
+
+// installCommand is `smith plugin install`, reading manifests the way the host does.
+func installCommand() *cobra.Command {
+	return plugininstall.Command(func(dir string) (plugininstall.Described, error) {
+		m, err := readInstalled(dir)
+		if err != nil {
+			return plugininstall.Described{}, err
+		}
+		return plugininstall.Described{Plugin: plugininstall.Plugin{Name: m.Name, Version: m.Version}, Argv: m.Argv, Command0: m.Command[0]}, nil
+	})
 }
 
 // EnablePlugins turns built-in plugins on or off in the smith.toml at root:

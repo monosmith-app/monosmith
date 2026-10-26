@@ -679,7 +679,9 @@ Usage: `smith plugin <command>`
 | `smith plugin check` | Check that a plugin keeps the protocol's promises |
 | `smith plugin disable` | Disable built-in plugins in smith.toml |
 | `smith plugin enable` | Enable built-in plugins in smith.toml |
+| `smith plugin install` | Install a packaged plugin, checked against its sha256 |
 | `smith plugin list` | List the built-in plugins, the external ones the workspace uses (trusted or not) and the ones installed on the plugin search path |
+| `smith plugin pack` | Pack a plugin directory into an archive `smith plugin install` accepts |
 | `smith plugin set` | Enable exactly these built-in plugins in smith.toml |
 | `smith plugin trust` | Review an external plugin and trust it, so smith may start it |
 | `smith plugin untrust` | Forget that you trust an external plugin |

@@ -24,6 +24,7 @@ plugins](managing-plugins.md#trusting-an-external-plugin).
 | A plugin reads secrets it does not need (`NPM_TOKEN`, cloud keys, smith's own cache key) | An external plugin gets a [minimal environment](#the-environment-an-external-plugin-gets) plus the variables it declares. Nothing else in your environment reaches it |
 | A plugin quietly asks for smith's own credentials | A plugin's own `plugin.json` cannot ask for the variables smith uses for its cache and releases (`SMITH_CACHE_KEY`, `SMITH_RELEASE_*` and the like). Only the workspace owner can, in `smith.toml` |
 | A CI job runs whatever plugin a pull request adds | In CI nobody is there to ask, so an external plugin starts only when `smith.toml` pins its `sha256` and the file still matches |
+| A plugin archive that was changed on its way, or that tries to write outside its folder | `smith plugin install` compares the archive with the digest you pass (or the one a GitHub release publishes), checks every file against the archive's `checksums.sha256`, and refuses unsafe paths, links, and oversized files. It never starts the plugin |
 | A tool or an editor opens the workspace and starts a plugin nobody looked at | `smith serve`, `smith mcp`, the editor extension and scripts never ask. They refuse with the same remedy |
 
 You can always see what is going on: `smith plugin list` shows, for every external plugin the
@@ -48,7 +49,7 @@ refuse to start.
 - **Network access, folders and programs.** smith does not restrict where a plugin may connect, which
   folders it may touch or what it may start. Declaring such needs in a manifest is planned; today the
   environment is the only thing a manifest can declare.
-- **Who wrote a plugin.** Plugins are not signed and there is no registry that vouches for them.
+- **Who wrote a plugin.** Plugins are not signed and there is no registry that vouches for them. `smith plugin install` proves that an archive is the one whose digest you were given, and that it is intact; a digest you copied from the same page as the download proves nothing about who published it. Signatures and provenance attestations are planned.
 
 ## The environment an external plugin gets
 

@@ -11,6 +11,8 @@ and the settings a plugin reads. The model behind it is in
 |---|---|
 | `smith plugin list [--json]` | lists the built-in plugins, the external plugins the workspace uses (trusted or not, and what each may see) and the plugins installed on the search path |
 | `smith plugin check <name or path> [--generate] [--env NAME] [--json]` | runs the conformance suite against a plugin, which needs no trust |
+| `smith plugin install <path|url|github:owner/repo@tag>` | installs a packaged plugin after checking it against its sha256; `--pin` also pins the digest in `smith.toml` |
+| `smith plugin pack [dir]` | packs a plugin directory you wrote into an archive for `install` |
 | `smith plugin trust <name> [--yes] [--pin]` | reviews an external plugin and records that you trust it, so smith may start it |
 | `smith plugin untrust <name>` | forgets that you trust an external plugin |
 | `smith plugin enable <name>...` | turns built-in language plugins on in `smith.toml` |
@@ -203,7 +205,43 @@ A declared plugin with the name of a built-in plugin replaces the built-in one. 
 starts only once you [trust it](#trusting-an-external-plugin), and with a minimal environment: see
 [Plugin security](plugin-security.md).
 
-### Install it on the search path
+### Install a packaged plugin
+
+A plugin that someone packed with [`smith plugin pack`](../../manual/plugin-pack.md) installs from
+the archive, from a URL or from a GitHub release:
+
+```sh
+smith plugin install ./widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d --pin
+smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d --pin
+smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin
+```
+
+```text
+Installed widget 0.1.0 in ~/work/inst/.smith/plugins/widget (2 files, from ./widget-0.1.0.smith-plugin.zip).
+  archive sha256 db7fb4c0...2204d matches the digest you gave or the release published.
+  every file matches checksums.sha256.
+  the plugin was not started.
+Pinned sha256 9e36a074...e7087 in smith.toml [plugins.external.widget], which is what CI checks.
+smith will ask before it first starts widget (or run `smith plugin trust widget`).
+```
+
+What to rely on:
+
+- Get the digest from the author through a channel other than the download (their release notes, the
+  `.sha256` file on a GitHub release, a message) and pass it with `--sha256`. A digest that does not
+  match stops the install and writes nothing, and an archive with no digest to be checked against is
+  refused. The digest proves the archive is the one the author published, not who the author is.
+- smith checks every file against the archive's `checksums.sha256`, refuses paths that leave the
+  plugin's folder, links and special files, and stops at 512 MiB per download and per file.
+- Installing **never starts the plugin**, and does not trust it either: smith asks the first time
+  the plugin is used, unless you pass `--trust`. In a workspace the plugin goes to `.smith/plugins/<name>`,
+  and with `--pin` its digest is also pinned in `smith.toml` (CI needs the pin); with `--global`, or
+  outside a workspace, it goes to `$SMITH_HOME/plugins`, where `--pin` is an error. An installed plugin
+  is replaced only with `--force`.
+
+Every flag, check and message is in the [`smith plugin install`](../../manual/plugin-install.md) page.
+
+### Install it by hand on the search path
 
 An installed plugin is a directory holding a `plugin.json`:
 
@@ -275,9 +313,10 @@ A plugin that is not on the search path and has no command is an error that list
 looked: `plugin "nosuch" is not installed: no nosuch/plugin.json in <dirs>; give its command in
 smith.toml, or install it there`.
 
-How plugins will be published and installed by name from a registry is not decided yet
-([#164](https://github.com/monosmith-app/monosmith/issues/164)): any channel only has to put a
-directory with a `plugin.json` on the search path. See
+Installing a plugin by name from a registry is not decided yet
+([#164](https://github.com/monosmith-app/monosmith/issues/164)): today a plugin arrives by
+[`smith plugin install`](../../manual/plugin-install.md) from an archive, a URL or a GitHub release, or
+by any other way that puts a directory with a `plugin.json` on the search path. See
 [Packaging and distributing a plugin](../creating/packaging-a-plugin.md).
 
 A project's cache keys include the version of every plugin that shapes it, so upgrading a plugin

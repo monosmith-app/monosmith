@@ -2,10 +2,11 @@
 
 A plugin is distributed as a directory with a `plugin.json` that smith finds on the plugin search
 path, or as a command written in `smith.toml`. This page covers the file, the naming, one binary per
-platform, versions, and the ways to get a plugin onto other machines. How plugins will one day be
-published and installed by name from a registry is not decided
-([#164](https://github.com/monosmith-app/monosmith/issues/164)): today, anything that puts a directory
-with a `plugin.json` on the search path is an install channel.
+platform, versions, packing the plugin with `smith plugin pack`, and the ways to get it onto other
+machines. Installing a plugin by name from a registry is not decided
+([#164](https://github.com/monosmith-app/monosmith/issues/164)): today a plugin is installed with
+`smith plugin install` from an archive, a URL or a GitHub release, and anything else that puts a
+directory with a `plugin.json` on the search path is an install channel too.
 
 ## Two ways to be found
 
@@ -160,12 +161,61 @@ and `x-protocolVersion` in the JSON Schema). A plugin on an SDK is built against
 handshake fails and you rebuild with a newer SDK. Additions to the protocol are optional fields and
 new capabilities, which old plugins ignore, so an old plugin keeps working with a newer smith.
 
+## Pack it
+
+`smith plugin pack` turns the plugin directory (with the binaries already built into it) into a
+single archive that `smith plugin install` verifies and unpacks:
+
+```sh
+smith plugin pack ./widget --out dist
+```
+
+```text
+Packed widget 0.1.0: 3 files, 14852081 bytes.
+  archive  dist/widget-0.1.0.smith-plugin.zip
+  sha256   db7fb4c07eeba779d2dd7dc313873cd180f8dbe133f8e4bb76c9c6956d22204d  (also in widget-0.1.0.smith-plugin.zip.sha256)
+  program  bin/smith-plugin-widget-windows-amd64.exe
+The plugin was not started. Publish the archive and its .sha256 file together; users install it with `smith plugin install`.
+```
+
+- `plugin.json` needs a `name` and a `version`; they name the archive, `<name>-<version>.smith-plugin.zip`.
+- Everything in the directory goes in (except `.git`, earlier archives, an old `checksums.sha256`
+  and what a `.smithpluginignore` file at the directory's root lists, one pattern per line such as
+  `src/` or `*.log`), stored uncompressed in name order with a fixed timestamp, so packing the same
+  directory twice gives the same bytes. Symbolic links are refused. List sources, secrets and build
+  leftovers in `.smithpluginignore`, or keep them out of the directory.
+- Publish the archive's `.sha256` with it: `smith plugin install` refuses an archive that has no digest
+  to be checked against.
+- The files that the first element of `command` names for any platform are marked executable, so
+  a package built on Windows installs runnable on Linux. If the `command` names a `./` program and no
+  file matches, packing fails: build for at least one platform first.
+- smith writes `checksums.sha256` into the archive (`<sha256>  <path>` for every file) and the archive's own
+  digest to `<archive>.sha256` beside it. `pack` does not run the plugin: run `smith plugin check` before
+  you pack.
+- Pack one archive per release with a binary for every platform you support. A user whose platform is
+  missing gets `the plugin has no program for this platform` and nothing is installed.
+
+To publish, attach the archive and its `.sha256` file to a GitHub Release. Users then run:
+
+```sh
+smith plugin install github:<owner>/<repo>@<tag>
+```
+
+and smith compares the archive with the digest the release publishes. Tell users the digest through
+another channel too (release notes, your site) so they can pass `--sha256` themselves. A GitHub
+release must have exactly one asset ending in `.smith-plugin.zip`; with several, users name one with
+`github:<owner>/<repo>@<tag>#<asset>`. Assets of private repositories are not supported.
+
+[`smith plugin pack`](../../manual/plugin-pack.md) and [`smith plugin
+install`](../../manual/plugin-install.md) list every check, flag and message. Installing never starts
+your plugin, and does not make users trust it: they are still asked the first time smith needs it.
+
 ## Ways to distribute
 
 | Way | How | Trade-off |
 |---|---|---|
 | in the repository | commit `.smith/plugins/<name>/` (plugin.json and the binaries), or the plugin's source as a project of the workspace and a `command` in `smith.toml` that builds and runs it (`["go", "run", "./apps/my-plugin"]`, what the `go-smith-plugin` scaffold writes) | nothing to install; binaries in git are heavy, and `go run` needs Go and is slow to start |
-| a release asset | attach a zip of the directory to a GitHub Release (smith can attach an app's build to a release; see [Releasing](../../reference/releasing.md)) and unpack it into `$SMITH_HOME/plugins` | one download per platform; you write the unpack step |
+| a packed archive | `smith plugin pack`, attach the archive and its `.sha256` to a GitHub Release (or host it anywhere over https); users run `smith plugin install github:owner/repo@tag` or give the URL and `--sha256` | one archive carries every platform; digests are checked and the pin written for CI; no signature yet |
 | a package manager | publish the directory as an npm, pip or other package whose install step puts it under `$SMITH_HOME/plugins` or a directory on `SMITH_PLUGIN_PATH` | reuses the registry; the install step is yours |
 | a setup script / dev container | copy or build into `.smith/plugins` in the machine setup | fits a team |
 
