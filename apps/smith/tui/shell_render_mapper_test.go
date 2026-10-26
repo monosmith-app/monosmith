@@ -57,7 +57,7 @@ func TestAtTheSupportedFloorEveryProjectIsStillListed(t *testing.T) {
 
 func TestOutsideAWorkspaceTheGuideIsTheOnlyTab(t *testing.T) {
 	l := newLab(t, false, 100, 28)
-	l.has("Guide", "Create a workspace", "No workspace here")
+	l.has("Start", "Create a workspace", "No workspace here")
 	l.hasNot("Doctor", "Settings")
 }
 

@@ -32,7 +32,7 @@ import (
 
 var tabTitles = map[string]string{
 	commands.TabHome: "Home", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Guide",
+	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Start",
 }
 
 // Config is what the shell is built from.
@@ -370,7 +370,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.loadedProjects, s.projectsErr = true, msg.Err
 		if msg.Err == nil {
 			selected := s.list.SelectedName()
-			s.list = projectlist.New(msg.Projects).SelectProject(selected)
+			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
 			s.branch = msg.Branch
 		}
 	case doctorview.Result:
@@ -457,4 +457,24 @@ func (s *Shell) say(text string) {
 // notify shows a toast.
 func (s *Shell) notify(text string, level toast.Level) {
 	s.toast = toast.New(text, level)
+}
+
+// everythingIsNotNews drops the "affected" mark when every project has it: with
+// nothing to compare to (right after a conversion, or with no release tag yet)
+// the mark says nothing, and 23 of them bury the rows that matter.
+func everythingIsNotNews(projects []projectlist.Project) []projectlist.Project {
+	if len(projects) < 2 {
+		return projects
+	}
+	for _, p := range projects {
+		if !p.Affected {
+			return projects
+		}
+	}
+	out := make([]projectlist.Project, len(projects))
+	copy(out, projects)
+	for i := range out {
+		out[i].Affected = false
+	}
+	return out
 }
