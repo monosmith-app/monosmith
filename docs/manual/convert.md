@@ -52,15 +52,16 @@ Usage: `smith convert [flags]`
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
 | `--test <test>` | `jest`, `vitest` or `keep` | the runner the workspace uses, else `keep` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep |
 | `--verbose` | boolean | off | name every project a finding applies to, not just a few |
-| `--yes` | boolean | off | apply without asking (a terminal asks before changing anything) |
+| `--yes` | boolean | off | apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything) |
 
 <!-- smith:end convert -->
 
 Interactions:
 
-- Run it with `--dry-run` first. An Nx workspace's dependencies must be installed
-  (`npm ci`), because Nx itself describes the projects; a Turborepo workspace is read
-  from its files, so nothing needs to be installed.
+- Run it with `--dry-run` first. An Nx workspace's packages must be installed, because Nx
+  itself describes the projects: in a terminal smith asks "Install them now?" and does it
+  (about two minutes), `--yes` installs without asking, and elsewhere it stops and says so.
+  A Turborepo workspace is read from its files, so nothing needs to be installed.
 - `--lint`, `--test`, `--build` and `--ci` are the choices behind `--level full`. In a
   terminal the ones you do not give are asked; elsewhere the plan is printed with
   the default for each (`lint: keep   tests: keep   build: smith   CI: smith`) and the

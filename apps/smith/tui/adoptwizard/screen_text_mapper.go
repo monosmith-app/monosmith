@@ -49,14 +49,19 @@ func foundText(f adoptflow.Found) string {
 		fmt.Fprintf(&b, "  • %s  %s  %s\n", p.Name, projectWords(p), p.Root)
 	}
 	for _, x := range f.Blockers {
-		fmt.Fprintf(&b, "\n✖ %s\n", x)
+		// Missing packages are a step smith takes itself, not a dead end.
+		mark := "✖"
+		if f.NeedsInstall {
+			mark = "●"
+		}
+		fmt.Fprintf(&b, "\n%s %s\n", mark, x)
 	}
 	for _, x := range f.Warnings {
 		fmt.Fprintf(&b, "\n! %s\n", x)
 	}
 	switch {
 	case f.NeedsInstall:
-		fmt.Fprintf(&b, "\nNothing has changed. Installing only fills node_modules; git does not track it, so git cannot take it back.\n")
+		fmt.Fprintf(&b, "\nNothing has changed yet. Installing only fills node_modules, which git does not track, so git cannot take it back. None of your own files are touched.\n")
 	case len(f.Blockers) == 0:
 		fmt.Fprintf(&b, "\nNothing has changed. The next screens ask how far to go and list every file before anything is written.\n")
 		if !f.Full && f.NoFull != "" {

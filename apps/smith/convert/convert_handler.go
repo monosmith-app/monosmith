@@ -2,6 +2,7 @@ package convert
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,10 +45,11 @@ pnpm and yarn lockfiles and settings go, and scripts that call turbo, pnpm or
 yarn call smith and npm.
 
 Run it with --dry-run first: the report lists what maps, what changes behaviour
-and what needs you. Nothing is dropped silently. An Nx workspace's
-dependencies must be installed (npm ci), because Nx itself describes the
-projects; a Turborepo workspace is read from its files, so nothing needs to be
-installed.
+and what needs you. Nothing is dropped silently. An Nx workspace's packages must
+be installed, because Nx itself describes the projects: in a terminal convert
+asks and installs them (about two minutes), --yes installs without asking, and
+anywhere else it stops and says so. A Turborepo workspace is read from its
+files, so nothing needs to be installed.
 
 --level full goes further: it makes smith the only tool. After the conversion
 it works out which files and devDependencies of the old tooling nothing uses
@@ -101,6 +103,17 @@ git undoes everything.`,
 					raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 					return string(raw)
 				},
+			}
+			told := out
+			if asJSON {
+				told = cmd.ErrOrStderr()
+			}
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, Terminal: interactive(), In: os.Stdin, Out: told}); err != nil {
+				return err
 			}
 			plan, err := readPlan(root, files, input)
 			if err != nil {
@@ -171,7 +184,7 @@ git undoes everything.`,
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
-	f.BoolVar(&yes, "yes", false, "apply without asking (a terminal asks before changing anything)")
+	f.BoolVar(&yes, "yes", false, "apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything)")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes (not with --level full)")
 	level := (*string)(&choices.Level)
 	f.StringVar(level, "level", string(convertchoices.LevelConservative), "how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking)")
