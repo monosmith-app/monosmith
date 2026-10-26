@@ -121,7 +121,11 @@ wrote): review them with git status, then commit.`,
 			for _, n := range res.Notes {
 				fmt.Fprintln(out, n)
 			}
-			if hint := tryHint(s.Graph.Get(args[1])); hint != "" {
+			project := s.Graph.Get(args[1])
+			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
+				return err
+			}
+			if hint := tryHint(project); hint != "" {
 				fmt.Fprintln(out, hint)
 			}
 			return nil

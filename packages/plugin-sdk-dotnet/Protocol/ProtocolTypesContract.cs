@@ -1470,6 +1470,9 @@ public sealed record GenerateResult : IProtocolValue<GenerateResult>
     /// <summary>Notes are printed to the user after generation.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];
 
+    /// <summary>InstallPending is true when the plugin changed what the workspace depends on and left installing it to the host. A project is made by several plugins in turn; the host asks each plugin that reported this to install once (dependencies/install with Quiet set) after the last of them has generated, instead of once per plugin.</summary>
+    public bool InstallPending { get; init; }
+
     /// <inheritdoc />
     public static GenerateResult Read(JsonAny? value, string path)
     {
@@ -1478,6 +1481,7 @@ public sealed record GenerateResult : IProtocolValue<GenerateResult>
         {
             Files = ListOf(Member(map, "files"), Join(path, "files"), StringValue),
             Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
+            InstallPending = BooleanValue(Member(map, "installPending"), Join(path, "installPending")),
         };
     }
 
@@ -1491,6 +1495,11 @@ public sealed record GenerateResult : IProtocolValue<GenerateResult>
         {
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        if (InstallPending)
+        {
+            writer.Property("installPending");
+            writer.Boolean(InstallPending);
         }
         writer.EndObject();
     }
@@ -1697,6 +1706,9 @@ public sealed record InstallParams : IProtocolValue<InstallParams>
     /// <summary>Dev adds them as development dependencies where the ecosystem has such a thing; a plugin without one says so in a note.</summary>
     public bool Dev { get; init; }
 
+    /// <summary>Quiet keeps the package manager's output unless it fails: the host sets it when it installs as one step of a larger job (smith add).</summary>
+    public bool Quiet { get; init; }
+
     /// <inheritdoc />
     public static InstallParams Read(JsonAny? value, string path)
     {
@@ -1707,6 +1719,7 @@ public sealed record InstallParams : IProtocolValue<InstallParams>
             Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
             Packages = ListOf(Member(map, "packages"), Join(path, "packages"), StringValue),
             Dev = BooleanValue(Member(map, "dev"), Join(path, "dev")),
+            Quiet = BooleanValue(Member(map, "quiet"), Join(path, "quiet")),
         };
     }
 
@@ -1733,6 +1746,11 @@ public sealed record InstallParams : IProtocolValue<InstallParams>
         {
             writer.Property("dev");
             writer.Boolean(Dev);
+        }
+        if (Quiet)
+        {
+            writer.Property("quiet");
+            writer.Boolean(Quiet);
         }
         writer.EndObject();
     }

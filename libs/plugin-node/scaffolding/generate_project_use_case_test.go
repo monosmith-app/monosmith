@@ -11,16 +11,15 @@ import (
 )
 
 func TestGenerateWritesProjectAndWorkspaceOnce(t *testing.T) {
-	installs := 0
-	Installer = func(string) error { installs++; return nil }
+
 	ws := t.TempDir()
 	params := protocol.GenerateParams{Kind: protocol.ProjectPackage, Name: "sdk", Directory: "packages/sdk", Workspace: protocol.WorkspaceInfo{Name: "Acme", Scope: "acme"}}
 	res, err := Generate(ws, params)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if installs != 1 {
-		t.Fatalf("installs=%d", installs)
+	if !res.InstallPending {
+		t.Fatal("the host installs once: the plugin must report InstallPending")
 	}
 	joined := strings.Join(res.Files, ",")
 	for _, want := range []string{"package.json", ".npmrc", "packages/sdk/package.json", "packages/sdk/src/greeting/greet.use-case.js", "packages/sdk/src/index.js"} {

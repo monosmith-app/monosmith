@@ -10,8 +10,7 @@ import (
 )
 
 func TestApplyAddsOnlyWhatIsMissing(t *testing.T) {
-	installs := 0
-	Installer = func(string) error { installs++; return nil }
+
 	ws := t.TempDir()
 	write(t, ws, "package.json", `{"name": "acme", "devDependencies": {"jest": "1.0.0"}}`)
 	write(t, ws, "apps/web/package.json", `{"name": "@acme/web", "scripts": {"build": "tsc", "test": "mine"}}`)
@@ -31,8 +30,8 @@ func TestApplyAddsOnlyWhatIsMissing(t *testing.T) {
 	if got := strings.Join(res.Files, ","); got != "apps/web/package.json,apps/web/src/a.spec.ts,other.json,package.json" {
 		t.Fatalf("files %s", got)
 	}
-	if installs != 1 {
-		t.Fatalf("installs=%d", installs)
+	if !res.InstallPending {
+		t.Fatal("changed root devDependencies must report InstallPending")
 	}
 	root := read(t, ws, "package.json")
 	if !strings.Contains(root, `"jest": "1.0.0"`) || !strings.Contains(root, `"ts-jest": "^29.0.0"`) {
@@ -49,13 +48,12 @@ func TestApplyAddsOnlyWhatIsMissing(t *testing.T) {
 	}
 
 	res, err = Apply(ws, params, setup)
-	if err != nil || len(res.Files) != 0 || installs != 1 {
-		t.Fatalf("a second apply changes nothing: %v %v installs=%d", res.Files, err, installs)
+	if err != nil || len(res.Files) != 0 || res.InstallPending {
+		t.Fatalf("a second apply changes nothing: %v %v", res.Files, err)
 	}
 }
 
 func TestApplyNeedsTheRootManifest(t *testing.T) {
-	Installer = func(string) error { return nil }
 	if _, err := Apply(t.TempDir(), protocol.GenerateParams{Directory: "apps/web"}, Setup{}); err == nil {
 		t.Fatal("a workspace without package.json must fail")
 	}
@@ -82,7 +80,6 @@ func read(t *testing.T, root, rel string) string {
 }
 
 func TestApplyAddsRootFieldsAndEntriesTheWorkspaceLacks(t *testing.T) {
-	Installer = func(string) error { return nil }
 	fields := map[string]any{"overrides": map[string]any{"eslint-plugin-jsx-a11y": map[string]any{"eslint": "$eslint"}}}
 	params := protocol.GenerateParams{Name: "web", Directory: "apps/web"}
 

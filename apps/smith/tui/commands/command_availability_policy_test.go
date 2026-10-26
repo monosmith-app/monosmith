@@ -83,7 +83,7 @@ func TestEveryCommandHasATitleAndExecuteHasAnArgv(t *testing.T) {
 		if !slices.Contains(GroupOrder, c.Group) {
 			t.Errorf("%s is in an unknown group %q", c.ID, c.Group)
 		}
-		if c.Kind == ViewAction && (c.Action == "" || len(c.Views) == 0) {
+		if c.Kind == ViewAction && (c.Action == "" || len(c.Views) == 0) && c.Kind != OpenPackagePrompt {
 			t.Errorf("%s is a view action without an action or a view", c.ID)
 		}
 		if c.Footer != "" && len(c.Keys) == 0 {
@@ -197,11 +197,11 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		return strings.Join(out, " · ")
 	}
 	for view, want := range map[string]string{
-		TabProjects: "Enter detail · b build · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
-		TabDoctor:   "Enter expand · f fix · x fix all · g group · p passed · r reload · b build · t test · z zoom · y copy",
-		TabHome:     "Enter next · r reload · b build · t test · w changed · d doctor",
-		TabDeps:     "Space mark · s safe · a all · u update · v align · o one version · r reload · b build · t test · y copy",
-		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · t test",
+		TabProjects: "Enter detail · b build · B build all · t test · l lint · c typecheck · w changed · d doctor · a add project · z zoom · y copy",
+		TabDoctor:   "Enter expand · f fix · F fix all · g group · p passed · r reload · b build · B build all · t test · z zoom · y copy",
+		TabHome:     "Enter next · r reload · b build · B build all · t test · w changed · d doctor",
+		TabDeps:     "Space mark · s safe · a all · u update · v align · o one version · r reload · b build · B build all · t test · y copy",
+		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · B build all · t test",
 		TabSettings: "↑↓ move · Space change · Tab sections · Esc back · t trust · f forget · u reset · r reload",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {

@@ -42,7 +42,7 @@ type Config struct {
 	Theme     theme.Theme
 	// Actions are the guided menu's entries.
 	Actions []guide.Action
-	// Commands are every smith command, for the palette.
+	// Commands are every smith command, for the guided forms.
 	Commands []clicontract.CommandDescription
 	// Sources load the views; nil outside a workspace.
 	Sources *sources.Sources
@@ -179,7 +179,7 @@ func NewShell(cfg Config) Shell {
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}
-	sh.pal = palette.New(nil, cfg.Commands)
+	sh.pal = palette.New(nil)
 	if cfg.Sources != nil {
 		sh.inWorkspace = true
 		sh.sources = *cfg.Sources
@@ -201,6 +201,7 @@ func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
+		Project: s.selectedProject(), Projects: s.list.Len(),
 	}
 }
 
@@ -212,6 +213,10 @@ func (s Shell) viewReasons() map[string]string {
 		r["ws.fix"] = "doctor has not checked the workspace yet"
 	} else if _, ok := s.doctor.FixAll(); !ok {
 		r["ws.fix"] = "doctor found nothing it can fix"
+	}
+	if s.list.Len() == 0 {
+		r["projects.install-package"] = "the workspace has no project yet"
+		r["projects.remove-package"] = "the workspace has no project yet"
 	}
 	switch s.tab {
 	case commands.TabDoctor:
@@ -262,10 +267,8 @@ func (s Shell) tabList() []string {
 func (s *Shell) refreshPalette() {
 	st := s.state()
 	var entries []palette.Entry
-	for _, c := range commands.All() {
-		if c.Visible(st) && (st.InWorkspace || !c.NeedsWorkspace) {
-			entries = append(entries, palette.Entry{ID: c.ID, Title: c.Title, Hint: c.Hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(st)})
-		}
+	for _, e := range commands.PaletteEntries(st) {
+		entries = append(entries, palette.Entry{ID: e.ID, Section: e.Section, Title: e.Title, Hint: e.Hint, Shortcut: e.Shortcut, Unavailable: e.Unavailable})
 	}
 	s.pal = s.pal.WithEntries(entries)
 }

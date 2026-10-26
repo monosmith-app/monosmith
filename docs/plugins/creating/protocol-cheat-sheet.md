@@ -359,6 +359,7 @@ GenerateResult lists what the plugin wrote, workspace-relative.
 |---|---|---|---|
 | `files` | `[]string` | yes |  |
 | `notes` | `[]string` | no | Notes are printed to the user after generation. |
+| `installPending` | `bool` | no | InstallPending is true when the plugin changed what the workspace depends on and left installing it to the host. A project is made by several plugins in turn; the host asks each plugin that reported this to install once (dependencies/install with Quiet set) after the last of them has generated, instead of once per plugin. |
 
 ### Contribution
 
@@ -695,6 +696,7 @@ InstallParams asks a plugin to add packages to one of its projects with the ecos
 | `projects` | `[]Project` | no | Projects are the projects the plugin serves, when Project is nil. |
 | `packages` | `[]string` | no | Packages are names or pinned specs as the ecosystem writes them (left-pad, requests>=2.31, github.com/pkg/errors@v0.9.1). |
 | `dev` | `bool` | no | Dev adds them as development dependencies where the ecosystem has such a thing; a plugin without one says so in a note. |
+| `quiet` | `bool` | no | Quiet keeps the package manager's output unless it fails: the host sets it when it installs as one step of a larger job (smith add). |
 
 ### UninstallParams
 

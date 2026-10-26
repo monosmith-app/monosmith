@@ -289,7 +289,23 @@ func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
 	if s.run == nil {
 		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
-		c.lines = append(c.lines, pane.Wrap(s.th.Muted("Pick a project in the list and press "+commands.ShortcutOf("run.build")+" to build it, or "+commands.ShortcutOf("run.test")+" to test."), w, 0)...)
+		c.lines = append(c.lines, "")
+		// The scope of every key is spelled out; the buttons run on every project.
+		scope := "Press " + commands.ShortcutOf("run.build") + " to build"
+		if name := s.selectedProject(); name != "" {
+			scope += " " + name + " (the project selected on Projects)"
+		} else {
+			scope += " every project"
+		}
+		c.lines = append(c.lines, pane.Wrap(s.th.Muted(scope+", "+commands.ShortcutOf("run.test")+" to test it, or start one on every project:"), w, 0)...)
+		c.lines = append(c.lines, "")
+		for _, b := range []struct{ id, label string }{
+			{"run.build-all", fmt.Sprintf("Build everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.build-all"))},
+			{"run.test-all", fmt.Sprintf("Test everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.test-all"))},
+		} {
+			c.hits[len(c.lines)] = hit{kind: "action", id: b.id}
+			c.lines = append(c.lines, "  "+s.th.Accent("[ "+b.label+" ]"))
+		}
 		c.lines = append(c.lines, "")
 		if len(s.history) > 0 {
 			c.lines = append(c.lines, s.th.Title("Command log"))

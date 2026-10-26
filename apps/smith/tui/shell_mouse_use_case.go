@@ -16,8 +16,11 @@ const wheelStep = 3
 
 // paletteBox is where the command palette is drawn.
 func (s Shell) paletteBox() layout.Rect {
-	w, h := min(max(s.w-4, 10), 76), min(max(s.h-4, 5), 20)
-	return layout.Rect{X: (s.w - w) / 2, Y: max((s.h-h)/3, 1), W: w, H: h}
+	// Inside the frame of the content, whatever the size: never over the tabs,
+	// the footer or the frame's own edges.
+	main := s.lay().Main
+	w, h := min(max(s.w-8, 10), 76), min(max(main.H-2, 5), 28)
+	return layout.Rect{X: (s.w - w) / 2, Y: main.Y + 1 + max((main.H-2-h)/3, 0), W: w, H: h}
 }
 
 func (s *Shell) mouse(msg tea.MouseMsg) tea.Cmd {

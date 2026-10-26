@@ -35,7 +35,7 @@ func TestClickingATabSwitchesTheView(t *testing.T) {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "✗ go.work lists every module", "x fix all")
+	l.has("2 failed", "✗ go.work lists every module", "F fix all")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {

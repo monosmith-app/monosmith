@@ -103,9 +103,13 @@ func (s *Shell) openPackages(remove bool) {
 		s.say("Select a project first: packages are installed on one project")
 		return
 	}
-	p := packageprompt.NewInstall(project)
+	var names []string
+	for _, pr := range s.list.Projects() {
+		names = append(names, pr.Name)
+	}
+	p := packageprompt.NewInstall(project, names)
 	if remove {
-		p = packageprompt.NewRemove(project)
+		p = packageprompt.NewRemove(project, names)
 	}
 	p = p.Place(s.w, s.h)
 	s.pkg = &p
@@ -144,11 +148,8 @@ func (s *Shell) afterPalette(res palette.Result) tea.Cmd {
 		s.palOpen = false
 		s.pal = s.pal.Reset()
 	}
-	switch {
-	case res.CommandID != "":
+	if res.CommandID != "" {
 		return s.activate(res.CommandID)
-	case len(res.Argv) > 0:
-		return s.execute(res.Argv, false)
 	}
 	return nil
 }
@@ -297,6 +298,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.toggleMouse()
 	case commands.ViewAction:
 		return s.activateSelection(c.Action)
+	case commands.OpenPackagePrompt:
+		s.openPackages(c.Action == "uninstall")
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
 	case commands.OpenAdoptWizard:

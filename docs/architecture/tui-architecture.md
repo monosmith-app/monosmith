@@ -78,7 +78,7 @@ The same list produces:
 | key dispatch | `commands.ByKey(key, state)` returns the command, or the reason it is unavailable, which becomes the toast |
 | footer hints | `commands.Hints(state)` returns the view's keys then the tail every view ends with |
 | help overlay (`?`, `F1`) | `commands.HelpRows(state, viewTitle)` |
-| palette | the commands that have no key are reached here, plus every command of the CLI catalogue |
+| palette | one plain-worded line per intent, grouped by section, with its key and the command it runs; the commands that have no key are reached here |
 
 Because one list feeds all of them, a hint cannot name a key that does nothing; that is the design
 claim of [ADR 0032](decisions/0032-single-key-tui-keymap.md). Keys are single keys, no plain key

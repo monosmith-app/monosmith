@@ -21,10 +21,27 @@ type templateData struct {
 // CrateName is a project's crate name: the workspace's name first, so a
 // published crate does not clash on crates.io (acme-core).
 func CrateName(workspace, name string) string {
+	workspace = crateIdentifier(workspace)
 	if workspace == "" || strings.HasPrefix(name, workspace+"-") {
 		return name
 	}
 	return workspace + "-" + name
+}
+
+// crateIdentifier keeps what Cargo accepts in a package name (letters,
+// digits, dashes, underscores): any other run of characters, such as the dots
+// of a workspace named jato.auto.packages, becomes one dash.
+func crateIdentifier(name string) string {
+	var b strings.Builder
+	for _, c := range strings.ToLower(name) {
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '_':
+			b.WriteRune(c)
+		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
+			b.WriteByte('-')
+		}
+	}
+	return strings.TrimSuffix(b.String(), "-")
 }
 
 // Generate writes a crate, lists it in the root Cargo.toml's workspace
@@ -75,7 +92,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	} else if added {
 		files = append(files, cargoConfig)
 	}
-	return protocol.GenerateResult{Files: files, Notes: []string{"Import it from another crate as " + data.Crate + " = { path = \"<relative path>\" }."}}, nil
+	return protocol.GenerateResult{Files: files, Notes: []string{"Import it from a crate in another top-level folder as " + data.Crate + " = { path = \"../../" + params.Directory + "\" }."}}, nil
 }
 
 // cargoConfig is the workspace's Cargo configuration.

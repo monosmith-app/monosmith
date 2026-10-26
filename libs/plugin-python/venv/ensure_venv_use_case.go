@@ -22,6 +22,11 @@ func Path(workspaceRoot string) string {
 // pinned development tools. It returns the files it created.
 func Ensure(workspaceRoot string) ([]string, error) {
 	var created []string
+	if added, err := ignoreVenv(workspaceRoot); err != nil {
+		return nil, err
+	} else if added {
+		created = append(created, ".gitignore")
+	}
 	req := filepath.Join(workspaceRoot, RequirementsFile)
 	if _, err := os.Stat(req); errors.Is(err, fs.ErrNotExist) {
 		if err := os.WriteFile(req, []byte(Requirements), 0o644); err != nil {
@@ -30,11 +35,13 @@ func Ensure(workspaceRoot string) ([]string, error) {
 		created = append(created, RequirementsFile)
 	}
 	if _, err := os.Stat(Path(workspaceRoot)); errors.Is(err, fs.ErrNotExist) {
+		toolrun.Step("Creating the Python environment (.venv)")
 		if err := create(workspaceRoot); err != nil {
 			return created, err
 		}
 	}
 	py := Path(workspaceRoot)
+	toolrun.Step("Installing the Python tools (pytest, ruff, mypy and the rest of " + RequirementsFile + ")")
 	if err := Runner(workspaceRoot, []string{py, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", RequirementsFile}); err != nil {
 		return created, err
 	}
@@ -44,6 +51,7 @@ func Ensure(workspaceRoot string) ([]string, error) {
 // InstallEditable installs one project into the venv in editable mode, which
 // is what makes every workspace project importable by every other one.
 func InstallEditable(workspaceRoot, projectRoot string) error {
+	toolrun.Step("Installing " + projectRoot + " into the environment")
 	return Runner(workspaceRoot, []string{Path(workspaceRoot), "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-e", "./" + projectRoot})
 }
 
