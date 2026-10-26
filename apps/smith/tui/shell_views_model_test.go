@@ -391,3 +391,26 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 		t.Fatalf("started %q", got)
 	}
 }
+
+func TestAScrollbarShowsOnlyWhenTheListHidesRowsAndFollowsTheWheel(t *testing.T) {
+	short := longDeps(t, 8)
+	short.hasNot("┃")
+	long := longDeps(t, 60)
+	long.has("┃")
+	thumbRow := func(l *lab) int {
+		for y, line := range l.lines() {
+			if strings.Contains(line, "┃") {
+				return y
+			}
+		}
+		return -1
+	}
+	before := thumbRow(long)
+	x, y := long.find("pkg05")
+	for range 6 {
+		long.send(wheel(x+5, y, 1))
+	}
+	if after := thumbRow(long); after <= before {
+		t.Fatalf("the thumb stayed at row %d after scrolling down (now %d)", before, after)
+	}
+}

@@ -141,6 +141,7 @@ func (s Shell) projectsContent(w, h int) content {
 	avail := max(h-len(c.lines), 1)
 	sel := s.list.Cursor()
 	top := s.projScroll.Show(sel, avail, len(projects))
+	first := len(c.lines)
 	for i := top; i < len(projects) && i < top+avail; i++ {
 		p := projects[i]
 		dot := s.th.Muted(s.th.Icons.Queued)
@@ -165,6 +166,7 @@ func (s Shell) projectsContent(w, h int) content {
 		c.hits[len(c.lines)] = hit{kind: "project", id: p.Name, index: i}
 		c.lines = append(c.lines, pane.Fit(line, w))
 	}
+	copy(c.lines[first:], pane.Scrollbar(s.th, c.lines[first:], w, top, len(projects)))
 	return c
 }
 
@@ -331,6 +333,7 @@ func (s Shell) runContent(w, h int) content {
 	for len(c.lines) < g.sepRow {
 		c.lines = append(c.lines, "")
 	}
+	copy(c.lines[g.listTop:g.sepRow], pane.Scrollbar(s.th, c.lines[g.listTop:g.sepRow], w, s.runTop, len(ids)))
 	title := "all output"
 	if s.runSel != "" {
 		title = s.runSel
@@ -341,7 +344,7 @@ func (s Shell) runContent(w, h int) content {
 	}
 	sep := "── Log: " + title + " (" + follow + ") "
 	c.lines = append(c.lines, s.th.Faint(pane.Fit(sep+strings.Repeat("─", max(w-pane.Width(sep), 0)), w)))
-	c.lines = append(c.lines, s.log.Render(logview.Rows(s.th, s.logLines(), w), w, g.logRows)...)
+	c.lines = append(c.lines, s.log.Render(s.th, logview.Rows(s.th, s.logLines(), w), w, g.logRows)...)
 	return c
 }
 

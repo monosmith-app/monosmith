@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -66,6 +67,7 @@ func (s Shell) detailContent(w, h int) content {
 	}
 	all, _ = panel.View(s.th, w, hover)
 	lines, _ := detail.Window(s.th, all, rows, s.detailTop, h)
+	lines = pane.Scrollbar(s.th, lines, w, detail.ClampTop(s.detailTop, len(all), h), len(all))
 	c := content{lines: lines, hits: map[int]hit{}}
 	for row, id := range hits {
 		c.hits[row] = hit{kind: "action", id: id}
