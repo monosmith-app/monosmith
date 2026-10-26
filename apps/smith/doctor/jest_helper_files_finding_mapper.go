@@ -25,7 +25,7 @@ func jestHelperFilesFindings(s *session.Session) []protocol.Finding {
 	finding := protocol.Finding{
 		Check:   "Jest helper files of an older convert are replaced by " + legacyjesthelpers.Package,
 		Warning: true,
-		Detail:  strings.Join(cleanup.Files, ", ") + " at the workspace root stand in for what Nx's Jest plugins provided; " + legacyjesthelpers.Package + " does that now, without files to keep",
+		Detail:  "at the workspace root: " + strings.Join(cleanup.Files, ", ") + ". They stand in for what Nx's Jest plugins provided; " + legacyjesthelpers.Package + " does that now, without files to keep",
 		Remedy:  "`smith doctor --fix` points the Jest configs at the package, adds it to the root devDependencies and deletes the files",
 		Fix:     cleanup.Fix,
 	}
