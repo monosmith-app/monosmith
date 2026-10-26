@@ -105,7 +105,7 @@ func TestPackThenInstallRunsInCIOnlyThroughThePinAndNeverRunsAtInstall(t *testin
 		t.Fatal(err)
 	}
 
-	out, err = runInstall(t, archive, "--sha256", strings.Fields(string(digest))[0])
+	out, err = runInstall(t, archive, "--sha256", strings.Fields(string(digest))[0], "--pin")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -192,7 +192,7 @@ func TestInstallGlobalGoesToSmithHomeAndPinsNothing(t *testing.T) {
 		t.Fatal("not installed in the smith home")
 	}
 	cfg, _ := workspace.Load(root)
-	if _, declared := cfg.Plugins.External["envdump"]; declared || !strings.Contains(out, "nothing was pinned") {
+	if _, declared := cfg.Plugins.External["envdump"]; declared || !strings.Contains(out, "Nothing was pinned") {
 		t.Fatalf("a global install changed smith.toml or did not say so:\n%s", out)
 	}
 }
@@ -229,5 +229,66 @@ func TestPackNeedsAManifestWithAVersion(t *testing.T) {
 	}
 	if _, err := runPack(t, empty); !errors.As(err, &p) || !strings.Contains(p.Problem, "no version") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestInstallPinsOnlyWithThePinFlag(t *testing.T) {
+	root := emptyWorkspace(t)
+	if out, err := runInstall(t, pluginSource(t)); err != nil || !strings.Contains(out, "Nothing was pinned") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if cfg, _ := workspace.Load(root); len(cfg.Plugins.External) != 0 {
+		t.Fatalf("smith.toml was written without --pin: %v", cfg.Plugins.External)
+	}
+	if out, err := runInstall(t, pluginSource(t), "--force", "--pin"); err != nil || !strings.Contains(out, "Pinned sha256") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if cfg, _ := workspace.Load(root); cfg.Plugins.External["envdump"].SHA256 == "" {
+		t.Fatal("--pin did not write the sha256")
+	}
+}
+
+func TestInstallPinNeedsAWorkspaceAndInstallsNothingOtherwise(t *testing.T) {
+	emptyWorkspace(t)
+	_, err := runInstall(t, pluginSource(t), "--global", "--pin")
+	var p *problem.Error
+	if !errors.As(err, &p) || !strings.Contains(p.Problem, "--pin") {
+		t.Fatalf("got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(Home(), "plugins", "envdump")); err == nil {
+		t.Fatal("installed although --pin could not be honoured")
+	}
+}
+
+func TestInstallRefusesAnArchiveWithoutADigest(t *testing.T) {
+	root := emptyWorkspace(t)
+	dist := t.TempDir()
+	if _, err := runPack(t, pluginSource(t), "--out", dist); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runInstall(t, filepath.Join(dist, "envdump-0.1.0.smith-plugin.zip"))
+	var p *problem.Error
+	if !errors.As(err, &p) || !strings.Contains(p.Problem, "no sha256") || !strings.Contains(strings.Join(p.Remedy, " "), "--sha256") {
+		t.Fatalf("got %v", err)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(root, ".smith", "plugins")); len(entries) != 0 {
+		t.Fatalf("left behind: %v", entries)
+	}
+}
+
+func TestInstallRefusesAPluginWithoutAProgramForThisPlatformEvenGlobally(t *testing.T) {
+	emptyWorkspace(t)
+	src := t.TempDir()
+	manifest := `{"name":"elsewhere","version":"1.0.0","command":["./bin/elsewhere-plan9-mips"]}`
+	if err := os.WriteFile(filepath.Join(src, ManifestFile), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runInstall(t, src, "--global")
+	var p *problem.Error
+	if !errors.As(err, &p) || !strings.Contains(p.Problem, "no program for this platform") {
+		t.Fatalf("got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(Home(), "plugins", "elsewhere")); err == nil {
+		t.Fatal("installed a plugin that cannot run here")
 	}
 }

@@ -113,7 +113,10 @@ func TestInstallRefusesAnArchiveWithoutChecksums(t *testing.T) {
 	_, _ = w.Write([]byte(`{"name":"widget","version":"1"}`))
 	_ = zw.Close()
 	path := writeFile(t, t.TempDir(), "w.smith-plugin.zip", buf.Bytes())
-	_, err := Install(context.Background(), NewClient(), request(path, t.TempDir()))
+	sum := sha256.Sum256(buf.Bytes())
+	req := request(path, t.TempDir())
+	req.SHA256 = hex.EncodeToString(sum[:])
+	_, err := Install(context.Background(), NewClient(), req)
 	if err == nil || !strings.Contains(err.Error(), pluginarchive.ChecksumsFile) {
 		t.Fatalf("got %v", err)
 	}
@@ -137,9 +140,10 @@ func TestInstallFromADirectoryNeedsNoChecksums(t *testing.T) {
 }
 
 func TestInstallReplacesOnlyWhenAsked(t *testing.T) {
-	raw, _ := archive(t)
+	raw, digest := archive(t)
 	path := writeFile(t, t.TempDir(), "w.smith-plugin.zip", raw)
 	plugins := t.TempDir()
+	request := func(source, dir string) Request { r := request(source, dir); r.SHA256 = digest; return r }
 	if _, err := Install(context.Background(), NewClient(), request(path, plugins)); err != nil {
 		t.Fatal(err)
 	}
@@ -168,10 +172,11 @@ func TestInstallReplacesOnlyWhenAsked(t *testing.T) {
 }
 
 func TestInstallRefusesWhatInspectRefusesAndABadName(t *testing.T) {
-	raw, _ := archive(t)
+	raw, digest := archive(t)
 	path := writeFile(t, t.TempDir(), "w.smith-plugin.zip", raw)
 	plugins := t.TempDir()
 	req := request(path, plugins)
+	req.SHA256 = digest
 	req.Inspect = func(string) (Plugin, error) { return Plugin{}, fmt.Errorf("no program for this platform") }
 	if _, err := Install(context.Background(), NewClient(), req); err == nil || !strings.Contains(err.Error(), "no program") {
 		t.Fatalf("got %v", err)
@@ -219,10 +224,11 @@ func TestInstallFromAURLWithADigestAndALimit(t *testing.T) {
 		t.Fatalf("wrong digest over http: %v", err)
 	}
 
-	if _, err := Install(context.Background(), NewClient(), request(srv.URL+"/redirect", t.TempDir())); err == nil || !strings.Contains(err.Error(), "only https") {
+	withDigest := func(source string) Request { r := request(source, t.TempDir()); r.SHA256 = digest; return r }
+	if _, err := Install(context.Background(), NewClient(), withDigest(srv.URL+"/redirect")); err == nil || !strings.Contains(err.Error(), "only https") {
 		t.Fatalf("a redirect to plain http: %v", err)
 	}
-	if _, err := Install(context.Background(), NewClient(), request(srv.URL+"/missing", t.TempDir())); err == nil || !strings.Contains(err.Error(), "404") {
+	if _, err := Install(context.Background(), NewClient(), withDigest(srv.URL+"/missing")); err == nil || !strings.Contains(err.Error(), "404") {
 		t.Fatalf("not found: %v", err)
 	}
 
@@ -277,5 +283,44 @@ func TestInstallFromAGitHubReleaseUsesThePublishedDigest(t *testing.T) {
 
 	if _, err := Install(context.Background(), NewClient(), request("github:acme/widget@v9", t.TempDir())); err == nil || !strings.Contains(err.Error(), "no release v9") {
 		t.Fatalf("unknown tag: %v", err)
+	}
+}
+
+func TestInstallRefusesAnArchiveWithNoDigestToCheckItAgainst(t *testing.T) {
+	raw, _ := archive(t)
+	path := writeFile(t, t.TempDir(), "w.smith-plugin.zip", raw)
+	plugins := t.TempDir()
+	var noDigest *NoDigestError
+	if _, err := Install(context.Background(), NewClient(), request(path, plugins)); !errors.As(err, &noDigest) {
+		t.Fatalf("a local archive without --sha256: %v", err)
+	}
+
+	var downloads int
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/acme/widget/releases/tags/v0.1.0":
+			assets := []map[string]string{{"name": "widget-0.1.0.smith-plugin.zip", "browser_download_url": srv.URL + "/dl/archive"}}
+			_ = json.NewEncoder(w).Encode(map[string]any{"assets": assets})
+		default:
+			downloads++
+			_, _ = w.Write(raw)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("GITHUB_API_URL", srv.URL)
+
+	if _, err := Install(context.Background(), NewClient(), request(srv.URL+"/w.smith-plugin.zip", plugins)); !errors.As(err, &noDigest) {
+		t.Fatalf("a URL without --sha256: %v", err)
+	}
+	_, err := Install(context.Background(), NewClient(), request("github:acme/widget@v0.1.0", plugins))
+	if !errors.As(err, &noDigest) || !strings.Contains(noDigest.Hint, ".sha256") {
+		t.Fatalf("a release that publishes no digest: %v", err)
+	}
+	if downloads != 0 {
+		t.Fatalf("downloaded %d times before refusing", downloads)
+	}
+	if entries, _ := os.ReadDir(plugins); len(entries) != 0 {
+		t.Fatalf("installed anyway: %v", entries)
 	}
 }

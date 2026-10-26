@@ -49,7 +49,9 @@ func Write(w io.Writer, entries []Entry) (map[string]string, error) {
 }
 
 func header(name string, executable bool) *zip.FileHeader {
-	h := &zip.FileHeader{Name: name, Method: zip.Deflate, Modified: stamp}
+	// Stored, not deflated: a deflate stream is not guaranteed to be the same
+	// across Go releases, and a stored archive is the same bytes anywhere.
+	h := &zip.FileHeader{Name: name, Method: zip.Store, Modified: stamp}
 	if executable {
 		h.SetMode(0o755)
 	} else {

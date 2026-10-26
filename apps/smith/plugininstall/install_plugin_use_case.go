@@ -17,7 +17,8 @@ import (
 // Install fetches the plugin, verifies it and installs it into
 // req.PluginsDir/<name>. Nothing is installed unless every check passes:
 //
-//   - a digest the person gave (or the release publishes) must match the archive;
+//   - an archive needs a digest, the one the person gave or the release
+//     publishes, and must match it; a directory has none and is the person's own;
 //   - an archive needs a checksums file that lists exactly its files and
 //     matches every one (a directory's is checked when it has one);
 //   - names stay inside the install directory, links and special files are
@@ -64,6 +65,9 @@ func Install(ctx context.Context, client *http.Client, req Request) (Result, err
 			}
 			break
 		}
+		if want == "" {
+			return Result{}, &NoDigestError{Source: src.Location, Hint: "pass --sha256 <digest>"}
+		}
 		f, err := os.Open(src.Location)
 		if err != nil {
 			return Result{}, err
@@ -84,6 +88,11 @@ func Install(ctx context.Context, client *http.Client, req Request) (Result, err
 			if want == "" && asset.SHA256 != "" {
 				want, wantFrom = asset.SHA256, "the release's "+asset.Name+".sha256"
 			}
+			if want == "" {
+				return Result{}, &NoDigestError{Source: src.Location, Hint: "pass --sha256 <digest>, or ask the author to publish " + asset.Name + ".sha256 with the release"}
+			}
+		} else if want == "" {
+			return Result{}, &NoDigestError{Source: src.Location, Hint: "pass --sha256 <digest>"}
 		}
 		tmp, err := os.CreateTemp("", "smith-plugin-*"+pluginarchive.Suffix)
 		if err != nil {

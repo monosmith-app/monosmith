@@ -79,6 +79,9 @@ func TestPackIsDeterministicAndMarksTheProgramsExecutable(t *testing.T) {
 	modes := map[string]os.FileMode{}
 	for _, f := range zr.File {
 		modes[f.Name] = f.Mode().Perm()
+		if f.Method != zip.Store {
+			t.Errorf("%s is compressed (method %d); a stored archive is the same bytes on any Go release", f.Name, f.Method)
+		}
 		if f.Modified.Year() != 2000 {
 			t.Errorf("%s has timestamp %v", f.Name, f.Modified)
 		}
@@ -115,5 +118,32 @@ func TestPackRefusesSymbolicLinksAndBadNames(t *testing.T) {
 	}
 	if _, err := Pack(dir, Plugin{Name: "../x", Version: "1"}, t.TempDir()); err == nil {
 		t.Fatal("packed a bad name")
+	}
+}
+
+func TestPackLeavesOutWhatTheIgnoreFileLists(t *testing.T) {
+	dir := widgetDir(t)
+	for name, body := range map[string]string{
+		IgnoreFile:         "# not part of the plugin\nnotes.txt\nsrc/\n*.log\n",
+		"src/main.go":      "package main",
+		"bin/run.log":      "log",
+		"bin/keep.txt":     "kept",
+		"docs/src/more.md": "a directory named src deeper down is also left out",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	res, err := Pack(dir, widget, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"bin/keep.txt", "bin/smith-plugin-widget-linux-amd64", "bin/smith-plugin-widget-windows-arm64.exe", "plugin.json"}
+	if strings.Join(res.Files, ",") != strings.Join(want, ",") {
+		t.Fatalf("files %v, want %v", res.Files, want)
 	}
 }

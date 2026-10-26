@@ -3,8 +3,10 @@ package pluginpack
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,8 +22,8 @@ func ArchiveName(p Plugin) string {
 
 // Pack packs the plugin directory dir into outDir as <name>-<version>.smith-plugin.zip,
 // with <that file>.sha256 beside it. Every file of the directory goes in,
-// except version-control folders, earlier archives and the checksums file,
-// which is written fresh. The files the manifest's command names for any
+// except version-control folders, earlier archives, the checksums file (which
+// is written fresh) and what the directory's IgnoreFile lists. The files the manifest's command names for any
 // platform are marked executable, so a build on Windows still installs
 // runnable on Linux. Nothing is run.
 func Pack(dir string, p Plugin, outDir string) (Result, error) {
@@ -31,7 +33,13 @@ func Pack(dir string, p Plugin, outDir string) (Result, error) {
 	if err := pluginarchive.ValidatePluginVersion(p.Version); err != nil {
 		return Result{}, err
 	}
-	entries, err := pluginarchive.DirEntries(dir, skipped)
+	patterns, err := readIgnore(dir)
+	if err != nil {
+		return Result{}, err
+	}
+	entries, err := pluginarchive.DirEntries(dir, func(rel string, isDir bool) bool {
+		return skipped(rel, isDir) || ignored(patterns, rel, isDir)
+	})
 	if err != nil {
 		return Result{}, err
 	}
@@ -98,10 +106,22 @@ func skipped(rel string, isDir bool) bool {
 	switch {
 	case isDir:
 		return base == ".git" || base == ".hg" || base == ".svn"
-	case rel == pluginarchive.ChecksumsFile, base == ".DS_Store":
+	case rel == pluginarchive.ChecksumsFile, rel == IgnoreFile, base == ".DS_Store":
 		return true
 	}
 	return strings.HasSuffix(base, pluginarchive.Suffix) || strings.HasSuffix(base, pluginarchive.Suffix+".sha256")
+}
+
+// readIgnore reads the directory's IgnoreFile; a plugin without one packs all.
+func readIgnore(dir string) ([]ignorePattern, error) {
+	text, err := os.ReadFile(filepath.Join(dir, IgnoreFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return parseIgnore(string(text)), nil
 }
 
 type countingWriter struct{ n int64 }

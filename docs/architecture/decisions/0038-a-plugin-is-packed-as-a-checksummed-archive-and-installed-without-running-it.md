@@ -39,21 +39,23 @@ the `pluginarchive` slice; `pluginpack` and `plugininstall` depend on it and nev
 `pluginhost` hands both the manifest reader, so the manifest has one owner.
 
 **Pack.** `smith plugin pack [dir] [--out dir]` packs every file of the directory except version
-control folders, earlier archives and an old checksums file. Entries are sorted, timestamps are
+control folders, earlier archives, an old checksums file and what the directory's `.smithpluginignore`
+lists (a gitignore-like list without negation; the file itself is not packed). Entries are sorted, timestamps are
 fixed, modes are 0644 or 0755; the files the first element of the manifest's `command` names for any
 platform (`{os}`, `{arch}` and `{exe}` as wildcards) are marked executable, so a package built on one
 operating system installs runnable on another. A symbolic link or special file is refused. Packing
-does not run anything. The output is deterministic for a given Go toolchain: the zip writer's
-DEFLATE output is not guaranteed stable across Go releases, so reproducibility is "same directory,
-same smith build", and the per-file digests in `checksums.sha256` are stable regardless.
+does not run anything. Entries are stored, not deflated, so the archive is the same bytes for the same
+directory on any smith build: a deflate stream is not guaranteed stable across Go releases, and a
+digest that anyone can reproduce from the source is worth more here than a smaller download.
 
 **Install.** `smith plugin install <source>` takes a path (archive or plugin directory), an https URL,
 or `github:owner/repo@tag[#asset]`. A tag is required. `http` is accepted for loopback only, and every
 redirect must satisfy the same rule. Before anything is written, smith:
 
 1. compares the archive's SHA-256 with `--sha256`, or with the release's `<archive>.sha256` asset
-   when installing from GitHub without `--sha256`; a mismatch refuses the install (a digest that
-   was not published is reported as unchecked);
+   when installing from GitHub without `--sha256`; a mismatch refuses the install, and so does an
+   archive with no digest at all, before it is downloaded (a plugin directory is the person's own
+   files and has no archive);
 2. requires `checksums.sha256` to list exactly the archive's files, and each file to match it while
    it is written (a directory source is checked when it has one);
 3. refuses an entry that is absolute, has `..`, a backslash, a colon, a control character, a
@@ -67,11 +69,12 @@ redirect must satisfy the same rule. Before anything is written, smith:
 The files go to a staging directory beside the destination and are moved into place at the end; an
 installed plugin of the same name is replaced only with `--force` and is put back if the move fails.
 
-**Where, and the pin.** Inside a workspace the plugin goes to `.smith/plugins/<name>` and
-`[plugins.external.<name>] sha256` is written with the same text-preserving edit `smith plugin
-trust --pin` uses, with the same value (the digest of the file the plugin runs). Outside a workspace,
-or with `--global`, it goes to `$SMITH_HOME/plugins` and nothing is pinned: a pin belongs to a
-workspace.
+**Where, and the pin.** Inside a workspace the plugin goes to `.smith/plugins/<name>`;
+with `--pin`, `[plugins.external.<name>] sha256` is also written with the same text-preserving edit
+`smith plugin trust --pin` uses, with the same value (the digest of the file the plugin runs), and
+without it the command prints the digest to pin. Outside a workspace, or with `--global`, it goes
+to `$SMITH_HOME/plugins`; a pin belongs to a workspace, so `--pin` there is an error. A plugin with
+no program for this platform is refused wherever it would go.
 
 **Trust.** Install records no trust decision unless `--trust` is given, which does what `smith
 plugin trust` does for the workspace. On a person's machine the pin still does not make a plugin
@@ -86,7 +89,8 @@ that it is intact; it does not prove who published it, and the digest taken from
 the download adds nothing. Signatures and provenance attestations, a registry, an SBOM in the
 archive and the canary checks of `smith plugin check` are not part of this step. Assets of private
 GitHub repositories are not downloaded. Packing everything in the directory means an author must
-keep the directory clean. A plugin that needs a runtime installed by another tool (Node.js, Python
+keep it clean or list what to leave out in `.smithpluginignore`; the archives are larger than
+compressed ones. A plugin that needs a runtime installed by another tool (Node.js, Python
 and their dependencies) packs its script and launcher, not the dependencies, unless they are in the
 directory.
 

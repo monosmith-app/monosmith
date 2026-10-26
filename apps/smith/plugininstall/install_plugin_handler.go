@@ -17,19 +17,20 @@ import (
 // manifest format belongs to the plugin host, not to the installer.
 func Command(describe func(dir string) (Described, error)) *cobra.Command {
 	var (
-		global, force, trust bool
-		sha                  string
+		global, force, trust, pin bool
+		sha                       string
 	)
 	cmd := &cobra.Command{
 		Use:   "install <source>",
-		Short: "Install a packaged plugin and pin its digest",
+		Short: "Install a packaged plugin, checked against its sha256",
 		Long: `Installs a plugin from an archive made by "smith plugin pack", from a plugin
 directory, from an https URL, or from a GitHub release (github:owner/repo@tag,
 the release's one *.smith-plugin.zip asset, or github:owner/repo@tag#<asset>).
 
 Before anything is installed, smith checks that
   - the archive matches the SHA-256 you give with --sha256, or the one the
-    release publishes in <archive>.sha256;
+    release publishes in <archive>.sha256 (an archive without either is
+    refused; a plugin directory has no archive and needs none);
   - the archive's checksums.sha256 lists exactly its files and every file
     matches it;
   - every path stays inside the plugin's directory (no "..", absolute paths,
@@ -37,20 +38,23 @@ Before anything is installed, smith checks that
   - the plugin has a program for this platform.
 A failed check installs nothing. The plugin is never started.
 
-Inside a workspace the plugin goes to .smith/plugins/<name> and the SHA-256 of
-the file it runs is pinned in smith.toml, as "smith plugin trust --pin" does,
-which is what CI checks. Outside a workspace, or with --global, it goes to
-$SMITH_HOME/plugins (~/.smith/plugins) and nothing is pinned.
+Inside a workspace the plugin goes to .smith/plugins/<name>; outside one, or
+with --global, to $SMITH_HOME/plugins (~/.smith/plugins). With --pin the SHA-256
+of the file it runs is also written to smith.toml, as "smith plugin trust --pin"
+does, which is what CI checks; a pin belongs to a workspace, so --pin needs one.
 
 Installing does not trust the plugin: smith asks the first time it is used,
 unless you pass --trust. A plugin runs with your privileges and smith does not
-sandbox it; read it before you trust it. Without --sha256 an https download is
-only as trustworthy as the place it came from.`,
-		Example: "  smith plugin install ./widget-0.1.0.smith-plugin.zip\n  smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 <digest>\n  smith plugin install github:acme/smith-plugin-widget@v0.1.0 --trust",
+sandbox it; read it before you trust it. The digest ties the archive to what
+the author published; it does not say who the author is.`,
+		Example: "  smith plugin install ./widget-0.1.0.smith-plugin.zip\n  smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 <digest>\n  smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin --trust",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, _ := workspace.FindRoot(".")
 			inWorkspace := root != "" && !global
+			if pin && !inWorkspace {
+				return problem.New("--pin writes to smith.toml, and there is no workspace here (or --global was given)", "run it inside a workspace, or drop --pin")
+			}
 			pluginsDir := filepath.Join(plugintrust.Home(), "plugins")
 			if inWorkspace {
 				pluginsDir = filepath.Join(root, ".smith", "plugins")
@@ -76,8 +80,6 @@ only as trustworthy as the place it came from.`,
 			switch {
 			case res.ArchiveVerified:
 				fmt.Fprintf(w, "  archive sha256 %s matches the digest you gave or the release published.\n", res.ArchiveSHA256)
-			case res.ArchiveSHA256 != "":
-				fmt.Fprintf(w, "  archive sha256 %s (not compared with a published digest: pass --sha256 to require one).\n", res.ArchiveSHA256)
 			}
 			if res.Checksummed {
 				fmt.Fprintln(w, "  every file matches checksums.sha256.")
@@ -95,15 +97,18 @@ only as trustworthy as the place it came from.`,
 				return problem.New(fmt.Sprintf("installed %s, but cannot read the file it runs: %v", res.Name, err))
 			}
 			digest := plugintrust.PinnedDigest(fp)
+			if pin {
+				table := "plugins.external." + configedit.QuoteKey(res.Name)
+				if err := configedit.SetTableValue(root, table, "sha256", digest); err != nil {
+					return err
+				}
+				fmt.Fprintf(w, "Pinned sha256 %s in smith.toml [%s], which is what CI checks.\n", digest, table)
+			} else {
+				fmt.Fprintf(w, "Nothing was pinned. In a workspace, add --pin to write the sha256 of the file it runs (%s) to smith.toml; CI needs it.\n", digest)
+			}
 			if !inWorkspace {
-				fmt.Fprintf(w, "Not inside a workspace, so nothing was pinned. To use it, declare [plugins.external.%s] in smith.toml and run `smith plugin trust %s --pin` there; its file's sha256 is %s.\n", res.Name, res.Name, digest)
 				return nil
 			}
-			table := "plugins.external." + configedit.QuoteKey(res.Name)
-			if err := configedit.SetTableValue(root, table, "sha256", digest); err != nil {
-				return err
-			}
-			fmt.Fprintf(w, "Pinned sha256 %s in smith.toml [%s], which is what CI checks.\n", digest, table)
 			if trust {
 				store, err := plugintrust.OpenStore()
 				if err != nil {
@@ -119,7 +124,8 @@ only as trustworthy as the place it came from.`,
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&global, "global", false, "install into $SMITH_HOME/plugins even inside a workspace, and pin nothing")
+	cmd.Flags().BoolVar(&global, "global", false, "install into $SMITH_HOME/plugins even inside a workspace")
+	cmd.Flags().BoolVar(&pin, "pin", false, "also pin the sha256 of the file the plugin runs in smith.toml (what CI checks)")
 	cmd.Flags().StringVar(&sha, "sha256", "", "the SHA-256 the archive must have; the install is refused if it differs")
 	cmd.Flags().BoolVar(&force, "force", false, "replace an installed plugin of the same name")
 	cmd.Flags().BoolVar(&trust, "trust", false, "also record that you trust the plugin in this workspace")
@@ -143,11 +149,18 @@ func inspectStaged(describe func(string) (Described, error), dir string) (Plugin
 // installProblem puts a remedy on the failures people can act on.
 func installProblem(err error) error {
 	var mismatch *DigestMismatchError
+	var noDigest *NoDigestError
 	switch {
 	case errors.As(err, &mismatch):
 		return &problem.Error{
 			Problem: err.Error(),
 			Remedy:  []string{"nothing was installed: download the archive again, or check where the digest came from"},
+			Cause:   err,
+		}
+	case errors.As(err, &noDigest):
+		return &problem.Error{
+			Problem: err.Error(),
+			Remedy:  []string{noDigest.Hint, "nothing was installed"},
 			Cause:   err,
 		}
 	case errors.Is(err, ErrAlreadyInstalled):

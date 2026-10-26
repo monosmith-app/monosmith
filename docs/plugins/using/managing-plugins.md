@@ -11,7 +11,7 @@ and the settings a plugin reads. The model behind it is in
 |---|---|
 | `smith plugin list [--json]` | lists the built-in plugins, the external plugins the workspace uses (trusted or not, and what each may see) and the plugins installed on the search path |
 | `smith plugin check <name or path> [--generate] [--env NAME] [--json]` | runs the conformance suite against a plugin, which needs no trust |
-| `smith plugin install <path|url|github:owner/repo@tag>` | installs a packaged plugin after checking its digests, and pins its digest in `smith.toml` |
+| `smith plugin install <path|url|github:owner/repo@tag>` | installs a packaged plugin after checking it against its sha256; `--pin` also pins the digest in `smith.toml` |
 | `smith plugin pack [dir]` | packs a plugin directory you wrote into an archive for `install` |
 | `smith plugin trust <name> [--yes] [--pin]` | reviews an external plugin and records that you trust it, so smith may start it |
 | `smith plugin untrust <name>` | forgets that you trust an external plugin |
@@ -211,9 +211,9 @@ A plugin that someone packed with [`smith plugin pack`](../../manual/plugin-pack
 the archive, from a URL or from a GitHub release:
 
 ```sh
-smith plugin install ./widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d
-smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d
-smith plugin install github:acme/smith-plugin-widget@v0.1.0
+smith plugin install ./widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d --pin
+smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d --pin
+smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin
 ```
 
 ```text
@@ -229,14 +229,15 @@ What to rely on:
 
 - Get the digest from the author through a channel other than the download (their release notes, the
   `.sha256` file on a GitHub release, a message) and pass it with `--sha256`. A digest that does not
-  match stops the install and writes nothing. Without a published digest, an install only proves
-  the archive is intact, not who made it.
+  match stops the install and writes nothing, and an archive with no digest to be checked against is
+  refused. The digest proves the archive is the one the author published, not who the author is.
 - smith checks every file against the archive's `checksums.sha256`, refuses paths that leave the
   plugin's folder, links and special files, and stops at 512 MiB per download and per file.
 - Installing **never starts the plugin**, and does not trust it either: smith asks the first time
-  the plugin is used, unless you pass `--trust`. In a workspace the plugin goes to `.smith/plugins/<name>`
-  and its digest is pinned in `smith.toml`; with `--global`, or outside a workspace, it goes to
-  `$SMITH_HOME/plugins` and nothing is pinned. An installed plugin is replaced only with `--force`.
+  the plugin is used, unless you pass `--trust`. In a workspace the plugin goes to `.smith/plugins/<name>`,
+  and with `--pin` its digest is also pinned in `smith.toml` (CI needs the pin); with `--global`, or
+  outside a workspace, it goes to `$SMITH_HOME/plugins`, where `--pin` is an error. An installed plugin
+  is replaced only with `--force`.
 
 Every flag, check and message is in the [`smith plugin install`](../../manual/plugin-install.md) page.
 

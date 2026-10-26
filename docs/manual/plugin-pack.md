@@ -6,8 +6,9 @@ parent: plugin.md
 `smith plugin pack` turns a plugin directory into one archive, `<name>-<version>.smith-plugin.zip`,
 that [`smith plugin install`](plugin-install.md) accepts, and writes the archive's SHA-256 beside it.
 The archive holds the plugin's files, the program `plugin.json` names for each platform, and a
-`checksums.sha256` that lists the SHA-256 of every file. Packing is deterministic: the same
-directory always gives the same bytes, so anyone can pack the same source and compare digests.
+`checksums.sha256` that lists the SHA-256 of every file. Packing is deterministic: files are stored
+uncompressed, so the same directory always gives the same bytes on any smith build, and anyone can
+pack the same source and compare digests.
 
 ## When to use it
 
@@ -42,9 +43,19 @@ Usage: `smith plugin pack [dir] [flags]`
 
 | In | Out |
 |---|---|
-| every file of the directory, in name order, with a fixed timestamp | `.git`, `.hg` and `.svn` folders, `.DS_Store`, earlier `*.smith-plugin.zip` files and their `.sha256`, and an old `checksums.sha256` |
+| every file of the directory, in name order, with a fixed timestamp | `.git`, `.hg` and `.svn` folders, `.DS_Store`, earlier `*.smith-plugin.zip` files and their `.sha256`, an old `checksums.sha256`, and whatever the directory's `.smithpluginignore` lists |
 | the files the first element of `command` names for any platform (`./bin/smith-plugin-widget-{os}-{arch}{exe}` matches `bin/smith-plugin-widget-linux-amd64` and `bin/smith-plugin-widget-windows-arm64.exe`), marked executable | |
 | `checksums.sha256`, written by smith: `<sha256>  <path>` per file, the format of `sha256sum` | |
+
+`.smithpluginignore` sits at the root of the plugin directory (and is not packed). One pattern per
+line: `name` leaves out that name at any depth, `dir/` only a directory, `a/b` or `/a` a path from the
+root, `*` and `**` are globs, `#` starts a comment. There is no negation.
+
+```text
+# not part of the plugin
+src/
+*.log
+```
 
 smith refuses to pack a directory that holds a symbolic link or another special file, and a
 manifest whose `command` names a `./` program that no file matches. A command that is looked up on

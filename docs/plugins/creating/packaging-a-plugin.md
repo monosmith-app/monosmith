@@ -179,9 +179,13 @@ The plugin was not started. Publish the archive and its .sha256 file together; u
 ```
 
 - `plugin.json` needs a `name` and a `version`; they name the archive, `<name>-<version>.smith-plugin.zip`.
-- Everything in the directory goes in (except `.git`, earlier archives and an old `checksums.sha256`),
-  in name order with a fixed timestamp, so packing the same directory twice gives the same bytes.
-  Symbolic links are refused. Keep secrets and build leftovers out of the directory.
+- Everything in the directory goes in (except `.git`, earlier archives, an old `checksums.sha256`
+  and what a `.smithpluginignore` file at the directory's root lists, one pattern per line such as
+  `src/` or `*.log`), stored uncompressed in name order with a fixed timestamp, so packing the same
+  directory twice gives the same bytes. Symbolic links are refused. List sources, secrets and build
+  leftovers in `.smithpluginignore`, or keep them out of the directory.
+- Publish the archive's `.sha256` with it: `smith plugin install` refuses an archive that has no digest
+  to be checked against.
 - The files that the first element of `command` names for any platform are marked executable, so
   a package built on Windows installs runnable on Linux. If the `command` names a `./` program and no
   file matches, packing fails: build for at least one platform first.

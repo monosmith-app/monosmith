@@ -23,11 +23,14 @@ func Command(read func(dir string) (Plugin, error)) *cobra.Command {
 plugin.json with a name and a version) into <name>-<version>.smith-plugin.zip,
 and writes the archive's SHA-256 to <archive>.sha256 beside it.
 
-The archive holds every file of the directory (except .git, earlier archives
-and checksums.sha256), the program plugin.json names for each platform marked
-executable, and a checksums.sha256 listing the SHA-256 of every file. Files
-are packed in name order with a fixed timestamp, so the same directory always
-gives the same archive. Symbolic links are refused.
+The archive holds every file of the directory except .git, earlier archives,
+checksums.sha256 and what the directory's .smithpluginignore lists (one pattern
+per line: "name" at any depth, "dir/" for a directory, "a/b" or "/a" from the
+root, * and ** as globs, # for comments). The program plugin.json names for
+each platform is marked executable, and a checksums.sha256 lists the SHA-256 of
+every file. Files are stored uncompressed in name order with a fixed timestamp,
+so the same directory always gives the same archive, byte for byte. Symbolic
+links are refused.
 
 Build the program for each platform into the directory first. Nothing is run:
 use "smith plugin check" for that.`,
