@@ -122,7 +122,7 @@ Usage: `smith convert [flags]`
 [Manual page](../manual/add.md)
 
 <!-- smith:begin add -->
-Add an app, an internal lib or a publishable package
+Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)
 
 Usage: `smith add <kind> <name> [flags]`
 
@@ -336,7 +336,7 @@ Usage: `smith dev [projects...] [flags]`
 [Manual page](../manual/install.md)
 
 <!-- smith:begin install -->
-Add packages to a project, or install the whole workspace (up updates, sync aligns versions)
+Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)
 
 Usage: `smith install [packages...] [flags]`
 

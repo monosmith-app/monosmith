@@ -51,7 +51,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	switch kind {
 	case protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage:
 	default:
-		return nil, fmt.Errorf("kind %q is not app, lib or package", opts.Kind)
+		return nil, fmt.Errorf("kind %q is not app, lib or package. To add a package (a dependency) to a project, use: smith install -w <project> <package>", opts.Kind)
 	}
 	if err := ValidateName(opts.Kind, opts.Name); err != nil {
 		return nil, err

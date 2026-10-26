@@ -125,7 +125,7 @@ var all = []Command{
 	{ID: "file.adopt", Group: GroupStart, Title: "Bring into MonoSmith…", Hint: "bring this folder under smith: what it found, how far to go, every file that changes, then the checks", Keys: []string{"a"}, Kind: OpenAdoptWizard, Views: vGuide, NeedsIdle: true, OnlyOutside: true, NeedsContent: true, Footer: "adopt"},
 
 	// Projects
-	{ID: "proj.install", Group: GroupProjects, Title: "Install dependencies…", Hint: "smith install: a fresh clone's npm install, venv, go mod download", Keys: []string{"i"}, Kind: Execute, Argv: []string{"install"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "proj.install", Group: GroupProjects, Title: "Install everything…", Hint: "smith install: installs what every project already declares, as after a fresh clone (to add one package, use Install a package)", Keys: []string{"i"}, Kind: Execute, Argv: []string{"install"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.affected", Group: GroupProjects, Title: "Show what changed", Hint: "smith affected: projects touched since the base branch", Kind: Execute, Argv: []string{"affected"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.graph", Group: GroupProjects, Title: "Project graph", Hint: "smith graph", Kind: Execute, Argv: []string{"graph"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.plugins", Group: GroupProjects, Title: "Manage plugins…", Hint: "choose which built-in plugins are on", Kind: Guided, Guide: "Manage plugins", NeedsWorkspace: true, NeedsIdle: true},

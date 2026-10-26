@@ -66,7 +66,7 @@ func TestTheRunTabOffersBuildEverythingAsAButtonAndPointsAtWhatIsOnScreen(t *tes
 func TestThePaletteInstallOpensTheGuidedFormOnTheProjectOnScreenAndOffersNoRawCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("ctrl+p").typeText("install")
-	l.has("Install a package", "Install dependencies")
+	l.has("Install a package", "Install everything")
 	l.hasNot("uninstall >", "[--save-dev]")
 	l.keys("enter")
 	l.has("Install packages", "Project: ‹ orders ›", "development dependency")

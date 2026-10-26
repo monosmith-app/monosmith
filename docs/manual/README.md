@@ -54,7 +54,7 @@ Python package). Paths in output are shortened.
 | [`smith new`](new.md) | Create a monorepo: configuration, git, CI pipelines and a first commit. |
 | [`smith adopt`](adopt.md) | Bring an existing repository under smith: report what it involves; `--init` takes the steps. |
 | [`smith convert`](convert.md) | Convert an Nx, Turborepo or mnci workspace to smith. |
-| [`smith add`](add.md) | Add an app, an internal lib or a publishable package. |
+| [`smith add`](add.md) | Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install). |
 | [`smith remove`](remove.md) | Remove a project: its directory, its traces in the workspace, its CI. |
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
 | [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices` or `none`), or choose another. |

@@ -16,7 +16,7 @@ func Describe(argv []string) (title, why string) {
 	case verb == "doctor" && slices.Contains(argv, "--fix"):
 		return "Fix with doctor", "This applies the safe fixes doctor found and rewrites files."
 	case verb == "install":
-		return "Install dependencies", "This installs packages with each project's own toolchain."
+		return "Install everything", "This installs what every project already declares, with its own toolchain (as after a fresh clone). To add one package, use Install a package instead."
 	case verb == "upgrade":
 		return "Upgrade the workspace", "This migrates smith.toml and regenerates the files smith owns."
 	case verb == "ci":

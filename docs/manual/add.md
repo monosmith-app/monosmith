@@ -33,7 +33,7 @@ smith add <kind> <name> [--lang <language>] [--stack <stack>] [--choice name=ans
 ## Arguments and flags
 
 <!-- smith:begin add -->
-Add an app, an internal lib or a publishable package
+Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)
 
 Usage: `smith add <kind> <name> [flags]`
 

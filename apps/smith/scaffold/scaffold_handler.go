@@ -59,7 +59,7 @@ func AddCommand(version string) *cobra.Command {
 	var verbose bool
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
-		Short: "Add an app, an internal lib or a publishable package",
+		Short: "Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)",
 		Long: `Add a project. The kind says what happens to it:
 
   app      deployed, never published         → apps/<name>
