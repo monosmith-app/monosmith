@@ -23,7 +23,7 @@ module.exports = {
 	if !kept {
 		t.Fatal("not rewritten")
 	}
-	for _, want := range []string{"const nxPreset = {", "testMatch:", "...nxPreset,", "setupFilesAfterEnv:      [require.resolve('./jest.setup.cjs')]", "nxPreset.transformIgnorePatterns ?? ['/node_modules/']"} {
+	for _, want := range []string{"const nxPreset = require('@monosmith/jest-preset')", "...nxPreset,", "setupFilesAfterEnv:      [require.resolve('./jest.setup.cjs')]", "nxPreset.transformIgnorePatterns ?? ['/node_modules/']"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}

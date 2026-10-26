@@ -62,7 +62,7 @@ var fileRules = []fileRule{
 		return hasPrefixes(rel, "eslint.config.", ".eslintrc") || b == ".eslintignore"
 	}},
 	{family: FamilyJest, byName: true, match: func(rel string) bool {
-		return hasPrefixes(rel, "jest.config.", "jest.preset.", "jest.setup.", "jest.resolver.")
+		return hasPrefixes(rel, "jest.config.", "jest.preset.", "jest.setup.", "jest.resolver.", "jest.asset-transform.")
 	}},
 	{family: FamilyVitest, byName: true, match: func(rel string) bool {
 		return hasPrefixes(rel, "vitest.config.", "vitest.workspace.", "vitest.setup.")
@@ -106,7 +106,7 @@ func packageFamily(name string) (Family, bool) {
 	case strings.Contains(name, "eslint"):
 		return FamilyLint, true
 	case name == "jest" || strings.HasPrefix(name, "jest-") || strings.HasPrefix(name, "@jest/") ||
-		name == "ts-jest" || name == "@swc/jest" || name == "babel-jest" || name == "@types/jest":
+		name == "ts-jest" || name == "@swc/jest" || name == "babel-jest" || name == "@types/jest" || name == "@monosmith/jest-preset":
 		return FamilyJest, true
 	case name == "vitest" || strings.HasPrefix(name, "@vitest/") || strings.HasPrefix(name, "vitest-"):
 		return FamilyVitest, true

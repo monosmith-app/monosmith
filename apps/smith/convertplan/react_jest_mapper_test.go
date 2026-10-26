@@ -19,17 +19,17 @@ const studioJest = `module.exports = {
 `
 
 func TestRewriteNxReactJestWritesOutTheTransformerAndPresets(t *testing.T) {
-	out, ok := RewriteNxReactJest(studioJest, "apps/studio-ui")
+	out, ok := RewriteNxReactJest(studioJest)
 	if !ok {
 		t.Fatal("not rewritten")
 	}
-	if !strings.Contains(out, `: '<rootDir>/../../jest.asset-transform.cjs',`) {
+	if !strings.Contains(out, `: '@monosmith/jest-preset/asset-transform',`) {
 		t.Errorf("transformer:\n%s", out)
 	}
 	if !strings.Contains(out, `presets: [['@babel/preset-env', { targets: { node: 'current' }, loose: true }], ['@babel/preset-typescript', { allowDeclareFields: true }], ['@babel/preset-react', { runtime: 'automatic', development: true }]]`) {
 		t.Errorf("presets:\n%s", out)
 	}
-	if _, ok := RewriteNxReactJest(strings.Replace(studioJest, "testEnvironment", "resolver: '@nx/jest/plugins/resolver', testEnvironment", 1), "apps/studio-ui"); ok {
+	if _, ok := RewriteNxReactJest(strings.Replace(studioJest, "testEnvironment", "resolver: '@nx/jest/plugins/resolver', testEnvironment", 1)); ok {
 		t.Error("another Nx import is left to the user")
 	}
 }
@@ -43,8 +43,20 @@ func TestPlanRewritesAReactJestConfig(t *testing.T) {
 		}
 		return ""
 	}})
-	if !strings.Contains(plan.Write["apps/ui/jest.config.cts"], "jest.asset-transform.cjs") || !strings.Contains(plan.Write[AssetTransformFile], "ReactComponent") {
+	if !strings.Contains(plan.Write["apps/ui/jest.config.cts"], "'@monosmith/jest-preset/asset-transform'") {
 		t.Fatalf("writes %v", plan.WriteFiles)
+	}
+	// The transformer comes from the package: no helper file is written beside the config.
+	for name := range plan.Write {
+		if strings.Contains(name, "asset-transform") {
+			t.Errorf("writes %s: the package provides the transformer", name)
+		}
+	}
+	if plan.AddDevDependencies[JestPresetPackage] != JestPresetRange {
+		t.Fatalf("dev dependencies %v", plan.AddDevDependencies)
+	}
+	if len(plan.Keep) > 0 {
+		t.Errorf("keeps %v", plan.Keep)
 	}
 	if _, ok := plan.AddDevDependencies["@babel/preset-react"]; !ok {
 		t.Fatalf("dev dependencies %v", plan.AddDevDependencies)

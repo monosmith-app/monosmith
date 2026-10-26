@@ -163,8 +163,18 @@ func TestPlanLegacyWorkspace(t *testing.T) {
 	if contains(plan.Delete, "apps/mobile/project.json") {
 		t.Error("an unsupported project keeps its project.json")
 	}
-	if !strings.Contains(plan.Write["jest.preset.js"], "moduleNameMapper") || !strings.Contains(plan.Write["requirements-dev.txt"], "setuptools==") {
+	if !strings.Contains(plan.Write["jest.preset.js"], "require('@monosmith/jest-preset')") || !strings.Contains(plan.Write["requirements-dev.txt"], "setuptools==") {
 		t.Fatalf("writes %v", plan.WriteFiles)
+	}
+
+	// Nx's Jest plugins are the package's now: no helper file is written, and the package is a devDependency.
+	for _, gone := range []string{"jest.resolver.cjs", "jest.asset-transform.cjs"} {
+		if _, ok := plan.Write[gone]; ok {
+			t.Errorf("writes %s: @monosmith/jest-preset has it", gone)
+		}
+	}
+	if plan.AddDevDependencies["@monosmith/jest-preset"] != "^0.1.0" || len(plan.Keep) != 0 {
+		t.Fatalf("dev dependencies %v, keeps %v", plan.AddDevDependencies, plan.Keep)
 	}
 
 	manual := findings(plan, Manual)
