@@ -41,43 +41,31 @@ plugin starts only when smith.toml pins its digest and the file still has it.`,
 			if err != nil {
 				return err
 			}
-			p, err := resolveForTrust(root, cfg, name)
+			review, err := ReviewForTrust(root, cfg, name)
 			if err != nil {
 				return err
-			}
-			store, err := plugintrust.OpenStore()
-			if err != nil {
-				return err
-			}
-			st := pluginadmit.Describe(store, root, []pluginadmit.Plugin{p})[0]
-			if st.Problem != "" {
-				return pluginadmit.Refusal(st, false)
 			}
 			out := cmd.OutOrStdout()
-			if !recordedTrust(store, root, p) {
-				if !yes {
-					if !term.IsTerminal(int(os.Stdin.Fd())) {
-						return problem.New("refusing to trust a plugin without a terminal to ask in",
-							"read what it is with `smith plugin list`, then run `smith plugin trust "+name+" --yes`")
-					}
-					if !pluginadmit.Ask(&pluginadmit.Prompter{Out: out, In: bufio.NewReader(os.Stdin)}, st) {
-						return fmt.Errorf("%s was not trusted", name)
-					}
+			if !review.AlreadyTrusted && !yes {
+				if !term.IsTerminal(int(os.Stdin.Fd())) {
+					return problem.New("refusing to trust a plugin without a terminal to ask in",
+						"read what it is with `smith plugin list`, then run `smith plugin trust "+name+" --yes`")
 				}
-				if err := store.Trust(root, name, st.Fingerprint); err != nil {
-					return err
+				if !pluginadmit.Ask(&pluginadmit.Prompter{Out: out, In: bufio.NewReader(os.Stdin)}, review.Status) {
+					return fmt.Errorf("%s was not trusted", name)
 				}
+			}
+			recorded, digest, err := RecordTrust(root, review, pin)
+			if err != nil {
+				return err
+			}
+			if recorded {
 				fmt.Fprintf(out, "Trusted %s in %s.\n", name, root)
 			} else {
 				fmt.Fprintf(out, "%s is already trusted in %s.\n", name, root)
 			}
 			if pin {
-				digest := plugintrust.PinnedDigest(st.Fingerprint)
-				table := "plugins.external." + configedit.QuoteKey(name)
-				if err := configedit.SetTableValue(root, table, "sha256", digest); err != nil {
-					return err
-				}
-				fmt.Fprintf(out, "Pinned sha256 %s in smith.toml [%s], which is what CI checks.\n", digest, table)
+				fmt.Fprintf(out, "Pinned sha256 %s in smith.toml [%s], which is what CI checks.\n", digest, PinTable(name))
 			}
 			return nil
 		},
@@ -95,11 +83,7 @@ plugin starts only when smith.toml pins its digest and the file still has it.`,
 			if err != nil {
 				return err
 			}
-			store, err := plugintrust.OpenStore()
-			if err != nil {
-				return err
-			}
-			removed, err := store.Untrust(root, args[0])
+			removed, err := ForgetTrust(root, args[0])
 			if err != nil {
 				return err
 			}
@@ -143,4 +127,68 @@ func resolveForTrust(root string, cfg workspace.Config, name string) (pluginadmi
 		return pluginadmit.Plugin{}, problem.New(err.Error(), "run `smith plugin list` to see the plugins smith can find")
 	}
 	return p, nil
+}
+
+// TrustReview is an external plugin ready for the person to decide on: what
+// would run, as `smith plugin trust` shows it before it asks.
+type TrustReview struct {
+	// Status is the plugin as it is now: source, command, the files it runs
+	// with their digests, what it may see.
+	Status pluginadmit.Status
+	// AlreadyTrusted is true when the person's own recorded decision still
+	// matches (a CI pin does not count).
+	AlreadyTrusted bool
+	store          *plugintrust.Store
+}
+
+// ReviewForTrust resolves and measures the external plugin name for a trust
+// decision. It refuses, with the same problem `smith plugin trust` prints, a
+// built-in plugin, an unknown name and a command that cannot be measured.
+func ReviewForTrust(root string, cfg workspace.Config, name string) (TrustReview, error) {
+	p, err := resolveForTrust(root, cfg, name)
+	if err != nil {
+		return TrustReview{}, err
+	}
+	store, err := plugintrust.OpenStore()
+	if err != nil {
+		return TrustReview{}, err
+	}
+	st := pluginadmit.Describe(store, root, []pluginadmit.Plugin{p})[0]
+	if st.Problem != "" {
+		return TrustReview{}, pluginadmit.Refusal(st, false)
+	}
+	return TrustReview{Status: st, AlreadyTrusted: recordedTrust(store, root, p), store: store}, nil
+}
+
+// RecordTrust records the person's yes for a reviewed plugin in the smith
+// home and, with pin, writes its sha256 to smith.toml for CI. recorded is
+// false when the decision was already on file; digest is empty without pin.
+func RecordTrust(root string, r TrustReview, pin bool) (recorded bool, digest string, err error) {
+	if !r.AlreadyTrusted {
+		if err = r.store.Trust(root, r.Status.Name, r.Status.Fingerprint); err != nil {
+			return false, "", err
+		}
+		recorded = true
+	}
+	if pin {
+		digest = plugintrust.PinnedDigest(r.Status.Fingerprint)
+		if err = configedit.SetTableValue(root, PinTable(r.Status.Name), "sha256", digest); err != nil {
+			return recorded, "", err
+		}
+	}
+	return recorded, digest, nil
+}
+
+// PinTable is the smith.toml table that pins a plugin's digest.
+func PinTable(name string) string { return "plugins.external." + configedit.QuoteKey(name) }
+
+// ForgetTrust removes the person's trust decision for a plugin in the
+// workspace and reports whether there was one. A sha256 pinned in smith.toml
+// is not touched.
+func ForgetTrust(root, name string) (bool, error) {
+	store, err := plugintrust.OpenStore()
+	if err != nil {
+		return false, err
+	}
+	return store.Untrust(root, name)
 }
