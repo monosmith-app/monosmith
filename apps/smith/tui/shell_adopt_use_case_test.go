@@ -101,12 +101,13 @@ func (f *adoptFake) ApplyFix(_ context.Context, fix protocol.Fix, out io.Writer)
 	f.mu.Unlock()
 	for _, s := range fix.Steps {
 		fmt.Fprintln(out, "… "+s.Description)
+		fmt.Fprintln(out, "✔ "+s.Description)
 	}
 	return nil
 }
 
-func (f *adoptFake) FinishFix(verify bool) doctorfix.Planned {
-	f.note(fmt.Sprintf("finish verify=%v", verify))
+func (f *adoptFake) FinishFix(withLint bool) doctorfix.Planned {
+	f.note(fmt.Sprintf("finish lint=%v", withLint))
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Install, then check", Steps: []protocol.FixStep{{Description: "install", Argv: []string{"npm", "install"}}}}}
 }
 
@@ -117,6 +118,8 @@ func (f *adoptFake) Changes() (adoptflow.Changes, error) {
 func (f *adoptFake) Result() convert.Highlights {
 	return convert.Highlights{Projects: "2 projects"}
 }
+
+func (f *adoptFake) Report() (string, error) { return "The report", nil }
 
 func (f *adoptFake) Install(context.Context, io.Writer) error { return nil }
 
@@ -213,7 +216,7 @@ func TestTheFullAdoptionRunsOffTheUIGoroutineAndLeavesWithTheNextStep(t *testing
 	l.keys("y") // delete it, then the closing steps run and the summary shows
 	l.has("is a smith workspace now", "2 projects", "Old tools removed: lint")
 	calls := f.Calls()
-	for _, want := range []string{"prepare", "plan --level full --lint smith --test jest --build smith --ci smith", "convert full", "apply Use smith's ESLint config", "finish verify=true", "apply Install, then check"} {
+	for _, want := range []string{"prepare", "plan --level full --lint smith --test jest --build smith --ci smith", "convert full", "apply Use smith's ESLint config", "finish lint=true", "apply Install, then check"} {
 		if !strings.Contains(calls, want) {
 			t.Fatalf("calls lack %q: %s", want, calls)
 		}
