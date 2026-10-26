@@ -73,6 +73,9 @@ func (rs Ruleset) LayerByName(name string) (Layer, bool) {
 // FolderNames lists the first folder name of each layer, for messages.
 func (rs Ruleset) FolderNames() []string {
 	var out []string
+	if rs.Modules {
+		out = append(out, "modules")
+	}
 	for _, l := range rs.Layers {
 		out = append(out, l.Folders[0])
 	}

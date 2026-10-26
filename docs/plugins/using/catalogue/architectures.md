@@ -1,6 +1,6 @@
 # The architecture plugins
 
-`hexagonal` and `clean` are built-in plugins that keep a project's code to an architecture by
+`hexagonal`, `clean`, `ddd` and `modular-monolith` are built-in plugins that keep a project's code to an architecture by
 checking what each file imports. They are conventions: each is turned on by its own table in
 `smith.toml`, and `smith architecture <name>` writes that table for you (and removes the table
 of the architecture it replaces). The rules, and what the check can and cannot see in each
@@ -11,10 +11,10 @@ language, are in [conventions](../../../reference/conventions.md#architectures-t
 | | |
 |---|---|
 | Kind | `convention` |
-| Names | `hexagonal`, `clean` |
+| Names | `hexagonal`, `clean`, `ddd`, `modular-monolith` |
 | Applies to | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby and C++ projects |
 | Capabilities | `contribute`, `doctor` |
-| Stacks they publish | none; turn one on with `[conventions.hexagonal]` or `[conventions.clean]` |
+| Stacks they publish | none; turn one on with `[conventions.hexagonal]`, `[conventions.clean]` and so on |
 | Project kinds | any |
 
 ## What it does

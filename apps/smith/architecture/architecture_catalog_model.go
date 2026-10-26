@@ -47,6 +47,16 @@ var catalog = []Architecture{
 		Table:   "conventions.clean",
 	},
 	{
+		Name:    "ddd",
+		Meaning: "domain-driven design: a folder per bounded context with its own domain, application and infrastructure",
+		Table:   "conventions.ddd",
+	},
+	{
+		Name:    "modular-monolith",
+		Meaning: "one program split into modules, each used by the others only through its public API",
+		Table:   "conventions.modular-monolith",
+	},
+	{
 		Name:    None,
 		Meaning: "smith checks no code layout",
 	},

@@ -152,6 +152,56 @@ func TestHexagonalCSharpDartRustPhpRubyCpp(t *testing.T) {
 	}
 }
 
+func TestDDDKeepsLayersInOrderAndContextsApart(t *testing.T) {
+	r := run(t, "ddd", "go",
+		"go.mod", goMod,
+		"sales/domain/order.go", "package domain\nimport \"example.com/shop/sales/infrastructure\"\n",
+		"sales/application/place.go", "package application\nimport (\n\t\"example.com/shop/sales/domain\"\n\t\"example.com/shop/billing/domain\"\n\t\"example.com/shop/billing\"\n)\n",
+		"sales/infrastructure/db.go", "package infrastructure\nimport (\n\t\"example.com/shop/sales/application\"\n\t\"example.com/shop/sales/domain\"\n)\n",
+		"billing/domain/invoice.go", "package domain\n",
+		"billing/api.go", "package billing\n",
+		"billing/infrastructure/db.go", "package infrastructure\nimport \"example.com/shop/billing/application\"\n",
+		"billing/application/pay.go", "package application\nimport \"example.com/shop/billing/domain\"\n",
+	)
+	wantProblems(t, r,
+		"sales/domain/order.go - imports example.com/shop/sales/infrastructure: domain code must not depend on infrastructure code",
+		"sales/application/place.go - imports example.com/shop/billing/domain: reaches into the domain layer of the billing context",
+	)
+}
+
+func TestDDDInJavaTellsContextsByPackage(t *testing.T) {
+	r := run(t, "ddd", "jvm",
+		"src/main/java/com/acme/orders/application/Place.java", "package com.acme.orders.application;\nimport com.acme.orders.domain.Order;\nimport com.acme.billing.infrastructure.Db;\n",
+		"src/main/java/com/acme/orders/domain/Order.java", "package com.acme.orders.domain;\n",
+		"src/main/java/com/acme/billing/infrastructure/Db.java", "package com.acme.billing.infrastructure;\n",
+	)
+	wantProblems(t, r, "Place.java - imports com.acme.billing.infrastructure.Db: reaches into the infrastructure layer of the billing context")
+}
+
+func TestModularMonolithGo(t *testing.T) {
+	r := run(t, "modular-monolith", "go",
+		"go.mod", goMod,
+		"modules/orders/orders.go", "package orders\nimport \"example.com/shop/modules/orders/store\"\n",
+		"modules/orders/api/api.go", "package api\n",
+		"modules/orders/store/store.go", "package store\n",
+		"modules/billing/pay.go", "package billing\nimport (\n\t\"example.com/shop/modules/orders\"\n\t\"example.com/shop/modules/orders/api\"\n\t\"example.com/shop/modules/orders/store\"\n)\n",
+		"main.go", "package main\nimport (\n\t\"example.com/shop/modules/billing\"\n\t\"example.com/shop/modules/orders/store\"\n)\n",
+	)
+	wantProblems(t, r,
+		"modules/billing/pay.go - imports example.com/shop/modules/orders/store: reaches into the internals of the orders module",
+		"main.go - imports example.com/shop/modules/orders/store: reaches into the internals of the orders module",
+	)
+}
+
+func TestModularMonolithNode(t *testing.T) {
+	r := run(t, "modular-monolith", "node",
+		"src/modules/orders/index.ts", "export * from './internal/place'\n",
+		"src/modules/orders/internal/place.ts", "export const x = 1\n",
+		"src/modules/billing/pay.ts", "import { a } from '../orders'\nimport { b } from '../orders/index'\nimport { c } from '../orders/internal/place'\n",
+	)
+	wantProblems(t, r, "src/modules/billing/pay.ts - imports ../orders/internal/place: reaches into the internals of the orders module")
+}
+
 func TestAProjectWithoutLayerFoldersIsReportedNotFailed(t *testing.T) {
 	r := run(t, "hexagonal", "go", "go.mod", goMod, "main.go", "package main\n", "store/store.go", "package store\n")
 	if !r.OK() || len(r.Warnings) != 1 || !strings.Contains(r.Warnings[0], "none of its rules were applied") {
