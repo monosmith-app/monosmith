@@ -90,3 +90,26 @@ func TestALongHeadingAndALongActionWrapInsteadOfBeingCut(t *testing.T) {
 		t.Fatalf("a wrapped action must be clickable on every line, got %d rows: %v", fixRows, hits)
 	}
 }
+
+func TestAnActionExplainsItselfUnderItsLabelAndTheExplanationClicksLikeIt(t *testing.T) {
+	p := Panel{
+		ActionsTitle: "Run on web",
+		Actions:      []Action{{ID: "x:run:build", Label: "Run build", Hint: "runs tsc -p tsconfig.json · after generate · result remembered"}},
+	}
+	lines, hits := p.View(theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII}), 40, "")
+	text := pane.Strip(strings.Join(lines, "\n"))
+	for _, want := range []string{"Run on web", "Run build", "runs tsc -p tsconfig.json", "result remembered"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("the panel lacks %q:\n%s", want, text)
+		}
+	}
+	rows := 0
+	for _, id := range hits {
+		if id == "x:run:build" {
+			rows++
+		}
+	}
+	if rows < 2 {
+		t.Fatalf("the action and its explanation click as one: %d rows hit\n%s", rows, text)
+	}
+}
