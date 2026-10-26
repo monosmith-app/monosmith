@@ -269,10 +269,13 @@ the fix wizard's keys and drawing. The stages:
 4. For the full level: a **trial conversion on a scratch copy** to see what would be left, then
    **the four choices** (lint, test runner, build, CI), as in `smith convert --lint --test
    --build --ci`.
-5. **The whole plan**, for confirmation: the files the conversion creates, edits and removes
-   (a file that changes in many folders is one line), then the plan. For the conservative
-   level the same list comes from a trial conversion on a scratch copy. `Enter` converts.
-   Nothing is written before.
+5. **The whole plan**, for confirmation, from a trial conversion on a scratch copy. It
+   starts with **In short** (how many files are created, edited and removed, how many things
+   to check, how many things behave differently), then **Check these before you go ahead**
+   (every item, with its reason), **Behaves differently afterwards** (the first five; the
+   rest go to `.smith/convert-report.txt` once it is converted), then the files in detail
+   (a file that changes in many folders is one line) and, at the full level, the removals.
+   `Enter` converts. Nothing is written before.
 6. **Converting**, then, for the full level, a question per **group of removals** (`We are
    going to delete N packages and M files. ... ok?`): `y` deletes them, `n` keeps them,
    `s` keeps these and skips the groups after.

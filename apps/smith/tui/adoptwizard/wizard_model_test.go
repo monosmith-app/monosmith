@@ -277,7 +277,7 @@ func TestTheFullWalkAsksTheChoicesPlansReviewsConvertsAsksEachGroupAndChecks(t *
 	if got := strings.Join(f.calls, "|"); !strings.Contains(got, "plan --level full --lint smith --test vitest --build smith --ci smith verify=true") {
 		t.Fatalf("the choices were not planned as answered: %s", got)
 	}
-	w.want("Bring in · review", "Nothing has changed yet", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
+	w.want("Bring in · review", "Nothing has changed yet", "! Check these before you go ahead (1)", "Behaves differently afterwards (1)", "Remove 2 lint packages", "[ Convert  Enter ]", "[ Back  b ]")
 
 	w.press("enter") // convert, then the first group is asked
 	if w.m.Stage() != StageGroup {
@@ -335,7 +335,10 @@ func TestSkipKeepsThisGroupAndTheRestAndGoesToTheChecks(t *testing.T) {
 func TestTheConservativeLevelOfAnNxWorkspaceConvertsThenInstallsWithoutTheChecks(t *testing.T) {
 	f := &fakeFlow{found: nxFound()}
 	w := start(t, f).press("enter", "1")
-	w.want("Convert the Nx workspace \"acme\" to smith, keeping what works", "smith will create 1 files, edit 2 and remove 1", "nx.json", "[ Go ahead  Enter ]")
+	w.want("Convert the Nx workspace \"acme\" to smith, keeping what works", "Files: smith creates 1, edits 2 and removes 1.", "Things to check: 1", "! Check these before you go ahead (1)", "azure-pipelines.yml", "Behaves differently afterwards (1)", "Rollup becomes esbuild", "[ Go ahead  Enter ]")
+	if strings.Contains(w.screen(), "stay as they are") {
+		t.Fatalf("the review must not promise that the old tooling stays: it removes Nx:\n%s", w.screen())
+	}
 	w.press("enter")
 	if w.m.Stage() != StageDone {
 		t.Fatalf("stage %v", w.m.Stage())

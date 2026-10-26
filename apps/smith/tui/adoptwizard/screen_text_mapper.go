@@ -98,15 +98,20 @@ func projectsLine(f adoptflow.Found) string {
 }
 
 // conservativeText is the review of the conservative level.
-func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes) string {
+func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, r convert.Highlights) string {
 	var b strings.Builder
 	if f.Kind.Convertible() {
+		tool := strings.TrimSuffix(f.Source, " workspace")
 		fmt.Fprintf(&b, "● Convert the %s %q to smith, keeping what works\n", f.Source, f.Name)
-		fmt.Fprintf(&b, "  Your lint, test and build tools stay as they are. smith adds its settings file (smith.toml),\n")
-		fmt.Fprintf(&b, "  updates each project's package.json, and replaces the CI pipeline files with ones it generates\n")
-		fmt.Fprintf(&b, "  (your own steps go in the marked sections). What needs a look afterwards is listed at the end.\n")
-		fmt.Fprintf(&b, "  Every change is a file in git, so git can take it back.\n\n")
-		b.WriteString(changes.Text())
+		fmt.Fprintf(&b, "  smith takes over from %s. It adds its settings file (smith.toml), turns each %s task into a task\n", tool, tool)
+		fmt.Fprintf(&b, "  smith runs, removes %s and the files only it used, and replaces the CI pipeline files with ones\n", tool)
+		fmt.Fprintf(&b, "  it generates (your own steps go in the marked sections). Your code is not rewritten, and your\n")
+		fmt.Fprintf(&b, "  projects still lint, test and build with the same tools. Every change is a file in git, so git can\n")
+		fmt.Fprintf(&b, "  take it back.\n\n")
+		b.WriteString(planSummaryText(changes, r))
+		if changes.Total() > 0 {
+			fmt.Fprintf(&b, "\n● The files, in detail\n%s", changes.Details())
+		}
 		return b.String()
 	}
 	b.WriteString(commandReview)
