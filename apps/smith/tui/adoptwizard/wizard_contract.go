@@ -50,8 +50,9 @@ type Flow interface {
 	Close()
 }
 
-// Opener reads the repository and returns its Flow.
-type Opener func() (Flow, error)
+// Opener reads the repository and returns its Flow. It may write "… name"
+// lines to out to tell what it is reading; the dialog shows the latest.
+type Opener func(io.Writer) (Flow, error)
 
 // Job is a step that takes time: the shell runs it off the UI goroutine,
 // reports each "… name" line it writes to out as Progress, and its end as Done.

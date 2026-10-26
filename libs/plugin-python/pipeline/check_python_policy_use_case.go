@@ -3,7 +3,10 @@ package pipeline
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 )
 
 // PyPIIndex is the simple index pip uses when a workspace names no registry.
@@ -14,10 +17,17 @@ const PyPIIndex = "https://pypi.org/simple"
 // URL or a git repository, and the only index is expectedIndex (so a
 // dependency cannot come from an index the workspace did not choose). It
 // returns one line per violation, in file order.
+//
+// The workspace's own toolchain file (requirements-dev.txt, written by smith
+// with top-level pins only) is exempt from the hash rule: pip's hash-checking
+// mode demands a hash for every transitive dependency too, which only a
+// resolved lock can give, and the file is smith's, not the project's
+// dependencies. Its index and URL rules still apply.
 func CheckPythonPolicy(name string, requirements []byte, expectedIndex string) []string {
 	if expectedIndex == "" {
 		expectedIndex = PyPIIndex
 	}
+	needHashes := filepath.ToSlash(filepath.Clean(name)) != venv.RequirementsFile
 	var violations []string
 	for _, line := range logicalLines(string(requirements)) {
 		fields := strings.Fields(line)
@@ -32,7 +42,7 @@ func CheckPythonPolicy(name string, requirements []byte, expectedIndex string) [
 			// -r, -c, --find-links...: not a requirement.
 		case strings.Contains(line, "@ ") || strings.Contains(line, "git+"):
 			violations = append(violations, fmt.Sprintf("%s: %s is fetched from a URL or git, not from the index", name, first))
-		case !strings.Contains(line, "--hash="):
+		case needHashes && !strings.Contains(line, "--hash="):
 			violations = append(violations, fmt.Sprintf("%s: %s has no --hash", name, first))
 		}
 	}

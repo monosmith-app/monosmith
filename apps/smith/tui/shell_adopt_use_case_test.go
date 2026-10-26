@@ -165,7 +165,7 @@ func newAdoptLab(t *testing.T, f *adoptFake, empty bool, w, h int) *lab {
 	cfg := Config{
 		Version: "1.2.3", Workspace: "no workspace", Theme: theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.Unicode}),
 		Commands: smithCommands, Actions: actions, EmptyFolder: empty,
-		Adopt: func() (adoptwizard.Flow, error) { return f, nil },
+		Adopt: func(io.Writer) (adoptwizard.Flow, error) { return f, nil },
 	}
 	sh := NewShell(cfg)
 	sh.now = func() time.Time { return l.clock }
