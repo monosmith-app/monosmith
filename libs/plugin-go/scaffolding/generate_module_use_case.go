@@ -34,6 +34,9 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	res, err := GenerateFrom(workspaceRoot, params, templates, nil)
 	if err == nil {
 		res.Notes = append(res.Notes, "Import it from another Go project as "+modulePath(params)+"/<slice>.")
+		if params.Workspace.ModulePrefix == "" {
+			res.Notes = append(res.Notes, "The module path uses the placeholder host "+fallbackModulePrefix(params.Workspace.Name)+": the workspace has no module_prefix and the repository has no git remote. Set module_prefix under [workspace] in smith.toml (for example github.com/<owner>/<repo>) before adding more modules.")
+		}
 	}
 	return res, err
 }
@@ -41,9 +44,30 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 func modulePath(params protocol.GenerateParams) string {
 	prefix := params.Workspace.ModulePrefix
 	if prefix == "" {
-		prefix = "example.com/" + strings.ToLower(params.Workspace.Name)
+		prefix = fallbackModulePrefix(params.Workspace.Name)
 	}
 	return prefix + "/" + params.Directory
+}
+
+// fallbackModulePrefix is the placeholder module prefix of a workspace with no
+// module_prefix and no git remote: example.com/<name>, the name reduced to
+// what a Go module path element allows (lowercase letters, digits, dots,
+// dashes, underscores; a run of anything else, such as spaces, is one dash).
+func fallbackModulePrefix(workspace string) string {
+	var b strings.Builder
+	for _, c := range strings.ToLower(strings.TrimSpace(workspace)) {
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '.', c == '_', c == '-':
+			b.WriteRune(c)
+		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
+			b.WriteByte('-')
+		}
+	}
+	name := strings.Trim(b.String(), "-.")
+	if name == "" {
+		name = "workspace"
+	}
+	return "example.com/" + name
 }
 
 // GenerateFrom scaffolds one Go module from templates (paths and contents use

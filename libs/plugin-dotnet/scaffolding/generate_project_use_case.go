@@ -27,6 +27,9 @@ func pascal(name string) string {
 			upper = true
 			continue
 		}
+		if b.Len() == 0 && unicode.IsDigit(c) {
+			b.WriteByte('X') // an identifier cannot start with a digit
+		}
 		if upper {
 			c = unicode.ToUpper(c)
 			upper = false

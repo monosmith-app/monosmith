@@ -41,7 +41,11 @@ func crateIdentifier(name string) string {
 			b.WriteByte('-')
 		}
 	}
-	return strings.TrimSuffix(b.String(), "-")
+	out := strings.TrimSuffix(b.String(), "-")
+	if out != "" && out[0] >= '0' && out[0] <= '9' {
+		out = "x" + out // Cargo wants a letter first
+	}
+	return out
 }
 
 // Generate writes a crate, lists it in the root Cargo.toml's workspace

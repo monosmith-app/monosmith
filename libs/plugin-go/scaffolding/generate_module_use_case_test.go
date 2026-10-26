@@ -86,3 +86,38 @@ func TestWorkspaceGoVersionReadsTheGoLineOfGoWork(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestFallbackModulePrefixIsAValidPath(t *testing.T) {
+	for in, want := range map[string]string{
+		"acme":               "example.com/acme",
+		"Jato.Auto.Packages": "example.com/jato.auto.packages",
+		"My Shop!":           "example.com/my-shop",
+		"":                   "example.com/workspace",
+	} {
+		if got := fallbackModulePrefix(in); got != want {
+			t.Errorf("fallbackModulePrefix(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestGenerateSaysWhenTheModulePathIsAPlaceholder(t *testing.T) {
+	GoRunner = func(dir string, argv []string) error {
+		if argv[1] == "mod" && argv[2] == "init" {
+			return os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module "+argv[3]+"\n"), 0o644)
+		}
+		return nil
+	}
+	gen := func(prefix string) string {
+		res, err := Generate(t.TempDir(), protocol.GenerateParams{Kind: protocol.ProjectLib, Name: "demo", Directory: "libs/demo", Workspace: protocol.WorkspaceInfo{Name: "a.b", ModulePrefix: prefix}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.Join(res.Notes, "\n")
+	}
+	if notes := gen(""); !strings.Contains(notes, "example.com/a.b/libs/demo") || !strings.Contains(notes, "module_prefix") {
+		t.Fatalf("no placeholder note:\n%s", notes)
+	}
+	if notes := gen("github.com/acme/repo"); strings.Contains(notes, "placeholder") {
+		t.Fatalf("a real prefix is not a placeholder:\n%s", notes)
+	}
+}

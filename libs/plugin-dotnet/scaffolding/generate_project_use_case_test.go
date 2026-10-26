@@ -42,3 +42,17 @@ func TestGenerate(t *testing.T) {
 		t.Fatal("an existing directory is refused")
 	}
 }
+
+func TestProjectIDIsAValidDotNetIdentifier(t *testing.T) {
+	for _, c := range []struct{ workspace, name, want string }{
+		{"acme", "web-api", "Acme.WebApi"},
+		{"jato.auto.packages", "core", "JatoAutoPackages.Core"},
+		{"my shop", "api", "MyShop.Api"},
+		{"3d", "2fa", "X3d.X2fa"},
+		{"", "core", "Core"},
+	} {
+		if got := ProjectID(c.workspace, c.name); got != c.want {
+			t.Errorf("ProjectID(%q, %q) = %q, want %q", c.workspace, c.name, got, c.want)
+		}
+	}
+}

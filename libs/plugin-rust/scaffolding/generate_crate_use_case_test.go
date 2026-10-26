@@ -77,6 +77,7 @@ func TestCrateNameIsValidForCargo(t *testing.T) {
 		{"acme", "acme-core", "acme-core"},
 		{"jato.auto", "jato-auto-core", "jato-auto-core"},
 		{"", "core", "core"},
+		{"2024.shop", "api", "x2024-shop-api"},
 	} {
 		if got := CrateName(c.workspace, c.name); got != c.want {
 			t.Errorf("CrateName(%q, %q) = %q, want %q", c.workspace, c.name, got, c.want)
