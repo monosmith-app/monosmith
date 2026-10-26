@@ -181,6 +181,9 @@ func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
 		rows = append(rows, th.Accent(th.Spin(tick))+" "+w.style.working()+"…")
 	case w.step == 0:
 		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" %s, then %d step(s)…", w.style.working(), w.total))
+	case w.total == 0:
+		// A job that does not know how many steps it has: the name alone.
+		rows = append(rows, th.Accent(th.Spin(tick))+" "+capitalFirst(w.stepName)+"…")
 	default:
 		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, max(w.total, w.step), w.stepName))
 	}

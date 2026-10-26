@@ -70,8 +70,8 @@ type prepared struct {
 // it, and the shell reports the result with Done.
 func New(open Opener) (Model, Job) {
 	m := Model{open: open, declined: map[string]bool{}}
-	job := Job{Name: "reading the repository", Run: func(context.Context, io.Writer) (any, error) {
-		f, err := open()
+	job := Job{Name: "reading the repository", Run: func(_ context.Context, out io.Writer) (any, error) {
+		f, err := open(out)
 		if err != nil {
 			return nil, err
 		}
@@ -524,7 +524,7 @@ func (m Model) install() (Model, Outcome) {
 			return nil, err
 		}
 		flow.Close()
-		return open()
+		return open(io.Discard)
 	}}
 	style := adoptStyle
 	style.Verb = "Installing…"

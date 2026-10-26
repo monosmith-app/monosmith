@@ -327,6 +327,15 @@ func TestAStartedStepShowsItsHeadlineAndAFailureWithoutRetryOffersOnlyClose(t *t
 	}
 }
 
+func TestAJobWithoutAStepCountShowsTheNameOfWhatItIsDoing(t *testing.T) {
+	w := New(safe(), show).Place(100, 30).Start("Reading the repository…", 0)
+	w = w.Progress(1, 0, "reading 1,240 files")
+	got := text(w)
+	if !strings.Contains(got, "Reading 1,240 files…") || strings.Contains(got, "step 1 of") {
+		t.Fatalf("progress without a total:\n%s", got)
+	}
+}
+
 func TestALongOptionWrapsUnderItsNumberAndAClickOnAnyOfItsLinesChoosesIt(t *testing.T) {
 	long := strings.Repeat("a very long label ", 8)
 	p := doctorfix.Planned{Fix: protocol.Fix{Description: "d", Choices: []protocol.FixChoice{{Question: "Which?", Options: []protocol.FixChoiceOption{{Label: "short"}, {Label: long}}}}}}
