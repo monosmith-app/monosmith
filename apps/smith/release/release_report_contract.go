@@ -94,7 +94,14 @@ func (r Report) Markdown() string {
 	if len(r.Unchanged) > 0 {
 		fmt.Fprintf(&b, "\nUnchanged: %s\n", strings.Join(r.Unchanged, ", "))
 	}
-	if r.Error != "" {
+	if r.Error != "" && r.DryRun {
+		b.WriteString("\n**The real release would fail for:**\n\n")
+		for _, res := range r.Results {
+			if res.Status == "failed" {
+				fmt.Fprintf(&b, "- %s: %s\n", res.Project, res.Error)
+			}
+		}
+	} else if r.Error != "" {
 		fmt.Fprintf(&b, "\n**Stopped:** %s\n\nRe-run the release: finished packages are kept and the rest resume.\n", r.Error)
 	}
 	return b.String()
