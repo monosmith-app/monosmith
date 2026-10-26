@@ -113,7 +113,7 @@ func TestProjectsFromRecipe(t *testing.T) {
 	// Python: the built-in plugin makes the project, and the recipe's
 	// structure plugin adds its check.
 	out = w.smith(true, "add", "package", "billing", "--choice", "language=python")
-	for _, want := range []string{"Recipe team 1.2.0 (language=python, kind=library) will use:", "structure", "vertical-slices", "Adding package billing (stack team-python-library)"} {
+	for _, want := range []string{"Recipe team 1.2.0 (language=python, kind=library) will use:", "structure", "vertical-slices", "Creating package billing in packages/billing"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("add printed no %q:\n%s", want, out)
 		}

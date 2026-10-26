@@ -92,11 +92,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if !generator.Supports(protocol.MethodGenerate) {
 		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
 	}
-	how := language.Info.Plugin.Name
-	if st.Name != "" && st.Name != protocol.NoStack {
-		how = "stack " + st.Name
-	}
-	fmt.Fprintf(opts.Out, "Adding %s %s (%s) in %s\n", opts.Kind, opts.Name, how, dir)
+	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
 	var res protocol.GenerateResult
 	// A workspace without a module prefix (a converted one) takes the one its
 	// git remote gives, so the Go module path is the repository's own.
@@ -128,6 +124,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if err := installPending(language, pending, &res, opts.Out); err != nil {
 		return &res, err
 	}
+	fmt.Fprintln(opts.Out, "Updating the CI pipelines")
 	changed, _, err := cipipeline.Regenerate(s)
 	if err != nil {
 		return &res, err
@@ -212,7 +209,7 @@ func addParts(s *session.Session, project *projectgraph.Project, st protocol.Sta
 		if !c.Supports(protocol.MethodGenerate) {
 			continue
 		}
-		fmt.Fprintf(out, "Adding %s\n", c.Info.Plugin.Name)
+		fmt.Fprintln(out, partStep(c.Info.Plugin.Name))
 		asked := params
 		asked.Convention = conventions[c.Info.Plugin.Name]
 		asked.Settings = settings[c.Info.Plugin.Name]
@@ -244,6 +241,7 @@ func installPending(language *host.Client, pending bool, res *protocol.GenerateR
 	if !language.Supports(protocol.MethodInstall) {
 		return fmt.Errorf("plugin %s left the dependencies to install but cannot install them", name)
 	}
+	fmt.Fprintln(out, "Installing packages (once, for everything added above)")
 	var installed protocol.DependencyResult
 	if err := language.Call(protocol.MethodInstall, protocol.InstallParams{Quiet: true}, &installed, 20*time.Minute); err != nil {
 		return fmt.Errorf("installing dependencies with %s: %w", name, err)

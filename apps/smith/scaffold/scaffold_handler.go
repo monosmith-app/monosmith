@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -109,6 +110,7 @@ wrote): review them with git status, then commit.`,
 				return err
 			}
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
+			began := time.Now()
 			res, err := AddProject(s, AddOptions{
 				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(),
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
@@ -125,6 +127,7 @@ wrote): review them with git status, then commit.`,
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
 				return err
 			}
+			fmt.Fprintln(out, doneStep(kind, args[1], len(res.Files), time.Since(began).Round(100*time.Millisecond).String()))
 			if hint := tryHint(project); hint != "" {
 				fmt.Fprintln(out, hint)
 			}

@@ -159,7 +159,7 @@ Recipe widget-team 0.1.0 (kind=service) will use:
   scaffold   widget-service  recipes/widget-team.recipe.toml:23 (recipe widget-team)
   structure  widget-layout   recipes/widget-team.recipe.toml:18 (recipe widget-team)
   setting widget-service.port = 9000
-Adding app billing (stack widget-team-service) in apps/billing
+Creating app billing in apps/billing: widget-team-service
 Adding widget-lint
 Wrote 5 file(s):
   apps/billing/README.md

@@ -95,9 +95,9 @@ smith add app web --lang node
 ```
 
 ```text
-Adding app web (stack node-jest) in apps/web
-Adding eslint
-Adding jest
+Creating app web in apps/web: node-jest
+Adding linting (eslint)
+Adding tests (jest)
 Wrote 14 file(s):
   .devcontainer/devcontainer.json
   .github/workflows/ci.yml
@@ -124,7 +124,7 @@ smith add go-lib core
 ```
 
 ```text
-Adding lib core (go) in libs/core
+Creating lib core in libs/core: go
 Wrote 7 file(s):
   .github/workflows/ci.yml
   libs/core/doc.go
