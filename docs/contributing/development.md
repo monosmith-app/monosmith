@@ -11,6 +11,7 @@ apps/smith/                     the CLI: the language-agnostic core, one package
 apps/vscode/                    the VS Code extension (TypeScript; talks to `smith serve`)
 packages/plugin-sdk/            the plugin protocol, framing, runtime, host client and helpers (published)
 packages/eslint-config/         @monosmith/eslint-config: the shared ESLint config with the vertical-slice rules (published)
+packages/jest-preset/           @monosmith/jest-preset: the Jest preset, resolver and asset transform that replace Nx's Jest plugins (published)
 libs/actions/                   the catalog of what smith can do, read by the CLI, the shell, the MCP server and `smith serve`
 libs/plugin-recipe/             the recipe language plugin (a `*.recipe.toml` is a project, released as `name@x.y.z`)
 libs/plugin-node/               the Node language plugin
@@ -57,6 +58,7 @@ Core slices in `apps/smith`:
 | `recipedrift` | compare each recipe project with its recipe as it is now (`smith doctor`), plan the upgrade, and list where a recipe's values came from (`smith explain`) |
 | `nxworkspace`, `turboworkspace`, `convertplan`, `turboplan`, `convert` | read an Nx or Turborepo workspace, plan its conversion, apply it (`smith convert`) |
 | `legacyinventory`, `convertchoices`, `removalplan`, `fullconversion` | the full level of `smith convert --level full`: what the old tooling leaves, the four choices, the groups of removals, and the trial on a scratch copy |
+| `legacyjesthelpers` | the Jest helper files an older `smith convert` wrote at the root, and the cleanup `smith doctor --fix` offers (`@monosmith/jest-preset` replaces them) |
 | `adoptflow` | what the TUI's adopt wizard asks of `adoption` and `convert`, as data and calls |
 | `doctorfix`, `corefixes` | turn the fixes doctor's findings carry into a plan (questions, files, steps) and apply it; the fixes of smith's own checks |
 | `engineserver`, `runevents` | `smith serve` and the event stream of runs, installs and releases |

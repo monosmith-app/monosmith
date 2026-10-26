@@ -33,6 +33,12 @@ Like [eslint](eslint.md), the plugin acts at creation time and adds only what is
 
 The `test` task comes from the script (cached, after `^build`, see [node: Tasks](node.md#tasks)).
 
+The stack does not write a Jest preset: its few settings sit in the project's `package.json`, as above, so a new
+project has no helper files. [`@monosmith/jest-preset`](https://github.com/monosmith-app/monosmith/tree/main/packages/jest-preset#readme)
+is the other way to configure Jest: the values `@nx/jest/preset` provided, a resolver that falls back to TypeScript
+(tsconfig `paths`, modules that only have types) and an asset transform for React. `smith convert` adds it to a
+converted Nx workspace; in any other workspace, `npm i -D @monosmith/jest-preset` and `preset: '@monosmith/jest-preset'`.
+
 ## Creating a project
 
 ```sh

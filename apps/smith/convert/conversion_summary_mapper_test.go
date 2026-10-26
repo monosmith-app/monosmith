@@ -10,13 +10,13 @@ import (
 
 func TestSummaryEndsWithTheFilesToKeepAndTheNextSteps(t *testing.T) {
 	plan := &convertplan.Plan{Config: workspace.Config{Workspace: workspace.WorkspaceSection{Name: "demo"}}}
-	plan.KeepFile("jest.resolver.cjs", "stands in for the resolver @nx/jest provided")
-	out := Summary(plan, []string{"ci.yml: build"}, []string{"jest.resolver.cjs", "smith.toml"})
+	plan.KeepFile("declaration-specifiers.mjs", "gives each relative specifier in the declarations its file")
+	out := Summary(plan, []string{"ci.yml: build"}, []string{"declaration-specifiers.mjs", "smith.toml"})
 	for _, want := range []string{
 		"! pipeline slot ci.yml: build",
 		"The full report is in .smith/convert-report.txt",
-		"jest.resolver.cjs: stands in for the resolver @nx/jest provided",
-		"Staged with git add so they cannot be lost: jest.resolver.cjs, smith.toml",
+		"declaration-specifiers.mjs: gives each relative specifier in the declarations its file",
+		"Staged with git add so they cannot be lost: declaration-specifiers.mjs, smith.toml",
 		"Next:\n  1. git diff",
 	} {
 		if !strings.Contains(out, want) {
@@ -30,8 +30,8 @@ func TestSummaryEndsWithTheFilesToKeepAndTheNextSteps(t *testing.T) {
 
 func TestDryRunNamesTheFilesThatMustStay(t *testing.T) {
 	plan := manyProjectsPlan(1)
-	plan.KeepFile("jest.resolver.cjs", "the Jest preset loads it")
-	if out := Report(plan, ReportOptions{DryRun: true}); !strings.Contains(out, "keep them and commit them") || !strings.Contains(out, "jest.resolver.cjs: the Jest preset loads it") {
+	plan.KeepFile("declaration-specifiers.mjs", "every package build calls it")
+	if out := Report(plan, ReportOptions{DryRun: true}); !strings.Contains(out, "keep them and commit them") || !strings.Contains(out, "declaration-specifiers.mjs: every package build calls it") {
 		t.Fatalf("%s", out)
 	}
 }

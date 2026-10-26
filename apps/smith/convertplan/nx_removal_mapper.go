@@ -26,28 +26,20 @@ func NxPackage(name string) bool {
 	return false
 }
 
-// JestPreset replaces a jest.preset.js that re-exported @nx/jest/preset whole:
-// Nx's preset values. Its resolver is replaced by the one thing a
-// workspace without Nx needs from it: an ESM-style "./x.js" import of a
-// TypeScript file resolves to "./x" (npm workspaces resolve the packages).
-const JestPreset = "// Written by smith convert: the values @nx/jest/preset provided, without Nx.\nmodule.exports = " + jestPresetValues + "\n"
+// JestPresetPackage is the published package that holds what Nx's Jest
+// plugins provided: the preset values, the resolver that falls back to
+// TypeScript, and the asset transform for React projects.
+const JestPresetPackage = "@monosmith/jest-preset"
 
-// jestPresetValues are those values as an object literal.
-const jestPresetValues = `{
-  testMatch:            ['**/?(*.)+(spec|test).?([mc])[jt]s?(x)'],
-  resolver:             require.resolve('./jest.resolver.cjs'),
-  moduleFileExtensions: ['ts', 'js', 'mts', 'mjs', 'cts', 'cjs', 'html'],
-  coverageReporters:    ['html'],
-  moduleNameMapper:     { '^(\\.{1,2}/.*)\\.js$': '$1' },
-  transform:            {
-    '^.+\\.(ts|js|mts|mjs|cts|cjs|html)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
-  },
-  testEnvironment:          'jsdom',
-  modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/out-tsc/'],
-  testEnvironmentOptions:   {
-    customExportConditions: ['node', 'require', 'default'],
-  },
-}`
+// JestPresetRange is the range convert adds it at: the first release of the
+// package (0.1.0) and the compatible ones after it.
+const JestPresetRange = "^0.1.0"
+
+// JestPreset replaces a jest.preset.js that re-exported @nx/jest/preset
+// whole: it re-exports the package that provides the same values, with the
+// resolver wired in. The file stays because the projects' Jest configs name
+// it as their preset.
+const JestPreset = "// Written by smith convert: the values @nx/jest/preset provided, without Nx.\nmodule.exports = require('" + JestPresetPackage + "')\n"
 
 // configFile reports whether a file is configuration or tooling that may
 // import Nx at run time.
@@ -152,34 +144,29 @@ func planNxRemoval(plan *Plan, w *nxworkspace.Workspace, files []string, read fu
 		base := path.Base(f)
 		switch {
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.preset.") && strings.Contains(text, "@nx/jest/preset"):
-			plan.WriteFile(JestResolverFile, JestResolver)
-			plan.KeepFile(JestResolverFile, "stands in for the resolver @nx/jest provided; the Jest preset loads it, so every package's tests need it")
+			addJestPresetPackage(plan)
 			if rewritten, kept := RewriteNxJestPreset(text); kept {
 				plan.WriteFile(f, rewritten)
-				plan.Add(Changed, "", f, "rewritten without @nx/jest: the same preset values, written out, and the rest of the file kept")
+				plan.Add(Changed, "", f, "rewritten without @nx/jest: the require('@nx/jest/preset') line is now require('"+JestPresetPackage+"') (its values and a resolver that falls back to TypeScript, so no jest.resolver.cjs is written) and the rest of the file kept")
 			} else {
 				plan.WriteFile(f, JestPreset)
-				plan.Add(Manual, "", f, "replaced by the values @nx/jest/preset provided, written out: anything else this file added is gone (see git diff), add it back")
+				plan.Add(Manual, "", f, "replaced by a re-export of "+JestPresetPackage+", which has the values @nx/jest/preset provided: anything else this file added is gone (see git diff), add it back")
 			}
 		case path.Dir(f) == "." && strings.HasPrefix(base, "jest.config.") && strings.Contains(text, "getJestProjects"):
 			plan.DeletePath(f)
 			plan.Add(Dropped, "", f, "listed every Jest project for Nx; smith runs each project's tests itself")
 		case strings.HasPrefix(base, "jest.config.") && strings.Contains(text, "@nx/react/"):
-			rewritten, ok := RewriteNxReactJest(text, path.Dir(f))
+			rewritten, ok := RewriteNxReactJest(text)
 			if !ok {
 				plan.Add(Manual, "", f, "imports Nx ("+nxImport(text)+"), which convert removes; rewrite it without Nx")
 				break
 			}
 			plan.WriteFile(f, rewritten)
-			plan.WriteFile(AssetTransformFile, AssetTransform)
-			plan.KeepFile(AssetTransformFile, "the Jest transformer for CSS and image imports that @nx/react provided; the Jest configs load it")
-			if plan.AddDevDependencies == nil {
-				plan.AddDevDependencies = map[string]string{}
-			}
+			addJestPresetPackage(plan)
 			for _, d := range []string{"babel-jest", "@babel/preset-env", "@babel/preset-typescript", "@babel/preset-react"} {
 				plan.AddDevDependencies[d] = ""
 			}
-			plan.Add(Changed, "", f, "rewritten without @nx/react: its Jest transformer is "+AssetTransformFile+" at the workspace root, and @nx/react/babel becomes the Babel presets it stood for (without its decorator, macro and runtime plugins)")
+			plan.Add(Changed, "", f, "rewritten without @nx/react: its Jest transformer is "+JestPresetPackage+"/asset-transform (no jest.asset-transform.cjs is written), and @nx/react/babel becomes the Babel presets it stood for (without its decorator, macro and runtime plugins)")
 		case strings.HasPrefix(base, "rollup.config.") && strings.Contains(text, "with-nx"):
 			if why := replaceRollup(plan, w, f, text); why != "" {
 				plan.Add(Manual, "", f, why)
@@ -391,4 +378,13 @@ func sortedKeys(set map[string]bool) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// addJestPresetPackage adds the package that stands in for Nx's Jest plugins
+// to the root devDependencies, at the range of its first release.
+func addJestPresetPackage(plan *Plan) {
+	if plan.AddDevDependencies == nil {
+		plan.AddDevDependencies = map[string]string{}
+	}
+	plan.AddDevDependencies[JestPresetPackage] = JestPresetRange
 }

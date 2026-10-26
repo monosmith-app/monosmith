@@ -30,9 +30,7 @@ func TestGeneratedFilesPassTheESLintConfig(t *testing.T) {
 	}
 	dir := t.TempDir()
 	files := map[string]string{
-		AssetTransformFile:          AssetTransform,
 		"jest.preset.js":            JestPreset,
-		JestResolverFile:            JestResolver,
 		cipipeline.DevcontainerPath: cipipeline.RenderDevcontainer("demo", cipipeline.NewModel(cipipeline.Contributions{}, "1.0.0", "main")),
 		"package.json":              `{"name": "demo", "private": true}` + "\n",
 		"eslint.config.mjs":         "import monosmith from '" + filepath.ToSlash("file:///"+strings.TrimPrefix(filepath.ToSlash(config), "/")) + "'\n\nexport default [\n  ...monosmith(),\n]\n",

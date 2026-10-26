@@ -199,6 +199,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		out = append(out, localCacheFindings(status)...)
 	}
 	out = append(out, toolchainPinFindings(s)...)
+	out = append(out, jestHelperFilesFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,

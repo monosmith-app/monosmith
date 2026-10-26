@@ -257,6 +257,12 @@ func editRootPackage(root string, plan *convertplan.Plan, version string) error 
 		if doc.Object("dependencies", false) != nil && doc.Object("dependencies", false).Has(name) || deps.Has(name) {
 			continue
 		}
+		// A range the plan names (the package that replaces Nx's Jest plugins) is
+		// used as it is; for the rest, Nx's install is the best guide.
+		if rng := plan.AddDevDependencies[name]; rng != "" {
+			deps.SetString(name, rng)
+			continue
+		}
 		deps.SetString(name, installedRange(root, name))
 	}
 	// The root scripts call smith: a teammate who runs npm install and then
