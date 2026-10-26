@@ -57,6 +57,16 @@ var catalog = []Architecture{
 		Table:   "conventions.modular-monolith",
 	},
 	{
+		Name:    "mvc",
+		Meaning: "models, views and controllers: the model knows neither, and a view never calls a controller",
+		Table:   "conventions.mvc",
+	},
+	{
+		Name:    "package-by-layer",
+		Meaning: "one folder per technical layer (controller, service, repository, model), each calling only the ones below",
+		Table:   "conventions.package-by-layer",
+	},
+	{
 		Name:    None,
 		Meaning: "smith checks no code layout",
 	},

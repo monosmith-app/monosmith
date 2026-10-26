@@ -3,7 +3,7 @@ package rules
 // all is every architecture the checker knows, in the order they are
 // offered. Adding one is a ruleset file and a row here, and a row in the
 // architecture catalog of smith.
-var all = []Ruleset{hexagonal, clean, ddd, modularMonolith}
+var all = []Ruleset{hexagonal, clean, ddd, modularMonolith, mvc, packageByLayer}
 
 // For returns an architecture's rules.
 func For(name string) (Ruleset, bool) {

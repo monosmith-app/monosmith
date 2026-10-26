@@ -202,6 +202,33 @@ func TestModularMonolithNode(t *testing.T) {
 	wantProblems(t, r, "src/modules/billing/pay.ts - imports ../orders/internal/place: reaches into the internals of the orders module")
 }
 
+func TestMVCKeepsTheModelFreeOfViewsAndControllers(t *testing.T) {
+	r := run(t, "mvc", "python",
+		"shop/__init__.py", "",
+		"shop/models/order.py", "from shop.views import page\nfrom shop.controllers.orders import Orders\nfrom shop.models import item\n",
+		"shop/views/page.py", "from shop.models.order import Order\nfrom shop.controllers import orders\n",
+		"shop/controllers/orders.py", "from shop.models.order import Order\nfrom shop.views.page import render\nfrom django.views import View\n",
+	)
+	wantProblems(t, r,
+		"shop/models/order.py - imports shop.views: model code must not depend on view code",
+		"shop/models/order.py - imports shop.controllers.orders: model code must not depend on controller code",
+		"shop/views/page.py - imports shop.controllers: view code must not depend on controller code",
+	)
+}
+
+func TestPackageByLayerFlowsDownward(t *testing.T) {
+	r := run(t, "package-by-layer", "jvm",
+		"src/main/java/com/acme/controller/OrderController.java", "package com.acme.controller;\nimport com.acme.service.OrderService;\nimport com.acme.model.Order;\nimport com.acme.repository.OrderRepository;\n",
+		"src/main/java/com/acme/service/OrderService.java", "package com.acme.service;\nimport com.acme.repository.OrderRepository;\nimport com.acme.controller.OrderController;\n",
+		"src/main/java/com/acme/repository/OrderRepository.java", "package com.acme.repository;\nimport com.acme.model.Order;\nimport com.acme.service.OrderService;\n",
+		"src/main/java/com/acme/model/Order.java", "package com.acme.model;\n",
+	)
+	wantProblems(t, r,
+		"OrderService.java - imports com.acme.controller.OrderController: service code must not depend on controller code",
+		"OrderRepository.java - imports com.acme.service.OrderService: repository code must not depend on service code",
+	)
+}
+
 func TestAProjectWithoutLayerFoldersIsReportedNotFailed(t *testing.T) {
 	r := run(t, "hexagonal", "go", "go.mod", goMod, "main.go", "package main\n", "store/store.go", "package store\n")
 	if !r.OK() || len(r.Warnings) != 1 || !strings.Contains(r.Warnings[0], "none of its rules were applied") {
