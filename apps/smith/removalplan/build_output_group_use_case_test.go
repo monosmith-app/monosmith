@@ -31,7 +31,7 @@ func TestEmbracingTheBuildMovesTscOutputsToTheWorkspaceDist(t *testing.T) {
 		t.Fatalf("an output group deletes nothing: %+v", g)
 	}
 	edited := map[string]string{}
-	for _, e := range g.Fix.Fix.Files {
+	for _, e := range g.Fix.Files {
 		edited[e.Path] = e.Content
 	}
 	if len(edited) != 2 || strings.Contains(edited["packages/kit/tsconfig.json"], "outDir") ||
