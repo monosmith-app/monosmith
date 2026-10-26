@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -15,7 +16,7 @@ import (
 // Commands are `smith install`, `smith uninstall`, `smith sync` and `smith up`.
 func Commands(version string) []*cobra.Command {
 	var targets []string
-	var dev bool
+	var dev, verbose bool
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
@@ -30,6 +31,11 @@ needs, for every language in the workspace.`,
   smith install -w apps/api -D pytest-cov
   smith install -w api github.com/pkg/errors@v0.9.1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if verbose {
+				// The plugins inherit it: the package manager's own warnings
+				// are shown as they come, not folded into one line.
+				_ = os.Setenv(toolrun.VerboseEnv, "1")
+			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
 				return err
@@ -38,6 +44,7 @@ needs, for every language in the workspace.`,
 			return Install(s, targets, args, dev, cmd.OutOrStdout())
 		},
 	}
+	install.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's own output and warnings (otherwise warnings fold into one line)")
 	install.Flags().StringArrayVarP(&targets, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")
 
