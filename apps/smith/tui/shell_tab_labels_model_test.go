@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
@@ -58,6 +59,20 @@ func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	}
 	if first := l.lines()[0]; !strings.Contains(first, "✗2") {
 		t.Fatalf("the header carries the health: %q", first)
+	}
+}
+
+func TestWarningsAloneNeverShowTheFailureMark(t *testing.T) {
+	s := newLab(t, true, 140, 30).sh()
+	s.doctor.Report = &doctor.Report{Passed: 3, Warnings: 2}
+	for what, got := range map[string]string{"tab": pane.Strip(s.tabBadge("doctor")), "header": pane.Strip(s.healthSummary())} {
+		if strings.Contains(got, "✗") || !strings.Contains(got, "▲2") {
+			t.Errorf("the %s says %q for 0 failed, 2 warnings", what, got)
+		}
+	}
+	s.doctor.Report = &doctor.Report{Failed: 1, Warnings: 2}
+	if got := pane.Strip(s.tabBadge("doctor")); got != "✗1" {
+		t.Errorf("the tab says %q for 1 failed", got)
 	}
 }
 

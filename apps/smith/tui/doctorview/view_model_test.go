@@ -132,6 +132,27 @@ func TestOpeningAFindingShowsItsFixAndWhetherItIsSafe(t *testing.T) {
 	}
 }
 
+func TestAFixThatAsksNamesItsSuggestedAnswer(t *testing.T) {
+	asks := &protocol.Fix{Description: "install the tools the scripts start, or remove those scripts", Choices: []protocol.FixChoice{{
+		Question: "format:check starts oxfmt, which is not installed.",
+		Options: []protocol.FixChoiceOption{
+			{Label: "install oxfmt: npm i -D oxfmt"},
+			{Label: "remove the script(s): format:check (oxfmt --check .)"},
+		},
+	}}}
+	m := FromResult(Result{Report: doctor.Report{Warnings: 1, Findings: []doctor.Finding{
+		{Finding: protocol.Finding{Check: "the scripts of web call tools that are missing", Warning: true, Detail: "format:check starts oxfmt, which is not installed", Fix: asks}},
+	}}})
+	out := plain(m.Update(key("enter")))
+	if !strings.Contains(out, "f, Enter takes the suggestion: install oxfmt: npm i -D oxfmt") {
+		t.Fatalf("the suggested answer is not named:\n%s", out)
+	}
+	asks.Choices = append(asks.Choices, protocol.FixChoice{Question: "another", Options: []protocol.FixChoiceOption{{Label: "x"}}})
+	if out := plain(m.Update(key("enter"))); strings.Contains(out, "takes the suggestion") {
+		t.Fatalf("one key cannot answer two questions:\n%s", out)
+	}
+}
+
 func TestPassedChecksAreOneCollapsedLineThatEnterOrPOpens(t *testing.T) {
 	m := sample()
 	out := plain(m)

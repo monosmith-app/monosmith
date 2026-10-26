@@ -14,7 +14,7 @@ func TestMissingToolsFixAsksToInstallOrRemoveTheScript(t *testing.T) {
 		t.Fatalf("%+v", fix)
 	}
 	options := fix.Choices[0].Options
-	if len(options) != 2 || !strings.HasPrefix(options[0].Label, "install oxfmt") || !strings.Contains(options[1].Label, "format:check (oxfmt --check .)") {
+	if len(options) != 2 || options[0].Label != "install oxfmt: npm i -D oxfmt" || !strings.Contains(options[1].Label, "format:check (oxfmt --check .)") {
 		t.Fatalf("%+v", options)
 	}
 	if got := strings.Join(options[0].Fix.Steps[0].Argv, " "); got != "npm install -D --no-audit --no-fund oxfmt" {
