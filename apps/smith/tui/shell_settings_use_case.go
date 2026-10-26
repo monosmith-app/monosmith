@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"slices"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
@@ -25,9 +27,28 @@ func settingsForms(actions []guide.Action) []settingsview.Form {
 
 // settingsKey gives the open Settings tab a key.
 func (s *Shell) settingsKey(msg tea.KeyMsg) tea.Cmd {
+	if why := s.settingsRefusal(msg.String()); why != "" {
+		s.say(why)
+		return nil
+	}
 	var res settingsview.Result
 	s.settings, res = s.settings.Key(msg)
 	return s.settingsResult(res)
+}
+
+// settingsRefusal is why a key of the tab does nothing on the row now, in the
+// words every refused key uses; "" when the key works or is not one of those.
+func (s Shell) settingsRefusal(key string) string {
+	if s.settings.Modal() {
+		return ""
+	}
+	reasons := s.settings.Reasons()
+	for _, id := range []string{"settings.change", "settings.trust", "settings.forget", "settings.unset"} {
+		if c, ok := commands.ByID(id); ok && slices.Contains(c.Keys, key) && reasons[id] != "" {
+			return c.Title + " is unavailable: " + reasons[id]
+		}
+	}
+	return ""
 }
 
 // settingsClick gives the tab a click at (x, y) of its body.

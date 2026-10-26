@@ -291,7 +291,11 @@ turns the mouse off.
 | `SMITH_NONINTERACTIVE` | Read by the runner that starts the shell's child commands (its exact effect was not verified). |
 
 When standard output is not a terminal the plain questions go to standard error so you can
-still read them.
+still read them. The plain questions have no Settings tab: there, change plugins and settings
+with `smith plugin enable|disable|trust` and `smith config set|unset`, and the theme with the
+variables above. In the full-screen interface with `NO_COLOR` or the plain theme, the Settings
+tab keeps every state as a word and a symbol (`[x]`, `trusted`, `not trusted`), so colour is
+never the only signal.
 
 ## Related
 

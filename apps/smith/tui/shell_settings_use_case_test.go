@@ -361,6 +361,17 @@ func TestTheMouseOpensTheTabPicksASectionAndADoubleClickTurnsAPluginOff(t *testi
 	l.send(tea.MouseMsg(tea.MouseEvent{X: x + 1, Y: y, Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown}))
 }
 
+func TestAKeyThatDoesNothingOnTheRowSaysWhy(t *testing.T) {
+	l, _ := newSettingsLab(t, 140, 34)
+	l.press("7", "t")
+	l.has("is unavailable: select an external plugin to trust")
+	l.press("u")
+	l.has("is unavailable: select a setting to reset to its default")
+	if l.sh().settings.Modal() {
+		t.Fatal("nothing opened")
+	}
+}
+
 func TestTheHelpListsTheKeysOfTheSettingsTab(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 40)
 	l.press("7", "?")
