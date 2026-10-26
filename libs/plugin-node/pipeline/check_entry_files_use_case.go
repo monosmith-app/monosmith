@@ -5,9 +5,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/manifestfixes"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -29,6 +31,7 @@ func CheckEntryFiles(workspaceRoot string, p protocol.Project) (protocol.Finding
 	var pkg struct {
 		Main, Module, Types, Typings string
 		Exports                      json.RawMessage
+		Scripts                      map[string]string
 	}
 	if json.Unmarshal(raw, &pkg) != nil {
 		return protocol.Finding{}, false
@@ -54,12 +57,61 @@ func CheckEntryFiles(workspaceRoot string, p protocol.Project) (protocol.Finding
 		return protocol.Finding{}, false
 	}
 	sort.Strings(missing)
-	return protocol.Finding{
+	finding := protocol.Finding{
 		Check:  p.Name + " builds every file its package.json names",
 		OK:     len(missing) == 0,
 		Detail: p.Root + "/package.json names " + strings.Join(missing, ", ") + ", which the build did not produce",
 		Remedy: "build each entry the exports name (several entries in one esbuild run: esbuild name=src/file.ts ... --splitting --outdir=dist), or remove the entries from package.json; rebuild from clean to check (an old build's files can hide a missing one)",
-	}, true
+	}
+	var declarations []string
+	for _, f := range missing {
+		if isDeclarationFile(f) {
+			declarations = append(declarations, f)
+		}
+	}
+	if len(declarations) > 0 {
+		finding.Remedy = declarationRemedy(workspaceRoot, p, pkg.Scripts["build"], declarations, pkg.Types, &finding)
+		if len(declarations) < len(missing) {
+			finding.Remedy += "\nand build each other entry the exports name, or remove it from package.json"
+		}
+	}
+	return finding, true
+}
+
+// declarationEmit finds a build script that already writes type declarations:
+// tsc, or a bundler's dts option.
+var declarationEmit = regexp.MustCompile(`\btsc\b|\btsup\b|--dts\b|\bdts\b`)
+
+// isDeclarationFile reports a TypeScript declaration file (.d.ts, .d.mts,
+// .d.cts).
+func isDeclarationFile(f string) bool {
+	for _, ext := range []string{".d.ts", ".d.mts", ".d.cts"} {
+		if strings.HasSuffix(f, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+// declarationRemedy says how the build is to write the declarations the
+// package.json names. A bundler (esbuild) writes none, so tsc is to; when the
+// build script already runs tsc or a dts option, its output is somewhere
+// else than the package.json says. A build that only lacks tsc gets the fix
+// that appends it.
+func declarationRemedy(workspaceRoot string, p protocol.Project, build string, missing []string, types string, finding *protocol.Finding) string {
+	if declarationEmit.MatchString(build) {
+		return "the build script already writes declarations, but not to the files package.json names: make tsc's --declarationDir (or rootDir) put them there, or point types and exports at where they are; rebuild from clean to check"
+	}
+	dir := ""
+	if types != "" {
+		dir = path.Dir(path.Clean(types))
+	} else if rel, err := filepath.Rel(filepath.FromSlash(p.Root), filepath.FromSlash(missing[0])); err == nil {
+		dir = path.Dir(filepath.ToSlash(rel))
+	}
+	if dir != "" && dir != "." {
+		finding.Fix = manifestfixes.EmitDeclarationsFix(workspaceRoot, p, dir)
+	}
+	return "emit the declarations in the build: a bundler such as esbuild writes none, so append `&& tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <the directory of the types entry>` to the build script (smith doctor --fix does); or remove the types entries from package.json"
 }
 
 // collectExportFiles walks package.json exports: a path, a list of

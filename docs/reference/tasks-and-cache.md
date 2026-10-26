@@ -88,6 +88,14 @@ package is read from its sources inside the workspace too. It is published from
 `exports`, `main` and `types` point at the built files, along with its README
 and LICENSE.
 
+A package's declarations (`.d.ts`) are written by its `build` script, into the
+same build output, so they are cached and restored with it. A package built by
+`tsc` gets them from `declaration`. One bundled by esbuild needs
+`&& tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --declarationDir <dir>`
+after the bundle (convert writes this for Rollup packages). If `package.json`
+names a `.d.ts` that the build did not produce, `smith doctor` says so, and
+`smith doctor --fix` appends that step to the build script.
+
 `smith doctor` enforces this. Any task output outside `dist/` fails, naming
 the task and where its outputs were set (a plugin or `smith.toml`). For Node, a
 `tsconfig` whose `outDir` is in the source tree fails too.
