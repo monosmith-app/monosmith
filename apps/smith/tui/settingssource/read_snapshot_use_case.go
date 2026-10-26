@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/recipecatalog"
@@ -55,6 +56,16 @@ func ReadSnapshot(root string) settingsview.Snapshot {
 		for _, b := range broken {
 			snap.Installed = append(snap.Installed, settingsview.InstalledPlugin{Name: filepath.Base(b.Dir), Dir: b.Dir, Problem: b.Problem})
 		}
+	}
+
+	current, err := architecture.Current(root)
+	if err != nil {
+		snap.Err = err
+		return snap
+	}
+	snap.Architecture = current.Name
+	for _, a := range architecture.Catalog() {
+		snap.Architectures = append(snap.Architectures, settingsview.ArchitectureChoice{Name: a.Name, Meaning: a.Meaning, Writes: a.Writes()})
 	}
 
 	fields, err := configedit.Fields()

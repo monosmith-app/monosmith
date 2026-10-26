@@ -199,6 +199,15 @@ sandboxed. Then the plugins installed on the plugin search path, and a row to in
 plugin: until `smith plugin install` exists in your smith it shows the command as a hint, and
 then it asks for the name or path here.
 
+**Architecture.** How the code of the workspace is laid out, as radio rows with what each
+choice means beside it: `vertical-slices` (code grouped by what it does, one flat folder per
+outcome, files named for their role) and `none` (smith checks no code layout). `Enter`
+chooses the highlighted one and saves it in `smith.toml` at once; the choice in use is marked
+`(●)`. It writes what [`smith architecture`](architecture.md) writes: choosing
+`vertical-slices` adds `[conventions.vertical-slices]`, and choosing another removes it
+together with the settings under it. The panel under the rows says in plain words what the
+highlighted choice does. More architectures will be offered here as smith learns them.
+
 **Style.** The colour theme (`auto`, `dark`, `light`, `plain`) and the symbols (`auto`,
 `unicode`, `ascii`), with a preview of the highlighted choice. `Enter` applies the choice at
 once to the whole interface and keeps it for you, in `tui.json` in the smith home

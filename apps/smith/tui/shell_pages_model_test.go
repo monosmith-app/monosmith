@@ -30,7 +30,7 @@ func TestPluginsRecipesAndSettingsOpenTheSettingsTabInsteadOfRunningACommand(t *
 		t.Fatalf("the palette entry opens the tab: %q, started %v", l.sh().tab, l.started)
 	}
 	for line, want := range map[string]settingsview.Section{
-		"plugin list": settingsview.Plugins, "recipe": settingsview.Recipes, "config list": settingsview.Workspace,
+		"plugin list": settingsview.Plugins, "recipe": settingsview.Recipes, "config list": settingsview.Workspace, "architecture": settingsview.Architecture,
 	} {
 		l.keys("2")
 		sh := l.sh()

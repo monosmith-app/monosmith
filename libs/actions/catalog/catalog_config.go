@@ -27,6 +27,7 @@ var catalog = []Action{
 	{Command: []string{"config"}, Safety: Reads, NotInMCP: "smith serve answers settings in process (config.list, config.get); no MCP tool"},
 	{Command: []string{"config", "set"}, Safety: Changes, NotInMCP: settingsEdit},
 	{Command: []string{"config", "unset"}, Safety: Changes, NotInMCP: settingsEdit},
+	{Command: []string{"architecture"}, Safety: Changes, NotInTUI: "the Settings tab has an Architecture section that chooses it", NotInMCP: settingsEdit, NotInServe: "an editor changes smith.toml through config.set; the architecture is a table of it"},
 
 	// Work
 	{Command: []string{"run"}, Safety: Reads},

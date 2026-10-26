@@ -32,6 +32,14 @@ func (f *fake) backend() Backend {
 			}
 			return f.setErr
 		},
+		SetArchitecture: func(name string) error {
+			f.calls = append(f.calls, "architecture "+name)
+			if f.setErr != nil {
+				return f.setErr
+			}
+			f.snap.Architecture = name
+			return nil
+		},
 		Review: func(name string) (TrustReview, error) { return f.reviewed, nil },
 		Trust: func(name string, pin bool) (string, error) {
 			f.calls = append(f.calls, fmt.Sprintf("trust %s pin=%v", name, pin))
@@ -67,6 +75,11 @@ func sample() *fake {
 	return &fake{
 		reviewed: TrustReview{Text: "\nThe external plugin \"widget\" wants to run on this machine.\n  from      smith.toml\n  command   widget --serve\n"},
 		snap: Snapshot{
+			Architecture: "vertical-slices",
+			Architectures: []ArchitectureChoice{
+				{Name: "vertical-slices", Meaning: "code grouped by what it does", Writes: "adds [conventions.vertical-slices] to smith.toml"},
+				{Name: "none", Meaning: "smith checks no code layout", Writes: "removes the lines that turn the other choices on"},
+			},
 			Plugins:    []Plugin{{"go", true}, {"node", true}, {"python", false}},
 			Addons:     []string{"eslint", "jest"},
 			External:   []ExternalPlugin{{Name: "widget", Source: "smith.toml", Command: "widget --serve", Detail: "never trusted here"}},
@@ -167,7 +180,7 @@ func TestThePluginsSectionListsTheBuiltInTheExternalAndTheInstalledPlugins(t *te
 	m := opened(t, sample())
 	out := text(m, 100, 28)
 	for _, want := range []string{
-		"Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms",
+		"Sections", "Plugins", "Architecture", "Style", "Workspace", "Recipes", "Forms",
 		"Built-in plugins", "[x] go", "[x] node", "[ ] python",
 		"External plugins this workspace uses", "widget", "not trusted",
 		"Installed on the search path", "kiwi", "1.2.0",
@@ -272,8 +285,8 @@ func TestInstallIsAHintUntilTheBackendCanInstall(t *testing.T) {
 func TestABooleanSettingFlipsOnSpaceAndItsDefaultIsRespected(t *testing.T) {
 	f := sample()
 	m := opened(t, f)
-	m, _ = press(m, "left", "down", "down", "right") // Workspace section
-	press(m, " ")                                    // ci.devcontainer, unset, default false
+	m, _ = press(m, "left", "down", "down", "down", "right") // Workspace section
+	press(m, " ")                                            // ci.devcontainer, unset, default false
 	if got := strings.Join(f.calls, ";"); got != "set ci.devcontainer true" {
 		t.Fatalf("calls: %q", got)
 	}
@@ -464,7 +477,7 @@ func TestAClickSelectsASectionOrARowAndADoubleClickChangesIt(t *testing.T) {
 	f := sample()
 	m := opened(t, f)
 	w, h := 100, 28
-	m, _ = m.Click(w, h, 2, 3, false) // Workspace in the list
+	m, _ = m.Click(w, h, 2, 4, false) // Workspace in the list
 	if m.Section() != Workspace || m.onItems {
 		t.Fatalf("section %v onItems=%v", m.Section(), m.onItems)
 	}
@@ -547,7 +560,7 @@ func TestAWorkspaceThatCannotBeReadShowsWhy(t *testing.T) {
 
 func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
 	m := opened(t, sample())
-	m, _ = press(m, "left", "down", "down", "right") // Workspace section
+	m, _ = press(m, "left", "down", "down", "down", "right") // Workspace section
 	var rows []string
 	for _, l := range strings.Split(text(m, 120, 30), "\n") {
 		rows = append(rows, strings.Join(strings.Fields(l), " "))
@@ -560,5 +573,58 @@ func TestAnUnsetSettingShowsItsDefaultValueAndASetOneShowsItsOwn(t *testing.T) {
 	}
 	if strings.Contains(screenText, "devcontainer default") {
 		t.Fatalf("an unset setting is shown as the word default:\n%s", screenText)
+	}
+}
+
+func TestTheArchitectureSectionOffersTheChoicesAndMarksTheOneInUse(t *testing.T) {
+	m := opened(t, sample()).Show(Architecture)
+	out := text(m, 100, 28)
+	for _, want := range []string{
+		"how the code of this workspace is laid out", "Code layout",
+		"(●) vertical-slices", "( ) none", "smith checks no code layout",
+		"is laid out", "smith architecture vertical-slices",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the Architecture section lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestEnterChoosesAnArchitectureSavesItAndTheRadioFollows(t *testing.T) {
+	f := sample()
+	m := opened(t, f).Show(Architecture)
+	m, results := press(m, "down", "enter")
+	if got := strings.Join(f.calls, ";"); got != "architecture none" {
+		t.Fatalf("calls: %q", got)
+	}
+	out := text(m, 100, 28)
+	if !strings.Contains(out, "( ) vertical-slices") || !strings.Contains(out, "(●) none") || !strings.Contains(out, "Architecture: none") {
+		t.Fatalf("the radio and the note follow:\n%s", out)
+	}
+	for _, r := range results {
+		if r.Failed {
+			t.Fatalf("failed: %+v", r)
+		}
+	}
+}
+
+func TestARefusedArchitectureStaysOnScreenWithItsReason(t *testing.T) {
+	f := sample()
+	f.setErr = errors.New("refusing to write an invalid smith.toml")
+	m := opened(t, f).Show(Architecture)
+	m, _ = press(m, "down", "enter")
+	if out := text(m, 100, 28); !strings.Contains(out, "refusing to write") || !strings.Contains(out, "(●) vertical-slices") {
+		t.Fatalf("%s", out)
+	}
+}
+
+func TestTheArchitectureSectionFitsASmallTerminal(t *testing.T) {
+	m := opened(t, sample()).Show(Architecture)
+	lines := m.View(plainTheme(), 80, 24, -1, -1)
+	if len(lines) != 24 {
+		t.Fatalf("%d lines", len(lines))
+	}
+	if out := text(m, 80, 24); !strings.Contains(out, "vertical-slices") || !strings.Contains(out, "none") {
+		t.Fatalf("%s", out)
 	}
 }

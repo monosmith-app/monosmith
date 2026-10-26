@@ -180,7 +180,7 @@ func firstBuiltin(t *testing.T) string {
 
 func TestChangingASettingInTheTabWritesWhatConfigSetWrites(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 34)
-	l.press("7", "left", "down", "down", "enter") // Workspace, into its rows
+	l.press("7", "left", "down", "down", "down", "enter") // Workspace, into its rows
 	l.has("workspace.name", `"acme"`, "default")
 	l.walkTo(t, "ci.devcontainer")
 	l.press("space")
@@ -223,7 +223,7 @@ func (l *lab) selectedLine() string {
 
 func TestATypedSettingIsAnEditorThatTakesEveryKeyIncludingTheOnesThatAreShortcuts(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 34)
-	l.press("7", "left", "down", "down", "enter")
+	l.press("7", "left", "down", "down", "down", "enter")
 	l.walkTo(t, "release.branch")
 	l.press("enter")
 	if !l.sh().editing() {
@@ -245,7 +245,7 @@ func TestATypedSettingIsAnEditorThatTakesEveryKeyIncludingTheOnesThatAreShortcut
 
 func TestAnInvalidValueIsRefusedInTheEditorWithTheSchemasReason(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 34)
-	l.press("7", "left", "down", "down", "enter")
+	l.press("7", "left", "down", "down", "down", "enter")
 	l.walkTo(t, "cache.max_size_mb")
 	l.press("enter").typeText("lots").keys("enter")
 	l.has("cache.max_size_mb is a whole number")
@@ -256,7 +256,7 @@ func TestAnInvalidValueIsRefusedInTheEditorWithTheSchemasReason(t *testing.T) {
 
 func TestChoosingAThemeInTheStyleSectionRedrawsAtOnceAndKeepsItForYouAlone(t *testing.T) {
 	l, ws := newSettingsLab(t, 140, 34)
-	l.press("7", "left", "down", "right") // Style
+	l.press("7", "left", "down", "down", "right") // Style
 	l.has("Theme", "Symbols", "Preview")
 	l.press("down", "down", "enter") // light
 	if got := l.sh().th.Tokens.Name; got != "light" {
@@ -290,13 +290,14 @@ func TestHomePointsANewUserAtTheSettingsTabUntilTheyHaveOpenedIt(t *testing.T) {
 func TestTheSettingsTabFillsExactlyTheTerminalInEverySectionAndEditor(t *testing.T) {
 	sizes := [][2]int{{140, 40}, {100, 30}, {80, 24}, {72, 9}, {72, 12}, {79, 20}, {60, 15}, {40, 10}, {20, 5}, {10, 3}, {1, 1}}
 	steps := map[string][]string{
-		"plugins":   {},
-		"review":    {},
-		"style":     {"left", "down", "right"},
-		"workspace": {"left", "down", "down", "right", "down", "down"},
-		"editor":    {"left", "down", "down", "right", "down", "down", "enter"},
-		"recipes":   {"left", "down", "down", "down", "right"},
-		"forms":     {"left", "down", "down", "down", "down", "right"},
+		"plugins":      {},
+		"review":       {},
+		"architecture": {"left", "down", "right"},
+		"style":        {"left", "down", "down", "right"},
+		"workspace":    {"left", "down", "down", "down", "right", "down", "down"},
+		"editor":       {"left", "down", "down", "down", "right", "down", "down", "enter"},
+		"recipes":      {"left", "down", "down", "down", "down", "right"},
+		"forms":        {"left", "down", "down", "down", "down", "down", "right"},
 	}
 	for name, keys := range steps {
 		for _, sz := range sizes {
@@ -380,7 +381,7 @@ func TestTheHelpListsTheKeysOfTheSettingsTab(t *testing.T) {
 
 func TestAFormOfTheFormsSectionOpensTheGuide(t *testing.T) {
 	l, _ := newSettingsLab(t, 140, 34)
-	l.press("7", "left", "down", "down", "down", "down", "right")
+	l.press("7", "left", "down", "down", "down", "down", "down", "right")
 	l.has("Guided forms")
 	l.press("enter")
 	if l.sh().tab != commands.TabGuide {

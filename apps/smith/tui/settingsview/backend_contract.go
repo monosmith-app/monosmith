@@ -10,6 +10,8 @@ type Backend struct {
 	Load func() Snapshot
 	// SetPlugin switches a built-in plugin on or off (smith plugin enable|disable).
 	SetPlugin func(name string, enable bool) error
+	// SetArchitecture chooses how the workspace's code is laid out (smith architecture).
+	SetArchitecture func(name string) error
 	// Review measures an external plugin for a trust decision (the review of
 	// smith plugin trust).
 	Review func(name string) (TrustReview, error)

@@ -13,6 +13,12 @@ languages it supports, in a workspace that turns it on in `smith.toml`:
 # exclude = ["legacy"]   # projects it leaves alone
 ```
 
+You need not edit the file for this one: it is the workspace's **architecture**, and
+[`smith architecture`](../manual/architecture.md) (or the Architecture section of the Settings
+tab in [`smith tui`](../manual/tui.md)) lists the architectures smith knows, shows the one in
+use and switches between them. Today they are `vertical-slices` and `none` (no table, no
+checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
+
 `smith new` turns on `vertical-slices`. A converted workspace does not get it
 until you add the line, because an existing codebase rarely follows it yet.
 
