@@ -168,7 +168,7 @@ project files.
 
 | You see | Cause |
 |---|---|
-| nothing: the convention adds no task | the plugin names no `languages`, or `[conventions.<name>]` is missing |
+| nothing: the convention adds no task | `[conventions.<name>]` is missing, or the plugin's `languages` do not include the project's language |
 | `the plugin did not start and initialize: ... plugin stopped answering: malformed header ...` | a `print` to stdout. Log to stderr |
 | `smith plugin check` passes but a task is missing in `smith explain` | `contribute` returned a task a project already has; use `Replace` to overwrite it |
 

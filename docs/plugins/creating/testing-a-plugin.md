@@ -261,7 +261,7 @@ tests cannot: a command that cannot be started from smith's working directory, a
 | You see | Cause and remedy |
 |---|---|
 | the test passes but `smith plugin check` fails | the test connected to a different type, or never built the binary; check the program smith starts |
-| `conformance` passes but the real workspace shows no task | the convention names no `Languages`, or is not configured with `[conventions.<name>]` |
+| `conformance` passes but the real workspace shows no task | the convention's `Languages` do not include the project's language, or it is not configured with `[conventions.<name>]` |
 | a golden test fails on another machine | the output contains a path, a time or an unsorted map |
 | the Windows test cannot start the plugin | path form without `.\`, or a script without a launcher |
 | the child-process test hangs | the test did not close the plugin's stdin, or did not send `shutdown` |

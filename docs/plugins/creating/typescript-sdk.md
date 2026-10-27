@@ -56,7 +56,7 @@ const base: SmithPlugin = {
       plugin: { name: 'widget-layout', version: '0.1.0' },
       kind: 'convention',
       roles: ['structure'],
-      languages: ['widget'], // a convention that names no language applies to no project
+      languages: ['widget'], // a convention that names no language applies to every language
     }
   },
 }

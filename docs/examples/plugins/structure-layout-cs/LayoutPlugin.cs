@@ -61,7 +61,7 @@ public sealed class LayoutPlugin : IPlugin, IContributor, IDoctorContributor
             Kind = PluginKind.Convention,
             Roles = [Role.Structure],
 
-            // The languages it applies to. A convention that names none applies to no project at all.
+            // The languages it applies to. A convention that names none applies to every language.
             Languages = ["widget"],
         };
     }

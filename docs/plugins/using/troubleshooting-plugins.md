@@ -149,7 +149,7 @@ names both sides.
 
 | Symptom | Cause and remedy |
 |---|---|
-| a structure plugin adds no task | it names no `languages`: a convention that names none applies to no project, and nothing says so. Set `languages` in its `initialize` answer |
+| a structure plugin adds no task | its `languages` do not include the project's language: a convention runs only for the languages it declares (none declared means every language), and `smith doctor` names the projects it left out. Fix `languages` in its `initialize` answer |
 | `[conventions.x]` is configured but no task appears | the plugin advertises no `contribute` capability, or none of its languages match a project. `smith explain <project>:<task>` says which plugin each field came from |
 | a toolchain's `generate` ran but its `lint` is missing | a toolchain that only implements `generate` writes scripts and files; the language plugin turns the scripts into tasks. The built-in `eslint`, `jest` and `vitest` work this way (see [the eslint page](catalogue/eslint.md)). To add a task directly, implement `contribute` |
 | a `dependsOn` is ignored | `dependsOn` in a contribution applies only to a task the project has after earlier plugins contributed |

@@ -76,7 +76,7 @@ public sealed class LayoutPlugin : IPlugin
             Plugin = new Peer { Name = "widget-layout", Version = "0.1.0" },
             Kind = PluginKind.Convention,
             Roles = [Role.Structure],
-            Languages = ["widget"], // a convention that names no language applies to no project
+            Languages = ["widget"], // a convention that names no language applies to every language
         };
     }
 }

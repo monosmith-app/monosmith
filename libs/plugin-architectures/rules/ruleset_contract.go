@@ -38,6 +38,10 @@ type Ruleset struct {
 	IsolatedLayer string
 	// Summary is one line of the rules, for the doctor and the reports.
 	Summary string
+	// Languages are the project languages the architecture applies to. Empty
+	// means every language the checker can read imports for; a built-in lists
+	// some only when the architecture makes no sense in the others.
+	Languages []string
 }
 
 // Normalise spells a folder name the way the rules compare it: lowercase,

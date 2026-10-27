@@ -66,7 +66,7 @@ def initialize(params):
         "plugin": {"name": "widget-layout", "version": "0.1.0"},
         "kind": "convention",
         "roles": ["structure"],
-        "languages": ["widget"],  # a convention that names none applies to no project
+        "languages": ["widget"],  # a convention that names none applies to every language
         # Only what the plugin implements; smith never calls anything else.
         "capabilities": {"contribute": True, "doctor": True},
     }
