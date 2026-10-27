@@ -45,11 +45,11 @@ Read-only tools (annotated `readOnlyHint`): `smith_projects`, `smith_graph` (inp
 `smith_affected` (`base`), `smith_kinds`, `smith_stacks`, `smith_commands`, `smith_info`,
 `smith_doctor`, `smith_release_preview`, `smith_updates`, `smith_explain`,
 `smith_recipe_check`, `smith_plugin_list`, `smith_plugin_check`, `smith_doctor_fixes`,
-`smith_upgrade_preview`.
+`smith_upgrade_preview`, `smith_change_kind_preview` (input `project`, `kind`).
 
 Tools that change the workspace: `smith_run`, `smith_add_project`, `smith_remove_project`,
 `smith_install`, `smith_uninstall`, `smith_doctor_fix`, `smith_upgrade`, `smith_recipe_new`,
-`smith_sync`, `smith_pipeline`.
+`smith_sync`, `smith_pipeline`, `smith_change_kind` (input `project`, `kind`; it never overrules a refusal, only a person does, with `smith kind --force`).
 
 Each tool's inputs are in its `inputSchema` (`tools/list`). A value is one argument and a
 value that looks like an option is refused. The tool descriptions and the initialize

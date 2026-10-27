@@ -271,6 +271,27 @@ func TestQueriesAnswerWithTheJSONOfTheirCommand(t *testing.T) {
 	}
 }
 
+func TestChangingAKindIsAPreviewQueryAndACommand(t *testing.T) {
+	var ran [][]string
+	s := &Server{Version: "1", Execute: func(_ context.Context, _ string, args []string, _ func(runevents.Stream, string)) ([]byte, int, error) {
+		ran = append(ran, args)
+		return []byte(`{"project":"core"}` + "\n"), 0, nil
+	}}
+	c := start(t, s)
+	if preview := c.call("kind.preview", map[string]any{"project": "core", "kind": "package"}); preview["result"].(map[string]any)["project"] != "core" {
+		t.Fatalf("kind.preview answered %v", preview)
+	}
+	if result := c.call("kind", map[string]any{"project": "core", "kind": "lib"})["result"].(map[string]any); result["ok"] != true {
+		t.Fatalf("kind answered %v", result)
+	}
+	if fmt.Sprint(ran) != "[[kind core package --dry-run --json] [kind core lib --json]]" {
+		t.Fatalf("commands run %v", ran)
+	}
+	if bad := c.call("kind", map[string]any{"project": "core", "kind": "--force"}); bad["error"] == nil {
+		t.Fatalf("an option smuggled in as the kind must be refused: %v", bad)
+	}
+}
+
 func TestACommandIsARunWithItsOutputAsEvents(t *testing.T) {
 	s := &Server{Version: "1", Execute: func(_ context.Context, _ string, args []string, onLine func(runevents.Stream, string)) ([]byte, int, error) {
 		onLine(runevents.Stdout, "added zod")

@@ -108,6 +108,22 @@ func words(input map[string]any, key string, required bool) ([]string, error) {
 	return out, nil
 }
 
+// kindArgs reads the project and the kind smith kind takes.
+func kindArgs(input map[string]any) ([]string, error) {
+	project, err := word(input, "project")
+	if err != nil {
+		return nil, err
+	}
+	kind, err := word(input, "kind")
+	if err != nil {
+		return nil, err
+	}
+	if kind != "app" && kind != "lib" && kind != "package" {
+		return nil, fmt.Errorf("\"kind\" must be app, lib or package, got %q", kind)
+	}
+	return []string{"kind", project, kind}, nil
+}
+
 func flag(input map[string]any, key string) bool { v, _ := input[key].(bool); return v }
 
 func fixed(args ...string) func(map[string]any) ([]string, error) {
@@ -249,6 +265,18 @@ var Tools = []Tool{
 				return []string{"remove", name, "--dry-run"}, err
 			}
 			return []string{"remove", name, "--yes"}, err
+		}},
+	{Name: "smith_change_kind_preview", Action: "kind", Description: "What smith_change_kind would do, as JSON: the project's new directory, every file it edits (manifest, workspace files, dependents), the references that still name the old folder and the warnings; changes nothing. A refusal (an app other projects import, a package already released) is part of the answer: only a person overrules it, with smith kind --force.", ReadOnly: true,
+		InputSchema: object(map[string]any{"project": str("the project"), "kind": map[string]any{"type": "string", "enum": []string{"app", "lib", "package"}, "description": "the kind it becomes"}}, "project", "kind"),
+		Args: func(in map[string]any) ([]string, error) {
+			args, err := kindArgs(in)
+			return append(args, "--dry-run", "--json"), err
+		}},
+	{Name: "smith_change_kind", Action: "kind", Description: "Make a project another kind: app (deployed), lib (imported internally) or package (published). Edits its manifest, moves its folder to libs/, packages/ or apps/, rewrites every reference to the old folder and regenerates the pipelines. Preview it first with smith_change_kind_preview. It does not overrule a refusal.",
+		InputSchema: object(map[string]any{"project": str("the project"), "kind": map[string]any{"type": "string", "enum": []string{"app", "lib", "package"}, "description": "the kind it becomes"}}, "project", "kind"),
+		Args: func(in map[string]any) ([]string, error) {
+			args, err := kindArgs(in)
+			return append(args, "--json"), err
 		}},
 	{Name: "smith_install", Action: "install", Description: "Add a package to one or more projects with each project's own toolchain (npm, pip, go). A dependency always belongs to a project, never the root.",
 		InputSchema: object(map[string]any{"package": str("the package, optionally with a version"), "projects": list("the projects, by name or directory"), "dev": boolean("a development dependency")}, "package", "projects"),

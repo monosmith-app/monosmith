@@ -41,7 +41,7 @@ is cancelled and its processes stopped. smith's own logging goes to standard err
 
 `add`, `affected`, `cancel`, `config.get`, `config.list`, `config.set`, `config.unset`,
 `doctor`, `doctor.fix`, `doctor.fixes`, `explain`, `graph`, `info`, `initialize`, `install`,
-`kinds`, `ping`, `plugins`, `projects`, `recipe.check`, `recipe.describe`, `recipe.list`,
+`kind`, `kind.preview`, `kinds`, `ping`, `plugins`, `projects`, `recipe.check`, `recipe.describe`, `recipe.list`,
 `recipe.roles`, `release`, `release.preview`, `remove`, `run`, `shutdown`, `sync`,
 `uninstall`, `updates`, `upgrade`, `upgrade.preview`.
 

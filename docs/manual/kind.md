@@ -151,3 +151,7 @@ package is missing.
 - [`smith kinds`](kinds.md) lists the kinds of project `smith add` can create.
 - [`smith add`](add.md) and [`smith remove`](remove.md).
 - [Releasing](../reference/releasing.md): what a package is and what a lib is.
+- Assistants and editors: the MCP tools `smith_change_kind_preview` and `smith_change_kind`
+  ([`smith mcp`](mcp.md)) and the `smith serve` methods `kind.preview` and `kind`
+  ([`smith serve`](serve.md)). Neither offers `--force`: a refusal is shown, and a person
+  overrules it on the command line.
