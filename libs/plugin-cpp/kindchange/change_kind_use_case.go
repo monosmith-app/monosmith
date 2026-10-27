@@ -23,7 +23,6 @@ var (
 	// subdirectoryCall is an add_subdirectory whose source is written without
 	// a leading ./ (add_subdirectory(libs/core core)): the root file's way.
 	subdirectoryCall = regexp.MustCompile(`(?i)(\badd_subdirectory\s*\(\s*"?(?:\$\{(?:CMAKE_CURRENT_SOURCE_DIR|CMAKE_CURRENT_LIST_DIR|PROJECT_SOURCE_DIR)\}/)?)([A-Za-z0-9_][^"\s)$]*)`)
-	addExecutable    = regexp.MustCompile(`(?i)\badd_executable\s*\(`)
 )
 
 func isCMakeFile(name string) bool {

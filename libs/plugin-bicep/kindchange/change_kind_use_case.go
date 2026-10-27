@@ -26,8 +26,8 @@ func isBicepFile(name string) bool {
 
 // Change answers what making the project params.Project a params.To changes:
 // the smithKind metadata of its main.bicep, and the module sources and
-// parameter files that name its directory. A Bicep project is released by its
-// tag whatever its kind, so nothing else depends on it.
+// parameter files that name its directory. A package is refused: there is no
+// Bicep registry to publish to yet.
 func Change(workspaceRoot string, params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	p := params.Project
 	edits := fileedits.New(workspaceRoot)
@@ -36,14 +36,14 @@ func Change(workspaceRoot string, params protocol.ChangeKindParams) (protocol.Ch
 	if !ok {
 		return protocol.ChangeKindResult{}, fmt.Errorf("%s not found", manifest)
 	}
+	if params.To == protocol.ProjectPackage {
+		return protocol.ChangeKindResult{Refused: "a Bicep project is an app (a deployment) or a lib (a module): publishing to a Bicep registry is not supported yet"}, nil
+	}
 	var result protocol.ChangeKindResult
 
 	edits.Write(manifest, setKind(src, string(params.To)))
 	if _, hasParams := edits.Read(path.Join(p.Root, "main.bicepparam")); params.To != protocol.ProjectApp && hasParams {
 		result.Warnings = append(result.Warnings, fmt.Sprintf("%s has a parameters file (main.bicepparam), which deploys it; as a %s it is a module other templates use, and the file is kept", p.Root, params.To))
-	}
-	if params.To == protocol.ProjectPackage {
-		result.Warnings = append(result.Warnings, "a Bicep project is released by its tag: there is no registry to publish a package to yet")
 	}
 
 	if params.NewRoot != p.Root {

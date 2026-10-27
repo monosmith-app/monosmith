@@ -49,25 +49,36 @@ func projects() []protocol.Project {
 	}
 }
 
-func TestLibBecomesPackage(t *testing.T) {
+func TestLibMovesToApps(t *testing.T) {
 	dir := writeFiles(t, workspace)
-	r, err := Change(dir, protocol.ChangeKindParams{Project: projects()[0], To: protocol.ProjectPackage, NewRoot: "packages/storage", Projects: projects()})
+	r, err := Change(dir, protocol.ChangeKindParams{Project: projects()[0], To: protocol.ProjectApp, NewRoot: "apps/storage", Projects: projects()})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := edited(r)
 	storage := got["libs/storage/main.bicep"]
-	if !strings.Contains(storage, "metadata smithKind = 'package'") {
+	if !strings.Contains(storage, "metadata smithKind = 'app'") {
 		t.Fatalf("the kind changes:\n%s", storage)
 	}
 	if !strings.Contains(storage, "'../../libs/util/main.bicep'") {
 		t.Fatalf("a module it used beside it is reached through libs/ now:\n%s", storage)
 	}
-	if !strings.Contains(got["apps/infra/main.bicep"], "'../../packages/storage/main.bicep'") {
+	if !strings.Contains(got["apps/infra/main.bicep"], "'../storage/main.bicep'") {
 		t.Fatalf("dependents follow:\n%s", got["apps/infra/main.bicep"])
 	}
 	if _, touched := got["libs/util/main.bicep"]; touched {
 		t.Fatal("a project that does not use storage is not edited")
+	}
+}
+
+func TestAPackageIsRefused(t *testing.T) {
+	dir := writeFiles(t, workspace)
+	r, err := Change(dir, protocol.ChangeKindParams{Project: projects()[0], To: protocol.ProjectPackage, NewRoot: "packages/storage", Projects: projects()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(r.Refused, "registry") || len(r.Files) != 0 {
+		t.Fatalf("refused, naming why, and nothing is edited: %+v", r)
 	}
 }
 
@@ -82,10 +93,10 @@ func TestMovingToADifferentDepthRebasesItsOwnModules(t *testing.T) {
 	}
 }
 
-func TestLibToPackageAndBackLeavesTheFileByteForByte(t *testing.T) {
+func TestLibToAppAndBackLeavesTheFileByteForByte(t *testing.T) {
 	dir := writeFiles(t, map[string]string{"libs/storage/main.bicep": storageBicep})
 	project := protocol.Project{Name: "storage", Root: "libs/storage", Language: "bicep"}
-	for _, to := range []protocol.ProjectKind{protocol.ProjectPackage, protocol.ProjectLib} {
+	for _, to := range []protocol.ProjectKind{protocol.ProjectApp, protocol.ProjectLib} {
 		r, err := Change(dir, protocol.ChangeKindParams{Project: project, To: to, NewRoot: "libs/storage"})
 		if err != nil {
 			t.Fatal(err)
