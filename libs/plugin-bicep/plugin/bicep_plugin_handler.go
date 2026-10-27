@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-bicep/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-bicep/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-bicep/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-bicep/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-bicep/scaffolding"
@@ -54,6 +55,11 @@ func (b *Bicep) Publish(params protocol.PublishParams) (protocol.PublishResult, 
 // CI implements serve.CIContributor.
 func (b *Bicep) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (b *Bicep) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(b.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.

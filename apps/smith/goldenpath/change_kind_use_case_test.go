@@ -16,6 +16,8 @@ type kindScenario struct {
 	lang string
 	// tools are programs the scenario needs; it is skipped without them.
 	tools []string
+	// ready says why the scenario cannot run here, beyond tools; "" when it can.
+	ready func() string
 	// wire makes cli use core, as the language does it.
 	wire func(w *workspace)
 	// install is what the language needs after the folder moved (npm links
@@ -139,6 +141,30 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"pubspec.yaml": "- packages/core"},
 		},
 		{
+			lang:  "bicep",
+			tools: []string{"az"},
+			ready: func() string {
+				if err := exec.Command("az", "bicep", "version").Run(); err != nil {
+					return "the Bicep CLI is not installed: " + err.Error()
+				}
+				return ""
+			},
+			wire: func(w *workspace) {
+				w.write("apps/cli/main.bicep", strings.Replace(w.read("apps/cli/main.bicep"), "output storageId string = storage.id", `module shared '../../libs/core/main.bicep' = {
+  name: 'shared'
+  params: {
+    location: location
+    storageName: '${storageName}s'
+  }
+}
+
+output storageId string = storage.id
+output sharedId string = shared.outputs.storageId`, 1))
+			},
+			untracked: []string{"libs/core/template", "packages/core/template", "apps/cli/template", "apps/cli/parameters"},
+			coreFiles: map[string]string{"apps/cli/main.bicep": "'../../packages/core/main.bicep'"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,
@@ -157,6 +183,11 @@ func runKindScenario(t *testing.T, sc kindScenario) {
 	for _, tool := range sc.tools {
 		if _, err := exec.LookPath(tool); err != nil {
 			t.Skip(tool + " is not installed")
+		}
+	}
+	if sc.ready != nil {
+		if why := sc.ready(); why != "" {
+			t.Skip(why)
 		}
 	}
 	base := t.TempDir()
