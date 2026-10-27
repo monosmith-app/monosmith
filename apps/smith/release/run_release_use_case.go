@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -308,8 +309,17 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 		return protocol.PublishResult{Skipped: "published for each platform by the native jobs"}, nil
 	}
 	spec := AssetSpec(p)
+	planOnly := false
 	if Native(p) {
-		spec = nil
+		// A native app's archives are built by the native jobs, one platform
+		// each. A dry run still asks for this machine's, to say what a native
+		// job would attach and to check that it can be built.
+		planOnly = dryRun && spec != nil
+		if planOnly {
+			spec.Platforms = []string{runtime.GOOS + "/" + runtime.GOARCH}
+		} else {
+			spec = nil
+		}
 	}
 	if spec == nil && p.Registries != nil && p.Registries.NoPublish {
 		return protocol.PublishResult{Skipped: "published by its tag (registry = \"none\")"}, nil
@@ -324,7 +334,7 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 		return pr, fmt.Errorf("publishing: %w", err)
 	}
 	if !ok {
-		if params.Assets != nil {
+		if params.Assets != nil && !planOnly {
 			return pr, fmt.Errorf("the %s plugin cannot build release assets", p.Plugin)
 		}
 		pr.Skipped = "published by its tag"
@@ -465,19 +475,7 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 // AssetSpec is what a plugin needs to build an app's release assets, or nil
 // for a project without them.
 func AssetSpec(p *projectgraph.Project) *protocol.AssetSpec {
-	r := p.Release
-	if r == nil {
-		return nil
-	}
-	return &protocol.AssetSpec{
-		Name:            r.AssetName,
-		Product:         r.Product,
-		Platforms:       r.Platforms,
-		OSAlias:         r.OSAlias,
-		ArchAlias:       r.ArchAlias,
-		VersionVariable: r.VersionVariable,
-		OutDir:          "dist/release/" + p.Name,
-	}
+	return p.AssetSpec()
 }
 
 // mirror pushes a project with a split repository there, once its tag is

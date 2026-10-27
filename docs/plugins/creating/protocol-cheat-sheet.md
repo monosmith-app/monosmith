@@ -288,6 +288,7 @@ Project is one unit of the monorepo as a plugin sees it.
 | `stack` | `string` | no | Stack is the stack recorded in the project's manifest, if any. |
 | `settings` | `map[string]map[string]any` | no | Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.<project>.settings.<name>] (what a recipe's settings became when it created the project), and for a convention its [conventions.<name>] settings and the project's [projects.<project>.<name>] on top. |
 | `registries` | `*Registries` | no | Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. |
+| `releaseAssets` | `*AssetSpec` | no | ReleaseAssets is what an app's release builds, from smith.toml [projects.<project>.release]: the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil for a project that has no release files. |
 
 ### Task
 

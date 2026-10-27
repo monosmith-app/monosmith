@@ -159,6 +159,8 @@ The plugin has no `[projects.<p>.settings.rust]` keys.
 | Where | Key | Effect | Read in |
 |---|---|---|---|
 | `Cargo.toml` (crate) | `[package.metadata.smith] kind`, `stack` | kind and stack | `discovery/cargo_manifest_mapper.go` |
+| `Cargo.toml` (crate) | `[package.metadata.smith] native = true` | the app is built on each OS and its release archives come from the native jobs | same |
+| `smith.toml` | `[projects.<app>.release] platforms`, `asset_name`, `product`, `os_alias`, `arch_alias` | which archives the release builds and what they are called | host, `releasing/build_assets_use_case.go` |
 | `Cargo.toml` (crate) | `[package] version`, `description`, `name` | version, description, export | same |
 | `Cargo.toml` (root) | `[workspace] members` | which crates cargo (and `-p`) can see; doctor checks it | `pipeline/check_workspace_use_case.go` |
 | `.cargo/config.toml` | `[build] target-dir` | where builds go (`dist/cargo`) | written by `scaffolding/generate_crate_use_case.go` |
@@ -188,7 +190,10 @@ Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes):
 |---|---|
 | Version | `[package] version` in the crate's `Cargo.toml`. The release writes the literal version there (keeping formatting), and also updates the `version = "..."` requirement of inline path dependencies on other released crates in the workspace (`dep = { path = "...", version = "..." }`), then publishes and restores. A crate with `version.workspace = true` has no literal to write; nothing is changed for it. |
 | Tag | `<name>@<version>`, name being the directory name: `kit@0.1.0` (real). |
-| What is published | `package` crates only, with `cargo publish -p <crate> --allow-dirty` (the manifests carry the release version while smith releases, and cargo would refuse the dirty tree). Apps and libs are released by their tag. An app with a `[projects.<app>.release]` section is tagged and gets a GitHub Release, without assets: `Rust release assets are not built yet: the app is released by its tag`. |
+| What is published | `package` crates only, with `cargo publish -p <crate> --allow-dirty` (the manifests carry the release version while smith releases, and cargo would refuse the dirty tree). Libs are released by their tag. |
+| Release assets of an app | With `[projects.<app>.release]` the plugin builds, for each of its `platforms` (Go's `os/arch`: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`, `windows/arm64`; default all six), `cargo build --release -p <crate> --target <triple> --message-format=json-render-diagnostics` (triples `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`), reads the programs from cargo's messages (so a changed `target-dir` is no problem), and writes `dist/release/<app>/<asset_name>` as a zip holding every program the crate builds, plus the README and LICENSE/COPYING files of the crate's directory (else the workspace root), and `checksums.txt` (`sha256sum -c` format). The version is the one in `Cargo.toml`, which the release has set: `env!("CARGO_PKG_VERSION")` is the tag's version. Each app of a workspace is its own asset set, named by `product` (default: the project name). The result also feeds the package manager manifests, deb and rpm, npm, PyPI, NuGet and RubyGems packages, exactly as a Go app's does. The checks run in a dry run (`would attach dist/release/cli/cli_0.1.0_linux_amd64.zip, dist/release/cli/checksums.txt`); nothing is built. |
+| Platforms this machine cannot build | This machine builds its own platform, the other Windows or Mac processor, and the other Linux processor when a linker is available (`aarch64-linux-gnu-gcc` or `x86_64-linux-gnu-gcc` on PATH, `CARGO_TARGET_<TRIPLE>_LINKER`, or a `linker` in `[target.<triple>]` of `.cargo/config.toml`). Anything else stops the release: `this machine (linux/amd64) cannot build windows/amd64: a Rust program is built on the system it is for. Mark the app native ...`; a Rust target `rustup` has not installed: `the Rust target x86_64-apple-darwin is not installed: run rustup target add x86_64-apple-darwin`; a missing linker: `needs a linker for it: install aarch64-linux-gnu-gcc (apt install gcc-aarch64-linux-gnu), or set CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER, or ... marking the app native`. |
+| Native apps | `[package.metadata.smith] native = true` in the app's `Cargo.toml` tags it `native`: `smith ci verify` leaves it to the native jobs, and each `smith ci native` runner (`ubuntu-latest`, `windows-latest`, `macos-latest`; `[ci] native_runners` adds others, such as `ubuntu-24.04-arm`) builds only its own platform and attaches `<asset>.zip` and `<asset>.zip.sha256` to the GitHub Release. This is how all six platforms are released from GitHub's runners. No combined `checksums.txt`, manifests or registry packages for a native app. |
 | Registry | crates.io only. There is no setting for another registry. `published` reads the newest stable version from `https://crates.io/api/v1/crates/<crate>`. |
 | Credentials | `CARGO_REGISTRY_TOKEN` (a crates.io API token that can publish the workspace's crates), listed as required when any crate is a package. |
 | Dry run | `smith release --dry-run` runs `cargo publish -p <crate> --allow-dirty --dry-run` for each package crate, so cargo does package, verify and contact crates.io for the index ("Updating crates.io index"); it does not upload. The manifest still holds `0.0.0` at that point. |
@@ -211,6 +216,8 @@ warning: aborting upload due to dry run
 cargo's output goes to stderr in both the text and the `--json` run; the JSON reports `"tag": "kit@0.1.0"`, `"registry": "crates.io"`, `"published": false`.
 
 ## CI
+
+For an app with a release section that is not native, the Rust toolchain step also installs the targets the Linux release runner can cross-compile (`targets: 'aarch64-unknown-linux-gnu'` for `linux/arm64`; the `rustup` install adds `--target`), and `smith ci setup` installs the `gcc-aarch64-linux-gnu` linker there (a non-blocking step that does nothing outside Linux). A native app adds nothing: its runner builds for itself.
 
 Real output of `smith ci generate` (GitHub):
 
@@ -251,6 +258,12 @@ Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the work
 | `the root Cargo.toml is valid TOML` | it does not parse |
 | `workspace member <path> exists` | a (non-glob) `members` entry has no `Cargo.toml`; remedy: remove it from `members` |
 | `the Cargo workspace lists <dir>` | a crate directory is not in `members` (a glob member matches), so `cargo -p` cannot find it |
+| `<app> releases for <platform>` | a platform in `[projects.<app>.release]` has no Rust target (anything but the six above); remedy: change `platforms` |
+| `<app> can build the <platform> archive here` | the platform is of another operating system than this machine's and the app is not native; remedy: `native = true` under `[package.metadata.smith]` |
+| `<app> has a linker for <platform>` | a Linux platform of the other processor and no cross linker; remedy: `apt install gcc-aarch64-linux-gnu`, or set `CARGO_TARGET_<TRIPLE>_LINKER`, or mark the app native |
+| `the Rust target <triple> is installed for <app>` | `rustup target list --installed` lacks it; fix: `rustup target add <triple>` (asked about, never applied by `--yes`). Not checked when `rustup` is absent. |
+
+These four appear only for an app with a release section; a native app is checked for its platform names only.
 
 All passed in the test run (`21 passed, 0 failed`). Only the version check has a `--fix`, and it runs `rustup`, so it is asked about, never applied by `--yes`.
 
@@ -263,7 +276,7 @@ Removal: `smith remove <project>` deletes the directory and takes its entry out 
 - `cargo` (with `rustc`, `clippy`, `rustfmt`) on PATH. Network for the first `cargo fetch` and for `release --dry-run`.
 - A root workspace `Cargo.toml` is required. A repository whose single root `Cargo.toml` is a crate is not a smith project (and `smith add` refuses to turn it into a workspace for you).
 - The root `Cargo.toml` is yours after the first write; smith edits only the `members` array and, at release time, the version lines.
-- `build` is a debug, uncached build with no declared outputs; there is no release build task and no Rust release assets.
+- `build` is a debug, uncached build with no declared outputs; there is no release build task. Release archives are built by `smith release` (zip only, not `.tar.gz`: the npm, PyPI, NuGet and package manager steps read zips) and by the native jobs.
 - No vulnerability audit by default (no `cargo audit`), no private cargo registries, no dependency management through smith.
 
 ## Verified

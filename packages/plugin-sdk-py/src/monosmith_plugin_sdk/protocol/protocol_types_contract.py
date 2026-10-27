@@ -890,6 +890,12 @@ class Project(_ProjectRequired, total=False):
     Registries are the private registries the project installs from and publishes to, from
     smith.toml [registries]; nil means the public ones. Set by the host.
     """
+    releaseAssets: AssetSpec
+    """
+    ReleaseAssets is what an app's release builds, from smith.toml [projects.<project>.release]:
+    the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil
+    for a project that has no release files. Set by the host.
+    """
 
 
 ProjectKind = Literal["app", "lib", "package"]
