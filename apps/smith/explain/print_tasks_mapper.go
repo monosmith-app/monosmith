@@ -96,7 +96,7 @@ func summary(t Task) string {
 func display(f Field) string {
 	switch f.Name {
 	case "command":
-		return expand(f.Value)
+		return longCommand(expand(f.Value))
 	case "dependsOn":
 		parts := strings.Split(f.Value, ", ")
 		for i, p := range parts {
@@ -109,6 +109,16 @@ func display(f Field) string {
 		return strings.Join(parts, ", ")
 	}
 	return f.Value
+}
+
+// longCommand cuts an inline script (a node -e body) to its start: the whole
+// of it is in smith explain --json.
+func longCommand(command string) string {
+	r := []rune(command)
+	if len(r) <= 160 {
+		return command
+	}
+	return string(r[:100]) + fmt.Sprintf(" … (%d characters in all; smith explain --json shows them)", len(r))
 }
 
 // expand writes {smith} as the command people type.

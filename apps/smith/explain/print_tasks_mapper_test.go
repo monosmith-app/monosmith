@@ -53,3 +53,13 @@ func TestPrintTasksExplainsWhatANewcomerCannotRead(t *testing.T) {
 		t.Fatalf("%s", text)
 	}
 }
+
+func TestPrintTasksCutsAnInlineScriptToItsStart(t *testing.T) {
+	tasks := sampleTasks()[:1]
+	tasks[0].Fields[0].Value = "node -e '" + strings.Repeat("x", 400) + "'"
+	var out bytes.Buffer
+	printTasks(&out, tasks)
+	if text := out.String(); strings.Contains(text, strings.Repeat("x", 150)) || !strings.Contains(text, "characters in all") {
+		t.Fatalf("%s", text)
+	}
+}
