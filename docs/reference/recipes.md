@@ -199,8 +199,8 @@ structure = "vertical-slices"
 language = "dotnet"
 structure = "vertical-slices"
 
-[when.language.csharp.settings.dotnet]
-target_framework = "net10.0"
+[when.language.csharp.settings.docker]
+context = "services/api"
 
 [when.language.csharp.when.kind.service.use]
 deploy = "docker"

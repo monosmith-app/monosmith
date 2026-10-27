@@ -114,14 +114,15 @@ registry = "public-npm"               # this package publishes here instead of [
 registry = "none"                     # tag it and create its GitHub Release, publish it to no registry (a registry that builds from the tag, such as JitPack); no credentials are asked for
 bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0, because JitPack uses the tag name as the version; one project only, not with tag_prefix
 
-[projects.sdk.settings.dotnet]        # a plugin's settings for this project, by plugin name; written from a recipe's settings
-target_framework = "net10.0"
+[projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
+context = "services/api"
 
 [registries.libs]                     # a private registry (below)
 auth = "azure-artifacts"              # or "github-packages", or "token" with token_env
 npm = "https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/"
 
 [conventions.vertical-slices]         # apply a convention (docs/reference/conventions.md)
+# a convention takes only the keys shown here; an external plugin's own settings go in [projects.<p>.settings.<plugin>]
 languages = ["go"]                    # default: every language it supports
 exclude = ["legacy"]                  # projects it leaves alone
 

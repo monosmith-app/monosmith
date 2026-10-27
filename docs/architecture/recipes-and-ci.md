@@ -129,8 +129,8 @@ lint = "ruff"
 language = "dotnet"
 test = "xunit"
 
-[when.language.csharp.settings.dotnet]
-target_framework = "net10.0"
+[when.language.csharp.settings.docker]
+context = "services/api"
 
 # Only for a C# service.
 [when.language.csharp.when.kind.service.use]

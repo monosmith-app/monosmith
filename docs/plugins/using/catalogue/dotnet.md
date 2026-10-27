@@ -144,7 +144,7 @@ Wrote 6 file(s):
 | env | `NUGET_API_KEY` | key for `dotnet nuget push` | `releasing/release_project_use_case.go` |
 | env | `NUGET_SOURCE` | push to another source instead of `https://api.nuget.org/v3/index.json` | same |
 
-The plugin reads no `[projects.<p>.settings.dotnet]` keys. `configuration.md` shows `[projects.sdk.settings.dotnet] target_framework = "net10.0"` as an example, and `smith recipe check` accepts it, but nothing in `libs/plugin-dotnet` reads project or generate settings; the target framework of new projects is the constant `net10.0`. (Contrast with `NUGET_PUSH_URL`, which belongs to the separate app-as-tool release, see [releasing](../../../reference/releasing.md).)
+The plugin reads no `[projects.<p>.settings.dotnet]` keys. `smith recipe check` accepts `[projects.<p>.settings.dotnet] target_framework = "net10.0"` (older docs showed it), but nothing in `libs/plugin-dotnet` reads project or generate settings; the target framework of new projects is the constant `net10.0`. (Contrast with `NUGET_PUSH_URL`, which belongs to the separate app-as-tool release, see [releasing](../../../reference/releasing.md).)
 
 ## Toolchain
 
