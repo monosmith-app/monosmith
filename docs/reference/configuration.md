@@ -443,8 +443,9 @@ pull requests; an app's `package` task does by default, `verify = false` turns
 it off), and `serve`, `serve_url` and `serve_timeout`, which start an app around
 the task ([Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task)).
 
-There is exactly one precedence rule: **plugin → `[tasks.<task>]` →
-`[projects.<name>.tasks.<task>]`**, later wins, field by field. To see the
+There is exactly one precedence rule: **plugin → `[tasks.<task>]` → matching
+`[[task_groups]]` (in file order) → `[projects.<name>.tasks.<task>]`**, later
+wins, field by field. See [Task groups](#task-groups) for the third layer. To see the
 result and where each value came from:
 
 ```sh
@@ -469,6 +470,56 @@ stays, because `e2e` cannot run without it; `smith explain` shows it as
 dependency a plugin gave the task and the override leaves out (`build`,
 `^build`) is gone. `smith doctor` names each one as a warning, so the drop is
 deliberate rather than silent.
+
+## Task groups
+
+When several projects need the same overrides (every Node library builds into
+`dist`, tests need the same variable), state them once, for the group, instead
+of once per project:
+
+```toml
+# every Node library
+[[task_groups]]
+select = ["lang:node", "kind:lib"]
+
+[task_groups.tasks.build]
+outputs = ["dist"]
+
+[task_groups.tasks.test]
+depends_on = ["^build", "logger:build"]
+env = { TS_NODE_COMPILER_OPTIONS = '{"module":"commonjs"}' }
+
+[task_groups.tasks.typecheck]
+depends_on = ["^build", "build", "^typecheck"]
+
+# one library uses all of that except for its test task
+[projects.parser.tasks.test]
+depends_on = ["^build"]
+```
+
+`select` lists selectors, written the way `--projects` and `[boundaries]` write
+them: a project name, a glob over names or folders (`libs/*`), `kind:app`,
+`kind:lib`, `kind:package`, `lang:<language>` or `tag:<tag>`. A project is in
+the group when it matches **every** selector (add a second group for "or").
+A group sets the same fields as `[tasks.<task>]`, and changes only tasks the
+project already has.
+
+- Groups apply in the order of the file. When two groups match a project and
+  set the same field of the same task, the later one wins; fields only one of
+  them sets are kept.
+- A project's own `[projects.<name>.tasks.<task>]` wins over every group,
+  field by field: `parser` above keeps the group's `build` and `typecheck`, and
+  its `test` takes its own `depends_on` and the group's `env`.
+- `tag:` selectors see the tags set in `[projects.<name>] tags`.
+- `smith explain parser:test` says where each value came from, for example
+  `from smith.toml [[task_groups]] select = ["lang:node", "kind:lib"]`.
+- Cache keys follow the resolved task, so a change in a group re-runs exactly
+  the tasks it changes.
+- `smith.toml` is rejected when a group has no `select`, an empty selector or
+  an unknown `kind:`, or sets no task. `smith doctor` warns about a group that
+  matches no project.
+- The `depends_on` rules above apply unchanged: a group's list replaces the
+  plugin's, and the dependencies it leaves out are named by `smith doctor`.
 
 ## A project's release settings
 

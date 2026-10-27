@@ -215,6 +215,9 @@ func Validate(cfg *Config) error {
 	if err := validateBoundaries(cfg); err != nil {
 		return err
 	}
+	if err := validateTaskGroups(cfg); err != nil {
+		return err
+	}
 	if err := validateRegistries(cfg); err != nil {
 		return err
 	}

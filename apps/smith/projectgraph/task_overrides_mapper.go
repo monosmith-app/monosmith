@@ -67,13 +67,14 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		sort.Strings(p.Tags)
 		p.BareTags = po.BareTags
 		p.Release = po.Release
-		p.ReleaseAssets =p.AssetSpec()
+		p.ReleaseAssets = p.AssetSpec()
 		if po.SplitRepo != "" {
 			if err := splitrepo.Valid(po.SplitRepo); err != nil {
 				return fmt.Errorf("smith.toml [projects.%s]: %w", p.Name, err)
 			}
 			p.SplitRepo = po.SplitRepo
 		}
+		p.applyTaskGroups(cfg)
 		taskNames := make([]string, 0, len(po.Tasks))
 		for name := range po.Tasks {
 			taskNames = append(taskNames, name)
@@ -88,6 +89,8 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 			p.Tasks[name] = t
 			p.override(name, o, fmt.Sprintf("smith.toml [projects.%s.tasks.%s]", p.Name, name))
 		}
+	} else {
+		p.applyTaskGroups(cfg)
 	}
 	return nil
 }
