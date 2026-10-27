@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/linting"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/testrunning"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/typechecking"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/pelletier/go-toml/v2"
@@ -47,7 +49,12 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		sort.Strings(imports)
 		importName := ImportName(py.Project.Name)
 		kind := projectkind.Resolve(py.Tool.Smith.Kind, root, protocol.ProjectLib)
-		ruffArgs, _, err := linting.Args(workspaceRoot, root)
+		var args ToolArgs
+		if args.Ruff, _, err = linting.Args(workspaceRoot, root); err == nil {
+			if args.Mypy, _, err = typechecking.Args(workspaceRoot, root); err == nil {
+				args.Pytest, _, err = testrunning.Args(workspaceRoot, root)
+			}
+		}
 		if err != nil {
 			return result, fmt.Errorf("%s: %w", manifest, err)
 		}
@@ -61,7 +68,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     dedupe(imports),
 			Version:     py.Project.Version,
 			Description: strings.TrimSpace(py.Project.Description),
-			Tasks:       Tasks(root, kind, importName, py.Tool.Mypy != nil, ruffArgs),
+			Tasks:       Tasks(root, kind, importName, args),
 		})
 	}
 	result.SetToolchain(func() string { return pythonToolchain(workspaceRoot) })

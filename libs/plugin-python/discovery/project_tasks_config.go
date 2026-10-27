@@ -1,31 +1,45 @@
 package discovery
 
 import (
+	"slices"
+
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tooldefaults"
 )
 
-var inputs = []string{"**/*", "{workspaceRoot}/requirements-dev.txt", "{workspaceRoot}/ruff.toml", "{workspaceRoot}/.ruff.toml", "{workspaceRoot}/pyproject.toml"}
+var inputs = []string{
+	"**/*", "{workspaceRoot}/requirements-dev.txt",
+	"{workspaceRoot}/ruff.toml", "{workspaceRoot}/.ruff.toml",
+	"{workspaceRoot}/mypy.ini", "{workspaceRoot}/.mypy.ini",
+	"{workspaceRoot}/pytest.ini", "{workspaceRoot}/.pytest.ini",
+	"{workspaceRoot}/pyproject.toml", "{workspaceRoot}/setup.cfg", "{workspaceRoot}/tox.ini",
+}
+
+// ToolArgs are the arguments each tool takes from the plugin's defaults slices
+// (linting, typechecking, testing): --config and the like with smith's default
+// file, or nothing when the repository configures the tool itself.
+type ToolArgs struct {
+	Ruff, Mypy, Pytest []string
+}
 
 // Tasks returns the tasks of a Python project. Every project is installed in
-// the venv in editable mode, so none needs another project built first. A
-// project that configures mypy ([tool.mypy]) is also type-checked.
-//
-// ruffArgs come from the linting slice: --config with smith's default, or
-// nothing when the repository configures ruff itself.
-func Tasks(root string, kind protocol.ProjectKind, importName string, mypy bool, ruffArgs []string) map[string]protocol.Task {
+// the venv in editable mode, so none needs another project built first. Lint,
+// typecheck and test run on smith's default configuration unless the repository
+// configures the tool; the default's content is an input of the task.
+func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolArgs) map[string]protocol.Task {
 	py := venv.Interpreter()
-	lint := append([]string{py, "-m", "ruff", "check"}, ruffArgs...)
-	lintDescription := "ruff check (the repository's ruff config)"
-	if len(ruffArgs) > 0 {
-		lintDescription = "ruff check (smith's default config)"
+	task := func(command []string, tool string, toolArgs []string) protocol.Task {
+		description := tool + " (the repository's config)"
+		if len(toolArgs) > 0 {
+			description = tool + " (smith's default config)"
+		}
+		return protocol.Task{Command: command, Inputs: tooldefaults.WithDefaultInputs(inputs, toolArgs), Cache: true, Description: description}
 	}
 	tasks := map[string]protocol.Task{
-		"lint": {Command: append(lint, "."), Inputs: inputs, Cache: true, Description: lintDescription},
-		"test": {Command: []string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, Inputs: inputs, Cache: true, Description: "pytest"},
-	}
-	if mypy {
-		tasks["typecheck"] = protocol.Task{Command: []string{py, "-m", "mypy", "."}, Inputs: inputs, Cache: true, Description: "mypy"}
+		"lint":      task(slices.Concat([]string{py, "-m", "ruff", "check"}, args.Ruff, []string{"."}), "ruff check", args.Ruff),
+		"typecheck": task(slices.Concat([]string{py, "-m", "mypy"}, args.Mypy, []string{"."}), "mypy", args.Mypy),
+		"test":      task(slices.Concat([]string{py, "-m", "pytest", "-q", "-p", "no:cacheprovider"}, args.Pytest), "pytest", args.Pytest),
 	}
 	switch kind {
 	case protocol.ProjectPackage:

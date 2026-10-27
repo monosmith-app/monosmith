@@ -1,6 +1,6 @@
 # The python plugin
 
-The python plugin makes every `pyproject.toml` that has a `[project]` table a smith project, and gives all of them one shared virtual environment. It creates `.venv` at the workspace root, installs every project into it in editable mode (so projects can import each other), runs Ruff, pytest and (when you configure it) mypy through that interpreter, builds wheels and sdists with PyPA `build`, and publishes packages to PyPI or a private index with twine. It is a built-in plugin: no installation, no setup beyond having a Python on the machine.
+The python plugin makes every `pyproject.toml` that has a `[project]` table a smith project, and gives all of them one shared virtual environment. It creates `.venv` at the workspace root, installs every project into it in editable mode (so projects can import each other), runs Ruff, mypy and pytest through that interpreter, on smith's default configuration unless the repository has its own, builds wheels and sdists with PyPA `build`, and publishes packages to PyPI or a private index with twine. It is a built-in plugin: no installation, no setup beyond having a Python on the machine.
 
 ## At a glance
 
@@ -47,13 +47,13 @@ The toolchain probe asks `.venv`'s interpreter first, since that is the Python t
 
 ## Tasks
 
-All tasks run in the project directory with the venv interpreter, written `{workspaceRoot}/.venv/Scripts/python.exe` on Windows and `{workspaceRoot}/.venv/bin/python` elsewhere (smith expands the placeholder at run time, so the cache key is the same on every machine). Every project is installed editable, so no task depends on another project's build. Inputs of the cached tasks: `**/*`, `{workspaceRoot}/requirements-dev.txt`, `{workspaceRoot}/ruff.toml`.
+All tasks run in the project directory with the venv interpreter, written `{workspaceRoot}/.venv/Scripts/python.exe` on Windows and `{workspaceRoot}/.venv/bin/python` elsewhere (smith expands the placeholder at run time, so the cache key is the same on every machine). Every project is installed editable, so no task depends on another project's build. Inputs of the cached tasks: `**/*`, `{workspaceRoot}/requirements-dev.txt`, the workspace-root tool configuration (`ruff.toml`, `mypy.ini`, `pytest.ini`, `pyproject.toml`, `setup.cfg`, `tox.ini`) and, when smith's default applies, that default's file under `.smith/defaults/`, so editing a default reruns the task.
 
 | Task | Command (after `<py>`) | Appears for | Cached | Outputs |
 |---|---|---|---|---|
-| `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .` (no `--config` when the repository configures ruff, see [Lint configuration](#lint-configuration)) | every project | yes | none |
-| `test` | `-m pytest -q -p no:cacheprovider` | every project | yes | none |
-| `typecheck` | `-m mypy .` | a project whose `pyproject.toml` has a `[tool.mypy]` table | yes | none |
+| `lint` | `-m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .` (no `--config` when the repository configures ruff, see [Tool configuration](#tool-configuration)) | every project | yes | none |
+| `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=.` (no `-c` when the repository configures pytest) | every project | yes | none |
+| `typecheck` | `-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .` (no `--config-file` when the repository configures mypy) | every project | yes | none |
 | `build` | `-m build --outdir {workspaceRoot}/dist/<project dir> .` | `package` only | yes | `dist/<project dir>` (wheel and sdist) |
 | `start` | `-m <import name>` | `app` only | no | none |
 | `package` | `-m build --wheel --outdir {workspaceRoot}/dist/drop .` | `app` only | no | none declared; the wheel lands in `dist/drop` for `smith ci pack` |
@@ -66,12 +66,13 @@ Real output (project names from the test workspace `py-demo`):
 
 ```
 $ smith explain web
-web has 5 tasks:
+web has 6 tasks:
   lint         {workspaceRoot}/.venv/Scripts/python.exe -m ruff check --config {workspaceRoot}/.smith/defaults/ruff.toml .  (cached, after slice-check)
   package      {workspaceRoot}/.venv/Scripts/python.exe -m build --wheel --outdir {workspaceRo...
   slice-check  smith slices check --lang python .  (cached)
   start        {workspaceRoot}/.venv/Scripts/python.exe -m py_demo_web
-  test         {workspaceRoot}/.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider  (cached)
+  test         {workspaceRoot}/.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=.  (cached)
+  typecheck    {workspaceRoot}/.venv/Scripts/python.exe -m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .  (cached)
 
 $ smith explain sdk:build
 sdk:build — Build the wheel and sdist into dist/packages/sdk/
@@ -83,18 +84,26 @@ sdk:build — Build the wheel and sdist into dist/packages/sdk/
   env        —
   cache      true
 
-$ smith run typecheck       # after adding [tool.mypy] strict = true to libs/util/pyproject.toml
+$ smith run typecheck       # after adding [tool.mypy] strict = true to libs/util/pyproject.toml, which replaces smith's default
 util:typecheck ▶ {workspaceRoot}/.venv/Scripts/python.exe -m mypy .
 util:typecheck │ Success: no issues found in 5 source files
 ```
 
 Running the build leaves `build/` and `<name>.egg-info` directories in the project source tree (setuptools's own); `smith new` writes `*.egg-info/` into `.gitignore`, and the build output itself goes to `dist/`.
 
-### Lint configuration
+### Tool configuration
 
-smith owns the lint of a Python repository, so a new project carries no ruff configuration. When ruff finds none for a project (no `ruff.toml` or `.ruff.toml` in the project or a directory above it, up to the workspace root, and no `[tool.ruff]` table in a `pyproject.toml` there), smith writes its default to `.smith/defaults/ruff.toml` (git ignores `.smith/`; the file is rewritten whenever it differs from the one in the smith binary) and passes it with `--config`. The default is `line-length = 100`, `target-version = "py312"` and the rules `E F I UP B N`.
+smith owns the lint, type check and tests of a Python repository, so a new project carries no ruff, mypy or pytest configuration. Each tool has its own default, resolved the same way: the next two paragraphs describe lint, the table after them all three. When ruff finds none for a project (no `ruff.toml` or `.ruff.toml` in the project or a directory above it, up to the workspace root, and no `[tool.ruff]` table in a `pyproject.toml` there), smith writes its default to `.smith/defaults/ruff.toml` (git ignores `.smith/`; the file is rewritten whenever it differs from the one in the smith binary) and passes it with `--config`. The default is `line-length = 100`, `target-version = "py312"` and the rules `E F I UP B N`.
 
-Your own file is the override and replaces the default whole: create `ruff.toml` at the workspace root (shared by every project) or a `[tool.ruff]` table in a project's `pyproject.toml`. When one exists smith passes no `--config` and ruff finds it, as it would without smith. To start from the default, copy `.smith/defaults/ruff.toml` (it exists after any `smith run lint`). pytest needs no configuration: smith runs it as `-m pytest -q -p no:cacheprovider` and a `[tool.pytest.ini_options]` table in the project's `pyproject.toml` still applies.
+Your own file is the override and replaces the default whole: create `ruff.toml` at the workspace root (shared by every project) or a `[tool.ruff]` table in a project's `pyproject.toml`. When one exists smith passes no `--config` and ruff finds it, as it would without smith. To start from the default, copy `.smith/defaults/ruff.toml` (it exists after any `smith run lint`).
+
+| Tool | Default file | Passed as | Default content | The repository's override (the nearest one up to the workspace root wins and replaces the default whole) |
+|---|---|---|---|---|
+| ruff | `.smith/defaults/ruff.toml` | `--config` | line length 100, `py312`, rules `E F I UP B N` | `ruff.toml`, `.ruff.toml`, `[tool.ruff]` in `pyproject.toml` |
+| mypy | `.smith/defaults/mypy.ini` | `--config-file` | `python_version = 3.12`, `check_untyped_defs`, `ignore_missing_imports`, `explicit_package_bases`, warnings for redundant casts and unused ignores; no annotations required | `mypy.ini`, `.mypy.ini`, `[tool.mypy]` in `pyproject.toml`, `[mypy]` in `setup.cfg` |
+| pytest | `.smith/defaults/pytest.ini` | `-c` with `--rootdir=.`, so the project stays pytest's root | `-ra --strict-markers`, `xfail_strict`, `testpaths = tests` | `pytest.ini`, `.pytest.ini`, `[tool.pytest]` or `[tool.pytest.ini_options]` in `pyproject.toml`, `[pytest]` in `tox.ini`, `[tool:pytest]` in `setup.cfg` |
+
+Every default is written from the smith binary into `.smith/defaults/` (ignored by version control) when it differs, and its content is an input of the task, so editing it, or upgrading smith to a release that changes it, reruns the task.
 
 ## Creating a project
 
@@ -161,7 +170,7 @@ The plugin has no `[projects.<p>.settings.python]` keys. What it reads:
 | Where | Key | Effect | Read in |
 |---|---|---|---|
 | `pyproject.toml` | `[tool.smith] kind`, `stack` | kind and stack | `discovery/pyproject_contract.go` |
-| `pyproject.toml` | `[tool.mypy]` (a table with at least one key; tried with `strict = true`) | adds the `typecheck` task | `discovery/discover_projects_use_case.go` |
+| `pyproject.toml`, `mypy.ini`, `.mypy.ini`, `setup.cfg` | `[tool.mypy]`, `[mypy]` | the repository's mypy configuration: smith passes no `--config-file` | `typechecking/mypy_args_use_case.go` |
 | `pyproject.toml` | `[project] version`, `description`, `dependencies` | version, description, graph edges | same |
 | `requirements-dev.txt`, `ruff.toml`, `.ruff.toml`, root `pyproject.toml` | whole file | part of every cached task's inputs; `ruff.toml`, `.ruff.toml` and a `[tool.ruff]` table are the repository's ruff override (smith creates none); edit `requirements-dev.txt` freely, smith only creates it when missing | `discovery/project_tasks_config.go` |
 | `smith.toml` | `[registries.<name>] pypi`, `pypi_upload`, `auth`, `token_env` plus `[workspace] registry`, `[release] registry`, `[projects.<p>] registry` | private index for installs and for publishing | `registries/`, `releasing/upload_target_policy.go` |
