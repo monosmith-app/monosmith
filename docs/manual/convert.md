@@ -170,18 +170,14 @@ Nothing of the old tooling is left to remove.
 
 ● Install the packages and refresh package-lock.json, then check the workspace
   step 1: install the packages and refresh package-lock.json
-          $ npm install --no-audit --no-fund
-  step 2: install again, so the lockfile settles (npm can leave it one step behind)
-          $ npm install --no-audit --no-fund
-  step 3: check that npm ci accepts the lockfile
-          $ npm ci --dry-run --ignore-scripts --no-audit --no-fund
-  step 4: build every project
+          $ smith npm-lockfile
+  step 2: build every project
           $ smith run build
-  step 5: run every project's tests
+  step 3: run every project's tests
           $ smith run test
-  step 6: lint every project
+  step 4: lint every project
           $ smith run lint
-  step 7: check the workspace with doctor
+  step 5: check the workspace with doctor
           $ smith doctor
 
 Nothing changed (dry run). To apply, with these choices:

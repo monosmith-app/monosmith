@@ -1,7 +1,6 @@
 package adoption
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
+	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
 )
 
 // CompleteWorkspace does the mechanical steps smith doctor would otherwise
@@ -57,27 +56,33 @@ func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 			return err
 		}
 	}
-	if install {
-		var log bytes.Buffer
-		cmd := exec.Command("npm", "install")
-		cmd.Dir, cmd.Stdout, cmd.Stderr = r.Root, &log, &log
-		fmt.Fprintln(out, "  npm install ...")
-		reportInstall(out, log.String(), cmd.Run())
-	}
+	settleLockfile(lockfilesync.Options{Root: r.Root, Out: out, Create: install, LockOnly: !install}, install || changed, out)
 	return nil
 }
 
-// reportInstall tells how npm install went. npm's own warnings (engines,
-// deprecations) are folded into one line each, as they are not smith's
-// result; the whole output is shown only when the install failed.
-func reportInstall(out io.Writer, log string, err error) {
-	if err != nil {
-		_, _ = io.WriteString(out, log)
-		fmt.Fprintf(out, "  not done: npm install failed (%v); run it yourself\n", err)
+// settleLockfile leaves package-lock.json in step with the package.json that
+// adoption just edited, when run is true: a full npm install when the person
+// asked for one (--install), otherwise only the lockfile, and only when
+// there is one. A failure is told, not returned: the adoption itself is done.
+func settleLockfile(o lockfilesync.Options, run bool, out io.Writer) {
+	if !run {
 		return
 	}
-	fmt.Fprintln(out, "  npm install done")
-	for _, note := range toolrun.FoldWarnings(log, "run npm install to see them") {
+	if o.Create {
+		fmt.Fprintln(out, "  npm install ...")
+	}
+	res, err := lockfilesync.Sync(o)
+	switch {
+	case err != nil:
+		fmt.Fprintf(out, "  not done: package-lock.json is not in step with package.json (%v)\n", err)
+	case res.Skipped != "":
+		return
+	case o.Create:
+		fmt.Fprintln(out, "  npm install done")
+	default:
+		fmt.Fprintln(out, "  package-lock.json updated for the new \"workspaces\"")
+	}
+	for _, note := range res.Notes {
 		fmt.Fprintf(out, "    note: %s\n", note)
 	}
 }

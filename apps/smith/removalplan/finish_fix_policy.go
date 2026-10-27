@@ -34,9 +34,10 @@ func FinishBuildAndTest(smith string) doctorfix.Planned {
 
 func finish(smith string, verify, lint bool) doctorfix.Planned {
 	steps := []protocol.FixStep{
-		{Description: "install the packages and refresh package-lock.json", Argv: []string{"npm", "install", "--no-audit", "--no-fund"}},
-		{Description: "install again so the lockfile settles (npm can leave it one step behind)", Argv: []string{"npm", "install", "--no-audit", "--no-fund"}},
-		{Description: "check that a clean install from the lockfile works", Argv: []string{"npm", "ci", "--dry-run", "--ignore-scripts", "--no-audit", "--no-fund"}},
+		// One step: smith installs, checks that npm ci accepts the lockfile,
+		// installs again when it does not, and rebuilds a git-tracked lockfile
+		// as a last resort (lockfilesync).
+		{Description: "install the packages and refresh package-lock.json", Argv: []string{smith, "npm-lockfile"}},
 	}
 	description := "Install the packages and refresh package-lock.json"
 	if verify {
