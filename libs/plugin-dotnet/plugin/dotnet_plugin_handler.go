@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
@@ -59,6 +60,31 @@ func (d *Dotnet) Published(params protocol.PublishedParams) (protocol.PublishedR
 // CI implements serve.CIContributor.
 func (d *Dotnet) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(d.root, params), nil
+}
+
+// Install implements serve.DependencyManager.
+func (d *Dotnet) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
+	return dependencies.Install(d.root, params)
+}
+
+// Uninstall implements serve.DependencyManager.
+func (d *Dotnet) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
+	return dependencies.Uninstall(d.root, params)
+}
+
+// Declared implements serve.DeclarationEditor.
+func (d *Dotnet) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(d.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (d *Dotnet) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(d.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (d *Dotnet) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(d.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.
