@@ -113,7 +113,7 @@ To change any of them for one project, or for all, use `[projects.<name>.tasks.<
 
 smith owns the lint of a Go repository, so the repository need not carry a linter configuration. When no `.golangci.yml`, `.golangci.yaml`, `.golangci.toml` or `.golangci.json` exists in the module or in a directory above it (up to the workspace root), smith writes its default to `.smith/defaults/golangci.yml` (git ignores `.smith/`; the file is rewritten whenever it differs from the one in the smith binary) and passes it with `--config`. The default is golangci-lint v2 with its standard linters and `errcheck` told that `fmt.Fprint`, `fmt.Fprintf` and `fmt.Fprintln` need no error check.
 
-Your own file is the override and replaces the default whole, because golangci-lint has no way to extend another file. When one exists smith passes no `--config` and golangci-lint finds it, as it would without smith. To start from the default, copy `.smith/defaults/golangci.yml` (it exists after any `smith run lint`) to `.golangci.yml` in the repository root and edit it. The workspace-root file is an input of the cached task, so editing it reruns the lint.
+Your own file is the override and replaces the default whole, because golangci-lint has no way to extend another file. When one exists smith passes no `--config` and golangci-lint finds it, as it would without smith. To start from the default, run [`smith eject golangci-lint`](../../../manual/eject.md): it copies the default to `.golangci.yml` in the workspace root, to edit. The workspace-root file is an input of the cached task, so editing it reruns the lint.
 
 ## Creating a project
 

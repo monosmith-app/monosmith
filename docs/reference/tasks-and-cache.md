@@ -53,6 +53,9 @@ works the same way through `@monosmith/eslint-config`. See
 [Go](../plugins/using/catalogue/go.md#lint-configuration) and
 [Python](../plugins/using/catalogue/python.md#tool-configuration).
 
+To own a default, [`smith eject <tool>`](../manual/eject.md) copies it into the
+workspace root as the file the tool reads; `smith eject` alone lists what applies.
+
 ### deps-check
 
 A Node package (`kind = package`) gets a `deps-check` task, and its `lint` (or,

@@ -315,6 +315,22 @@ Usage: `smith typecheck [project]... [flags]`
 
 <!-- smith:end typecheck -->
 
+### smith eject
+
+[Manual page](../manual/eject.md)
+
+<!-- smith:begin eject -->
+Copy smith's default configuration of a tool into the repository, to own and edit it
+
+Usage: `smith eject [tool...] [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--all` | eject every default that applies | off |
+| `--force` | replace a file that exists already | off |
+
+<!-- smith:end eject -->
+
 ### smith dev
 
 [Manual page](../manual/dev.md)

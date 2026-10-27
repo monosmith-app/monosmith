@@ -23,7 +23,7 @@ func Command(workspaceRoot, projectRoot string) (Lint, error) {
 	if tooldefaults.FindConfig(workspaceRoot, projectRoot, tooldefaults.HasFile(configNames...)) {
 		return Lint{Command: base, Description: "golangci-lint run (the repository's .golangci config)"}, nil
 	}
-	rel, err := tooldefaults.WriteDefault(workspaceRoot, DefaultFile, defaultConfig)
+	rel, err := tooldefaults.WriteDefault(workspaceRoot, tooldefaults.GolangciLint.File, defaultConfig)
 	if err != nil {
 		return Lint{}, err
 	}

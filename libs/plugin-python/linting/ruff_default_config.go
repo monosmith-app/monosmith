@@ -1,8 +1,5 @@
 package linting
 
-// DefaultFile is the name smith gives its default under .smith/defaults/.
-const DefaultFile = "ruff.toml"
-
 // defaultConfig is what ruff runs with when the repository configures none.
 // A repository's ruff.toml (or [tool.ruff] table) replaces it whole; it can
 // start from this text, or point `extend` at another file.
