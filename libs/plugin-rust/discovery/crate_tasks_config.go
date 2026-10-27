@@ -7,6 +7,11 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tooldefaults"
 )
 
+// NativeTag marks a crate built on each operating system
+// ([package.metadata.smith] native = true): smith ci verify leaves it to the
+// native jobs, which also build its release archive, each for its own system.
+const NativeTag = "native"
+
 // inputs are what a crate's results depend on: its sources and manifest, and
 // the workspace's manifest and lockfile.
 var inputs = []string{"**/*", "!target/**", "{workspaceRoot}/Cargo.toml", "{workspaceRoot}/Cargo.lock"}

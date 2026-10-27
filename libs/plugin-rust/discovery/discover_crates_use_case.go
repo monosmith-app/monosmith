@@ -43,6 +43,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		if err != nil {
 			return result, fmt.Errorf("%s: %w", manifest, err)
 		}
+		var tags []string
+		if crate.Native {
+			tags = append(tags, NativeTag)
+		}
 		result.Projects = append(result.Projects, protocol.Project{
 			Name:        path.Base(root),
 			Root:        root,
@@ -54,6 +58,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Description: crate.Description,
 			Tasks:       Tasks(crate.Name, kind, fmtArgs),
 			Stack:       crate.Stack,
+			Tags:        tags,
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("rustc", "rustc", "--version") })

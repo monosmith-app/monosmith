@@ -55,7 +55,7 @@ func TestRustWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(w.dir, "dist", "cargo")); err != nil {
 		t.Error("the builds are under dist/cargo")
 	}
-	if out := w.smith(true, "doctor"); !strings.Contains(out, "the Cargo workspace lists apps/cli") {
+	if out := w.smith(true, "doctor"); !strings.Contains(out, "the Cargo workspace lists each project") {
 		t.Fatalf("doctor:\n%s", out)
 	}
 	if ci := w.read(".github/workflows/ci.yml"); !strings.Contains(ci, "dtolnay/rust-toolchain") || !strings.Contains(ci, "CARGO_REGISTRY_TOKEN") {

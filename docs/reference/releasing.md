@@ -67,12 +67,50 @@ asset_name = "{product}_{version}_{os}_{arch}.{ext}"
 ```
 
 It is versioned by its tag (`cli@1.2.0`) only. Its plugin builds the release
-assets. Today only the Go plugin builds them: it cross-compiles every platform
-with `CGO_ENABLED=0`, stamps the version into `main.version` (`-ldflags -X`),
-zips each binary and writes `checksums.txt`, all under `dist/release/<app>/`.
+assets, one zip per platform and a `checksums.txt`, all under
+`dist/release/<app>/`. `platforms` are `os/arch` pairs in Go's spelling
+(`linux/amd64`, `windows/arm64`, `darwin/arm64`, the six of the default) whatever
+the language, and `asset_name` names each file the same way.
+
+| Language | What the plugin builds |
+|---|---|
+| Go | Cross-compiles every platform with `CGO_ENABLED=0`, stamps the version into `main.version` (`-ldflags -X`), zips each binary. |
+| Rust | Runs `cargo build --release -p <crate> --target <triple>` per platform (the version is the one in the crate's `Cargo.toml`, which the release has set, so `env!("CARGO_PKG_VERSION")` and `--version` agree with the tag), and zips every program the crate builds with the README and licence files (the crate's, else the workspace's). |
+
 An app in another language with a release section is tagged and gets a GitHub
 Release, without assets. The settings are in
 [Configuration](configuration.md#a-projects-release-settings).
+
+### Cross-building, and apps built on each system
+
+A program is linked against the system it runs on, so one machine builds only
+some platforms. For Rust, the release machine builds its own system and its own
+processor, the other Windows or Mac processor with just the Rust target
+(`rustup target add`), and the other Linux processor once a linker is installed
+(`gcc-aarch64-linux-gnu` for `linux/arm64`; or set the linker in
+`.cargo/config.toml` or `CARGO_TARGET_<TRIPLE>_LINKER`). A platform of another
+operating system is refused, in `smith release --dry-run` too, with the way out:
+
+```
+cli: this machine (linux/amd64) cannot build windows/amd64: a Rust program is built
+on the system it is for. Mark the app native (native = true under
+[package.metadata.smith] in its Cargo.toml) and each runner of `smith ci native`
+builds its own archive
+```
+
+A **native** app is the way to get every platform: `smith ci native` runs a job
+per runner (`ubuntu-latest`, `windows-latest` and `macos-latest` by default,
+`[ci] native_runners` to add `ubuntu-24.04-arm`, `windows-11-arm` or a macOS
+Intel runner for the other processors), each builds only its own platform and
+attaches its zip and a `<zip>.sha256` file to the GitHub Release the release job
+created. Its dry run lists what this machine's native job would attach. A native
+app has no combined `checksums.txt` (builds made on different runners cannot be
+summed in one place), no package manager manifests and no npm, PyPI, NuGet or
+RubyGems packages.
+
+`smith doctor` checks the same things beforehand: every platform has a Rust
+target, the target is installed (the fix runs `rustup target add`), the Linux
+linker is there, and an app that cannot be built here is marked native.
 
 ## Container images
 

@@ -17,6 +17,10 @@ type Crate struct {
 	Description string
 	// Kind and Stack are [package.metadata.smith] kind and stack.
 	Kind, Stack string
+	// Native is [package.metadata.smith] native = true: the crate is built
+	// on each operating system, so its release archives come from a native
+	// job per runner instead of cross-compiling on one.
+	Native bool
 	// PathDependencies are the crates it depends on by path (the workspace's
 	// own), by package name.
 	PathDependencies []string
@@ -32,8 +36,9 @@ type manifest struct {
 		Description any `toml:"description"`
 		Metadata    struct {
 			Smith struct {
-				Kind  string `toml:"kind"`
-				Stack string `toml:"stack"`
+				Kind   string `toml:"kind"`
+				Stack  string `toml:"stack"`
+				Native bool   `toml:"native"`
 			} `toml:"smith"`
 		} `toml:"metadata"`
 	} `toml:"package"`
@@ -61,6 +66,7 @@ func ParseCargo(src []byte) (Crate, error) {
 			c.Description = strings.TrimSpace(d)
 		}
 		c.Kind, c.Stack = m.Package.Metadata.Smith.Kind, m.Package.Metadata.Smith.Stack
+		c.Native = m.Package.Metadata.Smith.Native
 	}
 	if m.Workspace != nil {
 		c.Members = m.Workspace.Members

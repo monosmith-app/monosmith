@@ -61,6 +61,7 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		p.TagPrefixSet = po.TagPrefix != ""
 		p.BareTags = po.BareTags
 		p.Release = po.Release
+		p.ReleaseAssets =p.AssetSpec()
 		if po.SplitRepo != "" {
 			if err := splitrepo.Valid(po.SplitRepo); err != nil {
 				return fmt.Errorf("smith.toml [projects.%s]: %w", p.Name, err)

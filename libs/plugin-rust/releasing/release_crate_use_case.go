@@ -39,10 +39,11 @@ func WriteVersion(workspaceRoot string, params protocol.VersionParams) (protocol
 }
 
 // Publish publishes a package crate to its registry with cargo publish
-// (CARGO_REGISTRY_TOKEN). Apps and libraries are released by their tag.
+// (CARGO_REGISTRY_TOKEN). Apps and libraries are released by their tag; an
+// app with release assets gets an archive per platform instead.
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
 	if params.Assets != nil {
-		return protocol.PublishResult{Skipped: "Rust release assets are not built yet: the app is released by its tag"}, nil
+		return BuildAssets(workspaceRoot, params)
 	}
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil

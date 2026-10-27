@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -51,6 +52,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		})
 	}
 	for _, p := range params.Projects {
+		findings = append(findings, releasing.CheckReleaseTargets(workspaceRoot, p)...)
 		listed := slices.Contains(root.Members, p.Root) || slices.ContainsFunc(root.Members, func(m string) bool {
 			ok, _ := filepath.Match(m, p.Root)
 			return ok

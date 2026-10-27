@@ -61,6 +61,11 @@ type Project struct {
 	// publishes to, from smith.toml [registries]; nil means the public ones.
 	// Set by the host.
 	Registries *Registries `json:"registries,omitempty"`
+	// ReleaseAssets is what an app's release builds, from smith.toml
+	// [projects.<project>.release]: the platforms and file names, so a plugin
+	// can check (doctor) and prepare (CI) for them. Nil for a project that
+	// has no release files. Set by the host.
+	ReleaseAssets *AssetSpec `json:"releaseAssets,omitempty"`
 }
 
 // SetToolchain records the toolchain on every discovered project. The probe

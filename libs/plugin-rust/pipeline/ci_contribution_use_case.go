@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -31,14 +32,21 @@ func Version(workspaceRoot string) string {
 	return RustVersion
 }
 
-// runtime installs Rust with clippy and rustfmt.
-func runtime(version string) protocol.Toolchain {
+// runtime installs Rust with clippy and rustfmt, and the targets the apps'
+// release archives are cross-compiled for.
+func runtime(version string, targets []string) protocol.Toolchain {
+	inputs := []protocol.Input{{Name: "toolchain", Value: version}, {Name: "components", Value: "clippy, rustfmt"}}
+	addTargets := ""
+	if len(targets) > 0 {
+		inputs = append(inputs, protocol.Input{Name: "targets", Value: strings.Join(targets, ", ")})
+		addTargets = " --target " + strings.Join(targets, ",")
+	}
 	return protocol.Toolchain{
 		Name: "rust", Version: version,
-		GitHub: &protocol.ActionStep{Uses: "dtolnay/rust-toolchain@master", Inputs: []protocol.Input{{Name: "toolchain", Value: version}, {Name: "components", Value: "clippy, rustfmt"}}},
+		GitHub: &protocol.ActionStep{Uses: "dtolnay/rust-toolchain@master", Inputs: inputs},
 		// Elsewhere (Azure, GitLab): rustup, then cargo on PATH for this job
 		// and, on Azure, for the steps after it.
-		Install: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain " + version + " --component clippy,rustfmt\n" +
+		Install: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain " + version + " --component clippy,rustfmt" + addTargets + "\n" +
 			"export PATH=\"$HOME/.cargo/bin:$PATH\"\n" +
 			"echo \"##vso[task.prependpath]$HOME/.cargo/bin\"",
 		Devcontainer: &protocol.DevcontainerFeature{ID: "ghcr.io/devcontainers/features/rust:1", Options: map[string]string{"version": version, "profile": "minimal"}},
@@ -51,10 +59,18 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
+	targets, linkerPackages := releaseTargets(params.Projects)
 	result := protocol.CIResult{
-		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
+		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot), targets)},
 		Setup:      []protocol.Step{{Name: "Fetch crates", Command: []string{"cargo", "fetch"}, Blocking: true}},
 		Stores:     []protocol.PackageStore{{Name: "cargo", Path: "~/.cargo/registry", Env: "CARGO_HOME", Files: []string{"**/Cargo.lock"}}},
+	}
+	for _, pkg := range linkerPackages {
+		// Only the Linux runner has apt; the native jobs of other systems skip it.
+		result.Setup = append(result.Setup, protocol.Step{
+			Name:    "Install the " + pkg + " linker",
+			Command: []string{"sh", "-c", "if [ \"$(uname)\" = Linux ]; then sudo apt-get install -y " + pkg + "; fi"},
+		})
 	}
 	if params.Audit.Enabled("rust") {
 		// Opt-in ([ci] audit_policies): cargo-deny's licences and bans (its
