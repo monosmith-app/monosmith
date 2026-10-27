@@ -93,7 +93,7 @@ func summarise(out io.Writer, log *phaseLog, err error, took time.Duration) {
 // (phaseLog.banner); the others have their whole output folded.
 func announces(phase string) bool {
 	switch phase {
-	case "setup", "audit", "verify", "pack":
+	case "setup", "audit", "verify", "pack", "release":
 		return true
 	}
 	return false
@@ -255,18 +255,70 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		if err != nil {
 			return err
 		}
+		projects := len(s.Graph.Projects)
+		var c Contributions
+		if len(plan.Items) == 0 {
+			// Nothing is published, so the plugins can be asked first: fold only
+			// when a post-release step has output to fold.
+			if c, err = Collect(s); err != nil {
+				return err
+			}
+			log.heading("Looking for commits that release (feat, fix, perf or a breaking change) since each project's last tag.")
+			if len(c.PostRelease) > 0 {
+				log.fold()
+			}
+		} else {
+			log.heading(releaseIntro(plan, s.Config.Release.Branch, projects)...)
+			for _, line := range planTable(plan).Text("packages") {
+				log.say("%s", line)
+			}
+			log.fold()
+		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
-		fmt.Fprint(out, report.Markdown())
-		if err != nil {
-			return err
+		var after []stepOutcome
+		if err == nil {
+			// Work plugins want after every push to the release branch, released
+			// or not (a docs-only commit releases nothing).
+			if len(plan.Items) > 0 {
+				c, err = Collect(s)
+			}
+			if err == nil {
+				after, err = runSteps(ctx, s.Root, c.PostRelease, nil, out)
+			}
 		}
-		// Work plugins want after every push to the release branch, released
-		// or not (a docs-only commit releases nothing).
-		c, err := Collect(s)
-		if err != nil {
-			return err
+		log.close()
+		log.markdown = strings.Split(strings.TrimSpace(strings.TrimPrefix(report.Markdown(), "### Release")), "\n")
+		if len(plan.Items) == 0 {
+			log.say("Nothing to release: none of the %s has a releasing commit since its last release.", plural(projects, "project"))
+			log.say("→ commit with a message like \"feat: add search\" or \"fix: handle empty input\"; docs, chore, test and ci commits do not release")
+			log.conclusion = "nothing to release"
+		} else {
+			for _, line := range releaseResultTable(report, log.icons).Text("packages") {
+				log.say("%s", line)
+			}
+			for _, res := range report.Results {
+				for _, image := range res.Images {
+					log.say("Image pushed for %s: %s", res.Project, release.ImageLine(image))
+				}
+				if res.GitHubRelease != "" {
+					log.say("GitHub Release for %s: %s", res.Project, res.GitHubRelease)
+				}
+			}
+			if n := len(report.Unchanged); n > 0 {
+				log.say("Unchanged: %s have no releasing commit.", plural(n, "project"))
+			}
+			if len(after) > 0 {
+				for _, line := range stepTable("After the release", after, log.icons).Text("steps") {
+					log.say("%s", line)
+				}
+			}
+			if err != nil {
+				log.say("→ re-run the release: the packages it finished are kept and the rest resume")
+			} else {
+				log.conclusion = releaseConclusion(report)
+				notice(out, releaseConclusion(report))
+			}
 		}
-		_, err = runSteps(ctx, s.Root, c.PostRelease, nil, out)
 		return err
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
@@ -483,6 +535,13 @@ func annotate(out io.Writer, phase string, err error) {
 		fmt.Fprintf(out, "::error title=smith ci %s::%s\n", phase, msg)
 	case os.Getenv("TF_BUILD") != "":
 		fmt.Fprintf(out, "##vso[task.logissue type=error]smith ci %s: %s\n", phase, msg)
+	}
+}
+
+// notice puts a result in the run summary of the CI that has notices.
+func notice(out io.Writer, msg string) {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		fmt.Fprintf(out, "::notice title=smith ci release::%s\n", msg)
 	}
 }
 
