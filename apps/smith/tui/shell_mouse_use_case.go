@@ -257,7 +257,12 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 			s.projScroll.By(dir * wheelStep)
 		case commands.TabSettings:
 			s.settings = s.settings.Wheel(dir)
-		case commands.TabDoctor, commands.TabGuide, commands.TabRelease:
+		case commands.TabDoctor:
+			if s.doctorScroll == nil {
+				s.doctorScroll = &pane.Scroll{}
+			}
+			s.doctorScroll.By(dir * wheelStep)
+		case commands.TabGuide, commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}

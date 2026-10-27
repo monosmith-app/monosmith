@@ -83,6 +83,8 @@ type Shell struct {
 	// projScroll is where the project list's window starts, apart from its
 	// cursor, so the wheel scrolls without selecting.
 	projScroll *pane.Scroll
+	// doctorScroll is the same for the Doctor list.
+	doctorScroll *pane.Scroll
 	// loadedProjects is true once the project list arrived (or failed).
 	loadedProjects bool
 	projectsErr    error
@@ -180,7 +182,7 @@ type Shell struct {
 func NewShell(cfg Config) Shell {
 	sh := Shell{
 		th: cfg.Theme, version: cfg.Version, header: cfg.Workspace, now: time.Now,
-		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{},
+		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
 	if sh.th.Icons.Spinner == nil {
