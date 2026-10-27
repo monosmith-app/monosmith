@@ -78,8 +78,7 @@ func ConfigText(cfg workspace.Config) string {
 	}
 	writeTasks(&b, "tasks", cfg.Tasks)
 	for _, g := range cfg.TaskGroups {
-		fmt.Fprintf(&b, "\n[[task_groups]]\nselect = %s\n", list(g.Select))
-		writeTasks(&b, "task_groups.tasks", g.Tasks)
+		b.WriteString(workspace.TaskGroupText(g))
 	}
 	for _, name := range sortedKeys(cfg.Projects) {
 		p := cfg.Projects[name]
@@ -114,28 +113,9 @@ func ConfigText(cfg workspace.Config) string {
 
 func writeTasks(b *strings.Builder, prefix string, tasks map[string]workspace.TaskOverride) {
 	for _, name := range sortedKeys(tasks) {
-		t := tasks[name]
 		fmt.Fprintf(b, "\n[%s.%s]\n", prefix, key(name))
-		if t.Command != nil {
-			fmt.Fprintf(b, "command = %s\n", list(t.Command))
-		}
-		if t.Cwd != "" {
-			fmt.Fprintf(b, "cwd = %s\n", q(t.Cwd))
-		}
-		if t.DependsOn != nil {
-			fmt.Fprintf(b, "depends_on = %s\n", list(t.DependsOn))
-		}
-		if t.Inputs != nil {
-			fmt.Fprintf(b, "inputs = %s\n", list(t.Inputs))
-		}
-		if t.Outputs != nil {
-			fmt.Fprintf(b, "outputs = %s\n", list(t.Outputs))
-		}
-		if t.Env != nil {
-			fmt.Fprintf(b, "env = %s\n", table(t.Env))
-		}
-		if t.Cache != nil {
-			fmt.Fprintf(b, "cache = %t\n", *t.Cache)
+		for _, line := range workspace.TaskFieldLines(tasks[name]) {
+			b.WriteString(line + "\n")
 		}
 	}
 }
