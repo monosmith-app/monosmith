@@ -48,8 +48,13 @@ Usage: `smith sync [flags]`
 
 ## Files and environment
 
-Rewrites manifests (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` through `go get`) and runs the installer unless
-`--no-install`. Reads `[dependencies]` in `smith.toml`.
+Rewrites manifests and runs the installer unless `--no-install`. Reads `[dependencies]`
+in `smith.toml`. The manifests it rewrites, by language:
+
+- Node: `package.json`. Python: `pyproject.toml`.
+- Rust: `Cargo.toml` (crates and the root `[workspace.dependencies]`).
+- Go: `go.mod`, through `go get` (so `go.sum` follows).
+- .NET: the project files, `Directory.Build.props` and the central `Directory.Packages.props`.
 
 ## Examples
 

@@ -3,9 +3,11 @@ package pipeline
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -63,11 +65,32 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		if t, ok := p.Tasks["test"]; ok && len(t.Command) > 2 {
 			result.Setup = append(result.Setup, protocol.Step{Name: "dotnet restore " + p.Name + " tests", Command: []string{"dotnet", "restore", t.Command[2]}, Dir: p.Root, Blocking: true})
 		}
+		// Known-vulnerable packages, direct and transitive, reported (like
+		// pip-audit) and re-checked only when a project file, a lockfile or
+		// a central version changes.
+		result.Audit = append(result.Audit, protocol.Step{
+			Name: "dotnet list package --vulnerable " + p.Name, Command: []string{"sh", "-c", auditScript}, Dir: p.Root,
+			Blocking: false, CacheFiles: auditCacheFiles(workspaceRoot, p),
+		})
 		if p.Publishes() && publicPublish && !hasCredential(result.Credentials, "NUGET_API_KEY") {
 			result.Credentials = append(result.Credentials, protocol.Credential{Env: "NUGET_API_KEY", Description: "NuGet API key that can push the workspace's packages", Required: true})
 		}
 	}
 	return result
+}
+
+// auditScript lists the project's vulnerable packages and fails when there
+// are any: dotnet itself exits 0 and only prints them.
+const auditScript = `out=$(dotnet list package --vulnerable --include-transitive 2>&1); status=$?; printf '%s\n' "$out"; ` +
+	`if [ $status -ne 0 ]; then exit $status; fi; ` +
+	`if printf '%s' "$out" | grep -q 'has the following vulnerable packages'; then exit 1; fi`
+
+// auditCacheFiles are the files that decide what the audit of one project
+// finds: its project files and lockfile, and the workspace's central versions.
+func auditCacheFiles(workspaceRoot string, p protocol.Project) []string {
+	files := dependencies.ProjectFiles(workspaceRoot, p)
+	files = append(files, path.Join(p.Root, "packages.lock.json"), "Directory.Packages.props", "Directory.Build.props")
+	return files
 }
 
 func hasCredential(list []protocol.Credential, env string) bool {

@@ -11,7 +11,7 @@ The dotnet plugin makes every `.csproj` and `.fsproj` below the workspace root a
 | `--lang` values | `dotnet`, `csharp`, `fsharp` (see the note in [Creating a project](#creating-a-project)) |
 | Manifests that make a directory a project | `*.csproj`, `*.fsproj` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`. Not advertised: `remove`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`. Not advertised: `remove`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`dotnet-app`, `dotnet-lib`, `dotnet-package`) |
 
@@ -204,7 +204,7 @@ Real output of `smith ci generate` (GitHub):
 | Toolchain | the SDK channel of `global.json` (`major.minor`), else `10.0`: `actions/setup-dotnet@v4` with `<channel>.x`; `UseDotNet@2` on Azure; Microsoft's `dotnet-install.sh --channel` elsewhere; the `dotnet` dev container feature |
 | Package store | `~/.nuget/packages` (`NUGET_PACKAGES`), keyed on every `.csproj` and `.fsproj` |
 | Setup (`smith ci setup`) | `dotnet restore` in each project directory, and `dotnet restore <tests project>` when it has one. Real: `▶ dotnet restore web` and `▶ dotnet restore web tests` per project, `smith ci setup passed in 4s`. |
-| Audit | none: `smith ci audit` printed `nothing to audit` |
+| Audit | `dotnet list package --vulnerable --include-transitive` once per project (run in the project's folder), reported and not blocking. `dotnet` only prints what it finds, so the step fails when the output says a package is vulnerable. The verdict is remembered per content of the project files (and tests project), `packages.lock.json`, `Directory.Packages.props` and `Directory.Build.props`, so it is skipped while they are unchanged. It needs the SDK and a feed that publishes vulnerability data (nuget.org does) and a restore first, which the setup phase does; a failed run is a warning. |
 | Credentials, sign-in | `NUGET_API_KEY` (required; only when a package publishes to nuget.org). Azure Artifacts feed: `NuGetAuthenticate@1`, no secret. GitHub Packages: `GITHUB_TOKEN` and `packages: read` (`write` when publishing there). `token` feed: the variable named in `token_env`. |
 
 Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`: the Azure pipeline got `- task: NuGetAuthenticate@1` before the cache step, and `smith ci check` asked for the Feed Publisher role on the project's build service.
@@ -233,7 +233,12 @@ Real, with an Azure Artifacts feed named in `smith.toml`:
 
 `smith doctor --fix --yes` wrote a `nuget.config` with `<clear />` and the one feed (nuget.org is left out for Azure Artifacts, whose upstream sources serve it; for GitHub Packages and token feeds nuget.org is added beside it).
 
-Dependencies: the plugin has no dependency capability. `smith install -w kit Newtonsoft.Json` answers `smith: plugin dotnet cannot change kit's dependencies; edit its manifest instead` (real). Use `dotnet add package`.
+Dependencies: the plugin lists the `PackageReference` of every project and of its tests project, the references in the root `Directory.Build.props`, and the central `PackageVersion` entries of the root `Directory.Packages.props`, so `smith sync`, `smith up` and the one-version check in `smith doctor` cover .NET.
+
+- A reference without a version takes the central one and declares nothing of its own; `VersionOverride` is left alone. Ranges (`[3.0,4.0)`), floating versions (`1.*`) and MSBuild properties (`$(SerilogVersion)`) are reported and never rewritten.
+- `smith sync` brings every declaration of a package (a project, its tests project, the central file) to the highest version declared, changing only the version text: the attribute (`Version="1.0"`) or the child element (`<Version>1.0</Version>`), whichever the file uses. Package ids are compared without regard to case.
+- `smith up` asks nuget.org for the newest stable release of each package, rewrites to it and runs `dotnet restore` in each project. A package nuget.org does not have (a private feed's) is skipped; one it cannot be asked about is reported.
+- `smith install -w kit Newtonsoft.Json[@13.0.1]` runs `dotnet add <project> package`, `smith uninstall -w kit Newtonsoft.Json` runs `dotnet remove <project> package`, and a bare `smith install` runs `dotnet restore`.
 
 Removal: the plugin cleans nothing outside the project directory. Real dry run: `Would remove core (libs/core)`, `the pipelines would be regenerated`.
 
@@ -243,7 +248,7 @@ Removal: the plugin cleans nothing outside the project directory. Real dry run: 
 - Because `Directory.Build.props` sets `TreatWarningsAsErrors`, a new warning (for instance a nullable warning) fails the build and `lint`.
 - `build` is not cached and has no declared outputs; the test results are cached (`test`, `lint`).
 - A project needs its own directory: the name comes from the directory, and a project file at the workspace root is ignored.
-- No dependency management through smith, no vulnerability audit, no `format` or `typecheck` task. Release archives are self-contained single-file zips only (no framework-dependent or NativeAOT builds, no `.tar.gz`).
+- Newer versions come from nuget.org only (private feeds are not asked), the vulnerability audit does not tell fixable findings from the rest, and there is no `format` or `typecheck` task. Release archives are self-contained single-file zips only (no framework-dependent or NativeAOT builds, no `.tar.gz`).
 - NuGet package versions are not asked from a private feed.
 - F#: discovered and built when present, never generated.
 
