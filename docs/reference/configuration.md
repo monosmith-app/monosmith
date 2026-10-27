@@ -72,6 +72,10 @@ audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts i
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
 allow = ["left-pad"]                  # dependencies that may differ between projects
 
+[boundaries]
+kinds = true                          # no project depends on an app: an error (unset: a warning; false: off)
+# [[boundaries.rules]] from/allow/deny/reason, [[boundaries.exceptions]] from/to/reason (below)
+
 [release]
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
@@ -262,6 +266,31 @@ allow = ["left-pad"]      # may differ between projects
 With `one_version = true`, `smith doctor` fails when projects of one ecosystem declare a production dependency at different versions (it names each project and spec) and warns about a dev tool declared in a project as well as at the root, or by two projects. Peer dependencies, the workspace's own packages and the names in `allow` are never reported. `allow` also keeps `smith sync` and `smith deps up --align` from touching those names.
 
 To fix a fragmented dependency, `smith deps up --align [name...]` rewrites every declaration to one spec: the version installed, with the operator most projects use, else the highest version declared. `smith up <name>` and `smith deps up <name>` move a dependency to its latest release in every project that declares it, in one change. Both go through the plugins' `dependencies/declared` and `dependencies/rewrite` methods, so any language plugin that lists declarations takes part; Go does not need it, since a `go.work` builds every module with the highest version required. The policy is a workspace setting; a recipe cannot carry it yet (it has no workspace scope).
+
+## Boundaries
+
+Rules for which projects may depend on which, checked on the project graph (imports and shared schemas, in every language):
+
+```toml
+[boundaries]
+kinds = true                        # nothing depends on an app: an error. Unset: a warning; false: off
+
+[[boundaries.rules]]
+from = "tag:ui"                     # a name, a glob, kind:app, lang:go or tag:ui
+deny = ["tag:server"]               # may not depend on these
+allow = ["kind:lib"]                # or: may depend only on these
+reason = "the browser must not pull in server code"
+
+[[boundaries.exceptions]]           # one dependency that may stay
+from = "web"
+to = "admin"
+reason = "the shared login page, until it moves into a lib"
+
+[projects.web]
+tags = ["ui"]                       # added to the tags the project's plugin reports
+```
+
+`smith doctor` fails on each dependency that breaks one of your rules, naming the two projects (`web -> admin`), the rule and what to do; `smith boundaries` prints the same list, and `smith ci verify` fails on it. The built-in rule (no project depends on an app) is only a warning until you set `kinds = true`, so an existing workspace does not turn red. An exception needs a `reason`. See [`smith boundaries`](../manual/boundaries.md). A recipe cannot carry the rules yet (they are workspace settings).
 
 ## Toolchains
 

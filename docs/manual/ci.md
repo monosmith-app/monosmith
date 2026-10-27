@@ -8,7 +8,7 @@ what you can run locally.
 |---|---|
 | `setup` | Installs every toolchain dependency the workspace's plugins need. |
 | `audit` | Checks dependencies for known vulnerabilities, plus the policies in `ci.audit_policies`. |
-| `verify` | Runs `lint`, `typecheck`, `test` and `build`, only for the affected projects on a pull request. |
+| `verify` | Checks [`smith boundaries`](boundaries.md) first, then runs `lint`, `typecheck`, `test` and `build`, only for the affected projects on a pull request. |
 | `pack` | Runs every project's `package` task into `dist/drop`, kept as the pipeline's `drop` artifact on pushes to the release branch. |
 | `native` | Lints, tests, builds and packages the projects tagged `native` (cgo) on this OS; the pipeline runs it on each OS and, on a release, attaches the build. |
 | `release` | Versions, publishes and tags every package with releasable commits (see [`smith release`](release.md)). |

@@ -212,6 +212,9 @@ func Validate(cfg *Config) error {
 	if err := validateBareTags(cfg); err != nil {
 		return err
 	}
+	if err := validateBoundaries(cfg); err != nil {
+		return err
+	}
 	if err := validateRegistries(cfg); err != nil {
 		return err
 	}

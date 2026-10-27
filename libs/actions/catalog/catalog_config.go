@@ -68,6 +68,7 @@ var catalog = []Action{
 	{Command: []string{"cache", "prune"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache", "clear"}, Safety: Changes, Asks: true, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache", "verify"}, Safety: Reads, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"boundaries"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"slices"}, Safety: Reads, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"slices", "check"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"kinds"}, Safety: Reads, NotInTUI: referenceOut},

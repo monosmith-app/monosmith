@@ -91,6 +91,7 @@ func Run(s *session.Session) Report {
 	add("smith", CoreChecks(s)...)
 	add("smith", lineageChecks(s)...)
 	add("smith", conventionCoverageChecks(s)...)
+	add("smith", boundaryChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
