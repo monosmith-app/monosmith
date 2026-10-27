@@ -11,7 +11,7 @@ The ruby plugin makes every `*.gemspec` below the workspace root a smith project
 | `--lang` values | `ruby` |
 | Manifest that makes a directory a project | `*.gemspec` (a gemspec at the workspace root is skipped; one gem per directory) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`. Not advertised: `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`ruby-app`, `ruby-lib`, `ruby-package`) |
 
@@ -208,7 +208,7 @@ Real output of `smith ci generate` (GitHub):
 | Toolchain | Ruby from `.ruby-version`, else `3.4`: `ruby/setup-ruby@v1` (GitHub), `UseRubyVersion@0` (Azure), `apt-get install ruby-full build-essential` and `gem install bundler` elsewhere, the `ruby` dev container feature |
 | Package store | none: the plugin declares no download store and does not set `bundler-cache` |
 | Setup (`smith ci setup`) | `bundle install`, blocking. Real: `▶ Install the bundle`, `Bundle complete! ...`, `smith ci setup passed in 600ms`. |
-| Audit | none: `smith ci audit` printed `nothing to audit` (no `bundler-audit`) |
+| Audit | `bundle-audit check --update` (bundler-audit) against `Gemfile.lock`, reported and not blocking, remembered per content of the `Gemfile`, `Gemfile.lock` and the gemspecs so it is skipped while they are unchanged. On a CI runner (`CI` or `TF_BUILD` set) a missing bundler-audit is installed first (`gem install bundler-audit`); on a developer machine the step says `bundler-audit is not installed: run gem install bundler-audit` and fails as a warning. |
 | Credentials | `GEM_HOST_API_KEY` (required, when a package exists). `smith ci check`: `GitHub: add the repository secrets GEM_HOST_API_KEY`. Trusted publishing replaces it (above). |
 
 ## Doctor, dependencies and removal
@@ -230,7 +230,13 @@ Dependencies (`dependencies/`): the plugin edits the gemspec, then runs `bundle 
 | `smith install -w <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
 | `smith uninstall -w <gem> <name>...` | removes those lines, then `bundle install` |
 
-Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -w cli thor` removed it again. `smith up --check` said `Every declared dependency is at its latest release.` for Ruby, because the plugin has no declaration listing (`declarations`) and no tool-version lookup (`latest`), so `smith up` and `smith sync` do nothing for gems.
+Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -w cli thor` removed it again.
+
+**Versions: `smith sync` and `smith up`.** The plugin lists the gems with a version constraint that each gemspec declares (`add_dependency`, `add_runtime_dependency`, `add_development_dependency`) and the workspace `Gemfile` declares (`gem 'rake', '~> 13.0'`; gems inside a `development` or `test` group count as development dependencies), so `smith sync`, `smith up` and the one-version check in `smith doctor` cover Ruby.
+
+- A gem declared without a constraint has nothing to align and is left out. Several constraints on one gem (`'>= 2.0', '< 4'`) and pre-releases are reported and left alone.
+- `smith sync` brings every declaration of a gem to the highest constraint declared, changing only the quoted constraint. A pessimistic constraint keeps its precision: moving `~> 1.2` to 1.4.1 writes `~> 1.4`, not `~> 1.4.1`.
+- `smith up` asks rubygems.org (`/api/v1/versions/<gem>/latest.json`) for the newest release and runs `bundle install` afterwards, so `Gemfile.lock` follows. A gem rubygems.org does not have (a private server's) is skipped.
 
 Removal: `smith remove <gem>` deletes the directory and takes its `gemspec path:` line out of the root `Gemfile`. Real dry run: `Would remove core (libs/core)`, `changes Gemfile`, `the pipelines would be regenerated`.
 
@@ -239,7 +245,7 @@ Removal: `smith remove <gem>` deletes the directory and takes its `gemspec path:
 - `ruby` and `bundle` on PATH; network for the first `bundle install`. Generated gems need Ruby 3.2 or newer; the test machine runs 3.4.11, CI defaults to 3.4.
 - One bundle for the workspace: all gems share the same resolution, so two gems cannot pin conflicting versions of a dependency.
 - The gemspec is parsed with regular expressions. Single-line, quoted-string values only; `spec.version = Foo::VERSION` or a dependency built in a loop is not seen.
-- No `build`, `package`, `typecheck` or `format` task; no vulnerability audit; no release assets; no dependency updates through `smith up`.
+- No `build`, `package`, `typecheck` or `format` task; no release assets; newer gems come from rubygems.org only, and the audit does not tell fixable findings from the rest, so it never blocks.
 - Test and lint use the root `.rubocop.yml`. A gem without a `spec/` directory has no `test` task.
 
 ## Verified

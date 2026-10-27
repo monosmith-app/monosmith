@@ -55,6 +55,8 @@ in `smith.toml`. The manifests it rewrites, by language:
 - Rust: `Cargo.toml` (crates and the root `[workspace.dependencies]`).
 - Go: `go.mod`, through `go get` (so `go.sum` follows).
 - .NET: the project files, `Directory.Build.props` and the central `Directory.Packages.props`.
+- Ruby: gemspecs and the root `Gemfile`.
+- Dart: `pubspec.yaml` (`dependencies` and `dev_dependencies`).
 - JVM: `pom.xml` (dependencies, dependency management and their properties) and the string notation of Gradle build scripts.
 
 ## Examples

@@ -90,3 +90,18 @@ func (d *Dart) Install(params protocol.InstallParams) (protocol.DependencyResult
 func (d *Dart) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(d.root, params)
 }
+
+// Declared implements serve.DeclarationEditor.
+func (d *Dart) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(d.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (d *Dart) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(d.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (d *Dart) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(d.root, params)
+}

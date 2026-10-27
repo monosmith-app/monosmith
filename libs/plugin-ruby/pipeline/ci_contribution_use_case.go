@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -21,6 +22,25 @@ func Version(workspaceRoot string) string {
 		}
 	}
 	return RubyVersion
+}
+
+// auditScript runs bundler-audit against Gemfile.lock, updating its advisory
+// database first. A CI runner (CI or TF_BUILD is set) installs the gem when
+// it is missing; a developer's machine gets the command to run instead.
+const auditScript = "if ! bundle-audit version >/dev/null 2>&1 && { [ -n \"$CI\" ] || [ -n \"$TF_BUILD\" ]; }; then gem install bundler-audit --no-document; fi; " +
+	"if bundle-audit version >/dev/null 2>&1; then bundle-audit check --update; " +
+	"else echo 'bundler-audit is not installed: run gem install bundler-audit to check gems for known vulnerabilities' >&2; exit 1; fi"
+
+// auditCacheFiles are the files that decide what the audit finds.
+func auditCacheFiles(workspaceRoot string, projects []protocol.Project) []string {
+	files := []string{"Gemfile", "Gemfile.lock"}
+	for _, p := range projects {
+		found, _ := filepath.Glob(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), "*.gemspec"))
+		for _, f := range found {
+			files = append(files, path.Join(p.Root, filepath.Base(f)))
+		}
+	}
+	return files
 }
 
 func runtime(version string) protocol.Toolchain {
@@ -44,6 +64,9 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
 		Setup:      []protocol.Step{{Name: "Install the bundle", Command: []string{"bundle", "install"}, Blocking: true}},
+		// Known-vulnerable gems in Gemfile.lock, reported (like pip-audit)
+		// and re-checked only when a Gemfile, gemspec or lockfile changes.
+		Audit: []protocol.Step{{Name: "bundler-audit", Command: []string{"sh", "-c", auditScript}, Blocking: false, CacheFiles: auditCacheFiles(workspaceRoot, params.Projects)}},
 	}
 	for _, p := range params.Projects {
 		if p.Publishes() {
