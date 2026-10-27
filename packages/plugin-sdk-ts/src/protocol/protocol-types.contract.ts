@@ -159,6 +159,8 @@ export interface Capabilities {
   contribute?: boolean
   /** Remove cleans up a removed project's traces outside its directory. */
   remove?: boolean
+  /** ChangeKind answers what changing a project's kind edits (smith kind). */
+  changeKind?: boolean
   /** Published reports what a registry has of a project. */
   published?: boolean
   /** Dependencies installs and uninstalls packages in its projects. */
@@ -173,6 +175,50 @@ export interface Capabilities {
    * request-cancelled error. A host never sends the notification to a plugin without it.
    */
   cancel?: boolean
+}
+
+/**
+ * ChangeKindParams asks a plugin what changing a project's kind edits. The plugin writes nothing:
+ * it answers with the files' new contents, and the host applies them, then moves the project's
+ * directory.
+ */
+export interface ChangeKindParams {
+  /** Project is the project as it is now. */
+  project: Project
+  /** To is the kind it becomes. */
+  to: ProjectKind
+  /**
+   * NewRoot is the workspace-relative directory the host moves the project to afterwards; it equals
+   * Project.Root when the directory stays.
+   */
+  newRoot: string
+  /**
+   * Projects are every project of the workspace, so the plugin can find the ones whose manifests
+   * and sources name this one.
+   */
+  projects?: Project[]
+}
+
+/**
+ * ChangeKindResult is what the change edits. Every path in Files is the path the file has before
+ * the move.
+ */
+export interface ChangeKindResult {
+  /**
+   * Refused says why this kind makes no sense for the project's language ("a Bicep template is
+   * deployed, never published"); the host stops and shows it. Empty when the change is fine.
+   */
+  refused?: string
+  /**
+   * Files are the edits: manifests, workspace files and dependents that name the project's kind or
+   * its directory.
+   */
+  files?: FileEdit[]
+  /**
+   * Warnings name what the change loses or leaves for the user (a binary an app has and a lib does
+   * not, a lockfile to refresh).
+   */
+  warnings?: string[]
 }
 
 /**
@@ -1098,6 +1144,16 @@ export interface ProtocolMethods {
     params: RemoveParams
     result: RemoveResult
     capability: 'remove'
+  }
+  /**
+   * Asks what changing a project between app, lib and package edits: its manifest, the workspace
+   * files and the dependents that name its kind or directory. The host applies the edits and moves
+   * the directory.
+   */
+  'project/kind': {
+    params: ChangeKindParams
+    result: ChangeKindResult
+    capability: 'changeKind'
   }
   /** Asks which version of a project its registry has, so a release can check its tags against it. */
   published: {

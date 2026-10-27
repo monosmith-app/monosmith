@@ -13,6 +13,7 @@ export const PLUGIN_INTERFACES = [
   { name: 'ICiContributor', capability: 'ci', summary: 'A plugin that says what a pipeline needs for its projects.', methods: { ci: 'CiAsync' } },
   { name: 'IDoctorContributor', capability: 'doctor', summary: 'A plugin that checks its projects.', methods: { doctor: 'DoctorAsync' } },
   { name: 'IRemover', capability: 'remove', summary: 'A plugin that cleans up after a project is removed.', methods: { remove: 'RemoveAsync' } },
+  { name: 'IKindChanger', capability: 'changeKind', summary: 'A plugin that says what changing a project between app, lib and package edits.', methods: { 'project/kind': 'ChangeKindAsync' } },
   {
     name: 'IDependencyManager',
     capability: 'dependencies',

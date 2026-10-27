@@ -105,6 +105,16 @@ public interface IRemover
     Task<RemoveResult> RemoveAsync(RemoveParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that says what changing a project between app, lib and package edits.</summary>
+public interface IKindChanger
+{
+    /// <summary>Asks what changing a project between app, lib and package edits: its manifest, the workspace files and the dependents that name its kind or directory. The host applies the edits and moves the directory.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<ChangeKindResult> ChangeKindAsync(ChangeKindParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

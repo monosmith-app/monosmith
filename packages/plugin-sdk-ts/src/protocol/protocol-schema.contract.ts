@@ -135,6 +135,17 @@ export const protocolSchema: SchemaDocument = {
       "capability": "remove",
       "notification": false
     },
+    "project/kind": {
+      "description": "Asks what changing a project between app, lib and package edits: its manifest, the workspace files and the dependents that name its kind or directory. The host applies the edits and moves the directory.",
+      "params": {
+        "$ref": "#/$defs/ChangeKindParams"
+      },
+      "result": {
+        "$ref": "#/$defs/ChangeKindResult"
+      },
+      "capability": "changeKind",
+      "notification": false
+    },
     "published": {
       "description": "Asks which version of a project its registry has, so a release can check its tags against it.",
       "params": {
@@ -501,6 +512,10 @@ export const protocolSchema: SchemaDocument = {
           "type": "boolean",
           "description": "Remove cleans up a removed project's traces outside its directory."
         },
+        "changeKind": {
+          "type": "boolean",
+          "description": "ChangeKind answers what changing a project's kind edits (smith kind)."
+        },
         "published": {
           "type": "boolean",
           "description": "Published reports what a registry has of a project."
@@ -520,6 +535,60 @@ export const protocolSchema: SchemaDocument = {
         "cancel": {
           "type": "boolean",
           "description": "Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it."
+        }
+      }
+    },
+    "ChangeKindParams": {
+      "description": "ChangeKindParams asks a plugin what changing a project's kind edits. The plugin writes nothing: it answers with the files' new contents, and the host applies them, then moves the project's directory.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project",
+          "description": "Project is the project as it is now."
+        },
+        "to": {
+          "$ref": "#/$defs/ProjectKind",
+          "description": "To is the kind it becomes."
+        },
+        "newRoot": {
+          "type": "string",
+          "description": "NewRoot is the workspace-relative directory the host moves the project to afterwards; it equals Project.Root when the directory stays."
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Project"
+          },
+          "description": "Projects are every project of the workspace, so the plugin can find the ones whose manifests and sources name this one."
+        }
+      },
+      "required": [
+        "project",
+        "to",
+        "newRoot"
+      ]
+    },
+    "ChangeKindResult": {
+      "description": "ChangeKindResult is what the change edits. Every path in Files is the path the file has before the move.",
+      "type": "object",
+      "properties": {
+        "refused": {
+          "type": "string",
+          "description": "Refused says why this kind makes no sense for the project's language (\"a Bicep template is deployed, never published\"); the host stops and shows it. Empty when the change is fine."
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FileEdit"
+          },
+          "description": "Files are the edits: manifests, workspace files and dependents that name the project's kind or its directory."
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Warnings name what the change loses or leaves for the user (a binary an app has and a lib does not, a lockfile to refresh)."
         }
       }
     },

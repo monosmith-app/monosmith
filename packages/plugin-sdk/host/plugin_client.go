@@ -391,6 +391,8 @@ func (c *Client) Supports(method string) bool {
 		return caps.Contribute
 	case protocol.MethodRemove:
 		return caps.Remove
+	case protocol.MethodChangeKind:
+		return caps.ChangeKind
 	case protocol.MethodPublished:
 		return caps.Published
 	case protocol.MethodInstall, protocol.MethodUninstall:

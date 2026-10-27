@@ -30,6 +30,8 @@ __all__ = [
     "CIResult",
     "CancelParams",
     "Capabilities",
+    "ChangeKindParams",
+    "ChangeKindResult",
     "ContributeParams",
     "ContributeResult",
     "Contribution",
@@ -149,11 +151,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "published", "dependencies", "declarations", "latest", "cancel"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -169,6 +171,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "doctor": "doctor",
     "contribute": "contribute",
     "remove": "remove",
+    "project/kind": "changeKind",
     "published": "published",
     "dependencies/install": "dependencies",
     "dependencies/uninstall": "dependencies",
@@ -312,6 +315,8 @@ class Capabilities(TypedDict, total=False):
     """Contribute is a convention plugin's: it adds tasks to projects other plugins discovered."""
     remove: bool
     """Remove cleans up a removed project's traces outside its directory."""
+    changeKind: bool
+    """ChangeKind answers what changing a project's kind edits (smith kind)."""
     published: bool
     """Published reports what a registry has of a project."""
     dependencies: bool
@@ -325,6 +330,55 @@ class Capabilities(TypedDict, total=False):
     Cancel says the plugin stops the work of a request when the host sends a cancel notification
     with its id, then answers that request with its result (if the work was already done) or the
     request-cancelled error. A host never sends the notification to a plugin without it.
+    """
+
+
+class _ChangeKindParamsRequired(TypedDict):
+    project: Project
+    """Project is the project as it is now."""
+    to: ProjectKind
+    """To is the kind it becomes."""
+    newRoot: str
+    """
+    NewRoot is the workspace-relative directory the host moves the project to afterwards; it
+    equals Project.Root when the directory stays.
+    """
+
+
+class ChangeKindParams(_ChangeKindParamsRequired, total=False):
+    """
+    ChangeKindParams asks a plugin what changing a project's kind edits. The plugin writes
+    nothing: it answers with the files' new contents, and the host applies them, then moves the
+    project's directory.
+    """
+
+    projects: list[Project]
+    """
+    Projects are every project of the workspace, so the plugin can find the ones whose manifests
+    and sources name this one.
+    """
+
+
+class ChangeKindResult(TypedDict, total=False):
+    """
+    ChangeKindResult is what the change edits. Every path in Files is the path the file has
+    before the move.
+    """
+
+    refused: str
+    """
+    Refused says why this kind makes no sense for the project's language ("a Bicep template is
+    deployed, never published"); the host stops and shows it. Empty when the change is fine.
+    """
+    files: list[FileEdit]
+    """
+    Files are the edits: manifests, workspace files and dependents that name the project's kind
+    or its directory.
+    """
+    warnings: list[str]
+    """
+    Warnings name what the change loses or leaves for the user (a binary an app has and a lib
+    does not, a lockfile to refresh).
     """
 
 

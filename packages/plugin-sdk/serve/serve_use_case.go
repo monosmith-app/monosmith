@@ -214,6 +214,10 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if r, ok := p.(Remover); ok {
 			return call(req.Params, r.Remove)
 		}
+	case protocol.MethodChangeKind:
+		if k, ok := p.(KindChanger); ok {
+			return call(req.Params, k.ChangeKind)
+		}
 	case protocol.MethodPublished:
 		if r, ok := p.(RegistryReader); ok {
 			return call(req.Params, r.Published)
@@ -272,12 +276,13 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, doctor := p.(DoctorContributor)
 	_, contribute := p.(Contributor)
 	_, remove := p.(Remover)
+	_, changeKind := p.(KindChanger)
 	_, published := p.(RegistryReader)
 	_, dependencies := p.(DependencyManager)
 	_, declarations := p.(DeclarationEditor)
 	_, latest := p.(LatestReader)
 	_, cancel := p.(Cancellable)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel}
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

@@ -96,6 +96,12 @@ var Methods = []MethodSpec{
 		Capability: "Remove",
 	},
 	{
+		Method:      protocol.MethodChangeKind,
+		Description: "Asks what changing a project between app, lib and package edits: its manifest, the workspace files and the dependents that name its kind or directory. The host applies the edits and moves the directory.",
+		Params:      reflect.TypeFor[protocol.ChangeKindParams](), Result: reflect.TypeFor[protocol.ChangeKindResult](),
+		Capability: "ChangeKind",
+	},
+	{
 		Method:      protocol.MethodPublished,
 		Description: "Asks which version of a project its registry has, so a release can check its tags against it.",
 		Params:      reflect.TypeFor[protocol.PublishedParams](), Result: reflect.TypeFor[protocol.PublishedResult](),

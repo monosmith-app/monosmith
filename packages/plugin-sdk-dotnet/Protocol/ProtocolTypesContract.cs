@@ -81,6 +81,9 @@ public static class ProtocolMethods
     /// <summary>Lets a plugin clean up what it owns outside a project's directory after the project is removed.</summary>
     public const string Remove = "remove";
 
+    /// <summary>Asks what changing a project between app, lib and package edits: its manifest, the workspace files and the dependents that name its kind or directory. The host applies the edits and moves the directory.</summary>
+    public const string ProjectKind = "project/kind";
+
     /// <summary>Asks which version of a project its registry has, so a release can check its tags against it.</summary>
     public const string Published = "published";
 
@@ -113,6 +116,7 @@ public static class ProtocolMethods
         [Doctor] = "doctor",
         [Contribute] = "contribute",
         [Remove] = "remove",
+        [ProjectKind] = "changeKind",
         [Published] = "published",
         [DependenciesInstall] = "dependencies",
         [DependenciesUninstall] = "dependencies",
@@ -488,6 +492,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Remove cleans up a removed project's traces outside its directory.</summary>
     public bool Remove { get; init; }
 
+    /// <summary>ChangeKind answers what changing a project's kind edits (smith kind).</summary>
+    public bool ChangeKind { get; init; }
+
     /// <summary>Published reports what a registry has of a project.</summary>
     public bool Published { get; init; }
 
@@ -517,6 +524,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Doctor = BooleanValue(Member(map, "doctor"), Join(path, "doctor")),
             Contribute = BooleanValue(Member(map, "contribute"), Join(path, "contribute")),
             Remove = BooleanValue(Member(map, "remove"), Join(path, "remove")),
+            ChangeKind = BooleanValue(Member(map, "changeKind"), Join(path, "changeKind")),
             Published = BooleanValue(Member(map, "published"), Join(path, "published")),
             Dependencies = BooleanValue(Member(map, "dependencies"), Join(path, "dependencies")),
             Declarations = BooleanValue(Member(map, "declarations"), Join(path, "declarations")),
@@ -569,6 +577,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("remove");
             writer.Boolean(Remove);
         }
+        if (ChangeKind)
+        {
+            writer.Property("changeKind");
+            writer.Boolean(ChangeKind);
+        }
         if (Published)
         {
             writer.Property("published");
@@ -611,6 +624,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "doctor" => Doctor,
             "contribute" => Contribute,
             "remove" => Remove,
+            "changeKind" => ChangeKind,
             "published" => Published,
             "dependencies" => Dependencies,
             "declarations" => Declarations,
@@ -618,6 +632,100 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "cancel" => Cancel,
             _ => false,
         };
+}
+
+/// <summary>ChangeKindParams asks a plugin what changing a project's kind edits. The plugin writes nothing: it answers with the files' new contents, and the host applies them, then moves the project's directory.</summary>
+public sealed record ChangeKindParams : IProtocolValue<ChangeKindParams>
+{
+    /// <summary>Project is the project as it is now.</summary>
+    public required Project Project { get; init; }
+
+    /// <summary>To is the kind it becomes.</summary>
+    public required ProjectKind To { get; init; }
+
+    /// <summary>NewRoot is the workspace-relative directory the host moves the project to afterwards; it equals Project.Root when the directory stays.</summary>
+    public required string NewRoot { get; init; }
+
+    /// <summary>Projects are every project of the workspace, so the plugin can find the ones whose manifests and sources name this one.</summary>
+    public IReadOnlyList<Project> Projects { get; init; } = [];
+
+    /// <inheritdoc />
+    public static ChangeKindParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ChangeKindParams
+        {
+            Project = Project.Read(Member(map, "project"), Join(path, "project")),
+            To = ProjectKind.Read(Member(map, "to"), Join(path, "to")),
+            NewRoot = StringValue(Member(map, "newRoot"), Join(path, "newRoot")),
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        Project.Write(writer);
+        writer.Property("to");
+        To.Write(writer);
+        writer.Property("newRoot");
+        writer.String(NewRoot);
+        if (Projects is { Count: > 0 })
+        {
+            writer.Property("projects");
+            MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>ChangeKindResult is what the change edits. Every path in Files is the path the file has before the move.</summary>
+public sealed record ChangeKindResult : IProtocolValue<ChangeKindResult>
+{
+    /// <summary>Refused says why this kind makes no sense for the project's language ("a Bicep template is deployed, never published"); the host stops and shows it. Empty when the change is fine.</summary>
+    public string Refused { get; init; } = string.Empty;
+
+    /// <summary>Files are the edits: manifests, workspace files and dependents that name the project's kind or its directory.</summary>
+    public IReadOnlyList<FileEdit> Files { get; init; } = [];
+
+    /// <summary>Warnings name what the change loses or leaves for the user (a binary an app has and a lib does not, a lockfile to refresh).</summary>
+    public IReadOnlyList<string> Warnings { get; init; } = [];
+
+    /// <inheritdoc />
+    public static ChangeKindResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ChangeKindResult
+        {
+            Refused = StringValue(Member(map, "refused"), Join(path, "refused")),
+            Files = ListOf(Member(map, "files"), Join(path, "files"), FileEdit.Read),
+            Warnings = ListOf(Member(map, "warnings"), Join(path, "warnings"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        if (Refused.Length > 0)
+        {
+            writer.Property("refused");
+            writer.String(Refused);
+        }
+        if (Files is { Count: > 0 })
+        {
+            writer.Property("files");
+            MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Warnings is { Count: > 0 })
+        {
+            writer.Property("warnings");
+            MessageWritingAlgorithm.List(writer, Warnings, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
 }
 
 /// <summary>ContributeParams hands a plugin the projects it applies to: those whose stack includes it, or, for a workspace-wide convention, those of the languages it supports that smith.toml enables it for.</summary>

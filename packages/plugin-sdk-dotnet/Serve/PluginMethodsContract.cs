@@ -55,6 +55,11 @@ internal static class PluginMethods
             plugin => plugin is IRemover,
             value => RemoveParams.Read(value, "params"),
             async (plugin, parameters, cancellation) => await ((IRemover)plugin).RemoveAsync((RemoveParams)parameters, cancellation)),
+        [ProtocolMethods.ProjectKind] = new(
+            ProtocolMethods.ProjectKind,
+            plugin => plugin is IKindChanger,
+            value => ChangeKindParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((IKindChanger)plugin).ChangeKindAsync((ChangeKindParams)parameters, cancellation)),
         [ProtocolMethods.Published] = new(
             ProtocolMethods.Published,
             plugin => plugin is IRegistryReader,
@@ -99,6 +104,7 @@ internal static class PluginMethods
             Ci = plugin is ICiContributor,
             Doctor = plugin is IDoctorContributor,
             Remove = plugin is IRemover,
+            ChangeKind = plugin is IKindChanger,
             Dependencies = plugin is IDependencyManager,
             Declarations = plugin is IDeclarationEditor,
             Latest = plugin is ILatestReader,
