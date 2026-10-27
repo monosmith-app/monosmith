@@ -84,6 +84,7 @@ the language, and `asset_name` names each file the same way.
 |---|---|
 | Go | Cross-compiles every platform with `CGO_ENABLED=0`, stamps the version into `main.version` (`-ldflags -X`), zips each binary. |
 | Rust | Runs `cargo build --release -p <crate> --target <triple>` per platform (the version is the one in the crate's `Cargo.toml`, which the release has set, so `env!("CARGO_PKG_VERSION")` and `--version` agree with the tag), and zips every program the crate builds with the README and licence files (the crate's, else the workspace's). |
+| .NET | Runs `dotnet publish -r <rid> --self-contained -p:PublishSingleFile=true -p:Version=<version>` per platform (win-x64, linux-arm64, osx-arm64, ...) and zips the output with the README and licence files. Every platform is built on one machine; each needs its runtime downloaded from NuGet once. |
 
 An app in another language with a release section is tagged and gets a GitHub
 Release, without assets. The settings are in

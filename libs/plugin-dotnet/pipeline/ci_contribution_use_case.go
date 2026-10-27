@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/registries"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -97,6 +98,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	if f, ok := registries.CheckNuGetConfig(workspaceRoot, params.Projects); ok {
 		findings = append(findings, f)
+	}
+	for _, p := range params.Projects {
+		findings = append(findings, releasing.CheckReleaseRuntimes(p)...)
 	}
 	return protocol.DoctorResult{Findings: findings}
 }

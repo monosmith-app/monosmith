@@ -98,12 +98,13 @@ the GitHub Release URL, the mirror.
 
 ### Why apps release assets from the plugin
 
-A Go or Rust app's release is not "upload to a registry"; it is up to six platform
+A Go, Rust or .NET app's release is not "upload to a registry"; it is up to six platform
 archives. Only the language plugin knows how to build for a platform (for Go:
 `CGO_ENABLED=0`, `-trimpath`, the version stamped into `main.version`; for Rust:
 `cargo build --release --target <triple>`, the version the release wrote into
 `Cargo.toml`, cross-building only where the machine can link, otherwise the
-`native` jobs below). The plugins share the file naming, zip and checksum code in
+`native` jobs below; for .NET: `dotnet publish -r <rid> --self-contained`, which
+builds every platform on one machine). The plugins share the file naming, zip and checksum code in
 `packages/plugin-sdk/releaseassets`. The host also hands each project's
 `AssetSpec` to its plugin as `releaseAssets` on the project, so doctor and CI
 contributions can prepare for the platforms. So
