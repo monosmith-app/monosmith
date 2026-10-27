@@ -77,9 +77,17 @@ func Command(version string) *cobra.Command {
 				fmt.Fprintln(c.OutOrStdout(), "pipelines are up to date")
 				return nil
 			}
-			changed, lost, err := Regenerate(s)
+			contributions, err := Collect(s)
 			if err != nil {
 				return err
+			}
+			model := NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
+			changed, lost, err := Write(s.Root, s.Config, model)
+			if err != nil {
+				return err
+			}
+			for _, limit := range Limits(s.Config, model) {
+				fmt.Fprintln(c.ErrOrStderr(), "note: "+limit)
 			}
 			for _, f := range changed {
 				fmt.Fprintln(c.OutOrStdout(), changeVerb(s.Root, f)+" "+f)
@@ -109,7 +117,8 @@ func Command(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			steps := ManualSteps(s.Config, NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch))
+			model := NewModel(contributions, SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
+			steps := append(ManualSteps(s.Config, model), Limits(s.Config, model)...)
 			if len(steps) == 0 {
 				fmt.Fprintln(c.OutOrStdout(), "nothing to set up by hand")
 				return nil

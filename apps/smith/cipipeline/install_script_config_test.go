@@ -32,7 +32,7 @@ func TestInstallScriptKeepsShebangAndChecksumVerification(t *testing.T) {
 }
 
 func TestEveryProviderRunsTheVendoredInstallerAndWritesIt(t *testing.T) {
-	for _, provider := range []string{"github", "azure", "gitlab"} {
+	for _, provider := range []string{"github", "azure", "gitlab", "circleci"} {
 		cfg := workspace.Config{CI: workspace.CISection{Providers: []string{provider}}}
 		assertVendored(t, provider, Rendered(cfg, model()))
 	}

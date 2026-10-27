@@ -128,8 +128,8 @@ func Validate(cfg *Config) error {
 		cfg.CI.Providers = []string{"github"}
 	}
 	for _, p := range cfg.CI.Providers {
-		if p != "github" && p != "azure" && p != "gitlab" {
-			return fmt.Errorf("%s: unknown CI provider %q (use github, azure or gitlab)", FileName, p)
+		if p != "github" && p != "azure" && p != "gitlab" && p != "circleci" {
+			return fmt.Errorf("%s: unknown CI provider %q (use github, azure, gitlab or circleci)", FileName, p)
 		}
 	}
 	if cfg.Release.RubyGemsTrustedPublishing && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {

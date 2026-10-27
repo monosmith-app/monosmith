@@ -108,7 +108,7 @@ type WorkspaceSection struct {
 
 // CISection chooses which pipelines smith generates.
 type CISection struct {
-	// Providers is any of "github", "azure", "gitlab". Default: ["github"].
+	// Providers is any of "github", "azure", "gitlab", "circleci". Default: ["github"].
 	Providers []string `toml:"providers"`
 	// Devcontainer writes .devcontainer/devcontainer.json with the
 	// toolchains CI installs, at the same versions. Default: false (smith new

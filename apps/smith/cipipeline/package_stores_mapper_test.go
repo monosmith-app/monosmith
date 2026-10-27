@@ -78,7 +78,7 @@ func TestGitLabAllowsFourCachesAndSaysWhatItLeftOut(t *testing.T) {
 
 func TestNoStoresLeavesThePipelinesAsTheyWere(t *testing.T) {
 	m := storesModel()
-	for name, out := range map[string]string{"github": RenderGitHub(m), "azure": RenderAzure(m), "gitlab": RenderGitLab(m)} {
+	for name, out := range map[string]string{"github": RenderGitHub(m), "azure": RenderAzure(m), "gitlab": RenderGitLab(m), "circleci": RenderCircleCI(m)} {
 		if strings.Contains(out, "download store") || strings.Contains(out, "\nvariables:") || strings.Contains(out, "  cache:") {
 			t.Errorf("%s mentions a cache without a store:\n%s", name, out)
 		}

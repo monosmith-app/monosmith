@@ -34,6 +34,8 @@ func TestPullRequestsAreReadOnlyOnEveryProvider(t *testing.T) {
 		"github pull_request_target": {"GITHUB_EVENT_NAME": "pull_request_target"},
 		"azure pull request":         {"BUILD_REASON": "PullRequest"},
 		"gitlab merge request":       {"CI_PIPELINE_SOURCE": "merge_request_event"},
+		"circleci pull request":      {"CIRCLE_PULL_REQUEST": "https://github.com/o/r/pull/3"},
+		"circleci fork pull request": {"CIRCLE_PR_NUMBER": "3"},
 	}
 	for name, values := range cases {
 		if !pullRequest(env(values)) {
@@ -44,6 +46,7 @@ func TestPullRequestsAreReadOnlyOnEveryProvider(t *testing.T) {
 		"github push":     {"GITHUB_EVENT_NAME": "push"},
 		"azure ci":        {"BUILD_REASON": "IndividualCI"},
 		"gitlab pipeline": {"CI_PIPELINE_SOURCE": "push"},
+		"circleci branch": {"CIRCLECI": "true", "CIRCLE_BRANCH": "main"},
 		"a laptop":        {},
 	} {
 		if pullRequest(env(values)) {

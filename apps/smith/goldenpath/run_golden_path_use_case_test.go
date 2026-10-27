@@ -123,7 +123,7 @@ func TestGoldenPath(t *testing.T) {
 	if cfg, _ := os.ReadFile(filepath.Join(w.dir, "smith.toml")); !strings.HasPrefix(string(cfg), "#:schema https://") || !strings.Contains(string(cfg), "# Pipelines to generate") {
 		t.Fatalf("config set rewrote the file:\n%s", cfg)
 	}
-	w.smith(false, "config", "set", "ci.providers", "bitbucket")
+	w.smith(false, "config", "set", "ci.providers", "jenkins")
 
 	// 2. An app, a lib and a package in each language. Each project picks its
 	// stack: the language default (node-jest), a published one (node-vitest),
@@ -325,8 +325,17 @@ func TestGoldenPath(t *testing.T) {
 		t.Fatalf("go.work:\n%s", w.read("go.work"))
 	}
 	// GitLab gets the same phases, each toolchain installed by its script.
-	w.smith(true, "config", "set", "ci.providers", "github", "azure", "gitlab")
+	w.smith(true, "config", "set", "ci.providers", "github", "azure", "gitlab", "circleci")
 	w.smith(true, "ci", "generate")
+	circle := w.read(".circleci/config.yml")
+	for _, want := range []string{"image: debian:bookworm", "deb.nodesource.com/setup_24.x", "smith ci verify", "smith ci release", "pipeline.git.branch"} {
+		if !strings.Contains(circle, want) {
+			t.Fatalf(".circleci/config.yml lacks %q:\n%s", want, circle)
+		}
+	}
+	if out := w.smith(true, "ci", "generate", "--check"); !strings.Contains(out, "up to date") {
+		t.Fatalf("a fresh CircleCI config drifts:\n%s", out)
+	}
 	gitlab := w.read(".gitlab-ci.yml")
 	for _, want := range []string{"deb.nodesource.com/setup_24.x", "uv python install 3.12", ".linux-amd64.tar.gz | tar -C /usr/local -xz", "smith ci verify", "smith ci release"} {
 		if !strings.Contains(gitlab, want) {
@@ -337,6 +346,9 @@ func TestGoldenPath(t *testing.T) {
 	w.smith(true, "ci", "generate")
 	if _, err := os.Stat(filepath.Join(w.dir, ".gitlab-ci.yml")); err == nil {
 		t.Fatal("dropping gitlab deletes the pipeline smith wrote")
+	}
+	if _, err := os.Stat(filepath.Join(w.dir, ".circleci", "config.yml")); err == nil {
+		t.Fatal("dropping circleci deletes the config smith wrote")
 	}
 	// An AI assistant sees the same workspace over MCP.
 	mcp := exec.Command(w.bin, "mcp")

@@ -55,7 +55,7 @@ recipe = "recipes/team.recipe.toml"   # new projects are created from this recip
 package = "https://example.com/recipes/package.recipe.toml"
 
 [ci]
-providers = ["github"]                # "github", "azure", "gitlab", or several
+providers = ["github"]                # "github", "azure", "gitlab", "circleci", or several
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 branches = ["main", "dev"]             # branches the GitHub and Azure pipelines run on, pushes and pull requests; the release branch is always one; default: the release branch (docs/reference/ci.md)
 azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
