@@ -3,6 +3,7 @@ package release
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -143,7 +144,9 @@ func alternative(env string) bool {
 // Uncommitted lists the changed files of `git status --porcelain` that
 // matter to a release. go.work.sum is left out: it caches module checksums,
 // `go mod download` (CI setup) completes it, and it never changes what is
-// released.
+// released. .npmrc is left out too: the pipeline's npm sign-in step (Azure
+// npmAuthenticate) writes the feed credentials into it, and it never changes
+// what is released.
 func Uncommitted(porcelain string) []string {
 	var out []string
 	for _, line := range strings.Split(strings.ReplaceAll(porcelain, "\r\n", "\n"), "\n") {
@@ -151,7 +154,7 @@ func Uncommitted(porcelain string) []string {
 			continue
 		}
 		file := strings.TrimSpace(line[3:])
-		if file == "go.work.sum" {
+		if file == "go.work.sum" || path.Base(file) == ".npmrc" {
 			continue
 		}
 		out = append(out, file)
