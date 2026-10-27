@@ -140,7 +140,7 @@ func TestBuildExplainsWhatAKeptConfigNeeds(t *testing.T) {
 func TestTheConservativeFinishBuildsAndTestsButDoesNotLint(t *testing.T) {
 	f := FinishBuildAndTest("smith")
 	var got []string
-	for _, s := range f.Steps[3:] {
+	for _, s := range f.Steps[1:] {
 		got = append(got, s.Description)
 	}
 	if strings.Join(got, "|") != StepBuild+"|"+StepTest+"|"+StepDoctor {
@@ -150,10 +150,10 @@ func TestTheConservativeFinishBuildsAndTestsButDoesNotLint(t *testing.T) {
 
 func TestFinishInstallsOnceThenChecksTheWorkspace(t *testing.T) {
 	f := Finish("smith", true)
-	if f.Ask || !f.Safe || len(f.Steps) != 7 || f.Steps[0].Argv[1] != "install" || f.Steps[6].Argv[1] != "doctor" {
+	if f.Ask || !f.Safe || len(f.Steps) != 5 || f.Steps[0].Argv[1] != "npm-lockfile" || f.Steps[4].Argv[1] != "doctor" {
 		t.Fatalf("steps = %+v", f.Steps)
 	}
-	if got := Finish("smith", false); len(got.Steps) != 3 {
+	if got := Finish("smith", false); len(got.Steps) != 1 {
 		t.Fatalf("without the checks only the install remains, got %+v", got.Steps)
 	}
 }

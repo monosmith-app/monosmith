@@ -1,24 +1,22 @@
 package convert
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
+	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // ApplyOptions configure Apply.
@@ -161,18 +159,10 @@ const SmithPackage = "monosmith"
 // releasedVersion tells a smith release from a development build.
 var releasedVersion = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
-// refreshLockfile runs npm install so package-lock.json drops what convert
-// removed, and checks that npm ci accepts the result. npm 11 can reuse the
-// installed tree on the first run and leave the lockfile out of step, so a
-// second install re-resolves it when the check fails.
+// refreshLockfile drops what convert removed from package-lock.json (the Nx
+// packages, unless pruneNx is false), then has lockfilesync install and settle
+// it.
 func refreshLockfile(root string, out io.Writer, pruneNx bool) ([]string, error) {
-	if _, err := os.Stat(filepath.Join(root, "package.json")); err != nil {
-		return nil, nil
-	}
-	if _, err := exec.LookPath("npm"); err != nil {
-		fmt.Fprintln(out, "! npm is not installed: run npm install to update package-lock.json")
-		return nil, nil
-	}
 	lock := filepath.Join(root, "package-lock.json")
 	if raw, err := os.ReadFile(lock); err == nil && pruneNx {
 		pruned, dropped, err := PruneLockfile(raw, convertplan.NxPackage)
@@ -185,28 +175,11 @@ func refreshLockfile(root string, out io.Writer, pruneNx bool) ([]string, error)
 			}
 		}
 	}
-	// npm's own output (warnings about engines, deprecations, the husky
-	// banner) looks like smith's problem and buries the summary: it is shown
-	// only when npm fails.
-	var log bytes.Buffer
-	run := func(args ...string) error {
-		log.Reset()
-		cmd := exec.Command("npm", args...)
-		cmd.Dir, cmd.Stdout, cmd.Stderr = root, &log, &log
-		return cmd.Run()
+	res, err := lockfilesync.Sync(lockfilesync.Options{Root: root, Out: out, Create: true})
+	if err != nil {
+		return nil, fmt.Errorf("%w (the conversion itself is complete)", err)
 	}
-	for attempt := 1; attempt <= 2; attempt++ {
-		if err := run("install", "--no-audit", "--no-fund"); err != nil {
-			_, _ = out.Write(log.Bytes())
-			return nil, fmt.Errorf("npm install failed (%w); fix it and run npm install again, the conversion itself is complete", err)
-		}
-		installed := log.String()
-		if run("ci", "--dry-run", "--ignore-scripts", "--no-audit", "--no-fund") == nil {
-			return toolrun.FoldWarnings(installed, "run npm install to see them"), nil
-		}
-	}
-	_, _ = out.Write(log.Bytes())
-	return nil, errors.New("package-lock.json is still out of step with package.json after npm install; run npm install until `npm ci --dry-run` passes")
+	return res.Notes, nil
 }
 
 // editRootPackage removes Nx from the root package.json and rewrites its
