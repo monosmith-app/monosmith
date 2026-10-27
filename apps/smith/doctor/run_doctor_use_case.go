@@ -98,6 +98,7 @@ func Run(s *session.Session) Report {
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
+	add("smith", lockfileChecks(s)...)
 	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
 	report := Report{Findings: findings}
