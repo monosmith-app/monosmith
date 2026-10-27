@@ -176,8 +176,17 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		a := m.snap.Architectures[it.idx]
 		add(th.Bold(a.Name)+th.Muted("  "+a.Meaning),
 			"The architecture is how the code of this workspace is laid out. smith checks that the code follows the one you choose, and the check fails when it does not.",
-			"Enter chooses it and saves it at once: it "+a.Writes+". Choose none to stop the checks.",
-			th.Muted("The same as: smith architecture "+a.Name))
+			"Enter chooses it and saves it at once: it "+a.Writes+". Choose none to stop the checks.")
+		if a.AppliesTo != "" {
+			add(th.Bold("Applies to: ") + a.AppliesTo)
+		}
+		if a.Here != "" {
+			add(th.Bold("In this workspace: ") + a.Here)
+		}
+		if a.Warning != "" {
+			add(th.Failure(a.Warning))
+		}
+		add(th.Muted("The same as: smith architecture " + a.Name))
 	case kindTheme:
 		add(m.previewLines(th, it, w)...)
 	case kindIcons:

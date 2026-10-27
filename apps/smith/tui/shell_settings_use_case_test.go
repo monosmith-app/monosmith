@@ -43,7 +43,7 @@ func newSettingsLab(t *testing.T, w, h int) (*lab, settingsWorkspace) {
 	writeToml(t, ws.dir)
 	l := newLab(t, true, w, h)
 	sh := l.sh()
-	sh.sources.Settings = settingssource.New(ws.dir, ws.home, func(string) string { return "" })
+	sh.sources.Settings = settingssource.New(ws.dir, ws.home, "test", func(string) string { return "" })
 	sh.settings = settingsview.New(sh.sources.Settings, settingsForms(guide.Actions([]string{"go", "node"}, []string{"go", "node", "python"}, []string{"go", "node"})))
 	// Read the workspace now (Reload does not count as opening the tab), so
 	// no test depends on how fast a message comes back.

@@ -17,7 +17,7 @@ import (
 // New is the backend for the workspace that holds dir. home is the smith home
 // (SMITH_HOME, or ~/.smith) where the person's own preferences are kept;
 // getenv reads the variables that win over them.
-func New(dir, home string, getenv func(string) string) settingsview.Backend {
+func New(dir, home, version string, getenv func(string) string) settingsview.Backend {
 	root := func() (string, error) { return workspace.FindRootFrom(dir) }
 	prefs, _ := userprefs.Load(home)
 	b := settingsview.Backend{
@@ -26,7 +26,7 @@ func New(dir, home string, getenv func(string) string) settingsview.Backend {
 			if err != nil {
 				return settingsview.Snapshot{Err: err}
 			}
-			return ReadSnapshot(r)
+			return ReadSnapshot(r, version)
 		},
 		SetPlugin: func(name string, enable bool) error {
 			r, err := root()

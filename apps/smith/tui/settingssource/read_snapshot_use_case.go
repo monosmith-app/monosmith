@@ -18,7 +18,7 @@ import (
 // ReadSnapshot reads what the Settings tab shows from the workspace at root:
 // the same things `smith plugin list`, `smith config list` and `smith recipe`
 // read.
-func ReadSnapshot(root string) settingsview.Snapshot {
+func ReadSnapshot(root, version string) settingsview.Snapshot {
 	cfg, err := workspace.Load(root)
 	if err != nil {
 		return settingsview.Snapshot{Err: err}
@@ -64,8 +64,15 @@ func ReadSnapshot(root string) settingsview.Snapshot {
 		return snap
 	}
 	snap.Architecture = current.Name
+	// The projects say how each choice fits; a workspace that cannot be opened
+	// still offers the choices.
+	members, _ := architecture.WorkspaceMembers(root, version)
 	for _, a := range architecture.Catalog() {
-		snap.Architectures = append(snap.Architectures, settingsview.ArchitectureChoice{Name: a.Name, Meaning: a.Meaning, Writes: a.Writes()})
+		cover := a.Cover(members)
+		snap.Architectures = append(snap.Architectures, settingsview.ArchitectureChoice{
+			Name: a.Name, Meaning: a.Meaning, Writes: a.Writes(),
+			AppliesTo: a.AppliesText(), Here: cover.Here(), Warning: a.Warning(cover),
+		})
 	}
 
 	fields, err := configedit.Fields()

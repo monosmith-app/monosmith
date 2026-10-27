@@ -45,7 +45,7 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
 
 // move moves the cursor of the rows, or the section while the keyboard is on the list of sections.
 func (m Model) move(key string) Model {
-	m.note = ""
+	m.note, m.confirm = "", ""
 	if !m.onItems {
 		at := int(m.section)
 		switch key {
@@ -101,6 +101,14 @@ func (m Model) activate() (Model, Result) {
 		}
 		m.ed = newInstall()
 	case kindArchitecture:
+		a := m.snap.Architectures[it.idx]
+		if a.Warning != "" && m.confirm != a.Name {
+			// It would check nothing here: say so, and apply on the second Enter.
+			m.confirm = a.Name
+			m.note = a.Name + " would check none of your projects. Enter again to choose it anyway."
+			return m, Result{}
+		}
+		m.confirm = ""
 		return m, Result{Cmd: m.setArchitecture(it.key)}
 	case kindTheme:
 		return m, Result{Cmd: m.saveStyle(normalise(it.key), m.savedIcons)}

@@ -155,7 +155,7 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 }
 
 // detailWant is how many rows the detail of each section would like.
-var detailWant = map[Section]int{Plugins: 7, Architecture: 7, Style: 8, Workspace: 8, Recipes: 5, Forms: 3}
+var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Forms: 3}
 
 // listLines draws every row of the list with its group headings; lineOf is the
 // line of each item. The row at the cursor is highlighted while the keyboard

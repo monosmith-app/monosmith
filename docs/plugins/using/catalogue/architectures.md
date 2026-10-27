@@ -30,6 +30,13 @@ tool:architecture-check — checks the hexagonal architecture: the core never im
 
 The task is cached on the project's source files, like `slice-check`. `smith doctor` adds a
 warning for a project that has no folder named for a layer, since the rules then check nothing.
+It also warns when the chosen architecture does not apply to the language of some of your
+projects (it says which), since nothing checks those.
+
+The languages an architecture applies to are what its plugin declares in the handshake (`languages`).
+The built-in architectures declare every language in the table above; an architecture plugin
+written for fewer languages declares only those, and smith asks it only about projects in them.
+[`smith architecture`](../../../manual/architecture.md) shows them under each choice.
 
 ## Related
 

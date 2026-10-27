@@ -43,17 +43,6 @@ func (a *Architecture) Describe(params protocol.InitializeParams) (protocol.Init
 	}, nil
 }
 
-// Languages are the languages the architecture called name declares in its
-// handshake: the ones its ruleset lists, or every language the check can read.
-// It is nil for a name that is not served.
-func Languages(name string) []string {
-	rs, ok := rules.For(name)
-	if !ok {
-		return nil
-	}
-	return languagesOf(rs)
-}
-
 // reads is the way to read a project's imports when the architecture applies
 // to its language.
 func (a *Architecture) reads(language string) (imports.Language, bool) {
@@ -67,6 +56,8 @@ func (a *Architecture) reads(language string) (imports.Language, bool) {
 	return lang, true
 }
 
+// languagesOf is what the handshake declares: the languages the ruleset lists, or
+// every language the check can read.
 func languagesOf(rs rules.Ruleset) []string {
 	if len(rs.Languages) > 0 {
 		return slices.Clone(rs.Languages)

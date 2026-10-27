@@ -206,7 +206,8 @@ chooses the highlighted one and saves it in `smith.toml` at once; the choice in 
 `(●)`. It writes what [`smith architecture`](architecture.md) writes: choosing
 `vertical-slices` adds `[conventions.vertical-slices]`, and choosing another removes it
 together with the settings under it. The panel under the rows says in plain words what the
-highlighted choice does. More architectures will be offered here as smith learns them.
+highlighted choice does, which languages it applies to, and which projects of this workspace
+it would check or skip; a choice that would check none of them asks for a second `Enter`. More architectures will be offered here as smith learns them.
 
 **Style.** The colour theme (`auto`, `dark`, `light`, `plain`) and the symbols (`auto`,
 `unicode`, `ascii`), with a preview of the highlighted choice. `Enter` applies the choice at
