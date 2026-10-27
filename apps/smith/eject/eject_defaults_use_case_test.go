@@ -32,9 +32,9 @@ func read(t *testing.T, root, rel string) string {
 func TestEjectCopiesTheDefaultToTheFileTheToolReads(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, ".smith/defaults/ruff.toml", "line-length = 100\n")
-	target, err := Eject(root, tooldefaults.Ruff, false)
-	if err != nil || target != "ruff.toml" {
-		t.Fatalf("%q %v", target, err)
+	targets, err := Eject(root, tooldefaults.Ruff, false, nil)
+	if err != nil || len(targets) != 1 || targets[0] != "ruff.toml" {
+		t.Fatalf("%q %v", targets, err)
 	}
 	if got := read(t, root, "ruff.toml"); got != "line-length = 100\n" {
 		t.Fatalf("copied %q", got)
@@ -45,14 +45,14 @@ func TestEjectKeepsAFileThatIsThereUnlessForced(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, ".smith/defaults/mypy.ini", "[mypy]\n")
 	write(t, root, "mypy.ini", "[mypy]\nstrict = True\n")
-	_, err := Eject(root, tooldefaults.Mypy, false)
+	_, err := Eject(root, tooldefaults.Mypy, false, nil)
 	if err == nil || !strings.Contains(err.Error(), "--force") {
 		t.Fatalf("expected a refusal that names --force: %v", err)
 	}
 	if got := read(t, root, "mypy.ini"); !strings.Contains(got, "strict") {
 		t.Fatalf("the file was overwritten: %q", got)
 	}
-	if _, err := Eject(root, tooldefaults.Mypy, true); err != nil {
+	if _, err := Eject(root, tooldefaults.Mypy, true, nil); err != nil {
 		t.Fatal(err)
 	}
 	if got := read(t, root, "mypy.ini"); got != "[mypy]\n" {
@@ -64,14 +64,14 @@ func TestEjectingTwiceIsNotAnError(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, ".smith/defaults/pytest.ini", "[pytest]\n")
 	for i := 0; i < 2; i++ {
-		if _, err := Eject(root, tooldefaults.Pytest, false); err != nil {
+		if _, err := Eject(root, tooldefaults.Pytest, false, nil); err != nil {
 			t.Fatalf("run %d: %v", i, err)
 		}
 	}
 }
 
 func TestEjectWithoutADefaultSaysSo(t *testing.T) {
-	_, err := Eject(t.TempDir(), tooldefaults.GolangciLint, false)
+	_, err := Eject(t.TempDir(), tooldefaults.GolangciLint, false, nil)
 	if err == nil || !strings.Contains(err.Error(), "no default for golangci-lint") {
 		t.Fatalf("got %v", err)
 	}

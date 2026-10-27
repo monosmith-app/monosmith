@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-php/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -38,6 +39,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		if len(m.Bin) > 0 {
 			bin = m.Bin[0]
 		}
+		phpstan, _, err := linting.Args(workspaceRoot, root)
+		if err != nil {
+			return result, fmt.Errorf("%s: %w", manifest, err)
+		}
 		result.Projects = append(result.Projects, protocol.Project{
 			Name:        path.Base(root),
 			Root:        root,
@@ -47,7 +52,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     m.Requires,
 			Version:     m.Version,
 			Description: m.Description,
-			Tasks:       Tasks(Shape{Kind: kind, Tests: testsErr == nil, Bin: bin}),
+			Tasks:       Tasks(Shape{Kind: kind, Tests: testsErr == nil, Bin: bin, PHPStan: phpstan}),
 			Stack:       m.Stack,
 		})
 	}

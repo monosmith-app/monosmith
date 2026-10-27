@@ -87,13 +87,20 @@ and use the workspace's `vendor/`.
 
 | Task | Command | Inputs | Outputs | dependsOn (from the plugin) | Cached | Appears |
 |---|---|---|---|---|---|---|
-| `lint` | `php {workspaceRoot}/vendor/bin/phpstan analyse --no-progress --memory-limit=1G --level 8 --autoload-file {workspaceRoot}/vendor/autoload.php src tests` | `**/*`, `!vendor/**`, `{workspaceRoot}/composer.json`, `{workspaceRoot}/composer.lock` | none | none | yes | every package; `tests` is analysed only when `tests/` exists |
+| `lint` | `php {workspaceRoot}/vendor/bin/phpstan analyse --no-progress --memory-limit=1G -c {workspaceRoot}/.smith/defaults/phpstan.neon --autoload-file {workspaceRoot}/vendor/autoload.php src tests` (no `-c` when the package has a phpstan.neon, see [PHPStan configuration](#phpstan-configuration)) | `**/*`, `!vendor/**`, `{workspaceRoot}/composer.json`, `{workspaceRoot}/composer.lock` | none | none | yes | every package; `tests` is analysed only when `tests/` exists |
 | `test` | `php {workspaceRoot}/vendor/bin/phpunit --bootstrap {workspaceRoot}/vendor/autoload.php tests` | same as `lint` | none | none | yes | only when the package has a `tests/` directory |
 | `start` | `php <bin>` (for example `php bin/cli`) | every file of the project | none | none | no | only when the kind is `app` and the manifest's `bin` is not empty |
 
-PHPStan runs at level 8 over `src` and `tests`. There is nothing to build in
+PHPStan runs over `src` and `tests`, at level 8 unless the package has its own
+configuration (below). There is nothing to build in
 PHP, so a PHP project has no `build` task; `smith run build` in the demo
 workspace printed `no selected project has a [build] task`.
+
+### PHPStan configuration
+
+smith owns the analysis of a PHP repository, so a new package carries no `phpstan.neon`. PHPStan reads its configuration from the working directory only, which is the package's: when the package has a `phpstan.neon`, `phpstan.neon.dist` or `phpstan.dist.neon`, smith passes no `-c` and PHPStan reads it, level included (a file without a `level` runs at PHPStan's own default). Otherwise smith writes its default, `parameters: level: 8`, to `.smith/defaults/phpstan.neon` (ignored by version control; rewritten whenever it differs from the one in the smith binary) and passes it with `-c`. The default's content is an input of the `lint` task.
+
+A file in the workspace root does not count, because PHPStan would not read it from a package. To start from the default run [`smith eject phpstan`](../../../manual/eject.md): it copies the default to `phpstan.neon` in each package that uses it.
 
 If the workspace enables the `vertical-slices` convention (the default
 `smith.toml` of `smith new` does), every PHP project also gets a `slice-check`

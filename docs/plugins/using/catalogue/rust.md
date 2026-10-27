@@ -53,7 +53,7 @@ All tasks run in the crate directory, scoped with `-p <crate name>`. Cargo build
 | `test` | `cargo test -p <crate>` | every crate | yes |
 | `lint` | `cargo clippy -p <crate> --all-targets -- -D warnings` | every crate | yes |
 | `typecheck` | `cargo check -p <crate> --all-targets` | every crate | yes |
-| `format` | `cargo fmt -p <crate> --check` | every crate | yes |
+| `format` | `cargo fmt -p <crate> --check -- --config-path {workspaceRoot}/.smith/defaults/rustfmt.toml` (no `--` part when the repository has a `rustfmt.toml`, see [Format configuration](#format-configuration)) | every crate | yes |
 | `start` | `cargo run -p <crate>` | `app` | no |
 | `package` | `cargo package -p <crate> --allow-dirty` | `package` | no |
 
@@ -67,7 +67,7 @@ Real output:
 $ smith explain cli
 cli has 7 tasks:
   build        cargo build -p rs-demo-cli
-  format       cargo fmt -p rs-demo-cli --check  (cached)
+  format       cargo fmt -p rs-demo-cli --check -- --config-path {workspaceRoot}/.smith/defaults/rustfmt.toml  (cached)
   lint         cargo clippy -p rs-demo-cli --all-targets -- -D warnings  (cached, after slice-check)
   slice-check  smith slices check --lang rust .  (cached)
   start        cargo run -p rs-demo-cli
@@ -92,6 +92,12 @@ kit:package — cargo package: the .crate crates.io would get
 ```
 
 `smith run build`, `test`, `lint`, `typecheck`, `format` and `package` all succeeded (3/3 or 6/6 tasks).
+
+### Format configuration
+
+smith owns the formatting check of a Rust repository, so a new crate carries no rustfmt configuration. When the crate or a directory above it (up to the workspace root) has no `rustfmt.toml` or `.rustfmt.toml`, smith writes its default to `.smith/defaults/rustfmt.toml` (ignored by version control; rewritten whenever it differs from the one in the smith binary) and passes it with `--config-path` after cargo's `--`. The default is `max_width = 100` and `newline_style = "Unix"`, so a checkout formats the same on every OS. The default's content is an input of the `format` task.
+
+Your own file is the override and replaces the default whole. To start from the default run [`smith eject rustfmt`](../../../manual/eject.md), which copies it to `rustfmt.toml` in the workspace root. clippy takes no configuration file from smith: its lint levels are the `-D warnings` on the command line and the `[lints]` tables of your manifests, and a `clippy.toml` of yours still applies.
 
 ## Creating a project
 

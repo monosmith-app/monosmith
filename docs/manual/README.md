@@ -67,7 +67,7 @@ Python package). Paths in output are shortened.
 | [`smith run`](run.md) | Run tasks on projects, in dependency order, from cache when nothing changed. |
 | [`smith build`](build.md), [`smith test`](test.md), [`smith lint`](lint.md), [`smith typecheck`](typecheck.md) | `smith run` with the task fixed. |
 | [`smith dev`](dev.md) | Start several projects together. |
-| [`smith eject`](eject.md) | Copy smith's default configuration of a tool (ruff, mypy, pytest, golangci-lint) into the repository, to own it. |
+| [`smith eject`](eject.md) | Copy smith's default configuration of a tool (ruff, mypy, pytest, golangci-lint, rustfmt, phpstan) into the repository, to own it. |
 | [`smith install`](install.md), [`smith uninstall`](uninstall.md) | Add or remove packages in a project, or install the whole workspace. |
 | [`smith up`](up.md) | Show dependencies with newer releases and update the ones you pick. |
 | [`smith sync`](sync.md) | Make every project declare a shared dependency at the same version. |
