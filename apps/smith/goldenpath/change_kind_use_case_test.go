@@ -127,6 +127,18 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"apps/cli/CMakeLists.txt": "../../packages/core"},
 		},
 		{
+			lang:    "dart",
+			tools:   []string{"dart"},
+			install: true,
+			wire: func(w *workspace) {
+				pubspec := "apps/cli/pubspec.yaml"
+				w.write(pubspec, strings.Replace(w.read(pubspec), "dev_dependencies:", "dependencies:\n  kcdart_core: ^0.0.0\n\ndev_dependencies:", 1))
+				w.write("apps/cli/bin/main.dart", "import 'package:kcdart_core/kcdart_core.dart';\n\nvoid main() {\n  print(greet('core'));\n}\n")
+			},
+			untracked: []string{"pubspec.lock"},
+			coreFiles: map[string]string{"pubspec.yaml": "- packages/core"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

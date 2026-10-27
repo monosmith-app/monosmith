@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-dart/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/scaffolding"
@@ -68,6 +69,11 @@ func (d *Dart) Published(params protocol.PublishedParams) (protocol.PublishedRes
 // CI implements serve.CIContributor.
 func (d *Dart) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(d.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (d *Dart) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(d.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.
