@@ -89,6 +89,12 @@ func TestDirective(t *testing.T) {
 	}
 }
 
+func TestUncommittedIgnoresNpmrcWrittenByTheNpmSignIn(t *testing.T) {
+	if got := Uncommitted(" M .npmrc\n M apps/web/.npmrc\n"); len(got) != 0 {
+		t.Fatalf("%v", got)
+	}
+}
+
 func TestUncommittedIgnoresTheWorkspaceChecksumCache(t *testing.T) {
 	got := Uncommitted(" M go.work.sum\n M apps/web/package.json\nM  libs/x/go.mod\n")
 	if len(got) != 2 || got[0] != "apps/web/package.json" || got[1] != "libs/x/go.mod" {
