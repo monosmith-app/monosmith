@@ -28,7 +28,7 @@ repository and released by smith like the other packages. The NuGet package id i
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 17 methods with its params, its result and the
+one definition per message, a methods table (each of the 18 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The C# is generated from that
 file by a Node script (`Generator/generate-protocol.handler.mjs`), so it cannot drift from the Go types: a
 Go test fails when the schema is stale, a C# test fails when the generated files are, and the generator
@@ -339,6 +339,7 @@ a plugin implements as many as it needs.
 | `ICiContributor` | `CiAsync` | `ci` | `ci` | `CIContributor` |
 | `IDoctorContributor` | `DoctorAsync` | `doctor` | `doctor` | `DoctorContributor` |
 | `IRemover` | `RemoveAsync` | `remove` | `remove` | `Remover` |
+| `IKindChanger` | `ChangeKindAsync` | `project/kind` | `changeKind` | `KindChanger` |
 | `IContributor` | `ContributeAsync` | `contribute` | `contribute` | `Contributor` |
 | `IDependencyManager` | `InstallAsync` and `UninstallAsync` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `IDeclarationEditor` | `DeclaredAsync` and `RewriteAsync` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
@@ -361,7 +362,7 @@ waiting refused with `-32800`, and any other finishes what it is doing.
 | `PluginServer.RunAsync(plugin)` | runs the plugin on standard input and output; returns the exit code; the whole body of an entry point |
 | `PluginServer.ServeAsync(plugin, new ServeStreams(input, output, log), cancellation)` | the same loop on streams you give it; returns at `shutdown` or the end of the input |
 | `ClaimStdioUseCase.Claim()` | takes standard input and output for the protocol and returns the two streams; `RunAsync` calls it |
-| `IPlugin`, `IDiscoverer`, `IGenerator`, `IVersioner`, `IPublisher`, `IRegistryReader`, `ICiContributor`, `IDoctorContributor`, `IRemover`, `IContributor`, `IDependencyManager`, `IDeclarationEditor`, `ILatestReader` | the shapes of the plugin |
+| `IPlugin`, `IDiscoverer`, `IGenerator`, `IVersioner`, `IPublisher`, `IRegistryReader`, `ICiContributor`, `IDoctorContributor`, `IRemover`, `IKindChanger`, `IContributor`, `IDependencyManager`, `IDeclarationEditor`, `ILatestReader` | the shapes of the plugin |
 | `CancellationExtensions.ThrowIfCancelled(token, message?)` | throws `RequestCancelledError` when the work was asked to stop |
 | `RequestCancelledError` | what `ThrowIfCancelled` throws |
 

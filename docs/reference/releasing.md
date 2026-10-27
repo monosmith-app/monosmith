@@ -51,6 +51,14 @@ For JitPack, smith only tags: JitPack builds the artifact itself from a
 example through SDKMAN: `before_install: sdk install maven 3.9.11`).
 Consumers use the tag as the version.
 
+A project changes between internal `lib`, published `package` and `app` with
+[`smith kind`](../manual/kind.md): it records the kind, drops or restores the publish
+guard, moves the folder and updates what names it. `smith kind core package
+--dry-run` lists every edit first. A package that was released is refused (the
+newest tag is named) unless `--force`, because its published versions would never
+be updated; `smith release --dry-run` shows the project in the plan once it is a
+package and out of it once it is not.
+
 To force a version, commit a directive anywhere in the repository:
 
 ```

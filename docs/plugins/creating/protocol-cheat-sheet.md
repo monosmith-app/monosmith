@@ -100,6 +100,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `ci` | `ci` | `CIContributor` | `CIParams` → `CIResult` | `smith ci ...`, pipeline generation, release preflight | 1 min |
 | `doctor` | `doctor` | `DoctorContributor` | `DoctorParams` → `DoctorResult` | `smith doctor` | 1 min |
 | `remove` | `remove` | `Remover` | `RemoveParams` → `RemoveResult` | `smith remove` | 20 min |
+| `project/kind` | `changeKind` | `KindChanger` | `ChangeKindParams` → `ChangeKindResult` | `smith kind` | 5 min |
 | `dependencies/install` | `dependencies` | `DependencyManager.Install` | `InstallParams` → `DependencyResult` | `smith install`, `smith sync` | 20 min |
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
@@ -128,6 +129,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `doctor` | `doctor` | any |
 | `contribute` | `contribute` | toolchain, structure, deploy |
 | `remove` | `remove` | language |
+| `changeKind` | `project/kind` | language |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
@@ -212,6 +214,7 @@ Capabilities are the optional methods a plugin implements.
 | `doctor` | `bool` | no |  |
 | `contribute` | `bool` | no | Contribute is a convention plugin's: it adds tasks to projects other plugins discovered. |
 | `remove` | `bool` | no | Remove cleans up a removed project's traces outside its directory. |
+| `changeKind` | `bool` | no | ChangeKind answers what changing a project's kind edits (smith kind). |
 | `published` | `bool` | no | Published reports what a registry has of a project. |
 | `dependencies` | `bool` | no | Dependencies installs and uninstalls packages in its projects. |
 | `declarations` | `bool` | no | Declarations lists and rewrites declared dependency specs (sync, up). |
@@ -692,6 +695,27 @@ RemoveResult lists the workspace-relative files the plugin changed (or, in a dry
 |---|---|---|---|
 | `files` | `[]string` | no |  |
 | `notes` | `[]string` | no |  |
+
+### ChangeKindParams
+
+ChangeKindParams asks a plugin what changing a project's kind edits. The plugin writes nothing: it answers with the files' new contents, and the host applies them, then moves the project's directory.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `project` | `Project` | yes | Project is the project as it is now. |
+| `to` | `ProjectKind` | yes | To is the kind it becomes. |
+| `newRoot` | `string` | yes | NewRoot is the workspace-relative directory the host moves the project to afterwards; it equals Project.Root when the directory stays. |
+| `projects` | `[]Project` | no | Projects are every project of the workspace, so the plugin can find the ones whose manifests and sources name this one. |
+
+### ChangeKindResult
+
+ChangeKindResult is what the change edits. Every path in Files is the path the file has before the move.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `refused` | `string` | no | Refused says why this kind makes no sense for the project's language ("a Bicep template is deployed, never published"); the host stops and shows it. Empty when the change is fine. |
+| `files` | `[]FileEdit` | no | Files are the edits: manifests, workspace files and dependents that name the project's kind or its directory. |
+| `warnings` | `[]string` | no | Warnings name what the change loses or leaves for the user (a binary an app has and a lib does not, a lockfile to refresh). |
 
 ### InstallParams
 

@@ -67,7 +67,7 @@ Schema (draft 2020-12) generated from them,
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
 is the contract for every other language. It has one definition per message (a member is required
 when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
-definitions `x-methods` (each of the 17 methods with its params, its result and the capability it needs,
+definitions `x-methods` (each of the 18 methods with its params, its result and the capability it needs,
 `null` for `initialize` and `shutdown`, and `notification: true` with no result for `cancel`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
 kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
 
@@ -143,6 +143,7 @@ which capability each method needs.
 | `contribute` | `contribute` | `Contributor` | `projectgraph`, for stacks and conventions |
 | `generate` | `generate` | `Generator` | `smith new`, `smith add` |
 | `remove` | `remove` | `Remover` | `smith remove` |
+| `changeKind` | `project/kind` | `KindChanger` | `smith kind` |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |
@@ -183,6 +184,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn}`: add tasks, replace tasks, append dependencies |
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
+| `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them |
 | `publish` | `PublishParams{project, version, dryRun, assets}` | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
 | `published` | `PublishedParams{project}` | `PublishedResult{version, registry, unreachable, detail}` | what the registry already has |

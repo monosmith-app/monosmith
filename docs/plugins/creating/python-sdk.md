@@ -25,7 +25,7 @@ by smith like the other packages. The distribution is `monosmith-plugin-sdk`; th
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 17 methods with its params, its result and the
+one definition per message, a methods table (each of the 18 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The Python types are
 generated from that file by `tools/generate_protocol`, so they cannot drift from the Go ones: a Go test
 fails when the schema is stale, a Python test fails when the generated modules are, and a test fails
@@ -313,6 +313,7 @@ rest are `Protocol` classes that document the signatures, and a plugin does not 
 | `ci` | `ci` | `ci` | `CIContributor` |
 | `doctor` | `doctor` | `doctor` | `DoctorContributor` |
 | `remove` | `remove` | `remove` | `Remover` |
+| `change_kind` | `project/kind` | `changeKind` | `KindChanger` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
@@ -340,7 +341,7 @@ is the `initialize` result without the two members the SDK fills in.
 | `serve(plugin)` | runs the plugin on standard input and output and exits the process; the whole body of an entry point |
 | `serve_streams(plugin, ServeStreams(input, output, log=None))` | the same loop on streams you give it (binary file objects); returns at `shutdown` or the end of the input |
 | `capabilities_of(plugin)` | the `Capabilities` the plugin would advertise |
-| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
+| `Plugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader` | the shapes of the plugin object |
 | `CancelToken` | `cancelled`, `cancel()`, `wait(timeout=None)`, `raise_if_cancelled(message?)`, `on_cancel(callback)` |
 | `RequestCancelledError` | what `raise_if_cancelled` raises |
 
