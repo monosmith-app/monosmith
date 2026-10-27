@@ -121,3 +121,25 @@ func TestVerifyLeavesADevelopersOwnEditsAlone(t *testing.T) {
 		t.Errorf("in CI a file changed before verify fails it: %v", err)
 	}
 }
+
+func TestVerifyOpensItsLogGroupAfterTheBannerNotBefore(t *testing.T) {
+	s, _ := rewritingWorkspace(t)
+	t.Setenv("GITHUB_ACTIONS", "true")
+	s.Graph.Projects[0].Tasks = map[string]protocol.Task{"build": {Command: []string{"git", "--version"}}}
+	var out bytes.Buffer
+	if err := RunPhase(context.Background(), s, "verify", &out); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+	text := out.String()
+	if !strings.HasPrefix(text, "══ Verify") {
+		t.Errorf("the banner comes first, outside any group:\n%s", text)
+	}
+	if strings.Count(text, "::group::") != strings.Count(text, "::endgroup::") || strings.Contains(text, "::endgroup::\n::group::") {
+		t.Errorf("groups must balance and never be empty:\n%s", text)
+	}
+	for _, want := range []string{"Project", "core", "✓ Verify passed in"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q in\n%s", want, text)
+		}
+	}
+}

@@ -93,7 +93,7 @@ func summarise(out io.Writer, log *phaseLog, err error, took time.Duration) {
 // (phaseLog.banner); the others have their whole output folded.
 func announces(phase string) bool {
 	switch phase {
-	case "setup", "audit":
+	case "setup", "audit", "verify", "pack":
 		return true
 	}
 	return false
