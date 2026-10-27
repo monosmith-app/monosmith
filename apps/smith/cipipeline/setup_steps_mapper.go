@@ -45,8 +45,9 @@ func githubInstallSmith(m Model, bash bool) string {
 	if !i.Script {
 		command := i.HostedCommand()
 		if dir := i.HostedPathDir(); dir != "" {
-			command += "\necho \"" + dir + "\" >> \"$GITHUB_PATH\""
+			command += "\necho \"" + dir + "\" >> \"$GITHUB_PATH\"\nexport PATH=\"" + dir + ":$PATH\""
 		}
+		command += "\nsmith --version"
 		return "      - name: Install smith\n        shell: bash\n        run: " + runValue("        ", command)
 	}
 	shell := ""
@@ -68,8 +69,9 @@ func azureInstallSmith(m Model, indent string) string {
 	if !i.Script {
 		command := i.HostedCommand()
 		if dir := i.HostedPathDir(); dir != "" {
-			command += "\necho \"##vso[task.prependpath]" + dir + "\""
+			command += "\necho \"##vso[task.prependpath]" + dir + "\"\nexport PATH=\"" + dir + ":$PATH\""
 		}
+		command += "\nsmith --version"
 		return indent + "- bash: " + runValue(indent+"  ", command) + indent + "  displayName: Install smith\n"
 	}
 	return fmt.Sprintf("%s- bash: sh %s \"%s\"\n%s  displayName: Install smith\n", indent, InstallScriptPath, m.SmithVersion, indent)

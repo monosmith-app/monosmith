@@ -66,7 +66,7 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 		"python-version: '3.12'", "go-version: '1.26'",
 		"      - name: Install zig\n        shell: bash\n        run: |\n          curl -fsSL https://example.com/zig.sh | sh\n          zig version\n",
 		"      # smith: no plugin says how to install rust 1.90",
-		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}", "fetch-depth: 0", "run: npm install --global --registry https://registry.npmjs.org/ monosmith\n", "github.ref_name == 'main'"} {
+		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}", "fetch-depth: 0", "run: |\n          npm install --global --registry https://registry.npmjs.org/ monosmith\n          smith --version\n", "github.ref_name == 'main'"} {
 		if !strings.Contains(gh, want) {
 			t.Errorf("GitHub workflow lacks %q", want)
 		}
@@ -320,7 +320,7 @@ func TestPubWorkflowOnlyWhenAnAppPublishesToPubDev(t *testing.T) {
 		"on:\n  workflow_dispatch:\n    inputs:\n      project:",
 		"permissions:\n  contents: read\n  id-token: write\n",
 		"uses: dart-lang/setup-dart@v1",
-		"run: npm install --global --registry https://registry.npmjs.org/ monosmith\n",
+		"run: |\n          npm install --global --registry https://registry.npmjs.org/ monosmith\n          smith --version\n",
 		`run: smith release pub --project "$PROJECT" --version "$VERSION"`,
 		"PROJECT: ${{ inputs.project }}",
 		"# smith:slot before-publish",

@@ -82,4 +82,4 @@ if [ "$os" = windows ] && command -v cygpath >/dev/null 2>&1; then ci_dir=$(cygp
 [ -n "${GITHUB_PATH:-}" ] && echo "$ci_dir" >> "$GITHUB_PATH"
 [ -n "${TF_BUILD:-}" ] && echo "##vso[task.prependpath]$ci_dir"
 case ":$PATH:" in *":$DIR:"*) ;; *) echo "Add $DIR to your PATH to use smith." ;; esac
-"$DIR/$binary" --version
+echo "Installed $("$DIR/$binary" --version) in $DIR"
