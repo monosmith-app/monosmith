@@ -56,10 +56,22 @@ func (s Shell) mainContent(w, h int) content {
 		doctor := s.doctor
 		doctor.Waited = s.waited()
 		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
+		sel := 0
+		f, found := doctor.Selected()
 		for row, i := range rowOf {
-			c.hits[len(c.lines)+row] = hit{kind: "finding", index: i}
+			if (i < 0 && doctor.OnPassedLine()) || (found && i >= 0 && doctor.Report.Findings[i].Check == f.Check) {
+				sel = row
+			}
 		}
-		c.lines = append(c.lines, lines...)
+		total := len(lines)
+		top := s.doctorScroll.Show(sel, max(h, 1), total)
+		for row, i := range rowOf {
+			if row >= top && row < top+h {
+				c.hits[row-top] = hit{kind: "finding", index: i}
+			}
+		}
+		lines = lines[top:min(top+h, len(lines))]
+		c.lines = append(c.lines, pane.Scrollbar(s.th, lines, w, top, total)...)
 	case commands.TabRelease:
 		release := s.release
 		release.Waited = s.waited()
