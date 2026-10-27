@@ -128,6 +128,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)
 	planNodeStack(plan)
+	planTaskGroups(plan, w)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
 		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
 			plan.Decide("", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
