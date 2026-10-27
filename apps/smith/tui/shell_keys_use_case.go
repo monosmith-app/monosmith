@@ -204,7 +204,7 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 	case "projects":
 		return s.gotoTab(commands.TabProjects)
 	case "log":
-		s.runSel = ""
+		s.runSel, s.runHome = "", false
 		return s.gotoTab(commands.TabRun)
 	case "graph":
 		if project != "" {
@@ -471,6 +471,12 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	if s.run == nil {
 		return nil
 	}
+	if s.runHome {
+		if name == "enter" {
+			s.runHome = false
+		}
+		return nil
+	}
 	ids := s.runIDs()
 	at := 0
 	for i, id := range ids {
@@ -484,6 +490,10 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	case "down":
 		s.runSel = ids[min(at+1, len(ids)-1)]
 	case "esc":
+		// The first Esc shows all output; the next, once nothing runs, the start screen.
+		if s.runSel == "" && !s.running() {
+			s.runHome = true
+		}
 		s.runSel = ""
 	case "pgup":
 		s.log = s.log.Page(-1, s.logTotal(), s.logHeight())

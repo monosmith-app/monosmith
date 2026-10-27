@@ -305,8 +305,12 @@ func (s *Shell) keepRunVisible() {
 
 func (s Shell) runContent(w, h int) content {
 	c := content{hits: map[int]hit{}}
-	if s.run == nil {
-		c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
+	if s.run == nil || s.runHome {
+		if s.run == nil {
+			c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
+		} else {
+			c.lines = append(c.lines, "", s.th.Muted("Last run: "+s.run.CommandLine()+" (Enter shows it)"))
+		}
 		c.lines = append(c.lines, "")
 		// The scope of every key is spelled out; the buttons run on every project.
 		scope := "Press " + commands.ShortcutOf("run.build") + " to build"
