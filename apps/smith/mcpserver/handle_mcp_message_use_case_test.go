@@ -43,6 +43,8 @@ func TestServer(t *testing.T) {
 		{`{"name":"smith_run","arguments":{"tasks":["test","lint"],"projects":["web"],"affected":true}}`, "run test lint -p web --affected"},
 		{`{"name":"smith_add_project","arguments":{"kind":"app","name":"api","lang":"go"}}`, "add app api --lang go"},
 		{`{"name":"smith_remove_project","arguments":{"name":"old","dry_run":true}}`, "remove old --dry-run"},
+		{`{"name":"smith_change_kind_preview","arguments":{"project":"core","kind":"package"}}`, "kind core package --dry-run --json"},
+		{`{"name":"smith_change_kind","arguments":{"project":"core","kind":"lib"}}`, "kind core lib --json"},
 		{`{"name":"smith_pipeline","arguments":{"template":"deploy-pages","project":"web"}}`, "pipeline deploy-pages --project web"},
 		{`{"name":"smith_graph","arguments":{"focus":["web","api"]}}`, "graph --format json --focus web,api"},
 		{`{"name":"smith_explain","arguments":{"target":"web:build"}}`, "explain web:build --json"},

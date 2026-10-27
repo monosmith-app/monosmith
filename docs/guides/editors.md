@@ -88,11 +88,13 @@ the workspace. For example, in a client's JSON configuration:
 The read-only tools (`smith_projects`, `smith_graph`, `smith_affected`,
 `smith_kinds`, `smith_stacks`, `smith_commands`, `smith_info`, `smith_doctor`,
 `smith_release_preview`, `smith_updates`, `smith_explain`, `smith_recipe_check`,
-`smith_plugin_list`, `smith_doctor_fixes` and `smith_upgrade_preview`) are
+`smith_plugin_list`, `smith_doctor_fixes`, `smith_upgrade_preview` and
+`smith_change_kind_preview`) are
 marked so a client may run them without asking. The others change the
 workspace or run a plugin: `smith_run`, `smith_add_project`,
 `smith_remove_project`, `smith_install`, `smith_uninstall`, `smith_sync`,
-`smith_pipeline`, `smith_doctor_fix`, `smith_upgrade`, `smith_recipe_new` and
+`smith_pipeline`, `smith_doctor_fix`, `smith_upgrade`, `smith_recipe_new`,
+`smith_change_kind` and
 `smith_plugin_check`. Each tool runs the smith command it stands for
 and returns its output headed by that command line (`$ smith install -w web
 zod`), so you can see and repeat exactly what was done. Values become single

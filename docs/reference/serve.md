@@ -123,6 +123,7 @@ option is refused.
 | `explain` | `smith explain <target> --json` (`target`, `recipe`) | that JSON |
 | `recipe.check` | `smith recipe check --json` | that JSON |
 | `plugins` | `smith plugin list --json` | that JSON |
+| `kind.preview` | `smith kind <project> <kind> --dry-run --json` (`project`, `kind`) | that JSON |
 
 A query answers with the JSON its command prints, exactly as `--json` does, so
 a client and a script read the same contract.
@@ -133,6 +134,7 @@ The methods that change the workspace are runs of their own:
 |---|---|
 | `install`, `uninstall` | `smith install`, `smith uninstall` |
 | `add`, `remove` | `smith add`, `smith remove` |
+| `kind` (`project`, `kind`) | `smith kind <project> <kind> --json`; a refusal is a failed run, and `--force` is not offered |
 | `upgrade` | `smith upgrade` |
 | `doctor.fix` | `smith doctor --fix --yes` |
 | `sync` | `smith sync` |
