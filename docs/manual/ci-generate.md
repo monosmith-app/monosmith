@@ -5,7 +5,7 @@ parent: ci.md
 
 `smith ci generate` rewrites the CI pipeline files from the workspace's projects and
 settings: `.github/workflows/ci.yml` for GitHub, `azure-pipelines.yml` for Azure,
-`.gitlab-ci.yml` for GitLab (per `ci.providers`), and `.devcontainer/devcontainer.json`
+`.gitlab-ci.yml` for GitLab, `.circleci/config.yml` for CircleCI (per `ci.providers`), and `.devcontainer/devcontainer.json`
 when `ci.devcontainer` is on. It also writes `tools/smith/install.sh`, the smith installer
 the pipelines run (`sh tools/smith/install.sh "<version>"`) instead of fetching a script from GitHub
 at every run; commit it, and do not edit it (`smith doctor --fix` restores it). Steps you added in `smith:slot` markers are kept; a pipeline
@@ -49,7 +49,9 @@ fails when they differ. [`smith doctor`](doctor.md) runs the same comparison as 
 
 Writes the files above. A slot that no longer exists in the new pipeline cannot keep its
 content: `warning: slot no longer exists, its content was not kept: <slot>` goes to
-standard error. Reads no smith-specific environment variable; the generated files call
+standard error. When a configured provider cannot express a setting (CircleCI builds native
+projects on Linux only and ignores `ci.branches`), `note: <what is left out>` goes to standard
+error as well, and [`smith ci check`](ci-check.md) lists it. Reads no smith-specific environment variable; the generated files call
 `smith` and set `SMITH_VERSION`.
 
 ## Examples

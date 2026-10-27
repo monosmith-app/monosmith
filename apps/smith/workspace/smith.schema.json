@@ -25,7 +25,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
+        "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },
         "smith_version": { "type": "string", "pattern": "^(latest|[0-9]+[.][0-9]+[.][0-9]+.*)$", "description": "The smith the generated pipelines install: latest, or an exact version. Default: the version of the smith that generates them." },

@@ -67,7 +67,7 @@ smith config set ci.providers github azure
 | Message | Cause and remedy |
 |---|---|
 | `nonsense is not a setting smith config edits Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).` | Check the name against `smith config list`. |
-| `ci.providers takes github or azure or gitlab, not "gitlab2"` | Use one of the listed values. |
+| `ci.providers takes github or azure or gitlab or circleci, not "gitlab2"` | Use one of the listed values. |
 | `release.branch takes one value` | A single-value setting got none or several. |
 
 ## Related

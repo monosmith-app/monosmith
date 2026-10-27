@@ -79,6 +79,8 @@ func FromEnvironment(getenv func(string) string) (pr PullRequest, ok bool, why s
 			return pr, false, "GITLAB_TOKEN is not set (a project access token with the api scope, as a masked CI/CD variable)"
 		}
 		return pr, true, ""
+	case getenv("CIRCLECI") == "true":
+		return circleciPullRequest(getenv)
 	}
-	return pr, false, "not running in GitHub Actions, Azure Pipelines or GitLab CI"
+	return pr, false, "not running in GitHub Actions, Azure Pipelines, GitLab CI or CircleCI"
 }

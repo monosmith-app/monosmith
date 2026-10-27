@@ -18,7 +18,7 @@ func TestSetChecksTheSchemaAndKeepsComments(t *testing.T) {
 		args []string
 		err  string
 	}{
-		{"ci.providers", []string{"github", "bitbucket"}, `takes github or azure or gitlab, not "bitbucket"`},
+		{"ci.providers", []string{"github", "jenkins"}, `takes github or azure or gitlab or circleci, not "jenkins"`},
 		{"ci.providers", []string{"github", "github"}, "twice"},
 		{"ci.devcontainer", []string{"yes please"}, "true or false"},
 		{"cache.max_size_mb", []string{"-1"}, "at least 0"},

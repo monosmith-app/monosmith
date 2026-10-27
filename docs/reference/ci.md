@@ -14,7 +14,7 @@ Each plugin contributes, for its own projects:
 - **toolchains** — the runtimes to install, at versions the plugin pins. The
   plugin says how: a GitHub action and an Azure task with their inputs
   (`actions/setup-node@v7`, `UsePythonVersion@0`, …), and a shell command for
-  everything else (GitLab installs every toolchain this way). smith itself knows no runtime, so a plugin for a new
+  everything else (GitLab and CircleCI install every toolchain this way). smith itself knows no runtime, so a plugin for a new
   language installs it the same way; a runtime no plugin says how to install
   is left as a comment in the pipeline, to fill through the `before-setup`
   slot.
@@ -47,7 +47,63 @@ stays the only branch a release runs from: the pack, upload and release steps
 keep their condition on it, so a push to `dev` runs verify and nothing more.
 Pull requests into any of the listed branches get the release preview comment.
 `smith doctor` reports a pipeline that does not match the list, and
-`smith ci generate` rewrites it. GitLab is not affected.
+`smith ci generate` rewrites it. GitLab and CircleCI are not affected.
+
+## CircleCI
+
+With `"circleci"` in `[ci] providers`, smith writes `.circleci/config.yml`
+(configuration version 2.1). It is the same pipeline as GitLab's, spelled for
+CircleCI:
+
+- an `ci` job on a `debian:bookworm` image, with one shared command
+  (`install-tools`) that installs system packages, checks out the code,
+  installs each toolchain through its plugin's shell command, restores the
+  package stores and installs smith (the vendored `tools/smith/install.sh`);
+- then `smith ci setup`, `audit` and `verify`, the `before-setup` and
+  `after-verify` slots, and the release preview;
+- on the release branch only (a `when` condition on the branch), `smith ci
+  pack` (its `dist/drop` kept as the `drop` artifact) and `smith ci release`;
+- a `native` job after it, when a project is native;
+- one workflow that runs both.
+
+Each CircleCI step is its own shell, while the plugins' install commands set
+`PATH` (and `JAVA_HOME`, `DOTNET_ROOT`) for "the rest of the job". Each
+install step therefore appends what its command changed in the environment
+to `$BASH_ENV`, which every later step reads.
+
+**What CircleCI cannot express, and what smith does about it:**
+
+- **Pull requests.** CircleCI builds branches; it has no pull request trigger.
+  The job runs on every branch, the release preview runs when
+  `CIRCLE_PULL_REQUEST` is set, and a release runs only from the release
+  branch. `[ci] branches` does not apply; `smith ci generate` says so.
+- **The release preview comment.** CircleCI has no comment service of its
+  own, so smith comments through the host of the pull request: on a GitHub
+  repository (GitHub.com or Enterprise Server) when `GITHUB_TOKEN` is a
+  project environment variable that can comment on pull requests; on any
+  other host the preview stays in the job's log. There is no job summary.
+  Pull requests, including from forks, read the remote cache and never write
+  it.
+- **Native projects on other systems.** The toolchains' install commands are
+  written for Debian, so the `native` job builds on Linux only. A configured
+  `windows-latest` or `macos-latest` runner is named in a comment in the file
+  and in a note when `smith ci generate` runs; add a job with a macOS or
+  Windows executor that runs `smith ci native` yourself.
+- **Pushing tags.** CircleCI's checkout key is read-only. Add a user key with
+  write access (Project Settings, SSH Keys, Add user key) so `smith ci
+  release` can push its tags.
+- **Secrets.** CircleCI passes project environment variables (and the
+  variables of a context the job uses) to every step, so the file maps none
+  of them; the credentials the release reads are listed in a comment at its
+  end and by `smith ci check`.
+- **GitHub-only features.** SBOM provenance attestation, `pub.yml`, npm
+  provenance, RubyGems trusted publishing and `vsce_entra` are GitHub Actions
+  features. The last two are refused in `smith.toml` when another provider is
+  listed.
+
+`smith ci generate --check` and `smith doctor` cover the file like the
+others: an edited file is reported as out of date, and steps you put between
+the `smith:slot` markers are kept.
 
 ## GitLab CI
 
@@ -130,7 +186,7 @@ Release step, an `Attest build provenance` step
 (`actions/attest-build-provenance`) over `dist/release/*/*`, which signs the
 archives, packages and SBOMs with SLSA provenance. Verify one with
 `gh attestation verify <file> --repo <owner>/<repo>`. Azure Pipelines and
-GitLab CI get the SBOM but no provenance step: they have no attestation
+GitLab CI and CircleCI get the SBOM but no provenance step: they have no attestation
 service.
 
 ## Pinned versions and the dev container
@@ -283,6 +339,11 @@ How each provider does it:
   the first two, and allows four caches per job: stores beyond the fourth are
   named in a comment. A merge request from a fork runs in the fork's project
   and uses its caches.
+- **CircleCI**: a `restore_cache` and a `save_cache` step per store, keyed on
+  the OS and a checksum of all the store's lockfiles (concatenated into one
+  file, since a key takes one file), falling back to the latest cache of the
+  same store. The stores stay where each tool keeps them (`~/.npm`,
+  `~/go/pkg/mod`).
 
 `smith ci generate --check` reports a pipeline that is missing them.
 
@@ -357,7 +418,8 @@ None of them is required: a run without the key uses the local cache and says
 so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
 
 - **Pull requests read the cache and never write it.** A pull request (GitHub
-  `pull_request`, Azure `Build.Reason` of `PullRequest`, GitLab merge requests)
+  `pull_request`, Azure `Build.Reason` of `PullRequest`, GitLab merge requests,
+  CircleCI's `CIRCLE_PULL_REQUEST`)
   is read-only, so a contributor's build cannot store a result that every later
   run replays; only a push to the release branch writes. This is smith's own
   rule, not YAML: `smith run` in a pull request behaves the same on a laptop
@@ -370,7 +432,7 @@ so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
 - **Azure needs the mapping.** Azure Pipelines exposes a secret variable to a
   step only through `env:`, so each of those steps carries
   `SMITH_CACHE_KEY: $(SMITH_CACHE_KEY)`. GitHub reads `${{ secrets.X }}`, and
-  GitLab's CI/CD variables are already environment.
+  GitLab's CI/CD variables and CircleCI's environment variables are already environment.
 - `smith doctor` warns on a machine where the remote is configured and the key
   is not set.
 
@@ -417,6 +479,8 @@ before `smith ci setup`:
   write` when a package publishes to GitHub Packages).
 - **GitLab:** a `token` registry's variable, as a masked CI/CD variable. GitLab
   has no sign-in task, so use `auth = "token"` there.
+- **CircleCI:** the same as GitLab: a `token` registry's variable, as a
+  project environment variable.
 
 A registry's credential reaches setup only when installs read from it.
 Publishing to the feed drops `NODE_AUTH_TOKEN`, `PYPI_TOKEN` and
