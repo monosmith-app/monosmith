@@ -3,7 +3,9 @@
 `smith typecheck` runs the `typecheck` task of each selected project: it checks types
 without producing output (`tsc --noEmit` for Node stacks). Languages whose compiler checks
 as part of `build` have no separate typecheck task. It is [`smith run typecheck`](run.md)
-with the task fixed.
+with the task fixed. A Python project runs mypy on smith's default configuration
+(`.smith/defaults/mypy.ini`) unless the repository configures mypy; see
+[Python](../plugins/using/catalogue/python.md#tool-configuration).
 
 ## When to use it
 

@@ -8,7 +8,7 @@ smith owns the lint setup, so a repository needs no linter configuration: for Go
 Python smith writes its default to `.smith/defaults/` and passes it to the tool. A
 `.golangci.yml` (Go) or a `ruff.toml` / `[tool.ruff]` table (Python) in the repository is the
 override and replaces the default; see [Go](../plugins/using/catalogue/go.md#lint-configuration)
-and [Python](../plugins/using/catalogue/python.md#lint-configuration).
+and [Python](../plugins/using/catalogue/python.md#tool-configuration).
 
 A lint task is also how the vertical-slice rules are enforced: for Node, the shared
 ESLint config carries them; Go, Python and the other languages get a separate

@@ -19,9 +19,6 @@ type PyProject struct {
 			Kind  string `toml:"kind"`
 			Stack string `toml:"stack"`
 		} `toml:"smith"`
-		// Mypy is present when the project configures mypy, which gives it
-		// a typecheck task.
-		Mypy map[string]any `toml:"mypy"`
 	} `toml:"tool"`
 }
 

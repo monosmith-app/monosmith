@@ -79,6 +79,7 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 
 # editors and OS
 .DS_Store

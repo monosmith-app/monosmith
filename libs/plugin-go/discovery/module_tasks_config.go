@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-go/linting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tooldefaults"
 )
 
 var inputs = []string{"**/*", "{workspaceRoot}/go.work", "{workspaceRoot}/go.work.sum"}
@@ -26,7 +27,7 @@ const NativeTag = "native"
 func Tasks(name, root string, kind protocol.ProjectKind, native bool, lint linting.Lint) map[string]protocol.Task {
 	tasks := map[string]protocol.Task{
 		"test": {Command: []string{"go", "test", "./..."}, Inputs: inputs, Cache: true, Description: "go test ./..."},
-		"lint": {Command: lint.Command, Inputs: lintInputs, Cache: true, Description: lint.Description},
+		"lint": {Command: lint.Command, Inputs: tooldefaults.WithDefaultInputs(lintInputs, lint.Command), Cache: true, Description: lint.Description},
 	}
 	if kind == protocol.ProjectApp {
 		binary := name

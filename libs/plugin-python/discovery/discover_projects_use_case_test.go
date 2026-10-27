@@ -59,19 +59,35 @@ func TestModuleNames(t *testing.T) {
 	}
 }
 
-func TestTypecheckOnlyWithMypyConfigured(t *testing.T) {
+func TestToolsRunOnSmithsDefaultsUnlessTheRepositoryConfiguresThem(t *testing.T) {
 	ws := t.TempDir()
-	write(t, ws, "libs/typed/pyproject.toml", "[project]\nname = \"typed\"\n\n[tool.mypy]\nstrict = true\n")
+	write(t, ws, "libs/typed/pyproject.toml", "[project]\nname = \"typed\"\n\n[tool.mypy]\nstrict = true\n\n[tool.pytest.ini_options]\naddopts = \"-x\"\n")
 	write(t, ws, "libs/plain/pyproject.toml", "[project]\nname = \"plain\"\n")
 	res, err := Discover(ws, []string{"libs/plain/pyproject.toml", "libs/typed/pyproject.toml"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := res.Projects[0].Tasks["typecheck"]; ok {
-		t.Fatal("a project without [tool.mypy] has no typecheck")
+	plain, typed := res.Projects[0].Tasks, res.Projects[1].Tasks
+	if cmd := strings.Join(plain["typecheck"].Command[1:], " "); cmd != "-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini ." {
+		t.Fatalf("typecheck %s", cmd)
 	}
-	if cmd := res.Projects[1].Tasks["typecheck"].Command; len(cmd) != 4 || cmd[2] != "mypy" {
-		t.Fatalf("typecheck %v", cmd)
+	if cmd := strings.Join(plain["test"].Command[1:], " "); cmd != "-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=." {
+		t.Fatalf("test %s", cmd)
+	}
+	for task, file := range map[string]string{"lint": "ruff.toml", "typecheck": "mypy.ini", "test": "pytest.ini"} {
+		in := plain[task].Inputs
+		if in[len(in)-1] != "{workspaceRoot}/.smith/defaults/"+file {
+			t.Errorf("%s: the default's content is an input: %v", task, in)
+		}
+	}
+	if cmd := typed["typecheck"].Command; len(cmd) != 4 || cmd[2] != "mypy" || cmd[3] != "." {
+		t.Fatalf("a project that configures mypy gets no --config-file: %v", cmd)
+	}
+	if cmd := typed["test"].Command; len(cmd) != 6 {
+		t.Fatalf("a project that configures pytest gets no -c: %v", cmd)
+	}
+	if strings.Contains(typed["typecheck"].Description, "smith's default") {
+		t.Fatalf("description %q", typed["typecheck"].Description)
 	}
 }
 

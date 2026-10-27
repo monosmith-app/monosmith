@@ -33,20 +33,25 @@ skips the tasks that depend on it; independent tasks keep going unless `--bail`.
 Ctrl+C stops every process tree smith started — on Windows through a Job Object,
 elsewhere through a process group.
 
-### Default lint configuration
+### Default tool configuration
 
-smith owns the lint of a repository, so the repository holds only overrides. A Go
+smith owns the lint, type check and tests of a repository, so the repository holds only overrides. A Go
 module lints with `golangci-lint run --config .smith/defaults/golangci.yml` and a
-Python project with `ruff check --config .smith/defaults/ruff.toml`, unless the
-repository configures the tool itself (`.golangci.{yml,yaml,toml,json}`;
-`ruff.toml`, `.ruff.toml` or `[tool.ruff]` in a `pyproject.toml`), in the project or
+Python project with `ruff check --config .smith/defaults/ruff.toml`,
+`mypy --config-file .smith/defaults/mypy.ini` and
+`pytest -c .smith/defaults/pytest.ini`, unless the repository configures the tool
+itself (`.golangci.{yml,yaml,toml,json}`; `ruff.toml`, `.ruff.toml` or `[tool.ruff]`
+in a `pyproject.toml`; `mypy.ini` or `[tool.mypy]`; `pytest.ini` or
+`[tool.pytest.ini_options]`, and the other files each tool reads), in the project or
 above it, up to the workspace root. That configuration then replaces smith's default
 whole and smith passes no `--config`. The default is written from the smith binary
-into `.smith/defaults/` (ignored by git) whenever it differs, and the smith version
-is part of the cache key, so a release that changes a default reruns the lint. Node
+into `.smith/defaults/` (ignored by version control) whenever it differs. The default
+file is an input of the task, so its content is part of the cache key (the file is
+ignored, so the key reads it from disk by name), as is the smith version: editing a
+default, or a release that changes one, reruns the task. Node
 works the same way through `@monosmith/eslint-config`. See
 [Go](../plugins/using/catalogue/go.md#lint-configuration) and
-[Python](../plugins/using/catalogue/python.md#lint-configuration).
+[Python](../plugins/using/catalogue/python.md#tool-configuration).
 
 ### deps-check
 

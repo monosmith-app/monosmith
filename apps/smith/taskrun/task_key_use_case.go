@@ -24,6 +24,7 @@ func newKeyer(opts Options) *keyer {
 // task id.
 func (k *keyer) inputs(t *taskgraph.Task, deps map[string]string) taskcache.KeyInputs {
 	selected := taskcache.SelectInputs(k.opts.Files, t.Project.Root, t.Def.Inputs, t.Def.Outputs)
+	selected = append(selected, taskcache.DefaultInputs(selected, t.Def.Inputs)...)
 	files := make([]taskcache.FileDigest, len(selected))
 	for i, f := range selected {
 		files[i] = taskcache.FileDigest{Path: f, Digest: k.digests.Digest(f)}
