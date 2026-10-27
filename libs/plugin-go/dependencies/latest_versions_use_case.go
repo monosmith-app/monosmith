@@ -28,11 +28,14 @@ var FetchJSON = func(url string, v any) error {
 	return json.NewDecoder(resp.Body).Decode(v)
 }
 
-// Latest compares the tools the Go plugin pins with their newest releases:
-// Go (the version go.work names) and golangci-lint (the version CI
-// installs). Module updates are go get's: smith up does not list them.
+// Latest asks the module proxy for the newest release of each module, and
+// compares the tools the Go plugin pins with their newest releases: Go (the
+// version go.work names) and golangci-lint (the version CI installs).
 func Latest(workspaceRoot string, params protocol.LatestParams) (protocol.LatestResult, error) {
 	var res protocol.LatestResult
+	if len(params.Names) > 0 {
+		res.Latest, res.Unreachable = latestModules(params.Names)
+	}
 	if !params.Tools {
 		return res, nil
 	}

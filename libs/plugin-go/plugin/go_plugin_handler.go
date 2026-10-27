@@ -70,7 +70,18 @@ func (g *Go) Uninstall(params protocol.UninstallParams) (protocol.DependencyResu
 	return dependencies.Uninstall(g.root, params)
 }
 
-// Latest implements serve.LatestReader: the tools the plugin pins.
+// Declared implements serve.DeclarationEditor.
+func (g *Go) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(g.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (g *Go) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(g.root, params)
+}
+
+// Latest implements serve.LatestReader: the newest module releases and the
+// tools the plugin pins.
 func (g *Go) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(g.root, params)
 }

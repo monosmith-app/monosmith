@@ -140,11 +140,13 @@ func PrintSync(w io.Writer, r SyncReport, check bool) {
 		fmt.Fprintf(w, "✔ %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
 	}
 	for _, p := range r.Unchecked {
-		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations", p)
-		if p == "go" {
-			fmt.Fprint(w, " (a go.work builds every module with the highest version any of them requires, so differing requirements never ship two copies)")
+		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations\n", p)
+	}
+	for _, d := range r.Drift {
+		if d.Plugin == "go" {
+			fmt.Fprintln(w, "ℹ A go.work already builds every module with the highest version any of them requires; aligning go.mod keeps each module building the same on its own.")
+			break
 		}
-		fmt.Fprintln(w)
 	}
 }
 

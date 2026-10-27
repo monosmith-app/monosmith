@@ -48,7 +48,7 @@ Usage: `smith sync [flags]`
 
 ## Files and environment
 
-Rewrites manifests (`package.json`, `pyproject.toml`, `Cargo.toml`) and runs the installer unless
+Rewrites manifests (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` through `go get`) and runs the installer unless
 `--no-install`. Reads `[dependencies]` in `smith.toml`.
 
 ## Examples
@@ -59,7 +59,7 @@ smith sync --check
 
 ```text
 ✔ Every project agrees on every shared dependency version.
-⊘ go: not compared; its plugin does not list declarations (a go.work builds every module with the highest version any of them requires, so differing requirements never ship two copies)
+⊘ cpp: not compared; its plugin does not list declarations
 ```
 
 ## Common errors

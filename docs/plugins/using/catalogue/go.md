@@ -11,7 +11,7 @@ The go plugin makes every `go.mod` below the workspace root a smith project. It 
 | `--lang` values | `go`, `golang` |
 | Manifest that makes a directory a project | `go.mod` (a `go.mod` at the workspace root is skipped; see [What it detects](#what-it-detects)) |
 | Requires / conflicts / provides | none / none / no task slots (`smith plugin list` shows `-` in the SLOTS and REQUIRES columns) |
-| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `latest`. Not advertised: `version`, `published`, `declarations`. |
+| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`. Not advertised: `version`, `published`. |
 | Stacks it publishes | none. The add-on [go-smith-plugin](go-smith-plugin.md) publishes the one stack whose language is `go`. |
 | Project kinds it can create | `app`, `lib`, `package` (`go-app`, `go-lib`, `go-package` in `smith kinds`) |
 
@@ -303,7 +303,8 @@ Dependencies:
 | `smith install` (no package) | `go mod download` in every module |
 | `smith install -w <project> <module>[@v]` | `go get <module>` in that module; with `-D`, `go get -tool` (a Go tool dependency) |
 | `smith uninstall -w <project> <module>` | `go get <module>@none` (`go get -tool ...@none` when `go.mod` has a `tool` directive for it) |
-| `smith up` | does not list Go modules (the plugin has no `declarations` capability): a `go.work` builds every module with the highest version required, so `go get` is the tool. It does compare the pinned tools: Go and golangci-lint. |
+| `smith up` | asks the module proxy (`proxy.golang.org`) for the newest release of each module a `go.mod` requires directly, then runs `go get <module>@v<version>` in each module that declares it, so `go.mod` and `go.sum` change together. It also compares the pinned tools: Go and golangci-lint. Indirect requirements, pseudo-versions (a commit between tags) and `replace`d modules are left alone. |
+| `smith sync` | brings the direct requirements of one module that several `go.mod` files declare to the highest version any of them has, with `go get`. A `go.work` already builds every module with the highest version required, so this does not change what ships; it keeps each module building the same on its own, and makes `smith doctor`'s one-version check meaningful for Go. |
 
 Real: `smith install -w api github.com/pkg/errors@v0.9.1` printed `added github.com/pkg/errors@v0.9.1 (apps/api/go.mod, apps/api/go.sum)` and the note `go mod tidy drops a requirement nothing imports yet: import it before tidying`; the `go.mod` line was marked `// indirect` until code imports it. `smith uninstall` removed it again. `smith up --check` ended with:
 
