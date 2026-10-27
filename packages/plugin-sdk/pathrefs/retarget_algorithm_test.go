@@ -40,3 +40,14 @@ func TestRetargetSiblingStaysWhenOnlyTheFileMoves(t *testing.T) {
 		t.Fatalf("not a path: %q", got)
 	}
 }
+
+func TestRebaseFromAFileBelowTheMovingDirectory(t *testing.T) {
+	// libs/a/tests/x moves with libs/a: what it reaches inside libs/a follows,
+	// what it reaches outside is recomputed from the new place.
+	if got := RebaseFrom("../a.csproj", "libs/a/tests/x", "libs/a", "packages/a"); got != "../a.csproj" {
+		t.Fatalf("a reference inside the project is kept: %q", got)
+	}
+	if got := RebaseFrom("../../../b/b.csproj", "libs/a/tests/x", "libs/a", "packages/a"); got != "../../../../libs/b/b.csproj" {
+		t.Fatalf("a reference outside the project is recomputed: %q", got)
+	}
+}

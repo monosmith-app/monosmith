@@ -62,17 +62,26 @@ func Retarget(text, fileDir, oldRoot, newRoot string) (string, int) {
 // relative path ("serde", "https://...", an absolute path) is returned
 // unchanged.
 func Rebase(ref, oldDir, newDir string) string {
+	return RebaseFrom(ref, oldDir, oldDir, newDir)
+}
+
+// RebaseFrom is Rebase for a file that sits anywhere inside the directory that
+// moves: fileDir is the directory the reference is written from, oldRoot the
+// directory that moves and newRoot where it goes. A reference to something
+// inside oldRoot is kept, because that moves along with the file.
+func RebaseFrom(ref, fileDir, oldRoot, newRoot string) string {
 	if !strings.HasPrefix(ref, "./") && !strings.HasPrefix(ref, "../") {
 		return ref
 	}
-	target := path.Join(oldDir, ref)
-	if oldDir != "" && (target == oldDir || strings.HasPrefix(target, oldDir+"/")) {
+	target := path.Join(fileDir, ref)
+	if oldRoot != "" && (target == oldRoot || strings.HasPrefix(target, oldRoot+"/")) {
 		return ref
 	}
 	if strings.HasPrefix(target, "../") || target == ".." {
 		return ref // leaves the workspace
 	}
-	rel := Relative(newDir, target)
+	newFileDir := path.Join(newRoot, strings.TrimPrefix(strings.TrimPrefix(fileDir, oldRoot), "/"))
+	rel := Relative(newFileDir, target)
 	if strings.HasSuffix(ref, "/") && !strings.HasSuffix(rel, "/") {
 		rel += "/"
 	}

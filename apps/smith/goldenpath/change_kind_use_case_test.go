@@ -63,6 +63,16 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"package.json": "packages/*"},
 		},
 		{
+			lang:  "dotnet",
+			tools: []string{"dotnet"},
+			wire: func(w *workspace) {
+				csproj := "apps/cli/Kcdotnet.Cli.csproj"
+				w.write(csproj, strings.Replace(w.read(csproj), "  <!-- The tests project", "  <ItemGroup>\n    <ProjectReference Include=\"../../libs/core/Kcdotnet.Core.csproj\" />\n  </ItemGroup>\n\n  <!-- The tests project", 1))
+				w.write("apps/cli/Program.cs", "Console.WriteLine(Kcdotnet.Core.Greeting.GreetUseCase.Greet(\"core\").Message);\n")
+			},
+			coreFiles: map[string]string{"apps/cli/Kcdotnet.Cli.csproj": "../../packages/core/Kcdotnet.Core.csproj"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

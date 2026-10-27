@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
@@ -64,4 +65,9 @@ func (d *Dotnet) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // Doctor implements serve.DoctorContributor.
 func (d *Dotnet) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return pipeline.Doctor(d.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (d *Dotnet) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(d.root, params)
 }
