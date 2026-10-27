@@ -460,7 +460,7 @@ These are recorded in
 | SBOM and provenance beyond npm and Go apps, and beyond GitHub Actions | npm and pnpm generate SBOMs; Nx and pnpm document npm provenance | **High** for supply-chain reviews | #348 |
 | Trusted publishing (no long-lived key) for more registries | npm (`npm trust`) | Medium to high | RubyGems, pub.dev and PyPI done; no issue for the rest |
 | CircleCI, Bitbucket Pipelines or Jenkins pipelines | Nx (CircleCI, Bitbucket Pipelines; not Jenkins) | Medium | #571 |
-| One version of each shared dependency across projects, in every language | Rush, Gradle, Cargo, pnpm and Yarn, Bazel | Medium | `smith sync` covers Node, Python, Rust and Go; .NET and Dart are skipped. #572 |
+| One version of each shared dependency across projects, in every language | Rush, Gradle, Cargo, pnpm and Yarn, Bazel | Medium | `smith sync` covers Node, Python, Rust, Go and .NET; Dart and the rest are skipped. #572 |
 | Checking that a package declares what it imports | Nx, Rush, Bazel, Pants | Medium | smith checks Node packages only (`deps-check`). #572 |
 | Dependency vulnerability audit | npm, pnpm, Yarn | Medium to high | Node, Python and Go; other ecosystems in #572 |
 | Container images, Maven, crates.io, Go tags and Packagist releases verified end to end | Pants and Earthly (images); Gradle (Maven); Nx and Cargo (crates.io) | Medium | Shipped and covered by tests; not run against the live registry or a Docker daemon for this page |
