@@ -97,6 +97,22 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"Gemfile": "gemspec path: 'packages/core'"},
 		},
 		{
+			lang:    "php",
+			tools:   []string{"php", "composer"},
+			install: true,
+			wire: func(w *workspace) {
+				manifest := "apps/cli/composer.json"
+				w.write(manifest, strings.Replace(w.read(manifest), `"php": ">=8.2"`, `"php": ">=8.2",`+"\n        "+`"kcphp/core": "*"`, 1))
+				ns := func(s string) string { return strings.ReplaceAll(s, "/", string(rune(92))) }
+				bin := "apps/cli/bin/cli"
+				w.write(bin, strings.Replace(strings.Replace(w.read(bin),
+					ns("use Kcphp/Cli/Greeting/GreetUseCase;"), ns("use Kcphp/Cli/Greeting/GreetUseCase;\nuse Kcphp/Core/Greeting/GreetUseCase as CoreGreeting;"), 1),
+					"echo GreetUseCase::greet('world'), PHP_EOL;", "echo CoreGreeting::greet('core'), PHP_EOL;", 1))
+			},
+			untracked: []string{"composer.lock"},
+			coreFiles: map[string]string{"composer.json": `"url": "packages/core"`},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

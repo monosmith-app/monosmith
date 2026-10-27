@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-php/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-php/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/scaffolding"
@@ -65,6 +66,11 @@ func (p *PHP) Published(params protocol.PublishedParams) (protocol.PublishedResu
 // CI implements serve.CIContributor.
 func (p *PHP) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(p.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (p *PHP) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(p.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.
