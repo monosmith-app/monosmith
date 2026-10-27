@@ -20,8 +20,8 @@ install.
 | `--lang` values | `jvm`, `java` |
 | Manifests that make a directory a candidate project | `pom.xml`, `build.gradle.kts`, `build.gradle` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published` |
-| Not advertised | `dependencies`, `declarations`, `latest`: `smith install`, `smith sync` and `smith up` skip JVM |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest` |
+| Not advertised | `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
 | Stacks it publishes | `kotlin` ("a Kotlin module built with Gradle, linted with ktlint"), `android` ("an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint") |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `jvm-app`, `jvm-lib`, `jvm-package`); the `android` stack makes apps only |
 | Tasks | `build`, `test`, `lint`, `start` |
@@ -412,8 +412,29 @@ machine (no Gradle, no Android SDK) the real output was:
       → install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME
 ```
 
-**Dependencies.** None: the plugin does not manage dependencies. Edit the pom
-or the build script. `smith install -w` and `smith sync` do nothing for JVM.
+**Dependencies.** `smith sync` and `smith up` read and rewrite the versions in
+the build files themselves, so they need no Maven or Gradle plugin and work the
+same with or without `mvn` or `gradle` on the machine.
+
+- Maven: every `<dependency>` of a `pom.xml` with a `<version>`, directly and in
+  `<dependencyManagement>`. A version that is a `${property}` the same pom
+  defines is followed, and the property's value is what changes (so every
+  dependency using it moves together). A dependency without a version takes the
+  managed one and declares nothing. Ranges (`[1.7,2.0)`) and properties the pom
+  does not define (the parent's) are reported and never rewritten.
+- Gradle: the string notation of `build.gradle` and `build.gradle.kts`
+  (`implementation("group:artifact:1.2.3")`, in either quote style). Version
+  catalogs (`libs.versions.toml`), the map notation and variables are not read
+  yet; a build that uses them keeps those versions to Gradle.
+- `smith up` asks Maven Central (`maven-metadata.xml`) for the highest stable
+  release (milestones, release candidates and snapshots are skipped; a backport
+  shipped after a newer line does not win). An artifact Maven Central does not
+  have (an internal repository's) is skipped. Nothing is installed afterwards:
+  Maven and Gradle resolve the new version on the next build.
+- Not offered: `smith install -w <module> <dependency>` and `smith uninstall`
+  (edit the pom or build script), and a vulnerability audit (the usual tools,
+  OWASP dependency-check for Maven and a Gradle plugin, have to be installed
+  into the build first, so `smith ci audit` has nothing to run for JVM).
 
 **Remove.** `smith remove <project>` deletes the directory, then the plugin takes
 the module's `<module>` line out of the root `pom.xml` and its `include(...)` line

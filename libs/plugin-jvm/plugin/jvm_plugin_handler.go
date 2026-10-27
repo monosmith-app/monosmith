@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-jvm/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/releasing"
@@ -69,6 +70,21 @@ func (j *JVM) Published(params protocol.PublishedParams) (protocol.PublishedResu
 // CI implements serve.CIContributor.
 func (j *JVM) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(j.root, params), nil
+}
+
+// Declared implements serve.DeclarationEditor.
+func (j *JVM) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(j.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (j *JVM) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(j.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (j *JVM) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(j.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.
