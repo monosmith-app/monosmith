@@ -72,22 +72,29 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	if params.Project.Kind != protocol.ProjectPackage || len(params.Project.Exports) == 0 {
 		return protocol.PublishedResult{}, nil
 	}
+	return NewestStable(params.Project.Exports[0]), nil
+}
+
+// NewestStable asks crates.io for a crate's newest stable version; a crate
+// it does not have comes back with no version, an unreachable registry with
+// Unreachable set.
+func NewestStable(crate string) protocol.PublishedResult {
 	result := protocol.PublishedResult{Registry: "crates.io"}
-	req, _ := http.NewRequest(http.MethodGet, CratesAPI+"/crates/"+params.Project.Exports[0], nil)
+	req, _ := http.NewRequest(http.MethodGet, CratesAPI+"/crates/"+crate, nil)
 	// crates.io refuses requests without a User-Agent that says who asks.
 	req.Header.Set("User-Agent", "smith (https://github.com/monosmith-app/monosmith)")
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
 	if err != nil {
 		result.Unreachable, result.Detail = true, err.Error()
-		return result, nil
+		return result
 	}
 	defer func() { _ = resp.Body.Close() }()
 	switch {
 	case resp.StatusCode == http.StatusNotFound:
-		return result, nil
+		return result
 	case resp.StatusCode != http.StatusOK:
 		result.Unreachable, result.Detail = true, resp.Status
-		return result, nil
+		return result
 	}
 	var body struct {
 		Crate struct {
@@ -97,11 +104,11 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		result.Unreachable, result.Detail = true, fmt.Sprintf("unreadable answer: %v", err)
-		return result, nil
+		return result
 	}
 	result.Version = body.Crate.MaxStableVersion
 	if result.Version == "" && !strings.Contains(body.Crate.MaxVersion, "-") {
 		result.Version = body.Crate.MaxVersion
 	}
-	return result, nil
+	return result
 }

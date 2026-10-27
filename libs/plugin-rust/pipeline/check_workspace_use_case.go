@@ -28,6 +28,13 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		Check: "cargo is installed", OK: err == nil,
 		Detail: "cargo is not on PATH", Remedy: "install Rust " + Version(workspaceRoot) + " with rustup (https://rustup.rs)",
 	})
+	if err == nil {
+		_, auditErr := probe(workspaceRoot, []string{"cargo", "audit", "--version"})
+		findings = append(findings, protocol.Finding{
+			Check: "cargo-audit is installed", OK: auditErr == nil, Warning: true,
+			Detail: "smith ci audit cannot check the crates for known vulnerabilities without it", Remedy: "`cargo install --locked cargo-audit`",
+		})
+	}
 	if f, ok := CheckRustVersion(workspaceRoot); ok {
 		findings = append(findings, f)
 	}

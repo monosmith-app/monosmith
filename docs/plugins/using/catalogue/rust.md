@@ -11,7 +11,7 @@ The rust plugin makes every crate in a root Cargo workspace a smith project. It 
 | `--lang` values | `rust` |
 | Manifest that makes a directory a project | `Cargo.toml` with a `[package]` table. A root `Cargo.toml`, and a manifest without `[package]` (a virtual workspace), are not projects. |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`. Not advertised: `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`rust-app`, `rust-lib`, `rust-package`) |
 
@@ -241,7 +241,7 @@ Real output of `smith ci generate` (GitHub):
 | Toolchain | Rust at the `channel` of `rust-toolchain.toml`, else `1.90`, with `clippy` and `rustfmt`. GitHub: `dtolnay/rust-toolchain@master`. Azure and GitLab: `rustup` with `--profile minimal`, then `cargo` on PATH (`##vso[task.prependpath]` on Azure). Dev container: the `rust` feature, `profile: minimal`. |
 | Package store | `~/.cargo/registry` (`CARGO_HOME`), keyed on every `Cargo.lock` |
 | Setup (`smith ci setup`) | `cargo fetch` (blocking). Real: `▶ Fetch crates`, `smith ci setup passed in 100ms`. |
-| Audit | by default nothing: `smith ci audit` printed `nothing to audit`. There is no `cargo audit` step. With `[ci] audit_policies = ["rust"]`: setup also runs `cargo install --locked cargo-deny --version 0.18.5`, and the audit runs `cargo deny check licenses bans` and `smith rust-policy --max-unsafe=<audit_max_unsafe> <crate dirs>` (counts `unsafe` blocks, functions, impls and traits in `.rs` files outside `target/` and hidden folders). Blocking unless `"rust"` is in `audit_warn`. |
+| Audit | `cargo audit`, reported and not blocking, remembered per content of `Cargo.lock` and the manifests so it is skipped while they are unchanged. On a CI runner (`CI` or `TF_BUILD` set) a missing cargo-audit is installed first; on a developer machine the step says `cargo-audit is not installed: run cargo install --locked cargo-audit` and `smith doctor` warns with the same remedy. With `[ci] audit_policies = ["rust"]`: setup also runs `cargo install --locked cargo-deny --version 0.18.5`, and the audit runs `cargo deny check licenses bans` and `smith rust-policy --max-unsafe=<audit_max_unsafe> <crate dirs>` (counts `unsafe` blocks, functions, impls and traits in `.rs` files outside `target/` and hidden folders). Blocking unless `"rust"` is in `audit_warn`. |
 | Credentials | `CARGO_REGISTRY_TOKEN` (required, only when a package crate exists). `smith ci check`: `GitHub: add the repository secrets CARGO_REGISTRY_TOKEN`. |
 
 `smith rust-policy --max-unsafe=0` over the three generated crates printed nothing and exited 0. cargo-deny is not installed here, so the full opt-in audit was not run.
@@ -253,6 +253,7 @@ Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the work
 | Check | Fails when |
 |---|---|
 | `cargo is installed` | `cargo --version` fails; remedy: install Rust with rustup |
+| `cargo-audit is installed` | a warning when `cargo audit --version` fails; remedy: `cargo install --locked cargo-audit` |
 | `Rust is <version>, as in CI` | `rustc --version`, as rustup resolves it in the workspace (so a `rust-toolchain.toml` counts), is older than the version CI and the dev container install (`1.90`, or the `channel` of `rust-toolchain.toml`); a newer local Rust is a warning. Nothing is reported when `rustc` is absent (the `cargo` check says so) or the channel is `stable` or `nightly`. Fix: write `rust-toolchain.toml` (never over an existing one) and `rustup toolchain install` the pinned version; for a newer local Rust, pin what the machine runs |
 | `the root Cargo.toml is a workspace` | there is no root `Cargo.toml` |
 | `the root Cargo.toml is valid TOML` | it does not parse |
@@ -267,7 +268,12 @@ These four appear only for an app with a release section; a native app is checke
 
 All passed in the test run (`21 passed, 0 failed`). Only the version check has a `--fix`, and it runs `rustup`, so it is asked about, never applied by `--yes`.
 
-Dependencies: the plugin has no `dependencies` capability. `smith install -w kit serde` answers `smith: plugin rust cannot change kit's dependencies; edit its manifest instead` (real), and `smith up` has nothing to list for Rust (`Every declared dependency is at its latest release.`). Use `cargo add` / edit `Cargo.toml`.
+Dependencies: the plugin lists what every crate's `Cargo.toml` declares (`[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`) and the shared `[workspace.dependencies]` of the root `Cargo.toml`, so `smith sync`, `smith up` and the one-version check in `smith doctor` cover Rust.
+
+- A dependency from a `path` or a repository URL, and one a crate inherits with `workspace = true`, declares no version of its own and is left alone. A renamed dependency (`package = "reqwest"`) counts under its crate name.
+- `smith sync` brings every declaration of a crate to the highest version declared, rewriting only the version string (features, comments and spacing stay). A requirement that is a range (`>=0.11, <0.13`) or a wildcard is reported and left alone. A version a crate declares for a dependency that the root `[workspace.dependencies]` also declares counts as a difference; moving the dependency to the workspace table and writing `workspace = true` in the crates ends it for good.
+- `smith up` asks crates.io for the newest stable release of each crate and rewrites to it, keeping each requirement's operator. It then runs `cargo fetch`, so `Cargo.lock` follows.
+- `smith install -w kit serde` runs `cargo add` in the crate (`-D` adds a dev-dependency) and `smith uninstall -w kit serde` runs `cargo remove`; a bare `smith install` runs `cargo fetch`.
 
 Removal: `smith remove <project>` deletes the directory and takes its entry out of `members` in the root `Cargo.toml`. Real dry run: `Would remove core (libs/core)`, `changes Cargo.toml`, `the pipelines would be regenerated`.
 
@@ -277,7 +283,7 @@ Removal: `smith remove <project>` deletes the directory and takes its entry out 
 - A root workspace `Cargo.toml` is required. A repository whose single root `Cargo.toml` is a crate is not a smith project (and `smith add` refuses to turn it into a workspace for you).
 - The root `Cargo.toml` is yours after the first write; smith edits only the `members` array and, at release time, the version lines.
 - `build` is a debug, uncached build with no declared outputs; there is no release build task. Release archives are built by `smith release` (zip only, not `.tar.gz`: the npm, PyPI, NuGet and package manager steps read zips) and by the native jobs.
-- No vulnerability audit by default (no `cargo audit`), no private cargo registries, no dependency management through smith.
+- The audit needs cargo-audit (installed on CI, a hint elsewhere); it does not tell fixable findings from the rest, so it never blocks. Private cargo registries are not asked for newer versions.
 
 ## Verified
 

@@ -48,7 +48,7 @@ Usage: `smith sync [flags]`
 
 ## Files and environment
 
-Rewrites manifests (`package.json`, `pyproject.toml`) and runs the installer unless
+Rewrites manifests (`package.json`, `pyproject.toml`, `Cargo.toml`) and runs the installer unless
 `--no-install`. Reads `[dependencies]` in `smith.toml`.
 
 ## Examples

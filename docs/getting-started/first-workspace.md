@@ -332,9 +332,9 @@ smith uninstall -w web zod
 
 `-w` takes a project name or directory and can be repeated. `-D` adds a
 development dependency. A bare `smith install` installs everything a fresh clone
-needs. `smith install` and `smith uninstall` cover Node, Python, Go, Dart, PHP
-and Ruby; for the others use their own tool (`cargo add`, `dotnet add package`)
-in the project's folder.
+needs. `smith install` and `smith uninstall` cover Node, Python, Rust, Go, Dart,
+PHP and Ruby; for the others use their own tool (`dotnet add package`) in the
+project's folder.
 
 When projects declare the same dependency at different versions, `smith sync`
 makes them agree, and `smith sync --check` only reports (use it in CI).
