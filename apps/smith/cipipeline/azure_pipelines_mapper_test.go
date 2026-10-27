@@ -102,7 +102,7 @@ func TestANativePackagePublishesFromTheNativeJob(t *testing.T) {
 	m.Native, m.NativePublish, m.NativeRunners = true, true, DefaultNativeRunners
 	gh := RenderGitHub(m)
 	native := gh[strings.Index(gh, "\n  native:\n"):]
-	step := native[strings.Index(native, "      - name: Native\n"):strings.Index(native, "      - uses: actions/upload-artifact@v7\n")]
+	step := native[strings.Index(native, "      - name: Native\n"):strings.Index(native, "      - name: Keep the native builds")]
 	for _, want := range []string{"GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}\n", "PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}\n"} {
 		if !strings.Contains(step, want) {
 			t.Errorf("each native job publishes its platform, with the release credentials; lacks %q:\n%s", want, step)

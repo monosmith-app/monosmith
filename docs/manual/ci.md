@@ -213,8 +213,41 @@ Install plugin-sdk-py         ✓ done  4.9s
 ✓ Setup passed in 1m 32s: 8 steps ran, 26 projects ready
 ```
 
-`smith ci pack` runs the `package` task of the apps (here two Go apps and a Node app) and
-ends with `packed into dist/drop`.
+`smith ci verify` ends with one row per project and one column per task, failures first; a failure
+prints the end of its output and the command that repeats it, and the test column carries the
+runner's own count when smith can read it (pytest, vitest, jest, dotnet) or the number of Go
+packages:
+
+```text
+══ Verify ══════════════════════════════════════════════════
+Checking 26 projects (lint, typecheck, test, build).
+The dependency boundaries between projects are checked first.
+Project            Lint      Types   Tests              Build     Time
+jest-preset        ✗ failed  ✓       ✓ 19 passed        ○ none  1m 27s
+smith              ✓         ○ none  ✓ 116 packages ok  ✓       2m 49s
+eslint-config      ✓         ✓       ✓ 75 passed        ○ none  2m 37s
+vscode             ✓         ✓       ✓ 220 passed       ✓          56s
+last output of jest-preset:lint:
+  Oops! Something went wrong! :(
+→ repeat it with `smith run lint -p jest-preset`
+✗ Verify failed after 2m 37s
+```
+
+`smith ci pack` runs the `package` task of the apps (here a Go app and a VS Code extension), then
+lists what is in `dist/drop`, which the generated pipeline keeps as the artifact `drop` (the step
+is named for it in the GitHub and Azure files):
+
+```text
+══ Pack ════════════════════════════════════════════════════
+Packing 2 projects (task "package") into dist/drop.
+Project  Package  Time
+smith    ✓        2.0s
+vscode   ✓        1.3s
+Packed file                                Size
+dist/drop/monosmith-vscode-0.0.0.vsix  113.3 KB
+dist/drop/smith/smith.exe               28.5 MB
+✓ Pack passed in 2.1s: 2 files packed into dist/drop (28.6 MB)
+```
 
 ## Common errors
 

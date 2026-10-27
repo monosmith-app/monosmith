@@ -66,7 +66,8 @@ jobs:
 		fmt.Fprintf(&b, `      - name: Pack
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         run: smith ci pack
-%[2]s      - uses: actions/upload-artifact@v7
+%[2]s      - name: Keep the packed apps (dist/drop as artifact drop)
+        uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref_name == '%[1]s'
         with:
           name: drop
@@ -185,7 +186,8 @@ func githubNativeJob(m Model) string {
 	if m.NativePublish {
 		b.WriteString(githubEntraEnv(m))
 	}
-	b.WriteString(`      - uses: actions/upload-artifact@v7
+	b.WriteString(`      - name: Keep the native builds (dist/drop as artifact native-OS)
+        uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.os }}
           path: dist/drop

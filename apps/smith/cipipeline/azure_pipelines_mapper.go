@@ -78,7 +78,7 @@ func azureSteps(m Model) string {
     condition: %[1]s
 %[2]s  - publish: dist/drop
     artifact: drop
-    displayName: Keep the packed apps
+    displayName: Keep the packed apps (dist/drop as artifact drop)
     condition: %[1]s
 `, onPush, azureEnv("    ", m.TaskCredentials()))
 	}
@@ -123,7 +123,7 @@ func azureNativeJob(m Model) string {
 	b.WriteString(azureEnv("        ", m.nativeCredentials()))
 	b.WriteString(`      - publish: dist/drop
         artifact: native-$(image)
-        displayName: Keep the native builds
+        displayName: Keep the native builds (dist/drop as artifact native-OS)
 `)
 	return b.String()
 }
