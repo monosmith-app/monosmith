@@ -22,6 +22,21 @@ can apply a fix it offers one: for Rust, a `rust-toolchain.toml` pinning the ver
 `rustup toolchain install`, which also makes CI and the dev container follow the pin. A
 `[toolchains]` pin in `smith.toml` is a separate check, against the same probed version.
 
+## Suggestions about a project's kind
+
+Two warnings point at [`smith kind`](kind.md). They are suggestions, never failures, and they
+say nothing when there is nothing to say:
+
+- `the lib <name> is used by a project`: no project imports the lib, and it has been in the
+  repository for 14 days or more. A lib is shared inside the repository; this one is shared
+  with nobody. A lib added today, or in a workspace of one project, is left alone. The remedy
+  offers `smith kind <name> app`, `smith kind <name> package` or `smith remove <name>`, and
+  says to leave it if something outside the graph uses it.
+- `the package <name> is published`: a package that its own settings (`registry = "none"`
+  under `[projects.<name>]`) or its manifest (Dart's `publish_to: none`) never publish, while
+  the workspace does publish. The remedy offers `smith kind <name> lib`. A workspace that
+  releases everything by tag (`registry = "none"` under `[release]`) is not asked.
+
 ## When to use it
 
 - After cloning, after a merge, after changing tools, and before a release.
