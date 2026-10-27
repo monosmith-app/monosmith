@@ -73,6 +73,17 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"apps/cli/Kcdotnet.Cli.csproj": "../../packages/core/Kcdotnet.Core.csproj"},
 		},
 		{
+			lang:  "jvm",
+			tools: []string{"java", "mvn"},
+			wire: func(w *workspace) {
+				pom := "apps/cli/pom.xml"
+				w.write(pom, strings.Replace(w.read(pom), "  <dependencies>\n", "  <dependencies>\n    <dependency>\n      <groupId>dev.kcjvm</groupId>\n      <artifactId>kcjvm-core</artifactId>\n      <version>0.0.0</version>\n    </dependency>\n", 1))
+				main := "apps/cli/src/main/java/dev/kcjvm/cli/Main.java"
+				w.write(main, strings.Replace(w.read(main), `    System.out.println(GreetUseCase.greet("world"));`, `    System.out.println(dev.kcjvm.core.greeting.GreetUseCase.greet("core"));`, 1))
+			},
+			coreFiles: map[string]string{"pom.xml": "<module>packages/core</module>"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

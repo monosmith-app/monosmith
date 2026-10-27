@@ -69,6 +69,22 @@ func SetElementBefore(src, parent, name, value, before string) (out string, ok b
 	return src[:loc[0]] + line + src[loc[0]:], true
 }
 
+// AppendElement sets the text of the first <name> element; when there is none
+// it adds one as the last child of the first <parent> element, indented one
+// step deeper than the closing tag. ok is false when there is no such parent
+// written over several lines.
+func AppendElement(src, parent, name, value string) (out string, ok bool) {
+	if _, found := Element(src, name); found {
+		return SetElement(src, parent, name, value)
+	}
+	loc := regexp.MustCompile(`(?m)^([ \t]*)</` + regexp.QuoteMeta(parent) + `>`).FindStringSubmatchIndex(src)
+	if loc == nil {
+		return src, false
+	}
+	line := src[loc[2]:loc[3]] + "  <" + name + ">" + value + "</" + name + ">" + lineEnding(src)
+	return src[:loc[0]] + line + src[loc[0]:], true
+}
+
 // indentOfLine is the leading whitespace of the line starting at from.
 func indentOfLine(src string, from int) string {
 	end := from

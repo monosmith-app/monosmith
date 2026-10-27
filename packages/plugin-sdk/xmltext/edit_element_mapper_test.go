@@ -30,6 +30,14 @@ func TestSetElementBeforePutsItAboveTheNamedElement(t *testing.T) {
 	}
 }
 
+func TestAppendElementGoesLastInTheParent(t *testing.T) {
+	got, ok := AppendElement(project, "PropertyGroup", "Version", "1.0.0")
+	want := "<Project>\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <SmithKind>app</SmithKind>\n    <Version>1.0.0</Version>\n  </PropertyGroup>\n</Project>\n"
+	if !ok || got != want {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestRemoveElementTakesItsLine(t *testing.T) {
 	got, found := RemoveElement(project, "OutputType")
 	if !found || got != "<Project>\n  <PropertyGroup>\n    <SmithKind>app</SmithKind>\n  </PropertyGroup>\n</Project>\n" {
