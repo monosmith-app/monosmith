@@ -1,12 +1,15 @@
 package adoption
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // CompleteWorkspace does the mechanical steps smith doctor would otherwise
@@ -55,14 +58,28 @@ func CompleteWorkspace(r Report, install, eslint bool, out io.Writer) error {
 		}
 	}
 	if install {
+		var log bytes.Buffer
 		cmd := exec.Command("npm", "install")
-		cmd.Dir, cmd.Stdout, cmd.Stderr = r.Root, out, out
+		cmd.Dir, cmd.Stdout, cmd.Stderr = r.Root, &log, &log
 		fmt.Fprintln(out, "  npm install ...")
-		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(out, "  not done: npm install failed (%v); run it yourself\n", err)
-		}
+		reportInstall(out, log.String(), cmd.Run())
 	}
 	return nil
+}
+
+// reportInstall tells how npm install went. npm's own warnings (engines,
+// deprecations) are folded into one line each, as they are not smith's
+// result; the whole output is shown only when the install failed.
+func reportInstall(out io.Writer, log string, err error) {
+	if err != nil {
+		_, _ = io.WriteString(out, log)
+		fmt.Fprintf(out, "  not done: npm install failed (%v); run it yourself\n", err)
+		return
+	}
+	fmt.Fprintln(out, "  npm install done")
+	for _, note := range toolrun.FoldWarnings(log, "run npm install to see them") {
+		fmt.Fprintf(out, "    note: %s\n", note)
+	}
 }
 
 // writeGoWork runs go work init and go work use for the Go projects, unless
