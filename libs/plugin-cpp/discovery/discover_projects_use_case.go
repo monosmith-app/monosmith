@@ -43,6 +43,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			}
 		}
 		kind := projectkind.Resolve(lists.Kind, root, protocol.ProjectLib)
+		var tags []string
+		if lists.Native {
+			tags = append(tags, NativeTag)
+		}
 		result.Projects = append(result.Projects, protocol.Project{
 			Name:     path.Base(root),
 			Root:     root,
@@ -53,6 +57,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Version:  lists.Version,
 			Tasks:    Tasks(Shape{Root: root, Kind: kind, Executable: lists.Executable, Lint: lint}),
 			Stack:    lists.Stack,
+			Tags:     tags,
 		})
 	}
 	result.SetToolchain(func() string { return toolrun.Toolchain("cmake", "cmake", "--version") })
