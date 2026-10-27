@@ -11,6 +11,7 @@ from ..host import PluginClient
 from ..plugin_roles import effective_roles
 from ..projects import project_kind_directory
 from ..protocol import GenerateParams, Project, ProjectKind
+from .check_kind_change_use_case import check_kind_change
 from .conformance_report_model import ConformanceReport
 from .find_manifests_algorithm import find_manifests
 from .go_list_mapper import go_list, go_quote
@@ -30,7 +31,7 @@ def check_generation(client: PluginClient, workspace: str | Path, report: Confor
 
     For a language plugin, also that its own `discover` returns what it made, with the kind and the
     stack it was asked for, tasks with commands, and that the dry runs of `version/write`, `remove`,
-    `publish` and `published` answer.
+    `publish` and `published` answer, and, for a plugin that changes kinds, what `project/kind` edits.
     """
     language = "language" in effective_roles(client.info)
     made: list[GenerateParams] = []
@@ -104,6 +105,8 @@ def check_generation(client: PluginClient, workspace: str | Path, report: Confor
                 f"would remove the {kind} (dry run)",
                 functools.partial(call, "remove", {"project": project, "dryRun": True}),
             )
+        if client.supports("project/kind"):
+            check_kind_change(client, workspace, project, projects, report)
         if kind == "package" and client.supports("publish"):
             publish = functools.partial(client.call, timeout=300.0)
             _attempt(

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { connectInProcess } from '../host/index.ts'
 import type { SmithPlugin } from '../serve/index.ts'
 import { checkPlugin } from './check-plugin.use-case.ts'
+import type { ConformanceReport } from './conformance-report.model.ts'
 
 let ws: string
 beforeEach(() => { ws = mkdtempSync(join(tmpdir(), 'sdk-conformance-')) })
@@ -34,6 +35,29 @@ function good (): SmithPlugin {
   }
 }
 
+/** The good language, able to change kinds; `how` says how it misbehaves, if it does. */
+function changer (how: '' | 'nothing' | 'missing' | 'write'): SmithPlugin {
+  const plugin = good()
+  plugin.changeKind = ({ project, to }) => {
+    if (how === 'nothing') return {}
+    if (how === 'missing') return { files: [{ path: `${project.root}/nowhere.txt`, content: 'x' }] }
+    const manifest = `${project.root}/fig.txt`
+    if (how === 'write') writeFileSync(join(ws, ...manifest.split('/')), `${to} conformance`)
+
+    return { files: [{ path: manifest, content: `${to} conformance` }] }
+  }
+
+  return plugin
+}
+
+async function reportOf (plugin: SmithPlugin): Promise<ConformanceReport> {
+  const client = await connectInProcess(plugin, { workspaceRoot: ws })
+  const report = await checkPlugin(client, { workspace: ws })
+  await client.close()
+
+  return report
+}
+
 /** The failures of the static checks of a plugin served in this process. */
 async function failuresOf (plugin: SmithPlugin): Promise<string> {
   const client = await connectInProcess(plugin, { workspaceRoot: ws })
@@ -57,6 +81,30 @@ describe('checkPlugin', () => {
     ]))
     expect(JSON.stringify(report)).toMatch(/^\{"plugin":\{"name":"fig","version":"1.0.0"\},"results":\[\{"check":"names itself","ok":true\}/)
     await client.close()
+  })
+
+  describe('a plugin that changes kinds', () => {
+    it('is asked what each generated kind becomes, and passes', async () => {
+      const report = await reportOf(changer(''))
+      expect(report.failures()).toBe('')
+      expect(report.results.map(result => result.check)).toEqual(expect.arrayContaining([
+        'answers what making the app a lib edits (dry run)', 'answers what making the lib a package edits (dry run)', 'answers what making the package a lib edits (dry run)',
+      ]))
+    })
+
+    it('is not asked when it does not declare changeKind', async () => {
+      const report = await reportOf(good())
+      expect(report.results.some(result => result.check.includes('edits (dry run)'))).toBe(false)
+    })
+
+    it.each([
+      ['nothing', 'neither a refusal nor an edit'],
+      ['missing', 'files that do not exist'],
+      ['write', 'it wrote to the workspace'],
+    ] as const)('reports an answer that is %s', async (how, want) => {
+      const report = await reportOf(changer(how))
+      expect(report.failures()).toContain(want)
+    })
   })
 
   it('does not generate without a workspace', async () => {

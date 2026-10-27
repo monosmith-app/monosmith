@@ -63,6 +63,7 @@ With `--generate`, a plugin that advertises `generate` also has to work:
 | `the generated <kind>'s tasks have commands` | no task has an empty `command` |
 | `writes the <kind>'s version (dry run)` | `version/write` in dry run answers, if advertised |
 | `would remove the <kind> (dry run)` | `remove` in dry run answers, if advertised |
+| `answers what making the <kind> <another kind> edits (dry run)` | `project/kind` answers, if advertised (`changeKind`): an app is asked to become a lib, a lib a package, a package a lib. The answer is a refusal or edits to files that exist (paths before the move), and the plugin does not write them itself |
 | `publishes the package (dry run)` | `publish` in dry run answers for the package, if advertised |
 | `says what the registry has of the package` | `published` answers (an unreachable registry is a result, not an error) |
 
