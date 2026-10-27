@@ -48,7 +48,7 @@ func (c *Cpp) WriteVersion(params protocol.VersionParams) (protocol.VersionResul
 
 // Publish implements serve.Publisher.
 func (c *Cpp) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
-	return releasing.Publish(params)
+	return releasing.Publish(c.root, params)
 }
 
 // CI implements serve.CIContributor.

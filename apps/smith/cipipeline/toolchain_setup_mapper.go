@@ -15,7 +15,9 @@ func githubSetup(t protocol.Toolchain) string {
 	case t.GitHub != nil:
 		return actionStep("      ", "- uses: ", "with", t.GitHub)
 	case t.Install != "":
-		return fmt.Sprintf("      - name: Install %s\n        run: %s", t.Name, runValue("        ", t.Install))
+		// bash on every runner: an install script is shell, and the Windows
+		// runners' default is PowerShell.
+		return fmt.Sprintf("      - name: Install %s\n        shell: bash\n        run: %s", t.Name, runValue("        ", t.Install))
 	}
 	return missing("      ", t)
 }

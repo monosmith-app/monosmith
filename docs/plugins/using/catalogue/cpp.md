@@ -184,6 +184,8 @@ variables of its own, and no plugin tables in `smith.toml`.
 |---|---|---|---|
 | `CMakeLists.txt` | `set(SMITH_KIND "app")` | the project's kind | `discovery/cmake_lists_mapper.go` |
 | `CMakeLists.txt` | `set(SMITH_STACK "<name>")` | the project's stack | same |
+| `CMakeLists.txt` | `set(SMITH_NATIVE ON)` | the app is built on each OS and its release archives come from the native jobs | same |
+| `smith.toml` | `[projects.<app>.release] platforms`, `asset_name`, `product`, `os_alias`, `arch_alias` | which archive the release builds and what it is called | host, `releasing/build_assets_use_case.go` |
 | `CMakeLists.txt` | `project(... VERSION x.y.z)` | the release version it starts from and rewrites | `releasing/project_version_mapper.go` |
 | `CMakeLists.txt` | `add_subdirectory(<workspace dir>)` | a graph edge | `discovery/cmake_lists_mapper.go` |
 | `CMakeLists.txt` | first `add_executable(<target>` | what `start` runs | same |
@@ -227,6 +229,8 @@ are fixed in the plugin; override them with a task override.
 | Version write | at release time the number is replaced in place; with no `VERSION` argument one is inserted right after the project name. The file is restored afterwards. A dry run lists `packages/sdk/CMakeLists.txt` and writes nothing |
 | Tag | `<project>@<version>` (for example `sdk@0.1.0`); override with `[projects.<name>] tag_prefix` |
 | Publish | nothing is uploaded for any kind: "released by its tag". The consumer chooses a vcpkg registry or Conan |
+| Release assets of an app | With `[projects.<app>.release]` the plugin runs `cmake -S . -B dist/release/<app>/build -G Ninja -DCMAKE_BUILD_TYPE=Release`, `cmake --build` and `cmake --install --prefix dist/release/<app>/stage`, and writes `dist/release/<app>/<asset_name>` as a zip of what the install rules installed (or, with no install rules, the program of the first `add_executable`, named like the app's `Binary`), plus the README and LICENSE files of the project's directory, else the workspace root, and a checksum file. The version is the one the release wrote into `project(... VERSION)` (use `PROJECT_VERSION` in the code to show it). Each app of a workspace is its own asset set (`product` names it). |
+| Platforms | C++ is compiled and linked for the system it runs on, so an app is built on each system. A plain app can release only this machine's platform; another is refused, in a dry run too: `this machine (linux/amd64) cannot build darwin/arm64 ... Mark the app native (set(SMITH_NATIVE ON) in apps/tool/CMakeLists.txt) ...`. A **native** app (`set(SMITH_NATIVE ON)`) is built by each `smith ci native` runner (`ubuntu-latest`, `windows-latest`, `macos-latest`; `[ci] native_runners` adds others such as `ubuntu-24.04-arm`) for its own platform only, and attaches `<asset>.zip` and `<asset>.zip.sha256` to the GitHub Release; `smith ci verify` leaves it to those jobs. A native app has no combined `checksums.txt` (builds from different runners), no package manager manifests and no registry packages. A plain app's one platform gets `checksums.txt`, and feeds those like a Go app's. Its dry run lists what this machine's native job would attach. |
 | Credentials | none |
 | Private registry | not applicable |
 | Dry run | `smith release --dry-run` plans without tagging |
@@ -245,7 +249,7 @@ The JSON report for `sdk` shows `"tag": "sdk@0.1.0"`,
 
 | Provider | What is added |
 |---|---|
-| GitHub Actions, Azure Pipelines, GitLab | a step `Install cpp` that runs `apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config` (with `sudo` when present) |
+| GitHub Actions, Azure Pipelines, GitLab | a step `Install cpp` (bash on every runner) that, on Linux, runs `apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config` (with `sudo` when present), on macOS `brew install cmake ninja cppcheck pkg-config`, and on Windows nothing (the runner has CMake, Ninja and MinGW) |
 | Dev container | the `ghcr.io/devcontainers-extra/features/apt-get-packages:1` feature with `cmake,ninja-build,g++,cppcheck` |
 | vcpkg | when any project has a `vcpkg.json`, a step `Install vcpkg` clones vcpkg, bootstraps it and exports `VCPKG_ROOT` (GitHub's `GITHUB_ENV` and Azure's `##vso[task.setvariable]` ways). Not in the dev container |
 
@@ -254,12 +258,18 @@ no permission: a C++ release is the tag. The GitHub fragment from a real run:
 
 ```yaml
       - name: Install cpp
+        shell: bash
         run: |
-          SUDO=$(command -v sudo || true)
-          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config
+          case "$(uname -s)" in
+            Linux)
+              SUDO=$(command -v sudo || true)
+              $SUDO apt-get update -qq && $SUDO apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config ;;
+            Darwin)
+              brew install cmake ninja cppcheck pkg-config ;;
+          esac
 ```
 
-The CI images are assumed to be Debian or Ubuntu. Not verified: GitLab and
+(The `case` and `shell: bash` are new with the native release jobs; the fragment above is the older one-line form.) The CI images are assumed to be Debian or Ubuntu; a native app's macOS and Windows runners use the script's other branches. Not verified: GitLab and
 Azure output for cpp (generated from the same contribution, not run).
 
 ## Doctor, dependencies and removal
@@ -272,6 +282,9 @@ Azure output for cpp (generated from the same contribution, not run).
 | `Ninja is installed` | `ninja --version` fails |
 | `a C++ compiler is installed` | none of `c++`, `g++`, `clang++`, `cl` is on `PATH` |
 | `cppcheck is installed` | `cppcheck --version` fails |
+| `<app> releases for <platform>` | a platform in `[projects.<app>.release]` is not windows, linux or darwin with amd64 or arm64; remedy: change `platforms` |
+| `<app> can build the <platform> archive here` | the platform is not this machine's and the app is not native; remedy: `set(SMITH_NATIVE ON)` in its `CMakeLists.txt` |
+| `<app> has a program to release` | the app's `CMakeLists.txt` has no `add_executable` and no `install(` rule, so the archive would be empty |
 | `vcpkg is set up` | a project has a `vcpkg.json` and `VCPKG_ROOT` is empty. Real output: `a project has a vcpkg.json, but VCPKG_ROOT is not set` |
 
 All four passed on this machine; the vcpkg check failed as intended with an
@@ -296,7 +309,7 @@ project that another still adds with `add_subdirectory` is refused unless
   a macro, an `add_subdirectory` through a variable, or an `add_executable`
   generated by a function is not seen.
 - `smith add` generates C++20 code only (`cxx_std_20`, `LANGUAGES CXX`), with no stacks.
-- No `typecheck`, `format` or `package` tasks. `build` is not cached.
+- No `typecheck`, `format` or `package` tasks. `build` is not cached. Release archives are Release builds with Ninja and the compiler CMake finds (no cross-compiling, no multi-config generators), zip only, one platform per runner.
 - The Windows executable path in `start` gets `.exe` appended on Windows only;
   multi-config generators (Visual Studio) are not supported because the
   configure step always passes `-G Ninja`.

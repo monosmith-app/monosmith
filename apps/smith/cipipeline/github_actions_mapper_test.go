@@ -53,7 +53,7 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 	for _, want := range []string{
 		"      - uses: actions/setup-node@v7\n        with:\n          node-version: '24'\n          cache: false\n",
 		"python-version: '3.12'", "go-version: '1.26'",
-		"      - name: Install zig\n        run: |\n          curl -fsSL https://example.com/zig.sh | sh\n          zig version\n",
+		"      - name: Install zig\n        shell: bash\n        run: |\n          curl -fsSL https://example.com/zig.sh | sh\n          zig version\n",
 		"      # smith: no plugin says how to install rust 1.90",
 		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}", "fetch-depth: 0", "SMITH_VERSION: latest", "github.ref_name == 'main'"} {
 		if !strings.Contains(gh, want) {

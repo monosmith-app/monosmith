@@ -4,16 +4,25 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-cpp/releasing"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// toolchain installs CMake, Ninja, a compiler and cppcheck from the
-// distribution (the CI images run Debian or Ubuntu).
+// toolchain installs CMake, Ninja, a compiler and cppcheck: from the
+// distribution on Debian and Ubuntu (the CI images), with Homebrew on a Mac
+// runner (the compiler is Xcode's). A Windows runner comes with CMake, Ninja
+// and MinGW's compiler, so nothing is installed there. The script runs in
+// bash on every runner.
 var toolchain = protocol.Toolchain{
 	Name: "cpp", Version: "system",
-	Install: "SUDO=$(command -v sudo || true)\n" +
-		"$SUDO apt-get update -qq && $SUDO apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config",
+	Install: "case \"$(uname -s)\" in\n" +
+		"  Linux)\n" +
+		"    SUDO=$(command -v sudo || true)\n" +
+		"    $SUDO apt-get update -qq && $SUDO apt-get install -y -qq cmake ninja-build g++ cppcheck git curl zip unzip tar pkg-config ;;\n" +
+		"  Darwin)\n" +
+		"    brew install cmake ninja cppcheck pkg-config ;;\n" +
+		"esac",
 	Devcontainer: &protocol.DevcontainerFeature{ID: "ghcr.io/devcontainers-extra/features/apt-get-packages:1", Options: map[string]string{"packages": "cmake,ninja-build,g++,cppcheck"}},
 }
 
@@ -76,6 +85,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		{Check: "Ninja is installed", OK: has("ninja", "--version"), Detail: "ninja is not on PATH", Remedy: "install Ninja (https://ninja-build.org)"},
 		{Check: "a C++ compiler is installed", OK: compiler, Detail: "none of c++, g++, clang++ or cl is on PATH", Remedy: "install GCC, Clang or MSVC (from a developer prompt)"},
 		{Check: "cppcheck is installed", OK: has("cppcheck", "--version"), Detail: "cppcheck is not on PATH", Remedy: "install cppcheck (https://cppcheck.sourceforge.io)"},
+	}
+	for _, p := range params.Projects {
+		findings = append(findings, releasing.CheckReleasePlatforms(workspaceRoot, p)...)
 	}
 	if usesVcpkg(workspaceRoot, params.Projects) {
 		findings = append(findings, protocol.Finding{Check: "vcpkg is set up", OK: os.Getenv("VCPKG_ROOT") != "", Detail: "a project has a vcpkg.json, but VCPKG_ROOT is not set", Remedy: "clone and bootstrap vcpkg, then set VCPKG_ROOT (https://learn.microsoft.com/vcpkg/get_started)"})
