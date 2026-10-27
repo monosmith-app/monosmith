@@ -40,7 +40,7 @@ func RenderDevcontainer(name string, m Model) string {
 		Post     string                       `json:"postCreateCommand"`
 	}{
 		Name: name, Image: DevcontainerImage, Features: features,
-		Post: `sh ` + InstallScriptPath + ` "` + m.SmithVersion + `" && "$HOME/.local/bin/smith" ci setup`,
+		Post: devcontainerPost(m),
 	}
 	var b strings.Builder
 	b.WriteString(header("//"))
@@ -49,4 +49,19 @@ func RenderDevcontainer(name string, m Model) string {
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(doc)
 	return b.String()
+}
+
+// devcontainerPost installs smith as the pipelines do, then runs smith ci
+// setup; the install may not be on the container's PATH yet, so it is added
+// for that command.
+func devcontainerPost(m Model) string {
+	install := SmithInstallFor(m)
+	if install.Script {
+		return `sh ` + InstallScriptPath + ` "` + m.SmithVersion + `" && "$HOME/.local/bin/smith" ci setup`
+	}
+	path := `"$HOME/.local/bin"`
+	if dir := install.ContainerPathDir(); dir != "" {
+		path = `"` + dir + `"`
+	}
+	return install.ContainerCommand() + ` && PATH=` + path + `:"$PATH" smith ci setup`
 }

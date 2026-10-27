@@ -88,7 +88,7 @@ func TestCircleCICarriesTheSamePhasesAsGitHub(t *testing.T) {
 		t.Fatalf("providers drifted:\n%s\n%s", got, want)
 	}
 	for _, want := range []string{
-		"image: debian:bookworm", "sh tools/smith/install.sh 1.4.0", "smith release --dry-run --comment",
+		"image: debian:bookworm", "npm install --global --registry https://registry.npmjs.org/ monosmith@1.4.0", "smith release --dry-run --comment",
 		"equal: [ main, << pipeline.git.branch >> ]", "path: dist/drop\n                destination: drop",
 		"#   NODE_AUTH_TOKEN: publishes npm packages", "# smith: no plugin says how to install rust 1.90",
 		"smith-npm-v1-{{ arch }}-{{ checksum \"/tmp/smith-npm.lock\" }}",
@@ -179,7 +179,7 @@ func TestCircleCIDriftSeesAnEditAndAMissingFile(t *testing.T) {
 	root := t.TempDir()
 	cfg := circleciConfig()
 	m := multiLanguageModel()
-	if drift := Drift(root, cfg, m); len(drift) != 2 || !strings.Contains(strings.Join(drift, ";"), CircleCIPath+" is missing") {
+	if drift := Drift(root, cfg, m); len(drift) != 1 || !strings.Contains(strings.Join(drift, ";"), CircleCIPath+" is missing") {
 		t.Fatalf("a missing config is drift: %v", drift)
 	}
 	if _, _, err := Write(root, cfg, m); err != nil {

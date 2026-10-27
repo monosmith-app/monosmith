@@ -52,9 +52,7 @@ func azureSteps(m Model) string {
 		b.WriteString(azureAuthenticate(a))
 	}
 	b.WriteString(azureStores(m.Stores))
-	fmt.Fprintf(&b, `  - bash: sh %s "%s"
-    displayName: Install smith
-`, InstallScriptPath, m.SmithVersion)
+	b.WriteString(azureInstallSmith(m, "  "))
 	b.WriteString(slot("  ", "before-setup"))
 	b.WriteString("  - bash: smith ci setup\n    displayName: Setup\n")
 	b.WriteString(azureEnv("    ", m.SetupCredentials()))
@@ -114,11 +112,8 @@ func azureNativeJob(m Model) string {
 		tools.WriteString(azureAuthenticate(a))
 	}
 	b.WriteString(indent(tools.String(), "    "))
-	fmt.Fprintf(&b, `      - bash: sh %s "%s"
-        displayName: Install smith
-      - bash: smith ci setup
-        displayName: Setup
-`, InstallScriptPath, m.SmithVersion)
+	b.WriteString(azureInstallSmith(m, "      "))
+	b.WriteString("      - bash: smith ci setup\n        displayName: Setup\n")
 	b.WriteString(azureEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - bash: smith ci native
         displayName: Native

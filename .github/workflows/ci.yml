@@ -68,10 +68,8 @@ jobs:
           restore-keys: |
             smith-pip-${{ runner.os }}-
       - name: Install smith
-        run: sh tools/smith/install.sh "$SMITH_VERSION"
-        env:
-          SMITH_VERSION: latest
-          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: npm install --global --registry https://registry.npmjs.org/ monosmith
       # smith:slot before-setup
       # This repository is smith: every step below runs the smith built from this commit.
       - name: Build smith from this commit

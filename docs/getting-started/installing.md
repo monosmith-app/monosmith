@@ -52,7 +52,7 @@ curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/instal
 `SMITH_VERSION` does the same. With no version they install the newest
 `smith@` release. On GitHub Actions and Azure Pipelines `install.sh` also
 adds its directory to `PATH` for the following steps; generated pipelines
-install smith by running the project's own copy, `sh tools/smith/install.sh "<version>"`, pinned to the version that generated them (`smith ci generate` writes that copy and `smith doctor --fix` refreshes it; nothing is fetched from a branch at run time). Set
+install smith with the package manager of the workspace's main toolchain, pinned to the version that generated them: `npm install --global monosmith@<version>` when the workspace has Node (first choice), else `pip install monosmith==<version>` when it has Python, else `dotnet tool update --global monosmith --version <version>` when it has .NET. Any other workspace (Go, Rust, JVM, ...) runs the project's own copy of the installer, `sh tools/smith/install.sh "<version>"`, which `smith ci generate` writes and `smith doctor --fix` refreshes; nothing is fetched from a branch at run time. The .NET package can lag a release behind npm and PyPI. Set
 `GITHUB_TOKEN` to avoid GitHub's API rate limit on shared runners.
 
 ### Linux packages

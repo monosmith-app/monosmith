@@ -94,8 +94,8 @@ steps, credentials, package stores, the flags above, `NativeRunners`, `NativeLin
 | `[ci] devcontainer = true` | `RenderDevcontainer` | `.devcontainer/devcontainer.json` |
 
 The renderers decide nothing about what to run. They spell it. All of them produce the same order:
-checkout, toolchains, sign-in, package-store caches, install smith (`sh tools/smith/install.sh "<version>"`, the vendored installer, pinned to the version that
-generated the file), the `before-setup` slot, `smith ci setup`, `smith ci audit`,
+checkout, toolchains, sign-in, package-store caches, install smith (`npm`, `pip` or `dotnet tool` for a Node, Python or .NET workspace, else `sh tools/smith/install.sh "<version>"`, the vendored installer; either way pinned to the version that
+generated the file; the rule lives in `smith_install_policy.go`), the `before-setup` slot, `smith ci setup`, `smith ci audit`,
 `smith ci verify`, the `after-verify` slot, a release preview on pull requests, `smith ci pack`,
 and `smith ci release` (GitHub mapper: `github_actions_mapper.go`).
 

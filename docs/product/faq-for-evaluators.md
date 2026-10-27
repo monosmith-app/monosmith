@@ -72,8 +72,9 @@ releasing) need the network by their nature.
 
 - **`smith.toml`**, which is small, with every setting optional.
 - **The generated CI pipelines**, which call `smith ci <phase>`. CI needs the `smith`
-  binary, which the pipeline downloads at a pinned version with `tools/smith/install.sh`,
-  a copy of the installer committed in your project (it checks the download against the release checksums).
+  binary, which the pipeline installs at a pinned version: from npm, PyPI or NuGet in a Node, Python or
+  .NET workspace, else with `tools/smith/install.sh`, a copy of the installer committed in your
+  project (it checks the download against the release checksums).
 - **The directory convention:** builds go to `dist/` at the workspace root, and
   `smith doctor` fails a task that writes elsewhere.
 - **Release tags** named `<project>@<version>` (a Go package: `<dir>/v<version>`).

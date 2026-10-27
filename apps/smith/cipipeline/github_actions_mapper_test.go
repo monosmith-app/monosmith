@@ -3,6 +3,7 @@ package cipipeline
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,6 +19,16 @@ func runtime(name, version, action, task, input string) protocol.Toolchain {
 		GitHub: &protocol.ActionStep{Uses: action, Inputs: []protocol.Input{{Name: name + "-version", Value: version}, {Name: "cache", Value: "false"}}},
 		Azure:  &protocol.ActionStep{Uses: task, Inputs: []protocol.Input{{Name: input, Value: version + ".x"}}},
 	}
+}
+
+// scriptModel is model() on a workspace with no Node, Python or .NET toolchain,
+// which installs smith with the committed script.
+func scriptModel() Model {
+	m := model()
+	m.Toolchains = slices.DeleteFunc(m.Toolchains, func(t protocol.Toolchain) bool {
+		return t.Name == "node" || t.Name == "python" || t.Name == "dotnet"
+	})
+	return m
 }
 
 func model() Model {
@@ -55,7 +66,7 @@ func TestRenderersCarryTheSameSteps(t *testing.T) {
 		"python-version: '3.12'", "go-version: '1.26'",
 		"      - name: Install zig\n        shell: bash\n        run: |\n          curl -fsSL https://example.com/zig.sh | sh\n          zig version\n",
 		"      # smith: no plugin says how to install rust 1.90",
-		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}", "fetch-depth: 0", "SMITH_VERSION: latest", "github.ref_name == 'main'"} {
+		"smith ci setup", "smith ci audit", "smith ci verify", "smith ci release", "smith release --dry-run", "NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}", "fetch-depth: 0", "run: npm install --global --registry https://registry.npmjs.org/ monosmith\n", "github.ref_name == 'main'"} {
 		if !strings.Contains(gh, want) {
 			t.Errorf("GitHub workflow lacks %q", want)
 		}
@@ -175,7 +186,7 @@ func TestWriteKeepsSlotsAndReportsDrift(t *testing.T) {
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github", "azure"}}}
 	m := model()
 	changed, _, err := Write(root, cfg, m)
-	if err != nil || len(changed) != 3 {
+	if err != nil || len(changed) != 2 {
 		t.Fatalf("changed %v err %v", changed, err)
 	}
 	if drift := Drift(root, cfg, m); len(drift) != 0 {
@@ -188,8 +199,8 @@ func TestWriteKeepsSlotsAndReportsDrift(t *testing.T) {
 	if drift := Drift(root, cfg, m); len(drift) != 0 {
 		t.Fatalf("slot content is not drift: %v", drift)
 	}
-	m.Toolchains = m.Toolchains[:1]
-	if drift := Drift(root, cfg, m); len(drift) != 2 {
+	m.Toolchains = m.Toolchains[:1] // go only: both pipelines change and the install script is now needed
+	if drift := Drift(root, cfg, m); len(drift) != 3 {
 		t.Fatalf("changed toolchains must drift: %v", drift)
 	}
 	if _, _, err := Write(root, cfg, m); err != nil {
@@ -309,7 +320,7 @@ func TestPubWorkflowOnlyWhenAnAppPublishesToPubDev(t *testing.T) {
 		"on:\n  workflow_dispatch:\n    inputs:\n      project:",
 		"permissions:\n  contents: read\n  id-token: write\n",
 		"uses: dart-lang/setup-dart@v1",
-		"SMITH_VERSION: latest",
+		"run: npm install --global --registry https://registry.npmjs.org/ monosmith\n",
 		`run: smith release pub --project "$PROJECT" --version "$VERSION"`,
 		"PROJECT: ${{ inputs.project }}",
 		"# smith:slot before-publish",

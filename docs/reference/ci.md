@@ -58,7 +58,7 @@ CircleCI:
 - an `ci` job on a `debian:bookworm` image, with one shared command
   (`install-tools`) that installs system packages, checks out the code,
   installs each toolchain through its plugin's shell command, restores the
-  package stores and installs smith (the vendored `tools/smith/install.sh`);
+  package stores and installs smith (npm, pip or `dotnet tool` for Node, Python or .NET workspaces, else the vendored `tools/smith/install.sh`);
 - then `smith ci setup`, `audit` and `verify`, the `before-setup` and
   `after-verify` slots, and the release preview;
 - on the release branch only (a `when` condition on the branch), `smith ci
