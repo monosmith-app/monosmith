@@ -36,6 +36,8 @@ const (
 	AnswerGitHubReleases = "github-releases"
 	AnswerCacheDir       = "cache-dir"
 	AnswerCacheMaxMB     = "cache-max-mb"
+	AnswerSaveRecipe     = "save-recipe"
+	AnswerRecipeName     = "recipe-name"
 )
 
 // MoreYes is the answer of "more options" that asks the advanced questions.
@@ -55,6 +57,9 @@ type NewQuestion struct {
 	Default string
 	// Flag is the smith new flag that answers it without asking.
 	Flag string
+	// AtEnd questions are asked last. The command asks them after the summary
+	// (askSaveRecipe), the form as its final steps.
+	AtEnd bool
 	// Advanced questions are asked only after "more options".
 	Advanced bool
 	// Applies says whether the question is asked, given the answers so far;
@@ -104,6 +109,8 @@ func NewQuestions() []NewQuestion {
 	}
 	isNode := func(a map[string]string) bool { return a[AnswerLanguage] == "node" }
 	more := func(a map[string]string) bool { return a[AnswerMore] == MoreYes }
+	hasLanguage := func(a map[string]string) bool { return a[AnswerLanguage] != "" && a[AnswerLanguage] != LanguageLater }
+	saving := func(a map[string]string) bool { return hasLanguage(a) && a[AnswerSaveRecipe] == "yes" }
 	return []NewQuestion{
 		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for?", Default: "github", Flag: "ci", Options: []NewOption{
 			{Label: "GitHub Actions", Value: "github", Hint: "default"},
@@ -130,6 +137,16 @@ func NewQuestions() []NewQuestion {
 				return fmt.Errorf("%q is not a size in MB: use a whole number, 0 for no limit", v)
 			}
 			return nil
+		}},
+		{Key: AnswerSaveRecipe, Prompt: "Save these answers as a recipe to reuse on other workspaces?", Default: "no", AtEnd: true, Applies: hasLanguage, Options: []NewOption{
+			{Label: "No", Value: "no", Hint: "default"},
+			{Label: "Yes", Value: "yes", Hint: "writes recipes/<name>.recipe.toml: language, Node tests and lint, code layout"},
+		}},
+		{Key: AnswerRecipeName, Prompt: "Name of the recipe (Enter uses the workspace name)", Flag: "save-recipe", AtEnd: true, Applies: saving, Check: func(v string) error {
+			if v == "" {
+				return nil
+			}
+			return ValidateName("recipe", v)
 		}},
 	}
 }

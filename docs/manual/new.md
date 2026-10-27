@@ -22,7 +22,8 @@ there and keep it.
 smith new <name> [--dir <dir>] [--scope <scope>] [--module-prefix <prefix>] [--ci <providers>]
                  [--language <language>] [--default-stack node=<stack>] [--architecture <layout>]
                  [--release-branch <branch>] [--release-remote <remote>] [--github-releases]
-                 [--cache-dir <dir>] [--cache-max-mb <mb>] [--recipe <recipe>] [--yes]
+                 [--cache-dir <dir>] [--cache-max-mb <mb>] [--save-recipe <name>]
+                 [--recipe <recipe> | --recipe-file <file>] [--yes]
 ```
 
 ## Arguments and flags
@@ -48,8 +49,10 @@ Usage: `smith new <name> [flags]`
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
+| `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
 | `--release-remote <release-remote>` | string | `origin` | the git remote that receives release tags (default origin) |
+| `--save-recipe <save-recipe>` | string |  | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |
 | `--scope <scope>` | string | `@<name>` | npm scope for packages (default @<name>) |
 | `-y, --yes` | boolean | off | take the default for every question that has no flag |
 
@@ -93,6 +96,25 @@ are the whole answer.
 | Create a GitHub Release for every release tag? | `--github-releases` | no | `[release] github_releases` |
 | Where should the task cache live? | `--cache-dir` | `.smith/cache` | `[cache] dir` |
 | How large may the cache grow, in MB? | `--cache-max-mb` | `2048` (`0` for no limit) | `[cache] max_size_mb` |
+| Save these answers as a recipe? (last, asked only with a main language) | `--save-recipe <name>` | no | `recipes/<name>.recipe.toml` |
+
+After the summary, and before any file is written, one last question: **Save these
+answers as a recipe to reuse on other workspaces?** (default no; `--save-recipe <name>`
+answers it). It is asked only when a main language was chosen, since a recipe must fix
+one. On yes it asks the recipe's name (Enter uses the workspace name) and writes
+`recipes/<name>.recipe.toml` in the new workspace, in the first commit. The file is an
+ordinary [recipe](../reference/recipes.md): the language, for Node its scaffold and
+toolchain, and the code layout as the structure plugin. The CI, the release settings and
+the cache are workspace settings, not part of a recipe, so they are asked again for
+the next workspace. The recipe is not set as the new workspace's own recipe, so you can
+still add projects in other languages there.
+
+To create the next workspace from it, give the file: `smith new other --recipe-file
+../acme/recipes/team.recipe.toml`. smith copies it to `recipes/` in the new workspace,
+sets `[workspace] recipe`, and does not ask what the recipe answers (the language, the
+Node tests and lint, the code layout), saying so before the first question. A flag still
+wins over the recipe. To share one without copying files, publish it at an https URL and
+use `--recipe <url>`, which skips the same questions.
 
 A setting left at its default stays the commented line in `smith.toml`, so the file
 still shows what could be set. Giving one of the last five flags settles "More
@@ -132,9 +154,20 @@ Your choices
   Releases             from trunk, tags pushed to origin, with a GitHub Release
   Cache                .smith/cache, up to 2048 MB
 
+Save these answers as a recipe to reuse on other workspaces? [y/N]: y
+Name of the recipe [acme]: team
+
   wrote smith.toml
+  wrote recipes/team.recipe.toml
   ...
   committed
+
+Created acme. Next:
+  cd acme
+  smith add app web --lang node
+
+Recipe saved: /work/acme/recipes/team.recipe.toml
+For another workspace: smith new <name> --recipe-file /work/acme/recipes/team.recipe.toml
 ```
 
 ## Exit codes

@@ -74,7 +74,7 @@ func TestAClosedInputKeepsTheDefaults(t *testing.T) {
 
 func TestEveryQuestionHasAFlagAndADefaultAmongItsOptions(t *testing.T) {
 	for _, q := range NewQuestions() {
-		if q.Flag == "" && q.Key != AnswerMore {
+		if q.Flag == "" && q.Key != AnswerMore && q.Key != AnswerSaveRecipe { // the yes/no is answered by --save-recipe <name>
 			t.Errorf("%s has no flag", q.Key)
 		}
 		if q.Options != nil && !hasOption(q.Options, q.Default) {
