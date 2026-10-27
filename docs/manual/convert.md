@@ -98,6 +98,17 @@ may delete configuration files after asking. The full report of an applied
 conversion is saved to `.smith/convert-report.txt`. Runs `npm install` unless
 `--skip-install`. No smith-specific environment variable is read.
 
+### Shared task settings
+
+When two or more projects of one language and kind (every Node library, say)
+come out with the same settings for a task, `smith.toml` states them once, as a
+`[[task_groups]]` entry that selects them (`select = ["lang:node", "kind:lib"]`),
+instead of once per project. A project whose settings differ keeps its own
+`[projects.<name>.tasks.<task>]`, completed with the group's other fields, so
+every task still runs as before. The report lists each group it wrote. A group is only
+written when no project it selects would start taking settings it did not have.
+See [Task groups](../reference/configuration.md#task-groups).
+
 ## Examples
 
 The plan for a small Turborepo workspace, changing nothing:

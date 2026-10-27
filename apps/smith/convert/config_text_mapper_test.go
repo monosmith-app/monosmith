@@ -54,6 +54,30 @@ func TestConfigTextRoundTrips(t *testing.T) {
 	}
 }
 
+func TestConfigTextWritesTaskGroups(t *testing.T) {
+	in := workspace.Config{
+		Workspace: workspace.WorkspaceSection{Name: "demo"},
+		TaskGroups: []workspace.TaskGroup{
+			{Select: []string{"lang:node", "kind:lib"}, Tasks: map[string]workspace.TaskOverride{
+				"build": {Outputs: []string{"dist"}},
+				"test":  {DependsOn: []string{"^build"}, Env: map[string]string{"A": `{"x":1}`}},
+			}},
+		},
+		Projects: map[string]workspace.ProjectOverride{"odd": {Tasks: map[string]workspace.TaskOverride{"test": {Cwd: "."}}}},
+	}
+	text := ConfigText(in)
+	out, err := workspace.Parse([]byte(text))
+	if err != nil {
+		t.Fatalf("%v\n%s", err, text)
+	}
+	if !reflect.DeepEqual(out.TaskGroups, in.TaskGroups) {
+		t.Fatalf("groups %+v\n%s", out.TaskGroups, text)
+	}
+	if out.Projects["odd"].Tasks["test"].Cwd != "." {
+		t.Fatalf("%+v", out.Projects)
+	}
+}
+
 func TestConfigTextWritesTheDefaultStacks(t *testing.T) {
 	cfg := workspace.Config{Workspace: workspace.WorkspaceSection{Name: "demo"}, DefaultStacks: map[string]string{"node": "node-jest"}}
 	if text := ConfigText(cfg); !strings.Contains(text, "\n[default_stacks]\nnode = \"node-jest\"\n") {

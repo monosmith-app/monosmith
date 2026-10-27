@@ -77,6 +77,10 @@ func ConfigText(cfg workspace.Config) string {
 		}
 	}
 	writeTasks(&b, "tasks", cfg.Tasks)
+	for _, g := range cfg.TaskGroups {
+		fmt.Fprintf(&b, "\n[[task_groups]]\nselect = %s\n", list(g.Select))
+		writeTasks(&b, "task_groups.tasks", g.Tasks)
+	}
 	for _, name := range sortedKeys(cfg.Projects) {
 		p := cfg.Projects[name]
 		if p.TagPrefix != "" {
