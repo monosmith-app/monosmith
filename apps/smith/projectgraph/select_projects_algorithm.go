@@ -78,3 +78,7 @@ func matches(p *Project, pattern string) bool {
 	ok, _ := path.Match(pattern, p.Root)
 	return ok
 }
+
+// Matches reports whether the project is named by a selection pattern (a name,
+// a glob, "kind:<kind>", "lang:<language>" or "tag:<tag>").
+func (p *Project) Matches(pattern string) bool { return matches(p, pattern) }

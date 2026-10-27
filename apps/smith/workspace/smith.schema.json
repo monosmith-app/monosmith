@@ -47,6 +47,43 @@
         "allow": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Dependencies that may differ between projects: doctor, smith sync and smith deps up --align leave them alone." }
       }
     },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Rules for which projects may depend on which. smith doctor and smith boundaries report each dependency that breaks one; smith ci verify fails on it.",
+      "properties": {
+        "kinds": { "type": "boolean", "description": "The built-in rule: no project depends on an app. Unset: a warning. true: an error. false: off." },
+        "rules": {
+          "type": "array",
+          "description": "Your own rules.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from"],
+            "properties": {
+              "from": { "type": "string", "description": "The projects the rule is about: a name, a glob, kind:app, lang:go or tag:ui." },
+              "allow": { "type": "array", "items": { "type": "string" }, "description": "The only projects they may depend on (same names). Empty: no limit." },
+              "deny": { "type": "array", "items": { "type": "string" }, "description": "Projects they may not depend on." },
+              "reason": { "type": "string", "description": "Why the rule exists; shown with each violation." }
+            }
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "description": "Single dependencies that may stay though a rule forbids them.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "reason"],
+            "properties": {
+              "from": { "type": "string", "description": "The project that depends (a name, glob, kind:, lang: or tag:)." },
+              "to": { "type": "string", "description": "The project it depends on." },
+              "reason": { "type": "string", "description": "Why the dependency may stay." }
+            }
+          }
+        }
+      }
+    },
     "release": {
       "type": "object",
       "additionalProperties": false,
@@ -158,6 +195,7 @@
           "bare_tags": { "type": "boolean", "description": "Tag releases with the bare version (0.1.0) instead of <name>@0.1.0, for a registry that uses the tag name as the version (JitPack). Only one project can; it excludes tag_prefix." },
               "tag_prefix": { "type": "string", "description": "Replaces the release tag prefix (<name>@ by default)." },
           "stack": { "type": "string", "description": "Replaces the stack the project's manifest records." },
+          "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Tags added to the ones the project's plugin reports, for [boundaries] rules and --projects tag:<tag>." },
           "schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of shared schema files (OpenAPI, AsyncAPI, Protocol Buffers, GraphQL) the project owns, besides those inside its directory." },
           "consumes_schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of schema files the project consumes: it depends on their owner, so a schema change affects it." },
           "generate": {

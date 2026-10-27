@@ -113,7 +113,7 @@ Usage: `smith convert [flags]`
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
 | `--verbose` | name every project a finding applies to, not just a few | off |
-| `--yes` | apply without asking (a terminal asks before changing anything) | off |
+| `--yes` | apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
@@ -378,6 +378,7 @@ Alias: `smith i`
 | Flag | Meaning | Default |
 |---|---|---|
 | `-D, --save-dev` | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) | off |
+| `--verbose` | show the package manager's own output and warnings (otherwise warnings fold into one line) | off |
 | `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
 
 <!-- smith:end install -->
@@ -753,6 +754,21 @@ Usage: `smith recipe <command>`
 No flags.
 
 <!-- smith:end recipe -->
+
+### smith boundaries
+
+[Manual page](../manual/boundaries.md)
+
+<!-- smith:begin boundaries -->
+Check which projects depend on which against your rules
+
+Usage: `smith boundaries [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print the violations as JSON | off |
+
+<!-- smith:end boundaries -->
 
 ### smith slices
 

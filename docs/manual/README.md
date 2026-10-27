@@ -98,6 +98,7 @@ Python package). Paths in output are shortened.
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md) | What `smith add` accepts. |
 | [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`install`](plugin-install.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
+| [`smith boundaries`](boundaries.md) | Check which projects depend on which against your rules in `[boundaries]`. |
 | [`smith slices`](slices.md) | Check the vertical-slice layout: [`slices check`](slices-check.md). |
 | [`smith schema`](schema.md) | Print the JSON Schema of `smith.toml`. |
 | [`smith commands`](commands.md) | List smith's commands with their arguments and options. |

@@ -22,7 +22,9 @@ type Config struct {
 	// Dependencies is the workspace's policy for the versions its projects
 	// declare.
 	Dependencies DependenciesSection `toml:"dependencies"`
-	Plugins      PluginsSection      `toml:"plugins"`
+	// Boundaries are the rules for which projects may depend on which.
+	Boundaries BoundariesSection `toml:"boundaries"`
+	Plugins    PluginsSection    `toml:"plugins"`
 	// Conventions apply convention plugins, by name, to the projects of the
 	// languages they support.
 	Conventions map[string]ConventionConfig `toml:"conventions"`
@@ -189,6 +191,46 @@ type DependenciesSection struct {
 	Allow []string `toml:"allow"`
 }
 
+// BoundariesSection says which projects may depend on which. smith doctor
+// and smith boundaries report each dependency that breaks a rule, and smith
+// ci verify fails on one.
+type BoundariesSection struct {
+	// Kinds turns the built-in rule on or off: no project depends on an app
+	// (an app is deployed, so nothing builds on top of it). Unset, a
+	// dependency on an app is reported as a warning; true makes it an error;
+	// false switches the rule off.
+	Kinds *bool `toml:"kinds"`
+	// Rules are your own rules, by who they are about.
+	Rules []BoundaryRule `toml:"rules"`
+	// Exceptions are single dependencies that may stay though a rule forbids
+	// them, each with the reason.
+	Exceptions []BoundaryException `toml:"exceptions"`
+}
+
+// BoundaryRule is one rule of [boundaries]. A project is named the way
+// --projects names it: a name, a glob, kind:<kind>, lang:<language> or
+// tag:<tag>.
+type BoundaryRule struct {
+	// From is who the rule is about.
+	From string `toml:"from"`
+	// Allow lists the only projects From may depend on. Empty: no limit.
+	Allow []string `toml:"allow"`
+	// Deny lists projects From may not depend on.
+	Deny []string `toml:"deny"`
+	// Reason is why the rule exists; it is shown with each violation.
+	Reason string `toml:"reason"`
+}
+
+// BoundaryException lets one project depend on another though a rule says it
+// may not.
+type BoundaryException struct {
+	// From and To are project names, globs, kind:, lang: or tag: selectors.
+	From string `toml:"from"`
+	To   string `toml:"to"`
+	// Reason is why the dependency is acceptable (required).
+	Reason string `toml:"reason"`
+}
+
 // CacheSection configures the local task cache.
 type CacheSection struct {
 	// Dir is workspace-relative. Default: .smith/cache.
@@ -306,6 +348,9 @@ type ProjectOverride struct {
 	BareTags bool `toml:"bare_tags"`
 	// Stack replaces the stack the project's manifest records.
 	Stack string `toml:"stack"`
+	// Tags are added to the tags the project's plugin reports, so a
+	// [boundaries] rule or --projects tag:<tag> can name the project.
+	Tags []string `toml:"tags"`
 	// Release makes an app releasable: it is versioned by its tag and its
 	// assets are built and attached to the release.
 	Release *ProjectRelease `toml:"release"`

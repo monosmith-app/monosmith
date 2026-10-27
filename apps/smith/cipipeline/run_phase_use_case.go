@@ -92,6 +92,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 	case "verify":
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
+		if err := verifyBoundaries(s, out); err != nil {
+			return err
+		}
 		// Native projects are verified by the native job, on every OS.
 		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: []string{"!tag:" + release.NativeTag}, Affected: base != "", Base: base, Out: out})
 		if err != nil {

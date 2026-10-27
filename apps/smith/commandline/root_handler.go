@@ -23,6 +23,7 @@ import (
 	"golang.org/x/term"
 	"os"
 
+	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/cachecommand"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
@@ -96,7 +97,7 @@ already have), then build and doctor.`,
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
 	add("inspect", mcpserver.Command(version), engineserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command())
+	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 

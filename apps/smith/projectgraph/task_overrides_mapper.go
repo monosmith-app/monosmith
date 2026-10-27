@@ -59,6 +59,12 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 			p.TagPrefix = po.TagPrefix
 		}
 		p.TagPrefixSet = po.TagPrefix != ""
+		for _, tag := range po.Tags {
+			if !slices.Contains(p.Tags, tag) {
+				p.Tags = append(p.Tags, tag)
+			}
+		}
+		sort.Strings(p.Tags)
 		p.BareTags = po.BareTags
 		p.Release = po.Release
 		p.ReleaseAssets =p.AssetSpec()
