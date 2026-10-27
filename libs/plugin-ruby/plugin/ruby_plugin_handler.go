@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-ruby/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/scaffolding"
@@ -65,6 +66,11 @@ func (r *Ruby) Published(params protocol.PublishedParams) (protocol.PublishedRes
 // CI implements serve.CIContributor.
 func (r *Ruby) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(r.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (r *Ruby) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(r.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.

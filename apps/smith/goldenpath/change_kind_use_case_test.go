@@ -63,6 +63,82 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"package.json": "packages/*"},
 		},
 		{
+			lang:  "dotnet",
+			tools: []string{"dotnet"},
+			wire: func(w *workspace) {
+				csproj := "apps/cli/Kcdotnet.Cli.csproj"
+				w.write(csproj, strings.Replace(w.read(csproj), "  <!-- The tests project", "  <ItemGroup>\n    <ProjectReference Include=\"../../libs/core/Kcdotnet.Core.csproj\" />\n  </ItemGroup>\n\n  <!-- The tests project", 1))
+				w.write("apps/cli/Program.cs", "Console.WriteLine(Kcdotnet.Core.Greeting.GreetUseCase.Greet(\"core\").Message);\n")
+			},
+			coreFiles: map[string]string{"apps/cli/Kcdotnet.Cli.csproj": "../../packages/core/Kcdotnet.Core.csproj"},
+		},
+		{
+			lang:  "jvm",
+			tools: []string{"java", "mvn"},
+			wire: func(w *workspace) {
+				pom := "apps/cli/pom.xml"
+				w.write(pom, strings.Replace(w.read(pom), "  <dependencies>\n", "  <dependencies>\n    <dependency>\n      <groupId>dev.kcjvm</groupId>\n      <artifactId>kcjvm-core</artifactId>\n      <version>0.0.0</version>\n    </dependency>\n", 1))
+				main := "apps/cli/src/main/java/dev/kcjvm/cli/Main.java"
+				w.write(main, strings.Replace(w.read(main), `    System.out.println(GreetUseCase.greet("world"));`, `    System.out.println(dev.kcjvm.core.greeting.GreetUseCase.greet("core"));`, 1))
+			},
+			coreFiles: map[string]string{"pom.xml": "<module>packages/core</module>"},
+		},
+		{
+			lang:    "ruby",
+			tools:   []string{"ruby", "bundle"},
+			install: true,
+			wire: func(w *workspace) {
+				spec := "apps/cli/kcruby_cli.gemspec"
+				w.write(spec, strings.Replace(w.read(spec), "  spec.metadata['smith_kind'] = 'app'\n", "  spec.metadata['smith_kind'] = 'app'\n\n  spec.add_dependency 'kcruby_core'\n", 1))
+				exe := "apps/cli/exe/kcruby_cli"
+				w.write(exe, strings.Replace(w.read(exe), "puts KcrubyCli::Greeting.greet('world')\n", "require 'kcruby_core'\n\nputs KcrubyCore::Greeting.greet('core')\n", 1))
+			},
+			untracked: []string{"Gemfile.lock"},
+			coreFiles: map[string]string{"Gemfile": "gemspec path: 'packages/core'"},
+		},
+		{
+			lang:    "php",
+			tools:   []string{"php", "composer"},
+			install: true,
+			wire: func(w *workspace) {
+				manifest := "apps/cli/composer.json"
+				w.write(manifest, strings.Replace(w.read(manifest), `"php": ">=8.2"`, `"php": ">=8.2",`+"\n        "+`"kcphp/core": "*"`, 1))
+				ns := func(s string) string { return strings.ReplaceAll(s, "/", string(rune(92))) }
+				bin := "apps/cli/bin/cli"
+				w.write(bin, strings.Replace(strings.Replace(w.read(bin),
+					ns("use Kcphp/Cli/Greeting/GreetUseCase;"), ns("use Kcphp/Cli/Greeting/GreetUseCase;\nuse Kcphp/Core/Greeting/GreetUseCase as CoreGreeting;"), 1),
+					"echo GreetUseCase::greet('world'), PHP_EOL;", "echo CoreGreeting::greet('core'), PHP_EOL;", 1))
+			},
+			untracked: []string{"composer.lock"},
+			coreFiles: map[string]string{"composer.json": `"url": "packages/core"`},
+		},
+		{
+			lang:  "cpp",
+			tools: []string{"cmake", "ninja", "c++"},
+			wire: func(w *workspace) {
+				lists := "apps/cli/CMakeLists.txt"
+				w.write(lists, strings.Replace(w.read(lists), "target_link_libraries(kccpp_cli PRIVATE kccpp_cli_lib)",
+					"add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../libs/core kccpp_core)\ntarget_link_libraries(kccpp_cli PRIVATE kccpp_cli_lib kccpp_core)", 1))
+				main := "apps/cli/src/main.cpp"
+				w.write(main, strings.Replace(strings.Replace(w.read(main),
+					"#include \"kccpp_cli/greeting.hpp\"\n", "#include \"kccpp_cli/greeting.hpp\"\n#include \"kccpp_core/greeting.hpp\"\n", 1),
+					"<< '\\n';", "<< ' ' << kccpp_core::greeting::greet(\"core\") << '\\n';", 1))
+			},
+			coreFiles: map[string]string{"apps/cli/CMakeLists.txt": "../../packages/core"},
+		},
+		{
+			lang:    "dart",
+			tools:   []string{"dart"},
+			install: true,
+			wire: func(w *workspace) {
+				pubspec := "apps/cli/pubspec.yaml"
+				w.write(pubspec, strings.Replace(w.read(pubspec), "dev_dependencies:", "dependencies:\n  kcdart_core: ^0.0.0\n\ndev_dependencies:", 1))
+				w.write("apps/cli/bin/main.dart", "import 'package:kcdart_core/kcdart_core.dart';\n\nvoid main() {\n  print(greet('core'));\n}\n")
+			},
+			untracked: []string{"pubspec.lock"},
+			coreFiles: map[string]string{"pubspec.yaml": "- packages/core"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

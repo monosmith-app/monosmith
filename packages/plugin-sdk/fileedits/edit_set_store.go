@@ -50,6 +50,16 @@ func (s *Set) Write(rel, content string) {
 	s.files[rel].current = content
 }
 
+// Create sets a file's content, making the file when it does not exist: the
+// host writes it, and the folders above it.
+func (s *Set) Create(rel, content string) {
+	if _, ok := s.Read(rel); ok {
+		s.files[rel].current = content
+		return
+	}
+	s.files[rel] = &entry{current: content}
+}
+
 // Edits are the files whose content differs from what is on disk, by path.
 func (s *Set) Edits() []protocol.FileEdit {
 	var out []protocol.FileEdit

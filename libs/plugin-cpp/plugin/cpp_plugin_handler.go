@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-cpp/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/scaffolding"
@@ -54,6 +55,11 @@ func (c *Cpp) Publish(params protocol.PublishParams) (protocol.PublishResult, er
 // CI implements serve.CIContributor.
 func (c *Cpp) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(c.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (c *Cpp) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(c.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.

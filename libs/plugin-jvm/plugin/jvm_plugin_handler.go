@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-jvm/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/scaffolding"
@@ -74,4 +75,9 @@ func (j *JVM) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // Doctor implements serve.DoctorContributor.
 func (j *JVM) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return pipeline.Doctor(j.root, params), nil
+}
+
+// ChangeKind implements serve.KindChanger.
+func (j *JVM) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(j.root, params)
 }

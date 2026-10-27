@@ -56,23 +56,54 @@ func Retarget(text, fileDir, oldRoot, newRoot string) (string, int) {
 	return text, total
 }
 
+// Follow rewrites a relative reference written from directory fileDir (a file
+// that does not move) when it names something inside oldRoot, which moves to
+// newRoot: "../core/x.cmake" becomes "../../packages/core/x.cmake". Anything
+// else (another place, "serde", an absolute path) is returned unchanged.
+func Follow(ref, fileDir, oldRoot, newRoot string) string {
+	if ref == "" || strings.HasPrefix(ref, "/") || strings.Contains(ref, ":") {
+		return ref
+	}
+	target := path.Join(fileDir, ref)
+	if target != oldRoot && !strings.HasPrefix(target, oldRoot+"/") {
+		return ref
+	}
+	rel := Relative(fileDir, path.Join(newRoot, strings.TrimPrefix(target, oldRoot)))
+	if strings.HasPrefix(ref, "./") && !strings.HasPrefix(rel, "../") {
+		rel = "./" + strings.TrimPrefix(rel, "./")
+	}
+	if strings.HasSuffix(ref, "/") && !strings.HasSuffix(rel, "/") {
+		rel += "/"
+	}
+	return rel
+}
+
 // Rebase returns a reference written relative to directory oldDir so that it
 // names the same place from directory newDir. A reference to something inside
 // oldDir itself is kept, because that moves along. Anything that is not a
 // relative path ("serde", "https://...", an absolute path) is returned
 // unchanged.
 func Rebase(ref, oldDir, newDir string) string {
+	return RebaseFrom(ref, oldDir, oldDir, newDir)
+}
+
+// RebaseFrom is Rebase for a file that sits anywhere inside the directory that
+// moves: fileDir is the directory the reference is written from, oldRoot the
+// directory that moves and newRoot where it goes. A reference to something
+// inside oldRoot is kept, because that moves along with the file.
+func RebaseFrom(ref, fileDir, oldRoot, newRoot string) string {
 	if !strings.HasPrefix(ref, "./") && !strings.HasPrefix(ref, "../") {
 		return ref
 	}
-	target := path.Join(oldDir, ref)
-	if oldDir != "" && (target == oldDir || strings.HasPrefix(target, oldDir+"/")) {
+	target := path.Join(fileDir, ref)
+	if oldRoot != "" && (target == oldRoot || strings.HasPrefix(target, oldRoot+"/")) {
 		return ref
 	}
 	if strings.HasPrefix(target, "../") || target == ".." {
 		return ref // leaves the workspace
 	}
-	rel := Relative(newDir, target)
+	newFileDir := path.Join(newRoot, strings.TrimPrefix(strings.TrimPrefix(fileDir, oldRoot), "/"))
+	rel := Relative(newFileDir, target)
 	if strings.HasSuffix(ref, "/") && !strings.HasSuffix(rel, "/") {
 		rel += "/"
 	}

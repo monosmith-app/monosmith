@@ -56,10 +56,10 @@ regenerates the CI pipelines, which name projects by kind.
 
 | Step | What happens |
 |---|---|
-| The kind | Recorded where the language keeps it: `[package.metadata.smith] kind` in `Cargo.toml`, `"smith": {"kind"}` in `package.json`, `// smith:kind` in `go.mod`, `[tool.smith] kind` in `pyproject.toml`. |
-| The publish guard | A package is published, so the guard goes: `publish = false` (Rust) and `"private": true` (Node) are dropped. A lib or an app gets it back. |
+| The kind | Recorded where the language keeps it: `[package.metadata.smith] kind` in `Cargo.toml`, `"smith": {"kind"}` in `package.json`, `// smith:kind` in `go.mod`, `[tool.smith] kind` in `pyproject.toml`, `<SmithKind>` in the `.csproj`, `smith.kind` in the `pom.xml` properties or the module's `gradle.properties`, `smith_kind` metadata in the `.gemspec`, `extra.smith.kind` in `composer.json`, `set(SMITH_KIND ...)` in `CMakeLists.txt`, `smith: kind:` in `pubspec.yaml`, `metadata smithKind` in `main.bicep`. |
+| The publish guard | A package is published, so the guard goes: `publish = false` (Rust), `"private": true` (Node), `<IsPackable>false</IsPackable>` (.NET), the `allowed_push_host` line (Ruby) and `publish_to: none` (Dart) are dropped. A lib or an app gets it back. |
 | The folder | Moved to `libs/<name>`, `packages/<name>` or `apps/<name>` with `git mv`, so the history follows. A project that is not in one of those folders stays where it is, and only its kind changes. |
-| References | Everything that names the folder follows it: workspace members and path dependencies (Rust), `workspaces`, `file:` dependencies, tsconfig paths and references, the lockfile (Node), `go.work`, `replace` lines and, because a Go module's path ends in its folder, the module path and every import of it (Go), uv workspace members, editable requirements and `uv.lock` (Python), and `smith.toml`. |
+| References | Everything that names the folder follows it: workspace members and path dependencies (Rust), `workspaces`, `file:` dependencies, tsconfig paths and references, the lockfile (Node), `go.work`, `replace` lines and, because a Go module's path ends in its folder, the module path and every import of it (Go), uv workspace members, editable requirements and `uv.lock` (Python), project references and solution files (.NET), the root pom's `<module>` list, parent `relativePath` and, because a Gradle project path is its folder, the settings' `include` lines and `project(":libs:core")` dependencies (JVM), `Gemfile` entries and the lockfile (Ruby), the path repository and lockfile of the root `composer.json` (PHP), `add_subdirectory` calls and relative paths (C++), workspace members and path dependencies (Dart), module sources (Bicep), and `smith.toml`. |
 | CI | The pipelines are regenerated, so a package's registry credentials appear and a lib's go away. |
 
 The project keeps its name: it is the folder's last part. The project's own relative
@@ -133,9 +133,18 @@ smith kind core lib       # and back: the workspace is as it was
 
 ## Languages
 
-Rust, Node, Go and Python change kinds. The other languages (.NET, JVM, Ruby, PHP, C++, Dart,
-Bicep) answer that they cannot yet: edit the kind in the manifest and move the folder by hand,
-then run [`smith doctor`](doctor.md).
+Every language plugin changes kinds. What the plugin cannot decide for you it says as a
+warning: a build script that needs the `application` or `maven-publish` plugin (Gradle), a
+`Main` class an app needs, a program a lib keeps but no longer deploys, the registry fields a
+package is missing.
+
+- A Bicep project is a deployment (app) or a module (lib), so `smith kind <project> package`
+  is refused: there is no Bicep registry to publish to yet.
+- JVM: the `smith.kind` property of a Maven module's `pom.xml`, or of a Gradle module's
+  `gradle.properties` (created when the module has none). A Gradle module's build script is
+  code, so smith does not rewrite its plugins; it tells you which one to add.
+- Node, Python, PHP and Dart need `smith install` afterwards (the installed links name the old
+  folder); smith says so.
 
 ## See also
 

@@ -166,6 +166,7 @@ Limits:
   (a deployment) or a lib (a module): publishing to a Bicep registry is not
   supported yet`, although `smith kinds` lists `bicep-package`. You can still
   make a Bicep project a package by hand with `metadata smithKind = 'package'`
+  (`smith kind` refuses it for the same reason)
   (see Releasing).
 - The hint `Try: smith test -p infra` is wrong for Bicep: there is no test task.
 
