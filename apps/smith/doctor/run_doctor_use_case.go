@@ -240,6 +240,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Check: "the clone has full history", OK: !s.Git.IsShallow(), Warning: true,
 		Detail: "a shallow clone cannot compute versions or affected projects", Remedy: "`git fetch --unshallow` (in CI: checkout with fetch-depth 0)",
 	})
+	out = append(out, smithDependencyFinding(s.Root, cipipeline.SmithVersionFor(s.Config, s.Version))...)
 	if c, err := cipipeline.Collect(s); err == nil {
 		model := cipipeline.NewModel(c, cipipeline.SmithVersionFor(s.Config, s.Version), s.Config.Release.Branch)
 		drift := cipipeline.Drift(s.Root, s.Config, model)
