@@ -81,3 +81,18 @@ func (r *Ruby) Install(params protocol.InstallParams) (protocol.DependencyResult
 func (r *Ruby) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(r.root, params)
 }
+
+// Declared implements serve.DeclarationEditor.
+func (r *Ruby) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(r.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (r *Ruby) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(r.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (r *Ruby) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(r.root, params)
+}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -18,6 +20,25 @@ func TestCI(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(ws, ".ruby-version"), []byte("ruby-3.3.6\n"), 0o644)
 	if v := Version(ws); v != "3.3.6" {
 		t.Fatalf(".ruby-version pins %s", v)
+	}
+}
+
+func TestCIAuditsTheBundleForKnownVulnerabilities(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "web"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "apps", "web", "web.gemspec"), nil, 0o644)
+	got := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Name: "web", Root: "apps/web"}}}).Audit
+	if len(got) != 1 || got[0].Blocking {
+		t.Fatalf("one report-only step: %+v", got)
+	}
+	if want := []string{"Gemfile", "Gemfile.lock", "apps/web/web.gemspec"}; !reflect.DeepEqual(got[0].CacheFiles, want) {
+		t.Errorf("the verdict is remembered per Gemfile, lockfile and gemspec: %v", got[0].CacheFiles)
+	}
+	script := got[0].Command[2]
+	for _, want := range []string{"bundle-audit check --update", "gem install bundler-audit", `"$CI"`} {
+		if !strings.Contains(script, want) {
+			t.Errorf("the step says how to get the tool (%q missing): %s", want, script)
+		}
 	}
 }
 
