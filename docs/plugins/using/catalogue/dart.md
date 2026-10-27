@@ -19,8 +19,8 @@ pub.dev or a private pub repository, and installs and removes pub dependencies.
 | `--lang` values | `dart`, `flutter` (`--lang flutter` reaches this plugin but makes a plain Dart project; see Creating a project) |
 | Manifest that makes a directory a candidate project | `pubspec.yaml` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies` |
-| Not advertised | `declarations` and `latest`: `smith sync` and `smith up` skip Dart |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Not advertised | none of the dependency capabilities |
 | Stacks it publishes | `flutter`: "a Flutter app for the web, in the pub workspace" |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `dart-app`, `dart-lib`, `dart-package`); the `flutter` stack makes apps only |
 | Tasks | `lint`, `format`, `test`, `build`, `start` |
@@ -361,8 +361,24 @@ All four were run; each reported the member's `pubspec.yaml` and `pubspec.lock`
 as changed. `smith install -w sdk dart_demo_core` added the dependency on a
 workspace sibling and made it a graph edge (above).
 
-**Not supported.** `smith sync --check` printed `⊘ dart: not compared; its plugin
-does not list declarations`; `smith up --json` printed `{"updates": null}`.
+**Versions: `smith sync` and `smith up`.** The plugin lists the `dependencies` and
+`dev_dependencies` of every member's `pubspec.yaml` and of the workspace root's,
+so `smith sync`, `smith up`, the Deps tab and the one-version check in `smith
+doctor` cover Dart and Flutter.
+
+- A dependency from a `path`, a `git` repository or the SDK (`sdk: flutter`)
+  declares no version of its own and is left alone. A hosted entry written as a
+  map (`hosted:` and `version:`) counts under its `version:`.
+- `smith sync` brings every declaration of a package to the highest constraint
+  declared, changing only the constraint (quotes, comments and other keys stay).
+  `any` and ranges of two comparisons (`>=1.0.0 <2.0.0`) are reported and left
+  alone.
+- `smith up` asks pub.dev for the newest stable release of each package,
+  rewrites to it keeping the operator (`^`), and runs `pub get` (`flutter pub get`
+  for a Flutter workspace) so `pubspec.lock` follows. A package pub.dev does not
+  have (a private server's) is skipped.
+- Not offered: a vulnerability audit. pub has no audit command, so `smith ci audit`
+  has nothing to run for Dart.
 
 **Remove.** `smith remove tool --yes` deleted `apps/tool` and dropped it from the
 root `pubspec.yaml`'s `workspace:` list (`changes pubspec.yaml`). The lock file
