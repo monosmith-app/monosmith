@@ -11,6 +11,11 @@ import (
 // upstream of it in the graph).
 var inputs = []string{"**/*", "!build/**"}
 
+// NativeTag marks a project built on each operating system (set(SMITH_NATIVE
+// ON)): smith ci verify leaves it to the native jobs, which also build its
+// release archive, each for its own system.
+const NativeTag = "native"
+
 // Shape is what a project's tasks depend on.
 type Shape struct {
 	Root string

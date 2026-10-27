@@ -3,6 +3,7 @@ package discovery
 import (
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -14,6 +15,9 @@ type Lists struct {
 	Project       bool
 	Name, Version string
 	Kind, Stack   string
+	// Native is set(SMITH_NATIVE ON): the project is built on each operating
+	// system, so its release archives come from a native job per runner.
+	Native bool
 	// Executable is the first add_executable target, an app's to start.
 	Executable string
 	// Subdirectories are the add_subdirectory sources, as written.
@@ -23,7 +27,7 @@ type Lists struct {
 var (
 	projectCall = regexp.MustCompile(`(?is)\bproject\s*\(\s*([A-Za-z0-9_.+-]+)([^)]*)\)`)
 	versionArg  = regexp.MustCompile(`(?i)\bVERSION\s+([0-9][0-9.]*)`)
-	setting     = regexp.MustCompile(`(?i)\bset\s*\(\s*(SMITH_KIND|SMITH_STACK)\s+"?([A-Za-z0-9_-]+)"?\s*\)`)
+	setting     = regexp.MustCompile(`(?i)\bset\s*\(\s*(SMITH_KIND|SMITH_STACK|SMITH_NATIVE)\s+"?([A-Za-z0-9_-]+)"?\s*\)`)
 	executable  = regexp.MustCompile(`(?i)\badd_executable\s*\(\s*([A-Za-z0-9_.+-]+)`)
 	subdir      = regexp.MustCompile(`(?i)\badd_subdirectory\s*\(\s*"?([^"\s)]+)"?`)
 	comment     = regexp.MustCompile(`(?m)#[^\n]*`)
@@ -40,10 +44,13 @@ func ParseLists(src string) Lists {
 		}
 	}
 	for _, m := range setting.FindAllStringSubmatch(src, -1) {
-		if strings.EqualFold(m[1], "SMITH_KIND") {
+		switch strings.ToUpper(m[1]) {
+		case "SMITH_KIND":
 			l.Kind = m[2]
-		} else {
+		case "SMITH_STACK":
 			l.Stack = m[2]
+		case "SMITH_NATIVE":
+			l.Native = slices.Contains([]string{"ON", "TRUE", "YES", "1"}, strings.ToUpper(m[2]))
 		}
 	}
 	if m := executable.FindStringSubmatch(src); m != nil {
