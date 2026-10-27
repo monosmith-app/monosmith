@@ -152,22 +152,56 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 	case "verify":
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
+		log.banner(verifyIntro(s, base)...)
 		if err := verifyBoundaries(s, out); err != nil {
 			return err
 		}
 		// Native projects are verified by the native job, on every OS.
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: []string{"!tag:" + release.NativeTag}, Affected: base != "", Base: base, Out: out})
+		outputs := newTaskOutputs()
+		tee := io.MultiWriter(out, outputs)
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: VerifyTasks, Projects: nativeExcluded, Affected: base != "", Base: base, Out: tee})
 		if err != nil {
 			return err
 		}
 		if len(summary.Results) > 0 {
 			fmt.Fprintln(out, summary.String())
 		}
-		if !summary.OK() {
+		results, columns := summary.Results, VerifyTasks
+		failed := !summary.OK()
+		var markedErr error
+		if !failed {
+			var marked []taskrun.Result
+			marked, markedErr = verifyMarked(ctx, s, base, tee)
+			results = append(results, marked...)
+			for _, r := range marked {
+				if !slices.Contains(columns, taskOf(r.Task)) {
+					columns = append(slices.Clone(columns), taskOf(r.Task))
+				}
+			}
+		}
+		log.close()
+		if len(results) == 0 {
+			log.say("Nothing to verify: no selected project has a %s task.", strings.Join(VerifyTasks, ", "))
+			log.conclusion = "nothing to verify"
+		} else {
+			report := reportTasks(results, columns, outputs, log.icons)
+			for _, line := range report.Table.Text("passed") {
+				log.say("%s", line)
+			}
+			if slices.ContainsFunc(results, func(r taskrun.Result) bool { return r.Status == taskrun.Cached }) {
+				log.say("%s = replayed from the cache", log.icons.Cached)
+			}
+			for _, line := range failureLines(report.Failed, outputs) {
+				log.say("%s", line)
+			}
+			log.markdown = report.Table.Markdown()
+			log.conclusion = report.Conclusion
+		}
+		if failed {
 			return taskrun.ErrTasksFailed
 		}
-		if err := verifyMarked(ctx, s, base, out); err != nil {
-			return err
+		if markedErr != nil {
+			return markedErr
 		}
 		return verifyClean(s, before, summary)
 	case "pack":
@@ -182,19 +216,36 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 			}
 		}
 		if !packing {
-			fmt.Fprintln(out, "nothing to pack: no project has a package task")
+			log.banner()
+			log.say("Nothing to pack: no project has a %s task, so %s stays empty.", PackTask, DropDir)
+			log.conclusion = "nothing to pack"
 			return nil
 		}
+		log.banner(packIntro(s)...)
 		// Native projects are packed by the native job, on each OS.
-		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: []string{"!tag:" + release.NativeTag}, Out: out})
+		outputs := newTaskOutputs()
+		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{PackTask}, Projects: nativeExcluded, Out: io.MultiWriter(out, outputs)})
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(out, summary.String())
+		log.close()
+		report := reportTasks(summary.Results, []string{PackTask}, outputs, log.icons)
+		for _, line := range report.Table.Text("packed") {
+			log.say("%s", line)
+		}
+		for _, line := range failureLines(report.Failed, outputs) {
+			log.say("%s", line)
+		}
 		if !summary.OK() {
 			return taskrun.ErrTasksFailed
 		}
-		fmt.Fprintf(out, "packed into %s\n", DropDir)
+		files := listDropFiles(s.Root)
+		for _, line := range dropTable(files).Text("files") {
+			log.say("%s", line)
+		}
+		log.markdown = append(report.Table.Markdown(), append([]string{""}, dropTable(files).Markdown()...)...)
+		log.conclusion = fmt.Sprintf("%s packed into %s (%s)", plural(len(files), "file"), DropDir, formatSize(totalSize(files)))
 		return nil
 	case "native":
 		return nativebuild.Run(ctx, s, out)
@@ -260,7 +311,7 @@ func verifyClean(s *session.Session, before []string, summary taskrun.Summary) e
 // verify (protocol.Task.Verify: an app's image), each for the affected
 // projects that have it marked, native ones left to the native job. A task
 // whose program is not installed is skipped with a warning.
-func verifyMarked(ctx context.Context, s *session.Session, base string, out io.Writer) error {
+func verifyMarked(ctx context.Context, s *session.Session, base string, out io.Writer) ([]taskrun.Result, error) {
 	byTask, missing := MarkedForVerify(s.Graph.Projects, func(program string) bool {
 		_, err := exec.LookPath(program)
 		return err == nil
@@ -273,19 +324,27 @@ func verifyMarked(ctx context.Context, s *session.Session, base string, out io.W
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	var results []taskrun.Result
 	for _, name := range names {
 		summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{name}, Projects: byTask[name], Affected: base != "", Base: base, Out: out})
 		if err != nil {
-			return err
+			return results, err
 		}
 		if len(summary.Results) > 0 {
 			fmt.Fprintln(out, summary.String())
 		}
+		results = append(results, summary.Results...)
 		if !summary.OK() {
-			return taskrun.ErrTasksFailed
+			return results, taskrun.ErrTasksFailed
 		}
 	}
-	return nil
+	return results, nil
+}
+
+// taskOf is the task of a task id ("core:test" is "test").
+func taskOf(id string) string {
+	_, task := projectOf(id)
+	return task
 }
 
 // MarkedForVerify lists, by task, the projects whose task a plugin marked

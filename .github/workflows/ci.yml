@@ -95,7 +95,8 @@ jobs:
       - name: Pack
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: smith ci pack
-      - uses: actions/upload-artifact@v7
+      - name: Keep the packed apps (dist/drop as artifact drop)
+        uses: actions/upload-artifact@v7
         if: github.event_name == 'push' && github.ref_name == 'main'
         with:
           name: drop
