@@ -84,6 +84,19 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"pom.xml": "<module>packages/core</module>"},
 		},
 		{
+			lang:    "ruby",
+			tools:   []string{"ruby", "bundle"},
+			install: true,
+			wire: func(w *workspace) {
+				spec := "apps/cli/kcruby_cli.gemspec"
+				w.write(spec, strings.Replace(w.read(spec), "  spec.metadata['smith_kind'] = 'app'\n", "  spec.metadata['smith_kind'] = 'app'\n\n  spec.add_dependency 'kcruby_core'\n", 1))
+				exe := "apps/cli/exe/kcruby_cli"
+				w.write(exe, strings.Replace(w.read(exe), "puts KcrubyCli::Greeting.greet('world')\n", "require 'kcruby_core'\n\nputs KcrubyCore::Greeting.greet('core')\n", 1))
+			},
+			untracked: []string{"Gemfile.lock"},
+			coreFiles: map[string]string{"Gemfile": "gemspec path: 'packages/core'"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,
