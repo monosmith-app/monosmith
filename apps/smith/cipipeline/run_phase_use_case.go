@@ -280,7 +280,8 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			dir = filepath.Join(root, filepath.FromSlash(step.Dir))
 		}
 		began := time.Now()
-		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: argv, Dir: dir, Env: os.Environ(), Out: out})
+		tail := &tailWriter{}
+		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: argv, Dir: dir, Env: os.Environ(), Out: io.MultiWriter(out, tail)})
 		if err == nil && code == 0 {
 			if key != "" {
 				if err := remembered.remember(key, step, inputs, time.Since(began)); err != nil {
@@ -294,7 +295,7 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			msg = step.Name + ": " + err.Error()
 		}
 		if step.Blocking {
-			return errors.New(msg)
+			return errors.New(failureWithOutput(out, msg, tail.String()))
 		}
 		failures = append(failures, msg)
 		warn(out, msg+" — not blocking")
@@ -303,6 +304,24 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 		fmt.Fprintf(out, "%d non-blocking step(s) reported problems\n", len(failures))
 	}
 	return nil
+}
+
+// failureWithOutput is the failure of a blocking step with the end of its
+// output after it. When that output names a log file smith can read (npm's
+// debug log stays on the agent), the file's end is printed first, in a CI log
+// group, so the cause can be found from the pipeline.
+func failureWithOutput(out io.Writer, msg, output string) string {
+	if path := logFileNamed(output); path != "" {
+		if raw, err := os.ReadFile(path); err == nil {
+			group(out, "log file "+path)
+			fmt.Fprintf(out, "last %d lines of %s\n%s\n", logFileLines, path, lastLines(string(raw), logFileLines))
+			endGroup(out)
+		}
+	}
+	if strings.TrimSpace(output) == "" {
+		return msg
+	}
+	return msg + "\n" + lastLines(output, outputTailLines)
 }
 
 // ensureIdentity gives CI a committer identity for annotated release tags.
