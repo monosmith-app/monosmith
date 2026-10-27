@@ -116,3 +116,43 @@ func TestLevelsAndReferencesAreChecked(t *testing.T) {
 		}
 	}
 }
+
+// scoped is a convention with the given languages.
+type scoped struct{ languages []string }
+
+func (s scoped) Describe(protocol.InitializeParams) (protocol.InitializeResult, error) {
+	return protocol.InitializeResult{Plugin: protocol.Peer{Name: "scoped", Version: "1.0.0"}, Kind: protocol.KindConvention, Languages: s.languages}, nil
+}
+
+func (scoped) Contribute(protocol.ContributeParams) (protocol.ContributeResult, error) {
+	return protocol.ContributeResult{}, nil
+}
+
+func checkNames(r Report) string {
+	var names []string
+	for _, res := range r.Results {
+		names = append(names, res.Check)
+	}
+	return strings.Join(names, "|")
+}
+
+func TestAConventionSaysWhichLanguagesItAppliesTo(t *testing.T) {
+	r := Check(connect(t, scoped{languages: []string{"go", "python"}}, t.TempDir()), Options{})
+	if !strings.Contains(checkNames(r), "declares the languages it applies to: go, python") {
+		t.Fatalf("languages not reported: %s", checkNames(r))
+	}
+}
+
+func TestAConventionWithoutLanguagesSaysItMeansEveryLanguage(t *testing.T) {
+	r := Check(connect(t, scoped{}, t.TempDir()), Options{})
+	if !strings.Contains(checkNames(r), "declares no languages, so it applies to projects of every language") || !r.OK() {
+		t.Fatalf("%s\n%s", checkNames(r), r.Failures())
+	}
+}
+
+func TestBlankOrRepeatedLanguagesAreReported(t *testing.T) {
+	r := Check(connect(t, scoped{languages: []string{"go", "go", " "}}, t.TempDir()), Options{})
+	if !strings.Contains(r.Failures(), "declares the languages it applies to") {
+		t.Fatalf("not reported:\n%s", r.Failures())
+	}
+}

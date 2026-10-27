@@ -183,6 +183,12 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `conflicts` | `[]PluginRef` | no | Conflicts are plugins that must not be in the same project. |
 | `stacks` | `[]Stack` | no | Stacks are ready-made stacks the plugin publishes. |
 
+**What `languages` means for a convention plugin.** It is the list of project languages the plugin
+applies to, and the only place that says so. The host asks the plugin (`contribute`, `doctor`,
+`generate`) only about projects whose `language` is in the list, and `smith doctor` names the
+projects it left out. An empty or absent list means every language. `smith.toml` can narrow the
+list for a workspace (`languages = [...]` in `[conventions.<name>]`) but never widen it.
+
 ### Peer
 
 Peer names one side of the connection.

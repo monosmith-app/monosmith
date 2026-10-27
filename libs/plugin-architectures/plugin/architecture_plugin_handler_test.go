@@ -85,3 +85,40 @@ func TestDoctorWarnsAboutAProjectWithNoLayerFolders(t *testing.T) {
 		t.Fatalf("%+v", res.Findings[0])
 	}
 }
+
+func TestEveryArchitectureDeclaresTheLanguagesItAppliesTo(t *testing.T) {
+	for _, name := range Names() {
+		res, err := New(name, "1.0.0").Describe(protocol.InitializeParams{})
+		if err != nil || len(res.Languages) == 0 {
+			t.Fatalf("%s declares no languages: %+v %v", name, res, err)
+		}
+		if got := Languages(name); strings.Join(got, ",") != strings.Join(res.Languages, ",") {
+			t.Fatalf("%s: Languages says %v, the handshake %v", name, got, res.Languages)
+		}
+	}
+	if Languages("onion") != nil {
+		t.Fatal("an unknown architecture has languages")
+	}
+}
+
+func TestARulesetThatListsLanguagesAppliesToOnlyThose(t *testing.T) {
+	a := New("hexagonal", "1.0.0")
+	a.rules.Languages = []string{"go"}
+	res, err := a.Describe(protocol.InitializeParams{})
+	if err != nil || strings.Join(res.Languages, ",") != "go" {
+		t.Fatalf("%v %v", res.Languages, err)
+	}
+	got, err := a.Contribute(protocol.ContributeParams{Projects: []protocol.Project{
+		{Name: "tool", Language: "go"},
+		{Name: "web", Language: "node"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := got.Projects["tool"]; !ok {
+		t.Fatal("a listed language got no task")
+	}
+	if _, ok := got.Projects["web"]; ok {
+		t.Fatal("a language the ruleset leaves out got a task")
+	}
+}

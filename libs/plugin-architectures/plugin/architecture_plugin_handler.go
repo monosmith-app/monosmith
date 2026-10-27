@@ -39,8 +39,39 @@ func (a *Architecture) Describe(params protocol.InitializeParams) (protocol.Init
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: a.rules.Name, Version: a.Version},
 		Kind:      protocol.KindConvention,
-		Languages: imports.Names(),
+		Languages: languagesOf(a.rules),
 	}, nil
+}
+
+// Languages are the languages the architecture called name declares in its
+// handshake: the ones its ruleset lists, or every language the check can read.
+// It is nil for a name that is not served.
+func Languages(name string) []string {
+	rs, ok := rules.For(name)
+	if !ok {
+		return nil
+	}
+	return languagesOf(rs)
+}
+
+// reads is the way to read a project's imports when the architecture applies
+// to its language.
+func (a *Architecture) reads(language string) (imports.Language, bool) {
+	lang, ok := imports.For(language)
+	if !ok {
+		return imports.Language{}, false
+	}
+	if len(a.rules.Languages) > 0 && !slices.Contains(a.rules.Languages, lang.Name) {
+		return imports.Language{}, false
+	}
+	return lang, true
+}
+
+func languagesOf(rs rules.Ruleset) []string {
+	if len(rs.Languages) > 0 {
+		return slices.Clone(rs.Languages)
+	}
+	return imports.Names()
 }
 
 // Contribute implements serve.Contributor: an architecture-check task for every
@@ -48,7 +79,7 @@ func (a *Architecture) Describe(params protocol.InitializeParams) (protocol.Init
 func (a *Architecture) Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error) {
 	res := protocol.ContributeResult{Projects: map[string]protocol.Contribution{}}
 	for _, p := range params.Projects {
-		lang, ok := imports.For(p.Language)
+		lang, ok := a.reads(p.Language)
 		if !ok {
 			continue
 		}
@@ -67,7 +98,7 @@ func (a *Architecture) Doctor(params protocol.DoctorParams) (protocol.DoctorResu
 	var bare []string
 	checked := 0
 	for _, p := range params.Projects {
-		if _, ok := imports.For(p.Language); !ok {
+		if _, ok := a.reads(p.Language); !ok {
 			continue
 		}
 		folders, err := check.LayerFolders(filepath.Join(a.root, filepath.FromSlash(p.Root)), p.Language, a.rules)

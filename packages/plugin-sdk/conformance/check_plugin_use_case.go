@@ -32,6 +32,7 @@ func Check(c *host.Client, opts Options) Report {
 	r := Report{Plugin: info.Plugin}
 	r.add("names itself", info.Plugin.Name != "" && info.Plugin.Version != "", "initialize returned name %q, version %q; both are required", info.Plugin.Name, info.Plugin.Version)
 	r.add("has a known kind", info.Kind == protocol.KindLanguage || info.Kind == protocol.KindConvention, "kind %q is neither language nor convention", info.Kind)
+	checkLanguages(info, &r)
 	roles := info.EffectiveRoles()
 	for _, role := range roles {
 		r.add("plays a known role: "+string(role), role.Known(), "roles are %v", protocol.Roles)
@@ -85,6 +86,32 @@ func Check(c *host.Client, opts Options) Report {
 		generate(c, opts.Workspace, &r)
 	}
 	return r
+}
+
+// checkLanguages checks the languages a plugin declares are usable names. A
+// convention that declares none says in the check's name that it applies to
+// every language, so the report shows what smith will do with it.
+func checkLanguages(info protocol.InitializeResult, r *Report) {
+	if info.Kind == protocol.KindConvention && len(info.Languages) == 0 {
+		r.add("declares no languages, so it applies to projects of every language", true, "")
+		return
+	}
+	if len(info.Languages) == 0 {
+		return
+	}
+	var bad []string
+	seen := map[string]bool{}
+	for _, l := range info.Languages {
+		if strings.TrimSpace(l) == "" || l != strings.TrimSpace(l) || seen[l] {
+			bad = append(bad, "\""+l+"\"")
+		}
+		seen[l] = true
+	}
+	what := "declares the languages it serves"
+	if info.Kind == protocol.KindConvention {
+		what = "declares the languages it applies to"
+	}
+	r.add(what+": "+strings.Join(info.Languages, ", "), len(bad) == 0, "languages must be non-empty names, each listed once; problem with %s", strings.Join(bad, ", "))
 }
 
 // generate asks for one project of each kind, checks the files it reports

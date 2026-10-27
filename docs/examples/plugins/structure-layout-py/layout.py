@@ -40,7 +40,7 @@ class LayoutPlugin:
             "plugin": {"name": "widget-layout", "version": "0.1.0"},
             "kind": "convention",
             "roles": ["structure"],
-            # The languages it applies to. A convention that names none applies to no project at all.
+            # The languages it applies to. A convention that names none applies to every language.
             "languages": ["widget"],
         }
 

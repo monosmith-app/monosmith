@@ -19,7 +19,7 @@ func (l *layout) Describe(p protocol.InitializeParams) (protocol.InitializeResul
 		Kind:   protocol.KindConvention,
 		Roles:  []protocol.Role{protocol.RoleStructure},
 		// The languages it applies to. A convention that names none applies to
-		// no project at all.
+		// every language.
 		Languages: []string{"widget"},
 	}, nil
 }

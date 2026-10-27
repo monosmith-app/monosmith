@@ -31,10 +31,14 @@ plugin by default.
 | Way | Applies to | Configure |
 |---|---|---|
 | in a **stack** | the projects whose stack lists it under `structure` | `structure = ["widget-layout"]` in `[stacks.<name>]`, or a recipe's `use.structure` |
-| as a **convention** | every project of the languages it names | `[conventions.widget-layout]` with optional `languages = [...]` (to narrow) and `exclude = [...]` (projects left alone) |
+| as a **convention** | every project of the languages it declares (every project when it declares none) | `[conventions.widget-layout]` with optional `languages = [...]` (to narrow) and `exclude = [...]` (projects left alone) |
 
-**`Languages` is what a convention applies to.** A plugin that names none applies to no project,
-and nothing says so. Name the languages in the handshake.
+**`Languages` is where a convention applies, and the only place that says so.** A convention runs
+only for projects whose language is in the list; smith does not ask it about the others, and
+`smith doctor` says in plain words which projects it left out. A convention that declares none
+applies to every language. Declare the languages you have tried it on: a plugin for Go and Python
+projects should say `["go", "python"]`, not nothing. `smith plugin check` reports what the plugin
+declares, and says "applies to projects of every language" when it declares none.
 
 ## The example
 
@@ -61,7 +65,7 @@ func (l *layout) Describe(p protocol.InitializeParams) (protocol.InitializeResul
 		Kind:   protocol.KindConvention,
 		Roles:  []protocol.Role{protocol.RoleStructure},
 		// The languages it applies to. A convention that names none applies to
-		// no project at all.
+		// every language.
 		Languages: []string{"widget"},
 	}, nil
 }
@@ -307,7 +311,7 @@ structure = ["widget-layout"]
 
 | You see | Cause and remedy |
 |---|---|
-| the plugin is configured and no task appears | `Languages` is empty, or it does not include the project's language |
+| the plugin is configured and no task appears | `Languages` does not include the project's language (`smith doctor` names the projects it skips) |
 | `✖ a structure plugin does something` | the plugin implements none of `contribute`, `generate`, `ci`, `doctor` |
 | `smith.toml [conventions.x]: x is not a convention plugin` (from the code) | `Kind` is `language`; a structure plugin is kind `convention` |
 | `smith.toml [conventions.x]: it does not apply to "go"; it supports [widget]` (from the code) | `languages = [...]` in the convention names a language the plugin does not list |
