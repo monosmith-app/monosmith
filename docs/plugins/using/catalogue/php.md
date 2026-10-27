@@ -19,8 +19,8 @@ pipelines which PHP to install.
 | `--lang` value | `php` |
 | Manifest that makes a directory a candidate project | `composer.json` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies` |
-| Not advertised | `declarations` and `latest`: `smith sync` and `smith up` skip PHP |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Not advertised | none of the dependency capabilities |
 | Stacks it publishes | none. The `php` language alone is the stack; a project records no stack unless `extra.smith.stack` names one |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `php-app`, `php-lib`, `php-package`) |
 | Tasks | `lint`, `test`, `start`; no `build`, `typecheck`, `format` or `package` |
@@ -334,9 +334,13 @@ You register the mirror with Packagist yourself once.
 The PHP version is the first line of `.php-version`, else `8.4`
 (`PHPVersion` in `pipeline/ci_contribution_use_case.go`). The setup step
 (`smith ci setup`) runs `composer install --no-interaction --no-progress` and
-stops the job if it fails. The plugin adds no audit step (`smith ci audit`
-said "nothing to audit") and needs no secret or permission: Packagist reads
-tags.
+stops the job if it fails. The audit phase (`smith ci audit`) runs
+`composer audit` (Composer 2.4 or later), reported and not blocking, and
+remembered per content of the root and each package's `composer.json` and
+`composer.lock`, so it is skipped while they are unchanged. Without Composer
+the step says `composer is not installed: install it (https://getcomposer.org/download)`
+and fails as a warning; `smith doctor` already checks for it. The plugin needs
+no secret or permission: Packagist reads tags.
 
 The GitHub fragment from a real run:
 
@@ -376,9 +380,22 @@ Real run of the last two: both changed only `libs/util/composer.json` and
 `✔ util: added monolog/monolog (libs/util/composer.json, composer.lock)` and
 `✔ util: removed monolog/monolog (...)`.
 
-**Not supported.** `smith sync` and `smith up` skip PHP: `smith sync --check`
-printed `⊘ php: not compared; its plugin does not list declarations`, and
-`smith up --json` found no updates.
+**Versions: `smith sync` and `smith up`.** The plugin lists the `require` and
+`require-dev` packages of every package's `composer.json` and of the workspace
+root's, so `smith sync`, `smith up`, the Deps tab and the one-version check in
+`smith doctor` cover PHP.
+
+- Platform requirements (`php`, `ext-*`, `lib-*`) say what the package runs on and
+  are not listed. Alternatives (`^7.8 || ^8.0`), wildcards (`1.2.*`) and branches
+  (`dev-main`) are reported and never rewritten.
+- `smith sync` brings every declaration of a package to the highest constraint
+  declared, changing only the constraint string (indentation and key order stay).
+- `smith up` asks Packagist (`repo.packagist.org/p2`) for the newest stable release,
+  keeping each constraint's operator. When the workspace has a `composer.lock` it
+  then runs `composer update --no-install --with-dependencies <packages>` so the
+  lock follows (otherwise `composer install` would keep installing the locked
+  versions), and the install that finishes `smith up` brings `vendor/` to them. A
+  package Packagist does not have (a private repository's) is skipped.
 
 **Remove.** `smith remove <project>` deletes the directory, then the plugin
 runs `composer remove <name> --no-update` and
