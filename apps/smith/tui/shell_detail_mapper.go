@@ -192,7 +192,7 @@ func (s Shell) projectPanel() detail.Panel {
 	}
 	rows := []detail.Row{{Label: "kind", Value: p.Kind}, {Label: "language", Value: p.Language}}
 	if p.Stack != "" {
-		rows = append(rows, detail.Row{Label: "stack", Value: p.Stack})
+		rows = append(rows, detail.Row{Label: "stack", Value: stackText(p.Stack)})
 	}
 	rows = append(rows, detail.Row{Label: "root", Value: p.Root})
 	if p.Version != "" {
@@ -239,7 +239,7 @@ func taskHint(t projectlist.Task) string {
 		parts = append(parts, "a task of this project")
 	}
 	if len(t.DependsOn) > 0 {
-		parts = append(parts, "after "+strings.Join(t.DependsOn, ", "))
+		parts = append(parts, needsText(t.DependsOn))
 	}
 	if t.Cache {
 		parts = append(parts, "result remembered: skipped when nothing changed")
@@ -249,12 +249,46 @@ func taskHint(t projectlist.Task) string {
 
 // taskMeanings say what the common tasks do.
 var taskMeanings = map[string]string{
-	"build":     "turns the source into what gets shipped",
-	"lint":      "checks the code for mistakes and style",
-	"test":      "runs the tests",
-	"typecheck": "checks the types without building",
-	"package":   "bundles the build for publishing",
-	"format":    "rewrites the files to the house style",
+	"build":      "turns the source into what gets shipped",
+	"lint":       "checks the code for mistakes and style",
+	"test":       "runs the tests",
+	"typecheck":  "checks the types without building",
+	"package":    "bundles the build for publishing",
+	"format":     "rewrites the files to the house style",
+	"deps-check": "fails when the code imports a package its package.json does not list",
+	"prune":      "writes the deploy folder: the app with only the packages it uses",
+	"audit":      "looks for known security problems in the dependencies",
+}
+
+// stackMeanings say what a stack gives a project, for the stack row.
+var stackMeanings = map[string]string{
+	"node-jest":   "ESLint and Jest tasks",
+	"node-vitest": "ESLint and Vitest tasks",
+}
+
+// stackText is the stack's name, with what it gives when smith knows.
+func stackText(stack string) string {
+	if m := stackMeanings[stack]; m != "" {
+		return stack + " (" + m + ")"
+	}
+	return stack
+}
+
+// needsText says in plain words what has to run before a task: "^build" is
+// the build of the projects this one needs, "build" this project's own.
+func needsText(deps []string) string {
+	var parts []string
+	for _, d := range deps {
+		switch {
+		case strings.HasPrefix(d, "^"):
+			parts = append(parts, "the "+d[1:]+" of the projects it needs")
+		case strings.Contains(d, ":"):
+			parts = append(parts, d)
+		default:
+			parts = append(parts, "its own "+d)
+		}
+	}
+	return "runs after " + strings.Join(parts, " and ")
 }
 
 // taskAction is the action that runs a task on the selected project; the
