@@ -135,6 +135,8 @@ lists them all. The checks, grouped by who owns them:
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |
 | `<project> can be verified` (a warning) | the project has no `lint` or no `test` task, so CI never checks it. Add the task, or declare it under `[projects.<name>.tasks]` |
 | `<project>:<task> keeps the dependencies its plugins add` (a warning) | a `depends_on` override in `smith.toml` replaces the plugin's list, dropping dependencies it did not repeat. Add them back, or leave them out on purpose (`smith explain <project>:<task>` shows where each field came from) |
+| `task settings shared by projects are written once` (a warning) | two or more projects repeat the same task override in `smith.toml`. `smith doctor --fix` writes them once as a `[[task_groups]]` entry and keeps your comments; see [task groups](../reference/configuration.md#task-groups) |
+| `every task group names a project` (a warning) | a `[[task_groups]]` entry selects no project. Check its `select` against your project names, folders, kinds, languages and tags, or delete it |
 
 ### Language checks (owned by each language plugin)
 

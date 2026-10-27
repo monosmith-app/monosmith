@@ -107,7 +107,8 @@ instead of once per project. A project whose settings differ keeps its own
 `[projects.<name>.tasks.<task>]`, completed with the group's other fields, so
 every task still runs as before. The report lists each group it wrote. A group is only
 written when no project it selects would start taking settings it did not have.
-See [Task groups](../reference/configuration.md#task-groups).
+See [Task groups](../reference/configuration.md#task-groups). A workspace
+converted earlier can fold its repeated settings with `smith doctor --fix`.
 
 ## Examples
 

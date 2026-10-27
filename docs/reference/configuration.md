@@ -521,6 +521,16 @@ project already has.
 - The `depends_on` rules above apply unchanged: a group's list replaces the
   plugin's, and the dependencies it leaves out are named by `smith doctor`.
 
+`smith convert` writes the settings that projects of one language and kind
+share as a group. For a workspace that already repeats them, `smith doctor`
+warns ("task settings shared by projects are written once") and `smith doctor
+--fix` rewrites `smith.toml`: the repeated tables move into `[[task_groups]]`
+entries added at the end of the file, a project that differs keeps its own
+table (with the group's other fields added, so it runs as before), and every
+other line, comments included, stays. The fix is only offered when the
+rewritten file resolves to exactly the same tasks, and it never lets a group
+reach a project that did not repeat the settings.
+
 ## A project's release settings
 
 ```toml
