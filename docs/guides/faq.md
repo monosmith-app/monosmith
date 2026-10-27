@@ -157,12 +157,13 @@ and `smith ci generate` rewrites the file. Keep your own steps between the
 `audit`, `verify`, `pack`, `native` and `release` are ordinary commands.
 `smith adopt` keeps a pipeline of yours as `<file>.pre-smith`.
 
-### Why does CI install smith from a script?
+### How does CI install smith?
 
-The generated pipeline downloads the `smith` binary by running `tools/smith/install.sh`,
+A Node, Python or .NET workspace installs the `monosmith` package with npm, pip or
+`dotnet tool`. Any other workspace runs `tools/smith/install.sh`,
 a copy of the installer that `smith ci generate` commits into your project (never edit
-it; `smith doctor --fix` refreshes it), pinned to the version that generated the pipeline (a development build writes
-`SMITH_VERSION: latest`). Change that value to pin another version. See
+it; `smith doctor --fix` refreshes it). Both are pinned to the version that generated the pipeline (a development build
+installs the latest). Change `[ci] smith_version` to pin another version. See
 [installing](../getting-started/installing.md).
 
 ### How does CI cache package downloads?

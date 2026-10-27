@@ -34,11 +34,11 @@ func TestInstallScriptKeepsShebangAndChecksumVerification(t *testing.T) {
 func TestEveryProviderRunsTheVendoredInstallerAndWritesIt(t *testing.T) {
 	for _, provider := range []string{"github", "azure", "gitlab", "circleci"} {
 		cfg := workspace.Config{CI: workspace.CISection{Providers: []string{provider}}}
-		assertVendored(t, provider, Rendered(cfg, model()))
+		assertVendored(t, provider, Rendered(cfg, scriptModel()))
 	}
 	cfg := workspace.Config{CI: workspace.CISection{Devcontainer: true}}
-	assertVendored(t, "devcontainer", Rendered(cfg, model()))
-	for name, out := range map[string]string{"github setup": GitHubSetup(model()), "azure setup": AzureSetup(model())} {
+	assertVendored(t, "devcontainer", Rendered(cfg, scriptModel()))
+	for name, out := range map[string]string{"github setup": GitHubSetup(scriptModel()), "azure setup": AzureSetup(scriptModel())} {
 		if strings.Contains(out, "raw.githubusercontent.com") || !strings.Contains(out, "sh tools/smith/install.sh") {
 			t.Errorf("%s:\n%s", name, out)
 		}
@@ -60,7 +60,7 @@ func assertVendored(t *testing.T, name string, files map[string]string) {
 func TestWriteVendorsTheInstallerAndDriftSeesItChange(t *testing.T) {
 	root := t.TempDir()
 	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}}}
-	if _, _, err := Write(root, cfg, model()); err != nil {
+	if _, _, err := Write(root, cfg, scriptModel()); err != nil {
 		t.Fatal(err)
 	}
 	full := filepath.Join(root, "tools", "smith", "install.sh")
@@ -71,15 +71,15 @@ func TestWriteVendorsTheInstallerAndDriftSeesItChange(t *testing.T) {
 	if err := os.WriteFile(full, []byte("#!/bin/sh\necho old\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if drift := Drift(root, cfg, model()); len(drift) != 1 || !strings.Contains(drift[0], InstallScriptPath) {
+	if drift := Drift(root, cfg, scriptModel()); len(drift) != 1 || !strings.Contains(drift[0], InstallScriptPath) {
 		t.Fatalf("drift %v", drift)
 	}
-	planned, _ := Planned(root, cfg, model())
+	planned, _ := Planned(root, cfg, scriptModel())
 	if planned[InstallScriptPath] != InstallScript() || len(planned) != 1 {
 		t.Fatalf("planned %v", planned)
 	}
 	_ = os.Remove(full)
-	if drift := Drift(root, cfg, model()); len(drift) != 1 || !strings.Contains(drift[0], "missing") {
+	if drift := Drift(root, cfg, scriptModel()); len(drift) != 1 || !strings.Contains(drift[0], "missing") {
 		t.Fatalf("drift %v", drift)
 	}
 }

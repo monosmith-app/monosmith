@@ -9,7 +9,8 @@ import (
 
 // InstallScriptPath is where `smith ci generate` writes the smith installer
 // inside the project; generated pipelines run that file with sh instead of
-// fetching a script from a mutable branch on every run.
+// fetching a script from a mutable branch on every run. Only workspaces
+// with no Node, Python or .NET toolchain use it (see SmithInstallFor).
 const InstallScriptPath = "tools/smith/install.sh"
 
 // Model is a pipeline independent of any CI provider.

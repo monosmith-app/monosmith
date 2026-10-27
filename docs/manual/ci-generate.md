@@ -6,9 +6,11 @@ parent: ci.md
 `smith ci generate` rewrites the CI pipeline files from the workspace's projects and
 settings: `.github/workflows/ci.yml` for GitHub, `azure-pipelines.yml` for Azure,
 `.gitlab-ci.yml` for GitLab, `.circleci/config.yml` for CircleCI (per `ci.providers`), and `.devcontainer/devcontainer.json`
-when `ci.devcontainer` is on. It also writes `tools/smith/install.sh`, the smith installer
-the pipelines run (`sh tools/smith/install.sh "<version>"`) instead of fetching a script from GitHub
-at every run; commit it, and do not edit it (`smith doctor --fix` restores it). Steps you added in `smith:slot` markers are kept; a pipeline
+when `ci.devcontainer` is on. The pipelines install smith with `npm`, `pip` or `dotnet tool` when the workspace has a
+Node, Python or .NET toolchain (in that order of preference). For any other workspace it also writes
+`tools/smith/install.sh`, the installer the pipelines run (`sh tools/smith/install.sh "<version>"`) instead of
+fetching a script from GitHub at every run; commit it, and do not edit it (`smith doctor --fix` restores it).
+A generated copy in a workspace that no longer needs it is deleted. Steps you added in `smith:slot` markers are kept; a pipeline
 for a provider the workspace no longer asks for is deleted.
 
 `smith add` and `smith remove` run it for you. Run it yourself after editing `smith.toml`

@@ -45,12 +45,20 @@ commands:
 		b.WriteString(circleciSetup(t))
 	}
 	b.WriteString(circleciRestoreStores(m.Stores))
+	install := SmithInstallFor(m)
+	command := "sh " + InstallScriptPath + " " + shellWord(m.SmithVersion)
+	if !install.Script {
+		command = install.ContainerCommand()
+		if dir := install.ContainerPathDir(); dir != "" {
+			command += "\n" + `echo 'export PATH="` + dir + `:$PATH"' >> "$BASH_ENV"`
+		}
+	}
 	fmt.Fprintf(&b, `      - run:
           name: Install smith
           command: |
-            sh %s %s
+            %s
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-`, InstallScriptPath, shellWord(m.SmithVersion))
+`, strings.ReplaceAll(command, "\n", "\n            "))
 	if len(m.Stores) > 0 {
 		b.WriteString("  save-stores:\n    description: Keep the package download stores for the next run\n    steps:\n")
 		b.WriteString(circleciSaveStores(m.Stores))

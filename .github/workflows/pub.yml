@@ -36,10 +36,8 @@ jobs:
           python-version: '3.12'
       - uses: dart-lang/setup-dart@v1
       - name: Install smith
-        run: sh tools/smith/install.sh "$SMITH_VERSION"
-        env:
-          SMITH_VERSION: latest
-          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: npm install --global --registry https://registry.npmjs.org/ monosmith
       # smith:slot before-publish
       # smith:slot-end before-publish
       - name: Publish to pub.dev

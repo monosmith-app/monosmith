@@ -36,7 +36,15 @@ ci:
 	for _, t := range m.Toolchains {
 		b.WriteString(gitlabSetup(t))
 	}
-	fmt.Fprintf(&b, "    - sh %s \"$SMITH_VERSION\"\n", InstallScriptPath)
+	install := SmithInstallFor(m)
+	if install.Script {
+		fmt.Fprintf(&b, "    - sh %s \"$SMITH_VERSION\"\n", InstallScriptPath)
+	} else {
+		b.WriteString("    - " + yamlValue(install.ContainerCommand()) + "\n")
+		if dir := install.ContainerPathDir(); dir != "" {
+			b.WriteString("    - " + yamlValue(`export PATH="`+dir+`:$PATH"`) + "\n")
+		}
+	}
 	b.WriteString("    - export PATH=\"$HOME/.local/bin:$PATH\"\n")
 	b.WriteString(slot("    ", "before-setup"))
 	b.WriteString(`  script:
