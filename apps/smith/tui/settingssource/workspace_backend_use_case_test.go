@@ -87,7 +87,7 @@ func same(t *testing.T, tab, cli string) {
 
 func TestTurningAPluginOffWritesTheBytesPluginDisableWrites(t *testing.T) {
 	tab, cliDir := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	if err := b.SetPlugin("python", false); err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestTurningAPluginOffWritesTheBytesPluginDisableWrites(t *testing.T) {
 
 func TestTheLastPluginCannotBeSwitchedOffEitherWay(t *testing.T) {
 	tab, _ := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	var names []string
 	for _, p := range b.Load().Plugins {
 		names = append(names, p.Name)
@@ -130,7 +130,7 @@ func TestTheLastPluginCannotBeSwitchedOffEitherWay(t *testing.T) {
 
 func TestChangingAndResettingASettingWritesTheBytesConfigSetAndUnsetWrite(t *testing.T) {
 	tab, cliDir := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	steps := []struct {
 		path   string
 		values []string
@@ -165,7 +165,7 @@ func TestChangingAndResettingASettingWritesTheBytesConfigSetAndUnsetWrite(t *tes
 
 func TestASettingTheSchemaRefusesIsRefusedWithTheCommandsReasonAndTheFileIsUntouched(t *testing.T) {
 	tab, _ := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	before := read(t, tab)
 	if _, err := b.SetSetting("ci.providers", []string{"bitbucket"}); err == nil || !strings.Contains(err.Error(), "github or azure or gitlab") {
 		t.Fatalf("%v", err)
@@ -187,7 +187,7 @@ func TestTrustingAnExternalPluginRecordsAndPinsAsPluginTrustDoes(t *testing.T) {
 	withPlugin := baseToml + "\n[plugins.external.widget]\ncommand = ['" + filepath.ToSlash(exe) + "']\n"
 	write(t, tab, withPlugin)
 	write(t, cliDir, withPlugin)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 
 	snap := b.Load()
 	if len(snap.External) != 1 || snap.External[0].Trusted {
@@ -228,7 +228,7 @@ func TestTrustingAnExternalPluginRecordsAndPinsAsPluginTrustDoes(t *testing.T) {
 
 func TestABuiltInPluginHasNothingToTrust(t *testing.T) {
 	tab, _ := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	if _, err := b.Review("node"); err == nil || !strings.Contains(err.Error(), "built-in") {
 		t.Fatalf("%v", err)
 	}
@@ -237,7 +237,7 @@ func TestABuiltInPluginHasNothingToTrust(t *testing.T) {
 func TestTheSnapshotListsEverySettingConfigListKnowsExceptTheOnePluginsEdits(t *testing.T) {
 	tab, _ := twoWorkspaces(t)
 	write(t, tab, baseToml+"\n[default_stacks]\nnode = \"node-jest\"\n")
-	snap := New(tab, t.TempDir(), func(string) string { return "" }).Load()
+	snap := New(tab, t.TempDir(), "test", func(string) string { return "" }).Load()
 	if snap.Err != nil {
 		t.Fatal(snap.Err)
 	}
@@ -267,7 +267,7 @@ func TestTheSnapshotListsEverySettingConfigListKnowsExceptTheOnePluginsEdits(t *
 
 func TestAnUnreadableWorkspaceIsReportedNotHidden(t *testing.T) {
 	dir := t.TempDir()
-	if snap := New(dir, t.TempDir(), func(string) string { return "" }).Load(); snap.Err == nil {
+	if snap := New(dir, t.TempDir(), "test", func(string) string { return "" }).Load(); snap.Err == nil {
 		t.Fatal("no smith.toml here")
 	}
 }
@@ -275,7 +275,7 @@ func TestAnUnreadableWorkspaceIsReportedNotHidden(t *testing.T) {
 func TestTheStyleIsKeptInTheSmithHomeAndTheTipOnlyOnce(t *testing.T) {
 	tab, _ := twoWorkspaces(t)
 	home := t.TempDir()
-	b := New(tab, home, func(string) string { return "" })
+	b := New(tab, home, "test", func(string) string { return "" })
 	if b.TipSeen {
 		t.Fatal("a fresh home has not seen the tip")
 	}
@@ -287,7 +287,7 @@ func TestTheStyleIsKeptInTheSmithHomeAndTheTipOnlyOnce(t *testing.T) {
 	if err != nil || p.Theme != "light" || p.Icons != "ascii" || !p.SettingsTipSeen {
 		t.Fatalf("%+v %v", p, err)
 	}
-	again := New(tab, home, func(string) string { return "" })
+	again := New(tab, home, "test", func(string) string { return "" })
 	if again.Style.Theme != "light" || !again.TipSeen {
 		t.Fatalf("a new session reads it back: %+v", again.Style)
 	}

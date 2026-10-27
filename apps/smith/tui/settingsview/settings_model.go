@@ -29,6 +29,9 @@ type Model struct {
 	// note is the last thing that happened, shown under the list; failed makes it an error.
 	note   string
 	failed bool
+	// confirm is the architecture whose warning was shown: choosing it again,
+	// with nothing between, applies it.
+	confirm string
 	// savedTheme and savedIcons are the saved choice of the Style section.
 	savedTheme, savedIcons string
 	tipSeen                bool

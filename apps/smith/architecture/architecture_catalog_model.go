@@ -3,6 +3,9 @@ package architecture
 import (
 	"fmt"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // None is the choice of no architecture: smith checks no code layout.
@@ -17,6 +20,21 @@ type Architecture struct {
 	// Table is the smith.toml table that turns it on ("conventions.vertical-slices");
 	// empty when the choice writes nothing.
 	Table string
+}
+
+// AppliesTo lists the project languages the architecture applies to: what its
+// built-in plugin declares in the handshake, the one place that says. It is nil
+// for the choice of none.
+func (a Architecture) AppliesTo() []string {
+	build, ok := pluginhost.BuiltinAddons[a.Name]
+	if a.Table == "" || !ok {
+		return nil
+	}
+	info, err := build("").Describe(protocol.InitializeParams{})
+	if err != nil {
+		return nil
+	}
+	return info.Languages
 }
 
 // Writes says in plain words what choosing it changes in smith.toml.

@@ -618,6 +618,65 @@ func TestARefusedArchitectureStaysOnScreenWithItsReason(t *testing.T) {
 	}
 }
 
+// fitting is the sample with a choice that fits some projects and one that
+// would check none.
+func fitting() *fake {
+	f := sample()
+	f.snap.Architectures = []ArchitectureChoice{
+		{Name: "vertical-slices", Meaning: "code grouped by what it does", Writes: "adds [conventions.vertical-slices] to smith.toml",
+			AppliesTo: "go, node", Here: "checks api (go); skips infra (bicep) (its language is not covered)"},
+		{Name: "hexagonal", Meaning: "ports and adapters", Writes: "adds [conventions.hexagonal] to smith.toml",
+			AppliesTo: "go", Warning: "hexagonal applies to go, and none of your projects is written in those languages (infra (bicep)), so it would check nothing."},
+		{Name: "none", Meaning: "smith checks no code layout", Writes: "removes the lines that turn the other choices on"},
+	}
+	return f
+}
+
+func TestTheArchitectureSectionSaysWhatEachChoiceAppliesToAndDoesHere(t *testing.T) {
+	m := opened(t, fitting()).Show(Architecture)
+	out := text(m, 110, 30)
+	for _, want := range []string{"Applies to: go, node", "In this workspace: checks api (go); skips infra (bicep)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the Architecture section lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestAnArchitectureThatChecksNothingHereAsksForASecondEnter(t *testing.T) {
+	f := fitting()
+	m := opened(t, f).Show(Architecture)
+	m, _ = press(m, "down", "enter")
+	if len(f.calls) != 0 {
+		t.Fatalf("applied before the warning was read: %v", f.calls)
+	}
+	if out := text(m, 110, 30); !strings.Contains(out, "hexagonal would check none of your projects. Enter again to choose it anyway.") {
+		t.Fatalf("no warning:\n%s", out)
+	}
+	m, _ = press(m, "enter")
+	if got := strings.Join(f.calls, ";"); got != "architecture hexagonal" {
+		t.Fatalf("calls: %q", got)
+	}
+	_ = m
+}
+
+func TestMovingAwayForgetsAPendingWarning(t *testing.T) {
+	f := fitting()
+	m := opened(t, f).Show(Architecture)
+	_, _ = press(m, "down", "enter", "down", "up", "enter")
+	if len(f.calls) != 0 {
+		t.Fatalf("a warning shown before moving away must be shown again: %v", f.calls)
+	}
+}
+
+func TestAnArchitectureThatFitsIsChosenAtOnce(t *testing.T) {
+	f := fitting()
+	m := opened(t, f).Show(Architecture)
+	_, _ = press(m, "down", "down", "enter")
+	if got := strings.Join(f.calls, ";"); got != "architecture none" {
+		t.Fatalf("calls: %q", got)
+	}
+}
+
 func TestTheArchitectureSectionFitsASmallTerminal(t *testing.T) {
 	m := opened(t, sample()).Show(Architecture)
 	lines := m.View(plainTheme(), 80, 24, -1, -1)

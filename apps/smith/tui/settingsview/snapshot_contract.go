@@ -30,6 +30,11 @@ type ArchitectureChoice struct {
 	Name string
 	// Meaning is one line in plain words; Writes what choosing it changes in smith.toml.
 	Meaning, Writes string
+	// AppliesTo is the languages it checks ("go, node"); Here says which of
+	// this workspace's projects it would check and which it would skip (empty
+	// when the projects are not known); Warning is set when it would check
+	// none of them, and is shown before the choice is applied.
+	AppliesTo, Here, Warning string
 }
 
 // Plugin is a built-in language plugin and whether the workspace uses it.

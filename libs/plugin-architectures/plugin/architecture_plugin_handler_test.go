@@ -92,12 +92,6 @@ func TestEveryArchitectureDeclaresTheLanguagesItAppliesTo(t *testing.T) {
 		if err != nil || len(res.Languages) == 0 {
 			t.Fatalf("%s declares no languages: %+v %v", name, res, err)
 		}
-		if got := Languages(name); strings.Join(got, ",") != strings.Join(res.Languages, ",") {
-			t.Fatalf("%s: Languages says %v, the handshake %v", name, got, res.Languages)
-		}
-	}
-	if Languages("onion") != nil {
-		t.Fatal("an unknown architecture has languages")
 	}
 }
 

@@ -7,9 +7,28 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 )
 
+func TestTheSnapshotSaysWhatEachArchitectureAppliesTo(t *testing.T) {
+	tab, _ := twoWorkspaces(t)
+	snap := New(tab, t.TempDir(), "test", func(string) string { return "" }).Load()
+	if snap.Err != nil {
+		t.Fatal(snap.Err)
+	}
+	for _, a := range snap.Architectures {
+		if a.Name == "none" {
+			if a.AppliesTo != "" {
+				t.Errorf("none applies to %q", a.AppliesTo)
+			}
+			continue
+		}
+		if !strings.Contains(a.AppliesTo, "go") {
+			t.Errorf("%s: applies to %q", a.Name, a.AppliesTo)
+		}
+	}
+}
+
 func TestChoosingAnArchitectureInTheTabWritesTheBytesSmithArchitectureWrites(t *testing.T) {
 	tab, cliDir := twoWorkspaces(t)
-	b := New(tab, t.TempDir(), func(string) string { return "" })
+	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	if got := b.Load().Architecture; got != "none" {
 		t.Fatalf("a workspace without the table uses %q", got)
 	}
@@ -17,7 +36,7 @@ func TestChoosingAnArchitectureInTheTabWritesTheBytesSmithArchitectureWrites(t *
 		if err := b.SetArchitecture(name); err != nil {
 			t.Fatal(err)
 		}
-		cli(t, cliDir, architecture.Command(), name)
+		cli(t, cliDir, architecture.Command("test"), name)
 		same(t, tab, cliDir)
 		if got := b.Load().Architecture; got != name {
 			t.Fatalf("after choosing %s the tab reads %q", name, got)
