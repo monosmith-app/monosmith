@@ -105,9 +105,9 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 		fmt.Fprintf(&b, "● Convert the %s %q to smith, keeping what works\n", f.Source, f.Name)
 		fmt.Fprintf(&b, "  smith takes over from %s. It adds its settings file (smith.toml), turns each %s task into a task\n", tool, tool)
 		fmt.Fprintf(&b, "  smith runs, removes %s and the files only it used, and replaces the CI pipeline files with ones\n", tool)
-		fmt.Fprintf(&b, "  it generates (your own steps go in the marked sections). Your code is not rewritten, and your\n")
-		fmt.Fprintf(&b, "  projects still lint, test and build with the same tools. Every change is a file in git, so git can\n")
-		fmt.Fprintf(&b, "  take it back.\n\n")
+		fmt.Fprintf(&b, "  it generates (your own steps go in the marked sections). Your code is not rewritten. How each\n")
+		fmt.Fprintf(&b, "  project lints, tests and builds is carried over where smith can; what behaves differently or needs\n")
+		fmt.Fprintf(&b, "  you is listed below. Every change is a file in git, so git can take it back.\n\n")
 		b.WriteString(planSummaryText(changes, r))
 		if changes.Total() > 0 {
 			// The same diffs as the Doctor fix dialog shows for a fix.
