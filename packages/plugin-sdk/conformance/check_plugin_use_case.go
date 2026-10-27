@@ -2,6 +2,7 @@ package conformance
 
 import (
 	"io/fs"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -176,6 +177,9 @@ func generate(c *host.Client, ws string, r *Report) {
 			err := c.Call(protocol.MethodRemove, protocol.RemoveParams{Project: p, DryRun: true}, &rm, time.Minute)
 			r.add("would remove the "+string(params.Kind)+" (dry run)", err == nil, "%v", err)
 		}
+		if c.Supports(protocol.MethodChangeKind) {
+			checkChangeKind(c, ws, p, res.Projects, r)
+		}
 		if params.Kind == protocol.ProjectPackage && c.Supports(protocol.MethodPublish) {
 			var pub protocol.PublishResult
 			err := c.Call(protocol.MethodPublish, protocol.PublishParams{Project: p, Version: "1.2.3", DryRun: true}, &pub, 5*time.Minute)
@@ -187,6 +191,62 @@ func generate(c *host.Client, ws string, r *Report) {
 			r.add("says what the registry has of the package", err == nil, "%v (an unreachable registry is a result, not an error)", err)
 		}
 	}
+}
+
+// kindChangeTarget is the kind a generated project is asked to become: a lib
+// or an app is published as a package, a package goes back to a lib.
+func kindChangeTarget(kind protocol.ProjectKind) protocol.ProjectKind {
+	switch kind {
+	case protocol.ProjectApp:
+		return protocol.ProjectLib
+	case protocol.ProjectLib:
+		return protocol.ProjectPackage
+	}
+	return protocol.ProjectLib
+}
+
+// checkChangeKind asks a plugin that declares changeKind what making the
+// generated project another kind edits, and checks it answers with a refusal
+// or with edits to files that exist, and writes nothing itself: the host
+// applies the edits.
+func checkChangeKind(c *host.Client, ws string, p protocol.Project, all []protocol.Project, r *Report) {
+	to := kindChangeTarget(p.Kind)
+	newRoot, _ := projectkind.Relocate(p.Root, to)
+	name := "answers what making the " + string(p.Kind) + " " + article(to) + " edits (dry run)"
+	before := snapshot(ws, c.Info.Manifests)
+	var res protocol.ChangeKindResult
+	err := c.Call(protocol.MethodChangeKind, protocol.ChangeKindParams{Project: p, To: to, NewRoot: newRoot, Projects: all}, &res, 5*time.Minute)
+	if err != nil {
+		r.add(name, false, "%v", err)
+		return
+	}
+	var missing []string
+	for _, f := range res.Files {
+		if _, err := os.Stat(filepath.Join(ws, filepath.FromSlash(f.Path))); err != nil {
+			missing = append(missing, f.Path)
+		}
+	}
+	switch {
+	case res.Refused == "" && len(res.Files) == 0:
+		r.add(name, false, "it answered with neither a refusal nor an edit: a changed kind is recorded in a file")
+	case len(missing) > 0:
+		r.add(name, false, "edits files that do not exist (paths are those before the move): %v", missing)
+	case !maps.Equal(before, snapshot(ws, c.Info.Manifests)):
+		r.add(name, false, "it wrote to the workspace: it must only answer with the new content, and let the host write it")
+	default:
+		r.add(name, true, "")
+	}
+}
+
+// snapshot is the content of every manifest of the workspace, by path.
+func snapshot(ws string, names []string) map[string]string {
+	out := map[string]string{}
+	for _, m := range manifests(ws, names) {
+		if raw, err := os.ReadFile(filepath.Join(ws, filepath.FromSlash(m))); err == nil {
+			out[m] = string(raw)
+		}
+	}
+	return out
 }
 
 // manifests finds the files named like the plugin's manifests, skipping

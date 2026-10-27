@@ -4,6 +4,7 @@ import type { PluginClient } from '../host/index.ts'
 import { effectiveRoles } from '../plugin-roles/index.ts'
 import { projectKindDirectory } from '../projects/index.ts'
 import type { GenerateParams, Project, ProjectKind } from '../protocol/index.ts'
+import { checkKindChange } from './check-kind-change.use-case.ts'
 import type { ConformanceReport } from './conformance-report.model.ts'
 import { findManifests } from './find-manifests.algorithm.ts'
 import { goList, goQuote } from './go-list.mapper.ts'
@@ -22,7 +23,7 @@ function article (kind: ProjectKind): string {
  * exist, and, for a language plugin, that its own `discover` returns what it
  * made, with the kind and the stack it was asked for, tasks with commands, and
  * that the dry runs of `version/write`, `remove`, `publish` and `published`
- * answer.
+ * answer, and, for a plugin that changes kinds, what `project/kind` edits.
  */
 export async function checkGeneration (client: PluginClient, workspace: string, report: ConformanceReport): Promise<void> {
   const language = effectiveRoles(client.info).includes('language')
@@ -73,6 +74,9 @@ export async function checkGeneration (client: PluginClient, workspace: string, 
     }
     if (client.supports('remove')) {
       await attempt(report, `would remove the ${params.kind} (dry run)`, () => client.call('remove', { project, dryRun: true }, { timeoutMs: 60_000 }))
+    }
+    if (client.supports('project/kind')) {
+      await checkKindChange(client, workspace, project, projects, report)
     }
     if (params.kind === 'package' && client.supports('publish')) {
       await attempt(report, 'publishes the package (dry run)', () => client.call('publish', { project, version: '1.2.3', dryRun: true }, { timeoutMs: 5 * 60_000 }))

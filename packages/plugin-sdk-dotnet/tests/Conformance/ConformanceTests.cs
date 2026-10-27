@@ -108,6 +108,103 @@ public sealed class ConformanceTests
         Assert.StartsWith("{\"plugin\":{\"name\":\"\",\"version\":\"\"},\"results\":[{\"check\":\"names itself\",\"ok\":false,\"detail\":", report.ToJson(), StringComparison.Ordinal);
     }
 
+    /// <summary>A language whose manifest, fig.txt, holds "kind stack".</summary>
+    private class Fig(string workspace) : IPlugin, IGenerator, IDiscoverer
+    {
+        protected string Workspace { get; } = workspace;
+
+        public PluginDescription Describe(InitializeParams parameters) => new()
+        {
+            Plugin = new Peer { Name = "fig", Version = "1.0.0" },
+            Kind = PluginKind.Language,
+            Manifests = ["fig.txt"],
+        };
+
+        public Task<GenerateResult> GenerateAsync(GenerateParams parameters, CancellationToken cancellation)
+        {
+            var folder = Path.Combine(Workspace, parameters.Directory.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "fig.txt"), $"{parameters.Kind} {parameters.Stack}");
+            return Task.FromResult(new GenerateResult { Files = [$"{parameters.Directory}/fig.txt"] });
+        }
+
+        public Task<DiscoverResult> DiscoverAsync(DiscoverParams parameters, CancellationToken cancellation)
+        {
+            var projects = parameters.Manifests.Select(manifest =>
+            {
+                var parts = File.ReadAllText(Path.Combine(Workspace, manifest.Replace('/', Path.DirectorySeparatorChar))).Split(' ', 2);
+                var root = manifest[..manifest.LastIndexOf('/')];
+                return new Project
+                {
+                    Name = root[(root.LastIndexOf('/') + 1)..],
+                    Root = root,
+                    Language = "fig",
+                    Kind = new ProjectKind(parts[0]),
+                    Stack = parts[1],
+                    Tasks = new Dictionary<string, ProjectTask> { ["build"] = new() { Command = ["fig", "build"] } },
+                };
+            }).ToList();
+            return Task.FromResult(new DiscoverResult { Projects = projects });
+        }
+    }
+
+    /// <summary>The same language, able to change kinds; <c>how</c> says how it misbehaves, if it does.</summary>
+    private sealed class FigChanger(string workspace, string how = "") : Fig(workspace), IKindChanger
+    {
+        public Task<ChangeKindResult> ChangeKindAsync(ChangeKindParams parameters, CancellationToken cancellation)
+        {
+            var manifest = $"{parameters.Project.Root}/fig.txt";
+            var content = $"{parameters.To} {ConformanceChecks.Stack}";
+            switch (how)
+            {
+                case "nothing":
+                    return Task.FromResult(new ChangeKindResult());
+                case "missing":
+                    return Task.FromResult(new ChangeKindResult { Files = [new FileEdit { Path = $"{parameters.Project.Root}/nowhere.txt", Content = "x" }] });
+                case "write":
+                    File.WriteAllText(Path.Combine(Workspace, manifest.Replace('/', Path.DirectorySeparatorChar)), content);
+                    break;
+            }
+
+            return Task.FromResult(new ChangeKindResult { Files = [new FileEdit { Path = manifest, Content = content }] });
+        }
+    }
+
+    private static async Task<ConformanceReport> CheckedAsync(Func<string, IPlugin> plugin)
+    {
+        using var workspace = new TempWorkspace();
+        await using var client = await PluginClient.ConnectInProcessAsync(plugin(workspace.Root), new HostOptions { WorkspaceRoot = workspace.Root });
+        return await ConformanceChecks.CheckPluginAsync(client, workspace.Root);
+    }
+
+    [Fact]
+    public async Task A_plugin_that_changes_kinds_is_asked_what_each_generated_kind_becomes()
+    {
+        var report = await CheckedAsync(root => new FigChanger(root));
+        Assert.True(report.Ok, report.Failures());
+        var names = Names(report);
+        Assert.Contains("answers what making the app a lib edits (dry run)", names);
+        Assert.Contains("answers what making the lib a package edits (dry run)", names);
+        Assert.Contains("answers what making the package a lib edits (dry run)", names);
+    }
+
+    [Fact]
+    public async Task A_plugin_that_does_not_declare_change_kind_is_not_asked()
+    {
+        var report = await CheckedAsync(root => new Fig(root));
+        Assert.DoesNotContain(Names(report), name => name.Contains("edits (dry run)", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("nothing", "neither a refusal nor an edit")]
+    [InlineData("missing", "files that do not exist")]
+    [InlineData("write", "it wrote to the workspace")]
+    public async Task A_kind_change_that_answers_badly_is_reported(string how, string want)
+    {
+        var report = await CheckedAsync(root => new FigChanger(root, how));
+        Assert.Contains(want, report.Failures(), StringComparison.Ordinal);
+    }
+
     private sealed class Nameless2 : WidgetPlugin
     {
         public override PluginDescription Describe(InitializeParams parameters) => new()

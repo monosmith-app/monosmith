@@ -42,6 +42,64 @@ func (g *good) Discover(p protocol.DiscoverParams) (protocol.DiscoverResult, err
 	return res, nil
 }
 
+// changer is the good language, able to change kinds: it answers with the
+// manifest's new content (the kind is its first word).
+type changer struct {
+	good
+	// how is what it does besides answering: "" answers well, "write" writes
+	// the manifest itself, "nothing" answers with no edit, "missing" edits a
+	// file that does not exist.
+	how string
+}
+
+func (c *changer) ChangeKind(p protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	manifest := p.Project.Root + "/fig.txt"
+	switch c.how {
+	case "nothing":
+		return protocol.ChangeKindResult{}, nil
+	case "missing":
+		return protocol.ChangeKindResult{Files: []protocol.FileEdit{{Path: p.Project.Root + "/nowhere.txt", Content: "x"}}}, nil
+	case "write":
+		_ = os.WriteFile(filepath.Join(c.root, filepath.FromSlash(manifest)), []byte(string(p.To)+" "+Stack), 0o644)
+	}
+	return protocol.ChangeKindResult{Files: []protocol.FileEdit{{Path: manifest, Content: string(p.To) + " " + Stack}}}, nil
+}
+
+func TestAPluginThatChangesKindsIsAskedToAndPasses(t *testing.T) {
+	ws := t.TempDir()
+	r := Check(connect(t, &changer{}, ws), Options{Workspace: ws})
+	if !r.OK() {
+		t.Fatalf("failures:\n%s", r.Failures())
+	}
+	for _, want := range []string{"answers what making the app a lib edits (dry run)", "answers what making the lib a package edits (dry run)", "answers what making the package a lib edits (dry run)"} {
+		if !strings.Contains(checkNames(r), want) {
+			t.Errorf("check %q did not run: %s", want, checkNames(r))
+		}
+	}
+}
+
+func TestAPluginThatCannotChangeKindsIsNotAskedTo(t *testing.T) {
+	ws := t.TempDir()
+	r := Check(connect(t, &good{}, ws), Options{Workspace: ws})
+	if strings.Contains(checkNames(r), "edits (dry run)") {
+		t.Fatalf("asked a plugin that did not declare changeKind: %s", checkNames(r))
+	}
+}
+
+func TestAKindChangeThatAnswersBadlyIsReported(t *testing.T) {
+	for how, want := range map[string]string{
+		"nothing": "neither a refusal nor an edit",
+		"missing": "files that do not exist",
+		"write":   "it wrote to the workspace",
+	} {
+		ws := t.TempDir()
+		failures := Check(connect(t, &changer{how: how}, ws), Options{Workspace: ws}).Failures()
+		if !strings.Contains(failures, want) {
+			t.Errorf("%s: not reported (%q):\n%s", how, want, failures)
+		}
+	}
+}
+
 // bad breaks several promises: a structure plugin that does nothing,
 // providing a task, publishing an incomplete stack.
 type bad struct{}

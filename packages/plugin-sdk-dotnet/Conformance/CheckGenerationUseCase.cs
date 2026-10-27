@@ -13,7 +13,8 @@ internal static class CheckGenerationUseCase
     /// <summary>
     /// Asks the plugin for one project of each kind and checks the files it reports exist. For a language plugin, also
     /// that its own <c>discover</c> returns what it made, with the kind and the stack it was asked for, tasks with
-    /// commands, and that the dry runs of <c>version/write</c>, <c>remove</c>, <c>publish</c> and <c>published</c> answer.
+    /// commands, and that the dry runs of <c>version/write</c>, <c>remove</c>, <c>publish</c> and <c>published</c> answer,
+    /// and, for a plugin that changes kinds, what <c>project/kind</c> edits.
     /// </summary>
     public static async Task CheckAsync(PluginClient client, string workspace, ConformanceReport report)
     {
@@ -94,6 +95,11 @@ internal static class CheckGenerationUseCase
             if (client.Supports(ProtocolMethods.Remove))
             {
                 await AttemptAsync(report, $"would remove the {kind} (dry run)", () => client.RemoveAsync(new RemoveParams { Project = project, DryRun = true }, timeout: sixty)).ConfigureAwait(false);
+            }
+
+            if (client.Supports(ProtocolMethods.ProjectKind))
+            {
+                await CheckKindChangeUseCase.CheckAsync(client, workspace, project, projects, report).ConfigureAwait(false);
             }
 
             if (kind == ProjectKind.Package && client.Supports(ProtocolMethods.Publish))
