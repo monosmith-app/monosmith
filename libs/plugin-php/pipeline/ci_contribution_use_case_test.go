@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -19,6 +20,22 @@ func TestCI(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(ws, ".php-version"), []byte("8.3\n"), 0o644)
 	if v := Version(ws); v != "8.3" {
 		t.Fatalf(".php-version pins %s", v)
+	}
+}
+
+func TestCIAuditsPackagesWithComposerAudit(t *testing.T) {
+	got := CI(t.TempDir(), protocol.CIParams{Projects: []protocol.Project{{Name: "api", Root: "apps/api"}}}).Audit
+	if len(got) != 1 || got[0].Blocking {
+		t.Fatalf("one report-only step: %+v", got)
+	}
+	if want := []string{"composer.json", "composer.lock", "apps/api/composer.json"}; !reflect.DeepEqual(got[0].CacheFiles, want) {
+		t.Errorf("the verdict is remembered per manifest and lockfile: %v", got[0].CacheFiles)
+	}
+	script := got[0].Command[2]
+	for _, want := range []string{"composer audit --no-interaction", "composer is not installed"} {
+		if !strings.Contains(script, want) {
+			t.Errorf("the step says what is missing (%q absent): %s", want, script)
+		}
 	}
 }
 
