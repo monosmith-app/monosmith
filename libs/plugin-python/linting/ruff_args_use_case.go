@@ -17,7 +17,7 @@ func Args(workspaceRoot, projectRoot string) (args []string, own bool, err error
 	if tooldefaults.FindConfig(workspaceRoot, projectRoot, configures) {
 		return nil, true, nil
 	}
-	rel, err := tooldefaults.WriteDefault(workspaceRoot, DefaultFile, defaultConfig)
+	rel, err := tooldefaults.WriteDefault(workspaceRoot, tooldefaults.Ruff.File, defaultConfig)
 	if err != nil {
 		return nil, false, err
 	}

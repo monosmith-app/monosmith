@@ -1,8 +1,5 @@
 package testrunning
 
-// DefaultFile is the name smith gives its default under .smith/defaults/.
-const DefaultFile = "pytest.ini"
-
 // defaultConfig is what pytest runs with when the repository configures none.
 // A repository's own configuration replaces it whole.
 const defaultConfig = `# smith's default pytest configuration. Add a pytest.ini to replace it.

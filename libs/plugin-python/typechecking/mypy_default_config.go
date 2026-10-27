@@ -1,8 +1,5 @@
 package typechecking
 
-// DefaultFile is the name smith gives its default under .smith/defaults/.
-const DefaultFile = "mypy.ini"
-
 // defaultConfig is what mypy runs with when the repository configures none.
 // It checks untyped code too but asks for no annotations, so a project can
 // adopt types gradually. A repository's own configuration replaces it whole.

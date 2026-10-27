@@ -36,6 +36,7 @@ var catalog = []Action{
 	{Command: []string{"lint"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"typecheck"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"dev"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
+	{Command: []string{"eject"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"install"}, Safety: Changes},
 	{Command: []string{"uninstall"}, Safety: Changes},
 	{Command: []string{"sync"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},

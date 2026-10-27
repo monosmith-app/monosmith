@@ -1,8 +1,5 @@
 package linting
 
-// DefaultFile is the name smith gives its default under .smith/defaults/.
-const DefaultFile = "golangci.yml"
-
 // defaultConfig is what golangci-lint runs with when the repository has no
 // .golangci.{yml,yaml,toml,json} of its own: the standard linters, minus the
 // noise of writing to a terminal. A repository's own file replaces it whole
