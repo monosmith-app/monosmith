@@ -2071,6 +2071,9 @@ public sealed record Project : IProtocolValue<Project>
     /// <summary>Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. Set by the host.</summary>
     public Registries? Registries { get; init; }
 
+    /// <summary>ReleaseAssets is what an app's release builds, from smith.toml [projects.&lt;project&gt;.release]: the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil for a project that has no release files. Set by the host.</summary>
+    public AssetSpec? ReleaseAssets { get; init; }
+
     /// <inheritdoc />
     public static Project Read(JsonAny? value, string path)
     {
@@ -2093,6 +2096,7 @@ public sealed record Project : IProtocolValue<Project>
             Stack = StringValue(Member(map, "stack"), Join(path, "stack")),
             Settings = MapOf(Member(map, "settings"), Join(path, "settings"), ObjectOf),
             Registries = OptionalStruct<Registries>(Member(map, "registries"), Join(path, "registries")),
+            ReleaseAssets = OptionalStruct<AssetSpec>(Member(map, "releaseAssets"), Join(path, "releaseAssets")),
         };
     }
 
@@ -2167,6 +2171,11 @@ public sealed record Project : IProtocolValue<Project>
         {
             writer.Property("registries");
             Registries.Write(writer);
+        }
+        if (ReleaseAssets is not null)
+        {
+            writer.Property("releaseAssets");
+            ReleaseAssets.Write(writer);
         }
         writer.EndObject();
     }
