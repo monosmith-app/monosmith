@@ -125,6 +125,7 @@ lists them all. The checks, grouped by who owns them:
 | the local cache is within its limit (a warning, only once a cache exists) | the cache is bigger than `[cache] max_size_mb`. Run `smith cache prune` |
 | the local cache has no unusable entries (a warning, only once a cache exists) | entries that can never be a hit. Run `smith cache verify --fix` |
 | the clone has full history | a shallow clone cannot compute versions or affected projects. `git fetch --unshallow`; in CI, check out with `fetch-depth: 0` |
+| the smith the pipelines install is the smith in your dependencies (a warning) | the pipelines install the smith that generated them (or `[ci] smith_version`), but package.json resolves another `monosmith`. `smith doctor --fix` sets the dependency to the pipeline's version; then run your install |
 | tracked files are not generated files | git tracks a file that .gitignore ignores or a task writes (a build output, a cache). Stop tracking generated files (`git rm --cached <file>`), or commit the change on purpose |
 | every build writes to dist/ | a task's output is outside `dist/`. Point the tool there (tsconfig `outDir`, `--outdir`, `-o`) and set the task's `outputs` in `smith.toml` |
 | no two tasks write the same output directory | give each task its own directory (`dist/drop/<project dir>/` for a package task) |
