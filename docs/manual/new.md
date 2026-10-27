@@ -19,7 +19,10 @@ there and keep it.
 ## Synopsis
 
 ```sh
-smith new <name> [--dir <dir>] [--scope <scope>] [--module-prefix <prefix>] [--ci <providers>] [--recipe <recipe>]
+smith new <name> [--dir <dir>] [--scope <scope>] [--module-prefix <prefix>] [--ci <providers>]
+                 [--language <language>] [--default-stack node=<stack>] [--architecture <layout>]
+                 [--release-branch <branch>] [--release-remote <remote>] [--github-releases]
+                 [--cache-dir <dir>] [--cache-max-mb <mb>] [--recipe <recipe>] [--yes]
 ```
 
 ## Arguments and flags
@@ -35,11 +38,20 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure (default github) |
+| `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
+| `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
+| `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
+| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci (default github) |
+| `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
+| `--github-releases` | boolean | off | create a GitHub Release for every release tag |
+| `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
+| `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
+| `--release-remote <release-remote>` | string | `origin` | the git remote that receives release tags (default origin) |
 | `--scope <scope>` | string | `@<name>` | npm scope for packages (default @<name>) |
+| `-y, --yes` | boolean | off | take the default for every question that has no flag |
 
 <!-- smith:end new -->
 
@@ -48,9 +60,8 @@ Notes on the flags:
 - `<name>` must be kebab-case: lowercase letters and digits, words joined by single
   hyphens, starting with a letter. It becomes `[workspace] name` and the default
   npm scope.
-- `--ci` takes a comma-separated list or the flag repeated. The help text lists
-  `github` and `azure`; `gitlab` is also accepted (the schema of `smith.toml` lists
-  all three under `ci.providers`).
+- `--ci` takes a comma-separated list or the flag repeated: `github`, `azure`,
+  `gitlab` or `circleci`.
 - `--module-prefix` is read from the `origin` remote of the folder when it has one.
 - `--recipe` writes `recipe = ...` under `[workspace]`. See
   [Recipes](../reference/recipes.md). It is not checked at creation time.
@@ -60,6 +71,71 @@ Notes on the flags:
 In a terminal (standard input and output are terminals and `CI` is unset), a missing
 `<name>` is asked for: `Name of the workspace:`, up to three tries. Elsewhere it is the
 error listed below.
+
+## The questions
+
+At a terminal, `smith new` then asks the questions below, one at a time. The first
+answer listed is the default and Enter takes it; type a number or the answer's name to
+choose another. The [TUI](tui.md) form (**Create a workspace**) asks the same questions
+in the same order. A question whose flag you gave is not asked, `--yes` takes the
+default of the rest, and with no terminal nothing is asked: the flags and the defaults
+are the whole answer.
+
+| Question | Flag | Default | What it writes |
+|---|---|---|---|
+| Which CI should smith write pipelines for? | `--ci` | `github` | `[ci] providers` |
+| What is the main language? | `--language` | `later` | nothing in `smith.toml`; it decides whether the Node question is asked and the `--lang` of the next step |
+| Which tests and lint for Node projects? (asked for Node only) | `--default-stack node=<stack>` | `node-jest` (or `node-vitest`, `node-ts`) | `[default_stacks] node` |
+| Which code layout should smith check? | `--architecture` | `vertical-slices` | the `[conventions.<layout>]` table (none for `none`); see [`smith architecture`](architecture.md) |
+| Change anything else? | | keep the defaults | "More options" asks the five below |
+| Which branch do releases run from? | `--release-branch` | `main` | `[release] branch` |
+| Which remote receives the release tags? | `--release-remote` | `origin` | `[release] remote` |
+| Create a GitHub Release for every release tag? | `--github-releases` | no | `[release] github_releases` |
+| Where should the task cache live? | `--cache-dir` | `.smith/cache` | `[cache] dir` |
+| How large may the cache grow, in MB? | `--cache-max-mb` | `2048` (`0` for no limit) | `[cache] max_size_mb` |
+
+A setting left at its default stays the commented line in `smith.toml`, so the file
+still shows what could be set. Giving one of the last five flags settles "More
+options": the other four then take their defaults. Task overrides are not asked,
+since they depend on projects that do not exist yet; `smith.toml` keeps a commented
+example.
+
+A session, answering `node`, `2` (Vitest), the defaults, then "More options" with a
+different branch and GitHub Releases:
+
+```text
+══ New workspace: acme ═════════════════════════════════════
+A few questions. Enter takes the default shown; smith new --yes skips them.
+
+Which CI should smith write pipelines for?
+  1) GitHub Actions   default
+  2) Azure Pipelines
+  3) GitLab CI
+  4) CircleCI
+Choice [1]:
+What is the main language of this workspace?
+  1) Decide later             add projects in any language with smith add (default)
+  2) TypeScript / JavaScript
+  ...
+Choice [1]: node
+Which tests and lint for Node projects?
+  1) Jest             TypeScript, ESLint and Jest (default)
+  2) Vitest           TypeScript, ESLint and Vitest
+  3) TypeScript only  tsc, no lint and no tests
+Choice [1]: 2
+...
+Your choices
+  CI                   github
+  Main language        node
+  Node tests and lint  node-vitest
+  Code layout          vertical-slices
+  Releases             from trunk, tags pushed to origin, with a GitHub Release
+  Cache                .smith/cache, up to 2048 MB
+
+  wrote smith.toml
+  ...
+  committed
+```
 
 ## Exit codes
 

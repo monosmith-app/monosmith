@@ -22,7 +22,7 @@ command.
 | Where you start it | What you see |
 |---|---|
 | Inside a workspace (a folder with `smith.toml`, or below one) | The **Home** view, with the seven views as tabs. |
-| In an empty folder | The **Start** menu: create a workspace (`smith new`). |
+| In an empty folder | The **Start** menu: create a workspace (`smith new`): the name, then the same few questions the command asks (CI, main language, code layout, more options). |
 | In a folder that holds files but is not a workspace | The Start menu with **Bring this repository into MonoSmith** first, so Enter starts the wizard. |
 
 When the shell cannot be drawn (standard output is not a terminal, `SMITH_SCREEN_READER` is

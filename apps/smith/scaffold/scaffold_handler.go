@@ -3,7 +3,6 @@ package scaffold
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,42 +14,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
-
-// NewCommand is `smith new`.
-func NewCommand(version string) *cobra.Command {
-	var opts NewOptions
-	cmd := &cobra.Command{
-		Use:   "new <name>",
-		Short: "Create a monorepo: configuration, git, CI pipelines and a first commit",
-		Example: `  smith new acme
-  smith new acme --dir . --ci github,azure   # in an existing clone`,
-		Args: argsOrAsk(commandargs.Spec{Names: []string{"a name for the workspace"}, Example: "smith new acme", More: "to bring in a repository you already have, run smith adopt --dry-run instead"}, isInteractive),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			args, err := askMissingArguments(args, newQuestions(), cmd.InOrStdin(), cmd.OutOrStdout())
-			if err != nil {
-				return err
-			}
-			opts.Name, opts.Version, opts.Out = args[0], version, cmd.OutOrStdout()
-			dir, err := NewWorkspace(opts)
-			if err != nil {
-				return err
-			}
-			cwd, _ := filepath.Abs(".")
-			rel, err := filepath.Rel(cwd, dir)
-			if err != nil {
-				rel = dir
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "\nCreated %s. Next:\n  cd %s\n  smith add app web --lang node\n", opts.Name, rel)
-			return nil
-		},
-	}
-	cmd.Flags().StringVar(&opts.Dir, "dir", "", "directory to create the workspace in (default ./<name>)")
-	cmd.Flags().StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
-	cmd.Flags().StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
-	cmd.Flags().StringSliceVar(&opts.Providers, "ci", nil, "pipelines to generate: github, azure (default github)")
-	cmd.Flags().StringVar(&opts.Recipe, "recipe", "", "the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md)")
-	return cmd
-}
 
 // AddCommand is `smith add`.
 func AddCommand(version string) *cobra.Command {
@@ -159,12 +122,15 @@ func tryHint(p *projectgraph.Project) string {
 // nextSteps is what smith new prints last: a cd only when the workspace is not
 // the current directory, then the first project to add (smith kinds lists the
 // languages).
-func nextSteps(name, rel string) string {
+func nextSteps(name, rel, language string) string {
+	if language == "" {
+		language = "<language>   # smith kinds lists the languages"
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\nCreated %s. Next:\n", name)
 	if rel != "." {
 		fmt.Fprintf(&b, "  cd %s\n", rel)
 	}
-	b.WriteString("  smith add app web --lang <language>   # smith kinds lists the languages\n")
+	fmt.Fprintf(&b, "  smith add app web --lang %s\n", language)
 	return b.String()
 }

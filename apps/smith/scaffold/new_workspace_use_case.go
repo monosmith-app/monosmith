@@ -31,12 +31,31 @@ type NewOptions struct {
 	// NoCommit leaves the files uncommitted (smith adopt commits once, after
 	// generating the pipelines for the projects it found).
 	NoCommit bool
+
+	// The answers of the questions smith new asks (NewQuestions); a zero value
+	// is the default and leaves the commented line in smith.toml.
+	//
+	// Language is the main language, "" when undecided.
+	Language string
+	// DefaultStacks is [default_stacks], by language.
+	DefaultStacks map[string]string
+	// Architecture is the code layout checked, "" for the default.
+	Architecture                 string
+	ReleaseBranch, ReleaseRemote string
+	GitHubReleases               bool
+	CacheDir                     string
+	// CacheMaxMB is the cache size limit; negative is no limit, 0 the default.
+	CacheMaxMB int
 }
 
 // NewWorkspace creates a workspace: smith.toml, the root files, a git
 // repository, the pipelines, and a first commit when git has an identity.
 func NewWorkspace(opts NewOptions) (string, error) {
 	if err := ValidateName("workspace", opts.Name); err != nil {
+		return "", err
+	}
+	// Refuse an answer smith cannot write before anything is created.
+	if _, err := renderWorkspaceConfig(opts, `"github"`); err != nil {
 		return "", err
 	}
 	dir := opts.Dir
@@ -86,7 +105,10 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	for i, p := range opts.Providers {
 		quoted[i] = fmt.Sprintf("%q", p)
 	}
-	config := fmt.Sprintf(configTemplate, opts.Name, opts.Scope, opts.ModulePrefix, strings.Join(quoted, ", "))
+	config, err := renderWorkspaceConfig(opts, strings.Join(quoted, ", "))
+	if err != nil {
+		return "", err
+	}
 	if opts.Recipe != "" {
 		config = withRecipe(config, opts.ModulePrefix, opts.Recipe)
 	}

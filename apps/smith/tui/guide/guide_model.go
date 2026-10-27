@@ -267,6 +267,12 @@ func (m Model) confirm() Model {
 }
 
 func (m Model) advance() Model {
+	for m.action != nil {
+		if s := m.current(); s == nil || s.Skip == nil || !s.Skip(m.answers) {
+			break
+		}
+		m.step++
+	}
 	step := m.current()
 	if step == nil {
 		if m.action != nil && m.action.Argv != nil {

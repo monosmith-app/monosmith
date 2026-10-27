@@ -437,7 +437,10 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 	l.keys("n")
 	l.has("Create a workspace", "What should the new workspace be called?")
 	l.typeText("acme").keys("enter")
-	l.has("$ smith new acme")
+	// The CI, the main language, the code layout and "more options": Enter keeps each default.
+	l.has("Which CI should smith write pipelines for?")
+	l.keys("enter", "enter", "enter", "enter")
+	l.has("$ smith new acme --yes")
 }
 
 func TestInsideAWorkspaceNDoesNotStartAWorkspaceAndAAddsAProject(t *testing.T) {
