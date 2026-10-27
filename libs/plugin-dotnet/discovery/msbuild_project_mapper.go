@@ -13,7 +13,10 @@ type MSBuildProject struct {
 	// PackageID is what the project is known by: PackageId, AssemblyName or
 	// the file name.
 	PackageID string
-	Version   string
+	// AssemblyName is the name of the program an app builds: AssemblyName, or
+	// the file's base name.
+	AssemblyName string
+	Version      string
 	// OutputType Exe makes an app.
 	OutputType string
 	// Kind and Stack are the SmithKind and SmithStack properties.
@@ -69,6 +72,10 @@ func ParseProject(file string, src []byte) (MSBuildProject, error) {
 		if strings.EqualFold(strings.TrimSpace(g.IsTestProject), "true") {
 			p.Test = true
 		}
+	}
+	p.AssemblyName = assembly
+	if p.AssemblyName == "" {
+		p.AssemblyName = p.Name
 	}
 	if p.PackageID == "" {
 		p.PackageID = assembly

@@ -59,10 +59,11 @@ const NuGetSource = "https://api.nuget.org/v3/index.json"
 
 // Publish packs a package into the workspace's dist/<project dir> and pushes
 // it with dotnet nuget push (NUGET_API_KEY); a version the feed already has
-// is skipped, so a re-run is safe. Apps and libraries release by their tag.
+// is skipped, so a re-run is safe. Libraries release by their tag; an app with
+// release assets gets a zip per platform instead.
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
 	if params.Assets != nil {
-		return protocol.PublishResult{Skipped: ".NET release assets are not built yet: the app is released by its tag"}, nil
+		return BuildAssets(workspaceRoot, params)
 	}
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil
