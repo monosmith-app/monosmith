@@ -177,20 +177,24 @@ A short phase:
 smith ci audit
 ```
 
-```text
-✓ govulncheck api: no change in apps/api/go.mod, apps/api/go.sum since it passed on 2026-10-25
-▶ govulncheck web2
-=== Symbol Results ===
+Every phase opens with a banner that says what it will do and on what, folds the tools' own
+output in a collapsed log group (`::group::` on GitHub Actions, `##[group]` on Azure Pipelines),
+and ends with a result table and one closing line. The banner, the table and the closing line
+stay visible; the same table goes to the job summary (`$GITHUB_STEP_SUMMARY` on GitHub, an Azure
+summary section). The output is plain text: no colour, so `NO_COLOR` and a piped log read the
+same. `SMITH_ASCII=1` swaps the symbols for `[v]` `[x]` `[!]`.
 
-No vulnerabilities found.
-...
-✓ npm audit (runtime dependencies): no change in package-lock.json since it passed on 2026-10-25
-▶ pip-audit
-Found 1 known vulnerability in 1 package
-...
-warning: pip-audit (exit 1) — not blocking
-1 non-blocking step(s) reported problems
-smith ci audit passed in 5.5s
+```text
+══ Audit ═══════════════════════════════════════════════════
+Auditing 26 projects with 22 checks.
+Rules: smith's default policies ([ci] audit_policies).
+Check                             Result       Time  Note
+govulncheck actions               ↷ unchanged     -  nothing changed since it passed on 2026-10-27
+govulncheck plugin-sdk           ✓ done       1.5s
+npm audit (runtime dependencies)  ✓ done       2.7s
+pip-audit                         ▲ problems   0.0s  reported problems, not blocking
+→ read each step's findings in the folded output above
+✓ Audit passed in 33s: 22 checks over 26 projects: 5 ran, 4 unchanged since an earlier pass, 13 reported problems (not blocking)
 ```
 
 ```sh
@@ -198,13 +202,15 @@ smith ci setup
 ```
 
 ```text
-▶ Download Go modules
-▶ Install Node dependencies
-...
-▶ Create the Python venv
-▶ Install the Python toolchain
-▶ Install tools
-smith ci setup passed in 53s
+══ Setup ═══════════════════════════════════════════════════
+smith 1.102.2 on windows/amd64
+Installing dependencies for 4 toolchains (dotnet 10.0, go 1.26, node 24, python 3.12) and preparing 26 projects: 8 steps.
+Step                          Result  Time
+Download Go modules           ✓ done  0.1s
+Install Node dependencies     ✓ done   37s
+Create the Python venv        ✓ done   15s
+Install plugin-sdk-py         ✓ done  4.9s
+✓ Setup passed in 1m 32s: 8 steps ran, 26 projects ready
 ```
 
 `smith ci pack` runs the `package` task of the apps (here two Go apps and a Node app) and

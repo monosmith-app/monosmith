@@ -64,7 +64,7 @@ func (f *auditFixture) run(t *testing.T) (runs int, out string, err error) {
 	t.Helper()
 	f.verdicts.files = taskcache.NewFileDigests(f.root)
 	var buf bytes.Buffer
-	err = runSteps(context.Background(), f.root, []protocol.Step{f.step}, f.verdicts, &buf)
+	_, err = runSteps(context.Background(), f.root, []protocol.Step{f.step}, f.verdicts, &buf)
 	raw, _ := os.ReadFile(f.log)
 	return strings.Count(string(raw), "ran"), buf.String(), err
 }

@@ -38,39 +38,69 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "release"}
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
 	begin := time.Now()
-	group(out, "smith ci "+phase)
-	err := runPhase(ctx, s, phase, out)
-	endGroup(out)
-	status := "passed"
+	log := newPhaseLog(out, phase)
+	if !announces(phase) {
+		log.fold()
+	}
+	err := runPhase(ctx, s, phase, log)
+	log.close()
+	took := time.Since(begin)
 	if err != nil {
-		status = "failed"
 		annotate(out, phase, err)
 	}
-	took := time.Since(begin).Round(100 * time.Millisecond)
-	fmt.Fprintf(out, "smith ci %s %s in %s\n", phase, status, took)
-	summarise(phase, err, took)
+	log.finish(err, took)
+	summarise(out, log, err, took)
 	return err
 }
 
-// summarise adds the phase's outcome to the GitHub Actions job summary.
-func summarise(phase string, err error, took time.Duration) {
-	file := os.Getenv("GITHUB_STEP_SUMMARY")
-	if file == "" {
-		return
-	}
-	line := fmt.Sprintf("- ✅ **%s** passed in %s\n", phase, took)
+// summarise adds the phase's result to the job summary of the CI that has
+// one: GitHub's step summary file, or an Azure summary section.
+func summarise(out io.Writer, log *phaseLog, err error, took time.Duration) {
+	state := fmt.Sprintf("%s %s passed in %s", log.icons.Passed, log.title(), formatDuration(took))
 	if err != nil {
-		line = fmt.Sprintf("- ❌ **%s** failed after %s\n", phase, took)
+		state = fmt.Sprintf("%s %s failed after %s", log.icons.Failed, log.title(), formatDuration(took))
 	}
-	f, openErr := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if openErr != nil {
+	text := "### " + log.title() + "\n\n" + state + "\n"
+	if err == nil && log.conclusion != "" {
+		text += "\n" + log.conclusion + "\n"
+	}
+	if len(log.markdown) > 0 {
+		text += "\n" + strings.Join(log.markdown, "\n") + "\n"
+	}
+	text += "\n"
+	if file := os.Getenv("GITHUB_STEP_SUMMARY"); file != "" {
+		f, openErr := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if openErr != nil {
+			return
+		}
+		defer func() { _ = f.Close() }()
+		_, _ = f.WriteString(text)
 		return
 	}
-	defer func() { _ = f.Close() }()
-	_, _ = f.WriteString(line)
+	if os.Getenv("TF_BUILD") != "" {
+		dir := os.Getenv("AGENT_TEMPDIRECTORY")
+		if dir == "" {
+			dir = os.TempDir()
+		}
+		path := filepath.Join(dir, "smith-ci-"+log.phase+".md")
+		if os.WriteFile(path, []byte(text), 0o644) == nil {
+			fmt.Fprintf(out, "##vso[task.uploadsummary]%s\n", path)
+		}
+	}
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
+// announces reports whether a phase opens with a banner of its own
+// (phaseLog.banner); the others have their whole output folded.
+func announces(phase string) bool {
+	switch phase {
+	case "setup", "audit":
+		return true
+	}
+	return false
+}
+
+func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseLog) error {
+	out := log.out
 	switch phase {
 	case "setup", "audit":
 		c, err := Collect(s)
@@ -81,14 +111,44 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if phase == "audit" {
 			steps = c.Audit
 		}
-		if len(steps) == 0 {
-			fmt.Fprintln(out, "nothing to "+phase)
-		}
 		var remembered *verdicts
+		intro := setupIntro(s, c, steps)
 		if phase == "audit" {
 			remembered = openVerdicts(s)
+			intro = auditIntro(s, steps)
 		}
-		return runSteps(ctx, s.Root, steps, remembered, out)
+		if phase == "setup" {
+			intro = append([]string{smithLine(s.Version)}, intro...)
+		}
+		if len(steps) == 0 {
+			log.banner()
+			log.close()
+			log.say("%s", strings.Join(intro, " "))
+			log.say("Nothing to %s: no plugin asked for a %s step.", phase, phase)
+			log.conclusion = "nothing to " + phase
+			return nil
+		}
+		log.banner(intro...)
+		outcomes, err := runSteps(ctx, s.Root, steps, remembered, out)
+		log.close()
+		if len(outcomes) > 0 {
+			table := stepTable(map[string]string{"setup": "Step", "audit": "Check"}[phase], outcomes, log.icons)
+			for _, line := range table.Text("steps done") {
+				log.say("%s", line)
+			}
+			log.markdown = table.Markdown()
+		}
+		if problems := problemNames(outcomes); len(problems) > 0 {
+			warn(out, fmt.Sprintf("%s reported problems (not blocking): %s", plural(len(problems), "step"), listSome(problems, 3)))
+			log.say("→ read each step's findings in the folded output above")
+		}
+		if err == nil {
+			log.conclusion = setupConclusion(outcomes, len(s.Graph.Projects))
+			if phase == "audit" {
+				log.conclusion = auditConclusion(outcomes, len(s.Graph.Projects))
+			}
+		}
+		return err
 	case "verify":
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
@@ -155,7 +215,8 @@ func runPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 		if err != nil {
 			return err
 		}
-		return runSteps(ctx, s.Root, c.PostRelease, nil, out)
+		_, err = runSteps(ctx, s.Root, c.PostRelease, nil, out)
+		return err
 	}
 	return fmt.Errorf("unknown phase %q (phases: %s)", phase, strings.Join(Phases, ", "))
 }
@@ -256,8 +317,9 @@ func MarkedForVerify(projects []*projectgraph.Project, installed func(string) bo
 	return byTask, missing
 }
 
-func runSteps(ctx context.Context, root string, steps []protocol.Step, remembered *verdicts, out io.Writer) error {
+func runSteps(ctx context.Context, root string, steps []protocol.Step, remembered *verdicts, out io.Writer) ([]stepOutcome, error) {
 	var failures []string
+	var outcomes []stepOutcome
 	for _, step := range steps {
 		var key string
 		var inputs taskcache.KeyInputs
@@ -266,6 +328,7 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			if key, inputs, ok = remembered.keyOf(step); ok {
 				if since, hit := remembered.passed(key); hit {
 					replay(out, step, since)
+					outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepUnchanged, Since: since.UTC().Format("2006-01-02")})
 					continue
 				}
 			}
@@ -288,6 +351,7 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 					warn(out, step.Name+": the verdict was not remembered: "+err.Error())
 				}
 			}
+			outcomes = append(outcomes, stepOutcome{Name: step.Name, Took: time.Since(began)})
 			continue
 		}
 		msg := fmt.Sprintf("%s (exit %d)", step.Name, code)
@@ -295,15 +359,16 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			msg = step.Name + ": " + err.Error()
 		}
 		if step.Blocking {
-			return errors.New(failureWithOutput(out, msg, tail.String()))
+			return outcomes, errors.New(failureWithOutput(out, msg, tail.String()))
 		}
 		failures = append(failures, msg)
+		outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepProblem, Took: time.Since(began)})
 		warn(out, msg+" — not blocking")
 	}
 	if len(failures) > 0 {
 		fmt.Fprintf(out, "%d non-blocking step(s) reported problems\n", len(failures))
 	}
-	return nil
+	return outcomes, nil
 }
 
 // failureWithOutput is the failure of a blocking step with the end of its

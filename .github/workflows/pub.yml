@@ -37,7 +37,9 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - name: Install smith
         shell: bash
-        run: npm install --global --registry https://registry.npmjs.org/ monosmith
+        run: |
+          npm install --global --registry https://registry.npmjs.org/ monosmith
+          smith --version
       # smith:slot before-publish
       # smith:slot-end before-publish
       - name: Publish to pub.dev

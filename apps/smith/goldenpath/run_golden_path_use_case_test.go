@@ -398,7 +398,7 @@ func TestGoldenPath(t *testing.T) {
 	w.git("commit", "-qm", "feat: add every kind of project")
 	for _, phase := range []string{"setup", "audit", "verify", "pack", "native"} {
 		out := w.smith(true, "ci", phase)
-		if !strings.Contains(out, "smith ci "+phase+" passed") {
+		if !strings.Contains(out, "passed in") {
 			t.Fatalf("ci %s:\n%s", phase, out)
 		}
 		if phase == "verify" && strings.Contains(out, "probe:") {

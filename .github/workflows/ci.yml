@@ -69,7 +69,9 @@ jobs:
             smith-pip-${{ runner.os }}-
       - name: Install smith
         shell: bash
-        run: npm install --global --registry https://registry.npmjs.org/ monosmith
+        run: |
+          npm install --global --registry https://registry.npmjs.org/ monosmith
+          smith --version
       # smith:slot before-setup
       # This repository is smith: every step below runs the smith built from this commit.
       - name: Build smith from this commit
