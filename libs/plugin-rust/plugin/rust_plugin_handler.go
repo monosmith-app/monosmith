@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/scaffolding"
@@ -69,4 +70,9 @@ func (r *Rust) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, erro
 // Remove implements serve.Remover.
 func (r *Rust) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
 	return scaffolding.Remove(r.root, params)
+}
+
+// ChangeKind implements serve.KindChanger.
+func (r *Rust) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(r.root, params)
 }

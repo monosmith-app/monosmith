@@ -22,6 +22,7 @@ PLUGIN_MEMBERS: dict[str, PluginMember] = {
     "doctor": PluginMember("doctor", ("doctor",)),
     "contribute": PluginMember("contribute", ("contribute",)),
     "remove": PluginMember("remove", ("remove",)),
+    "project/kind": PluginMember("change_kind", ("change_kind",)),
     "published": PluginMember("published", ("published",)),
     "dependencies/install": PluginMember("install", ("install", "uninstall")),
     "dependencies/uninstall": PluginMember("uninstall", ("install", "uninstall")),

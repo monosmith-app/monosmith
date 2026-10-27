@@ -88,6 +88,8 @@ type Capabilities struct {
 	Contribute bool `json:"contribute,omitempty"`
 	// Remove cleans up a removed project's traces outside its directory.
 	Remove bool `json:"remove,omitempty"`
+	// ChangeKind answers what changing a project's kind edits (smith kind).
+	ChangeKind bool `json:"changeKind,omitempty"`
 	// Published reports what a registry has of a project.
 	Published bool `json:"published,omitempty"`
 	// Dependencies installs and uninstalls packages in its projects.

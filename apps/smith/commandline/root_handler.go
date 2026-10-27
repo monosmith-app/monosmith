@@ -34,6 +34,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/eject"
 	"github.com/monosmith-app/monosmith/apps/smith/explain"
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
+	"github.com/monosmith-app/monosmith/apps/smith/kindchange"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
@@ -86,7 +87,7 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
-	add("work", devservers.Command(version), eject.Command(version))
+	add("work", devservers.Command(version), eject.Command(version), kindchange.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)

@@ -141,6 +141,22 @@ public static class PluginClientCalls
         return client.CallAsync<RemoveParams, RemoveResult>(ProtocolMethods.Remove, parameters, timeout, cancellation);
     }
 
+    /// <summary>Asks what changing a project between app, lib and package edits: its manifest, the workspace files and the dependents that name its kind or directory. The host applies the edits and moves the directory.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<ChangeKindResult> ChangeKindAsync(
+        this PluginClient client,
+        ChangeKindParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<ChangeKindParams, ChangeKindResult>(ProtocolMethods.ProjectKind, parameters, timeout, cancellation);
+    }
+
     /// <summary>Asks which version of a project its registry has, so a release can check its tags against it.</summary>
     /// <param name="client">The connected plugin.</param>
     /// <param name="parameters">The params of the request.</param>

@@ -31,6 +31,7 @@ way, a [scaffold](scaffold-plugin.md) or a [recipe](recipe-and-stack.md) is enou
 | `ci` | for generated pipelines | learn what CI must install, cache and have credentials for |
 | `doctor` | optional | collect health findings, with fixes |
 | `remove` | optional | clean up outside a project's directory after `smith remove` |
+| `project/kind` | optional | say what changing a project between app, lib and package edits, for `smith kind` |
 | `dependencies/*` | optional | `smith install`, `uninstall`, `sync`, `up` |
 
 The handshake must declare `kind: "language"`, at least one entry in `manifests` (the file names, or
@@ -368,6 +369,7 @@ show how; the shapes are in [the cheat sheet](protocol-cheat-sheet.md).
 | `published` | the newest version the registry has of the project (`Version` empty when it has none), or `Unreachable: true` with a `Detail` when it could not be asked. smith checks release tags against it |
 | `ci` | `Toolchains` (a runtime to install, with GitHub and Azure steps or an `Install` command), package `Stores` to cache, `Setup` and `Audit` steps, `Credentials` the release needs, `Permissions`. Only list credentials for projects that publish (`Project.Publishes()`) |
 | `remove` | after smith deleted the project's directory, clean what you own outside it (a workspace file, a lockfile) and list the files you changed |
+| `project/kind` | `smith kind`: answer, without writing anything, the whole new content of every file the change edits (the manifest's kind and publish guard, the references other projects and the workspace make to the folder `newRoot`), as paths before the move; the host applies them and moves the folder. Say `refused` when the kind makes no sense for the language, and `warnings` for what the change loses. The SDK helpers `pathrefs`, `tomltext` and `fileedits` do the rewriting |
 | `dependencies/install`, `/uninstall` | add and remove packages with the ecosystem's own tool |
 | `dependencies/declared`, `/rewrite`, `/latest` | list declared dependency specs, rewrite them in place, and report the newest releases: what `smith sync` and `smith up` need |
 

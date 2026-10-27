@@ -20,7 +20,7 @@ by smith like the other packages.
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 17 methods with its params, its result and the
+one definition per message, a methods table (each of the 18 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The TypeScript types are
 generated from that file, so they cannot drift from the Go ones: a Go test fails when the schema is
 stale, a TypeScript test fails when the generated types are, and a test fails when the schema has a
@@ -248,6 +248,7 @@ Promise<result>`. The names follow the Go interfaces.
 | `ci` | `ci` | `ci` | `CIContributor` |
 | `doctor` | `doctor` | `doctor` | `DoctorContributor` |
 | `remove` | `remove` | `remove` | `Remover` |
+| `changeKind` | `project/kind` | `changeKind` | `KindChanger` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
@@ -271,7 +272,7 @@ Everything is exported from `@monosmith/plugin-sdk`. The messages (`Project`, `T
 | `serveStreams(plugin, { input, output, log? })` | the same loop on streams you give it; resolves at `shutdown` or the end of the input |
 | `capabilitiesOf(plugin)` | the `Capabilities` the plugin would advertise |
 | `implementsMethod(plugin, method)` | whether the plugin has the members a protocol method needs |
-| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
+| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
 
 ### Testing a plugin
 

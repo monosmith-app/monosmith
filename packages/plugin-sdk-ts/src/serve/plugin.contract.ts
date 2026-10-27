@@ -1,5 +1,5 @@
 import type {
-  CIParams, CIResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
+  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
   InitializeResult, InstallParams, LatestParams, LatestResult, PublishedParams, PublishedResult, PublishParams,
   PublishResult, RemoveParams, RemoveResult, RewriteParams, UninstallParams, VersionParams, VersionResult,
@@ -57,6 +57,11 @@ export interface Remover {
   remove: (params: RemoveParams, signal: AbortSignal) => Awaitable<RemoveResult>
 }
 
+/** `project/kind`: what changing a project between app, lib and package edits. */
+export interface KindChanger {
+  changeKind: (params: ChangeKindParams, signal: AbortSignal) => Awaitable<ChangeKindResult>
+}
+
 /** `dependencies/install` and `dependencies/uninstall`: both, or the capability is not advertised. */
 export interface DependencyManager {
   install:   (params: InstallParams, signal: AbortSignal) => Awaitable<DependencyResult>
@@ -101,5 +106,5 @@ export interface Cancellable {
  */
 export type SmithPlugin = Plugin & Partial<
 Discoverer & Generator & Versioner & Publisher & RegistryReader & CIContributor & DoctorContributor &
-Remover & DependencyManager & DeclarationEditor & LatestReader & Contributor & Cancellable
+Remover & KindChanger & DependencyManager & DeclarationEditor & LatestReader & Contributor & Cancellable
 >

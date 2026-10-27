@@ -51,3 +51,7 @@ func holdsMainPackage(dir string) bool {
 	}
 	return false
 }
+
+// HoldsMainPackage reports whether a non-test .go file directly in dir is in
+// package main.
+func HoldsMainPackage(dir string) bool { return holdsMainPackage(dir) }

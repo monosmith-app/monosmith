@@ -17,6 +17,8 @@ from typing import Protocol
 
 from ..cancellation import CancelToken
 from ..protocol import (
+    ChangeKindParams,
+    ChangeKindResult,
     CIParams,
     CIResult,
     ContributeParams,
@@ -105,6 +107,12 @@ class Remover(Protocol):
     """`remove`: cleans up after a project is removed."""
 
     def remove(self, params: RemoveParams, cancel: CancelToken) -> RemoveResult: ...
+
+
+class KindChanger(Protocol):
+    """`project/kind`: what changing a project between app, lib and package edits."""
+
+    def change_kind(self, params: ChangeKindParams, cancel: CancelToken) -> ChangeKindResult: ...
 
 
 class DependencyManager(Protocol):

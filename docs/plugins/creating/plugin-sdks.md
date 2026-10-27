@@ -59,7 +59,7 @@ func main() { serve.Main(&widget{}) }
 ```
 
 The interfaces in `serve` are `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`,
-`CIContributor`, `DoctorContributor`, `Remover`, `DependencyManager`, `DeclarationEditor`,
+`CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `DependencyManager`, `DeclarationEditor`,
 `LatestReader` and `Contributor`; [the cheat sheet](protocol-cheat-sheet.md#methods) maps each to its
 method. An error a method returns becomes a `-32000` response with your message. Two optional features are
 opt-in: a `Concurrency` in what `Describe` returns (the host then sends up to that many requests at once, and

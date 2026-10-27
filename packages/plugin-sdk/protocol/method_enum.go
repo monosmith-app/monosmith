@@ -19,6 +19,8 @@ const (
 	MethodContribute = "contribute"
 	// MethodRemove lets a plugin clean up after a project is removed.
 	MethodRemove = "remove"
+	// MethodChangeKind asks what changing a project's kind edits.
+	MethodChangeKind = "project/kind"
 	// MethodPublished asks for the newest version a registry has of a
 	// project, so release can check its tags against it.
 	MethodPublished = "published"

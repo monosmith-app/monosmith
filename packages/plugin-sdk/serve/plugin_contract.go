@@ -75,6 +75,11 @@ type Remover interface {
 	Remove(params protocol.RemoveParams) (protocol.RemoveResult, error)
 }
 
+// KindChanger says what changing a project's kind edits (smith kind).
+type KindChanger interface {
+	ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error)
+}
+
 // DependencyManager adds and removes packages in its projects with the
 // ecosystem's own toolchain (smith install / uninstall).
 type DependencyManager interface {

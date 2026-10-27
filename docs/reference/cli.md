@@ -153,6 +153,23 @@ Usage: `smith remove <project> [flags]`
 
 <!-- smith:end remove -->
 
+### smith kind
+
+[Manual page](../manual/kind.md)
+
+<!-- smith:begin kind -->
+Make a project an app, an internal lib or a published package
+
+Usage: `smith kind <project> <kind> [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--dry-run` | list every file edit and the move; change nothing | off |
+| `--force` | go ahead although other projects import it or it was already released | off |
+| `--json` | print the plan and what was done as JSON | off |
+
+<!-- smith:end kind -->
+
 ### smith config
 
 [Manual page](../manual/config.md)

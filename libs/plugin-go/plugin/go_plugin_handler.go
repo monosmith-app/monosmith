@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/scaffolding"
@@ -72,4 +73,9 @@ func (g *Go) Uninstall(params protocol.UninstallParams) (protocol.DependencyResu
 // Latest implements serve.LatestReader: the tools the plugin pins.
 func (g *Go) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(g.root, params)
+}
+
+// ChangeKind implements serve.KindChanger.
+func (g *Go) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
+	return kindchange.Change(g.root, params)
 }

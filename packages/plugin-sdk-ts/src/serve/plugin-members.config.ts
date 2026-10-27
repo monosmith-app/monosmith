@@ -20,6 +20,7 @@ export const PLUGIN_MEMBERS: Readonly<Record<string, { member: Member, requires:
   'doctor':                 { member: 'doctor', requires: ['doctor'] },
   'contribute':             { member: 'contribute', requires: ['contribute'] },
   'remove':                 { member: 'remove', requires: ['remove'] },
+  'project/kind':           { member: 'changeKind', requires: ['changeKind'] },
   'published':              { member: 'published', requires: ['published'] },
   'dependencies/install':   { member: 'install', requires: ['install', 'uninstall'] },
   'dependencies/uninstall': { member: 'uninstall', requires: ['install', 'uninstall'] },
