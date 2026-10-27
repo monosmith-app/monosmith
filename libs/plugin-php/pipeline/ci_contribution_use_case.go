@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -42,12 +43,26 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	if len(params.Projects) == 0 {
 		return protocol.CIResult{}
 	}
+	cacheFiles := []string{"composer.json", "composer.lock"}
+	for _, p := range params.Projects {
+		cacheFiles = append(cacheFiles, path.Join(p.Root, "composer.json"))
+	}
 	return protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot))},
 		Stores:     []protocol.PackageStore{{Name: "composer", Path: "~/.cache/composer", Env: "COMPOSER_CACHE_DIR", Files: []string{"**/composer.lock"}}},
 		Setup:      []protocol.Step{{Name: "Install the Composer packages", Command: []string{"composer", "install", "--no-interaction", "--no-progress"}, Blocking: true}},
+		// Known-vulnerable packages from Composer's own audit (Composer 2.4
+		// and later), reported (like pip-audit) and re-checked only when a
+		// composer.json or the lockfile changes.
+		Audit: []protocol.Step{{Name: "composer audit", Command: []string{"sh", "-c", auditScript}, Blocking: false, CacheFiles: cacheFiles}},
 	}
 }
+
+// auditScript runs composer audit, or says what is missing instead of
+// failing with "command not found". Composer exits non-zero when it finds
+// advisories.
+const auditScript = "if composer --version >/dev/null 2>&1; then composer audit --no-interaction; " +
+	"else echo 'composer is not installed: install it (https://getcomposer.org/download) to check packages for known vulnerabilities' >&2; exit 1; fi"
 
 // probe runs a tool for its output; tests replace it.
 var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }

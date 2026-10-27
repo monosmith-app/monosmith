@@ -87,3 +87,18 @@ func (p *PHP) Install(params protocol.InstallParams) (protocol.DependencyResult,
 func (p *PHP) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(p.root, params)
 }
+
+// Declared implements serve.DeclarationEditor.
+func (p *PHP) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(p.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (p *PHP) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(p.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (p *PHP) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(p.root, params)
+}
