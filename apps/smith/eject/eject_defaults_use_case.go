@@ -3,6 +3,7 @@ package eject
 import (
 	"bytes"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
@@ -13,7 +14,7 @@ import (
 type Candidate struct {
 	Tool tooldefaults.Tool
 	// Exists is whether the file that would replace the default is already
-	// there.
+	// there (always false for a tool that is configured per project).
 	Exists bool
 }
 
@@ -33,43 +34,54 @@ func Available(root string) []Candidate {
 		if _, err := os.Stat(defaultPath(root, t)); err != nil {
 			continue
 		}
-		_, err := os.Stat(targetPath(root, t))
-		out = append(out, Candidate{Tool: t, Exists: err == nil})
+		exists := false
+		if !t.PerProject {
+			_, err := os.Stat(filepath.Join(root, filepath.FromSlash(t.Target)))
+			exists = err == nil
+		}
+		out = append(out, Candidate{Tool: t, Exists: exists})
 	}
 	return out
 }
 
-// Eject copies the tool's default to the file that replaces it, in the
-// workspace root, and returns that file's workspace-relative path. It refuses
+// Eject copies the tool's default to the file that replaces it and returns the
+// workspace-relative paths written. That is one file in the workspace root, or,
+// for a tool that reads its configuration from the project's directory only,
+// one in each of projectRoots (the projects that use the default). It refuses
 // to replace a file that is there unless force is set, and says so when the
 // tool has no default to copy.
-func Eject(root string, tool tooldefaults.Tool, force bool) (string, error) {
+func Eject(root string, tool tooldefaults.Tool, force bool, projectRoots []string) ([]string, error) {
 	raw, err := os.ReadFile(defaultPath(root, tool))
 	if err != nil {
-		return "", problem.New(
+		return nil, problem.New(
 			"smith has no default for "+tool.Name+" to copy: the repository already configures it, or no project uses it",
 			"smith eject lists the defaults that apply",
 		)
 	}
-	target := targetPath(root, tool)
-	if have, err := os.ReadFile(target); err == nil {
-		if bytes.Equal(have, raw) {
-			return tool.Target, nil
+	targets := []string{tool.Target}
+	if tool.PerProject {
+		targets = targets[:0]
+		for _, p := range projectRoots {
+			targets = append(targets, path.Join(p, tool.Target))
 		}
-		if !force {
-			return "", problem.New(tool.Target+" exists already and differs from smith's default", "edit it, or run `smith eject "+tool.Name+" --force` to replace it with the default")
+		if len(targets) == 0 {
+			return nil, problem.New("no project uses smith's default for "+tool.Name, "every project configures it already")
 		}
 	}
-	if err := os.WriteFile(target, raw, 0o644); err != nil {
-		return "", problem.New("could not write "+tool.Target+": "+err.Error(), "check that the workspace root is writable")
+	// Check every target before writing any, so a refusal changes nothing.
+	for _, rel := range targets {
+		if have, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel))); err == nil && !bytes.Equal(have, raw) && !force {
+			return nil, problem.New(rel+" exists already and differs from smith's default", "edit it, or run `smith eject "+tool.Name+" --force` to replace it with the default")
+		}
 	}
-	return tool.Target, nil
+	for _, rel := range targets {
+		if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(rel)), raw, 0o644); err != nil {
+			return nil, problem.New("could not write "+rel+": "+err.Error(), "check that the directory is writable")
+		}
+	}
+	return targets, nil
 }
 
 func defaultPath(root string, t tooldefaults.Tool) string {
 	return filepath.Join(root, filepath.FromSlash(tooldefaults.Dir), t.File)
-}
-
-func targetPath(root string, t tooldefaults.Tool) string {
-	return filepath.Join(root, filepath.FromSlash(t.Target))
 }

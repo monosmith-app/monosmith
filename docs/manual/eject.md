@@ -47,6 +47,8 @@ language that runs them:
 | `ruff` | `ruff.toml` | Python |
 | `mypy` | `mypy.ini` | Python |
 | `pytest` | `pytest.ini` | Python |
+| `rustfmt` | `rustfmt.toml` | Rust |
+| `phpstan` | `phpstan.neon`, in each package that uses the default (PHPStan reads only the package's own directory) | PHP |
 
 - Only defaults that apply to the workspace now can be ejected: a tool the repository already
   configures (in the project or above it), or one no project uses, has none. `smith eject` lists

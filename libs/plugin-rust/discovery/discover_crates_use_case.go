@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/formatting"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -38,6 +39,10 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			fallback = protocol.ProjectApp
 		}
 		kind := projectkind.Resolve(crate.Kind, root, fallback)
+		fmtArgs, _, err := formatting.Args(workspaceRoot, root)
+		if err != nil {
+			return result, fmt.Errorf("%s: %w", manifest, err)
+		}
 		result.Projects = append(result.Projects, protocol.Project{
 			Name:        path.Base(root),
 			Root:        root,
@@ -47,7 +52,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     crate.PathDependencies,
 			Version:     crate.Version,
 			Description: crate.Description,
-			Tasks:       Tasks(crate.Name, kind),
+			Tasks:       Tasks(crate.Name, kind, fmtArgs),
 			Stack:       crate.Stack,
 		})
 	}

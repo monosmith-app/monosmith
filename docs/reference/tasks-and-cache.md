@@ -53,6 +53,15 @@ works the same way through `@monosmith/eslint-config`. See
 [Go](../plugins/using/catalogue/go.md#lint-configuration) and
 [Python](../plugins/using/catalogue/python.md#tool-configuration).
 
+Rust formats with `cargo fmt --check -- --config-path .smith/defaults/rustfmt.toml`
+and PHP lints with `phpstan analyse -c .smith/defaults/phpstan.neon`, the same way
+(see [Rust](../plugins/using/catalogue/rust.md#format-configuration) and
+[PHP](../plugins/using/catalogue/php.md#phpstan-configuration)). The other languages
+have no smith default: their tool takes no configuration path, or the plugin's
+scaffold already writes the configuration (JVM's Checkstyle in the pom, Dart's
+`analysis_options.yaml`, Ruby's `.rubocop.yml`), or the tool is not configurable
+from smith (`dotnet format` reads `.editorconfig` by walking up from each file).
+
 To own a default, [`smith eject <tool>`](../manual/eject.md) copies it into the
 workspace root as the file the tool reads; `smith eject` alone lists what applies.
 

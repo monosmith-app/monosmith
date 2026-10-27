@@ -54,11 +54,11 @@ tools to eject, or pass --all. A file that exists already is left alone unless
 				return err
 			}
 			for _, t := range tools {
-				target, err := Eject(s.Root, t, force)
+				targets, err := Eject(s.Root, t, force, projectsUsing(s.Graph, t))
 				if err != nil {
 					return err
 				}
-				fmt.Fprintf(out, "Copied the default of %s to %s: it is yours now, and smith passes no configuration to %s.\n", t.Name, target, t.Name)
+				fmt.Fprintf(out, "Copied the default of %s to %s: it is yours now, and smith passes no configuration to %s.\n", t.Name, strings.Join(targets, ", "), t.Name)
 			}
 			return nil
 		},
@@ -110,7 +110,11 @@ func list(out io.Writer, available []Candidate) error {
 		if c.Exists {
 			note = "  (" + c.Tool.Target + " exists already)"
 		}
-		fmt.Fprintf(out, "  %-14s %-7s -> %s%s\n", c.Tool.Name, c.Tool.Language, c.Tool.Target, note)
+		target := c.Tool.Target
+		if c.Tool.PerProject {
+			target += " in each project"
+		}
+		fmt.Fprintf(out, "  %-14s %-7s -> %s%s\n", c.Tool.Name, c.Tool.Language, target, note)
 	}
 	return nil
 }
