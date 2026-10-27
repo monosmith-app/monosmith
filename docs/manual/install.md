@@ -38,6 +38,7 @@ Alias: `smith i`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `-D, --save-dev` | boolean | off | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) |
+| `--verbose` | boolean | off | show the package manager's own output and warnings (otherwise warnings fold into one line) |
 | `-w, --workspace <workspace>` | string, repeatable |  | target project, by name or directory; repeat it for several |
 
 <!-- smith:end install -->

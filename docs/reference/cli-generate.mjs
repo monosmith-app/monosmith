@@ -153,7 +153,7 @@ const argumentMeanings = {
   'config set|setting': 'the setting, such as `ci.providers`',
   'config set|value': 'the new value; a list setting takes several',
   'config unset|setting': 'the setting to remove',
-  'architecture|name': 'vertical-slices or none; without it, the choices are listed and the one in use marked',
+  'architecture|name': 'vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer or none; without it, the choices are listed and the one in use marked',
   'plugin enable|name': 'built-in plugin names',
   'plugin disable|name': 'built-in plugin names',
   'plugin set|name': 'built-in plugin names',
