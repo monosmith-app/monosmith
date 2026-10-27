@@ -22,6 +22,7 @@ func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Find
 	undeclared, err := declaredimports.Check(workspaceRoot, p.Root)
 	if err != nil {
 		f.Detail = err.Error()
+		f.Remedy = "smith could not read " + p.Root + " to check its imports: fix what the problem says, then check again"
 		return f
 	}
 	f.OK = len(undeclared) == 0
