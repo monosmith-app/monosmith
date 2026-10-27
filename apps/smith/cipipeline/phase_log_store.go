@@ -49,6 +49,13 @@ func (l *phaseLog) title() string {
 // banner marks the start of the phase and says, in plain words, what it will
 // do; what follows is folded.
 func (l *phaseLog) banner(lines ...string) {
+	l.heading(lines...)
+	l.fold()
+}
+
+// heading is a banner whose lines are followed by more visible lines (a plan),
+// before anything is folded.
+func (l *phaseLog) heading(lines ...string) {
 	rule := "== " + l.title() + " =="
 	if l.icons.Passed != theme.ASCII.Passed {
 		rule = "══ " + l.title() + " "
@@ -58,7 +65,6 @@ func (l *phaseLog) banner(lines ...string) {
 	for _, line := range lines {
 		l.say("%s", line)
 	}
-	l.fold()
 }
 
 // fold folds what follows.

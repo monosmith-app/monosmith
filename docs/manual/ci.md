@@ -249,6 +249,32 @@ dist/drop/smith/smith.exe               28.5 MB
 ✓ Pack passed in 2.1s: 2 files packed into dist/drop (28.6 MB)
 ```
 
+`smith ci release` prints the decision first, one row per package with the version it was, the
+version it becomes and the commit that decided it (a breaking change over a feature over a fix),
+then folds the publishing, then lists where each package went and its tag. When nothing releases
+it says so, with the way to make something release. On GitHub the closing result is also a
+`::notice::` annotation on the run:
+
+```text
+══ Release ═════════════════════════════════════════════════
+Releasing 2 projects of 2 from main, in dependency order: each is versioned, built, published and tagged.
+Package  Was    Now    Why
+core     0.1.0  0.2.0  feat(search): add search to the core (+1 more)
+logger   0.1.0  0.1.1  fix: log the empty greeting
+Package  Result      Published to  Tag
+core     ✓ released  its tag       packages/core/v0.2.0 (pushed)
+logger   ✓ released  its tag       packages/logger/v0.1.1 (pushed)
+✓ Release passed in 0.8s: 2 projects released (core 0.2.0, logger 0.1.1)
+```
+
+```text
+══ Release ═════════════════════════════════════════════════
+Looking for commits that release (feat, fix, perf or a breaking change) since each project's last tag.
+Nothing to release: none of the 2 projects has a releasing commit since its last release.
+→ commit with a message like "feat: add search" or "fix: handle empty input"; docs, chore, test and ci commits do not release
+✓ Release passed in 0.2s: nothing to release
+```
+
 ## Common errors
 
 | Message | Cause and remedy |
