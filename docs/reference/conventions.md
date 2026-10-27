@@ -17,7 +17,7 @@ You need not edit the file for this one: it is the workspace's **architecture**,
 [`smith architecture`](../manual/architecture.md) (or the Architecture section of the Settings
 tab in [`smith tui`](../manual/tui.md)) lists the architectures smith knows, shows the one in
 use and switches between them. Today they are `vertical-slices`, `hexagonal`, `clean`, `ddd`,
-`modular-monolith` and `none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
+`modular-monolith`, `mvc`, `package-by-layer` and `none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
 
 `smith new` turns on `vertical-slices`. A converted workspace does not get it
 until you add the line, because an existing codebase rarely follows it yet.
@@ -29,7 +29,7 @@ structure plugin such as `vertical-slices` can be either.
 | Convention | Languages | What it does |
 |---|---|---|
 | `vertical-slices` | Go, Python, Dart, Rust, Ruby, C++, .NET, JVM, PHP | a `slice-check` task, run before `lint` |
-| `hexagonal`, `clean`, `ddd`, `modular-monolith` | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby, C++ | an `architecture-check` task, run before `lint`, and a `smith doctor` warning for a project with no folder named for a layer (see below) |
+| `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` | Go, Python, Node, JVM, .NET, PHP, Dart, Rust, Ruby, C++ | an `architecture-check` task, run before `lint`, and a `smith doctor` warning for a project with no folder named for a layer (see below) |
 | `vertical-slices` | Node | `smith doctor` checks that the root ESLint config loads `@monosmith/eslint-config`, where Node's slice rules live (see below); nothing is written |
 
 ## How a convention combines with a project
@@ -82,7 +82,7 @@ again only when one of them changes, appears or disappears.
 
 ## Architectures that check imports
 
-`hexagonal`, `clean`, `ddd` and `modular-monolith` (and the architectures that follow) differ from `vertical-slices`:
+`hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc` and `package-by-layer` differ from `vertical-slices`:
 they do not look at file names, they look at what each file imports. smith places every source
 file in a **layer** by the folder names on its path, reads the imports of the project's own
 code, and reports an import that goes where the architecture forbids. It runs as
@@ -161,6 +161,35 @@ its folder, and its `api/` (or `public/`) folder; everything deeper is internal.
 A module may import all of its own code. The check does not look inside a module, so it combines
 with a layer naming of your own but does not enforce one. Dependencies between modules that
 form a cycle are not reported.
+
+### mvc
+
+Models, views and controllers, each a folder: **model** (`models`, `model`), **view** (`views`,
+`view`, `templates`) and **controller** (`controllers`, `controller`). From the inside out
+they are model, view, controller.
+
+| Rule | Reported as |
+|---|---|
+| the model imports neither views nor controllers | `model code must not depend on view code` |
+| a view imports the model, never a controller | `view code must not depend on controller code` |
+
+A controller may import models and views. A layer made of files and not folders (Django's
+`models.py` and `views.py`, a single `controller.ts`) is not seen: the check works on folder
+names.
+
+### package-by-layer
+
+The layout of many existing codebases, stated explicitly so it stops drifting: one folder per
+technical layer, each layer calling only the ones below it. From the bottom: **model**
+(`models`, `entities`), **repository** (`repositories`, `dao`, `persistence`), **service**
+(`services`) and **controller** (`controllers`, `web`, `api`, `rest`).
+
+| Rule | Reported as |
+|---|---|
+| a layer imports only itself and the layers below it | `service code must not depend on controller code` |
+
+A layer may skip one: a controller may import a repository directly. Whether it should is a
+team decision the check does not make.
 
 ### What is checked, and the limits
 

@@ -38,7 +38,7 @@ support, CI contributions and limits, written from its code and from real runs.
 | [`docker`](../plugins/using/catalogue/docker.md) | deploy, a convention for every language (`[conventions.docker]`) | an `image` task for every app with a `Dockerfile`; writes a `Dockerfile` for a new Go, static web or Node app | the release builds the image once, tags it with the version and `latest`, and pushes to `[conventions.docker] registry` or `registries` (see [releasing](releasing.md#container-images)) |
 | [`go-smith-plugin`](../plugins/using/catalogue/go-smith-plugin.md) | scaffold, requires the `go` language plugin; publishes the `go-smith-plugin` stack | `smith add app my-plugin --stack go-smith-plugin` writes a smith plugin in Go on the plugin SDK, with a conformance test | — |
 | [`vertical-slices`](../plugins/using/catalogue/vertical-slices.md) | structure | a `slice-check` task for Go, Python, Dart, Rust, Ruby, C++, .NET, JVM and PHP projects, run before `lint`, in each language's own file-naming style | — |
-| [`hexagonal`, `clean`, `ddd`, `modular-monolith`](../plugins/using/catalogue/architectures.md) | structure, a convention for each language it reads (`[conventions.hexagonal]`) | an `architecture-check` task that reports the imports the architecture forbids, run before `lint` | — |
+| [`hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer`](../plugins/using/catalogue/architectures.md) | structure, a convention for each language it reads (`[conventions.hexagonal]`) | an `architecture-check` task that reports the imports the architecture forbids, run before `lint` | — |
 
 ### playwright
 

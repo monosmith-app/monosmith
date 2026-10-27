@@ -11,9 +11,11 @@ the code against the one you choose. These are known today:
 | `clean` | the dependency rule: frameworks, interface adapters, use cases, entities, and code depends only inward |
 | `ddd` | domain-driven design: a folder per bounded context with its own domain, application and infrastructure |
 | `modular-monolith` | one program split into modules, each used by the others only through its public API |
+| `mvc` | models, views and controllers: the model knows neither, and a view never calls a controller |
+| `package-by-layer` | one folder per technical layer (controller, service, repository, model), each calling only the ones below |
 | `none` | smith checks no code layout |
 
-More will follow (MVC, package-by-layer). The rules of
+The rules of
 each, and what they can and cannot check in each language, are in
 [conventions](../reference/conventions.md#architectures-that-check-imports).
 
@@ -39,7 +41,7 @@ Usage: `smith architecture [name]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `name` | no | vertical-slices, hexagonal, clean, ddd, modular-monolith or none; without it, the choices are listed and the one in use marked |
+| `name` | no | vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer or none; without it, the choices are listed and the one in use marked |
 
 No flags.
 
@@ -73,6 +75,8 @@ smith architecture
   clean            the dependency rule: frameworks, interface adapters, use cases, entities, and code depends only inward
   ddd              domain-driven design: a folder per bounded context with its own domain, application and infrastructure
   modular-monolith one program split into modules, each used by the others only through its public API
+  mvc              models, views and controllers: the model knows neither, and a view never calls a controller
+  package-by-layer one folder per technical layer (controller, service, repository, model), each calling only the ones below
   none             smith checks no code layout
 ```
 
@@ -88,7 +92,7 @@ architecture: none
 
 | Message | Cause and remedy |
 |---|---|
-| `no architecture called "onion"; the choices are vertical-slices, hexagonal, clean, ddd, modular-monolith, none` | Use one of the listed names. |
+| `no architecture called "onion"; the choices are vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none` | Use one of the listed names. |
 
 ## Related
 

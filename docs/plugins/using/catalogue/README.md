@@ -46,7 +46,7 @@ configure.
 | `astro` | scaffold, toolchain | `build` | [astro](astro.md) |
 | `vscode` | scaffold, toolchain, deploy | `build`, `typecheck` | [vscode](vscode.md) |
 | `vertical-slices` | structure | | [vertical-slices](vertical-slices.md) |
-| `hexagonal`, `clean`, `ddd`, `modular-monolith` | structure | | [architectures](architectures.md) |
+| `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` | structure | | [architectures](architectures.md) |
 | `docker` | deploy | | [docker](docker.md) |
 | `go-smith-plugin` | scaffold | | [go-smith-plugin](go-smith-plugin.md) |
 
