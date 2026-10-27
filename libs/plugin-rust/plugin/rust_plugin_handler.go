@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
@@ -70,6 +71,31 @@ func (r *Rust) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, erro
 // Remove implements serve.Remover.
 func (r *Rust) Remove(params protocol.RemoveParams) (protocol.RemoveResult, error) {
 	return scaffolding.Remove(r.root, params)
+}
+
+// Install implements serve.DependencyManager.
+func (r *Rust) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
+	return dependencies.Install(r.root, params)
+}
+
+// Uninstall implements serve.DependencyManager.
+func (r *Rust) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
+	return dependencies.Uninstall(r.root, params)
+}
+
+// Declared implements serve.DeclarationEditor.
+func (r *Rust) Declared(params protocol.DeclaredParams) (protocol.DeclaredResult, error) {
+	return dependencies.Declared(r.root, params)
+}
+
+// Rewrite implements serve.DeclarationEditor.
+func (r *Rust) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
+	return dependencies.Rewrite(r.root, params)
+}
+
+// Latest implements serve.LatestReader.
+func (r *Rust) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
+	return dependencies.Latest(r.root, params)
 }
 
 // ChangeKind implements serve.KindChanger.

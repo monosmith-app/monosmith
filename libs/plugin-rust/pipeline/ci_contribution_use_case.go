@@ -19,6 +19,22 @@ const RustVersion = "1.90"
 // bump it deliberately.
 const CargoDenyVersion = "0.18.5"
 
+// auditScript runs cargo audit. A CI runner (CI or TF_BUILD is set) installs
+// it first when it is missing; a developer's machine gets the command to run
+// instead of cargo's "no such command".
+const auditScript = "if ! cargo audit --version >/dev/null 2>&1 && { [ -n \"$CI\" ] || [ -n \"$TF_BUILD\" ]; }; then cargo install --locked cargo-audit; fi; " +
+	"if cargo audit --version >/dev/null 2>&1; then cargo audit; " +
+	"else echo 'cargo-audit is not installed: run cargo install --locked cargo-audit to check crates for known vulnerabilities' >&2; exit 1; fi"
+
+// auditCacheFiles are the files that decide what cargo audit finds.
+func auditCacheFiles(projects []protocol.Project) []string {
+	files := []string{"Cargo.lock", "Cargo.toml"}
+	for _, p := range projects {
+		files = append(files, path.Join(p.Root, "Cargo.toml"))
+	}
+	return files
+}
+
 var channel = regexp.MustCompile(`(?m)^[ \t]*channel[ \t]*=[ \t]*"([^"]+)"`)
 
 // Version is the toolchain the workspace pins in rust-toolchain.toml, else
@@ -64,6 +80,9 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 		Toolchains: []protocol.Toolchain{runtime(Version(workspaceRoot), targets)},
 		Setup:      []protocol.Step{{Name: "Fetch crates", Command: []string{"cargo", "fetch"}, Blocking: true}},
 		Stores:     []protocol.PackageStore{{Name: "cargo", Path: "~/.cargo/registry", Env: "CARGO_HOME", Files: []string{"**/Cargo.lock"}}},
+		// Known-vulnerable crates, reported (like pip-audit) and re-checked
+		// only when a lockfile or manifest changes.
+		Audit: []protocol.Step{{Name: "cargo audit", Command: []string{"sh", "-c", auditScript}, Blocking: false, CacheFiles: auditCacheFiles(params.Projects)}},
 	}
 	for _, pkg := range linkerPackages {
 		// Only the Linux runner has apt; the native jobs of other systems skip it.
