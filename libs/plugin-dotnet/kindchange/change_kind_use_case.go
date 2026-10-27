@@ -152,24 +152,10 @@ func retargetDependents(edits *fileedits.Set, params protocol.ChangeKindParams) 
 			text, _ := edits.Read(file)
 			dir := path.Dir(file)
 			edits.Write(file, mapAttributes(text, func(ref string) string {
-				return follow(ref, dir, p.Root, params.NewRoot)
+				return pathrefs.Follow(ref, dir, p.Root, params.NewRoot)
 			}))
 		}
 	}
-}
-
-// follow rewrites a reference written from fileDir when it names something
-// inside the directory that moved.
-func follow(ref, fileDir, oldRoot, newRoot string) string {
-	if !strings.HasPrefix(ref, "../") && !strings.HasPrefix(ref, "./") {
-		return ref
-	}
-	target := path.Join(fileDir, ref)
-	if target != oldRoot && !strings.HasPrefix(target, oldRoot+"/") {
-		return ref
-	}
-	moved := path.Join(newRoot, strings.TrimPrefix(target, oldRoot))
-	return pathrefs.Relative(fileDir, moved)
 }
 
 // retargetSolutions updates the solution files at the workspace root.

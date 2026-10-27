@@ -113,6 +113,20 @@ func TestKindChange(t *testing.T) {
 			coreFiles: map[string]string{"composer.json": `"url": "packages/core"`},
 		},
 		{
+			lang:  "cpp",
+			tools: []string{"cmake", "ninja", "c++"},
+			wire: func(w *workspace) {
+				lists := "apps/cli/CMakeLists.txt"
+				w.write(lists, strings.Replace(w.read(lists), "target_link_libraries(kccpp_cli PRIVATE kccpp_cli_lib)",
+					"add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../libs/core kccpp_core)\ntarget_link_libraries(kccpp_cli PRIVATE kccpp_cli_lib kccpp_core)", 1))
+				main := "apps/cli/src/main.cpp"
+				w.write(main, strings.Replace(strings.Replace(w.read(main),
+					"#include \"kccpp_cli/greeting.hpp\"\n", "#include \"kccpp_cli/greeting.hpp\"\n#include \"kccpp_core/greeting.hpp\"\n", 1),
+					"<< '\\n';", "<< ' ' << kccpp_core::greeting::greet(\"core\") << '\\n';", 1))
+			},
+			coreFiles: map[string]string{"apps/cli/CMakeLists.txt": "../../packages/core"},
+		},
+		{
 			lang:    "python",
 			tools:   []string{"python"},
 			install: true,

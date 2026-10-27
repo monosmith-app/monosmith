@@ -41,6 +41,24 @@ func TestRetargetSiblingStaysWhenOnlyTheFileMoves(t *testing.T) {
 	}
 }
 
+func TestFollowRewritesWhatNamesTheMovedDirectory(t *testing.T) {
+	cases := []struct{ ref, fileDir, want string }{
+		{"../../libs/core", "apps/cli", "../../packages/core"},
+		{"../../libs/core/include", "apps/cli", "../../packages/core/include"},
+		{"libs/core", "", "packages/core"},
+		{"./libs/core/", "", "./packages/core/"},
+		{"../util", "libs/core", "../util"},
+		{"../../libs/core-extra", "apps/cli", "../../libs/core-extra"},
+		{"serde", "apps/cli", "serde"},
+		{"/abs/libs/core", "apps/cli", "/abs/libs/core"},
+	}
+	for _, c := range cases {
+		if got := Follow(c.ref, c.fileDir, "libs/core", "packages/core"); got != c.want {
+			t.Errorf("Follow(%q from %q) = %q, want %q", c.ref, c.fileDir, got, c.want)
+		}
+	}
+}
+
 func TestRebaseFromAFileBelowTheMovingDirectory(t *testing.T) {
 	// libs/a/tests/x moves with libs/a: what it reaches inside libs/a follows,
 	// what it reaches outside is recomputed from the new place.

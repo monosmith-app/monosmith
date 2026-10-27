@@ -56,6 +56,28 @@ func Retarget(text, fileDir, oldRoot, newRoot string) (string, int) {
 	return text, total
 }
 
+// Follow rewrites a relative reference written from directory fileDir (a file
+// that does not move) when it names something inside oldRoot, which moves to
+// newRoot: "../core/x.cmake" becomes "../../packages/core/x.cmake". Anything
+// else (another place, "serde", an absolute path) is returned unchanged.
+func Follow(ref, fileDir, oldRoot, newRoot string) string {
+	if ref == "" || strings.HasPrefix(ref, "/") || strings.Contains(ref, ":") {
+		return ref
+	}
+	target := path.Join(fileDir, ref)
+	if target != oldRoot && !strings.HasPrefix(target, oldRoot+"/") {
+		return ref
+	}
+	rel := Relative(fileDir, path.Join(newRoot, strings.TrimPrefix(target, oldRoot)))
+	if strings.HasPrefix(ref, "./") && !strings.HasPrefix(rel, "../") {
+		rel = "./" + strings.TrimPrefix(rel, "./")
+	}
+	if strings.HasSuffix(ref, "/") && !strings.HasSuffix(rel, "/") {
+		rel += "/"
+	}
+	return rel
+}
+
 // Rebase returns a reference written relative to directory oldDir so that it
 // names the same place from directory newDir. A reference to something inside
 // oldDir itself is kept, because that moves along. Anything that is not a
