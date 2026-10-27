@@ -110,6 +110,8 @@ var all = []Command{
 	{ID: "run.affected", Group: GroupRun, Title: "Lint and test what changed", Hint: "smith run lint test --affected", Keys: []string{"w"}, Kind: Execute, Argv: []string{"run", "lint", "test", "--affected"}, NeedsWorkspace: true, NeedsIdle: true, Footer: "changed", ShowIn: []string{TabHome, TabProjects}},
 	{ID: "run.test-all", Group: GroupRun, Title: "Test all", Hint: "smith run test, on every project", Keys: []string{"T"}, Kind: RunTask, Task: "test", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"test"}},
 	{ID: "run.lint-all", Group: GroupRun, Title: "Lint all", Hint: "smith run lint, on every project", Keys: []string{"L"}, Kind: RunTask, Task: "lint", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"lint"}},
+	{ID: "run.typecheck-all", Group: GroupRun, Title: "Typecheck all", Hint: "smith run typecheck, on every project", Keys: []string{"C"}, Kind: RunTask, Task: "typecheck", All: true, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"typecheck"}},
+	{ID: "run.verify", Group: GroupRun, Title: "Verify all", Hint: "smith run lint typecheck test, on every project: what CI checks before it builds", Keys: []string{"V"}, Kind: Execute, Argv: []string{"run", "lint", "typecheck", "test"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "run.stop", Group: GroupRun, Title: "Stop", Hint: "stops the run; pressing it again quits", Keys: []string{"ctrl+c"}, Kind: Stop, NeedsRunning: true, Footer: "stop", ShowIn: vWorkspace},
 
 	// Workspace

@@ -318,8 +318,11 @@ func (s Shell) runContent(w, h int) content {
 		c.lines = append(c.lines, pane.Wrap(s.th.Muted(scope+", "+commands.ShortcutOf("run.test")+" to test, or start one on every project:"), w, 0)...)
 		c.lines = append(c.lines, "")
 		for _, b := range []struct{ id, label string }{
+			{"run.verify", "Verify everything: lint, typecheck, test  " + commands.ShortcutOf("run.verify")},
 			{"run.build-all", fmt.Sprintf("Build everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.build-all"))},
 			{"run.test-all", fmt.Sprintf("Test everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.test-all"))},
+			{"run.lint-all", fmt.Sprintf("Lint everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.lint-all"))},
+			{"run.typecheck-all", fmt.Sprintf("Typecheck everything (%d)  %s", s.list.Len(), commands.ShortcutOf("run.typecheck-all"))},
 		} {
 			c.hits[len(c.lines)] = hit{kind: "action", id: b.id}
 			c.lines = append(c.lines, "  "+s.th.Accent("[ "+b.label+" ]"))
