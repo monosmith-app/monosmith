@@ -33,6 +33,18 @@ skips the tasks that depend on it; independent tasks keep going unless `--bail`.
 Ctrl+C stops every process tree smith started — on Windows through a Job Object,
 elsewhere through a process group.
 
+### Changing tasks for a set of projects
+
+Each project's tasks come from its plugin; smith.toml changes them in three
+layers, the later winning field by field: `[tasks.<task>]` (every project),
+`[[task_groups]]` (the projects a group selects, such as `lang:node` and
+`kind:lib`) and `[projects.<name>.tasks.<task>]` (one project). A workspace
+whose libraries share the same overrides states them once in a group, and the
+one library that differs overrides only its own task. `smith explain
+<project>:<task>` shows which layer each value came from. See
+[Task groups](configuration.md#task-groups). The cache key follows the
+resolved task, whichever layer a value came from.
+
 ### Default tool configuration
 
 smith owns the lint, type check and tests of a repository, so the repository holds only overrides. A Go

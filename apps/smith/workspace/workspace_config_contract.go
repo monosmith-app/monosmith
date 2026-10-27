@@ -36,9 +36,14 @@ type Config struct {
 	DefaultStacks map[string]string `toml:"default_stacks"`
 	// Recipes names the recipe for one project kind (app, lib or package),
 	// instead of [workspace] recipe.
-	Recipes  map[string]string          `toml:"recipes"`
-	Tasks    map[string]TaskOverride    `toml:"tasks"`
-	Projects map[string]ProjectOverride `toml:"projects"`
+	Recipes map[string]string       `toml:"recipes"`
+	Tasks   map[string]TaskOverride `toml:"tasks"`
+	// TaskGroups set task fields for the projects their selectors name, so a
+	// set of similar projects states its overrides once. Each group sits
+	// between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several
+	// matching, a later group wins field by field.
+	TaskGroups []TaskGroup                `toml:"task_groups"`
+	Projects   map[string]ProjectOverride `toml:"projects"`
 	// Registries are private package registries, by name, that the
 	// workspace installs from ([workspace] registry) and publishes to
 	// ([release] registry, [projects.<name>] registry).
@@ -470,6 +475,16 @@ type ProjectRelease struct {
 	Description string `toml:"description"`
 	Homepage    string `toml:"homepage"`
 	License     string `toml:"license"`
+}
+
+// TaskGroup is one [[task_groups]] entry: task overrides for every project
+// that all its selectors name. A selector is written the way --projects
+// writes one: a name, a glob, kind:<kind>, lang:<language> or tag:<tag>.
+type TaskGroup struct {
+	// Select lists the selectors; a project must match every one.
+	Select []string `toml:"select"`
+	// Tasks are the overrides, by task name, with the fields of [tasks.<task>].
+	Tasks map[string]TaskOverride `toml:"tasks"`
 }
 
 // TaskOverride replaces individual fields of a plugin-inferred task. Unset
