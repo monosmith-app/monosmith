@@ -4,9 +4,9 @@ import { statusMenuEntries } from './status-menu.mapper.ts'
 const idle = { running: false, hasLastRun: false, failed: 0 }
 
 describe('statusMenuEntries', () => {
-  it('offers run affected, doctor, refresh, output and settings', () => {
+  it('offers run affected, doctor, refresh, the agent, output and settings', () => {
     const commands = statusMenuEntries(idle).map((entry) => entry.command)
-    expect(commands).toEqual(expect.arrayContaining(['monosmith.runAffected', 'monosmith.doctor', 'monosmith.refresh', 'monosmith.showOutput', 'monosmith.openSettings']))
+    expect(commands).toEqual(expect.arrayContaining(['monosmith.runAffected', 'monosmith.doctor', 'monosmith.refresh', 'monosmith.showOutput', 'monosmith.openSettings', 'monosmith.talkToAgent']))
   })
 
   it('offers cancel only while a run goes, and first', () => {

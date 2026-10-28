@@ -1,4 +1,6 @@
 import * as assert from 'node:assert/strict'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import * as vscode from 'vscode'
 import { EXTENSION_ID, getExtensionState, waitUntil } from '../../extension-handle/index.ts'
 
@@ -57,5 +59,27 @@ describe('MonoSmith with a smith that runs', () => {
     const state = await getExtensionState()
     await vscode.commands.executeCommand('monosmith.refresh')
     assert.equal(state.viewState(), 'ready')
+  })
+
+  it('offers the agent while its files are missing, installs it on a yes, and then stops offering', async () => {
+    const state = await getExtensionState()
+    const [root = ''] = state.roots()
+    await waitUntil('the doctor to say the agent files are missing', () => state.agentFiles(root) === 'missing')
+    assert.equal(existsSync(join(root, '.claude', 'agents', 'smith.md')), false)
+    await vscode.commands.executeCommand('monosmith.installAgent', { root, confirmed: true })
+    assert.equal(existsSync(join(root, '.claude', 'agents', 'smith.md')), true)
+    assert.equal(existsSync(join(root, '.mcp.json')), true)
+    assert.equal(existsSync(join(root, '.vscode', 'mcp.json')), true)
+    await waitUntil('the doctor to say the agent files are current', () => state.agentFiles(root) === 'current')
+  })
+
+  it('leaves a file the team edited as it is, and says so', async () => {
+    const state = await getExtensionState()
+    const [root = ''] = state.roots()
+    const mcp = join(root, '.vscode', 'mcp.json')
+    const edited = '{ "EDITED": true }'
+    writeFileSync(mcp, edited)
+    await vscode.commands.executeCommand('monosmith.installMcp', { root, confirmed: true })
+    assert.equal(readFileSync(mcp, 'utf8'), edited)
   })
 })

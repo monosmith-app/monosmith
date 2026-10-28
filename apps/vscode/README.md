@@ -52,6 +52,24 @@ health of the workspace, its dependencies and its next release.
 
   ![Explain page of a project](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-explain.png)
 
+- **The MonoSmith agent.** A workspace without the agent files shows one line
+  in the Projects view, **Add the MonoSmith agent**, and the extension offers
+  it once as a notification (**Install**, **Not now**, **Never for this
+  workspace**, which records `[agent] enabled = false` through `smith config
+  set`). Three commands do the same from the palette:
+  **MonoSmith: Install the MCP server and agent** writes
+  `.claude/agents/smith.md`, `.mcp.json` and `.vscode/mcp.json`;
+  **MonoSmith: Install the MCP server only** writes `.vscode/mcp.json`;
+  **MonoSmith: Talk to the MonoSmith agent** opens a terminal that runs
+  `smith agent` (Claude Code with the agent), or says how to install Claude
+  Code and offers the MCP config to copy. Every install shows the files first
+  (with the diff on request) and writes only after you agree; smith merges into
+  an existing MCP file and never overwrites a file you edited, and says so
+  when it stops. See [the agent guide](https://github.com/monosmith-app/monosmith/blob/main/docs/guides/agent.md).
+
+  To use the server in VS Code (1.99 or later), open `.vscode/mcp.json`,
+  choose **Start** above the `smith` server (or run **MCP: List Servers**),
+  trust it when VS Code asks, and pick its tools in Chat's agent mode.
 - **Tasks and tasks.json.** Tasks of type `smith` appear in **Run Task** and
   can be written in `tasks.json`; the `$smith`, `$smith-tsc` and
   `$smith-eslint` problem matchers read the failures out of the terminal.

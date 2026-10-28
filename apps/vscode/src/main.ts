@@ -1,6 +1,10 @@
 import { existsSync } from 'node:fs'
-import { isAbsolute } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import * as vscode from 'vscode'
+import {
+  confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellInstallOutcome,
+  type AgentFilesState, type InstallScope,
+} from './agent-install/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState } from './folder-session/index.ts'
 import { fixDoctor, readHealth, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
@@ -34,8 +38,11 @@ import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 const INSTALL_COMMAND = 'npm i -D monosmith'
 const UPDATE_COMMAND = 'npm i -D monosmith@latest'
 const FILTER_KEY = 'monosmith.filter'
+const AGENT_ASKED_KEY = 'monosmith.agentOffered'
+const AGENT_FILE = join('.claude', 'agents', 'smith.md')
 
 const folders = new Map<string, FolderState>()
+const agentFiles = new Map<string, AgentFilesState>()
 
 function states (): FolderState[] {
   return Array.from(folders, ([, state]) => state)
@@ -198,6 +205,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       name:     state.name,
       snapshot: state.phase === 'ready' ? state.snapshot : undefined,
       note:     describeFolderNote(state),
+      ...(agentFiles.get(state.root) === 'missing' && { agentMissing: true }),
     })))
     paint()
   }
@@ -291,6 +299,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
     await refreshFolder(root, 'full', false)
     void warnAboutSkew(state)
+    void checkAgentFiles(state, true)
   }
 
   const handleExit = (root: string, exit: SmithExit): void => {
@@ -333,6 +342,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       stopFolder(root)
       folders.delete(root)
       statuses.delete(root)
+      agentFiles.delete(root)
       unwatch(root)
     }
     const added = roots.filter((folder) => !folders.has(folder.root))
@@ -594,6 +604,88 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     void setContextKey('monosmith.filtered', next.text.trim() !== '')
   }
 
+  /** Asks the doctor whether the folder has the agent files, shows the line in the view, and offers them once. */
+  const checkAgentFiles = async (state: FolderState, offer: boolean): Promise<void> => {
+    const session = state.session
+    if (session === undefined) return
+    try {
+      agentFiles.set(state.root, judgeAgentFiles(await runDoctor(session.connection)))
+    } catch (error) {
+      note(`MonoSmith: could not read the agent files check of ${state.name}: ${error instanceof Error ? error.message : String(error)}`)
+
+      return
+    }
+    sync()
+    const asked = `${AGENT_ASKED_KEY}:${state.root}`
+    if (!offer || !shouldOfferAgent({ state: agentFiles.get(state.root) ?? 'unknown', alreadyAsked: context.workspaceState.get<boolean>(asked) === true })) return
+    await context.workspaceState.update(asked, true)
+    const answer = await offerAgent(state.name)
+    if (answer === 'install') await installIn(state, 'agent', false)
+    else if (answer === 'never') await declineAgent(state)
+  }
+
+  const declineAgent = async (state: FolderState): Promise<void> => {
+    if (state.location === undefined) return
+    const location = state.location
+    const failure = await optOutOfAgent(async (args) => await runSmith(location.executable, args, state.root))
+    if (failure !== undefined) {
+      void vscode.window.showWarningMessage(`MonoSmith: smith.toml was not changed. ${failure}`)
+
+      return
+    }
+    agentFiles.set(state.root, 'unknown')
+    sync()
+    void vscode.window.showInformationMessage(`MonoSmith: ${state.name} will not be offered the agent again. smith.toml has enabled = false under [agent]; remove it to be asked.`)
+  }
+
+  const installIn = async (state: FolderState, scope: InstallScope, confirmed: boolean): Promise<boolean> => {
+    if (state.location === undefined) return false
+    if (!isWorkspaceTrusted()) {
+      void vscode.window.showWarningMessage('MonoSmith: adding the agent writes files and needs a trusted workspace.')
+
+      return false
+    }
+    const location = state.location
+    const outcome = await installAgent({
+      run:     async (args) => await runSmith(location.executable, args, state.root),
+      confirm: async (preview) => await confirmInstall(preview, scope, state.name),
+    }, scope, confirmed)
+    note(`MonoSmith: install ${scope} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellInstallOutcome(outcome, scope, state.root)
+    if (outcome.kind === 'written' || outcome.kind === 'current') await checkAgentFiles(state, false)
+
+    return outcome.kind === 'written' || outcome.kind === 'current'
+  }
+
+  /** The folder a command works in: the one in the row it came from, else the one the person picks. */
+  const folderFor = async (argument: unknown): Promise<FolderState | undefined> => {
+    const root = (argument as { root?: unknown } | undefined)?.root
+    const given = typeof root === 'string' ? folders.get(root) : undefined
+    if (given?.session !== undefined) return given
+    const state = await folderOf()
+    if (state === undefined) void vscode.window.showInformationMessage('MonoSmith: smith is not running in a folder, so there is nothing to add the agent to.')
+
+    return state
+  }
+
+  const installFiles = async (scope: InstallScope, argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state !== undefined) await installIn(state, scope, (argument as { confirmed?: unknown } | undefined)?.confirmed === true)
+  }
+
+  const talkToTheAgent = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    const location = state.location
+    await talkToAgent({
+      hasClaude:       hasClaudeCode,
+      hasAgentFile:    () => existsSync(join(state.root, AGENT_FILE)),
+      offerInstall:    async () => await installIn(state, 'agent', false) && existsSync(join(state.root, AGENT_FILE)),
+      openAgent:       () => { openSmithTerminal(location.executable, ['agent'], state.root) },
+      explainNoClaude: explainNoClaudeCode,
+    })
+  }
+
   const copyInstallCommand = async (): Promise<void> => {
     await vscode.env.clipboard.writeText(INSTALL_COMMAND)
     void vscode.window.showInformationMessage(`MonoSmith: copied "${INSTALL_COMMAND}". Run it in the workspace, then retry.`)
@@ -673,6 +765,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command('monosmith.showOutput', async () => { output.show() }),
     command('monosmith.openSettings', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith') }),
     command('monosmith.copyInstallCommand', copyInstallCommand),
+    command<unknown>('monosmith.installAgent', async (argument) => { await installFiles('agent', argument) }),
+    command<unknown>('monosmith.installMcp', async (argument) => { await installFiles('mcp', argument) }),
+    command<unknown>('monosmith.talkToAgent', talkToTheAgent),
     command('monosmith.health.refresh', async () => { await health.reload() }),
     command('monosmith.health.fix', fixHealth),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
@@ -714,8 +809,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
       return
     },
-    isRunning: () => activeRun !== undefined,
-    roots:     () => ready().map((state) => state.root),
+    isRunning:  () => activeRun !== undefined,
+    roots:      () => ready().map((state) => state.root),
+    agentFiles: (root) => agentFiles.get(root),
   }
 }
 

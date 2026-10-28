@@ -73,6 +73,31 @@ install it.
 In VS Code, open `.vscode/mcp.json`, choose Start above the `smith` server, then use the
 tools in agent mode. The MonoSmith extension offers the same install as a command.
 
+### In the VS Code extension
+
+A workspace that lacks the agent files shows **Add the MonoSmith agent** at the top of the
+MonoSmith Projects view, and the extension offers the install once with a notification
+(**Install**, **Not now**, **Never for this workspace**; the last one runs
+`smith config set agent.enabled false`). From the command palette:
+
+- **MonoSmith: Install the MCP server and agent** runs `smith agent install --claude --vscode`.
+  It first reads what smith would write and shows the files (the diff opens on request), and
+  writes only after you choose **Install**.
+- **MonoSmith: Install the MCP server only** does the same with `smith mcp install --vscode`.
+- **MonoSmith: Talk to the MonoSmith agent** opens a terminal that runs `smith agent`. Without
+  the `claude` command it says how to install Claude Code and offers **Copy the MCP config**
+  (the `.mcp.json` entry for another client) and **Open the docs**.
+
+If smith stops (an MCP file you edited, or one with comments) the extension says nothing was
+written and repeats smith's reason; fix the file as [smith agent install](../manual/agent-install.md)
+says, then run the command again.
+
+VS Code reads `.vscode/mcp.json` by itself (VS Code 1.99 or later) and lists the `smith` server
+in **MCP: List Servers**, but it does not run a server you have not started. Choose **Start**
+above the `smith` server in `.vscode/mcp.json` (or in that list); VS Code asks you to trust the
+server once, because it runs `smith mcp` on your machine. Then open Chat in agent mode and
+enable the `smith` tools in its tool picker.
+
 ## What it does alone and what it asks
 
 It reads on its own: the projects, `smith info`, the doctor and its list of fixes, the

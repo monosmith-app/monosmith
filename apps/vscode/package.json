@@ -254,6 +254,23 @@
         "command": "monosmith.openWalkthrough",
         "title": "Open Getting Started",
         "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.installAgent",
+        "title": "Install the MCP server and agent",
+        "category": "MonoSmith",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "monosmith.installMcp",
+        "title": "Install the MCP server only",
+        "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.talkToAgent",
+        "title": "Talk to the MonoSmith agent",
+        "category": "MonoSmith",
+        "icon": "$(hubot)"
       }
     ],
     "menus": {
@@ -332,6 +349,21 @@
           "command": "monosmith.openSettings",
           "when": "view == monosmith.projects",
           "group": "4_smith@3"
+        },
+        {
+          "command": "monosmith.installAgent",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "5_agent@1"
+        },
+        {
+          "command": "monosmith.installMcp",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "5_agent@2"
+        },
+        {
+          "command": "monosmith.talkToAgent",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "5_agent@3"
         },
         {
           "command": "monosmith.openWalkthrough",
@@ -447,6 +479,18 @@
         },
         {
           "command": "monosmith.doctor",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.installAgent",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.installMcp",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.talkToAgent",
           "when": "monosmith.state == ready"
         },
         {

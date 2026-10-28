@@ -4,7 +4,7 @@ import type { WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
 /** One row of the MonoSmith view. */
 export interface TreeNode {
   id:          string
-  kind:        'folder' | 'group' | 'project' | 'task'
+  kind:        'folder' | 'group' | 'project' | 'task' | 'action'
   label:       string
   description: string
   /** A codicon id; the view tints it for a project. */
@@ -24,6 +24,8 @@ export interface TreeNode {
   hasLog?:     boolean
   /** Open the row, because the filter matched something under it. */
   reveal?:     boolean
+  /** The command an `action` row runs when it is chosen. */
+  command?:    string
   /** What a screen reader says for the row. */
   spoken:      string
   /** What the pointer says for the row. */
@@ -33,12 +35,14 @@ export interface TreeNode {
 
 /** A folder of the editor, as the view shows it. */
 export interface TreeFolder {
-  root:      string
-  name:      string
+  root:          string
+  name:          string
   /** What smith said; absent while the folder has no running smith. */
-  snapshot?: WorkspaceSnapshot
+  snapshot?:     WorkspaceSnapshot
   /** Why there is no snapshot, in a few words. */
-  note?:     string
+  note?:         string
+  /** Doctor says the folder lacks the MonoSmith agent files, and the person has not opted out. */
+  agentMissing?: boolean
 }
 
 /** What the last run did to a task, and whether its output was kept. */
@@ -87,11 +91,11 @@ const STATUS_ICONS: Record<TaskResult['status'], string> = {
 export function toTree (folders: readonly TreeFolder[], factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter = NO_FILTER): TreeNode[] {
   if (folders.every((folder) => folder.snapshot === undefined)) return []
   const first = folders[0]
-  if (folders.length === 1 && first?.snapshot !== undefined) return toGroups(first.root, first.snapshot, factsOf, filter)
+  const narrowed = filter.text.trim() !== '' || filter.affectedOnly
+  if (folders.length === 1 && first?.snapshot !== undefined) return [...agentRow(first, narrowed), ...toGroups(first.root, first.snapshot, factsOf, filter)]
 
   return folders.flatMap((folder): TreeNode[] => {
-    const children = folder.snapshot === undefined ? [] : toGroups(folder.root, folder.snapshot, factsOf, filter)
-    const narrowed = filter.text.trim() !== '' || filter.affectedOnly
+    const children = folder.snapshot === undefined ? [] : [...agentRow(folder, narrowed), ...toGroups(folder.root, folder.snapshot, factsOf, filter)]
     if (narrowed && children.length === 0) return []
     const projects = folder.snapshot?.projects.map((project) => project.name) ?? []
     const description = folder.snapshot === undefined ? (folder.note ?? '') : `${projects.length} projects`
@@ -109,6 +113,25 @@ export function toTree (folders: readonly TreeFolder[], factsOf: (root: string, 
       children,
     }]
   })
+}
+
+/** The line that offers the agent in a folder whose doctor says it is missing; not while the view is narrowed. */
+function agentRow (folder: TreeFolder, narrowed: boolean): TreeNode[] {
+  if (narrowed || folder.agentMissing !== true) return []
+
+  return [{
+    id:          `agent:${folder.root}`,
+    kind:        'action',
+    label:       'Add the MonoSmith agent',
+    description: 'with smith’s MCP server',
+    icon:        'hubot',
+    root:        folder.root,
+    projects:    [],
+    command:     'monosmith.installAgent',
+    spoken:      'Add the MonoSmith agent and smith’s MCP server to this folder',
+    tooltip:     'Writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json. It shows the files first and asks.',
+    children:    [],
+  }]
 }
 
 /**
