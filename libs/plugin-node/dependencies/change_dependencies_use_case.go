@@ -5,9 +5,6 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// NpmRunner runs npm; tests replace it.
-var NpmRunner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
-
 // FoldedNpmRunner runs npm and returns its warnings folded into one-line
 // notes; its output is shown only when it fails. Tests replace it.
 var FoldedNpmRunner = func(dir string, argv []string) ([]string, error) { return toolrun.Folded(dir, argv) }
@@ -38,8 +35,9 @@ func Install(workspaceRoot string, params protocol.InstallParams) (protocol.Depe
 // Uninstall removes packages from one project's package.json.
 func Uninstall(workspaceRoot string, params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	argv := append(append([]string{"npm", "uninstall"}, params.Packages...), "--workspace", params.Project.Root)
-	if err := NpmRunner(workspaceRoot, append(argv, quiet...)); err != nil {
+	notes, err := FoldedNpmRunner(workspaceRoot, append(argv, quiet...))
+	if err != nil {
 		return protocol.DependencyResult{}, err
 	}
-	return protocol.DependencyResult{Files: []string{params.Project.Root + "/package.json", "package-lock.json"}}, nil
+	return protocol.DependencyResult{Files: []string{params.Project.Root + "/package.json", "package-lock.json"}, Notes: notes}, nil
 }
