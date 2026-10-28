@@ -151,7 +151,7 @@ func TestTheLogFollowsUntilYouScrollAndFTogglesIt(t *testing.T) {
 	}
 	lines = append(lines, "kit:build ✔ 1s")
 	l.next = &scripted{lines: lines}
-	l.keys("b", "esc") // esc shows all output
+	l.keys("b") // no task failed: all output is shown
 	l.has("following", "line 119")
 	l.keys("pgup")
 	l.has("paused")
@@ -229,4 +229,16 @@ func TestOutsideAWorkspaceACommandRunsInTheTerminalAfterTheShellQuits(t *testing
 	if !sh.quit || len(sh.Argv) == 0 || sh.Argv[0] != "adopt" {
 		t.Fatalf("quit=%v argv=%v", sh.quit, sh.Argv)
 	}
+}
+
+func TestEscOnAFinishedRunOpensTheStartScreenAndEnterGoesBack(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✔ 1s"}}
+	l.keys("b")
+	l.has("passed")
+	l.keys("esc")
+	l.has("Verify everything", "Last run: ")
+	l.keys("enter")
+	l.has("passed")
+	l.hasNot("Verify everything")
 }

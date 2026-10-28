@@ -110,6 +110,9 @@ type Shell struct {
 	stopping bool
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
 	runSel  string
+	// runHome shows the start screen of the Run tab (the buttons) over a finished run; Esc
+	// opens it, Enter, a new run or , . leave it.
+	runHome bool
 	runTop  int
 	log     logview.Log
 	lastArg []string

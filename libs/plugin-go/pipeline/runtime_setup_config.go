@@ -8,7 +8,8 @@ import (
 
 // runtime installs Go in the generated pipelines. The action does not cache
 // the module cache itself: the plugin declares it as a package store, so every
-// provider caches it the same way (see CI).
+// provider caches it the same way (see CI). check-latest takes the newest patch
+// of a minor version, so a Go security fix reaches the pipelines the day it ships.
 func runtime(version string) protocol.Toolchain {
 	azure := version
 	if strings.Count(azure, ".") == 1 {
@@ -16,7 +17,7 @@ func runtime(version string) protocol.Toolchain {
 	}
 	return protocol.Toolchain{
 		Name: "go", Version: version,
-		GitHub: &protocol.ActionStep{Uses: "actions/setup-go@v7", Inputs: []protocol.Input{{Name: "go-version", Value: version}, {Name: "cache", Value: "false"}}},
+		GitHub: &protocol.ActionStep{Uses: "actions/setup-go@v7", Inputs: []protocol.Input{{Name: "go-version", Value: version}, {Name: "check-latest", Value: "true"}, {Name: "cache", Value: "false"}}},
 		Azure:  &protocol.ActionStep{Uses: "GoTool@0", Inputs: []protocol.Input{{Name: "version", Value: azure}}},
 		// Elsewhere (GitLab CI, on a Debian image, as root): the release
 		// tarball, on PATH for the rest of the job.

@@ -236,7 +236,7 @@ func TestTheWheelScrollsTheLogAndPausesIt(t *testing.T) {
 	}
 	lines = append(lines, "kit:build ✓ 1s")
 	l.next = &scripted{lines: lines}
-	l.keys("b", "esc")
+	l.keys("b")
 	l.has("output line 149", "following")
 	_, y := l.find("output line 149")
 	l.send(wheel(60, y-3, -1))
