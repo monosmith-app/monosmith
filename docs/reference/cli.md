@@ -61,11 +61,20 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--ci <ci>` | pipelines to generate: github, azure (default github) (repeatable) | `github` |
+| `--architecture <architecture>` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) | `vertical-slices` |
+| `--cache-dir <cache-dir>` | the task cache folder inside the workspace (default .smith/cache) | `.smith/cache` |
+| `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |
+| `--ci <ci>` | pipelines to generate: github, azure, gitlab, circleci (default github) (repeatable) | `github` |
+| `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
+| `--github-releases` | create a GitHub Release for every release tag | off |
+| `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
+| `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
+| `--release-remote <release-remote>` | the git remote that receives release tags (default origin) | `origin` |
 | `--scope <scope>` | npm scope for packages (default @<name>) | `@<name>` |
+| `-y, --yes` | take the default for every question that has no flag | off |
 
 <!-- smith:end new -->
 

@@ -2,6 +2,24 @@ package scaffold
 
 import "github.com/monosmith-app/monosmith/apps/smith/workspace"
 
+// The parts of the template that the answers of smith new replace (see
+// renderWorkspaceConfig); each is the text a workspace gets when nothing was
+// asked or the default was taken.
+const (
+	defaultStacksText = `node = "node-jest"     # ESLint with @monosmith/eslint-config, and Jest
+`
+	conventionText = `[conventions.vertical-slices]
+`
+	releaseText = `# [release]
+# branch = "main"     # releases run only from this branch
+# remote = "origin"   # release tags are pushed here
+`
+	cacheText = `# [cache]
+# dir = ".smith/cache"
+# max_size_mb = 2048
+`
+)
+
 const configTemplate = `#:schema ` + workspace.SchemaURL + `
 # smith workspace configuration. Every setting below has a default; most
 # workspaces need nothing more than a name. See https://github.com/monosmith-app/monosmith/blob/main/docs/reference/configuration.md.
@@ -34,8 +52,7 @@ one_version = true
 # them and ` + "`smith add app web --stack node-vitest`" + ` picks one. Projects that record
 # none use the default of their language. See https://github.com/monosmith-app/monosmith/blob/main/docs/reference/stacks.md.
 [default_stacks]
-node = "node-jest"     # ESLint with @monosmith/eslint-config, and Jest
-
+` + defaultStacksText + `
 # [stacks.node-quick]
 # description = "Vitest only, no lint"
 # language = "node"
@@ -46,16 +63,9 @@ node = "node-jest"     # ESLint with @monosmith/eslint-config, and Jest
 # projects a slice-check task, run before lint (role-named files, no
 # junk-drawer folders), and has smith doctor check that Node projects' ESLint
 # config loads the same rules. See https://github.com/monosmith-app/monosmith/blob/main/docs/reference/conventions.md.
-[conventions.vertical-slices]
-
-# [release]
-# branch = "main"     # releases run only from this branch
-# remote = "origin"   # release tags are pushed here
-
-# [cache]
-# dir = ".smith/cache"
-# max_size_mb = 2048
-
+` + conventionText + `
+` + releaseText + `
+` + cacheText + `
 # Override any task a plugin infers, for every project or for one:
 # [tasks.test]
 # cache = false

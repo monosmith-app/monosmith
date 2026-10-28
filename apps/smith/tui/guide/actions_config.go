@@ -20,6 +20,9 @@ type Step struct {
 	// Check says what is wrong with a typed answer ("" when it is fine); it
 	// runs as the person types and again on enter.
 	Check func(answers map[string][]string, value string) string
+	// Skip, when set, leaves the question out when it says so, given the
+	// earlier answers; the key then has no answer.
+	Skip func(answers map[string][]string) bool
 }
 
 // Option is one answer.
@@ -94,8 +97,8 @@ func Actions(languages, plugins, enabled []string) []Action {
 	return []Action{
 		{
 			Title: "Create a workspace", Presents: "new", Hint: "smith new", OutsideOnly: true,
-			Steps: []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio"}},
-			Argv:  func(a map[string][]string) []string { return []string{"new", first(a, "name")} },
+			Steps: NewWorkspaceSteps(),
+			Argv:  NewWorkspaceArgv,
 		},
 		{
 			Title: "Run tasks", Presents: "run", Hint: "build, test, lint, typecheck", NeedsWorkspace: true,

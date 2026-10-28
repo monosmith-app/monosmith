@@ -80,7 +80,14 @@ Created acme. Next:
 smith writes the files, runs `git init` on `main` and makes the first commit.
 The `smith.toml` it wrote is mostly comments explaining each setting; the only
 live lines are the workspace's name, the npm scope, the Go module prefix, the CI
-provider and a default stack for Node.
+provider, a default stack for Node and the code layout smith checks.
+
+At a terminal, `smith new` first asks a few questions (the CI, the main
+language, the tests and lint for Node, the code layout, and behind "more
+options" the release branch, GitHub Releases and the cache). Enter keeps the
+default shown, `--yes` skips them all, and every answer is a flag too; the
+[`smith new` manual](../manual/new.md#the-questions) lists them. The listing
+above is what you get without a terminal or with `--yes`.
 
 Options (see [`smith new`](../reference/cli.md#smith-new)):
 
@@ -88,7 +95,8 @@ Options (see [`smith new`](../reference/cli.md#smith-new)):
 |---|---|---|
 | `--scope @acme` | `@<name>` | the npm scope for Node packages |
 | `--module-prefix github.com/acme/acme` | from the `origin` remote, else `example.com/<name>` | the Go module path prefix |
-| `--ci github,azure` | `github` | pipelines to write (`gitlab` also works, though the option's help text does not list it) |
+| `--ci github,azure` | `github` | pipelines to write (`github`, `azure`, `gitlab`, `circleci`) |
+| `--yes` | off | ask nothing; take the default of every question without a flag |
 | `--dir .` | `./<name>` | create the workspace in an existing clone |
 | `--recipe <path or URL>` | none | the [recipe](../reference/recipes.md) `smith add` builds projects from |
 
