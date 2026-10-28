@@ -77,6 +77,26 @@ winget-pkgs submission uses them yet. `go install` is not supported, by
 decision: smith is built from the repository's `go.work`, which `go install`
 ignores ([ADR 0019](../architecture/decisions/0019-no-go-install.md)).
 
+## Knowing when smith changed
+
+The first command you run after smith was updated ends with one line on stderr:
+
+```
+smith updated 1.70.0 → 1.73.0. What's new: https://github.com/monosmith-app/monosmith/releases/tag/smith@1.73.0
+```
+
+It shows once; the terminal interface shows it as a toast. At most once a day smith also asks the
+registry whether a newer one exists (a short, cached check that never holds a command up and
+says nothing when you are offline) and prints the update command that fits how you installed it:
+
+```
+smith 1.75.0 is out, you have 1.73.0: update with npm i -g monosmith@latest (hide this: SMITH_NO_UPDATE_CHECK=1)
+```
+
+Set `SMITH_NO_UPDATE_CHECK=1` to stop the registry check. Neither line appears in CI, in a pipe
+or in `smith serve` and `smith mcp`. What smith remembers is `version.json` in the smith home
+(`$SMITH_HOME`, or `~/.smith`).
+
 ## Checking a download
 
 Every release has a `checksums.txt` with the SHA-256 of each archive:

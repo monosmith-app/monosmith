@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
@@ -15,6 +16,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/userprefs"
+	"github.com/monosmith-app/monosmith/apps/smith/updatenotice"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 )
@@ -104,6 +106,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 	}
+	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
 	if inside {
 		s := sources.WorkspaceSources(".", version)
 		s.Settings = settingssource.New(".", pluginhost.Home(), version, os.Getenv)

@@ -54,6 +54,9 @@ type Config struct {
 	Start []string
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
+	// Notice is a quiet line shown once as a toast: smith was updated, or a
+	// newer one exists.
+	Notice string
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -205,6 +208,9 @@ func NewShell(cfg Config) Shell {
 	}
 	sh.tabs = sh.tabList()
 	sh.refreshPalette()
+	if cfg.Notice != "" {
+		sh.notify(cfg.Notice, toast.Info)
+	}
 	return sh
 }
 
