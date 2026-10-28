@@ -50,6 +50,8 @@ type ReportResult struct {
 	// Mirror is the split repository and tag the release was pushed to
 	// (owner/repo@vX.Y.Z), when the project has one.
 	Mirror string `json:"mirror,omitempty"`
+	// TookMs is how long the package took to release, in milliseconds.
+	TookMs int64  `json:"tookMs,omitempty"`
 	Error  string `json:"error,omitempty"`
 }
 

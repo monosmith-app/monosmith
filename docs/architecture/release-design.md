@@ -55,7 +55,7 @@ a pull request (`releasepreview`) and the real release therefore print the same 
    the project is the highest of its commits. `Version.Bump` applies it; below 1.0 a breaking change
    moves the minor (`semver_model.go`).
 4. **Dependents.** If a project's own commits ask for nothing but a dependency of it is already in
-   this plan, it gets a `patch` (`reason: dependency <name> releases`), so its declared range stays
+   this plan, it gets a `patch` (`reason: dependency <name> <its new version>`), so its declared range stays
    correct.
 5. **Override.** A commit anywhere in the repository since the tag whose message contains
    `version(<project>)[x.y.z]` forces that version (`directiveFor`). The plan refuses a next

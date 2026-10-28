@@ -71,7 +71,7 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 		return Plan{}, err
 	}
 	var plan Plan
-	releasing := map[string]bool{}
+	releasing := map[string]string{}
 	for _, name := range order {
 		p := graph.Get(name)
 		if !p.Releases() {
@@ -104,8 +104,8 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 		reason := fmt.Sprintf("%d releasing commit(s)", len(subjects))
 		if level == None {
 			for _, d := range p.Deps {
-				if releasing[d] {
-					level, reason = Patch, "dependency "+d+" releases"
+				if releasing[d] != "" {
+					level, reason = Patch, "dependency "+d+" "+releasing[d]
 					break
 				}
 			}
@@ -135,7 +135,7 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 		item.Next = next.String()
 		item.Tag = TagPrefix(p) + item.Next
 		plan.Items = append(plan.Items, item)
-		releasing[name] = true
+		releasing[name] = item.Next
 	}
 	return plan, nil
 }

@@ -24,6 +24,8 @@ func TestMain(m *testing.M) {
 		code, _ := strconv.Atoi(os.Getenv("AUDIT_HELPER_EXIT"))
 		os.Exit(code)
 	}
+	// Tests read plain text; the colour tests pass their own environment.
+	_ = os.Setenv("NO_COLOR", "1")
 	os.Exit(m.Run())
 }
 

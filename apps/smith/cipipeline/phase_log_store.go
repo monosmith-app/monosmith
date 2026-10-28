@@ -23,7 +23,7 @@ var phaseTitles = map[string]string{
 // result lines and a closing line. Everything a reader needs stays visible; the
 // wall of tool output does not. The group closes before the first line said
 // after it and at the end of the phase, so a phase that fails early never
-// leaves one open. Only plain text is written: no colour, no cursor movement.
+// leaves one open. Colour is written only where colourWanted allows it, never cursor movement.
 type phaseLog struct {
 	out   io.Writer
 	phase string
@@ -92,11 +92,11 @@ func (l *phaseLog) close() {
 func (l *phaseLog) finish(err error, took time.Duration) {
 	l.close()
 	if err != nil {
-		l.say("%s %s failed after %s", l.icons.Failed, l.title(), formatDuration(took))
+		l.say("%s %s failed after %s", paint(l.icons.Failed, tintRed, colourOn()), l.title(), formatDuration(took))
 		l.say("→ the output above shows the cause; repeat the phase with `smith ci %s`", l.phase)
 		return
 	}
-	line := fmt.Sprintf("%s %s passed in %s", l.icons.Passed, l.title(), formatDuration(took))
+	line := fmt.Sprintf("%s %s passed in %s", paint(l.icons.Passed, tintGreen, colourOn()), l.title(), formatDuration(took))
 	if l.conclusion != "" {
 		line += ": " + l.conclusion
 	}

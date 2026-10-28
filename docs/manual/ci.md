@@ -181,8 +181,10 @@ Every phase opens with a banner that says what it will do and on what, folds the
 output in a collapsed log group (`::group::` on GitHub Actions, `##[group]` on Azure Pipelines),
 and ends with a result table and one closing line. The banner, the table and the closing line
 stay visible; the same table goes to the job summary (`$GITHUB_STEP_SUMMARY` on GitHub, an Azure
-summary section). The output is plain text: no colour, so `NO_COLOR` and a piped log read the
-same. `SMITH_ASCII=1` swaps the symbols for `[v]` `[x]` `[!]`.
+summary section). Status words and glyphs are coloured (green passed, yellow warning or dependency-caused,
+red failed, dim unchanged) only where the CI renders it: GitHub Actions, Azure Pipelines and
+GitLab, or a terminal. `NO_COLOR` and `TERM=dumb` switch it off, and a piped log has none, so the
+words read the same without it; the job summary is always plain. `SMITH_ASCII=1` swaps the symbols for `[v]` `[x]` `[!]`.
 
 ```text
 ══ Audit ═══════════════════════════════════════════════════
@@ -249,22 +251,24 @@ dist/drop/smith/smith.exe               28.5 MB
 ✓ Pack passed in 2.1s: 2 files packed into dist/drop (28.6 MB)
 ```
 
-`smith ci release` prints the decision first, one row per package with the version it was, the
-version it becomes and the commit that decided it (a breaking change over a feature over a fix),
-then folds the publishing, then lists where each package went and its tag. When nothing releases
-it says so, with the way to make something release. On GitHub the closing result is also a
-`::notice::` annotation on the run:
+`smith ci release` says what it will release (the banner and a one-line plan), folds the whole
+log (the version it resolved from each tag, the bump and why, the publishing) in the collapsed
+group, then prints one table: a row per released package with the version it was and becomes, the
+bump (major, minor or patch), the commit that decided it or the dependency or `version()`
+directive that forced it, where it was published, its tag and how long it took. Failed packages
+come first. Packages with nothing to release are not rows: they are listed on one line, or counted
+when there are many. When nothing releases it says so, with the way to make something release. On
+GitHub the closing result is also a `::notice::` annotation on the run:
 
 ```text
 ══ Release ═════════════════════════════════════════════════
-Releasing 2 projects of 2 from main, in dependency order: each is versioned, built, published and tagged.
-Package  Was    Now    Why
-core     0.1.0  0.2.0  feat(search): add search to the core (+1 more)
-logger   0.1.0  0.1.1  fix: log the empty greeting
-Package  Result      Published to  Tag
-core     ✓ released  its tag       packages/core/v0.2.0 (pushed)
-logger   ✓ released  its tag       packages/logger/v0.1.1 (pushed)
-✓ Release passed in 0.8s: 2 projects released (core 0.2.0, logger 0.1.1)
+Releasing 2 projects of 5 from main, in dependency order: each is versioned, built, published and tagged.
+Plan: core 0.2.0, logger 0.1.1
+Project  Was    Now      Bump   Why                                           Published             Tag                          Time
+core     0.1.0  › 0.2.0  minor  feat(search): add search to the core (+1 more)  ✓ registry.npmjs.org  packages/core/v0.2.0 (pushed)    0.3s
+logger   0.1.0  › 0.1.1  patch  dependency core 0.2.0                          ✓ registry.npmjs.org  packages/logger/v0.1.1 (pushed)  0.2s
+Unchanged (3): docs, tool, util
+✓ Release passed in 0.8s: 2 released (core 0.2.0, logger 0.1.1), 3 unchanged, 0 failed
 ```
 
 ```text
