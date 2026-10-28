@@ -164,7 +164,7 @@ Limits:
 
 - `smith add package x --lang bicep` fails with `smith: a Bicep project is an app
   (a deployment) or a lib (a module): publishing to a Bicep registry is not
-  supported yet`, although `smith kinds` lists `bicep-package`. You can still
+  supported yet`, and `smith kinds` lists no `bicep-package`. You can still
   make a Bicep project a package by hand with `metadata smithKind = 'package'`
   (`smith kind` refuses it for the same reason)
   (see Releasing).

@@ -19,7 +19,7 @@ import (
 type Options struct {
 	// Workspace is the empty directory the plugin was started in. When set, a
 	// plugin that generates projects is asked to generate an app, a lib and a
-	// package there, which a language plugin must then discover as
+	// package there (only the kinds it declares, when it declares any), which a language plugin must then discover as
 	// generated. Generation may install dependencies, so it is opt-in.
 	Workspace string
 }
@@ -115,12 +115,13 @@ func checkLanguages(info protocol.InitializeResult, r *Report) {
 	r.add(what+": "+strings.Join(info.Languages, ", "), len(bad) == 0, "languages must be non-empty names, each listed once; problem with %s", strings.Join(bad, ", "))
 }
 
-// generate asks for one project of each kind, checks the files it reports
+// generate asks for one project of each kind the plugin declares it scaffolds
+// (all three when it declares none), checks the files it reports
 // exist, and, for a language plugin, that discovery returns what it made.
 func generate(c *host.Client, ws string, r *Report) {
 	language := slices.Contains(c.Info.EffectiveRoles(), protocol.RoleLanguage)
 	var made []protocol.GenerateParams
-	for _, kind := range []protocol.ProjectKind{protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage} {
+	for _, kind := range c.Info.ScaffoldKinds() {
 		name := "c" + string(kind)
 		params := protocol.GenerateParams{
 			Kind: kind, Name: name, Directory: projectkind.Directory(kind) + "/" + name, Stack: Stack,

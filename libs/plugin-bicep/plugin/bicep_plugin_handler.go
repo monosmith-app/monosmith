@@ -29,6 +29,8 @@ func (b *Bicep) Describe(params protocol.InitializeParams) (protocol.InitializeR
 		Kind:      protocol.KindLanguage,
 		Languages: []string{"bicep"},
 		Manifests: []string{discovery.Manifest},
+		// Publishing to a Bicep registry is not supported yet.
+		Kinds: []protocol.ProjectKind{protocol.ProjectApp, protocol.ProjectLib},
 	}, nil
 }
 

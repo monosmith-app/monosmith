@@ -8,7 +8,7 @@ process, and a workspace test that runs it under smith. The examples in
 
 ```sh
 smith plugin check <name | path to executable> [args...]
-smith plugin check <name> --generate     # also scaffold an app, a lib and a package
+smith plugin check <name> --generate     # also scaffold an app, a lib and a package (the kinds it declares)
 smith plugin check <name> --json         # the report as JSON
 smith plugin check <name> --env NPM_TOKEN --env 'AWS_*'   # variables the plugin may see
 ```
@@ -56,7 +56,7 @@ With `--generate`, a plugin that advertises `generate` also has to work:
 
 | Check | Passes when |
 |---|---|
-| `generates an app`, `generates a lib`, `generates a package` | `generate` returns files and every one exists under the temporary workspace. Each of the three kinds must succeed |
+| `generates an app`, `generates a lib`, `generates a package` | `generate` returns files and every one exists under the temporary workspace. Each kind must succeed: the three, or only the ones the plugin lists in `kinds` |
 | `discovers the generated <kind>` | (language plugins) `discover` over the files found returns a project at that directory |
 | `the generated <kind> keeps its kind` | the discovered kind is the requested one |
 | `the generated <kind> records its stack` | the discovered `stack` is the one `generate` was asked to record (`conformance`) |

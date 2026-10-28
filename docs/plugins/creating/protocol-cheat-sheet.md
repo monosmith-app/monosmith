@@ -184,6 +184,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `requires` | `[]PluginRef` | no | Requires are plugins that must also be in the project for this one to work: a Node toolchain requires the node language plugin. |
 | `conflicts` | `[]PluginRef` | no | Conflicts are plugins that must not be in the same project. |
 | `stacks` | `[]Stack` | no | Stacks are ready-made stacks the plugin publishes. |
+| `kinds` | `[]ProjectKind` | no | Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those. |
 
 **What `languages` means for a convention plugin.** It is the list of project languages the plugin
 applies to, and the only place that says so. The host asks the plugin (`contribute`, `doctor`,

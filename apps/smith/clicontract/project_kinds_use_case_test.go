@@ -40,3 +40,15 @@ func TestKindsComeFromTheLanguagePlugins(t *testing.T) {
 		t.Fatalf("node-app %+v", node)
 	}
 }
+
+func TestKindsLeaveOutWhatAPluginDoesNotScaffold(t *testing.T) {
+	ctor, _ := pluginhost.Builtin("bicep")
+	set := &pluginhost.PluginSet{Clients: []*host.Client{connect(t, ctor("1.0.0"))}}
+	var names []string
+	for _, k := range Kinds(set) {
+		names = append(names, k.Kind)
+	}
+	if len(names) != 2 || names[0] != "bicep-app" || names[1] != "bicep-lib" {
+		t.Fatalf("kinds %v, want bicep-app and bicep-lib (a Bicep package is refused)", names)
+	}
+}

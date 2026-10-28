@@ -28,7 +28,9 @@ function article (kind: ProjectKind): string {
 export async function checkGeneration (client: PluginClient, workspace: string, report: ConformanceReport): Promise<void> {
   const language = effectiveRoles(client.info).includes('language')
   const made: GenerateParams[] = []
+  const declared = client.info.kinds ?? []
   for (const kind of ['app', 'lib', 'package'] as const) {
+    if (declared.length > 0 && !declared.includes(kind)) continue
     const name = `c${kind}`
     const params: GenerateParams = {
       kind,

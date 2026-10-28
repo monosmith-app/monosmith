@@ -35,7 +35,8 @@ def check_generation(client: PluginClient, workspace: str | Path, report: Confor
     """
     language = "language" in effective_roles(client.info)
     made: list[GenerateParams] = []
-    kinds: tuple[ProjectKind, ...] = ("app", "lib", "package")
+    declared = client.info.get("kinds") or []
+    kinds: tuple[ProjectKind, ...] = tuple(k for k in ("app", "lib", "package") if not declared or k in declared)
     for kind in kinds:
         name = f"c{kind}"
         params: GenerateParams = {

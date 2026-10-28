@@ -18,7 +18,8 @@ var kindText = map[protocol.ProjectKind]string{
 var languages = map[string]string{"node": "typescript"}
 
 // Kinds lists what `smith add <kind>` accepts: <language>-<app|lib|package>
-// for every language plugin that generates projects.
+// for every language plugin that generates projects, and every kind it
+// declares it scaffolds (all three when it declares none).
 func Kinds(set *pluginhost.PluginSet) []KindDescription {
 	var out []KindDescription
 	for _, c := range set.Clients {
@@ -30,7 +31,7 @@ func Kinds(set *pluginhost.PluginSet) []KindDescription {
 		if lang == "" {
 			lang = name
 		}
-		for _, kind := range []protocol.ProjectKind{protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage} {
+		for _, kind := range c.Info.ScaffoldKinds() {
 			out = append(out, KindDescription{
 				Kind: name + "-" + string(kind), Language: lang,
 				Label:       title(name) + " " + string(kind),

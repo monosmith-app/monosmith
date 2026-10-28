@@ -27,6 +27,7 @@ func (s *Scaffold) Describe(params protocol.InitializeParams) (protocol.Initiali
 		Kind:      protocol.KindConvention,
 		Roles:     []protocol.Role{protocol.RoleScaffold},
 		Languages: []string{"go"},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("go")},
 		Stacks: []protocol.Stack{{
 			Name: Name, Description: "a smith plugin written in Go, on the plugin SDK, with a conformance test",

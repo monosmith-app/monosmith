@@ -1690,6 +1690,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Stacks are ready-made stacks the plugin publishes.</summary>
     public IReadOnlyList<Stack> Stacks { get; init; } = [];
 
+    /// <summary>Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those.</summary>
+    public IReadOnlyList<ProjectKind> Kinds { get; init; } = [];
+
     /// <inheritdoc />
     public static InitializeResult Read(JsonAny? value, string path)
     {
@@ -1708,6 +1711,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Requires = ListOf(Member(map, "requires"), Join(path, "requires"), PluginRef.Read),
             Conflicts = ListOf(Member(map, "conflicts"), Join(path, "conflicts"), PluginRef.Read),
             Stacks = ListOf(Member(map, "stacks"), Join(path, "stacks"), Stack.Read),
+            Kinds = ListOf(Member(map, "kinds"), Join(path, "kinds"), ProjectKind.Read),
         };
     }
 
@@ -1762,6 +1766,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("stacks");
             MessageWritingAlgorithm.List(writer, Stacks, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Kinds is { Count: > 0 })
+        {
+            writer.Property("kinds");
+            MessageWritingAlgorithm.List(writer, Kinds, (builder1, item1) => item1.Write(builder1));
         }
         writer.EndObject();
     }
@@ -3663,6 +3672,9 @@ public sealed record PluginDescription
     /// <summary>Stacks are ready-made stacks the plugin publishes.</summary>
     public IReadOnlyList<Stack> Stacks { get; init; } = [];
 
+    /// <summary>Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those.</summary>
+    public IReadOnlyList<ProjectKind> Kinds { get; init; } = [];
+
     /// <summary>The <c>initialize</c> result for this description.</summary>
     /// <param name="capabilities">The capabilities derived from the plugin.</param>
     /// <returns>The result the serve loop answers.</returns>
@@ -3681,5 +3693,6 @@ public sealed record PluginDescription
             Requires = Requires,
             Conflicts = Conflicts,
             Stacks = Stacks,
+            Kinds = Kinds,
         };
 }

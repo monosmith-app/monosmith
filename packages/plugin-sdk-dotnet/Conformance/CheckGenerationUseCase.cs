@@ -20,7 +20,8 @@ internal static class CheckGenerationUseCase
     {
         var language = PluginRoles.Effective(client.Info).Contains(Role.Language);
         var made = new List<GenerateParams>();
-        foreach (var kind in new[] { ProjectKind.App, ProjectKind.Lib, ProjectKind.Package })
+        var declared = client.Info.Kinds;
+        foreach (var kind in new[] { ProjectKind.App, ProjectKind.Lib, ProjectKind.Package }.Where(each => declared.Count == 0 || declared.Contains(each)))
         {
             var name = $"c{kind}";
             var parameters = new GenerateParams
