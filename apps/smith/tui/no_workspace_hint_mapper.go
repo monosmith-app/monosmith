@@ -12,5 +12,5 @@ func (s Shell) noWorkspaceHint() string {
 	if s.adopter != nil {
 		return " Not a smith workspace yet. Press " + commands.ShortcutOf("file.adopt") + " to bring this folder in, " + press + " for a new workspace"
 	}
-	return " No workspace here. Press " + press + " to create one (or smith adopt)"
+	return " No workspace here. Press " + press + " to create one, or run smith adopt to bring this folder in"
 }
