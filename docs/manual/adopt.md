@@ -11,8 +11,9 @@ and commits.
 - You have a repository with packages or modules and want smith to run it.
 - You want to know first what smith would do (`smith adopt`, or `--dry-run`).
 
-Do not use it for an Nx or Turborepo workspace, or an mnci one: `adopt` recognises
-them, says so and stops; [`smith convert`](convert.md) is the command for those.
+You do not have to choose between this command and [`smith convert`](convert.md): in an
+Nx or Turborepo workspace (or an mnci one) `adopt` recognises it and hands over to
+`convert`, so `smith adopt` is the one way in for any repository.
 Do not use it in a folder that already has a `smith.toml` (`smith doctor` checks that
 workspace, [`smith upgrade`](upgrade.md) brings it up to date).
 

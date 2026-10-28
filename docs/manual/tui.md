@@ -255,8 +255,10 @@ Opened by `f` or `F` in Doctor. It is the interactive form of
 ### The adopt wizard
 
 Opened with `a` from the Start menu, or by Enter when the folder holds files but no
-workspace. It combines [`smith adopt`](adopt.md) and [`smith convert`](convert.md) and uses
-the fix wizard's keys and drawing. The stages:
+workspace, under the one name "Bring this repository into MonoSmith". It names what it
+found first (a plain repository, or an Nx or Turborepo workspace) and does the work of
+[`smith adopt`](adopt.md) or [`smith convert`](convert.md) to fit; it uses the fix
+wizard's keys and drawing. The stages:
 
 1. **Reading** the repository.
 2. **What was found**: the kind of repository (Nx, Turborepo, or plain), the projects

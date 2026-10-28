@@ -147,7 +147,7 @@ sequenceDiagram
   participant F as adoptflow.Session
   participant FC as fullconversion
   participant C as convert
-  U->>W: Enter on "Adopt this repository"
+  U->>W: Enter on "Bring this repository into MonoSmith"
   W->>F: Open(dir) [Reading]
   F-->>W: Found{kind, projects, tools, blockers} [Found]
   W->>U: how far to go? conservative or full [Level]
@@ -213,5 +213,6 @@ missing (`NoFullForPlain`, `IssueFullForPlain`).
 | The convert end-to-end test runs on demand | [ADR 0014](decisions/0014-convert-end-to-end-test-on-demand.md) |
 
 Why adopt and convert are two commands and not one is not recorded in the decision log. The
-code and issue 548 show the split (adopt reports and makes small steps; convert rewrites), and the
-wizard hides it from the person.
+code and issue 548 show the split (adopt reports and makes small steps; convert rewrites). The
+person sees one way in: the wizard is one entry, "Bring this repository into MonoSmith", and
+`smith adopt` hands an Nx or Turborepo workspace to `smith convert`.

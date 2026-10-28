@@ -15,6 +15,9 @@ and asks about each group before deleting it.
 
 ## When to use it
 
+You can also start with `smith adopt`: in an Nx or Turborepo workspace it hands over to this
+command, and the terminal interface offers one entry, "Bring this repository into MonoSmith".
+
 - The folder is an Nx or Turborepo workspace and you want it to run on smith.
 - A Turborepo workspace on pnpm or yarn: it becomes an npm workspace, the one
   [`smith install`](install.md) installs (`pnpm-workspace.yaml` moves into
