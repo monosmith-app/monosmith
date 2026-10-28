@@ -83,6 +83,18 @@ describe('checkPlugin', () => {
     await client.close()
   })
 
+  it('generates only the kinds a plugin declares', async () => {
+    const plugin = good()
+    const describe = plugin.describe
+    plugin.describe = async params => ({ ...await describe(params), kinds: ['app'] })
+    const report = await reportOf(plugin)
+    expect(report.failures()).toBe('')
+    const checks = report.results.map(result => result.check)
+    expect(checks).toContain('discovers the generated app')
+    expect(checks).not.toContain('generates a lib')
+    expect(checks).not.toContain('generates a package')
+  })
+
   describe('a plugin that changes kinds', () => {
     it('is asked what each generated kind becomes, and passes', async () => {
       const report = await reportOf(changer(''))

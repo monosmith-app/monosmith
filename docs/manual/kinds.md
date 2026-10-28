@@ -2,7 +2,8 @@
 
 `smith kinds` lists the project kinds [`smith add`](add.md) accepts: a role (`app`, `lib`,
 `package`) combined with a language, such as `go-lib` or `node-package`. With `--json` it
-prints them as one document for editors.
+prints them as one document for editors. A plugin that scaffolds only some kinds (Bicep: no
+package) is listed for those only.
 
 ## When to use it
 
@@ -49,7 +50,6 @@ smith kinds
 ```text
 bicep-app        Bicep: an app: deployed or run, never published. Built with the workspace's default stack, or --stack.
 bicep-lib        Bicep: an internal library: imported by other projects, never published. ...
-bicep-package    Bicep: a package: published to its registry on release. ...
 cpp-app          Cpp: an app: deployed or run, never published. ...
 ...
 rust-package     Rust: a package: published to its registry on release. ...

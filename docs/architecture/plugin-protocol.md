@@ -127,6 +127,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `provides` | slots: task names the plugin owns (`test`, `lint`) |
 | `requires`, `conflicts` | plugins that must or must not share a project |
 | `stacks` | ready-made stacks the plugin publishes |
+| `kinds` | the project kinds `generate` can scaffold (`app`, `lib`, `package`); absent or empty means all three ([ADR 0039](decisions/0039-a-plugin-declares-the-project-kinds-it-scaffolds.md)) |
 | `concurrency` | how many requests the plugin can work on at once: absent or `0` is 1, `N` is N, `-1` leaves the number to the host (which keeps 32 in flight) |
 
 ### Capabilities

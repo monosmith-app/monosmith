@@ -1,6 +1,9 @@
 package protocol
 
-import "path"
+import (
+	"path"
+	"slices"
+)
 
 // InitializeParams is sent once, first, by the host.
 type InitializeParams struct {
@@ -48,6 +51,29 @@ type InitializeResult struct {
 	Conflicts []PluginRef `json:"conflicts,omitempty"`
 	// Stacks are ready-made stacks the plugin publishes.
 	Stacks []Stack `json:"stacks,omitempty"`
+	// Kinds are the project kinds the plugin can scaffold with generate.
+	// Absent or empty means all three (app, lib and package): what every
+	// plugin that says nothing does. A plugin that scaffolds only some, such
+	// as an app, lists them, so the host offers and the conformance suite
+	// asks for just those.
+	Kinds []ProjectKind `json:"kinds,omitempty"`
+}
+
+// Scaffolds says whether the plugin can scaffold a project of the kind.
+func (r InitializeResult) Scaffolds(kind ProjectKind) bool {
+	return len(r.Kinds) == 0 || slices.Contains(r.Kinds, kind)
+}
+
+// ScaffoldKinds are the project kinds the plugin can scaffold, in the order
+// app, lib, package.
+func (r InitializeResult) ScaffoldKinds() []ProjectKind {
+	var out []ProjectKind
+	for _, kind := range []ProjectKind{ProjectApp, ProjectLib, ProjectPackage} {
+		if r.Scaffolds(kind) {
+			out = append(out, kind)
+		}
+	}
+	return out
 }
 
 // EffectiveRoles are the plugin's roles, or the default of its kind.

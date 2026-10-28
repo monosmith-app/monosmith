@@ -532,6 +532,13 @@ export interface InitializeResult {
   conflicts?: PluginRef[]
   /** Stacks are ready-made stacks the plugin publishes. */
   stacks?: Stack[]
+  /**
+   * Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all
+   * three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds
+   * only some, such as an app, lists them, so the host offers and the conformance suite asks for
+   * just those.
+   */
+  kinds?: ProjectKind[]
 }
 
 /**

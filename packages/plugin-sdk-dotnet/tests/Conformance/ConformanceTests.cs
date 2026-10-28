@@ -113,7 +113,7 @@ public sealed class ConformanceTests
     {
         protected string Workspace { get; } = workspace;
 
-        public PluginDescription Describe(InitializeParams parameters) => new()
+        public virtual PluginDescription Describe(InitializeParams parameters) => new()
         {
             Plugin = new Peer { Name = "fig", Version = "1.0.0" },
             Kind = PluginKind.Language,
@@ -186,6 +186,22 @@ public sealed class ConformanceTests
         Assert.Contains("answers what making the app a lib edits (dry run)", names);
         Assert.Contains("answers what making the lib a package edits (dry run)", names);
         Assert.Contains("answers what making the package a lib edits (dry run)", names);
+    }
+
+    private sealed class FigAppOnly(string workspace) : Fig(workspace)
+    {
+        public override PluginDescription Describe(InitializeParams parameters) => base.Describe(parameters) with { Kinds = [ProjectKind.App] };
+    }
+
+    [Fact]
+    public async Task A_plugin_is_asked_to_generate_only_the_kinds_it_declares()
+    {
+        var report = await CheckedAsync(root => new FigAppOnly(root));
+        Assert.True(report.Ok, report.Failures());
+        var names = Names(report);
+        Assert.Contains("discovers the generated app", names);
+        Assert.DoesNotContain("generates a lib", names);
+        Assert.DoesNotContain("generates a package", names);
     }
 
     [Fact]

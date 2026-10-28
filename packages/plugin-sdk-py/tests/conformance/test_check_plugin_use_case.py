@@ -132,6 +132,19 @@ def test_a_plugin_that_changes_kinds_is_asked_what_each_generated_kind_becomes(t
     assert "answers what making the package a lib edits (dry run)" in names(report)
 
 
+class FigAppOnly(Fig):
+    def describe(self, params: Any) -> Any:
+        return {**super().describe(params), "kinds": ["app"]}
+
+
+def test_a_plugin_is_asked_to_generate_only_the_kinds_it_declares(tmp_path: Path) -> None:
+    report = checked(FigAppOnly(tmp_path), tmp_path)
+    assert report.ok, report.failures()
+    assert "discovers the generated app" in names(report)
+    assert "generates a lib" not in names(report)
+    assert "generates a package" not in names(report)
+
+
 def test_a_plugin_that_does_not_declare_change_kind_is_not_asked(tmp_path: Path) -> None:
     report = checked(Fig(tmp_path), tmp_path)
     assert not any("edits (dry run)" in check for check in names(report))

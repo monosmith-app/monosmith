@@ -214,3 +214,36 @@ func TestBlankOrRepeatedLanguagesAreReported(t *testing.T) {
 		t.Fatalf("not reported:\n%s", r.Failures())
 	}
 }
+
+// appOnly is the good language, declaring that it scaffolds only apps.
+type appOnly struct{ good }
+
+func (a *appOnly) Describe(p protocol.InitializeParams) (protocol.InitializeResult, error) {
+	res, err := a.good.Describe(p)
+	res.Kinds = []protocol.ProjectKind{protocol.ProjectApp}
+	return res, err
+}
+
+func (a *appOnly) Generate(p protocol.GenerateParams) (protocol.GenerateResult, error) {
+	if p.Kind != protocol.ProjectApp {
+		return protocol.GenerateResult{}, os.ErrInvalid
+	}
+	return a.good.Generate(p)
+}
+
+func TestAPluginIsAskedToGenerateOnlyTheKindsItDeclares(t *testing.T) {
+	ws := t.TempDir()
+	r := Check(connect(t, &appOnly{}, ws), Options{Workspace: ws})
+	if !r.OK() {
+		t.Fatalf("failures:\n%s", r.Failures())
+	}
+	names := checkNames(r)
+	if !strings.Contains(names, "discovers the generated app") {
+		t.Errorf("the app was not generated: %s", names)
+	}
+	for _, not := range []string{"generates a lib", "generates a package"} {
+		if strings.Contains(names, not) {
+			t.Errorf("check %q ran for a kind the plugin does not declare: %s", not, names)
+		}
+	}
+}

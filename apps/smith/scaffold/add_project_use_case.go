@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -91,6 +92,13 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	if !generator.Supports(protocol.MethodGenerate) {
 		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
+	}
+	if !generator.Info.Scaffolds(kind) {
+		var can []string
+		for _, k := range generator.Info.ScaffoldKinds() {
+			can = append(can, string(k))
+		}
+		return nil, fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
 	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
 	var res protocol.GenerateResult
