@@ -126,3 +126,20 @@ func TestAListOfChoicesCanBeOneCommaSeparatedValue(t *testing.T) {
 		t.Errorf("each part is still checked: %v", err)
 	}
 }
+
+func TestSetRecordsTheAgentOptOut(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, workspace.FileName)
+	_ = os.WriteFile(file, []byte("schema = 1\n\n[workspace]\nname = \"acme\"\n"), 0o644)
+	if err := Set(root, "agent.enabled", []string{"false"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(file)
+	cfg, err := workspace.Parse(raw)
+	if err != nil {
+		t.Fatalf("%v\n%s", err, raw)
+	}
+	if cfg.AgentEnabled() {
+		t.Fatalf("the agent is still enabled:\n%s", raw)
+	}
+}

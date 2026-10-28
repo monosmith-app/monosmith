@@ -16,7 +16,7 @@ func Command() *cobra.Command {
 		Use:   "config",
 		Short: "Read and change settings of smith.toml",
 		Long: `Read and change the settings of smith.toml's [workspace], [ci], [release],
-[cache] and [plugins] tables. Values are checked against smith.toml's schema,
+[cache], [plugins] and [agent] tables. Values are checked against smith.toml's schema,
 and only the setting's value changes in the file: comments and every other
 line stay as they are. A default stack is set per language, as in
 default_stacks.node. Edit stacks, conventions, tasks and projects in the file

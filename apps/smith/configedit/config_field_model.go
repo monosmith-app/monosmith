@@ -43,7 +43,7 @@ type schemaNode struct {
 }
 
 // Fields are the settings of smith.toml's fixed tables ([workspace], [ci],
-// [release], [cache], [plugins]), in schema order of tables and by name
+// [release], [cache], [plugins], [agent]), in schema order of tables and by name
 // within one. Tables of named entries (stacks, tasks, projects, ...) are
 // edited in the file.
 func Fields() ([]Field, error) {
@@ -52,7 +52,7 @@ func Fields() ([]Field, error) {
 		return nil, err
 	}
 	var out []Field
-	for _, table := range []string{"workspace", "ci", "release", "cache", "plugins"} {
+	for _, table := range []string{"workspace", "ci", "release", "cache", "plugins", "agent"} {
 		node := root.Properties[table]
 		keys := make([]string, 0, len(node.Properties))
 		for k := range node.Properties {
