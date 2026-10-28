@@ -10,6 +10,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ var newIsInteractive = isInteractive
 // newFlags are the variables the flags of smith new write to, besides the
 // ones NewOptions holds.
 type newFlags struct {
-	yes                                    bool
+	yes, here                              bool
 	ci, defaultStacks                      []string
 	language, architecture, branch, remote string
 	githubReleases                         bool
@@ -45,13 +46,24 @@ default shown. Every question has a flag, and a question whose flag is given is
 not asked; --yes takes the defaults for the rest, and without a terminal
 nothing is asked.`,
 		Example: `  smith new acme
+  smith new --here                                      # in this empty folder, named after it
   smith new acme --yes                                  # no questions
   smith new acme --ci github,azure --default-stack node=node-vitest
   smith new acme --dir . --architecture hexagonal       # in an existing clone`,
-		Args: argsOrAsk(commandargs.Spec{Names: []string{"a name for the workspace"}, Example: "smith new acme", More: "to bring in a repository you already have, run smith adopt --dry-run instead"}, isInteractive),
+		Args: newArgs(argsOrAsk(commandargs.Spec{Names: []string{"a name for the workspace"}, Example: "smith new acme", More: "to bring in a repository you already have, run smith adopt --dry-run instead"}, isInteractive)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			in := bufio.NewReader(cmd.InOrStdin())
 			out := cmd.OutOrStdout()
+			if f.here {
+				if opts.Dir != "" {
+					return problem.New("--here and --dir both say where to create the workspace", "use one of them")
+				}
+				if err := checkFolderEmpty("."); err != nil {
+					return err
+				}
+				opts.Dir = "."
+				args = nameFromFolder(args)
+			}
 			args, err := askMissingArguments(args, newQuestions(), in, out)
 			if err != nil {
 				return err
@@ -104,6 +116,7 @@ nothing is asked.`,
 		},
 	}
 	flags := cmd.Flags()
+	flags.BoolVar(&f.here, "here", false, "create the workspace in the current folder, which must be empty; the name defaults to the folder's")
 	flags.StringVar(&opts.Dir, "dir", "", "directory to create the workspace in (default ./<name>)")
 	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
 	flags.StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
