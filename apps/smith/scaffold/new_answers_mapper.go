@@ -39,6 +39,7 @@ func WithAnswers(opts NewOptions, answers map[string]string) (NewOptions, error)
 		opts.DefaultStacks = map[string]string{"node": stack}
 	}
 	opts.Architecture = get(AnswerArchitecture)
+	opts.NoAgent = get(AnswerAgent) == "no"
 	opts.ReleaseBranch = get(AnswerReleaseBranch)
 	opts.ReleaseRemote = get(AnswerReleaseRemote)
 	opts.GitHubReleases = get(AnswerGitHubReleases) == "yes"

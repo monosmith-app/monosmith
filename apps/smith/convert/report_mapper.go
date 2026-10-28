@@ -177,6 +177,7 @@ func NextSteps(plan *convertplan.Plan, dryRun bool) string {
 	if plan.Source == convertplan.SourceTurborepo {
 		step("smith i: install dependencies this way from now on, not with pnpm or yarn")
 	}
+	step("smith agent install: add the MonoSmith agent, so Claude Code and VS Code work through smith (optional)")
 	step("commit")
 	return b.String()
 }

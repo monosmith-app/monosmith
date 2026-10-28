@@ -77,6 +77,9 @@ JSON lines. Both are described in [Serve and the event stream](../reference/serv
 
 ## AI assistants (MCP)
 
+`smith agent install` registers the server below for Claude Code and VS Code and adds a
+Claude Code agent that knows the tools ([the agent guide](agent.md)).
+
 `smith mcp` serves the workspace over the Model Context Protocol on stdin and
 stdout. Register it as an MCP server whose command is `smith mcp`, started in
 the workspace. For example, in a client's JSON configuration:

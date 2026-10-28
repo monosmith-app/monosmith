@@ -24,6 +24,7 @@ type newFlags struct {
 	ci, defaultStacks                      []string
 	language, architecture, branch, remote string
 	githubReleases                         bool
+	agent, noAgent                         bool
 	cacheMaxMB                             int
 }
 
@@ -112,6 +113,8 @@ nothing is asked.`,
 	flags.StringVar(&f.architecture, "architecture", "", "the code layout smith checks: "+strings.Join(architecture.Names(), ", ")+" (default vertical-slices)")
 	flags.StringVar(&f.branch, "release-branch", "", "the branch releases run from (default main)")
 	flags.StringVar(&f.remote, "release-remote", "", "the git remote that receives release tags (default origin)")
+	flags.BoolVar(&f.agent, "agent", true, "add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)")
+	flags.BoolVar(&f.noAgent, "no-agent", false, "leave the MonoSmith agent out; smith agent install adds it later")
 	flags.BoolVar(&f.githubReleases, "github-releases", false, "create a GitHub Release for every release tag")
 	flags.StringVar(&opts.CacheDir, "cache-dir", "", "the task cache folder inside the workspace (default .smith/cache)")
 	flags.IntVar(&f.cacheMaxMB, "cache-max-mb", 0, "the largest the task cache may grow, in MB; 0 for no limit (default 2048)")
@@ -148,6 +151,12 @@ func answersFromFlags(cmd *cobra.Command, opts *NewOptions, f newFlags) (map[str
 	}
 	if changed("release-remote") {
 		answers[AnswerReleaseRemote] = f.remote
+	}
+	if changed("agent") || changed("no-agent") {
+		if changed("agent") && changed("no-agent") && f.agent == f.noAgent {
+			return nil, fmt.Errorf("--agent and --no-agent say opposite things; use one")
+		}
+		answers[AnswerAgent] = map[bool]string{true: "yes", false: "no"}[f.agent && !f.noAgent]
 	}
 	if changed("github-releases") {
 		answers[AnswerGitHubReleases] = map[bool]string{true: "yes", false: "no"}[f.githubReleases]

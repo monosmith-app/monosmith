@@ -13,6 +13,8 @@ type Config struct {
 	CI        CISection        `toml:"ci"`
 	Release   ReleaseSection   `toml:"release"`
 	Cache     CacheSection     `toml:"cache"`
+	// Agent configures the MonoSmith agent files (smith agent install).
+	Agent AgentSection `toml:"agent"`
 	// Toolchains pins the runtime versions the workspace builds with, by
 	// toolchain label (node, go, python, rustc, java, dotnet, ruby, php,
 	// dart, cmake): "22" accepts any 22.x. smith doctor reports a machine
@@ -154,6 +156,17 @@ type CISection struct {
 	// the workspace's Rust sources. Default: 0 (none).
 	AuditMaxUnsafe int `toml:"audit_max_unsafe"`
 }
+
+// AgentSection configures the MonoSmith agent: .claude/agents/smith.md and the
+// MCP registration of smith mcp.
+type AgentSection struct {
+	// Enabled false says the workspace has no agent files on purpose, so
+	// smith doctor and smith upgrade leave them alone. Default: true.
+	Enabled *bool `toml:"enabled"`
+}
+
+// AgentEnabled reports whether the workspace keeps the MonoSmith agent files.
+func (c Config) AgentEnabled() bool { return c.Agent.Enabled == nil || *c.Agent.Enabled }
 
 // ReleaseSection configures `smith release`.
 type ReleaseSection struct {

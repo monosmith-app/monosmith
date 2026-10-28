@@ -5,6 +5,7 @@ Task-oriented pages for people who already have a workspace.
 | Guide | Read it when |
 |---|---|
 | [Editors](editors.md) | you integrate smith with an editor or an AI assistant: the `--json` contracts, `smith serve` and `smith mcp` |
+| [The MonoSmith agent](agent.md) | you want Claude Code or VS Code to work in the workspace through smith: what `smith agent install` writes, what the agent does alone and what it asks |
 | [Troubleshooting](troubleshooting.md) | something does not work: every doctor check with its remedy, cache surprises, install problems |
 | [FAQ](faq.md) | you want a short answer to a common question |
 | [Writing a plugin](writing-a-plugin.md) | smith lacks a language or a rule you need: a pointer to [Creating plugins](../plugins/creating/README.md), which has a guide for each kind of plugin, with working examples in [`examples/plugins`](../examples/plugins/README.md) |

@@ -58,7 +58,7 @@ func TestQuestionsThatDoNotApplyAreSkipped(t *testing.T) {
 		seen = append(seen, m.current().Key)
 		m, _ = m.Handle(enter)
 	}
-	want := []string{"name", "ci", "language", "architecture", "more"}
+	want := []string{"name", "ci", "language", "architecture", "agent", "more"}
 	if !reflect.DeepEqual(seen, want) || !m.Done() {
 		t.Fatalf("with every default the form asks %v, got %v (done %v)", want, seen, m.Done())
 	}

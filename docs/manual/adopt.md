@@ -78,7 +78,9 @@ Reads the repository's manifests (`package.json` workspaces, `go.mod`, `pyprojec
 and its git history. With `--init` it writes `smith.toml`, `.gitattributes`,
 `README.md`, `.github/workflows/ci.yml` (and the other providers'
 files), `.devcontainer/devcontainer.json`, `go.work` when there are Go projects, and
-edits `.gitignore`. It reads no smith-specific environment variable.
+edits `.gitignore`. It reads no smith-specific environment variable. It does not write the
+MonoSmith agent: the result names `smith agent install`, which adds the agent for Claude Code and
+VS Code after showing the files.
 
 ## Examples
 

@@ -30,7 +30,11 @@ A client configuration, as a `.mcp.json` entry:
 <!-- smith:begin mcp -->
 Serve the workspace to an AI assistant over the Model Context Protocol (stdio)
 
-Usage: `smith mcp`
+Usage: `smith mcp <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith mcp install` | Install the smith MCP server for Claude Code and VS Code |
 
 No flags.
 
@@ -38,6 +42,12 @@ No flags.
 
 The server opens no network port and ends when standard input closes. Logging goes to
 standard error.
+
+## Registering it
+
+`smith mcp install` writes the entry for Claude Code (`.mcp.json`) and VS Code
+(`.vscode/mcp.json`), merging into an existing file; `smith agent install` also adds the
+Claude Code agent that knows these tools. See [the agent guide](../guides/agent.md).
 
 ## Tools
 

@@ -2,6 +2,7 @@ package adoption
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"io"
 	"strings"
 
@@ -33,6 +34,7 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 	if len(left) == 0 {
 		fmt.Fprintln(out, "✔ adopted, and smith doctor finds nothing to fix")
 		fmt.Fprintln(out, "  next: smith run build")
+		offerAgent(s.Root, s.Config.AgentEnabled(), out)
 		return nil
 	}
 	fmt.Fprintf(out, "✔ adopted. smith doctor still reports %d thing(s) for you:\n", len(left))
@@ -49,4 +51,12 @@ func DescribeOutcome(root, version string, out io.Writer) error {
 	}
 	fmt.Fprintln(out, "  next: follow the steps above, then run smith doctor")
 	return nil
+}
+
+// offerAgent tells a workspace without the MonoSmith agent files how to add
+// them. It never writes: smith agent install shows the files and asks.
+func offerAgent(root string, enabled bool, out io.Writer) {
+	if enabled && !agentfiles.Finding(root).OK {
+		fmt.Fprintln(out, "  agent: smith agent install adds the MonoSmith agent, so Claude Code and VS Code work through smith (optional)")
+	}
 }

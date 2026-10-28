@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -51,6 +52,8 @@ type NewOptions struct {
 	ReleaseBranch, ReleaseRemote string
 	GitHubReleases               bool
 	CacheDir                     string
+	// NoAgent leaves out the MonoSmith agent files and says so in smith.toml.
+	NoAgent bool
 	// CacheMaxMB is the cache size limit; negative is no limit, 0 the default.
 	CacheMaxMB int
 }
@@ -172,6 +175,20 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		fmt.Fprintf(opts.Out, "  wrote %s\n", f)
 	}
 	written = append(written, pipelines...)
+	if !opts.NoAgent {
+		agent, err := agentfiles.Plan(agentfiles.Options{Root: dir, Claude: true, VSCode: true, Agent: true})
+		if err != nil {
+			return "", err
+		}
+		agentWritten, err := agentfiles.Write(dir, agent)
+		if err != nil {
+			return "", err
+		}
+		for _, f := range agentWritten {
+			fmt.Fprintf(opts.Out, "  wrote %s\n", f)
+		}
+		written = append(written, agentWritten...)
+	}
 	if opts.NoCommit {
 		return dir, nil
 	}

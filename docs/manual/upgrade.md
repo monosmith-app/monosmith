@@ -61,7 +61,10 @@ Usage: `smith upgrade [flags]`
 
 Reads and may rewrite `smith.toml`; regenerates `.github/workflows/ci.yml`,
 `azure-pipelines.yml`, `.gitlab-ci.yml`, `.devcontainer/devcontainer.json` as configured,
-and the files plugins own for recipe projects. Nothing is committed.
+and the files plugins own for recipe projects. It also rewrites `.claude/agents/smith.md` when
+smith wrote it and nobody edited it; an edited file is left as it is and named in a hint, and a
+workspace without the file gets none (`smith agent install` adds it). `[agent] enabled = false`
+turns this off. Nothing is committed.
 
 ## Examples
 

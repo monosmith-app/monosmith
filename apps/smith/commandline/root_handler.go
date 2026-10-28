@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
 	"github.com/monosmith-app/monosmith/apps/smith/npmdepscheck"
@@ -97,7 +98,9 @@ already have), then build and doctor.`,
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
-	add("inspect", mcpserver.Command(version), engineserver.Command(version))
+	mcpCmd := mcpserver.Command(version)
+	mcpCmd.AddCommand(agentfiles.McpInstallCommand())
+	add("inspect", mcpCmd, agentfiles.Command(), engineserver.Command(version))
 	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }

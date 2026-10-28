@@ -1,6 +1,7 @@
 package upgrade
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"io"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -88,6 +89,16 @@ func Upgrade(dir, version string, check bool, log io.Writer) (Result, error) {
 			return r, err
 		}
 		r.Files, r.Lost = append(r.Files, changed...), lost
+	}
+	if s.Config.AgentEnabled() {
+		changed, kept, err := agentfiles.Refresh(s.Root, check)
+		if err != nil {
+			return r, err
+		}
+		r.Files = append(r.Files, changed...)
+		if kept {
+			r.Hints = append(r.Hints, agentfiles.AgentPath+" was edited by hand, so smith left it as it is.\n→ smith agent install shows how it differs from the current text")
+		}
 	}
 	r.Hints = append(r.Hints, hints(s)...)
 	return r, nil
