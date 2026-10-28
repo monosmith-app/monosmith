@@ -168,6 +168,8 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 		return m.cancel()
 	case out.Apply:
 		return m.confirm()
+	case out.Decline && m.stage == StageAgent:
+		return m.done(), Outcome{}
 	case out.Decline && m.stage == StageDone:
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: true}
 	case out.Decline:
@@ -188,7 +190,7 @@ func (m Model) cancel() (Model, Outcome) {
 	switch m.stage {
 	case StageDone:
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
-	case StageReport:
+	case StageReport, StageAgent:
 		return m.done(), Outcome{}
 	case StageGroup, StageChecking:
 		return m, Outcome{Close: true, Note: "Stopped. The conversion is in your files; git status shows it, and git restore --staged --worktree . && git clean -fd takes it back (installed packages stay installed)."}
@@ -240,6 +242,15 @@ func (m Model) confirm() (Model, Outcome) {
 		style := adoptStyle
 		style.Verb = "Removing…"
 		return m.runFix(StageRemoving, g.Fix, job, style), Outcome{Job: &job}
+	case StageAgent:
+		fix, _ := m.flow.AgentFix()
+		flow := m.flow
+		job := Job{Name: "installing the MonoSmith agent", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
+			return nil, flow.ApplyFix(ctx, fix.Fix, out)
+		}}
+		style := adoptStyle
+		style.Verb = "Installing the agent…"
+		return m.runFix(StageAgentInstalling, fix, job, style), Outcome{Job: &job}
 	case StageDone:
 		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
 	case StageReport:
@@ -340,6 +351,8 @@ func (m Model) Done(result any, err error) (Model, Outcome) {
 		return m.check()
 	case StageFinishing:
 		m.checked, _ = result.([]checkedStep)
+		return m.offerAgent(), Outcome{}
+	case StageAgentInstalling:
 		return m.done(), Outcome{}
 	}
 	return m, Outcome{}
@@ -612,7 +625,7 @@ func (m Model) askGroup(g removalplan.Group) Model {
 func (m Model) finish() (Model, Outcome) {
 	flow := m.flow
 	if !m.found.Kind.Convertible() {
-		return m.done(), Outcome{}
+		return m.offerAgent(), Outcome{}
 	}
 	fix := flow.FinishFix(m.full)
 	job := Job{Name: "installing and checking", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
@@ -627,6 +640,22 @@ func (m Model) finish() (Model, Outcome) {
 	style.Working = "starting"
 	m = m.runFix(StageFinishing, fix, job, style)
 	return m, Outcome{Job: &job}
+}
+
+// offerAgent asks whether to add the MonoSmith agent, when the workspace lacks
+// it and has not opted out; otherwise it goes straight to the result.
+func (m Model) offerAgent() Model {
+	fix, ok := m.flow.AgentFix()
+	if !ok {
+		return m.done()
+	}
+	text, err := m.flow.ShowFix(fix)
+	if err != nil {
+		text = "● " + fix.Description + "\n"
+	}
+	style := adoptStyle
+	style.Apply, style.Decline, style.Review = "Add the agent", "Not now", "the MonoSmith agent"
+	return m.reviewOf(StageAgent, "agent", "The MonoSmith agent lets Claude Code and VS Code work in this workspace through smith.\nIt reads on its own and asks before it changes anything.\n\n"+text, style)
 }
 
 // done tells what happened.

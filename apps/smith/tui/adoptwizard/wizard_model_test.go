@@ -33,6 +33,8 @@ type fakeFlow struct {
 	closed   bool
 	applied  map[string]bool
 	declined []map[string]bool
+	// agent, when set, is the offer of the MonoSmith agent.
+	agent bool
 }
 
 func (f *fakeFlow) note(s string) { f.calls = append(f.calls, s) }
@@ -129,6 +131,10 @@ func (f *fakeFlow) FinishFix(withLint bool) doctorfix.Planned {
 
 func (f *fakeFlow) AdoptFix() doctorfix.Planned {
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Make this repository a smith workspace", Steps: []protocol.FixStep{{Description: "adopt", Argv: []string{"smith", "adopt", "--init"}}}}}
+}
+
+func (f *fakeFlow) AgentFix() (doctorfix.Planned, bool) {
+	return doctorfix.Planned{Fix: protocol.Fix{Description: "Add the MonoSmith agent", Steps: []protocol.FixStep{{Description: "install the agent files", Argv: []string{"smith", "agent", "install", "--yes"}}}}}, f.agent
 }
 
 func (f *fakeFlow) Close() { f.closed = true }
@@ -576,5 +582,30 @@ func TestReadingTheRepositoryShowsWhatTheOpenerSaysItIsReading(t *testing.T) {
 	got := pane.Strip(strings.Join(m.Lines(plain(), 0), "\n"))
 	if !strings.Contains(got, "Reading 1,240 files…") {
 		t.Fatalf("the reading stage:\n%s", got)
+	}
+}
+
+func TestTheAgentIsOfferedBeforeTheResultAndInstalledOnEnter(t *testing.T) {
+	f := &fakeFlow{found: nxFound(), agent: true}
+	w := start(t, f).press("enter", "1", "enter")
+	if w.m.Stage() != StageAgent {
+		t.Fatalf("stage %v", w.m.Stage())
+	}
+	w.want("The MonoSmith agent lets Claude Code and VS Code work", "smith agent install --yes", "[ Add the agent  Enter ]", "[ Not now")
+	w.press("enter") // the install runs as a job
+	if w.m.Stage() != StageDone {
+		t.Fatalf("stage %v", w.m.Stage())
+	}
+	if !strings.Contains(strings.Join(f.calls, "|"), "apply Add the MonoSmith agent") {
+		t.Fatalf("calls: %v", f.calls)
+	}
+}
+
+func TestDecliningTheAgentGoesToTheResultWithoutInstallingIt(t *testing.T) {
+	f := &fakeFlow{found: nxFound(), agent: true}
+	w := start(t, f).press("enter", "1", "enter")
+	w.press("n")
+	if w.m.Stage() != StageDone || strings.Contains(strings.Join(f.calls, "|"), "agent") {
+		t.Fatalf("stage %v, calls %v", w.m.Stage(), f.calls)
 	}
 }
