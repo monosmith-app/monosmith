@@ -34,6 +34,16 @@ new workspace's `smith.toml`. A URL must be reachable and a recipe, or `new`
 refuses before creating anything; a path that is not there yet is only said,
 since a recipe kept in the same repository may be added next.
 
+`smith new` can also write a recipe for you. At the end of its questions it asks
+whether to save the answers as a recipe (`--save-recipe <name>` in a script): the
+main language, for Node the scaffold and toolchain of the chosen stack, and the code
+layout as the structure plugin, written to `recipes/<name>.recipe.toml` in the new
+workspace. `smith new other --recipe-file <that file>` copies it into another new
+workspace, sets it as `[workspace] recipe` and skips the questions it answers (so does
+`--recipe <url>` for a published one). Settings that are not about a project's plugins
+(the CI, release branch, cache) are not part of a recipe. See
+[`smith new`](../manual/new.md#the-questions).
+
 With a recipe configured, `smith add <kind> <name>` creates the project from it:
 
 1. **It asks the recipe's choices.** In a terminal, one question at a time, in

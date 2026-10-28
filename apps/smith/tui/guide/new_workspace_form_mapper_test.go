@@ -66,3 +66,17 @@ func TestQuestionsThatDoNotApplyAreSkipped(t *testing.T) {
 		t.Errorf("%v", m.Argv)
 	}
 }
+
+func TestSavingARecipeFromTheFormUsesTheWorkspaceNameByDefault(t *testing.T) {
+	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {""}})
+	if want := []string{"new", "acme", "--yes", "--language", "go", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("%v", got)
+	}
+	got = NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {"team"}})
+	if got[len(got)-1] != "team" {
+		t.Fatalf("%v", got)
+	}
+	if got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "save-recipe": {"no"}}); len(got) != 3 {
+		t.Fatalf("no means no flag: %v", got)
+	}
+}

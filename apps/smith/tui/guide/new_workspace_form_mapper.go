@@ -56,7 +56,7 @@ func NewWorkspaceArgv(a map[string][]string) []string {
 	argv := []string{"new", first(a, "name"), "--yes"}
 	for _, q := range scaffold.NewQuestions() {
 		value := strings.TrimSpace(first(a, q.Key))
-		if q.Flag == "" || value == "" || value == q.Default {
+		if q.Flag == "" || value == "" || value == q.Default || q.Key == scaffold.AnswerRecipeName {
 			continue
 		}
 		switch q.Key {
@@ -67,6 +67,13 @@ func NewWorkspaceArgv(a map[string][]string) []string {
 		default:
 			argv = append(argv, "--"+q.Flag, value)
 		}
+	}
+	if first(a, scaffold.AnswerSaveRecipe) == "yes" {
+		name := strings.TrimSpace(first(a, scaffold.AnswerRecipeName))
+		if name == "" {
+			name = first(a, "name")
+		}
+		argv = append(argv, "--save-recipe", name)
 	}
 	return argv
 }

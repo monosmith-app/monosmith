@@ -71,8 +71,10 @@ Usage: `smith new <name> [flags]`
 | `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
+| `--recipe-file <recipe-file>` | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |  |
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
 | `--release-remote <release-remote>` | the git remote that receives release tags (default origin) | `origin` |
+| `--save-recipe <save-recipe>` | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |  |
 | `--scope <scope>` | npm scope for packages (default @<name>) | `@<name>` |
 | `-y, --yes` | take the default for every question that has no flag | off |
 

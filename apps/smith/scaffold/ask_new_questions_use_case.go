@@ -24,7 +24,7 @@ func askNewQuestions(answers map[string]string, in *bufio.Reader, out io.Writer)
 		if _, given := answers[q.Key]; given {
 			continue
 		}
-		if q.Applies != nil && !q.Applies(answers) {
+		if q.AtEnd || (q.Applies != nil && !q.Applies(answers)) {
 			continue
 		}
 		if closed {

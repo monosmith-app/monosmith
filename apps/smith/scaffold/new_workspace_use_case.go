@@ -25,9 +25,16 @@ type NewOptions struct {
 	Providers    []string
 	// Recipe is written as [workspace] recipe: the recipe `smith add`
 	// creates projects from.
-	Recipe  string
-	Version string
-	Out     io.Writer
+	Recipe string
+	// RecipeFile is a recipe file on this machine, copied to recipes/ in the
+	// new workspace and set as its recipe (smith new --recipe-file): a recipe
+	// saved by another workspace, reused here.
+	RecipeFile string
+	// SaveRecipe, when set, saves the answers as recipes/<name>.recipe.toml
+	// in the new workspace (smith new --save-recipe).
+	SaveRecipe string
+	Version    string
+	Out        io.Writer
 	// NoCommit leaves the files uncommitted (smith adopt commits once, after
 	// generating the pipelines for the projects it found).
 	NoCommit bool
@@ -69,8 +76,14 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	if _, err := os.Stat(filepath.Join(dir, workspace.FileName)); err == nil {
 		return "", fmt.Errorf("%s already holds a smith workspace", dir)
 	}
-	if err := checkRecipe(dir, opts.Recipe, opts.Out); err != nil {
+	recipes, err := recipeFiles(dir, &opts)
+	if err != nil {
 		return "", err
+	}
+	if opts.RecipeFile == "" {
+		if err := checkRecipe(dir, opts.Recipe, opts.Out); err != nil {
+			return "", err
+		}
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
@@ -146,6 +159,11 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		written = append(written, name)
 		fmt.Fprintf(opts.Out, "  wrote %s\n", name)
 	}
+	savedRecipes, err := writeRecipeFiles(dir, recipes, opts.Out)
+	if err != nil {
+		return "", err
+	}
+	written = append(written, savedRecipes...)
 	pipelines, _, err := cipipeline.Write(dir, cfg, cipipeline.NewModel(cipipeline.Contributions{}, opts.Version, cfg.Release.Branch))
 	if err != nil {
 		return "", err

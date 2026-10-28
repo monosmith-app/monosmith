@@ -61,8 +61,18 @@ nothing is asked.`,
 			}
 			opts.Name, opts.Version, opts.Out = args[0], version, out
 			asked := !f.yes && newIsInteractive()
+			// What the recipe settles is not asked; a flag still wins over it.
+			settled := recipeAnswers(opts)
+			for key, value := range settled {
+				if _, given := answers[key]; !given {
+					answers[key] = value
+				}
+			}
 			if asked {
 				fmt.Fprintln(out, newBanner(opts.Name, theme.Choose(os.Getenv, true).Icons))
+				if len(settled) > 0 {
+					fmt.Fprintln(out, describeSettled(settled))
+				}
 				askNewQuestions(answers, in, out)
 			}
 			if opts, err = WithAnswers(opts, answers); err != nil {
@@ -71,6 +81,10 @@ nothing is asked.`,
 			if asked {
 				describeChoices(opts, out)
 				fmt.Fprintln(out)
+				if opts.SaveRecipe == "" {
+					opts.SaveRecipe = askSaveRecipe(opts, in, out)
+					fmt.Fprintln(out)
+				}
 			}
 			dir, err := NewWorkspace(opts)
 			if err != nil {
@@ -82,6 +96,9 @@ nothing is asked.`,
 				rel = dir
 			}
 			fmt.Fprint(out, nextSteps(opts.Name, rel, opts.Language))
+			if opts.SaveRecipe != "" {
+				fmt.Fprint(out, recipeSavedText(dir, opts.SaveRecipe))
+			}
 			return nil
 		},
 	}
@@ -99,6 +116,8 @@ nothing is asked.`,
 	flags.StringVar(&opts.CacheDir, "cache-dir", "", "the task cache folder inside the workspace (default .smith/cache)")
 	flags.IntVar(&f.cacheMaxMB, "cache-max-mb", 0, "the largest the task cache may grow, in MB; 0 for no limit (default 2048)")
 	flags.BoolVarP(&f.yes, "yes", "y", false, "take the default for every question that has no flag")
+	flags.StringVar(&opts.SaveRecipe, "save-recipe", "", "save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language)")
+	flags.StringVar(&opts.RecipeFile, "recipe-file", "", "a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked")
 	flags.StringVar(&opts.Recipe, "recipe", "", "the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md)")
 	return cmd
 }
