@@ -14,6 +14,9 @@ const maxTableRows = 30
 type tableRow struct {
 	Cells []string
 	Bad   bool
+	// Tints colours cells by index; a cell without one takes the colour of its
+	// leading status glyph.
+	Tints map[int]tint
 }
 
 // resultTable is the same rows as aligned text for the log and as Markdown for
@@ -49,8 +52,14 @@ func (t resultTable) shown() (rows []tableRow, left int) {
 }
 
 // Text is the table as padded columns (spaces, no box drawing), then a line
-// counting the rows left out; more names what they were ("passed").
+// counting the rows left out; more names what they were ("passed"). Colour
+// follows colourWanted.
 func (t resultTable) Text(more string) []string {
+	return t.render(more, colourOn())
+}
+
+// render pads on the plain text and paints after, so colour never moves a column.
+func (t resultTable) render(more string, colour bool) []string {
 	rows, left := t.shown()
 	widths := make([]int, len(t.Headers))
 	for i, h := range t.Headers {
@@ -61,10 +70,15 @@ func (t resultTable) Text(more string) []string {
 			widths[i] = max(widths[i], utf8.RuneCountInString(c))
 		}
 	}
-	line := func(cells []string) string {
+	line := func(cells []string, tints map[int]tint) string {
 		parts := make([]string, len(cells))
 		for i, c := range cells {
 			pad := strings.Repeat(" ", widths[i]-utf8.RuneCountInString(c))
+			k, ok := tints[i]
+			if !ok {
+				k = glyphTint(c)
+			}
+			c = paint(c, k, colour)
 			if i < len(t.Right) && t.Right[i] {
 				parts[i] = pad + c
 			} else {
@@ -73,9 +87,9 @@ func (t resultTable) Text(more string) []string {
 		}
 		return strings.TrimRight(strings.Join(parts, "  "), " ")
 	}
-	lines := []string{line(t.Headers)}
+	lines := []string{line(t.Headers, nil)}
 	for _, r := range rows {
-		lines = append(lines, line(r.Cells))
+		lines = append(lines, line(r.Cells, r.Tints))
 	}
 	if left > 0 {
 		lines = append(lines, fmt.Sprintf("... %d more %s", left, more))

@@ -1,6 +1,7 @@
 package cipipeline
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -269,10 +270,10 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 			}
 		} else {
 			log.heading(releaseIntro(plan, s.Config.Release.Branch, projects)...)
-			for _, line := range planTable(plan).Text("packages") {
-				log.say("%s", line)
-			}
 			log.fold()
+			for _, item := range plan.Items {
+				fmt.Fprintf(out, "%s: %s -> %s (%s) because %s\n", item.Project, cmp.Or(item.Current, "new"), item.Next, bumpOf(item), item.Why())
+			}
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
 		var after []stepOutcome
@@ -293,8 +294,11 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 			log.say("→ commit with a message like \"feat: add search\" or \"fix: handle empty input\"; docs, chore, test and ci commits do not release")
 			log.conclusion = "nothing to release"
 		} else {
-			for _, line := range releaseResultTable(report, log.icons).Text("packages") {
+			for _, line := range releaseTable(plan, report, log.icons).Text("packages") {
 				log.say("%s", line)
+			}
+			if line := unchangedLine(report.Unchanged); line != "" {
+				log.say("%s", paint(line, tintDim, colourOn()))
 			}
 			for _, res := range report.Results {
 				for _, image := range res.Images {
@@ -304,15 +308,13 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 					log.say("GitHub Release for %s: %s", res.Project, res.GitHubRelease)
 				}
 			}
-			if n := len(report.Unchanged); n > 0 {
-				log.say("Unchanged: %s have no releasing commit.", plural(n, "project"))
-			}
 			if len(after) > 0 {
 				for _, line := range stepTable("After the release", after, log.icons).Text("steps") {
 					log.say("%s", line)
 				}
 			}
 			if err != nil {
+				log.say("%s", releaseConclusion(report))
 				log.say("→ re-run the release: the packages it finished are kept and the rest resume")
 			} else {
 				log.conclusion = releaseConclusion(report)

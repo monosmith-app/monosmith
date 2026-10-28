@@ -73,7 +73,10 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 	var failures []string
 	for _, item := range plan.Items {
 		res := ReportResult{Item: item, Status: "planned"}
-		if err := releaseOne(ctx, s, item, versions, opts, &res); err != nil {
+		began := time.Now()
+		err := releaseOne(ctx, s, item, versions, opts, &res)
+		res.TookMs = time.Since(began).Milliseconds()
+		if err != nil {
 			res.Status, res.Error = "failed", err.Error()
 			report.Results = append(report.Results, res)
 			journalRelease(s, res, opts.Out)

@@ -75,7 +75,7 @@ func TestPlan(t *testing.T) {
 	if items["core"].Next != "0.1.0" || items["core"].Tag != "core@0.1.0" {
 		t.Fatalf("core %+v", items["core"])
 	}
-	if items["sdk"].Next != "0.0.1" || items["sdk"].Reason != "dependency core releases" {
+	if items["sdk"].Next != "0.0.1" || items["sdk"].Reason != "dependency core 0.1.0" {
 		t.Fatalf("sdk must follow its dependency: %+v", items["sdk"])
 	}
 	if items["gomod"].Tag != "packages/gomod/v0.0.1" {
