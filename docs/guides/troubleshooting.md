@@ -133,6 +133,7 @@ lists them all. The checks, grouped by who owns them:
 | projects do not import each other in a cycle | smith cannot order a cycle: `smith doctor` and `smith graph` still open the workspace and list it with the import to remove, while `run`, `build`, `affected` and releases stop with `smith: projects import each other in a cycle: ui → web → ui`. Remove that import, move what both need into a project neither imports back, or merge the two |
 | package-lock.json matches package.json (a warning, only for an npm workspace that has a lockfile) | `npm ci --dry-run` refuses the lockfile, so CI and a fresh clone cannot install. Run `npm install`, then commit package-lock.json (`smith doctor --fix` runs the install and asks first). The dry run installs nothing and takes about a second |
 | CI pipelines match the workspace | the generated pipeline is stale. Run `smith ci generate` and commit it (`smith doctor --fix` does the same) |
+| the MonoSmith agent files are installed and current (a warning) | `.claude/agents/smith.md`, `.mcp.json` or `.vscode/mcp.json` is missing, has no smith server, or is an older text smith wrote. Run `smith agent install`, or set `[agent] enabled = false` in `smith.toml`. A file you edited is yours and passes |
 | release tags resolve under each project's tag prefix | a project's release tags use another name, so its next release would start from scratch. `smith adopt --tags` creates them |
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |
 | `<project> can be verified` (a warning) | the project has no `lint` or no `test` task, so CI never checks it. Add the task, or declare it under `[projects.<name>.tasks]` |
@@ -169,6 +170,7 @@ beyond the safe ones, which doctor asks about:
 |---|---|
 | every build declares the directories it writes as outputs | declares them in `smith.toml` (safe), for all the projects at once |
 | CI pipelines match the workspace | regenerates them, keeping your slot contents (safe when no slot would be lost) |
+| the MonoSmith agent files are installed and current | writes the missing files and updates the ones smith wrote (safe) |
 | tracked files are not generated files | `git rm --cached` on them; asks whether to add the output directory to `.gitignore` |
 | `<project> can be verified` (no lint task) | adds a `lint` task running ESLint to `smith.toml`, for every Node project without one |
 | `<project>` declares the packages it imports | adds each package to `package.json` at the range the workspace already uses (asks which when projects disagree), then `npm install` |

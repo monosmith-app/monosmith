@@ -96,6 +96,13 @@
         "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." }
       }
     },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Keep the MonoSmith agent files (.claude/agents/smith.md, .mcp.json, .vscode/mcp.json). false says they are absent on purpose: smith doctor and smith upgrade leave them alone. Default: true." }
+      }
+    },
     "cache": {
       "type": "object",
       "additionalProperties": false,

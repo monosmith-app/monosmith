@@ -39,6 +39,7 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--agent` | boolean | off | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) |
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
@@ -48,6 +49,7 @@ Usage: `smith new <name> [flags]`
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
+| `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
 | `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
@@ -90,6 +92,7 @@ are the whole answer.
 | What is the main language? | `--language` | `later` | nothing in `smith.toml`; it decides whether the Node question is asked and the `--lang` of the next step |
 | Which tests and lint for Node projects? (asked for Node only) | `--default-stack node=<stack>` | `node-jest` (or `node-vitest`, `node-ts`) | `[default_stacks] node` |
 | Which code layout should smith check? | `--architecture` | `vertical-slices` | the `[conventions.<layout>]` table (none for `none`); see [`smith architecture`](architecture.md) |
+| Add the MonoSmith agent, so Claude Code and VS Code can work in this workspace through smith? | `--agent` / `--no-agent` | yes | the three [agent files](../guides/agent.md); `no` writes `[agent] enabled = false` |
 | Change anything else? | | keep the defaults | "More options" asks the five below |
 | Which branch do releases run from? | `--release-branch` | `main` | `[release] branch` |
 | Which remote receives the release tags? | `--release-remote` | `origin` | `[release] remote` |
@@ -181,7 +184,8 @@ For another workspace: smith new <name> --recipe-file /work/acme/recipes/team.re
 
 Writes, in the new folder: `.gitignore`, `.gitattributes`, `smith.toml`, `README.md`,
 `.github/workflows/ci.yml` (and `azure-pipelines.yml` or `.gitlab-ci.yml` for the other
-providers), `.devcontainer/devcontainer.json`. It then runs `git init -b main`, stages
+providers), `.devcontainer/devcontainer.json`, and the MonoSmith agent: `.claude/agents/smith.md`,
+`.mcp.json` and `.vscode/mcp.json` (see [the agent guide](../guides/agent.md)). It then runs `git init -b main`, stages
 what is in the folder and commits it as `chore: create the <name> workspace with smith`.
 
 `smith.toml` starts with a `#:schema` line pointing at the published JSON Schema, so

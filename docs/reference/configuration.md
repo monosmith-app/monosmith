@@ -90,6 +90,9 @@ max_size_mb = 2048                     # keep the local cache under this size in
 remote = "s3://acme-smith-cache/main"  # a shared remote cache: https://, s3://, azblob:// (docs/reference/tasks-and-cache.md)
 remote_read_only = false               # read the remote without writing to it
 
+[agent]
+enabled = false                       # no MonoSmith agent files on purpose (smith agent install); default: true
+
 [plugins]
 enabled = ["node", "go", "python"]    # default: every built-in plugin
 

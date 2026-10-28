@@ -35,7 +35,7 @@ func TestEnterTakesEveryDefaultAndSkipsTheAdvancedQuestions(t *testing.T) {
 
 func TestNodeAsksItsStackAndMoreOptionsAsksTheRest(t *testing.T) {
 	// ci azure, language node (3rd... by number), stack vitest, layout 2, more options, then the advanced ones.
-	answers, out := ask(t, "azure\nnode\n2\nhexagonal\n2\ntrunk\n\nyes\n.cache\n0\n", nil)
+	answers, out := ask(t, "azure\nnode\n2\nhexagonal\n\n2\ntrunk\n\nyes\n.cache\n0\n", nil)
 	want := map[string]string{
 		AnswerCI: "azure", AnswerLanguage: "node", AnswerNodeStack: "node-vitest", AnswerArchitecture: "hexagonal",
 		AnswerMore: MoreYes, AnswerReleaseBranch: "trunk", AnswerReleaseRemote: "origin",

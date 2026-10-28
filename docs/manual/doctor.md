@@ -205,7 +205,7 @@ workspace and is not checked. See [Plugin security](../plugins/using/plugin-secu
 | `external plugin <name> is trusted` fails | smith will not start an external plugin you have not trusted (or that changed since you did). Run `smith plugin trust <name>`; in CI, `smith plugin trust <name> --pin` on your machine and commit the `sha256`. |
 | `--only and --choose pick what to fix, so they go with --fix` | Add `--fix`. |
 | `not applied: <fix> needs your decision. Run one of: smith doctor --fix --only "<fix>" --yes` | A fix with a question or a command is not applied without a terminal; run the command it prints. |
-| Check-specific failures | Each prints its own remedy; the names are stable, for example `go.work exists`, `Node dependencies are installed`, `CI pipelines match the workspace`, `tracked files are not generated files`, `Jest helper files of an older convert are replaced by @monosmith/jest-preset`. |
+| Check-specific failures | Each prints its own remedy; the names are stable, for example `go.work exists`, `Node dependencies are installed`, `CI pipelines match the workspace`, `the MonoSmith agent files are installed and current`, `tracked files are not generated files`, `Jest helper files of an older convert are replaced by @monosmith/jest-preset`. |
 
 ## Related
 

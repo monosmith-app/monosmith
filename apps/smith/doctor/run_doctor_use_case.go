@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"maps"
 	"os"
 	"path/filepath"
@@ -267,6 +268,9 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 			}
 		}
 		out = append(out, pipelines)
+	}
+	if s.Config.AgentEnabled() {
+		out = append(out, agentfiles.Finding(s.Root))
 	}
 	// One smith.toml change gives every Node project without a lint task one,
 	// so each of their checks carries the same fix.

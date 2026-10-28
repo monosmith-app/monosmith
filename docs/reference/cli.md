@@ -61,6 +61,7 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--agent` | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) | off |
 | `--architecture <architecture>` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) | `vertical-slices` |
 | `--cache-dir <cache-dir>` | the task cache folder inside the workspace (default .smith/cache) | `.smith/cache` |
 | `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |
@@ -70,6 +71,7 @@ Usage: `smith new <name> [flags]`
 | `--github-releases` | create a GitHub Release for every release tag | off |
 | `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
+| `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
 | `--recipe-file <recipe-file>` | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |  |
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
@@ -839,6 +841,23 @@ No flags.
 
 <!-- smith:end serve -->
 
+### smith agent
+
+[Manual page](../manual/agent.md)
+
+<!-- smith:begin agent -->
+Start the MonoSmith agent in Claude Code; agent install adds it to a workspace
+
+Usage: `smith agent <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith agent install` | Install the MonoSmith agent and the smith MCP server in this workspace |
+
+No flags.
+
+<!-- smith:end agent -->
+
 ### smith mcp
 
 [Manual page](../manual/mcp.md)
@@ -846,7 +865,11 @@ No flags.
 <!-- smith:begin mcp -->
 Serve the workspace to an AI assistant over the Model Context Protocol (stdio)
 
-Usage: `smith mcp`
+Usage: `smith mcp <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith mcp install` | Install the smith MCP server for Claude Code and VS Code |
 
 No flags.
 

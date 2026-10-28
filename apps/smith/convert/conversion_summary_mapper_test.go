@@ -23,7 +23,7 @@ func TestSummaryEndsWithTheFilesToKeepAndTheNextSteps(t *testing.T) {
 			t.Errorf("summary lacks %q:\n%s", want, out)
 		}
 	}
-	if !strings.HasSuffix(out, "  4. commit\n") {
+	if !strings.HasSuffix(out, "  5. commit\n") {
 		t.Errorf("the next steps are not last:\n%s", out)
 	}
 }

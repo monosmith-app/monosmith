@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "smith": {
+      "type": "stdio",
+      "command": "smith",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
