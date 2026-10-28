@@ -11,7 +11,7 @@ import (
 // workspace has. A missing file, or a stale one smith wrote, is a warning with
 // a fix that writes it; a file the person edited is theirs and passes.
 func Finding(root string) protocol.Finding {
-	check := "the MonoSmith agent files are installed and current"
+	check := "The MonoSmith agent files are installed and current"
 	claude, vscode := PresentClients(root, nil)
 	files, err := Plan(Options{Root: root, Claude: claude, VSCode: vscode, Agent: true})
 	if err != nil {

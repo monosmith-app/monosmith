@@ -51,7 +51,7 @@ if (command === 'config' && subcommand === 'set' && rest[0] === 'agent.enabled')
 }
 const optedOut = () => fs.existsSync('smith.toml') && fs.readFileSync('smith.toml', 'utf8').includes('enabled = false')
 const agentFinding = () => ({
-  check:   'the MonoSmith agent files are installed and current',
+  check:   'The MonoSmith agent files are installed and current',
   ok:      AGENT_FILES.every((file) => fs.existsSync(file)),
   warning: true,
   detail:  'missing files',

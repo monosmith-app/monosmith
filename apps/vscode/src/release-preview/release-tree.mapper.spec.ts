@@ -25,7 +25,7 @@ describe('toReleaseRows', () => {
 
   it('lists the packages with nothing to release, closed', () => {
     const last = toReleaseRows(preview).nodes.at(-1)
-    expect(last).toMatchObject({ label: 'Nothing to release', description: '1', children: [{ label: 'core' }] })
+    expect(last).toMatchObject({ label: 'Unchanged', description: '1', children: [{ label: 'core' }] })
     expect(last?.expanded).toBeUndefined()
   })
 

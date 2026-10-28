@@ -22,7 +22,7 @@ export function statusMenuEntries (state: MenuState): MenuEntry[] {
   return [
     ...(state.running ? [{ label: '$(debug-stop) Cancel run', command: 'monosmith.cancelRun' }] : []),
     { label: '$(play) Run affected…', description: 'one task in the projects the changes affect', command: 'monosmith.runAffected' },
-    { label: '$(debug-rerun) Re-run last', description: state.hasLastRun ? '' : 'nothing has run yet', command: 'monosmith.rerunLast' },
+    ...(state.hasLastRun ? [{ label: '$(debug-rerun) Re-run last', command: 'monosmith.rerunLast' }] : []),
     {
       label:       '$(pulse) Run doctor',
       description: state.failed > 0 ? `${state.failed} tasks failed in the last run` : 'check the workspace',

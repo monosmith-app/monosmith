@@ -14,6 +14,11 @@ describe('statusMenuEntries', () => {
     expect(statusMenuEntries({ ...idle, running: true })[0]?.command).toBe('monosmith.cancelRun')
   })
 
+  it('offers re-run last only once something has run', () => {
+    expect(statusMenuEntries(idle).some((entry) => entry.command === 'monosmith.rerunLast')).toBe(false)
+    expect(statusMenuEntries({ ...idle, hasLastRun: true }).some((entry) => entry.command === 'monosmith.rerunLast')).toBe(true)
+  })
+
   it('says how many tasks failed on the doctor entry', () => {
     const doctor = statusMenuEntries({ ...idle, failed: 2 }).find((entry) => entry.command === 'monosmith.doctor')
     expect(doctor?.description).toContain('2 tasks failed')

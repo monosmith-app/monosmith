@@ -641,7 +641,7 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == empty",
-        "contents": "No open folder has a smith.toml.\n[Learn about MonoSmith](https://github.com/monosmith-app/monosmith)"
+        "contents": "This folder is not a MonoSmith workspace yet.\nA workspace has a smith.toml at its root. Create one with smith new, or bring a repository in with smith adopt.\n[Learn about MonoSmith](https://github.com/monosmith-app/monosmith)"
       }
     ],
     "taskDefinitions": [
