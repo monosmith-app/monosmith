@@ -24,7 +24,7 @@ export function statusMenuEntries (state: MenuState): MenuEntry[] {
   if (state.adoptable === true) {
     return [
       { label: '$(arrow-right) Convert it to MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
-      { label: '$(eye) See what would change', description: 'writes nothing', command: 'monosmith.adopt.preview' },
+      { label: '$(eye) See what would change', description: 'a report, no files changed', command: 'monosmith.adopt.preview' },
       { label: '$(output) Open output', command: 'monosmith.showOutput' },
       { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
     ]

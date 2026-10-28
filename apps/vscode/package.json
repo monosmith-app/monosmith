@@ -646,17 +646,17 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == nx",
-        "contents": "This looks like an Nx workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+        "contents": "This looks like an Nx workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == turborepo",
-        "contents": "This looks like a Turborepo workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+        "contents": "This looks like a Turborepo workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
       },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == adoptable && monosmith.repoKind == repository",
-        "contents": "This looks like a repository with several projects.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+        "contents": "This looks like a repository with several projects.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
       },
       {
         "view": "monosmith.projects",
