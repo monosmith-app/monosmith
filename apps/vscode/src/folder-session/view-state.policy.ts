@@ -7,10 +7,11 @@ const PRIORITY: FolderPhase[] = ['starting', 'untrusted', 'missing', 'failed']
  * What the view shows for the phases of all its folders. One ready folder is
  * enough to show projects; otherwise the welcome content of the most pressing
  * state: still starting, then not trusted, then smith missing, then failed.
- * No folder with a `smith.toml` at all is `empty`.
+ * No folder with a `smith.toml` at all is `adoptable` when `offers` folders
+ * look like a repository smith can bring in, and `empty` otherwise.
  */
-export function judgeViewState (phases: readonly FolderPhase[]): ViewState {
-  if (phases.length === 0) return 'empty'
+export function judgeViewState (phases: readonly FolderPhase[], offers = 0): ViewState {
+  if (phases.length === 0) return offers > 0 ? 'adoptable' : 'empty'
 
   return phases.includes('ready') ? 'ready' : PRIORITY.find((phase) => phases.includes(phase)) ?? 'failed'
 }

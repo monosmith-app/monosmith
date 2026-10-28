@@ -24,3 +24,10 @@ describe('statusMenuEntries', () => {
     expect(doctor?.description).toContain('2 tasks failed')
   })
 })
+
+describe('statusMenuEntries for a folder that can be converted', () => {
+  it('offers the conversion and its preview instead of runs', () => {
+    const commands = statusMenuEntries({ ...idle, adoptable: true }).map((entry) => entry.command)
+    expect(commands).toEqual(['monosmith.adopt.start', 'monosmith.adopt.preview', 'monosmith.showOutput', 'monosmith.openSettings'])
+  })
+})

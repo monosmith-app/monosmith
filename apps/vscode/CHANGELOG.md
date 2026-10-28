@@ -7,6 +7,13 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- **Bring a repository into MonoSmith.** The extension also wakes up in a folder
+  with `nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, `rush.json`,
+  `go.work` or a `package.json` that lists workspaces, and the Projects view says
+  what it looks like with three links: Convert it to MonoSmith (opens `smith` in a
+  terminal, which lists every change and asks before it makes any), See what would
+  change (`smith adopt --dry-run`, writes nothing) and Learn more. A folder with
+  none of those stays quiet, and nothing is written by the extension itself.
 - **The MonoSmith agent.** Commands to install the MCP server and the agent
   (`.claude/agents/smith.md`, `.mcp.json`, `.vscode/mcp.json`) after showing the
   files, to install the MCP server alone, and to talk to the agent in a
