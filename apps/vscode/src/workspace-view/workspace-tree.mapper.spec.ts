@@ -180,6 +180,29 @@ describe('describeFilter', () => {
   })
 })
 
+describe('toTree and the agent', () => {
+  const missing: TreeFolder[] = [{ root: '/repo', name: 'repo', snapshot, agentMissing: true }]
+
+  it('puts one line that adds the agent above the groups, running the install command', () => {
+    const tree = toTree(missing, none)
+    expect(tree.map((node) => node.label)).toEqual(['Add the MonoSmith agent', 'apps', 'libs'])
+    expect(tree[0]).toMatchObject({ kind: 'action', command: 'monosmith.installAgent', root: '/repo' })
+    expect(countProjects(tree)).toBe(3)
+  })
+
+  it('leaves the line out when the agent is there, not known to be missing, or the view is narrowed', () => {
+    expect(toTree(single, none).map((node) => node.kind)).not.toContain('action')
+    expect(toTree(missing, none, { text: 'api', affectedOnly: false }).map((node) => node.kind)).not.toContain('action')
+  })
+
+  it('puts the line under its folder when there are several', () => {
+    const several: TreeFolder[] = [...missing, { root: '/other', name: 'other', snapshot }]
+    const tree = toTree(several, none)
+    expect(tree[0]?.children[0]?.kind).toBe('action')
+    expect(tree[1]?.children[0]?.kind).toBe('group')
+  })
+})
+
 describe('formatDuration', () => {
   it('reads in the unit that fits', () => {
     expect(formatDuration(850)).toBe('850ms')

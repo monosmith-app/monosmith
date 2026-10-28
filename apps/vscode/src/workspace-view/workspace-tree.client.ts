@@ -65,6 +65,9 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
       if (node.kind === 'project') {
         item.resourceUri = dotUri(node)
       }
+      if (node.kind === 'action' && node.command !== undefined) {
+        item.command = { command: node.command, title: node.label, arguments: [node] }
+      }
 
       return item
     },

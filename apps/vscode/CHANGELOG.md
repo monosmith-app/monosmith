@@ -7,6 +7,12 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- **The MonoSmith agent.** Commands to install the MCP server and the agent
+  (`.claude/agents/smith.md`, `.mcp.json`, `.vscode/mcp.json`) after showing the
+  files, to install the MCP server alone, and to talk to the agent in a
+  terminal (`smith agent`). A workspace without the files gets a line in the
+  Projects view and a one-time notification with Install, Not now and Never for
+  this workspace.
 - **Health, Dependencies and Release Preview views** beside the projects. Health
   lists the checks that failed or warn with the problem and the remedy, and a
   Fix action applies the fixes `smith doctor` proposes after showing them.

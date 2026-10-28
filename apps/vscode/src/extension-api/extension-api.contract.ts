@@ -14,4 +14,6 @@ export interface ExtensionStateApi {
   isRunning:  () => boolean
   /** The folder roots that run smith. */
   roots:      () => string[]
+  /** What the doctor said about the agent files of a folder: `missing`, `current` or `unknown`. */
+  agentFiles: (root: string) => string | undefined
 }

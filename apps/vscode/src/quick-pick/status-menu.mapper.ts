@@ -29,6 +29,7 @@ export function statusMenuEntries (state: MenuState): MenuEntry[] {
       command:     'monosmith.doctor',
     },
     { label: '$(refresh) Refresh', description: 'read the projects and what is affected again', command: 'monosmith.refresh' },
+    { label: '$(hubot) Talk to the MonoSmith agent', description: 'Claude Code with smith’s tools', command: 'monosmith.talkToAgent' },
     { label: '$(output) Open output', command: 'monosmith.showOutput' },
     { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
   ]
