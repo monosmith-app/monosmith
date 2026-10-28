@@ -57,7 +57,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
-	s.run = runview.NewRun(argv, nil, s.now())
+	s.run, s.runHome = runview.NewRun(argv, nil, s.now()), false
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {

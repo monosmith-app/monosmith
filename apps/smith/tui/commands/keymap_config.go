@@ -59,7 +59,7 @@ var all = []Command{
 	{ID: "run.older", Group: GroupRun, Title: "Show the previous run", Hint: "the runs of this session are kept", Keys: []string{","}, Kind: ViewAction, Action: "run-older", Views: vRun, NeedsIdle: true, Footer: "runs", Glyph: ", ."},
 	{ID: "run.newer", Group: GroupRun, Title: "Show the next run", Keys: []string{"."}, Kind: ViewAction, Action: "run-newer", Views: vRun, NeedsIdle: true},
 	{ID: "run.follow", Group: GroupRun, Title: "Follow the log, or pause it", Hint: "stay at the end of the log, or pause to read", Keys: []string{"f"}, Kind: Follow, Views: vRun, Footer: "follow"},
-	{ID: "run.all-output", Group: GroupRun, Title: "Show all output", Keys: []string{"esc"}, Kind: PaneKey, Views: vRun},
+	{ID: "run.all-output", Group: GroupRun, Title: "Show all output, then the start screen", Keys: []string{"esc"}, Kind: PaneKey, Views: vRun, Footer: "start screen"},
 	{ID: "run.scroll", Group: GroupRun, Title: "Pick a task, scroll its log", Keys: []string{"down", "up", "pgdown", "pgup"}, Shortcut: "Up Down PgUp PgDn", Glyph: "↑↓", Kind: PaneKey, Views: vRun, Footer: "task"},
 
 	{ID: "doctor.open", Group: GroupWorkspace, Title: "Expand the check: its problem, remedy and fix", Keys: []string{"enter"}, Kind: PaneKey, Views: vDoctor, NeedsNarrowList: true, Footer: "expand", Glyph: "Enter"},
