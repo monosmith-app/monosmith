@@ -16,7 +16,17 @@ describe('judgeViewState', () => {
     expect(judgeViewState(['failed'])).toBe('failed')
   })
 
-  it('is empty when no folder has a smith.toml', () => {
+  it('is empty when no folder has a smith.toml and none looks adoptable', () => {
     expect(judgeViewState([])).toBe('empty')
+    expect(judgeViewState([], 0)).toBe('empty')
+  })
+
+  it('is adoptable when no folder runs smith but one looks like a repository to bring in', () => {
+    expect(judgeViewState([], 1)).toBe('adoptable')
+  })
+
+  it('shows the folders that run smith before any offer', () => {
+    expect(judgeViewState(['ready'], 2)).toBe('ready')
+    expect(judgeViewState(['missing'], 2)).toBe('missing')
   })
 })

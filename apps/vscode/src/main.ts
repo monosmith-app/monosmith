@@ -1,10 +1,11 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import * as vscode from 'vscode'
 import {
   confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellInstallOutcome,
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
+import { toAdoptArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState } from './folder-session/index.ts'
 import { fixDoctor, readHealth, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
@@ -31,7 +32,7 @@ import {
   type RunEvent, type RunPlan, type RunTarget, type TaskStatusStore,
 } from './task-run/index.ts'
 import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './workspace/index.ts'
-import { findSmithRoots, listFolders, onFoldersChanged } from './workspace-folders/index.ts'
+import { findSmithRoots, listFolders, onFoldersChanged, onManifestChanged } from './workspace-folders/index.ts'
 import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter } from './workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 
@@ -43,6 +44,18 @@ const AGENT_FILE = join('.claude', 'agents', 'smith.md')
 
 const folders = new Map<string, FolderState>()
 const agentFiles = new Map<string, AgentFilesState>()
+/** Folders without a smith.toml that look like a repository smith can bring in. */
+let offers: RepositoryOffer[] = []
+const INSTALL_GLOBAL_COMMAND = 'npm i -g monosmith'
+
+/** A small text file, or undefined when it is missing, unreadable or too big to be a manifest. */
+function readSmallText (path: string): string | undefined {
+  try {
+    return statSync(path).size > 1_000_000 ? undefined : readFileSync(path, 'utf8')
+  } catch {
+    return undefined
+  }
+}
 
 function states (): FolderState[] {
   return Array.from(folders, ([, state]) => state)
@@ -171,7 +184,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
 
   const paint = (): void => {
     const phases = states().map((state) => state.phase)
-    const viewState = judgeViewState(phases)
+    const viewState = judgeViewState(phases, offers.length)
     const readyStates = ready()
     const many = states().length > 1
     const origin = readyStates.flatMap((state) => {
@@ -197,6 +210,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       origin,
     })
     void setContextKey('monosmith.state', viewState)
+    void setContextKey('monosmith.repoKind', viewState === 'adoptable' ? offers[0]?.kind ?? '' : '')
   }
 
   const sync = (): void => {
@@ -345,6 +359,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       agentFiles.delete(root)
       unwatch(root)
     }
+    offers = findRepositoryOffers(listFolders(), wanted, { exists: existsSync, read: readSmallText })
     const added = roots.filter((folder) => !folders.has(folder.root))
     for (const folder of added) {
       folders.set(folder.root, { root: folder.root, name: folder.name, phase: 'starting', skippedUntrusted: false })
@@ -691,6 +706,34 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     void vscode.window.showInformationMessage(`MonoSmith: copied "${INSTALL_COMMAND}". Run it in the workspace, then retry.`)
   }
 
+  /** Opens smith in a terminal on the folder to bring in. Nothing is written by this click: smith asks first. */
+  const adopt = async (action: AdoptAction): Promise<void> => {
+    const offered = offers
+    if (offered.length === 0) return
+    const picked = offered.length === 1
+      ? undefined
+      : await vscode.window.showQuickPick(offered.map((offer) => ({ label: offer.name, description: offer.root, offer })), { placeHolder: 'Which folder?' })
+    const chosen = offered.length === 1 ? offered[0] : picked?.offer
+    if (chosen === undefined) return
+    const found = locateSmith({
+      setting:       vscode.workspace.getConfiguration('monosmith').get<string>('path', ''),
+      workspaceRoot: chosen.root,
+      trusted:       isWorkspaceTrusted(),
+      platform:      process.platform,
+      pathVariable:  process.env.PATH ?? '',
+      exists:        existsSync,
+    })
+    if (found.location === undefined) {
+      const copy = `Copy "${INSTALL_GLOBAL_COMMAND}"`
+      const choice = await vscode.window.showWarningMessage('MonoSmith: smith is not installed on this computer. Install it, then try again.', copy)
+      if (choice === copy) await vscode.env.clipboard.writeText(INSTALL_GLOBAL_COMMAND)
+
+      return
+    }
+    note(`MonoSmith: ${action === 'start' ? 'bringing' : 'previewing bringing'} ${chosen.name} into MonoSmith (found ${chosen.marker}).`)
+    openSmithTerminal(found.location.executable, toAdoptArguments(action), chosen.root)
+  }
+
   const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
     try {
       await action(node)
@@ -730,6 +773,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     { dispose: () => { for (const root of watchers.keys()) unwatch(root) } },
     tree.onSelectionChange((node) => { void setContextKey('monosmith.selectionKind', node?.kind ?? '') }),
     onFoldersChanged(discover),
+    onManifestChanged(discover),
     onTrustGranted(() => { void restartAll() }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('monosmith.path')) void restartAll()
@@ -760,11 +804,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command('monosmith.cancelRun', cancel),
     command('monosmith.doctor', doctor),
     command('monosmith.showMenu', async () => {
-      await showStatusMenu({ running: activeRun !== undefined, hasLastRun: lastRun.last() !== undefined, failed: failedTasks() })
+      await showStatusMenu({ running: activeRun !== undefined, hasLastRun: lastRun.last() !== undefined, failed: failedTasks(), adoptable: judgeViewState(states().map((state) => state.phase), offers.length) === 'adoptable' })
     }),
     command('monosmith.showOutput', async () => { output.show() }),
     command('monosmith.openSettings', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith') }),
     command('monosmith.copyInstallCommand', copyInstallCommand),
+    command('monosmith.adopt.start', async () => { await adopt('start') }),
+    command('monosmith.adopt.preview', async () => { await adopt('preview') }),
     command<unknown>('monosmith.installAgent', async (argument) => { await installFiles('agent', argument) }),
     command<unknown>('monosmith.installMcp', async (argument) => { await installFiles('mcp', argument) }),
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
@@ -799,7 +845,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   discover()
 
   return {
-    viewState:  () => judgeViewState(states().map((state) => state.phase)),
+    viewState:  () => judgeViewState(states().map((state) => state.phase), offers.length),
     projects:   () => readyWorkspaces().flatMap((folder) => folder.snapshot.projects.map((project) => project.name)),
     taskStatus: (task) => {
       for (const store of statuses.values()) {
@@ -812,6 +858,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     isRunning:  () => activeRun !== undefined,
     roots:      () => ready().map((state) => state.root),
     agentFiles: (root) => agentFiles.get(root),
+    offers:     () => offers.map((offer) => offer.kind),
   }
 }
 

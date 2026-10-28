@@ -45,7 +45,14 @@
   ],
   "main": "../../dist/apps/vscode/main.js",
   "activationEvents": [
-    "workspaceContains:smith.toml"
+    "workspaceContains:smith.toml",
+    "workspaceContains:nx.json",
+    "workspaceContains:turbo.json",
+    "workspaceContains:lerna.json",
+    "workspaceContains:pnpm-workspace.yaml",
+    "workspaceContains:rush.json",
+    "workspaceContains:go.work",
+    "workspaceContains:package.json"
   ],
   "contributes": {
     "viewsContainers": {
@@ -256,6 +263,16 @@
         "category": "MonoSmith"
       },
       {
+        "command": "monosmith.adopt.start",
+        "title": "Convert This Folder to MonoSmith",
+        "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.adopt.preview",
+        "title": "See What Converting Would Change",
+        "category": "MonoSmith"
+      },
+      {
         "command": "monosmith.installAgent",
         "title": "Install the MCP server and agent",
         "category": "MonoSmith",
@@ -450,6 +467,14 @@
       ],
       "commandPalette": [
         {
+          "command": "monosmith.adopt.start",
+          "when": "monosmith.state == adoptable"
+        },
+        {
+          "command": "monosmith.adopt.preview",
+          "when": "monosmith.state == adoptable"
+        },
+        {
           "command": "monosmith.runSelected",
           "when": "false"
         },
@@ -618,6 +643,21 @@
       }
     ],
     "viewsWelcome": [
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == adoptable && monosmith.repoKind == nx",
+        "contents": "This looks like an Nx workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == adoptable && monosmith.repoKind == turborepo",
+        "contents": "This looks like a Turborepo workspace.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == adoptable && monosmith.repoKind == repository",
+        "contents": "This looks like a repository with several projects.\nsmith lists every change and asks before it makes any. Your projects stay where they are.\n[Convert it to MonoSmith](command:monosmith.adopt.start)\n[See what would change](command:monosmith.adopt.preview)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+      },
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == starting",

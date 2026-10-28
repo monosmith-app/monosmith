@@ -22,6 +22,7 @@ export interface StatusInput {
   origin:    string[]
 }
 
+const CLICK_TO_CONVERT = 'Click for a menu: convert it, see what would change.'
 const CLICK = 'Click for a menu: run affected, doctor, refresh, output, settings.'
 
 /**
@@ -36,6 +37,13 @@ export function describeStatus (input: StatusInput): StatusText {
     }
     case 'empty': {
       return { text: '$(tools) smith', tooltip: 'MonoSmith: no open folder has a smith.toml.', warning: false }
+    }
+    case 'adoptable': {
+      return {
+        text:    '$(tools) smith',
+        tooltip: `MonoSmith: this folder is not a MonoSmith workspace yet. It can be converted.\n${CLICK_TO_CONVERT}`,
+        warning: false,
+      }
     }
     case 'missing': {
       return { text: '$(circle-slash) smith', tooltip: `MonoSmith: smith was not found.\n${CLICK}`, warning: true }

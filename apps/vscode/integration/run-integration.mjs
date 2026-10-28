@@ -25,6 +25,8 @@ const SCENARIOS = [
   { name: 'ready', trusted: true, smith: 'setting' },
   { name: 'missing', trusted: true, smith: 'none' },
   { name: 'untrusted', trusted: false, smith: 'path' },
+  // An Nx-like folder with no smith.toml: the extension wakes up and offers to bring it in.
+  { name: 'adoptable', trusted: true, smith: 'none', manifest: false },
 ]
 
 function log (message) {
@@ -73,7 +75,12 @@ async function runScenario (scenario, executable, work) {
   const suiteDir = await bundleSuite(scenario.name)
   const workspace = join(work, `${scenario.name}-workspace`)
   mkdirSync(join(workspace, '.vscode'), { recursive: true })
-  writeFileSync(join(workspace, 'smith.toml'), 'schema = 1\n\n[workspace]\nname = "demo"\n')
+  if (scenario.manifest === false) {
+    writeFileSync(join(workspace, 'nx.json'), '{}\n')
+    writeFileSync(join(workspace, 'package.json'), '{"name":"demo","workspaces":["packages/*"]}\n')
+  } else {
+    writeFileSync(join(workspace, 'smith.toml'), 'schema = 1\n\n[workspace]\nname = "demo"\n')
+  }
   const smithDir = join(work, 'fake-bin')
   const fake = installFakeSmith(smithDir)
   if (scenario.smith === 'setting') writeFileSync(join(workspace, '.vscode', 'settings.json'), JSON.stringify({ 'monosmith.path': fake }))

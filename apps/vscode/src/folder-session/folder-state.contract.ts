@@ -22,5 +22,8 @@ export interface FolderState {
   snapshot?:        WorkspaceSnapshot
 }
 
-/** What the whole view shows, from the phases of all its folders. */
-export type ViewState = FolderPhase | 'empty'
+/**
+ * What the whole view shows, from the phases of all its folders. `adoptable`:
+ * no folder runs smith, but one looks like a repository smith can bring in.
+ */
+export type ViewState = FolderPhase | 'adoptable' | 'empty'

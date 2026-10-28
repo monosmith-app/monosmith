@@ -11,6 +11,8 @@ export interface MenuState {
   running:    boolean
   hasLastRun: boolean
   failed:     number
+  /** No folder runs smith, but one can be converted: offer that instead of runs. */
+  adoptable?: boolean
 }
 
 /**
@@ -19,6 +21,15 @@ export interface MenuState {
  * output, change settings.
  */
 export function statusMenuEntries (state: MenuState): MenuEntry[] {
+  if (state.adoptable === true) {
+    return [
+      { label: '$(arrow-right) Convert it to MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
+      { label: '$(eye) See what would change', description: 'writes nothing', command: 'monosmith.adopt.preview' },
+      { label: '$(output) Open output', command: 'monosmith.showOutput' },
+      { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
+    ]
+  }
+
   return [
     ...(state.running ? [{ label: '$(debug-stop) Cancel run', command: 'monosmith.cancelRun' }] : []),
     { label: '$(play) Run affected…', description: 'one task in the projects the changes affect', command: 'monosmith.runAffected' },
