@@ -49,3 +49,14 @@ func TestDoctorChecksThatAPackageDeclaresItsImports(t *testing.T) {
 		t.Fatalf("the installed version is the fallback, and installing is asked about: %+v", f.Fix)
 	}
 }
+
+func TestAnUnreadablePackageGetsNoAddDependenciesRemedy(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "packages", "bad"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "package.json"), []byte(`{"workspaces":["packages/*"]}`), 0o644)
+	_ = os.WriteFile(filepath.Join(ws, "packages", "bad", "package.json"), []byte(`{not json`), 0o644)
+	f := CheckPackageImports(ws, protocol.Project{Name: "bad", Root: "packages/bad", Kind: protocol.ProjectPackage})
+	if f.OK || f.Detail == "" || strings.Contains(f.Remedy, "add each to dependencies") {
+		t.Fatalf("finding %+v", f)
+	}
+}
