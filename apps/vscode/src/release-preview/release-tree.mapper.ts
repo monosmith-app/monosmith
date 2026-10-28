@@ -23,7 +23,7 @@ export function toReleaseRows (preview: ReleasePreview): ListResult {
       ? []
       : [{
           id:          'release:unchanged',
-          label:       'Nothing to release',
+          label:       'Unchanged',
           description: String(unchanged.length),
           icon:        'circle-slash',
           children:    unchanged.map((name) => ({ id: `release:unchanged:${name}`, label: name, icon: 'package' })),

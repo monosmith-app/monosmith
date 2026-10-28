@@ -1,7 +1,7 @@
 import type { DoctorReport } from '../health/index.ts'
 
 /** The check of `smith doctor` about the agent files. */
-export const AGENT_FILES_CHECK = 'the MonoSmith agent files are installed and current'
+export const AGENT_FILES_CHECK = 'The MonoSmith agent files are installed and current'
 
 /**
  * What the doctor says about the agent files: `missing` when its check
