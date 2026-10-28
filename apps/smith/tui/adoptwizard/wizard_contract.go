@@ -46,6 +46,9 @@ type Flow interface {
 	Report() (string, error)
 	// AdoptFix is the conservative adoption of a plain repository.
 	AdoptFix() doctorfix.Planned
+	// AgentFix is the offer to add the MonoSmith agent (smith agent install);
+	// ok is false when the workspace has it, or opted out.
+	AgentFix() (fix doctorfix.Planned, ok bool)
 	// Close releases what the flow holds (a scratch copy).
 	Close()
 }
@@ -116,6 +119,10 @@ const (
 	StageRemoving
 	// StageFinishing installs and checks the workspace.
 	StageFinishing
+	// StageAgent offers the MonoSmith agent.
+	StageAgent
+	// StageAgentInstalling writes the agent files.
+	StageAgentInstalling
 	// StageDone tells what happened.
 	StageDone
 	// StageReport shows the saved report of the conversion; Enter goes back to

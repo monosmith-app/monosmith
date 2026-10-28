@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -144,6 +146,25 @@ func (s *Session) FinishFix(withLint bool) doctorfix.Planned {
 func (s *Session) Report() (string, error) {
 	raw, err := os.ReadFile(filepath.Join(s.Root, filepath.FromSlash(convert.ReportFile)))
 	return string(raw), err
+}
+
+// AgentFix offers the MonoSmith agent files as one step that runs smith agent
+// install --yes; ok is false when the workspace has them or opted out.
+func (s *Session) AgentFix() (doctorfix.Planned, bool) {
+	cfg, err := workspace.Load(s.Root)
+	if err != nil || !cfg.AgentEnabled() || agentfiles.Finding(s.Root).OK {
+		return doctorfix.Planned{}, false
+	}
+	return doctorfix.Planned{
+		Fix: protocol.Fix{
+			Description: "Add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json",
+			Steps: []protocol.FixStep{{
+				Description: "install the agent files (smith agent install)",
+				Argv:        []string{convert.SmithCommand(), "agent", "install", "--yes"},
+			}},
+		},
+		Checks: []string{"agent"},
+	}, true
 }
 
 // AdoptFix is the conservative adoption of a plain repository as a fix: one
