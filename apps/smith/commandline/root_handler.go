@@ -157,6 +157,8 @@ func run(version string, args []string) int {
 	if canAsk(root, args) {
 		pluginadmit.SetPrompter(&pluginadmit.Prompter{Out: os.Stderr, In: bufio.NewReader(os.Stdin)})
 	}
+	announce := startUpdateNotice(root, args, version)
+	defer announce()
 	if err := root.Execute(); err != nil {
 		var p *problem.Error
 		switch {
