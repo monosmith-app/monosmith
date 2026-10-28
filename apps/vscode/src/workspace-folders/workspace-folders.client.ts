@@ -13,3 +13,14 @@ export function listFolders (): FolderRef[] {
 export function onFoldersChanged (handler: () => void): vscode.Disposable {
   return vscode.workspace.onDidChangeWorkspaceFolders(() => { handler() })
 }
+
+/**
+ * Listens to a `smith.toml` appearing or going away in an open folder (a
+ * conversion wrote one, or it was deleted).
+ * @returns what stops the listening
+ */
+export function onManifestChanged (handler: () => void): vscode.Disposable {
+  const watcher = vscode.workspace.createFileSystemWatcher('**/smith.toml', false, true, false)
+
+  return vscode.Disposable.from(watcher, watcher.onDidCreate(handler), watcher.onDidDelete(handler))
+}

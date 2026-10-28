@@ -4,7 +4,7 @@
  * may change with any release.
  */
 export interface ExtensionStateApi {
-  /** What the view shows: `ready`, `starting`, `missing`, `untrusted`, `failed` or `empty`. */
+  /** What the view shows: `ready`, `starting`, `missing`, `untrusted`, `failed`, `adoptable` or `empty`. */
   viewState:  () => string
   /** The names of the projects of every folder that runs smith. */
   projects:   () => string[]
@@ -16,4 +16,6 @@ export interface ExtensionStateApi {
   roots:      () => string[]
   /** What the doctor said about the agent files of a folder: `missing`, `current` or `unknown`. */
   agentFiles: (root: string) => string | undefined
+  /** The kind of each folder offered to be brought into MonoSmith (`nx`, `turborepo`, `repository`). */
+  offers:     () => string[]
 }

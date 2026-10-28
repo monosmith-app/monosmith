@@ -51,3 +51,11 @@ describe('describeStatus', () => {
     expect(describeStatus({ ...ready(), state: 'starting' }).warning).toBe(false)
   })
 })
+
+describe('describeStatus for a folder that can be converted', () => {
+  it('says the folder can be converted and does not warn', () => {
+    const status = describeStatus(ready({ state: 'adoptable' }))
+    expect(status.tooltip).toContain('can be converted')
+    expect(status.warning).toBe(false)
+  })
+})
