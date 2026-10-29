@@ -17,7 +17,7 @@ describe('toDependencyRows', () => {
   it('groups the updates patch, minor, major and counts them', () => {
     const { nodes, summary } = toDependencyRows(report)
     expect(nodes.map((node) => `${node.label} ${node.description}`)).toEqual(['Patch 1', 'Minor 1', 'Major 1', 'Tools 1'])
-    expect(nodes[2]?.children?.[0]).toMatchObject({ label: 'typescript', description: '6.0.3 → 7.0.2', color: 'charts.red' })
+    expect(nodes[2]?.children?.[0]).toMatchObject({ label: 'typescript', description: '→ 7.0.2', color: 'charts.red' })
     expect(summary).toBe('3 updates')
   })
 

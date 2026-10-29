@@ -123,8 +123,8 @@ function agentRow (folder: TreeFolder, narrowed: boolean): TreeNode[] {
     id:          `agent:${folder.root}`,
     kind:        'action',
     label:       'Add the MonoSmith agent',
-    description: 'with smith’s MCP server',
     icon:        'hubot',
+    description: '',
     root:        folder.root,
     projects:    [],
     command:     'monosmith.installAgent',
@@ -140,11 +140,9 @@ function agentRow (folder: TreeFolder, narrowed: boolean): TreeNode[] {
  */
 export function describeAffected (folders: readonly TreeFolder[]): string {
   const known = folders.flatMap((folder) => (folder.snapshot === undefined ? [] : [folder.snapshot]))
-  const total = known.reduce((sum, snapshot) => sum + snapshot.projects.length, 0)
   const affected = known.reduce((sum, snapshot) => sum + snapshot.projects.filter((project) => snapshot.affected.has(project.name)).length, 0)
-  if (total === 0 || affected === 0) return ''
 
-  return affected === total ? `all ${total} affected` : `${affected} of ${total} affected`
+  return affected === 0 ? '' : `${affected} affected`
 }
 
 /**
