@@ -69,6 +69,7 @@ Usage: `smith new <name> [flags]`
 | `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
 | `--github-releases` | create a GitHub Release for every release tag | off |
+| `--here` | create the workspace in the current folder, which must be empty; the name defaults to the folder's | off |
 | `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |

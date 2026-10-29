@@ -47,6 +47,7 @@ Usage: `smith new <name> [flags]`
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
+| `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
@@ -72,6 +73,9 @@ Notes on the flags:
   [Recipes](../reference/recipes.md). It is not checked at creation time.
 - `--dir .` creates the workspace in the current folder. Files smith does not own
   are kept.
+- `--here` creates the workspace in the current folder when it is empty (a `.git`, `.vscode`
+  or `.DS_Store` does not count) and names it after the folder unless you give a name. A folder
+  with files is refused with a problem that points at `smith adopt`.
 
 In a terminal (standard input and output are terminals and `CI` is unset), a missing
 `<name>` is asked for: `Name of the workspace:`, up to three tries. Elsewhere it is the
