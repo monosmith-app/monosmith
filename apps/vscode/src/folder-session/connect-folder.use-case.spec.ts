@@ -30,6 +30,11 @@ describe('connectFolder', () => {
     expect(outcome.location?.executable).toBe('/usr/bin/smith')
   })
 
+  it('names the setting and its path when the monosmith.path smith cannot start', async () => {
+    const outcome = await connectFolder({ locate: () => ({ location: { executable: '/nope/smith', source: 'setting' }, skippedUntrusted: false }), start: async () => { throw new Error('spawn ENOENT') } }, '/repo')
+    expect(outcome.error).toBe('the monosmith.path setting (/nope/smith) did not start: spawn ENOENT')
+  })
+
   it('does not start anything when there is no smith', async () => {
     let started = false
     await connectFolder({
