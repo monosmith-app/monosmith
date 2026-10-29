@@ -671,7 +671,7 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == failed",
-        "contents": "smith could not start, or it stopped.\nThe log has what it said.\n[Restart smith](command:monosmith.restart)\n[Show log](command:monosmith.showOutput)\n[Open settings](command:monosmith.openSettings)"
+        "contents": "smith could not start, or it stopped.\n[Restart smith](command:monosmith.restart)\nSee the [log](command:monosmith.showOutput), or check the [settings](command:monosmith.openSettings)."
       },
       {
         "view": "monosmith.projects",
