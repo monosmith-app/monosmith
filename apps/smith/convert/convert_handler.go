@@ -112,7 +112,8 @@ git undoes everything.`,
 			if ctx == nil {
 				ctx = context.Background()
 			}
-			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, Terminal: interactive(), In: os.Stdin, Out: told}); err != nil {
+			// A dry run is the read-only choice, so it never offers to install: --yes does.
+			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, Terminal: interactive() && !dryRun, In: os.Stdin, Out: told}); err != nil {
 				return err
 			}
 			plan, err := readPlan(root, files, input)
