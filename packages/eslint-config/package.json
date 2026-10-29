@@ -52,7 +52,7 @@
     "@html-eslint/eslint-plugin": "^0.67.0",
     "@html-eslint/parser": "^0.65.0",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@typescript-eslint/parser": "^8.68.0",
+    "@typescript-eslint/parser": "^8.72.0",
     "eslint-import-resolver-node": "^0.4.0",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-astro": "^1.7.0",
