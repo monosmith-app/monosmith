@@ -19,6 +19,15 @@ describe('toHealthRows', () => {
     expect(summary).toBe('1 failed, 1 warning')
   })
 
+  it('shows the first clause of a long problem and remedy, and keeps all of it in the tooltip', () => {
+    const long = { check: 'agent files', ok: false, detail: '.claude/agents/smith.md is missing; smith cannot answer for it', remedy: 'run smith agent install. It writes the files' }
+    const { nodes } = toHealthRows({ ...report, findings: [long] })
+    expect(nodes[0]?.children).toMatchObject([
+      { label: '.claude/agents/smith.md is missing', tooltip: long.detail },
+      { label: 'run smith agent install', tooltip: `Fix: ${long.remedy}` },
+    ])
+  })
+
   it('does not show the remedy of a check that passed as a problem', () => {
     const passed = toHealthRows(report).nodes[2]
     expect(passed?.description).toBe('1')
