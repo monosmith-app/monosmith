@@ -23,7 +23,9 @@ export interface FolderState {
 }
 
 /**
- * What the whole view shows, from the phases of all its folders. `adoptable`:
- * no folder runs smith, but one looks like a repository smith can bring in.
+ * What the whole view shows, from the phases of all its folders. With no
+ * folder that runs smith: `adoptable` (one looks like a repository smith can
+ * bring in), `empty` (one has nothing in it), `unrecognised` (one has files
+ * but no tool smith knows) or `nofolder` (nothing is open).
  */
-export type ViewState = FolderPhase | 'adoptable' | 'empty'
+export type ViewState = FolderPhase | 'adoptable' | 'empty' | 'unrecognised' | 'nofolder'

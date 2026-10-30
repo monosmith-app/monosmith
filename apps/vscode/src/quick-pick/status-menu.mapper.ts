@@ -1,3 +1,5 @@
+import type { ViewState } from '../folder-session/index.ts'
+
 /** One entry of the menu the status bar item opens. */
 export interface MenuEntry {
   label:        string
@@ -11,8 +13,8 @@ export interface MenuState {
   running:    boolean
   hasLastRun: boolean
   failed:     number
-  /** No folder runs smith, but one can be converted: offer that instead of runs. */
-  adoptable?: boolean
+  /** What the view shows; with no folder that runs smith, the menu offers what that state offers instead of runs. */
+  view?:      ViewState
 }
 
 /**
@@ -21,12 +23,28 @@ export interface MenuState {
  * output, change settings.
  */
 export function statusMenuEntries (state: MenuState): MenuEntry[] {
-  if (state.adoptable === true) {
+  const tail = [
+    { label: '$(output) Open output', command: 'monosmith.showOutput' },
+    { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
+  ]
+  if (state.view === 'adoptable') {
     return [
       { label: '$(arrow-right) Convert it to MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
       { label: '$(eye) See what would change', description: 'a report, no files changed', command: 'monosmith.adopt.preview' },
-      { label: '$(output) Open output', command: 'monosmith.showOutput' },
-      { label: '$(gear) Open settings', command: 'monosmith.openSettings' },
+      ...tail,
+    ]
+  }
+  if (state.view === 'unrecognised') {
+    return [
+      { label: '$(arrow-right) Bring this folder into MonoSmith', description: 'smith lists every change and asks first', command: 'monosmith.adopt.start' },
+      { label: '$(eye) See what would change', description: 'a report, no files changed', command: 'monosmith.adopt.preview' },
+      ...tail,
+    ]
+  }
+  if (state.view === 'empty') {
+    return [
+      { label: '$(add) Create a new MonoSmith workspace', description: 'smith asks a few questions first', command: 'monosmith.new' },
+      ...tail,
     ]
   }
 

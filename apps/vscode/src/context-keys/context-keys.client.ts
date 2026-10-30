@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
  * The context keys the extension sets, for `when` clauses of menus,
  * keybindings and welcome views: `monosmith.running` (a run is in progress),
  * `monosmith.state` (what the view shows: ready, starting, missing, untrusted,
- * failed, adoptable or empty), `monosmith.repoKind` (what the adoptable folder is: nx, turborepo or repository), `monosmith.selectionKind` (the kind of row selected: task,
+ * failed, adoptable, empty, unrecognised or nofolder), `monosmith.repoKind` (what the adoptable folder is: nx, turborepo or repository), `monosmith.selectionKind` (the kind of row selected: task,
  * project, group or folder), `monosmith.hasLastRun` (a run was started
  * before, so it can be run again), `monosmith.affectedOnly` and
  * `monosmith.filtered` (the view is narrowed to the affected projects, or by a
