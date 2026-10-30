@@ -27,6 +27,10 @@ const SCENARIOS = [
   { name: 'untrusted', trusted: false, smith: 'path' },
   // An Nx-like folder with no smith.toml: the extension wakes up and offers to bring it in.
   { name: 'adoptable', trusted: true, smith: 'none', manifest: false },
+  // Nothing but the editor's own settings: the extension offers a new workspace.
+  { name: 'empty', trusted: true, smith: 'none', manifest: false, files: {} },
+  // Files, but no tool smith recognises: the extension offers to bring the folder in.
+  { name: 'unrecognised', trusted: true, smith: 'none', manifest: false, files: { 'notes.txt': 'hello\n' } },
 ]
 
 function log (message) {
@@ -75,7 +79,9 @@ async function runScenario (scenario, executable, work) {
   const suiteDir = await bundleSuite(scenario.name)
   const workspace = join(work, `${scenario.name}-workspace`)
   mkdirSync(join(workspace, '.vscode'), { recursive: true })
-  if (scenario.manifest === false) {
+  if (scenario.files !== undefined) {
+    for (const [file, text] of Object.entries(scenario.files)) writeFileSync(join(workspace, file), text)
+  } else if (scenario.manifest === false) {
     writeFileSync(join(workspace, 'nx.json'), '{}\n')
     writeFileSync(join(workspace, 'package.json'), '{"name":"demo","workspaces":["packages/*"]}\n')
   } else {

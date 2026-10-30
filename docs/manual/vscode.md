@@ -17,7 +17,7 @@ Marketplace is not described here.
 | Item | Value |
 |---|---|
 | VS Code | `^1.96.0` |
-| Activation | When the workspace contains a `smith.toml` (`workspaceContains:smith.toml`). |
+| Activation | When the workspace contains a `smith.toml`, a marker of another monorepo tool (`nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, `rush.json`, `go.work`, `package.json`) or any file at its root (`workspaceContains:*`); and when the MonoSmith view is opened, which is how an empty folder gets its offer. |
 | smith | A smith whose `serve` protocol version the extension speaks (version 1; a newer one is worked with, an older one cannot be served). |
 
 ## Which smith runs
@@ -55,7 +55,14 @@ When smith is not usable the view says why instead of staying empty, with button
 | missing | `smith was not found.` | Copy install command, Open settings, Retry, Show log |
 | failed | `smith could not start, or it stopped.` | Restart smith, Show log, Open settings |
 | untrusted | `This workspace is not trusted.` | Manage Workspace Trust, Open settings, Retry |
-| empty | `No open folder has a smith.toml.` | Learn about MonoSmith |
+| empty | `This folder is empty.` | Create a new MonoSmith workspace (`smith new --here` in a terminal), Learn more |
+| unrecognised | `This folder is not a MonoSmith workspace yet.` | Bring this folder into MonoSmith (`smith adopt` in a terminal), See what would change, Learn more |
+| nofolder | `No folder is open.` | Open Folder |
+
+The status bar menu offers the same entries in those states. Nothing is written by the click:
+smith asks its questions in the terminal, lists what it will create or change, and `smith new --here`
+refuses a folder that holds files. A folder counts as empty when it holds only `.git`, `.vscode`,
+`.DS_Store`, `Thumbs.db` or `desktop.ini`; the extension lists the top of the folder and reads no file.
 
 Title-bar buttons (when ready): Filter Projects…, Show Affected Only / Show All Projects,
 Run Affected, Re-run Last (not while running), Cancel Run (while running), Refresh. The

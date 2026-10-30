@@ -26,6 +26,11 @@ health of the workspace, its dependencies and its next release.
   projects the changes affect, **Run Task in All Projects** wherever it
   exists, **Re-run Last** (`Ctrl+Alt+M R`) repeats the last run, and
   **Cancel** (`Ctrl+Alt+M C`) stops the run and its processes.
+- **Start from an empty folder.** An empty folder offers **Create a new MonoSmith
+  workspace** (`smith new --here` in a terminal, which asks its questions), and a
+  folder with files but no recognised tool offers **Bring this folder into
+  MonoSmith** (`smith adopt`). Also in the status bar menu; nothing is written
+  until you answer in the terminal.
 - **Problems panel.** The failures that tsc, ESLint, go, gcc, ruff and rustc
   print become entries in the Problems panel, with the file and the place,
   and are cleared when the task runs again. A path in the output

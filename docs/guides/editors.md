@@ -53,6 +53,16 @@ as diffs and walks the choices; `smith doctor --fix --only "<fix>" --choose 1,2
 Set `SMITH_NO_UPDATE_CHECK=1` to stop `smith info` asking GitHub for the newest
 release.
 
+## Starting in an empty folder
+
+An editor that opens a folder with no `smith.toml` can offer two commands, both of which ask
+their questions in a terminal and write nothing before the person agrees: `smith new --here`
+creates the workspace in the current folder (it takes no name, which then comes from the
+folder, and it refuses a folder that holds anything besides `.git`, `.vscode`, `.DS_Store`,
+`Thumbs.db` or `desktop.ini`), and `smith adopt` brings a folder with files into MonoSmith.
+The VS Code extension offers them as "Create a new MonoSmith workspace" and "Bring this folder
+into MonoSmith", in the Projects view and in the status bar menu.
+
 ## The engine over JSON-RPC (`smith serve`)
 
 An editor plugin starts the installed smith as a child process, `smith serve`

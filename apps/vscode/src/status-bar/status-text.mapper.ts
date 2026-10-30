@@ -41,12 +41,18 @@ export function describeStatus (input: StatusInput): StatusText {
       return { text: '$(tools) smith', tooltip: 'MonoSmith: no folder is open.', warning: false }
     }
     case 'empty': {
-      return { text: '$(tools) smith', tooltip: `MonoSmith: this folder is empty.
-${CLICK_TO_CREATE}`, warning: false }
+      return {
+        text:    '$(tools) smith',
+        tooltip: `MonoSmith: this folder is empty.\n${CLICK_TO_CREATE}`,
+        warning: false,
+      }
     }
     case 'unrecognised': {
-      return { text: '$(tools) smith', tooltip: `MonoSmith: this folder is not a MonoSmith workspace yet.
-${CLICK_TO_BRING_IN}`, warning: false }
+      return {
+        text:    '$(tools) smith',
+        tooltip: `MonoSmith: this folder is not a MonoSmith workspace yet.\n${CLICK_TO_BRING_IN}`,
+        warning: false,
+      }
     }
     case 'adoptable': {
       return {
