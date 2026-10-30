@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/go/pkg/mod
-          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
+          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
           restore-keys: |
             smith-go-${{ runner.os }}-
       - name: Cache the npm download store

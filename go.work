@@ -11,6 +11,7 @@ use (
 	./libs/plugin-dotnet
 	./libs/plugin-go
 	./libs/plugin-jvm
+	./libs/plugin-lua
 	./libs/plugin-node
 	./libs/plugin-node-toolchains
 	./libs/plugin-php
