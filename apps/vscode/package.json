@@ -20,7 +20,7 @@
     "url": "https://github.com/monosmith-app/monosmith/issues"
   },
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.140.0"
   },
   "categories": [
     "Testing",

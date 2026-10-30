@@ -5,6 +5,11 @@ the first release everything below is under Unreleased.
 
 ## Unreleased
 
+### Changed
+
+- **VS Code 1.140 or newer is required** (it was 1.96). An older editor keeps the
+  version it has and does not offer this one.
+
 ### Added
 
 - **Bring a repository into MonoSmith.** The extension also wakes up in a folder

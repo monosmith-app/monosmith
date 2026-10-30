@@ -16,7 +16,7 @@ Marketplace is not described here.
 
 | Item | Value |
 |---|---|
-| VS Code | `^1.96.0` |
+| VS Code | `^1.140.0` |
 | Activation | When the workspace contains a `smith.toml` (`workspaceContains:smith.toml`). |
 | smith | A smith whose `serve` protocol version the extension speaks (version 1; a newer one is worked with, an older one cannot be served). |
 
