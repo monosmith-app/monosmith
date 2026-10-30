@@ -51,6 +51,9 @@ type Project struct {
 	Dropped map[string][]string `json:"-"`
 	// contributed maps "task.field" to the plugin or convention that set it.
 	contributed map[string]string
+	// releaseDefaults are the release settings a plugin supplied for the
+	// project, used for what its smith.toml release table leaves out.
+	releaseDefaults *protocol.ReleaseDefaults
 	// stackPlugins are the plugins of the project's stack, other than its
 	// language plugin.
 	stackPlugins []string

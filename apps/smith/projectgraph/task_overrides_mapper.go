@@ -66,7 +66,11 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 		}
 		sort.Strings(p.Tags)
 		p.BareTags = po.BareTags
-		p.Release = po.Release
+		release, err := workspace.ResolveRelease(p.Name, po, p.releaseDefaults, cfg.Release.GitHubReleases)
+		if err != nil {
+			return err
+		}
+		p.Release = release
 		p.ReleaseAssets = p.AssetSpec()
 		if po.SplitRepo != "" {
 			if err := splitrepo.Valid(po.SplitRepo); err != nil {

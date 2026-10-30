@@ -42,7 +42,7 @@ func TestConfigTextRoundTrips(t *testing.T) {
 		t.Fatalf("conventions %+v\n%s", out.Conventions, text)
 	}
 	tool := out.Projects["tool"]
-	if tool.Release.Product != "tool" || tool.Release.OSAlias["darwin"] != "macos" || len(tool.Release.Platforms) != 6 {
+	if tool.Release.Product != "tool" || tool.Release.OSAlias["darwin"] != "macos" {
 		t.Fatalf("release %+v", tool.Release)
 	}
 	check := tool.Tasks["slice-check"]

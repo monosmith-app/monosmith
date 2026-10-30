@@ -130,10 +130,15 @@ func TestParseProjectReleaseAndTagPrefix(t *testing.T) {
 	if !cfg.Release.GitHubReleases || cli.TagPrefix != "@a/cli@" || cli.Tasks["slice"].Cwd != "." {
 		t.Fatalf("%+v", cfg)
 	}
-	if cli.Release.Product != "acme" || len(cli.Release.Platforms) != 6 || cli.Release.AssetName != "{product}_{version}_{os}_{arch}.{ext}" {
-		t.Fatalf("release defaults %+v", cli.Release)
+	release, err := ResolveRelease("cli", cli, nil, true)
+	if err != nil || release.Product != "acme" || len(release.Platforms) != 6 || release.AssetName != "{product}_{version}_{os}_{arch}.{ext}" {
+		t.Fatalf("release defaults %+v %v", release, err)
 	}
-	if _, err := Parse([]byte("[workspace]\nname = \"a\"\n[projects.cli.release]\nplatforms = [\"linux\"]\n")); err == nil || !strings.Contains(err.Error(), "os/arch") {
+	bad, err := Parse([]byte("[workspace]\nname = \"a\"\n[projects.cli.release]\nplatforms = [\"linux\"]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveRelease("cli", bad.Projects["cli"], nil, false); err == nil || !strings.Contains(err.Error(), "os/arch") {
 		t.Fatalf("a bad platform must be rejected: %v", err)
 	}
 }

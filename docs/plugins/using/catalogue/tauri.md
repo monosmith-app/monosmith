@@ -15,7 +15,7 @@ workspace-wide with `[conventions.tauri]`.
 | Provides (slots) | `tauri-build` |
 | Requires | language plugin `node` |
 | Applies to | `node` projects |
-| Capabilities | `generate`, `contribute`, `ci`, `doctor` |
+| Capabilities | `generate`, `contribute`, `version`, `ci`, `doctor` |
 | Stack it publishes | `node-vitest-tauri`: scaffold `typescript`; toolchain `typescript`, `eslint`, `vitest`, `tauri`. The `vite` plugin publishes `react-tauri`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest`, `tauri` |
 | Project kinds | any Node project with a `src-tauri` folder |
 
@@ -36,6 +36,13 @@ in the root `[workspace] members`. `smith doctor` warns when a member glob match
 | `tauri-build` | `tauri build -- --target-dir {workspaceRoot}/dist/tauri/<project dir>`, after `^build` and the project's own `build` | yes; output `dist/tauri/<project dir>` |
 | `tauri-dev` | `tauri dev` | no |
 
+`smith run tauri-dev -p studio` runs the app in development mode: it starts the web dev server
+itself, because the scaffold's `tauri.conf.json` has `beforeDevCommand` `npm run start` (Vite on
+`http://localhost:5173`, the `devUrl`), opens the app window, and reloads it as you edit; stop it
+with Ctrl+C. It is never cached. An app whose `tauri.conf.json` has no `beforeDevCommand` (one made
+with `npx tauri init`) must have its dev server running already: start it with
+`smith run start -p studio` in another terminal, or add the command to `beforeDevCommand`.
+
 The cargo target directory, and so the installers, go under `dist/tauri/<project dir>`, beside the
 web build rather than in it. The path is absolute: cargo runs inside `src-tauri`, and the Tauri CLI
 reads the same flag to find the bundles, so a relative path would depend on which of them resolves it.
@@ -48,6 +55,7 @@ reads the same flag to find the bundles, so a relative path would depend on whic
 | `the tauri CLI is installed` | `node_modules` has no `@tauri-apps/cli`. Remedy: `smith install -D @tauri-apps/cli` |
 | `src-tauri is outside the root Cargo workspace` | A warning: the root `Cargo.toml` `[workspace] members` glob matches `<project>/src-tauri` and `exclude` does not name it. Remedy: narrow `members`, or list it under `exclude` |
 | `frontendDist of <project> is the project's build output` | A warning: `build.frontendDist` in `src-tauri/tauri.conf.json` is a folder other than the one smith builds the web app into (`dist/<project dir>`), so `tauri build` fails with "Unable to find your web assets". A URL is not checked. Remedy: set it to the path the check prints |
+| `the versions of <project> agree` | A warning: `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` carry different versions (a `tauri.conf.json` version that is a path to `package.json` counts as the same). Remedy: use `"version": "../package.json"` and the same version in `Cargo.toml`, or let `smith release` write them |
 | `the system libraries Tauri needs on Linux` | `pkg-config` does not find `webkit2gtk-4.1`, `gtk+-3.0` or `librsvg-2.0` (Linux only). Remedy: `sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev` |
 
 ## Which toolchains combine with `tauri`
@@ -128,23 +136,68 @@ step's log: on a Linux runner it prints `installing the system libraries Tauri n
 and the steps table at the end lists `Install the system libraries Tauri needs`. Elsewhere it
 prints nothing and passes.
 
-The installers are released through [release files from a command](../../../reference/releasing.md#release-files-from-a-command).
-Tauri names its bundles after the platform and processor (`Studio_1.0.0_x64-setup.exe`,
-`Studio_1.0.0_aarch64.dmg`, `studio_1.0.0_amd64.deb`), so one glob serves every runner:
+### Releasing the installers
+
+The installers are released through [release files from a command](../../../reference/releasing.md#release-files-from-a-command),
+and the plugin supplies the command. Switch GitHub Releases on and name the project; that is all:
 
 ```toml
 [release]
 github_releases = true
 
 [projects.studio.release]
-build     = "smith run tauri-build studio"   # or any command that also builds what the app bundles
-assets    = ["dist/tauri/apps/studio/release/bundle/**/*.{msi,exe,dmg,deb,rpm,AppImage}"]
-platforms = ["windows-x64", "macos-arm64", "linux-x64"]
 ```
 
-A `build` that needs another program of the same release (VideoCraw's studio bundles the `videocraw`
-binary) builds it first in the same command. No setting does this for you yet: the plugin has no
-`publish` method.
+For a project the plugin applies to, the table's missing settings default to:
+
+| Setting | Default |
+|---|---|
+| `build` | `smith run tauri-build -p studio` |
+| `assets` | `dist/tauri/apps/studio/release/bundle/**/*.{msi,exe,dmg,deb,rpm,AppImage}` |
+| `platforms` | `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64` |
+| `asset_name` | `{product}-{version}-{platform}.{ext}` |
+| `checksums` | `true` |
+
+`linux-arm64` is not a default (Linux bundles for it are rarely wanted and cost a slower runner);
+add it with `platforms = [..., "linux-arm64"]`, which smith runs on `ubuntu-24.04-arm`. What the
+table sets wins, field by field: `platforms = ["windows-x64"]` alone keeps the default `build` and
+`assets`. A table that sets only what a plugin's own archives use (`os_alias`, `npm`, ...) is not
+given the defaults. The table must exist: a Tauri app with none is not released, so building on
+four runners is always your choice.
+
+Each runner builds with `tauri-build`, then uploads its installers renamed after the project, the
+version and the platform, plus a checksums file. Tauri's own names (`Studio_1.0.0_x64-setup.exe`,
+with spaces, the same on every runner of an OS) would collide or confuse:
+
+| Tauri's bundle | Uploaded as |
+|---|---|
+| `msi/Studio_1.0.0_x64_en-US.msi` | `studio-1.0.0-windows-x64.msi` |
+| `nsis/Studio_1.0.0_x64-setup.exe` | `studio-1.0.0-windows-x64.exe` |
+| `dmg/Studio_1.0.0_aarch64.dmg` | `studio-1.0.0-macos-arm64.dmg` |
+| `deb/studio_1.0.0_amd64.deb`, `rpm/...rpm`, `appimage/...AppImage` | `studio-1.0.0-linux-x64.deb`, `.rpm`, `.AppImage` |
+| the files of that runner | `studio-1.0.0-windows-x64.sha256` (`sha256sum` format) |
+
+Two bundles of one runner that end in the same extension keep their folder's name
+(`studio-1.0.0-windows-x64-nsis.exe`). The product in the name is the project's name; set
+`product` in the table to change it.
+
+A `build` that needs another program of the same release (VideoCraw's studio bundles the
+`videocraw` binary) builds it first in the same command, and `assets` then lists what you want
+(sidecars and resources are not handled by the plugin yet).
+
+### Versions
+
+smith owns the version, and a Tauri app keeps it in three files. `smith release` writes the new
+version into `package.json` (the `node` plugin), `src-tauri/Cargo.toml` (`[package] version`) and
+`src-tauri/tauri.conf.json` (the top-level `version`, not the ones nested in `bundle`), then puts
+the files back after the build. The assets job of every runner does the same before it builds, so
+the installers carry the version in their file names and in their metadata. The scaffold sets
+`"version": "../package.json"` in `tauri.conf.json` (Tauri 2 reads the version from that file); a
+`tauri.conf.json` with a path there is left alone. Only `tauri.conf.json` is edited, not
+`tauri.conf.json5` or `Tauri.toml`.
+
+`smith doctor` warns (`the versions of <project> agree`) when the files that carry a literal
+version differ, with the versions it found.
 
 ## Verified
 

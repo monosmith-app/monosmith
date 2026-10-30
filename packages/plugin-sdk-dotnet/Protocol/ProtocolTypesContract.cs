@@ -795,6 +795,9 @@ public sealed record Contribution : IProtocolValue<Contribution>
     /// <summary>DependsOn adds dependencies to tasks the project already has, by task name ({"lint": ["slice-check"]}).</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> DependsOn { get; init; } = new Dictionary<string, IReadOnlyList<string>>();
 
+    /// <summary>Release is how the project's release files are made, for a project that releases through GitHub releases and leaves them out of its smith.toml [projects.&lt;name&gt;.release] table; what the table sets wins.</summary>
+    public ReleaseDefaults? Release { get; init; }
+
     /// <inheritdoc />
     public static Contribution Read(JsonAny? value, string path)
     {
@@ -804,6 +807,7 @@ public sealed record Contribution : IProtocolValue<Contribution>
             Tasks = MapOf(Member(map, "tasks"), Join(path, "tasks"), ProjectTask.Read),
             Replace = MapOf(Member(map, "replace"), Join(path, "replace"), ProjectTask.Read),
             DependsOn = MapOf(Member(map, "dependsOn"), Join(path, "dependsOn"), (value1, path1) => ListOf(value1, path1, StringValue)),
+            Release = OptionalStruct<ReleaseDefaults>(Member(map, "release"), Join(path, "release")),
         };
     }
 
@@ -825,6 +829,11 @@ public sealed record Contribution : IProtocolValue<Contribution>
         {
             writer.Property("dependsOn");
             MessageWritingAlgorithm.Map(writer, DependsOn, (builder1, member1) => MessageWritingAlgorithm.List(builder1, member1, (builder2, item2) => builder2.String(item2)));
+        }
+        if (Release is not null)
+        {
+            writer.Property("release");
+            Release.Write(writer);
         }
         writer.EndObject();
     }
@@ -2774,6 +2783,62 @@ public sealed record Registry : IProtocolValue<Registry>
         {
             writer.Property("maven");
             writer.String(Maven);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>ReleaseDefaults are release settings a plugin supplies for a project: the same fields as the release-from-a-command settings of smith.toml, used for the ones the project's table leaves out.</summary>
+public sealed record ReleaseDefaults : IProtocolValue<ReleaseDefaults>
+{
+    /// <summary>Build is the shell command that makes the files, run at the workspace root on a runner of each platform.</summary>
+    public required string Build { get; init; }
+
+    /// <summary>Assets are workspace-relative globs of the files Build leaves.</summary>
+    public IReadOnlyList<string> Assets { get; init; } = [];
+
+    /// <summary>Platforms are the runner platforms (windows-x64, macos-arm64, macos-x64, linux-x64, linux-arm64).</summary>
+    public IReadOnlyList<string> Platforms { get; init; } = [];
+
+    /// <summary>AssetName renames each file on upload; see the asset_name setting.</summary>
+    public string AssetName { get; init; } = string.Empty;
+
+    /// <summary>Checksums attaches a checksums file for the files a runner uploads.</summary>
+    public bool Checksums { get; init; }
+
+    /// <inheritdoc />
+    public static ReleaseDefaults Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ReleaseDefaults
+        {
+            Build = StringValue(Member(map, "build"), Join(path, "build")),
+            Assets = ListOf(Member(map, "assets"), Join(path, "assets"), StringValue),
+            Platforms = ListOf(Member(map, "platforms"), Join(path, "platforms"), StringValue),
+            AssetName = StringValue(Member(map, "assetName"), Join(path, "assetName")),
+            Checksums = BooleanValue(Member(map, "checksums"), Join(path, "checksums")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("build");
+        writer.String(Build);
+        writer.Property("assets");
+        MessageWritingAlgorithm.List(writer, Assets, (builder1, item1) => builder1.String(item1));
+        writer.Property("platforms");
+        MessageWritingAlgorithm.List(writer, Platforms, (builder1, item1) => builder1.String(item1));
+        if (AssetName.Length > 0)
+        {
+            writer.Property("assetName");
+            writer.String(AssetName);
+        }
+        if (Checksums)
+        {
+            writer.Property("checksums");
+            writer.Boolean(Checksums);
         }
         writer.EndObject();
     }

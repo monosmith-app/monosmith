@@ -73,6 +73,7 @@ __all__ = [
     "PublishedResult",
     "Registries",
     "Registry",
+    "ReleaseDefaults",
     "RemoveParams",
     "RemoveResult",
     "Request",
@@ -412,6 +413,12 @@ class Contribution(TypedDict, total=False):
     """
     DependsOn adds dependencies to tasks the project already has, by task name ({"lint":
     ["slice-check"]}).
+    """
+    release: ReleaseDefaults
+    """
+    Release is how the project's release files are made, for a project that releases through
+    GitHub releases and leaves them out of its smith.toml [projects.<name>.release] table; what
+    the table sets wins.
     """
 
 
@@ -1122,6 +1129,34 @@ class Registry(_RegistryRequired, total=False):
     Maven is the Maven repository packages deploy to: an https URL, or MavenGitHub for the GitHub
     Packages repository of the repository the release runs in.
     """
+
+
+class _ReleaseDefaultsRequired(TypedDict):
+    build: str
+    """
+    Build is the shell command that makes the files, run at the workspace root on a runner of
+    each platform.
+    """
+    assets: list[str]
+    """Assets are workspace-relative globs of the files Build leaves."""
+    platforms: list[str]
+    """
+    Platforms are the runner platforms (windows-x64, macos-arm64, macos-x64, linux-x64,
+    linux-arm64).
+    """
+
+
+class ReleaseDefaults(_ReleaseDefaultsRequired, total=False):
+    """
+    ReleaseDefaults are release settings a plugin supplies for a project: the same fields as the
+    release-from-a-command settings of smith.toml, used for the ones the project's table leaves
+    out.
+    """
+
+    assetName: str
+    """AssetName renames each file on upload; see the asset_name setting."""
+    checksums: bool
+    """Checksums attaches a checksums file for the files a runner uploads."""
 
 
 class _RemoveParamsRequired(TypedDict):

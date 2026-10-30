@@ -457,8 +457,14 @@ type ProjectRelease struct {
 	Assets []string `toml:"assets"`
 	// AssetName is the file name pattern of each asset; placeholders are
 	// {product}, {version}, {os}, {arch} and {ext}.
-	// Default: {product}_{version}_{os}_{arch}.{ext}.
+	// Default: {product}_{version}_{os}_{arch}.{ext}. With Build the files
+	// are renamed when they are uploaded, and the placeholders are {product},
+	// {version}, {platform} (windows-x64) and {ext}; without it they keep
+	// their names.
 	AssetName string `toml:"asset_name"`
+	// Checksums attaches, with Build, a SHA-256 checksums file of the files
+	// each runner uploads. Default: off (on for the apps whose plugin says).
+	Checksums *bool `toml:"checksums"`
 	// Product fills {product}. Default: the project name.
 	Product string `toml:"product"`
 	// Platforms are os/arch pairs. Default: DefaultPlatforms.

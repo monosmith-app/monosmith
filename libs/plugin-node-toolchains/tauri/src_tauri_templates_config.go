@@ -53,7 +53,7 @@ pub fn run() {
 	"tauri.conf.json": `{
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "{{name}}",
-  "version": "0.0.0",
+  "version": "../package.json",
   "identifier": "{{identifier}}",
   "build": {
     "frontendDist": "{{dist}}",

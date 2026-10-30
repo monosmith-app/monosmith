@@ -54,6 +54,11 @@ func TestContribute(t *testing.T) {
 	if dev := res.Projects["studio"].Replace[DevTask]; dev.Cache || dev.Command[len(dev.Command)-1] != "dev" {
 		t.Errorf("tauri-dev %+v", dev)
 	}
+	rel := res.Projects["studio"].Release
+	if rel == nil || rel.Build != "smith run tauri-build -p studio" || strings.Join(rel.Platforms, ",") != "windows-x64,macos-arm64,macos-x64,linux-x64" ||
+		rel.Assets[0] != "dist/tauri/apps/studio/release/bundle/**/*.{msi,exe,dmg,deb,rpm,AppImage}" || !rel.Checksums || rel.AssetName == "" {
+		t.Errorf("release defaults %+v", rel)
+	}
 }
 
 func TestDoctor(t *testing.T) {
