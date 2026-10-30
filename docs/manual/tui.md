@@ -196,8 +196,12 @@ command runs with their sha256 and the environment it may see, and `y` trusts it
 it and writes its sha256 to `smith.toml` for CI, `Esc` leaves it untrusted; `f` forgets a
 decision (`smith plugin untrust`). A trusted plugin runs with your privileges and is not
 sandboxed. Then the plugins installed on the plugin search path, and a row to install a
-plugin: until `smith plugin install` exists in your smith it shows the command as a hint, and
-then it asks for the name or path here.
+plugin. `Enter` on that row asks where the plugin comes from (a directory, an archive, an https
+URL or `github:owner/repo@tag`; an archive or URL needs its sha256 typed after the source) and
+shows the command line as you type, `smith plugin install <source> [--sha256 <digest>]`. `Enter`
+again shows it in the confirmation dialog, and `y` runs it in the Run view, so its output is the
+command's own. The plugin is checked and never started; trusting it is the review above. The tab
+reads the plugins again when the command ends.
 
 **Architecture.** How the code of the workspace is laid out, as radio rows with what each
 choice means beside it: `vertical-slices` (code grouped by what it does, one flat folder per

@@ -50,4 +50,7 @@ type Result struct {
 	Theme *theme.Choice
 	// Form is the title of a guided form to open.
 	Form string
+	// Run is a smith command line (without the leading smith) the shell
+	// shows, asks about and runs in the Run view: the tab never runs it.
+	Run []string
 }

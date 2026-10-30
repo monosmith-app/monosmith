@@ -88,7 +88,39 @@ func newReview(name string, r TrustReview) *editor {
 }
 
 func newInstall() *editor {
-	return &editor{kind: editInstall, title: "Install a plugin", about: "A plugin's name, or the path to its directory. smith plugin install does the same.", input: newInput("", "name or path")}
+	return &editor{
+		kind:  editInstall,
+		title: "Install a plugin",
+		about: "A plugin directory or archive, an https URL or github:owner/repo@tag. An archive or URL also needs its sha256: type it after the source.",
+		input: newInput("", "source [sha256]"),
+	}
+}
+
+// installArgv is the command line the typed text stands for, or why it is not one.
+func installArgv(typed string) ([]string, string) {
+	words := strings.Fields(typed)
+	if len(words) == 0 {
+		return []string{"plugin", "install", "<source>"}, "Say where the plugin comes from."
+	}
+	argv := []string{"plugin", "install"}
+	if n := len(words); n > 1 && isSHA256(words[n-1]) {
+		argv = append(argv, strings.Join(words[:n-1], " "), "--sha256", words[n-1])
+	} else {
+		argv = append(argv, strings.Join(words, " "))
+	}
+	return argv, ""
+}
+
+func isSHA256(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for _, r := range s {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
+			return false
+		}
+	}
+	return true
 }
 
 // values are what the editor would save.
@@ -130,7 +162,14 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 			e.err = ""
 			m.ed = &e
 			if e.kind == editInstall {
-				return m, Result{Cmd: m.install(strings.TrimSpace(e.input.Value()))}
+				argv, why := installArgv(e.input.Value())
+				if why != "" {
+					e.err = why
+					m.ed = &e
+					return m, Result{}
+				}
+				m.ed = nil
+				return m, Result{Run: argv}
 			}
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}

@@ -52,11 +52,7 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		}
 		return "     " + pane.Cell(p.Name, 14) + pane.Cell(p.Version, 10) + th.Muted(p.Dir)
 	case kindInstall:
-		row := "   " + th.Accent("+ Install a plugin…")
-		if m.b.Install == nil {
-			row += "  " + th.Muted("smith plugin install <name|path>")
-		}
-		return row
+		return "   " + th.Accent("+ Install a plugin…") + "  " + th.Muted("smith plugin install <source>")
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		return "   " + m.radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
@@ -166,12 +162,8 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		}
 		add(th.Muted("Search path: " + strings.Join(m.snap.SearchPath, ", ")))
 	case kindInstall:
-		add(th.Bold("Install a plugin"), "From a name or a path: smith plugin install <name|path>.")
-		if m.b.Install == nil {
-			add(th.Muted("This smith does not have that command yet. When it does, Enter asks for the name here and installs it without leaving."))
-		} else {
-			add("Enter asks for the name or path and installs it.")
-		}
+		add(th.Bold("Install a plugin"), "From a directory, an archive, an https URL or a GitHub release: smith plugin install <source>.",
+			"Enter asks where it comes from and shows the command line. After you confirm it, it runs in the Run view. The plugin is checked, never started, and trusted only when you say so here.")
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		add(th.Bold(a.Name)+th.Muted("  "+a.Meaning),
@@ -251,6 +243,11 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 		in.Width = max(w-6, 4)
 		lines = append(lines, "", " "+in.View())
 		keys = "Enter saves · Esc cancels"
+		if e.kind == editInstall {
+			argv, _ := installArgv(e.input.Value())
+			lines = append(lines, "", " "+th.Muted("smith "+strings.Join(argv, " ")))
+			keys = "Enter shows the command · Esc cancels"
+		}
 	case editMulti:
 		lines = append(lines, "")
 		for i, c := range e.choices {

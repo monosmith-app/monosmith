@@ -110,10 +110,6 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			}
 			return path + " removed: it has its default", nil
 		},
-		// Install stays nil until `smith plugin install` is in this smith (the
-		// Plugins section shows the command as a hint meanwhile). When it
-		// lands, set it here to that command's use case.
-		Install: nil,
 		Style: settingsview.StylePrefs{
 			Theme: prefs.Theme, Icons: prefs.Icons, Path: userprefs.Path(home), Getenv: getenv, Dark: theme.DarkBackground(getenv),
 			Save: func(themeName, icons string) error {

@@ -77,6 +77,7 @@ var catalog = []Action{
 	{Command: []string{"commands"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"schema"}, Safety: Reads, NotInTUI: referenceOut, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"plugin"}, Safety: Reads},
+	{Command: []string{"plugin", "install"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"plugin", "set"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"plugin", "enable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"plugin", "disable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
