@@ -23,6 +23,8 @@ export interface StatusInput {
 }
 
 const CLICK_TO_CONVERT = 'Click for a menu: convert it, see what would change.'
+const CLICK_TO_CREATE = 'Click for a menu: create a new workspace here.'
+const CLICK_TO_BRING_IN = 'Click for a menu: bring this folder in, see what would change.'
 const CLICK = 'Click for a menu: run affected, doctor, refresh, output, settings.'
 
 /**
@@ -35,8 +37,22 @@ export function describeStatus (input: StatusInput): StatusText {
     case 'starting': {
       return { text: '$(sync~spin) smith', tooltip: 'MonoSmith: starting smith…', warning: false }
     }
+    case 'nofolder': {
+      return { text: '$(tools) smith', tooltip: 'MonoSmith: no folder is open.', warning: false }
+    }
     case 'empty': {
-      return { text: '$(tools) smith', tooltip: 'MonoSmith: no open folder has a smith.toml.', warning: false }
+      return {
+        text:    '$(tools) smith',
+        tooltip: `MonoSmith: this folder is empty.\n${CLICK_TO_CREATE}`,
+        warning: false,
+      }
+    }
+    case 'unrecognised': {
+      return {
+        text:    '$(tools) smith',
+        tooltip: `MonoSmith: this folder is not a MonoSmith workspace yet.\n${CLICK_TO_BRING_IN}`,
+        warning: false,
+      }
     }
     case 'adoptable': {
       return {

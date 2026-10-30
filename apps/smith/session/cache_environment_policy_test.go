@@ -36,6 +36,7 @@ func TestPullRequestsAreReadOnlyOnEveryProvider(t *testing.T) {
 		"gitlab merge request":       {"CI_PIPELINE_SOURCE": "merge_request_event"},
 		"circleci pull request":      {"CIRCLE_PULL_REQUEST": "https://github.com/o/r/pull/3"},
 		"circleci fork pull request": {"CIRCLE_PR_NUMBER": "3"},
+		"bitbucket pull request":     {"BITBUCKET_PR_ID": "3"},
 	}
 	for name, values := range cases {
 		if !pullRequest(env(values)) {
@@ -43,11 +44,12 @@ func TestPullRequestsAreReadOnlyOnEveryProvider(t *testing.T) {
 		}
 	}
 	for name, values := range map[string]map[string]string{
-		"github push":     {"GITHUB_EVENT_NAME": "push"},
-		"azure ci":        {"BUILD_REASON": "IndividualCI"},
-		"gitlab pipeline": {"CI_PIPELINE_SOURCE": "push"},
-		"circleci branch": {"CIRCLECI": "true", "CIRCLE_BRANCH": "main"},
-		"a laptop":        {},
+		"github push":      {"GITHUB_EVENT_NAME": "push"},
+		"azure ci":         {"BUILD_REASON": "IndividualCI"},
+		"gitlab pipeline":  {"CI_PIPELINE_SOURCE": "push"},
+		"circleci branch":  {"CIRCLECI": "true", "CIRCLE_BRANCH": "main"},
+		"bitbucket branch": {"BITBUCKET_BUILD_NUMBER": "9", "BITBUCKET_BRANCH": "main"},
+		"a laptop":         {},
 	} {
 		if pullRequest(env(values)) {
 			t.Errorf("%s is read-only", name)

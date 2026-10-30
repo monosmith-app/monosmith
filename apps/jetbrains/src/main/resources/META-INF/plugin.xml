@@ -1,0 +1,11 @@
+<idea-plugin>
+    <id>dev.monosmith.jetbrains</id>
+    <name>MonoSmith</name>
+    <vendor>MonoSmith</vendor>
+    <description>Lists the projects and tasks of a MonoSmith workspace and runs a task, showing the command line first. Uses the smith installed in the workspace or on the PATH.</description>
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.toolwindow.ProjectsToolWindowHandler"/>
+    </extensions>
+</idea-plugin>

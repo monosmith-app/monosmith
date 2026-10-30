@@ -87,7 +87,9 @@ export function createWorkspaceTree (factsOf: (root: string, task: string) => Ta
     const before = dotUris(roots)
     roots = toTree(folders, factsOf, narrowed)
     view.description = describeAffected(folders) || undefined
-    view.message = describeFilter(narrowed, countProjects(roots))
+    // With nothing to list the welcome text is static, so the reason smith failed goes in the message above it.
+    const why = roots.length === 0 && folders.length === 1 ? folders[0]?.note : undefined
+    view.message = why?.startsWith('smith failed') === true ? why : describeFilter(narrowed, countProjects(roots))
     changed.fire(undefined)
     decorations.fire([...before, ...dotUris(roots)])
   }

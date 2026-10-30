@@ -56,6 +56,11 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			}
 		}
 	}
+	for _, p := range params.Projects {
+		if p.Kind == protocol.ProjectPackage {
+			findings = append(findings, CheckPackageImports(workspaceRoot, p))
+		}
+	}
 	required := work.GoVersion
 	if required == "" {
 		required = DefaultGoVersion

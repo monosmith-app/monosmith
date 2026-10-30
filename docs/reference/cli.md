@@ -65,7 +65,7 @@ Usage: `smith new <name> [flags]`
 | `--architecture <architecture>` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) | `vertical-slices` |
 | `--cache-dir <cache-dir>` | the task cache folder inside the workspace (default .smith/cache) | `.smith/cache` |
 | `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |
-| `--ci <ci>` | pipelines to generate: github, azure, gitlab, circleci (default github) (repeatable) | `github` |
+| `--ci <ci>` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) (repeatable) | `github` |
 | `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
 | `--github-releases` | create a GitHub Release for every release tag | off |
@@ -143,7 +143,7 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
-| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
+| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 
@@ -480,6 +480,7 @@ Usage: `smith ci <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
 | `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
@@ -538,6 +539,7 @@ Usage: `smith release <command> [flags]`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith release assets` | Build a release's files with its build command and upload them to its GitHub Release |
 | `smith release pub` | Publish a released app to pub.dev from its GitHub Release (the generated pub workflow runs it) |
 
 | Flag | Meaning | Default |

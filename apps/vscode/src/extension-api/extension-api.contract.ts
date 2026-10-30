@@ -4,7 +4,7 @@
  * may change with any release.
  */
 export interface ExtensionStateApi {
-  /** What the view shows: `ready`, `starting`, `missing`, `untrusted`, `failed`, `adoptable` or `empty`. */
+  /** What the view shows: `ready`, `starting`, `missing`, `untrusted`, `failed`, `adoptable`, `empty`, `unrecognised` or `nofolder`. */
   viewState:  () => string
   /** The names of the projects of every folder that runs smith. */
   projects:   () => string[]

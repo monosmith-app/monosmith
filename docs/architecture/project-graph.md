@@ -71,6 +71,11 @@ What each plugin reports:
 | python | the import name derived from the project name | top-level module names from `import` and `from ... import` lines in `.py` files, plus the import names of the `[project] dependencies` |
 | cpp | the project's directory | the workspace directories it adds with `add_subdirectory` |
 | bicep | the project's directory | the workspace directories its modules come from |
+| lua | the rock's `package` name | the rocks in the rockspec's `dependencies`, `lua` excluded |
+| applescript | the project's directory | none |
+| vba | the project's directory | none |
+| swift | the project's directory | the workspace directories of its `.package(path:)` dependencies |
+| objc | the pod's name | the pods in its `s.dependency` lines |
 | dotnet | the package id of the project file | the references of the project file; a tests project's references count as its owner's |
 | rust | the crate name | the crate's path dependencies |
 | dart | the package name | the dependencies in `pubspec.yaml` |

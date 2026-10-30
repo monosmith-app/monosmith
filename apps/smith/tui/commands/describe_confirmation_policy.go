@@ -34,6 +34,8 @@ func Describe(argv []string) (title, why string) {
 			return "Align dependency versions", "This rewrites manifests so each dependency has one version across the workspace, then installs."
 		}
 		return "Update dependencies", "This moves the chosen dependencies to their latest release in every project that declares them, then installs."
+	case verb == "plugin" && len(argv) > 1 && argv[1] == "install":
+		return "Install a plugin", "This puts the plugin on this machine after checking it. smith does not start it."
 	case verb == "plugin":
 		return "Change plugins", "This edits smith.toml."
 	}

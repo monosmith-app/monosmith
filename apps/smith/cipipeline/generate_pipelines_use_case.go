@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -42,6 +43,13 @@ func Collect(s *session.Session) (Contributions, error) {
 	for _, p := range s.Graph.Projects {
 		if _, ok := p.Tasks[PackTask]; ok {
 			c.Pack = true
+		}
+		if release.BuildsAssetsFromCommand(p) {
+			for _, platform := range workspace.CommandPlatforms {
+				if slices.Contains(p.Release.Platforms, platform) && !slices.Contains(c.AssetPlatforms, platform) {
+					c.AssetPlatforms = append(c.AssetPlatforms, platform)
+				}
+			}
 		}
 		if release.Native(p) {
 			c.Native = true
@@ -80,6 +88,7 @@ func Collect(s *session.Session) (Contributions, error) {
 // Rendered maps each configured provider's file to its content.
 func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Branches = cfg.CI.Branches
+	m.SiblingRepos = cfg.CI.SiblingRepos
 	out := map[string]string{}
 	for _, p := range cfg.CI.Providers {
 		switch p {
@@ -95,6 +104,8 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 			out[GitLabPath] = RenderGitLab(m)
 		case "circleci":
 			out[CircleCIPath] = RenderCircleCI(m)
+		case "bitbucket":
+			out[BitbucketPath] = RenderBitbucket(m)
 		}
 	}
 	if cfg.CI.Devcontainer {
@@ -153,7 +164,7 @@ func fileMode(path string) os.FileMode {
 
 // OwnedPaths are the files smith generates and may rewrite or delete. A file
 // at one of them belongs to smith only while it starts with smith's header.
-var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, DevcontainerPath, InstallScriptPath}
+var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, BitbucketPath, DevcontainerPath, InstallScriptPath}
 
 // Stale lists the files smith generated that the workspace no longer asks for
 // (a provider dropped from [ci] providers): they carry smith's header and are

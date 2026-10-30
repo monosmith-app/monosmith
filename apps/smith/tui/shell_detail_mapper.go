@@ -255,7 +255,7 @@ var taskMeanings = map[string]string{
 	"typecheck":  "checks the types without building",
 	"package":    "bundles the build for publishing",
 	"format":     "rewrites the files to the house style",
-	"deps-check": "fails when the code imports a package its package.json does not list",
+	"deps-check": "fails when the code imports a package its manifest does not list (package.json, pyproject.toml, go.mod)",
 	"prune":      "writes the deploy folder: the app with only the packages it uses",
 	"audit":      "looks for known security problems in the dependencies",
 }

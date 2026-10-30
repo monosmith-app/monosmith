@@ -20,6 +20,9 @@ func ManualSteps(cfg workspace.Config, m Model) []string {
 		if p == "circleci" {
 			steps = append(steps, "CircleCI: the checkout key is read-only, so add a user key with write access (Project Settings → SSH Keys → Add user key) for smith ci release to push tags; for the release preview comment on GitHub pull requests add GITHUB_TOKEN too")
 		}
+		if p == "bitbucket" {
+			steps = append(steps, "Bitbucket: add BITBUCKET_TOKEN as a secured repository variable, a repository access token (Repository settings → Access tokens) with pull request write and repository write, for the release preview comment and for smith ci release to push tags")
+		}
 		var secrets []string
 		for _, c := range m.Credentials {
 			if p == "github" && c.Env == "GITHUB_TOKEN" {
@@ -37,6 +40,8 @@ func ManualSteps(cfg workspace.Config, m Model) []string {
 			steps = append(steps, "Azure Pipelines: add the secret variables "+strings.Join(secrets, ", ")+" to the pipeline (Edit → Variables, keep this value secret)")
 		case "circleci":
 			steps = append(steps, "CircleCI: add the environment variables "+strings.Join(secrets, ", ")+" (Project Settings → Environment Variables, or a context the project uses)")
+		case "bitbucket":
+			steps = append(steps, "Bitbucket: add the secured repository variables "+strings.Join(secrets, ", ")+" (Repository settings → Pipelines → Repository variables)")
 		case "gitlab":
 			steps = append(steps, "GitLab: add the masked CI/CD variables "+strings.Join(secrets, ", ")+" (Settings → CI/CD → Variables)")
 		}

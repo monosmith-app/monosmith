@@ -37,6 +37,22 @@ func TestFromEnvironment(t *testing.T) {
 	}
 }
 
+func TestBitbucketPullRequest(t *testing.T) {
+	vars := map[string]string{"BITBUCKET_BUILD_NUMBER": "9", "BITBUCKET_WORKSPACE": "acme", "BITBUCKET_REPO_SLUG": "repo"}
+	if _, ok, why := FromEnvironment(env(vars)); ok || !strings.Contains(why, "not for a pull request") {
+		t.Fatalf("a branch build: %v %s", ok, why)
+	}
+	vars["BITBUCKET_PR_ID"] = "12"
+	if _, ok, why := FromEnvironment(env(vars)); ok || !strings.Contains(why, "BITBUCKET_TOKEN") {
+		t.Fatalf("without a token: %v %s", ok, why)
+	}
+	vars["BITBUCKET_TOKEN"] = "t"
+	pr, ok, _ := FromEnvironment(env(vars))
+	if !ok || pr.Provider != "bitbucket" || pr.Number != 12 || pr.Repo != "acme/repo" || pr.API != "https://api.bitbucket.org/2.0" {
+		t.Fatalf("%+v", pr)
+	}
+}
+
 func TestGitLabMergeRequest(t *testing.T) {
 	env := map[string]string{"GITLAB_CI": "true", "CI_PIPELINE_SOURCE": "merge_request_event", "CI_MERGE_REQUEST_IID": "7", "CI_API_V4_URL": "https://gitlab.example/api/v4", "CI_PROJECT_ID": "42"}
 	if _, ok, why := FromEnvironment(func(k string) string { return env[k] }); ok || !strings.Contains(why, "GITLAB_TOKEN") {

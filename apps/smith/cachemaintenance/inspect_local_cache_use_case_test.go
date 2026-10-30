@@ -34,10 +34,10 @@ func seedEntry(t testing.TB, store taskcache.Storage, task string, outputs ...[]
 	sum := sha256.Sum256([]byte(task + string(bytes.Join(outputs, nil))))
 	key = hex.EncodeToString(sum[:])
 	if err := store.Put(taskcache.AC, key, bytes.NewReader(raw)); err != nil {
-		t.Fatal(err)
+		t.Fatalf("storing the entry of %s: %v", task, err)
 	}
 	if err := taskcache.Remember(store, task, key); err != nil {
-		t.Fatal(err)
+		t.Fatalf("remembering %s: %v", task, err)
 	}
 	return key, blobs
 }
@@ -47,7 +47,7 @@ func putBlob(t testing.TB, store taskcache.Storage, content []byte) string {
 	sum := sha256.Sum256(content)
 	digest := hex.EncodeToString(sum[:])
 	if err := store.Put(taskcache.CAS, digest, bytes.NewReader(content)); err != nil {
-		t.Fatal(err)
+		t.Fatalf("storing blob %s: %v", digest, err)
 	}
 	return digest
 }

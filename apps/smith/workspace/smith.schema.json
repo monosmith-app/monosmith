@@ -25,7 +25,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
+        "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci", "bitbucket"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },
         "smith_version": { "type": "string", "pattern": "^(latest|[0-9]+[.][0-9]+[.][0-9]+.*)$", "description": "The smith the generated pipelines install: latest, or an exact version. Default: the version of the smith that generates them." },
@@ -36,7 +36,24 @@
         "audit_policies": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Ecosystem policy checks smith ci audit runs beyond the vulnerability scan. Default: none." },
         "audit_warn": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Audit policies that only report instead of failing. Default: none." },
         "audit_allow_install_scripts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "npm packages whose install scripts the node audit policy accepts. Default: none." },
-        "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." }
+        "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." },
+        "sibling_repos": {
+          "type": "array",
+          "description": "Other GitHub repositories the generated workflow checks out beside the workspace, GitHub Actions only. Default: none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo", "env"],
+            "properties": {
+              "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "The repository, owner/name." },
+              "ref": { "type": "string", "description": "Branch, tag or commit to check out. Default: the repository's default branch." },
+              "env": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "description": "Environment variable that holds the checkout's absolute path in every later step." },
+              "dir": { "type": "string", "description": "The checkout's directory in the workspace. Default: the repository's name." },
+              "pre_build": { "type": "string", "description": "Shell command run in the checkout before smith sets the workspace up. Default: none." },
+              "token_secret": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "description": "GitHub secret holding a token that can read the repository. Default: the job's token." }
+            }
+          }
+        }
       }
     },
     "dependencies": {
@@ -273,7 +290,9 @@
             "properties": {
               "asset_name": { "type": "string", "description": "Asset file name pattern; placeholders {product}, {version}, {os}, {arch}, {ext}." },
               "product": { "type": "string", "description": "Fills {product}. Default: the project name." },
-              "platforms": { "type": "array", "items": { "type": "string", "pattern": "^[^/]+/[^/]+$" }, "description": "os/arch pairs." },
+              "build": { "type": "string", "minLength": 1, "description": "A shell command, run at the workspace root on one runner per platform, that makes the files assets names. They are uploaded to the GitHub Release with gh release upload (never an artifact), whatever the language. The command sees SMITH_PLATFORM, SMITH_VERSION and SMITH_TAG. Needs [release] github_releases and platforms; excludes asset_name, os_alias, arch_alias, version_variable, package_managers, linux_packages, npm, pypi, nuget, rubygems and pub." },
+              "assets": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "description": "Workspace-relative globs of the files build leaves, each uploaded to the release. Needs build." },
+              "platforms": { "type": "array", "items": { "type": "string", "pattern": "^([^/]+/[^/]+|windows-x64|macos-arm64|macos-x64|linux-x64|linux-arm64)$" }, "description": "os/arch pairs; with build, runner names: windows-x64, macos-arm64, macos-x64, linux-x64, linux-arm64." },
               "os_alias": { "type": "object", "additionalProperties": { "type": "string" } },
               "arch_alias": { "type": "object", "additionalProperties": { "type": "string" } },
               "version_variable": { "type": "string", "description": "The symbol the version is stamped into. Default for Go: main.version." },

@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
       - uses: actions/setup-go@v7
@@ -34,6 +34,19 @@ jobs:
           go-version: '1.26'
           check-latest: true
           cache: false
+      - name: Install gradle
+        shell: bash
+        run: |
+          curl -fsSLo /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.8.1-bin.zip
+          unzip -q -o -d "$HOME" /tmp/gradle.zip && rm /tmp/gradle.zip
+          export PATH="$HOME/gradle-9.8.1/bin:$PATH"
+          if [ -n "$GITHUB_PATH" ]; then echo "$HOME/gradle-9.8.1/bin" >> "$GITHUB_PATH"; fi
+          echo "##vso[task.prependpath]$HOME/gradle-9.8.1/bin"
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -44,7 +57,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/go/pkg/mod
-          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
+          key: smith-go-${{ runner.os }}-${{ hashFiles('libs/actions/go.sum', 'libs/plugin-applescript/go.sum', 'libs/plugin-architectures/go.sum', 'libs/plugin-bicep/go.sum', 'libs/plugin-bundle/go.sum', 'libs/plugin-cpp/go.sum', 'libs/plugin-dart/go.sum', 'libs/plugin-docker/go.sum', 'libs/plugin-dotnet/go.sum', 'libs/plugin-go/go.sum', 'libs/plugin-jvm/go.sum', 'libs/plugin-lua/go.sum', 'libs/plugin-node/go.sum', 'libs/plugin-node-toolchains/go.sum', 'libs/plugin-objc/go.sum', 'libs/plugin-php/go.sum', 'libs/plugin-python/go.sum', 'libs/plugin-recipe/go.sum', 'libs/plugin-ruby/go.sum', 'libs/plugin-rust/go.sum', 'packages/plugin-sdk/go.sum', 'libs/plugin-swift/go.sum', 'libs/plugin-vba/go.sum', 'libs/plugin-vertical-slices/go.sum', 'apps/smith/go.sum') }}
           restore-keys: |
             smith-go-${{ runner.os }}-
       - name: Cache the npm download store

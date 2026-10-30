@@ -60,7 +60,7 @@ func TestAWrongAnswerIsExplainedAndTheDefaultTakenAfterThreeTries(t *testing.T) 
 	if answers[AnswerCI] != "github" {
 		t.Errorf("ci = %q", answers[AnswerCI])
 	}
-	if !strings.Contains(out, "type a number from 1 to 4") || !strings.Contains(out, "Using the default, github.") {
+	if !strings.Contains(out, "type a number from 1 to 5") || !strings.Contains(out, "Using the default, github.") {
 		t.Errorf("\n%s", out)
 	}
 }

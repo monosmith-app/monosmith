@@ -166,6 +166,10 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return err
 	}
 	res.Published, res.Registry, res.Publish, res.Assets = pr.Published, pr.Registry, pr.Skipped, pr.Assets
+	if BuildsAssetsFromCommand(p) {
+		say("%s are made by `%s` on a runner each (smith ci assets, or smith release assets on this machine) and uploaded to the GitHub Release: %s",
+			strings.Join(p.Release.Platforms, ", "), p.Release.Build, strings.Join(p.Release.Assets, ", "))
+	}
 	if err := deploy(ctx, s, p, item, opts.DryRun, res, say); err != nil {
 		return err
 	}
@@ -536,7 +540,7 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 	if err != nil {
 		return err
 	}
-	if assets == nil && (p.Release != nil || attachesItsFile(p)) && !Native(p) {
+	if assets == nil && (p.Release != nil || attachesItsFile(p)) && !Native(p) && !BuildsAssetsFromCommand(p) {
 		existing, found, err := client.ReleaseByTag(repo, item.Tag)
 		if err != nil {
 			return err

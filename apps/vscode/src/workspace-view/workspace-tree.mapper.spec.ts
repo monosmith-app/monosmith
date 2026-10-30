@@ -160,8 +160,8 @@ describe('toTree', () => {
 
 describe('describeAffected', () => {
   it('counts the affected projects of all folders', () => {
-    expect(describeAffected(single)).toBe('1 of 3 affected')
-    expect(describeAffected([{ root: '/r', name: 'r', snapshot: { ...snapshot, affected: new Set(['web', 'core', 'api']) } }])).toBe('all 3 affected')
+    expect(describeAffected(single)).toBe('1 affected')
+    expect(describeAffected([{ root: '/r', name: 'r', snapshot: { ...snapshot, affected: new Set(['web', 'core', 'api']) } }])).toBe('3 affected')
   })
 
   it('says nothing when none are affected or it is not known', () => {

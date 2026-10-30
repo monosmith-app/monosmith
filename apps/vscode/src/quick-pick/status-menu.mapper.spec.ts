@@ -27,7 +27,20 @@ describe('statusMenuEntries', () => {
 
 describe('statusMenuEntries for a folder that can be converted', () => {
   it('offers the conversion and its preview instead of runs', () => {
-    const commands = statusMenuEntries({ ...idle, adoptable: true }).map((entry) => entry.command)
+    const commands = statusMenuEntries({ ...idle, view: 'adoptable' }).map((entry) => entry.command)
     expect(commands).toEqual(['monosmith.adopt.start', 'monosmith.adopt.preview', 'monosmith.showOutput', 'monosmith.openSettings'])
+  })
+})
+
+describe('statusMenuEntries for a folder with no smith.toml and nothing to convert', () => {
+  it('offers a new workspace in an empty folder, and no runs', () => {
+    const commands = statusMenuEntries({ ...idle, view: 'empty' }).map((entry) => entry.command)
+    expect(commands).toEqual(['monosmith.new', 'monosmith.showOutput', 'monosmith.openSettings'])
+  })
+
+  it('offers to bring in a folder with files, and its preview', () => {
+    const entries = statusMenuEntries({ ...idle, view: 'unrecognised' })
+    expect(entries.map((entry) => entry.command)).toEqual(['monosmith.adopt.start', 'monosmith.adopt.preview', 'monosmith.showOutput', 'monosmith.openSettings'])
+    expect(entries[0]?.label).toContain('Bring this folder into MonoSmith')
   })
 })

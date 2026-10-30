@@ -452,7 +452,6 @@ These are recorded in
 | Rules for which projects may depend on which | Nx, Bazel, Pants, Buck2, moon, Please; Turborepo (experimental) and Yarn (constraints) in part | **Medium to high**: architecture governance as the repository grows | #570 |
 | JetBrains IDE plugin | Nx, Lerna, Bazel, Gradle, Please | **Medium to high**: many JVM and .NET teams use JetBrains | #303 |
 | Speaking the Bazel Remote Execution API for caching | Bazel, Pants, Buck2, moon; Please (experimental) | Medium: reuse of existing cache servers | #345 asks first which servers already work over HTTP |
-| A plugin SDK for C# | Nx, Pants, Bazel, Buck2, Gradle ship SDKs in their own languages | Medium: writing a plugin is the route to a missing language | Go, TypeScript and Python are published; C# is next: #564 |
 | Sandboxed plugins | moon (WASM plugins get a sandboxed file system) | Medium to high for teams that run plugins from outside | smith trusts, pins and limits the environment of a plugin but does not sandbox it: #565, [decision 0036](../../architecture/decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md) |
 | Import edges between languages in the graph | Nx, Bazel, Buck2, Please | Medium for polyglot repositories | Edges across languages come from shared schemas you name; by design, [decision 0028](../../architecture/decisions/0028-graph-edges-from-shared-schemas.md) |
 | Gradle, Kotlin and Android environments verified end to end | Gradle (`gradle init`) | Medium for JVM teams | Maven was run on 1.65.0; Gradle was not run (not installed); the `jvm` plugin supports both |
@@ -461,7 +460,7 @@ These are recorded in
 | Trusted publishing (no long-lived key) for more registries | npm (`npm trust`) | Medium to high | RubyGems, pub.dev and PyPI done; no issue for the rest |
 | CircleCI, Bitbucket Pipelines or Jenkins pipelines | Nx (CircleCI, Bitbucket Pipelines; not Jenkins) | Medium | #571 |
 | One version of each shared dependency across projects, in every language | Rush, Gradle, Cargo, pnpm and Yarn, Bazel | Medium | `smith sync` covers Node, Python, Rust, Go, .NET, the JVM, Dart, Ruby and PHP. #572 |
-| Checking that a package declares what it imports | Nx, Rush, Bazel, Pants | Medium | smith checks Node packages only (`deps-check`). #572 |
+| Checking that a package declares what it imports | Nx, Rush, Bazel, Pants | Medium | smith checks Node, Python and Go packages (`deps-check`). #572 |
 | Dependency vulnerability audit | npm, pnpm, Yarn | Medium to high | Node, Python, Go, Rust, .NET, Ruby and PHP; the JVM and Dart have no audit tool to run, see #572 |
 | Container images, Maven, crates.io, Go tags and Packagist releases verified end to end | Pants and Earthly (images); Gradle (Maven); Nx and Cargo (crates.io) | Medium | Shipped and covered by tests; not run against the live registry or a Docker daemon for this page |
 

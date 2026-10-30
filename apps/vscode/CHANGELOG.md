@@ -12,6 +12,12 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- **Start in an empty folder.** An empty folder says `This folder is empty.` and offers
+  Create a new MonoSmith workspace (`smith new --here` in a terminal, which asks its questions);
+  a folder with files but no tool smith recognises offers Bring this folder into MonoSmith
+  (`smith adopt`) and See what would change. The same entries are in the status bar menu.
+  The extension also wakes up for any folder with a file at its root, and when its view is opened.
+  Nothing is written by the extension itself.
 - **Bring a repository into MonoSmith.** The extension also wakes up in a folder
   with `nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, `rush.json`,
   `go.work` or a `package.json` that lists workspaces, and the Projects view says

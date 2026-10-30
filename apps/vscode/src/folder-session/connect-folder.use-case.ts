@@ -31,6 +31,8 @@ export async function connectFolder (deps: ConnectDeps, root: string): Promise<C
 
     return { phase: 'ready', session, location, pathSmith, skippedUntrusted }
   } catch (error) {
-    return { phase: 'failed', location, pathSmith, skippedUntrusted, error: error instanceof Error ? error.message : String(error) }
+    const reason = error instanceof Error ? error.message : String(error)
+
+    return { phase: 'failed', location, pathSmith, skippedUntrusted, error: location.source === 'setting' ? `the monosmith.path setting (${location.executable}) did not start: ${reason}` : reason }
   }
 }

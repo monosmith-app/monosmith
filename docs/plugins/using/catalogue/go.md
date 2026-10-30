@@ -70,10 +70,13 @@ The plugin contributes these tasks (`libs/plugin-go/discovery/module_tasks_confi
 | `build` | `go build ./...` | lib, package | yes | none (compiles, writes nothing) |
 | `test` | `go test ./...` | every module | yes | none |
 | `lint` | `golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml` (no `--config` when the repository has its own, see [Lint configuration](#lint-configuration)) | every module | yes | none |
+| `deps-check` | `smith go-deps-check <dir>` | package; its `lint` (or, without one, `build` or `test`) runs after it, so CI verify runs it | yes | none |
 | `start` | `go run .` | app | no | none |
 | `package` | `go build -trimpath -o {workspaceRoot}/dist/drop/<name>/<name>[.exe] .` | app | no | none declared; the binary lands in `dist/drop/<name>/` and `smith ci pack` keeps it |
 
 `.exe` is added to the binary name only when smith itself runs on Windows. Every cached task has the inputs `**/*`, `{workspaceRoot}/go.work` and `{workspaceRoot}/go.work.sum`. A `native` module gets `CGO_ENABLED=1` in the environment of every task.
+
+`deps-check` fails when a file of the module imports a package from a module its `go.mod` does not require. `go.work` merges the build lists of every module in the workspace, so a module can import a package that only another module requires and still build here, while whoever fetches the module on its own gets "no required module provides package". Never reported: the standard library, the module's own packages (and its nested modules' directories, which are skipped, as are `vendor/`, `testdata/`, and directories starting with `.` or `_`), files marked `//go:build ignore`, the modules of the `go.work` `use` directives, and modules a `replace` directive (in `go.mod` or `go.work`) names. A requirement marked `// indirect` counts as declared, versions are not compared, and a requirement nothing imports is not reported. A file that does not parse is left to the compiler. The output lines are `<file> imports <package>, which go.mod does not require`; the fix is `go mod tidy` in the module.
 
 There is no `typecheck` and no `format` task: `smith run typecheck` and `smith run format` answer `no selected project has a [typecheck] task` (and `[format]`). `golangci-lint` is the lint (it includes `go vet`); the compiler is the type check inside `build`.
 
@@ -280,6 +283,7 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work exists` | the workspace has Go modules and no `go.work` | run `go work init` and `go work use` |
 | `go.work entry <dir> exists` | a `use` entry has no `go.mod` | `go work edit -dropuse=./<dir>`; `smith doctor --fix` rewrites `go.work` |
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
+| `<dir> requires the modules it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix, `go mod tidy` in the module | `go mod tidy` |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
 | `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
 

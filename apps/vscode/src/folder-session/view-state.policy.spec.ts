@@ -16,17 +16,27 @@ describe('judgeViewState', () => {
     expect(judgeViewState(['failed'])).toBe('failed')
   })
 
-  it('is empty when no folder has a smith.toml and none looks adoptable', () => {
-    expect(judgeViewState([])).toBe('empty')
-    expect(judgeViewState([], 0)).toBe('empty')
+  it('is nofolder when nothing is open', () => {
+    expect(judgeViewState([])).toBe('nofolder')
+    expect(judgeViewState([], { adoptable: 0, empty: 0, unrecognised: 0 })).toBe('nofolder')
   })
 
   it('is adoptable when no folder runs smith but one looks like a repository to bring in', () => {
-    expect(judgeViewState([], 1)).toBe('adoptable')
+    expect(judgeViewState([], { adoptable: 1 })).toBe('adoptable')
+  })
+
+  it('is empty for an empty folder and unrecognised for one with files and no known tool', () => {
+    expect(judgeViewState([], { empty: 1 })).toBe('empty')
+    expect(judgeViewState([], { unrecognised: 1 })).toBe('unrecognised')
+  })
+
+  it('prefers a conversion to an empty folder, and that to a folder with unknown files', () => {
+    expect(judgeViewState([], { adoptable: 1, empty: 1, unrecognised: 1 })).toBe('adoptable')
+    expect(judgeViewState([], { empty: 1, unrecognised: 1 })).toBe('empty')
   })
 
   it('shows the folders that run smith before any offer', () => {
-    expect(judgeViewState(['ready'], 2)).toBe('ready')
-    expect(judgeViewState(['missing'], 2)).toBe('missing')
+    expect(judgeViewState(['ready'], { adoptable: 2, empty: 1 })).toBe('ready')
+    expect(judgeViewState(['missing'], { adoptable: 2, empty: 1 })).toBe('missing')
   })
 })

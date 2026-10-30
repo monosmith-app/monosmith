@@ -46,7 +46,7 @@ export function toDependencyRows (report: UpdatesReport): ListResult {
           children:    tools.map((tool) => ({
             id:          `deps:tool:${tool.plugin}:${tool.name}`,
             label:       tool.name,
-            description: `${tool.pinned} → ${tool.latest}`,
+            description: `→ ${tool.latest}`,
             icon:        'arrow-up',
             tooltip:     `${tool.name} is pinned at ${tool.pinned}; ${tool.latest} is out.`,
           })),
@@ -65,7 +65,7 @@ function toUpdateRow (update: DependencyUpdate, color: string): ListNode {
   return {
     id:          `deps:${update.plugin}:${update.name}`,
     label:       update.name,
-    description: `${update.current} → ${update.latest}`,
+    description: `→ ${update.latest}`,
     icon:        'arrow-up',
     color,
     ...(rewritable && { context: 'dependency', data: update.name }),

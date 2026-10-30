@@ -51,6 +51,12 @@ func TestDiscover(t *testing.T) {
 	if sdk.Kind != protocol.ProjectPackage || sdk.TagPrefix != "packages/sdk/v" {
 		t.Fatalf("sdk %+v", sdk)
 	}
+	if check := sdk.Tasks["deps-check"]; !reflect.DeepEqual(check.Command, []string{"{smith}", "go-deps-check", "packages/sdk"}) || !check.Cache || sdk.Tasks["lint"].DependsOn[0] != "deps-check" {
+		t.Fatalf("a package checks its imports before lint: %+v", check)
+	}
+	if _, ok := api.Tasks["deps-check"]; ok {
+		t.Fatal("an app has no deps-check")
+	}
 	if _, ok := sdk.Tasks["start"]; ok {
 		t.Fatal("a package has no start task")
 	}

@@ -179,14 +179,7 @@ func attach(ctx context.Context, s *session.Session, native []*projectgraph.Proj
 
 // taggedAt is the project's release tag pointing at commit, and its version.
 func taggedAt(s *session.Session, p *projectgraph.Project, commit string) (string, string) {
-	prefix := release.TagPrefix(p)
-	tags, _ := s.Git.Tags(prefix)
-	for _, t := range tags {
-		if c, err := s.Git.RevParse("refs/tags/" + t + "^{commit}"); err == nil && c == commit {
-			return t, strings.TrimPrefix(t, prefix)
-		}
-	}
-	return "", ""
+	return release.TaggedAt(s, p, commit)
 }
 
 func inCI() bool { return os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("TF_BUILD") != "" }

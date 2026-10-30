@@ -16,7 +16,7 @@ it compares with the other tools you may be looking at.
 |---|---|---|
 | **A new Rust, Python, .NET or Go project that works on day one** | a scaffold, the workspace around it, tasks, CI, a dev container and a release target for eleven ecosystems, with no BUILD files or per-language rules | [Languages and ready-made environments](comparison/languages-and-environments.md) |
 | **One dependency graph for every language** | edges read from manifests, imports and shared schemas; `smith graph` as a tree, JSON, DOT, HTML or a terminal browser; blast radius and diff between revisions | [The dependency graph](comparison/dependency-graph.md) |
-| **To extend the tool in a language your team already uses** | plugins in five roles over JSON-RPC, SDKs for Go, TypeScript and Python, `smith plugin check`, stacks and recipes for team standards, a trust gate for plugins a repository names | [Plugins and flexibility](comparison/plugins-and-flexibility.md) |
+| **To extend the tool in a language your team already uses** | plugins in five roles over JSON-RPC, SDKs for Go, TypeScript, Python and C#, `smith plugin check`, stacks and recipes for team standards, a trust gate for plugins a repository names | [Plugins and flexibility](comparison/plugins-and-flexibility.md) |
 
 They make two promises.
 

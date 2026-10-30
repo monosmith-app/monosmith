@@ -1,0 +1,62 @@
+package cipipeline
+
+import (
+	"fmt"
+	"strings"
+)
+
+// githubAssetRunners is the GitHub-hosted runner of each platform a release
+// build command runs for.
+var githubAssetRunners = map[string]string{
+	"windows-x64": "windows-latest",
+	"macos-arm64": "macos-latest",
+	"macos-x64":   "macos-15-intel",
+	"linux-x64":   "ubuntu-latest",
+	"linux-arm64": "ubuntu-24.04-arm",
+}
+
+// githubAssetsJob runs smith ci assets on a runner of each platform after the
+// ci job released: each runner builds and uploads its own files to the GitHub
+// Release with gh release upload, so no artifact storage is used.
+func githubAssetsJob(m Model) string {
+	if len(m.AssetPlatforms) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, `
+  assets:
+    needs: ci
+    if: github.event_name == 'push' && github.ref_name == '%s'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+`, m.ReleaseBranch)
+	for _, p := range m.AssetPlatforms {
+		fmt.Fprintf(&b, "          - platform: %s\n            os: %s\n", p, githubAssetRunners[p])
+	}
+	b.WriteString(`    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+`)
+	b.WriteString(githubSiblingCheckouts(m))
+	for _, t := range m.Toolchains {
+		b.WriteString(githubSetup(t))
+	}
+	for _, a := range m.Authenticate {
+		b.WriteString(githubAuthenticate(a))
+	}
+	b.WriteString(githubInstallSmith(m, true))
+	b.WriteString(githubSiblingPreBuilds(m))
+	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
+	b.WriteString(githubEnv("        ", m.SetupCredentials()))
+	b.WriteString(`      - name: Build and upload the release files
+        run: smith ci assets
+        env:
+          SMITH_PLATFORM: ${{ matrix.platform }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+`)
+	return b.String()
+}

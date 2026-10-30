@@ -184,7 +184,7 @@ func TestThePluginsSectionListsTheBuiltInTheExternalAndTheInstalledPlugins(t *te
 		"Built-in plugins", "[x] go", "[x] node", "[ ] python",
 		"External plugins this workspace uses", "widget", "not trusted",
 		"Installed on the search path", "kiwi", "1.2.0",
-		"+ Install a plugin", "smith plugin install <name|path>",
+		"+ Install a plugin", "smith plugin install <source>",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the Plugins section lacks %q:\n%s", want, out)
@@ -258,27 +258,58 @@ func TestTrustingAnExternalPluginShowsTheReviewFirst(t *testing.T) {
 	}
 }
 
-func TestInstallIsAHintUntilTheBackendCanInstall(t *testing.T) {
+func TestInstallAsksForASourceAndHandsTheCommandLineToTheShell(t *testing.T) {
 	f := sample()
 	m := opened(t, f)
-	m, _ = press(m, "end")
-	m, _ = press(m, "enter")
-	if !strings.Contains(text(m, 100, 28), "Not in this smith yet") || m.Modal() {
-		t.Fatalf("a hint, not an editor:\n%s", text(m, 100, 28))
-	}
-	b := f.backend()
-	var installed string
-	b.Install = func(source string) (string, error) { installed = source; return "installed " + source, nil }
-	m = New(b, nil)
-	m, cmd := m.Open()
-	m, _ = settle(m, Result{Cmd: cmd})
 	m, _ = press(m, "end", "enter")
 	if !m.Modal() || !strings.Contains(text(m, 100, 28), "Install a plugin") {
-		t.Fatal("with an installer the row opens a field")
+		t.Fatalf("the row opens a field: %s", text(m, 100, 28))
 	}
-	press(m, "k", "i", "w", "i", "enter")
-	if installed != "kiwi" {
-		t.Fatalf("installed %q", installed)
+	if !strings.Contains(text(m, 100, 28), "smith plugin install <source>") {
+		t.Fatalf("the command line is shown before anything is typed: %s", text(m, 100, 28))
+	}
+	m, _ = press(m, "k", "i", "w", "i")
+	if !strings.Contains(text(m, 100, 28), "smith plugin install kiwi") {
+		t.Fatalf("the command line follows the typing: %s", text(m, 100, 28))
+	}
+	m, results := press(m, "enter")
+	var run []string
+	for _, r := range results {
+		if r.Run != nil {
+			run = r.Run
+		}
+	}
+	if strings.Join(run, " ") != "plugin install kiwi" || m.Modal() {
+		t.Fatalf("Enter hands plugin install kiwi to the shell and closes the field: %v", run)
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("the tab must not install by itself: %v", f.calls)
+	}
+}
+
+func TestInstallTakesTheDigestAfterTheSourceAndRefusesAnEmptyField(t *testing.T) {
+	f := sample()
+	m := opened(t, f)
+	digest := strings.Repeat("ab", 32)
+	m, _ = press(m, "end", "enter", "enter")
+	if !m.Modal() || !strings.Contains(text(m, 100, 28), "Say where the plugin comes from.") {
+		t.Fatalf("an empty field is refused with the reason: %s", text(m, 100, 28))
+	}
+	for _, r := range "./kiwi.zip " + digest {
+		m, _ = press(m, string(r))
+	}
+	if !strings.Contains(text(m, 120, 28), "--sha256") {
+		t.Fatalf("the digest becomes the flag: %s", text(m, 120, 28))
+	}
+	_, results := press(m, "enter")
+	var run []string
+	for _, r := range results {
+		if r.Run != nil {
+			run = r.Run
+		}
+	}
+	if strings.Join(run, " ") != "plugin install ./kiwi.zip --sha256 "+digest {
+		t.Fatalf("the command line: %v", run)
 	}
 }
 

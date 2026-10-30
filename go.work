@@ -3,21 +3,27 @@ go 1.26.0
 use (
 	./apps/smith
 	./libs/actions
+	./libs/plugin-applescript
 	./libs/plugin-architectures
 	./libs/plugin-bicep
+	./libs/plugin-bundle
 	./libs/plugin-cpp
 	./libs/plugin-dart
 	./libs/plugin-docker
 	./libs/plugin-dotnet
 	./libs/plugin-go
 	./libs/plugin-jvm
+	./libs/plugin-lua
 	./libs/plugin-node
 	./libs/plugin-node-toolchains
+	./libs/plugin-objc
 	./libs/plugin-php
 	./libs/plugin-python
 	./libs/plugin-recipe
 	./libs/plugin-ruby
 	./libs/plugin-rust
+	./libs/plugin-swift
+	./libs/plugin-vba
 	./libs/plugin-vertical-slices
 	./packages/plugin-sdk
 )

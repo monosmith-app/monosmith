@@ -140,6 +140,11 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	}
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
 	cmds := []tea.Cmd{s.loadProjects()}
+	if len(argv) > 0 && argv[0] == "plugin" {
+		var reload tea.Cmd
+		s.settings, reload = s.settings.Reload()
+		cmds = append(cmds, reload)
+	}
 	if load := s.sources.Doctor; load != nil {
 		cmds = append(cmds, func() tea.Msg { return load() })
 	}

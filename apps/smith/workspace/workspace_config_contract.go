@@ -110,7 +110,7 @@ type WorkspaceSection struct {
 
 // CISection chooses which pipelines smith generates.
 type CISection struct {
-	// Providers is any of "github", "azure", "gitlab", "circleci". Default: ["github"].
+	// Providers is any of "github", "azure", "gitlab", "circleci", "bitbucket". Default: ["github"].
 	Providers []string `toml:"providers"`
 	// Devcontainer writes .devcontainer/devcontainer.json with the
 	// toolchains CI installs, at the same versions. Default: false (smith new
@@ -155,6 +155,10 @@ type CISection struct {
 	// AuditMaxUnsafe is how many unsafe blocks the rust policy accepts in all
 	// the workspace's Rust sources. Default: 0 (none).
 	AuditMaxUnsafe int `toml:"audit_max_unsafe"`
+	// SiblingRepos are other repositories the generated GitHub Actions
+	// workflow checks out beside the workspace, with the path exported in an
+	// environment variable and an optional pre-build command. Default: none.
+	SiblingRepos []SiblingRepo `toml:"sibling_repos"`
 }
 
 // AgentSection configures the MonoSmith agent: .claude/agents/smith.md and the
@@ -441,6 +445,16 @@ var DefaultPlatforms = []string{"linux/amd64", "linux/arm64", "darwin/amd64", "d
 
 // ProjectRelease configures the release of an app.
 type ProjectRelease struct {
+	// Build is a shell command, run at the workspace root once on a runner
+	// of each of Platforms, that makes the release files Assets names. With
+	// it, the files are attached to the GitHub Release with gh release
+	// upload instead of being built by the project's plugin, and Platforms
+	// are the CommandPlatforms names. It sees SMITH_PLATFORM, SMITH_VERSION
+	// and SMITH_TAG.
+	Build string `toml:"build"`
+	// Assets are workspace-relative globs of the files Build leaves, each
+	// uploaded to the release. Needed with Build.
+	Assets []string `toml:"assets"`
 	// AssetName is the file name pattern of each asset; placeholders are
 	// {product}, {version}, {os}, {arch} and {ext}.
 	// Default: {product}_{version}_{os}_{arch}.{ext}.

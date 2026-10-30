@@ -12,11 +12,17 @@ var languages = map[string]string{
 	"cpp":    "C / C++",
 	"dart":   "Dart / Flutter",
 	"ruby":   "Ruby",
+	"objc":   "Objective-C",
 	"php":    "PHP",
+	"vba":    "VBA",
 	"swift":  "Swift",
+	"lua":    "Lua",
 	"bicep":  "Azure Bicep",
+	"bundle": "Bundle",
 	"docker": "Docker",
 	"recipe": "A recipe (a ready-made set of projects)",
+
+	"applescript": "AppleScript",
 }
 
 // popular are the languages most people reach for, in the order the lists
@@ -77,11 +83,17 @@ var descriptions = map[string]string{
 	"cpp":    "native programs and libraries",
 	"dart":   "Flutter apps and Dart packages",
 	"ruby":   "gems and web apps",
+	"objc":   "CocoaPods libraries",
 	"php":    "web apps and Composer packages",
-	"swift":  "Apple platform apps and packages",
+	"vba":    "Office macros kept in git as text",
+	"swift":  "packages and command-line tools built with SwiftPM",
+	"lua":    "scripts and LuaRocks libraries",
 	"bicep":  "Azure infrastructure as code",
+	"bundle": "apps assembled from other projects: app.json and flow.json",
 	"docker": "container images",
 	"recipe": "A ready-made set of projects that work together",
+
+	"applescript": "scripts that automate macOS apps",
 }
 
 // Describe is a one-line description of what a language gives a new project,

@@ -2,9 +2,9 @@ package settingsview
 
 // Backend is what the tab calls to read and change things. Every function
 // does what the matching `smith` command does, in this process; the model
-// runs them off the update loop and shows what they return. A nil function
-// means the thing is not offered (Install, until `smith plugin install`
-// exists in this smith).
+// runs them off the update loop and shows what they return. What needs the
+// network or a download (smith plugin install) is not here: the tab asks the
+// shell to run that command line, which shows it first (Result.Run).
 type Backend struct {
 	// Load reads the workspace.
 	Load func() Snapshot
@@ -23,10 +23,6 @@ type Backend struct {
 	// the values against the schema and return what to tell the person.
 	SetSetting   func(path string, values []string) (string, error)
 	UnsetSetting func(path string) (string, error)
-	// Install installs a plugin by name or path (smith plugin install). It
-	// stays nil until that command exists; the Plugins section then shows the
-	// command as a hint, and turns into a live action when it is set.
-	Install func(source string) (string, error)
 	// Style is the person's saved choice of theme and symbols.
 	Style StylePrefs
 	// TipSeen and MarkTipSeen keep whether Home still points at this tab.

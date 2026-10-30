@@ -25,7 +25,7 @@ CI. If you add a project by hand, `smith doctor` tells you what is missing.
 
 Node (JavaScript and TypeScript), Python, Go, Rust, .NET (C#, F#), Ruby, PHP,
 C and C++ (CMake), Dart and Flutter, the JVM (Java with Maven, Kotlin with
-Gradle, Android) and Bicep, each as a built-in plugin. Anything else is a
+Gradle, Android), Bicep, Lua, AppleScript, VBA, Swift and Objective-C (CocoaPods), each as a built-in plugin. Anything else is a
 [plugin you write](writing-a-plugin.md), in any language.
 
 ### What is the difference between an app, a lib and a package?
@@ -145,7 +145,7 @@ The cache lives in `.smith/cache`; deleting it only costs you the cached results
 ### Do I write the pipeline?
 
 No. `smith new` and `smith add` generate it for GitHub Actions, Azure Pipelines,
-GitLab CI or CircleCI (`[ci] providers`), and `smith ci generate` regenerates it. Put your
+GitLab CI, CircleCI or Bitbucket Pipelines (`[ci] providers`), and `smith ci generate` regenerates it. Put your
 own steps between the `smith:slot` markers and they are kept. See
 [CI pipelines](../reference/ci.md).
 

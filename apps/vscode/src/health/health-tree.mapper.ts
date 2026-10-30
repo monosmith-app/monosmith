@@ -49,8 +49,8 @@ function toProblemRow (finding: DoctorFinding, id: string, icon: string, color: 
   const detail = finding.detail?.trim()
   const remedy = finding.remedy?.trim()
   const children: ListNode[] = [
-    ...(detail === undefined || detail === '' ? [] : [{ id: `${id}:problem`, label: detail, icon: 'info', tooltip: detail }]),
-    ...(remedy === undefined || remedy === '' ? [] : [{ id: `${id}:remedy`, label: remedy, icon: 'lightbulb', tooltip: `Fix: ${remedy}` }]),
+    ...(detail === undefined || detail === '' ? [] : [{ id: `${id}:problem`, label: firstClause(detail), icon: 'info', tooltip: detail }]),
+    ...(remedy === undefined || remedy === '' ? [] : [{ id: `${id}:remedy`, label: firstClause(remedy), icon: 'lightbulb', tooltip: `Fix: ${remedy}` }]),
   ]
 
   return {
@@ -62,6 +62,11 @@ function toProblemRow (finding: DoctorFinding, id: string, icon: string, color: 
     tooltip:  [finding.check, detail, remedy === undefined ? undefined : `Fix: ${remedy}`].filter(Boolean).join('\n'),
     children,
   }
+}
+
+/** The part of a sentence up to its first `;` or `. `, so a narrow row shows the part that matters; the tooltip has all of it. */
+function firstClause (text: string): string {
+  return /^(.+?)(?:;|\. )/.exec(text)?.[1] ?? text
 }
 
 function summarize (failed: number, warnings: number): string {

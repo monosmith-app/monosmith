@@ -1,7 +1,7 @@
 # Editors
 
 The [VS Code extension](../manual/vscode.md) is the editor integration smith
-ships; it talks to `smith serve` (below). Other editors and tools build on four
+ships; it talks to `smith serve` (below). A first JetBrains plugin (`apps/jetbrains`, a tool window of the projects and tasks, task runs in the Run window) reads `smith projects --json`; see its [README](../../apps/jetbrains/README.md). Other editors and tools build on four
 commands whose `--json` output is a stable contract. They keep the shapes the mnci VS Code extension reads, which was
 written against the old TypeScript mnci.
 
@@ -52,6 +52,16 @@ as diffs and walks the choices; `smith doctor --fix --only "<fix>" --choose 1,2
 
 Set `SMITH_NO_UPDATE_CHECK=1` to stop `smith info` asking GitHub for the newest
 release.
+
+## Starting in an empty folder
+
+An editor that opens a folder with no `smith.toml` can offer two commands, both of which ask
+their questions in a terminal and write nothing before the person agrees: `smith new --here`
+creates the workspace in the current folder (it takes no name, which then comes from the
+folder, and it refuses a folder that holds anything besides `.git`, `.vscode`, `.DS_Store`,
+`Thumbs.db` or `desktop.ini`), and `smith adopt` brings a folder with files into MonoSmith.
+The VS Code extension offers them as "Create a new MonoSmith workspace" and "Bring this folder
+into MonoSmith", in the Projects view and in the status bar menu.
 
 ## The engine over JSON-RPC (`smith serve`)
 
