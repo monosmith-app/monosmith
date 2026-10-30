@@ -16,7 +16,7 @@
   },
   "private": true,
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@monosmith/eslint-config": "^1.0.0",
     "@types/node": "^24.0.0",
