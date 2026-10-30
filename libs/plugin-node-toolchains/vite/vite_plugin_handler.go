@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -13,14 +14,15 @@ import (
 const Name = "vite"
 
 // apps are the starters, by stack name.
-var apps = map[string]webApp{"react": react, "react-p5": reactP5, "vue": vue, "svelte": svelte, "html": html}
+var apps = map[string]webApp{"react": react, "react-p5": reactP5, "react-tauri": react, "vue": vue, "svelte": svelte, "html": html}
 
 var descriptions = map[string]string{
-	"react":    "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"react-p5": "a React app drawing with p5, built with Vite, linted by eslint, tested with Vitest",
-	"vue":      "a Vue app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"svelte":   "a Svelte app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"html":     "a page in TypeScript with no framework, built with Vite, linted by eslint, tested with Vitest",
+	"react":       "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
+	"react-p5":    "a React app drawing with p5, built with Vite, linted by eslint, tested with Vitest",
+	"react-tauri": "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest, packaged as a desktop app with Tauri",
+	"vue":         "a Vue app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
+	"svelte":      "a Svelte app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
+	"html":        "a page in TypeScript with no framework, built with Vite, linted by eslint, tested with Vitest",
 }
 
 // Vite is the vite plugin.
@@ -39,7 +41,7 @@ func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	for _, name := range slices.Sorted(maps.Keys(apps)) {
 		stacks = append(stacks, protocol.Stack{
 			Name: name, Description: descriptions[name], Language: "node",
-			Scaffold: Name, Toolchain: []string{Name, "eslint", "vitest"},
+			Scaffold: Name, Toolchain: toolchain(name),
 		})
 	}
 	return protocol.InitializeResult{
@@ -51,6 +53,16 @@ func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Provides:  []string{"build", "typecheck"},
 		Stacks:    stacks,
 	}, nil
+}
+
+// toolchain is what a stack's project is built with: tauri joins the stacks that
+// package the app as a desktop app.
+func toolchain(stack string) []string {
+	tc := []string{Name, "eslint", "vitest"}
+	if strings.HasSuffix(stack, "-tauri") {
+		tc = append(tc, "tauri")
+	}
+	return tc
 }
 
 // Generate implements serve.Generator: the starter of the project's stack.
