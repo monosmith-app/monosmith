@@ -84,6 +84,7 @@ the language, and `asset_name` names each file the same way.
 |---|---|
 | Go | Cross-compiles every platform with `CGO_ENABLED=0`, stamps the version into `main.version` (`-ldflags -X`), zips each binary. |
 | Rust | Runs `cargo build --release -p <crate> --target <triple>` per platform (the version is the one in the crate's `Cargo.toml`, which the release has set, so `env!("CARGO_PKG_VERSION")` and `--version` agree with the tag), and zips every program the crate builds with the README and licence files (the crate's, else the workspace's). |
+| C++ | Builds in Release mode with CMake and Ninja, installs into a staging folder (or takes the program of the first `add_executable`) and zips it with the README and licence files. Built on each system: a plain app releases only this machine's platform, a native app (`set(SMITH_NATIVE ON)`) is built by each `smith ci native` runner. |
 | .NET | Runs `dotnet publish -r <rid> --self-contained -p:PublishSingleFile=true -p:Version=<version>` per platform (win-x64, linux-arm64, osx-arm64, ...) and zips the output with the README and licence files. Every platform is built on one machine; each needs its runtime downloaded from NuGet once. |
 
 An app in another language with a release section is tagged and gets a GitHub
