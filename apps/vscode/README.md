@@ -7,6 +7,10 @@ health of the workspace, its dependencies and its next release.
 
 ![The projects of a workspace, a dot on those the changes affect, and the Health, Dependencies and Release Preview views](https://github.com/monosmith-app/monosmith/raw/main/apps/vscode/media/screenshot-views.png)
 
+## Requirements
+
+VS Code 1.140 or newer. An older editor keeps the version it has and does not offer an update.
+
 ## What you get
 
 - **Projects view.** Apps, libs and packages, each with its language. A dot

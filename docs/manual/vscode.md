@@ -16,7 +16,7 @@ Marketplace is not described here.
 
 | Item | Value |
 |---|---|
-| VS Code | `^1.96.0` |
+| VS Code | `^1.140.0` |
 | Activation | When the workspace contains a `smith.toml`, a marker of another monorepo tool (`nx.json`, `turbo.json`, `lerna.json`, `pnpm-workspace.yaml`, `rush.json`, `go.work`, `package.json`) or any file at its root (`workspaceContains:*`); and when the MonoSmith view is opened, which is how an empty folder gets its offer. |
 | smith | A smith whose `serve` protocol version the extension speaks (version 1; a newer one is worked with, an older one cannot be served). |
 
