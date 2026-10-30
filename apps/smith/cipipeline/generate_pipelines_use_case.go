@@ -95,6 +95,8 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 			out[GitLabPath] = RenderGitLab(m)
 		case "circleci":
 			out[CircleCIPath] = RenderCircleCI(m)
+		case "bitbucket":
+			out[BitbucketPath] = RenderBitbucket(m)
 		}
 	}
 	if cfg.CI.Devcontainer {
@@ -153,7 +155,7 @@ func fileMode(path string) os.FileMode {
 
 // OwnedPaths are the files smith generates and may rewrite or delete. A file
 // at one of them belongs to smith only while it starts with smith's header.
-var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, DevcontainerPath, InstallScriptPath}
+var OwnedPaths = []string{GitHubPath, GitHubPubPath, AzurePath, GitLabPath, CircleCIPath, BitbucketPath, DevcontainerPath, InstallScriptPath}
 
 // Stale lists the files smith generated that the workspace no longer asks for
 // (a provider dropped from [ci] providers): they carry smith's header and are

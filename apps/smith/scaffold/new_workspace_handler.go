@@ -120,7 +120,7 @@ nothing is asked.`,
 	flags.StringVar(&opts.Dir, "dir", "", "directory to create the workspace in (default ./<name>)")
 	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
 	flags.StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
-	flags.StringSliceVar(&f.ci, "ci", nil, "pipelines to generate: github, azure, gitlab, circleci (default github)")
+	flags.StringSliceVar(&f.ci, "ci", nil, "pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github)")
 	flags.StringVar(&f.language, "language", "", "the main language: node, python, go, jvm, dotnet, rust, or later (default later)")
 	flags.StringSliceVar(&f.defaultStacks, "default-stack", nil, "the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts")
 	flags.StringVar(&f.architecture, "architecture", "", "the code layout smith checks: "+strings.Join(architecture.Names(), ", ")+" (default vertical-slices)")
