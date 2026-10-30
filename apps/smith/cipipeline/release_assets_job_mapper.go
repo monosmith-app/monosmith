@@ -41,6 +41,7 @@ func githubAssetsJob(m Model) string {
         with:
           fetch-depth: 0
 `)
+	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
@@ -48,6 +49,7 @@ func githubAssetsJob(m Model) string {
 		b.WriteString(githubAuthenticate(a))
 	}
 	b.WriteString(githubInstallSmith(m, true))
+	b.WriteString(githubSiblingPreBuilds(m))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Build and upload the release files
