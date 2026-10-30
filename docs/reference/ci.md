@@ -298,6 +298,8 @@ native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # the defa
 native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux
 ```
 
+Every AppleScript project is native, because `osacompile` exists on macOS only: with only AppleScript projects native, set `native_runners = ["macos-latest"]`.
+
 On Azure Pipelines a workspace with a native project gets a `jobs:` pipeline:
 the ci job, and the native job with a matrix of runner images. Steps kept in
 the `smith:slot` markers move with the job.
@@ -344,7 +346,7 @@ and the installed one only bootstraps.
 
 The pipeline lists only the secrets its projects need. Go packages are
 published by their tag and need no secret; PHP packages are read by Packagist
-from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++, Bicep and Lua projects release by their tag only. On GitHub, the job
+from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++, Bicep, Lua and AppleScript projects release by their tag only. On GitHub, the job
 has `contents: write` so it can push tags; on Azure the checkout keeps its
 credentials (`persistCredentials`).
 

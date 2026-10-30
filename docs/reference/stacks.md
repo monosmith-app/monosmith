@@ -78,6 +78,7 @@ The project records its stack in its manifest:
 | C, C++ | `set(SMITH_STACK ...)` in `CMakeLists.txt` |
 | Bicep | `metadata smithStack = '...'` in `main.bicep` |
 | Lua | `-- smithStack: ...` comment in the `.rockspec` |
+| AppleScript | `-- smithStack: ...` comment in the main `.applescript` |
 
 The project's kind sits beside it, under the same name with `kind`
 (`SmithKind`, `smith_kind`, `smith.kind`, `SMITH_KIND`, `smithKind`).

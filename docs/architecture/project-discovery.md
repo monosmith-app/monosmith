@@ -72,6 +72,7 @@ or any parent).
 | `jvm` | `pom.xml`, `build.gradle.kts`, `build.gradle` | modules; the root pom or build script, other pom-packaged modules and `buildSrc` only organise the build |
 | `bicep` | `main.bicep` | each one |
 | `lua` | `*.rockspec` | each directory with one (the first rockspec counts); the root one is skipped |
+| `applescript` | `*.applescript` | each directory with one; its main script is `main.applescript`, else the first by name; the root is skipped |
 | `recipe` | `*.recipe.toml` in a folder of its own | a recipe file is a project, versioned like a package |
 
 The row for each plugin comes from its `Manifests` field in `libs/plugin-<name>/plugin`
@@ -138,6 +139,7 @@ looks:
 | jvm | `smith.kind` and `smith.stack` properties in the pom or the Gradle build |
 | bicep | `metadata smithKind = '...'` and `metadata smithStack = '...'` |
 | lua | `-- smithKind: ...` and `-- smithStack: ...` comments in the rockspec |
+| applescript | `-- smithKind: ...`, `-- smithStack: ...` and `-- smithVersion: ...` comments in the main script |
 
 The fallbacks differ because the languages do: a private npm package is a lib and a public
 one a package; a Go module whose top directory holds a `package main` file is an app and

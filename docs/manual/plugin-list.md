@@ -48,6 +48,8 @@ smith plugin list
 
 ```text
 PLUGIN           LEVELS                       SLOTS                REQUIRES
+applescript      language,toolchain,scaffold  -                    -
+...
 bicep            language,toolchain,scaffold  -                    -
 ...
 lua              language,toolchain,scaffold  -                    -
@@ -78,7 +80,7 @@ External plugins this workspace uses (smith starts them only when trusted):
 `FROM` is `smith.toml` (its `command`), `.smith/plugins`, `SMITH_PLUGIN_PATH` or
 `$SMITH_HOME/plugins`.
 
-(Thirteen language plugins, then twelve toolchain, scaffold, structure and deploy plugins;
+(Fourteen language plugins, then twelve toolchain, scaffold, structure and deploy plugins;
 rows between `...` are cut.)
 
 ## Related

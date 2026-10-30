@@ -44,7 +44,7 @@ rubygems = "monosmith"
 # starts .github/workflows/pub.yml on it, which pub.dev's automated
 # publishing accepts.
 pub = "monosmith"
-description = "Runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM, Bicep and Lua: tasks from a cache, CI and releases"
+description = "Runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM, Bicep, Lua and AppleScript: tasks from a cache, CI and releases"
 license = "MIT"
 
 # The workspace's lint above is golangci-lint, for the Go projects; this Node
