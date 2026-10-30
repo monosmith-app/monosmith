@@ -54,7 +54,7 @@ enabled plugins: bicep, cpp, dart, dotnet, jvm, node, php, python, recipe, ruby,
 
 | Message | Cause and remedy |
 |---|---|
-| `no built-in plugin "docker" (built-in: bicep, cpp, ...)` | Only the fifteen language plugins can be disabled. |
+| `no built-in plugin "docker" (built-in: bicep, cpp, ...)` | Only the sixteen language plugins can be disabled. |
 
 ## Related
 

@@ -146,6 +146,7 @@ package is missing.
   is refused: nothing publishes VBA.
 - A Bicep project is a deployment (app) or a module (lib), so `smith kind <project> package`
   is refused: there is no Bicep registry to publish to yet.
+- Swift: the `// smithKind:` comment of `Package.swift`, and the `.package(path:)` entries of the manifests that name the folder.
 - JVM: the `smith.kind` property of a Maven module's `pom.xml`, or of a Gradle module's
   `gradle.properties` (created when the module has none). A Gradle module's build script is
   code, so smith does not rewrite its plugins; it tells you which one to add.

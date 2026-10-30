@@ -80,6 +80,7 @@ The project records its stack in its manifest:
 | Lua | `-- smithStack: ...` comment in the `.rockspec` |
 | AppleScript | `-- smithStack: ...` comment in the main `.applescript` |
 | VBA | `' smithStack: ...` comment in the main module (`.bas`, `.cls`, `.frm`) |
+| Swift | `// smithStack: ...` comment in `Package.swift` |
 
 The project's kind sits beside it, under the same name with `kind`
 (`SmithKind`, `smith_kind`, `smith.kind`, `SMITH_KIND`, `smithKind`).

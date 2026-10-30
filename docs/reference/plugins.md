@@ -28,6 +28,7 @@ support, CI contributions and limits, written from its code and from real runs.
 | [`lua`](../plugins/using/catalogue/lua.md) | language (+ default toolchain, scaffold) | LuaRocks projects: each `*.rockspec`; `luacheck`, `busted`, `luarocks make` | none: released by its tag |
 | [`applescript`](../plugins/using/catalogue/applescript.md) | language (+ default toolchain, scaffold) | directories of `.applescript` sources; `osacompile` (macOS only) | none: released by its tag |
 | [`vba`](../plugins/using/catalogue/vba.md) | language (+ default toolchain, scaffold) | directories of VBA modules exported as text; no tasks | none: released by its tag |
+| [`swift`](../plugins/using/catalogue/swift.md) | language (+ default toolchain, scaffold) | Swift packages: each `Package.swift`; `swift build`, `swift test` | none: released by its tag |
 | [`recipe`](../plugins/using/catalogue/recipe.md) | language (+ default toolchain, scaffold) | a `*.recipe.toml` in a folder of its own is a package project; `test` runs `smith recipe check --all` | its tag, with the recipe attached to the GitHub Release |
 | [`typescript`](../plugins/using/catalogue/typescript.md) | scaffold and toolchain, provides `build`, `typecheck`; publishes `node-ts` | scaffolds TypeScript projects that build and type-check with `tsc` | — |
 | [`vite`](../plugins/using/catalogue/vite.md) | scaffold and toolchain, provides `build`, `typecheck`; publishes `react`, `react-p5`, `vue`, `svelte`, `html` | scaffolds browser apps in TypeScript that Vite serves and builds | released by its tag |
