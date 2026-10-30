@@ -15,6 +15,7 @@ use (
 	./libs/plugin-lua
 	./libs/plugin-node
 	./libs/plugin-node-toolchains
+	./libs/plugin-objc
 	./libs/plugin-php
 	./libs/plugin-python
 	./libs/plugin-recipe
