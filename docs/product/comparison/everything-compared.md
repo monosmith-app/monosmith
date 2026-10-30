@@ -301,8 +301,8 @@ comparison tables and the tool pages.
 - *Releases Go modules and Packagist packages by tag.* MonoSmith: tag-based; not run against Packagist here.
 - *Builds and pushes container images.* MonoSmith: no Docker daemon was available to run it. Nx: experimental; Pants: docker publish; Earthly: builds and pushes images.
 - *.deb and .rpm packages attached to the release.* Pants: an experimental backend that builds .deb files (packaging, not release).
-- *Per-platform app archives with checksums on a GitHub Release.* MonoSmith: Go apps only; other languages are tagged without assets. Searched for ❔: not searched beyond release and publish pages.
-- *SBOM generation.* MonoSmith: CycloneDX on the release; the dependencies come from the plugins that list them (Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, JVM). npm and pnpm have an `sbom` command; Cargo lists an unstable SBOM option.
+- *Per-platform app archives with checksums on a GitHub Release.* MonoSmith: Go, Rust, .NET and C++ apps; other languages are tagged without assets. Searched for ❔: not searched beyond release and publish pages.
+- *SBOM generation.* MonoSmith: CycloneDX on the release for npm and Go apps only. npm and pnpm have an `sbom` command; Cargo lists an unstable SBOM option.
 - *Signed provenance for what you publish.* MonoSmith: GitHub Actions only: npm provenance and SLSA attestation of release files. Nx: a CI guide grants id-token for npm provenance; pnpm documents `publish --provenance`.
 - *Publishes without a long-lived key (trusted publishing).* MonoSmith: RubyGems, pub.dev, PyPI and the Marketplace; not every registry. Nx: a CI guide grants id-token for npm provenance; npm documents `npm trust` (OIDC trust relationships with CI providers); pnpm can use the CI identity for dist-tags.
 - *A failed release resumes: versions a registry already has are skipped, in every registry.* Nx: for npm, it looks the version up before publishing so that the same publish can run again; Lerna: its FAQ says a partly failed publish may leave the repository in an inconsistent state. Searched for ❔: "already published", "skip", "re-run" next to "publish" or "release".
