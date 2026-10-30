@@ -41,6 +41,7 @@ eslint           toolchain                    lint                 language plug
 go-smith-plugin  scaffold                     -                    language plugin go
 jest             toolchain                    test                 language plugin node
 playwright       toolchain                    e2e                  language plugin node
+tauri            toolchain                    tauri-build          language plugin node
 typescript       scaffold,toolchain           build,typecheck      language plugin node
 vertical-slices  structure                    -                    -
 vite             scaffold,toolchain           build,typecheck      language plugin node

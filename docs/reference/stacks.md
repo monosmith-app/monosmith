@@ -123,6 +123,7 @@ add: a file, script, setting or dependency that already exists is kept.
 | `node-jest` | node | `typescript` | `typescript`, `eslint` (`@monosmith/eslint-config`), `jest` | `jest` |
 | `node-vitest` | node | `typescript` | `typescript`, `eslint` (`@monosmith/eslint-config`), `vitest` | `vitest` |
 | `node-vitest-playwright` | node | `typescript` | `typescript`, `eslint`, `vitest`, `playwright` | `playwright`: adds `playwright.config.ts`, a smoke test in `e2e/` (named `*.e2e.ts`, so Vitest never runs it), an `e2e` script and `@playwright/test`; reports and traces go to `dist/e2e/<project dir>`, the `e2e` task's outputs, beside the build rather than in it (a cached build replaces its own directory) |
+| `node-vitest-tauri` | node | `typescript` | `typescript`, `eslint`, `vitest`, `tauri` | `tauri`: adds `@tauri-apps/cli` and a `tauri` script; `npx tauri init` writes `src-tauri` |
 | `react`, `react-p5`, `vue`, `svelte`, `html` | node | `vite` | `vite`, `eslint`, `vitest` | `vite`: a browser app built with Vite |
 | `angular` | node | `angular` | `angular`, `eslint`, `vitest` | `angular` |
 | `docs-site` | node | `astro` | `astro`, `eslint` | `astro`: an Astro Starlight documentation site |

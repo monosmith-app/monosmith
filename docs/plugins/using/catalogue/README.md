@@ -1,6 +1,6 @@
 # The built-in plugin catalogue
 
-smith ships 24 plugins inside its binary: 12 language plugins and 12 add-ons (toolchain, structure,
+smith ships 25 plugins inside its binary: 12 language plugins and 13 add-ons (toolchain, structure,
 scaffold and deploy plugins). This section has one page for each, written from the plugin's code
 and from real runs: what it detects, the project kinds and tasks it adds, what it scaffolds, its
 settings, how it handles the toolchain, how it releases, what it adds to CI, and where it is
@@ -47,6 +47,7 @@ configure.
 | `jest` | toolchain | `test` | [jest](jest.md) |
 | `vitest` | toolchain | `test` | [vitest](vitest.md) |
 | `playwright` | toolchain | `e2e` | [playwright](playwright.md) |
+| `tauri` | toolchain | `tauri-build` | [tauri](tauri.md) |
 | `vite` | scaffold, toolchain | `build`, `typecheck` | [vite](vite.md) |
 | `angular` | scaffold, toolchain | `build`, `typecheck` | [angular](angular.md) |
 | `astro` | scaffold, toolchain | `build` | [astro](astro.md) |
