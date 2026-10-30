@@ -150,6 +150,9 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("%s: [ci] branches must not hold an empty branch name", FileName)
 		}
 	}
+	if err := validateSiblingRepos(cfg); err != nil {
+		return err
+	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
 		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
 	}

@@ -155,6 +155,10 @@ type CISection struct {
 	// AuditMaxUnsafe is how many unsafe blocks the rust policy accepts in all
 	// the workspace's Rust sources. Default: 0 (none).
 	AuditMaxUnsafe int `toml:"audit_max_unsafe"`
+	// SiblingRepos are other repositories the generated GitHub Actions
+	// workflow checks out beside the workspace, with the path exported in an
+	// environment variable and an optional pre-build command. Default: none.
+	SiblingRepos []SiblingRepo `toml:"sibling_repos"`
 }
 
 // AgentSection configures the MonoSmith agent: .claude/agents/smith.md and the

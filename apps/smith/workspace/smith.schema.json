@@ -36,7 +36,24 @@
         "audit_policies": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Ecosystem policy checks smith ci audit runs beyond the vulnerability scan. Default: none." },
         "audit_warn": { "type": "array", "items": { "enum": ["node", "go", "python", "rust"] }, "uniqueItems": true, "description": "Audit policies that only report instead of failing. Default: none." },
         "audit_allow_install_scripts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "npm packages whose install scripts the node audit policy accepts. Default: none." },
-        "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." }
+        "audit_max_unsafe": { "type": "integer", "minimum": 0, "description": "Unsafe blocks the rust audit policy accepts in all Rust sources. Default: 0." },
+        "sibling_repos": {
+          "type": "array",
+          "description": "Other GitHub repositories the generated workflow checks out beside the workspace, GitHub Actions only. Default: none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo", "env"],
+            "properties": {
+              "repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "The repository, owner/name." },
+              "ref": { "type": "string", "description": "Branch, tag or commit to check out. Default: the repository's default branch." },
+              "env": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "description": "Environment variable that holds the checkout's absolute path in every later step." },
+              "dir": { "type": "string", "description": "The checkout's directory in the workspace. Default: the repository's name." },
+              "pre_build": { "type": "string", "description": "Shell command run in the checkout before smith sets the workspace up. Default: none." },
+              "token_secret": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "description": "GitHub secret holding a token that can read the repository. Default: the job's token." }
+            }
+          }
+        }
       }
     },
     "dependencies": {

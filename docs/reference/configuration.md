@@ -58,6 +58,7 @@ package = "https://example.com/recipes/package.recipe.toml"
 providers = ["github"]                # "github", "azure", "gitlab", "circleci", or several
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 branches = ["main", "dev"]             # branches the GitHub and Azure pipelines run on, pushes and pull requests; the release branch is always one; default: the release branch (docs/reference/ci.md)
+# [[ci.sibling_repos]]: repo, ref, env, dir, pre_build, token_secret: other repositories the GitHub workflow checks out beside the workspace (docs/reference/ci.md)
 azure_pool = "Managed-Windows"        # the agent pool an Azure Pipelines definition runs on; default: Microsoft's hosted ubuntu-latest
 azure_variable_groups = ["Build"]     # variable groups the definition links, for the secrets its steps read; default: none
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # where native projects build (docs/reference/ci.md)
