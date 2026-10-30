@@ -18,6 +18,7 @@ var languages = map[string]string{
 	"swift":  "Swift",
 	"lua":    "Lua",
 	"bicep":  "Azure Bicep",
+	"bundle": "Bundle",
 	"docker": "Docker",
 	"recipe": "A recipe (a ready-made set of projects)",
 
@@ -88,6 +89,7 @@ var descriptions = map[string]string{
 	"swift":  "packages and command-line tools built with SwiftPM",
 	"lua":    "scripts and LuaRocks libraries",
 	"bicep":  "Azure infrastructure as code",
+	"bundle": "apps assembled from other projects: app.json and flow.json",
 	"docker": "container images",
 	"recipe": "A ready-made set of projects that work together",
 

@@ -6,6 +6,7 @@ use (
 	./libs/plugin-applescript
 	./libs/plugin-architectures
 	./libs/plugin-bicep
+	./libs/plugin-bundle
 	./libs/plugin-cpp
 	./libs/plugin-dart
 	./libs/plugin-docker

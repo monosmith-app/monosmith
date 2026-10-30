@@ -6,6 +6,7 @@ import (
 	applescriptp "github.com/monosmith-app/monosmith/libs/plugin-applescript/plugin"
 	archp "github.com/monosmith-app/monosmith/libs/plugin-architectures/plugin"
 	bicepp "github.com/monosmith-app/monosmith/libs/plugin-bicep/plugin"
+	bundlep "github.com/monosmith-app/monosmith/libs/plugin-bundle/plugin"
 	cppp "github.com/monosmith-app/monosmith/libs/plugin-cpp/plugin"
 	dartp "github.com/monosmith-app/monosmith/libs/plugin-dart/plugin"
 	dockerp "github.com/monosmith-app/monosmith/libs/plugin-docker/plugin"
@@ -49,6 +50,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"jvm":    func(v string) serve.Plugin { return jvmp.New(v) },
 	"lua":    func(v string) serve.Plugin { return luap.New(v) },
 	"bicep":  func(v string) serve.Plugin { return bicepp.New(v) },
+	"bundle": func(v string) serve.Plugin { return bundlep.New(v) },
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
 	"objc":   func(v string) serve.Plugin { return objcp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },
