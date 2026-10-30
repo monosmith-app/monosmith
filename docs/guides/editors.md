@@ -1,7 +1,7 @@
 # Editors
 
 The [VS Code extension](../manual/vscode.md) is the editor integration smith
-ships; it talks to `smith serve` (below). Other editors and tools build on four
+ships; it talks to `smith serve` (below). A first JetBrains plugin (`apps/jetbrains`, a tool window of the projects and tasks, task runs in the Run window) reads `smith projects --json`; see its [README](../../apps/jetbrains/README.md). Other editors and tools build on four
 commands whose `--json` output is a stable contract. They keep the shapes the mnci VS Code extension reads, which was
 written against the old TypeScript mnci.
 

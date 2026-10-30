@@ -20,7 +20,7 @@ they disagree with the box, the box is right.
 > | Doctor fix wizard and adopt wizard | built ([ADR 0033](decisions/0033-doctor-fixes-with-steps-and-choices.md), [ADR 0034](decisions/0034-adopt-and-convert-depth-levels.md)) |
 > | VS Code extension on `smith serve`, using the installed smith | built ([ADR 0025](decisions/0025-ide-plugins-run-the-installed-smith.md), [ADR 0030](decisions/0030-vscode-extension-is-a-serve-client.md), [architecture](vscode-architecture.md)); the setting is `monosmith.path` |
 > | `smith lsp` (completion and validation of `smith.toml` and recipes) | **planned, not built** (issue #303); there is no such command |
-> | JetBrains plugin | **planned, not built** (issue #303) |
+> | JetBrains plugin | a first slice is built, `apps/jetbrains` ([README](../../apps/jetbrains/README.md)): a tool window with the projects and tasks from `smith projects --json`, and a task run that prints its command line first. It does not use `smith serve` or settings yet; it is not published to the Marketplace |
 > | A `smith` version range in `smith.toml` | not built; still an open question below |
 > | Keys | the table under "Interaction" is a proposal; `Tab` and `Shift+Tab` move between buttons in dialogs and wizards, not between panes. The authoritative list is [the manual](../manual/tui.md) |
 
