@@ -18,7 +18,11 @@ const ResumeReason = "tagged, but its GitHub Release is missing"
 // registry and only creates the Release and attaches its assets. A project
 // without a release tag is left out, and so is every project when GitHub
 // Releases are off.
-func UnfinishedReleases(s *session.Session, hasRelease func(tag string) (bool, error)) ([]Item, error) {
+//
+// Only a tag at HEAD is finished: the assets of a Release are rebuilt from the
+// checkout, so with later commits they would be files of newer code on the
+// page of an older version. Such a Release is skipped, with one line to say.
+func UnfinishedReleases(s *session.Session, hasRelease func(tag string) (bool, error), say io.Writer) ([]Item, error) {
 	if !s.Config.Release.GitHubReleases {
 		return nil, nil
 	}
@@ -26,6 +30,7 @@ func UnfinishedReleases(s *session.Session, hasRelease func(tag string) (bool, e
 	if err != nil {
 		return nil, err
 	}
+	head, _ := s.Git.RevParse("HEAD")
 	var items []Item
 	for _, name := range order {
 		p := s.Graph.Get(name)
@@ -40,9 +45,14 @@ func UnfinishedReleases(s *session.Session, hasRelease func(tag string) (bool, e
 		if err != nil {
 			return nil, fmt.Errorf("GitHub Release %s: %w", tag, err)
 		}
-		if !found {
-			items = append(items, Item{Project: name, Plugin: p.Plugin, Current: latest.String(), Next: latest.String(), Level: "resume", Tag: tag, Reason: ResumeReason})
+		if found {
+			continue
 		}
+		if s.Git.TagCommit(tag) != head {
+			fmt.Fprintf(say, "not creating the GitHub Release of %s: HEAD is newer than its tag\n", tag)
+			continue
+		}
+		items = append(items, Item{Project: name, Plugin: p.Plugin, Current: latest.String(), Next: latest.String(), Level: "resume", Tag: tag, Reason: ResumeReason})
 	}
 	return items, nil
 }
@@ -62,7 +72,7 @@ func UnfinishedFromGitHub(s *session.Session, warn io.Writer) []Item {
 	items, err := UnfinishedReleases(s, func(tag string) (bool, error) {
 		_, found, err := client.ReleaseByTag(repo, tag)
 		return found, err
-	})
+	}, warn)
 	if err != nil {
 		fmt.Fprintf(warn, "warning: could not look for unfinished releases: %v\n", err)
 		return nil
