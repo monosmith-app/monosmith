@@ -27,6 +27,7 @@ scaffold. `smith plugin enable`, `disable` and `set` switch these on and off.
 | `dart` | packages of a root pub workspace, Dart or Flutter | [dart](dart.md) |
 | `jvm` | Maven modules (Java) and Gradle modules (Kotlin, Android) | [jvm](jvm.md) |
 | `bicep` | Azure infrastructure: each `main.bicep` | [bicep](bicep.md) |
+| `lua` | LuaRocks projects: each `*.rockspec` | [lua](lua.md) |
 | `recipe` | a `*.recipe.toml` in a folder of its own | [recipe](recipe.md) |
 
 ## Toolchain, scaffold, structure and deploy plugins

@@ -99,7 +99,7 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 | trust | none needed: it is the smith binary | you trust it before smith starts it: `smith plugin trust <name>` |
 | environment | the whole environment smith runs in | a minimal one, plus the variables it declares and you grant |
 
-The **12 language plugins** are `bicep`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `node`, `php`,
+The **13 language plugins** are `bicep`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `lua`, `node`, `php`,
 `python`, `recipe`, `ruby` and `rust`. They load unless `[plugins] enabled` names fewer.
 
 The **12 add-ons** are the built-in toolchain, structure, scaffold and deploy plugins: `angular`,
