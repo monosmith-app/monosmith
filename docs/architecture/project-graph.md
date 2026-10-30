@@ -73,6 +73,7 @@ What each plugin reports:
 | bicep | the project's directory | the workspace directories its modules come from |
 | lua | the rock's `package` name | the rocks in the rockspec's `dependencies`, `lua` excluded |
 | applescript | the project's directory | none |
+| vba | the project's directory | none |
 | dotnet | the package id of the project file | the references of the project file; a tests project's references count as its owner's |
 | rust | the crate name | the crate's path dependencies |
 | dart | the package name | the dependencies in `pubspec.yaml` |

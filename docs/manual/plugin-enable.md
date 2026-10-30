@@ -29,7 +29,7 @@ No flags.
 <!-- smith:end plugin enable -->
 
 Names are the built-in language plugins: applescript, bicep, cpp, dart, dotnet, go, jvm, lua, node, php, python,
-recipe, ruby, rust.
+recipe, ruby, rust, vba.
 
 ## Exit codes
 
@@ -58,7 +58,7 @@ enabled plugins: bicep, cpp, dart, dotnet, go, jvm, node, php, python, recipe, r
 
 | Message | Cause and remedy |
 |---|---|
-| `no built-in plugin "nonexistent" (built-in: applescript, bicep, cpp, dart, dotnet, go, jvm, lua, node, php, python, recipe, ruby, rust)` | Pick from the list. Toolchain plugins such as `docker` are not switched this way. |
+| `no built-in plugin "nonexistent" (built-in: applescript, bicep, cpp, dart, dotnet, go, jvm, lua, node, php, python, recipe, ruby, rust, vba)` | Pick from the list. Toolchain plugins such as `docker` are not switched this way. |
 
 ## Related
 

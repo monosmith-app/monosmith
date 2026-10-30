@@ -113,7 +113,7 @@ deploy: `deploying with widget-bundle: no build output at <path>: run smith run 
 |---|---|
 | `plugin "nosuch" is not installed: no nosuch/plugin.json in <dirs>; give its command in smith.toml, or install it there` | the name is not on the search path. The message lists the directories looked in: `<workspace>/.smith/plugins`, each directory of `SMITH_PLUGIN_PATH`, `$SMITH_HOME/plugins`. Prefixed with `smith.toml [plugins.external.nosuch]:` when it comes from a declaration |
 | `<dir>\plugin.json: name and command are required` | the file lacks a `name` or a `command`. `smith plugin list` shows it as invalid with this message and lists the other plugins; a plugin by that name cannot be started until it is fixed |
-| `no built-in plugin "typescript" (built-in: bicep, cpp, ...)` | `smith plugin enable` and `disable` change the 14 language plugins only; the add-ons are always loaded |
+| `no built-in plugin "typescript" (built-in: bicep, cpp, ...)` | `smith plugin enable` and `disable` change the 15 language plugins only; the add-ons are always loaded |
 | `smith.toml enables unknown plugin "nope"; built-in plugins are [bicep cpp ...]` | a hand-written `[plugins] enabled` names a plugin that does not exist |
 | `no plugin handles language "go"; available: bicep, cpp, ...` | the language plugin is not enabled, or `--lang` is not one of its languages. `smith plugin list` shows the names, `smith plugin enable go` turns it on |
 

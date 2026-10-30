@@ -19,7 +19,7 @@ libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright
 libs/plugin-go/                 the Go language plugin, and the go-smith-plugin scaffold
 libs/plugin-python/             the Python language plugin
 libs/plugin-rust/, plugin-dotnet/, plugin-ruby/, plugin-php/, plugin-cpp/,
-  plugin-dart/, plugin-jvm/, plugin-bicep/, plugin-lua/, plugin-applescript/    the other language plugins
+  plugin-dart/, plugin-jvm/, plugin-bicep/, plugin-lua/, plugin-applescript/, plugin-vba/    the other language plugins
 libs/plugin-docker/             the docker deploy plugin and convention
 libs/plugin-vertical-slices/    the vertical-slices structure plugin
 install.sh, install.ps1         installers for people; install.sh is also embedded (apps/smith/cipipeline/smith_installer.sh, a test keeps the copies equal) and vendored as tools/smith/install.sh into projects with no Node, Python or .NET toolchain (the others install the monosmith package; see smith_install_policy.go)
