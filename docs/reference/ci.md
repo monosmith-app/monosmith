@@ -49,6 +49,34 @@ Pull requests into any of the listed branches get the release preview comment.
 `smith doctor` reports a pipeline that does not match the list, and
 `smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
 
+## Sibling repositories
+
+A build that needs another repository beside the workspace (a plugin pack built
+from source, say) declares it:
+
+```toml
+[[ci.sibling_repos]]
+repo = "acme/VideoPlugins"             # owner/name
+ref = "main"                           # branch, tag or commit; default: the repository's default branch
+env = "VIDEOPLUGINS"                   # holds $GITHUB_WORKSPACE/VideoPlugins in every later step
+dir = "VideoPlugins"                   # default: the repository's name
+pre_build = "cargo build --release -p videoplugins-music-sync"   # optional, runs in the checkout
+token_secret = "VIDEOPLUGINS_TOKEN"    # optional: a secret that can read a private repository
+```
+
+The generated workflow checks the repository out right after the workspace's own
+checkout, exports `env`, and runs `pre_build` after the toolchains and smith are
+installed and before `smith ci setup`. The `ci` job, the native job and the
+pipeline templates (`smith pipeline`) all do this. `smith.toml` is refused,
+with how to fix it, when `repo` is not `owner/name`, `env` or `dir` repeats or
+is not valid, or `dir` leaves the workspace.
+
+Only GitHub Actions is covered: with another provider in `[ci] providers` the
+configuration is refused. The Azure, GitLab, CircleCI and Bitbucket pipelines,
+the pub workflow and the devcontainer do not check the repository out, so check
+it out in your own pipeline there. Without `token_secret` the job's own token is
+used, which can read only public repositories (and this one).
+
 ## CircleCI
 
 With `"circleci"` in `[ci] providers`, smith writes `.circleci/config.yml`

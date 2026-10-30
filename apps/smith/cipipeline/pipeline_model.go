@@ -4,6 +4,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -66,6 +67,9 @@ type Model struct {
 	// Permissions are the GitHub token permissions plugins asked for
 	// ("packages: write"), sorted.
 	Permissions []string
+	// SiblingRepos are [[ci.sibling_repos]]: repositories the GitHub workflow
+	// checks out beside the workspace.
+	SiblingRepos []workspace.SiblingRepo
 }
 
 // DefaultNativeRunners build native projects on each OS.

@@ -36,6 +36,7 @@ jobs:
         with:
           fetch-depth: 0
 `, strings.Join(m.TriggerBranches(), ", "), idToken(m))
+	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
@@ -44,6 +45,7 @@ jobs:
 	}
 	b.WriteString(githubStores(m.Stores))
 	b.WriteString(githubInstallSmith(m, false))
+	b.WriteString(githubSiblingPreBuilds(m))
 	b.WriteString(slot("      ", "before-setup"))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
@@ -162,6 +164,7 @@ func githubNativeJob(m Model) string {
         with:
           fetch-depth: 0
 `, strings.Join(m.NativeRunners, ", "))
+	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
@@ -169,6 +172,7 @@ func githubNativeJob(m Model) string {
 		b.WriteString(githubAuthenticate(a))
 	}
 	b.WriteString(githubInstallSmith(m, true))
+	b.WriteString(githubSiblingPreBuilds(m))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(githubRubyGemsSignIn(m, "native"))

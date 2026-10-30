@@ -14,10 +14,12 @@ func GitHubSetup(m Model) string {
         with:
           fetch-depth: 0
 `)
+	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
 	}
 	b.WriteString(githubInstallSmith(m, false))
+	b.WriteString(githubSiblingPreBuilds(m))
 	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
 	return b.String()
 }
