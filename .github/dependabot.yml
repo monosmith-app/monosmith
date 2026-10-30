@@ -25,6 +25,9 @@ updates:
       # The types follow the Node version the code runs on (CI and the templates use 24), not the newest Node.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # The Babel presets need @babel/core 8, but babel-jest 30 needs @babel/core 7: stay on 7 until babel-jest supports 8.
+      - dependency-name: "@babel/preset-*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"

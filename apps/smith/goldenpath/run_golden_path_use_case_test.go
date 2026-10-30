@@ -325,7 +325,7 @@ func TestGoldenPath(t *testing.T) {
 		t.Fatalf("go.work:\n%s", w.read("go.work"))
 	}
 	// GitLab gets the same phases, each toolchain installed by its script.
-	w.smith(true, "config", "set", "ci.providers", "github", "azure", "gitlab", "circleci")
+	w.smith(true, "config", "set", "ci.providers", "github", "azure", "gitlab", "circleci", "bitbucket")
 	w.smith(true, "ci", "generate")
 	circle := w.read(".circleci/config.yml")
 	for _, want := range []string{"image: debian:bookworm", "deb.nodesource.com/setup_24.x", "smith ci verify", "smith ci release", "pipeline.git.branch"} {
@@ -335,6 +335,15 @@ func TestGoldenPath(t *testing.T) {
 	}
 	if out := w.smith(true, "ci", "generate", "--check"); !strings.Contains(out, "up to date") {
 		t.Fatalf("a fresh CircleCI config drifts:\n%s", out)
+	}
+	bitbucket := w.read("bitbucket-pipelines.yml")
+	for _, want := range []string{"image: debian:bookworm", "deb.nodesource.com/setup_24.x", "smith ci verify", "smith ci release", "BITBUCKET_PR_ID"} {
+		if !strings.Contains(bitbucket, want) {
+			t.Fatalf("bitbucket-pipelines.yml lacks %q:\n%s", want, bitbucket)
+		}
+	}
+	if out := w.smith(true, "ci", "generate", "--check"); !strings.Contains(out, "up to date") {
+		t.Fatalf("a fresh Bitbucket config drifts:\n%s", out)
 	}
 	gitlab := w.read(".gitlab-ci.yml")
 	for _, want := range []string{"deb.nodesource.com/setup_24.x", "uv python install 3.12", ".linux-amd64.tar.gz | tar -C /usr/local -xz", "smith ci verify", "smith ci release"} {
@@ -346,6 +355,9 @@ func TestGoldenPath(t *testing.T) {
 	w.smith(true, "ci", "generate")
 	if _, err := os.Stat(filepath.Join(w.dir, ".gitlab-ci.yml")); err == nil {
 		t.Fatal("dropping gitlab deletes the pipeline smith wrote")
+	}
+	if _, err := os.Stat(filepath.Join(w.dir, "bitbucket-pipelines.yml")); err == nil {
+		t.Fatal("dropping bitbucket deletes the config smith wrote")
 	}
 	if _, err := os.Stat(filepath.Join(w.dir, ".circleci", "config.yml")); err == nil {
 		t.Fatal("dropping circleci deletes the config smith wrote")

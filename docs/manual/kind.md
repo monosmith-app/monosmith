@@ -138,8 +138,17 @@ warning: a build script that needs the `application` or `maven-publish` plugin (
 `Main` class an app needs, a program a lib keeps but no longer deploys, the registry fields a
 package is missing.
 
+- A Lua project records its kind in a `-- smithKind:` comment of the rockspec. Like Bicep, it is an app or a lib, so `smith kind <project> package`
+  is refused: smith does not publish to luarocks.org yet.
+- An AppleScript project records its kind in a `-- smithKind:` comment of its main script. It is an app or a lib, so `smith kind <project> package`
+  is refused: nothing publishes AppleScript.
+- A VBA project records its kind in a `' smithKind:` comment of its main module. It is an app or a lib, so `smith kind <project> package`
+  is refused: nothing publishes VBA.
 - A Bicep project is a deployment (app) or a module (lib), so `smith kind <project> package`
   is refused: there is no Bicep registry to publish to yet.
+- An Objective-C project records its kind in a `# smithKind:` comment of its podspec. It is a lib or a package, so `smith kind <project> app`
+  is refused: a podspec describes a library.
+- Swift: the `// smithKind:` comment of `Package.swift`, and the `.package(path:)` entries of the manifests that name the folder.
 - JVM: the `smith.kind` property of a Maven module's `pom.xml`, or of a Gradle module's
   `gradle.properties` (created when the module has none). A Gradle module's build script is
   code, so smith does not rewrite its plugins; it tells you which one to add.

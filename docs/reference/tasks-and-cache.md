@@ -100,6 +100,26 @@ Versions are not compared, and a declaration nothing imports is not reported.
 `smith doctor` reports the same, per package. A project that defines its own
 `deps-check` script keeps it.
 
+Python and Go packages (`kind = package`) get the same task, `deps-check`, run
+before their `lint` (or, without one, another verify task), with the same
+output lines and the same exit policy: a non-zero exit when anything is
+undeclared, nothing printed when all is declared, and one `smith doctor` finding
+per package. It runs `smith py-deps-check` and `smith go-deps-check`:
+
+- a Python package must declare, in its `pyproject.toml` (or `requirements.txt`),
+  a distribution that provides each module its files import; the standard
+  library, the project's own modules and imports guarded by `try` or `if
+  TYPE_CHECKING:` are fine, tests may also use development dependencies, and
+  when a declared distribution's import name cannot be known (it is not in
+  smith's table of well-known names and is not installed in `.venv`) smith
+  reports nothing for the package rather than guess
+  ([python](../plugins/using/catalogue/python.md#tasks))
+- a Go module must require, in its `go.mod`, the module of every package its
+  files import; the standard library, the module's own packages, the modules
+  of `go.work` and the modules a `replace` directive names are fine, and a
+  `// indirect` requirement counts
+  ([go](../plugins/using/catalogue/go.md#tasks))
+
 ## Builds go to dist/
 
 Every build writes to one directory at the workspace root, `dist/`, in a path
@@ -118,6 +138,9 @@ folder there: Cargo builds into `dist/cargo` (`target-dir` in
 | Dart, Flutter | `dist/<project dir>/`: a Flutter web app, or a Dart app's `dart build cli` output |
 | C, C++ | `dist/<project dir>/`: the CMake build (Ninja) |
 | Bicep | `dist/<project dir>/template` and `parameters` |
+| Lua | `dist/<project dir>/`: the rock installed by `luarocks make --tree` |
+| Swift | `dist/<project dir>/`: the SwiftPM build (`swift build --scratch-path`) |
+| AppleScript | `dist/<project dir>/<name>.scpt` (`osacompile`, macOS only) |
 | Rust | `dist/cargo` for the whole workspace |
 | .NET | `dist/dotnet` (`bin/` and `obj/`) for the whole workspace |
 | JVM | `dist/maven` or `dist/gradle` for the whole workspace |

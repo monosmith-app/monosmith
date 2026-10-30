@@ -128,8 +128,8 @@ func Validate(cfg *Config) error {
 		cfg.CI.Providers = []string{"github"}
 	}
 	for _, p := range cfg.CI.Providers {
-		if p != "github" && p != "azure" && p != "gitlab" && p != "circleci" {
-			return fmt.Errorf("%s: unknown CI provider %q (use github, azure, gitlab or circleci)", FileName, p)
+		if p != "github" && p != "azure" && p != "gitlab" && p != "circleci" && p != "bitbucket" {
+			return fmt.Errorf("%s: unknown CI provider %q (use github, azure, gitlab, circleci or bitbucket)", FileName, p)
 		}
 	}
 	if cfg.Release.RubyGemsTrustedPublishing && slices.ContainsFunc(cfg.CI.Providers, func(p string) bool { return p != "github" }) {
@@ -149,6 +149,9 @@ func Validate(cfg *Config) error {
 		if strings.TrimSpace(b) == "" {
 			return fmt.Errorf("%s: [ci] branches must not hold an empty branch name", FileName)
 		}
+	}
+	if err := validateSiblingRepos(cfg); err != nil {
+		return err
 	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
 		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
@@ -195,6 +198,12 @@ func Validate(cfg *Config) error {
 			po.Docker.Registries = registries
 		}
 		if po.Release == nil {
+			continue
+		}
+		if err := validateReleaseCommand(name, po, cfg.Release.GitHubReleases); err != nil {
+			return err
+		}
+		if po.Release.Build != "" {
 			continue
 		}
 		if len(po.Release.Platforms) == 0 {

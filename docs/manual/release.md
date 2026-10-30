@@ -41,6 +41,7 @@ Usage: `smith release <command> [flags]`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith release assets` | Build a release's files with its build command and upload them to its GitHub Release |
 | `smith release pub` | Publish a released app to pub.dev from its GitHub Release (the generated pub workflow runs it) |
 
 | Flag | Type | Default | Effect |
@@ -57,7 +58,9 @@ Usage: `smith release <command> [flags]`
 
 <!-- smith:end release -->
 
-The subcommand [`smith release pub`](release-pub.md) publishes a Dart app to pub.dev.
+The subcommand [`smith release pub`](release-pub.md) publishes a Dart app to pub.dev;
+[`smith release assets`](release-assets.md) builds the files of an app whose `[release]` has a
+`build` command and uploads them to its GitHub Release.
 
 Interactions:
 

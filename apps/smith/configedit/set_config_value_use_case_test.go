@@ -18,7 +18,7 @@ func TestSetChecksTheSchemaAndKeepsComments(t *testing.T) {
 		args []string
 		err  string
 	}{
-		{"ci.providers", []string{"github", "jenkins"}, `takes github or azure or gitlab or circleci, not "jenkins"`},
+		{"ci.providers", []string{"github", "jenkins"}, `takes github or azure or gitlab or circleci or bitbucket, not "jenkins"`},
 		{"ci.providers", []string{"github", "github"}, "twice"},
 		{"ci.devcontainer", []string{"yes please"}, "true or false"},
 		{"cache.max_size_mb", []string{"-1"}, "at least 0"},
@@ -122,7 +122,7 @@ func TestAListOfChoicesCanBeOneCommaSeparatedValue(t *testing.T) {
 	if err != nil || strings.Join(cfg.CI.Providers, ",") != "github,azure,gitlab" {
 		t.Fatalf("%v %+v\n%s", err, cfg.CI.Providers, raw)
 	}
-	if err := Set(root, "ci.providers", []string{"github,bitbucket"}); err == nil || !strings.Contains(err.Error(), `not "bitbucket"`) {
+	if err := Set(root, "ci.providers", []string{"github,jenkins"}); err == nil || !strings.Contains(err.Error(), `not "jenkins"`) {
 		t.Errorf("each part is still checked: %v", err)
 	}
 }

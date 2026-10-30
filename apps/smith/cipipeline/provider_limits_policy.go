@@ -12,9 +12,15 @@ import (
 // leaving the file to differ silently from what the team asked for.
 func Limits(cfg workspace.Config, m Model) []string {
 	var out []string
-	if slices.Contains(cfg.CI.Providers, "circleci") {
+	for _, p := range []struct{ id, name, builds string }{
+		{"circleci", "CircleCI", "CircleCI builds every branch"},
+		{"bitbucket", "Bitbucket", "Bitbucket builds pull requests and pushes to " + cfg.Release.Branch + " only"},
+	} {
+		if !slices.Contains(cfg.CI.Providers, p.id) {
+			continue
+		}
 		if len(cfg.CI.Branches) > 0 {
-			out = append(out, "CircleCI: [ci] branches does not apply; CircleCI builds every branch, and a release still runs only from "+cfg.Release.Branch)
+			out = append(out, p.name+": [ci] branches does not apply; "+p.builds+", and a release still runs only from "+cfg.Release.Branch)
 		}
 		if m.Native {
 			var other []string
@@ -24,7 +30,14 @@ func Limits(cfg workspace.Config, m Model) []string {
 				}
 			}
 			if len(other) > 0 {
-				out = append(out, "CircleCI: native projects build on Linux only, not on "+strings.Join(other, ", ")+"; add a macOS or Windows job that runs `smith ci native` yourself")
+				out = append(out, p.name+": native projects build on Linux only, not on "+strings.Join(other, ", ")+"; add a macOS or Windows job that runs `smith ci native` yourself")
+			}
+		}
+	}
+	if len(m.AssetPlatforms) > 0 {
+		for _, p := range cfg.CI.Providers {
+			if p != "github" {
+				out = append(out, p+": the release files a [release] build command makes are built and uploaded by the GitHub Actions workflow only; add github to [ci] providers, or run `smith release assets` on each platform yourself")
 			}
 		}
 	}

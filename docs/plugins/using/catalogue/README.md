@@ -1,6 +1,6 @@
 # The built-in plugin catalogue
 
-smith ships 24 plugins inside its binary: 12 language plugins and 12 add-ons (toolchain, structure,
+smith ships 25 plugins inside its binary: 12 language plugins and 13 add-ons (toolchain, structure,
 scaffold and deploy plugins). This section has one page for each, written from the plugin's code
 and from real runs: what it detects, the project kinds and tasks it adds, what it scaffolds, its
 settings, how it handles the toolchain, how it releases, what it adds to CI, and where it is
@@ -27,6 +27,12 @@ scaffold. `smith plugin enable`, `disable` and `set` switch these on and off.
 | `dart` | packages of a root pub workspace, Dart or Flutter | [dart](dart.md) |
 | `jvm` | Maven modules (Java) and Gradle modules (Kotlin, Android) | [jvm](jvm.md) |
 | `bicep` | Azure infrastructure: each `main.bicep` | [bicep](bicep.md) |
+| `lua` | LuaRocks projects: each `*.rockspec` | [lua](lua.md) |
+| `applescript` | AppleScript: each directory with a `.applescript` source | [applescript](applescript.md) |
+| `vba` | VBA modules exported as text (`.bas`, `.cls`, `.frm`) | [vba](vba.md) |
+| `swift` | Swift packages: each `Package.swift` | [swift](swift.md) |
+| `objc` | CocoaPods libraries (Objective-C): each `*.podspec` | [objc](objc.md) |
+| `bundle` | apps with no language: a directory with `app.json` and `flow.json` | [bundle](bundle.md) |
 | `recipe` | a `*.recipe.toml` in a folder of its own | [recipe](recipe.md) |
 
 ## Toolchain, scaffold, structure and deploy plugins
@@ -41,6 +47,7 @@ configure.
 | `jest` | toolchain | `test` | [jest](jest.md) |
 | `vitest` | toolchain | `test` | [vitest](vitest.md) |
 | `playwright` | toolchain | `e2e` | [playwright](playwright.md) |
+| `tauri` | toolchain | `tauri-build` | [tauri](tauri.md) |
 | `vite` | scaffold, toolchain | `build`, `typecheck` | [vite](vite.md) |
 | `angular` | scaffold, toolchain | `build`, `typecheck` | [angular](angular.md) |
 | `astro` | scaffold, toolchain | `build` | [astro](astro.md) |

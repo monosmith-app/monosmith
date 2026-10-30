@@ -55,8 +55,13 @@ All tasks run in the project directory with the venv interpreter, written `{work
 | `test` | `-m pytest -q -p no:cacheprovider -c {workspaceRoot}/.smith/defaults/pytest.ini --rootdir=.` (no `-c` when the repository configures pytest) | every project | yes | none |
 | `typecheck` | `-m mypy --config-file {workspaceRoot}/.smith/defaults/mypy.ini .` (no `--config-file` when the repository configures mypy) | every project | yes | none |
 | `build` | `-m build --outdir {workspaceRoot}/dist/<project dir> .` | `package` only | yes | `dist/<project dir>` (wheel and sdist) |
+| `deps-check` | `smith py-deps-check <dir>` (not run through the venv) | `package` only; its `lint` (or, without one, `typecheck` or `test`) runs after it, so CI verify runs it | yes; inputs `**/*` and `requirements-dev.txt` | none |
 | `start` | `-m <import name>` | `app` only | no | none |
 | `package` | `-m build --wheel --outdir {workspaceRoot}/dist/drop .` | `app` only | no | none declared; the wheel lands in `dist/drop` for `smith ci pack` |
+
+`deps-check` fails when a `.py` file of the package imports a module that none of the distributions its `pyproject.toml` declares provides, because the workspace's one shared venv hides the gap that whoever installs the package from PyPI hits. Declarations are read from `[project] dependencies` and `optional-dependencies` (extras count as declared), `[dependency-groups]`, Poetry's tables, `[build-system] requires`, and the project's `requirements*.txt` files; a test, `conftest.py`, `setup.py`, `noxfile.py` or a file under `tests/`, `test/`, `testing/`, `e2e/`, `tools/`, `scripts/`, `docs/`, `examples/` or `benchmarks/` may also import the development ones and the workspace's `requirements-dev.txt`. A development-only import in a file that ships is reported as `declared only in development dependencies`.
+
+It reports only what it can be sure about. Never reported: the standard library, the project's own modules (any folder or file name inside the project), relative imports, imports in a docstring, and imports inside `try`/`except` or `if TYPE_CHECKING:` (optional by intent). A distribution's import name often differs from its name (PyYAML is imported as `yaml`, Pillow as `PIL`); smith matches an import to a distribution by name, by a table of well-known differences, or by the metadata of the distribution installed in the workspace `.venv` (`top_level.txt` or `RECORD`). When a declared distribution is none of those (not in the table, not installed, and its name is not one of the package's imports), smith cannot tell what it provides and reports nothing for that package until `smith ci setup` has installed it. A package with `dynamic = ["dependencies"]` and no `requirements.txt` is skipped for the same reason. The output lines are `<file> imports <module>, which pyproject.toml does not declare`.
 
 A `lib` has no `build`, and an `app` has no `build` either: `smith run build` ran only the package's build in the test workspace (`1/1 tasks`). There is no `format` task.
 
@@ -272,6 +277,7 @@ Doctor checks (`pipeline/ci_contribution_use_case.go`, `check_python_version_use
 |---|---|---|
 | `Python venv exists` | `.venv/Scripts/python.exe` (or `.venv/bin/python`) is missing | run `smith ci setup` |
 | `requirements-dev.txt exists` | the file is missing | run `smith add` for a Python project, or restore it |
+| `<dir> declares the distributions it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix | add the distribution to `dependencies` in `<dir>/pyproject.toml` |
 | `the venv's Python is 3.12, as in CI` | a warning when the venv's Python is newer than `3.12` (or has none); a failure when it is older | delete `.venv`, then `smith ci setup` |
 
 All three passed in the test run (`17 passed, 0 failed, 0 warning(s)`).

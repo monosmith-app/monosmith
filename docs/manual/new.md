@@ -43,10 +43,11 @@ Usage: `smith new <name> [flags]`
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
-| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci (default github) |
+| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab`, `circleci`, `bitbucket` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
+| `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
@@ -66,12 +67,15 @@ Notes on the flags:
   hyphens, starting with a letter. It becomes `[workspace] name` and the default
   npm scope.
 - `--ci` takes a comma-separated list or the flag repeated: `github`, `azure`,
-  `gitlab` or `circleci`.
+  `gitlab`, `circleci` or `bitbucket`.
 - `--module-prefix` is read from the `origin` remote of the folder when it has one.
 - `--recipe` writes `recipe = ...` under `[workspace]`. See
   [Recipes](../reference/recipes.md). It is not checked at creation time.
 - `--dir .` creates the workspace in the current folder. Files smith does not own
   are kept.
+- `--here` creates the workspace in the current folder when it is empty (a `.git`, `.vscode`
+  or `.DS_Store` does not count) and names it after the folder unless you give a name. A folder
+  with files is refused with a problem that points at `smith adopt`.
 
 In a terminal (standard input and output are terminals and `CI` is unset), a missing
 `<name>` is asked for: `Name of the workspace:`, up to three tries. Elsewhere it is the
@@ -137,6 +141,7 @@ Which CI should smith write pipelines for?
   2) Azure Pipelines
   3) GitLab CI
   4) CircleCI
+  5) Bitbucket Pipelines
 Choice [1]:
 What is the main language of this workspace?
   1) Decide later             add projects in any language with smith add (default)

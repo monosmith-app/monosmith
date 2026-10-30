@@ -43,6 +43,8 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 	}
 	switch kind {
 	case protocol.ProjectPackage:
+		addDepsCheck(tasks, root)
+		addDepsCheck(tasks, root)
 		// Into the workspace's dist/, like every build: nothing in the source tree.
 		tasks["build"] = protocol.Task{Command: []string{py, "-m", "build", "--outdir", "{workspaceRoot}/" + protocol.ProjectBuildDir(root), "."}, Inputs: inputs, Outputs: []string{protocol.BuildDirFromProject(root)}, Cache: true, Description: "Build the wheel and sdist into " + protocol.ProjectBuildDir(root) + "/"}
 	case protocol.ProjectApp:
@@ -53,4 +55,27 @@ func Tasks(root string, kind protocol.ProjectKind, importName string, args ToolA
 		}
 	}
 	return tasks
+}
+
+// DepsCheckTask is the name of the task that checks a package declares what
+// it imports (smith py-deps-check).
+const DepsCheckTask = "deps-check"
+
+// addDepsCheck gives a package the deps-check task, cached on its files and
+// the workspace's development requirements, and makes its lint (or, without
+// one, typecheck or test) run after it, so CI's verify phase runs it.
+func addDepsCheck(tasks map[string]protocol.Task, root string) {
+	tasks[DepsCheckTask] = protocol.Task{
+		Command:     []string{"{smith}", "py-deps-check", root},
+		Cache:       true,
+		Inputs:      []string{"**/*", "{workspaceRoot}/" + venv.RequirementsFile},
+		Description: "Check the package declares every distribution it imports",
+	}
+	for _, name := range []string{"lint", "typecheck", "test"} {
+		if t, ok := tasks[name]; ok {
+			t.DependsOn = append(t.DependsOn, DepsCheckTask)
+			tasks[name] = t
+			return
+		}
+	}
 }

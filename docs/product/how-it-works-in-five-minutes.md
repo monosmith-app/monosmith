@@ -182,7 +182,7 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 - A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 24 built-in
   plugins (eleven language plugins and one for recipes, and twelve add-ons for toolchains,
   scaffolds, structure rules and deploy targets) ship inside the binary; `smith plugin list`
-  shows them. You can write a plugin in any language (SDKs exist for Go, TypeScript and Python) and
+  shows them. You can write a plugin in any language (SDKs exist for Go, TypeScript, Python and C#) and
   check it with `smith plugin check`. A plugin a repository names does not start until you
   trust it (`smith plugin trust`), and in CI only when its SHA-256 is pinned.
 - A **stack** is the set of plugins one project is built with. `smith stacks` lists

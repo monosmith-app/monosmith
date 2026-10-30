@@ -145,9 +145,9 @@ lists them all. The checks, grouped by who owns them:
 
 | Language | Checks |
 |---|---|
-| Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it) |
+| Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it); a package requires in `go.mod` every module it imports (the `deps-check` task, `go mod tidy`) |
 | Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
-| Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`) |
+| Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`); a package declares in `pyproject.toml` a distribution for every module it imports (the `deps-check` task) |
 | Rust | `cargo` is installed; the root `Cargo.toml` is a workspace and lists every crate in `members` |
 | .NET | the .NET SDK is installed; `nuget.config` matches `[registries]` (`smith doctor --fix`) |
 | Ruby, PHP | the interpreter and Bundler or Composer are installed |
@@ -155,6 +155,10 @@ lists them all. The checks, grouped by who owns them:
 | Dart, Flutter | the SDK is installed, and lives outside the workspace |
 | JVM | a JDK, Maven, Gradle or the Android SDK, as the projects need |
 | Bicep | the Azure CLI and the Bicep CLI |
+| Lua | LuaRocks and luacheck are installed; each rockspec is named for its version (a warning) |
+| Swift | `swift` is installed |
+| Objective-C | `pod` and `xcodebuild` are on PATH (macOS only; warnings elsewhere) |
+| AppleScript | `osacompile` is on PATH (macOS only; a warning elsewhere) |
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 
 `smith doctor --fix` shows each fix first (diffs, the commands it runs, the

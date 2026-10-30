@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
+	"github.com/monosmith-app/monosmith/apps/smith/godepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
-	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
 	"github.com/monosmith-app/monosmith/apps/smith/npmdepscheck"
@@ -20,6 +21,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
+	"github.com/monosmith-app/monosmith/apps/smith/pydepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
 	"golang.org/x/term"
@@ -44,6 +46,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
@@ -66,7 +69,7 @@ func Root(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:   "smith",
 		Short: "A simple monorepo tool: add apps, libs and packages; build, test, release",
-		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM and Bicep (and anything a plugin adds):
+		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM, Bicep, Lua, AppleScript, VBA, Swift and Objective-C (and anything a plugin adds):
 it scaffolds projects, runs their tasks in dependency order from a cache,
 generates CI pipelines, and releases packages from conventional commits.
 
@@ -91,10 +94,10 @@ already have), then build and doctor.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version), eject.Command(version), kindchange.Command(version))
-	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
+	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
-	releaseCmd.AddCommand(pubrelease.Command(version))
+	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version))
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)

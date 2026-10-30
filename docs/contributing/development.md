@@ -19,7 +19,7 @@ libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright
 libs/plugin-go/                 the Go language plugin, and the go-smith-plugin scaffold
 libs/plugin-python/             the Python language plugin
 libs/plugin-rust/, plugin-dotnet/, plugin-ruby/, plugin-php/, plugin-cpp/,
-  plugin-dart/, plugin-jvm/, plugin-bicep/    the other language plugins
+  plugin-dart/, plugin-jvm/, plugin-bicep/, plugin-lua/, plugin-applescript/, plugin-vba/, plugin-swift/, plugin-objc/    the other language plugins
 libs/plugin-docker/             the docker deploy plugin and convention
 libs/plugin-vertical-slices/    the vertical-slices structure plugin
 install.sh, install.ps1         installers for people; install.sh is also embedded (apps/smith/cipipeline/smith_installer.sh, a test keeps the copies equal) and vendored as tools/smith/install.sh into projects with no Node, Python or .NET toolchain (the others install the monosmith package; see smith_install_policy.go)
@@ -66,7 +66,7 @@ Core slices in `apps/smith`:
 | `pubrelease`, `dockerdescription` | `smith release pub` and `smith docker description` |
 | `recipecatalog`, `recipewizard`, `recipereleases` | list and describe a workspace's recipes, `smith recipe new`, and whether a recipe URL has a newer release |
 | `toolchainpin`, `cachecredentials`, `buildoutputs`, `declarationspecifiers` | `[toolchains]` pins, the secrets a remote cache needs, the build-output check, the declaration fix-up convert writes |
-| `npmaudit`, `npmpolicy`, `npmdepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-policy` and `rust-policy` steps the language plugins' tasks call |
+| `npmaudit`, `npmpolicy`, `npmdepscheck`, `pydepscheck`, `godepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-*`, `go-deps-check` and `rust-policy` steps the language plugins' tasks call |
 | `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |
 | `packagemanifests` | the Homebrew, Scoop and winget manifests attached to an app's GitHub Release |

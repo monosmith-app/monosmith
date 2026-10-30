@@ -14,7 +14,7 @@ Each plugin contributes, for its own projects:
 - **toolchains** — the runtimes to install, at versions the plugin pins. The
   plugin says how: a GitHub action and an Azure task with their inputs
   (`actions/setup-node@v7`, `UsePythonVersion@0`, …), and a shell command for
-  everything else (GitLab and CircleCI install every toolchain this way). smith itself knows no runtime, so a plugin for a new
+  everything else (GitLab, CircleCI and Bitbucket install every toolchain this way). smith itself knows no runtime, so a plugin for a new
   language installs it the same way; a runtime no plugin says how to install
   is left as a comment in the pipeline, to fill through the `before-setup`
   slot.
@@ -47,7 +47,35 @@ stays the only branch a release runs from: the pack, upload and release steps
 keep their condition on it, so a push to `dev` runs verify and nothing more.
 Pull requests into any of the listed branches get the release preview comment.
 `smith doctor` reports a pipeline that does not match the list, and
-`smith ci generate` rewrites it. GitLab and CircleCI are not affected.
+`smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
+
+## Sibling repositories
+
+A build that needs another repository beside the workspace (a plugin pack built
+from source, say) declares it:
+
+```toml
+[[ci.sibling_repos]]
+repo = "acme/VideoPlugins"             # owner/name
+ref = "main"                           # branch, tag or commit; default: the repository's default branch
+env = "VIDEOPLUGINS"                   # holds $GITHUB_WORKSPACE/VideoPlugins in every later step
+dir = "VideoPlugins"                   # default: the repository's name
+pre_build = "cargo build --release -p videoplugins-music-sync"   # optional, runs in the checkout
+token_secret = "VIDEOPLUGINS_TOKEN"    # optional: a secret that can read a private repository
+```
+
+The generated workflow checks the repository out right after the workspace's own
+checkout, exports `env`, and runs `pre_build` after the toolchains and smith are
+installed and before `smith ci setup`. The `ci` job, the native job and the
+pipeline templates (`smith pipeline`) all do this. `smith.toml` is refused,
+with how to fix it, when `repo` is not `owner/name`, `env` or `dir` repeats or
+is not valid, or `dir` leaves the workspace.
+
+Only GitHub Actions is covered: with another provider in `[ci] providers` the
+configuration is refused. The Azure, GitLab, CircleCI and Bitbucket pipelines,
+the pub workflow and the devcontainer do not check the repository out, so check
+it out in your own pipeline there. Without `token_secret` the job's own token is
+used, which can read only public repositories (and this one).
 
 ## CircleCI
 
@@ -105,6 +133,60 @@ to `$BASH_ENV`, which every later step reads.
 others: an edited file is reported as out of date, and steps you put between
 the `smith:slot` markers are kept.
 
+## Bitbucket Pipelines
+
+With `"bitbucket"` in `[ci] providers`, smith writes `bitbucket-pipelines.yml`
+at the repository root. It is the same pipeline as GitLab's, spelled for
+Bitbucket Pipelines:
+
+- a `Verify` step on a `debian:bookworm` image, defined once under
+  `definitions` and reused: it installs system packages, each toolchain through
+  its plugin's shell command and smith (npm, pip or `dotnet tool` for Node,
+  Python or .NET workspaces, else the vendored `tools/smith/install.sh`), then
+  runs `smith ci setup`, `audit` and `verify`, with the `before-setup` and
+  `after-verify` slots and the release preview;
+- on the release branch only (a test of `BITBUCKET_BRANCH` in the script),
+  `smith ci pack` (its `dist/drop` kept as the step's artifacts) and
+  `smith ci release`;
+- a `Native (Linux)` step after it, when a project is native;
+- the same steps for `pull-requests` (`'**'`) and for `branches` of the release
+  branch, so a push to any other branch builds nothing.
+
+A step's script runs in one shell, so the plugins' install commands that set
+`PATH` (and `JAVA_HOME`, `DOTNET_ROOT`) for "the rest of the job" work as they
+are. The package stores are Bitbucket caches under `definitions`, keyed on the
+store's lockfiles.
+
+**What Bitbucket Pipelines cannot express, and what smith does about it:**
+
+- **Branches.** Only the release branch and pull requests build, so `[ci]
+  branches` does not apply; `smith ci generate` says so.
+- **The release preview comment.** Bitbucket Cloud has a pull request comments
+  API, so smith comments there when `BITBUCKET_TOKEN` is a secured repository
+  variable (a repository access token with pull request write). Without it the
+  preview stays in the step's log. There is no job summary. Pull requests read
+  the remote cache and never write it.
+- **Native projects on other systems.** Bitbucket's cloud runs Linux, so the
+  `Native (Linux)` step is the one native step. A configured `windows-latest` or
+  `macos-latest` runner is named in a comment in the file and in a note when
+  `smith ci generate` runs; add a step with `runs-on: [self.hosted, ...]` on a
+  self-hosted macOS or Windows runner that runs `smith ci native` yourself.
+- **Pushing tags.** `smith ci release` pushes with `BITBUCKET_TOKEN`
+  (`https://x-token-auth:...@bitbucket.org/...`), so the token also needs
+  repository write.
+- **Secrets.** Bitbucket passes repository and workspace variables to every
+  step, so the file maps none of them; add the credentials the release reads,
+  listed in a comment at the file's end and by `smith ci check`, as secured
+  variables (Repository settings, Pipelines, Repository variables).
+- **Cache keys.** A Bitbucket cache key hashes at most ten files; a store with
+  more lockfiles takes the first ten.
+- **GitHub-only features.** The same as for CircleCI: SBOM provenance, `pub.yml`,
+  npm provenance, RubyGems trusted publishing and `vsce_entra`.
+
+`smith ci generate --check` and `smith doctor` cover the file like the others:
+an edited file is reported as out of date, and steps you put between the
+`smith:slot` markers are kept.
+
 ## GitLab CI
 
 With `"gitlab"` in `[ci] providers`, smith writes `.gitlab-ci.yml`. It has
@@ -134,6 +216,7 @@ can run locally.
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
 | `smith ci pack` | on a push to the release branch: every project's `package` task into `dist/drop`, kept as the run's `drop` artifact |
 | `smith ci native` | in a job per OS, after the ci job: lint, test, build and package the projects tagged native |
+| `smith ci assets` | in a job per platform, after the ci job (GitHub Actions only): run an app's `[release]` build command and upload its files to the GitHub Release ([Releasing](releasing.md#release-files-from-a-command)) |
 | `smith ci release` | on a push to the release branch: version, publish and tag; then the post-release steps plugins declare, whether or not anything was released (the docker plugin's `smith docker description`, when an app has a `description_from` file or a short description for a `docker.io` registry), each only a warning when it fails |
 
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
@@ -186,7 +269,7 @@ Release step, an `Attest build provenance` step
 (`actions/attest-build-provenance`) over `dist/release/*/*`, which signs the
 archives, packages and SBOMs with SLSA provenance. Verify one with
 `gh attestation verify <file> --repo <owner>/<repo>`. Azure Pipelines and
-GitLab CI and CircleCI get the SBOM but no provenance step: they have no attestation
+GitLab CI, CircleCI and Bitbucket get the SBOM but no provenance step: they have no attestation
 service.
 
 ## Pinned versions and the dev container
@@ -244,6 +327,10 @@ native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # the defa
 native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux
 ```
 
+Every AppleScript project is native, because `osacompile` exists on macOS only: with only AppleScript projects native, set `native_runners = ["macos-latest"]`.
+
+Every Objective-C project is native too, because `pod lib lint` needs Xcode: with only such projects native, set `native_runners = ["macos-latest"]`.
+
 On Azure Pipelines a workspace with a native project gets a `jobs:` pipeline:
 the ci job, and the native job with a matrix of runner images. Steps kept in
 the `smith:slot` markers move with the job.
@@ -290,7 +377,7 @@ and the installed one only bootstraps.
 
 The pipeline lists only the secrets its projects need. Go packages are
 published by their tag and need no secret; PHP packages are read by Packagist
-from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++ and Bicep projects release by their tag only. On GitHub, the job
+from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++, Bicep, Lua, AppleScript, VBA, Swift and Objective-C projects release by their tag only. On GitHub, the job
 has `contents: write` so it can push tags; on Azure the checkout keeps its
 credentials (`persistCredentials`).
 
@@ -419,7 +506,7 @@ so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
 
 - **Pull requests read the cache and never write it.** A pull request (GitHub
   `pull_request`, Azure `Build.Reason` of `PullRequest`, GitLab merge requests,
-  CircleCI's `CIRCLE_PULL_REQUEST`)
+  CircleCI's `CIRCLE_PULL_REQUEST`, Bitbucket's `BITBUCKET_PR_ID`)
   is read-only, so a contributor's build cannot store a result that every later
   run replays; only a push to the release branch writes. This is smith's own
   rule, not YAML: `smith run` in a pull request behaves the same on a laptop
@@ -432,7 +519,7 @@ so (`the remote cache is off: SMITH_CACHE_KEY is not set`).
 - **Azure needs the mapping.** Azure Pipelines exposes a secret variable to a
   step only through `env:`, so each of those steps carries
   `SMITH_CACHE_KEY: $(SMITH_CACHE_KEY)`. GitHub reads `${{ secrets.X }}`, and
-  GitLab's CI/CD variables and CircleCI's environment variables are already environment.
+  GitLab's CI/CD variables, CircleCI's and Bitbucket's environment variables are already environment.
 - `smith doctor` warns on a machine where the remote is configured and the key
   is not set.
 

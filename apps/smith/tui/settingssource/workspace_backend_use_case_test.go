@@ -167,7 +167,7 @@ func TestASettingTheSchemaRefusesIsRefusedWithTheCommandsReasonAndTheFileIsUntou
 	tab, _ := twoWorkspaces(t)
 	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
 	before := read(t, tab)
-	if _, err := b.SetSetting("ci.providers", []string{"jenkins"}); err == nil || !strings.Contains(err.Error(), "github or azure or gitlab or circleci") {
+	if _, err := b.SetSetting("ci.providers", []string{"jenkins"}); err == nil || !strings.Contains(err.Error(), "github or azure or gitlab or circleci or bitbucket") {
 		t.Fatalf("%v", err)
 	}
 	if _, err := b.SetSetting("cache.max_size_mb", []string{"lots"}); err == nil || !strings.Contains(err.Error(), "whole number") {
@@ -257,7 +257,7 @@ func TestTheSnapshotListsEverySettingConfigListKnowsExceptTheOnePluginsEdits(t *
 	if s := got["default_stacks.node"]; !s.Set || s.Current[0] != "node-jest" {
 		t.Fatalf("a default stack that is set is listed: %+v", s)
 	}
-	if s := got["ci.providers"]; !s.Set || len(s.Current) != 1 || s.Current[0] != "github" || len(s.Choices) != 4 {
+	if s := got["ci.providers"]; !s.Set || len(s.Current) != 1 || s.Current[0] != "github" || len(s.Choices) != 5 {
 		t.Fatalf("an array reads as its items: %+v", s)
 	}
 	if s := got["release.github_releases"]; s.Set || s.Default != "false" || s.Explanation == "" || strings.Contains(s.Explanation, "Default:") {

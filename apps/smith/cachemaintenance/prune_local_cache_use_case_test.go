@@ -314,7 +314,7 @@ func TestTwoSmithProcessesPruneAndStoreAtTheSameTime(t *testing.T) {
 	var childOut bytes.Buffer
 	child.Stdout, child.Stderr = &childOut, &childOut
 	if err := child.Start(); err != nil {
-		t.Fatal(err)
+		t.Fatalf("starting the pruning process: %v", err)
 	}
 	done := make(chan error, 1)
 	go func() { done <- child.Wait() }()
@@ -333,7 +333,7 @@ func TestTwoSmithProcessesPruneAndStoreAtTheSameTime(t *testing.T) {
 	}
 	report, err := Verify(dir, false, time.Now().Add(time.Hour))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("verifying the store: %v", err)
 	}
 	for _, p := range report.Problems {
 		if p.Kind == CorruptBlob || p.Kind == UnreadableEntry || p.Kind == DamagedEntry {

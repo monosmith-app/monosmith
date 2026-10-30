@@ -11,7 +11,7 @@ const Marker = "<!-- smith:release-preview -->"
 
 // PullRequest is where the preview goes.
 type PullRequest struct {
-	// Provider is "github", "azure" or "gitlab".
+	// Provider is "github", "azure", "gitlab" or "bitbucket".
 	Provider string
 	Number   int
 	Token    string
@@ -21,6 +21,7 @@ type PullRequest struct {
 	Collection, Project, RepoID string
 	// GitLab: the API root (API) and the project id (ProjectID).
 	ProjectID string
+	// Bitbucket: the API root (API) and "workspace/repository" (Repo).
 }
 
 var githubPullRef = regexp.MustCompile(`^refs/pull/(\d+)/`)
@@ -79,8 +80,19 @@ func FromEnvironment(getenv func(string) string) (pr PullRequest, ok bool, why s
 			return pr, false, "GITLAB_TOKEN is not set (a project access token with the api scope, as a masked CI/CD variable)"
 		}
 		return pr, true, ""
+	case getenv("BITBUCKET_BUILD_NUMBER") != "":
+		if getenv("BITBUCKET_PR_ID") == "" {
+			return pr, false, "this Bitbucket Pipelines run is not for a pull request"
+		}
+		n, _ := strconv.Atoi(getenv("BITBUCKET_PR_ID"))
+		repo := getenv("BITBUCKET_WORKSPACE") + "/" + getenv("BITBUCKET_REPO_SLUG")
+		pr = PullRequest{Provider: "bitbucket", Number: n, Token: getenv("BITBUCKET_TOKEN"), API: "https://api.bitbucket.org/2.0", Repo: repo}
+		if pr.Token == "" {
+			return pr, false, "BITBUCKET_TOKEN is not set (a repository access token with pull request write, as a secured repository variable)"
+		}
+		return pr, true, ""
 	case getenv("CIRCLECI") == "true":
 		return circleciPullRequest(getenv)
 	}
-	return pr, false, "not running in GitHub Actions, Azure Pipelines, GitLab CI or CircleCI"
+	return pr, false, "not running in GitHub Actions, Azure Pipelines, GitLab CI, Bitbucket Pipelines or CircleCI"
 }

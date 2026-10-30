@@ -87,8 +87,53 @@ the language, and `asset_name` names each file the same way.
 | .NET | Runs `dotnet publish -r <rid> --self-contained -p:PublishSingleFile=true -p:Version=<version>` per platform (win-x64, linux-arm64, osx-arm64, ...) and zips the output with the README and licence files. Every platform is built on one machine; each needs its runtime downloaded from NuGet once. |
 
 An app in another language with a release section is tagged and gets a GitHub
-Release, without assets. The settings are in
+Release, without assets, unless it builds them with a command (next section).
+The settings are in
 [Configuration](configuration.md#a-projects-release-settings).
+
+### Release files from a command
+
+Any language, and any tool, can make an app's release files: name the command
+and the files it leaves.
+
+```toml
+[release]
+github_releases = true
+
+[projects.music-fixer.release]
+build     = "vcw app build examples/apps/music-fixer/app.json --out out --zip"
+assets    = ["out/*.zip", "out/*.zip.sha256"]
+platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]
+```
+
+`build` is a shell command, run at the workspace root once on a runner of each
+platform, and `assets` are workspace-relative globs of what it leaves. The
+command sees `SMITH_PLATFORM` (one of the five names above), `SMITH_VERSION`
+and `SMITH_TAG`, so it can name its files after the platform. This replaces what
+the project's plugin would build: there are no `asset_name`, aliases, package
+manager manifests, Linux packages or npm, PyPI, NuGet, RubyGems and pub
+packages for it, and smith refuses a `release` table that sets them next to
+`build`, that has `build` without `assets` or `platforms`, `assets` without
+`build`, a platform it does not know, or no `github_releases`. Each message says
+how to fix it.
+
+The release job tags the app and creates its GitHub Release, without files.
+The generated GitHub Actions workflow then has an `assets` job that runs
+`smith ci assets` on one runner per platform (`windows-latest`, `macos-latest`
+for arm64, `macos-15-intel`, `ubuntu-latest`, `ubuntu-24.04-arm`) after the
+release. Each runner runs the build, then uploads its own files with
+`gh release upload --clobber`, so a re-run replaces a file and no job uses
+`actions/upload-artifact` (no artifact storage is spent). Give the files names
+that differ by platform: two runners uploading the same name replace each other.
+
+`smith release --dry-run` says which command and files each release has.
+`smith release assets` runs the build and the upload for the platform you are on
+(`--platform` to name it), for a release made by hand. Not covered: GitLab CI,
+Azure Pipelines, CircleCI and Bitbucket Pipelines do not run this, and
+`smith ci generate` says so when one of them is configured; run
+`smith release assets` on each platform there. The checksums file, SBOM,
+attestation and platform packages that smith builds from a plugin's archives are
+not made for these files; have `build` write what you need.
 
 ### Cross-building, and apps built on each system
 
@@ -327,7 +372,9 @@ With `[release] github_releases = true`, every released tag gets a GitHub
 Release named `<project> <version>`, and an app's assets are attached. It
 needs `GITHUB_TOKEN` (or `GH_TOKEN`) with `contents: write`, which the
 generated GitHub pipeline passes. A re-run completes a release that is missing
-assets and never duplicates one.
+assets and never duplicates one. Another repository's CI downloads a private
+repository's files with a fine-grained token:
+[Private release files](../guides/private-release-assets.md).
 
 The notes come from the releasing commits. Breaking changes are listed first,
 with the text of their `BREAKING CHANGE:` footer. Then come Features, Fixes,
@@ -652,7 +699,7 @@ release, because the plan's versions would be wrong:
 The registry is asked through the project's plugin (`npm view` for Node, the
 PEP 503 index for Python, and likewise crates.io, NuGet, RubyGems, pub.dev,
 Packagist and the Maven repository; a Go module's tags are its registry, and
-C++ and Bicep projects have none). An unreachable
+C++, Bicep, Lua, AppleScript, VBA, Swift and Objective-C projects have none). An unreachable
 registry is a warning, not a stop. `smith doctor` runs the same checks without
 fetching.
 
@@ -694,6 +741,15 @@ The release stops at the failing package; everything before it is tagged and
 pushed. Re-run it: tagged packages have no new commits and are kept, and a
 package that was published but not tagged is skipped by the registry check and
 then tagged. Tags left local by an interrupted push are pushed by the next run.
+
+A release that stopped after its tag was pushed, when GitHub refused to create
+the Release (a 500, say), is finished by a re-run even on a fresh CI checkout,
+which has no journal. When no package has anything new to release, smith asks
+GitHub (with `GITHUB_TOKEN`) whether each project's latest release tag has a
+GitHub Release, and finishes the ones that do not: it creates the Release and
+attaches the assets, rebuilding them if the Release lacks any. It publishes to
+no registry again. This needs `[release] github_releases = true`. The notes of
+a finished Release are empty, as the commits are not replanned.
 
 Before a real release smith refuses a shallow clone, a branch other than
 `[release] branch`, uncommitted changes, and a missing publish credential —
