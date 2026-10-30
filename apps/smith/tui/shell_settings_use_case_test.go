@@ -148,7 +148,7 @@ func TestTheSettingsTabIsTheLastOfTheStripAndKeySevenOpensIt(t *testing.T) {
 	if l.sh().tab != commands.TabSettings {
 		t.Fatalf("on %q", l.sh().tab)
 	}
-	l.has("Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <name|path>")
+	l.has("Sections", "Plugins", "Style", "Workspace", "Recipes", "Forms", "Built-in plugins", "[x] go", "[x] node", "+ Install a plugin", "smith plugin install <source>")
 	footer := footerOf(l)
 	for _, want := range []string{"↑↓ move", "Space change", "Tab sections", "r reload", "1-7 views"} {
 		if !strings.Contains(footer, want) {
@@ -386,5 +386,25 @@ func TestAFormOfTheFormsSectionOpensTheGuide(t *testing.T) {
 	l.press("enter")
 	if l.sh().tab != commands.TabGuide {
 		t.Fatalf("on %q", l.sh().tab)
+	}
+}
+
+func TestInstallingAPluginShowsTheCommandLineAsksAndRunsItInTheRunTab(t *testing.T) {
+	l, _ := newSettingsLab(t, 140, 40)
+	l.press("7")
+	l.walkTo(t, "+ Install a plugin")
+	l.press("enter").typed("./kiwi")
+	l.has("Install a plugin", "smith plugin install ./kiwi")
+	l.press("enter")
+	l.has("Install a plugin", "plugin install ./kiwi")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before the confirmation", l.started)
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "plugin install ./kiwi" {
+		t.Fatalf("started %q", got)
+	}
+	if l.sh().tab != commands.TabRun {
+		t.Fatalf("the output shows in the Run tab, on %q", l.sh().tab)
 	}
 }

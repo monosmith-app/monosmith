@@ -95,10 +95,6 @@ func (m Model) activate() (Model, Result) {
 	case kindExternal:
 		return m.askTrust()
 	case kindInstall:
-		if m.b.Install == nil {
-			m.note = "Not in this smith yet: run  smith plugin install <name|path>  in a terminal when it is."
-			return m, Result{}
-		}
 		m.ed = newInstall()
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
@@ -256,13 +252,6 @@ func (m Model) untrust(name string) tea.Cmd {
 		return unavailable()
 	}
 	return m.run(func() (string, error) { return m.b.Untrust(name) })
-}
-
-func (m Model) install(source string) tea.Cmd {
-	if m.b.Install == nil {
-		return unavailable()
-	}
-	return m.run(func() (string, error) { return m.b.Install(source) })
 }
 
 // saveStyle keeps the choice and reports the theme to draw with: the saved

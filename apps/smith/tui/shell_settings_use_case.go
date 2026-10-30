@@ -78,6 +78,9 @@ func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
 	if res.Theme != nil {
 		s.th = theme.New(*res.Theme)
 	}
+	if res.Run != nil {
+		return s.execute(res.Run, false)
+	}
 	if res.Form != "" {
 		return s.perform(commands.Command{Kind: commands.Guided, Guide: res.Form})
 	}
