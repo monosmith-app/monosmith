@@ -117,5 +117,5 @@ Python package). Paths in output are shortened.
 ## Not documented here
 
 `smith` has a few internal commands that its own tasks call (for example `npm-pack`,
-`npm-prune` and `npm-deps-check`, which `smith explain` shows as task commands); they are hidden from
+`npm-prune`, `npm-deps-check`, `py-deps-check` and `go-deps-check`, which `smith explain` shows as task commands); they are hidden from
 `smith --help` and are not part of the interface.

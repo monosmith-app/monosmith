@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
+	"github.com/monosmith-app/monosmith/apps/smith/godepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
-	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
 	"github.com/monosmith-app/monosmith/apps/smith/npmdepscheck"
@@ -20,6 +21,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
+	"github.com/monosmith-app/monosmith/apps/smith/pydepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
 	"golang.org/x/term"
@@ -91,7 +93,7 @@ already have), then build and doctor.`,
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version), eject.Command(version), kindchange.Command(version))
-	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
+	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
 	releaseCmd.AddCommand(pubrelease.Command(version))

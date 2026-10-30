@@ -48,6 +48,9 @@ func Tasks(name, root string, kind protocol.ProjectKind, native bool, lint linti
 	} else {
 		tasks["build"] = protocol.Task{Command: []string{"go", "build", "./..."}, Inputs: inputs, Cache: true, Description: "Compile every package"}
 	}
+	if kind == protocol.ProjectPackage {
+		addDepsCheck(tasks, root)
+	}
 	if native {
 		for n, t := range tasks {
 			t.Env = map[string]string{"CGO_ENABLED": "1"}

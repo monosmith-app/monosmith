@@ -44,6 +44,12 @@ func TestDiscover(t *testing.T) {
 	if start := api.Tasks["start"].Command; start[len(start)-1] != "acme_api" || !strings.Contains(start[0], ".venv") {
 		t.Fatalf("start %v", start)
 	}
+	if check := sdk.Tasks["deps-check"]; strings.Join(check.Command, " ") != "{smith} py-deps-check packages/sdk" || !check.Cache || sdk.Tasks["lint"].DependsOn[0] != "deps-check" {
+		t.Fatalf("a package checks its imports before lint: %+v", check)
+	}
+	if _, ok := api.Tasks["deps-check"]; ok {
+		t.Fatal("an app has no deps-check")
+	}
 	if sdk.Kind != protocol.ProjectPackage || sdk.Exports[0] != "acme_sdk" || sdk.Tasks["build"].Outputs[0] != "../../dist/packages/sdk" || sdk.Version != "1.2.0" {
 		t.Fatalf("sdk %+v", sdk)
 	}

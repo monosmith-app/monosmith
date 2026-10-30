@@ -82,6 +82,11 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if f, ok := CheckVenvIgnored(workspaceRoot); ok {
 		findings = append(findings, f)
 	}
+	for _, p := range params.Projects {
+		if p.Kind == protocol.ProjectPackage {
+			findings = append(findings, CheckPackageImports(workspaceRoot, p))
+		}
+	}
 	return protocol.DoctorResult{Findings: findings}
 }
 
