@@ -77,6 +77,11 @@ published. What was published where is kept in dist/release/<project>/journal.js
 			if err != nil {
 				return err
 			}
+			if len(plan.Items) == 0 {
+				// A re-run on a fresh checkout has no journal: a release that
+				// stopped after its tag is finished from the tag.
+				plan.Items = UnfinishedFromGitHub(s, cmd.ErrOrStderr())
+			}
 			if !asJSON {
 				if printsTextPlan(asJSON, format) {
 					printPlan(cmd, plan, dryRun, verbose)
