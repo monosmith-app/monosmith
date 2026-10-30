@@ -66,7 +66,7 @@ Core slices in `apps/smith`:
 | `pubrelease`, `dockerdescription` | `smith release pub` and `smith docker description` |
 | `recipecatalog`, `recipewizard`, `recipereleases` | list and describe a workspace's recipes, `smith recipe new`, and whether a recipe URL has a newer release |
 | `toolchainpin`, `cachecredentials`, `buildoutputs`, `declarationspecifiers` | `[toolchains]` pins, the secrets a remote cache needs, the build-output check, the declaration fix-up convert writes |
-| `npmaudit`, `npmpolicy`, `npmdepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-policy` and `rust-policy` steps the language plugins' tasks call |
+| `npmaudit`, `npmpolicy`, `npmdepscheck`, `pydepscheck`, `godepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-*`, `go-deps-check` and `rust-policy` steps the language plugins' tasks call |
 | `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |
 | `packagemanifests` | the Homebrew, Scoop and winget manifests attached to an app's GitHub Release |
