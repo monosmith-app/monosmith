@@ -1,7 +1,7 @@
 # smith ci
 
 `smith ci` runs one phase of the pipeline, or regenerates the pipeline files. The generated
-pipelines (GitHub Actions, Azure Pipelines, GitLab CI, CircleCI) call these phases, so CI runs exactly
+pipelines (GitHub Actions, Azure Pipelines, GitLab CI, CircleCI, Bitbucket Pipelines) call these phases, so CI runs exactly
 what you can run locally.
 
 | Phase | What it does |
