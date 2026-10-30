@@ -6,7 +6,8 @@ import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 // for a project without them.
 func (p *Project) AssetSpec() *protocol.AssetSpec {
 	r := p.Release
-	if r == nil {
+	if r == nil || r.Build != "" {
+		// A build command makes its own files; no plugin builds archives.
 		return nil
 	}
 	return &protocol.AssetSpec{

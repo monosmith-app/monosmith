@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/nativebuild"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
@@ -34,7 +35,7 @@ const PackTask = "package"
 const DropDir = "dist/drop"
 
 // Phases lists `smith ci` phases in pipeline order.
-var Phases = []string{"setup", "audit", "verify", "pack", "native", "release"}
+var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "release"}
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
@@ -250,6 +251,12 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		return nil
 	case "native":
 		return nativebuild.Run(ctx, s, out)
+	case "assets":
+		done, err := releaseassets.Run(ctx, s, releaseassets.Request{Platform: os.Getenv("SMITH_PLATFORM"), Out: out})
+		if err == nil && len(done) == 0 {
+			fmt.Fprintln(out, "no release files to build: no project with a build command was released by this commit on this platform")
+		}
+		return err
 	case "release":
 		ensureIdentity(s)
 		plan, err := release.MakePlan(s.Git, s.Graph)

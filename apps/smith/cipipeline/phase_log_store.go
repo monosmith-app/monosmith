@@ -15,7 +15,7 @@ const bannerWidth = 60
 
 // phaseTitles are how the phases are named to a reader.
 var phaseTitles = map[string]string{
-	"setup": "Setup", "audit": "Audit", "verify": "Verify", "pack": "Pack", "native": "Native build", "release": "Release",
+	"setup": "Setup", "audit": "Audit", "verify": "Verify", "pack": "Pack", "native": "Native build", "assets": "Release assets", "release": "Release",
 }
 
 // phaseLog is what a phase says to the pipeline log: a banner that says what

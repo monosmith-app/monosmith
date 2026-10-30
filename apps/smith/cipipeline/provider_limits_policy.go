@@ -34,5 +34,12 @@ func Limits(cfg workspace.Config, m Model) []string {
 			}
 		}
 	}
+	if len(m.AssetPlatforms) > 0 {
+		for _, p := range cfg.CI.Providers {
+			if p != "github" {
+				out = append(out, p+": the release files a [release] build command makes are built and uploaded by the GitHub Actions workflow only; add github to [ci] providers, or run `smith release assets` on each platform yourself")
+			}
+		}
+	}
 	return out
 }

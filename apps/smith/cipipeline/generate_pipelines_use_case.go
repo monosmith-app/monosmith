@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -42,6 +43,13 @@ func Collect(s *session.Session) (Contributions, error) {
 	for _, p := range s.Graph.Projects {
 		if _, ok := p.Tasks[PackTask]; ok {
 			c.Pack = true
+		}
+		if release.BuildsAssetsFromCommand(p) {
+			for _, platform := range workspace.CommandPlatforms {
+				if slices.Contains(p.Release.Platforms, platform) && !slices.Contains(c.AssetPlatforms, platform) {
+					c.AssetPlatforms = append(c.AssetPlatforms, platform)
+				}
+			}
 		}
 		if release.Native(p) {
 			c.Native = true

@@ -46,6 +46,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
@@ -96,7 +97,7 @@ already have), then build and doctor.`,
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
-	releaseCmd.AddCommand(pubrelease.Command(version))
+	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version))
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)

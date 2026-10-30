@@ -441,6 +441,16 @@ var DefaultPlatforms = []string{"linux/amd64", "linux/arm64", "darwin/amd64", "d
 
 // ProjectRelease configures the release of an app.
 type ProjectRelease struct {
+	// Build is a shell command, run at the workspace root once on a runner
+	// of each of Platforms, that makes the release files Assets names. With
+	// it, the files are attached to the GitHub Release with gh release
+	// upload instead of being built by the project's plugin, and Platforms
+	// are the CommandPlatforms names. It sees SMITH_PLATFORM, SMITH_VERSION
+	// and SMITH_TAG.
+	Build string `toml:"build"`
+	// Assets are workspace-relative globs of the files Build leaves, each
+	// uploaded to the release. Needed with Build.
+	Assets []string `toml:"assets"`
 	// AssetName is the file name pattern of each asset; placeholders are
 	// {product}, {version}, {os}, {arch} and {ext}.
 	// Default: {product}_{version}_{os}_{arch}.{ext}.

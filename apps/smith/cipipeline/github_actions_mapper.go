@@ -99,6 +99,7 @@ jobs:
 	if m.Native {
 		b.WriteString(githubNativeJob(m))
 	}
+	b.WriteString(githubAssetsJob(m))
 	return b.String()
 }
 
