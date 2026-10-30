@@ -145,7 +145,7 @@ The cache lives in `.smith/cache`; deleting it only costs you the cached results
 ### Do I write the pipeline?
 
 No. `smith new` and `smith add` generate it for GitHub Actions, Azure Pipelines,
-GitLab CI or CircleCI (`[ci] providers`), and `smith ci generate` regenerates it. Put your
+GitLab CI, CircleCI or Bitbucket Pipelines (`[ci] providers`), and `smith ci generate` regenerates it. Put your
 own steps between the `smith:slot` markers and they are kept. See
 [CI pipelines](../reference/ci.md).
 

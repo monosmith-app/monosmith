@@ -41,6 +41,8 @@ func pullRequest(getenv func(string) string) bool {
 		return true
 	case getenv("CI_PIPELINE_SOURCE") == "merge_request_event":
 		return true
+	case getenv("BITBUCKET_PR_ID") != "":
+		return true
 	case getenv("CIRCLE_PULL_REQUEST") != "", getenv("CIRCLE_PR_NUMBER") != "":
 		// CircleCI builds branches: it sets these when the branch has a
 		// pull request, and CIRCLE_PR_NUMBER on a fork's.

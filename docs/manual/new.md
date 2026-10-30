@@ -43,7 +43,7 @@ Usage: `smith new <name> [flags]`
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
-| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci (default github) |
+| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab`, `circleci`, `bitbucket` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
@@ -67,7 +67,7 @@ Notes on the flags:
   hyphens, starting with a letter. It becomes `[workspace] name` and the default
   npm scope.
 - `--ci` takes a comma-separated list or the flag repeated: `github`, `azure`,
-  `gitlab` or `circleci`.
+  `gitlab`, `circleci` or `bitbucket`.
 - `--module-prefix` is read from the `origin` remote of the folder when it has one.
 - `--recipe` writes `recipe = ...` under `[workspace]`. See
   [Recipes](../reference/recipes.md). It is not checked at creation time.
@@ -141,6 +141,7 @@ Which CI should smith write pipelines for?
   2) Azure Pipelines
   3) GitLab CI
   4) CircleCI
+  5) Bitbucket Pipelines
 Choice [1]:
 What is the main language of this workspace?
   1) Decide later             add projects in any language with smith add (default)

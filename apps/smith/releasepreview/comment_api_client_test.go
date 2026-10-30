@@ -82,6 +82,25 @@ func TestAzureCreatesAClosedThreadThenUpdates(t *testing.T) {
 	}
 }
 
+func TestBitbucketCreatesThenUpdates(t *testing.T) {
+	comments := "/repositories/acme/repo/pullrequests/7/comments"
+	f, url := serve(t, map[string]string{"GET " + comments: `{"values": [{"id": 1, "content": {"raw": "lgtm"}}]}`})
+	pr := PullRequest{Provider: "bitbucket", Number: 7, Token: "secret", API: url, Repo: "acme/repo"}
+	if done, err := Upsert(pr, Marker+" plan"); err != nil || done != "created" {
+		t.Fatalf("%s %v", done, err)
+	}
+	if !strings.Contains(f.bodies["POST "+comments], `plan"}}`) {
+		t.Fatalf("bodies %v", f.bodies)
+	}
+	f.answers["GET "+comments] = `{"values": [{"id": 4, "content": {"raw": "` + Marker + ` old"}}]}`
+	if done, err := Upsert(pr, Marker+" new plan"); err != nil || done != "updated" {
+		t.Fatalf("%s %v", done, err)
+	}
+	if !strings.Contains(f.bodies["PUT "+comments+"/4"], "new plan") {
+		t.Fatalf("bodies %v", f.bodies)
+	}
+}
+
 func TestAnAPIFailureIsAnError(t *testing.T) {
 	_, url := serve(t, nil)
 	pr := PullRequest{Provider: "github", Number: 5, Token: "wrong", API: url, Repo: "acme/repo"}

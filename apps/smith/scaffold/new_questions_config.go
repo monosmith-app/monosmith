@@ -118,6 +118,7 @@ func NewQuestions() []NewQuestion {
 			{Label: "Azure Pipelines", Value: "azure"},
 			{Label: "GitLab CI", Value: "gitlab"},
 			{Label: "CircleCI", Value: "circleci"},
+			{Label: "Bitbucket Pipelines", Value: "bitbucket"},
 		}},
 		{Key: AnswerLanguage, Prompt: "What is the main language of this workspace?", Default: LanguageLater, Flag: "language", Options: languages},
 		{Key: AnswerNodeStack, Prompt: "Which tests and lint for Node projects?", Default: DefaultNodeStack, Flag: "default-stack", Options: NodeStacks(), Applies: isNode},

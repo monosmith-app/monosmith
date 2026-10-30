@@ -24,6 +24,8 @@ func Upsert(pr PullRequest, body string) (string, error) {
 		return upsertAzure(pr, body)
 	case "gitlab":
 		return upsertGitLab(pr, body)
+	case "bitbucket":
+		return upsertBitbucket(pr, body)
 	}
 	return "", fmt.Errorf("unknown provider %q", pr.Provider)
 }
@@ -101,6 +103,34 @@ func upsertGitLab(pr PullRequest, body string) (string, error) {
 		}
 	}
 	return "created", call(http.MethodPost, notes, auth, map[string]string{"body": body}, nil)
+}
+
+func upsertBitbucket(pr PullRequest, body string) (string, error) {
+	auth := "Bearer " + pr.Token
+	comments := fmt.Sprintf("%s/repositories/%s/pullrequests/%d/comments", pr.API, pr.Repo, pr.Number)
+	content := map[string]any{"content": map[string]string{"raw": body}}
+	next := comments + "?pagelen=100"
+	for page := 1; next != "" && page <= 10; page++ {
+		var list struct {
+			Values []struct {
+				ID      int64 `json:"id"`
+				Content struct {
+					Raw string `json:"raw"`
+				} `json:"content"`
+			} `json:"values"`
+			Next string `json:"next"`
+		}
+		if err := call(http.MethodGet, next, auth, nil, &list); err != nil {
+			return "", err
+		}
+		for _, c := range list.Values {
+			if strings.Contains(c.Content.Raw, Marker) {
+				return "updated", call(http.MethodPut, fmt.Sprintf("%s/%d", comments, c.ID), auth, content, nil)
+			}
+		}
+		next = list.Next
+	}
+	return "created", call(http.MethodPost, comments, auth, content, nil)
 }
 
 func call(method, url, auth string, in, out any) error {

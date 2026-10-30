@@ -95,7 +95,7 @@ Options (see [`smith new`](../reference/cli.md#smith-new)):
 |---|---|---|
 | `--scope @acme` | `@<name>` | the npm scope for Node packages |
 | `--module-prefix github.com/acme/acme` | from the `origin` remote, else `example.com/<name>` | the Go module path prefix |
-| `--ci github,azure` | `github` | pipelines to write (`github`, `azure`, `gitlab`, `circleci`) |
+| `--ci github,azure` | `github` | pipelines to write (`github`, `azure`, `gitlab`, `circleci`, `bitbucket`) |
 | `--yes` | off | ask nothing; take the default of every question without a flag |
 | `--dir .` | `./<name>` | create the workspace in an existing clone |
 | `--recipe <path or URL>` | none | the [recipe](../reference/recipes.md) `smith add` builds projects from |
