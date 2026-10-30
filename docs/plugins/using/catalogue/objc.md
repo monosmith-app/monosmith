@@ -127,8 +127,8 @@ Edit the podspec.
 
 - A Mac with Xcode and CocoaPods for `build` (and `lint`, which needs `pod`).
 - A podspec is Ruby: a name or version built by code is not seen.
-- A directory with a podspec and a `Package.swift` is a project of both the objc and the swift
-  plugin; smith does not choose between them.
+- A directory with a `Package.swift` beside its podspec is a Swift package: the objc plugin leaves it to
+  the swift plugin, so a CocoaPods pod that is also a Swift package is a swift project.
 - No toolchain probe, so no CocoaPods or Xcode version is part of a task's cache key.
 
 ## Verified

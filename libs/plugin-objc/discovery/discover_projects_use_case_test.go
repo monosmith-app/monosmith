@@ -34,7 +34,9 @@ func TestDiscover(t *testing.T) {
 	write("libs/core/Core.podspec", "Pod::Spec.new do |spec|\n  spec.name = 'Core'\n  spec.version = File.read('VERSION')\nend\n")
 	write("libs/odd/Odd.podspec", "# nothing\n")
 	write("Root.podspec", "")
-	res, err := Discover(ws, []string{"Root.podspec", "libs/core/Core.podspec", "libs/odd/Odd.podspec", "libs/strings/Strings.podspec", "libs/strings/Zeta.podspec"})
+	write("libs/both/Both.podspec", "Pod::Spec.new do |s|\n  s.name = 'Both'\nend\n")
+	write("libs/both/Package.swift", "// swift-tools-version: 5.9\n")
+	res, err := Discover(ws, []string{"Root.podspec", "libs/core/Core.podspec", "libs/odd/Odd.podspec", "libs/both/Both.podspec", "libs/strings/Strings.podspec", "libs/strings/Zeta.podspec"})
 	if err != nil || len(res.Projects) != 2 {
 		t.Fatal(err, res.Projects)
 	}
