@@ -100,6 +100,14 @@ Versions are not compared, and a declaration nothing imports is not reported.
 `smith doctor` reports the same, per package. A project that defines its own
 `deps-check` script keeps it.
 
+A Go module gets a `deps-check` task too, and its `lint` runs after it. It
+fails when `go.mod` does not match the imports, as `go mod tidy` would leave
+it: an imported package no requirement provides, a direct requirement nothing
+imports, a requirement marked `// indirect` that the module imports. It runs
+`go mod tidy -diff` (writes nothing), or, for a module that imports another
+module of `go.work` and for a Go older than 1.23, compares `go.mod` with the
+sources. See [the go plugin](../plugins/using/catalogue/go.md#checking-gomod-against-the-imports).
+
 ## Builds go to dist/
 
 Every build writes to one directory at the workspace root, `dist/`, in a path

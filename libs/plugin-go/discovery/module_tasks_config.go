@@ -15,6 +15,10 @@ var inputs = []string{"**/*", "{workspaceRoot}/go.work", "{workspaceRoot}/go.wor
 // one of its files.
 var lintInputs = append(append([]string{}, inputs...), "{workspaceRoot}/.golangci.{yml,yaml,toml,json}")
 
+// DepsCheckTask is the name of the task that checks go.mod against the
+// module's imports (smith go-deps-check).
+const DepsCheckTask = "deps-check"
+
 // NativeTag marks a module built on each OS (cgo): smith ci verify leaves it
 // to smith ci native, which runs on every runner.
 const NativeTag = "native"
@@ -27,7 +31,15 @@ const NativeTag = "native"
 func Tasks(name, root string, kind protocol.ProjectKind, native bool, lint linting.Lint) map[string]protocol.Task {
 	tasks := map[string]protocol.Task{
 		"test": {Command: []string{"go", "test", "./..."}, Inputs: inputs, Cache: true, Description: "go test ./..."},
-		"lint": {Command: lint.Command, Inputs: tooldefaults.WithDefaultInputs(lintInputs, lint.Command), Cache: true, Description: lint.Description},
+		// The check is not lint's to own, but lint is the task every module
+		// has, so CI's verify phase runs it through lint.
+		"lint": {Command: lint.Command, DependsOn: []string{DepsCheckTask}, Inputs: tooldefaults.WithDefaultInputs(lintInputs, lint.Command), Cache: true, Description: lint.Description},
+		DepsCheckTask: {
+			Command:     []string{"{smith}", "go-deps-check", root},
+			Inputs:      inputs,
+			Cache:       true,
+			Description: "Check go.mod matches what the module imports (go mod tidy -diff, read-only)",
+		},
 	}
 	if kind == protocol.ProjectApp {
 		binary := name

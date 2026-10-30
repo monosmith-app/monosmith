@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-go/declaredimports"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
@@ -52,7 +53,9 @@ func (g *Go) CI(params protocol.CIParams) (protocol.CIResult, error) {
 
 // Doctor implements serve.DoctorContributor.
 func (g *Go) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
-	return pipeline.Doctor(g.root, params), nil
+	result := pipeline.Doctor(g.root, params)
+	result.Findings = append(result.Findings, declaredimports.Doctor(g.root, params).Findings...)
+	return result, nil
 }
 
 // Remove implements serve.Remover.

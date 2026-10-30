@@ -70,6 +70,7 @@ The plugin contributes these tasks (`libs/plugin-go/discovery/module_tasks_confi
 | `build` | `go build ./...` | lib, package | yes | none (compiles, writes nothing) |
 | `test` | `go test ./...` | every module | yes | none |
 | `lint` | `golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml` (no `--config` when the repository has its own, see [Lint configuration](#lint-configuration)) | every module | yes | none |
+| `deps-check` | `smith go-deps-check <dir>` | every module; the module's `lint` runs after it, so CI verify runs it | yes | none |
 | `start` | `go run .` | app | no | none |
 | `package` | `go build -trimpath -o {workspaceRoot}/dist/drop/<name>/<name>[.exe] .` | app | no | none declared; the binary lands in `dist/drop/<name>/` and `smith ci pack` keeps it |
 
@@ -77,13 +78,16 @@ The plugin contributes these tasks (`libs/plugin-go/discovery/module_tasks_confi
 
 There is no `typecheck` and no `format` task: `smith run typecheck` and `smith run format` answer `no selected project has a [typecheck] task` (and `[format]`). `golangci-lint` is the lint (it includes `go vet`); the compiler is the type check inside `build`.
 
+`deps-check` fails when `go.mod` does not match what the module imports, the way `go mod tidy` would leave it (see [Checking go.mod against the imports](#checking-gomod-against-the-imports)).
+
 A convention adds tasks on top. With `[conventions.vertical-slices]` (written by `smith new`) every Go module also gets `slice-check`, and `lint` depends on it; see [vertical-slices](vertical-slices.md). Real `smith explain` output:
 
 ```
 $ smith explain api
-api has 6 tasks:
+api has 7 tasks:
   build        go build -trimpath -o {workspaceRoot}/dist/apps/api/api.exe .  (cached)
-  lint         golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml  (cached, after slice-check)
+  deps-check   smith go-deps-check apps/api  (cached)
+  lint         golangci-lint run --allow-serial-runners --config {workspaceRoot}/.smith/defaults/golangci.yml  (cached, after deps-check, slice-check)
   package      go build -trimpath -o {workspaceRoot}/dist/drop/api/api.exe .
   slice-check  smith slices check --lang go .  (cached)
   start        go run .
@@ -108,6 +112,21 @@ sdk:build — Compile every package
 ```
 
 To change any of them for one project, or for all, use `[projects.<name>.tasks.<task>]` or `[tasks.<task>]` in `smith.toml` (see [tasks and cache](../../../reference/tasks-and-cache.md)). A `lint` command that starts with `golangci-lint` (the default) is what makes CI install it; see [CI](#ci).
+
+### Checking go.mod against the imports
+
+`smith run deps-check` (and `smith doctor`, per module) tells you when a module's `go.mod` and its code disagree. It reports:
+
+- an imported package that no requirement provides (missing);
+- a direct requirement that nothing imports (unused);
+- a requirement marked `// indirect` that the module imports itself.
+
+It uses `go mod tidy -diff` when the installed Go has it (Go 1.23 and later), which prints what tidy would change and writes nothing. Two cases use a read-only comparison of `go.mod` with the sources instead, and the first line of the task's output says which ran:
+
+- a module that imports or requires another module `go.work` uses. `go mod tidy` cannot see `go.work`, so it would try to download the sibling from the network; the workspace provides it, so a package of another workspace module is never reported missing.
+- a Go older than 1.23, or a machine where tidy cannot run (a module it needs is not downloaded and there is no network).
+
+The comparison reads every `.go` file of the module, tests and files for any build tag included, but not `testdata`, `vendor`, nested modules, or files tagged `//go:build ignore`. Packages named in `tool` directives and `go run <package>` in `//go:generate` lines count as imports. Versions are not compared. `smith doctor` always uses the comparison, so it stays fast and offline; the finding is `<dir>/go.mod matches what the module imports`, and its remedy is `go mod tidy` in the module (a requirement on a `go.work` member is added by hand). A project that sets its own `deps-check` task in `smith.toml` keeps it.
 
 ### Lint configuration
 
@@ -273,7 +292,7 @@ Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each mo
 
 ## Doctor, dependencies and removal
 
-Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_case.go`):
+Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_case.go`, `declaredimports/check_module_doctor_use_case.go`):
 
 | Check | Fails when | Fix |
 |---|---|---|
@@ -281,6 +300,7 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work entry <dir> exists` | a `use` entry has no `go.mod` | `go work edit -dropuse=./<dir>`; `smith doctor --fix` rewrites `go.work` |
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
+| `<dir>/go.mod matches what the module imports` | go.mod has a missing, unused or wrongly indirect requirement (see [Checking go.mod against the imports](#checking-gomod-against-the-imports)) | `go mod tidy` in the module |
 | `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
 
 Real output after `go work edit -dropuse=./libs/util`:
