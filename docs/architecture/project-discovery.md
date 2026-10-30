@@ -76,6 +76,7 @@ or any parent).
 | `vba` | `*.bas`, `*.cls`, `*.frm` | each directory with an exported VBA module (one that starts with `Attribute VB_Name`); the root is skipped |
 | `swift` | `Package.swift` | each one below the root |
 | `objc` | `*.podspec` | each directory with one (the first podspec counts), unless it also has a `Package.swift`, which the swift plugin owns; the root is skipped |
+| `bundle` | `flow.json` | each directory that also has an `app.json` and no `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `pom.xml` or `pubspec.yaml`; the root is skipped |
 | `recipe` | `*.recipe.toml` in a folder of its own | a recipe file is a project, versioned like a package |
 
 The row for each plugin comes from its `Manifests` field in `libs/plugin-<name>/plugin`
