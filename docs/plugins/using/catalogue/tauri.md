@@ -49,6 +49,22 @@ reads the same flag to find the bundles, so a relative path would depend on whic
 | `src-tauri is outside the root Cargo workspace` | A warning: the root `Cargo.toml` `[workspace] members` glob matches `<project>/src-tauri` and `exclude` does not name it. Remedy: narrow `members`, or list it under `exclude` |
 | `the system libraries Tauri needs on Linux` | `pkg-config` does not find `webkit2gtk-4.1`, `gtk+-3.0` or `librsvg-2.0` (Linux only). Remedy: `sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev` |
 
+## Which toolchains combine with `tauri`
+
+`tauri` provides only `tauri-build`, so it combines with any toolchain whose tasks do not clash.
+The web build comes from exactly one of `typescript` or `vite`: both provide the `build` and
+`typecheck` tasks, and smith refuses a stack that lists both ("typescript and vite both provide the
+build task; keep one"). With a Vite app, name `vite` and leave `typescript` out:
+
+```toml
+[stacks.studio]
+language  = "node"
+toolchain = ["vite", "vitest", "eslint", "tauri"]   # not "typescript" as well
+```
+
+`vitest` and `eslint` combine with either, as does `playwright`. Do not name `jest` beside `vitest`
+(both provide `test`).
+
 ## Scaffolding
 
 A project made with `--stack node-vitest-tauri` gets `@tauri-apps/cli` and a `tauri` script. It
@@ -56,11 +72,22 @@ does not write `src-tauri`: run `npx tauri init` in the project.
 
 ## Releasing and CI
 
-The plugin gives every pipeline with a Tauri app a Rust toolchain (`tauri-rust`, the `stable`
-channel, named apart from the `rust` plugin's so that plugin keeps its own version) and a setup
-step that, on a Linux runner, installs `pkg-config`, `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`,
+The plugin gives every pipeline with a Tauri app a Rust toolchain and a setup step that, on a Linux
+runner, installs `pkg-config`, `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`,
 `libayatana-appindicator3-dev` and `librsvg2-dev`. `smith ci setup` runs it, so the release's
 `assets` job gets it too.
+
+The Rust toolchain is named `rust`, like the `rust` plugin's, and the pipeline keeps the first of
+two with the same name: the `rust` plugin's, with its version, components and targets. The plugin
+never adds a second Rust step that would replace your pin. Its own version is the workspace's pin
+(the `channel` of `rust-toolchain.toml`, else the `rust-version` of the root `Cargo.toml`), and
+`stable` when there is none; that matters only when no Rust project of the `rust` plugin is in the
+workspace.
+
+The apt step is not a line of `ci.yml`: the workflow runs `smith ci setup`. To see it, read that
+step's log: on a Linux runner it prints `installing the system libraries Tauri needs (apt-get)`,
+and the steps table at the end lists `Install the system libraries Tauri needs`. Elsewhere it
+prints nothing and passes.
 
 The installers are released through [release files from a command](../../../reference/releasing.md#release-files-from-a-command).
 Tauri names its bundles after the platform and processor (`Studio_1.0.0_x64-setup.exe`,
