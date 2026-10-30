@@ -75,6 +75,7 @@ What each plugin reports:
 | applescript | the project's directory | none |
 | vba | the project's directory | none |
 | swift | the project's directory | the workspace directories of its `.package(path:)` dependencies |
+| objc | the pod's name | the pods in its `s.dependency` lines |
 | dotnet | the package id of the project file | the references of the project file; a tests project's references count as its owner's |
 | rust | the crate name | the crate's path dependencies |
 | dart | the package name | the dependencies in `pubspec.yaml` |

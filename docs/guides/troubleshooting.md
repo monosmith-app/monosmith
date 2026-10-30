@@ -157,6 +157,7 @@ lists them all. The checks, grouped by who owns them:
 | Bicep | the Azure CLI and the Bicep CLI |
 | Lua | LuaRocks and luacheck are installed; each rockspec is named for its version (a warning) |
 | Swift | `swift` is installed |
+| Objective-C | `pod` and `xcodebuild` are on PATH (macOS only; warnings elsewhere) |
 | AppleScript | `osacompile` is on PATH (macOS only; a warning elsewhere) |
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 

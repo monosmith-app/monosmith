@@ -26,7 +26,7 @@ releases this repository itself.
 | Path | What it is |
 |---|---|
 | `apps/smith` | the `smith` command: the core, the CLI, the TUI, and every built-in plugin linked in |
-| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode), `python`, `go` (which also holds `pluginkit`, the plugin that scaffolds plugins), `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `docker`, `recipe`, `vertical-slices` |
+| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode), `python`, `go` (which also holds `pluginkit`, the plugin that scaffolds plugins), `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `docker`, `recipe`, `vertical-slices` |
 | `libs/actions` | the one catalogue of what smith can do (`catalog`), read by the command line, the shell, the MCP server and the engine server ([ADR 0029](decisions/0029-one-list-of-actions.md)) |
 | `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates (`templating`), tool runs (`toolrun`), JSON documents (`jsondoc`) and project kinds (`projectkind`). Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
 | `packages/eslint-config` | `@monosmith/eslint-config`, the shared ESLint config with the vertical-slice rules (an npm package) |

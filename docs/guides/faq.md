@@ -25,7 +25,7 @@ CI. If you add a project by hand, `smith doctor` tells you what is missing.
 
 Node (JavaScript and TypeScript), Python, Go, Rust, .NET (C#, F#), Ruby, PHP,
 C and C++ (CMake), Dart and Flutter, the JVM (Java with Maven, Kotlin with
-Gradle, Android), Bicep, Lua, AppleScript, VBA and Swift, each as a built-in plugin. Anything else is a
+Gradle, Android), Bicep, Lua, AppleScript, VBA, Swift and Objective-C (CocoaPods), each as a built-in plugin. Anything else is a
 [plugin you write](writing-a-plugin.md), in any language.
 
 ### What is the difference between an app, a lib and a package?
