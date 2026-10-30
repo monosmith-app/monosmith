@@ -59,3 +59,22 @@ describe('describeStatus for a folder that can be converted', () => {
     expect(status.warning).toBe(false)
   })
 })
+
+describe('describeStatus for a folder with no smith.toml and nothing to convert', () => {
+  it('says an empty folder is empty and offers a new workspace', () => {
+    const status = describeStatus(ready({ state: 'empty' }))
+    expect(status.tooltip).toContain('this folder is empty')
+    expect(status.tooltip).toContain('create a new workspace')
+    expect(status.warning).toBe(false)
+  })
+
+  it('says a folder with files is not a workspace yet and offers to bring it in', () => {
+    const status = describeStatus(ready({ state: 'unrecognised' }))
+    expect(status.tooltip).toContain('not a MonoSmith workspace yet')
+    expect(status.tooltip).toContain('bring this folder in')
+  })
+
+  it('says no folder is open', () => {
+    expect(describeStatus(ready({ state: 'nofolder' })).tooltip).toContain('no folder is open')
+  })
+})

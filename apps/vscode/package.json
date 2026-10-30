@@ -52,7 +52,9 @@
     "workspaceContains:pnpm-workspace.yaml",
     "workspaceContains:rush.json",
     "workspaceContains:go.work",
-    "workspaceContains:package.json"
+    "workspaceContains:package.json",
+    "workspaceContains:*",
+    "onView:monosmith.projects"
   ],
   "contributes": {
     "viewsContainers": {
@@ -263,6 +265,11 @@
         "category": "MonoSmith"
       },
       {
+        "command": "monosmith.new",
+        "title": "Create a New MonoSmith Workspace",
+        "category": "MonoSmith"
+      },
+      {
         "command": "monosmith.adopt.start",
         "title": "Convert This Folder to MonoSmith",
         "category": "MonoSmith"
@@ -467,12 +474,16 @@
       ],
       "commandPalette": [
         {
+          "command": "monosmith.new",
+          "when": "monosmith.state == empty"
+        },
+        {
           "command": "monosmith.adopt.start",
-          "when": "monosmith.state == adoptable"
+          "when": "monosmith.state == adoptable || monosmith.state == unrecognised"
         },
         {
           "command": "monosmith.adopt.preview",
-          "when": "monosmith.state == adoptable"
+          "when": "monosmith.state == adoptable || monosmith.state == unrecognised"
         },
         {
           "command": "monosmith.runSelected",
@@ -681,7 +692,17 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == empty",
-        "contents": "This folder is not a MonoSmith workspace yet.\nA workspace has a smith.toml at its root. Create one with smith new, or bring a repository in with smith adopt.\n[Learn about MonoSmith](https://github.com/monosmith-app/monosmith)"
+        "contents": "This folder is empty.\nMonoSmith can start a workspace here. smith asks its questions in a terminal and lists what it will create first.\n[Create a new MonoSmith workspace](command:monosmith.new)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == unrecognised",
+        "contents": "This folder is not a MonoSmith workspace yet.\nsmith found no monorepo tool here. It can still bring the folder in: it lists every change and asks before it makes any, and your files stay where they are.\n[Bring this folder into MonoSmith](command:monosmith.adopt.start)\nYou can [see what would change](command:monosmith.adopt.preview) first, or [learn more](https://github.com/monosmith-app/monosmith)."
+      },
+      {
+        "view": "monosmith.projects",
+        "when": "monosmith.state == nofolder",
+        "contents": "No folder is open.\n[Open Folder](command:workbench.action.files.openFolder)"
       }
     ],
     "taskDefinitions": [
