@@ -40,6 +40,7 @@ Usage: `smith ci <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
 | `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
@@ -137,6 +138,22 @@ No flags.
 <!-- smith:end ci native -->
 
 Builds the projects tagged `native` for the current OS. See [CI pipelines](../reference/ci.md).
+
+### assets
+
+<!-- smith:begin ci assets -->
+Run the assets phase
+
+Usage: `smith ci assets`
+
+No flags.
+
+<!-- smith:end ci assets -->
+
+Runs [`smith release assets`](release-assets.md) for the platform in `SMITH_PLATFORM`, which the
+generated GitHub Actions job sets from its matrix: the build command of each app released by
+this commit, then `gh release upload --clobber` of the files it left. With nothing to build it
+prints `no release files to build`.
 
 ### release
 

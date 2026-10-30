@@ -41,6 +41,10 @@ type Model struct {
 	// NativeRunners and NativeLinuxPackages configure that job.
 	NativeRunners       []string
 	NativeLinuxPackages []string
+	// AssetPlatforms are the platforms an app's [release] build command runs
+	// for, in workspace.CommandPlatforms order: a job runs smith ci assets on
+	// a runner of each.
+	AssetPlatforms []string
 	// Provenance is true when an app is published to npm: on GitHub the job
 	// may then request an OIDC token, which npm provenance signs with.
 	Provenance bool
@@ -88,6 +92,8 @@ type Contributions struct {
 	NativePublish       bool
 	NativeRunners       []string
 	NativeLinuxPackages []string
+	// AssetPlatforms are the platforms a [release] build command runs for.
+	AssetPlatforms []string
 	// Provenance is true when an app is published to npm.
 	Provenance bool
 	// Attest is true when a release attaches archives to a GitHub Release.
@@ -179,7 +185,7 @@ func NewModel(c Contributions, smithVersion, releaseBranch string) Model {
 	if smithVersion == "" || smithVersion == "dev" {
 		smithVersion = "latest"
 	}
-	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish,
+	m := Model{SmithVersion: smithVersion, ReleaseBranch: releaseBranch, Pack: c.Pack, Native: c.Native, NativePublish: c.NativePublish, AssetPlatforms: c.AssetPlatforms,
 		NativeRunners: c.NativeRunners, NativeLinuxPackages: c.NativeLinuxPackages, Provenance: c.Provenance, Attest: c.Attest, Pub: c.Pub, RubyGemsTrusted: c.RubyGemsTrusted, VSCEEntra: c.VSCEEntra}
 	if len(m.NativeRunners) == 0 {
 		m.NativeRunners = DefaultNativeRunners

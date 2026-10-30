@@ -197,6 +197,12 @@ func Validate(cfg *Config) error {
 		if po.Release == nil {
 			continue
 		}
+		if err := validateReleaseCommand(name, po, cfg.Release.GitHubReleases); err != nil {
+			return err
+		}
+		if po.Release.Build != "" {
+			continue
+		}
 		if len(po.Release.Platforms) == 0 {
 			po.Release.Platforms = append([]string(nil), DefaultPlatforms...)
 		}

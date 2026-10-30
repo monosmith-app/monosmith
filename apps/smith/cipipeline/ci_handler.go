@@ -36,6 +36,9 @@ func Command(version string) *cobra.Command {
            "drop" artifact on pushes to the release branch
   native   lint, test, build and package the projects tagged native (cgo) on this
            OS; the pipeline runs it on each OS and, on a release, attaches the build
+  assets   run the build command of the apps released at HEAD that have one in
+           [release] and upload its files to their GitHub Release; the pipeline
+           runs it on one runner per platform
   release  version, publish and tag every package with releasable commits`,
 	}
 	for _, phase := range Phases {
