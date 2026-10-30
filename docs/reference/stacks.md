@@ -46,6 +46,10 @@ scaffold = "azure-function"
 deploy = ["azure-functions"]
 ```
 
+List one provider per task: `typescript` and `vite` both provide `build` and `typecheck`, so a stack
+with both is refused ("typescript and vite both provide the build task; keep one"). A Vite app names
+`vite` alone; `tauri`, `vitest`, `eslint` and `playwright` combine with either.
+
 Toolchain plugins apply in order, so a later one may replace a task an earlier
 one added. smith checks every stack against the loaded plugins: each is loaded,
 plays the role it is listed under and applies to the stack's language, and no

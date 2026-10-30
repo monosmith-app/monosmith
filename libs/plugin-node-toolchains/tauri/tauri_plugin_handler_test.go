@@ -155,3 +155,35 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("no CLI dependency: %s", root)
 	}
 }
+
+func TestCIReusesTheWorkspacesPinnedRust(t *testing.T) {
+	app := protocol.CIParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}}
+	for name, tc := range map[string]struct{ file, body, want string }{
+		"no pin":         {"", "", RustVersion},
+		"toolchain file": {"rust-toolchain.toml", "[toolchain]\nchannel = \"1.99.1\"\n", "1.99.1"},
+		"rust-version":   {"Cargo.toml", "[workspace.package]\nrust-version = \"1.88\"\n", "1.88"},
+	} {
+		ws := t.TempDir()
+		write(t, ws, "apps/studio/src-tauri/tauri.conf.json", "{}")
+		if tc.file != "" {
+			write(t, ws, tc.file, tc.body)
+		}
+		got := CI(ws, app).Toolchains
+		if len(got) != 1 || got[0].Name != "rust" || got[0].Version != tc.want || got[0].GitHub.Inputs[0].Value != tc.want {
+			t.Errorf("%s: want one rust toolchain at %s, got %+v", name, tc.want, got)
+			continue
+		}
+		if !strings.Contains(got[0].Install, "--default-toolchain "+tc.want+"\n") {
+			t.Errorf("%s: install command: %q", name, got[0].Install)
+		}
+	}
+}
+
+func TestCISetupNamesItsStepInTheLog(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", "{}")
+	got := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}})
+	if !strings.Contains(got.Setup[0].Command[2], "echo 'installing the system libraries Tauri needs (apt-get)'") {
+		t.Errorf("setup command: %q", got.Setup[0].Command[2])
+	}
+}
