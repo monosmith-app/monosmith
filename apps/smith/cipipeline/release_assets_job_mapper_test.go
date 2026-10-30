@@ -37,3 +37,19 @@ func TestLimitsSayWhichProvidersDoNotBuildReleaseFiles(t *testing.T) {
 		t.Errorf("limits:\n%s", limits)
 	}
 }
+
+// The assets job checks the sibling repository out and pre-builds it too,
+// before it runs smith ci assets.
+func TestAssetsJobChecksOutAndPreBuildsSiblingRepos(t *testing.T) {
+	m := siblingModel()
+	m.AssetPlatforms = []string{"linux-x64"}
+	job := githubAssetsJob(m)
+	for _, want := range []string{"Check out acme/VideoPlugins", "token: ${{ secrets.PLUGINS_TOKEN }}", "VIDEOPLUGINS=", "Build VideoPlugins"} {
+		if !strings.Contains(job, want) {
+			t.Errorf("missing %q in:\n%s", want, job)
+		}
+	}
+	if strings.Index(job, "Build VideoPlugins") >= strings.Index(job, "smith ci assets") {
+		t.Errorf("pre-build must come before smith ci assets:\n%s", job)
+	}
+}
