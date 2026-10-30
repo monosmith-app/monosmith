@@ -13,11 +13,15 @@ import (
 
 func TestDescribe(t *testing.T) {
 	res, err := New("1.0.0").Describe(protocol.InitializeParams{})
-	if err != nil || len(res.Stacks) != 5 {
+	if err != nil || len(res.Stacks) != 6 {
 		t.Fatal(err, res.Stacks)
 	}
 	for _, s := range res.Stacks {
-		if s.Scaffold != Name || strings.Join(s.Toolchain, ",") != "vite,eslint,vitest" || s.Description == "" {
+		want := "vite,eslint,vitest"
+		if s.Name == "react-tauri" {
+			want += ",tauri"
+		}
+		if s.Scaffold != Name || strings.Join(s.Toolchain, ",") != want || s.Description == "" {
 			t.Errorf("stack %+v", s)
 		}
 	}

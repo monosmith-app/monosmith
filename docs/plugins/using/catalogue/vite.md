@@ -15,7 +15,7 @@ with [vitest](vitest.md).
 | Requires | language plugin `node` |
 | Applies to | `node` projects |
 | Capabilities | `generate` |
-| Stacks it publishes | `react`, `react-p5`, `vue`, `svelte`, `html`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest` |
+| Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
 | Project kinds | `app` only |
 
 ## What it does
@@ -24,6 +24,7 @@ with [vitest](vitest.md).
 |---|---|---|
 | `react` | a React app (`App` component, `main.tsx`) | `tsc` |
 | `react-p5` | a React app drawing with p5 | `tsc` |
+| `react-tauri` | the `react` app as a desktop app: the [tauri](tauri.md) plugin adds `src-tauri` | `tsc` |
 | `vue` | a Vue app | `vue-tsc` |
 | `svelte` | a Svelte app | `svelte-check` |
 | `html` | a page in TypeScript with no framework | `tsc` |
@@ -74,7 +75,7 @@ The root `package.json` gains `vite`, `@vitejs/plugin-react` and the React type 
 `overrides` entry that keeps `@babel/plugin-transform-runtime` on Babel 7 (next to any overrides the
 workspace already has), so adding them to a workspace that holds Jest's Babel 7 still installs. Asking for another kind is an error that says what to run:
 `a react project is an app: smith add app <name> --stack react`. A stack name the plugin does not
-scaffold fails with `the vite plugin scaffolds the [html react react-p5 svelte vue] stacks, not "x"`.
+scaffold fails with `the vite plugin scaffolds the [html react react-p5 react-tauri svelte vue] stacks, not "x"`.
 
 ## Settings, releasing, CI
 

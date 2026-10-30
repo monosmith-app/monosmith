@@ -16,7 +16,7 @@ workspace-wide with `[conventions.tauri]`.
 | Requires | language plugin `node` |
 | Applies to | `node` projects |
 | Capabilities | `generate`, `contribute`, `ci`, `doctor` |
-| Stack it publishes | `node-vitest-tauri`: scaffold `typescript`; toolchain `typescript`, `eslint`, `vitest`, `tauri` |
+| Stack it publishes | `node-vitest-tauri`: scaffold `typescript`; toolchain `typescript`, `eslint`, `vitest`, `tauri`. The `vite` plugin publishes `react-tauri`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest`, `tauri` |
 | Project kinds | any Node project with a `src-tauri` folder |
 
 ## What it detects
@@ -47,6 +47,7 @@ reads the same flag to find the bundles, so a relative path would depend on whic
 | `the Rust toolchain is installed` | `rustc` or `cargo` is not on `PATH`. Remedy: install Rust from rustup.rs |
 | `the tauri CLI is installed` | `node_modules` has no `@tauri-apps/cli`. Remedy: `smith install -D @tauri-apps/cli` |
 | `src-tauri is outside the root Cargo workspace` | A warning: the root `Cargo.toml` `[workspace] members` glob matches `<project>/src-tauri` and `exclude` does not name it. Remedy: narrow `members`, or list it under `exclude` |
+| `frontendDist of <project> is the project's build output` | A warning: `build.frontendDist` in `src-tauri/tauri.conf.json` is a folder other than the one smith builds the web app into (`dist/<project dir>`), so `tauri build` fails with "Unable to find your web assets". A URL is not checked. Remedy: set it to the path the check prints |
 | `the system libraries Tauri needs on Linux` | `pkg-config` does not find `webkit2gtk-4.1`, `gtk+-3.0` or `librsvg-2.0` (Linux only). Remedy: `sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev` |
 
 ## Which toolchains combine with `tauri`
@@ -67,8 +68,46 @@ toolchain = ["vite", "vitest", "eslint", "tauri"]   # not "typescript" as well
 
 ## Scaffolding
 
-A project made with `--stack node-vitest-tauri` gets `@tauri-apps/cli` and a `tauri` script. It
-does not write `src-tauri`: run `npx tauri init` in the project.
+One command makes a React desktop app:
+
+```sh
+smith add app studio --stack react-tauri    # vite, eslint, vitest, tauri
+```
+
+The `vite` plugin writes the React app; the `tauri` plugin then adds, for a project that has an
+`index.html` (a web page to wrap), and never over a file that is already there:
+
+- `src-tauri/`: `Cargo.toml` with its own empty `[workspace]`, `build.rs`, `src/main.rs`,
+  `src/lib.rs`, `capabilities/default.json`, placeholder `icons/`, a `.gitignore` for `target`, `gen`
+  and `binaries`, and `tauri.conf.json`.
+- `@tauri-apps/api` in the project's dependencies, `@tauri-apps/cli` in the root's devDependencies
+  and a `tauri` script.
+- the project's `src-tauri` under `exclude` in the root `Cargo.toml`'s `[workspace]`, when its
+  `members` would take it in.
+
+`tauri.conf.json` is written to match how smith builds: `frontendDist` is the Vite output
+(`../../../dist/apps/studio` from `apps/studio/src-tauri`), `devUrl` is Vite's `http://localhost:5173`
+with `beforeDevCommand` `npm run start`, and there is no `beforeBuildCommand`: `tauri-build` runs
+after the project's own `build`, so a second build would only repeat it. The bundle identifier is
+`com.<workspace>.<project>`; change it before you ship.
+
+A project made with `--stack node-vitest-tauri` has no web page: it gets `@tauri-apps/cli` and a
+`tauri` script, and `npx tauri init` writes `src-tauri`.
+
+An existing Node app does not join with a smith command yet: create `src-tauri` with
+`npx tauri init` (answer the frontend questions with `../../../dist/apps/<project>` for the
+dist folder and leave the build command empty), or copy the files of a `react-tauri` project.
+
+### Icons
+
+The scaffold's icons are plain placeholders so the first build runs. Make the real ones from a
+square PNG (1024x1024 is best) in the project:
+
+```sh
+npx tauri icon logo.png
+```
+
+It overwrites `src-tauri/icons/`.
 
 ## Releasing and CI
 
@@ -109,9 +148,11 @@ binary) builds it first in the same command. No setting does this for you yet: t
 
 ## Verified
 
-Unit tests only. **Not verified:** a real `smith run tauri-build` or a release's `assets` job (they
-need Rust, the platform's libraries and the network), the installer names in the glob above, and
-that the Tauri CLI finds the bundles under an absolute `--target-dir`.
+Unit tests, and on Windows `smith add app studio --stack react-tauri` followed by `smith doctor`
+and `smith run tauri-build -p studio` in a scratch workspace: the MSI and the NSIS installer were
+built under `dist/tauri/apps/studio/release/bundle`. **Not verified:** macOS and Linux builds
+(including the generated `icon.icns`), a release's `assets` job, and the installer names in the
+glob above on those platforms.
 
 ## See also
 

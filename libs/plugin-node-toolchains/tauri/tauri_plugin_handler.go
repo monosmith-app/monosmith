@@ -58,10 +58,20 @@ func (p *Tauri) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, err
 
 // Generate implements serve.Generator: only a stack that names tauri gets the
 // CLI and its script; as a convention the plugin acts on projects that have
-// src-tauri and adds nothing. It does not write src-tauri: `npx tauri init` does.
+// src-tauri and adds nothing. For a project with a web page it writes src-tauri
+// (files already there stay) and keeps it out of the root Cargo workspace.
 func (p *Tauri) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	if params.Convention {
 		return protocol.GenerateResult{}, nil
 	}
-	return tooling.Apply(p.root, params, setup(p.root, params))
+	res, err := tooling.Apply(p.root, params, setup(p.root, params))
+	if err != nil {
+		return res, err
+	}
+	if excluded, err := ExcludeFromCargoWorkspace(p.root, params.Directory); err != nil {
+		return res, err
+	} else if excluded {
+		res.Files = append(res.Files, "Cargo.toml")
+	}
+	return res, nil
 }

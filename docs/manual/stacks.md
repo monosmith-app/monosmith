@@ -70,9 +70,9 @@ node-jest  (plugin jest)  default for node
 ...
 ```
 
-Seventeen stacks in this version: android, angular, docs-site, flutter, go-smith-plugin, html,
-kotlin, node-jest, node-ts, node-vitest, node-vitest-playwright, node-vitest-tauri, react, react-p5, svelte,
-vscode-extension, vue.
+Eighteen stacks in this version: android, angular, docs-site, flutter, go-smith-plugin, html,
+kotlin, node-jest, node-ts, node-vitest, node-vitest-playwright, node-vitest-tauri, react, react-p5,
+react-tauri, svelte, vscode-extension, vue.
 
 ## Common errors
 
