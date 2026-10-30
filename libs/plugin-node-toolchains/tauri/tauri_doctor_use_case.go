@@ -25,17 +25,20 @@ var linuxLibs = []string{"webkit2gtk-4.1", "gtk+-3.0", "librsvg-2.0"}
 // toolchain, the tauri CLI and, on Linux, the system libraries.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	findings := []protocol.Finding{}
+	var roots []string
 	cli, apps := exists(workspaceRoot, "node_modules/@tauri-apps/cli/package.json"), 0
 	for _, p := range params.Projects {
 		if !Detect(workspaceRoot, p.Root) {
 			continue
 		}
 		apps++
+		roots = append(roots, p.Root)
 		cli = cli || exists(workspaceRoot, p.Root+"/node_modules/@tauri-apps/cli/package.json")
 	}
 	if apps == 0 {
 		return protocol.DoctorResult{Findings: findings}
 	}
+	findings = append(findings, workspaceFinding(workspaceRoot, roots))
 	_, rustc := lookPath("rustc")
 	_, cargo := lookPath("cargo")
 	findings = append(findings,
