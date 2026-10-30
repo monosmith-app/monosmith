@@ -142,6 +142,8 @@ package is missing.
   is refused: smith does not publish to luarocks.org yet.
 - An AppleScript project records its kind in a `-- smithKind:` comment of its main script. It is an app or a lib, so `smith kind <project> package`
   is refused: nothing publishes AppleScript.
+- A VBA project records its kind in a `' smithKind:` comment of its main module. It is an app or a lib, so `smith kind <project> package`
+  is refused: nothing publishes VBA.
 - A Bicep project is a deployment (app) or a module (lib), so `smith kind <project> package`
   is refused: there is no Bicep registry to publish to yet.
 - JVM: the `smith.kind` property of a Maven module's `pom.xml`, or of a Gradle module's

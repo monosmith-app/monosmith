@@ -652,8 +652,7 @@ release, because the plan's versions would be wrong:
 The registry is asked through the project's plugin (`npm view` for Node, the
 PEP 503 index for Python, and likewise crates.io, NuGet, RubyGems, pub.dev,
 Packagist and the Maven repository; a Go module's tags are its registry, and
-C++, Bicep, Lua and AppleScript projects have none). An unreachable
-C++, Bicep and AppleScript projects have none). An unreachable
+C++, Bicep, Lua, AppleScript and VBA projects have none). An unreachable
 registry is a warning, not a stop. `smith doctor` runs the same checks without
 fetching.
 

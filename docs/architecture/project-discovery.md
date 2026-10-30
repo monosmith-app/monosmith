@@ -73,6 +73,7 @@ or any parent).
 | `bicep` | `main.bicep` | each one |
 | `lua` | `*.rockspec` | each directory with one (the first rockspec counts); the root one is skipped |
 | `applescript` | `*.applescript` | each directory with one; its main script is `main.applescript`, else the first by name; the root is skipped |
+| `vba` | `*.bas`, `*.cls`, `*.frm` | each directory with an exported VBA module (one that starts with `Attribute VB_Name`); the root is skipped |
 | `recipe` | `*.recipe.toml` in a folder of its own | a recipe file is a project, versioned like a package |
 
 The row for each plugin comes from its `Manifests` field in `libs/plugin-<name>/plugin`
@@ -140,6 +141,7 @@ looks:
 | bicep | `metadata smithKind = '...'` and `metadata smithStack = '...'` |
 | lua | `-- smithKind: ...` and `-- smithStack: ...` comments in the rockspec |
 | applescript | `-- smithKind: ...`, `-- smithStack: ...` and `-- smithVersion: ...` comments in the main script |
+| vba | `' smithKind: ...`, `' smithStack: ...` and `' smithVersion: ...` comments in the main module |
 
 The fallbacks differ because the languages do: a private npm package is a lib and a public
 one a package; a Go module whose top directory holds a `package main` file is an app and

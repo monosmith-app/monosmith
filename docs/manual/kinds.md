@@ -55,10 +55,8 @@ cpp-app          Cpp: an app: deployed or run, never published. ...
 rust-package     Rust: a package: published to its registry on release. ...
 ```
 
-Thirty-nine rows: applescript, bicep, cpp, dart, dotnet, go, jvm, lua, node, php, python, recipe, ruby and rust,
-each as app, lib and package (applescript, bicep and lua: app and lib only).
-Thirty-seven rows: applescript, bicep, cpp, dart, dotnet, go, jvm, node, php, python, recipe, ruby and rust,
-each as app, lib and package (applescript and bicep: app and lib only).
+Forty-one rows: applescript, bicep, cpp, dart, dotnet, go, jvm, lua, node, php, python, recipe, ruby, rust and vba,
+each as app, lib and package (applescript, bicep, lua and vba: app and lib only).
 
 ## Related
 

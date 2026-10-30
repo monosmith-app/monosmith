@@ -346,7 +346,7 @@ and the installed one only bootstraps.
 
 The pipeline lists only the secrets its projects need. Go packages are
 published by their tag and need no secret; PHP packages are read by Packagist
-from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++, Bicep, Lua and AppleScript projects release by their tag only. On GitHub, the job
+from the tags (of a split repository, with `split_repo`, when the package lives in a subdirectory), and C++, Bicep, Lua, AppleScript and VBA projects release by their tag only. On GitHub, the job
 has `contents: write` so it can push tags; on Azure the checkout keeps its
 credentials (`persistCredentials`).
 
