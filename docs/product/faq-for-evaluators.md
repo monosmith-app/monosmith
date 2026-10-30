@@ -22,7 +22,7 @@ the test machine because `dart analyze` itself crashed. See
 ### Can we add a language or a rule smith does not have?
 
 Yes. A plugin is any program that speaks JSON-RPC 2.0 on stdin and stdout, so it can be written in
-any language; SDKs are published for Go, TypeScript and Python, and a 102-line hand-framed plugin with no SDK
+any language; SDKs are published for Go, TypeScript, Python and C#, and a 102-line hand-framed plugin with no SDK
 passes `smith plugin check`. A plugin can add a language, tasks, a scaffold, CI steps or a release
 target. A team standard that needs no code is a recipe. There is no plugin registry yet, and plugins
 are placed on a search path or named in `smith.toml`. See
