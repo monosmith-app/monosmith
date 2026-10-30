@@ -24,6 +24,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vitest"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vscode"
 	nodep "github.com/monosmith-app/monosmith/libs/plugin-node/plugin"
+	objcp "github.com/monosmith-app/monosmith/libs/plugin-objc/plugin"
 	phpp "github.com/monosmith-app/monosmith/libs/plugin-php/plugin"
 	pythonp "github.com/monosmith-app/monosmith/libs/plugin-python/plugin"
 	recipep "github.com/monosmith-app/monosmith/libs/plugin-recipe/plugin"
@@ -49,6 +50,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"lua":    func(v string) serve.Plugin { return luap.New(v) },
 	"bicep":  func(v string) serve.Plugin { return bicepp.New(v) },
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
+	"objc":   func(v string) serve.Plugin { return objcp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },
 	"swift":  func(v string) serve.Plugin { return swiftp.New(v) },
 	"recipe": func(v string) serve.Plugin { return recipep.New(v) },
