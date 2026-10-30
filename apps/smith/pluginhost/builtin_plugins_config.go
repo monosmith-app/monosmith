@@ -3,6 +3,7 @@ package pluginhost
 import (
 	"sort"
 
+	applescriptp "github.com/monosmith-app/monosmith/libs/plugin-applescript/plugin"
 	archp "github.com/monosmith-app/monosmith/libs/plugin-architectures/plugin"
 	bicepp "github.com/monosmith-app/monosmith/libs/plugin-bicep/plugin"
 	cppp "github.com/monosmith-app/monosmith/libs/plugin-cpp/plugin"
@@ -47,6 +48,8 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },
 	"recipe": func(v string) serve.Plugin { return recipep.New(v) },
+
+	"applescript": func(v string) serve.Plugin { return applescriptp.New(v) },
 }
 
 // BuiltinAddons constructs each built-in plugin that is not a language:

@@ -68,7 +68,7 @@ func Root(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:   "smith",
 		Short: "A simple monorepo tool: add apps, libs and packages; build, test, release",
-		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM, Bicep and Lua (and anything a plugin adds):
+		Long: `smith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, the JVM, Bicep, Lua and AppleScript (and anything a plugin adds):
 it scaffolds projects, runs their tasks in dependency order from a cache,
 generates CI pipelines, and releases packages from conventional commits.
 

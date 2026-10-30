@@ -18,6 +18,8 @@ var languages = map[string]string{
 	"bicep":  "Azure Bicep",
 	"docker": "Docker",
 	"recipe": "A recipe (a ready-made set of projects)",
+
+	"applescript": "AppleScript",
 }
 
 // popular are the languages most people reach for, in the order the lists
@@ -84,6 +86,8 @@ var descriptions = map[string]string{
 	"bicep":  "Azure infrastructure as code",
 	"docker": "container images",
 	"recipe": "A ready-made set of projects that work together",
+
+	"applescript": "scripts that automate macOS apps",
 }
 
 // Describe is a one-line description of what a language gives a new project,
