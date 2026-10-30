@@ -51,6 +51,12 @@ func (p *Tauri) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return CI(p.root, params), nil
 }
 
+// WriteVersion implements serve.Versioner: the version goes into src-tauri's
+// Cargo.toml and tauri.conf.json, beside the package.json the node plugin writes.
+func (p *Tauri) WriteVersion(params protocol.VersionParams) (protocol.VersionResult, error) {
+	return WriteVersion(p.root, params)
+}
+
 // Doctor implements serve.DoctorContributor.
 func (p *Tauri) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return Doctor(p.root, params), nil

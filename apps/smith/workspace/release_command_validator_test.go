@@ -29,7 +29,7 @@ func TestParseRejectsAReleaseBuildThatCannotWork(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[projects.app.release]\nbuild = \"make\"\nassets = [\"a\"]\nplatforms = [\"linux-x64\"]\n": "github_releases = true",
 		releaseHead + "build = \"make\"\nassets = [\"a\"]\nplatforms = [\"linux-x64\"]\n[projects.app]\ntags = [\"native\"]\n": "tagged native",
 	} {
-		_, err := Parse([]byte(input))
+		_, err := parseAndResolve(input)
 		if err == nil || !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "→") {
 			t.Errorf("input %q: want a problem with a remedy containing %q, got %v", input, want, err)
 		}

@@ -197,26 +197,9 @@ func Validate(cfg *Config) error {
 			}
 			po.Docker.Registries = registries
 		}
-		if po.Release == nil {
-			continue
-		}
-		if err := validateReleaseCommand(name, po, cfg.Release.GitHubReleases); err != nil {
-			return err
-		}
-		if po.Release.Build != "" {
-			continue
-		}
-		if len(po.Release.Platforms) == 0 {
-			po.Release.Platforms = append([]string(nil), DefaultPlatforms...)
-		}
-		if po.Release.AssetName == "" {
-			po.Release.AssetName = "{product}_{version}_{os}_{arch}.{ext}"
-		}
-		for _, p := range po.Release.Platforms {
-			if os, arch, ok := strings.Cut(p, "/"); !ok || os == "" || arch == "" {
-				return fmt.Errorf("%s: [projects.%s.release] platform %q must be os/arch", FileName, name, p)
-			}
-		}
+		// The release table is checked and completed by ResolveRelease once the
+		// project's plugins have had their say (a Tauri app's plugin supplies
+		// build, assets and platforms).
 	}
 	if err := validateBareTags(cfg); err != nil {
 		return err

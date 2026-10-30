@@ -110,12 +110,14 @@ platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm6
 platform, and `assets` are workspace-relative globs of what it leaves. The
 command sees `SMITH_PLATFORM` (one of the five names above), `SMITH_VERSION`
 and `SMITH_TAG`, so it can name its files after the platform. This replaces what
-the project's plugin would build: there are no `asset_name`, aliases, package
-manager manifests, Linux packages or npm, PyPI, NuGet, RubyGems and pub
-packages for it, and smith refuses a `release` table that sets them next to
-`build`, that has `build` without `assets` or `platforms`, `assets` without
-`build`, a platform it does not know, or no `github_releases`. Each message says
-how to fix it.
+the project's plugin would build: there are no aliases, package manager
+manifests, Linux packages or npm, PyPI, NuGet, RubyGems and pub packages for
+it, and smith refuses a `release` table that sets them next to `build`, that has
+`build` without `assets` or `platforms`, `assets` without `build`, a platform it
+does not know, an `asset_name` placeholder the files do not have, or no
+`github_releases`. Each message says how to fix it. (When the project's plugin
+supplies `build`, `assets` and `platforms`, the table may leave them out; see
+below.)
 
 The release job tags the app and creates its GitHub Release, without files.
 The generated GitHub Actions workflow then has an `assets` job that runs
@@ -125,6 +127,25 @@ release. Each runner runs the build, then uploads its own files with
 `gh release upload --clobber`, so a re-run replaces a file and no job uses
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
+
+Two settings tidy the files on upload. `asset_name` renames each file, with the
+placeholders `{product}` (default: the project name), `{version}`, `{platform}`
+(`windows-x64`) and `{ext}`; two files that get the same name keep the name of
+the folder they were in (`app-1.0.0-windows-x64-nsis.exe`), so a runner never
+uploads a name twice. `checksums = true` adds a `<product>-<version>-<platform>.sha256`
+file (`sha256sum` format) of what that runner uploaded. Both rename and
+checksum copies kept under `dist/release/<project>-assets/<platform>`. Before the
+build, each runner also writes the release's version into the project's version
+files (`package.json`, and the files a plugin keeps a version in, such as a Tauri
+app's `tauri.conf.json` and `Cargo.toml`), so what it builds carries the version
+it uploads; the files are put back afterwards.
+
+A plugin can supply the settings a table leaves out. The `tauri` plugin does for
+a Tauri app, so `[projects.studio.release]` with nothing in it is enough (with
+`github_releases = true`): see [the tauri plugin](../plugins/using/catalogue/tauri.md#releasing-the-installers).
+What the table sets wins, field by field. A table that sets only things the
+plugin's archives use (`os_alias`, `package_managers`, `npm`, ...) is left to the
+plugin's archives.
 
 `smith release --dry-run` says which command and files each release has.
 `smith release assets` runs the build and the upload for the platform you are on

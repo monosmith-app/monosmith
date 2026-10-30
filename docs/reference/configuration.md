@@ -572,6 +572,11 @@ homepage = "https://cli.acme.dev"                     # default: the GitHub repo
 build = "vcw app build examples/apps/music-fixer/app.json --out out --zip"  # run at the workspace root, once per platform
 assets = ["out/*.zip", "out/*.zip.sha256"]            # globs of the files it leaves, uploaded to the GitHub Release
 platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]  # a runner each
+asset_name = "{product}-{version}-{platform}.{ext}"   # optional: rename the files on upload ({product}, {version}, {platform}, {ext})
+checksums = true                                      # optional: attach <product>-<version>-<platform>.sha256 for what a runner uploads
+
+# a Tauri app needs none of that: its plugin supplies build, assets, platforms, asset_name and checksums
+[projects.studio.release]
 ```
 
 See [Releasing](releasing.md#apps).

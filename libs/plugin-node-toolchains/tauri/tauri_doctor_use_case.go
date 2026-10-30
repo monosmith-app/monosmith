@@ -40,6 +40,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings, workspaceFinding(workspaceRoot, roots))
 	findings = append(findings, frontendDistFindings(workspaceRoot, params.Projects)...)
+	findings = append(findings, versionFindings(workspaceRoot, params.Projects)...)
 	_, rustc := lookPath("rustc")
 	_, cargo := lookPath("cargo")
 	findings = append(findings,

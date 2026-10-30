@@ -69,6 +69,9 @@ func merge(p *Project, c protocol.Contribution, source string) {
 	if p.contributed == nil {
 		p.contributed = map[string]string{}
 	}
+	if c.Release != nil && p.releaseDefaults == nil {
+		p.releaseDefaults = c.Release
+	}
 	for _, name := range sortedTaskNames(c.Tasks) {
 		if _, exists := p.Tasks[name]; exists {
 			continue

@@ -23,6 +23,27 @@ func targetDirFromProject(root string) string {
 	return strings.Repeat("../", strings.Count(strings.Trim(root, "/"), "/")+1) + TargetDir(root)
 }
 
+// ReleasePlatforms are the desktop platforms a Tauri app's release is built
+// for by default, one runner each. linux-arm64 is left out: name it in the
+// release table's platforms to add it.
+var ReleasePlatforms = []string{"windows-x64", "macos-arm64", "macos-x64", "linux-x64"}
+
+// releaseAssetName is what an installer is called on upload: Tauri's own names
+// have spaces and say nothing of the platform.
+const releaseAssetName = "{product}-{version}-{platform}.{ext}"
+
+// releaseDefaults is how a Tauri app's release files are made: tauri-build on a
+// runner of each platform, then the installers under its bundle folder.
+func releaseDefaults(p protocol.Project) *protocol.ReleaseDefaults {
+	return &protocol.ReleaseDefaults{
+		Build:     "smith run " + TaskName + " -p " + p.Name,
+		Assets:    []string{TargetDir(p.Root) + "/release/bundle/**/*.{msi,exe,dmg,deb,rpm,AppImage}"},
+		Platforms: ReleasePlatforms,
+		AssetName: releaseAssetName,
+		Checksums: true,
+	}
+}
+
 var inputs = []string{"**/*", "!node_modules/**", "!" + SrcDir + "/target/**", "{workspaceRoot}/package-lock.json"}
 
 // Contribute gives every project with a Tauri app a tauri-build task, cached
@@ -40,7 +61,7 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 		// Absolute: cargo runs inside src-tauri and the CLI reads the same flag to find
 		// the bundles, so a relative path would depend on which of them resolves it.
 		target := "{workspaceRoot}/" + TargetDir(p.Root)
-		res.Projects[p.Name] = protocol.Contribution{Replace: map[string]protocol.Task{
+		res.Projects[p.Name] = protocol.Contribution{Release: releaseDefaults(p), Replace: map[string]protocol.Task{
 			TaskName: {
 				Command:     []string{"npx", "--no-install", "tauri", "build", "--", "--target-dir", target},
 				Inputs:      inputs,

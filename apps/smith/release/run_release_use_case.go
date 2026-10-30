@@ -133,7 +133,12 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 	if err != nil {
 		return fmt.Errorf("writing version: %w", err)
 	}
-	if ok {
+	extra, err := WriteConventionVersions(ctx, s, p, item.Next, opts.DryRun)
+	if err != nil {
+		return fmt.Errorf("writing version: %w", err)
+	}
+	vr.Files = append(vr.Files, extra...)
+	if ok || len(extra) > 0 {
 		res.Files = vr.Files
 	}
 	if !opts.DryRun && len(vr.Files) > 0 {
