@@ -29,6 +29,7 @@ import (
 	recipep "github.com/monosmith-app/monosmith/libs/plugin-recipe/plugin"
 	rubyp "github.com/monosmith-app/monosmith/libs/plugin-ruby/plugin"
 	rustp "github.com/monosmith-app/monosmith/libs/plugin-rust/plugin"
+	vbap "github.com/monosmith-app/monosmith/libs/plugin-vba/plugin"
 	slicesp "github.com/monosmith-app/monosmith/libs/plugin-vertical-slices/plugin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
 )
@@ -40,6 +41,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"dotnet": func(v string) serve.Plugin { return dotnetp.New(v) },
 	"ruby":   func(v string) serve.Plugin { return rubyp.New(v) },
 	"php":    func(v string) serve.Plugin { return phpp.New(v) },
+	"vba":    func(v string) serve.Plugin { return vbap.New(v) },
 	"cpp":    func(v string) serve.Plugin { return cppp.New(v) },
 	"dart":   func(v string) serve.Plugin { return dartp.New(v) },
 	"jvm":    func(v string) serve.Plugin { return jvmp.New(v) },

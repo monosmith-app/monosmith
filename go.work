@@ -20,6 +20,7 @@ use (
 	./libs/plugin-recipe
 	./libs/plugin-ruby
 	./libs/plugin-rust
+	./libs/plugin-vba
 	./libs/plugin-vertical-slices
 	./packages/plugin-sdk
 )
