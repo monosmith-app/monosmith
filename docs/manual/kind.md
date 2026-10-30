@@ -138,6 +138,8 @@ warning: a build script that needs the `application` or `maven-publish` plugin (
 `Main` class an app needs, a program a lib keeps but no longer deploys, the registry fields a
 package is missing.
 
+- A Lua project records its kind in a `-- smithKind:` comment of the rockspec. Like Bicep, it is an app or a lib, so `smith kind <project> package`
+  is refused: smith does not publish to luarocks.org yet.
 - A Bicep project is a deployment (app) or a module (lib), so `smith kind <project> package`
   is refused: there is no Bicep registry to publish to yet.
 - JVM: the `smith.kind` property of a Maven module's `pom.xml`, or of a Gradle module's

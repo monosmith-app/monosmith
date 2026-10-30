@@ -12,6 +12,7 @@ import (
 	gop "github.com/monosmith-app/monosmith/libs/plugin-go/plugin"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pluginkit"
 	jvmp "github.com/monosmith-app/monosmith/libs/plugin-jvm/plugin"
+	luap "github.com/monosmith-app/monosmith/libs/plugin-lua/plugin"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/angular"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/astro"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/eslint"
@@ -41,6 +42,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"cpp":    func(v string) serve.Plugin { return cppp.New(v) },
 	"dart":   func(v string) serve.Plugin { return dartp.New(v) },
 	"jvm":    func(v string) serve.Plugin { return jvmp.New(v) },
+	"lua":    func(v string) serve.Plugin { return luap.New(v) },
 	"bicep":  func(v string) serve.Plugin { return bicepp.New(v) },
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },

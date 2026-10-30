@@ -51,6 +51,7 @@ not install compilers; it tells you what is missing (see
 | Dart, Flutter | Dart (Flutter carries it) |
 | JVM | JDK 21 with Maven; Gradle 9 for Kotlin; the Android SDK for Android |
 | Bicep | the Azure CLI with Bicep |
+| Lua | Lua with LuaRocks, luacheck and busted |
 
 This tour uses Node, Go and Python.
 
@@ -161,7 +162,7 @@ test and build straight away. The [conventions](../reference/conventions.md)
 page explains the layout and how to turn the check on or off.
 
 `--lang` picks the language: `node`, `go`, `python`, `rust`, `dotnet`, `ruby`,
-`php`, `cpp`, `dart`, `jvm` or `bicep`. When the workspace has only one
+`php`, `cpp`, `dart`, `jvm`, `bicep` or `lua`. When the workspace has only one
 language, it is the default. `--stack` picks the set of plugins the project is
 built with instead (`smith add app web --stack react`); `smith stacks` lists
 them, and [stacks](../reference/stacks.md) explains them. If your team keeps a

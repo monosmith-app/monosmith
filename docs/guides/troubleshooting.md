@@ -155,6 +155,7 @@ lists them all. The checks, grouped by who owns them:
 | Dart, Flutter | the SDK is installed, and lives outside the workspace |
 | JVM | a JDK, Maven, Gradle or the Android SDK, as the projects need |
 | Bicep | the Azure CLI and the Bicep CLI |
+| Lua | LuaRocks and luacheck are installed; each rockspec is named for its version (a warning) |
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 
 `smith doctor --fix` shows each fix first (diffs, the commands it runs, the

@@ -138,6 +138,7 @@ folder there: Cargo builds into `dist/cargo` (`target-dir` in
 | Dart, Flutter | `dist/<project dir>/`: a Flutter web app, or a Dart app's `dart build cli` output |
 | C, C++ | `dist/<project dir>/`: the CMake build (Ninja) |
 | Bicep | `dist/<project dir>/template` and `parameters` |
+| Lua | `dist/<project dir>/`: the rock installed by `luarocks make --tree` |
 | Rust | `dist/cargo` for the whole workspace |
 | .NET | `dist/dotnet` (`bin/` and `obj/`) for the whole workspace |
 | JVM | `dist/maven` or `dist/gradle` for the whole workspace |

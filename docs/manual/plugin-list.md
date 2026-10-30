@@ -50,6 +50,8 @@ smith plugin list
 PLUGIN           LEVELS                       SLOTS                REQUIRES
 bicep            language,toolchain,scaffold  -                    -
 ...
+lua              language,toolchain,scaffold  -                    -
+...
 node             language,toolchain,scaffold  -                    -
 ...
 angular          scaffold,toolchain           build,typecheck      language plugin node
@@ -76,7 +78,7 @@ External plugins this workspace uses (smith starts them only when trusted):
 `FROM` is `smith.toml` (its `command`), `.smith/plugins`, `SMITH_PLUGIN_PATH` or
 `$SMITH_HOME/plugins`.
 
-(Twelve language plugins, then twelve toolchain, scaffold, structure and deploy plugins;
+(Thirteen language plugins, then twelve toolchain, scaffold, structure and deploy plugins;
 rows between `...` are cut.)
 
 ## Related
