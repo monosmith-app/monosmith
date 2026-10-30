@@ -46,6 +46,11 @@ func (p *Tauri) Contribute(params protocol.ContributeParams) (protocol.Contribut
 	return Contribute(p.root, params), nil
 }
 
+// CI implements serve.CIContributor: the Rust toolchain and, on Linux, the system libraries.
+func (p *Tauri) CI(params protocol.CIParams) (protocol.CIResult, error) {
+	return CI(p.root, params), nil
+}
+
 // Doctor implements serve.DoctorContributor.
 func (p *Tauri) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
 	return Doctor(p.root, params), nil

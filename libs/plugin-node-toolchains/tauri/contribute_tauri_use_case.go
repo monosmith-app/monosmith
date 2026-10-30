@@ -37,8 +37,9 @@ func Contribute(workspaceRoot string, params protocol.ContributeParams) protocol
 		if _, ok := p.Tasks["build"]; ok {
 			deps = append(deps, "build")
 		}
-		// Cargo runs inside src-tauri, so its relative target dir starts one level deeper.
-		target := "../" + targetDirFromProject(p.Root)
+		// Absolute: cargo runs inside src-tauri and the CLI reads the same flag to find
+		// the bundles, so a relative path would depend on which of them resolves it.
+		target := "{workspaceRoot}/" + TargetDir(p.Root)
 		res.Projects[p.Name] = protocol.Contribution{Replace: map[string]protocol.Task{
 			TaskName: {
 				Command:     []string{"npx", "--no-install", "tauri", "build", "--", "--target-dir", target},

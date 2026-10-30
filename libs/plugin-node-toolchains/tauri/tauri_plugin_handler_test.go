@@ -48,8 +48,8 @@ func TestContribute(t *testing.T) {
 	if !task.Cache || task.Outputs[0] != "../../dist/tauri/apps/studio" || strings.Join(task.DependsOn, ",") != "^build,build" {
 		t.Errorf("tauri-build %+v", task)
 	}
-	if got := task.Command[len(task.Command)-1]; got != "../../../dist/tauri/apps/studio" {
-		t.Errorf("target dir seen from src-tauri: %q", got)
+	if got := task.Command[len(task.Command)-1]; got != "{workspaceRoot}/dist/tauri/apps/studio" {
+		t.Errorf("target dir must be absolute: %q", got)
 	}
 	if dev := res.Projects["studio"].Replace[DevTask]; dev.Cache || dev.Command[len(dev.Command)-1] != "dev" {
 		t.Errorf("tauri-dev %+v", dev)
@@ -70,10 +70,13 @@ func TestDoctor(t *testing.T) {
 	}
 	write(t, ws, "studio/src-tauri/tauri.conf.json", "{}")
 	res := Doctor(ws, protocol.DoctorParams{Projects: projects})
-	if len(res.Findings) != 3 {
+	if len(res.Findings) != 4 {
 		t.Fatalf("findings %+v", res.Findings)
 	}
 	for _, f := range res.Findings {
+		if strings.Contains(f.Check, "Cargo workspace") {
+			continue // passes: the test workspace has no root Cargo.toml
+		}
 		if f.OK || f.Remedy == "" {
 			t.Errorf("%q should fail with a remedy: %+v", f.Check, f)
 		}
@@ -88,8 +91,42 @@ func TestDoctor(t *testing.T) {
 		}
 	}
 	platform = "windows"
-	if got := Doctor(ws, protocol.DoctorParams{Projects: projects}); len(got.Findings) != 2 {
+	if got := Doctor(ws, protocol.DoctorParams{Projects: projects}); len(got.Findings) != 3 {
 		t.Errorf("system libraries are a Linux check: %+v", got.Findings)
+	}
+}
+
+func TestCIGivesRustAndLinuxLibsOnlyForATauriApp(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", "{}")
+	if got := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Name: "web", Root: "apps/web"}}}); len(got.Toolchains) != 0 || len(got.Setup) != 0 {
+		t.Fatalf("no Tauri app, nothing to set up: %+v", got)
+	}
+	got := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}})
+	if len(got.Toolchains) != 1 || got.Toolchains[0].GitHub == nil || len(got.Setup) != 1 {
+		t.Fatalf("toolchain and one setup step: %+v", got)
+	}
+	if cmd := got.Setup[0].Command[2]; !strings.Contains(cmd, "libwebkit2gtk-4.1-dev") || !strings.Contains(cmd, "libayatana-appindicator3-dev") {
+		t.Errorf("apt packages: %q", cmd)
+	}
+}
+
+func TestWorkspaceMembers(t *testing.T) {
+	ws := t.TempDir()
+	roots := []string{"apps/studio"}
+	if got := workspaceMembers(ws, roots); got != nil {
+		t.Fatalf("no root Cargo.toml: %v", got)
+	}
+	for body, want := range map[string]int{
+		"[workspace]\nmembers = [\"apps/*/src-tauri\"]\n":                                        1,
+		"[workspace]\nmembers = [\"apps/*/src-tauri\"]\nexclude = [\"apps/studio/src-tauri\"]\n": 0,
+		"[workspace]\nmembers = [\"libs/*\", \"apps/*\"]\n":                                      0,
+		"[package]\nname = \"x\"\n":                                                              0,
+	} {
+		write(t, ws, "Cargo.toml", body)
+		if got := workspaceMembers(ws, roots); len(got) != want {
+			t.Errorf("%q: %v, want %d", body, got, want)
+		}
 	}
 }
 
