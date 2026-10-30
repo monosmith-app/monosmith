@@ -742,6 +742,15 @@ pushed. Re-run it: tagged packages have no new commits and are kept, and a
 package that was published but not tagged is skipped by the registry check and
 then tagged. Tags left local by an interrupted push are pushed by the next run.
 
+A release that stopped after its tag was pushed, when GitHub refused to create
+the Release (a 500, say), is finished by a re-run even on a fresh CI checkout,
+which has no journal. When no package has anything new to release, smith asks
+GitHub (with `GITHUB_TOKEN`) whether each project's latest release tag has a
+GitHub Release, and finishes the ones that do not: it creates the Release and
+attaches the assets, rebuilding them if the Release lacks any. It publishes to
+no registry again. This needs `[release] github_releases = true`. The notes of
+a finished Release are empty, as the commits are not replanned.
+
 Before a real release smith refuses a shallow clone, a branch other than
 `[release] branch`, uncommitted changes, and a missing publish credential —
 before anything is tagged.
