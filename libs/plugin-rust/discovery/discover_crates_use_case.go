@@ -23,6 +23,9 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			continue
 		}
 		dir := filepath.Join(workspaceRoot, filepath.FromSlash(root))
+		if isAppShell(workspaceRoot, root) {
+			continue
+		}
 		src, err := os.ReadFile(filepath.Join(dir, "Cargo.toml"))
 		if err != nil {
 			return result, err

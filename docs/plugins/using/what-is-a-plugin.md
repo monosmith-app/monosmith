@@ -94,7 +94,7 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 |---|---|---|
 | where it lives | inside the `smith` binary | any executable you provide |
 | how it is started | `smith plugin serve <name>` (a child of smith) | its `command` from `smith.toml`, or its `plugin.json` on the search path |
-| how many | 12 language plugins and 12 add-ons | as many as you declare |
+| how many | 12 language plugins and 13 add-ons | as many as you declare |
 | switch | `[plugins] enabled` (the language plugins) | declare or remove `[plugins.external.<name>]` |
 | trust | none needed: it is the smith binary | you trust it before smith starts it: `smith plugin trust <name>` |
 | environment | the whole environment smith runs in | a minimal one, plus the variables it declares and you grant |
@@ -102,8 +102,8 @@ The field-level detail of each is in [the cheat sheet](../creating/protocol-chea
 The **18 language plugins** are `applescript`, `bicep`, `bundle`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `lua`, `node`, `objc`, `php`,
 `python`, `recipe`, `ruby`, `rust`, `swift` and `vba`. They load unless `[plugins] enabled` names fewer.
 
-The **12 add-ons** are the built-in toolchain, structure, scaffold and deploy plugins: `angular`,
-`astro`, `docker`, `eslint`, `go-smith-plugin`, `jest`, `playwright`, `typescript`,
+The **13 add-ons** are the built-in toolchain, structure, scaffold and deploy plugins: `angular`,
+`astro`, `docker`, `eslint`, `go-smith-plugin`, `jest`, `playwright`, `tauri`, `typescript`,
 `vertical-slices`, `vite`, `vitest` and `vscode`. They are always loaded, so the stacks they
 publish are always available, but they act only on projects whose stack names them, or as a
 convention you configure with `[conventions.<name>]`. They cannot be enabled or disabled with
