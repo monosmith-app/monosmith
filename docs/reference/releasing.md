@@ -749,7 +749,10 @@ which has no journal. When no package has anything new to release, smith asks
 GitHub (with `GITHUB_TOKEN`) whether each project's latest release tag has a
 GitHub Release, and finishes the ones that do not: it creates the Release and
 attaches the assets, rebuilding them if the Release lacks any. It publishes to
-no registry again. This needs `[release] github_releases = true`. The notes of
+no registry again. Only a tag at the commit being run is finished, because the
+assets are built from the checkout: the Release of an older tag, with commits
+after it, is skipped (smith prints `not creating the GitHub Release of
+smith@1.121.0: HEAD is newer than its tag`) and stays missing. This needs `[release] github_releases = true`. The notes of
 a finished Release are empty, as the commits are not replanned.
 
 Before a real release smith refuses a shallow clone, a branch other than
