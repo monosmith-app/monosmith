@@ -29,6 +29,19 @@ jobs:
           go-version: '1.26'
           check-latest: true
           cache: false
+      - name: Install gradle
+        shell: bash
+        run: |
+          curl -fsSLo /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.8.1-bin.zip
+          unzip -q -o -d "$HOME" /tmp/gradle.zip && rm /tmp/gradle.zip
+          export PATH="$HOME/gradle-9.8.1/bin:$PATH"
+          if [ -n "$GITHUB_PATH" ]; then echo "$HOME/gradle-9.8.1/bin" >> "$GITHUB_PATH"; fi
+          echo "##vso[task.prependpath]$HOME/gradle-9.8.1/bin"
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
       - uses: actions/setup-node@v7
         with:
           node-version: '24'

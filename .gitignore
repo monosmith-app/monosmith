@@ -71,3 +71,10 @@ assets/*~lock~
 
 # VS Code downloaded for the extension integration tests
 .vscode-test/
+
+# Gradle
+.gradle/
+.kotlin/
+
+# IntelliJ Platform Gradle plugin: the downloaded IDE and its sandbox
+.intellijPlatform/
