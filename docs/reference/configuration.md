@@ -565,6 +565,12 @@ pub_tag = "{name}-v{version}"                         # the default: the tag pub
 description = "What the app does"                     # shown by the registries and package managers
 license = "MIT"
 homepage = "https://cli.acme.dev"                     # default: the GitHub repository
+
+# or make the release files with a command, in any language (see releasing.md, Release files from a command)
+[projects.music-fixer.release]
+build = "vcw app build examples/apps/music-fixer/app.json --out out --zip"  # run at the workspace root, once per platform
+assets = ["out/*.zip", "out/*.zip.sha256"]            # globs of the files it leaves, uploaded to the GitHub Release
+platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]  # a runner each
 ```
 
 See [Releasing](releasing.md#apps).
