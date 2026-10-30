@@ -555,7 +555,7 @@ platforms = ["linux/amd64", "darwin/arm64", "windows/amd64"]  # default: six
 os_alias = { darwin = "macos" }                       # names in file names only
 arch_alias = { amd64 = "x64" }                        # the same for architectures
 version_variable = "main.version"                     # Go: stamped with -X
-package_managers = ["homebrew", "scoop", "winget"]    # manifests attached to the GitHub Release
+package_managers = ["homebrew", "scoop", "winget", "aur"]    # manifests attached to the GitHub Release
 linux_packages = ["deb", "rpm"]                       # Linux packages attached to the GitHub Release
 npm = ["@acme/cli", "acme"]                           # npm packages; the first names the platform ones
 pypi = "acme"                                         # PyPI wheels

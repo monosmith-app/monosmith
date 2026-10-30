@@ -7,7 +7,7 @@ import (
 	"unicode"
 )
 
-// Render writes the manifests asked for (homebrew, scoop, winget) as file
+// Render writes the manifests asked for (homebrew, scoop, winget, aur) as file
 // name → content. A package manager whose platforms have no archive is
 // skipped, with the reason in skipped.
 func Render(r Release, managers []string) (files map[string]string, skipped []string) {
@@ -21,6 +21,8 @@ func Render(r Release, managers []string) (files map[string]string, skipped []st
 			err = scoop(r, files)
 		case "winget":
 			err = winget(r, files)
+		case "aur":
+			err = aur(r, files)
 		default:
 			err = fmt.Errorf("unknown package manager")
 		}

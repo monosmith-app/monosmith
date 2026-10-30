@@ -15,7 +15,7 @@ import (
 )
 
 // TestReleaseAttachesPackageManifests releases a Go app to a (fake) GitHub
-// Release and checks that its Homebrew, Scoop and winget manifests are
+// Release and checks that its Homebrew, Scoop, winget and AUR manifests are
 // attached beside the archives, built from their checksums.
 func TestReleaseAttachesPackageManifests(t *testing.T) {
 	var mu sync.Mutex
@@ -49,7 +49,7 @@ func TestReleaseAttachesPackageManifests(t *testing.T) {
 	w.smith(true, "add", "app", "tool", "--lang", "go")
 	cfg := w.read("smith.toml")
 	w.write("smith.toml", strings.Replace(cfg, "[ci]", "[release]\ngithub_releases = true\n\n[ci]", 1)+
-		"\n[projects.tool.release]\nplatforms = [\"darwin/arm64\", \"linux/amd64\", \"windows/amd64\"]\npackage_managers = [\"homebrew\", \"scoop\", \"winget\"]\ndescription = \"A tool\"\nlicense = \"MIT\"\n")
+		"\n[projects.tool.release]\nplatforms = [\"darwin/arm64\", \"linux/amd64\", \"windows/amd64\"]\npackage_managers = [\"homebrew\", \"scoop\", \"winget\", \"aur\"]\ndescription = \"A tool\"\nlicense = \"MIT\"\n")
 	remote := filepath.Join(base, "remote.git")
 	run(t, base, "git", "init", "-q", "--bare", remote)
 	w.git("remote", "add", "origin", remote)
@@ -60,7 +60,7 @@ func TestReleaseAttachesPackageManifests(t *testing.T) {
 	out := w.smith(true, "release", "--yes")
 	mu.Lock()
 	defer mu.Unlock()
-	for _, want := range []string{"tool_0.1.0_windows_amd64.zip", "checksums.txt", "tool.rb", "tool.json", "acme.tool.yaml", "acme.tool.installer.yaml", "acme.tool.locale.en-US.yaml"} {
+	for _, want := range []string{"tool_0.1.0_windows_amd64.zip", "checksums.txt", "tool.rb", "tool.json", "acme.tool.yaml", "acme.tool.installer.yaml", "acme.tool.locale.en-US.yaml", "tool-bin.PKGBUILD", "tool-bin.SRCINFO"} {
 		if _, ok := uploads[want]; !ok {
 			t.Fatalf("%s was not attached (attached: %v)\n%s", want, names(uploads), out)
 		}

@@ -69,7 +69,7 @@ Core slices in `apps/smith`:
 | `npmaudit`, `npmpolicy`, `npmdepscheck`, `pydepscheck`, `godepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-*`, `go-deps-check` and `rust-policy` steps the language plugins' tasks call |
 | `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |
-| `packagemanifests` | the Homebrew, Scoop and winget manifests attached to an app's GitHub Release |
+| `packagemanifests` | the Homebrew, Scoop, winget and AUR manifests attached to an app's GitHub Release |
 | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems` | an app's binaries as npm packages, PyPI wheels, a .NET tool and platform gems |
 | `npmpack`, `npmaudit` | the node plugin's `smith npm-pack` and `smith npm-audit` steps |
 | `remotecache` | the shared remote cache (HTTP, S3, Azure Blob) behind the local one |

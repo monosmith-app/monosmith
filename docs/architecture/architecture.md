@@ -56,7 +56,7 @@ each slice's handler; most commands start by opening a `session`.
 | `release` | conventional commits to versions, in dependency order: stamp manifests, publish through the language plugin, distribute an app's binaries to registries, tag, push, GitHub Release; resumable and previewable (`--dry-run` is the same path) |
 | `releaselineage`, `releasepreview` | refusing tags that would give wrong versions; posting the release preview on a pull request |
 | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems` | re-packing an app's release archives as npm packages, PyPI wheels, a .NET tool and platform gems, and uploading them |
-| `packagemanifests` | Homebrew, Scoop and winget manifests attached to a GitHub Release |
+| `packagemanifests` | Homebrew, Scoop, winget and AUR manifests attached to a GitHub Release |
 | `githubrelease`, `gitclient` | the only doors to the GitHub Releases API and to git |
 | `cipipeline` | generating pipelines and running their phases (`smith ci <phase>`) |
 | `nativebuild` | `smith ci native`: projects built on their own OS runner |
