@@ -83,7 +83,7 @@ var descriptions = map[string]string{
 	"ruby":   "gems and web apps",
 	"php":    "web apps and Composer packages",
 	"vba":    "Office macros kept in git as text",
-	"swift":  "Apple platform apps and packages",
+	"swift":  "packages and command-line tools built with SwiftPM",
 	"lua":    "scripts and LuaRocks libraries",
 	"bicep":  "Azure infrastructure as code",
 	"docker": "container images",

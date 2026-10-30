@@ -29,6 +29,7 @@ import (
 	recipep "github.com/monosmith-app/monosmith/libs/plugin-recipe/plugin"
 	rubyp "github.com/monosmith-app/monosmith/libs/plugin-ruby/plugin"
 	rustp "github.com/monosmith-app/monosmith/libs/plugin-rust/plugin"
+	swiftp "github.com/monosmith-app/monosmith/libs/plugin-swift/plugin"
 	vbap "github.com/monosmith-app/monosmith/libs/plugin-vba/plugin"
 	slicesp "github.com/monosmith-app/monosmith/libs/plugin-vertical-slices/plugin"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/serve"
@@ -49,6 +50,7 @@ var Builtins = map[string]func(version string) serve.Plugin{
 	"bicep":  func(v string) serve.Plugin { return bicepp.New(v) },
 	"python": func(v string) serve.Plugin { return pythonp.New(v) },
 	"rust":   func(v string) serve.Plugin { return rustp.New(v) },
+	"swift":  func(v string) serve.Plugin { return swiftp.New(v) },
 	"recipe": func(v string) serve.Plugin { return recipep.New(v) },
 
 	"applescript": func(v string) serve.Plugin { return applescriptp.New(v) },

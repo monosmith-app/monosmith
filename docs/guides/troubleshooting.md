@@ -156,6 +156,7 @@ lists them all. The checks, grouped by who owns them:
 | JVM | a JDK, Maven, Gradle or the Android SDK, as the projects need |
 | Bicep | the Azure CLI and the Bicep CLI |
 | Lua | LuaRocks and luacheck are installed; each rockspec is named for its version (a warning) |
+| Swift | `swift` is installed |
 | AppleScript | `osacompile` is on PATH (macOS only; a warning elsewhere) |
 | Docker convention | Docker is running; image descriptions fit the registry's length limit |
 

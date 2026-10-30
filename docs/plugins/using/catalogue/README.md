@@ -30,6 +30,7 @@ scaffold. `smith plugin enable`, `disable` and `set` switch these on and off.
 | `lua` | LuaRocks projects: each `*.rockspec` | [lua](lua.md) |
 | `applescript` | AppleScript: each directory with a `.applescript` source | [applescript](applescript.md) |
 | `vba` | VBA modules exported as text (`.bas`, `.cls`, `.frm`) | [vba](vba.md) |
+| `swift` | Swift packages: each `Package.swift` | [swift](swift.md) |
 | `recipe` | a `*.recipe.toml` in a folder of its own | [recipe](recipe.md) |
 
 ## Toolchain, scaffold, structure and deploy plugins

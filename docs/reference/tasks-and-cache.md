@@ -139,6 +139,7 @@ folder there: Cargo builds into `dist/cargo` (`target-dir` in
 | C, C++ | `dist/<project dir>/`: the CMake build (Ninja) |
 | Bicep | `dist/<project dir>/template` and `parameters` |
 | Lua | `dist/<project dir>/`: the rock installed by `luarocks make --tree` |
+| Swift | `dist/<project dir>/`: the SwiftPM build (`swift build --scratch-path`) |
 | AppleScript | `dist/<project dir>/<name>.scpt` (`osacompile`, macOS only) |
 | Rust | `dist/cargo` for the whole workspace |
 | .NET | `dist/dotnet` (`bin/` and `obj/`) for the whole workspace |
