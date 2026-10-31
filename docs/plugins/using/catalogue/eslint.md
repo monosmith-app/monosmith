@@ -25,7 +25,7 @@ absent:
 
 | Where | What |
 |---|---|
-| workspace root | `eslint.config.mjs`: `import monosmith from '@monosmith/eslint-config'` and `export default [ ...monosmith() ]`, with a comment that later blocks win |
+| workspace root | `eslint.config.mjs`: `import monosmith from '@monosmith/eslint-config'` and `export default [ ...monosmith() ]`, with a comment that later blocks win. In a `react`, `react-p5` or `react-tauri` project it is `monosmith({ verticalSlices: { roles: ['hook', 'content', 'fixture', 'style', 'mock'] } })`, so the front-end slice roles are on from the first file |
 | root `package.json` devDependencies | `@monosmith/eslint-config` `^1.0.0` and `eslint` `^10.12.0` |
 | root `package.json` field | `overrides` that settle the `eslint` peer range of `eslint-plugin-jsx-a11y`, so the first install prints no peer-conflict warnings |
 | project `package.json` scripts | `lint`: `eslint .` |

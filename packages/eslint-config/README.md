@@ -77,7 +77,7 @@ as a comment, so it is readable without opening node_modules.
 | `monosmith/yaml/recommended/*`, `monosmith/yaml`   | `eslint-plugin-yml` — your CI pipeline files                                                   |
 | `monosmith/toml/base/*`                       | `eslint-plugin-toml` — **parsing only**, see below                                             |
 | `monosmith/markdown`                          | `@eslint/markdown` (GitHub-flavoured)                                                          |
-| `monosmith/css`                               | `@eslint/css`                                                                                  |
+| `monosmith/css`                               | `@eslint/css`; `css/no-invalid-properties` allows unknown CSS variables (`allowUnknownVariables`), because frameworks such as Chakra and React Flow define them |
 | `monosmith/html`                              | `@html-eslint/eslint-plugin`, incl. its a11y rules                                             |
 | `monosmith/svelte/*`, `monosmith/svelte`           | `eslint-plugin-svelte` on `.svelte` files (recommended rules plus the compiler's a11y diagnostics) — only when `svelte` is installed, because the plugin imports it while loading |
 | `monosmith/astro/*`                           | `eslint-plugin-astro` on `.astro` files and the scripts inside them (recommended rules)         |
