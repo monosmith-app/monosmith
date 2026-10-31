@@ -34,6 +34,7 @@ func scratch(t *testing.T, commit bool) *gitclient.Git {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)
+	t.Setenv("SMITH_WORKSPACE_ROOT", dir)
 	return g
 }
 
