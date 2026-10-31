@@ -101,6 +101,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `doctor` | `doctor` | `DoctorContributor` | `DoctorParams` → `DoctorResult` | `smith doctor` | 1 min |
 | `remove` | `remove` | `Remover` | `RemoveParams` → `RemoveResult` | `smith remove` | 20 min |
 | `project/kind` | `changeKind` | `KindChanger` | `ChangeKindParams` → `ChangeKindResult` | `smith kind` | 5 min |
+| `derive` | `derive` | `Deriver` | `DeriveParams` → `DeriveResult` | `smith derive` | 10 min |
 | `sbom/components` | `components` | `ComponentLister` | `ComponentsParams` → `ComponentsResult` | `smith release` (the SBOM) | 2 min |
 | `dependencies/install` | `dependencies` | `DependencyManager.Install` | `InstallParams` → `DependencyResult` | `smith install`, `smith sync` | 20 min |
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
@@ -132,6 +133,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `remove` | `remove` | language |
 | `changeKind` | `project/kind` | language |
 | `components` | `sbom/components` | language |
+| `derive` | `derive` | language |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |

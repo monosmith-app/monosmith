@@ -155,6 +155,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		base := affected.BaseFromEnv()
 		before := uncommitted(s)
 		log.banner(verifyIntro(s, base)...)
+		if err := verifyDerived(s, out); err != nil {
+			return err
+		}
 		if err := verifyBoundaries(s, out); err != nil {
 			return err
 		}

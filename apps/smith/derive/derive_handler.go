@@ -1,0 +1,143 @@
+package derive
+
+import (
+	"fmt"
+	"io"
+	"reflect"
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/derivelock"
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/spf13/cobra"
+)
+
+// Command is `smith derive`.
+func Command(version string) *cobra.Command {
+	var check bool
+	var explain, adopt, eject, replace []string
+	cmd := &cobra.Command{
+		Use:   "derive",
+		Short: "Write the files that follow from facts and the project graph, and report hand edits",
+		Long: `Write the files that follow from facts and the project graph.
+
+Some config repeats in every project and follows from what smith knows: a
+tsconfig's references are the project's internal dependencies, a Jest
+displayName is the project's name. A plugin renders such a file, or part of it,
+and smith keeps a record of what it wrote in smith.lock: the owner (smith or
+you), the renderer and a hash of the content.
+
+A file smith owns is rewritten when its inputs change. When its content no
+longer matches the record, someone edited it: derive reports the drift with a
+diff and never overwrites it. Then you choose, per file:
+
+  --replace <file>  let smith overwrite it with the derived content
+  --adopt <file>    keep the edit as the new baseline (a file smith owns by
+                    keys, that still has every derived key)
+  --eject <file>    own the file: the record says "you" and smith stops
+
+A file that exists, is not in the record and differs from the derived content is
+left alone in the same way (--replace takes it over, --eject keeps it).
+
+--check writes nothing and fails when derive would change a file or the record,
+or when a file needs a choice. smith ci verify runs it. --explain <file> says
+who owns a file, which renderer wrote it and why it is in its state.
+
+Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
+		Example: "  smith derive\n  smith derive --check\n  smith derive --explain packages/web/tsconfig.lib.json\n  smith derive --replace packages/web/tsconfig.lib.json\n  smith derive --eject packages/web/tsconfig.lib.json",
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			if !s.Config.Derive.Enabled {
+				return problem.New("derived files are off in this workspace", "set enabled = true under [derive] in smith.toml")
+			}
+			return run(cmd.OutOrStdout(), s, check, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
+		},
+	}
+	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a derived file or the record is out of date")
+	cmd.Flags().StringArrayVar(&explain, "explain", nil, "say who owns this file and why it is in its state")
+	cmd.Flags().StringArrayVar(&replace, "replace", nil, "overwrite this drifted or diverged file with the derived content")
+	cmd.Flags().StringArrayVar(&adopt, "adopt", nil, "take the hand edit of this keys-mode file as the new baseline")
+	cmd.Flags().StringArrayVar(&eject, "eject", nil, "own this file: smith stops touching it")
+	return cmd
+}
+
+func run(out io.Writer, s *session.Session, check bool, explain []string, d Decision) error {
+	plan, rec, err := BuildPlan(s)
+	if err != nil {
+		return err
+	}
+	if len(explain) > 0 {
+		for _, p := range explain {
+			items := itemsAt(plan, p)
+			if len(items) == 0 {
+				return problem.New("smith does not derive "+p, "smith derive --check lists the files it derives")
+			}
+			PrintExplanation(out, items)
+		}
+		return nil
+	}
+	if check {
+		return CheckPlan(out, plan)
+	}
+	before := rec
+	before.Files = append([]derivelock.Entry(nil), rec.Files...)
+	outcome, err := Apply(s.Root, plan, &rec, d)
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(before.Files, rec.Files) {
+		if err := derivelock.Write(s.Root, rec); err != nil {
+			return err
+		}
+	}
+	printOutcome(out, plan, outcome)
+	if len(outcome.Held) > 0 {
+		PrintDiffs(out, outcome.Held)
+		return problem.New(fmt.Sprintf("%d derived files need a choice: smith did not overwrite them", len(outcome.Held)),
+			"--replace <file> overwrites with the derived content", "--adopt <file> keeps a hand edit of a keys-mode file", "--eject <file> makes the file yours")
+	}
+	return nil
+}
+
+// CheckPlan reports the plan to out and fails when anything needs action: the
+// check behind smith derive --check and smith ci verify.
+func CheckPlan(out io.Writer, plan Plan) error {
+	pending := plan.Pending()
+	if len(pending) == 0 {
+		fmt.Fprintf(out, "%d derived files are up to date.\n", len(plan.Items))
+		return nil
+	}
+	PrintPlan(out, plan)
+	return problem.New(fmt.Sprintf("%d derived files are out of date", len(pending)), "run smith derive, and commit the files and smith.lock")
+}
+
+func printOutcome(out io.Writer, plan Plan, o Outcome) {
+	list := func(verb string, paths []string) {
+		for _, p := range paths {
+			fmt.Fprintf(out, "  %-9s %s\n", verb, p)
+		}
+	}
+	list("wrote", o.Written)
+	list("replaced", o.Replaced)
+	list("recorded", o.Recorded)
+	list("adopted", o.Adopted)
+	list("ejected", o.Ejected)
+	for _, h := range o.Held {
+		fmt.Fprintf(out, "  %-9s %s  (%s)  %s\n", string(h.Status), h.File.Path, h.File.Renderer, h.Detail)
+	}
+	changed := len(o.Written) + len(o.Replaced) + len(o.Recorded) + len(o.Adopted) + len(o.Ejected)
+	fmt.Fprintf(out, "%d derived files: %s.\n", len(plan.Items), strings.Join(summary(changed, len(o.Held)), ", "))
+}
+
+func summary(changed, held int) []string {
+	parts := []string{fmt.Sprintf("%d changed", changed)}
+	if held > 0 {
+		parts = append(parts, fmt.Sprintf("%d need a choice", held))
+	}
+	return parts
+}

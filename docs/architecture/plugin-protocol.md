@@ -147,6 +147,7 @@ which capability each method needs.
 | `remove` | `remove` | `Remover` | `smith remove` |
 | `changeKind` | `project/kind` | `KindChanger` | `smith kind` |
 | `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
+| `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |
@@ -188,6 +189,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
 | `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
+| `derive` | `DeriveParams{projects, graph, owned}` | `DeriveResult{files}` (`DerivedFile{project, path, mode, renderer, version, content, comment, format, table, keys}`) | the content of the files the plugin derives from facts and the project graph, as a whole file, a region between markers or owned keys; the plugin writes nothing, the host keeps `smith.lock` and decides ([ADR 0046](decisions/0046-derived-files-have-an-owner-and-a-record.md)) |
 | `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them. Asked of the project's language plugin and of every other plugin that serves the project and advertises `version` (a convention such as `tauri`, for the files it keeps a version in) |
 | `publish` | `PublishParams{project, version, dryRun, assets}` | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |

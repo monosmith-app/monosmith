@@ -32,6 +32,7 @@ way, a [scaffold](scaffold-plugin.md) or a [recipe](recipe-and-stack.md) is enou
 | `doctor` | optional | collect health findings, with fixes |
 | `remove` | optional | clean up outside a project's directory after `smith remove` |
 | `project/kind` | optional | say what changing a project between app, lib and package edits, for `smith kind` |
+| `derive` | optional | say which files you derive from facts and the project graph (tsconfig references, a test config's name), for `smith derive`; see [Rendering derived files](derived-files.md) |
 | `sbom/components` | optional | list the components a project ships (lockfile, else manifest) as package URLs, for the SBOM a release attaches |
 | `dependencies/*` | optional | `smith install`, `uninstall`, `sync`, `up` |
 

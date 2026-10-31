@@ -365,6 +365,25 @@ Usage: `smith typecheck [project]... [flags]`
 
 <!-- smith:end typecheck -->
 
+### smith derive
+
+[Manual page](../manual/derive.md)
+
+<!-- smith:begin derive -->
+Write the files that follow from facts and the project graph, and report hand edits
+
+Usage: `smith derive [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--adopt <adopt>` | take the hand edit of this keys-mode file as the new baseline (repeatable) |  |
+| `--check` | write nothing; fail when a derived file or the record is out of date | off |
+| `--eject <eject>` | own this file: smith stops touching it (repeatable) |  |
+| `--explain <explain>` | say who owns this file and why it is in its state (repeatable) |  |
+| `--replace <replace>` | overwrite this drifted or diverged file with the derived content (repeatable) |  |
+
+<!-- smith:end derive -->
+
 ### smith eject
 
 [Manual page](../manual/eject.md)

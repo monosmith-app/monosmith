@@ -6,6 +6,7 @@ Task-oriented pages for people who already have a workspace.
 |---|---|
 | [Editors](editors.md) | you integrate smith with an editor or an AI assistant: the `--json` contracts, `smith serve` and `smith mcp` |
 | [The MonoSmith agent](agent.md) | you want Claude Code or VS Code to work in the workspace through smith: what `smith agent install` writes, what the agent does alone and what it asks |
+| [Derived files](derived-files.md) | config repeats in every project and follows from the graph: let smith write it, keep a record, and report a hand edit instead of overwriting it |
 | [Troubleshooting](troubleshooting.md) | something does not work: every doctor check with its remedy, cache surprises, install problems |
 | [Private release files](private-release-assets.md) | another repository's CI must download the release files of a private repository: the fine-grained token, the secret and the download step |
 | [FAQ](faq.md) | you want a short answer to a common question |
