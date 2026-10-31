@@ -100,5 +100,5 @@ brace. A `export *` from another package counts as one name (`* from <package>`)
 - Issues [#819](https://github.com/monosmith-app/monosmith/issues/819) and
   [#824](https://github.com/monosmith-app/monosmith/issues/824)
 - [ADR 0006](0006-conventional-commits-tag-only-releases.md): versions come from commits
-- ADR 0042 (shared facts): why facts do not fit here
+- [ADR 0042](0042-plugins-publish-shared-facts-the-core-merges.md): shared facts, and why they do not fit here
 - [The plugin protocol](../plugin-protocol.md)
