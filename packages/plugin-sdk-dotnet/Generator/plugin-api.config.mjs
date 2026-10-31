@@ -16,6 +16,7 @@ export const PLUGIN_INTERFACES = [
   { name: 'IKindChanger', capability: 'changeKind', summary: 'A plugin that says what changing a project between app, lib and package edits.', methods: { 'project/kind': 'ChangeKindAsync' } },
   { name: 'IComponentLister', capability: 'components', summary: 'A plugin that lists the components a project ships, for the SBOM a release attaches.', methods: { 'sbom/components': 'ComponentsAsync' } },
   { name: 'IDeriver', capability: 'derive', summary: 'A plugin that says which files it derives from facts and the project graph.', methods: { derive: 'DeriveAsync' } },
+  { name: 'IApiSurfaceReader', capability: 'apiSurface', summary: 'A plugin that lists the public API names of a project at a git revision, for the release version check.', methods: { 'api/surface': 'ApiSurfaceAsync' } },
   {
     name: 'IDependencyManager',
     capability: 'dependencies',

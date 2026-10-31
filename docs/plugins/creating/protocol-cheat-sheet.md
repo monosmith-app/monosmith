@@ -103,6 +103,7 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `project/kind` | `changeKind` | `KindChanger` | `ChangeKindParams` → `ChangeKindResult` | `smith kind` | 5 min |
 | `derive` | `derive` | `Deriver` | `DeriveParams` → `DeriveResult` | `smith derive` | 10 min |
 | `sbom/components` | `components` | `ComponentLister` | `ComponentsParams` → `ComponentsResult` | `smith release` (the SBOM) | 2 min |
+| `api/surface` | `apiSurface` | `APISurfaceReader` | `APISurfaceParams` → `APISurfaceResult` | `smith release` (the API version check) | 1 min |
 | `dependencies/install` | `dependencies` | `DependencyManager.Install` | `InstallParams` → `DependencyResult` | `smith install`, `smith sync` | 20 min |
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
@@ -134,6 +135,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `changeKind` | `project/kind` | language |
 | `components` | `sbom/components` | language |
 | `derive` | `derive` | language |
+| `apiSurface` | `api/surface` | language |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |

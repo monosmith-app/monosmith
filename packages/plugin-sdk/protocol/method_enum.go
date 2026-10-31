@@ -40,4 +40,7 @@ const (
 	// MethodDerive asks for the files a plugin derives from facts and the
 	// project graph (smith derive).
 	MethodDerive = "derive"
+	// MethodAPISurface lists the public API names of a project at a git
+	// revision, so a release can compare them with the last release.
+	MethodAPISurface = "api/surface"
 )

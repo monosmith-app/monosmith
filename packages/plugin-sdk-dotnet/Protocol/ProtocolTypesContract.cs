@@ -108,6 +108,9 @@ public static class ProtocolMethods
     /// <summary>Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.</summary>
     public const string Derive = "derive";
 
+    /// <summary>Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.</summary>
+    public const string ApiSurface = "api/surface";
+
     /// <summary>For each method the capability a plugin advertises to be asked it; <c>null</c> where it is always available.</summary>
     public static IReadOnlyDictionary<string, string?> CapabilityByMethod { get; } = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
@@ -131,6 +134,7 @@ public static class ProtocolMethods
         [DependenciesLatest] = "latest",
         [SbomComponents] = "components",
         [Derive] = "derive",
+        [ApiSurface] = "apiSurface",
     };
 }
 
@@ -153,6 +157,76 @@ public static class ProtocolRoles
         new(new Role("structure"), "Checks layout and code rules.", "additive", ["convention"]),
         new(new Role("deploy"), "Adds pipeline steps and deploy targets.", "additive", []),
     ];
+}
+
+/// <summary>APISurfaceParams asks a plugin for the public API names of one project.</summary>
+public sealed record APISurfaceParams : IProtocolValue<APISurfaceParams>
+{
+    /// <summary>The <c>project</c> member of <c>APISurfaceParams</c>.</summary>
+    public required Project Project { get; init; }
+
+    /// <summary>Ref is the git revision to read the project at (the tag of its last release). Empty means the working tree.</summary>
+    public string Ref { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static APISurfaceParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new APISurfaceParams
+        {
+            Project = Project.Read(Member(map, "project"), Join(path, "project")),
+            Ref = StringValue(Member(map, "ref"), Join(path, "ref")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        Project.Write(writer);
+        if (Ref.Length > 0)
+        {
+            writer.Property("ref");
+            writer.String(Ref);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>APISurfaceResult is the public API of a project: the names its entry points export. A host compares the names of two revisions; it never reads their meaning, so a plugin chooses its own spelling and keeps it stable.</summary>
+public sealed record APISurfaceResult : IProtocolValue<APISurfaceResult>
+{
+    /// <summary>Names are the exported names, sorted. A name an entry point other than the main one exports is prefixed with that entry point and a colon ("./cli:run"). An empty list is an answer: the project exports nothing.</summary>
+    public IReadOnlyList<string> Names { get; init; } = [];
+
+    /// <summary>Unreadable says why the API could not be listed (no entry point, no source at the revision). When set, Names is empty and the host skips the project without a warning.</summary>
+    public string Unreadable { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static APISurfaceResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new APISurfaceResult
+        {
+            Names = ListOf(Member(map, "names"), Join(path, "names"), StringValue),
+            Unreadable = StringValue(Member(map, "unreadable"), Join(path, "unreadable")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("names");
+        MessageWritingAlgorithm.List(writer, Names, (builder1, item1) => builder1.String(item1));
+        if (Unreadable.Length > 0)
+        {
+            writer.Property("unreadable");
+            writer.String(Unreadable);
+        }
+        writer.EndObject();
+    }
 }
 
 /// <summary>ActionStep is a provider-native step: a GitHub action or an Azure task, with its inputs in the order they are written.</summary>
@@ -524,6 +598,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Derive says which files the plugin derives from facts and the project graph (smith derive).</summary>
     public bool Derive { get; init; }
 
+    /// <summary>APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs.</summary>
+    public bool ApiSurface { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -546,6 +623,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Cancel = BooleanValue(Member(map, "cancel"), Join(path, "cancel")),
             Components = BooleanValue(Member(map, "components"), Join(path, "components")),
             Derive = BooleanValue(Member(map, "derive"), Join(path, "derive")),
+            ApiSurface = BooleanValue(Member(map, "apiSurface"), Join(path, "apiSurface")),
         };
     }
 
@@ -633,6 +711,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("derive");
             writer.Boolean(Derive);
         }
+        if (ApiSurface)
+        {
+            writer.Property("apiSurface");
+            writer.Boolean(ApiSurface);
+        }
         writer.EndObject();
     }
 
@@ -658,6 +741,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "cancel" => Cancel,
             "components" => Components,
             "derive" => Derive,
+            "apiSurface" => ApiSurface,
             _ => false,
         };
 }

@@ -20,7 +20,7 @@ by smith like the other packages.
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 19 methods with its params, its result and the
+one definition per message, a methods table (each of the 20 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The TypeScript types are
 generated from that file, so they cannot drift from the Go ones: a Go test fails when the schema is
 stale, a TypeScript test fails when the generated types are, and a test fails when the schema has a

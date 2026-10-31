@@ -139,6 +139,10 @@ type Capabilities struct {
 	// Derive says which files the plugin derives from facts and the project
 	// graph (smith derive).
 	Derive bool `json:"derive,omitempty"`
+	// APISurface lists the names a project exports, at a git revision, so a
+	// release can warn when the commits ask for a smaller bump than the API
+	// change needs.
+	APISurface bool `json:"apiSurface,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

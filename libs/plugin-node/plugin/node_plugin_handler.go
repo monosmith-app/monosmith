@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-node/apisurface"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
@@ -105,6 +106,11 @@ func (n *Node) Derive(params protocol.DeriveParams) (protocol.DeriveResult, erro
 // ChangeKind implements serve.KindChanger.
 func (n *Node) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(n.root, params)
+}
+
+// APISurface implements serve.APISurfaceReader.
+func (n *Node) APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
+	return apisurface.List(n.root, params)
 }
 
 // Components implements serve.ComponentLister.

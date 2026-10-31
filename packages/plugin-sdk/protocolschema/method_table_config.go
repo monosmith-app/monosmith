@@ -149,4 +149,10 @@ var Methods = []MethodSpec{
 		Params:      reflect.TypeFor[protocol.DeriveParams](), Result: reflect.TypeFor[protocol.DeriveResult](),
 		Capability: "Derive",
 	},
+	{
+		Method:      protocol.MethodAPISurface,
+		Description: "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
+		Params:      reflect.TypeFor[protocol.APISurfaceParams](), Result: reflect.TypeFor[protocol.APISurfaceResult](),
+		Capability: "APISurface",
+	},
 }

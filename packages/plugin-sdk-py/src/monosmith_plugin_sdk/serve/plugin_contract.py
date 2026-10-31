@@ -17,6 +17,8 @@ from typing import Protocol
 
 from ..cancellation import CancelToken
 from ..protocol import (
+    APISurfaceParams,
+    APISurfaceResult,
     ChangeKindParams,
     ChangeKindResult,
     CIParams,
@@ -129,6 +131,12 @@ class Deriver(Protocol):
     """`derive`: the files the plugin derives from facts and the project graph (smith derive)."""
 
     def derive(self, params: DeriveParams, cancel: CancelToken) -> DeriveResult: ...
+
+
+class APISurfaceReader(Protocol):
+    """`api/surface`: the public API names of a project at a git revision, for the release's version check."""
+
+    def api_surface(self, params: APISurfaceParams, cancel: CancelToken) -> APISurfaceResult: ...
 
 
 class DependencyManager(Protocol):

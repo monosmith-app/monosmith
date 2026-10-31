@@ -25,6 +25,7 @@ PLUGIN_MEMBERS: dict[str, PluginMember] = {
     "project/kind": PluginMember("change_kind", ("change_kind",)),
     "sbom/components": PluginMember("components", ("components",)),
     "derive": PluginMember("derive", ("derive",)),
+    "api/surface": PluginMember("api_surface", ("api_surface",)),
     "published": PluginMember("published", ("published",)),
     "dependencies/install": PluginMember("install", ("install", "uninstall")),
     "dependencies/uninstall": PluginMember("uninstall", ("install", "uninstall")),

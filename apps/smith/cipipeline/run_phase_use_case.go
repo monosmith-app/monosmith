@@ -266,6 +266,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		if err != nil {
 			return err
 		}
+		if err := release.CheckAPI(ctx, s, &plan); err != nil {
+			return err
+		}
 		projects := len(s.Graph.Projects)
 		var c Contributions
 		if len(plan.Items) == 0 {
@@ -283,6 +286,9 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 			log.fold()
 			for _, item := range plan.Items {
 				fmt.Fprintf(out, "%s: %s -> %s (%s) because %s\n", item.Project, cmp.Or(item.Current, "new"), item.Next, bumpOf(item), item.Why())
+				for _, w := range item.APIWarnings {
+					warn(out, w)
+				}
 			}
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})

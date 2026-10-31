@@ -405,6 +405,8 @@ func (c *Client) Supports(method string) bool {
 		return caps.Components
 	case protocol.MethodDerive:
 		return caps.Derive
+	case protocol.MethodAPISurface:
+		return caps.APISurface
 	}
 	return method == protocol.MethodInitialize || method == protocol.MethodShutdown
 }
