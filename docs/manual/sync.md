@@ -39,6 +39,9 @@ Usage: `smith sync [flags]`
 
 <!-- smith:end sync -->
 
+With `commit_operations = true` under `[workspace]` and a clean git work tree, a run that rewrites
+declarations is one commit (`chore: align dependency versions`); [`smith undo`](undo.md) reverts it.
+
 ## Exit codes
 
 | Code | Meaning |

@@ -18,7 +18,7 @@ command stops with a message and nothing else in smith looks at derived files.
 ## Synopsis
 
 ```sh
-smith derive [--check] [--explain <file>] [--replace <file>] [--adopt <file>] [--eject <file>]
+smith derive [--check] [--explain <file>] [--replace <file>] [--adopt <file>] [--eject <file>] [--yes]
 ```
 
 ## Arguments and flags
@@ -35,6 +35,7 @@ Usage: `smith derive [flags]`
 | `--eject <eject>` | string, repeatable |  | own this file: smith stops touching it |
 | `--explain <explain>` | string, repeatable |  | say who owns this file and why it is in its state |
 | `--replace <replace>` | string, repeatable |  | overwrite this drifted or diverged file with the derived content |
+| `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end derive -->
 
@@ -59,6 +60,12 @@ smith derive --eject packages/web/tsconfig.lib.json     # the file is yours from
 3. Writes the files that are missing or stale, records the files that already match, and prints the
    files that need a choice with a diff.
 4. Saves `smith.lock` when it changed.
+
+Before step 3, derive prints the plan: the files it creates or rewrites, grouped by renderer, with
+their owner, and `smith.lock`. In a terminal, outside CI, it asks `Go ahead? [y/N]` unless you pass
+`--yes` or a decision (`--replace`, `--adopt`, `--eject`). With `commit_operations = true` under
+`[workspace]` and a clean git work tree, the run is one commit (`chore: derive files`) that
+[`smith undo`](undo.md) reverts.
 
 The states and the three ownership modes are in [Derived files](../reference/derived-files.md).
 

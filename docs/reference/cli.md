@@ -143,11 +143,13 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
+| `--dry-run` | show the plan and change nothing | off |
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 | `--with <with>` | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default (repeatable) |  |
+| `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end add -->
 
@@ -251,6 +253,7 @@ Usage: `smith upgrade [flags]`
 | `--check` | change nothing; fail when something would change | off |
 | `--dry-run` | show the plan, with the change to smith.toml, and change nothing | off |
 | `--json` | print the result as JSON | off |
+| `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end upgrade -->
 
@@ -382,8 +385,25 @@ Usage: `smith derive [flags]`
 | `--eject <eject>` | own this file: smith stops touching it (repeatable) |  |
 | `--explain <explain>` | say who owns this file and why it is in its state (repeatable) |  |
 | `--replace <replace>` | overwrite this drifted or diverged file with the derived content (repeatable) |  |
+| `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end derive -->
+
+### smith undo
+
+[Manual page](../manual/undo.md)
+
+<!-- smith:begin undo -->
+Revert the last operation smith committed (add, remove, upgrade, derive, sync)
+
+Usage: `smith undo [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--dry-run` | show what would be reverted and change nothing | off |
+| `-y, --yes` | do not ask for confirmation | off |
+
+<!-- smith:end undo -->
 
 ### smith eject
 
