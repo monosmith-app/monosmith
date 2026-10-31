@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/releasepreview"
+	"github.com/monosmith-app/monosmith/apps/smith/releaserehearsal"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -18,8 +20,8 @@ import (
 // Command is `smith release`.
 func Command(version string) *cobra.Command {
 	var (
-		dryRun, yes, noPush, asJSON, comment, notes, status, verbose bool
-		format                                                       string
+		dryRun, yes, noPush, asJSON, comment, notes, status, verbose, rehearse bool
+		format                                                                 string
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
@@ -32,7 +34,8 @@ after a failure resumes where it stopped. Before the first publish every
 npm, PyPI, NuGet and RubyGems registry is asked whether it accepts the
 credential and the names, so a bad key stops the release before anything is
 published. What was published where is kept in dist/release/<project>/journal.json
-(smith release --status).`,
+(smith release --status). smith release --rehearse runs registry checks for every
+package on their own, before a first release, and publishes nothing.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
 			if comment && !dryRun {
@@ -60,6 +63,9 @@ published. What was published where is kept in dist/release/<project>/journal.js
 				}
 				fmt.Fprint(out, RenderJournalStatus(journals))
 				return nil
+			}
+			if rehearse {
+				return rehearseRegistries(s, out, asJSON, verbose)
 			}
 			var blockers []string
 			for _, f := range CheckLineage(s, true) {
@@ -137,11 +143,32 @@ published. What was published where is kept in dist/release/<project>/journal.js
 	cmd.Flags().BoolVar(&noPush, "no-push", false, "create tags locally only")
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
 	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")
+	cmd.Flags().BoolVar(&rehearse, "rehearse", false, "check every registry the release publishes to (it resolves, which credential it expects, that yours is accepted, that the CI identity may publish) with read-only requests; publish nothing")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the release report as JSON")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "name every unchanged package")
 	cmd.Flags().StringVar(&format, "format", "text", "how the result is printed: text, or markdown (what the CI job summary and --comment use)")
 	cmd.Flags().BoolVar(&comment, "comment", false, "with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment")
 	return cmd
+}
+
+// rehearseRegistries is `smith release --rehearse`: it asks every registry
+// the workspace's packages publish to and fails when one would refuse.
+func rehearseRegistries(s *session.Session, out io.Writer, asJSON, verbose bool) error {
+	targets := releaserehearsal.ListTargets(s, os.Getenv)
+	report := releaserehearsal.Rehearse(targets, releaserehearsal.NewProbe(), os.Getenv)
+	if asJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(report); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprint(out, releaserehearsal.RenderText(report, len(targets), verbose))
+	}
+	if report.Failed > 0 {
+		return fmt.Errorf("the rehearsal found %d registry problem(s): a real release would fail", report.Failed)
+	}
+	return nil
 }
 
 // printsTextPlan is whether the text plan comes before the result: not for JSON,

@@ -7,6 +7,7 @@ smith release --dry-run    # the plan; changes nothing
 smith release --dry-run --comment   # in a pull request build: also post the plan on it (docs/reference/ci.md)
 smith release              # asks before releasing (CI: smith ci release)
 smith release --status     # the release journal: what was published where
+smith release --rehearse   # ask every registry whether the release would be accepted; publishes nothing
 ```
 
 ## What releases
@@ -763,6 +764,45 @@ does not run `npm publish --dry-run`, `twine check` or `cargo publish
 --dry-run` ahead of time (they need the built packages), and packages
 published by a language plugin (not an app's binaries) are not asked yet.
 A dry run does not check the registries.
+
+## Rehearse a release
+
+`smith release --rehearse` finds a wrong feed setting before the first real push, so the
+first CI run on a new feed needs no fix-and-retry commit. It looks at every package project
+(not at the commits), and for each registry its plugin publishes to it asks, with read-only
+requests:
+
+| Check | Question | How |
+|---|---|---|
+| `registry` | Does the URL resolve, and which credential does it expect? | An unauthenticated request; the `WWW-Authenticate` header gives Basic or Bearer. |
+| `credential` | Is the credential set? | The variable the publish reads, or the one `smith.toml` names (see below). |
+| `access` | Does the registry accept it? | npm `/-/whoami`, or a package read where the feed has no `whoami` (Azure Artifacts, GitHub Packages); an upload with no file to PyPI, which the index refuses after it checks the credential; a read of the feed for a private NuGet feed; `/api/v1/me` on crates.io. |
+| `identity` | In CI, which identity publishes? | The pipeline (GitHub Actions or Azure Pipelines) is detected from its environment. |
+
+The URL is what the publish uses: the registry `smith.toml` names (`registry = "<name>"`
+and `[registries.<name>]`), else `NPM_CONFIG_REGISTRY` and the `registry=` and
+`@scope:registry=` lines of `.npmrc` (user, workspace and project), `TWINE_REPOSITORY_URL`,
+`NUGET_SOURCE`, else the public registry. Credentials by sign-in kind:
+
+| Sign-in | Credential |
+|---|---|
+| `azure-artifacts` | `SYSTEM_ACCESSTOKEN` (map `$(System.AccessToken)` into the step), or an `.npmrc` token. Outside Azure Pipelines this is a warning, since the pipeline supplies it. |
+| `github-packages` | `GITHUB_TOKEN`. |
+| `token` | the variable `token_env` names. |
+| none | npm `NODE_AUTH_TOKEN` or `NPM_TOKEN` or the `.npmrc` `_authToken` for the registry (a `${VAR}` in it is expanded); PyPI `PYPI_TOKEN` or `TWINE_PASSWORD`; NuGet `NUGET_API_KEY`; crates.io `CARGO_REGISTRY_TOKEN`. |
+
+A GitHub Actions job with `id-token: write` and no token is a warning, not a failure: npm,
+PyPI and crates.io accept OIDC (trusted publishing), which cannot be checked without
+publishing. A NuGet push key on nuget.org cannot be checked without pushing either, so it is
+reported as set and nothing more. Whether the Build Service identity has Contributor on an
+Azure feed cannot be read with a read request: a refused request names the setting to change.
+Maven, RubyGems, pub.dev and Packagist projects are not rehearsed yet (the existing
+[pre-publish check](#checked-before-anything-is-published) covers RubyGems for an app's binaries).
+
+The output is in the style of `smith doctor`: what failed, why, and `→` the exact fix.
+`--verbose` lists passed checks too and `--json` prints the report (`results` with `project`,
+`registry`, `check`, `status`, `message`, `fix`). The exit code is 1 when a check fails, 0
+otherwise. No secret is printed or encoded.
 
 ## The release journal
 
