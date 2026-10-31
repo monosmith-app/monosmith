@@ -1,14 +1,16 @@
 package scaffold
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -35,18 +37,22 @@ import is refused unless --force. Its release tags are kept.`,
 				return err
 			}
 			defer s.Close()
-			if !opts.DryRun && !yes {
-				p := s.Graph.Get(opts.Name)
-				if p == nil {
+			if !opts.DryRun {
+				if s.Graph.Get(opts.Name) == nil {
 					return fmt.Errorf("no project named %q", opts.Name)
 				}
-				if !term.IsTerminal(int(os.Stdin.Fd())) {
+				if !yes && !term.IsTerminal(int(os.Stdin.Fd())) {
 					return errors.New("refusing to remove without a terminal; pass --yes")
 				}
-				fmt.Fprintf(out, "Remove %s and everything in %s? [y/N] ", p.Name, p.Root)
-				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-				if !strings.EqualFold(strings.TrimSpace(answer), "y") {
-					return errors.New("remove cancelled")
+				// The dry run is the plan: it also refuses a project others import.
+				preview, err := RemoveProject(s, RemoveOptions{Name: opts.Name, Force: opts.Force, DryRun: true})
+				if err != nil {
+					return err
+				}
+				if _, err := operationplan.Present(planOut(cmd, asJSON), cmd.InOrStdin(), PlanRemoval(s.Root, preview), operationplan.Options{
+					Yes: yes, Ask: true, Env: operationplan.DetectEnvironment(),
+				}); err != nil {
+					return err
 				}
 			}
 			r, err := RemoveProject(s, opts)
@@ -79,5 +85,13 @@ import is refused unless --force. Its release tags are kept.`,
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "remove a project other projects still import")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print what changed as JSON")
-	return cmd
+	return operation.Wrap(cmd, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "remove " + args[0] }})
+}
+
+// planOut is where the plan goes: stderr when stdout carries JSON.
+func planOut(cmd *cobra.Command, asJSON bool) io.Writer {
+	if asJSON {
+		return cmd.ErrOrStderr()
+	}
+	return cmd.OutOrStdout()
 }

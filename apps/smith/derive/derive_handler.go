@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/derivelock"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -55,7 +57,8 @@ Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
 			if !s.Config.Derive.Enabled {
 				return problem.New("derived files are off in this workspace", "set enabled = true under [derive] in smith.toml")
 			}
-			return run(cmd.OutOrStdout(), s, check, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
+			yes, _ := cmd.Flags().GetBool("yes")
+			return run(cmd.OutOrStdout(), cmd.InOrStdin(), s, check, yes, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
 		},
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a derived file or the record is out of date")
@@ -63,10 +66,10 @@ Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
 	cmd.Flags().StringArrayVar(&replace, "replace", nil, "overwrite this drifted or diverged file with the derived content")
 	cmd.Flags().StringArrayVar(&adopt, "adopt", nil, "take the hand edit of this keys-mode file as the new baseline")
 	cmd.Flags().StringArrayVar(&eject, "eject", nil, "own this file: smith stops touching it")
-	return cmd
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "derive files" }})
 }
 
-func run(out io.Writer, s *session.Session, check bool, explain []string, d Decision) error {
+func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, explain []string, d Decision) error {
 	plan, rec, err := BuildPlan(s)
 	if err != nil {
 		return err
@@ -83,6 +86,11 @@ func run(out io.Writer, s *session.Session, check bool, explain []string, d Deci
 	}
 	if check {
 		return CheckPlan(out, plan)
+	}
+	if _, err := operationplan.Present(out, in, PlanWrites(s.Root, plan), operationplan.Options{
+		Yes: yes, Ask: len(d.Replace)+len(d.Adopt)+len(d.Eject) == 0, Env: operationplan.DetectEnvironment(),
+	}); err != nil {
+		return err
 	}
 	before := rec
 	before.Files = append([]derivelock.Entry(nil), rec.Files...)

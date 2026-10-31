@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +38,25 @@ nothing. --check does the same and fails when something would change, for CI.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			check = check || dryRun
+			yes, _ := cmd.Flags().GetBool("yes")
+			if !check && operationplan.ShouldAsk(operationplan.DetectEnvironment(), yes) {
+				// A person at a terminal sees the plan, from a dry run, and confirms it.
+				preview, err := Upgrade(".", version, true, io.Discard)
+				if err != nil {
+					return err
+				}
+				if preview.Changed() {
+					root, err := workspace.FindRoot(".")
+					if err != nil {
+						return err
+					}
+					if _, err := operationplan.Present(cmd.OutOrStdout(), cmd.InOrStdin(), PlanUpgrade(root, preview), operationplan.Options{
+						Ask: true, Env: operationplan.DetectEnvironment(),
+					}); err != nil {
+						return err
+					}
+				}
+			}
 			r, err := Upgrade(".", version, check, cmd.ErrOrStderr())
 			if err != nil {
 				return err
@@ -100,7 +123,7 @@ nothing. --check does the same and fails when something would change, for CI.`,
 	cmd.Flags().BoolVar(&check, "check", false, "change nothing; fail when something would change")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan, with the change to smith.toml, and change nothing")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the result as JSON")
-	return cmd
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "upgrade the workspace" }})
 }
 
 func versionOf(v string) string {

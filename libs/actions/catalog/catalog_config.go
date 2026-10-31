@@ -20,7 +20,7 @@ const (
 var catalog = []Action{
 	// Create
 	{Command: []string{"new"}, Safety: Changes, NotInMCP: "creates a workspace, and the server serves one that exists", NotInServe: "creates a workspace, and the engine serves one that exists"},
-	{Command: []string{"add"}, Safety: Changes},
+	{Command: []string{"add"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
 	{Command: []string{"remove"}, Safety: Changes, Asks: true},
 	{Command: []string{"adopt"}, Safety: Reads, Variants: []Variant{{When: []string{"--tags", "--init"}, Safety: Changes}}, NotInMCP: "no tool yet: bringing a repository under smith is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"convert"}, Safety: Changes, NotInMCP: "no tool yet: converting an Nx or Turborepo workspace is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
@@ -39,6 +39,7 @@ var catalog = []Action{
 	{Command: []string{"dev"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 	{Command: []string{"kind"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
 	{Command: []string{"derive"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}, {When: []string{"--explain"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"undo"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"eject"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri", "add"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
