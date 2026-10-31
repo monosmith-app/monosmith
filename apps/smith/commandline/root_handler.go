@@ -51,6 +51,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
+	"github.com/monosmith-app/monosmith/apps/smith/choiceview"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriadd"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
@@ -107,7 +108,7 @@ already have), then build and doctor.`,
 	mcpCmd := mcpserver.Command(version)
 	mcpCmd.AddCommand(agentfiles.McpInstallCommand())
 	add("inspect", mcpCmd, agentfiles.Command(), engineserver.Command(version), languageserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 

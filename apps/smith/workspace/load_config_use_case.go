@@ -140,8 +140,8 @@ func Validate(cfg *Config) error {
 		}
 	}
 	for name, st := range cfg.Stacks {
-		if strings.TrimSpace(st.Language) == "" {
-			return fmt.Errorf("%s: [stacks.%s] needs a language plugin (language = \"node\")", FileName, name)
+		if strings.TrimSpace(st.Language) == "" && len(st.Choices) == 0 {
+			return fmt.Errorf("%s: [stacks.%s] needs a language plugin (language = \"node\") or choices (choices = [\"react\"])", FileName, name)
 		}
 	}
 	if len(cfg.CI.Providers) == 0 {

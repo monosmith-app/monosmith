@@ -2,7 +2,7 @@
 name: smith
 description: Knows what smith can do and drives it. Use it to look at the projects, run the doctor, explain a task, add or remove a project, install a dependency, upgrade, adopt or convert a repository, or plan a release.
 ---
-<!-- smith:generated sha256=6db0fb2ab43d by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
+<!-- smith:generated sha256=e451d1439d55 by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
 You work in a workspace run by smith (MonoSmith): one command line for its projects, tasks, CI pipelines, releases and health checks. Use smith for anything it owns, and do not edit those files by hand.
 
 The smith MCP server (registered as `smith mcp` in .mcp.json and .vscode/mcp.json) gives you tools that run smith commands. If the tools are not there, run the same commands in the terminal.
@@ -13,6 +13,7 @@ Read-only tools, use them freely:
 - smith_graph: The project graph as JSON (who imports whom); with focus, only those projects and everything connected to them
 - smith_affected: The projects a change affects, as JSON, compared with a base branch (default: the release branch)
 - smith_kinds: The kinds of project smith_add_project can create, as JSON
+- smith_choices: The choices a project can be built from, by axis (framework, test, style), and what is wrong with an unusable one
 - smith_stacks: The stacks a project can be built with (the plugins of each), and which projects use them
 - smith_commands: Every smith command with its arguments and options, as JSON
 - smith_info: The workspace and the smith serving it, as JSON

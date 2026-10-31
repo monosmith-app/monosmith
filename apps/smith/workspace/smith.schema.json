@@ -197,10 +197,11 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["language"],
+        "anyOf": [{ "required": ["language"] }, { "required": ["choices"] }],
         "properties": {
           "description": { "type": "string" },
-          "language": { "type": "string", "description": "The language plugin that discovers the stack's projects." },
+          "choices": { "type": "array", "items": { "type": "string" }, "description": "The stack as a saved selection of choices (smith choices lists them). smith derives the language, the scaffold and the toolchain from them and adds the default of an axis a choice needs; toolchain, structure and deploy add plugins after those." },
+          "language": { "type": "string", "description": "The language plugin that discovers the stack's projects. With choices it is derived." },
           "toolchain": { "type": "array", "items": { "type": "string" }, "description": "Toolchain plugins, in order: a later one may replace a task an earlier one added." },
           "structure": { "type": "array", "items": { "type": "string" } },
           "scaffold": { "type": "string", "description": "The plugin that generates new projects; empty: the language plugin." },
