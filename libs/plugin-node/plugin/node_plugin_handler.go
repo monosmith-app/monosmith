@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/dependencies"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
@@ -94,6 +95,11 @@ func (n *Node) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult
 // Latest implements serve.LatestReader.
 func (n *Node) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(n.root, params)
+}
+
+// Derive implements serve.Deriver.
+func (n *Node) Derive(params protocol.DeriveParams) (protocol.DeriveResult, error) {
+	return deriving.Derive(n.root, params)
 }
 
 // ChangeKind implements serve.KindChanger.
