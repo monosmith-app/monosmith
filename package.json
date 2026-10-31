@@ -46,7 +46,17 @@
     "minimatch": "11.0.3",
     "glob": "14.0.3",
     "eslint-plugin-import-x": {
-      "minimatch": "10.2.6"
+      "minimatch": "10.2.6",
+      "eslint": {
+        ".": "$eslint",
+        "minimatch": "11.0.3",
+        "@eslint/config-array": {
+          "minimatch": "11.0.3"
+        }
+      },
+      "@eslint/config-array": {
+        "minimatch": "11.0.3"
+      }
     },
     "@typescript-eslint/typescript-estree": {
       "minimatch": "11.0.3"
