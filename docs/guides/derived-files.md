@@ -30,12 +30,20 @@ holds the owner, the renderer, its version and a hash of what smith wrote.
 
 ## What smith derives today
 
-The Node plugin has two renderers.
+Two kinds of Node renderer exist. The first two serve a converted workspace. The last two serve a
+workspace made by `smith new` and `smith add`.
 
 | Renderer | File | Mode | Derives |
 |---|---|---|---|
 | `node.tsconfig.references` | `<project>/tsconfig.lib.json` | keys | the `references` key: one entry for each internal dependency of the project graph, pointing at the `tsconfig.lib.json` (else `tsconfig.json`) of that project |
 | `node.jest.display-name` | `<project>/jest.config.{ts,js,cjs,mjs}` | region | the `displayName` line: the package name |
+| `typescript.tsconfig` | `<project>/tsconfig.json` of a lib, package or app that smith scaffolded | file | the whole file, as the scaffold wrote it |
+| `vite.tsconfig` | `<project>/tsconfig.json` of an app made with `--with` choices | file | the whole file, from the saved choices |
+
+The last two files are the scaffold's own. When derive is on, `smith add` records them in
+`smith.lock`. Smith derives only a file that is exactly what the scaffold writes, or that the record
+owns, so a `tsconfig.json` that you wrote is not touched. To change one, use `--eject`, or change
+the stack. A deleted file comes back whole ([ADR 0049](../architecture/decisions/0049-a-scaffold-is-also-the-renderer-of-its-own-files.md)).
 
 A Jest config needs markers around the line smith owns. Smith does not add them:
 
@@ -58,7 +66,8 @@ The three modes are explained in [Derived files](../reference/derived-files.md).
   date. `smith ci verify` runs it when `[derive] enabled = true`.
 - `smith doctor` reports each file that needs action, with its owner.
 - You delete a derived file, or the lines between the markers. Smith treats that as a request to
-  write it again, not as an edit. `smith derive` restores it.
+  write it again, not as an edit. `smith derive` restores it. A `file` mode file comes back whole.
+  A `keys` mode file (`tsconfig.lib.json`) comes back with the keys smith owns, and nothing else.
 
 ## Who owns a file
 

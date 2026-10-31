@@ -84,7 +84,11 @@ The exit code of `smith derive` is not zero while a file is in `drift`, `diverge
 | `node.tsconfig.references` | node | `tsconfig.lib.json` of each project that has it (or that the record owns) | `keys` | `references`: one `{ "path": … }` for each internal dependency of the project graph, sorted by project name |
 | `node.jest.display-name` | node | `jest.config.ts`, `.js`, `.cjs` or `.mjs` that has the markers | `region` | `displayName: '<package name>',` |
 
-A project whose `tsconfig.lib.json` has no dependency and no `references` key is skipped.
+| `typescript.tsconfig` | typescript | `tsconfig.json` of a project the plugin scaffolded | `file` | the whole file, rendered from the scaffold template of the project |
+| `vite.tsconfig` | vite | `tsconfig.json` of an app made from choices | `file` | the whole file, rendered from the saved choices |
+
+The last two renderers derive a file only when the record owns it or when it is, line for line, what
+the template renders. A project whose `tsconfig.lib.json` has no dependency and no `references` key is skipped.
 
 ## Where it is checked
 

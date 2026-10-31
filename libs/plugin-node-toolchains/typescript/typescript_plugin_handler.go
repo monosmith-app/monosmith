@@ -2,6 +2,8 @@ package typescript
 
 import (
 	"maps"
+	"os"
+	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
@@ -61,4 +63,17 @@ func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.Generate
 		set.DevDependencies["esbuild"] = esbuildVersion
 	}
 	return scaffolding.GenerateFrom(p.root, params, set)
+}
+
+// Derive implements serve.Deriver: the tsconfig.json of the projects the plugin
+// scaffolded, rendered from its own template (ADR 0049). An app made from
+// choices has a vite.config.ts and belongs to the vite plugin.
+func (p *TypeScript) Derive(params protocol.DeriveParams) (protocol.DeriveResult, error) {
+	return scaffolding.FileRenderer{
+		ID: "typescript.tsconfig", Version: 1, File: "tsconfig.json",
+		Templates: func(gp protocol.GenerateParams) (scaffolding.TemplateSet, bool) {
+			_, err := os.Stat(filepath.Join(p.root, filepath.FromSlash(gp.Directory), "vite.config.ts"))
+			return templates, err != nil
+		},
+	}.Derive(p.root, params)
 }

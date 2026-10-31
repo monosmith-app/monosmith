@@ -5,6 +5,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -61,12 +62,38 @@ func (p *Vite) Generate(params protocol.GenerateParams) (protocol.GenerateResult
 		}
 		return protocol.GenerateResult{}, fmt.Errorf("the vite plugin writes projects from the choices %v, not the stack %q: smith add app <name> --with react", offered, params.Stack)
 	}
+	return scaffolding.GenerateFrom(p.root, params, templateSet(plan))
+}
+
+// templateSet is the starter that a plan of choices describes.
+func templateSet(plan choicedata.Plan) scaffolding.TemplateSet {
 	files := maps.Clone(typescript.GreetingSlice)
 	for path, body := range plan.Files {
 		files["[[.Dir]]/"+path] = body
 	}
-	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{
+	return scaffolding.TemplateSet{
 		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
 		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
-	})
+	}
+}
+
+// Derive implements serve.Deriver: the tsconfig.json of the apps that the
+// plugin made from choices, rendered from the same choices (ADR 0049).
+func (p *Vite) Derive(params protocol.DeriveParams) (protocol.DeriveResult, error) {
+	return scaffolding.FileRenderer{
+		ID: "vite.tsconfig", Version: 1, File: "tsconfig.json",
+		Templates: func(gp protocol.GenerateParams) (scaffolding.TemplateSet, bool) {
+			choices := scaffolding.StackChoices(p.root, gp.Stack)
+			for _, st := range webChoices.Stacks() {
+				if st.Name == gp.Stack {
+					choices = st.Choices
+				}
+			}
+			plan, err := webChoices.Plan(choices)
+			if err != nil || len(plan.Applied) == 0 {
+				return scaffolding.TemplateSet{}, false
+			}
+			return templateSet(plan), true
+		},
+	}.Derive(p.root, params)
 }

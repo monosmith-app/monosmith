@@ -60,9 +60,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 // workspace's Node tooling the first time. It reports InstallPending: the
 // host installs once, so the new package is linked into node_modules.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
-	aliases := modulealiases.FromFacts(params.Facts)
-	data.TSPaths, data.ViteAlias = aliases.TSConfigPaths(), aliases.ViteResolveAlias()
+	data := newTemplateData(workspaceRoot, params, set)
 
 	var files []string
 	rootFiles, err := ensureWorkspace(workspaceRoot, params.Workspace.Name, set)
@@ -71,16 +69,9 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 	}
 	files = append(files, rootFiles...)
 
-	templates := maps.Clone(set.Slice)
-	switch params.Kind {
-	case protocol.ProjectApp:
-		maps.Copy(templates, set.App)
-	case protocol.ProjectLib:
-		maps.Copy(templates, set.Lib)
-	case protocol.ProjectPackage:
-		maps.Copy(templates, set.Package)
-	default:
-		return protocol.GenerateResult{}, fmt.Errorf("unknown kind %q", params.Kind)
+	templates, err := kindTemplates(params.Kind, set)
+	if err != nil {
+		return protocol.GenerateResult{}, err
 	}
 	written, err := templating.Write(workspaceRoot, templates, data)
 	if err != nil {
@@ -94,6 +85,31 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 		Notes:          []string{fmt.Sprintf("Import it from another Node project as '%s'.", data.Package)},
 		InstallPending: true,
 	}, nil
+}
+
+// newTemplateData is what the templates of a project read.
+func newTemplateData(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) templateData {
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
+	aliases := modulealiases.FromFacts(params.Facts)
+	data.TSPaths, data.ViteAlias = aliases.TSConfigPaths(), aliases.ViteResolveAlias()
+	return data
+}
+
+// kindTemplates are the templates of a project of the kind: the set's shared
+// ones and those of the kind. It returns an error for an unknown kind.
+func kindTemplates(kind protocol.ProjectKind, set TemplateSet) (map[string]string, error) {
+	templates := maps.Clone(set.Slice)
+	switch kind {
+	case protocol.ProjectApp:
+		maps.Copy(templates, set.App)
+	case protocol.ProjectLib:
+		maps.Copy(templates, set.Lib)
+	case protocol.ProjectPackage:
+		maps.Copy(templates, set.Package)
+	default:
+		return nil, fmt.Errorf("unknown kind %q", kind)
+	}
+	return templates, nil
 }
 
 // pairs sorts a map by name, with the values escaped for a JSON string.
