@@ -449,7 +449,7 @@ to the GitHub Release beside them:
 
 ```toml
 [projects.cli.release]
-package_managers = ["homebrew", "scoop", "winget", "aur"]
+package_managers = ["homebrew", "scoop", "winget", "aur", "nix"]
 description = "What the app does"
 license = "MIT"
 homepage = "https://cli.acme.dev"   # default: the GitHub repository
@@ -461,6 +461,7 @@ homepage = "https://cli.acme.dev"   # default: the GitHub repository
 | Scoop | `<product>.json` (64-bit and arm64) | your bucket |
 | winget | `<Owner>.<product>.yaml`, `.installer.yaml`, `.locale.en-US.yaml` (a portable zip) | a pull request to `microsoft/winget-pkgs` |
 | AUR | `<product>-bin.PKGBUILD` and `<product>-bin.SRCINFO` (x86_64 and aarch64, from the Linux archives) | the AUR git repository `<product>-bin`, as `PKGBUILD` and `.SRCINFO` |
+| Nix | `<product>.flake.nix` (x86_64 and aarch64, Linux and macOS) | `flake.nix` in a repository, then `nix run github:<owner>/<repo>` |
 
 They point at the release's own archives with their SHA-256, so each one can
 be copied into a tap, a bucket or winget-pkgs as it is. A manager whose

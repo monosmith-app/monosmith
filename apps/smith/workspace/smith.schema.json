@@ -297,7 +297,7 @@
               "os_alias": { "type": "object", "additionalProperties": { "type": "string" } },
               "arch_alias": { "type": "object", "additionalProperties": { "type": "string" } },
               "version_variable": { "type": "string", "description": "The symbol the version is stamped into. Default for Go: main.version." },
-              "package_managers": { "type": "array", "items": { "enum": ["homebrew", "scoop", "winget", "aur"] }, "uniqueItems": true, "description": "Manifests generated from the assets and attached to the GitHub Release." },
+              "package_managers": { "type": "array", "items": { "enum": ["homebrew", "scoop", "winget", "aur", "nix"] }, "uniqueItems": true, "description": "Manifests generated from the assets and attached to the GitHub Release." },
               "linux_packages": { "type": "array", "items": { "enum": ["deb", "rpm"] }, "uniqueItems": true, "description": "Linux packages built from the linux archives (binary in /usr/bin) and attached to the GitHub Release." },
               "npm": { "type": "array", "items": { "type": "string", "pattern": "^(@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$" }, "minItems": 1, "uniqueItems": true, "description": "npm packages the app is published as; the first also names the per-platform packages (<first>-<os>-<cpu>). Needs NODE_AUTH_TOKEN." },
               "pypi": { "type": "string", "pattern": "^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$", "description": "PyPI project the app is published as, one wheel per platform. Needs PYPI_TOKEN." },
