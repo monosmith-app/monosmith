@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 )
 
 // Document is a JSON object that keeps its key order, so editing a
@@ -13,6 +15,7 @@ import (
 type Document struct {
 	keys   []string
 	values map[string]any // json.RawMessage for leaves and arrays, *Document for objects
+	crlf   bool           // the parsed text ended its lines with CRLF; Bytes does the same
 }
 
 // ParseDocument reads a JSON object.
@@ -26,7 +29,12 @@ func ParseDocument(raw []byte) (*Document, error) {
 	if d, ok := tok.(json.Delim); !ok || d != '{' {
 		return nil, fmt.Errorf("not a JSON object")
 	}
-	return readObject(dec)
+	doc, err := readObject(dec)
+	if err != nil {
+		return nil, err
+	}
+	doc.crlf, _ = lineendings.IsCRLF(string(raw))
+	return doc, nil
 }
 
 func readObject(dec *json.Decoder) (*Document, error) {
@@ -152,12 +160,13 @@ func (d *Document) Keys() []string { return append([]string(nil), d.keys...) }
 func (d *Document) Len() int { return len(d.keys) }
 
 // Bytes renders the document with two-space indentation and a final newline,
-// the way npm writes package.json.
+// the way npm writes package.json. Lines end with CRLF when the parsed text
+// did, so editing a CRLF file does not turn it into LF.
 func (d *Document) Bytes() []byte {
 	var b strings.Builder
 	d.write(&b, "")
 	b.WriteString("\n")
-	return []byte(b.String())
+	return []byte(lineendings.Convert(b.String(), d.crlf))
 }
 
 func (d *Document) write(b *strings.Builder, indent string) {

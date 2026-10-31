@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"text/template"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 )
 
 // ErrExists is returned when a target file already exists.
@@ -56,7 +58,8 @@ func Write(root string, files map[string]string, data any) ([]string, error) {
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return written, err
 		}
-		if err := os.WriteFile(full, r.content, 0o644); err != nil {
+		content := []byte(lineendings.Convert(string(r.content), lineendings.NewFileCRLF(root, r.path)))
+		if err := os.WriteFile(full, content, 0o644); err != nil {
 			return written, err
 		}
 		written = append(written, r.path)

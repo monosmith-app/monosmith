@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -61,11 +62,19 @@ func (s *Set) Create(rel, content string) {
 }
 
 // Edits are the files whose content differs from what is on disk, by path.
+// An edited file keeps its line ending; a created file takes the one the
+// repository uses (see the lineendings package).
 func (s *Set) Edits() []protocol.FileEdit {
 	var out []protocol.FileEdit
 	for rel, e := range s.files {
-		if e.current != e.original {
-			out = append(out, protocol.FileEdit{Path: rel, Content: e.current})
+		content := e.current
+		if _, known := lineendings.IsCRLF(e.original); known {
+			content = lineendings.Match(e.original, content)
+		} else {
+			content = lineendings.Resolve(s.root, rel, content)
+		}
+		if content != e.original {
+			out = append(out, protocol.FileEdit{Path: rel, Content: content})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
