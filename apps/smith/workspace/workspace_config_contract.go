@@ -210,6 +210,12 @@ type ReleaseSection struct {
 	// Registry names the [registries] entry packages are published to;
 	// empty means [workspace] registry, and then the public registries.
 	Registry string `toml:"registry"`
+	// APICheck says what smith does when the commits ask for a smaller version
+	// bump than the change of a package's public API needs (a removed export
+	// needs a major, an added one a minor): "warn" prints the warning and the
+	// bump to use, "error" stops the release too, "off" does not look. Plugins
+	// that cannot list a public API are never checked. Default: "warn".
+	APICheck string `toml:"api_check"`
 }
 
 // DependenciesSection is the one-version policy: a production dependency is

@@ -743,6 +743,49 @@ C++, Bicep, Lua, AppleScript, VBA, Swift and Objective-C projects have none). An
 registry is a warning, not a stop. `smith doctor` runs the same checks without
 fetching.
 
+## The bump against the public API
+
+A commit that says `fix` can delete an export. Before showing the plan, `smith release` asks the
+plugin of each package that has a last release for the package's public API at that release's
+tag and now, and compares the two lists of names. A removed name needs a major (a minor before
+1.0). A new name needs a minor. When the commits give a smaller bump, the plan item gets a warning
+that names the package, the names and the version to use instead:
+
+```text
+  ui    1.2.3 → 1.2.4  (1 releasing commit(s))
+  warning: ui: the commits release a patch (1.2.4), but the public API lost 1 export (parse);
+  that needs a major (2.0.0). Mark a commit as breaking (`feat!:` or a `BREAKING CHANGE:` footer),
+  or restore the export.
+```
+
+The warning shows in the text plan, in `--format markdown`, in the `--comment` preview on the
+pull request, in `--json` (`apiWarnings` on the item) and in the `smith ci release` log. It is
+advice. A release never fails because of it, unless you ask:
+
+```toml
+[release]
+api_check = "warn"   # "warn" (default), "error" stops the release too, "off" does not look
+```
+
+The check skips a package that was never released, a version a `version(...)[x]` directive forced,
+and a plugin that cannot list an API. A failing plugin, a tag that was not fetched or a package
+with no entry file give no warning. Fix the bump with a commit marker, not with `api_check`:
+`feat:` for an added export, `feat!:` or a `BREAKING CHANGE:` footer for a removed one.
+
+**Node.** The Node plugin reads the entry points `package.json` declares (`exports`, `types`,
+`typings`, `module`, `main`), takes the built declaration file when the repository holds it and
+the source it comes from otherwise (`dist/index.d.ts` is read as `src/index.ts`), and follows
+`export * from`. It never builds. A private package has no public API. A subpath export is listed
+as `./sub:name`.
+
+**Not detected.** A changed signature or type with the same name (only names are compared).
+Wildcard subpath exports (`"./*"`). A second declarator in one `export const a = 1, b = 2` and
+destructured exports. The implicit exports of an ambient `.d.ts` file. A regular expression
+literal with an unbalanced brace. Other languages: Go and C# plugins can add the same method
+(`api/surface`, see [the protocol](../architecture/plugin-protocol.md)) with no change to smith;
+until then they are not checked. The reason is in
+[ADR 0044](../architecture/decisions/0044-the-release-checks-the-bump-against-the-public-api.md).
+
 ## Checked before anything is published
 
 Before the first publish of a real release, smith asks npm, PyPI, NuGet and
