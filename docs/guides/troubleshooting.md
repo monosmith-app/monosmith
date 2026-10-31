@@ -32,6 +32,18 @@ that make or inspect a workspace, or need none, work outside one: `new`,
 `completion` and `help`. In a terminal, a bare `smith` outside a workspace
 opens the Start menu instead.
 
+## smith says smith.toml needs a newer smith
+
+```text
+smith: This smith (1.100.0) is older than smith.toml needs. Run `npm install --global monosmith`.
+```
+
+A teammate or CI used a newer smith that added tables or keys to `smith.toml`
+(or raised its `schema`), and this smith does not know them. Upgrade smith with
+the command shown. `--verbose` adds the parse errors, one per unknown table or
+key. A single unknown key is not taken for a newer smith, because it is more
+likely a typo: that error names the key.
+
 ## A task ran again and I expected the cache
 
 Ask:
@@ -147,7 +159,7 @@ lists them all. The checks, grouped by who owns them:
 | Language | Checks |
 |---|---|
 | Go | `go.work` exists and lists exactly the workspace's Go modules (`go work use ./libs/x`, or `smith doctor --fix`); Go is installed and at least the version `go.work` names; `golangci-lint` is installed (`smith ci setup` installs it); a package requires in `go.mod` every module it imports (the `deps-check` task, `go mod tidy`) |
-| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
+| Node | Node.js matches CI's major version (a warning); dependencies are installed (`npm install` at the root); every project is in the root `package.json`'s `workspaces` (add `"libs/*"`, or leave a standalone project out with `exclude`; `smith add` puts a new Node project in a folder the globs already cover and runs this check before it says "Done"); a package imports only what its `package.json` declares (the `deps-check` task); the scripts of the root and of each project call files and tools that exist (a `node ./scripts/x.mjs` whose file is gone, a tool such as `oxfmt` that is not installed), and the packages the ESLint config imports are installed; `tsconfig` `outDir` points into `dist/` |
 | Python | the `.venv` exists (`smith ci setup`); `requirements-dev.txt` exists; the venv's Python matches CI (delete `.venv` and run `smith ci setup`); a package declares in `pyproject.toml` a distribution for every module it imports (the `deps-check` task) |
 | Rust | `cargo` is installed; the root `Cargo.toml` is a workspace and lists every crate in `members` |
 | .NET | the .NET SDK is installed; `nuget.config` matches `[registries]` (`smith doctor --fix`) |

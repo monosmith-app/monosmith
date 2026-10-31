@@ -170,7 +170,10 @@ func run(version string, args []string) int {
 	defer announce()
 	if err := root.Execute(); err != nil {
 		var p *problem.Error
+		message, newer := newerSmithMessage(err, version, wantsVerbose(args))
 		switch {
+		case newer:
+			fmt.Fprintln(os.Stderr, "smith: "+message)
 		case errors.As(err, &p):
 			fmt.Fprintln(os.Stderr, p.Error())
 		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid):

@@ -62,6 +62,21 @@ func TestParseRejectsMistakes(t *testing.T) {
 	}
 }
 
+func TestParseTellsANewerSmithFromATypo(t *testing.T) {
+	for input, newer := range map[string]bool{
+		"[workspace]\nname = \"a\"\nnmae = \"typo\"\n":                     false,
+		"[workspace]\nname = \"a\"\n[future]\nk = 1\n":                     true,
+		"[workspace]\nname = \"a\"\n[ci]\nfoo = \"x\"\nother = 1\n": true,
+		"schema = 99\n[workspace]\nname = \"a\"\nnmae = \"x\"\n":           true,
+		"schema = 99\n[workspace]\nname = \"a\"\n":                         true,
+	} {
+		_, err := Parse([]byte(input))
+		if _, got := AsNewerSmith(err); got != newer {
+			t.Errorf("input %q: newer smith = %v, want %v (%v)", input, got, newer, err)
+		}
+	}
+}
+
 func TestParseRecipesAndProjectSettings(t *testing.T) {
 	cfg, err := Parse([]byte(`[workspace]
 name = "a"

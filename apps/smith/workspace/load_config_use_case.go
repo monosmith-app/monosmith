@@ -68,7 +68,11 @@ func Parse(raw []byte) (Config, error) {
 	if err := dec.Decode(&cfg); err != nil {
 		var strict *toml.StrictMissingError
 		if errors.As(err, &strict) {
-			return cfg, fmt.Errorf("%s: %s", FileName, strings.TrimSpace(strict.String()))
+			detail := fmt.Sprintf("%s: %s", FileName, strings.TrimSpace(strict.String()))
+			if needsNewerSmith(raw, strict) {
+				return cfg, &NewerSmithError{Detail: detail}
+			}
+			return cfg, errors.New(detail)
 		}
 		var decodeErr *toml.DecodeError
 		if errors.As(err, &decodeErr) {
@@ -89,13 +93,29 @@ func Parse(raw []byte) (Config, error) {
 	return cfg, Validate(&cfg)
 }
 
+// needsNewerSmith says whether the unknown keys of smith.toml come from a newer
+// smith: the file declares a newer schema, has a table this smith lacks, or has
+// more than one unknown key. One unknown key alone is taken for a typo.
+func needsNewerSmith(raw []byte, strict *toml.StrictMissingError) bool {
+	var probe struct {
+		Schema int `toml:"schema"`
+	}
+	if toml.Unmarshal(raw, &probe) == nil && probe.Schema > SchemaVersion {
+		return true
+	}
+	if len(strict.Errors) > 1 {
+		return true
+	}
+	return strings.Contains(strict.String(), "missing table")
+}
+
 // Validate applies defaults and checks values.
 func Validate(cfg *Config) error {
 	if cfg.Schema == 0 {
 		cfg.Schema = SchemaVersion
 	}
 	if cfg.Schema > SchemaVersion {
-		return fmt.Errorf("%s uses schema %d; this smith reads up to %d, upgrade smith", FileName, cfg.Schema, SchemaVersion)
+		return &NewerSmithError{Detail: fmt.Sprintf("%s uses schema %d; this smith reads up to %d, upgrade smith", FileName, cfg.Schema, SchemaVersion)}
 	}
 	if cfg.Schema < SchemaVersion {
 		return fmt.Errorf("%s uses schema %d, this smith schema %d: run `smith upgrade`", FileName, cfg.Schema, SchemaVersion)

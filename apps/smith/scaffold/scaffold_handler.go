@@ -90,6 +90,9 @@ wrote): review them with git status, then commit.`,
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
 				return err
 			}
+			if err := CheckNewProject(s, project, out); err != nil {
+				return err
+			}
 			fmt.Fprintln(out, doneStep(kind, args[1], len(res.Files), time.Since(began).Round(100*time.Millisecond).String()))
 			if hint := tryHint(project); hint != "" {
 				fmt.Fprintln(out, hint)

@@ -60,10 +60,6 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if s.Graph.Get(opts.Name) != nil {
 		return nil, fmt.Errorf("a project named %q already exists (%s)", opts.Name, s.Graph.Get(opts.Name).Root)
 	}
-	dir := projectkind.Directory(kind) + "/" + opts.Name
-	if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(dir))); err == nil {
-		return nil, fmt.Errorf("%s already exists", dir)
-	}
 	plan, err := planRecipe(s, opts)
 	if err != nil {
 		return nil, err
@@ -85,6 +81,15 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		}()
 	} else if language, st, err = chooseStack(s, opts); err != nil {
 		return nil, err
+	}
+	// A Node project goes where the root package.json workspaces reach it.
+	parent := projectkind.Directory(kind)
+	if language.Info.Plugin.Name == "node" {
+		parent = nodeWorkspaceDirectory(s.Root, parent, opts.Name)
+	}
+	dir := parent + "/" + opts.Name
+	if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(dir))); err == nil {
+		return nil, fmt.Errorf("%s already exists", dir)
 	}
 	generator := language
 	if st.Scaffold != "" {
