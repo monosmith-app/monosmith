@@ -1,4 +1,4 @@
-package tauri
+package scaffold
 
 import (
 	"os"
@@ -15,9 +15,9 @@ const (
 	apiVersion = "^2.0.0"
 )
 
-// setup is the CLI and its script and, when the project has a web page to wrap
+// Setup is the CLI and its script and, when the project has a web page to wrap
 // (an index.html) and no src-tauri yet, the src-tauri that shows its build.
-func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
+func Setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 	s := tooling.Setup{
 		DevDependencies: map[string]string{"@tauri-apps/cli": cliVersion},
 		Scripts:         map[string]string{"tauri": "tauri"},

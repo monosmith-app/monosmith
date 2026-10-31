@@ -7,6 +7,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/cargoworkspace"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/versionsync"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -28,7 +32,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	var roots []string
 	cli, apps := exists(workspaceRoot, "node_modules/@tauri-apps/cli/package.json"), 0
 	for _, p := range params.Projects {
-		if !Detect(workspaceRoot, p.Root) {
+		if !tauriapp.Detect(workspaceRoot, p.Root) {
 			continue
 		}
 		apps++
@@ -38,10 +42,10 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if apps == 0 {
 		return protocol.DoctorResult{Findings: findings}
 	}
-	findings = append(findings, workspaceFinding(workspaceRoot, roots))
+	findings = append(findings, cargoworkspace.WorkspaceFinding(workspaceRoot, roots))
 	findings = append(findings, frontendDistFindings(workspaceRoot, params.Projects)...)
-	findings = append(findings, versionFindings(workspaceRoot, params.Projects)...)
-	findings = append(findings, extrasFindings(workspaceRoot, params.Projects)...)
+	findings = append(findings, extras.Findings(workspaceRoot, params.Projects)...)
+	findings = append(findings, versionsync.Findings(workspaceRoot, params.Projects)...)
 	_, rustc := lookPath("rustc")
 	_, cargo := lookPath("cargo")
 	findings = append(findings,

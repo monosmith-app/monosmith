@@ -1,10 +1,12 @@
-package tauri
+package cargoworkspace
 
 import (
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 )
 
 // ExcludeFromCargoWorkspace lists the project's src-tauri under `exclude` in the
@@ -20,7 +22,7 @@ func ExcludeFromCargoWorkspace(workspaceRoot, root string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	src, entry := string(raw), `"`+path.Join(strings.Trim(root, "/"), SrcDir)+`"`
+	src, entry := string(raw), `"`+path.Join(strings.Trim(root, "/"), tauriapp.SrcDir)+`"`
 	if loc := excludeList.FindStringSubmatchIndex(src); loc != nil {
 		list := src[loc[2]:loc[3]]
 		trimmed := strings.TrimRight(list, " \t\r\n")

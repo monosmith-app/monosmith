@@ -1,4 +1,4 @@
-package tauri
+package extras
 
 import (
 	"encoding/json"
@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 )
 
 // PrepareRequest is one project's sidecars and resources to get ready.
@@ -34,7 +36,7 @@ func PrepareExtras(req PrepareRequest) ([]string, error) {
 	if err := os.RemoveAll(prep); err != nil {
 		return nil, err
 	}
-	srcTauri := filepath.Join(req.WorkspaceRoot, filepath.FromSlash(req.ProjectRoot), SrcDir)
+	srcTauri := filepath.Join(req.WorkspaceRoot, filepath.FromSlash(req.ProjectRoot), tauriapp.SrcDir)
 	conf, err := readBundle(srcTauri)
 	if err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func PrepareExtras(req PrepareRequest) ([]string, error) {
 			done = append(done, fmt.Sprintf("resource %s: %d file(s)", r.From, n))
 		}
 		if conf.resourceList {
-			return nil, fmt.Errorf("%s/tauri.conf.json lists bundle.resources as an array; smith adds its resources to the map form ({ \"folder/\": \"target/\" }): write yours that way, or declare them all in smith.toml", filepath.ToSlash(path.Join(req.ProjectRoot, SrcDir)))
+			return nil, fmt.Errorf("%s/tauri.conf.json lists bundle.resources as an array; smith adds its resources to the map form ({ \"folder/\": \"target/\" }): write yours that way, or declare them all in smith.toml", filepath.ToSlash(path.Join(req.ProjectRoot, tauriapp.SrcDir)))
 		}
 		if resources == nil {
 			resources = map[string]any{}

@@ -1,4 +1,4 @@
-package tauri
+package scaffold
 
 import (
 	"bytes"

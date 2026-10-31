@@ -1,6 +1,10 @@
-package tauri
+package scaffold
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
+)
 
 // srcTauriTemplates are the files of a new src-tauri (path relative to it).
 // {{name}}, {{lib}}, {{identifier}} and {{dist}} are replaced when written.
@@ -92,10 +96,10 @@ func renderSrcTauri(name, workspace, buildDirFromProject string) map[string]stri
 	)
 	files := map[string]string{}
 	for path, body := range srcTauriTemplates {
-		files[SrcDir+"/"+path] = r.Replace(body)
+		files[tauriapp.SrcDir+"/"+path] = r.Replace(body)
 	}
 	for path, body := range placeholderIcons() {
-		files[SrcDir+"/icons/"+path] = body
+		files[tauriapp.SrcDir+"/icons/"+path] = body
 	}
 	return files
 }

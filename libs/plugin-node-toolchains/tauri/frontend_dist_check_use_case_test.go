@@ -1,6 +1,8 @@
 package tauri
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,5 +22,16 @@ func TestDoctorChecksFrontendDist(t *testing.T) {
 	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"build":{"frontendDist":"http://localhost:5173"}}`)
 	if found := frontendDistFindings(ws, projects); len(found) != 0 {
 		t.Errorf("a URL is not checked: %+v", found)
+	}
+}
+
+func write(t *testing.T, ws, rel, body string) {
+	t.Helper()
+	p := filepath.Join(ws, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

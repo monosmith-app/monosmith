@@ -1,4 +1,4 @@
-package tauri
+package extras
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -133,40 +134,6 @@ func TestPickProgram(t *testing.T) {
 	}
 }
 
-func TestContributeWithExtras(t *testing.T) {
-	ws := t.TempDir()
-	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", "{}")
-	settings := map[string]any{
-		"sidecars":  []any{map[string]any{"name": "videocraw", "project": "cli"}},
-		"resources": []any{"assets/models"},
-	}
-	project := protocol.Project{Name: "studio", Root: "apps/studio", Settings: map[string]map[string]any{Name: settings}}
-	c := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{project}}).Projects["studio"]
-	build, prepare, verify := c.Replace[TaskName], c.Replace[PrepareTask], c.Replace[VerifyTask]
-	if !strings.Contains(strings.Join(build.Command, " "), "--config {workspaceRoot}/dist/tauri-prepare/apps/studio/tauri.config.json") {
-		t.Errorf("build command: %v", build.Command)
-	}
-	if !build.Cache || !prepare.Cache || len(build.DependsOn) != 2 || build.DependsOn[1] != PrepareTask || c.Replace[DevTask].DependsOn[0] != PrepareTask {
-		t.Errorf("build %+v prepare %+v", build, prepare)
-	}
-	if prepare.Env[SettingsEnv] == "" || verify.DependsOn[0] != TaskName || !strings.Contains(c.Release.Build, "tauri-build tauri-verify") {
-		t.Errorf("verify %+v release %q", verify, c.Release.Build)
-	}
-	// Anything the cache key cannot see turns the cache off for the prepare and the build.
-	for _, r := range []string{"$OTHER/x", "dist/out", "/abs/path", "../sibling/x"} {
-		settings["resources"] = []any{r}
-		c = Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{project}}).Projects["studio"]
-		if c.Replace[TaskName].Cache || c.Replace[PrepareTask].Cache {
-			t.Errorf("%s should not be cached", r)
-		}
-	}
-	// No settings: tasks are as before.
-	plain := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}}).Projects["studio"]
-	if _, ok := plain.Replace[PrepareTask]; ok || strings.Contains(strings.Join(plain.Replace[TaskName].Command, " "), "--config") || strings.Contains(plain.Release.Build, "verify") {
-		t.Errorf("plain: %+v", plain)
-	}
-}
-
 func TestExtrasDoctor(t *testing.T) {
 	ws := t.TempDir()
 	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", `{"bundle":{"externalBin":["binaries/legacy"]}}`)
@@ -178,9 +145,9 @@ func TestExtrasDoctor(t *testing.T) {
 		"sidecars":  []any{map[string]any{"name": "a", "from": "dist/cargo/release/a"}, map[string]any{"name": "b", "from": "tools/b"}},
 		"resources": []any{"assets/ok.txt", "assets/missing"},
 	}
-	project := protocol.Project{Name: "studio", Root: "apps/studio", Settings: map[string]map[string]any{Name: settings}}
+	project := protocol.Project{Name: "studio", Root: "apps/studio", Settings: map[string]map[string]any{tauriapp.Name: settings}}
 	failed := map[string]bool{}
-	for _, f := range extrasFindings(ws, []protocol.Project{project}) {
+	for _, f := range Findings(ws, []protocol.Project{project}) {
 		if !f.OK {
 			failed[f.Check] = f.Warning
 		}
@@ -199,8 +166,8 @@ func TestExtrasDoctor(t *testing.T) {
 			t.Errorf("%s: failed=%v warning=%v", check, ok, w)
 		}
 	}
-	project.Settings[Name] = map[string]any{"sidecar": []any{}}
-	if got := extrasFindings(ws, []protocol.Project{project}); len(got) != 1 || got[0].OK {
+	project.Settings[tauriapp.Name] = map[string]any{"sidecar": []any{}}
+	if got := Findings(ws, []protocol.Project{project}); len(got) != 1 || got[0].OK {
 		t.Errorf("a typo in the table must fail: %+v", got)
 	}
 }
@@ -222,5 +189,16 @@ func TestVerifyExtras(t *testing.T) {
 	write(t, ws, release+"bundle/deb/studio_1_amd64/data/usr/bin/studio", "x")
 	if _, err := VerifyExtras(ws, "apps/studio", extras); err == nil || !strings.Contains(err.Error(), "deb") {
 		t.Fatalf("a deb without the sidecar must fail: %v", err)
+	}
+}
+
+func write(t *testing.T, ws, rel, body string) {
+	t.Helper()
+	p := filepath.Join(ws, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

@@ -7,32 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
-
-func write(t *testing.T, ws, rel, body string) {
-	t.Helper()
-	p := filepath.Join(ws, filepath.FromSlash(rel))
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestDetect(t *testing.T) {
-	ws := t.TempDir()
-	write(t, ws, "apps/conf/src-tauri/tauri.conf.json", "{}")
-	write(t, ws, "apps/cargo/src-tauri/Cargo.toml", "[package]\nname=\"a\"\n\n[dependencies]\ntauri = { version = \"2\" }\n")
-	write(t, ws, "apps/plain/src-tauri/Cargo.toml", "[package]\nname=\"a\"\n\n[dependencies]\nserde = \"1\"\n")
-	write(t, ws, "apps/web/package.json", "{}")
-	for root, want := range map[string]bool{"apps/conf": true, "apps/cargo": true, "apps/plain": false, "apps/web": false} {
-		if got := Detect(ws, root); got != want {
-			t.Errorf("%s: %v, want %v", root, got, want)
-		}
-	}
-}
 
 func TestContribute(t *testing.T) {
 	ws := t.TempDir()
@@ -116,25 +94,6 @@ func TestCIGivesRustAndLinuxLibsOnlyForATauriApp(t *testing.T) {
 	}
 }
 
-func TestWorkspaceMembers(t *testing.T) {
-	ws := t.TempDir()
-	roots := []string{"apps/studio"}
-	if got := workspaceMembers(ws, roots); got != nil {
-		t.Fatalf("no root Cargo.toml: %v", got)
-	}
-	for body, want := range map[string]int{
-		"[workspace]\nmembers = [\"apps/*/src-tauri\"]\n":                                        1,
-		"[workspace]\nmembers = [\"apps/*/src-tauri\"]\nexclude = [\"apps/studio/src-tauri\"]\n": 0,
-		"[workspace]\nmembers = [\"libs/*\", \"apps/*\"]\n":                                      0,
-		"[package]\nname = \"x\"\n":                                                              0,
-	} {
-		write(t, ws, "Cargo.toml", body)
-		if got := workspaceMembers(ws, roots); len(got) != want {
-			t.Errorf("%q: %v, want %d", body, got, want)
-		}
-	}
-}
-
 func TestGenerate(t *testing.T) {
 	ws := t.TempDir()
 	write(t, ws, "package.json", `{"name":"ws","private":true,"workspaces":["apps/*"]}`)
@@ -190,5 +149,102 @@ func TestCISetupNamesItsStepInTheLog(t *testing.T) {
 	got := CI(ws, protocol.CIParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}})
 	if !strings.Contains(got.Setup[0].Command[2], "echo 'installing the system libraries Tauri needs (apt-get)'") {
 		t.Errorf("setup command: %q", got.Setup[0].Command[2])
+	}
+}
+
+func TestContributeWithExtras(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "apps/studio/src-tauri/tauri.conf.json", "{}")
+	settings := map[string]any{
+		"sidecars":  []any{map[string]any{"name": "videocraw", "project": "cli"}},
+		"resources": []any{"assets/models"},
+	}
+	project := protocol.Project{Name: "studio", Root: "apps/studio", Settings: map[string]map[string]any{Name: settings}}
+	c := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{project}}).Projects["studio"]
+	build, prepare, verify := c.Replace[TaskName], c.Replace[extras.PrepareTask], c.Replace[extras.VerifyTask]
+	if !strings.Contains(strings.Join(build.Command, " "), "--config {workspaceRoot}/dist/tauri-prepare/apps/studio/tauri.config.json") {
+		t.Errorf("build command: %v", build.Command)
+	}
+	if !build.Cache || !prepare.Cache || len(build.DependsOn) != 2 || build.DependsOn[1] != extras.PrepareTask || c.Replace[DevTask].DependsOn[0] != extras.PrepareTask {
+		t.Errorf("build %+v prepare %+v", build, prepare)
+	}
+	if prepare.Env[SettingsEnv] == "" || verify.DependsOn[0] != TaskName || !strings.Contains(c.Release.Build, "tauri-build tauri-verify") {
+		t.Errorf("verify %+v release %q", verify, c.Release.Build)
+	}
+	// Anything the cache key cannot see turns the cache off for the prepare and the build.
+	for _, r := range []string{"$OTHER/x", "dist/out", "/abs/path", "../sibling/x"} {
+		settings["resources"] = []any{r}
+		c = Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{project}}).Projects["studio"]
+		if c.Replace[TaskName].Cache || c.Replace[extras.PrepareTask].Cache {
+			t.Errorf("%s should not be cached", r)
+		}
+	}
+	// No settings: tasks are as before.
+	plain := Contribute(ws, protocol.ContributeParams{Projects: []protocol.Project{{Name: "studio", Root: "apps/studio"}}}).Projects["studio"]
+	if _, ok := plain.Replace[extras.PrepareTask]; ok || strings.Contains(strings.Join(plain.Replace[TaskName].Command, " "), "--config") || strings.Contains(plain.Release.Build, "verify") {
+		t.Errorf("plain: %+v", plain)
+	}
+}
+func TestGenerateWritesSrcTauriForAWebApp(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "package.json", `{"name":"ws","private":true}`)
+	write(t, ws, "Cargo.toml", "[workspace]\nmembers = [\"apps/*/src-tauri\"]\n")
+	write(t, ws, "apps/studio/package.json", `{"name":"studio","dependencies":{"react":"^19.0.0"}}`)
+	write(t, ws, "apps/studio/index.html", "<div id=\"app\"></div>")
+	write(t, ws, "apps/studio/src-tauri/build.rs", "// mine\n")
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	res, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "my-studio", Directory: "apps/studio", Workspace: protocol.WorkspaceInfo{Name: "Acme"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := func(rel string) string {
+		b, _ := os.ReadFile(filepath.Join(ws, filepath.FromSlash(rel)))
+		return string(b)
+	}
+	conf := read("apps/studio/src-tauri/tauri.conf.json")
+	for _, want := range []string{`"frontendDist": "../../../dist/apps/studio"`, `"identifier": "com.acme.my-studio"`} {
+		if !strings.Contains(conf, want) {
+			t.Errorf("tauri.conf.json lacks %s: %s", want, conf)
+		}
+	}
+	if strings.Contains(conf, "beforeBuildCommand") {
+		t.Errorf("smith builds the web app first: %s", conf)
+	}
+	if got := read("apps/studio/src-tauri/build.rs"); got != "// mine\n" {
+		t.Errorf("an existing file is kept: %q", got)
+	}
+	if got := read("apps/studio/src-tauri/src/main.rs"); !strings.Contains(got, "my_studio_lib::run()") {
+		t.Errorf("main.rs: %s", got)
+	}
+	if got := read("apps/studio/src-tauri/Cargo.toml"); !strings.Contains(got, "\n[workspace]\n") {
+		t.Errorf("Cargo.toml needs its own workspace: %s", got)
+	}
+	if got := read("apps/studio/package.json"); !strings.Contains(got, "@tauri-apps/api") || !strings.Contains(got, `"react"`) {
+		t.Errorf("package.json: %s", got)
+	}
+	if got := read("Cargo.toml"); !strings.Contains(got, `exclude = ["apps/studio/src-tauri"]`) {
+		t.Errorf("root Cargo.toml: %s", got)
+	}
+	if !tauriapp.Detect(ws, "apps/studio") || len(res.Files) < 10 {
+		t.Errorf("files %v", res.Files)
+	}
+	icon := read("apps/studio/src-tauri/icons/icon.ico")
+	if len(icon) < 30 || icon[23:26] != "PNG" {
+		t.Errorf("icon.ico is not an ICO holding a PNG")
+	}
+}
+
+func TestGenerateWritesNoSrcTauriWithoutAWebPage(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "package.json", `{"name":"ws","private":true}`)
+	write(t, ws, "apps/lib/package.json", `{"name":"lib"}`)
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	if _, err := p.Generate(protocol.GenerateParams{Name: "lib", Directory: "apps/lib"}); err != nil {
+		t.Fatal(err)
+	}
+	if tauriapp.Detect(ws, "apps/lib") {
+		t.Error("nothing to wrap, no src-tauri")
 	}
 }

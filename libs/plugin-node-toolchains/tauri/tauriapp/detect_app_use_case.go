@@ -1,10 +1,14 @@
-package tauri
+package tauriapp
 
 import (
 	"os"
 	"path/filepath"
 	"regexp"
 )
+
+// Name is the tauri plugin's name in a stack's toolchain list and in smith.toml
+// ([conventions.tauri], [projects.<p>.settings.tauri]).
+const Name = "tauri"
 
 // SrcDir is the folder of a Tauri app's Rust side, inside the Node project.
 const SrcDir = "src-tauri"

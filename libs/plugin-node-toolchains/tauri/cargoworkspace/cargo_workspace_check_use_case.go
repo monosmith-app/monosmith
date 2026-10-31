@@ -1,4 +1,4 @@
-package tauri
+package cargoworkspace
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -38,7 +39,7 @@ func workspaceMembers(workspaceRoot string, roots []string) []string {
 	members, excluded := manifestList(membersList, string(src)), manifestList(excludeList, string(src))
 	var hits []string
 	for _, root := range roots {
-		dir := path.Join(root, SrcDir)
+		dir := path.Join(root, tauriapp.SrcDir)
 		if !matchesAny(excluded, dir) && matchesAny(members, dir) {
 			hits = append(hits, dir)
 		}
@@ -55,10 +56,10 @@ func matchesAny(globs []string, dir string) bool {
 	return false
 }
 
-// workspaceFinding warns when a root Cargo workspace would take src-tauri in:
+// WorkspaceFinding warns when a root Cargo workspace would take src-tauri in:
 // the app has its own Cargo.lock and builds into dist/, and as a member it
 // would share the workspace's lockfile and target directory instead.
-func workspaceFinding(workspaceRoot string, roots []string) protocol.Finding {
+func WorkspaceFinding(workspaceRoot string, roots []string) protocol.Finding {
 	hits := workspaceMembers(workspaceRoot, roots)
 	return protocol.Finding{
 		Check:   "src-tauri is outside the root Cargo workspace",

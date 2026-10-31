@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -15,11 +16,11 @@ import (
 func tauriSidecarChecks(s *session.Session) []protocol.Finding {
 	var out []protocol.Finding
 	for _, p := range s.Graph.Projects {
-		extras, err := tauri.ParseExtras(p.Settings[tauri.Name])
+		declared, err := extras.ParseExtras(p.Settings[tauri.Name])
 		if err != nil {
 			continue // the plugin reports the invalid table
 		}
-		for _, sc := range extras.Sidecars {
+		for _, sc := range declared.Sidecars {
 			if sc.Project == "" {
 				continue
 			}

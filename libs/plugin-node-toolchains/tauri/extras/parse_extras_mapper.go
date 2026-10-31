@@ -1,4 +1,4 @@
-package tauri
+package extras
 
 import (
 	"fmt"

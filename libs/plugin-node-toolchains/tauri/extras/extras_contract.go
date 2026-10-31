@@ -1,4 +1,4 @@
-package tauri
+package extras
 
 import (
 	"strings"
@@ -43,6 +43,12 @@ func (e Extras) Empty() bool { return len(e.Sidecars) == 0 && len(e.Resources) =
 // Tauri configuration go, workspace-relative: dist/tauri-prepare/<project dir>.
 func PrepareDir(root string) string {
 	return protocol.BuildDir + "/tauri-prepare/" + strings.Trim(root, "/")
+}
+
+// TargetDir is where a project's Cargo target directory goes, workspace-relative:
+// dist/tauri/<project dir>, beside the web build rather than in it.
+func TargetDir(root string) string {
+	return protocol.BuildDir + "/tauri/" + strings.Trim(root, "/")
 }
 
 // fromSrcTauri is the path from a project's src-tauri folder back to the
