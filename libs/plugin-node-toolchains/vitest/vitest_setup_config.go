@@ -1,7 +1,11 @@
 package vitest
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -23,9 +27,25 @@ func New(version string) *tooling.Toolchain {
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
+	files := tooling.StarterSpec(workspaceRoot, params, "vitest")
+	// A module.aliases fact reaches Vitest through a vitest.config.ts, unless
+	// the project has a vite.config.ts: Vitest reads that, and the vite
+	// plugin already wrote the aliases into it.
+	if alias := modulealiases.FromFacts(params.Facts).ViteResolveAlias(); alias != "" && !hasViteConfig(workspaceRoot, params.Directory) {
+		if files == nil {
+			files = map[string]string{}
+		}
+		files["vitest.config.ts"] = "import { defineConfig } from 'vitest/config'\n\nexport default defineConfig({\n" + alias + "})\n"
+	}
 	return tooling.Setup{
 		DevDependencies: map[string]string{"vitest": "^5.0.5"},
-		Files:           tooling.StarterSpec(workspaceRoot, params, "vitest"),
+		Files:           files,
 		Scripts:         map[string]string{"test": "vitest run"},
 	}
+}
+
+// hasViteConfig reports whether the project directory already has a Vite config.
+func hasViteConfig(workspaceRoot, dir string) bool {
+	_, err := os.Stat(filepath.Join(workspaceRoot, filepath.FromSlash(dir), "vite.config.ts"))
+	return err == nil
 }

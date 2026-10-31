@@ -37,6 +37,17 @@ func (p *TypeScript) Describe(params protocol.InitializeParams) (protocol.Initia
 	}, nil
 }
 
+// Contribute implements serve.Contributor: the plugin adds no tasks. It
+// publishes the default source root of the projects it scaffolds as the shared
+// fact source.roots, so a tool that needs it reads it from the facts.
+func (p *TypeScript) Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error) {
+	res := protocol.ContributeResult{Projects: map[string]protocol.Contribution{}}
+	for _, project := range params.Projects {
+		res.Projects[project.Name] = protocol.Contribution{Facts: map[string]any{protocol.FactSourceRoots: []string{"src"}}}
+	}
+	return res, nil
+}
+
 // Generate implements serve.Generator: the TypeScript starter.
 func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	return scaffolding.GenerateFrom(p.root, params, templates)

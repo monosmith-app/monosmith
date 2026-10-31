@@ -1,7 +1,10 @@
 package jest
 
 import (
+	"maps"
+
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -23,6 +26,15 @@ func New(version string) *tooling.Toolchain {
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
+	// A module.aliases fact adds its aliases to the mapper and to the
+	// compiler options ts-jest type-checks with; without one, neither changes.
+	aliases := modulealiases.FromFacts(params.Facts)
+	mapper := map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"}
+	maps.Copy(mapper, aliases.JestModuleNameMapper())
+	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false}
+	if paths := aliases.CompilerPaths(); paths != nil {
+		compiler["paths"] = paths
+	}
 	return tooling.Setup{
 		DevDependencies: map[string]string{
 			"@jest/globals": "^30.5.2",
@@ -36,10 +48,8 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 		Fields: map[string]any{"jest": map[string]any{
 			"testEnvironment":  "node",
 			"roots":            []string{"<rootDir>/src"},
-			"moduleNameMapper": map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"},
-			"transform": map[string]any{`^.+\.ts$`: []any{"ts-jest", map[string]any{"tsconfig": map[string]any{
-				"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false,
-			}}}},
+			"moduleNameMapper": mapper,
+			"transform":        map[string]any{`^.+\.ts$`: []any{"ts-jest", map[string]any{"tsconfig": compiler}}},
 		}},
 	}
 }
