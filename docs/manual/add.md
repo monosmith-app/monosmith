@@ -27,7 +27,7 @@ manifests it finds (see [`smith projects`](projects.md)). To delete one, use
 ## Synopsis
 
 ```sh
-smith add <kind> <name> [--lang <language>] [--stack <stack>] [--choice name=answer ...] [--verbose]
+smith add <kind> <name> [--lang <language>] [--stack <stack>] [--choice name=answer ...] [--fresh] [--verbose]
 ```
 
 ## Arguments and flags
@@ -45,6 +45,7 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
+| `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
@@ -66,6 +67,43 @@ or name is asked for (`Kind (app is deployed, lib is internal, package is publis
 with numbered options, then `Name of the project:`, three tries each); so is the
 language when `--lang` is missing and more than one could apply. Elsewhere the missing
 argument is the error listed below.
+
+## Following the siblings
+
+A workspace has habits: its libs build with esbuild, its packages test with
+`@swc/jest`, their `main` points into `dist/`. `smith add` reads the **siblings**, the
+projects of the same kind and language, and gives the new project the same shape. It
+prints what they agree on and why:
+
+```text
+The 3 sibling packages agree on:
+  build.tool = esbuild (3 of 3 packages)
+  exports.target = dist (3 of 3 packages)
+  test.runner = @swc/jest (3 of 3 packages)
+```
+
+The rules, from [ADR 0041](../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md):
+
+- A value is followed when **at least 3** siblings have it and **at least two thirds** of
+  the siblings that report the key. With fewer than 3 siblings nothing is inferred and
+  nothing is printed.
+- When the siblings **split** (no value has two thirds), `smith add` asks in a terminal and
+  lists the values with their counts and the default of the stack. Without a terminal, or
+  with `CI` set, it never waits: it uses the default and prints a warning that names the
+  split.
+- After the project is made, each key the siblings agree on that the new project does not
+  have is a warning (`Warning: 3 of 3 sibling packages have tsconfig.files = ...; the new
+  package has ...`). The warning means the stack cannot follow that key.
+- `--fresh` skips all of it: the project gets the default of its stack.
+
+The facts for a Node project are `build.tool` (`tsc`, `esbuild`, ...), `test.runner`
+(`jest`, `ts-jest`, `@swc/jest`, `vitest`, ...), `exports.target` (`dist`, `src`),
+`tsconfig.files`, `lint.config`, `scripts` and `layout`. The stacks follow
+`build.tool` (`tsc`, `esbuild`), `exports.target` and `test.runner` (`node-jest` follows
+`ts-jest` and `@swc/jest`; `node-vitest` follows `vitest`); the others are reported and
+warned about. A stack does not switch plugins for a sibling shape: if the siblings use
+Vitest and the stack uses Jest, the warning is your cue to pass `--stack node-vitest`.
+Languages whose plugin does not report a shape are not affected.
 
 For a Node project, the folder follows the root `package.json` `workspaces`. When they
 cover `libs/*` (or the kind's own folder), the project goes there. When they do not (a

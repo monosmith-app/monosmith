@@ -1121,6 +1121,13 @@ _SCHEMA_JSON = r'''{
         "settings": {
           "type": "object",
           "description": "Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.<plugin> table); the same table is later the plugin's entry in Project.Settings. Nil when there are none."
+        },
+        "shape": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project."
         }
       },
       "required": [
@@ -1257,6 +1264,13 @@ _SCHEMA_JSON = r'''{
             "$ref": "#/$defs/ProjectKind"
           },
           "description": "Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those."
+        },
+        "follows": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none."
         }
       },
       "required": [
@@ -1500,6 +1514,13 @@ _SCHEMA_JSON = r'''{
             "type": "object"
           },
           "description": "Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.<project>.settings.<name>] (what a recipe's settings became when it created the project), and for a convention its [conventions.<name>] settings and the project's [projects.<project>.<name>] on top. Set by the host; a plugin reads its own entry."
+        },
+        "shape": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Shape is the dialect of the project: named facts about how it is made (\"build.tool\": \"esbuild\", \"test.runner\": \"@swc/jest\", \"exports.target\": \"dist\"), each a short string, read from the manifest and files the plugin already reads in discovery. The host counts the shapes of the projects of one kind and language to let a new project follow what they do, and knows no key itself. Nil when the plugin does not describe shapes."
         },
         "registries": {
           "$ref": "#/$defs/Registries",

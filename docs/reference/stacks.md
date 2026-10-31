@@ -119,6 +119,12 @@ generate the project and record the stack, then asks each of the stack's other
 plugins to add its part: files, scripts, settings, dependencies. These only
 add: a file, script, setting or dependency that already exists is kept.
 
+When siblings of the new project's kind and language share a build tool, a test runner
+or where their entry points lead, the project follows them, not the stack's own default
+(`smith add --fresh` gives the default). A plugin lists the shape keys it applies in
+`initialize.follows`; see [`smith add`](../manual/add.md#following-the-siblings) and
+[ADR 0041](../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md).
+
 ## Built-in stacks
 
 | Stack | Language | Scaffold | Toolchain | Published by |

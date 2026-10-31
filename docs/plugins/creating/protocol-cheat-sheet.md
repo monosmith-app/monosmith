@@ -187,6 +187,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `conflicts` | `[]PluginRef` | no | Conflicts are plugins that must not be in the same project. |
 | `stacks` | `[]Stack` | no | Stacks are ready-made stacks the plugin publishes. |
 | `kinds` | `[]ProjectKind` | no | Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those. |
+| `follows` | `[]string` | no | Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none. |
 
 **What `languages` means for a convention plugin.** It is the list of project languages the plugin
 applies to, and the only place that says so. The host asks the plugin (`contribute`, `doctor`,
@@ -293,6 +294,7 @@ Project is one unit of the monorepo as a plugin sees it.
 | `tags` | `[]string` | no |  |
 | `stack` | `string` | no | Stack is the stack recorded in the project's manifest, if any. |
 | `settings` | `map[string]map[string]any` | no | Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.<project>.settings.<name>] (what a recipe's settings became when it created the project), and for a convention its [conventions.<name>] settings and the project's [projects.<project>.<name>] on top. |
+| `shape` | `map[string]string` | no | Shape is the dialect of the project: named facts about how it is made ("build.tool": "esbuild", "test.runner": "@swc/jest", "exports.target": "dist"), each a short string, read from the manifest and files the plugin already reads in discovery. The host counts the shapes of the projects of one kind and language to let a new project follow what they do, and knows no key itself. Nil when the plugin does not describe shapes. |
 | `registries` | `*Registries` | no | Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. |
 | `releaseAssets` | `*AssetSpec` | no | ReleaseAssets is what an app's release builds, from smith.toml [projects.<project>.release]: the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil for a project that has no release files. |
 
@@ -353,6 +355,7 @@ GenerateParams asks a plugin to scaffold a project.
 | `stack` | `string` | no | Stack is the stack the project is created with. |
 | `convention` | `bool` | no | Convention is true when the plugin is asked as a workspace convention ([conventions.<name>] applying to the new project), not as one of the stack's plugins. |
 | `settings` | `map[string]any` | no | Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.<plugin> table); the same table is later the plugin's entry in Project.Settings. |
+| `shape` | `map[string]string` | no | Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project. |
 
 ### WorkspaceInfo
 
