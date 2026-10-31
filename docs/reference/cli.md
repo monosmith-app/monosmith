@@ -570,6 +570,7 @@ Usage: `smith release <command> [flags]`
 | `--json` | print the release report as JSON | off |
 | `--no-push` | create tags locally only | off |
 | `--notes` | also print each release's notes (what its GitHub Release says) | off |
+| `--rehearse` | check every registry the release publishes to (it resolves, which credential it expects, that yours is accepted, that the CI identity may publish) with read-only requests; publish nothing | off |
 | `--status` | show the release journal: what was published where (dist/release/<project>/journal.json) | off |
 | `--verbose` | name every unchanged package | off |
 | `-y, --yes` | do not ask for confirmation | off |
