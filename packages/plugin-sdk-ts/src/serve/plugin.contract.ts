@@ -1,5 +1,5 @@
 import type {
-  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
+  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult, DeriveParams, DeriveResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
   InitializeResult, InstallParams, LatestParams, LatestResult, PublishedParams, PublishedResult, PublishParams,
   PublishResult, RemoveParams, RemoveResult, RewriteParams, UninstallParams, VersionParams, VersionResult,
@@ -65,6 +65,11 @@ export interface KindChanger {
 /** `sbom/components`: the components a project ships, for the SBOM a release attaches. */
 export interface ComponentLister {
   components: (params: ComponentsParams, signal: AbortSignal) => Awaitable<ComponentsResult>
+}
+
+/** `derive`: the files the plugin derives from facts and the project graph (smith derive). */
+export interface Deriver {
+  derive: (params: DeriveParams, signal: AbortSignal) => Awaitable<DeriveResult>
 }
 
 /** `dependencies/install` and `dependencies/uninstall`: both, or the capability is not advertised. */

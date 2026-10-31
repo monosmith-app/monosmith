@@ -268,4 +268,20 @@ public static class PluginClientCalls
         ArgumentNullException.ThrowIfNull(client);
         return client.CallAsync<ComponentsParams, ComponentsResult>(ProtocolMethods.SbomComponents, parameters, timeout, cancellation);
     }
+
+    /// <summary>Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<DeriveResult> DeriveAsync(
+        this PluginClient client,
+        DeriveParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<DeriveParams, DeriveResult>(ProtocolMethods.Derive, parameters, timeout, cancellation);
+    }
 }

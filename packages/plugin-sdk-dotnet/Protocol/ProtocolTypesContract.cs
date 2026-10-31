@@ -105,6 +105,9 @@ public static class ProtocolMethods
     /// <summary>Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.</summary>
     public const string SbomComponents = "sbom/components";
 
+    /// <summary>Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.</summary>
+    public const string Derive = "derive";
+
     /// <summary>For each method the capability a plugin advertises to be asked it; <c>null</c> where it is always available.</summary>
     public static IReadOnlyDictionary<string, string?> CapabilityByMethod { get; } = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
@@ -127,6 +130,7 @@ public static class ProtocolMethods
         [DependenciesRewrite] = "declarations",
         [DependenciesLatest] = "latest",
         [SbomComponents] = "components",
+        [Derive] = "derive",
     };
 }
 
@@ -517,6 +521,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Components lists a project's dependencies for its SBOM.</summary>
     public bool Components { get; init; }
 
+    /// <summary>Derive says which files the plugin derives from facts and the project graph (smith derive).</summary>
+    public bool Derive { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -538,6 +545,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Latest = BooleanValue(Member(map, "latest"), Join(path, "latest")),
             Cancel = BooleanValue(Member(map, "cancel"), Join(path, "cancel")),
             Components = BooleanValue(Member(map, "components"), Join(path, "components")),
+            Derive = BooleanValue(Member(map, "derive"), Join(path, "derive")),
         };
     }
 
@@ -620,6 +628,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("components");
             writer.Boolean(Components);
         }
+        if (Derive)
+        {
+            writer.Property("derive");
+            writer.Boolean(Derive);
+        }
         writer.EndObject();
     }
 
@@ -644,6 +657,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "latest" => Latest,
             "cancel" => Cancel,
             "components" => Components,
+            "derive" => Derive,
             _ => false,
         };
 }
@@ -1191,6 +1205,162 @@ public sealed record DependencyResult : IProtocolValue<DependencyResult>
         {
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>DeriveParams asks a plugin for the files it can derive from facts and the project graph. The plugin writes nothing: it answers with the content, and the host decides, from its ownership record, whether to write it.</summary>
+public sealed record DeriveParams : IProtocolValue<DeriveParams>
+{
+    /// <summary>Projects are the projects the plugin serves.</summary>
+    public IReadOnlyList<Project> Projects { get; init; } = [];
+
+    /// <summary>Graph maps a project name to the names of the projects it depends on inside the workspace, sorted. The host resolved these edges: a plugin does not repeat that work.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> Graph { get; init; } = new Dictionary<string, IReadOnlyList<string>>();
+
+    /// <summary>Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin proposes such a file again even when it is missing on disk, so deleting a derived file and deriving restores it. A file that is not owned and not on disk is not proposed.</summary>
+    public IReadOnlyList<string> Owned { get; init; } = [];
+
+    /// <inheritdoc />
+    public static DeriveParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new DeriveParams
+        {
+            Projects = ListOf(Member(map, "projects"), Join(path, "projects"), Project.Read),
+            Graph = MapOf(Member(map, "graph"), Join(path, "graph"), (value1, path1) => ListOf(value1, path1, StringValue)),
+            Owned = ListOf(Member(map, "owned"), Join(path, "owned"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("projects");
+        MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        if (Graph is { Count: > 0 })
+        {
+            writer.Property("graph");
+            MessageWritingAlgorithm.Map(writer, Graph, (builder1, member1) => MessageWritingAlgorithm.List(builder1, member1, (builder2, item2) => builder2.String(item2)));
+        }
+        if (Owned is { Count: > 0 })
+        {
+            writer.Property("owned");
+            MessageWritingAlgorithm.List(writer, Owned, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>DeriveResult carries the files a plugin derives.</summary>
+public sealed record DeriveResult : IProtocolValue<DeriveResult>
+{
+    /// <summary>The <c>files</c> member of <c>DeriveResult</c>.</summary>
+    public IReadOnlyList<DerivedFile> Files { get; init; } = [];
+
+    /// <inheritdoc />
+    public static DeriveResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new DeriveResult
+        {
+            Files = ListOf(Member(map, "files"), Join(path, "files"), DerivedFile.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("files");
+        MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>DerivedFile is the content one renderer derives for one file.</summary>
+public sealed record DerivedFile : IProtocolValue<DerivedFile>
+{
+    /// <summary>Project is the project the file belongs to.</summary>
+    public required string Project { get; init; }
+
+    /// <summary>Path is workspace-relative, with forward slashes.</summary>
+    public required string Path { get; init; }
+
+    /// <summary>Mode is DeriveFile, DeriveRegion or DeriveKeys.</summary>
+    public required string Mode { get; init; }
+
+    /// <summary>Renderer is the stable id of the renderer, for example "node.tsconfig.references". It names the region markers.</summary>
+    public required string Renderer { get; init; }
+
+    /// <summary>Version is the renderer's version. A new version means new output for the same inputs, so the host rewrites an unedited file.</summary>
+    public long Version { get; init; }
+
+    /// <summary>Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the markers. Unused for DeriveKeys.</summary>
+    public string Content { get; init; } = string.Empty;
+
+    /// <summary>Comment is the line comment leader of the file ("//", "#"): the host writes a generated header after it in a DeriveFile. Empty for a format without comments, then the file has no header.</summary>
+    public string Comment { get; init; } = string.Empty;
+
+    /// <summary>Format is "json" or "toml" for DeriveKeys.</summary>
+    public string Format { get; init; } = string.Empty;
+
+    /// <summary>Keys are the owned top-level keys and their values (DeriveKeys).</summary>
+    public JsonMap Keys { get; init; } = new();
+
+    /// <inheritdoc />
+    public static DerivedFile Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new DerivedFile
+        {
+            Project = StringValue(Member(map, "project"), Join(path, "project")),
+            Path = StringValue(Member(map, "path"), Join(path, "path")),
+            Mode = StringValue(Member(map, "mode"), Join(path, "mode")),
+            Renderer = StringValue(Member(map, "renderer"), Join(path, "renderer")),
+            Version = IntegerValue(Member(map, "version"), Join(path, "version")),
+            Content = StringValue(Member(map, "content"), Join(path, "content")),
+            Comment = StringValue(Member(map, "comment"), Join(path, "comment")),
+            Format = StringValue(Member(map, "format"), Join(path, "format")),
+            Keys = ObjectOf(Member(map, "keys"), Join(path, "keys")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        writer.String(Project);
+        writer.Property("path");
+        writer.String(Path);
+        writer.Property("mode");
+        writer.String(Mode);
+        writer.Property("renderer");
+        writer.String(Renderer);
+        writer.Property("version");
+        writer.Integer(Version);
+        if (Content.Length > 0)
+        {
+            writer.Property("content");
+            writer.String(Content);
+        }
+        if (Comment.Length > 0)
+        {
+            writer.Property("comment");
+            writer.String(Comment);
+        }
+        if (Format.Length > 0)
+        {
+            writer.Property("format");
+            writer.String(Format);
+        }
+        if (Keys is { Count: > 0 })
+        {
+            writer.Property("keys");
+            writer.Any(Keys);
         }
         writer.EndObject();
     }

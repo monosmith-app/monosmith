@@ -143,4 +143,10 @@ var Methods = []MethodSpec{
 		Params:      reflect.TypeFor[protocol.ComponentsParams](), Result: reflect.TypeFor[protocol.ComponentsResult](),
 		Capability: "Components",
 	},
+	{
+		Method:      protocol.MethodDerive,
+		Description: "Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.",
+		Params:      reflect.TypeFor[protocol.DeriveParams](), Result: reflect.TypeFor[protocol.DeriveResult](),
+		Capability: "Derive",
+	},
 }

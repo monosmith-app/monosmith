@@ -106,6 +106,12 @@ type ComponentLister interface {
 	Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error)
 }
 
+// Deriver says which files the plugin derives from facts and the project graph
+// (smith derive). It writes nothing: the host owns the writes.
+type Deriver interface {
+	Derive(params protocol.DeriveParams) (protocol.DeriveResult, error)
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)

@@ -136,6 +136,9 @@ type Capabilities struct {
 	Cancel bool `json:"cancel,omitempty"`
 	// Components lists a project's dependencies for its SBOM.
 	Components bool `json:"components,omitempty"`
+	// Derive says which files the plugin derives from facts and the project
+	// graph (smith derive).
+	Derive bool `json:"derive,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

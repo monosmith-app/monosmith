@@ -28,6 +28,8 @@ from ..protocol import (
     DeclaredParams,
     DeclaredResult,
     DependencyResult,
+    DeriveParams,
+    DeriveResult,
     DiscoverParams,
     DiscoverResult,
     DoctorParams,
@@ -121,6 +123,12 @@ class ComponentLister(Protocol):
     """`sbom/components`: the components a project ships, for the SBOM a release attaches."""
 
     def components(self, params: ComponentsParams, cancel: CancelToken) -> ComponentsResult: ...
+
+
+class Deriver(Protocol):
+    """`derive`: the files the plugin derives from facts and the project graph (smith derive)."""
+
+    def derive(self, params: DeriveParams, cancel: CancelToken) -> DeriveResult: ...
 
 
 class DependencyManager(Protocol):

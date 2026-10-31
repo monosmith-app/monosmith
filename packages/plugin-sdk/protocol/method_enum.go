@@ -37,4 +37,7 @@ const (
 	// MethodComponents lists the components a project ships, from its
 	// lockfile or manifest, for the release's SBOM.
 	MethodComponents = "sbom/components"
+	// MethodDerive asks for the files a plugin derives from facts and the
+	// project graph (smith derive).
+	MethodDerive = "derive"
 )

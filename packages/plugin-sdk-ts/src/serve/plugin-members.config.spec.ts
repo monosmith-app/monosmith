@@ -24,6 +24,7 @@ describe('PLUGIN_MEMBERS', () => {
       remove:       () => ({}),
       changeKind:   () => ({}),
       components:   () => ({ components: [] }),
+      derive:       () => ({ files: [] }),
       install:      () => ({}),
       uninstall:    () => ({}),
       declared:     () => ({ declarations: [] }),
@@ -35,6 +36,6 @@ describe('PLUGIN_MEMBERS', () => {
     const wanted = new Set(rows.map(row => row.capability).filter(c => c !== null))
     const advertised = new Set(Object.keys(capabilitiesOf(everything)))
     expect(advertised).toEqual(wanted)
-    expect(wanted.size).toBe(15)
+    expect(wanted.size).toBe(16)
   })
 })
