@@ -116,6 +116,11 @@ type WorkspaceSection struct {
 	// to smith.toml, or an https URL (docs/reference/recipes.md). Empty means
 	// stacks only. `smith add --stack` bypasses it.
 	Recipe string `toml:"recipe"`
+	// CommitOperations makes every mutating command (smith add, remove,
+	// upgrade, derive, sync) commit what it changed as one commit, when the
+	// work tree is clean before it starts. smith undo reverts the last such
+	// commit. Default: false (ADR 0047).
+	CommitOperations bool `toml:"commit_operations"`
 }
 
 // CISection chooses which pipelines smith generates.

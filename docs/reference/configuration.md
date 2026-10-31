@@ -50,6 +50,7 @@ module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
+commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
 
 [recipes]                             # a different recipe for one project kind: app, lib or package
 package = "https://example.com/recipes/package.recipe.toml"
@@ -343,6 +344,16 @@ A key of another namespace (`acme.region`) holds any value. A bad key, or a valu
 for a key above, stops smith with a message that names the table. `smith explain <project> --facts`
 shows each value and where it came from. Plugin authors: [Sharing facts between
 plugins](../plugins/creating/shared-facts.md).
+
+## Operations
+
+`[workspace] commit_operations = true` makes `smith add`, `remove`, `upgrade`, `derive` and `sync`
+commit their work as one conventional commit (`chore: add package billing`), when the work tree has
+no uncommitted change before the command. Smith lists each commit in `.smith/operations.json`, and
+[`smith undo`](../manual/undo.md) reverts the last one with `git revert`. Default: `false`, so a
+workspace that does not opt in sees no change. Before they write, `add`, `remove`, `upgrade` and
+`derive` print a plan and, in a terminal outside CI, ask; `--yes` skips the question. See
+[ADR 0047](../architecture/decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md).
 
 ## Derived files
 

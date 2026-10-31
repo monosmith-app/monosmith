@@ -27,7 +27,7 @@ Do not use it to apply dependency updates ([`smith up`](up.md)) or to bring in a
 ## Synopsis
 
 ```sh
-smith upgrade [--dry-run] [--check] [--json]
+smith upgrade [--dry-run] [--check] [--json] [--yes]
 ```
 
 ## Arguments and flags
@@ -42,6 +42,7 @@ Usage: `smith upgrade [flags]`
 | `--check` | boolean | off | change nothing; fail when something would change |
 | `--dry-run` | boolean | off | show the plan, with the change to smith.toml, and change nothing |
 | `--json` | boolean | off | print the result as JSON |
+| `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end upgrade -->
 
@@ -49,6 +50,10 @@ Usage: `smith upgrade [flags]`
   Exit code 0 either way.
 - `--check` also changes nothing, and fails (exit 1) when something would change.
 - `--json` prints the result as JSON (`{}` when nothing changed).
+- In a terminal, outside CI, smith upgrade first prints the plan (from a dry run) and asks
+  `Go ahead? [y/N]`. `--yes` skips the question; without a terminal it never asks.
+- With `commit_operations = true` under `[workspace]` and a clean git work tree, the upgrade is one
+  commit (`chore: upgrade the workspace`); [`smith undo`](undo.md) reverts it.
 
 ## Exit codes
 

@@ -27,7 +27,7 @@ manifests it finds (see [`smith projects`](projects.md)). To delete one, use
 ## Synopsis
 
 ```sh
-smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--verbose]
+smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--verbose] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
@@ -45,11 +45,13 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
+| `--dry-run` | boolean | off | show the plan and change nothing |
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
 | `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
+| `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end add -->
 
@@ -144,8 +146,17 @@ checks for the new project (npm workspaces, scripts, entry files). If one fails,
 prints the check with its remedy, exits with 1 and does not print "Done"; follow the
 remedy, then run `smith doctor`.
 
-The name must be kebab-case. smith add leaves the files it wrote uncommitted (`smith new`
-commits what it wrote): review them with `git status`, then commit.
+The name must be kebab-case.
+
+Before it writes, smith add prints a plan: the project directory, what each plugin of the stack
+adds, and the workspace files that change (with the owner, `smith` or `you`, where `smith.lock`
+records one). In a terminal, outside CI, it asks `Go ahead? [y/N]`; `--yes` skips the question,
+and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it never asks.
+
+By default smith add leaves the files it wrote uncommitted (`smith new` commits what it wrote):
+review them with `git status`, then commit. With `commit_operations = true` under `[workspace]`
+and a clean git work tree, it commits them as one commit (`chore: add package billing`), and
+[`smith undo`](undo.md) reverts that commit.
 
 ## Exit codes
 

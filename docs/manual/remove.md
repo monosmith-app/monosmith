@@ -40,8 +40,11 @@ Usage: `smith remove <project> [flags]`
 
 - `<project>` is a project name, as [`smith projects`](projects.md) lists it.
 - `--dry-run` prints what would change and changes nothing.
-- `--yes` skips the confirmation. In a terminal smith asks `Remove <name> and everything
-  in <dir>? [y/N]`; without a terminal it refuses, so pass `--yes` in scripts.
+- `--yes` skips the confirmation. smith prints a plan first (the directory, then the workspace
+  files that change, with their owner where `smith.lock` records one). In a terminal it asks
+  `Go ahead? [y/N]`; without a terminal it refuses, so pass `--yes` in scripts.
+- With `commit_operations = true` under `[workspace]` and a clean git work tree, the removal is one
+  commit (`chore: remove core`); [`smith undo`](undo.md) reverts it.
 - `--force` removes a project other projects still import; their imports are left
   broken.
 - `--json` prints what changed: `project`, `root` and `notes`.
@@ -103,7 +106,7 @@ smith remove tools --json --dry-run
 | Message | Cause and remedy |
 |---|---|
 | `no project named "nope"` | Check the name with `smith projects`. |
-| `refusing to remove without a terminal; pass --yes` | Standard input is not a terminal, so the `Remove <name> and everything in <dir>? [y/N]` question cannot be asked. Pass `--yes`. |
+| `refusing to remove without a terminal; pass --yes` | Standard input is not a terminal, so the `Go ahead? [y/N]` question cannot be asked. Pass `--yes`. |
 | A refusal naming the projects that import it | Remove or change those first, or pass `--force`. (The exact wording was not captured for this page.) |
 
 ## Related

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
@@ -177,7 +178,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "take every update without prompting")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the updates and tools as JSON; never write")
 	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
-	return cmd
+	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "align dependency versions" }})
 }
 
 // interactive reports whether up can ask: a terminal on both ends, not CI.

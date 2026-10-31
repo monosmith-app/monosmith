@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/recipechoice"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -87,10 +89,19 @@ wrote): review them with git status, then commit.`,
 			}
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 			began := time.Now()
-			res, err := AddProject(s, AddOptions{
+			addOpts := AddOptions{
 				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
+			}
+			yes, _ := cmd.Flags().GetBool("yes")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			proceed, err := operationplan.Present(cmd.OutOrStdout(), cmd.InOrStdin(), PlanAdd(s, addOpts), operationplan.Options{
+				Yes: yes, DryRun: dryRun, Ask: true, Env: operationplan.DetectEnvironment(),
 			})
+			if err != nil || !proceed {
+				return err
+			}
+			res, err := AddProject(s, addOpts)
 			if err != nil {
 				return err
 			}
@@ -119,7 +130,9 @@ wrote): review them with git status, then commit.`,
 	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
-	return cmd
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(_ *cobra.Command, args []string) string {
+		return "add " + strings.Join(args, " ")
+	}})
 }
 
 // tryHint is the command smith add suggests for the new project: its test
