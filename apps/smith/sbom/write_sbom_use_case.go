@@ -35,11 +35,17 @@ func Write(s *session.Session, p *projectgraph.Project, r Request) (string, erro
 	if !ok {
 		return "", nil
 	}
+	return writeListed(s.Root, p.Name, listed, r)
+}
+
+// writeListed renders and writes the SBOM of a project whose components the
+// plugin listed.
+func writeListed(root, name string, listed protocol.ComponentsResult, r Request) (string, error) {
 	comps := make([]Component, len(listed.Components))
 	for i, c := range listed.Components {
 		comps[i] = Component{Name: c.Name, Version: c.Version, PURL: c.PURL}
 	}
-	sub := Subject{Name: p.Name, Version: r.Version}
+	sub := Subject{Name: name, Version: r.Version}
 	if listed.PURL != "" {
 		sub.PURL = listed.PURL + "@" + r.Version
 	}
@@ -49,10 +55,10 @@ func Write(s *session.Session, p *projectgraph.Project, r Request) (string, erro
 	}
 	product := r.Product
 	if product == "" {
-		product = p.Name
+		product = name
 	}
 	rel := path.Join(r.OutDir, product+"_"+r.Version+"_sbom.cdx.json")
-	return rel, writeFile(s.Root, rel, append(body, '\n'))
+	return rel, writeFile(root, rel, append(body, '\n'))
 }
 
 func writeFile(root, rel string, body []byte) error {

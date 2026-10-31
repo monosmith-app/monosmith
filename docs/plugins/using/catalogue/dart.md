@@ -305,6 +305,8 @@ pub.dev itself needs setup that smith cannot do: publish the first version by
 hand, then enable automated publishing for the repository with the tag pattern;
 see [releasing: pub.dev](../../../reference/releasing.md#pubdev).
 
+The release's SBOM lists the packages of `pubspec.lock`, falling back to `pubspec.yaml`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 | What | Where it comes from |

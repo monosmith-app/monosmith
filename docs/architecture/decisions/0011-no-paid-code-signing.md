@@ -27,8 +27,9 @@ Only a binary downloaded from GitHub Releases in a browser is affected: macOS qu
 it, and Windows SmartScreen warns. Installs through package managers and the install
 scripts are not affected.
 
-The SBOM is written by smith from the lockfile or manifest (Go and npm so far; the plugin
-protocol is not extended until more ecosystems need it). Azure Pipelines and GitLab have no
+The SBOM is rendered by smith from the components the project's plugin lists with the
+`sbom/components` method (added in [#797](https://github.com/monosmith-app/monosmith/issues/797),
+once more ecosystems needed it; until then smith read Go and npm lockfiles itself). Azure Pipelines and GitLab have no
 attestation service, so they get the SBOM and `checksums.txt` only. Native apps' archives
 are attached by the per-OS jobs and are not attested or given an SBOM yet. The rendered
 SBOM is validated against the CycloneDX 1.5 schema in a test

@@ -344,6 +344,8 @@ warning: could not ask https://maven.pkg.github.com/acme/tools about sdk (401 Un
 The 401 is GitHub Packages refusing an unauthenticated read; with no
 registry the plan has no `registry` field. A real deploy was not run.
 
+The release's SBOM lists the artifacts of `gradle.lockfile`, falling back to `pom.xml` and the Gradle build script, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 | What | Where it comes from |

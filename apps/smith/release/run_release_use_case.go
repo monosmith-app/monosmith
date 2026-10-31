@@ -572,7 +572,7 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 		}
 	}
 	if len(assets) > 0 && p.Release != nil && !Native(p) {
-		bom, err := sbom.Write(sbom.Request{Root: s.Root, ProjectRoot: p.Root, Language: p.Language, Name: p.Name, Version: item.Next,
+		bom, err := sbom.Write(s, p, sbom.Request{Version: item.Next,
 			Product: p.Release.Product, OutDir: "dist/release/" + p.Name, SmithVersion: s.Version})
 		if err != nil {
 			return fmt.Errorf("SBOM for %s: %w (re-run the release to finish it)", item.Tag, err)

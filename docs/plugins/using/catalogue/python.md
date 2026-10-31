@@ -229,6 +229,8 @@ $ smith release --dry-run --json      # excerpt
 
 The `published` capability lets smith ask the index for the newest version it has (the plugin reads the simple index page); which host command consumes it was not traced.
 
+The release's SBOM lists the packages of `uv.lock` or `poetry.lock` (the project's or any directory above), falling back to `requirements.txt` and the dependencies of `pyproject.toml`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 Real output of `smith ci generate` for the test workspace (GitHub):

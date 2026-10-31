@@ -245,6 +245,8 @@ The JSON report for `sdk` shows `"tag": "sdk@0.1.0"`,
 `"files": ["packages/sdk/CMakeLists.txt"]` and
 `"publish": "released by its tag"`.
 
+The release's SBOM lists the packages of `vcpkg.json` and `conanfile.txt`; a project with neither gets an SBOM that says it declares no dependency, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 | Provider | What is added |

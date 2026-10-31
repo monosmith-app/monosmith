@@ -246,6 +246,8 @@ $ smith release --dry-run --json      # excerpt
   "tag": "kit@0.1.0",  "publish": "dry run",  "registry": "https://registry.npmjs.org/"
 ```
 
+The release's SBOM lists the packages of the nearest `package-lock.json` (the project's or the workspace's), falling back to the ranges in `package.json`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 Real output of `smith ci generate` (GitHub; Azure shows `UseNode@1` with `24.x`):

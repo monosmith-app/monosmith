@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
@@ -71,14 +73,32 @@ func TestRenderedSBOMIsValidCycloneDX(t *testing.T) {
 func TestWrittenSBOMsAreValidCycloneDX(t *testing.T) {
 	schema := cyclonedxSchema(t)
 	root := t.TempDir()
-	_ = os.MkdirAll(filepath.Join(root, "app"), 0o755)
-	_ = os.WriteFile(filepath.Join(root, "app", "go.mod"), []byte("module example.com/app\n\ngo 1.22\n\nrequire github.com/a/b v1.2.3\n"), 0o644)
-	rel, err := Write(Request{Root: root, ProjectRoot: "app", Language: "go", Name: "app", Version: "1.0.0", OutDir: "dist/release/app", SmithVersion: "x"})
-	if err != nil {
-		t.Fatal(err)
+	listed := protocol.ComponentsResult{
+		PURL:       "pkg:golang/example.com/app",
+		Components: []protocol.Component{{Name: "github.com/a/b", Version: "v1.2.3", PURL: "pkg:golang/github.com/a/b@v1.2.3"}},
+	}
+	rel, err := writeListed(root, "app", listed, Request{Version: "1.0.0", OutDir: "dist/release/app", SmithVersion: "x"})
+	if err != nil || rel != "dist/release/app/app_1.0.0_sbom.cdx.json" {
+		t.Fatalf("%q %v", rel, err)
 	}
 	raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	validate(t, schema, raw)
+	if !strings.Contains(string(raw), "pkg:golang/example.com/app@1.0.0") {
+		t.Errorf("the project's own purl carries the release version: %s", raw)
+	}
+}
+
+func TestAnEmptyListIsStatedNotLeftOut(t *testing.T) {
+	root := t.TempDir()
+	rel, err := writeListed(root, "native", protocol.ComponentsResult{}, Request{Version: "1.0.0", Product: "Native", OutDir: "out", SmithVersion: "x"})
+	if err != nil || rel != "out/Native_1.0.0_sbom.cdx.json" {
+		t.Fatalf("%q %v", rel, err)
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	validate(t, cyclonedxSchema(t), raw)
+	if !strings.Contains(string(raw), "smith:components") {
+		t.Errorf("the empty list should say why: %s", raw)
+	}
 }
 
 // A schema that accepted anything would make the tests above pass for nothing.
