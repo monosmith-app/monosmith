@@ -11,6 +11,7 @@ import (
 
 func fakeNpm(t *testing.T, published string) *[]string {
 	t.Helper()
+	registries.forget()
 	var calls []string
 	npm.output = func(_ string, argv []string) (string, error) {
 		calls = append(calls, strings.Join(argv, " "))
