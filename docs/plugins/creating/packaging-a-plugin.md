@@ -250,5 +250,6 @@ how it is released.
 ## See also
 
 - [Installing, enabling and configuring plugins](../using/managing-plugins.md)
+- [Listing a packed plugin in the marketplace](../using/marketplace.md#publish-a-plugin)
 - [Troubleshooting plugins](../using/troubleshooting-plugins.md)
 - [Testing a plugin](testing-a-plugin.md)

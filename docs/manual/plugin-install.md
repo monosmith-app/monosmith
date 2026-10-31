@@ -11,6 +11,8 @@ plugin**, and, with `--pin` inside a workspace, pins the digest of the file the 
 
 ## When to use it
 
+- You know the plugin's name: `smith plugin install widget` or `widget@1.2.0` finds it in the
+  [marketplace](../plugins/using/marketplace.md); [`smith plugin search`](plugin-search.md) lists what is there.
 - A plugin author gave you a `.smith-plugin.zip`, a URL or a GitHub repository and tag.
 - A workspace needs a plugin in CI: install it on your machine with `--pin`, commit the pin in `smith.toml`.
 
@@ -29,7 +31,7 @@ Usage: `smith plugin install <source> [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
-| `source` | yes | an archive or plugin directory path, an https URL, or `github:owner/repo@tag` (optionally `#<asset>`) |
+| `source` | yes | a marketplace name (`widget` or `widget@1.2.0`), an archive or plugin directory path, an https URL, or `github:owner/repo@tag` (optionally `#<asset>`) |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
@@ -45,6 +47,7 @@ Usage: `smith plugin install <source> [flags]`
 
 | Source | Notes |
 |---|---|
+| `widget` or `widget@1.2.0` | a name in the marketplace index (`SMITH_MARKETPLACE`, else `[plugins] marketplace` in `smith.toml`, else monosmith-app/plugins); without a version, the newest one that is not a pre-release. The index gives the archive's https URL and its SHA-256, which the archive must match, so `--sha256` is refused. A file or directory with that name in the current directory is a path instead |
 | a path to a `.smith-plugin.zip` | needs `--sha256`; the archive must have a `checksums.sha256` |
 | a path to a directory | a quick way to try a plugin you are writing; if it has a `checksums.sha256` it is checked, otherwise the files are installed as they are |
 | `https://...` | needs `--sha256`; the file is downloaded to a temporary file, at most 512 MiB, with at most five redirects; every redirect must be https too. `http://` is accepted for `localhost` only |
@@ -54,7 +57,7 @@ Usage: `smith plugin install <source> [flags]`
 
 1. **The archive's digest.** `--sha256 <digest>` must equal the archive's SHA-256; for a GitHub
    release without `--sha256`, the release's `<archive>.sha256` asset (which `smith plugin pack`
-   writes) is used. A difference stops the install, and so does having neither: an archive with no
+   writes) is used; for a marketplace name, the digest in the index. A difference stops the install, and so does having neither: an archive with no
    digest to be checked against is refused before it is downloaded. A plugin directory has no
    archive and needs no digest.
 2. **Every file against `checksums.sha256`.** The list must name exactly the files in the archive,
@@ -104,7 +107,10 @@ with your privileges and smith does not sandbox it.
 
 Reads the source; writes under `.smith/plugins` or `$SMITH_HOME/plugins`, and `[plugins.external.<name>]`
 in `smith.toml`; with `--trust`, `trust.json` in the smith home. Uses `GITHUB_TOKEN` and
-`GITHUB_API_URL` for the release lookup only; the token is never sent to a download.
+`GITHUB_API_URL` for the release lookup only; the token is never sent to a download. For a name, it
+also reads `SMITH_MARKETPLACE` and `[plugins] marketplace` in `smith.toml`, and the token rules of
+[`smith plugin search`](plugin-search.md) apply to the index (not to the archive: an archive in a
+private repository cannot be downloaded).
 
 ## Examples
 
@@ -114,11 +120,17 @@ smith plugin install ./widget-0.1.0.smith-plugin.zip --sha256 db7fb4c0...2204d -
 
 ```text
 Installed widget 0.1.0 in ~/work/inst/.smith/plugins/widget (2 files, from ./widget-0.1.0.smith-plugin.zip).
-  archive sha256 db7fb4c0...2204d matches the digest you gave or the release published.
+  archive sha256 db7fb4c0...2204d matches the digest you gave, or the marketplace or release published.
   every file matches checksums.sha256.
   the plugin was not started.
 Pinned sha256 9e36a074...e7087 in smith.toml [plugins.external.widget], which is what CI checks.
 smith will ask before it first starts widget (or run `smith plugin trust widget`).
+```
+
+From the marketplace, by name (the install is still not a trust decision):
+
+```sh
+smith plugin install widget@1.2.0 --pin
 ```
 
 From a release, trusting it for this workspace in the same step:
@@ -150,6 +162,7 @@ A digest that does not match:
 ## Related
 
 [`smith plugin pack`](plugin-pack.md), [`smith plugin trust`](plugin-trust.md),
-[`smith plugin list`](plugin-list.md), [Plugin security](../plugins/using/plugin-security.md),
+[`smith plugin list`](plugin-list.md), [`smith plugin search`](plugin-search.md),
+[Using the plugin marketplace](../plugins/using/marketplace.md), [Plugin security](../plugins/using/plugin-security.md),
 [Installing, enabling and configuring plugins](../plugins/using/managing-plugins.md),
 [Decision 0038](../architecture/decisions/0038-a-plugin-is-packed-as-a-checksummed-archive-and-installed-without-running-it.md).

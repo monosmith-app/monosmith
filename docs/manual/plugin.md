@@ -17,6 +17,7 @@ installed ones live on a search path. The protocol is described in
   [`smith plugin check`](plugin-check.md).
 - To package a plugin you wrote, or install one someone packaged (an archive, a URL or a GitHub
   release) with its digests checked: [`pack`](plugin-pack.md), [`install`](plugin-install.md).
+- To find a plugin by name in the marketplace and install it: [`search`](plugin-search.md), [`install`](plugin-install.md).
 - To trust an external plugin so smith may start it, or take the trust back:
   [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md).
 
@@ -35,6 +36,7 @@ Usage: `smith plugin <command>`
 | `smith plugin install` | Install a packaged plugin, checked against its sha256 |
 | `smith plugin list` | List the built-in plugins, the external ones the workspace uses (trusted or not) and the ones installed on the plugin search path |
 | `smith plugin pack` | Pack a plugin directory into an archive `smith plugin install` accepts |
+| `smith plugin search` | Search the plugin marketplace |
 | `smith plugin set` | Enable exactly these built-in plugins in smith.toml |
 | `smith plugin trust` | Review an external plugin and trust it, so smith may start it |
 | `smith plugin untrust` | Forget that you trust an external plugin |
