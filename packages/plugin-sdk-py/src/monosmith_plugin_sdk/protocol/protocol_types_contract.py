@@ -23,6 +23,8 @@ __all__ = [
     "MethodName",
     "CapabilityName",
     "METHOD_CAPABILITIES",
+    "APISurfaceParams",
+    "APISurfaceResult",
     "ActionStep",
     "AssetSpec",
     "AuditSettings",
@@ -158,11 +160,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -187,11 +189,49 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "dependencies/latest": "latest",
     "sbom/components": "components",
     "derive": "derive",
+    "api/surface": "apiSurface",
 }
 """The capability a plugin advertises to be asked each method (`None`: always available).
 
 Capability names are not method names: `version/write` is the `version` capability.
 """
+
+
+class _APISurfaceParamsRequired(TypedDict):
+    project: Project
+
+
+class APISurfaceParams(_APISurfaceParamsRequired, total=False):
+    """APISurfaceParams asks a plugin for the public API names of one project."""
+
+    ref: str
+    """
+    Ref is the git revision to read the project at (the tag of its last release). Empty means the
+    working tree.
+    """
+
+
+class _APISurfaceResultRequired(TypedDict):
+    names: list[str]
+    """
+    Names are the exported names, sorted. A name an entry point other than the main one exports
+    is prefixed with that entry point and a colon ("./cli:run"). An empty list is an answer: the
+    project exports nothing.
+    """
+
+
+class APISurfaceResult(_APISurfaceResultRequired, total=False):
+    """
+    APISurfaceResult is the public API of a project: the names its entry points export. A host
+    compares the names of two revisions; it never reads their meaning, so a plugin chooses its
+    own spelling and keeps it stable.
+    """
+
+    unreadable: str
+    """
+    Unreadable says why the API could not be listed (no entry point, no source at the revision).
+    When set, Names is empty and the host skips the project without a warning.
+    """
 
 
 class _ActionStepRequired(TypedDict):
@@ -345,6 +385,11 @@ class Capabilities(TypedDict, total=False):
     derive: bool
     """
     Derive says which files the plugin derives from facts and the project graph (smith derive).
+    """
+    apiSurface: bool
+    """
+    APISurface lists the names a project exports, at a git revision, so a release can warn when
+    the commits ask for a smaller bump than the API change needs.
     """
 
 

@@ -90,6 +90,7 @@ from .projects import (
 from .protocol import *  # noqa: F403
 from .scaffold import scaffold_data, scaffold_project
 from .serve import (
+    APISurfaceReader,
     CIContributor,
     ComponentLister,
     Contributor,
@@ -130,6 +131,7 @@ __all__ = [
     "KindChanger",
     "DependencyManager",
     "Deriver",
+    "APISurfaceReader",
     "ComponentLister",
     "DeclarationEditor",
     "LatestReader",

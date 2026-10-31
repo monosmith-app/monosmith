@@ -135,6 +135,16 @@ public interface IDeriver
     Task<DeriveResult> DeriveAsync(DeriveParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that lists the public API names of a project at a git revision, for the release version check.</summary>
+public interface IApiSurfaceReader
+{
+    /// <summary>Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<APISurfaceResult> ApiSurfaceAsync(APISurfaceParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

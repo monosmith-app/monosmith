@@ -20,6 +20,7 @@ branch. Running `smith release` by hand is the same thing from your machine.
 - `smith release --dry-run` locally or on a pull request, to see what would be released.
 - `smith release` from the release branch when you publish by hand.
 - `smith release --status` to see what a failed release already published.
+- `smith release --rehearse` before the first release on a new feed, or after changing a token, to find a wrong URL, credential type or identity without publishing.
 
 Do not use it to cut a release from a feature branch: `releases run from main, not
 <branch>` (see the environment variables). Versions come from commit messages; there is no
@@ -28,7 +29,7 @@ flag to set one.
 ## Synopsis
 
 ```sh
-smith release [--dry-run [--comment]] [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [-y]
+smith release [--dry-run [--comment]] [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
 smith release pub --project <app> --version <version>
 ```
 
@@ -52,6 +53,7 @@ Usage: `smith release <command> [flags]`
 | `--json` | boolean | off | print the release report as JSON |
 | `--no-push` | boolean | off | create tags locally only |
 | `--notes` | boolean | off | also print each release's notes (what its GitHub Release says) |
+| `--rehearse` | boolean | off | check every registry the release publishes to (it resolves, which credential it expects, that yours is accepted, that the CI identity may publish) with read-only requests; publish nothing |
 | `--status` | boolean | off | show the release journal: what was published where (dist/release/<project>/journal.json) |
 | `--verbose` | boolean | off | name every unchanged package |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
@@ -69,6 +71,11 @@ Interactions:
   say). `--comment` needs `--dry-run` (`--comment posts a preview: use it with --dry-run`)
   and posts the markdown preview on the pull request, updating smith's earlier comment
   (GitHub and Azure Repos).
+- The plan also checks the bump against the public API. If a `fix` commit removes an export
+  (a major) or adds one (a minor), the plan, the `--comment` preview and the `--json`
+  `apiWarnings` carry a warning with the version to use. It is advice; `[release] api_check =
+  "error"` stops the release, `"off"` skips the check. Node packages only for now (see
+  [releasing](../reference/releasing.md#the-bump-against-the-public-api)).
 - `--format markdown` is what the CI job summary and `--comment` use. In the trial the
   plan line was printed first in text and the markdown table after it.
 - `--json` prints the report as JSON (`dryRun`, `started`, `finished`, `results` with
@@ -76,6 +83,12 @@ Interactions:
   `published`, `registry`, `pushed`).
 - `--status` prints the release journal and exits; it ignores the other flags except
   `--json`.
+- `--rehearse` asks every registry the packages publish to (npm-compatible feeds including
+  Azure Artifacts, GitHub Packages and `.npmrc` registries, PyPI, NuGet, crates.io) whether
+  the URL resolves, which credential it expects, whether the credential is set and accepted,
+  and, in CI, which identity publishes. It sends read-only requests, never prints a secret,
+  ignores the commit history and the other flags except `--json` and `--verbose`, and exits 1
+  when a check fails. Each failure names the exact fix.
 - `--no-push` creates the tags locally only.
 - Without a terminal a real release must be confirmed with `-y`/`--yes` (CI passes it).
 - `--verbose` names the unchanged packages.
@@ -87,12 +100,23 @@ missing (`NODE_AUTH_TOKEN` or `NPM_TOKEN`, `PYPI_TOKEN`, `NUGET_API_KEY`, `GEM_H
 `VSCE_PAT`, `GITHUB_TOKEN` when `[release] github_releases` is on, and what a deploy plugin
 such as docker needs).
 
+A rehearsal prints, for each failure or warning, the reason and the fix:
+
+```text
+Release rehearsal: asking 1 registry with read-only requests; nothing is published.
+✖ core: credential on pkgs.dev.azure.com
+    SYSTEM_ACCESSTOKEN is not set, so @acme/core cannot be published to pkgs.dev.azure.com
+    → map the pipeline token into the release step: env: SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+0 passed, 1 failed, 0 warning(s)
+```
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | Released, or the dry run printed, or there was nothing to release. |
-| 1 | A preflight problem, a wrong release tag, a failed publish, a declined confirmation, or `--comment` without `--dry-run`. |
+| 1 | A failed `--rehearse` check, a preflight problem, a wrong release tag, a failed publish, a declined confirmation, or `--comment` without `--dry-run`. |
 
 ## Files and environment
 
