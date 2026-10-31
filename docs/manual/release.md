@@ -69,6 +69,11 @@ Interactions:
   say). `--comment` needs `--dry-run` (`--comment posts a preview: use it with --dry-run`)
   and posts the markdown preview on the pull request, updating smith's earlier comment
   (GitHub and Azure Repos).
+- The plan also checks the bump against the public API. If a `fix` commit removes an export
+  (a major) or adds one (a minor), the plan, the `--comment` preview and the `--json`
+  `apiWarnings` carry a warning with the version to use. It is advice; `[release] api_check =
+  "error"` stops the release, `"off"` skips the check. Node packages only for now (see
+  [releasing](../reference/releasing.md#the-bump-against-the-public-api)).
 - `--format markdown` is what the CI job summary and `--comment` use. In the trial the
   plan line was printed first in text and the markdown table after it.
 - `--json` prints the report as JSON (`dryRun`, `started`, `finished`, `results` with
