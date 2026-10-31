@@ -80,6 +80,7 @@ func Check(c *host.Client, opts Options) Report {
 	}
 	call("discover answers with no manifests", protocol.MethodDiscover, protocol.DiscoverParams{Manifests: []string{}}, &protocol.DiscoverResult{})
 	call("contribute answers with no projects", protocol.MethodContribute, protocol.ContributeParams{Projects: []protocol.Project{}}, &protocol.ContributeResult{})
+	checkFacts(c, &r)
 	call("ci answers with no projects", protocol.MethodCI, protocol.CIParams{Projects: []protocol.Project{}}, &protocol.CIResult{})
 	call("doctor answers with no projects", protocol.MethodDoctor, protocol.DoctorParams{Projects: []protocol.Project{}}, &protocol.DoctorResult{})
 

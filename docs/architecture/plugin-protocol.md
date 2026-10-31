@@ -184,8 +184,8 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | Method | Request | Response | Contribution to the whole |
 |---|---|---|---|
 | `discover` | `DiscoverParams{manifests}` (paths whose base name matches) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
-| `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out |
-| `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings}` | `GenerateResult{files, notes}` | writes a new project's files |
+| `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release, facts}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out, publish default [shared facts](#shared-facts) |
+| `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
 | `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
 | `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
@@ -250,6 +250,30 @@ records its source for `smith explain`. The code is `projectgraph.Discover` and
 what they share goes through the project (`exports`, `imports`, `tags`, `settings`) and through task
 names. The result therefore depends on the set of plugins and the stack's order, not on timing.
 How the edges are found is the subject of [the project graph page](project-graph.md).
+
+## Shared facts
+
+A fact is a typed value under a namespaced key (`module.aliases`, `source.roots`). It is how
+several tools agree on one value without calling each other
+([ADR 0042](decisions/0042-plugins-publish-shared-facts-the-core-merges.md)). The change is
+additive; the protocol version stays 1.
+
+| Where | Field | Meaning |
+|---|---|---|
+| plugin to host | `Contribution.facts` | the plugin's default facts for a project (the lowest scope) |
+| host to plugin | `Project.facts` | the merged facts of the project, in every request that carries a project |
+| host to plugin | `GenerateParams.facts` | the facts `smith.toml` sets for the project being generated |
+
+Well-known keys, whose value type the protocol checks: `module.aliases` (object of strings),
+`source.roots`, `test.patterns`, `build.outputs` (arrays of strings), `runtime.node` (string). A
+plugin may publish any other namespaced key with any JSON value.
+
+The core merges the layers per project and key (`apps/smith/factmerge`). The narrowest scope that
+sets a key wins: `[projects.<name>.facts]`, then `[facts]`, then a recipe, then the plugin defaults.
+Two plugin defaults that differ for one key are an error that names both plugins; a `smith.toml`
+fact decides it. A plugin never sees who set a fact; an absent key means no one set it and the
+plugin uses its own default. `smith explain <project> --facts` shows each value and its source.
+How to publish and read facts is in [the plugin author guide](../plugins/creating/shared-facts.md).
 
 ## Cancel and concurrency
 

@@ -47,6 +47,7 @@ no trust, so the commands in the guides that check a plugin work as written.
 | [The TypeScript SDK](typescript-sdk.md) | you write a plugin in TypeScript: a walk-through, then every function, type and helper of `@monosmith/plugin-sdk` |
 | [The Python SDK](python-sdk.md) | you write a plugin in Python: a walk-through, then every function, type and helper of `monosmith-plugin-sdk` |
 | [The C# SDK](csharp-sdk.md) | you write a plugin in C#: a walk-through, then every interface, type and helper of `MonoSmith.Plugin.Sdk` |
+| [Sharing facts between plugins](shared-facts.md) | several tools must agree on a value (an alias, a source folder) and you want to publish or read it |
 | [Testing a plugin](testing-a-plugin.md) | `smith plugin check`, unit tests, and a workspace test |
 | [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions, `smith plugin pack` and how users install the result |
 
