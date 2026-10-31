@@ -476,7 +476,7 @@ type ProjectRelease struct {
 	// Go: main.version.
 	VersionVariable string `toml:"version_variable"`
 	// PackageManagers are the manifests generated from the assets and
-	// attached to the GitHub Release: homebrew, scoop, winget, aur.
+	// attached to the GitHub Release: homebrew, scoop, winget, aur, nix.
 	PackageManagers []string `toml:"package_managers"`
 	// LinuxPackages are the Linux packages built from the linux archives
 	// and attached to the GitHub Release: deb, rpm.
