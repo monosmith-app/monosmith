@@ -33,6 +33,11 @@ type GenerateParams struct {
 	// InitializeResult.Follows) and ignores the rest. Nil when there is
 	// nothing to follow, or the person asked for a fresh project.
 	Shape map[string]string `json:"shape,omitempty"`
+	// Choices are the choices (see Choice) the new project is built from, the
+	// stack's Choices, in the order they apply: a choice comes after those it
+	// requires. A plugin applies the choices it owns and ignores the rest.
+	// Absent when the stack is not a selection. Set by the host; read only.
+	Choices []string `json:"choices,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.

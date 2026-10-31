@@ -147,6 +147,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
+| `--with <with>` | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default (repeatable) |  |
 
 <!-- smith:end add -->
 
@@ -768,6 +769,21 @@ Usage: `smith stacks [flags]`
 | `--json` | print JSON | off |
 
 <!-- smith:end stacks -->
+
+### smith choices
+
+[Manual page](../manual/choices.md)
+
+<!-- smith:begin choices -->
+List the choices a project can be built from, by axis (framework, test, style)
+
+Usage: `smith choices [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print JSON | off |
+
+<!-- smith:end choices -->
 
 ### smith plugin
 

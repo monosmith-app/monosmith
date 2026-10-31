@@ -17,7 +17,7 @@ func TestTheModuleAliasesFactReachesViteAndItsTsconfig(t *testing.T) {
 	ws := t.TempDir()
 	p := New("1.0.0")
 	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
-	_, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react",
+	_, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react", Choices: []string{"react"},
 		Facts:     map[string]any{protocol.FactModuleAliases: map[string]any{"@app": "src"}},
 		Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}})
 	if err != nil {
@@ -45,7 +45,7 @@ func TestWithoutTheFactViteConfigHasNoAlias(t *testing.T) {
 	ws := t.TempDir()
 	p := New("1.0.0")
 	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
-	if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react",
+	if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react", Choices: []string{"react"},
 		Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}}); err != nil {
 		t.Fatal(err)
 	}

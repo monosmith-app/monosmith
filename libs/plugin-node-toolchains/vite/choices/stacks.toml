@@ -1,0 +1,34 @@
+# The stacks the vite plugin publishes: each is a saved selection of choices. The host
+# derives the language, the scaffold and the toolchain, and adds the default lint and test
+# choices the framework needs (eslint, vitest).
+
+[[stack]]
+name = "react"
+description = "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest"
+choices = ["react"]
+
+[[stack]]
+name = "react-p5"
+description = "a React app drawing with p5, built with Vite, linted by eslint, tested with Vitest"
+choices = ["react", "p5"]
+
+[[stack]]
+name = "react-tauri"
+description = "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest, packaged as a desktop app with Tauri"
+choices = ["react"]
+toolchain = ["tauri"]
+
+[[stack]]
+name = "vue"
+description = "a Vue app in TypeScript, built with Vite, linted by eslint, tested with Vitest"
+choices = ["vue"]
+
+[[stack]]
+name = "svelte"
+description = "a Svelte app in TypeScript, built with Vite, linted by eslint, tested with Vitest"
+choices = ["svelte"]
+
+[[stack]]
+name = "html"
+description = "a page in TypeScript with no framework, built with Vite, linted by eslint, tested with Vitest"
+choices = ["html"]

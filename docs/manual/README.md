@@ -97,7 +97,7 @@ Python package). Paths in output are shortened.
 | [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
-| [`smith kinds`](kinds.md), [`smith stacks`](stacks.md) | What `smith add` accepts. |
+| [`smith kinds`](kinds.md), [`smith stacks`](stacks.md), [`smith choices`](choices.md) | What `smith add` accepts. |
 | [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
 | [`smith boundaries`](boundaries.md) | Check which projects depend on which against your rules in `[boundaries]`. |

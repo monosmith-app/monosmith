@@ -27,7 +27,7 @@ manifests it finds (see [`smith projects`](projects.md)). To delete one, use
 ## Synopsis
 
 ```sh
-smith add <kind> <name> [--lang <language>] [--stack <stack>] [--choice name=answer ...] [--fresh] [--verbose]
+smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--verbose]
 ```
 
 ## Arguments and flags
@@ -49,11 +49,14 @@ Usage: `smith add <kind> <name> [flags]`
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
+| `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
 
 <!-- smith:end add -->
 
 How the language and stack are chosen:
 
+0. `--with react,vitest,bootstrap` builds the project from choices. See
+   [Building from choices](#building-from-choices).
 1. `--stack` wins and bypasses the workspace recipe. `--stack none` uses the language
    plugin alone. [`smith stacks`](stacks.md) lists the names.
 2. Otherwise, when `[workspace] recipe` is set in `smith.toml`, the recipe creates the
@@ -67,6 +70,32 @@ or name is asked for (`Kind (app is deployed, lib is internal, package is publis
 with numbered options, then `Name of the project:`, three tries each); so is the
 language when `--lang` is missing and more than one could apply. Elsewhere the missing
 argument is the error listed below.
+
+## Building from choices
+
+`--with` names the choices a project is built from instead of a ready-made stack: a framework, a
+test runner, a style. [`smith choices`](choices.md) lists them.
+
+```sh
+smith add app web --with react,vitest,bootstrap
+```
+
+```text
+Choices: react, vitest, bootstrap, eslint (eslint by default) as the stack react-vitest-bootstrap
+```
+
+Another framework, test runner and style are three more words, and no new code:
+
+```sh
+smith add app admin --with vue,jest,tailwind
+```
+
+smith checks the selection first (one choice per axis, what each requires, what conflicts) and
+gives one message that names the choices and the fix, for example `chakra requires react, which is
+not in the selection: add react to --with, or drop chakra`. An axis that a choice needs and the
+selection leaves out takes its default. The result is saved in `smith.toml` as a stack with
+`choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
+[Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 
 ## Following the siblings
 

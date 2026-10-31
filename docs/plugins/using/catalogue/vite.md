@@ -15,7 +15,8 @@ with [vitest](vitest.md).
 | Requires | language plugin `node` |
 | Applies to | `node` projects |
 | Capabilities | `generate` |
-| Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
+| Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: each a saved selection of choices; scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
+| Choices it publishes | frameworks `react`, `vue`, `svelte`, `html`; library `p5`; styles `bootstrap`, `chakra` (requires `react`), `tailwind` |
 | Project kinds | `app` only |
 
 ## What it does
@@ -28,6 +29,19 @@ with [vitest](vitest.md).
 | `vue` | a Vue app | `vue-tsc` |
 | `svelte` | a Svelte app | `svelte-check` |
 | `html` | a page in TypeScript with no framework | `tsc` |
+
+## Choices
+
+The frameworks and the styles are data files in the plugin's `choices/` folder, not code. A stack
+is a saved selection of them, so you can mix a framework, a test runner and a style:
+
+```sh
+smith choices
+smith add app web --with react,vitest,bootstrap
+```
+
+`bootstrap` and `tailwind` add their stylesheet to the entry file of any framework; `chakra` and `p5` require `react`. To add a
+framework or a style, write one TOML file ([Writing choices](../../creating/choices.md)).
 
 The scripts it writes become tasks through the [node plugin](node.md#tasks):
 

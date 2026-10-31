@@ -103,7 +103,7 @@ marketplace = "https://example.com/plugins/index.json"   # where `smith plugin s
 [default_stacks]                      # a project's stack when it records none (docs/reference/stacks.md)
 node = "node-jest"
 
-[stacks.ts-func]                      # declare a stack: the plugins a project is built with
+[stacks.ts-func]                      # declare a stack: the plugins a project is built with (or choices = ["react", "vitest"], a saved selection: docs/reference/stacks.md)
 description = "Azure Function in TypeScript"
 language = "node"
 toolchain = ["eslint", "vitest"]

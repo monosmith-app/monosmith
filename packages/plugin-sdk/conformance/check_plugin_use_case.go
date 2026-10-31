@@ -64,11 +64,12 @@ func Check(c *host.Client, opts Options) Report {
 	}
 	names := map[string]bool{}
 	for _, st := range info.Stacks {
-		r.add("stack "+st.Name+" is complete", st.Name != "" && st.Language != "" && !names[st.Name], "a stack needs a unique name and a language plugin")
+		r.add("stack "+st.Name+" is complete", st.Name != "" && (st.Language != "" || len(st.Choices) > 0) && !names[st.Name], "a stack needs a unique name and a language plugin, or choices to derive it from")
 		names[st.Name] = true
 	}
 
 	checkScheduling(c, &r)
+	checkChoices(c, &r)
 
 	call := func(check, method string, params, result any) bool {
 		if !c.Supports(method) {

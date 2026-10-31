@@ -1,0 +1,6 @@
+axis = "lint"
+name = "eslint"
+description = "lint and format with @monosmith/eslint-config"
+language = "node"
+roles = ["toolchain"]
+default = true
