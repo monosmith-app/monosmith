@@ -1,0 +1,51 @@
+axis = "framework"
+name = "react"
+description = "a React 19 app in TypeScript, built with Vite"
+language = "node"
+roles = ["scaffold", "toolchain"]
+needs = ["lint", "test"]
+dependencies = ["react", "react-dom"]
+dev_dependencies = ["@types/react", "@types/react-dom", "@vitejs/plugin-react"]
+overrides = ["@babel/plugin-transform-runtime"]
+
+[tasks]
+typecheck = "tsc -p tsconfig.json --noEmit"
+
+[slots]
+entry = ["main.tsx"]
+"vite.imports" = ["import react from '@vitejs/plugin-react'"]
+"vite.plugins" = ["react()"]
+"tsconfig.options" = ['"jsx": "react-jsx"']
+"tsconfig.include" = ["src/**/*.tsx"]
+
+[files]
+# The app slice's root component greets.
+"src/main.tsx" = '''
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { App } from './app/index.ts'
+[[range index .Slots "entry.imports"]][[.]]
+[[end]]
+const root = document.getElementById('app')
+if (root === null) {
+  throw new Error('index.html has no #app')
+}
+createRoot(root).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+'''
+
+"src/app/app.component.tsx" = '''
+import { greet } from '../greeting'
+
+/** The app's root component. */
+export function App () {
+  return <h1>{greet('world').message}</h1>
+}
+'''
+
+"src/app/index.ts" = '''
+export { App } from './app.component.tsx'
+'''

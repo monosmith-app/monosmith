@@ -1,0 +1,29 @@
+# The version of every package a choice of the vite plugin names. A choice never
+# writes a version: to bump one, change one line here. Nothing installs "latest".
+[versions]
+typescript = "~6.0.3"
+vite = "^8.3.4"
+
+react = "^19.3.1"
+react-dom = "^19.3.1"
+"@types/react" = "^19.3.0"
+"@types/react-dom" = "^19.3.0"
+"@vitejs/plugin-react" = "^6.1.2"
+# @vitejs/plugin-react optionally peers @rolldown/plugin-babel, which optionally peers
+# @babel/plugin-transform-runtime ^7 || ^8; the newest is 8, which wants @babel/core 8. When the
+# workspace already holds Babel 7 (Jest brings it) npm cannot place both and fails with ERESOLVE
+# (issue 584). The Babel the Jest stack brings is 7, so the workspace stays on 7.
+"@babel/plugin-transform-runtime" = "^7.29.0"
+
+"@p5-wrapper/react" = "^5.0.4"
+p5 = "^2.3.4"
+
+vue = "^3.5.44"
+"@vitejs/plugin-vue" = "^6.0.10"
+vue-tsc = "^3.3.13"
+
+svelte = "^5.57.2"
+"@sveltejs/vite-plugin-svelte" = "^7.3.1"
+svelte-check = "^4.7.7"
+
+bootstrap = "^5.3.8"

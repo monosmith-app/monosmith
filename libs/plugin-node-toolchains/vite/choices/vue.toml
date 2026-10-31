@@ -1,0 +1,42 @@
+axis = "framework"
+name = "vue"
+description = "a Vue 3 app in TypeScript, built with Vite and type-checked by vue-tsc"
+language = "node"
+roles = ["scaffold", "toolchain"]
+needs = ["lint", "test"]
+dependencies = ["vue"]
+dev_dependencies = ["@vitejs/plugin-vue", "vue-tsc"]
+
+[tasks]
+typecheck = "vue-tsc -p tsconfig.json --noEmit"
+
+[slots]
+entry = ["main.ts"]
+"vite.imports" = ["import vue from '@vitejs/plugin-vue'"]
+"vite.plugins" = ["vue()"]
+"tsconfig.include" = ["src/**/*.vue"]
+
+[files]
+"src/main.ts" = '''
+import { createApp } from 'vue'
+import { App } from './app/index.ts'
+[[range index .Slots "entry.imports"]][[.]]
+[[end]]
+createApp(App).mount('#app')
+'''
+
+"src/app/app.component.vue" = '''
+<script setup lang="ts">
+import { greet } from '../greeting'
+
+const message = greet('world').message
+</script>
+
+<template>
+  <h1>{{ message }}</h1>
+</template>
+'''
+
+"src/app/index.ts" = '''
+export { default as App } from './app.component.vue'
+'''
