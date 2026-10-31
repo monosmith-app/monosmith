@@ -35,6 +35,8 @@ in the root `[workspace] members`. `smith doctor` warns when a member glob match
 |---|---|---|
 | `tauri-build` | `tauri build -- --target-dir {workspaceRoot}/dist/tauri/<project dir>`, after `^build` and the project's own `build` | yes; output `dist/tauri/<project dir>` |
 | `tauri-dev` | `tauri dev` | no |
+| `tauri-prepare` | only with sidecars or resources in `[projects.<p>.settings.tauri]`: builds the sidecars and copies them and the resources ([below](#sidecars-and-resources)); `tauri-build` and `tauri-dev` run it first | when everything it reads is in the cache key |
+| `tauri-verify` | only with sidecars or resources: checks the built app holds the sidecars; after `tauri-build` | no |
 
 `smith run tauri-dev -p studio` runs the app in development mode: it starts the web dev server
 itself, because the scaffold's `tauri.conf.json` has `beforeDevCommand` `npm run start` (Vite on
@@ -56,6 +58,11 @@ reads the same flag to find the bundles, so a relative path would depend on whic
 | `src-tauri is outside the root Cargo workspace` | A warning: the root `Cargo.toml` `[workspace] members` glob matches `<project>/src-tauri` and `exclude` does not name it. Remedy: narrow `members`, or list it under `exclude` |
 | `frontendDist of <project> is the project's build output` | A warning: `build.frontendDist` in `src-tauri/tauri.conf.json` is a folder other than the one smith builds the web app into (`dist/<project dir>`), so `tauri build` fails with "Unable to find your web assets". A URL is not checked. Remedy: set it to the path the check prints |
 | `the versions of <project> agree` | A warning: `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` carry different versions (a `tauri.conf.json` version that is a path to `package.json` counts as the same). Remedy: use `"version": "../package.json"` and the same version in `Cargo.toml`, or let `smith release` write them |
+| `the tauri settings of <project> are valid` | `[projects.<p>.settings.tauri]` has an unknown key or an entry that is not a table of the shape above. Remedy: fix it in `smith.toml` |
+| `the sidecar <name> of <project> is a project that exists` | The sidecar's `project` is not a project of the workspace, or not a Rust project. Remedy: name one of `smith projects`, or give a `from` |
+| `the sidecar <name> of <project> exists` | A sidecar given as `from` is not there (a warning when it is under `dist/`, which a build makes, or when its environment variable is unset). Remedy: build it first, or fix `from` |
+| `the resource <from> of <project> exists` | The resource's file or folder is missing or the pattern matches nothing (a warning under `dist/` or with an unset environment variable). Remedy: fix `from` |
+| `the sidecar <name> of <project> is named for this machine` | A warning: `tauri.conf.json` lists `<name>` in `bundle.externalBin`, smith does not manage it, and `<name>-<target triple>[.exe]` for this machine is missing, which Tauri requires. Remedy: declare it in `settings.tauri` sidecars |
 | `the system libraries Tauri needs on Linux` | `pkg-config` does not find `webkit2gtk-4.1`, `gtk+-3.0` or `librsvg-2.0` (Linux only). Remedy: `sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev` |
 
 ## Which toolchains combine with `tauri`
@@ -181,9 +188,76 @@ Two bundles of one runner that end in the same extension keep their folder's nam
 (`studio-1.0.0-windows-x64-nsis.exe`). The product in the name is the project's name; set
 `product` in the table to change it.
 
-A `build` that needs another program of the same release (VideoCraw's studio bundles the
-`videocraw` binary) builds it first in the same command, and `assets` then lists what you want
-(sidecars and resources are not handled by the plugin yet).
+### Sidecars and resources
+
+An app that bundles another program (a Tauri *sidecar*, `bundle.externalBin`) or extra files
+(`bundle.resources`) declares them in `smith.toml`, and `tauri-build` prepares them. The table is
+the generic plugin settings table of the project, `[projects.<p>.settings.tauri]`:
+
+```toml
+[projects.studio.settings.tauri]
+sidecars = [
+  { name = "videocraw", project = "cli", bin = "videocraw" },   # a Rust project of the workspace
+  { name = "ffmpeg-lite", from = "tools/ffmpeg-lite" },          # a file something else made
+]
+resources = [
+  "assets/models",                                               # a folder: its files, under models/
+  { from = "$VIDEOPLUGINS/dist", to = "plugins/" },              # from outside the repository
+]
+```
+
+| Key | Meaning |
+|---|---|
+| `sidecars[].name` | The program's name as the app starts it (`shell.sidecar("videocraw")`): no folder, no `.exe`. |
+| `sidecars[].project` | A Rust project of the workspace (its `smith projects` name). smith builds it with `cargo build --release -p <crate>` for this machine's platform and copies the program it makes. |
+| `sidecars[].bin` | Which program to take when the crate builds several. Default: the only one, else the one named like the sidecar, the crate or the project. |
+| `sidecars[].from` | Instead of `project`: a file that something else built. Relative to the workspace; `$NAME` is an environment variable; on Windows `.exe` is found without being written. |
+| `resources[]` | A path, or `{ from, to }`. `from` is a file, a folder (its contents are copied) or a pattern with `*` and `?`; relative to the workspace, `$NAME` or `${NAME}` is an environment variable. `to` is where it goes inside the app's resources (`plugins/` with a trailing slash puts a file in that folder); default the file or folder name. |
+
+A key it does not know, a sidecar with both or neither of `project` and `from`, and a resource that
+is missing, matches nothing, is an empty folder or names an unset environment variable all fail
+with a message that names the entry, so nothing empty is ever bundled.
+
+With the table, the plugin adds a `tauri-prepare` task that `tauri-build` (and `tauri-dev`) run
+first:
+
+1. builds each sidecar `project` in release mode (cargo is incremental, a built program costs a
+   moment);
+2. copies the program to `dist/tauri-prepare/<project dir>/binaries/<name>-<target triple>[.exe]`.
+   The triple is the host's from `rustc -vV` (`x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, ...) and
+   `.exe` is added for Windows, so the same setting works on every runner of a release;
+3. copies the resources under `dist/tauri-prepare/<project dir>/resources/`;
+4. writes `dist/tauri-prepare/<project dir>/tauri.config.json` with the `bundle.externalBin` and
+   `bundle.resources` entries, and `tauri-build` passes it as `tauri build --config <file>`.
+
+**tauri.conf.json is not edited.** Tauri merges the `--config` file into it, replacing arrays, so
+smith writes the developer's own `externalBin` entries and `resources` first and adds only the ones
+it lacks: a sidecar you already list in `tauri.conf.json` stays where you put it (smith copies the
+program to the path you gave, with the triple), and nothing of yours is overwritten. `resources`
+written as an array in `tauri.conf.json` cannot take smith's entries (they need the map form, which
+puts a folder at a name): use the map form `{ "folder/": "target/" }` or declare all of them in
+`smith.toml`; smith says so and stops.
+
+`tauri-prepare` and `tauri-build` are cached when everything they read is in the cache key: sidecars
+that name a project (any change to a Rust file or `Cargo.toml` in the workspace counts), and
+resources that are tracked files of the workspace. A sidecar given as `from`, a resource under
+`dist/`, outside the workspace or named by an environment variable is not in the key, so then both
+tasks run every time. They are never wrong, only slower.
+
+`tauri-verify` runs after `tauri-build` and the release's `build` runs both (`smith run tauri-build
+tauri-verify -p studio`). It fails when a declared sidecar is not beside the built app's program
+(`dist/tauri/<project dir>/release/<name>[.exe]`) or inside a bundle that is unpacked on disk: the
+`.app` of a macOS build, the data folder of a `.deb`, the AppDir of an AppImage. It does not open
+the installers that need an installer program to read them (`.exe`, `.msi`, `.dmg`, `.rpm`, the
+`.AppImage` file); Tauri itself stops the build when an `externalBin` file is missing.
+
+In CI the environment variable of a resource from another repository comes from
+`[[ci.sibling_repos]]` (see the [CI reference](../../../reference/ci.md)): the checkout is exported as a variable that the
+setting reads.
+
+Not supported yet: a sidecar that is not a Rust project (give its file as `from`), a build for a
+platform other than the runner's (`tauri build --target`), and glob patterns with `**` (name the
+folder instead).
 
 ### Versions
 
@@ -206,6 +280,14 @@ and `smith run tauri-build -p studio` in a scratch workspace: the MSI and the NS
 built under `dist/tauri/apps/studio/release/bundle`. **Not verified:** macOS and Linux builds
 (including the generated `icon.icns`), a release's `assets` job, and the installer names in the
 glob above on those platforms.
+
+Sidecars and resources: on Windows, with a Rust project as the sidecar and a folder inside and a
+folder outside the repository (an environment variable) as resources, `smith run tauri-build
+tauri-verify` built the app, the MSI holds the sidecar and both resource folders (read with
+`msiexec /a`), the second run came entirely from the cache, and a change to the sidecar's source
+ran the prepare step again. **Not verified:** the same on macOS and Linux (`.app`, `.deb` and
+AppImage layouts the verify step reads), the sidecar inside the NSIS installer, and a sidecar's
+`bin` when the crate builds several programs outside the unit tests.
 
 ## See also
 
