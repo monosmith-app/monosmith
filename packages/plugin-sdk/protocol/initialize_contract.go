@@ -57,6 +57,11 @@ type InitializeResult struct {
 	// as an app, lists them, so the host offers and the conformance suite
 	// asks for just those.
 	Kinds []ProjectKind `json:"kinds,omitempty"`
+	// Follows are the shape keys (see Project.Shape) the plugin applies when
+	// it generates a project with GenerateParams.Shape. Where siblings split
+	// on a key, the host asks the person only for a key that a plugin of the
+	// stack follows. Absent means the plugin follows none.
+	Follows []string `json:"follows,omitempty"`
 }
 
 // Scaffolds says whether the plugin can scaffold a project of the kind.

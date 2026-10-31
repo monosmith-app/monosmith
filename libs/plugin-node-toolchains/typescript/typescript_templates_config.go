@@ -21,6 +21,10 @@ var devDependencies = map[string]string{
 	"@monosmith/tsconfig": "^0.1.0",
 }
 
+// esbuildVersion is the esbuild a project that follows siblings building with
+// it pins in the workspace.
+const esbuildVersion = "^0.25.12"
+
 // GreetingSlice is the greeting slice every TypeScript project starts with:
 // a contract, a use case and the slice's index (its only public door). A
 // test-runner plugin (jest, vitest) adds the use case's spec.
@@ -75,8 +79,21 @@ func withGreetingSlice(templates map[string]string) map[string]string {
 	return templates
 }
 
+// shapeVars are the template variables the package.json of a project reads:
+// esbuild builds with esbuild, dist leads the entry points to the build folder,
+// and build says the project has a build script (a lib has none unless the
+// shape it follows asks for a build).
+const shapeVars = `[[- $esbuild := eq (index .Shape "build.tool") "esbuild" -]]
+[[- $dist := eq (index .Shape "exports.target") "dist" -]]
+[[- $build := or $esbuild $dist (eq (index .Shape "build.tool") "tsc") -]]
+`
+
+// libraryBuild is the build script of a lib or package: tsc, or esbuild for the
+// code and tsc for the declarations.
+const libraryBuild = `[[if $esbuild]]esbuild src/index.ts --bundle --packages=external --platform=node --format=esm --outdir=[[.Build]] && tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --outDir [[.Build]][[else]]tsc -p tsconfig.build.json[[if $dist]] --declaration[[end]] --outDir [[.Build]][[end]]`
+
 var appTemplates = map[string]string{
-	"[[.Dir]]/package.json": `{
+	"[[.Dir]]/package.json": shapeVars + `{
   "name": "[[.Package]]",
   "version": "0.0.0",
   "private": true,
@@ -84,7 +101,7 @@ var appTemplates = map[string]string{
   "smith": { "kind": "app"[[if .Stack]], "stack": "[[.Stack]]"[[end]] },
   "main": "[[.Build]]/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json --outDir [[.Build]]",
+    "build": "[[if $esbuild]]esbuild src/main.ts --bundle --packages=external --platform=node --format=esm --outdir=[[.Build]][[else]]tsc -p tsconfig.build.json --outDir [[.Build]][[end]]",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node [[.Build]]/main.js"
   }
@@ -97,15 +114,18 @@ process.stdout.write(greet('world').message + '\n')
 }
 
 var libTemplates = map[string]string{
-	"[[.Dir]]/package.json": `{
+	"[[.Dir]]/package.json": shapeVars + `{
   "name": "[[.Package]]",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "smith": { "kind": "lib"[[if .Stack]], "stack": "[[.Stack]]"[[end]] },
-  "exports": "./src/index.ts",
-  "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+[[if $dist]]  "main": "[[.Build]]/index.js",
+  "types": "[[.Build]]/index.d.ts",
+[[else]]  "exports": "./src/index.ts",
+[[end]]  "scripts": {
+[[if $build]]    "build": "` + libraryBuild + `",
+[[end]]    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
 `,
@@ -115,17 +135,19 @@ export type { Greeting } from './greeting/index.ts'
 }
 
 var packageTemplates = map[string]string{
-	"[[.Dir]]/package.json": `{
+	"[[.Dir]]/package.json": shapeVars + `{
   "name": "[[.Package]]",
   "version": "0.0.0",
   "description": "[[.Name]]",
   "license": "MIT",
   "type": "module",
   "smith": { "kind": "package"[[if .Stack]], "stack": "[[.Stack]]"[[end]] },
-  "exports": "./src/index.ts",
-  "publishConfig": { "access": "public" },
+[[if $dist]]  "main": "[[.Build]]/index.js",
+  "types": "[[.Build]]/index.d.ts",
+[[else]]  "exports": "./src/index.ts",
+[[end]]  "publishConfig": { "access": "public" },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json --outDir [[.Build]]",
+    "build": "` + libraryBuild + `",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

@@ -518,6 +518,13 @@ export interface GenerateParams {
    * scaffolds its own default. Set by the host; read only.
    */
   facts?: Record<string, unknown>
+  /**
+   * Shape is the dialect the new project should have: the facts (see Project.Shape) that most
+   * projects of its kind and language agree on, as the host counted them. A plugin applies the keys
+   * it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to
+   * follow, or the person asked for a fresh project.
+   */
+  shape?: Record<string, string>
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -592,6 +599,12 @@ export interface InitializeResult {
    * just those.
    */
   kinds?: ProjectKind[]
+  /**
+   * Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project
+   * with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a
+   * key that a plugin of the stack follows. Absent means the plugin follows none.
+   */
+  follows?: string[]
 }
 
 /**
@@ -760,6 +773,14 @@ export interface Project {
    * [projects.<project>.<name>] on top. Set by the host; a plugin reads its own entry.
    */
   settings?: Record<string, Record<string, unknown>>
+  /**
+   * Shape is the dialect of the project: named facts about how it is made ("build.tool": "esbuild",
+   * "test.runner": "@swc/jest", "exports.target": "dist"), each a short string, read from the
+   * manifest and files the plugin already reads in discovery. The host counts the shapes of the
+   * projects of one kind and language to let a new project follow what they do, and knows no key
+   * itself. Nil when the plugin does not describe shapes.
+   */
+  shape?: Record<string, string>
   /**
    * Registries are the private registries the project installs from and publishes to, from
    * smith.toml [registries]; nil means the public ones. Set by the host.

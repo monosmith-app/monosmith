@@ -1,6 +1,9 @@
 package typescript
 
 import (
+	"maps"
+
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -27,6 +30,7 @@ func (p *TypeScript) Describe(params protocol.InitializeParams) (protocol.Initia
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
 		Provides:  []string{"build", "typecheck"},
+		Follows:   []string{discovery.ShapeBuildTool, discovery.ShapeExportsTarget},
 		Stacks: []protocol.Stack{{
 			Name:        "node-ts",
 			Description: "TypeScript on Node, built and type-checked with tsc; no lint or tests",
@@ -50,5 +54,11 @@ func (p *TypeScript) Contribute(params protocol.ContributeParams) (protocol.Cont
 
 // Generate implements serve.Generator: the TypeScript starter.
 func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	return scaffolding.GenerateFrom(p.root, params, templates)
+	set := templates
+	if params.Shape[discovery.ShapeBuildTool] == "esbuild" {
+		// A project that builds with esbuild needs it in the workspace.
+		set.DevDependencies = maps.Clone(templates.DevDependencies)
+		set.DevDependencies["esbuild"] = esbuildVersion
+	}
+	return scaffolding.GenerateFrom(p.root, params, set)
 }

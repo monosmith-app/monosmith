@@ -11,6 +11,8 @@ type Toolchain struct {
 	Provides []string
 	// Stacks are the stacks the plugin publishes.
 	Stacks []protocol.Stack
+	// Follows are the shape keys the plugin applies (InitializeResult.Follows).
+	Follows []string
 	// Setup returns what to add to the project params names.
 	Setup func(workspaceRoot string, params protocol.GenerateParams) Setup
 	root  string
@@ -27,6 +29,7 @@ func (c *Toolchain) Describe(params protocol.InitializeParams) (protocol.Initial
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  c.Provides,
 		Stacks:    c.Stacks,
+		Follows:   c.Follows,
 	}, nil
 }
 

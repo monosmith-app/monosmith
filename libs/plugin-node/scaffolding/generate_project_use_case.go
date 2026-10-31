@@ -38,6 +38,10 @@ type templateData struct {
 	// ViteAlias is the Vite resolve.alias member for the module.aliases fact,
 	// or empty for no aliases.
 	ViteAlias string
+	// Shape is the dialect the project follows (GenerateParams.Shape); a
+	// template reads a fact with (index .Shape "build.tool"). Nil when there is
+	// none, and index then gives "".
+	Shape map[string]string
 }
 
 // Generate scaffolds one plain JavaScript project.
@@ -49,7 +53,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 // workspace's Node tooling the first time. It reports InstallPending: the
 // host installs once, so the new package is linked into node_modules.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot)}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape}
 	aliases := modulealiases.FromFacts(params.Facts)
 	data.TSPaths, data.ViteAlias = aliases.TSConfigPaths(), aliases.ViteResolveAlias()
 

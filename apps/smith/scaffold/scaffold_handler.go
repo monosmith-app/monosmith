@@ -19,7 +19,7 @@ import (
 func AddCommand(version string) *cobra.Command {
 	var lang, stack string
 	var choices []string
-	var verbose bool
+	var verbose, fresh bool
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
 		Short: "Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)",
@@ -36,6 +36,12 @@ When smith.toml names a recipe ([workspace] recipe), the recipe creates the
 project: it asks its choices one at a time (or take --choice name=answer, as
 often as needed, without asking), shows the plugins it picks, then makes the
 project as a stack's project is made. --stack bypasses the recipe.
+
+The project follows the siblings: when at least three projects of the same
+kind and language, and at least two thirds of them, share a build tool, a
+test runner or where their entry points lead, the new project does the same
+and says why. If they split, a terminal is asked; elsewhere the default is
+used and a warning says so. --fresh gives the stack's default instead.
 
 The project lints, type-checks, tests and builds immediately, and the CI
 pipelines are regenerated to install its toolchain.
@@ -75,7 +81,7 @@ wrote): review them with git status, then commit.`,
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 			began := time.Now()
 			res, err := AddProject(s, AddOptions{
-				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(),
+				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
 			})
 			if err != nil {
@@ -102,6 +108,7 @@ wrote): review them with git status, then commit.`,
 	}
 	cmd.Flags().StringVarP(&lang, "lang", "l", "", "language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language)")
 	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
+	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return cmd

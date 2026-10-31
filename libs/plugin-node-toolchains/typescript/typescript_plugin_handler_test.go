@@ -71,3 +71,57 @@ func TestTypeScriptProjectAllowsItsOwnImportsUnderAnyBase(t *testing.T) {
 		t.Errorf("index.ts:\n%s", index)
 	}
 }
+
+func generated(t *testing.T, kind protocol.ProjectKind, shape map[string]string) (project, root string) {
+	t.Helper()
+	scaffolding.Installer = func(string) error { return nil }
+	ws := t.TempDir()
+	p := New("1.0.0")
+	info, _ := p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	if len(info.Follows) != 2 {
+		t.Fatalf("follows %v", info.Follows)
+	}
+	params := protocol.GenerateParams{Kind: kind, Name: "dep", Directory: "packages/dep", Shape: shape, Workspace: protocol.WorkspaceInfo{Name: "Acme", Scope: "acme"}}
+	if _, err := p.Generate(params); err != nil {
+		t.Fatal(err)
+	}
+	manifest, _ := os.ReadFile(filepath.Join(ws, "packages", "dep", "package.json"))
+	rootManifest, _ := os.ReadFile(filepath.Join(ws, "package.json"))
+	return string(manifest), string(rootManifest)
+}
+
+func TestTypeScriptLibFollowsSiblingsThatBuildWithEsbuildIntoDist(t *testing.T) {
+	project, root := generated(t, protocol.ProjectLib, map[string]string{"build.tool": "esbuild", "exports.target": "dist"})
+	for _, want := range []string{`"build": "esbuild src/index.ts`, `--outdir=../../dist/packages/dep`, `"main": "../../dist/packages/dep/index.js"`, `"types": "../../dist/packages/dep/index.d.ts"`} {
+		if !strings.Contains(project, want) {
+			t.Errorf("package.json lacks %s:\n%s", want, project)
+		}
+	}
+	if strings.Contains(project, `"exports"`) {
+		t.Errorf("a lib that exports its build has no exports field:\n%s", project)
+	}
+	if !strings.Contains(root, `"esbuild"`) {
+		t.Errorf("the root does not pin esbuild:\n%s", root)
+	}
+}
+
+func TestTypeScriptPackageAndAppFollowTheBuildTool(t *testing.T) {
+	pkg, _ := generated(t, protocol.ProjectPackage, map[string]string{"build.tool": "esbuild", "exports.target": "dist"})
+	if !strings.Contains(pkg, `esbuild src/index.ts`) || !strings.Contains(pkg, `"types": "../../dist/packages/dep/index.d.ts"`) {
+		t.Errorf("package:\n%s", pkg)
+	}
+	app, _ := generated(t, protocol.ProjectApp, map[string]string{"build.tool": "esbuild"})
+	if !strings.Contains(app, `esbuild src/main.ts`) {
+		t.Errorf("app:\n%s", app)
+	}
+}
+
+func TestTypeScriptLibWithoutShapeKeepsTheDefault(t *testing.T) {
+	project, root := generated(t, protocol.ProjectLib, nil)
+	if !strings.Contains(project, `"exports": "./src/index.ts"`) || strings.Contains(project, `"build"`) {
+		t.Errorf("the default lib exports its source and has no build:\n%s", project)
+	}
+	if strings.Contains(root, `"esbuild"`) {
+		t.Errorf("the root pins esbuild without being asked:\n%s", root)
+	}
+}

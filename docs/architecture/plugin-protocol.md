@@ -128,6 +128,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `requires`, `conflicts` | plugins that must or must not share a project |
 | `stacks` | ready-made stacks the plugin publishes |
 | `kinds` | the project kinds `generate` can scaffold (`app`, `lib`, `package`); absent or empty means all three ([ADR 0039](decisions/0039-a-plugin-declares-the-project-kinds-it-scaffolds.md)) |
+| `follows` | the project shape keys `generate` applies when it is given `shape`; `discover` reports `shape`, the dialect of each project ([ADR 0041](decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md)) |
 | `concurrency` | how many requests the plugin can work on at once: absent or `0` is 1, `N` is N, `-1` leaves the number to the host (which keeps 32 in flight) |
 
 ### Capabilities

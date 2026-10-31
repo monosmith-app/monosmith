@@ -56,3 +56,26 @@ func read(t *testing.T, root, rel string) string {
 	}
 	return string(b)
 }
+
+func TestJestFollowsASiblingShapeThatCompilesWithSwc(t *testing.T) {
+	ws := t.TempDir()
+	write(t, ws, "package.json", `{"name": "acme"}`)
+	write(t, ws, "apps/web/package.json", `{"name": "@acme/web"}`)
+
+	c := New("1.0.0")
+	info, _ := c.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	if len(info.Follows) != 1 || info.Follows[0] != "test.runner" {
+		t.Fatalf("follows %v", info.Follows)
+	}
+	shape := map[string]string{"test.runner": "@swc/jest"}
+	if _, err := c.Generate(protocol.GenerateParams{Name: "web", Directory: "apps/web", Shape: shape}); err != nil {
+		t.Fatal(err)
+	}
+	project, root := read(t, ws, "apps/web/package.json"), read(t, ws, "package.json")
+	if !strings.Contains(project, `"@swc/jest"`) || strings.Contains(project, `"ts-jest"`) {
+		t.Fatalf("the transform is @swc/jest:\n%s", project)
+	}
+	if !strings.Contains(root, `"@swc/jest"`) || !strings.Contains(root, `"@swc/core"`) || strings.Contains(root, `"ts-jest"`) {
+		t.Fatalf("the root has the swc packages and not ts-jest:\n%s", root)
+	}
+}

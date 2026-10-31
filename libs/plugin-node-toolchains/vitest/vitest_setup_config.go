@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -23,7 +24,7 @@ var stacks = []protocol.Stack{{
 
 // New returns the plugin; version is reported in the handshake.
 func New(version string) *tooling.Toolchain {
-	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Setup: setup}
+	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Follows: []string{discovery.ShapeTestRunner}, Setup: setup}
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
