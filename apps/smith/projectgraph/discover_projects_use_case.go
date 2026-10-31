@@ -66,11 +66,21 @@ func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catal
 	}
 	ResolveEdges(projects)
 	ResolveSchemaEdges(projects, files, cfg)
+	if err := SeedFacts(projects, cfg); err != nil {
+		return nil, err
+	}
 	if err := ApplyStacks(projects, plugins, catalog, cfg); err != nil {
+		return nil, err
+	}
+	// The conventions' requests carry the stacks' default facts too.
+	if err := ResolveFacts(projects); err != nil {
 		return nil, err
 	}
 	applied, err := ApplyConventions(projects, plugins, cfg)
 	if err != nil {
+		return nil, err
+	}
+	if err := ResolveFacts(projects); err != nil {
 		return nil, err
 	}
 	for convention, names := range applied {

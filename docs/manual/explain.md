@@ -20,7 +20,7 @@ For why a task would **run again** rather than come from the cache, use
 ## Synopsis
 
 ```sh
-smith explain <project>[:<task>] [--task <task>] [--recipe] [--json]
+smith explain <project>[:<task>] [--task <task>] [--recipe] [--facts] [--fact <key>] [--json]
 ```
 
 ## Arguments and flags
@@ -36,6 +36,8 @@ Usage: `smith explain <project>[:<task>] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--fact <fact>` | string |  | print one shared fact (module.aliases) and where its value came from |
+| `--facts` | boolean | off | print the project's shared facts and where each value came from |
 | `--json` | boolean | off | print JSON |
 | `--recipe` | boolean | off | print only what the project's recipe decided, and where |
 | `--task <task>` | string |  | explain only this task (same as <project>:<task>) |
@@ -45,6 +47,10 @@ Usage: `smith explain <project>[:<task>] [flags]`
 - `<project>:<task>` and `--task <task>` are the same; either explains one task.
 - `--recipe` prints only what the project's recipe decided, and where; with `--json` it
   prints that for tools. It is an error for a project that was not made from a recipe.
+- `--facts` prints the project's [shared facts](../reference/configuration.md#shared-facts): each key
+  with its value, the scope that set it (project, workspace or plugin default) and the table or
+  plugin it came from. `--fact module.aliases` prints one. With `--json` it prints an array of
+  `{ "key", "value", "scope", "source" }`.
 - `--json` prints an array of tasks, each `{ "id", "description", "fields": [ { "name",
   "value", "source" } ] }`, with the fields `command`, `cwd`, `dependsOn`, `inputs`,
   `outputs`, `env` and `cache`.

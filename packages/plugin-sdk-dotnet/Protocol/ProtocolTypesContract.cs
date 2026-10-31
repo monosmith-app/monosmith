@@ -923,6 +923,9 @@ public sealed record Contribution : IProtocolValue<Contribution>
     /// <summary>Release is how the project's release files are made, for a project that releases through GitHub releases and leaves them out of its smith.toml [projects.&lt;name&gt;.release] table; what the table sets wins.</summary>
     public ReleaseDefaults? Release { get; init; }
 
+    /// <summary>Facts are the plugin's default facts for the project: typed values under namespaced keys ({"source.roots": ["src"]}) that other settings and plugins read through the merged Project.Facts. They are the lowest scope: a [facts] table in smith.toml wins over them, and two plugins that publish different values for one key are an error that names both.</summary>
+    public JsonMap Facts { get; init; } = new();
+
     /// <inheritdoc />
     public static Contribution Read(JsonAny? value, string path)
     {
@@ -933,6 +936,7 @@ public sealed record Contribution : IProtocolValue<Contribution>
             Replace = MapOf(Member(map, "replace"), Join(path, "replace"), ProjectTask.Read),
             DependsOn = MapOf(Member(map, "dependsOn"), Join(path, "dependsOn"), (value1, path1) => ListOf(value1, path1, StringValue)),
             Release = OptionalStruct<ReleaseDefaults>(Member(map, "release"), Join(path, "release")),
+            Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
         };
     }
 
@@ -959,6 +963,11 @@ public sealed record Contribution : IProtocolValue<Contribution>
         {
             writer.Property("release");
             Release.Write(writer);
+        }
+        if (Facts is { Count: > 0 })
+        {
+            writer.Property("facts");
+            writer.Any(Facts);
         }
         writer.EndObject();
     }
@@ -1656,6 +1665,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.&lt;plugin&gt; table); the same table is later the plugin's entry in Project.Settings. Nil when there are none.</summary>
     public JsonMap Settings { get; init; } = new();
 
+    /// <summary>Facts are the shared facts that hold for the new project, from smith.toml: [projects.&lt;name&gt;.facts] over [facts]. A key that is absent was set by no one: the plugin scaffolds its own default. Set by the host; read only.</summary>
+    public JsonMap Facts { get; init; } = new();
+
     /// <summary>Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project.</summary>
     public IReadOnlyDictionary<string, string> Shape { get; init; } = new Dictionary<string, string>();
 
@@ -1672,6 +1684,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Stack = StringValue(Member(map, "stack"), Join(path, "stack")),
             Convention = BooleanValue(Member(map, "convention"), Join(path, "convention")),
             Settings = ObjectOf(Member(map, "settings"), Join(path, "settings")),
+            Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
         };
     }
@@ -1702,6 +1715,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("settings");
             writer.Any(Settings);
+        }
+        if (Facts is { Count: > 0 })
+        {
+            writer.Property("facts");
+            writer.Any(Facts);
         }
         if (Shape is { Count: > 0 })
         {
@@ -2346,6 +2364,9 @@ public sealed record Project : IProtocolValue<Project>
     /// <summary>ReleaseAssets is what an app's release builds, from smith.toml [projects.&lt;project&gt;.release]: the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil for a project that has no release files. Set by the host.</summary>
     public AssetSpec? ReleaseAssets { get; init; }
 
+    /// <summary>Facts are the shared facts that hold for the project, merged by the host, narrowest scope first: [projects.&lt;name&gt;.facts], then [facts], then the defaults plugins published through Contribution.Facts. A key that is absent was set by no one: the plugin uses its own default. A request made before every plugin has contributed carries the smith.toml facts and the defaults published so far. Set by the host; read only.</summary>
+    public JsonMap Facts { get; init; } = new();
+
     /// <inheritdoc />
     public static Project Read(JsonAny? value, string path)
     {
@@ -2370,6 +2391,7 @@ public sealed record Project : IProtocolValue<Project>
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
             Registries = OptionalStruct<Registries>(Member(map, "registries"), Join(path, "registries")),
             ReleaseAssets = OptionalStruct<AssetSpec>(Member(map, "releaseAssets"), Join(path, "releaseAssets")),
+            Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
         };
     }
 
@@ -2454,6 +2476,11 @@ public sealed record Project : IProtocolValue<Project>
         {
             writer.Property("releaseAssets");
             ReleaseAssets.Write(writer);
+        }
+        if (Facts is { Count: > 0 })
+        {
+            writer.Property("facts");
+            writer.Any(Facts);
         }
         writer.EndObject();
     }

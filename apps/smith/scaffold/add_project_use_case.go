@@ -125,6 +125,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
 	params.Settings = settings[generator.Info.Plugin.Name]
+	if params.Facts, err = projectgraph.ConfigFacts(s.Config, opts.Name); err != nil {
+		return nil, err
+	}
 	var siblings dialect.Dialect
 	if !opts.Fresh {
 		siblings = siblingDialect(s, opts, kind, language, st)

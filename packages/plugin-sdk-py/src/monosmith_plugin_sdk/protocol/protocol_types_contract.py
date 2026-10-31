@@ -470,6 +470,13 @@ class Contribution(TypedDict, total=False):
     GitHub releases and leaves them out of its smith.toml [projects.<name>.release] table; what
     the table sets wins.
     """
+    facts: dict[str, Any]
+    """
+    Facts are the plugin's default facts for the project: typed values under namespaced keys
+    ({"source.roots": ["src"]}) that other settings and plugins read through the merged
+    Project.Facts. They are the lowest scope: a [facts] table in smith.toml wins over them, and
+    two plugins that publish different values for one key are an error that names both.
+    """
 
 
 class _CredentialRequired(TypedDict):
@@ -737,6 +744,12 @@ class GenerateParams(_GenerateParamsRequired, total=False):
     Settings are this plugin's own settings for the new project, from the recipe the project is
     created from (its settings.<plugin> table); the same table is later the plugin's entry in
     Project.Settings. Nil when there are none.
+    """
+    facts: dict[str, Any]
+    """
+    Facts are the shared facts that hold for the new project, from smith.toml:
+    [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin
+    scaffolds its own default. Set by the host; read only.
     """
     shape: dict[str, str]
     """
@@ -1034,6 +1047,14 @@ class Project(_ProjectRequired, total=False):
     ReleaseAssets is what an app's release builds, from smith.toml [projects.<project>.release]:
     the platforms and file names, so a plugin can check (doctor) and prepare (CI) for them. Nil
     for a project that has no release files. Set by the host.
+    """
+    facts: dict[str, Any]
+    """
+    Facts are the shared facts that hold for the project, merged by the host, narrowest scope
+    first: [projects.<name>.facts], then [facts], then the defaults plugins published through
+    Contribution.Facts. A key that is absent was set by no one: the plugin uses its own default.
+    A request made before every plugin has contributed carries the smith.toml facts and the
+    defaults published so far. Set by the host; read only.
     """
 
 
