@@ -39,6 +39,14 @@ Make the answer deterministic and independent of the order of the files. A refer
 derived file must not depend on whether that file exists yet: count a path in `owned` as existing.
 The Node plugin does this in `libs/plugin-node/deriving`.
 
+## Derive the files you scaffold
+
+A Node plugin that scaffolds a file from a template can derive it from the same template. Declare a
+`scaffolding.FileRenderer` in `libs/plugin-node/scaffolding` with the id, the version, the
+project-relative file and a function that returns your template set for a project. Its `Derive`
+method renders the whole file in the `file` mode, so a deleted file comes back whole. Raise the
+version when the template changes ([ADR 0049](../../architecture/decisions/0049-a-scaffold-is-also-the-renderer-of-its-own-files.md)).
+
 ## Test it
 
 `smith plugin check` calls `derive` on a plugin that advertises it. Unit-test the renderer with a

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/derive"
 	"github.com/monosmith-app/monosmith/apps/smith/dialect"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -190,6 +191,14 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		return &res, err
 	}
 	res.Files = append(res.Files, changed...)
+	// With derived files on, the files the scaffold wrote are recorded from the start.
+	recorded, err := derive.Sync(s)
+	if err != nil {
+		return &res, err
+	}
+	if len(recorded) > 0 {
+		res.Files = append(res.Files, "smith.lock")
+	}
 	sort.Strings(res.Files)
 	res.Files = slices.Compact(res.Files)
 	return &res, nil
