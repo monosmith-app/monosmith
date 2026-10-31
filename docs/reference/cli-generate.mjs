@@ -144,6 +144,7 @@ const argumentMeanings = {
   'add|kind': '`app`, `lib` or `package`, or a combined kind such as `go-lib` (`smith kinds`)',
   'add|name': "the project's name, in kebab-case",
   'remove|project': 'the project to remove',
+  'why|file': 'the file to explain, relative to the current directory',
   'why-miss|project:task': 'the task to explain, such as `web:build`',
   'explain|project[:task]': 'the project, optionally with one of its tasks, such as `web:build`',
   'run|task': 'the tasks to run, in order, such as `lint test`',
