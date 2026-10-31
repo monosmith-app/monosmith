@@ -19,6 +19,15 @@ const (
 	ShapeLintConfig    = "lint.config"
 	ShapeScripts       = "scripts"
 	ShapeLayout        = "layout"
+	// ShapeBuildOutput says where the build script writes: ShapeOutputProject
+	// (the project's own folder), ShapeOutputWorkspace (a folder outside the
+	// project, the workspace's dist/<project dir>) or none.
+	ShapeBuildOutput = "build.output"
+	// ShapeExportsMap is ShapeMapped when package.json has an exports map, else none.
+	ShapeExportsMap = "exports.map"
+	// ShapeJestConfig says where Jest is configured: ShapeConfigFile (a
+	// jest.config file), ShapeConfigPackage (the "jest" field) or none.
+	ShapeJestConfig = "jest.config"
 )
 
 // Shape values the plugins that follow a shape also write.
@@ -28,9 +37,17 @@ const (
 	ShapeTsJest     = "ts-jest"
 	ShapeTargetDist = "dist"
 	ShapeTargetSrc  = "src"
-	shapeOther      = "other"
-	shapeProject    = "project"
-	shapeWorkspace  = "root"
+	// ShapeOutputProject and ShapeOutputWorkspace are the values of ShapeBuildOutput.
+	ShapeOutputProject   = "project"
+	ShapeOutputWorkspace = "workspace"
+	// ShapeMapped is the value of ShapeExportsMap for a project with an exports map.
+	ShapeMapped = "map"
+	// ShapeConfigFile and ShapeConfigPackage are the values of ShapeJestConfig.
+	ShapeConfigFile    = "file"
+	ShapeConfigPackage = "package"
+	shapeOther         = "other"
+	shapeProject       = "project"
+	shapeWorkspace     = "root"
 )
 
 var (
@@ -76,7 +93,55 @@ func ProjectShape(dir string, raw []byte, pkg PackageManifest) map[string]string
 		ShapeLintConfig:    lint,
 		ShapeScripts:       joinOrNone(scripts),
 		ShapeLayout:        joinOrNone(folders),
+		ShapeBuildOutput:   buildOutput(pkg.Scripts["build"]),
+		ShapeExportsMap:    exportsMap(raw),
+		ShapeJestConfig:    jestConfigPlace(dir, raw),
 	}
+}
+
+// outputFlag matches the flags of a build script that name a folder or file it writes.
+var outputFlag = regexp.MustCompile(`--(?:outDir|outdir|outfile|declarationDir)[= ]+"?([^"\s&;|]+)"?`)
+
+// buildOutput says where a build script writes: "project" when every output
+// flag names a place inside the project folder, "workspace" when one leads out
+// of it (../../dist/packages/a), "none" when the script names none.
+func buildOutput(script string) string {
+	matches := outputFlag.FindAllStringSubmatch(script, -1)
+	if len(matches) == 0 {
+		return ShapeNone
+	}
+	for _, m := range matches {
+		if p := path.Clean(m[1]); p == ".." || strings.HasPrefix(p, "../") {
+			return ShapeOutputWorkspace
+		}
+	}
+	return ShapeOutputProject
+}
+
+// exportsMap is "map" when package.json has an exports object, else "none".
+func exportsMap(raw []byte) string {
+	var fields struct {
+		Exports json.RawMessage `json:"exports"`
+	}
+	if json.Unmarshal(raw, &fields) == nil && len(fields.Exports) > 0 && fields.Exports[0] == '{' {
+		return ShapeMapped
+	}
+	return ShapeNone
+}
+
+// jestConfigPlace says where Jest is configured: "file" for a jest.config
+// file, "package" for the "jest" field of package.json, else "none".
+func jestConfigPlace(dir string, raw []byte) string {
+	if matches, _ := filepath.Glob(filepath.Join(dir, "jest.config.*")); len(matches) > 0 {
+		return ShapeConfigFile
+	}
+	var fields struct {
+		Jest json.RawMessage `json:"jest"`
+	}
+	if json.Unmarshal(raw, &fields) == nil && len(fields.Jest) > 0 {
+		return ShapeConfigPackage
+	}
+	return ShapeNone
 }
 
 func joinOrNone(values []string) string {

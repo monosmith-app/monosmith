@@ -28,3 +28,13 @@ func TestAddStepsNameWhatIsHappeningInWords(t *testing.T) {
 		t.Fatalf("done: %q", got)
 	}
 }
+
+func TestDirectoryReasonSaysWhyTheProjectLeftItsKindFolder(t *testing.T) {
+	got := directoryReason("lib", "libs", "packages")
+	if !strings.Contains(got, "goes to packages/, not libs/") || !strings.Contains(got, "list packages/* and not libs/*") {
+		t.Errorf("got %q", got)
+	}
+	if directoryReason("lib", "libs", "libs") != "" {
+		t.Error("a project in its own folder needs no reason")
+	}
+}

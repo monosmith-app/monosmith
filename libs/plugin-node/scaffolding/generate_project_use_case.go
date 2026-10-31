@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -29,6 +30,14 @@ type templateData struct {
 	// Build is the project's build directory relative to it
 	// (../../dist/apps/web): every build goes to the workspace's dist/.
 	Build string
+	// BuildLocal is true when the shape asks for the build in the project's own
+	// dist folder; Build is then "dist".
+	BuildLocal bool
+	// BuildConfig is the tsconfig file the build uses (tsconfig.build.json, or
+	// tsconfig.lib.json when the siblings have one).
+	BuildConfig string
+	// TsconfigSpec is true when the siblings have a tsconfig.spec.json.
+	TsconfigSpec bool
 	// Up leads from the project to the workspace root (../../).
 	Up string
 	// TestSuffix is the workspace's test file suffix, "spec" or "test".
@@ -90,6 +99,10 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 // newTemplateData is what the templates of a project read.
 func newTemplateData(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) templateData {
 	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
+	if params.Shape[discovery.ShapeBuildOutput] == discovery.ShapeOutputProject {
+		data.Build, data.BuildLocal = "dist", true
+	}
+	data.BuildConfig, data.TsconfigSpec = TsconfigSet(params.Shape)
 	aliases := modulealiases.FromFacts(params.Facts)
 	data.TSPaths, data.ViteAlias = aliases.TSConfigPaths(), aliases.ViteResolveAlias()
 	return data

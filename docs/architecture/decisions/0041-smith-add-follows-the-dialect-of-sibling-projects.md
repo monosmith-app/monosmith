@@ -28,6 +28,9 @@ For Node projects these facts are:
 | `lint.config` | `project` when the folder has its own ESLint config, else `root` |
 | `scripts` | the sorted script names |
 | `layout` | the sorted top-level folders of the project, without `node_modules` and `dist` |
+| `build.output` | where the build script writes: `project` (its own folder, `dist`), `workspace` (`../../dist/<dir>`), or `none` |
+| `exports.map` | `map` when package.json has an `exports` object, else `none` |
+| `jest.config` | `file` for a `jest.config.*` file, `package` for the `jest` field, or `none` |
 
 The core knows no key. It treats a shape as a map of strings.
 
@@ -82,7 +85,12 @@ nothing about siblings is printed.
 **Node.** `libs/plugin-node` describes the shape in discovery. The toolchain plugins follow it:
 `typescript` follows `build.tool` (`tsc`, `esbuild`) and `exports.target` (`dist`, `src`); `jest`
 follows `test.runner` (`jest`, `ts-jest`, `@swc/jest`); `vitest` follows `test.runner` (`vitest`).
-A key that no plugin follows, such as `tsconfig.files`, is reported and warned about.
+`typescript` also follows `build.output` (the build goes to the project's own `dist`, with
+`--declarationDir`), `exports.map` and `tsconfig.files`: siblings with a `tsconfig.lib.json` get
+it, a `tsconfig.json` that only references it and, when they have one, a `tsconfig.spec.json`;
+`jest` follows `jest.config` (a `jest.config.cts`, and a `.spec.swcrc` for `@swc/jest`).
+A key that no plugin follows is reported and warned about. A sibling set with only a
+`tsconfig.json` is not followed: the new project keeps its default set and gets the warning.
 
 ## Consequences
 
