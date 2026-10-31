@@ -72,7 +72,8 @@ func planSelection(s *session.Session, opts AddOptions) (*selectionPlan, error) 
 	if err != nil {
 		return nil, err
 	}
-	st.Name, plan.stack, plan.reuse = name, st, reuse
+	st.Name = name
+	plan.stack, plan.reuse = st, reuse
 	return plan, nil
 }
 

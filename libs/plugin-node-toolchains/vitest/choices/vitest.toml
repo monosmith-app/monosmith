@@ -1,0 +1,6 @@
+axis = "test"
+name = "vitest"
+description = "test with Vitest"
+language = "node"
+roles = ["toolchain"]
+default = true

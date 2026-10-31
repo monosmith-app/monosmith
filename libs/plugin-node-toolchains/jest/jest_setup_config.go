@@ -23,7 +23,7 @@ var stacks = []protocol.Stack{{
 
 // New returns the plugin; version is reported in the handshake.
 func New(version string) *tooling.Toolchain {
-	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Follows: []string{discovery.ShapeTestRunner}, Setup: setup}
+	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Choices: choices.Choices(), Follows: []string{discovery.ShapeTestRunner}, Setup: setup}
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
