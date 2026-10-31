@@ -1,5 +1,7 @@
 package plugininstall
 
+import "context"
+
 // Kind says where a plugin comes from.
 type Kind string
 
@@ -87,3 +89,19 @@ type Described struct {
 	Argv     []string
 	Command0 string
 }
+
+// Resolved is a marketplace name turned into something Install accepts.
+type Resolved struct {
+	// Name is the plugin and version as found, such as "widget@1.2.0".
+	Name string
+	// Origin is the index the name was found in.
+	Origin string
+	// Source is the archive's https URL and SHA256 the digest the index lists for it.
+	Source, SHA256 string
+}
+
+// Resolver turns an install argument that names a marketplace plugin into the
+// archive to fetch. It returns false, and no error, for an argument that is
+// not a marketplace name (a path, a URL, github:owner/repo@tag), which Install
+// handles as before.
+type Resolver func(ctx context.Context, arg string) (Resolved, bool, error)

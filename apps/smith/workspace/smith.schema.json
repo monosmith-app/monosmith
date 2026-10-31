@@ -141,6 +141,7 @@
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "array", "items": { "type": "string" }, "description": "Built-in language plugins to load. Default: all of them." },
+        "marketplace": { "type": "string", "description": "The plugin index smith plugin search and smith plugin install <name> read: an https URL or a file path. SMITH_MARKETPLACE overrides it. Default: the index of github.com/monosmith-app/plugins." },
         "external": {
           "type": "object",
           "description": "Plugins outside the smith binary, by name; one replaces a built-in plugin of the same name.",

@@ -11,7 +11,8 @@ and the settings a plugin reads. The model behind it is in
 |---|---|
 | `smith plugin list [--json]` | lists the built-in plugins, the external plugins the workspace uses (trusted or not, and what each may see) and the plugins installed on the search path |
 | `smith plugin check <name or path> [--generate] [--env NAME] [--json]` | runs the conformance suite against a plugin, which needs no trust |
-| `smith plugin install <path|url|github:owner/repo@tag>` | installs a packaged plugin after checking it against its sha256; `--pin` also pins the digest in `smith.toml` |
+| `smith plugin search [term]` | lists the plugins of the [marketplace](marketplace.md) that match the term |
+| `smith plugin install <name[@version]|path|url|github:owner/repo@tag>` | installs a packaged plugin after checking it against its sha256 (a name is looked up in the marketplace); `--pin` also pins the digest in `smith.toml` |
 | `smith plugin pack [dir]` | packs a plugin directory you wrote into an archive for `install` |
 | `smith plugin trust <name> [--yes] [--pin]` | reviews an external plugin and records that you trust it, so smith may start it |
 | `smith plugin untrust <name>` | forgets that you trust an external plugin |
@@ -219,7 +220,7 @@ smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin
 
 ```text
 Installed widget 0.1.0 in ~/work/inst/.smith/plugins/widget (2 files, from ./widget-0.1.0.smith-plugin.zip).
-  archive sha256 db7fb4c0...2204d matches the digest you gave or the release published.
+  archive sha256 db7fb4c0...2204d matches the digest you gave, or the marketplace or release published.
   every file matches checksums.sha256.
   the plugin was not started.
 Pinned sha256 9e36a074...e7087 in smith.toml [plugins.external.widget], which is what CI checks.

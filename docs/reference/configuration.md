@@ -97,6 +97,7 @@ enabled = false                       # no MonoSmith agent files on purpose (smi
 
 [plugins]
 enabled = ["node", "go", "python"]    # default: every built-in plugin
+marketplace = "https://example.com/plugins/index.json"   # where `smith plugin search|install <name>` look; default: monosmith-app/plugins
 
 [default_stacks]                      # a project's stack when it records none (docs/reference/stacks.md)
 node = "node-jest"
@@ -606,6 +607,7 @@ See [Releasing](releasing.md#apps).
 | `SMITH_RELEASE_ANY_BRANCH` | allow a real release from another branch |
 | `SMITH_PYPI_SIMPLE_URL` | the simple index to check before uploading to a custom Python index |
 | `SMITH_PLUGIN_PATH` | directories to look for installed plugins in, after the workspace's `.smith/plugins` (docs/reference/plugins.md) |
+| `SMITH_MARKETPLACE` | the plugin index `smith plugin search` and `smith plugin install <name>` read: an https URL or a file path; wins over `[plugins] marketplace` |
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/`, and the external plugins you trust are recorded in its `trust.json` |
 | `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
 | `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
