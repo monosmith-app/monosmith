@@ -22,6 +22,11 @@ type GenerateParams struct {
 	// same table is later the plugin's entry in Project.Settings. Nil when
 	// there are none.
 	Settings map[string]any `json:"settings,omitempty"`
+	// Facts are the shared facts that hold for the new project, from
+	// smith.toml: [projects.<name>.facts] over [facts]. A key that is absent
+	// was set by no one: the plugin scaffolds its own default. Set by the
+	// host; read only.
+	Facts map[string]any `json:"facts,omitempty"`
 }
 
 // WorkspaceInfo is the subset of workspace settings plugins may use.

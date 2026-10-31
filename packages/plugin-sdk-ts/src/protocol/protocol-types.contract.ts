@@ -289,6 +289,13 @@ export interface Contribution {
    * sets wins.
    */
   release?: ReleaseDefaults
+  /**
+   * Facts are the plugin's default facts for the project: typed values under namespaced keys
+   * ({"source.roots": ["src"]}) that other settings and plugins read through the merged
+   * Project.Facts. They are the lowest scope: a [facts] table in smith.toml wins over them, and two
+   * plugins that publish different values for one key are an error that names both.
+   */
+  facts?: Record<string, unknown>
 }
 
 /** Credential is a secret the release phase needs. */
@@ -505,6 +512,12 @@ export interface GenerateParams {
    * Project.Settings. Nil when there are none.
    */
   settings?: Record<string, unknown>
+  /**
+   * Facts are the shared facts that hold for the new project, from smith.toml:
+   * [projects.<name>.facts] over [facts]. A key that is absent was set by no one: the plugin
+   * scaffolds its own default. Set by the host; read only.
+   */
+  facts?: Record<string, unknown>
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -758,6 +771,14 @@ export interface Project {
    * a project that has no release files. Set by the host.
    */
   releaseAssets?: AssetSpec
+  /**
+   * Facts are the shared facts that hold for the project, merged by the host, narrowest scope
+   * first: [projects.<name>.facts], then [facts], then the defaults plugins published through
+   * Contribution.Facts. A key that is absent was set by no one: the plugin uses its own default. A
+   * request made before every plugin has contributed carries the smith.toml facts and the defaults
+   * published so far. Set by the host; read only.
+   */
+  facts?: Record<string, unknown>
 }
 
 /**

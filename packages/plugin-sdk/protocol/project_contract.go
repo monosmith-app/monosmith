@@ -66,6 +66,13 @@ type Project struct {
 	// can check (doctor) and prepare (CI) for them. Nil for a project that
 	// has no release files. Set by the host.
 	ReleaseAssets *AssetSpec `json:"releaseAssets,omitempty"`
+	// Facts are the shared facts that hold for the project, merged by the
+	// host, narrowest scope first: [projects.<name>.facts], then [facts],
+	// then the defaults plugins published through Contribution.Facts. A key
+	// that is absent was set by no one: the plugin uses its own default. A
+	// request made before every plugin has contributed carries the smith.toml
+	// facts and the defaults published so far. Set by the host; read only.
+	Facts map[string]any `json:"facts,omitempty"`
 }
 
 // SetToolchain records the toolchain on every discovered project. The probe
