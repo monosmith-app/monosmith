@@ -316,6 +316,34 @@ go = "1.23"      # any 1.23.x
 
 A version is a prefix on dot boundaries: `22` accepts 22.3.0 and not 220.0.0. `smith doctor` fails when a machine runs another version, naming the remedy (`mise use node@22`), and `smith doctor --fix` writes the pins to `.tool-versions`, which mise and asdf read and install from; the fix is applied automatically only when that file is new, otherwise it is shown as a diff. smith does not download runtimes itself ([ADR 0020](../architecture/decisions/0020-toolchain-pins-checked-not-downloaded.md)). The installed version is already part of every task's cache key, so a machine on another version never reuses a result. A pin for a tool no project uses, or that is not installed, gives no finding.
 
+## Shared facts
+
+A fact is a value that several tools must agree on, under a namespaced key. Plugins publish a
+default for each; `[facts]` sets one for every project, and `[projects.<name>.facts]` for one
+project. The narrowest table wins, then the plugin defaults
+([ADR 0042](../architecture/decisions/0042-plugins-publish-shared-facts-the-core-merges.md)).
+
+```toml
+[facts]
+"module.aliases" = { "@app" = "src" }
+
+[projects.web.facts]
+"source.roots" = ["src", "generated"]
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `module.aliases` | table of strings | import alias to a directory relative to the project. The Node toolchains write it into `tsconfig.json` (`paths`), Jest (`moduleNameMapper`), Vite (`resolve.alias`) and Vitest when they scaffold a project. |
+| `source.roots` | array of strings | directories that hold source code |
+| `test.patterns` | array of strings | globs that select test files |
+| `build.outputs` | array of strings | directories a build writes |
+| `runtime.node` | string | the Node.js version range |
+
+A key of another namespace (`acme.region`) holds any value. A bad key, or a value of the wrong type
+for a key above, stops smith with a message that names the table. `smith explain <project> --facts`
+shows each value and where it came from. Plugin authors: [Sharing facts between
+plugins](../plugins/creating/shared-facts.md).
+
 ## Leaving directories out
 
 smith makes a project of every manifest it finds (`package.json`, `go.mod`,

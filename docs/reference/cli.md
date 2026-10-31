@@ -641,6 +641,8 @@ Usage: `smith explain <project>[:<task>] [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--fact <fact>` | print one shared fact (module.aliases) and where its value came from |  |
+| `--facts` | print the project's shared facts and where each value came from | off |
 | `--json` | print JSON | off |
 | `--recipe` | print only what the project's recipe decided, and where | off |
 | `--task <task>` | explain only this task (same as <project>:<task>) |  |

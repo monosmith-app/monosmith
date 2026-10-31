@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/factmerge"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -49,6 +50,12 @@ type Project struct {
 	// smith.toml depends_on override leaves out ("build (from plugin node)"),
 	// for doctor to name.
 	Dropped map[string][]string `json:"-"`
+	// FactDetail is each merged fact with the scope and source that supplied
+	// it, for smith explain. Facts holds the values only.
+	FactDetail map[string]factmerge.Fact `json:"-"`
+	// factLayers are the layers FactDetail is merged from: smith.toml's and,
+	// once a plugin has contributed, the plugin's defaults.
+	factLayers []factmerge.Layer
 	// contributed maps "task.field" to the plugin or convention that set it.
 	contributed map[string]string
 	// releaseDefaults are the release settings a plugin supplied for the

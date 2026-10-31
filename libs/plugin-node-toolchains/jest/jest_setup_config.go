@@ -1,8 +1,11 @@
 package jest
 
 import (
+	"maps"
+
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/modulealiases"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -24,12 +27,17 @@ func New(version string) *tooling.Toolchain {
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
-	devDependencies, transform := tsJest()
+	// A module.aliases fact adds its aliases to the mapper and, for ts-jest, to
+	// the compiler options it type-checks with; without one, neither changes.
+	aliases := modulealiases.FromFacts(params.Facts)
+	devDependencies, transform := tsJest(aliases)
 	if params.Shape[discovery.ShapeTestRunner] == discovery.ShapeSwcJest {
 		devDependencies, transform = swcJest()
 	}
 	devDependencies["@jest/globals"] = "^30.5.2"
 	devDependencies["jest"] = "^30.5.2"
+	mapper := map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"}
+	maps.Copy(mapper, aliases.JestModuleNameMapper())
 	return tooling.Setup{
 		DevDependencies: devDependencies,
 		Files:           tooling.StarterSpec(workspaceRoot, params, "@jest/globals"),
@@ -39,17 +47,19 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 		Fields: map[string]any{"jest": map[string]any{
 			"testEnvironment":  "node",
 			"roots":            []string{"<rootDir>/src"},
-			"moduleNameMapper": map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"},
+			"moduleNameMapper": mapper,
 			"transform":        map[string]any{`^.+\.ts$`: transform},
 		}},
 	}
 }
 
 // tsJest is the default compiler of the tests: ts-jest.
-func tsJest() (devDependencies map[string]string, transform []any) {
-	return map[string]string{"ts-jest": "^29.4.15"}, []any{"ts-jest", map[string]any{"tsconfig": map[string]any{
-		"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false,
-	}}}
+func tsJest(aliases modulealiases.Aliases) (devDependencies map[string]string, transform []any) {
+	compiler := map[string]any{"module": "commonjs", "moduleResolution": "bundler", "verbatimModuleSyntax": false}
+	if paths := aliases.CompilerPaths(); paths != nil {
+		compiler["paths"] = paths
+	}
+	return map[string]string{"ts-jest": "^29.4.15"}, []any{"ts-jest", map[string]any{"tsconfig": compiler}}
 }
 
 // swcJest compiles the tests with @swc/jest, the compiler a workspace converted

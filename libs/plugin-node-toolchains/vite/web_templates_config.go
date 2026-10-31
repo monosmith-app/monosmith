@@ -99,7 +99,7 @@ func (a webApp) viteConfig() string {
 
 // The build goes to the workspace's dist/ (smith), never dist/ in the app.
 export default defineConfig({
-` + plugins + `  ` + build + `
+` + plugins + `[[.ViteAlias]]  ` + build + `
     outDir:      '[[.Build]]',
     emptyOutDir: true,
   },
@@ -136,7 +136,7 @@ func (a webApp) tsconfig() string {
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"][[.TSPaths]]
   },
   "include": [` + strings.Join(include, ", ") + `]
 }

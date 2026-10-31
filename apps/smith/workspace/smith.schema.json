@@ -132,6 +132,19 @@
         "remote_read_only": { "type": "boolean", "description": "Read the remote cache without writing to it (SMITH_CACHE_READ_ONLY=1 does the same). Default: false." }
       }
     },
+    "facts": {
+      "type": "object",
+      "description": "Shared facts every project gets: typed values under namespaced keys that plugins read when they set a project up. They win over the defaults plugins publish and lose to [projects.<name>.facts]. smith explain <project> --facts shows each value and where it came from.",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)+$" },
+      "additionalProperties": {},
+      "properties": {
+        "module.aliases": { "type": "object", "description": "Import aliases and the project-relative directory each stands for, such as { \"@app\" = \"src\" }. The TypeScript, Jest, Vite and Vitest plugins write them into the project's configs.", "additionalProperties": { "type": "string" } },
+        "source.roots": { "type": "array", "description": "Project-relative directories that hold source code.", "items": { "type": "string" } },
+        "test.patterns": { "type": "array", "description": "Globs that select test files, relative to the project.", "items": { "type": "string" } },
+        "build.outputs": { "type": "array", "description": "Project-relative directories a build writes.", "items": { "type": "string" } },
+        "runtime.node": { "type": "string", "description": "The Node.js version range the project runs on." }
+      }
+    },
     "toolchains": {
       "type": "object",
       "description": "Runtime versions the workspace builds with, by toolchain label (node, go, python, rustc, java, dotnet, ruby, php, dart, cmake). A version is a prefix: \"22\" accepts any 22.x. smith doctor reports a machine on another version.",
@@ -270,6 +283,19 @@
           },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },
           "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry." },
+          "facts": {
+            "type": "object",
+            "description": "Shared facts for this project, the narrowest scope: they win over [facts] and over the defaults plugins publish. Same keys as [facts].",
+            "propertyNames": { "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)+$" },
+            "additionalProperties": {},
+            "properties": {
+              "module.aliases": { "type": "object", "additionalProperties": { "type": "string" } },
+              "source.roots": { "type": "array", "items": { "type": "string" } },
+              "test.patterns": { "type": "array", "items": { "type": "string" } },
+              "build.outputs": { "type": "array", "items": { "type": "string" } },
+              "runtime.node": { "type": "string" }
+            }
+          },
           "settings": {
             "type": "object",
             "description": "Plugins' settings for this project, by plugin name: what a recipe's settings became when it created the project. A plugin reads its own table.",

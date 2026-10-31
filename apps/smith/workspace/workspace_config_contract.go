@@ -21,6 +21,11 @@ type Config struct {
 	// that runs another version, and --fix writes .tool-versions for mise
 	// and asdf. Default: none.
 	Toolchains map[string]string `toml:"toolchains"`
+	// Facts are shared facts every project gets, by namespaced key
+	// ("module.aliases", "source.roots"): typed values that plugins read when
+	// they set a project up. They win over the defaults plugins publish and
+	// lose to a project's own [projects.<name>.facts]. Default: none.
+	Facts map[string]any `toml:"facts"`
 	// Dependencies is the workspace's policy for the versions its projects
 	// declare.
 	Dependencies DependenciesSection `toml:"dependencies"`
@@ -418,6 +423,9 @@ type ProjectOverride struct {
 	// ([projects.<name>.settings.<plugin>]): what a recipe's settings became
 	// when it created the project. A plugin reads its own table.
 	Settings map[string]map[string]any `toml:"settings"`
+	// Facts are shared facts for this project, the narrowest scope: they win
+	// over [facts] and over the defaults plugins publish.
+	Facts map[string]any `toml:"facts"`
 	// Recipe records the recipe the project was created from.
 	Recipe *ProjectRecipe          `toml:"recipe"`
 	Tasks  map[string]TaskOverride `toml:"tasks"`
