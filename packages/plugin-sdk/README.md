@@ -21,7 +21,8 @@ minor version may change the Go API; the wire protocol is versioned on its own
 | `host` | the host side: start a plugin, handshake, call with timeouts, shut down; `host.Connect` drives a plugin in-process for tests |
 | `conformance` | `conformance.Check`: the checks `smith plugin check` runs, for a plugin's own tests |
 | `templating` | render a new project's files from `[[ ]]` templates, never overwriting a file |
-| `jsondoc` | edit JSON such as `package.json` in place, keeping key order |
+| `jsondoc` | edit JSON such as `package.json` in place, keeping key order and CRLF line endings |
+| `lineendings` | keep the line ending of an edited file; pick one for a new file from `.gitattributes`, git settings and sibling files |
 | `protocolschema` | the JSON Schema of the protocol, built from the types (see above); `schemagen` is its command |
 | `projectkind` | a project's kind when its manifest declares none, and the directory each kind lives in |
 | `toolrun` | run toolchain commands with their output on stderr, keeping stdout for the protocol |

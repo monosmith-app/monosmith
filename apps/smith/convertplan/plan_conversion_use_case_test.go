@@ -84,6 +84,26 @@ func legacyWorkspace(t *testing.T) (*nxworkspace.Workspace, Input) {
 	return w, Input{DirName: "legacy", Files: files, Tags: []string{"@legacy/kit@0.1.0"}, Read: func(f string) string { return contents[f] }}
 }
 
+func TestPlanWritesTheWorkspaceTagFormatWhenMostTagsFollowIt(t *testing.T) {
+	w, in := legacyWorkspace(t)
+	for _, name := range []string{"a", "b"} {
+		p := project("@legacy/"+name, "packages/"+name, "lib", []string{"package.json"}, map[string]nxworkspace.Target{})
+		p.Package = &nxworkspace.PackageJSON{Name: "@legacy/" + name}
+		w.Projects = append(w.Projects, p)
+		in.Tags = append(in.Tags, "@legacy/"+name+"@1.0.0")
+	}
+	plan := MakePlan(w, in)
+
+	if plan.Config.Release.TagFormat != ScopedTagFormat {
+		t.Fatalf("tag_format %q", plan.Config.Release.TagFormat)
+	}
+	for _, name := range []string{"kit", "a", "b"} {
+		if prefix := plan.Config.Projects[name].TagPrefix; prefix != "" {
+			t.Errorf("%s repeats the format as tag_prefix %q", name, prefix)
+		}
+	}
+}
+
 func TestPlanLegacyWorkspace(t *testing.T) {
 	w, in := legacyWorkspace(t)
 	plan := MakePlan(w, in)

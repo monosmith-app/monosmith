@@ -115,6 +115,7 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 			planProject(plan, w, p, names[p.Name], released[p.Name], pattern, in)
 		}
 	}
+	applyTagFormat(plan)
 	planRoot(plan, w, names)
 	if plan.Legacy {
 		for _, f := range legacyTools {
@@ -187,6 +188,10 @@ func planProject(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, n
 			if prefix, err = TagPrefix(pattern, p, def, in.Tags); err != nil {
 				plan.Add(Manual, name, "release tags", err.Error())
 			}
+		}
+		if lang != "go" || kind != protocol.ProjectPackage { // a Go module's own prefix is no choice
+			_, taggedUnderDefault := newestUnder(in.Tags, def)
+			plan.tagChoices = append(plan.tagChoices, tagChoice{project: name, prefix: prefix, fresh: prefix == def && !taggedUnderDefault})
 		}
 		if prefix != def {
 			o := plan.Override(name)

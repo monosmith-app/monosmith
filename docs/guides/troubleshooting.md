@@ -204,9 +204,11 @@ outside `dist/`) needs a decision only you can make; its remedy says what.
 - **Run smith from PowerShell, Git Bash or Windows Terminal.** Paths smith
   prints use forward slashes (`{workspaceRoot}/.venv/Scripts/python.exe`) on
   every system. That is deliberate and works on Windows.
-- **Line endings.** `smith new` writes a `.gitattributes`, so git normalises line
-  endings. The `CRLF will be replaced by LF` warnings git prints on Windows are
-  harmless.
+- **Line endings.** smith keeps the line ending of a file it edits, so a CRLF
+  checkout stays CRLF. A file it creates follows an `eol` rule in `.gitattributes`
+  (`smith new` writes `eol=lf`), then git's `core.eol` and `core.autocrlf`, then the
+  files beside it. The `CRLF will be replaced by LF` warnings git prints on Windows
+  are harmless.
 - **Long paths.** smith stores cache files with the `\\?\` prefix, so files past
   260 characters are cached correctly. Git itself needs `git config core.longpaths
   true` to check such files out.

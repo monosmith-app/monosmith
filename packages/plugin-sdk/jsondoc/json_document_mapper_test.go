@@ -86,6 +86,18 @@ func TestSetJSONMakesObjectsEditable(t *testing.T) {
 	}
 }
 
+func TestDocumentKeepsCRLF(t *testing.T) {
+	doc, err := ParseDocument([]byte("{\r\n  \"name\": \"a\"\r\n}\r\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.SetString("version", "1.0.0")
+	want := "{\r\n  \"name\": \"a\",\r\n  \"version\": \"1.0.0\"\r\n}\r\n"
+	if got := string(doc.Bytes()); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
 func TestString(t *testing.T) {
 	doc, _ := ParseDocument([]byte(`{"a": "x", "n": 1, "o": {}}`))
 	if v, ok := doc.String("a"); !ok || v != "x" {

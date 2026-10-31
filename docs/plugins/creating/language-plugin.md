@@ -292,7 +292,7 @@ func (w *widget) WriteVersion(p protocol.VersionParams) (protocol.VersionResult,
 A dry run lists the files it would change and changes none. `p.Dependencies` maps the identifiers of
 other workspace projects to their new versions, for a manifest that records dependency ranges; the
 example has none. The SDK's `jsondoc` package edits JSON in place and keeps the key order and layout,
-so a release does not reformat the file (in TypeScript and Python, `JsonDocument`; in C#, `EditableJsonDocument`).
+so a release does not reformat the file or turn CRLF lines into LF (in TypeScript and Python, `JsonDocument`; in C#, `EditableJsonDocument`).
 
 ## Step 6: health checks with fixes (`doctor`)
 

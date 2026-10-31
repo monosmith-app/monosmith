@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -98,7 +99,7 @@ func ensureWorkspace(root, workspaceName string, set TemplateSet) ([]string, err
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return written, err
 		}
-		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		if err := os.WriteFile(p, []byte(lineendings.Resolve(root, name, body)), 0o644); err != nil {
 			return written, err
 		}
 		written = append(written, name)
@@ -126,5 +127,6 @@ func ensureRootManifest(path, workspaceName string, devDependencies, overrides m
 	if !changed {
 		return false, nil
 	}
-	return true, os.WriteFile(path, out, 0o644)
+	text := lineendings.Resolve(filepath.Dir(path), filepath.Base(path), string(out))
+	return true, os.WriteFile(path, []byte(text), 0o644)
 }

@@ -135,7 +135,7 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 		if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
 			return changed, lost, readErr
 		}
-		content, missing := Preserve(string(old), content)
+		content, missing := preserveFile(root, path, string(old), content)
 		for _, slot := range missing {
 			lost = append(lost, path+": "+slot)
 		}
@@ -200,7 +200,7 @@ func Planned(root string, cfg workspace.Config, m Model) (files map[string]strin
 	files = map[string]string{}
 	for path, content := range Rendered(cfg, m) {
 		old, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
-		content, missing := Preserve(string(old), content)
+		content, missing := preserveFile(root, path, string(old), content)
 		for _, slot := range missing {
 			lost = append(lost, path+": "+slot)
 		}
@@ -225,7 +225,7 @@ func Drift(root string, cfg workspace.Config, m Model) []string {
 			drift = append(drift, path+" is missing")
 			continue
 		}
-		if kept, _ := Preserve(string(old), content); kept != string(old) {
+		if kept, _ := preserveFile(root, path, string(old), content); kept != string(old) {
 			drift = append(drift, path+" is out of date")
 		}
 	}

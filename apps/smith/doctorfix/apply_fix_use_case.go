@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -106,7 +107,7 @@ func ApplyFiles(root string, fix protocol.Fix) error {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(path, []byte(e.Content), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(lineendings.Resolve(root, e.Path, e.Content)), 0o644); err != nil {
 			return err
 		}
 	}
