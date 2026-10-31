@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/devservers"
 	"github.com/monosmith-app/monosmith/apps/smith/engineserver"
 	"github.com/monosmith-app/monosmith/apps/smith/godepscheck"
+	"github.com/monosmith-app/monosmith/apps/smith/languageserver"
 	"github.com/monosmith-app/monosmith/apps/smith/lockfilesync"
 	"github.com/monosmith-app/monosmith/apps/smith/mcpserver"
 	"github.com/monosmith-app/monosmith/apps/smith/npmaudit"
@@ -105,14 +106,14 @@ already have), then build and doctor.`,
 	add("inspect", clicontract.Commands(version)...)
 	mcpCmd := mcpserver.Command(version)
 	mcpCmd.AddCommand(agentfiles.McpInstallCommand())
-	add("inspect", mcpCmd, agentfiles.Command(), engineserver.Command(version))
+	add("inspect", mcpCmd, agentfiles.Command(), engineserver.Command(version), languageserver.Command(version))
 	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 
 // canAsk is whether a person is at the terminal to be asked to trust an
 // external plugin: stdin and stderr are terminals, this is not CI, and the
-// command is not one that serves other programs (smith serve, smith mcp) or
+// command is not one that serves other programs (smith serve, smith mcp, smith lsp) or
 // owns the screen (smith tui), which never ask.
 func canAsk(root *cobra.Command, args []string) bool {
 	if plugintrust.InCI(os.Getenv) || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
@@ -126,7 +127,7 @@ func canAsk(root *cobra.Command, args []string) bool {
 		cmd = cmd.Parent()
 	}
 	switch cmd.Name() {
-	case "serve", "mcp", "tui":
+	case "serve", "mcp", "lsp", "tui":
 		return false
 	}
 	return true

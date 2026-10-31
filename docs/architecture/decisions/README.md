@@ -72,8 +72,9 @@ Records 0004, 0005, 0008 and 0016 state their rationale as not recorded; so do p
 - Plugin repository. Where plugins live (this monorepo, their own repositories, a registry)
   and who publishes them.
 - Plugin flow. How a user discovers, adds and upgrades plugins and stacks end to end.
-- `smith lsp`, the language server for `smith.toml` and recipes, planned in
-  [#303](https://github.com/monosmith-app/monosmith/issues/303) and not built.
+- `smith lsp`, the language server for `smith.toml` and recipes, tracked in
+  [#303](https://github.com/monosmith-app/monosmith/issues/303). `smith.toml` diagnostics,
+  completion and hover exist; recipes and doctor findings are not built.
 - Plain-repository adoption at the full level,
   [#553](https://github.com/monosmith-app/monosmith/issues/553) (see [ADR 0034](0034-adopt-and-convert-depth-levels.md)).
 

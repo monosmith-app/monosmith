@@ -104,6 +104,7 @@ Python package). Paths in output are shortened.
 | [`smith schema`](schema.md) | Print the JSON Schema of `smith.toml`. |
 | [`smith commands`](commands.md) | List smith's commands with their arguments and options. |
 | [`smith serve`](serve.md) | Serve the engine to an editor over JSON-RPC (stdio). |
+| [`smith lsp`](lsp.md) | Serve `smith.toml` to an editor over the Language Server Protocol (stdio): diagnostics, completion, hover. |
 | [`smith mcp`](mcp.md) | Serve the workspace to an AI assistant over the Model Context Protocol (stdio); [`mcp install`](mcp-install.md) registers it for Claude Code and VS Code. |
 | [`smith agent`](agent.md) | Start the MonoSmith agent in Claude Code; [`agent install`](agent-install.md) adds it, with its MCP registration, to a workspace. |
 

@@ -63,6 +63,16 @@ folder, and it refuses a folder that holds anything besides `.git`, `.vscode`, `
 The VS Code extension offers them as "Create a new MonoSmith workspace" and "Bring this folder
 into MonoSmith", in the Projects view and in the status bar menu.
 
+## The language server (`smith lsp`)
+
+`smith lsp` is a Language Server Protocol server for `smith.toml`, on standard input and
+output. Any editor that starts a language server can use it: set `smith lsp` as the server
+command for files named `smith.toml`. It reports what smith would reject (syntax, unknown
+keys, wrong types, rejected values), completes table names, keys and enumerated values, and
+shows a key's description on hover, all from the schema. Recipe files, doctor findings as
+diagnostics and code actions are not built yet ([#303](https://github.com/monosmith-app/monosmith/issues/303)).
+The [VS Code extension](../manual/vscode.md) does not start it yet. See [`smith lsp`](../manual/lsp.md).
+
 ## The engine over JSON-RPC (`smith serve`)
 
 An editor plugin starts the installed smith as a child process, `smith serve`

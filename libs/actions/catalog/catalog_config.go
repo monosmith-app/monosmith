@@ -91,4 +91,5 @@ var catalog = []Action{
 	{Command: []string{"agent"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: "starts Claude Code on the terminal", NotInServe: "starts Claude Code on the terminal"},
 	{Command: []string{"agent", "install"}, Safety: Changes, Asks: true, NotInMCP: agentInstall, NotInServe: noMethodYet},
 	{Command: []string{"serve"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
+	{Command: []string{"lsp"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 }
