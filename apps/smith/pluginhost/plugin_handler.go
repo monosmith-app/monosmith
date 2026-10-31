@@ -1,6 +1,7 @@
 package pluginhost
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/plugininstall"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginmarket"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginpack"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -184,7 +186,7 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand())
+	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand())
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
@@ -268,7 +270,8 @@ func packCommand() *cobra.Command {
 	})
 }
 
-// installCommand is `smith plugin install`, reading manifests the way the host does.
+// installCommand is `smith plugin install`, reading manifests the way the host
+// does and resolving plugin names through the marketplace.
 func installCommand() *cobra.Command {
 	return plugininstall.Command(func(dir string) (plugininstall.Described, error) {
 		m, err := readInstalled(dir)
@@ -276,7 +279,35 @@ func installCommand() *cobra.Command {
 			return plugininstall.Described{}, err
 		}
 		return plugininstall.Described{Plugin: plugininstall.Plugin{Name: m.Name, Version: m.Version}, Argv: m.Argv, Command0: m.Command[0]}, nil
+	}, func(ctx context.Context, arg string) (plugininstall.Resolved, bool, error) {
+		if _, _, ok := pluginmarket.ParseName(arg); !ok {
+			return plugininstall.Resolved{}, false, nil
+		}
+		configured, err := configuredMarketplace()
+		if err != nil {
+			return plugininstall.Resolved{}, false, err
+		}
+		return pluginmarket.NewResolver(plugininstall.NewClient(), pluginmarket.Location(configured), pluginmarket.GitHubToken)(ctx, arg)
 	})
+}
+
+// searchCommand is `smith plugin search`.
+func searchCommand() *cobra.Command {
+	return pluginmarket.SearchCommand(plugininstall.NewClient(), configuredMarketplace)
+}
+
+// configuredMarketplace is the [plugins] marketplace value of the workspace
+// around the current directory, or "" when there is none.
+func configuredMarketplace() (string, error) {
+	root, _ := workspace.FindRoot(".")
+	if root == "" {
+		return "", nil
+	}
+	cfg, err := workspace.Load(root)
+	if err != nil {
+		return "", err
+	}
+	return cfg.Plugins.Marketplace, nil
 }
 
 // EnablePlugins turns built-in plugins on or off in the smith.toml at root:
