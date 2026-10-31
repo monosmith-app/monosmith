@@ -113,7 +113,16 @@ func CheckPlan(out io.Writer, plan Plan) error {
 		return nil
 	}
 	PrintPlan(out, plan)
-	return problem.New(fmt.Sprintf("%d derived files are out of date", len(pending)), "run smith derive, and commit the files and smith.lock")
+	title := fmt.Sprintf("%d derived files are out of date", len(pending))
+	for _, i := range pending {
+		switch i.Status {
+		case StatusDrift, StatusDiverged, StatusBroken:
+			// smith derive would hold these back, so name the choices instead.
+			return problem.New(title, "smith derive --explain <file> shows the diff",
+				"then --replace, --adopt or --eject <file> picks who owns the file")
+		}
+	}
+	return problem.New(title, "run smith derive, and commit the files and smith.lock")
 }
 
 func printOutcome(out io.Writer, plan Plan, o Outcome) {
