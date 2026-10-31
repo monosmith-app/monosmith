@@ -45,6 +45,21 @@ func TestCompleteRootManifestKeepsWhatIsThereAsWritten(t *testing.T) {
 	}
 }
 
+func TestCompleteRootManifestKeepsCRLF(t *testing.T) {
+	raw := "{\r\n  \"name\": \"acme\",\r\n  \"private\": true\r\n}\r\n"
+	out, changed, err := completeRootManifest([]byte(raw), "acme", map[string]string{"vitest": "^5.0.0"}, nil)
+	if err != nil || !changed {
+		t.Fatalf("changed %v, err %v", changed, err)
+	}
+	got := string(out)
+	if strings.Contains(strings.ReplaceAll(got, "\r\n", ""), "\n") {
+		t.Fatalf("a bare LF in a CRLF manifest:\n%q", got)
+	}
+	if !strings.Contains(got, "\"vitest\": \"^5.0.0\"") {
+		t.Fatalf("missing vitest in\n%q", got)
+	}
+}
+
 func TestCompleteRootManifestLeavesAFinishedOneUntouched(t *testing.T) {
 	raw := `{"name":"a","workspaces":["packages/*"],"devDependencies":{"vitest":"^5.0.0"}}`
 	out, changed, err := completeRootManifest([]byte(raw), "a", map[string]string{"vitest": "^4.0.0"}, nil)

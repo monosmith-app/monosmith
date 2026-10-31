@@ -6,6 +6,8 @@ import (
 	"errors"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 )
 
 // manifestMember is one member of a JSON object, its value left as written.
@@ -62,7 +64,8 @@ func completeRootManifest(raw []byte, workspaceName string, devDependencies, ove
 		return raw, false, nil
 	}
 	out, err := renderManifestMembers(members)
-	return out, true, err
+	// A CRLF manifest stays CRLF.
+	return []byte(lineendings.Match(string(raw), string(out))), true, err
 }
 
 // withMissingEntries is the object under key with the missing entries added,
