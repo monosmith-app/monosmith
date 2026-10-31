@@ -83,6 +83,7 @@ func Check(c *host.Client, opts Options) Report {
 	checkFacts(c, &r)
 	call("ci answers with no projects", protocol.MethodCI, protocol.CIParams{Projects: []protocol.Project{}}, &protocol.CIResult{})
 	call("doctor answers with no projects", protocol.MethodDoctor, protocol.DoctorParams{Projects: []protocol.Project{}}, &protocol.DoctorResult{})
+	call("derive answers with no projects", protocol.MethodDerive, protocol.DeriveParams{Projects: []protocol.Project{}}, &protocol.DeriveResult{})
 
 	if opts.Workspace != "" && caps.Generate {
 		generate(c, opts.Workspace, &r)

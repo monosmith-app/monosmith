@@ -292,7 +292,7 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, cancel := p.(Cancellable)
 	_, components := p.(ComponentLister)
 	_, derive := p.(Deriver)
-	return protocol.Capabilities{Derive: derive,Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components}
+	return protocol.Capabilities{Derive: derive, Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {
