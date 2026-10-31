@@ -12,6 +12,9 @@ exclude = ["docs/examples/**", "apps/smith/goldenpath/testdata/**"]
 
 [ci]
 providers = ["github"]
+# smith-v2 is the long-lived branch of the 2.0 work: it builds and tests like main
+# but never releases (only the release branch does).
+branches = ["main", "smith-v2"]
 # Every step of this repository's pipelines runs the smith built from the commit:
 # the installed one only bootstraps, so it need not change with every release.
 smith_version = "latest"
