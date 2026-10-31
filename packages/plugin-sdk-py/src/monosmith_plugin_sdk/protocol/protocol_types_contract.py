@@ -635,8 +635,16 @@ class DerivedFile(_DerivedFileRequired, total=False):
     """
     format: str
     """Format is "json" or "toml" for DeriveKeys."""
+    table: str
+    """
+    Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for
+    "json", whose keys are the top-level ones.
+    """
     keys: dict[str, Any]
-    """Keys are the owned top-level keys and their values (DeriveKeys)."""
+    """
+    Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a
+    boolean or an array of those.
+    """
 
 
 class _DevcontainerFeatureRequired(TypedDict):

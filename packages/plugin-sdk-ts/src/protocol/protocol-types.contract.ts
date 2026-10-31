@@ -421,7 +421,15 @@ export interface DerivedFile {
   comment?: string
   /** Format is "json" or "toml" for DeriveKeys. */
   format?: string
-  /** Keys are the owned top-level keys and their values (DeriveKeys). */
+  /**
+   * Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for
+   * "json", whose keys are the top-level ones.
+   */
+  table?: string
+  /**
+   * Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a
+   * boolean or an array of those.
+   */
   keys?: Record<string, unknown>
 }
 

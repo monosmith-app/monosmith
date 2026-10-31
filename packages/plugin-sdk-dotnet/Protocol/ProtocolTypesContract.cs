@@ -1307,7 +1307,10 @@ public sealed record DerivedFile : IProtocolValue<DerivedFile>
     /// <summary>Format is "json" or "toml" for DeriveKeys.</summary>
     public string Format { get; init; } = string.Empty;
 
-    /// <summary>Keys are the owned top-level keys and their values (DeriveKeys).</summary>
+    /// <summary>Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for "json", whose keys are the top-level ones.</summary>
+    public string Table { get; init; } = string.Empty;
+
+    /// <summary>Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a boolean or an array of those.</summary>
     public JsonMap Keys { get; init; } = new();
 
     /// <inheritdoc />
@@ -1324,6 +1327,7 @@ public sealed record DerivedFile : IProtocolValue<DerivedFile>
             Content = StringValue(Member(map, "content"), Join(path, "content")),
             Comment = StringValue(Member(map, "comment"), Join(path, "comment")),
             Format = StringValue(Member(map, "format"), Join(path, "format")),
+            Table = StringValue(Member(map, "table"), Join(path, "table")),
             Keys = ObjectOf(Member(map, "keys"), Join(path, "keys")),
         };
     }
@@ -1356,6 +1360,11 @@ public sealed record DerivedFile : IProtocolValue<DerivedFile>
         {
             writer.Property("format");
             writer.String(Format);
+        }
+        if (Table.Length > 0)
+        {
+            writer.Property("table");
+            writer.String(Table);
         }
         if (Keys is { Count: > 0 })
         {
