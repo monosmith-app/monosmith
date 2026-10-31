@@ -43,7 +43,7 @@ Usage: `smith new <name> [flags]`
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
-| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab`, `circleci`, `bitbucket` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
+| `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |

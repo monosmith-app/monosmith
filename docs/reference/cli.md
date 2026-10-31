@@ -143,7 +143,7 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
-| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
+| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
 
@@ -183,6 +183,24 @@ Usage: `smith kind <project> <kind> [flags]`
 | `--json` | print the plan and what was done as JSON | off |
 
 <!-- smith:end kind -->
+
+### smith tauri
+
+[Manual page](../manual/tauri.md)
+
+<!-- smith:begin tauri -->
+Add Tauri to a Node app, or make its icons
+
+Usage: `smith tauri <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith tauri add` | Make an existing Node app a Tauri desktop app |
+| `smith tauri icon` | Make the app's icons from a square PNG |
+
+No flags.
+
+<!-- smith:end tauri -->
 
 ### smith config
 

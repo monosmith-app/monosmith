@@ -51,6 +51,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
+	"github.com/monosmith-app/monosmith/apps/smith/tauriadd"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
 	"github.com/monosmith-app/monosmith/apps/smith/tui"
 	"github.com/monosmith-app/monosmith/apps/smith/upgrade"
@@ -94,7 +95,7 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version))
 	add("work", taskrun.Commands(version)...)
-	add("work", devservers.Command(version), eject.Command(version), kindchange.Command(version))
+	add("work", devservers.Command(version), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)

@@ -109,9 +109,25 @@ after the project's own `build`, so a second build would only repeat it. The bun
 A project made with `--stack node-vitest-tauri` has no web page: it gets `@tauri-apps/cli` and a
 `tauri` script, and `npx tauri init` writes `src-tauri`.
 
-An existing Node app does not join with a smith command yet: create `src-tauri` with
-`npx tauri init` (answer the frontend questions with `../../../dist/apps/<project>` for the
-dist folder and leave the build command empty), or copy the files of a `react-tauri` project.
+### Adding Tauri to an existing app
+
+One command makes an app that already exists, such as a Vite React app, a Tauri app:
+
+```sh
+smith tauri add studio
+```
+
+It writes the same `src-tauri` as above (never over a file that is already there), adds the same
+dependencies and script, keeps `src-tauri` out of a root Cargo workspace, installs, regenerates
+the pipelines and prints what it wrote and the commands to run next. The project must be a Node app
+with an `index.html`. Run it again and it changes nothing that is there.
+
+The project's stack gains `tauri` last in its toolchain, so its own ESLint, test and build
+tooling stay: `react` becomes `react-tauri` (the same make-up), and any other stack becomes
+`<stack>-tauri`, declared in `smith.toml`, with `[projects.studio] stack` naming it. See
+[`smith tauri add`](../../../manual/tauri-add.md). An app made with `npx tauri init` already has
+`src-tauri`: `smith tauri add` then only gives it the stack, the dependencies and the script (set
+`frontendDist` to the path `smith doctor` prints).
 
 ### Icons
 
@@ -119,10 +135,11 @@ The scaffold's icons are plain placeholders so the first build runs. Make the re
 square PNG (1024x1024 is best) in the project:
 
 ```sh
-npx tauri icon logo.png
+smith tauri icon logo.png -p studio
 ```
 
-It overwrites `src-tauri/icons/`.
+It runs the Tauri CLI's `icon` command in the app's folder (`npx tauri icon logo.png` does the
+same) and overwrites `src-tauri/icons/`.
 
 ## Releasing and CI
 
