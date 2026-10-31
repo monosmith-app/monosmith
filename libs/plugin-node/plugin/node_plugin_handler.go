@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -98,4 +99,9 @@ func (n *Node) Latest(params protocol.LatestParams) (protocol.LatestResult, erro
 // ChangeKind implements serve.KindChanger.
 func (n *Node) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(n.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (n *Node) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(n.root, params)
 }

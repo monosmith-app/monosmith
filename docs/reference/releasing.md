@@ -408,11 +408,20 @@ anything is released.
 
 Every app released with a GitHub Release also gets a CycloneDX 1.5 SBOM,
 `<product>_<version>_sbom.cdx.json`, attached next to its archives. smith
-writes it from the project's lockfile or manifest: Go lists the modules in
-`go.mod` (direct and indirect), npm the packages in the nearest
-`package-lock.json` (the project's or the workspace's), falling back to the
-ranges in `package.json`. Apps of other ecosystems get no SBOM yet; Python,
-Rust, .NET and the rest follow.
+writes it from what the project's plugin lists: each language plugin answers
+the `sbom/components` method of the plugin protocol with the project's
+components as package URLs, read from its lockfile where the ecosystem has one
+and from its manifest otherwise. Go lists the modules in `go.mod` (direct and
+indirect), npm the packages in the nearest `package-lock.json` (the project's
+or the workspace's), falling back to the ranges in `package.json`; Python
+(`uv.lock`, `poetry.lock`), Rust (`Cargo.lock`), .NET (`packages.lock.json`),
+Ruby (`Gemfile.lock`), PHP (`composer.lock`), Dart (`pubspec.lock`), the JVM
+(`gradle.lockfile`, `pom.xml`) and C++ (`vcpkg.json`, `conanfile.txt`) follow
+the same rule, each falling back to its manifest. A project that declares no
+dependency gets an SBOM that says so. smith does not read lockfiles itself: an
+app whose plugin does not implement `sbom/components` (a plugin written before
+the method, or one that has no packages to list) gets no SBOM, and the release
+carries on without one. Each plugin's page says which files it reads.
 
 On GitHub Actions the generated workflow then attests everything in
 `dist/release` (archives, Linux packages, checksums and the SBOM) with

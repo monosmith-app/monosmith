@@ -151,7 +151,7 @@ The re-packaging of one binary into every package manager is a core feature, not
 
 smith does not sign binaries with a paid certificate
 ([ADR 0011](decisions/0011-no-paid-code-signing.md)). It attaches `checksums.txt`, a CycloneDX SBOM per
-released app (`apps/smith/sbom`, Go and npm components), npm provenance through the job's OIDC
+released app (`apps/smith/sbom` renders it from the components the project's plugin lists with `sbom/components`), npm provenance through the job's OIDC
 token, and, on GitHub, an SLSA build-provenance attestation of the archives in `dist/release`
 (a pipeline step, see [CI generation](ci-generation.md#supply-chain-steps)).
 

@@ -235,6 +235,8 @@ $ smith release --dry-run --json      # excerpt for the package
 
 A dry run names the assets but builds nothing. There is no registry to configure: for a Go module the tag is the registry (releasing.md: "a Go module's tags are its registry"). Credentials: none for the module tag beyond push rights to `[release] remote`; `GITHUB_TOKEN` when `github_releases = true` or when an app attaches assets (see [releasing](../../../reference/releasing.md)).
 
+The release's SBOM lists the modules `go.mod` requires, direct and indirect, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 `smith ci generate` writes the toolchain and cache steps from the plugin's `ci` method. With three modules, `go.work` saying `go 1.27.0`, real output:

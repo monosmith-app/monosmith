@@ -181,6 +181,8 @@ $ smith release --dry-run --json      # excerpt
   "tag": "kit@0.1.0",  "publish": "dry run",  "registry": "https://api.nuget.org/v3/index.json"
 ```
 
+The release's SBOM lists the packages of `packages.lock.json`, falling back to the `PackageReference`s of the project file, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 Real output of `smith ci generate` (GitHub):

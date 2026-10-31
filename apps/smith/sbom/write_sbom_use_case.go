@@ -1,49 +1,53 @@
 package sbom
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Request asks for the SBOM of one released project.
 type Request struct {
-	// Root is the workspace directory; ProjectRoot is the project's, relative.
-	Root, ProjectRoot string
-	Language          string
-	Name, Version     string
-	// Product names the file: <product>_<version>_sbom.cdx.json.
+	Version string
+	// Product names the file: <product>_<version>_sbom.cdx.json; the project's
+	// name when empty.
 	Product string
 	// OutDir is the workspace-relative directory the file is written to.
 	OutDir       string
 	SmithVersion string
 }
 
-// Write writes the project's CycloneDX SBOM and returns its workspace-relative
-// path, or "" when the project's ecosystem is not supported yet.
-func Write(r Request) (string, error) {
-	sub := Subject{Name: r.Name, Version: r.Version}
-	var comps []Component
-	var err error
-	switch r.Language {
-	case "go":
-		var gomod []byte
-		if gomod, err = os.ReadFile(filepath.Join(r.Root, filepath.FromSlash(r.ProjectRoot), "go.mod")); err != nil {
-			return "", fmt.Errorf("sbom: %w", err)
-		}
-		comps = GoComponents(string(gomod))
-		if m := GoModule(string(gomod)); m != "" {
-			sub.PURL = "pkg:golang/" + m + "@" + r.Version
-		}
-	case "node":
-		if comps, err = nodeComponents(r); err != nil {
-			return "", fmt.Errorf("sbom: %w", err)
-		}
-	default:
+// Write asks the project's plugin for its components, writes the CycloneDX
+// SBOM and returns its workspace-relative path. It returns "" when the plugin
+// cannot list components, so the project gets no SBOM.
+func Write(s *session.Session, p *projectgraph.Project, r Request) (string, error) {
+	var listed protocol.ComponentsResult
+	ok, err := s.Plugins.Call(p.Plugin, protocol.MethodComponents, protocol.ComponentsParams{Project: p.Project}, &listed, 2*time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("sbom: %w", err)
+	}
+	if !ok {
 		return "", nil
+	}
+	return writeListed(s.Root, p.Name, listed, r)
+}
+
+// writeListed renders and writes the SBOM of a project whose components the
+// plugin listed.
+func writeListed(root, name string, listed protocol.ComponentsResult, r Request) (string, error) {
+	comps := make([]Component, len(listed.Components))
+	for i, c := range listed.Components {
+		comps[i] = Component{Name: c.Name, Version: c.Version, PURL: c.PURL}
+	}
+	sub := Subject{Name: name, Version: r.Version}
+	if listed.PURL != "" {
+		sub.PURL = listed.PURL + "@" + r.Version
 	}
 	body, err := RenderCycloneDX(sub, comps, time.Now(), r.SmithVersion)
 	if err != nil {
@@ -51,35 +55,16 @@ func Write(r Request) (string, error) {
 	}
 	product := r.Product
 	if product == "" {
-		product = r.Name
+		product = name
 	}
 	rel := path.Join(r.OutDir, product+"_"+r.Version+"_sbom.cdx.json")
-	abs := filepath.Join(r.Root, filepath.FromSlash(rel))
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return "", err
-	}
-	return rel, os.WriteFile(abs, append(body, '\n'), 0o644)
+	return rel, writeFile(root, rel, append(body, '\n'))
 }
 
-// nodeComponents reads the nearest package-lock.json, at the project or any
-// directory above it up to the workspace (npm workspaces keep one at the
-// root), and falls back to the project's package.json.
-func nodeComponents(r Request) ([]Component, error) {
-	dir := filepath.Join(r.Root, filepath.FromSlash(r.ProjectRoot))
-	for d := dir; ; d = filepath.Dir(d) {
-		if lock, err := os.ReadFile(filepath.Join(d, "package-lock.json")); err == nil {
-			return NPMComponentsFromLock(lock)
-		}
-		if d == filepath.Clean(r.Root) || filepath.Dir(d) == d {
-			break
-		}
+func writeFile(root, rel string, body []byte) error {
+	abs := filepath.Join(root, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		return err
 	}
-	manifest, err := os.ReadFile(filepath.Join(dir, "package.json"))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return NPMComponentsFromManifest(manifest)
+	return os.WriteFile(abs, body, 0o644)
 }

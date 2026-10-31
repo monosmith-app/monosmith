@@ -190,6 +190,8 @@ $ smith release --dry-run --json      # excerpt
   "tag": "kit@0.1.0",  "publish": "dry run",  "registry": "https://rubygems.org"
 ```
 
+The release's SBOM lists the gems of `Gemfile.lock`, falling back to the `Gemfile` and the gemspec, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 Real output of `smith ci generate` (GitHub):

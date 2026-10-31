@@ -32,6 +32,9 @@ __all__ = [
     "Capabilities",
     "ChangeKindParams",
     "ChangeKindResult",
+    "Component",
+    "ComponentsParams",
+    "ComponentsResult",
     "ContributeParams",
     "ContributeResult",
     "Contribution",
@@ -152,11 +155,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -179,6 +182,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "dependencies/declared": "declarations",
     "dependencies/rewrite": "declarations",
     "dependencies/latest": "latest",
+    "sbom/components": "components",
 }
 """The capability a plugin advertises to be asked each method (`None`: always available).
 
@@ -332,6 +336,8 @@ class Capabilities(TypedDict, total=False):
     with its id, then answers that request with its result (if the work was already done) or the
     request-cancelled error. A host never sends the notification to a plugin without it.
     """
+    components: bool
+    """Components lists a project's dependencies for its SBOM."""
 
 
 class _ChangeKindParamsRequired(TypedDict):
@@ -380,6 +386,50 @@ class ChangeKindResult(TypedDict, total=False):
     """
     Warnings name what the change loses or leaves for the user (a binary an app has and a lib
     does not, a lockfile to refresh).
+    """
+
+
+class _ComponentRequired(TypedDict):
+    name: str
+    purl: str
+    """PURL is the package URL (https://github.com/package-url/purl-spec)."""
+
+
+class Component(_ComponentRequired, total=False):
+    """Component is one dependency of a project."""
+
+    version: str
+    """Version is the locked version, or the declared range when the project has no lockfile."""
+
+
+class ComponentsParams(TypedDict):
+    """
+    ComponentsParams asks a plugin for the components one of its projects ships: what a CycloneDX
+    SBOM lists.
+    """
+
+    project: Project
+
+
+class _ComponentsResultRequired(TypedDict):
+    components: list[Component]
+
+
+class ComponentsResult(_ComponentsResultRequired, total=False):
+    """
+    ComponentsResult lists the components, read from a lockfile where the ecosystem has one and
+    from the manifest otherwise. An empty list is an answer: the project declares no
+    dependencies.
+    """
+
+    source: str
+    """
+    Source is the workspace-relative file the list was read from, "" when the project has none.
+    """
+    purl: str
+    """
+    PURL is the project's own package URL when it has a registry identity (without a version: the
+    release supplies it); "" otherwise.
     """
 
 

@@ -211,6 +211,17 @@ export const protocolSchema: SchemaDocument = {
       },
       "capability": "latest",
       "notification": false
+    },
+    "sbom/components": {
+      "description": "Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.",
+      "params": {
+        "$ref": "#/$defs/ComponentsParams"
+      },
+      "result": {
+        "$ref": "#/$defs/ComponentsResult"
+      },
+      "capability": "components",
+      "notification": false
     }
   },
   "x-errorCodes": [
@@ -535,6 +546,10 @@ export const protocolSchema: SchemaDocument = {
         "cancel": {
           "type": "boolean",
           "description": "Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it."
+        },
+        "components": {
+          "type": "boolean",
+          "description": "Components lists a project's dependencies for its SBOM."
         }
       }
     },
@@ -591,6 +606,62 @@ export const protocolSchema: SchemaDocument = {
           "description": "Warnings name what the change loses or leaves for the user (a binary an app has and a lib does not, a lockfile to refresh)."
         }
       }
+    },
+    "Component": {
+      "description": "Component is one dependency of a project.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version is the locked version, or the declared range when the project has no lockfile."
+        },
+        "purl": {
+          "type": "string",
+          "description": "PURL is the package URL (https://github.com/package-url/purl-spec)."
+        }
+      },
+      "required": [
+        "name",
+        "purl"
+      ]
+    },
+    "ComponentsParams": {
+      "description": "ComponentsParams asks a plugin for the components one of its projects ships: what a CycloneDX SBOM lists.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "required": [
+        "project"
+      ]
+    },
+    "ComponentsResult": {
+      "description": "ComponentsResult lists the components, read from a lockfile where the ecosystem has one and from the manifest otherwise. An empty list is an answer: the project declares no dependencies.",
+      "type": "object",
+      "properties": {
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Component"
+          }
+        },
+        "source": {
+          "type": "string",
+          "description": "Source is the workspace-relative file the list was read from, \"\" when the project has none."
+        },
+        "purl": {
+          "type": "string",
+          "description": "PURL is the project's own package URL when it has a registry identity (without a version: the release supplies it); \"\" otherwise."
+        }
+      },
+      "required": [
+        "components"
+      ]
     },
     "ContributeParams": {
       "description": "ContributeParams hands a plugin the projects it applies to: those whose stack includes it, or, for a workspace-wide convention, those of the languages it supports that smith.toml enables it for.",

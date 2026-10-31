@@ -255,7 +255,7 @@ internal sealed class Rust : IPlugin, IDiscoverer
 
 **The contract is a JSON Schema.** The Go types of the protocol are the source of truth, and
 `packages/plugin-sdk/schema/protocol.schema.json` is generated from them (draft 2020-12): one definition
-per message, `x-methods` (each of the 18 methods with its params, its result and the capability it
+per message, `x-methods` (each of the 19 methods with its params, its result and the capability it
 needs), `x-errorCodes`, `x-roles`, `x-protocolVersion` and `x-transport` (the framing). A member is
 required when its Go field has no `omitempty`. A Go test fails when the file is stale, and the SDKs of other
 languages generate their types from it, so a plugin in a language without an SDK can read it too.

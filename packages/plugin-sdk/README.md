@@ -30,7 +30,7 @@ minor version may change the Go API; the wire protocol is versioned on its own
 
 The Go types in `protocol` are the source of truth of the wire protocol. Their JSON Schema (draft
 2020-12) is committed as [`schema/protocol.schema.json`](schema/protocol.schema.json): one definition
-per message, a methods table (`x-methods`: each of the 18 methods with its params and result
+per message, a methods table (`x-methods`: each of the 19 methods with its params and result
 definitions and the capability a plugin advertises to be asked it; `cancel` is a notification, without a result), the error codes (`x-errorCodes`),
 the roles (`x-roles`), the protocol version (`x-protocolVersion`) and the framing (`x-transport`).
 The SDKs of other languages generate their types from it (see

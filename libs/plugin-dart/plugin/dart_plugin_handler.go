@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-dart/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -104,4 +105,9 @@ func (d *Dart) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult
 // Latest implements serve.LatestReader.
 func (d *Dart) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(d.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (d *Dart) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(d.root, params)
 }

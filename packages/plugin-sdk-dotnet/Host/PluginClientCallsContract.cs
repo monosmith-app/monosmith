@@ -252,4 +252,20 @@ public static class PluginClientCalls
         ArgumentNullException.ThrowIfNull(client);
         return client.CallAsync<LatestParams, LatestResult>(ProtocolMethods.DependenciesLatest, parameters, timeout, cancellation);
     }
+
+    /// <summary>Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<ComponentsResult> ComponentsAsync(
+        this PluginClient client,
+        ComponentsParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<ComponentsParams, ComponentsResult>(ProtocolMethods.SbomComponents, parameters, timeout, cancellation);
+    }
 }

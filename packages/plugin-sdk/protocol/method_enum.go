@@ -34,4 +34,7 @@ const (
 	MethodRewrite = "dependencies/rewrite"
 	// MethodLatest asks registries for the newest releases (smith up).
 	MethodLatest = "dependencies/latest"
+	// MethodComponents lists the components a project ships, from its
+	// lockfile or manifest, for the release's SBOM.
+	MethodComponents = "sbom/components"
 )

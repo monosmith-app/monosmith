@@ -115,6 +115,16 @@ public interface IKindChanger
     Task<ChangeKindResult> ChangeKindAsync(ChangeKindParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that lists the components a project ships, for the SBOM a release attaches.</summary>
+public interface IComponentLister
+{
+    /// <summary>Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<ComponentsResult> ComponentsAsync(ComponentsParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.</summary>
 public interface IDependencyManager
 {

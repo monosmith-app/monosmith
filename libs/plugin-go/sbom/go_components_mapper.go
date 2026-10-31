@@ -3,11 +3,15 @@ package sbom
 import (
 	"bufio"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/components"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// GoComponents lists the modules a go.mod requires, direct and indirect.
-func GoComponents(gomod string) []Component {
-	var out []Component
+// ComponentsFromGoMod lists the modules a go.mod requires, direct and
+// indirect.
+func ComponentsFromGoMod(gomod string) []protocol.Component {
+	var out []protocol.Component
 	inBlock := false
 	sc := bufio.NewScanner(strings.NewReader(gomod))
 	for sc.Scan() {
@@ -31,13 +35,13 @@ func GoComponents(gomod string) []Component {
 		if len(f) != 2 {
 			continue
 		}
-		out = append(out, Component{Name: f[0], Version: f[1], PURL: "pkg:golang/" + f[0] + "@" + f[1]})
+		out = append(out, protocol.Component{Name: f[0], Version: f[1], PURL: "pkg:golang/" + f[0] + "@" + f[1]})
 	}
-	return out
+	return components.Dedupe(out)
 }
 
-// GoModule is the module path a go.mod declares.
-func GoModule(gomod string) string {
+// ModulePath is the module path a go.mod declares.
+func ModulePath(gomod string) string {
 	for _, line := range strings.Split(gomod, "\n") {
 		if rest, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
 			return strings.Trim(strings.TrimSpace(rest), `"`)

@@ -67,7 +67,7 @@ Schema (draft 2020-12) generated from them,
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
 is the contract for every other language. It has one definition per message (a member is required
 when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
-definitions `x-methods` (each of the 18 methods with its params, its result and the capability it needs,
+definitions `x-methods` (each of the 19 methods with its params, its result and the capability it needs,
 `null` for `initialize` and `shutdown`, and `notification: true` with no result for `cancel`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
 kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
 
@@ -145,6 +145,7 @@ which capability each method needs.
 | `generate` | `generate` | `Generator` | `smith new`, `smith add` |
 | `remove` | `remove` | `Remover` | `smith remove` |
 | `changeKind` | `project/kind` | `KindChanger` | `smith kind` |
+| `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |
@@ -186,6 +187,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
 | `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
+| `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them. Asked of the project's language plugin and of every other plugin that serves the project and advertises `version` (a convention such as `tauri`, for the files it keeps a version in) |
 | `publish` | `PublishParams{project, version, dryRun, assets}` | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
 | `published` | `PublishedParams{project}` | `PublishedResult{version, registry, unreachable, detail}` | what the registry already has |

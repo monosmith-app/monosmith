@@ -6,6 +6,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -96,4 +97,9 @@ func (d *Dotnet) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, er
 // ChangeKind implements serve.KindChanger.
 func (d *Dotnet) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(d.root, params)
+}
+
+// Components implements serve.ComponentLister.
+func (d *Dotnet) Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error) {
+	return sbom.List(d.root, params)
 }

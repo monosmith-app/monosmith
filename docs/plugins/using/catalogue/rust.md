@@ -215,6 +215,8 @@ warning: aborting upload due to dry run
 
 cargo's output goes to stderr in both the text and the `--json` run; the JSON reports `"tag": "kit@0.1.0"`, `"registry": "crates.io"`, `"published": false`.
 
+The release's SBOM lists the crates of `Cargo.lock` (the crate's or the workspace's), falling back to the dependencies of `Cargo.toml`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 For an app with a release section that is not native, the Rust toolchain step also installs the targets the Linux release runner can cross-compile (`targets: 'aarch64-unknown-linux-gnu'` for `linux/arm64`; the `rustup` install adds `--target`), and `smith ci setup` installs the `gcc-aarch64-linux-gnu` linker there (a non-blocking step that does nothing outside Linux). A native app adds nothing: its runner builds for itself.

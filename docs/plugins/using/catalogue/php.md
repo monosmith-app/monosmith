@@ -320,6 +320,8 @@ and the registry (`packagist.org`). `SPLIT_REPO_TOKEN`, the mirror's token, is
 described in [releasing: split repositories](../../../reference/releasing.md#split-repositories).
 You register the mirror with Packagist yourself once.
 
+The release's SBOM lists the packages of `composer.lock`, falling back to `composer.json`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
 ## CI
 
 `smith ci generate` adds, when the workspace has at least one PHP project:

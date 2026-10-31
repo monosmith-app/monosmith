@@ -188,7 +188,7 @@ Two steps are model flags rather than plugin contributions. `Attest` adds an
 `actions/attest-build-provenance` step (SLSA provenance for the archives in `dist/release`) and the
 `attestations: write` and `id-token` permissions. `Provenance` gives the job `id-token: write` so
 npm can sign provenance. The SBOM is not a pipeline step: `release.publishGitHubRelease` writes a
-CycloneDX file with `sbom.Write` and attaches it to the GitHub Release ([ADR 0011](decisions/0011-no-paid-code-signing.md)).
+CycloneDX file with `sbom.Write` (from the components the project's plugin lists) and attaches it to the GitHub Release ([ADR 0011](decisions/0011-no-paid-code-signing.md)).
 
 ## Where in the code
 
