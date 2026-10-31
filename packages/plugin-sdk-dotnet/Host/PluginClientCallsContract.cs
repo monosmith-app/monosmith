@@ -268,4 +268,20 @@ public static class PluginClientCalls
         ArgumentNullException.ThrowIfNull(client);
         return client.CallAsync<ComponentsParams, ComponentsResult>(ProtocolMethods.SbomComponents, parameters, timeout, cancellation);
     }
+
+    /// <summary>Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<APISurfaceResult> ApiSurfaceAsync(
+        this PluginClient client,
+        APISurfaceParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<APISurfaceParams, APISurfaceResult>(ProtocolMethods.ApiSurface, parameters, timeout, cancellation);
+    }
 }
