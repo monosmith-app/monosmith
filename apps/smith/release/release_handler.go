@@ -77,6 +77,10 @@ published. What was published where is kept in dist/release/<project>/journal.js
 			if err != nil {
 				return err
 			}
+			if err := CheckAPI(cmd.Context(), s, &plan); err != nil {
+				preview("### Release preview\n\n**Blocked:** " + err.Error() + "\n")
+				return err
+			}
 			if len(plan.Items) == 0 {
 				// A re-run on a fresh checkout has no journal: a release that
 				// stopped after its tag is finished from the tag.
@@ -165,6 +169,9 @@ func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 			from = "unreleased"
 		}
 		fmt.Fprintf(out, "  %-20s %s → %s  (%s)\n", item.Project, from, item.Next, item.Reason)
+		for _, w := range item.APIWarnings {
+			fmt.Fprintf(out, "  warning: %s\n", w)
+		}
 	}
 	if len(plan.Unchanged) > 0 {
 		if verbose {
