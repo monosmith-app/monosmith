@@ -173,8 +173,7 @@ It calls the same functions the commands call, in the process, so a change leave
 The palette lists one **Settings** entry; a `smith plugin`, `plugin list`, `recipe` or
 `config list` typed in the palette opens the tab on the matching section instead of leaving
 the terminal. Home points a new user at the tab until it has been opened once (kept in
-`tui.json` as `settingsTipSeen`). Not in the tab: `smith recipe new` (its wizard asks on the
-terminal), and `smith plugin set`, which the Plugins section does one plugin at a time.
+`tui.json` as `settingsTipSeen`). Not in the tab: `smith plugin set`, which the Plugins section does one plugin at a time.
 
 Other commands that print and end (`graph`, `explain`...) run in the Run tab like a task run: the interface
 stays and the output is captured there. A command that changes `smith.toml` still asks first.
