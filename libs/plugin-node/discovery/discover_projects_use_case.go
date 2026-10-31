@@ -56,6 +56,7 @@ func describe(workspaceRoot, root, manifest string) (protocol.Project, error) {
 		Description: strings.TrimSpace(pkg.Description),
 		Stack:       pkg.Smith.Stack,
 		Tasks:       map[string]protocol.Task{},
+		Shape:       ProjectShape(filepath.Join(workspaceRoot, filepath.FromSlash(root)), raw, pkg),
 	}
 	if pkg.Smith.Native {
 		project.Tags = append(project.Tags, NativeTag)
