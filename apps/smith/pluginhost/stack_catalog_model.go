@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -33,8 +34,12 @@ func NewCatalog(set *PluginSet, cfg workspace.Config) (*Catalog, error) {
 	for _, client := range set.Clients {
 		for _, st := range client.Info.Stacks {
 			entry := CatalogStack{Stack: st, Source: "plugin " + client.Info.Plugin.Name}
-			if err := ValidateStack(st, set); err != nil {
+			if expanded, err := choiceselect.ExpandStack(st, set.Offers()); err != nil {
 				entry.Problem = err.Error()
+			} else if err := ValidateStack(expanded, set); err != nil {
+				entry.Problem = err.Error()
+			} else {
+				entry.Stack = expanded
 			}
 			c.stacks[st.Name] = entry
 		}
@@ -44,6 +49,11 @@ func NewCatalog(set *PluginSet, cfg workspace.Config) (*Catalog, error) {
 		st := protocol.Stack{
 			Name: name, Description: sc.Description, Language: sc.Language,
 			Toolchain: sc.Toolchain, Structure: sc.Structure, Scaffold: sc.Scaffold, Deploy: sc.Deploy,
+			Choices: sc.Choices,
+		}
+		st, err := choiceselect.ExpandStack(st, set.Offers())
+		if err != nil {
+			return nil, fmt.Errorf("smith.toml [stacks.%s]: %w", name, err)
 		}
 		if err := ValidateStack(st, set); err != nil {
 			return nil, fmt.Errorf("smith.toml [stacks.%s]: %w", name, err)

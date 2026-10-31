@@ -78,6 +78,7 @@ var catalog = []Action{
 	{Command: []string{"slices", "check"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"kinds"}, Safety: Reads, NotInTUI: referenceOut},
 	{Command: []string{"stacks"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
+	{Command: []string{"choices"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"commands"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"schema"}, Safety: Reads, NotInTUI: referenceOut, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"plugin"}, Safety: Reads},

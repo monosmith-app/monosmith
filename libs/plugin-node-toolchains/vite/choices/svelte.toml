@@ -1,0 +1,44 @@
+axis = "framework"
+name = "svelte"
+description = "a Svelte 5 app in TypeScript, built with Vite and checked by svelte-check"
+language = "node"
+roles = ["scaffold", "toolchain"]
+needs = ["lint", "test"]
+dependencies = ["svelte"]
+dev_dependencies = ["@sveltejs/vite-plugin-svelte", "svelte-check"]
+
+[tasks]
+typecheck = "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+
+[slots]
+entry = ["main.ts"]
+"vite.imports" = ["import { svelte } from '@sveltejs/vite-plugin-svelte'"]
+"vite.plugins" = ["svelte()"]
+"tsconfig.include" = ["src/**/*.svelte"]
+
+[files]
+"src/main.ts" = '''
+import { mount } from 'svelte'
+import { App } from './app/index.ts'
+[[range index .Slots "entry.imports"]][[.]]
+[[end]]
+const target = document.getElementById('app')
+if (target === null) {
+  throw new Error('index.html has no #app')
+}
+mount(App, { target })
+'''
+
+"src/app/app.component.svelte" = '''
+<script lang="ts">
+  import { greet } from '../greeting'
+
+  const message = greet('world').message
+</script>
+
+<h1>{message}</h1>
+'''
+
+"src/app/index.ts" = '''
+export { default as App } from './app.component.svelte'
+'''

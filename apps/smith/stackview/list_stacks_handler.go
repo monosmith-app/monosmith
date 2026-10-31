@@ -80,6 +80,9 @@ publish stacks; smith.toml declares more under [stacks.<name>].
 						fmt.Fprintf(out, "  %-10s %s\n", part.role, strings.Join(part.names, ", "))
 					}
 				}
+				if len(r.Choices) > 0 {
+					fmt.Fprintf(out, "  %-10s %s\n", "choices", strings.Join(r.Choices, ", "))
+				}
 				if r.Problem != "" {
 					fmt.Fprintf(out, "  ✖ cannot be used: %s\n", r.Problem)
 				}

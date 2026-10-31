@@ -3,9 +3,8 @@ package vite
 import (
 	"fmt"
 	"maps"
-	"slices"
-	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -13,19 +12,9 @@ import (
 // Name is the plugin's name in a stack.
 const Name = "vite"
 
-// apps are the starters, by stack name.
-var apps = map[string]webApp{"react": react, "react-p5": reactP5, "react-tauri": react, "vue": vue, "svelte": svelte, "html": html}
-
-var descriptions = map[string]string{
-	"react":       "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"react-p5":    "a React app drawing with p5, built with Vite, linted by eslint, tested with Vitest",
-	"react-tauri": "a React app in TypeScript, built with Vite, linted by eslint, tested with Vitest, packaged as a desktop app with Tauri",
-	"vue":         "a Vue app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"svelte":      "a Svelte app in TypeScript, built with Vite, linted by eslint, tested with Vitest",
-	"html":        "a page in TypeScript with no framework, built with Vite, linted by eslint, tested with Vitest",
-}
-
-// Vite is the vite plugin.
+// Vite is the vite plugin. It builds browser apps from choices: a framework
+// writes the app, a style adds to it. The choices are data (see
+// web_choices_config.go and ADR 0045).
 type Vite struct {
 	Version string
 	root    string
@@ -37,13 +26,6 @@ func New(version string) *Vite { return &Vite{Version: version} }
 // Describe implements serve.Plugin.
 func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeResult, error) {
 	p.root = params.WorkspaceRoot
-	var stacks []protocol.Stack
-	for _, name := range slices.Sorted(maps.Keys(apps)) {
-		stacks = append(stacks, protocol.Stack{
-			Name: name, Description: descriptions[name], Language: "node",
-			Scaffold: Name, Toolchain: toolchain(name),
-		})
-	}
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: p.Version},
 		Kind:      protocol.KindConvention,
@@ -51,31 +33,40 @@ func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
 		Provides:  []string{"build", "typecheck"},
-		Stacks:    stacks,
+		Stacks:    webChoices.Stacks(),
+		Choices:   webChoices.Choices(),
 	}, nil
 }
 
-// toolchain is what a stack's project is built with: tauri joins the stacks that
-// package the app as a desktop app.
-func toolchain(stack string) []string {
-	tc := []string{Name, "eslint", "vitest"}
-	if strings.HasSuffix(stack, "-tauri") {
-		tc = append(tc, "tauri")
-	}
-	return tc
-}
-
-// Generate implements serve.Generator: the starter of the project's stack.
-// A browser app is an app; its build is a static site, released by its tag.
+// Generate implements serve.Generator: the starter that the stack's choices
+// describe. A browser app is an app; its build is a static site, released by
+// its tag.
+//
+// It returns an error for a kind other than app, and for params that carry no
+// choice of this plugin.
 func (p *Vite) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	app, ok := apps[params.Stack]
-	if !ok {
-		return protocol.GenerateResult{}, fmt.Errorf("the vite plugin scaffolds the %v stacks, not %q", slices.Sorted(maps.Keys(apps)), params.Stack)
-	}
 	if params.Kind != protocol.ProjectApp {
 		return protocol.GenerateResult{}, fmt.Errorf("a %s project is an app: smith add app %s --stack %s", params.Stack, params.Name, params.Stack)
 	}
-	dev := maps.Clone(devDependencies)
-	maps.Copy(dev, app.DevDependencies)
-	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{Slice: app.templates(), DevDependencies: dev, Overrides: app.Overrides})
+	plan, err := webChoices.Plan(params.Choices)
+	if err != nil {
+		return protocol.GenerateResult{}, err
+	}
+	if len(plan.Applied) == 0 {
+		var offered []string
+		for _, c := range webChoices.Choices() {
+			if c.Plays(protocol.RoleScaffold) {
+				offered = append(offered, c.Name)
+			}
+		}
+		return protocol.GenerateResult{}, fmt.Errorf("the vite plugin writes projects from the choices %v, not the stack %q: smith add app <name> --with react", offered, params.Stack)
+	}
+	files := maps.Clone(typescript.GreetingSlice)
+	for path, body := range plan.Files {
+		files["[[.Dir]]/"+path] = body
+	}
+	return scaffolding.GenerateFrom(p.root, params, scaffolding.TemplateSet{
+		Slice: files, DevDependencies: plan.DevDependencies, Overrides: plan.Overrides,
+		Slots: plan.Slots, Scripts: plan.Tasks, Dependencies: plan.Dependencies,
+	})
 }

@@ -42,7 +42,8 @@ Usage: `smith stacks [flags]`
 
 ## Files and environment
 
-Reads `smith.toml` (`[stacks]`, `[default_stacks]`) and the plugins.
+Reads `smith.toml` (`[stacks]`, `[default_stacks]`) and the plugins. A stack that is a saved
+selection shows its `choices` line: the full list, with the defaults added ([`smith choices`](choices.md)).
 
 ## Examples
 

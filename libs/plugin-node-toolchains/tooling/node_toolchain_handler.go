@@ -11,6 +11,10 @@ type Toolchain struct {
 	Provides []string
 	// Stacks are the stacks the plugin publishes.
 	Stacks []protocol.Stack
+	// Choices are the choices the plugin owns on an axis (InitializeResult.Choices),
+	// read from the data it embeds. A choice here is metadata: the Setup below keeps
+	// the logic that depends on the workspace.
+	Choices []protocol.Choice
 	// Follows are the shape keys the plugin applies (InitializeResult.Follows).
 	Follows []string
 	// Setup returns what to add to the project params names.
@@ -29,6 +33,7 @@ func (c *Toolchain) Describe(params protocol.InitializeParams) (protocol.Initial
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  c.Provides,
 		Stacks:    c.Stacks,
+		Choices:   c.Choices,
 		Follows:   c.Follows,
 	}, nil
 }

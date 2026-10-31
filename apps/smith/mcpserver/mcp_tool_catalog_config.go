@@ -156,7 +156,8 @@ var Tools = []Tool{
 			return args, err
 		}},
 	{Name: "smith_kinds", Action: "kinds", Description: "The kinds of project smith_add_project can create, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("kinds", "--json")},
-	{Name: "smith_stacks", Action: "stacks", Description: "The stacks a project can be built with (the plugins of each), and which projects use them.", InputSchema: noInput, ReadOnly: true, Args: fixed("stacks")},
+	{Name: "smith_choices", Action: "choices", Description: "The choices a project can be built from, by axis (framework, test, style), and what is wrong with an unusable one.", InputSchema: noInput, ReadOnly: true, Args: fixed("choices")},
+	{Name: "smith_stacks",Action: "stacks", Description: "The stacks a project can be built with (the plugins of each), and which projects use them.", InputSchema: noInput, ReadOnly: true, Args: fixed("stacks")},
 	{Name: "smith_commands", Action: "commands", Description: "Every smith command with its arguments and options, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("commands", "--json")},
 	{Name: "smith_info", Action: "info", Description: "The workspace and the smith serving it, as JSON.", InputSchema: noInput, ReadOnly: true, Args: fixed("info", "--json")},
 	{Name: "smith_doctor", Action: "doctor", Description: "Check the workspace's health, as JSON; every failed check names its remedy.", InputSchema: noInput, ReadOnly: true, Args: fixed("doctor", "--json")},

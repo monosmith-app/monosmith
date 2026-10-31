@@ -48,6 +48,7 @@ no trust, so the commands in the guides that check a plugin work as written.
 | [The Python SDK](python-sdk.md) | you write a plugin in Python: a walk-through, then every function, type and helper of `monosmith-plugin-sdk` |
 | [The C# SDK](csharp-sdk.md) | you write a plugin in C#: a walk-through, then every interface, type and helper of `MonoSmith.Plugin.Sdk` |
 | [Rendering derived files](derived-files.md) | a file or part of one follows from facts and the project graph and you want `smith derive` to write it without overwriting a hand edit |
+| [Writing choices](choices.md) | you ship a framework, a test runner or a style as data, so people can pick it with `--with` |
 | [Sharing facts between plugins](shared-facts.md) | several tools must agree on a value (an alias, a source folder) and you want to publish or read it |
 | [Testing a plugin](testing-a-plugin.md) | `smith plugin check`, unit tests, and a workspace test |
 | [Packaging and distributing a plugin](packaging-a-plugin.md) | naming, `plugin.json`, binaries per platform, versions, `smith plugin pack` and how users install the result |

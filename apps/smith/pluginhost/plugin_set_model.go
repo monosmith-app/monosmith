@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -91,4 +92,16 @@ func (s *PluginSet) Close() {
 	for _, c := range s.Clients {
 		_ = c.Close()
 	}
+}
+
+// Offers lists the choices every loaded plugin publishes, each with the
+// plugin that owns it, in the order the plugins load.
+func (s *PluginSet) Offers() []choiceselect.Offer {
+	var out []choiceselect.Offer
+	for _, c := range s.Clients {
+		for _, choice := range c.Info.Choices {
+			out = append(out, choiceselect.Offer{Choice: choice, Plugin: c.Info.Plugin.Name})
+		}
+	}
+	return out
 }

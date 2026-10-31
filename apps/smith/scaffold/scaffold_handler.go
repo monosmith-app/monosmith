@@ -18,7 +18,7 @@ import (
 // AddCommand is `smith add`.
 func AddCommand(version string) *cobra.Command {
 	var lang, stack string
-	var choices []string
+	var choices, with []string
 	var verbose, fresh bool
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
@@ -37,6 +37,12 @@ project: it asks its choices one at a time (or take --choice name=answer, as
 often as needed, without asking), shows the plugins it picks, then makes the
 project as a stack's project is made. --stack bypasses the recipe.
 
+--with builds the project from choices instead of a ready-made stack: a
+framework, a test runner, a style (` + "`smith choices`" + ` lists them). smith checks
+that they fit (one per axis, what each requires, what conflicts), fills an axis they
+need with its default, and saves the result in smith.toml as a stack. A
+published stack is a saved selection too.
+
 The project follows the siblings: when at least three projects of the same
 kind and language, and at least two thirds of them, share a build tool, a
 test runner or where their entry points lead, the new project does the same
@@ -50,6 +56,7 @@ smith add leaves the files it wrote uncommitted (smith new commits what it
 wrote): review them with git status, then commit.`,
 		Example: `  smith add app web --lang node
   smith add app api --stack node-vitest
+  smith add app web --with react,vitest,bootstrap
   smith add lib core --lang go
   smith add package sdk --lang python
   smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
@@ -81,7 +88,7 @@ wrote): review them with git status, then commit.`,
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 			began := time.Now()
 			res, err := AddProject(s, AddOptions{
-				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh,
+				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
 			})
 			if err != nil {
@@ -108,6 +115,7 @@ wrote): review them with git status, then commit.`,
 	}
 	cmd.Flags().StringVarP(&lang, "lang", "l", "", "language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language)")
 	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
+	cmd.Flags().StringSliceVar(&with, "with", nil, "the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default")
 	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")

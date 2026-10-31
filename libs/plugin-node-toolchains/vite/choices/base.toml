@@ -1,0 +1,90 @@
+# What every choice of the vite plugin builds on: the page, the Vite and TypeScript
+# configuration, and the scripts of a browser app. A framework fills the slots and may
+# replace a file; a style adds to the slots.
+#
+# Slots read here:
+#   entry             the module index.html loads, under src/ (one item)
+#   vite.imports      lines at the top of vite.config.ts
+#   vite.plugins      the calls in plugins: [...]
+#   tsconfig.options  extra compilerOptions members, without the trailing comma
+#   tsconfig.include  globs the type check covers (vite.config.ts is always covered)
+dev_dependencies = ["typescript", "vite"]
+
+[tasks]
+build = "vite build"
+start = "vite"
+
+[slots]
+"tsconfig.include" = ["src/**/*.ts"]
+
+[files]
+"package.json" = '''
+{
+  "name": "[[.Package]]",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "smith": { "kind": "app"[[if .Stack]], "stack": "[[.Stack]]"[[end]] },
+  "scripts": {
+[[- range $i, $s := .Scripts]][[if $i]],[[end]]
+    "[[$s.Name]]": "[[$s.Value]]"[[end]]
+  }[[if .Dependencies]],
+  "dependencies": {
+[[- range $i, $d := .Dependencies]][[if $i]],[[end]]
+    "[[$d.Name]]": "[[$d.Value]]"[[end]]
+  }[[end]]
+}
+'''
+
+"index.html" = '''
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>[[.Name]]</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/[[index .Slots "entry" 0]]"></script>
+  </body>
+</html>
+'''
+
+# The build goes to the workspace's dist/, in the layout @monosmith/eslint-config formats
+# (aligned values).
+"vite.config.ts" = '''
+[[range index .Slots "vite.imports"]][[.]]
+[[end]]import { defineConfig } from 'vite'
+
+// The build goes to the workspace's dist/ (smith), never dist/ in the app.
+export default defineConfig({
+[[if index .Slots "vite.plugins"]]  plugins: [[ "[" ]][[range $i, $p := index .Slots "vite.plugins"]][[if $i]], [[end]][[$p]][[end]]],
+[[end]][[.ViteAlias]]  build:[[if index .Slots "vite.plugins"]]   [[else]] [[end]]{
+    outDir:      '[[.Build]]',
+    emptyOutDir: true,
+  },
+})
+'''
+
+# Type-checks for the browser through Vite: bundler resolution, nothing emitted.
+"tsconfig.json" = '''
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",[[range index .Slots "tsconfig.options"]]
+    [[.]],[[end]]
+    "strict": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vite/client"][[.TSPaths]]
+  },
+  "include": [[ "[" ]][[range index .Slots "tsconfig.include"]]"[[.]]", [[end]]"vite.config.ts"]
+}
+'''

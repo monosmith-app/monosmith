@@ -1,0 +1,87 @@
+axis = "library"
+name = "p5"
+description = "draw with p5: a bouncing-ball slice (pure motion, a p5 sketch, a lazy component)"
+language = "node"
+many = true
+requires = ["react"]
+dependencies = ["@p5-wrapper/react", "p5"]
+
+[files]
+# Replaces the root component of react: it draws the ball under the greeting.
+"src/app/app.component.tsx" = '''
+import { BouncingBall } from '../bouncing-ball'
+import { greet } from '../greeting'
+
+/** The app's root component. */
+export function App () {
+  return (
+    <main>
+      <h1>{greet('world').message}</h1>
+      <BouncingBall />
+    </main>
+  )
+}
+'''
+
+"src/bouncing-ball/bounce.algorithm.ts" = '''
+/** A ball's position and velocity along one axis. */
+export interface Motion {
+  position: number
+  velocity: number
+}
+
+/**
+ * Moves a ball one step, bouncing it off the walls at 0 and size.
+ * @param motion - where the ball is and how fast it moves
+ * @param size - the distance between the walls
+ * @returns the ball's next motion
+ */
+export function bounce (motion: Motion, size: number): Motion {
+  const position = motion.position + motion.velocity
+
+  return position < 0 || position > size
+    ? { position: motion.position - motion.velocity, velocity: -motion.velocity }
+    : { position, velocity: motion.velocity }
+}
+'''
+
+"src/bouncing-ball/bouncing-ball.client.ts" = '''
+import type { Sketch } from '@p5-wrapper/react'
+import { bounce, type Motion } from './bounce.algorithm.ts'
+
+const size = 400
+
+/** The p5 sketch: a ball bouncing around the canvas. */
+export const bouncingBall: Sketch = (p5) => {
+  let x: Motion = { position: size / 2, velocity: 3 }
+  let y: Motion = { position: size / 3, velocity: 2 }
+  p5.setup = () => {
+    p5.createCanvas(size, size)
+  }
+  p5.draw = () => {
+    x = bounce(x, size)
+    y = bounce(y, size)
+    p5.background(240)
+    p5.circle(x.position, y.position, 24)
+  }
+}
+'''
+
+"src/bouncing-ball/bouncing-ball.component.tsx" = '''
+import { P5Canvas } from '@p5-wrapper/react'
+import { Suspense } from 'react'
+import { bouncingBall } from './bouncing-ball.client.ts'
+
+/** The bouncing ball, drawn by p5 once it has loaded. */
+export function BouncingBall () {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <P5Canvas sketch={bouncingBall} />
+    </Suspense>
+  )
+}
+'''
+
+"src/bouncing-ball/index.ts" = '''
+export { BouncingBall } from './bouncing-ball.component.tsx'
+'''

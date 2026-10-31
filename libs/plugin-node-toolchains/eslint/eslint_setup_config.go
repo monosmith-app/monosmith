@@ -1,7 +1,7 @@
 package eslint
 
 import (
-	"strings"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -33,10 +33,10 @@ export default [
 ]
 `
 
-// configFor returns the root eslint config text for a stack: React stacks
-// (react, react-p5, react-tauri) enable the front-end slice roles.
-func configFor(stack string) string {
-	if strings.HasPrefix(stack, "react") {
+// configFor returns the root eslint config text for the choices of a project:
+// a project built with react enables the front-end slice roles.
+func configFor(selected []string) string {
+	if slices.Contains(selected, "react") {
 		return frontEndConfig
 	}
 	return config
@@ -44,12 +44,12 @@ func configFor(stack string) string {
 
 // New returns the plugin; version is reported in the handshake.
 func New(version string) *tooling.Toolchain {
-	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"lint"}, Setup: setup}
+	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"lint"}, Choices: choices.Choices(), Setup: setup}
 }
 
 func setup(_ string, params protocol.GenerateParams) tooling.Setup {
 	return tooling.Setup{
-		RootFiles: map[string]string{"eslint.config.mjs": configFor(params.Stack)},
+		RootFiles: map[string]string{"eslint.config.mjs": configFor(params.Choices)},
 		DevDependencies: map[string]string{
 			"@monosmith/eslint-config": "^1.0.0",
 			"eslint":                   "^10.12.0",

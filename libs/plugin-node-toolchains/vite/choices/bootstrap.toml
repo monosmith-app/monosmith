@@ -1,0 +1,8 @@
+axis = "style"
+name = "bootstrap"
+description = "Bootstrap 5 styles, imported by the entry file"
+language = "node"
+dependencies = ["bootstrap"]
+
+[slots]
+"entry.imports" = ["import 'bootstrap/dist/css/bootstrap.min.css'"]

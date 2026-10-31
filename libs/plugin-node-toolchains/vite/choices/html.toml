@@ -1,0 +1,43 @@
+axis = "framework"
+name = "html"
+description = "a page in TypeScript with no framework, built with Vite"
+language = "node"
+roles = ["scaffold", "toolchain"]
+needs = ["lint", "test"]
+
+[tasks]
+typecheck = "tsc -p tsconfig.json --noEmit"
+
+[slots]
+entry = ["main.ts"]
+
+[files]
+# A handler writes the greeting into the page.
+"src/main.ts" = '''
+import { showGreeting } from './app/index.ts'
+[[range index .Slots "entry.imports"]][[.]]
+[[end]]
+const target = document.getElementById('app')
+if (target === null) {
+  throw new Error('index.html has no #app')
+}
+showGreeting(target)
+'''
+
+"src/app/show-greeting.handler.ts" = '''
+import { greet } from '../greeting'
+
+/**
+ * Shows the greeting in the page.
+ * @param target - the element to write it into
+ */
+export function showGreeting (target: HTMLElement): void {
+  const heading = document.createElement('h1')
+  heading.textContent = greet('world').message
+  target.replaceChildren(heading)
+}
+'''
+
+"src/app/index.ts" = '''
+export { showGreeting } from './show-greeting.handler.ts'
+'''
