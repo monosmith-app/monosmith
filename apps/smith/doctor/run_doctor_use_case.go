@@ -95,6 +95,7 @@ func Run(s *session.Session) Report {
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)
 	add("smith", taskGroupChecks(s)...)
+	add("smith", tauriSidecarChecks(s)...)
 	add("smith", taskFoldChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
