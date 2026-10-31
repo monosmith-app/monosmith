@@ -742,6 +742,107 @@ public sealed record ChangeKindResult : IProtocolValue<ChangeKindResult>
     }
 }
 
+/// <summary>Choice is one option on an axis of a project's make-up: a framework, a test runner, a style library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks a selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What a choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.</summary>
+public sealed record Choice : IProtocolValue<Choice>
+{
+    /// <summary>Axis is the question the choice answers: "framework", "test", "style", "lint". The plugins agree on the name; the host only compares it.</summary>
+    public required string Axis { get; init; }
+
+    /// <summary>Name identifies the choice in a selection and is unique among the choices of all loaded plugins.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The <c>description</c> member of <c>Choice</c>.</summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>Language is the language plugin the choice applies to ("node").</summary>
+    public required string Language { get; init; }
+
+    /// <summary>Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin of the selection already writes, as a style does.</summary>
+    public IReadOnlyList<Role> Roles { get; init; } = [];
+
+    /// <summary>Needs are axes that the selection must have a choice on. An axis the person leaves out is filled with the default of the axis.</summary>
+    public IReadOnlyList<string> Needs { get; init; } = [];
+
+    /// <summary>Default marks the choice the host adds when a selection needs its axis and has no choice on it.</summary>
+    public bool Default { get; init; }
+
+    /// <summary>Many allows the choice next to other choices of its axis that are Many too. By default a selection has one choice per axis.</summary>
+    public bool Many { get; init; }
+
+    /// <summary>Requires are choices that must be in the selection.</summary>
+    public IReadOnlyList<string> Requires { get; init; } = [];
+
+    /// <summary>Conflicts are choices that must not be in the selection.</summary>
+    public IReadOnlyList<string> Conflicts { get; init; } = [];
+
+    /// <inheritdoc />
+    public static Choice Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new Choice
+        {
+            Axis = StringValue(Member(map, "axis"), Join(path, "axis")),
+            Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Description = StringValue(Member(map, "description"), Join(path, "description")),
+            Language = StringValue(Member(map, "language"), Join(path, "language")),
+            Roles = ListOf(Member(map, "roles"), Join(path, "roles"), Role.Read),
+            Needs = ListOf(Member(map, "needs"), Join(path, "needs"), StringValue),
+            Default = BooleanValue(Member(map, "default"), Join(path, "default")),
+            Many = BooleanValue(Member(map, "many"), Join(path, "many")),
+            Requires = ListOf(Member(map, "requires"), Join(path, "requires"), StringValue),
+            Conflicts = ListOf(Member(map, "conflicts"), Join(path, "conflicts"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("axis");
+        writer.String(Axis);
+        writer.Property("name");
+        writer.String(Name);
+        if (Description.Length > 0)
+        {
+            writer.Property("description");
+            writer.String(Description);
+        }
+        writer.Property("language");
+        writer.String(Language);
+        if (Roles is { Count: > 0 })
+        {
+            writer.Property("roles");
+            MessageWritingAlgorithm.List(writer, Roles, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Needs is { Count: > 0 })
+        {
+            writer.Property("needs");
+            MessageWritingAlgorithm.List(writer, Needs, (builder1, item1) => builder1.String(item1));
+        }
+        if (Default)
+        {
+            writer.Property("default");
+            writer.Boolean(Default);
+        }
+        if (Many)
+        {
+            writer.Property("many");
+            writer.Boolean(Many);
+        }
+        if (Requires is { Count: > 0 })
+        {
+            writer.Property("requires");
+            MessageWritingAlgorithm.List(writer, Requires, (builder1, item1) => builder1.String(item1));
+        }
+        if (Conflicts is { Count: > 0 })
+        {
+            writer.Property("conflicts");
+            MessageWritingAlgorithm.List(writer, Conflicts, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
+}
+
 /// <summary>Component is one dependency of a project.</summary>
 public sealed record Component : IProtocolValue<Component>
 {
@@ -1671,6 +1772,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project.</summary>
     public IReadOnlyDictionary<string, string> Shape { get; init; } = new Dictionary<string, string>();
 
+    /// <summary>Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.</summary>
+    public IReadOnlyList<string> Choices { get; init; } = [];
+
     /// <inheritdoc />
     public static GenerateParams Read(JsonAny? value, string path)
     {
@@ -1686,6 +1790,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Settings = ObjectOf(Member(map, "settings"), Join(path, "settings")),
             Facts = ObjectOf(Member(map, "facts"), Join(path, "facts")),
             Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
+            Choices = ListOf(Member(map, "choices"), Join(path, "choices"), StringValue),
         };
     }
 
@@ -1725,6 +1830,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("shape");
             MessageWritingAlgorithm.Map(writer, Shape, (builder1, member1) => builder1.String(member1));
+        }
+        if (Choices is { Count: > 0 })
+        {
+            writer.Property("choices");
+            MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
@@ -1857,6 +1967,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none.</summary>
     public IReadOnlyList<string> Follows { get; init; } = [];
 
+    /// <summary>Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none.</summary>
+    public IReadOnlyList<Choice> Choices { get; init; } = [];
+
     /// <inheritdoc />
     public static InitializeResult Read(JsonAny? value, string path)
     {
@@ -1877,6 +1990,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Stacks = ListOf(Member(map, "stacks"), Join(path, "stacks"), Stack.Read),
             Kinds = ListOf(Member(map, "kinds"), Join(path, "kinds"), ProjectKind.Read),
             Follows = ListOf(Member(map, "follows"), Join(path, "follows"), StringValue),
+            Choices = ListOf(Member(map, "choices"), Join(path, "choices"), Choice.Read),
         };
     }
 
@@ -1941,6 +2055,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("follows");
             MessageWritingAlgorithm.List(writer, Follows, (builder1, item1) => builder1.String(item1));
+        }
+        if (Choices is { Count: > 0 })
+        {
+            writer.Property("choices");
+            MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => item1.Write(builder1));
         }
         writer.EndObject();
     }
@@ -3379,6 +3498,9 @@ public sealed record Stack : IProtocolValue<Stack>
     /// <summary>The <c>deploy</c> member of <c>Stack</c>.</summary>
     public IReadOnlyList<string> Deploy { get; init; } = [];
 
+    /// <summary>Choices make the stack a saved selection (see Choice). When they are set, the host derives the language, the scaffold and the toolchain from them, and Toolchain lists only the plugins to add after those. The plugins of the stack get the choices in GenerateParams.Choices.</summary>
+    public IReadOnlyList<string> Choices { get; init; } = [];
+
     /// <inheritdoc />
     public static Stack Read(JsonAny? value, string path)
     {
@@ -3392,6 +3514,7 @@ public sealed record Stack : IProtocolValue<Stack>
             Structure = ListOf(Member(map, "structure"), Join(path, "structure"), StringValue),
             Scaffold = StringValue(Member(map, "scaffold"), Join(path, "scaffold")),
             Deploy = ListOf(Member(map, "deploy"), Join(path, "deploy"), StringValue),
+            Choices = ListOf(Member(map, "choices"), Join(path, "choices"), StringValue),
         };
     }
 
@@ -3427,6 +3550,11 @@ public sealed record Stack : IProtocolValue<Stack>
         {
             writer.Property("deploy");
             MessageWritingAlgorithm.List(writer, Deploy, (builder1, item1) => builder1.String(item1));
+        }
+        if (Choices is { Count: > 0 })
+        {
+            writer.Property("choices");
+            MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
@@ -3922,6 +4050,9 @@ public sealed record PluginDescription
     /// <summary>Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none.</summary>
     public IReadOnlyList<string> Follows { get; init; } = [];
 
+    /// <summary>Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none.</summary>
+    public IReadOnlyList<Choice> Choices { get; init; } = [];
+
     /// <summary>The <c>initialize</c> result for this description.</summary>
     /// <param name="capabilities">The capabilities derived from the plugin.</param>
     /// <returns>The result the serve loop answers.</returns>
@@ -3942,5 +4073,6 @@ public sealed record PluginDescription
             Stacks = Stacks,
             Kinds = Kinds,
             Follows = Follows,
+            Choices = Choices,
         };
 }

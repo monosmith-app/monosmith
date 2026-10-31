@@ -223,6 +223,50 @@ export interface ChangeKindResult {
   warnings?: string[]
 }
 
+/**
+ * Choice is one option on an axis of a project's make-up: a framework, a test runner, a style
+ * library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks a
+ * selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What a
+ * choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.
+ */
+export interface Choice {
+  /**
+   * Axis is the question the choice answers: "framework", "test", "style", "lint". The plugins
+   * agree on the name; the host only compares it.
+   */
+  axis: string
+  /**
+   * Name identifies the choice in a selection and is unique among the choices of all loaded
+   * plugins.
+   */
+  name: string
+  description?: string
+  /** Language is the language plugin the choice applies to ("node"). */
+  language: string
+  /**
+   * Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the
+   * project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin
+   * of the selection already writes, as a style does.
+   */
+  roles?: Role[]
+  /**
+   * Needs are axes that the selection must have a choice on. An axis the person leaves out is
+   * filled with the default of the axis.
+   */
+  needs?: string[]
+  /** Default marks the choice the host adds when a selection needs its axis and has no choice on it. */
+  default?: boolean
+  /**
+   * Many allows the choice next to other choices of its axis that are Many too. By default a
+   * selection has one choice per axis.
+   */
+  many?: boolean
+  /** Requires are choices that must be in the selection. */
+  requires?: string[]
+  /** Conflicts are choices that must not be in the selection. */
+  conflicts?: string[]
+}
+
 /** Component is one dependency of a project. */
 export interface Component {
   name: string
@@ -525,6 +569,12 @@ export interface GenerateParams {
    * follow, or the person asked for a fresh project.
    */
   shape?: Record<string, string>
+  /**
+   * Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the
+   * order they apply: a choice comes after those it requires. A plugin applies the choices it owns
+   * and ignores the rest. Absent when the stack is not a selection. Set by the host; read only.
+   */
+  choices?: string[]
 }
 
 /** GenerateResult lists what the plugin wrote, workspace-relative. */
@@ -605,6 +655,12 @@ export interface InitializeResult {
    * key that a plugin of the stack follows. Absent means the plugin follows none.
    */
   follows?: string[]
+  /**
+   * Choices are the options on an axis (framework, test, style) the plugin owns. The host lists
+   * them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin
+   * owns none.
+   */
+  choices?: Choice[]
 }
 
 /**
@@ -1044,6 +1100,12 @@ export interface Stack {
   /** Scaffold generates new projects; empty means the language plugin does. */
   scaffold?: string
   deploy?: string[]
+  /**
+   * Choices make the stack a saved selection (see Choice). When they are set, the host derives the
+   * language, the scaffold and the toolchain from them, and Toolchain lists only the plugins to add
+   * after those. The plugins of the stack get the choices in GenerateParams.Choices.
+   */
+  choices?: string[]
 }
 
 /** Step is one command a CI phase runs. */

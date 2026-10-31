@@ -615,6 +615,68 @@ _SCHEMA_JSON = r'''{
         }
       }
     },
+    "Choice": {
+      "description": "Choice is one option on an axis of a project's make-up: a framework, a test runner, a style library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks a selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What a choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.",
+      "type": "object",
+      "properties": {
+        "axis": {
+          "type": "string",
+          "description": "Axis is the question the choice answers: \"framework\", \"test\", \"style\", \"lint\". The plugins agree on the name; the host only compares it."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name identifies the choice in a selection and is unique among the choices of all loaded plugins."
+        },
+        "description": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language is the language plugin the choice applies to (\"node\")."
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Role"
+          },
+          "description": "Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin of the selection already writes, as a style does."
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Needs are axes that the selection must have a choice on. An axis the person leaves out is filled with the default of the axis."
+        },
+        "default": {
+          "type": "boolean",
+          "description": "Default marks the choice the host adds when a selection needs its axis and has no choice on it."
+        },
+        "many": {
+          "type": "boolean",
+          "description": "Many allows the choice next to other choices of its axis that are Many too. By default a selection has one choice per axis."
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Requires are choices that must be in the selection."
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Conflicts are choices that must not be in the selection."
+        }
+      },
+      "required": [
+        "axis",
+        "name",
+        "language"
+      ]
+    },
     "Component": {
       "description": "Component is one dependency of a project.",
       "type": "object",
@@ -1136,6 +1198,13 @@ _SCHEMA_JSON = r'''{
             "type": "string"
           },
           "description": "Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project."
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Choices are the choices (see Choice) the new project is built from, the stack's Choices, in the order they apply: a choice comes after those it requires. A plugin applies the choices it owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read only."
         }
       },
       "required": [
@@ -1279,6 +1348,13 @@ _SCHEMA_JSON = r'''{
             "type": "string"
           },
           "description": "Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none."
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Choice"
+          },
+          "description": "Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none."
         }
       },
       "required": [
@@ -1969,6 +2045,13 @@ _SCHEMA_JSON = r'''{
           "items": {
             "type": "string"
           }
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Choices make the stack a saved selection (see Choice). When they are set, the host derives the language, the scaffold and the toolchain from them, and Toolchain lists only the plugins to add after those. The plugins of the stack get the choices in GenerateParams.Choices."
         }
       },
       "required": [
