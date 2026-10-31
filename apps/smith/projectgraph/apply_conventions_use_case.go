@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/factmerge"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -71,6 +72,9 @@ func merge(p *Project, c protocol.Contribution, source string) {
 	}
 	if c.Release != nil && p.releaseDefaults == nil {
 		p.releaseDefaults = c.Release
+	}
+	if len(c.Facts) > 0 {
+		p.factLayers = append(p.factLayers, factmerge.Layer{Scope: factmerge.ScopePluginDefault, Source: source, Facts: c.Facts})
 	}
 	for _, name := range sortedTaskNames(c.Tasks) {
 		if _, exists := p.Tasks[name]; exists {

@@ -117,6 +117,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
 	params.Settings = settings[generator.Info.Plugin.Name]
+	if params.Facts, err = projectgraph.ConfigFacts(s.Config, opts.Name); err != nil {
+		return nil, err
+	}
 	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
 		return nil, err
 	}

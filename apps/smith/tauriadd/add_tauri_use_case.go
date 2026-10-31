@@ -117,6 +117,9 @@ func AddTauri(s *session.Session, name string) (res Result, err error) {
 	params := protocol.GenerateParams{Kind: p.Kind, Name: name, Directory: p.Root, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: s.Config.Workspace.ModulePrefix,
 	}}
+	if params.Facts, err = projectgraph.ConfigFacts(s.Config, name); err != nil {
+		return res, err
+	}
 	var gen protocol.GenerateResult
 	if err = tauri.Call(protocol.MethodGenerate, params, &gen, 20*time.Minute); err != nil {
 		return res, err

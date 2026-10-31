@@ -14,8 +14,8 @@ import (
 
 // Command is `smith explain`.
 func Command(version string) *cobra.Command {
-	var asJSON, recipeOnly bool
-	var onlyTask string
+	var asJSON, recipeOnly, showFacts bool
+	var onlyTask, factKey string
 	cmd := &cobra.Command{
 		Use:   "explain <project>[:<task>]",
 		Short: "Show how a project's tasks resolved, and where each setting came from (why-miss says why one reran)",
@@ -28,11 +28,15 @@ settings), each with the recipe file and line it came from. --recipe prints
 only that, and with --json prints it for tools. The tasks' --json output is
 unchanged.
 
+--facts lists the shared facts of the project (module.aliases, source.roots,
+...): each value with the scope that set it (project, workspace or plugin
+default) and the table or plugin it came from. --fact module.aliases shows one.
+
 The text starts with one line per task (its command, whether it is cached,
 what it waits for), then each task's fields. Where a value came from is said
 once for all of them, and marked only where it differs. --task build, or
 <project>:build, shows one task.`,
-		Example: "  smith explain web\n  smith explain web:build\n  smith explain web --recipe",
+		Example: "  smith explain web\n  smith explain web:build\n  smith explain web --recipe\n  smith explain web --facts\n  smith explain web --fact module.aliases",
 		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a project name"}, Example: "smith explain web", More: "smith projects lists them; add :<task> for one task, e.g. smith explain web:build"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -46,6 +50,17 @@ once for all of them, and marked only where it differs. --task build, or
 				target += ":" + onlyTask
 			}
 			project, task, _ := strings.Cut(target, ":")
+			if showFacts || factKey != "" {
+				facts, err := ExplainFacts(s.Graph, project, factKey)
+				if err != nil {
+					return err
+				}
+				if asJSON {
+					return encode(out, facts)
+				}
+				printFacts(out, project, facts)
+				return nil
+			}
 			if recipeOnly || (task == "" && !asJSON) {
 				e, ok, err := recipedrift.Explain(s, project)
 				switch {
@@ -77,6 +92,8 @@ once for all of them, and marked only where it differs. --task build, or
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
 	cmd.Flags().StringVar(&onlyTask, "task", "", "explain only this task (same as <project>:<task>)")
+	cmd.Flags().BoolVar(&showFacts, "facts", false, "print the project's shared facts and where each value came from")
+	cmd.Flags().StringVar(&factKey, "fact", "", "print one shared fact (module.aliases) and where its value came from")
 	cmd.Flags().BoolVar(&recipeOnly, "recipe", false, "print only what the project's recipe decided, and where")
 	return cmd
 }
