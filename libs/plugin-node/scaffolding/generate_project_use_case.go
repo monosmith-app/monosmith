@@ -1,12 +1,14 @@
 package scaffolding
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -42,6 +44,11 @@ type templateData struct {
 	// template reads a fact with (index .Shape "build.tool"). Nil when there is
 	// none, and index then gives "".
 	Shape map[string]string
+	// Slots, Scripts and Dependencies come from the template set (see
+	// TemplateSet).
+	Slots        map[string][]string
+	Scripts      []Pair
+	Dependencies []Pair
 }
 
 // Generate scaffolds one plain JavaScript project.
@@ -53,7 +60,7 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 // workspace's Node tooling the first time. It reports InstallPending: the
 // host installs once, so the new package is linked into node_modules.
 func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set TemplateSet) (protocol.GenerateResult, error) {
-	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape}
+	data := templateData{Dir: params.Directory, Name: params.Name, Package: packageName(params.Workspace.Scope, params.Name), Stack: params.Stack, Build: protocol.BuildDirFromProject(params.Directory), Up: strings.Repeat("../", strings.Count(strings.Trim(params.Directory, "/"), "/")+1), TestSuffix: TestSuffix(workspaceRoot), Shape: params.Shape, Slots: set.Slots, Scripts: pairs(set.Scripts), Dependencies: pairs(set.Dependencies)}
 	aliases := modulealiases.FromFacts(params.Facts)
 	data.TSPaths, data.ViteAlias = aliases.TSConfigPaths(), aliases.ViteResolveAlias()
 
@@ -87,6 +94,16 @@ func GenerateFrom(workspaceRoot string, params protocol.GenerateParams, set Temp
 		Notes:          []string{fmt.Sprintf("Import it from another Node project as '%s'.", data.Package)},
 		InstallPending: true,
 	}, nil
+}
+
+// pairs sorts a map by name, with the values escaped for a JSON string.
+func pairs(m map[string]string) []Pair {
+	out := make([]Pair, 0, len(m))
+	for _, name := range slices.Sorted(maps.Keys(m)) {
+		quoted, _ := json.Marshal(m[name])
+		out = append(out, Pair{Name: name, Value: string(quoted[1 : len(quoted)-1])})
+	}
+	return out
 }
 
 func packageName(scope, name string) string {
