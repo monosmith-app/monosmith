@@ -1,6 +1,9 @@
 package tauri
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 // RustVersion is what a Tauri app's pipelines install when the workspace pins no
 // Rust toolchain; bump it deliberately.
@@ -33,7 +36,7 @@ func rustToolchain(workspaceRoot string) protocol.Toolchain {
 // gets it too.
 func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	for _, p := range params.Projects {
-		if Detect(workspaceRoot, p.Root) {
+		if tauriapp.Detect(workspaceRoot, p.Root) {
 			return protocol.CIResult{
 				Toolchains: []protocol.Toolchain{rustToolchain(workspaceRoot)},
 				Setup: []protocol.Step{{

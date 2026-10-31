@@ -1,13 +1,17 @@
 package tauri
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/cargoworkspace"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/scaffold"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/versionsync"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // Name is the plugin's name in a stack's toolchain list and in smith.toml
 // ([conventions.tauri]).
-const Name = "tauri"
+const Name = tauriapp.Name
 
 // Stack is the stack the plugin publishes.
 const Stack = "node-vitest-tauri"
@@ -54,7 +58,7 @@ func (p *Tauri) CI(params protocol.CIParams) (protocol.CIResult, error) {
 // WriteVersion implements serve.Versioner: the version goes into src-tauri's
 // Cargo.toml and tauri.conf.json, beside the package.json the node plugin writes.
 func (p *Tauri) WriteVersion(params protocol.VersionParams) (protocol.VersionResult, error) {
-	return WriteVersion(p.root, params)
+	return versionsync.WriteVersion(p.root, params)
 }
 
 // Doctor implements serve.DoctorContributor.
@@ -70,11 +74,11 @@ func (p *Tauri) Generate(params protocol.GenerateParams) (protocol.GenerateResul
 	if params.Convention {
 		return protocol.GenerateResult{}, nil
 	}
-	res, err := tooling.Apply(p.root, params, setup(p.root, params))
+	res, err := tooling.Apply(p.root, params, scaffold.Setup(p.root, params))
 	if err != nil {
 		return res, err
 	}
-	if excluded, err := ExcludeFromCargoWorkspace(p.root, params.Directory); err != nil {
+	if excluded, err := cargoworkspace.ExcludeFromCargoWorkspace(p.root, params.Directory); err != nil {
 		return res, err
 	} else if excluded {
 		res.Files = append(res.Files, "Cargo.toml")

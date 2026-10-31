@@ -1,4 +1,4 @@
-package tauri
+package extras
 
 import (
 	"os"
@@ -7,20 +7,21 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// extrasFindings checks, for each Tauri project, that every sidecar and
+// Findings checks, for each Tauri project, that every sidecar and
 // resource its settings.tauri declares can be found, and that every
 // bundle.externalBin entry smith does not manage has a program named for this
 // machine's target triple (`<name>-<triple>[.exe]`), which Tauri insists on.
-func extrasFindings(workspaceRoot string, projects []protocol.Project) []protocol.Finding {
+func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Finding {
 	var findings []protocol.Finding
 	for _, p := range projects {
-		if !Detect(workspaceRoot, p.Root) {
+		if !tauriapp.Detect(workspaceRoot, p.Root) {
 			continue
 		}
-		extras, err := ParseExtras(p.Settings[Name])
+		extras, err := ParseExtras(p.Settings[tauriapp.Name])
 		if err != nil {
 			findings = append(findings, protocol.Finding{
 				Check: "the tauri settings of " + p.Name + " are valid", Detail: err.Error(),
@@ -81,7 +82,7 @@ func resourceFinding(workspaceRoot string, p protocol.Project, r Resource) proto
 // externalBinFindings warns about an externalBin entry of tauri.conf.json that
 // smith does not copy and whose program for this machine's triple is missing.
 func externalBinFindings(workspaceRoot string, p protocol.Project, extras Extras) []protocol.Finding {
-	srcTauri := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), SrcDir)
+	srcTauri := filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), tauriapp.SrcDir)
 	conf, err := readBundle(srcTauri)
 	triple, terr := HostTriple()
 	if err != nil || terr != nil || triple == "" {
@@ -98,7 +99,7 @@ func externalBinFindings(workspaceRoot string, p protocol.Project, extras Extras
 			Check:   "the sidecar " + name + " of " + p.Name + " is named for this machine",
 			OK:      fileExists(want),
 			Warning: true,
-			Detail:  p.Root + "/" + SrcDir + "/tauri.conf.json lists " + e + " in bundle.externalBin, but " + rel(workspaceRoot, want) + " does not exist; Tauri wants <name>-<target triple>[.exe]",
+			Detail:  p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json lists " + e + " in bundle.externalBin, but " + rel(workspaceRoot, want) + " does not exist; Tauri wants <name>-<target triple>[.exe]",
 			Remedy:  "declare it in [projects." + p.Name + ".settings.tauri] sidecars, and smith builds and copies it with the right name",
 		})
 	}

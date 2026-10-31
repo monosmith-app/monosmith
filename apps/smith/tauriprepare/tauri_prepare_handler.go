@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/extras"
 	"github.com/spf13/cobra"
 )
 
@@ -32,17 +33,17 @@ func Command(version string) *cobra.Command {
 					return fmt.Errorf("%s is not JSON: %w", tauri.SettingsEnv, err)
 				}
 			}
-			extras, err := tauri.ParseExtras(settings)
+			declared, err := extras.ParseExtras(settings)
 			if err != nil {
 				return err
 			}
-			triple, err := tauri.HostTriple()
+			triple, err := extras.HostTriple()
 			if err != nil || triple == "" {
 				return fmt.Errorf("cannot tell the target triple: is Rust installed (rustc -vV)? %v", err)
 			}
 			projectRoot := filepath.ToSlash(args[0])
 			if verify {
-				lines, err := tauri.VerifyExtras(root, projectRoot, extras)
+				lines, err := extras.VerifyExtras(root, projectRoot, declared)
 				for _, l := range lines {
 					fmt.Fprintln(cmd.OutOrStdout(), l)
 				}
@@ -50,7 +51,7 @@ func Command(version string) *cobra.Command {
 			}
 			program, closeSession := programOf(root, version)
 			defer closeSession()
-			lines, err := tauri.PrepareExtras(tauri.PrepareRequest{WorkspaceRoot: root, ProjectRoot: projectRoot, Extras: extras, Triple: triple, Program: program})
+			lines, err := extras.PrepareExtras(extras.PrepareRequest{WorkspaceRoot: root, ProjectRoot: projectRoot, Extras: declared, Triple: triple, Program: program})
 			for _, l := range lines {
 				fmt.Fprintln(cmd.OutOrStdout(), l)
 			}
@@ -63,9 +64,9 @@ func Command(version string) *cobra.Command {
 
 // programOf builds a sidecar's Rust project. The workspace is opened once, on
 // the first sidecar that names a project.
-func programOf(root, version string) (func(tauri.Sidecar) (string, error), func()) {
+func programOf(root, version string) (func(extras.Sidecar) (string, error), func()) {
 	var s *session.Session
-	program := func(sc tauri.Sidecar) (string, error) {
+	program := func(sc extras.Sidecar) (string, error) {
 		if s == nil {
 			opened, err := session.Open(session.Options{Dir: root, Version: version, Log: io.Discard})
 			if err != nil {
@@ -84,7 +85,7 @@ func programOf(root, version string) (func(tauri.Sidecar) (string, error), func(
 		if len(p.Exports) > 0 {
 			crate = p.Exports[0]
 		}
-		return tauri.BuildSidecar(root, crate, sc)
+		return extras.BuildSidecar(root, crate, sc)
 	}
 	return program, func() {
 		if s != nil {

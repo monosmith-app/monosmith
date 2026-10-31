@@ -1,4 +1,4 @@
-package tauri
+package versionsync
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -16,14 +17,14 @@ import (
 // A project without a Tauri app has nothing to write.
 func WriteVersion(workspaceRoot string, params protocol.VersionParams) (protocol.VersionResult, error) {
 	res := protocol.VersionResult{Files: []string{}}
-	if !Detect(workspaceRoot, params.Project.Root) {
+	if !tauriapp.Detect(workspaceRoot, params.Project.Root) {
 		return res, nil
 	}
 	for _, f := range []struct {
 		name string
 		set  func(string, string) (string, bool)
 	}{{"Cargo.toml", setCargoVersion}, {"tauri.conf.json", setConfVersion}} {
-		rel := path.Join(params.Project.Root, SrcDir, f.name)
+		rel := path.Join(params.Project.Root, tauriapp.SrcDir, f.name)
 		full := filepath.Join(workspaceRoot, filepath.FromSlash(rel))
 		src, err := os.ReadFile(full)
 		if err != nil {

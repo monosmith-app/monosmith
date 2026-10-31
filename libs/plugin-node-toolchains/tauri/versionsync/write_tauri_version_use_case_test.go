@@ -1,4 +1,4 @@
-package tauri
+package versionsync
 
 import (
 	"os"
@@ -76,12 +76,23 @@ func TestWriteVersionDryRunWritesNothing(t *testing.T) {
 
 func TestVersionFindingsWarnOnAMismatch(t *testing.T) {
 	ws, p := versionedApp(t, `{"version": "0.0.0"}`, "[package]\nname = \"a\"\nversion = \"1.0.0\"\n")
-	f := versionFindings(ws, []protocol.Project{p})
+	f := Findings(ws, []protocol.Project{p})
 	if len(f) != 1 || f[0].OK || !f[0].Warning || !strings.Contains(f[0].Detail, "tauri.conf.json 0.0.0") {
 		t.Fatalf("%+v", f)
 	}
 	ws, p = versionedApp(t, `{"version": "../package.json"}`, "[package]\nname = \"a\"\nversion = \"1.0.0\"\n")
-	if f := versionFindings(ws, []protocol.Project{p}); len(f) != 1 || !f[0].OK {
+	if f := Findings(ws, []protocol.Project{p}); len(f) != 1 || !f[0].OK {
 		t.Fatalf("a path to package.json agrees: %+v", f)
+	}
+}
+
+func write(t *testing.T, ws, rel, body string) {
+	t.Helper()
+	p := filepath.Join(ws, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

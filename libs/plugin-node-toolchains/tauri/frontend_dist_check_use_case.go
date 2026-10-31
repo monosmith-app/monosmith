@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -18,10 +19,10 @@ import (
 func frontendDistFindings(workspaceRoot string, projects []protocol.Project) []protocol.Finding {
 	var findings []protocol.Finding
 	for _, p := range projects {
-		if _, builds := p.Tasks["build"]; !builds || !Detect(workspaceRoot, p.Root) {
+		if _, builds := p.Tasks["build"]; !builds || !tauriapp.Detect(workspaceRoot, p.Root) {
 			continue
 		}
-		raw, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), SrcDir, "tauri.conf.json"))
+		raw, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), tauriapp.SrcDir, "tauri.conf.json"))
 		if err != nil {
 			continue
 		}
@@ -40,10 +41,10 @@ func frontendDistFindings(workspaceRoot string, projects []protocol.Project) []p
 		want := "../" + protocol.BuildDirFromProject(p.Root)
 		findings = append(findings, protocol.Finding{
 			Check:   "frontendDist of " + p.Name + " is the project's build output",
-			OK:      path.Clean(path.Join(SrcDir, dist)) == path.Clean(path.Join(SrcDir, want)),
+			OK:      path.Clean(path.Join(tauriapp.SrcDir, dist)) == path.Clean(path.Join(tauriapp.SrcDir, want)),
 			Warning: true,
-			Detail:  p.Root + "/" + SrcDir + "/tauri.conf.json has frontendDist " + dist + ", but smith builds the web app into " + protocol.ProjectBuildDir(p.Root),
-			Remedy:  `set build.frontendDist to "` + want + `" in ` + p.Root + "/" + SrcDir + "/tauri.conf.json, and leave beforeBuildCommand empty (smith builds the web app first)",
+			Detail:  p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json has frontendDist " + dist + ", but smith builds the web app into " + protocol.ProjectBuildDir(p.Root),
+			Remedy:  `set build.frontendDist to "` + want + `" in ` + p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json, and leave beforeBuildCommand empty (smith builds the web app first)",
 		})
 	}
 	return findings
