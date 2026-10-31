@@ -28,7 +28,7 @@ repository and released by smith like the other packages. The NuGet package id i
 The Go types in `packages/plugin-sdk/protocol` are the source of truth of the protocol. Their JSON
 Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
-one definition per message, a methods table (each of the 19 methods with its params, its result and the
+one definition per message, a methods table (each of the 20 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The C# is generated from that
 file by a Node script (`Generator/generate-protocol.handler.mjs`), so it cannot drift from the Go types: a
 Go test fails when the schema is stale, a C# test fails when the generated files are, and the generator

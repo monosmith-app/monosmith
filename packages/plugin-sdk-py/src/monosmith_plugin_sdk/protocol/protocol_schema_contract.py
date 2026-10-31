@@ -230,6 +230,17 @@ _SCHEMA_JSON = r'''{
       },
       "capability": "components",
       "notification": false
+    },
+    "api/surface": {
+      "description": "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
+      "params": {
+        "$ref": "#/$defs/APISurfaceParams"
+      },
+      "result": {
+        "$ref": "#/$defs/APISurfaceResult"
+      },
+      "capability": "apiSurface",
+      "notification": false
     }
   },
   "x-errorCodes": [
@@ -310,6 +321,42 @@ _SCHEMA_JSON = r'''{
     }
   ],
   "$defs": {
+    "APISurfaceParams": {
+      "description": "APISurfaceParams asks a plugin for the public API names of one project.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "ref": {
+          "type": "string",
+          "description": "Ref is the git revision to read the project at (the tag of its last release). Empty means the working tree."
+        }
+      },
+      "required": [
+        "project"
+      ]
+    },
+    "APISurfaceResult": {
+      "description": "APISurfaceResult is the public API of a project: the names its entry points export. A host compares the names of two revisions; it never reads their meaning, so a plugin chooses its own spelling and keeps it stable.",
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names are the exported names, sorted. A name an entry point other than the main one exports is prefixed with that entry point and a colon (\"./cli:run\"). An empty list is an answer: the project exports nothing."
+        },
+        "unreadable": {
+          "type": "string",
+          "description": "Unreadable says why the API could not be listed (no entry point, no source at the revision). When set, Names is empty and the host skips the project without a warning."
+        }
+      },
+      "required": [
+        "names"
+      ]
+    },
     "ActionStep": {
       "description": "ActionStep is a provider-native step: a GitHub action or an Azure task, with its inputs in the order they are written.",
       "type": "object",
@@ -558,6 +605,10 @@ _SCHEMA_JSON = r'''{
         "components": {
           "type": "boolean",
           "description": "Components lists a project's dependencies for its SBOM."
+        },
+        "apiSurface": {
+          "type": "boolean",
+          "description": "APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs."
         }
       }
     },

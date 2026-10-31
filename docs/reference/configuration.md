@@ -85,6 +85,7 @@ tag_format = "{name}@"                # the tag prefix of a project with no tag_
 rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC token, not GEM_HOST_API_KEY (GitHub only; docs/reference/releasing.md)
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
+api_check = "warn"                    # warn when the commits' bump is smaller than the public API change needs; "error" stops the release, "off" skips (releasing.md, The bump against the public API)
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute

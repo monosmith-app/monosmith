@@ -248,6 +248,8 @@ $ smith release --dry-run --json      # excerpt
 
 The release's SBOM lists the packages of the nearest `package-lock.json` (the project's or the workspace's), falling back to the ranges in `package.json`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
 
+The release compares the exported names of a package at its last tag and now, through the `api/surface` method, and warns when the commits give a smaller bump than the change needs. The plugin reads `exports`, `types`, `typings`, `module` and `main` of `package.json`, and the declaration, TypeScript or JavaScript file behind each (the source when the build output is not in the repository). It does not build. What it misses is listed in [releasing](../../../reference/releasing.md#the-bump-against-the-public-api).
+
 ## CI
 
 Real output of `smith ci generate` (GitHub; Azure shows `UseNode@1` with `24.x`):

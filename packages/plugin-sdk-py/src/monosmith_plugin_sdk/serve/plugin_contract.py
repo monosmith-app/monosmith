@@ -17,6 +17,8 @@ from typing import Protocol
 
 from ..cancellation import CancelToken
 from ..protocol import (
+    APISurfaceParams,
+    APISurfaceResult,
     ChangeKindParams,
     ChangeKindResult,
     CIParams,
@@ -121,6 +123,12 @@ class ComponentLister(Protocol):
     """`sbom/components`: the components a project ships, for the SBOM a release attaches."""
 
     def components(self, params: ComponentsParams, cancel: CancelToken) -> ComponentsResult: ...
+
+
+class APISurfaceReader(Protocol):
+    """`api/surface`: the public API names of a project at a git revision, for the release's version check."""
+
+    def api_surface(self, params: APISurfaceParams, cancel: CancelToken) -> APISurfaceResult: ...
 
 
 class DependencyManager(Protocol):
