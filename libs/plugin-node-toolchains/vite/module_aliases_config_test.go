@@ -30,7 +30,7 @@ func TestTheModuleAliasesFactReachesViteAndItsTsconfig(t *testing.T) {
 		}
 		return string(raw)
 	}
-	if got := read("vite.config.ts"); !strings.Contains(got, `"@app": "/src",`) || !strings.Contains(got, "plugins: [react()]") {
+	if got := read("vite.config.ts"); !strings.Contains(got, `'@app': '/src',`) || !strings.Contains(got, "plugins: [react()]") || !strings.Contains(got, "\n  build: {") {
 		t.Errorf("vite.config.ts:\n%s", got)
 	}
 	if got := read("tsconfig.json"); !strings.Contains(got, `"@app/*": ["./src/*"]`) {

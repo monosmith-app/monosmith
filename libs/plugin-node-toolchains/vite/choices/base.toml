@@ -60,7 +60,7 @@ start = "vite"
 // The build goes to the workspace's dist/ (smith), never dist/ in the app.
 export default defineConfig({
 [[if index .Slots "vite.plugins"]]  plugins: [[ "[" ]][[range $i, $p := index .Slots "vite.plugins"]][[if $i]], [[end]][[$p]][[end]]],
-[[end]][[.ViteAlias]]  build:[[if index .Slots "vite.plugins"]]   [[else]] [[end]]{
+[[end]][[.ViteAlias]]  build:[[if and (index .Slots "vite.plugins") (not .ViteAlias)]]   [[else]] [[end]]{
     outDir:      '[[.Build]]',
     emptyOutDir: true,
   },
