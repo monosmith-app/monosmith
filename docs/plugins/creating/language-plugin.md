@@ -164,6 +164,17 @@ shop  app · widget · apps/shop
   └─ core
 ```
 
+### Optional: report a shape so new projects follow their siblings
+
+A project in `discover` may carry `shape`: a map of short facts about how it is made, for example
+`"build.tool": "esbuild"`, `"test.runner": "@swc/jest"`, `"exports.target": "dist"`. Choose the keys
+and values; the host knows none of them. `smith add` counts the shapes of the projects of the new
+project's kind and language. When at least 3 of them, and at least two thirds, share a value, it
+prints the reason and sends the value back in `generate` as `params.shape`. Apply the keys you can,
+list them in `initialize.follows` (the host asks about a split only for those keys), and ignore the
+rest. The host reads the shape of the new project after `generate` and warns for each key that
+differs. See [ADR 0040](../../architecture/decisions/0040-smith-add-follows-the-dialect-of-sibling-projects.md).
+
 ## Step 3: tasks that cache honestly
 
 A task is a command smith runs, hashes and caches. The plugin describes it; it never runs it.
