@@ -281,6 +281,11 @@ type CacheSection struct {
 type PluginsSection struct {
 	// Enabled lists built-in plugins to load. Default: all of them.
 	Enabled []string `toml:"enabled"`
+	// Marketplace is the index `smith plugin search` and `smith plugin install
+	// <name>` read: an https URL or a file path. The SMITH_MARKETPLACE
+	// environment variable wins. Default: the index of
+	// github.com/monosmith-app/plugins.
+	Marketplace string `toml:"marketplace"`
 	// External plugins are executables speaking the plugin protocol.
 	External map[string]ExternalPlugin `toml:"external"`
 }

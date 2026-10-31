@@ -14,8 +14,11 @@ import (
 
 // Command is `smith plugin install`. describe reads the plugin.json of a
 // directory and resolves the command it would run on this machine: the
-// manifest format belongs to the plugin host, not to the installer.
-func Command(describe func(dir string) (Described, error)) *cobra.Command {
+// manifest format belongs to the plugin host, not to the installer. resolve,
+// when it is not nil, turns a marketplace name (widget, widget@1.2.0) into an
+// archive URL and its digest before the install; it leaves every other
+// argument alone.
+func Command(describe func(dir string) (Described, error), resolve Resolver) *cobra.Command {
 	var (
 		global, force, trust, pin bool
 		sha                       string
@@ -23,14 +26,17 @@ func Command(describe func(dir string) (Described, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install <source>",
 		Short: "Install a packaged plugin, checked against its sha256",
-		Long: `Installs a plugin from an archive made by "smith plugin pack", from a plugin
+		Long: `Installs a plugin from the marketplace by name (widget or widget@1.2.0, see
+"smith plugin search"), from an archive made by "smith plugin pack", from a plugin
 directory, from an https URL, or from a GitHub release (github:owner/repo@tag,
 the release's one *.smith-plugin.zip asset, or github:owner/repo@tag#<asset>).
+A name that is also a file or directory here is that path.
 
 Before anything is installed, smith checks that
   - the archive matches the SHA-256 you give with --sha256, or the one the
-    release publishes in <archive>.sha256 (an archive without either is
-    refused; a plugin directory has no archive and needs none);
+    release publishes in <archive>.sha256, or the marketplace index lists (an
+    archive without any is refused; a plugin directory has no archive and
+    needs none);
   - the archive's checksums.sha256 lists exactly its files and every file
     matches it;
   - every path stays inside the plugin's directory (no "..", absolute paths,
@@ -47,9 +53,23 @@ Installing does not trust the plugin: smith asks the first time it is used,
 unless you pass --trust. A plugin runs with your privileges and smith does not
 sandbox it; read it before you trust it. The digest ties the archive to what
 the author published; it does not say who the author is.`,
-		Example: "  smith plugin install ./widget-0.1.0.smith-plugin.zip\n  smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 <digest>\n  smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin --trust",
+		Example: "  smith plugin install widget@1.2.0\n  smith plugin install ./widget-0.1.0.smith-plugin.zip\n  smith plugin install https://example.com/widget-0.1.0.smith-plugin.zip --sha256 <digest>\n  smith plugin install github:acme/smith-plugin-widget@v0.1.0 --pin --trust",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			source, want := args[0], sha
+			if resolve != nil {
+				r, ok, err := resolve(cmd.Context(), source)
+				if err != nil {
+					return err
+				}
+				if ok {
+					if sha != "" {
+						return problem.New("--sha256 cannot be used with a marketplace name: the index gives the digest", "drop --sha256, or install from the archive URL")
+					}
+					source, want = r.Source, r.SHA256
+					fmt.Fprintf(cmd.OutOrStdout(), "Found %s in the marketplace %s.\n", r.Name, r.Origin)
+				}
+			}
 			root, _ := workspace.FindRoot(".")
 			inWorkspace := root != "" && !global
 			if pin && !inWorkspace {
@@ -62,9 +82,9 @@ the author published; it does not say who the author is.`,
 				return problem.New("cannot find your home directory to install into", "set SMITH_HOME")
 			}
 			res, err := Install(cmd.Context(), NewClient(), Request{
-				Source:     args[0],
+				Source:     source,
 				PluginsDir: pluginsDir,
-				SHA256:     sha,
+				SHA256:     want,
 				Replace:    force,
 				Inspect:    func(dir string) (Plugin, error) { return inspectStaged(describe, dir) },
 			})
@@ -79,7 +99,7 @@ the author published; it does not say who the author is.`,
 			fmt.Fprintf(w, "%s %s %s in %s (%d files, from %s).\n", verb, res.Name, res.Version, res.Dir, res.Files, res.Source)
 			switch {
 			case res.ArchiveVerified:
-				fmt.Fprintf(w, "  archive sha256 %s matches the digest you gave or the release published.\n", res.ArchiveSHA256)
+				fmt.Fprintf(w, "  archive sha256 %s matches the digest you gave, or the marketplace or release published.\n", res.ArchiveSHA256)
 			}
 			if res.Checksummed {
 				fmt.Fprintln(w, "  every file matches checksums.sha256.")
