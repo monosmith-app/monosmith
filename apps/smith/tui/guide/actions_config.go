@@ -181,5 +181,10 @@ func Actions(languages, plugins, enabled []string) []Action {
 				return argv
 			},
 		},
+		{
+			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (for choices, run smith recipe new in a terminal)",
+			Steps: NewRecipeSteps(),
+			Argv:  NewRecipeArgv,
+		},
 	}
 }

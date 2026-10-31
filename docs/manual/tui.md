@@ -234,7 +234,12 @@ stays in the editor when it is refused. `u` removes the setting, so it has its d
 one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a recipe would use.
 
 **Forms.** The guided forms (add a project, remove a project and the rest of the Start menu)
-that end as a smith command line.
+that end as a smith command line. Every action in the action catalog has one: a command with
+no hand-written form gets a form built from its own arguments and options, subcommands
+included (`deps up`, `docker description`, `slices check`, `cache prune`). **Write a recipe**
+asks for the name, version, parent and the fixed plugins (`language=python lint=ruff`) and ends
+as `smith recipe new --name ... --fixed ...`. A recipe with a choice its users make is still
+written with `smith recipe new` on a terminal, which asks the questions.
 
 Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in
 `tui.json`.

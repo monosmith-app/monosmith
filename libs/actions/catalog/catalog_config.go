@@ -85,7 +85,7 @@ var catalog = []Action{
 	{Command: []string{"plugin", "enable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"plugin", "disable"}, Safety: Changes, NotInMCP: settingsEdit, NotInServe: noMethodYet},
 	{Command: []string{"recipe"}, Safety: Reads},
-	{Command: []string{"recipe", "new"}, Safety: NeedsTerminal, Variants: []Variant{{When: []string{"--from-answers"}, Safety: Changes}}, NotInTUI: "its wizard asks on the terminal, so the shell hands it one (the palette lists it)", NotInServe: noMethodYet},
+	{Command: []string{"recipe", "new"}, Safety: NeedsTerminal, Variants: []Variant{{When: []string{"--from-answers", "--fixed", "--name"}, Safety: Changes}}, NotInServe: noMethodYet},
 	{Command: []string{"mcp"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 	{Command: []string{"mcp", "install"}, Safety: Changes, Asks: true, NotInMCP: agentInstall, NotInServe: noMethodYet},
 	{Command: []string{"agent"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: "starts Claude Code on the terminal", NotInServe: "starts Claude Code on the terminal"},

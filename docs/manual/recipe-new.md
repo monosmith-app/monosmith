@@ -20,10 +20,17 @@ To start a recipe without learning the format; then edit the file by hand. Witho
 terminal, `--from-answers` reads the same answers from a file, so a script or a test gets
 the same recipe the questions would.
 
+A recipe whose plugins are all fixed needs neither questions nor a file: `--name` and one
+`--fixed level=plugin` for each level write it. A structure, deploy or toolchain level takes
+plugins joined by commas (`--fixed structure=slices,layers`). A choice the recipe's users
+make still needs the questions or an answers file. The interface's **Write a recipe** form
+(the guided menu) asks for these values and shows this command line before it runs.
+
 ## Synopsis
 
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
+smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] --fixed <level=plugin>...
 ```
 
 ## Arguments and flags
@@ -39,8 +46,12 @@ Usage: `smith recipe new [path] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--extends <extends>` | string |  | the recipe this one extends: a path from the new file, or an https URL |
+| `--fixed <fixed>` | string, repeatable |  | fix a level's plugin, as level=plugin (language=python, structure=slices,layers); repeat for each level |
 | `--force` | boolean | off | replace the file if it exists |
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
+| `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |
+| `--recipe-version <recipe-version>` | string |  | the recipe's version (0.1.0 when not given) |
 
 <!-- smith:end recipe new -->
 
@@ -71,6 +82,12 @@ smith recipe new --from-answers answers.toml
 
 Wrote team.recipe.toml (recipe team 0.1.0).
 Check it any time with: smith recipe check team.recipe.toml --all
+```
+
+With fixed plugins only, as the interface's form runs it:
+
+```sh
+smith recipe new --name team --fixed language=python --fixed lint=ruff
 ```
 
 The file it wrote:

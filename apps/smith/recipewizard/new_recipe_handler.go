@@ -22,6 +22,10 @@ type Options struct {
 	Target string
 	// FromAnswers is a Plan file; set, nothing is asked.
 	FromAnswers string
+	// Name, RecipeVersion, Extends and Fixed describe a recipe whose plugins
+	// are all fixed (see PlanFromFlags); with Name or Fixed set, nothing is asked.
+	Name, RecipeVersion, Extends string
+	Fixed                        []string
 	// Force replaces an existing file without asking.
 	Force bool
 	// Interactive says a person is there to answer.
@@ -54,10 +58,14 @@ write by hand, to <name>.recipe.toml or the path you give. An existing file is
 replaced only after you confirm, or with --force.
 
 Without a terminal, --from-answers reads the same answers from a file, so a
-script or a test gets the same recipe the questions would.`,
+script or a test gets the same recipe the questions would. A recipe whose
+plugins are all fixed needs no file either: --name and --fixed level=plugin
+(as often as needed) write it, which is what the interface's form runs. A
+choice the recipe's users make still needs the questions or an answers file.`,
 		Example: `  smith recipe new
   smith recipe new recipes/team/team.recipe.toml
-  smith recipe new --from-answers answers.toml`,
+  smith recipe new --from-answers answers.toml
+  smith recipe new --name team --fixed language=python --fixed lint=ruff`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 {
@@ -69,6 +77,10 @@ script or a test gets the same recipe the questions would.`,
 		},
 	}
 	cmd.Flags().StringVar(&opts.FromAnswers, "from-answers", "", "read the answers from a TOML file instead of asking (see docs/reference/recipes.md)")
+	cmd.Flags().StringVar(&opts.Name, "name", "", "the recipe's name; with --fixed, nothing is asked")
+	cmd.Flags().StringVar(&opts.RecipeVersion, "recipe-version", "", "the recipe's version (0.1.0 when not given)")
+	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
+	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a level's plugin, as level=plugin (language=python, structure=slices,layers); repeat for each level")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
 	return cmd
 }
@@ -101,6 +113,11 @@ func Run(o Options) error {
 			return err
 		}
 		if plan, err = ReadPlan(data, o.FromAnswers); err != nil {
+			return err
+		}
+	case o.Name != "" || len(o.Fixed) > 0:
+		var err error
+		if plan, err = PlanFromFlags(o.Name, o.RecipeVersion, o.Extends, o.Fixed); err != nil {
 			return err
 		}
 	case o.Interactive:

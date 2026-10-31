@@ -90,6 +90,35 @@ func TestAnExistingRecipeIsReplacedWhenThePersonConfirms(t *testing.T) {
 	}
 }
 
+func TestFixedFlagsWriteARecipeWithoutQuestions(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	var out bytes.Buffer
+	err := Run(Options{Name: "team", Fixed: []string{"language=python", "lint=ruff"}, Out: &out, In: strings.NewReader(""), Lookup: fakeLookup})
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+	written, err := os.ReadFile(filepath.Join(dir, "team.recipe.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(written), "ruff") || !strings.Contains(out.String(), "Wrote team.recipe.toml (recipe team 0.1.0)") {
+		t.Errorf("recipe:\n%s\noutput:\n%s", written, out.String())
+	}
+}
+
+func TestFixedFlagsRefuseALevelThatDoesNotFit(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	err := Run(Options{Name: "team", Fixed: []string{"language=node", "lint=ruff"}, Out: &bytes.Buffer{}, In: strings.NewReader(""), Lookup: fakeLookup})
+	if err == nil || !strings.Contains(err.Error(), "nothing was written") {
+		t.Errorf("err = %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(dir, "team.recipe.toml")); statErr == nil {
+		t.Error("a recipe that does not resolve was written")
+	}
+}
+
 func TestTheWizardNeedsATerminalOrAnAnswersFile(t *testing.T) {
 	t.Chdir(t.TempDir())
 	err := Run(Options{Out: &bytes.Buffer{}, In: strings.NewReader(""), Lookup: fakeLookup})
