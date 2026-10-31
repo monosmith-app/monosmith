@@ -3,7 +3,10 @@ package pluginhost
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -290,5 +293,68 @@ func TestInstallRefusesAPluginWithoutAProgramForThisPlatformEvenGlobally(t *test
 	}
 	if _, err := os.Stat(filepath.Join(Home(), "plugins", "elsewhere")); err == nil {
 		t.Fatal("installed a plugin that cannot run here")
+	}
+}
+
+// marketplaceFor packs the test plugin, serves it with an index that lists it
+// under indexDigest ("" means its real digest), points SMITH_MARKETPLACE at
+// the index and returns the server.
+func marketplaceFor(t *testing.T, indexDigest string) *httptest.Server {
+	t.Helper()
+	dist := t.TempDir()
+	if out, err := runPack(t, pluginSource(t), "--out", dist); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	raw, err := os.ReadFile(filepath.Join(dist, "envdump-0.1.0.smith-plugin.zip.sha256"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if indexDigest == "" {
+		indexDigest = strings.Fields(string(raw))[0]
+	}
+	mux := http.NewServeMux()
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	mux.HandleFunc("/index.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"schema":1,"plugins":{"envdump":{"description":"d","license":"MIT","versions":{"0.1.0":{"url":"%s/envdump-0.1.0.smith-plugin.zip","sha256":"%s"}}}}}`, srv.URL, indexDigest)
+	})
+	mux.Handle("/", http.FileServer(http.Dir(dist)))
+	t.Setenv("SMITH_MARKETPLACE", srv.URL+"/index.json")
+	return srv
+}
+
+func TestInstallByNameResolvesThroughTheMarketplaceAndDoesNotTrust(t *testing.T) {
+	root := emptyWorkspace(t)
+	marketplaceFor(t, "")
+
+	out, err := runInstall(t, "envdump@0.1.0", "--pin")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	for _, want := range []string{"Found envdump@0.1.0 in the marketplace", "Installed envdump 0.1.0", "matches the digest", "was not started", "Pinned sha256"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+	store, _ := plugintrust.OpenStore()
+	if _, ok, _ := store.Find(root, "envdump"); ok {
+		t.Fatal("installing by name trusted the plugin")
+	}
+}
+
+func TestInstallByNameRefusesAnArchiveThatIsNotTheOneTheIndexListsAndGivenSha256(t *testing.T) {
+	emptyWorkspace(t)
+	marketplaceFor(t, strings.Repeat("0", 64))
+
+	_, err := runInstall(t, "envdump")
+	var p *problem.Error
+	if !errors.As(err, &p) || !strings.Contains(p.Problem, "sha256") {
+		t.Fatalf("got %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(".smith", "plugins", "envdump")); statErr == nil {
+		t.Fatal("a plugin that failed its digest was installed")
+	}
+	if _, err := runInstall(t, "envdump", "--sha256", strings.Repeat("0", 64)); err == nil || !strings.Contains(err.Error(), "--sha256 cannot be used") {
+		t.Fatalf("got %v", err)
 	}
 }
