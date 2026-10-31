@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node/siblingfiles"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -16,16 +17,28 @@ func Derive(workspaceRoot string, params protocol.DeriveParams) (protocol.Derive
 	for _, p := range params.Projects {
 		byName[p.Name] = p
 	}
-	var files []protocol.DerivedFile
+	// The shape of the sibling projects comes first: a file it derives is not
+	// derived again by a renderer that knows one part of it.
+	shared := siblingfiles.Derive(siblingfiles.Input{
+		Root: workspaceRoot, Projects: params.Projects, Owned: params.Owned,
+		References: func(p protocol.Project, content []byte) []any {
+			return inFileOrder(dependencyReferences(workspaceRoot, p, byName, params), content)
+		},
+	})
+	covered := map[string]bool{}
+	files := shared.Files
+	for _, f := range shared.Files {
+		covered[f.Path] = true
+	}
 	for _, p := range params.Projects {
-		if f, ok := tsconfigReferences(workspaceRoot, p, byName, params); ok {
+		if f, ok := tsconfigReferences(workspaceRoot, p, byName, params); ok && !covered[f.Path] {
 			files = append(files, f)
 		}
-		if f, ok := jestDisplayName(workspaceRoot, p); ok {
+		if f, ok := jestDisplayName(workspaceRoot, p); ok && !covered[f.Path] {
 			files = append(files, f)
 		}
 	}
-	return protocol.DeriveResult{Files: files}, nil
+	return protocol.DeriveResult{Files: files, Diverging: shared.Diverging}, nil
 }
 
 // readFile reads a workspace-relative file; ok is false when it is not there.

@@ -467,6 +467,12 @@ export interface DeriveParams {
 /** DeriveResult carries the files a plugin derives. */
 export interface DeriveResult {
   files: DerivedFile[]
+  /**
+   * Diverging are files a renderer looked at and left alone because they differ from the shape
+   * their siblings share. They are not drift: the project owns them. The host shows them in `smith
+   * derive --explain` and in the doctor, and never writes them.
+   */
+  diverging?: DivergentFile[]
 }
 
 /** DerivedFile is the content one renderer derives for one file. */
@@ -532,6 +538,21 @@ export interface DiscoverParams {
  */
 export interface DiscoverResult {
   projects: Project[]
+}
+
+/**
+ * DivergentFile is a file a renderer does not derive because the project made it differ from its
+ * siblings.
+ */
+export interface DivergentFile {
+  /** Project is the project the file belongs to. */
+  project: string
+  /** Path is workspace-relative, with forward slashes. */
+  path: string
+  /** Renderer is the stable id of the renderer that compared the file. */
+  renderer: string
+  /** Detail says in a sentence how the file differs from its siblings. */
+  detail: string
 }
 
 /** DoctorParams gives the plugin its projects to check. */

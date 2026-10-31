@@ -103,6 +103,7 @@ func keysContent(f protocol.DerivedFile, keys map[string]any) ([]byte, error) {
 		var b bytes.Buffer
 		enc := json.NewEncoder(&b)
 		enc.SetEscapeHTML(false)
+		enc.SetIndent("", "  ")
 		if err := enc.Encode(keys); err != nil {
 			return nil, err
 		}

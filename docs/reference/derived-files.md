@@ -86,6 +86,14 @@ The exit code of `smith derive` is not zero while a file is in `drift`, `diverge
 
 | `typescript.tsconfig` | typescript | `tsconfig.json` of a project the plugin scaffolded | `file` | the whole file, rendered from the scaffold template of the project |
 | `vite.tsconfig` | vite | `tsconfig.json` of an app made from choices | `file` | the whole file, rendered from the saved choices |
+| `node.sibling-shape` | node | a config file (`tsconfig*.json`, `.swcrc`, `jest.config.*`, `vitest.config.*`, `eslint.config.*`, `babel.config.*`, `.eslintrc*`, `.prettierrc*`, `.babelrc`) that sibling projects share | `file`, or `keys` for a JSON file that matches in some keys only | the shape the siblings share, with the project name, the package name and the internal references substituted |
+
+`node.sibling-shape` derives a file when at least three projects of one kind hold it at the same
+path, and at least two thirds of the projects that have it hold it in the same shape. It never
+creates a file for a project that lacks it, unless the record owns the file. A file or a key that
+differs from the shape is the project's own: smith does not touch it, and `smith derive --explain
+<file>` and `smith doctor` say that it diverges from its siblings. That is not drift and needs no
+action. `package.json`, test setup files and source files are never derived this way.
 
 The last two renderers derive a file only when the record owns it or when it is, line for line, what
 the template renders. A project whose `tsconfig.lib.json` has no dependency and no `references` key is skipped.

@@ -95,7 +95,10 @@ is planned ([ADR 0046](../architecture/decisions/0046-derived-files-have-an-owne
 - Smith edits JSON with its own writer. A file in `keys` mode is indented with two spaces when
   smith writes it. JSON with comments is reported as `broken`.
 - A region needs its markers and its file. Smith never creates them.
-- Other derivable parts (a shared tsconfig base, test setup, source locations) are not rendered yet.
+- Smith derives a config file from the shape of the sibling projects only when three or more
+  projects, and two thirds of those that have it, hold the same shape. A file that differs is yours
+  and is reported as diverging.
+- A shared tsconfig base, test setup and source locations are not rendered yet.
   The release tag prefix needs no renderer: use `tag_format` in `[release]`.
 
 Plugin authors: [Rendering derived files](../plugins/creating/derived-files.md).

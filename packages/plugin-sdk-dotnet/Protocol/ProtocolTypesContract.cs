@@ -1445,6 +1445,9 @@ public sealed record DeriveResult : IProtocolValue<DeriveResult>
     /// <summary>The <c>files</c> member of <c>DeriveResult</c>.</summary>
     public IReadOnlyList<DerivedFile> Files { get; init; } = [];
 
+    /// <summary>Diverging are files a renderer looked at and left alone because they differ from the shape their siblings share. They are not drift: the project owns them. The host shows them in <c>smith derive --explain</c> and in the doctor, and never writes them.</summary>
+    public IReadOnlyList<DivergentFile> Diverging { get; init; } = [];
+
     /// <inheritdoc />
     public static DeriveResult Read(JsonAny? value, string path)
     {
@@ -1452,6 +1455,7 @@ public sealed record DeriveResult : IProtocolValue<DeriveResult>
         return new DeriveResult
         {
             Files = ListOf(Member(map, "files"), Join(path, "files"), DerivedFile.Read),
+            Diverging = ListOf(Member(map, "diverging"), Join(path, "diverging"), DivergentFile.Read),
         };
     }
 
@@ -1461,6 +1465,11 @@ public sealed record DeriveResult : IProtocolValue<DeriveResult>
         writer.BeginObject();
         writer.Property("files");
         MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => item1.Write(builder1));
+        if (Diverging is { Count: > 0 })
+        {
+            writer.Property("diverging");
+            MessageWritingAlgorithm.List(writer, Diverging, (builder1, item1) => item1.Write(builder1));
+        }
         writer.EndObject();
     }
 }
@@ -1643,6 +1652,50 @@ public sealed record DiscoverResult : IProtocolValue<DiscoverResult>
         writer.BeginObject();
         writer.Property("projects");
         MessageWritingAlgorithm.List(writer, Projects, (builder1, item1) => item1.Write(builder1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>DivergentFile is a file a renderer does not derive because the project made it differ from its siblings.</summary>
+public sealed record DivergentFile : IProtocolValue<DivergentFile>
+{
+    /// <summary>Project is the project the file belongs to.</summary>
+    public required string Project { get; init; }
+
+    /// <summary>Path is workspace-relative, with forward slashes.</summary>
+    public required string Path { get; init; }
+
+    /// <summary>Renderer is the stable id of the renderer that compared the file.</summary>
+    public required string Renderer { get; init; }
+
+    /// <summary>Detail says in a sentence how the file differs from its siblings.</summary>
+    public required string Detail { get; init; }
+
+    /// <inheritdoc />
+    public static DivergentFile Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new DivergentFile
+        {
+            Project = StringValue(Member(map, "project"), Join(path, "project")),
+            Path = StringValue(Member(map, "path"), Join(path, "path")),
+            Renderer = StringValue(Member(map, "renderer"), Join(path, "renderer")),
+            Detail = StringValue(Member(map, "detail"), Join(path, "detail")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        writer.String(Project);
+        writer.Property("path");
+        writer.String(Path);
+        writer.Property("renderer");
+        writer.String(Renderer);
+        writer.Property("detail");
+        writer.String(Detail);
         writer.EndObject();
     }
 }

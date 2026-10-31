@@ -34,6 +34,24 @@ type DeriveParams struct {
 // DeriveResult carries the files a plugin derives.
 type DeriveResult struct {
 	Files []DerivedFile `json:"files"`
+	// Diverging are files a renderer looked at and left alone because they
+	// differ from the shape their siblings share. They are not drift: the
+	// project owns them. The host shows them in `smith derive --explain` and in
+	// the doctor, and never writes them.
+	Diverging []DivergentFile `json:"diverging,omitempty"`
+}
+
+// DivergentFile is a file a renderer does not derive because the project made
+// it differ from its siblings.
+type DivergentFile struct {
+	// Project is the project the file belongs to.
+	Project string `json:"project"`
+	// Path is workspace-relative, with forward slashes.
+	Path string `json:"path"`
+	// Renderer is the stable id of the renderer that compared the file.
+	Renderer string `json:"renderer"`
+	// Detail says in a sentence how the file differs from its siblings.
+	Detail string `json:"detail"`
 }
 
 // DerivedFile is the content one renderer derives for one file.

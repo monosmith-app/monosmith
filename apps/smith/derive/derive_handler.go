@@ -23,11 +23,22 @@ func Command(version string) *cobra.Command {
 		Short: "Write the files that follow from facts and the project graph, and report hand edits",
 		Long: `Write the files that follow from facts and the project graph.
 
-Some config repeats in every project and follows from what smith knows: a
-tsconfig's references are the project's internal dependencies, a Jest
-displayName is the project's name. A plugin renders such a file, or part of it,
-and smith keeps a record of what it wrote in smith.lock: the owner (smith or
-you), the renderer and a hash of the content.
+Some config repeats in every project and follows from what smith knows. Two
+things are derived:
+
+  - what the project graph says: a tsconfig's references are the project's
+    internal dependencies, and a Jest displayName (between smith:begin and
+    smith:end markers) is the project's name;
+  - the shape of the sibling projects: when at least three projects of one kind,
+    and two thirds of those that have the file, hold the same config file
+    (tsconfig*.json, .swcrc, jest.config.*, and the like) after the project name
+    and the references are substituted, that shape is derived for each project
+    that has the file. A key or a file that differs is the project's own: smith
+    leaves it alone and --explain says it diverges from its siblings.
+
+A plugin renders such a file, or part of it, and smith keeps a record of what it
+wrote in smith.lock: the owner (smith or you), the renderer and a hash of the
+content. Delete a derived file and smith derive writes it back.
 
 A file smith owns is rewritten when its inputs change. When its content no
 longer matches the record, someone edited it: derive reports the drift with a
@@ -77,6 +88,10 @@ func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, expla
 	if len(explain) > 0 {
 		for _, p := range explain {
 			items := itemsAt(plan, p)
+			if d := plan.FindDivergence(p); len(items) == 0 && d != nil {
+				fmt.Fprintf(out, "%s\n  owner     you\n  renderer  %s (plugin %s)\n  project   %s\n  state     %s\n", d.Path, d.Renderer, d.Plugin, d.Project, d.Detail)
+				continue
+			}
 			if len(items) == 0 {
 				return problem.New("smith does not derive "+p, "smith derive --check lists the files it derives")
 			}
