@@ -9,9 +9,9 @@ import (
 func webWithDeps(t *testing.T, file string) protocol.DerivedFile {
 	t.Helper()
 	root := t.TempDir()
-	put(t, root, "libs/a/tsconfig.lib.json", "{}")
-	put(t, root, "libs/b/tsconfig.lib.json", "{}")
-	put(t, root, "libs/c/tsconfig.lib.json", "{}")
+	put(t, root, "libs/a/tsconfig.lib.json", `{"a": 1}`)
+	put(t, root, "libs/b/tsconfig.lib.json", `{"b": 1}`)
+	put(t, root, "libs/c/tsconfig.lib.json", `{"c": 1}`)
 	put(t, root, "apps/web/tsconfig.lib.json", file)
 	res, err := Derive(root, protocol.DeriveParams{
 		Projects: []protocol.Project{{Name: "web", Root: "apps/web"}, {Name: "a", Root: "libs/a"}, {Name: "b", Root: "libs/b"}, {Name: "c", Root: "libs/c"}},

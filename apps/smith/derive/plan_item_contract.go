@@ -63,9 +63,30 @@ func (i Item) NeedsAction() bool {
 	return i.Status != StatusCurrent && i.Status != StatusEjected
 }
 
+// Divergence is a file a renderer compared with its sibling projects and left
+// alone, because the project made it differ. It is not drift: the project owns
+// it.
+type Divergence struct {
+	// Plugin is the plugin whose renderer compared the file.
+	Plugin string
+	protocol.DivergentFile
+}
+
 // Plan is every derived file of the workspace, sorted by path.
 type Plan struct {
 	Items []Item
+	// Diverging are the files that differ from the shape of their siblings.
+	Diverging []Divergence
+}
+
+// FindDivergence returns the divergence of a path, or nil.
+func (p *Plan) FindDivergence(path string) *Divergence {
+	for i := range p.Diverging {
+		if p.Diverging[i].Path == path {
+			return &p.Diverging[i]
+		}
+	}
+	return nil
 }
 
 // Find returns the item of a path, or nil.

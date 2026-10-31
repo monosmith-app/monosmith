@@ -31,7 +31,8 @@ func TestMergeKeepsThePositionOfAKeyItChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(got)
-	if !(strings.Index(s, `"extends"`) < strings.Index(s, `"references"`) && strings.Index(s, `"references"`) < strings.Index(s, `"exclude"`)) {
+	extends, refs, exclude := strings.Index(s, `"extends"`), strings.Index(s, `"references"`), strings.Index(s, `"exclude"`)
+	if extends >= refs || refs >= exclude {
 		t.Fatalf("the key moved:\n%s", s)
 	}
 }

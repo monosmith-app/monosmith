@@ -9,7 +9,7 @@ capability. A plugin that does not implement it is not asked, and the protocol s
 | Capability | `derive` |
 | Go interface | `Deriver` (`derive` in the TypeScript and Python SDKs, `IDeriver` in C#) |
 | Request | `DeriveParams{projects, graph, owned}` |
-| Answer | `DeriveResult{files}`, each a `DerivedFile` |
+| Answer | `DeriveResult{files, diverging}`: each file a `DerivedFile`, each diverging file a `DivergentFile` |
 | Called by | `smith derive`, `smith doctor`, `smith ci verify` (only when `[derive] enabled = true`) |
 
 The plugin writes nothing. It answers with content, and the host decides, from `smith.lock`,
@@ -34,6 +34,11 @@ whether to write it. Read [Derived files](../../reference/derived-files.md) for 
 | `content` | the whole file (`file`) or the lines of the region without the markers (`region`) |
 | `comment` | the comment leader of the file (`//`, `#`). Needed for `region`; for `file` it makes the host write a generated header |
 | `format`, `table`, `keys` | for `keys`: `json` or `toml`; the TOML table that holds the keys; the owned keys and their values |
+
+A renderer that derives a file from the shape of its sibling projects lists the files that differ
+from that shape in `diverging` (`DivergentFile{project, path, renderer, detail}`). The host never
+writes them. It shows them in `smith derive --explain` and in `smith doctor`, as files the project
+owns. The field is optional and the protocol stays at version 1.
 
 Make the answer deterministic and independent of the order of the files. A reference to another
 derived file must not depend on whether that file exists yet: count a path in `owned` as existing.

@@ -25,6 +25,21 @@ func tsconfigReferences(workspaceRoot string, p protocol.Project, byName map[str
 	if !exists && !owns(params, target) {
 		return protocol.DerivedFile{}, false
 	}
+	refs := dependencyReferences(workspaceRoot, p, byName, params)
+	if len(refs) == 0 && !owns(params, target) && !bytes.Contains(content, []byte(`"references"`)) {
+		return protocol.DerivedFile{}, false
+	}
+	refs = inFileOrder(refs, content)
+	return protocol.DerivedFile{
+		Project: p.Name, Path: target, Mode: protocol.DeriveKeys, Format: "json",
+		Renderer: TSConfigReferences, Version: 1, Keys: map[string]any{"references": refs},
+	}, true
+}
+
+// dependencyReferences are the references a project's tsconfig.lib.json wants:
+// one to the tsconfig of each dependency that is a Node project with one, in the
+// order of the graph.
+func dependencyReferences(workspaceRoot string, p protocol.Project, byName map[string]protocol.Project, params protocol.DeriveParams) []any {
 	refs := []any{}
 	for _, dep := range params.Graph[p.Name] {
 		d, ok := byName[dep]
@@ -40,14 +55,7 @@ func tsconfigReferences(workspaceRoot string, p protocol.Project, byName map[str
 			}
 		}
 	}
-	if len(refs) == 0 && !owns(params, target) && !bytes.Contains(content, []byte(`"references"`)) {
-		return protocol.DerivedFile{}, false
-	}
-	refs = inFileOrder(refs, content)
-	return protocol.DerivedFile{
-		Project: p.Name, Path: target, Mode: protocol.DeriveKeys, Format: "json",
-		Renderer: TSConfigReferences, Version: 1, Keys: map[string]any{"references": refs},
-	}, true
+	return refs
 }
 
 // inFileOrder puts the wanted references in the order the file already has

@@ -1022,6 +1022,13 @@ export const protocolSchema: SchemaDocument = {
           "items": {
             "$ref": "#/$defs/DerivedFile"
           }
+        },
+        "diverging": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DivergentFile"
+          },
+          "description": "Diverging are files a renderer looked at and left alone because they differ from the shape their siblings share. They are not drift: the project owns them. The host shows them in `smith derive --explain` and in the doctor, and never writes them."
         }
       },
       "required": [
@@ -1128,6 +1135,34 @@ export const protocolSchema: SchemaDocument = {
       },
       "required": [
         "projects"
+      ]
+    },
+    "DivergentFile": {
+      "description": "DivergentFile is a file a renderer does not derive because the project made it differ from its siblings.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Project is the project the file belongs to."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path is workspace-relative, with forward slashes."
+        },
+        "renderer": {
+          "type": "string",
+          "description": "Renderer is the stable id of the renderer that compared the file."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Detail says in a sentence how the file differs from its siblings."
+        }
+      },
+      "required": [
+        "project",
+        "path",
+        "renderer",
+        "detail"
       ]
     },
     "DoctorParams": {

@@ -52,6 +52,7 @@ __all__ = [
     "DevcontainerFeature",
     "DiscoverParams",
     "DiscoverResult",
+    "DivergentFile",
     "DoctorParams",
     "DoctorResult",
     "Empty",
@@ -691,10 +692,19 @@ class DeriveParams(_DeriveParamsRequired, total=False):
     """
 
 
-class DeriveResult(TypedDict):
+class _DeriveResultRequired(TypedDict):
+    files: list[DerivedFile]
+
+
+class DeriveResult(_DeriveResultRequired, total=False):
     """DeriveResult carries the files a plugin derives."""
 
-    files: list[DerivedFile]
+    diverging: list[DivergentFile]
+    """
+    Diverging are files a renderer looked at and left alone because they differ from the shape
+    their siblings share. They are not drift: the project owns them. The host shows them in
+    `smith derive --explain` and in the doctor, and never writes them.
+    """
 
 
 class _DerivedFileRequired(TypedDict):
@@ -774,6 +784,22 @@ class DiscoverResult(TypedDict):
     """
 
     projects: list[Project]
+
+
+class DivergentFile(TypedDict):
+    """
+    DivergentFile is a file a renderer does not derive because the project made it differ from
+    its siblings.
+    """
+
+    project: str
+    """Project is the project the file belongs to."""
+    path: str
+    """Path is workspace-relative, with forward slashes."""
+    renderer: str
+    """Renderer is the stable id of the renderer that compared the file."""
+    detail: str
+    """Detail says in a sentence how the file differs from its siblings."""
 
 
 class DoctorParams(TypedDict):

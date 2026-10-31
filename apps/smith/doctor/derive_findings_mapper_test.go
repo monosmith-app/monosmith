@@ -27,6 +27,15 @@ func TestDeriveFindingsNameTheStateTheOwnerAndTheChoice(t *testing.T) {
 	}
 }
 
+func TestDeriveFindingsTellAboutFilesThatDivergeFromTheirSiblingsWithoutFailing(t *testing.T) {
+	plan := derive.Plan{Diverging: []derive.Divergence{{Plugin: "node", DivergentFile: protocol.DivergentFile{Path: "a/jest.config.cts", Detail: "diverges from siblings: x"}}}}
+	got := deriveFindings(plan)
+	last := got[len(got)-1]
+	if len(got) != 2 || !last.OK || !strings.Contains(last.Detail, "a/jest.config.cts") {
+		t.Fatalf("%+v", got)
+	}
+}
+
 func TestDeriveFindingsPassWhenNothingNeedsAction(t *testing.T) {
 	got := deriveFindings(derive.Plan{})
 	if len(got) != 1 || !got[0].OK {
