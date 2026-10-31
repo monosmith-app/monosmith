@@ -3,6 +3,7 @@ using MonoSmith.Plugin.Sdk.Tests.Testing;
 namespace MonoSmith.Plugin.Sdk.Tests.Integration;
 
 /// <summary>The C# examples are plugins that are tested with their own tests project; the SDK runs those too.</summary>
+[Collection(ExampleBuildsCollection.Name)]
 public sealed class ExampleTests
 {
     [IntegrationTheory("dotnet")]

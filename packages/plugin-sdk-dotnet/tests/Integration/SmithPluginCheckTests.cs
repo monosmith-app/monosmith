@@ -7,6 +7,7 @@ namespace MonoSmith.Plugin.Sdk.Tests.Integration;
 /// <c>dotnet</c>, by its path (a bare name is looked up as a plugin, and <c>dotnet</c> is one), and the argument is the
 /// assembly.
 /// </summary>
+[Collection(ExampleBuildsCollection.Name)]
 public sealed class SmithPluginCheckTests(ExampleSides examples) : IClassFixture<ExampleSides>
 {
     private static (int Status, string Output) Check(IReadOnlyList<string> command, params string[] flags) =>
