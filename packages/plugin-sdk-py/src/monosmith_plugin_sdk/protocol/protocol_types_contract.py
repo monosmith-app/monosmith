@@ -34,6 +34,7 @@ __all__ = [
     "Capabilities",
     "ChangeKindParams",
     "ChangeKindResult",
+    "Choice",
     "Component",
     "ComponentsParams",
     "ComponentsResult",
@@ -434,6 +435,57 @@ class ChangeKindResult(TypedDict, total=False):
     """
 
 
+class _ChoiceRequired(TypedDict):
+    axis: str
+    """
+    Axis is the question the choice answers: "framework", "test", "style", "lint". The plugins
+    agree on the name; the host only compares it.
+    """
+    name: str
+    """
+    Name identifies the choice in a selection and is unique among the choices of all loaded
+    plugins.
+    """
+    language: str
+    """Language is the language plugin the choice applies to ("node")."""
+
+
+class Choice(_ChoiceRequired, total=False):
+    """
+    Choice is one option on an axis of a project's make-up: a framework, a test runner, a style
+    library. A plugin publishes the choices it owns in InitializeResult.Choices; the host checks
+    a selection of them (smith add --with react,vitest,bootstrap) and turns it into a stack. What
+    a choice writes (dependencies, tasks, files) stays with the plugin: the host never sees it.
+    """
+
+    description: str
+    roles: list[Role]
+    """
+    Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes
+    the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a
+    plugin of the selection already writes, as a style does.
+    """
+    needs: list[str]
+    """
+    Needs are axes that the selection must have a choice on. An axis the person leaves out is
+    filled with the default of the axis.
+    """
+    default: bool
+    """
+    Default marks the choice the host adds when a selection needs its axis and has no choice on
+    it.
+    """
+    many: bool
+    """
+    Many allows the choice next to other choices of its axis that are Many too. By default a
+    selection has one choice per axis.
+    """
+    requires: list[str]
+    """Requires are choices that must be in the selection."""
+    conflicts: list[str]
+    """Conflicts are choices that must not be in the selection."""
+
+
 class _ComponentRequired(TypedDict):
     name: str
     purl: str
@@ -803,6 +855,13 @@ class GenerateParams(_GenerateParamsRequired, total=False):
     keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is
     nothing to follow, or the person asked for a fresh project.
     """
+    choices: list[str]
+    """
+    Choices are the choices (see Choice) the new project is built from, the stack's Choices, in
+    the order they apply: a choice comes after those it requires. A plugin applies the choices it
+    owns and ignores the rest. Absent when the stack is not a selection. Set by the host; read
+    only.
+    """
 
 
 class _GenerateResultRequired(TypedDict):
@@ -892,6 +951,12 @@ class InitializeResult(_InitializeResultRequired, total=False):
     Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project
     with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a
     key that a plugin of the stack follows. Absent means the plugin follows none.
+    """
+    choices: list[Choice]
+    """
+    Choices are the options on an axis (framework, test, style) the plugin owns. The host lists
+    them (smith choices) and checks a selection of them (smith add --with). Absent means the
+    plugin owns none.
     """
 
 
@@ -1395,6 +1460,12 @@ class Stack(_StackRequired, total=False):
     scaffold: str
     """Scaffold generates new projects; empty means the language plugin does."""
     deploy: list[str]
+    choices: list[str]
+    """
+    Choices make the stack a saved selection (see Choice). When they are set, the host derives
+    the language, the scaffold and the toolchain from them, and Toolchain lists only the plugins
+    to add after those. The plugins of the stack get the choices in GenerateParams.Choices.
+    """
 
 
 class _StepRequired(TypedDict):
@@ -1611,4 +1682,10 @@ class PluginDescription(_PluginDescriptionRequired, total=False):
     Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project
     with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a
     key that a plugin of the stack follows. Absent means the plugin follows none.
+    """
+    choices: list[Choice]
+    """
+    Choices are the options on an axis (framework, test, style) the plugin owns. The host lists
+    them (smith choices) and checks a selection of them (smith add --with). Absent means the
+    plugin owns none.
     """

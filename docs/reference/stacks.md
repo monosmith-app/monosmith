@@ -58,6 +58,44 @@ two provide the same task (`jest` and `vitest` both provide `test`).
 `smith stacks` lists every stack, where it comes from, its plugins, what is
 wrong with it if it cannot be used, and the projects using it.
 
+## Choices: a stack as a saved selection
+
+A stack that fixes the framework, the test runner and the style for every combination would need a
+stack per combination. Instead, plugins publish **choices**: one option on an **axis**
+(`framework`, `test`, `style`, `lint`, `library`). `smith choices` lists them:
+
+```sh
+smith choices
+smith add app web --with react,vitest,bootstrap
+```
+
+smith checks the selection before it writes a file, and gives one message that names the choices
+and the fix when it cannot be used:
+
+- One choice per axis, unless the choices on the axis say they can share it. `react,vue` is refused
+  (`react and vue are both on the framework axis: keep one`).
+- A choice may require another (`chakra requires react, which is not in the selection: add react
+  to --with, or drop chakra`) or conflict with one.
+- A choice may need an axis (`react` needs `lint` and `test`). A selection that leaves the axis out
+  takes its default (`eslint`, `vitest`), and smith says so.
+- Exactly one choice writes the project, and all choices are for one language.
+
+A stack is a saved selection. Give it `choices`; the language, the scaffold and the toolchain come
+from them, and `toolchain`, `structure` and `deploy` add plugins after those:
+
+```toml
+[stacks.shop-web]
+description = "React with Vitest and Bootstrap"
+choices = ["react", "vitest", "bootstrap"]
+```
+
+`smith add --with` saves the selection in `smith.toml` this way, under a name made of the choices
+(`react-vitest-bootstrap`), and the project records that stack. A stack with the same choices is
+reused. The ready-made `react`, `vue`, `svelte` and `html` stacks are saved selections too.
+`--with` and `--stack` exclude each other. How a plugin ships choices:
+[Writing choices](../plugins/creating/choices.md). The decision:
+[ADR 0045](../architecture/decisions/0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md).
+
 ## Choosing a stack
 
 ```sh

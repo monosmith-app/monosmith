@@ -62,6 +62,10 @@ type InitializeResult struct {
 	// on a key, the host asks the person only for a key that a plugin of the
 	// stack follows. Absent means the plugin follows none.
 	Follows []string `json:"follows,omitempty"`
+	// Choices are the options on an axis (framework, test, style) the plugin
+	// owns. The host lists them (smith choices) and checks a selection of them
+	// (smith add --with). Absent means the plugin owns none.
+	Choices []Choice `json:"choices,omitempty"`
 }
 
 // Scaffolds says whether the plugin can scaffold a project of the kind.

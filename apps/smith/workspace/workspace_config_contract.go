@@ -91,6 +91,9 @@ type StackConfig struct {
 	Structure   []string `toml:"structure"`
 	Scaffold    string   `toml:"scaffold"`
 	Deploy      []string `toml:"deploy"`
+	// Choices make the stack a saved selection: smith derives the language, the
+	// scaffold and the toolchain from them (ADR 0045).
+	Choices []string `toml:"choices"`
 }
 
 // WorkspaceSection names the monorepo.

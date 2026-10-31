@@ -109,7 +109,7 @@ the workspace. For example, in a client's JSON configuration:
 ```
 
 The read-only tools (`smith_projects`, `smith_graph`, `smith_affected`,
-`smith_kinds`, `smith_stacks`, `smith_commands`, `smith_info`, `smith_doctor`,
+`smith_kinds`, `smith_stacks`, `smith_choices`, `smith_commands`, `smith_info`, `smith_doctor`,
 `smith_release_preview`, `smith_updates`, `smith_explain`, `smith_recipe_check`,
 `smith_plugin_list`, `smith_doctor_fixes`, `smith_upgrade_preview` and
 `smith_change_kind_preview`) are

@@ -31,6 +31,10 @@ type AddOptions struct {
 	// Stack is the stack the project is built with; empty means the
 	// workspace default for its language, if any.
 	Stack string
+	// With names the choices the project is built from (smith add --with
+	// react,vitest,bootstrap): the solver checks them, adds the default of an axis
+	// they need, and saves the result as a stack. It replaces Stack and the recipe.
+	With []string
 	// Recipe answers the workspace's recipe ([workspace] recipe), which
 	// creates the project unless Stack names one. Nil: no answers, no one to
 	// ask.
@@ -52,6 +56,10 @@ type AddOptions struct {
 // with the recipe's settings, and the project is made exactly as a stack's
 // project is. If making it fails, smith.toml is put back.
 //
+// With --with the stack comes from the choices (ADR 0045): they are solved,
+// saved in smith.toml as a stack (or matched to a stack that has them), and
+// the project is made as that stack's project is.
+//
 // Unless opts.Fresh is set, the project follows the dialect of its siblings,
 // the projects of its kind and language: it is told the shape most of them
 // share, and a warning names each key it could not follow (ADR 0041).
@@ -72,6 +80,10 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if err != nil {
 		return nil, err
 	}
+	selection, err := planSelection(s, opts)
+	if err != nil {
+		return nil, err
+	}
 	var language *host.Client
 	var st protocol.Stack
 	var settings map[string]map[string]any
@@ -82,6 +94,19 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 			return nil, err
 		}
 		// A project that could not be made leaves nothing in smith.toml.
+		defer func() {
+			if err != nil {
+				undo()
+			}
+		}()
+	} else if selection != nil {
+		language, st = s.Plugins.Get(selection.stack.Language), selection.stack
+		fmt.Fprintln(opts.Out, selection.describe())
+		var undo func()
+		if undo, err = selection.declare(s); err != nil {
+			return nil, err
+		}
+		// A project that could not be made leaves no stack in smith.toml.
 		defer func() {
 			if err != nil {
 				undo()
@@ -124,6 +149,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	params := protocol.GenerateParams{Kind: kind, Name: opts.Name, Directory: dir, Stack: st.Name, Workspace: protocol.WorkspaceInfo{
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
+	params.Choices = st.Choices
 	params.Settings = settings[generator.Info.Plugin.Name]
 	if params.Facts, err = projectgraph.ConfigFacts(s.Config, opts.Name); err != nil {
 		return nil, err

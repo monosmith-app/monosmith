@@ -46,6 +46,8 @@ func planRecipe(s *session.Session, opts AddOptions) (*recipePlan, error) {
 	}
 	ref := workspace.RecipeFor(s.Config, opts.Kind)
 	switch {
+	case len(opts.With) > 0:
+		return nil, nil
 	case opts.Stack != "" && len(use.Answers) > 0:
 		return nil, fmt.Errorf("--choice answers a recipe's choices, and --stack bypasses the recipe: use one or the other")
 	case opts.Stack != "":
