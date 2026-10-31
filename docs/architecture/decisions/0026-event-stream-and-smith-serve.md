@@ -29,9 +29,11 @@ the JSON of their `--json` command, so existing contracts do not change; `run`, 
 ## Consequences
 
 Release became a streamed run, with config and recipe methods, in
-[#387](https://github.com/monosmith-app/monosmith/pull/387). Not built: `smith lsp`
-(planned, [#303](https://github.com/monosmith-app/monosmith/issues/303)), and `smith mcp`
-as a view on the server (it still runs its own process).
+[#387](https://github.com/monosmith-app/monosmith/pull/387). `smith lsp` has a first
+slice (`smith.toml` diagnostics, completion and hover from the schema; see
+[#303](https://github.com/monosmith-app/monosmith/issues/303)). Not built: recipe files and
+doctor findings in `smith lsp`, and `smith mcp` as a view on the server (it still runs its own
+process).
 
 ## Sources
 

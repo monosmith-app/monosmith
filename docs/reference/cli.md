@@ -862,6 +862,19 @@ No flags.
 
 <!-- smith:end serve -->
 
+### smith lsp
+
+[Manual page](../manual/lsp.md)
+
+<!-- smith:begin lsp -->
+Serve smith.toml to an editor over the Language Server Protocol (stdio)
+
+Usage: `smith lsp`
+
+No flags.
+
+<!-- smith:end lsp -->
+
 ### smith agent
 
 [Manual page](../manual/agent.md)
