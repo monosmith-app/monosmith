@@ -16,7 +16,7 @@ with [vitest](vitest.md).
 | Applies to | `node` projects |
 | Capabilities | `generate` |
 | Stacks it publishes | `react`, `react-p5`, `react-tauri`, `vue`, `svelte`, `html`: each a saved selection of choices; scaffold `vite`; toolchain `vite`, `eslint`, `vitest` (and `tauri` for `react-tauri`) |
-| Choices it publishes | frameworks `react`, `vue`, `svelte`, `html`; library `p5`; style `bootstrap` |
+| Choices it publishes | frameworks `react`, `vue`, `svelte`, `html`; library `p5`; styles `bootstrap`, `chakra` (requires `react`), `tailwind` |
 | Project kinds | `app` only |
 
 ## What it does
@@ -40,7 +40,7 @@ smith choices
 smith add app web --with react,vitest,bootstrap
 ```
 
-`bootstrap` adds its stylesheet to the entry file of any framework; `p5` requires `react`. To add a
+`bootstrap` and `tailwind` add their stylesheet to the entry file of any framework; `chakra` and `p5` require `react`. To add a
 framework or a style, write one TOML file ([Writing choices](../../creating/choices.md)).
 
 The scripts it writes become tasks through the [node plugin](node.md#tasks):
