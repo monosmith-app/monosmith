@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>acme workspace report</title>
+<style>
+:root { color-scheme: light dark; --bg: #ffffff; --fg: #111827; --muted: #4b5563; --line: #d1d5db; --panel: #f3f4f6; --link: #1d4ed8; --fail: #b91c1c; --warn: #92400e; --pass: #166534; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0b1020; --fg: #e5e7eb; --muted: #9ca3af; --line: #374151; --panel: #151b2e; --link: #93c5fd; --fail: #fca5a5; --warn: #fcd34d; --pass: #86efac; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--link); }
+:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+.skip { position: absolute; left: 8px; top: -48px; background: var(--bg); padding: 8px 12px; border: 2px solid var(--link); }
+.skip:focus { top: 8px; }
+header, main { max-width: 72rem; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.5rem; margin: 0 0 4px; }
+h2 { font-size: 1.25rem; margin: 32px 0 8px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+p { margin: 8px 0; }
+.muted { color: var(--muted); }
+nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; margin: 12px 0 0; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); background: var(--panel); padding: 8px; }
+.scroll svg { color: var(--fg); fill: var(--fg); max-width: none; }
+table { border-collapse: collapse; width: 100%; }
+caption { text-align: left; font-weight: 600; padding: 4px 0; }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th { background: var(--panel); }
+.status { font-weight: 700; white-space: nowrap; }
+.status.fail { color: var(--fail); border-left: 4px solid var(--fail); padding-left: 6px; }
+.status.warn { color: var(--warn); border-left: 4px dashed var(--warn); padding-left: 6px; }
+.status.pass { color: var(--pass); border-left: 4px dotted var(--pass); padding-left: 6px; }
+summary { cursor: pointer; font-weight: 600; margin: 8px 0; }
+code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+ul.plain { padding-left: 20px; }
+@media print { .skip, nav { display: none; } .scroll { overflow: visible; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the report</a>
+<header>
+<h1>acme</h1>
+<p class="muted">Workspace report: 3 projects. Written by smith report.</p>
+<nav aria-label="Sections">
+<ul>
+<li><a href="#map">Workspace map</a></li>
+<li><a href="#health">Health</a></li>
+<li><a href="#drift">Derived files</a></li>
+<li><a href="#choices">Stack and choices</a></li>
+<li><a href="#release">Release plan</a></li>
+</ul>
+</nav>
+</header>
+<main id="main">
+
+<section aria-labelledby="map">
+<h2 id="map" tabindex="-1">Workspace map</h2>
+<p>Each box is a project. An arrow points from a project to one it depends on. The box says the kind and the language of the project in words.</p>
+<div class="scroll" role="group" aria-label="Dependency graph" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="graph-title graph-desc" viewBox="0 0 430 314" width="430" height="314"><title id="graph-title">Project dependency graph</title><desc id="graph-desc">Each box is a project; an arrow points from a project to one it depends on.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs><line x1="115" y1="122" x2="215" y2="192" stroke="currentColor" stroke-opacity=".45" marker-end="url(#arrow)"/><line x1="315" y1="122" x2="215" y2="192" stroke="currentColor" stroke-opacity=".45" marker-end="url(#arrow)"/><g><title>apps/api</title><rect x="30" y="70" width="170" height="52" rx="8" fill="none" stroke="#2563eb" stroke-width="2"/><text x="115" y="92" text-anchor="middle" font-weight="600">api</text><text x="115" y="110" text-anchor="middle" font-size="12" opacity=".7">app · go</text></g><g><title>libs/ui</title><rect x="130" y="192" width="170" height="52" rx="8" fill="none" stroke="#16a34a" stroke-width="2"/><text x="215" y="214" text-anchor="middle" font-weight="600">ui</text><text x="215" y="232" text-anchor="middle" font-size="12" opacity=".7">package · node</text></g><g><title>apps/web</title><rect x="230" y="70" width="170" height="52" rx="8" fill="none" stroke="#2563eb" stroke-width="2"/><text x="315" y="92" text-anchor="middle" font-weight="600">web</text><text x="315" y="110" text-anchor="middle" font-size="12" opacity=".7">app · node</text></g></svg></div>
+<table>
+<caption>The same graph as a table</caption>
+<thead><tr><th scope="col">Project</th><th scope="col">Folder</th><th scope="col">Kind</th><th scope="col">Language</th><th scope="col">Depends on</th></tr></thead>
+<tbody>
+<tr><th scope="row">api</th><td><code>apps/api</code></td><td>app</td><td>go</td><td>ui</td></tr>
+<tr><th scope="row">ui</th><td><code>libs/ui</code></td><td>package</td><td>node</td><td>nothing</td></tr>
+<tr><th scope="row">web</th><td><code>apps/web</code></td><td>app</td><td>node</td><td>ui</td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="health">
+<h2 id="health" tabindex="-1">Health</h2>
+<p>smith doctor: 1 failed, 1 warnings, 2 passed.</p>
+<table>
+<caption>Checks that need attention</caption>
+<thead><tr><th scope="col">Status</th><th scope="col">Check</th><th scope="col">Detail</th><th scope="col">Remedy</th></tr></thead>
+<tbody>
+<tr><td><span class="status fail">Fail</span></td><th scope="row">lockfile in step</th><td>web installs without a lockfile</td><td>run smith install</td></tr>
+<tr><td><span class="status warn">Warning</span></td><th scope="row">agent files</th><td>AGENTS.md is missing</td><td>smith agent file</td></tr>
+</tbody>
+</table>
+<details>
+<summary>Checks that passed: 2</summary>
+<ul class="plain"><li><span class="status pass">Pass</span> plugins trusted</li>
+<li><span class="status pass">Pass</span> slice names: 3 projects checked</li>
+</ul>
+</details>
+</section>
+
+<section aria-labelledby="drift">
+<h2 id="drift" tabindex="-1">Derived files</h2>
+<p>Files that need action: 1. Files that are current: 4. Run <code>smith derive</code> to see each diff.</p>
+<table>
+<caption>Derived files that need action</caption>
+<thead><tr><th scope="col">File</th><th scope="col">State</th><th scope="col">Owner</th><th scope="col">Renderer</th><th scope="col">Detail</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>apps/web/tsconfig.lib.json</code></th><td>drift</td><td>smith</td><td><code>node.tsconfig.references</code></td><td>someone edited the derived keys</td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="choices">
+<h2 id="choices" tabindex="-1">Stack and choices</h2>
+<table>
+<caption>What each project was made from</caption>
+<thead><tr><th scope="col">Project</th><th scope="col">Stack</th><th scope="col">Choices</th><th scope="col">Conventions</th></tr></thead>
+<tbody>
+<tr><th scope="row">api</th><td>go</td><td>none</td><td>vertical-slices</td></tr>
+<tr><th scope="row">ui</th><td>none</td><td>none</td><td>none</td></tr>
+<tr><th scope="row">web</th><td>react-vitest</td><td>react, vitest</td><td>none</td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="release">
+<h2 id="release" tabindex="-1">Release plan</h2>
+<p>What a merge of this commit to <code>main</code> would release. smith reads the commits since each package's last tag. It does not ask a registry.</p>
+<table>
+<caption>Packages that would release</caption>
+<thead><tr><th scope="col">Package</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Bump</th><th scope="col">Why</th></tr></thead>
+<tbody>
+<tr><th scope="row">ui</th><td>1.2.0</td><td>1.3.0</td><td>minor</td><td>2 releasing commit(s)</td></tr>
+</tbody>
+</table>
+<details>
+<summary>Packages with nothing to release: 1</summary>
+<p>api</p>
+</details>
+</section>
+
+</main>
+</body>
+</html>

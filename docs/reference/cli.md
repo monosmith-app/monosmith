@@ -670,6 +670,21 @@ Usage: `smith explain <project>[:<task>] [flags]`
 
 <!-- smith:end explain -->
 
+### smith why
+
+[Manual page](../manual/why.md)
+
+<!-- smith:begin why -->
+Say who owns a file, what produced it and how to change it (why-miss says why a task reran)
+
+Usage: `smith why <file> [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print JSON | off |
+
+<!-- smith:end why -->
+
 ### smith why-miss
 
 [Manual page](../manual/why-miss.md)
@@ -684,6 +699,21 @@ Usage: `smith why-miss <project>:<task> [flags]`
 | `--json` | print JSON | off |
 
 <!-- smith:end why-miss -->
+
+### smith report
+
+[Manual page](../manual/report.md)
+
+<!-- smith:begin report -->
+Write one HTML page: the workspace map, health, derived-file drift, choices and release plan
+
+Usage: `smith report [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `-o, --output <output>` | write the page to a file |  |
+
+<!-- smith:end report -->
 
 ### smith cache
 
@@ -926,6 +956,7 @@ Usage: `smith agent <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith agent file` | Write AGENTS.md (and a CLAUDE.md that points to it) from the workspace's rules |
 | `smith agent install` | Install the MonoSmith agent and the smith MCP server in this workspace |
 
 No flags.

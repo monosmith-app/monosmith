@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/adoption"
+	"github.com/monosmith-app/monosmith/apps/smith/agentdoc"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/declarationspecifiers"
@@ -49,6 +50,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
+	"github.com/monosmith-app/monosmith/apps/smith/report"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
@@ -58,6 +60,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
 	"github.com/monosmith-app/monosmith/apps/smith/tui"
 	"github.com/monosmith-app/monosmith/apps/smith/upgrade"
+	"github.com/monosmith-app/monosmith/apps/smith/why"
 	"github.com/monosmith-app/monosmith/apps/smith/whymiss"
 	"github.com/spf13/cobra"
 )
@@ -108,8 +111,10 @@ already have), then build and doctor.`,
 	add("inspect", clicontract.Commands(version)...)
 	mcpCmd := mcpserver.Command(version)
 	mcpCmd.AddCommand(agentfiles.McpInstallCommand())
-	add("inspect", mcpCmd, agentfiles.Command(), engineserver.Command(version), languageserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), whymiss.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	agentCmd := agentfiles.Command()
+	agentCmd.AddCommand(agentdoc.FileCommand(version))
+	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
+	add("inspect", doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 

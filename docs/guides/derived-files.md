@@ -60,6 +60,11 @@ The three modes are explained in [Derived files](../reference/derived-files.md).
 - You delete a derived file, or the lines between the markers. Smith treats that as a request to
   write it again, not as an edit. `smith derive` restores it.
 
+## Who owns a file
+
+`smith why <file>` says whether smith or you own a file, which renderer wrote it, and how to change
+it. It also answers for files that smith does not derive. See [`smith why`](../manual/why.md).
+
 ## A hand edit
 
 You edit a file that smith owns. The next `smith derive` does not overwrite it. It prints the

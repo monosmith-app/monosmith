@@ -93,6 +93,8 @@ Python package). Paths in output are shortened.
 | [`smith graph`](graph.md) | Show how projects depend on each other. |
 | [`smith affected`](affected.md) | List the projects affected by changes since a base branch. |
 | [`smith explain`](explain.md) | Show how a project's tasks resolved, and where each setting came from. |
+| [`smith why`](why.md) | Say who owns a file, what produced it and how to change it. |
+| [`smith report`](report.md) | Write one HTML page: the workspace map, health, derived-file drift, choices and release plan. |
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
 | [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
@@ -107,7 +109,7 @@ Python package). Paths in output are shortened.
 | [`smith serve`](serve.md) | Serve the engine to an editor over JSON-RPC (stdio). |
 | [`smith lsp`](lsp.md) | Serve `smith.toml` to an editor over the Language Server Protocol (stdio): diagnostics, completion, hover. |
 | [`smith mcp`](mcp.md) | Serve the workspace to an AI assistant over the Model Context Protocol (stdio); [`mcp install`](mcp-install.md) registers it for Claude Code and VS Code. |
-| [`smith agent`](agent.md) | Start the MonoSmith agent in Claude Code; [`agent install`](agent-install.md) adds it, with its MCP registration, to a workspace. |
+| [`smith agent`](agent.md) | Start the MonoSmith agent in Claude Code; [`agent install`](agent-install.md) adds it, with its MCP registration, to a workspace; [`agent file`](agent-file.md) writes `AGENTS.md` from the workspace's rules. |
 
 ## Shell, interface and editor
 

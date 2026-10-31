@@ -66,6 +66,14 @@ To keep a workspace without the files, set this in `smith.toml`; `smith doctor` 
 enabled = false
 ```
 
+## Rules for any agent: AGENTS.md
+
+`smith agent install` adds the MonoSmith agent. To give every coding agent the rules of the
+workspace (where code goes, how files are named, which commands mean done, which files not to
+edit), run `smith agent file`. It writes `AGENTS.md` between region markers, so your own text
+survives, and `--check` fails in CI when the file is stale. See
+[Know your files, share the workspace and brief your agents](know-your-files-and-brief-your-agents.md).
+
 ## Use it
 
 In Claude Code, run `smith agent` (it runs `claude --agent smith` in the workspace), or start

@@ -92,4 +92,5 @@ A project whose `tsconfig.lib.json` has no dependency and no `references` key is
 |---|---|
 | `smith derive --check` | the whole plan |
 | `smith doctor` | one finding for each file that needs action; the detail names the state and the owner |
+| `smith why <file>` | the owner, renderer, state and the ways to change one file |
 | `smith ci verify` | `smith derive --check`, before the tasks, when `[derive] enabled = true` |

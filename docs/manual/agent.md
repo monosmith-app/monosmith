@@ -18,6 +18,7 @@ Not when you already work in an editor with the agent: use it there.
 ```sh
 smith agent
 smith agent install [--claude] [--vscode] [--yes]
+smith agent file [--check] [--no-claude-md]
 ```
 
 ## Arguments and flags
@@ -29,6 +30,7 @@ Usage: `smith agent <command>`
 
 | Subcommand | Meaning |
 |---|---|
+| `smith agent file` | Write AGENTS.md (and a CLAUDE.md that points to it) from the workspace's rules |
 | `smith agent install` | Install the MonoSmith agent and the smith MCP server in this workspace |
 
 No flags.
@@ -60,5 +62,5 @@ smith` with the workspace root as its folder.
 
 ## Related
 
-[The MonoSmith agent and the MCP server](../guides/agent.md), [`smith agent install`](agent-install.md),
+[The MonoSmith agent and the MCP server](../guides/agent.md), [`smith agent install`](agent-install.md), [`smith agent file`](agent-file.md),
 [`smith mcp`](mcp.md).
