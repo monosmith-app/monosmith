@@ -1,5 +1,5 @@
 import type {
-  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
+  ChangeKindParams, ChangeKindResult, CIParams, CIResult, ComponentsParams, ComponentsResult, ContributeParams, ContributeResult, DeclaredParams, DeclaredResult, DependencyResult,
   DiscoverParams, DiscoverResult, DoctorParams, DoctorResult, GenerateParams, GenerateResult, InitializeParams,
   InitializeResult, InstallParams, LatestParams, LatestResult, PublishedParams, PublishedResult, PublishParams,
   PublishResult, RemoveParams, RemoveResult, RewriteParams, UninstallParams, VersionParams, VersionResult,
@@ -62,6 +62,11 @@ export interface KindChanger {
   changeKind: (params: ChangeKindParams, signal: AbortSignal) => Awaitable<ChangeKindResult>
 }
 
+/** `sbom/components`: the components a project ships, for the SBOM a release attaches. */
+export interface ComponentLister {
+  components: (params: ComponentsParams, signal: AbortSignal) => Awaitable<ComponentsResult>
+}
+
 /** `dependencies/install` and `dependencies/uninstall`: both, or the capability is not advertised. */
 export interface DependencyManager {
   install:   (params: InstallParams, signal: AbortSignal) => Awaitable<DependencyResult>
@@ -106,5 +111,5 @@ export interface Cancellable {
  */
 export type SmithPlugin = Plugin & Partial<
 Discoverer & Generator & Versioner & Publisher & RegistryReader & CIContributor & DoctorContributor &
-Remover & KindChanger & DependencyManager & DeclarationEditor & LatestReader & Contributor & Cancellable
+Remover & KindChanger & ComponentLister & DependencyManager & DeclarationEditor & LatestReader & Contributor & Cancellable
 >

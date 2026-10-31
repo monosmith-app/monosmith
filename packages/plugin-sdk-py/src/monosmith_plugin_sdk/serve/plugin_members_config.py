@@ -23,6 +23,7 @@ PLUGIN_MEMBERS: dict[str, PluginMember] = {
     "contribute": PluginMember("contribute", ("contribute",)),
     "remove": PluginMember("remove", ("remove",)),
     "project/kind": PluginMember("change_kind", ("change_kind",)),
+    "sbom/components": PluginMember("components", ("components",)),
     "published": PluginMember("published", ("published",)),
     "dependencies/install": PluginMember("install", ("install", "uninstall")),
     "dependencies/uninstall": PluginMember("uninstall", ("install", "uninstall")),

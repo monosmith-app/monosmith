@@ -14,6 +14,7 @@ export const PLUGIN_INTERFACES = [
   { name: 'IDoctorContributor', capability: 'doctor', summary: 'A plugin that checks its projects.', methods: { doctor: 'DoctorAsync' } },
   { name: 'IRemover', capability: 'remove', summary: 'A plugin that cleans up after a project is removed.', methods: { remove: 'RemoveAsync' } },
   { name: 'IKindChanger', capability: 'changeKind', summary: 'A plugin that says what changing a project between app, lib and package edits.', methods: { 'project/kind': 'ChangeKindAsync' } },
+  { name: 'IComponentLister', capability: 'components', summary: 'A plugin that lists the components a project ships, for the SBOM a release attaches.', methods: { 'sbom/components': 'ComponentsAsync' } },
   {
     name: 'IDependencyManager',
     capability: 'dependencies',

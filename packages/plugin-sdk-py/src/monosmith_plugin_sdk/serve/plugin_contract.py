@@ -21,6 +21,8 @@ from ..protocol import (
     ChangeKindResult,
     CIParams,
     CIResult,
+    ComponentsParams,
+    ComponentsResult,
     ContributeParams,
     ContributeResult,
     DeclaredParams,
@@ -113,6 +115,12 @@ class KindChanger(Protocol):
     """`project/kind`: what changing a project between app, lib and package edits."""
 
     def change_kind(self, params: ChangeKindParams, cancel: CancelToken) -> ChangeKindResult: ...
+
+
+class ComponentLister(Protocol):
+    """`sbom/components`: the components a project ships, for the SBOM a release attaches."""
+
+    def components(self, params: ComponentsParams, cancel: CancelToken) -> ComponentsResult: ...
 
 
 class DependencyManager(Protocol):

@@ -175,6 +175,8 @@ export interface Capabilities {
    * request-cancelled error. A host never sends the notification to a plugin without it.
    */
   cancel?: boolean
+  /** Components lists a project's dependencies for its SBOM. */
+  components?: boolean
 }
 
 /**
@@ -219,6 +221,38 @@ export interface ChangeKindResult {
    * not, a lockfile to refresh).
    */
   warnings?: string[]
+}
+
+/** Component is one dependency of a project. */
+export interface Component {
+  name: string
+  /** Version is the locked version, or the declared range when the project has no lockfile. */
+  version?: string
+  /** PURL is the package URL (https://github.com/package-url/purl-spec). */
+  purl: string
+}
+
+/**
+ * ComponentsParams asks a plugin for the components one of its projects ships: what a CycloneDX
+ * SBOM lists.
+ */
+export interface ComponentsParams {
+  project: Project
+}
+
+/**
+ * ComponentsResult lists the components, read from a lockfile where the ecosystem has one and from
+ * the manifest otherwise. An empty list is an answer: the project declares no dependencies.
+ */
+export interface ComponentsResult {
+  components: Component[]
+  /** Source is the workspace-relative file the list was read from, "" when the project has none. */
+  source?: string
+  /**
+   * PURL is the project's own package URL when it has a registry identity (without a version: the
+   * release supplies it); "" otherwise.
+   */
+  purl?: string
 }
 
 /**
@@ -1232,6 +1266,16 @@ export interface ProtocolMethods {
     params: LatestParams
     result: LatestResult
     capability: 'latest'
+  }
+  /**
+   * Asks which components a project ships (its locked dependencies, read from a lockfile where the
+   * ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release
+   * attaches.
+   */
+  'sbom/components': {
+    params: ComponentsParams
+    result: ComponentsResult
+    capability: 'components'
   }
 }
 

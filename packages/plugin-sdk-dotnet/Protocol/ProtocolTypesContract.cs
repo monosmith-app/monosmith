@@ -102,6 +102,9 @@ public static class ProtocolMethods
     /// <summary>Asks registries for the newest releases of dependencies, and how the tools the plugin pins compare with theirs.</summary>
     public const string DependenciesLatest = "dependencies/latest";
 
+    /// <summary>Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.</summary>
+    public const string SbomComponents = "sbom/components";
+
     /// <summary>For each method the capability a plugin advertises to be asked it; <c>null</c> where it is always available.</summary>
     public static IReadOnlyDictionary<string, string?> CapabilityByMethod { get; } = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
@@ -123,6 +126,7 @@ public static class ProtocolMethods
         [DependenciesDeclared] = "declarations",
         [DependenciesRewrite] = "declarations",
         [DependenciesLatest] = "latest",
+        [SbomComponents] = "components",
     };
 }
 
@@ -510,6 +514,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it.</summary>
     public bool Cancel { get; init; }
 
+    /// <summary>Components lists a project's dependencies for its SBOM.</summary>
+    public bool Components { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -530,6 +537,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Declarations = BooleanValue(Member(map, "declarations"), Join(path, "declarations")),
             Latest = BooleanValue(Member(map, "latest"), Join(path, "latest")),
             Cancel = BooleanValue(Member(map, "cancel"), Join(path, "cancel")),
+            Components = BooleanValue(Member(map, "components"), Join(path, "components")),
         };
     }
 
@@ -607,6 +615,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("cancel");
             writer.Boolean(Cancel);
         }
+        if (Components)
+        {
+            writer.Property("components");
+            writer.Boolean(Components);
+        }
         writer.EndObject();
     }
 
@@ -630,6 +643,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "declarations" => Declarations,
             "latest" => Latest,
             "cancel" => Cancel,
+            "components" => Components,
             _ => false,
         };
 }
@@ -723,6 +737,117 @@ public sealed record ChangeKindResult : IProtocolValue<ChangeKindResult>
         {
             writer.Property("warnings");
             MessageWritingAlgorithm.List(writer, Warnings, (builder1, item1) => builder1.String(item1));
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>Component is one dependency of a project.</summary>
+public sealed record Component : IProtocolValue<Component>
+{
+    /// <summary>The <c>name</c> member of <c>Component</c>.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Version is the locked version, or the declared range when the project has no lockfile.</summary>
+    public string Version { get; init; } = string.Empty;
+
+    /// <summary>PURL is the package URL (https://github.com/package-url/purl-spec).</summary>
+    public required string Purl { get; init; }
+
+    /// <inheritdoc />
+    public static Component Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new Component
+        {
+            Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Version = StringValue(Member(map, "version"), Join(path, "version")),
+            Purl = StringValue(Member(map, "purl"), Join(path, "purl")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("name");
+        writer.String(Name);
+        if (Version.Length > 0)
+        {
+            writer.Property("version");
+            writer.String(Version);
+        }
+        writer.Property("purl");
+        writer.String(Purl);
+        writer.EndObject();
+    }
+}
+
+/// <summary>ComponentsParams asks a plugin for the components one of its projects ships: what a CycloneDX SBOM lists.</summary>
+public sealed record ComponentsParams : IProtocolValue<ComponentsParams>
+{
+    /// <summary>The <c>project</c> member of <c>ComponentsParams</c>.</summary>
+    public required Project Project { get; init; }
+
+    /// <inheritdoc />
+    public static ComponentsParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ComponentsParams
+        {
+            Project = Project.Read(Member(map, "project"), Join(path, "project")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        Project.Write(writer);
+        writer.EndObject();
+    }
+}
+
+/// <summary>ComponentsResult lists the components, read from a lockfile where the ecosystem has one and from the manifest otherwise. An empty list is an answer: the project declares no dependencies.</summary>
+public sealed record ComponentsResult : IProtocolValue<ComponentsResult>
+{
+    /// <summary>The <c>components</c> member of <c>ComponentsResult</c>.</summary>
+    public IReadOnlyList<Component> Components { get; init; } = [];
+
+    /// <summary>Source is the workspace-relative file the list was read from, "" when the project has none.</summary>
+    public string Source { get; init; } = string.Empty;
+
+    /// <summary>PURL is the project's own package URL when it has a registry identity (without a version: the release supplies it); "" otherwise.</summary>
+    public string Purl { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static ComponentsResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ComponentsResult
+        {
+            Components = ListOf(Member(map, "components"), Join(path, "components"), Component.Read),
+            Source = StringValue(Member(map, "source"), Join(path, "source")),
+            Purl = StringValue(Member(map, "purl"), Join(path, "purl")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("components");
+        MessageWritingAlgorithm.List(writer, Components, (builder1, item1) => item1.Write(builder1));
+        if (Source.Length > 0)
+        {
+            writer.Property("source");
+            writer.String(Source);
+        }
+        if (Purl.Length > 0)
+        {
+            writer.Property("purl");
+            writer.String(Purl);
         }
         writer.EndObject();
     }

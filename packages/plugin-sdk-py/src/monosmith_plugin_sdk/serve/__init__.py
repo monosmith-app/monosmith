@@ -3,6 +3,7 @@
 from .capabilities_of_algorithm import capabilities_of, implements_method
 from .plugin_contract import (
     CIContributor,
+    ComponentLister,
     Contributor,
     DeclarationEditor,
     DependencyManager,
@@ -27,6 +28,7 @@ __all__ = [
     "ByteSource",
     "CIContributor",
     "Contributor",
+    "ComponentLister",
     "DeclarationEditor",
     "DependencyManager",
     "Discoverer",

@@ -137,4 +137,10 @@ var Methods = []MethodSpec{
 		Params:      reflect.TypeFor[protocol.LatestParams](), Result: reflect.TypeFor[protocol.LatestResult](),
 		Capability: "Latest",
 	},
+	{
+		Method:      protocol.MethodComponents,
+		Description: "Asks which components a project ships (its locked dependencies, read from a lockfile where the ecosystem has one and from the manifest otherwise), as package URLs, for the SBOM a release attaches.",
+		Params:      reflect.TypeFor[protocol.ComponentsParams](), Result: reflect.TypeFor[protocol.ComponentsResult](),
+		Capability: "Components",
+	},
 }

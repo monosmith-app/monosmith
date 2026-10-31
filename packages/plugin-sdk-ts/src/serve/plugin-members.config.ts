@@ -27,4 +27,5 @@ export const PLUGIN_MEMBERS: Readonly<Record<string, { member: Member, requires:
   'dependencies/declared':  { member: 'declared', requires: ['declared', 'rewrite'] },
   'dependencies/rewrite':   { member: 'rewrite', requires: ['declared', 'rewrite'] },
   'dependencies/latest':    { member: 'latest', requires: ['latest'] },
+  'sbom/components':        { member: 'components', requires: ['components'] },
 }
