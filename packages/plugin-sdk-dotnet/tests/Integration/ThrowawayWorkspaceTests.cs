@@ -4,6 +4,7 @@ using MonoSmith.Plugin.Sdk.Tests.Testing;
 namespace MonoSmith.Plugin.Sdk.Tests.Integration;
 
 /// <summary>A real workspace that uses the C# examples as external plugins.</summary>
+[Collection(ExampleBuildsCollection.Name)]
 public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("sdk-workspace-").FullName;

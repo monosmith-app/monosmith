@@ -1,13 +1,19 @@
 package declaredimports
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
+
+// sdistStaging matches the `<name>-<version>` folder that `python -m build`
+// stages inside the project and removes again.
+var sdistStaging = regexp.MustCompile(`^[A-Za-z0-9_.]+-\d+(\.\w+)*$`)
 
 var skippedDirs = map[string]bool{"dist": true, "build": true, "node_modules": true, "__pycache__": true, "site-packages": true}
 
@@ -68,12 +74,15 @@ func scan(dir string) ([]scannedFile, map[string]bool, error) {
 	var files []scannedFile
 	own := map[string]bool{}
 	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil // a build folder removed while the walk ran
+		}
 		if err != nil {
 			return err
 		}
 		name := d.Name()
 		if d.IsDir() {
-			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info")) {
+			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info") || sdistStaging.MatchString(name)) {
 				return filepath.SkipDir
 			}
 			own[name] = true
