@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/dialect"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
@@ -34,7 +35,10 @@ type AddOptions struct {
 	// creates the project unless Stack names one. Nil: no answers, no one to
 	// ask.
 	Recipe *RecipeUse
-	Out    io.Writer
+	// Fresh gives the project the built-in default of its stack and does not
+	// look at the sibling projects (smith add --fresh).
+	Fresh bool
+	Out   io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -47,6 +51,10 @@ type AddOptions struct {
 // are answered, the plugins it picks become a stack declared in smith.toml
 // with the recipe's settings, and the project is made exactly as a stack's
 // project is. If making it fails, smith.toml is put back.
+//
+// Unless opts.Fresh is set, the project follows the dialect of its siblings,
+// the projects of its kind and language: it is told the shape most of them
+// share, and a warning names each key it could not follow (ADR 0040).
 func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateResult, err error) {
 	kind := protocol.ProjectKind(opts.Kind)
 	switch kind {
@@ -117,6 +125,11 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		Name: s.Config.Workspace.Name, Scope: s.Config.Workspace.Scope, ModulePrefix: modulePrefix,
 	}}
 	params.Settings = settings[generator.Info.Plugin.Name]
+	var siblings dialect.Dialect
+	if !opts.Fresh {
+		siblings = siblingDialect(s, opts, kind, language, st)
+		params.Shape = siblings.Shape
+	}
 	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
 		return nil, err
 	}
@@ -133,6 +146,11 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	if err := addParts(s, project, st, params, settings, &res, &pending, opts.Out); err != nil {
 		return &res, err
+	}
+	if project = s.Graph.Get(opts.Name); project != nil {
+		for _, warning := range siblings.Warnings(project.Shape) {
+			fmt.Fprintln(opts.Out, warning)
+		}
 	}
 	if err := installPending(language, pending, &res, opts.Out); err != nil {
 		return &res, err
