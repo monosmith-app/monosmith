@@ -1656,6 +1656,9 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
     /// <summary>Settings are this plugin's own settings for the new project, from the recipe the project is created from (its settings.&lt;plugin&gt; table); the same table is later the plugin's entry in Project.Settings. Nil when there are none.</summary>
     public JsonMap Settings { get; init; } = new();
 
+    /// <summary>Shape is the dialect the new project should have: the facts (see Project.Shape) that most projects of its kind and language agree on, as the host counted them. A plugin applies the keys it follows (see InitializeResult.Follows) and ignores the rest. Nil when there is nothing to follow, or the person asked for a fresh project.</summary>
+    public IReadOnlyDictionary<string, string> Shape { get; init; } = new Dictionary<string, string>();
+
     /// <inheritdoc />
     public static GenerateParams Read(JsonAny? value, string path)
     {
@@ -1669,6 +1672,7 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
             Stack = StringValue(Member(map, "stack"), Join(path, "stack")),
             Convention = BooleanValue(Member(map, "convention"), Join(path, "convention")),
             Settings = ObjectOf(Member(map, "settings"), Join(path, "settings")),
+            Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
         };
     }
 
@@ -1698,6 +1702,11 @@ public sealed record GenerateParams : IProtocolValue<GenerateParams>
         {
             writer.Property("settings");
             writer.Any(Settings);
+        }
+        if (Shape is { Count: > 0 })
+        {
+            writer.Property("shape");
+            MessageWritingAlgorithm.Map(writer, Shape, (builder1, member1) => builder1.String(member1));
         }
         writer.EndObject();
     }
@@ -1827,6 +1836,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those.</summary>
     public IReadOnlyList<ProjectKind> Kinds { get; init; } = [];
 
+    /// <summary>Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none.</summary>
+    public IReadOnlyList<string> Follows { get; init; } = [];
+
     /// <inheritdoc />
     public static InitializeResult Read(JsonAny? value, string path)
     {
@@ -1846,6 +1858,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Conflicts = ListOf(Member(map, "conflicts"), Join(path, "conflicts"), PluginRef.Read),
             Stacks = ListOf(Member(map, "stacks"), Join(path, "stacks"), Stack.Read),
             Kinds = ListOf(Member(map, "kinds"), Join(path, "kinds"), ProjectKind.Read),
+            Follows = ListOf(Member(map, "follows"), Join(path, "follows"), StringValue),
         };
     }
 
@@ -1905,6 +1918,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("kinds");
             MessageWritingAlgorithm.List(writer, Kinds, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Follows is { Count: > 0 })
+        {
+            writer.Property("follows");
+            MessageWritingAlgorithm.List(writer, Follows, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
@@ -2319,6 +2337,9 @@ public sealed record Project : IProtocolValue<Project>
     /// <summary>Settings are plugins' settings for this project from smith.toml, by plugin name: [projects.&lt;project&gt;.settings.&lt;name&gt;] (what a recipe's settings became when it created the project), and for a convention its [conventions.&lt;name&gt;] settings and the project's [projects.&lt;project&gt;.&lt;name&gt;] on top. Set by the host; a plugin reads its own entry.</summary>
     public IReadOnlyDictionary<string, JsonMap> Settings { get; init; } = new Dictionary<string, JsonMap>();
 
+    /// <summary>Shape is the dialect of the project: named facts about how it is made ("build.tool": "esbuild", "test.runner": "@swc/jest", "exports.target": "dist"), each a short string, read from the manifest and files the plugin already reads in discovery. The host counts the shapes of the projects of one kind and language to let a new project follow what they do, and knows no key itself. Nil when the plugin does not describe shapes.</summary>
+    public IReadOnlyDictionary<string, string> Shape { get; init; } = new Dictionary<string, string>();
+
     /// <summary>Registries are the private registries the project installs from and publishes to, from smith.toml [registries]; nil means the public ones. Set by the host.</summary>
     public Registries? Registries { get; init; }
 
@@ -2346,6 +2367,7 @@ public sealed record Project : IProtocolValue<Project>
             Tags = ListOf(Member(map, "tags"), Join(path, "tags"), StringValue),
             Stack = StringValue(Member(map, "stack"), Join(path, "stack")),
             Settings = MapOf(Member(map, "settings"), Join(path, "settings"), ObjectOf),
+            Shape = MapOf(Member(map, "shape"), Join(path, "shape"), StringValue),
             Registries = OptionalStruct<Registries>(Member(map, "registries"), Join(path, "registries")),
             ReleaseAssets = OptionalStruct<AssetSpec>(Member(map, "releaseAssets"), Join(path, "releaseAssets")),
         };
@@ -2417,6 +2439,11 @@ public sealed record Project : IProtocolValue<Project>
         {
             writer.Property("settings");
             MessageWritingAlgorithm.Map(writer, Settings, (builder1, member1) => builder1.Any(member1));
+        }
+        if (Shape is { Count: > 0 })
+        {
+            writer.Property("shape");
+            MessageWritingAlgorithm.Map(writer, Shape, (builder1, member1) => builder1.String(member1));
         }
         if (Registries is not null)
         {
@@ -3865,6 +3892,9 @@ public sealed record PluginDescription
     /// <summary>Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those.</summary>
     public IReadOnlyList<ProjectKind> Kinds { get; init; } = [];
 
+    /// <summary>Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none.</summary>
+    public IReadOnlyList<string> Follows { get; init; } = [];
+
     /// <summary>The <c>initialize</c> result for this description.</summary>
     /// <param name="capabilities">The capabilities derived from the plugin.</param>
     /// <returns>The result the serve loop answers.</returns>
@@ -3884,5 +3914,6 @@ public sealed record PluginDescription
             Conflicts = Conflicts,
             Stacks = Stacks,
             Kinds = Kinds,
+            Follows = Follows,
         };
 }

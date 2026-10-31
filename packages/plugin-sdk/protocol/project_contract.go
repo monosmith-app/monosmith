@@ -57,6 +57,14 @@ type Project struct {
 	// [projects.<project>.<name>] on top. Set by the host; a plugin reads its
 	// own entry.
 	Settings map[string]map[string]any `json:"settings,omitempty"`
+	// Shape is the dialect of the project: named facts about how it is made
+	// ("build.tool": "esbuild", "test.runner": "@swc/jest", "exports.target":
+	// "dist"), each a short string, read from the manifest and files the
+	// plugin already reads in discovery. The host counts the shapes of the
+	// projects of one kind and language to let a new project follow what they
+	// do, and knows no key itself. Nil when the plugin does not describe
+	// shapes.
+	Shape map[string]string `json:"shape,omitempty"`
 	// Registries are the private registries the project installs from and
 	// publishes to, from smith.toml [registries]; nil means the public ones.
 	// Set by the host.
