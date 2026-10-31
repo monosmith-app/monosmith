@@ -123,7 +123,7 @@ When siblings of the new project's kind and language share a build tool, a test 
 or where their entry points lead, the project follows them, not the stack's own default
 (`smith add --fresh` gives the default). A plugin lists the shape keys it applies in
 `initialize.follows`; see [`smith add`](../manual/add.md#following-the-siblings) and
-[ADR 0040](../architecture/decisions/0040-smith-add-follows-the-dialect-of-sibling-projects.md).
+[ADR 0041](../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md).
 
 ## Built-in stacks
 

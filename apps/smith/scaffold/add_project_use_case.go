@@ -54,7 +54,7 @@ type AddOptions struct {
 //
 // Unless opts.Fresh is set, the project follows the dialect of its siblings,
 // the projects of its kind and language: it is told the shape most of them
-// share, and a warning names each key it could not follow (ADR 0040).
+// share, and a warning names each key it could not follow (ADR 0041).
 func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateResult, err error) {
 	kind := protocol.ProjectKind(opts.Kind)
 	switch kind {

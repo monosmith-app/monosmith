@@ -173,7 +173,7 @@ project's kind and language. When at least 3 of them, and at least two thirds, s
 prints the reason and sends the value back in `generate` as `params.shape`. Apply the keys you can,
 list them in `initialize.follows` (the host asks about a split only for those keys), and ignore the
 rest. The host reads the shape of the new project after `generate` and warns for each key that
-differs. See [ADR 0040](../../architecture/decisions/0040-smith-add-follows-the-dialect-of-sibling-projects.md).
+differs. See [ADR 0041](../../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md).
 
 ## Step 3: tasks that cache honestly
 

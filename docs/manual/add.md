@@ -82,7 +82,7 @@ The 3 sibling packages agree on:
   test.runner = @swc/jest (3 of 3 packages)
 ```
 
-The rules, from [ADR 0040](../architecture/decisions/0040-smith-add-follows-the-dialect-of-sibling-projects.md):
+The rules, from [ADR 0041](../architecture/decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md):
 
 - A value is followed when **at least 3** siblings have it and **at least two thirds** of
   the siblings that report the key. With fewer than 3 siblings nothing is inferred and

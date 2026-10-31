@@ -1,4 +1,4 @@
-# ADR 0040: `smith add` follows the dialect of sibling projects
+# ADR 0041: `smith add` follows the dialect of sibling projects
 
 - Status: accepted
 - Date: 2026-10-31
