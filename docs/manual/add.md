@@ -67,6 +67,16 @@ with numbered options, then `Name of the project:`, three tries each); so is the
 language when `--lang` is missing and more than one could apply. Elsewhere the missing
 argument is the error listed below.
 
+For a Node project, the folder follows the root `package.json` `workspaces`. When they
+cover `libs/*` (or the kind's own folder), the project goes there. When they do not (a
+workspace converted from Nx lists only `packages/*` and `apps/*`), a lib goes into the
+first folder the globs name that exists, `packages/` first, so npm links it at once.
+
+After the first build and test, `smith add` runs the language plugins' `smith doctor`
+checks for the new project (npm workspaces, scripts, entry files). If one fails, it
+prints the check with its remedy, exits with 1 and does not print "Done"; follow the
+remedy, then run `smith doctor`.
+
 The name must be kebab-case. smith add leaves the files it wrote uncommitted (`smith new`
 commits what it wrote): review them with `git status`, then commit.
 
@@ -75,7 +85,7 @@ commits what it wrote): review them with `git status`, then commit.
 | Code | Meaning |
 |---|---|
 | 0 | The project was created. |
-| 1 | The kind, name, language or stack is invalid, the name is taken, or generation or the first install failed. |
+| 1 | The kind, name, language or stack is invalid, the name is taken, generation or the first install failed, or the new project fails its `smith doctor` checks. |
 
 ## Files and environment
 
