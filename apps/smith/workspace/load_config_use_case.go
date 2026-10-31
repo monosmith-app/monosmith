@@ -182,6 +182,13 @@ func Validate(cfg *Config) error {
 	if cfg.Release.Remote == "" {
 		cfg.Release.Remote = "origin"
 	}
+	switch cfg.Release.APICheck {
+	case "":
+		cfg.Release.APICheck = "warn"
+	case "warn", "error", "off":
+	default:
+		return fmt.Errorf("%s: [release] api_check must be \"warn\", \"error\" or \"off\", not %q", FileName, cfg.Release.APICheck)
+	}
 	if cfg.Cache.Dir == "" {
 		cfg.Cache.Dir = ".smith/cache"
 	}
