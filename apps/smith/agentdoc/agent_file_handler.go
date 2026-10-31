@@ -62,15 +62,23 @@ CLAUDE.md gets a short region that imports AGENTS.md. --no-claude-md skips it.
 // finish reports the changes and, unless check is set, writes them.
 func finish(cmd *cobra.Command, root string, changes []FileChange, check bool) error {
 	out := cmd.OutOrStdout()
-	var stale []string
+	var stale, missing []string
 	for _, c := range changes {
 		if !c.Differs {
 			fmt.Fprintf(out, "%s is current\n", c.Path)
 			continue
 		}
-		stale = append(stale, c.Path)
+		if c.Exists {
+			stale = append(stale, c.Path)
+		} else {
+			missing = append(missing, c.Path)
+		}
 		if check {
-			fmt.Fprintf(out, "%s is out of date\n", c.Path)
+			if c.Exists {
+				fmt.Fprintf(out, "%s is out of date\n", c.Path)
+			} else {
+				fmt.Fprintf(out, "%s is missing, run smith agent file\n", c.Path)
+			}
 			continue
 		}
 		if err := os.WriteFile(filepath.Join(root, c.Path), []byte(c.Content), 0o644); err != nil {
@@ -78,12 +86,26 @@ func finish(cmd *cobra.Command, root string, changes []FileChange, check bool) e
 		}
 		fmt.Fprintf(out, "wrote %s\n", c.Path)
 	}
-	if check && len(stale) > 0 {
-		verb := " is"
-		if len(stale) > 1 {
-			verb = " are"
-		}
-		return problem.New(strings.Join(stale, " and ")+verb+" not up to date with the workspace", "smith agent file")
+	if !check {
+		return nil
+	}
+	var parts []string
+	if len(missing) > 0 {
+		parts = append(parts, listWithVerb(missing)+" missing")
+	}
+	if len(stale) > 0 {
+		parts = append(parts, listWithVerb(stale)+" not up to date with the workspace")
+	}
+	if len(parts) > 0 {
+		return problem.New(strings.Join(parts, "; "), "smith agent file")
 	}
 	return nil
+}
+
+// listWithVerb joins paths with "and" and adds "is" or "are".
+func listWithVerb(paths []string) string {
+	if len(paths) > 1 {
+		return strings.Join(paths, " and ") + " are"
+	}
+	return paths[0] + " is"
 }
