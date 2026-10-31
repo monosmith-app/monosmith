@@ -38,7 +38,7 @@ func ConfigText(cfg workspace.Config) string {
 			fmt.Fprintf(&b, "azure_variable_groups = %s\n", list(cfg.CI.AzureVariableGroups))
 		}
 	}
-	if cfg.Release.Branch != "" || cfg.Release.Remote != "" || cfg.Release.GitHubReleases || cfg.Release.Registry != "" {
+	if cfg.Release.Branch != "" || cfg.Release.Remote != "" || cfg.Release.GitHubReleases || cfg.Release.Registry != "" || cfg.Release.TagFormat != "" {
 		b.WriteString("\n[release]\n")
 		if cfg.Release.Branch != "" {
 			fmt.Fprintf(&b, "branch = %s\n", q(cfg.Release.Branch))
@@ -51,6 +51,9 @@ func ConfigText(cfg workspace.Config) string {
 		}
 		if cfg.Release.Registry != "" {
 			fmt.Fprintf(&b, "registry = %s\n", q(cfg.Release.Registry))
+		}
+		if cfg.Release.TagFormat != "" {
+			fmt.Fprintf(&b, "tag_format = %s\n", q(cfg.Release.TagFormat))
 		}
 	}
 	for _, name := range sortedKeys(cfg.Registries) {

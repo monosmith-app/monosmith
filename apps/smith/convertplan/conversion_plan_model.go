@@ -108,6 +108,9 @@ type Plan struct {
 	// names maps each Nx project name to its smith name, so a target's
 	// dependency on another project's target can name it.
 	names map[string]string
+	// tagChoices are the release tag prefixes planned for the projects smith
+	// prefixes with their name; applyTagFormat looks for a format they share.
+	tagChoices []tagChoice
 }
 
 // Add records a finding.

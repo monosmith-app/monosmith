@@ -81,6 +81,7 @@ kinds = true                          # no project depends on an app: an error (
 branch = "main"                       # real releases run only here
 remote = "origin"                     # release tags are pushed here
 github_releases = false               # a GitHub Release per tag (needs GITHUB_TOKEN)
+tag_format = "{name}@"                # the tag prefix of a project with no tag_prefix; "{scope}/{name}@" gives @acme/kit@ (releasing.md, Tags)
 rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC token, not GEM_HOST_API_KEY (GitHub only; docs/reference/releasing.md)
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
@@ -546,6 +547,12 @@ reach a project that did not repeat the settings.
 # keep existing tags that do not follow <name>@<version>
 [projects.kit]
 tag_prefix = "@acme/kit@"
+
+# or name the prefix of every project once, and set tag_prefix only on the exceptions
+[workspace]
+scope = "@acme"
+[release]
+tag_format = "{scope}/{name}@"       # kit tags @acme/kit@1.0.0; {name} is required
 
 # mirror each release to a repository of its own (see releasing.md, Split repositories)
 [projects.client-php]

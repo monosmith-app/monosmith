@@ -170,6 +170,37 @@ func TestAnAppsPackageTaskRunsInVerifyUnlessTurnedOff(t *testing.T) {
 	}
 }
 
+func TestTagFormatGivesTheProjectsThatSetNoPrefixTheirs(t *testing.T) {
+	cfg := workspace.Config{
+		Workspace: workspace.WorkspaceSection{Scope: "@acme"},
+		Release:   workspace.ReleaseSection{TagFormat: "{scope}/{name}@"},
+		Projects: map[string]workspace.ProjectOverride{
+			"odd":  {TagPrefix: "odd-v"},
+			"jit":  {BareTags: true},
+			"pack": {},
+		},
+	}
+	cases := []struct {
+		name, plugin, want string
+	}{
+		{"kit", "", "@acme/kit@"},
+		{"pack", "", "@acme/pack@"},
+		{"odd", "", "odd-v"},
+		{"jit", "", ""},
+		{"core", "libs/core/v", "libs/core/v"},
+	}
+	for _, c := range cases {
+		p := &Project{Project: protocol.Project{Name: c.name, TagPrefix: c.plugin}}
+		if err := ApplyOverrides(p, cfg); err != nil || p.TagPrefix != c.want {
+			t.Errorf("%s: prefix %q, want %q (%v)", c.name, p.TagPrefix, c.want, err)
+		}
+	}
+	kit := &Project{Project: protocol.Project{Name: "kit"}}
+	if err := ApplyOverrides(kit, cfg); err != nil || !kit.TagPrefixSet {
+		t.Errorf("a prefix from tag_format is deliberate, so it is marked set: %v", err)
+	}
+}
+
 func TestOnlyATagPrefixFromSmithTomlIsMarkedSet(t *testing.T) {
 	// A Go package reports its own prefix, which is not a deliberate one.
 	goPkg := &Project{Project: protocol.Project{Name: "core", TagPrefix: "libs/core/v"}}

@@ -96,6 +96,12 @@ func ApplyOverrides(p *Project, cfg workspace.Config) error {
 	} else {
 		p.applyTaskGroups(cfg)
 	}
+	// [release] tag_format names the prefix of a project that sets none. A
+	// prefix a plugin reports (a Go module's <dir>/v) stays, and so do bare tags.
+	if cfg.Release.TagFormat != "" && p.TagPrefix == "" && !p.BareTags {
+		p.TagPrefix = workspace.ExpandTagFormat(cfg.Release.TagFormat, cfg.Workspace.Scope, p.Name)
+		p.TagPrefixSet = true
+	}
 	return nil
 }
 

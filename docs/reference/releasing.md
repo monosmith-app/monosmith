@@ -664,8 +664,15 @@ root.
 
 | Language | Tag | Why |
 |---|---|---|
-| every language but Go, and every app | `<name>@<version>` | override with `tag_prefix` |
+| every language but Go, and every app | `<name>@<version>` | override with `tag_prefix`, or for all projects at once with `[release] tag_format` |
 | Go packages | `<dir>/v<version>` (e.g. `packages/gokit/v0.1.0`) | how `go get` finds a nested module's version |
+
+`[release] tag_format` is the prefix of every project that sets no `tag_prefix` and no `bare_tags`.
+`{name}` is the project's name (required) and `{scope}` is `[workspace] scope` as written, so with
+`scope = "@acme"`, `tag_format = "{scope}/{name}@"` tags the project `kit` as `@acme/kit@1.0.0`. A
+project's own `tag_prefix` wins, and so does the prefix a plugin reports (a Go module's `<dir>/v`).
+`smith convert` writes the format when most of the workspace's tags follow `{scope}/{name}@` (two or
+more projects, and more than the ones that do not), and a `tag_prefix` only on the projects that differ.
 
 The model is **tag-only**: nothing is committed back to the branch. For each
 package, in dependency order, smith:

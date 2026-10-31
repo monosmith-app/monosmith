@@ -44,7 +44,8 @@ a pull request (`releasepreview`) and the real release therefore print the same 
 `package`, or an app with a release section.
 
 1. **Last release.** `LatestTag` finds the highest version among tags with the project's prefix.
-   `TagPrefix` is empty for `bare_tags`, otherwise `tag_prefix` when set, otherwise `<name>@`. A Go
+   `TagPrefix` is empty for `bare_tags`, otherwise `tag_prefix` when set, otherwise the prefix a plugin reports, otherwise `[release] tag_format`
+   expanded for the project (`{name}`, `{scope}`; default `<name>@`; `ApplyOverrides` sets it). A Go
    module's plugin sets `<dir>/v` itself (`libs/plugin-go/discovery`). No tag means a first
    release, which starts from the manifest's version.
 2. **Commits.** `git.Log(tag, SourceRoots...)` lists the commits since that tag that touched the

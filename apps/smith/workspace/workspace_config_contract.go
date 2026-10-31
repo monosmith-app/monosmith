@@ -182,6 +182,12 @@ type ReleaseSection struct {
 	// release's commits as notes and an app's assets attached. Needs
 	// GITHUB_TOKEN (or GH_TOKEN). Default: false.
 	GitHubReleases bool `toml:"github_releases"`
+	// TagFormat is the release tag prefix of every project that sets no
+	// tag_prefix (and no bare_tags), with {name} for the project's name and
+	// {scope} for [workspace] scope: "{scope}/{name}@" gives "@acme/kit@" for
+	// the project kit. It must contain {name}. A prefix a plugin reports (a Go
+	// module's <dir>/v) wins over it. Default: "{name}@".
+	TagFormat string `toml:"tag_format"`
 	// RubyGemsTrustedPublishing publishes gems with the GitHub workflow's
 	// OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY
 	// secret, which needs a one-time password when the account asks for one.

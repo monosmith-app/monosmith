@@ -13,7 +13,7 @@ func TestConfigTextRoundTrips(t *testing.T) {
 	in := workspace.Config{
 		Workspace:  workspace.WorkspaceSection{Name: "acme", Scope: "@acme", ModulePrefix: "github.com/acme/repo", Exclude: []string{"examples/*"}},
 		CI:         workspace.CISection{Providers: []string{"github", "azure"}, AzurePool: "Managed Pool", AzureVariableGroups: []string{"Build", "Release secrets"}},
-		Release:    workspace.ReleaseSection{GitHubReleases: true, Registry: "feed"},
+		Release:    workspace.ReleaseSection{GitHubReleases: true, Registry: "feed", TagFormat: "{name}-v"},
 		Registries: map[string]workspace.RegistryConfig{"feed": {Auth: "azure-artifacts", NPM: "https://pkgs.dev.azure.com/o/_packaging/feed/npm/registry/"}},
 		Conventions: map[string]workspace.ConventionConfig{
 			"docker":          {},
@@ -35,7 +35,7 @@ func TestConfigTextRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v\n%s", err, text)
 	}
-	if !reflect.DeepEqual(out.Workspace, in.Workspace) || !reflect.DeepEqual(out.CI.Providers, in.CI.Providers) || !out.Release.GitHubReleases {
+	if !reflect.DeepEqual(out.Workspace, in.Workspace) || !reflect.DeepEqual(out.CI.Providers, in.CI.Providers) || !out.Release.GitHubReleases || out.Release.TagFormat != "{name}-v" {
 		t.Fatalf("sections %+v\n%s", out, text)
 	}
 	if !reflect.DeepEqual(out.Conventions, in.Conventions) {
