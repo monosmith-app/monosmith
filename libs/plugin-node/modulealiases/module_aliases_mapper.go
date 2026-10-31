@@ -104,6 +104,12 @@ func (a Aliases) JestModuleNameMapper() map[string]string {
 	return out
 }
 
+// jsString quotes s as a single-quoted JavaScript string, the style
+// @monosmith/eslint-config enforces.
+func jsString(s string) string {
+	return "'" + strings.NewReplacer(`\`, `\\`, "'", `\'`).Replace(s) + "'"
+}
+
 // ViteResolveAlias is the Vite resolve.alias member for a vite.config.ts or a
 // vitest.config.ts, with its trailing new line, or "" for no aliases. A
 // replacement that starts with "/" is relative to the project root, which is
@@ -114,7 +120,7 @@ func (a Aliases) ViteResolveAlias() string {
 	}
 	var lines []string
 	for _, alias := range a.names() {
-		lines = append(lines, fmt.Sprintf("      %q: %q,", alias, "/"+a[alias]))
+		lines = append(lines, fmt.Sprintf("      %s: %s,", jsString(alias), jsString("/"+a[alias])))
 	}
 	return "  resolve: {\n    alias: {\n" + strings.Join(lines, "\n") + "\n    },\n  },\n"
 }

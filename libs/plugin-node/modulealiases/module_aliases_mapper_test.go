@@ -21,7 +21,7 @@ func TestOneAliasReachesEveryTool(t *testing.T) {
 		t.Fatalf("dir = %q", got)
 	}
 	for tool, got := range map[string]string{"tsconfig": a.TSConfigPaths(), "vite": a.ViteResolveAlias()} {
-		if !strings.Contains(got, `"@app"`) || !strings.Contains(got, "src") {
+		if !strings.Contains(got, `@app`) || !strings.Contains(got, "src") {
 			t.Errorf("%s lacks the alias:\n%s", tool, got)
 		}
 	}
@@ -32,7 +32,7 @@ func TestOneAliasReachesEveryTool(t *testing.T) {
 	if jest[`^@app/(.*)$`] != "<rootDir>/src/$1" || jest[`^@app$`] != "<rootDir>/src" {
 		t.Errorf("jest = %v", jest)
 	}
-	if !strings.Contains(a.ViteResolveAlias(), `"@app": "/src",`) {
+	if !strings.Contains(a.ViteResolveAlias(), `'@app': '/src',`) {
 		t.Errorf("vite = %s", a.ViteResolveAlias())
 	}
 }
@@ -44,5 +44,12 @@ func TestAnAliasOfTheProjectRootAndRegexpCharacters(t *testing.T) {
 	}
 	if !strings.Contains(a.TSConfigPaths(), `"~lib.x/*": ["./*"]`) {
 		t.Errorf("paths = %s", a.TSConfigPaths())
+	}
+}
+
+func TestViteAliasUsesSingleQuotesAndEscapes(t *testing.T) {
+	a := Aliases{"it's": "src"}
+	if got := a.ViteResolveAlias(); !strings.Contains(got, `'it\'s': '/src',`) {
+		t.Errorf("vite = %s", got)
 	}
 }

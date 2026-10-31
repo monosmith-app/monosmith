@@ -35,7 +35,7 @@ var aliasFacts = map[string]any{protocol.FactModuleAliases: map[string]any{"@app
 
 func TestTheModuleAliasesFactBecomesAVitestConfig(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join(generate(t, false, aliasFacts), "libs", "ui", "vitest.config.ts"))
-	if err != nil || !strings.Contains(string(raw), `"@app": "/src",`) {
+	if err != nil || !strings.Contains(string(raw), `'@app': '/src',`) {
 		t.Fatalf("vitest.config.ts: %v\n%s", err, raw)
 	}
 }
