@@ -6,4 +6,6 @@ import monosmith from '@monosmith/eslint-config'
 
 export default [
   ...monosmith(),
+  // The jest-preset tests create and delete throwaway projects here while the lint task runs.
+  { ignores: ['**/.fixture-*/**'] },
 ]
