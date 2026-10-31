@@ -43,7 +43,9 @@ func TestWebChoices(t *testing.T) {
 	}
 	for _, bad := range []struct{ with, want string }{
 		{"react,vue", "react and vue are both on the framework axis: keep one"},
-		{"vue,p5", "p5 requires react, which is not in the selection: add react to --with, or drop p5"},
+		{"vue,chakra", "chakra requires react, which is not in the selection: add react to --with, or drop chakra"},
+		{"react,bootstrap,tailwind", "bootstrap and tailwind are both on the style axis: keep one"},
+		{"vue,p5","p5 requires react, which is not in the selection: add react to --with, or drop p5"},
 		{"bootstrap", "no choice in bootstrap writes the project"},
 	} {
 		if out := w.smith(false, "add", "app", "bad", "--with", bad.with); !strings.Contains(out, bad.want) {

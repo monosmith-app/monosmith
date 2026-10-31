@@ -1,0 +1,16 @@
+axis = "style"
+name = "tailwind"
+description = "Tailwind CSS 4 through its Vite plugin, imported by the entry file"
+language = "node"
+dependencies = ["tailwindcss"]
+dev_dependencies = ["@tailwindcss/vite"]
+
+[slots]
+"vite.imports" = ["import tailwindcss from '@tailwindcss/vite'"]
+"vite.plugins" = ["tailwindcss()"]
+"entry.imports" = ["import './style.css'"]
+
+[files]
+"src/style.css" = '''
+@import "tailwindcss";
+'''

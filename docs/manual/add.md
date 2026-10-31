@@ -84,6 +84,12 @@ smith add app web --with react,vitest,bootstrap
 Choices: react, vitest, bootstrap, eslint (eslint by default) as the stack react-vitest-bootstrap
 ```
 
+Another framework, test runner and style are three more words, and no new code:
+
+```sh
+smith add app admin --with vue,jest,tailwind
+```
+
 smith checks the selection first (one choice per axis, what each requires, what conflicts) and
 gives one message that names the choices and the fix, for example `chakra requires react, which is
 not in the selection: add react to --with, or drop chakra`. An axis that a choice needs and the

@@ -65,8 +65,12 @@ lint
 
 style
   bootstrap    Bootstrap 5 styles, imported by the entry file  [vite]
+  chakra       Chakra UI 3 components; the app is wrapped in its provider (React only)  [vite]
+               requires react
+  tailwind     Tailwind CSS 4 through its Vite plugin, imported by the entry file  [vite]
 
 test
+  jest         test with Jest (ts-jest, or @swc/jest when the siblings use it)  [jest]
   vitest       test with Vitest  [vitest]  (default)
 ```
 

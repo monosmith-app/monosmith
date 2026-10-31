@@ -1,0 +1,28 @@
+axis = "style"
+name = "chakra"
+description = "Chakra UI 3 components; the app is wrapped in its provider (React only)"
+language = "node"
+requires = ["react"]
+dependencies = ["@chakra-ui/react", "@emotion/react"]
+
+[files]
+# Replaces the entry file of react: the same, with the provider around the app.
+"src/main.tsx" = '''
+import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { App } from './app/index.ts'
+[[range index .Slots "entry.imports"]][[.]]
+[[end]]
+const root = document.getElementById('app')
+if (root === null) {
+  throw new Error('index.html has no #app')
+}
+createRoot(root).render(
+  <StrictMode>
+    <ChakraProvider value={defaultSystem}>
+      <App />
+    </ChakraProvider>
+  </StrictMode>,
+)
+'''

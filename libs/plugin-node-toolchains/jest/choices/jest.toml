@@ -1,0 +1,5 @@
+axis = "test"
+name = "jest"
+description = "test with Jest (ts-jest, or @swc/jest when the siblings use it)"
+language = "node"
+roles = ["toolchain"]
