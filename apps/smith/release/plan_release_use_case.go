@@ -23,6 +23,9 @@ type Item struct {
 	Forced  bool     `json:"forced,omitempty"`
 	// Changes are the releasing commits, for the release notes.
 	Changes []Change `json:"changes,omitempty"`
+	// APIWarnings say that the commits ask for a smaller bump than the change
+	// of the public API needs, and which bump to use (see CheckAPI).
+	APIWarnings []string `json:"apiWarnings,omitempty"`
 }
 
 // Plan is every package that will release, in dependency order.

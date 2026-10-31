@@ -95,6 +95,11 @@ internal static class PluginMethods
             plugin => plugin is IComponentLister,
             value => ComponentsParams.Read(value, "params"),
             async (plugin, parameters, cancellation) => await ((IComponentLister)plugin).ComponentsAsync((ComponentsParams)parameters, cancellation)),
+        [ProtocolMethods.ApiSurface] = new(
+            ProtocolMethods.ApiSurface,
+            plugin => plugin is IApiSurfaceReader,
+            value => APISurfaceParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((IApiSurfaceReader)plugin).ApiSurfaceAsync((APISurfaceParams)parameters, cancellation)),
     };
 
     /// <summary>The capabilities a plugin advertises, derived from the interfaces it implements.</summary>
@@ -111,6 +116,7 @@ internal static class PluginMethods
             Remove = plugin is IRemover,
             ChangeKind = plugin is IKindChanger,
             Components = plugin is IComponentLister,
+            ApiSurface = plugin is IApiSurfaceReader,
             Dependencies = plugin is IDependencyManager,
             Declarations = plugin is IDeclarationEditor,
             Latest = plugin is ILatestReader,

@@ -76,6 +76,9 @@ func (r Report) Markdown() string {
 		}
 	}
 	for _, res := range r.Results {
+		for _, w := range res.APIWarnings {
+			fmt.Fprintf(&b, "\n**Warning, API check:** %s\n", w)
+		}
 		if len(res.Images) > 0 {
 			fmt.Fprintf(&b, "\nImages pushed for %s:\n\n", res.Project)
 			for _, image := range res.Images {

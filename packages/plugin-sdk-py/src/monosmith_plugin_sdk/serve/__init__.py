@@ -2,6 +2,7 @@
 
 from .capabilities_of_algorithm import capabilities_of, implements_method
 from .plugin_contract import (
+    APISurfaceReader,
     CIContributor,
     ComponentLister,
     Contributor,
@@ -28,6 +29,7 @@ __all__ = [
     "ByteSource",
     "CIContributor",
     "Contributor",
+    "APISurfaceReader",
     "ComponentLister",
     "DeclarationEditor",
     "DependencyManager",

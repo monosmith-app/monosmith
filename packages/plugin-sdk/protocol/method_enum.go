@@ -37,4 +37,7 @@ const (
 	// MethodComponents lists the components a project ships, from its
 	// lockfile or manifest, for the release's SBOM.
 	MethodComponents = "sbom/components"
+	// MethodAPISurface lists the public API names of a project at a git
+	// revision, so a release can compare them with the last release.
+	MethodAPISurface = "api/surface"
 )

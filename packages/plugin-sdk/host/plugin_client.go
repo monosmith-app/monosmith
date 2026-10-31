@@ -403,6 +403,8 @@ func (c *Client) Supports(method string) bool {
 		return caps.Latest
 	case protocol.MethodComponents:
 		return caps.Components
+	case protocol.MethodAPISurface:
+		return caps.APISurface
 	}
 	return method == protocol.MethodInitialize || method == protocol.MethodShutdown
 }

@@ -140,6 +140,10 @@ type Capabilities struct {
 	Cancel bool `json:"cancel,omitempty"`
 	// Components lists a project's dependencies for its SBOM.
 	Components bool `json:"components,omitempty"`
+	// APISurface lists the names a project exports, at a git revision, so a
+	// release can warn when the commits ask for a smaller bump than the API
+	// change needs.
+	APISurface bool `json:"apiSurface,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's

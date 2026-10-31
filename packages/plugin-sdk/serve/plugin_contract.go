@@ -106,6 +106,11 @@ type ComponentLister interface {
 	Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error)
 }
 
+// APISurfaceReader lists the public API names of a project at a git revision.
+type APISurfaceReader interface {
+	APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error)
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)
