@@ -32,6 +32,18 @@ that make or inspect a workspace, or need none, work outside one: `new`,
 `completion` and `help`. In a terminal, a bare `smith` outside a workspace
 opens the Start menu instead.
 
+## smith says smith.toml needs a newer smith
+
+```text
+smith: This smith (1.100.0) is older than smith.toml needs. Run `npm install --global monosmith`.
+```
+
+A teammate or CI used a newer smith that added tables or keys to `smith.toml`
+(or raised its `schema`), and this smith does not know them. Upgrade smith with
+the command shown. `--verbose` adds the parse errors, one per unknown table or
+key. A single unknown key is not taken for a newer smith, because it is more
+likely a typo: that error names the key.
+
 ## A task ran again and I expected the cache
 
 Ask:
