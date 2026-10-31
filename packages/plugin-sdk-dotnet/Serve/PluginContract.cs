@@ -125,6 +125,16 @@ public interface IComponentLister
     Task<ComponentsResult> ComponentsAsync(ComponentsParams parameters, CancellationToken cancellation);
 }
 
+/// <summary>A plugin that says which files it derives from facts and the project graph.</summary>
+public interface IDeriver
+{
+    /// <summary>Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.</summary>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancelled when the host cancels the request (a plugin that sets <see cref="IPlugin.Cancellable"/>) or the plugin shuts down.</param>
+    /// <returns>The result of the method.</returns>
+    Task<DeriveResult> DeriveAsync(DeriveParams parameters, CancellationToken cancellation);
+}
+
 /// <summary>A plugin that lists the public API names of a project at a git revision, for the release version check.</summary>
 public interface IApiSurfaceReader
 {

@@ -46,6 +46,9 @@ __all__ = [
     "DeclaredParams",
     "DeclaredResult",
     "DependencyResult",
+    "DeriveParams",
+    "DeriveResult",
+    "DerivedFile",
     "DevcontainerFeature",
     "DiscoverParams",
     "DiscoverResult",
@@ -158,11 +161,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "api/surface"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "apiSurface"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -186,6 +189,7 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "dependencies/rewrite": "declarations",
     "dependencies/latest": "latest",
     "sbom/components": "components",
+    "derive": "derive",
     "api/surface": "apiSurface",
 }
 """The capability a plugin advertises to be asked each method (`None`: always available).
@@ -379,6 +383,10 @@ class Capabilities(TypedDict, total=False):
     """
     components: bool
     """Components lists a project's dependencies for its SBOM."""
+    derive: bool
+    """
+    Derive says which files the plugin derives from facts and the project graph (smith derive).
+    """
     apiSurface: bool
     """
     APISurface lists the names a project exports, at a git revision, so a release can warn when
@@ -656,6 +664,84 @@ class DependencyResult(TypedDict, total=False):
 
     files: list[str]
     notes: list[str]
+
+
+class _DeriveParamsRequired(TypedDict):
+    projects: list[Project]
+    """Projects are the projects the plugin serves."""
+
+
+class DeriveParams(_DeriveParamsRequired, total=False):
+    """
+    DeriveParams asks a plugin for the files it can derive from facts and the project graph. The
+    plugin writes nothing: it answers with the content, and the host decides, from its ownership
+    record, whether to write it.
+    """
+
+    graph: dict[str, list[str]]
+    """
+    Graph maps a project name to the names of the projects it depends on inside the workspace,
+    sorted. The host resolved these edges: a plugin does not repeat that work.
+    """
+    owned: list[str]
+    """
+    Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin
+    proposes such a file again even when it is missing on disk, so deleting a derived file and
+    deriving restores it. A file that is not owned and not on disk is not proposed.
+    """
+
+
+class DeriveResult(TypedDict):
+    """DeriveResult carries the files a plugin derives."""
+
+    files: list[DerivedFile]
+
+
+class _DerivedFileRequired(TypedDict):
+    project: str
+    """Project is the project the file belongs to."""
+    path: str
+    """Path is workspace-relative, with forward slashes."""
+    mode: str
+    """Mode is DeriveFile, DeriveRegion or DeriveKeys."""
+    renderer: str
+    """
+    Renderer is the stable id of the renderer, for example "node.tsconfig.references". It names
+    the region markers.
+    """
+    version: int
+    """
+    Version is the renderer's version. A new version means new output for the same inputs, so the
+    host rewrites an unedited file.
+    """
+
+
+class DerivedFile(_DerivedFileRequired, total=False):
+    """DerivedFile is the content one renderer derives for one file."""
+
+    content: str
+    """
+    Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the
+    markers. Unused for DeriveKeys.
+    """
+    comment: str
+    """
+    Comment is the line comment leader of the file ("//", "#"): the host writes a generated
+    header after it in a DeriveFile. Empty for a format without comments, then the file has no
+    header.
+    """
+    format: str
+    """Format is "json" or "toml" for DeriveKeys."""
+    table: str
+    """
+    Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for
+    "json", whose keys are the top-level ones.
+    """
+    keys: dict[str, Any]
+    """
+    Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a
+    boolean or an array of those.
+    """
 
 
 class _DevcontainerFeatureRequired(TypedDict):

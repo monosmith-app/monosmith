@@ -106,6 +106,12 @@ type ComponentLister interface {
 	Components(params protocol.ComponentsParams) (protocol.ComponentsResult, error)
 }
 
+// Deriver says which files the plugin derives from facts and the project graph
+// (smith derive). It writes nothing: the host owns the writes.
+type Deriver interface {
+	Derive(params protocol.DeriveParams) (protocol.DeriveResult, error)
+}
+
 // APISurfaceReader lists the public API names of a project at a git revision.
 type APISurfaceReader interface {
 	APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error)

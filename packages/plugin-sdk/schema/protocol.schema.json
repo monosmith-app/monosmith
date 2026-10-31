@@ -139,6 +139,13 @@
       "capability": "components",
       "notification": false
     },
+    "derive": {
+      "description": "Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.",
+      "params": {"$ref": "#/$defs/DeriveParams"},
+      "result": {"$ref": "#/$defs/DeriveResult"},
+      "capability": "derive",
+      "notification": false
+    },
     "api/surface": {
       "description": "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
       "params": {"$ref": "#/$defs/APISurfaceParams"},
@@ -437,6 +444,10 @@
           "type": "boolean",
           "description": "Components lists a project's dependencies for its SBOM."
         },
+        "derive": {
+          "type": "boolean",
+          "description": "Derive says which files the plugin derives from facts and the project graph (smith derive)."
+        },
         "apiSurface": {
           "type": "boolean",
           "description": "APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs."
@@ -717,6 +728,77 @@
           "items": {"type": "string"}
         }
       }
+    },
+    "DeriveParams": {
+      "description": "DeriveParams asks a plugin for the files it can derive from facts and the project graph. The plugin writes nothing: it answers with the content, and the host decides, from its ownership record, whether to write it.",
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Project"},
+          "description": "Projects are the projects the plugin serves."
+        },
+        "graph": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "description": "Graph maps a project name to the names of the projects it depends on inside the workspace, sorted. The host resolved these edges: a plugin does not repeat that work."
+        },
+        "owned": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin proposes such a file again even when it is missing on disk, so deleting a derived file and deriving restores it. A file that is not owned and not on disk is not proposed."
+        }
+      },
+      "required": ["projects"]
+    },
+    "DeriveResult": {
+      "description": "DeriveResult carries the files a plugin derives.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/DerivedFile"}
+        }
+      },
+      "required": ["files"]
+    },
+    "DerivedFile": {
+      "description": "DerivedFile is the content one renderer derives for one file.",
+      "type": "object",
+      "properties": {
+        "project": {"type": "string", "description": "Project is the project the file belongs to."},
+        "path": {"type": "string", "description": "Path is workspace-relative, with forward slashes."},
+        "mode": {"type": "string", "description": "Mode is DeriveFile, DeriveRegion or DeriveKeys."},
+        "renderer": {
+          "type": "string",
+          "description": "Renderer is the stable id of the renderer, for example \"node.tsconfig.references\". It names the region markers."
+        },
+        "version": {
+          "type": "integer",
+          "description": "Version is the renderer's version. A new version means new output for the same inputs, so the host rewrites an unedited file."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the markers. Unused for DeriveKeys."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Comment is the line comment leader of the file (\"//\", \"#\"): the host writes a generated header after it in a DeriveFile. Empty for a format without comments, then the file has no header."
+        },
+        "format": {"type": "string", "description": "Format is \"json\" or \"toml\" for DeriveKeys."},
+        "table": {
+          "type": "string",
+          "description": "Table is the TOML table that holds the keys (\"tool.smith\"); required for \"toml\", unused for \"json\", whose keys are the top-level ones."
+        },
+        "keys": {
+          "type": "object",
+          "description": "Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a boolean or an array of those."
+        }
+      },
+      "required": ["project", "path", "mode", "renderer", "version"]
     },
     "DevcontainerFeature": {
       "description": "DevcontainerFeature is a dev container feature and its options (https://containers.dev/features).",

@@ -206,6 +206,8 @@ export interface Capabilities {
   cancel?: boolean
   /** Components lists a project's dependencies for its SBOM. */
   components?: boolean
+  /** Derive says which files the plugin derives from facts and the project graph (smith derive). */
+  derive?: boolean
   /**
    * APISurface lists the names a project exports, at a git revision, so a release can warn when the
    * commits ask for a smaller bump than the API change needs.
@@ -439,6 +441,74 @@ export interface DeclaredResult {
 export interface DependencyResult {
   files?: string[]
   notes?: string[]
+}
+
+/**
+ * DeriveParams asks a plugin for the files it can derive from facts and the project graph. The
+ * plugin writes nothing: it answers with the content, and the host decides, from its ownership
+ * record, whether to write it.
+ */
+export interface DeriveParams {
+  /** Projects are the projects the plugin serves. */
+  projects: Project[]
+  /**
+   * Graph maps a project name to the names of the projects it depends on inside the workspace,
+   * sorted. The host resolved these edges: a plugin does not repeat that work.
+   */
+  graph?: Record<string, string[]>
+  /**
+   * Owned are the workspace-relative paths the host's ownership record says smith owns. A plugin
+   * proposes such a file again even when it is missing on disk, so deleting a derived file and
+   * deriving restores it. A file that is not owned and not on disk is not proposed.
+   */
+  owned?: string[]
+}
+
+/** DeriveResult carries the files a plugin derives. */
+export interface DeriveResult {
+  files: DerivedFile[]
+}
+
+/** DerivedFile is the content one renderer derives for one file. */
+export interface DerivedFile {
+  /** Project is the project the file belongs to. */
+  project: string
+  /** Path is workspace-relative, with forward slashes. */
+  path: string
+  /** Mode is DeriveFile, DeriveRegion or DeriveKeys. */
+  mode: string
+  /**
+   * Renderer is the stable id of the renderer, for example "node.tsconfig.references". It names the
+   * region markers.
+   */
+  renderer: string
+  /**
+   * Version is the renderer's version. A new version means new output for the same inputs, so the
+   * host rewrites an unedited file.
+   */
+  version: number
+  /**
+   * Content is the whole file (DeriveFile) or the lines of the region (DeriveRegion), without the
+   * markers. Unused for DeriveKeys.
+   */
+  content?: string
+  /**
+   * Comment is the line comment leader of the file ("//", "#"): the host writes a generated header
+   * after it in a DeriveFile. Empty for a format without comments, then the file has no header.
+   */
+  comment?: string
+  /** Format is "json" or "toml" for DeriveKeys. */
+  format?: string
+  /**
+   * Table is the TOML table that holds the keys ("tool.smith"); required for "toml", unused for
+   * "json", whose keys are the top-level ones.
+   */
+  table?: string
+  /**
+   * Keys are the owned keys and their values (DeriveKeys). A TOML value is a string, a number, a
+   * boolean or an array of those.
+   */
+  keys?: Record<string, unknown>
 }
 
 /** DevcontainerFeature is a dev container feature and its options (https://containers.dev/features). */
@@ -1414,6 +1484,16 @@ export interface ProtocolMethods {
     params: ComponentsParams
     result: ComponentsResult
     capability: 'components'
+  }
+  /**
+   * Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a
+   * test config's display name). The plugin writes nothing: it answers with the content, and the
+   * host rewrites a file only when its ownership record allows.
+   */
+  derive: {
+    params: DeriveParams
+    result: DeriveResult
+    capability: 'derive'
   }
   /**
    * Asks for the public API names of a project, at the working tree or at a git revision (its last

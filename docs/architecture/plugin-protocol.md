@@ -148,6 +148,7 @@ which capability each method needs.
 | `remove` | `remove` | `Remover` | `smith remove` |
 | `changeKind` | `project/kind` | `KindChanger` | `smith kind` |
 | `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
+| `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
 | `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
@@ -190,6 +191,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
 | `project/kind` | `ChangeKindParams` | `ChangeKindResult` | the edits that make a project another kind: its manifest and the references to its directory |
+| `derive` | `DeriveParams{projects, graph, owned}` | `DeriveResult{files}` (`DerivedFile{project, path, mode, renderer, version, content, comment, format, table, keys}`) | the content of the files the plugin derives from facts and the project graph, as a whole file, a region between markers or owned keys; the plugin writes nothing, the host keeps `smith.lock` and decides ([ADR 0046](decisions/0046-derived-files-have-an-owner-and-a-record.md)) |
 | `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
 | `api/surface` | `APISurfaceParams{project, ref}` | `APISurfaceResult{names, unreadable}` | the names the project exports at a git revision (empty `ref` = working tree), sorted; a name of a subpath entry is prefixed `./sub:`. `unreadable` says why no list exists, and the host then skips the project. The host compares two lists and reads no meaning from the names |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them. Asked of the project's language plugin and of every other plugin that serves the project and advertises `version` (a convention such as `tauri`, for the files it keeps a version in) |

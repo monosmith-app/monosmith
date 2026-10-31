@@ -132,6 +132,14 @@
         "remote_read_only": { "type": "boolean", "description": "Read the remote cache without writing to it (SMITH_CACHE_READ_ONLY=1 does the same). Default: false." }
       }
     },
+    "derive": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Derived files: files smith writes from facts and the project graph, with an ownership record in smith.lock. Off by default.",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Turn derived files on: smith derive works, smith doctor reports drift and smith ci verify runs smith derive --check. Default: false." }
+      }
+    },
     "facts": {
       "type": "object",
       "description": "Shared facts every project gets: typed values under namespaced keys that plugins read when they set a project up. They win over the defaults plugins publish and lose to [projects.<name>.facts]. smith explain <project> --facts shows each value and where it came from.",

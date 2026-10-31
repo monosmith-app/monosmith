@@ -9,6 +9,7 @@ settings and concepts mean.
 | [Configuration: `smith.toml`](configuration.md) | every setting of the workspace file, its default, and the environment variables smith reads |
 | [Glossary](glossary.md) | the words smith uses: workspace, project, kind, task, stack, recipe, slot, and the rest |
 | [Conventions](conventions.md) | the vertical-slice layout smith generates and checks, and how to turn the check on or off |
+| [Derived files](derived-files.md) | the ownership modes, `smith.lock`, the states of a derived file and the renderers |
 | [Stacks](stacks.md) | what a project can be built with (React, Vue, Jest, ...) and how a stack is chosen |
 | [Recipes](recipes.md) | a team's choice of plugins and settings, the recipe file format and the answers file |
 | [Tasks, cache and affected](tasks-and-cache.md) | how tasks are defined and overridden, the cache and the remote cache, `smith dev` and serving an app for a task |

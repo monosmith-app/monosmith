@@ -144,6 +144,12 @@ var Methods = []MethodSpec{
 		Capability: "Components",
 	},
 	{
+		Method:      protocol.MethodDerive,
+		Description: "Asks which files a plugin derives from facts and the project graph (a tsconfig's references, a test config's display name). The plugin writes nothing: it answers with the content, and the host rewrites a file only when its ownership record allows.",
+		Params:      reflect.TypeFor[protocol.DeriveParams](), Result: reflect.TypeFor[protocol.DeriveResult](),
+		Capability: "Derive",
+	},
+	{
 		Method:      protocol.MethodAPISurface,
 		Description: "Asks for the public API names of a project, at the working tree or at a git revision (its last release tag), so a release can compare them and say what bump the change needs.",
 		Params:      reflect.TypeFor[protocol.APISurfaceParams](), Result: reflect.TypeFor[protocol.APISurfaceResult](),

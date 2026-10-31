@@ -140,6 +140,9 @@ type Capabilities struct {
 	Cancel bool `json:"cancel,omitempty"`
 	// Components lists a project's dependencies for its SBOM.
 	Components bool `json:"components,omitempty"`
+	// Derive says which files the plugin derives from facts and the project
+	// graph (smith derive).
+	Derive bool `json:"derive,omitempty"`
 	// APISurface lists the names a project exports, at a git revision, so a
 	// release can warn when the commits ask for a smaller bump than the API
 	// change needs.

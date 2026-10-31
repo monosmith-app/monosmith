@@ -246,6 +246,10 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if l, ok := p.(ComponentLister); ok {
 			return call(req.Params, l.Components)
 		}
+	case protocol.MethodDerive:
+		if d, ok := p.(Deriver); ok {
+			return call(req.Params, d.Derive)
+		}
 	case protocol.MethodAPISurface:
 		if r, ok := p.(APISurfaceReader); ok {
 			return call(req.Params, r.APISurface)
@@ -291,8 +295,9 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, latest := p.(LatestReader)
 	_, cancel := p.(Cancellable)
 	_, components := p.(ComponentLister)
+	_, derive := p.(Deriver)
 	_, apiSurface := p.(APISurfaceReader)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface}
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

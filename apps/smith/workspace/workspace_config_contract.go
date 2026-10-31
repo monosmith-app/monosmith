@@ -13,6 +13,8 @@ type Config struct {
 	CI        CISection        `toml:"ci"`
 	Release   ReleaseSection   `toml:"release"`
 	Cache     CacheSection     `toml:"cache"`
+	// Derive turns on derived files (smith derive).
+	Derive DeriveSection `toml:"derive"`
 	// Agent configures the MonoSmith agent files (smith agent install).
 	Agent AgentSection `toml:"agent"`
 	// Toolchains pins the runtime versions the workspace builds with, by
@@ -271,6 +273,15 @@ type BoundaryException struct {
 	To   string `toml:"to"`
 	// Reason is why the dependency is acceptable (required).
 	Reason string `toml:"reason"`
+}
+
+// DeriveSection configures derived files: files smith writes from facts and
+// the project graph, with an ownership record in smith.lock.
+type DeriveSection struct {
+	// Enabled turns derived files on: smith derive works, smith doctor
+	// reports drift and smith ci verify runs smith derive --check. Default:
+	// false.
+	Enabled bool `toml:"enabled"`
 }
 
 // CacheSection configures the local task cache.

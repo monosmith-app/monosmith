@@ -344,6 +344,23 @@ for a key above, stops smith with a message that names the table. `smith explain
 shows each value and where it came from. Plugin authors: [Sharing facts between
 plugins](../plugins/creating/shared-facts.md).
 
+## Derived files
+
+Files that smith writes from facts and the project graph, with an owner for each in `smith.lock`
+([ADR 0046](../architecture/decisions/0046-derived-files-have-an-owner-and-a-record.md)). Off by
+default: a workspace that does not opt in sees no change.
+
+```toml
+[derive]
+enabled = true
+```
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | boolean | `false` | `smith derive` works, `smith doctor` reports files that need action, and `smith ci verify` runs `smith derive --check` |
+
+See [Derived files](derived-files.md) and the [guide](../guides/derived-files.md).
+
 ## Leaving directories out
 
 smith makes a project of every manifest it finds (`package.json`, `go.mod`,

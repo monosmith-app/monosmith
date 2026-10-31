@@ -38,6 +38,7 @@ var catalog = []Action{
 	{Command: []string{"typecheck"}, Safety: Reads, NotInMCP: byTaskName, NotInServe: runByName},
 	{Command: []string{"dev"}, Safety: NeedsTerminal, NotInTUI: ownTerminal, NotInMCP: servesItself, NotInServe: servesItself},
 	{Command: []string{"kind"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
+	{Command: []string{"derive"}, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}, {When: []string{"--explain"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"eject"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri", "add"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
