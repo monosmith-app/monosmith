@@ -2,8 +2,8 @@
 
 from .capabilities_of_algorithm import capabilities_of, implements_method
 from .plugin_contract import (
-    CIContributor,
     APISurfaceReader,
+    CIContributor,
     ComponentLister,
     Contributor,
     DeclarationEditor,
