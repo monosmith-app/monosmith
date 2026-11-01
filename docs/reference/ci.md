@@ -274,7 +274,11 @@ the workflow adds `id-token: write` and `attestations: write` and, after the
 Release step, an `Attest build provenance` step
 (`actions/attest-build-provenance`) over `dist/release/*/*`, which signs the
 archives, packages and SBOMs with SLSA provenance. Verify one with
-`gh attestation verify <file> --repo <owner>/<repo>`. Azure Pipelines and
+`gh attestation verify <file> --repo <owner>/<repo>`. A private repository of a free
+GitHub organisation has no attestations: the step fails and takes the release job with it,
+after the releases exist. Set `[ci] attest = "optional"` to let the job go on when GitHub
+refuses (the step gets `continue-on-error: true`), or `"off"` to leave the step and its two
+permissions out. The default is `"on"`. Azure Pipelines and
 GitLab CI, CircleCI and Bitbucket get the SBOM but no provenance step: they have no attestation
 service.
 

@@ -26,6 +26,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "attest": { "enum": ["on", "optional", "off"], "description": "What the generated GitHub pipeline does about the build provenance attestation of a release's archives: on attests and fails the release job when GitHub refuses (default); optional attests but lets the job go on when GitHub refuses (a private repository of a free organisation has no attestations); off leaves the step out." },
         "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci", "bitbucket"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },

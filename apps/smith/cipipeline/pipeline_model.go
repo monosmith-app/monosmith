@@ -56,6 +56,8 @@ type Model struct {
 	// GitHub the job then attests them (SLSA build provenance), which needs
 	// id-token and attestations permissions.
 	Attest bool
+	// AttestOptional makes the attestation step continue on error, from [ci] attest.
+	AttestOptional bool
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool

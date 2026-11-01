@@ -127,6 +127,12 @@ type WorkspaceSection struct {
 type CISection struct {
 	// Providers is any of "github", "azure", "gitlab", "circleci", "bitbucket". Default: ["github"].
 	Providers []string `toml:"providers"`
+	// Attest says what the generated GitHub pipeline does about the build
+	// provenance attestation of a release's archives: "on" attests and fails the
+	// release job when GitHub refuses (the default); "optional" attests but lets
+	// the job go on when GitHub refuses, as on a private repository of a free
+	// organisation, which has no attestations; "off" leaves the step out.
+	Attest string `toml:"attest"`
 	// Devcontainer writes .devcontainer/devcontainer.json with the
 	// toolchains CI installs, at the same versions. Default: false (smith new
 	// turns it on).

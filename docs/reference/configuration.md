@@ -57,6 +57,7 @@ package = "https://example.com/recipes/package.recipe.toml"
 
 [ci]
 providers = ["github"]                # "github", "azure", "gitlab", "circleci", or several
+attest = "on"                         # build provenance of a release's archives (GitHub): "optional" goes on when GitHub refuses (private repo of a free organisation), "off" leaves the step out
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 branches = ["main", "dev"]             # branches the GitHub and Azure pipelines run on, pushes and pull requests; the release branch is always one; default: the release branch (docs/reference/ci.md)
 # [[ci.sibling_repos]]: repo, ref, env, dir, pre_build, token_secret: other repositories the GitHub workflow checks out beside the workspace (docs/reference/ci.md)
