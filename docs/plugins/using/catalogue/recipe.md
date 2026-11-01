@@ -18,7 +18,7 @@ attach to a GitHub Release.
 | `--lang` value | `recipe` |
 | Manifest that makes a directory a candidate project | `*.recipe.toml` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `channels` |
 | Not advertised | `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`: no CI step, no doctor check |
 | Stacks it publishes | none |
 | Project kinds | always `package`, whatever `smith add` is asked for |
@@ -175,6 +175,7 @@ version.
 | Version write | the first `version` line before the first table is replaced in place (single or double quotes; a trailing comment is kept; the value becomes double-quoted); else `version = "x"` is added after `name`, keeping the file's line endings; else at the top. Keys under tables (`[choices.x]`) are never touched. A dry run lists the file and writes nothing |
 | Tag | `<name>@<version>` (for example `team@0.1.0`) |
 | Publish | nothing is pushed to a registry: "released by its tag". The release has one **asset**, `dist/release/<name>/<file>.recipe.toml`, a copy with the release's version written into it |
+| Release channel | the plugin declares `channels`: nothing is pushed to a registry, so no pointer can move. The recipe and its release copy get `2.0.0-beta.1` as it is |
 | Credentials, private registry | none |
 | Dry run | lists the asset it would attach |
 
@@ -234,6 +235,10 @@ installs.
   pipelines; the plugin cleans nothing else. A recipe that another recipe
   extends is refused: `smith: dev is imported by team: remove those imports
   first, or pass --force to remove it anyway` (from `smith remove dev --dry-run`).
+
+## Declared projects
+
+A recipe is one `.recipe.toml` file, so there is no folder of recipe sources to declare. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

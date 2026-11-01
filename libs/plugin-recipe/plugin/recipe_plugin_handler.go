@@ -49,3 +49,7 @@ func (r *Recipe) WriteVersion(params protocol.VersionParams) (protocol.VersionRe
 func (r *Recipe) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
 	return releasing.Publish(r.root, params)
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a recipe is released by its tag, and its file is the release's asset.
+// No registry holds a stable pointer a prerelease could take.
+func (r *Recipe) PublishesChannels() {}

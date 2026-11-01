@@ -18,7 +18,7 @@ the rest of the workspace.
 | `--lang` value | `vba` |
 | Manifests that make a directory a project | `*.bas`, `*.cls`, `*.frm` (only files that start like an exported VBA module) |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `changeKind` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `changeKind`, `channels` |
 | Not advertised | `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app` and `lib`. `package` is refused: nothing publishes VBA |
@@ -79,6 +79,7 @@ the three header comments above.
 | Version write | the comment is replaced in place, or added under the `Attribute VB_Name` line (as the first line when there is none), in the file's own line ending |
 | Tag | `<project>@<version>` |
 | Publish | nothing is uploaded: "released by its tag" |
+| Release channel | the plugin declares `channels`: nothing is uploaded, so no registry pointer can move, and the version is a comment that takes `2.0.0-beta.1` as it is |
 | Credentials | none |
 
 ## CI, doctor, dependencies and removal
@@ -86,6 +87,10 @@ the three header comments above.
 The plugin adds nothing to CI and has no doctor checks. `smith install`,
 `smith sync` and `smith up` do nothing for VBA, and there is no remove support:
 `smith remove` deletes the project's directory.
+
+## Declared projects
+
+VBA has no project file above a folder of exported modules, and no command-line tool: the modules are the manifest, so a declared folder would have nothing to belong to. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

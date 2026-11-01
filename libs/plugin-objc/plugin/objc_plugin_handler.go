@@ -54,6 +54,11 @@ func (o *ObjC) Publish(params protocol.PublishParams) (protocol.PublishResult, e
 	return releasing.Publish(params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a pod is found by its git tag, and CocoaPods orders
+// 2.0.0-beta.1 below 2.0.0.
+// No registry holds a stable pointer a prerelease could take.
+func (o *ObjC) PublishesChannels() {}
+
 // CI implements serve.CIContributor.
 func (o *ObjC) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(params), nil

@@ -50,3 +50,7 @@ func (b *Bundle) WriteVersion(params protocol.VersionParams) (protocol.VersionRe
 func (b *Bundle) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
 	return releasing.Publish(params)
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a bundle is released by its tag, and app.json takes any version string.
+// No registry holds a stable pointer a prerelease could take.
+func (b *Bundle) PublishesChannels() {}

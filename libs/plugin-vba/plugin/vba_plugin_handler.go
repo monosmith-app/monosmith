@@ -53,6 +53,10 @@ func (v *VBA) Publish(params protocol.PublishParams) (protocol.PublishResult, er
 	return releasing.Publish(params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a project is released by its tag, and the version is a comment.
+// No registry holds a stable pointer a prerelease could take.
+func (v *VBA) PublishesChannels() {}
+
 // ChangeKind implements serve.KindChanger.
 func (v *VBA) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(v.root, params)

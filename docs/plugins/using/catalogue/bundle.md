@@ -17,7 +17,7 @@ never publishes to a registry: a release is a git tag.
 | Kind | language |
 | `--lang` value | `bundle` (`smith add app <name> --lang bundle`) |
 | Manifest that makes a directory a project | `flow.json`, with an `app.json` beside it |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `channels` |
 | Project kinds | `app` |
 | Tasks | none |
 
@@ -63,6 +63,14 @@ platforms = ["linux/amd64"]
 `smith release` then versions the bundle on its own conventional commits (a change in
 a project it depends on counts), writes the version into `app.json` and tags it.
 See [releasing](../../../reference/releasing.md).
+
+## Release channels
+
+A release channel stamps a prerelease version. The plugin declares `channels`: nothing is uploaded, so no registry pointer can move, and the `version` string of `app.json` takes `2.0.0-beta.1` as it is.
+
+## Declared projects
+
+A bundle is an `app.json` and the files beside it; no tool builds or checks a folder of a bundle on its own. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Not covered
 
