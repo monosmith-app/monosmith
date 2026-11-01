@@ -18,7 +18,7 @@ func jestHelperFilesFindings(s *session.Session) []protocol.Finding {
 	for _, p := range s.Graph.Projects {
 		dirs = append(dirs, p.Root)
 	}
-	cleanup := legacyjesthelpers.FindCleanup(s.Root, dirs)
+	cleanup := legacyjesthelpers.FindCleanup(s.Root, dirs, s.Version)
 	if len(cleanup.Files) == 0 {
 		return nil
 	}

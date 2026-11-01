@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjesthelpers"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
 )
 
@@ -52,7 +53,7 @@ func TestPlanRewritesAReactJestConfig(t *testing.T) {
 			t.Errorf("writes %s: the package provides the transformer", name)
 		}
 	}
-	if plan.AddDevDependencies[JestPresetPackage] != JestPresetRange {
+	if plan.AddDevDependencies[JestPresetPackage] != legacyjesthelpers.StableRange {
 		t.Fatalf("dev dependencies %v", plan.AddDevDependencies)
 	}
 	if len(plan.Keep) > 0 {

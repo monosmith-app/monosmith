@@ -44,7 +44,10 @@ lists every check with its remedy.
 - `the clone has full history`, `tracked files are not generated files`, `every build writes to
   dist/` and `projects depend only on what the boundaries allow`.
 - `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
-  would fail `npm ci` on another. `smith doctor --fix` regenerates it.
+  would fail `npm ci` on another. `smith doctor --fix` regenerates it. If `npm ci` still fails,
+  list the missing packages in the root `devDependencies`; when `overrides` names one of them
+  (`@emnapi/core`, `@emnapi/runtime`), set the override to `"$<name>"`, or npm stops with
+  `Override ... conflicts with direct dependency`.
 
 ## Suggestions about the defaults
 

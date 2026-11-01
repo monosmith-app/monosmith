@@ -114,9 +114,10 @@ git undoes everything.`,
 			}
 			tags, _ := git.Tags("")
 			input := convertplan.Input{
-				DirName: filepath.Base(root),
-				Files:   files,
-				Tags:    tags,
+				DirName:      filepath.Base(root),
+				Files:        files,
+				Tags:         tags,
+				SmithVersion: version,
 				Read: func(rel string) string {
 					raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 					return string(raw)

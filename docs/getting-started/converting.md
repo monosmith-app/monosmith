@@ -181,7 +181,7 @@ What it changes to get npm workspaces, each in the report:
 | `pnpm-workspace.yaml` `packages` (or yarn's object-form `workspaces`) | the root `package.json` `"workspaces"` list; `pnpm-workspace.yaml` is removed |
 | `workspace:*`, `workspace:^`, `workspace:~`, `workspace:1.2.3` | `*`, `^<the package's version>`, `~<the package's version>`, `1.2.3`; npm links a workspace package by name when the range matches its version |
 | `catalog:` and `catalog:name` | the range in `pnpm-workspace.yaml`'s `catalog` or `catalogs` |
-| `pnpm.overrides`, pnpm 10's `overrides` in `pnpm-workspace.yaml`, yarn `resolutions` | `overrides`, for a plain package name; a selector (`a>b`, `foo@<2`, `**/foo`) is reported for you to write |
+| `pnpm.overrides`, pnpm 10's `overrides` in `pnpm-workspace.yaml`, yarn `resolutions` | `overrides`, for a plain package name (`@emnapi/core` and `@emnapi/runtime` also become `devDependencies`, and their override is `"$@emnapi/core"`, so npm accepts both); a selector (`a>b`, `foo@<2`, `**/foo`) is reported for you to write |
 | `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `.yarnrc.yml`, `.yarn/`, `.pnp.cjs` | removed. **Resolved versions are not carried over**: `npm install` resolves every range again and writes `package-lock.json`, so a dependency can move inside its range; review the diff |
 | the `packageManager` field, `engines.pnpm` and `engines.yarn`, the `pnpm` field | removed (`pnpm.overrides` moved, any other key is reported as unsupported) |
 | `turbo.json`, package `turbo.json` files, `.turbo/`, `turbo`, `turbo-ignore` and `@turbo/*` | removed |
