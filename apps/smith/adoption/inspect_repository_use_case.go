@@ -41,7 +41,8 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		r.Blockers = append(r.Blockers, Item{Message: "this is not a git repository: smith versions from tags and finds files through git", Step: "git init, then commit what you have", Blocks: BlocksAdoption})
 		return r, nil
 	case exists(workspace.FileName):
-		r.Blockers = append(r.Blockers, Item{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it, smith upgrade brings it up to this smith", Blocks: BlocksAdoption})
+		raw, _ := os.ReadFile(filepath.Join(root, workspace.FileName))
+		r.Blockers = append(r.Blockers, existingWorkspaceItem(raw))
 		return r, nil
 	case exists("turbo.json") && !exists("nx.json"):
 		r.Blockers = append(r.Blockers, Item{Message: "this is a Turborepo workspace: its tasks are turbo.json's to describe", Step: "smith convert --dry-run", Blocks: BlocksAdoption})
