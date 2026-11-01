@@ -33,18 +33,31 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 	if spec.AddDryRun && cmd.Flags().Lookup("dry-run") == nil {
 		cmd.Flags().Bool("dry-run", false, "show the plan and change nothing")
 	}
+	if cmd.Flags().Lookup("commit") == nil {
+		cmd.Flags().Bool("commit", false, "commit the change as one operation so smith undo can revert it (nothing is committed without it)")
+	}
 	run := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		var pending *Pending
 		if !readsOnly(c) {
 			if root, err := workspace.FindRoot("."); err == nil {
 				var note string
-				if pending, note = Begin(root); note != "" {
+				begin := Begin
+				if f := c.Flags().Lookup("commit"); f != nil && f.Value.String() == "true" {
+					begin = BeginRequested
+				}
+				if pending, note = begin(root); note != "" {
 					fmt.Fprintln(c.ErrOrStderr(), "smith: "+note)
 				}
 			}
 		}
-		if err := run(c, args); err != nil || pending == nil {
+		err := run(c, args)
+		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
+			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
+				fmt.Fprintln(c.OutOrStdout(), "Not committed. Review it with git status; add --commit next time to commit it as one operation that smith undo can revert.")
+			}
+		}
+		if err != nil || pending == nil {
 			return err
 		}
 		command := spec.Describe(c, args)
