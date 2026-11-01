@@ -53,6 +53,9 @@ func VerifyProject(ctx context.Context, s *session.Session, p *projectgraph.Proj
 		return nil
 	}
 	fmt.Fprintln(out, strings.TrimRight(log.String(), "\n"))
+	if err == nil && strings.Contains(log.String(), "is not installed or not on PATH") {
+		return fmt.Errorf("%s was created and its files are kept, but a tool it needs is missing. Install it (the line above says where), then run smith %s -p %s", p.Name, tasks[len(tasks)-1], p.Name)
+	}
 	if err != nil {
 		return fmt.Errorf("the new project %s could not be verified: %w", p.Name, err)
 	}

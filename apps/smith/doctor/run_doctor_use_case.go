@@ -97,6 +97,7 @@ func Run(s *session.Session) Report {
 	add("smith", taskGroupChecks(s)...)
 	add("smith", tauriSidecarChecks(s)...)
 	add("smith", taskFoldChecks(s)...)
+	add("smith", sourceConditionChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
