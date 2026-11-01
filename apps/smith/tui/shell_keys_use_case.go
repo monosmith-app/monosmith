@@ -288,6 +288,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == addProjectTitle {
 			return s.openAddProject()
 		}
+		if c.Guide == removeProjectTitle {
+			return s.openRemoveProject()
+		}
 		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
 			s.guide = g
 		}

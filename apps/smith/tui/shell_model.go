@@ -141,6 +141,8 @@ type Shell struct {
 	offers     []guide.ChoiceOffer
 	addPending bool
 	addBase    *guide.Action
+	// removeBase is the plain Remove form, which the project list turns into a pick list.
+	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
 	pkg  *packageprompt.Prompt
 	help *dialog.Help
@@ -414,6 +416,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			}
 			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
 			s.branch = msg.Branch
+			s.refreshProjectForms()
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)

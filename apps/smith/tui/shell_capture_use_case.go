@@ -143,7 +143,7 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		s.tell("Cannot add "+name+" like that", "smith said:", failureText(msg.res))
 		return nil
 	}
-	c := dialog.NewConfirm("Add "+name+"?", "Nothing is written yet. This is the plan; Run makes the project, and Esc leaves everything as it is. Tick the box to commit it, so it can be undone.", argv).
+	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len()), argv).
 		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
@@ -192,9 +192,52 @@ func (s *Shell) showAddForm() tea.Cmd {
 		}
 	}
 	if s.addBase != nil {
-		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.list.Len()))
+		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()))
 	}
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// removeProjectTitle is the title of the guided form that removes a project.
+const removeProjectTitle = "Remove a project"
+
+// projectNames are the names of the workspace's projects, in list order.
+func (s Shell) projectNames() []string {
+	var names []string
+	for _, p := range s.list.Projects() {
+		names = append(names, p.Name)
+	}
+	return names
+}
+
+// refreshProjectForms puts the project names into the Remove form of the menu,
+// so a form opened from the Guide tab lists the projects too.
+func (s *Shell) refreshProjectForms() {
+	if s.removeBase == nil {
+		base, ok := s.guide.ActionTitled(removeProjectTitle)
+		if !ok {
+			return
+		}
+		s.removeBase = &base
+	}
+	s.guide = s.guide.WithAction(guide.RemoveProjectAction(*s.removeBase, s.projectNames()))
+}
+
+// openRemoveProject opens the form that removes a project as a pick list that
+// starts on the selected project.
+func (s *Shell) openRemoveProject() tea.Cmd {
+	g := s.guide
+	if s.removeBase == nil {
+		if base, ok := g.ActionTitled(removeProjectTitle); ok {
+			s.removeBase = &base
+		}
+	}
+	if s.removeBase != nil {
+		g = g.WithAction(guide.RemoveProjectAction(*s.removeBase, s.projectNames()))
+	}
+	if g, ok := g.WithDefault("name", s.selectedProject()).Pick(removeProjectTitle); ok {
 		s.guide = g
 	}
 	return s.gotoTab(commands.TabGuide)

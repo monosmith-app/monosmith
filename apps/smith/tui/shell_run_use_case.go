@@ -142,6 +142,11 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	if _, isRun := commands.ParseRun(argv); isRun {
 		return nil
 	}
+	if isPreview(argv) {
+		// A preview writes nothing: the plan on the Release tab stays, so the
+		// release can start from it.
+		return nil
+	}
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
 	cmds := []tea.Cmd{s.loadProjects()}
 	if len(argv) > 0 && argv[0] == "plugin" {
