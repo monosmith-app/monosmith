@@ -3,7 +3,6 @@ package taskrun
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -29,7 +28,7 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	if !strings.ContainsAny(program, `/\`) {
 		resolved, err := lookPath(program, spec.Env)
 		if err != nil {
-			return -1, fmt.Errorf("%s is not installed or not on PATH", program)
+			return -1, errors.New(MissingProgramMessage(program))
 		}
 		program = resolved
 	} else {

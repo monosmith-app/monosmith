@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/spf13/cobra"
@@ -63,7 +64,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 				req.Out = io.Discard
 				req.Events = runevents.NewJSONLines(cmd.OutOrStdout())
 			}
-			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			summary, err := RunInDirectory(ctx, ".", version, cmd.ErrOrStderr(), req)
 			if err != nil {

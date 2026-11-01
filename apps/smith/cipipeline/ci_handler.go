@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -52,7 +53,7 @@ func Command(version string) *cobra.Command {
 					return err
 				}
 				defer s.Close()
-				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt)
+				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
 				defer stop()
 				return RunPhase(ctx, s, phase, c.OutOrStdout())
 			},
