@@ -25,7 +25,7 @@ describes, and `smith upgrade` migrates older files.
 ## Changing a setting from the command line
 
 `smith config` reads and changes the settings of the `[workspace]`, `[ci]`,
-`[release]`, `[cache]` and `[plugins]` tables:
+`[release]`, `[cache]`, `[plugins]` and `[agent]` tables:
 
 ```sh
 smith config list                          # every setting, its value, what it does
