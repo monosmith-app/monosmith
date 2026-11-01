@@ -8,6 +8,15 @@ It is not [`smith why-miss`](why-miss.md), which says why a task ran again inste
 from the cache. `smith why` is about files. [`smith explain`](explain.md) is about the
 settings of a project's tasks.
 
+## A setting
+
+Give `smith why` the path of a setting (`smith why workspace.commit_operations`) and it says the
+value and where it comes from (`smith.toml` or the default), what the setting does, why the default
+is what it is, and the two commands to change it and to go back. The reason is one line recorded
+with the setting in the schema (`x-reason`); `smith config list` shows it after the description, and
+`smith config list --json` and `smith why <setting> --json` carry it for editors. A setting with no
+recorded reason says so. A name that is also an existing file is treated as the file.
+
 ## When to use it
 
 - Before you edit a file you did not write: is it yours, or does smith rewrite it?

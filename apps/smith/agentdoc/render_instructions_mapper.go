@@ -15,7 +15,7 @@ import (
 func forbiddenFolders() []string {
 	var out []string
 	for name := range languages.ForbiddenFolders {
-		if !(strings.HasSuffix(name, "s") && languages.ForbiddenFolders[strings.TrimSuffix(name, "s")]) {
+		if !strings.HasSuffix(name, "s") || !languages.ForbiddenFolders[strings.TrimSuffix(name, "s")] {
 			out = append(out, name)
 		}
 	}

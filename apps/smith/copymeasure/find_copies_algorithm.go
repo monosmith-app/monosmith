@@ -65,7 +65,7 @@ func Measure(projects []Project, read func(string) ([]byte, error)) Report {
 	var r Report
 	for _, p := range projects {
 		for _, f := range p.Files {
-			if path.Dir(f) != p.Root && !(p.Root == "." && !strings.Contains(f, "/")) {
+			if path.Dir(f) != p.Root && (p.Root != "." || strings.Contains(f, "/")) {
 				continue
 			}
 			data, err := read(f)
