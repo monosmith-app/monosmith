@@ -122,3 +122,18 @@ func TestNoProjectWarningExplainsARootPackage(t *testing.T) {
 		t.Errorf("no manifest: %+v", bare)
 	}
 }
+
+func TestWhatSmithItselfLeavesInTheTreeDoesNotMakeItDirty(t *testing.T) {
+	for status, want := range map[string]bool{
+		"":                                  true,
+		"?? .smith/\n":                      true,
+		"?? .smith/defaults/golangci.yml\n": true,
+		"?? .smith/\n M go.mod\n":           false,
+		"?? notes.txt\n":                    false,
+		"?? .smithy/\n":                     false,
+	} {
+		if got := cleanApartFromSmith(status); got != want {
+			t.Errorf("%q: got %v, want %v", status, got, want)
+		}
+	}
+}

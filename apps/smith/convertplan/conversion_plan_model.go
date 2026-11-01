@@ -55,6 +55,9 @@ type ProjectPlan struct {
 	Scripts map[string]string `json:"scripts,omitempty"`
 	// Supported is false for a language smith has no plugin for.
 	Supported bool `json:"supported"`
+	// Declared is true for a project with no manifest of its own, declared in
+	// smith.toml with a root and a language.
+	Declared bool `json:"declared,omitempty"`
 }
 
 // The tools a plan converts from.
@@ -174,7 +177,7 @@ func (p *Plan) Override(project string) workspace.ProjectOverride {
 
 // SetOverride stores a project section, dropping it when empty.
 func (p *Plan) SetOverride(project string, o workspace.ProjectOverride) {
-	if o.TagPrefix == "" && o.Release == nil && len(o.Tasks) == 0 {
+	if o.TagPrefix == "" && o.Release == nil && len(o.Tasks) == 0 && !o.Declared() {
 		delete(p.Config.Projects, project)
 		return
 	}

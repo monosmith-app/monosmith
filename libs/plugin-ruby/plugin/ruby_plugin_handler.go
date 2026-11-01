@@ -34,9 +34,18 @@ func (r *Ruby) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the folders smith.toml declares, as folders of the gem above them.
+func (r *Ruby) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: RubyGems orders a
+// prerelease (2.0.0.pre.beta.1) below its release, a plain install skips it, and
+// WriteVersion and Publish spell it that way.
+func (r *Ruby) PublishesChannels() {}
+
 // Discover implements serve.Discoverer.
 func (r *Ruby) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(r.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.

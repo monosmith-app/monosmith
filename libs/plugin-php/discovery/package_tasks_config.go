@@ -18,6 +18,9 @@ type Shape struct {
 	Tests bool
 	// Bin is the app's executable, project-relative.
 	Bin string
+	// Sources are the folders PHPStan analyses, project-relative; src (and tests
+	// when the package has them) when empty. A declared folder is analysed whole.
+	Sources []string
 	// PHPStan are the arguments PHPStan takes for its rules: -c with smith's default, or none when the package has a phpstan.neon.
 	PHPStan []string
 }
@@ -29,9 +32,12 @@ type Shape struct {
 // slice).
 func Tasks(s Shape) map[string]protocol.Task {
 	vendor := "{workspaceRoot}/vendor/"
-	paths := []string{"src"}
-	if s.Tests {
-		paths = append(paths, "tests")
+	paths := s.Sources
+	if len(paths) == 0 {
+		paths = []string{"src"}
+		if s.Tests {
+			paths = append(paths, "tests")
+		}
 	}
 	lint := slices.Concat([]string{"php", vendor + "bin/phpstan", "analyse", "--no-progress", "--memory-limit=1G"}, s.PHPStan, []string{"--autoload-file", vendor + "autoload.php"}, paths)
 	lintDescription := "PHPStan (the package's phpstan.neon)"

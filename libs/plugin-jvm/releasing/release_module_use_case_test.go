@@ -75,6 +75,36 @@ func TestPublish(t *testing.T) {
 	}
 }
 
+func TestAPrereleaseIsWrittenAsIsDeployedAsIsAndNeverReportedAsTheRelease(t *testing.T) {
+	out, ok := SetVersion(corePom, "2.0.0-beta.3")
+	if !ok || !strings.Contains(out, "<artifactId>acme-core</artifactId>\n  <version>2.0.0-beta.3</version>") {
+		t.Fatalf("Maven takes the semver prerelease as it is: %v\n%s", ok, out)
+	}
+	dep, _ := SetDependencyVersion(`<dependency><groupId>acme</groupId><artifactId>acme-core</artifactId><version>1.0.0</version></dependency>`, "acme", "acme-core", "2.0.0-beta.3")
+	if !strings.Contains(dep, "<version>2.0.0-beta.3</version>") {
+		t.Fatalf("a dependent names the prerelease: %s", dep)
+	}
+	var ran []string
+	real := MavenRunner
+	defer func() { MavenRunner = real }()
+	MavenRunner = func(_ string, argv []string, _ ...string) error { ran = argv; return nil }
+	t.Setenv("MAVEN_REPOSITORY_URL", "https://repo.example/maven")
+	core := protocol.Project{Name: "core", Root: "libs/core", Kind: protocol.ProjectPackage, Exports: []string{"dev.acme:acme-core"}}
+	if res, err := Publish(t.TempDir(), protocol.PublishParams{Project: core, Version: "2.0.0-beta.3", Tag: "beta"}); err != nil || !res.Published || !strings.Contains(strings.Join(ran, " "), "deploy") {
+		t.Fatal("a repository has no channel tag: the prerelease is deployed like a release", err, res, ran)
+	}
+	// Maven names the last deployed version <release>, a prerelease too.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<metadata><versioning><latest>2.0.0-beta.3</latest><release>2.0.0-beta.3</release><versions><version>1.9.0</version><version>1.10.0</version><version>2.0.0-beta.3</version></versions></versioning></metadata>`))
+	}))
+	defer srv.Close()
+	MavenCentral = srv.URL
+	t.Setenv("MAVEN_REPOSITORY_URL", "")
+	if res, _ := Published(protocol.PublishedParams{Project: core}); res.Version != "1.10.0" {
+		t.Fatalf("the newest release is not the prerelease deployed last: %+v", res)
+	}
+}
+
 func TestPublished(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/dev/acme/acme-core/maven-metadata.xml" {

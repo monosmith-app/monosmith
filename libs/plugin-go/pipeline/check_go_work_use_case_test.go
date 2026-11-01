@@ -103,3 +103,24 @@ func TestCheckToolVersions(t *testing.T) {
 		t.Fatalf("a missing Go fails: %+v", f)
 	}
 }
+
+func TestAProjectDeclaredInARootModuleNeedsNoGoWork(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "mvd"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "go.mod"), []byte("module example.com/mvd\n\ngo 1.25\n"), 0o644)
+	params := protocol.DoctorParams{Projects: []protocol.Project{{Root: "apps/mvd", Kind: protocol.ProjectApp, Tasks: map[string]protocol.Task{"lint": {Command: []string{"golangci-lint", "run"}}}}}}
+	for _, f := range Doctor(ws, params).Findings {
+		if f.Check == "go.work exists" || (!f.OK && f.Check == "go.work lists apps/mvd") {
+			t.Errorf("a declared project is not a module to list in go.work: %+v", f)
+		}
+	}
+}
+
+func TestTheGoVersionOfTheCIFollowsTheModuleAboveADeclaredProject(t *testing.T) {
+	ws := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(ws, "apps", "mvd"), 0o755)
+	_ = os.WriteFile(filepath.Join(ws, "go.mod"), []byte("module example.com/mvd\n\ngo 1.25\n"), 0o644)
+	if got := toolchainVersion(ws, []protocol.Project{{Root: "apps/mvd"}}); got != "1.25" {
+		t.Errorf("the module needs Go 1.25, not the default: %q", got)
+	}
+}

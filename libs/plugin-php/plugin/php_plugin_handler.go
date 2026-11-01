@@ -34,9 +34,18 @@ func (p *PHP) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the folders smith.toml declares, as folders of the package above them.
+func (p *PHP) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: Packagist reads a
+// version from the repository's tag, Composer ranks a beta tag below the release,
+// and the default minimum-stability skips it. Publish has nothing to upload.
+func (p *PHP) PublishesChannels() {}
+
 // Discover implements serve.Discoverer.
 func (p *PHP) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(p.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(p.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.
