@@ -36,3 +36,12 @@ func TestACompleteLockfilePassesAndNoLockfileSaysNothing(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestThePlatformRemedyTellsHowToKeepAnOverrideAndADirectDependencyTogether(t *testing.T) {
+	got := platformRemedy([]string{"@emnapi/core", "@emnapi/runtime"})
+	for _, want := range []string{"npm install -D @emnapi/core @emnapi/runtime", `"$<name>"`, `"@emnapi/core": "$@emnapi/core"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("remedy lacks %q:\n%s", want, got)
+		}
+	}
+}

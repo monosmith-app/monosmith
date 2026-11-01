@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/legacyjesthelpers"
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
@@ -24,7 +25,9 @@ type Input struct {
 	Files []string
 	// Tags are the repository's git tags.
 	Tags []string
-	// Read returns a workspace-relative file's content, "" when missing.
+	// SmithVersion is the running smith; the jest preset is added at the range of its release line.
+	SmithVersion string
+	// Readreturns a workspace-relative file's content, "" when missing.
 	Read func(rel string) string
 }
 
@@ -129,6 +132,9 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 		}
 	}
 	removal(plan, w, in.Files, in.Read)
+	if _, ok := plan.AddDevDependencies[JestPresetPackage]; ok {
+		plan.AddDevDependencies[JestPresetPackage] = legacyjesthelpers.PackageRangeFor(in.SmithVersion)
+	}
 	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)
 	planNodeStack(plan)

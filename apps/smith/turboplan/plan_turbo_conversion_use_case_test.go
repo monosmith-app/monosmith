@@ -24,7 +24,7 @@ func pnpmWorkspace(t *testing.T) *convertplan.Plan {
   "scripts": {"build": "turbo run build", "dev": "turbo run dev --ui=stream", "lint": "turbo run lint --filter=web...", "test": "pnpm -r run test", "prepare": "npx only-allow pnpm"},
   "devDependencies": {"turbo": "^2.1.0", "typescript": "^5.6.0"},
   "engines": {"node": ">=20", "pnpm": ">=9"},
-  "pnpm": {"overrides": {"semver": "7.5.2", "a>b": "1.0.0"}, "onlyBuiltDependencies": ["esbuild"]}
+  "pnpm": {"overrides": {"semver": "7.5.2", "a>b": "1.0.0", "@emnapi/core": "1.4.0"}, "onlyBuiltDependencies": ["esbuild"]}
 }`,
 		"pnpm-workspace.yaml":          "packages:\n  - 'apps/*'\n  - 'packages/*'\ncatalog:\n  react: ^19.0.0\n",
 		"pnpm-lock.yaml":               "lockfileVersion: '9.0'\n",
@@ -174,8 +174,11 @@ func TestMakePlanMovesToNpmWorkspaces(t *testing.T) {
 	if want := []string{"apps/*", "packages/*"}; !reflect.DeepEqual(plan.SetWorkspaces, want) {
 		t.Errorf("workspaces %v", plan.SetWorkspaces)
 	}
-	if want := map[string]string{"semver": "7.5.2"}; !reflect.DeepEqual(plan.SetOverrides, want) {
+	if want := map[string]string{"semver": "7.5.2", "@emnapi/core": "$@emnapi/core"}; !reflect.DeepEqual(plan.SetOverrides, want) {
 		t.Errorf("overrides %v", plan.SetOverrides)
+	}
+	if got := plan.AddDevDependencies["@emnapi/core"]; got != "1.4.0" {
+		t.Errorf("an override of a lockfile platform package needs the matching devDependency, got %v", plan.AddDevDependencies)
 	}
 	wantSpecs := map[string]map[string]string{
 		"apps/web":      {"@acme/ui": "*", "react": "^19.0.0"},

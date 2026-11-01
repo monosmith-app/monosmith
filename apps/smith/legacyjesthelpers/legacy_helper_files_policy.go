@@ -8,8 +8,6 @@ import (
 const (
 	// Package is the published package that replaces the helper files.
 	Package = "@monosmith/jest-preset"
-	// PackageRange is the range the cleanup adds it at.
-	PackageRange = "^0.1.0"
 
 	// ResolverFile and AssetTransformFile are the helper files older converts wrote at the root.
 	ResolverFile       = "jest.resolver.cjs"

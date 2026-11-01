@@ -40,14 +40,14 @@ func edited(fix *protocol.Fix, path string) (protocol.FileEdit, bool) {
 
 func TestFindCleanupReplacesTheHelpersWithThePackage(t *testing.T) {
 	root := workspace(t, map[string]string{
-		"jest.resolver.cjs":         oldResolver,
-		"jest.asset-transform.cjs":  oldTransform,
-		"jest.preset.js":            oldPreset,
-		"apps/ui/jest.config.cts":   reactConfig,
-		"package.json":              `{"name": "acme", "devDependencies": {"jest": "^30.0.0"}}` + "\n",
+		"jest.resolver.cjs":        oldResolver,
+		"jest.asset-transform.cjs": oldTransform,
+		"jest.preset.js":           oldPreset,
+		"apps/ui/jest.config.cts":  reactConfig,
+		"package.json":             `{"name": "acme", "devDependencies": {"jest": "^30.0.0"}}` + "\n",
 	})
 
-	got := FindCleanup(root, []string{"apps/ui"})
+	got := FindCleanup(root, []string{"apps/ui"}, "2.0.0-beta.2")
 
 	if got.Fix == nil {
 		t.Fatalf("no fix: %s", got.Manual)
@@ -64,7 +64,7 @@ func TestFindCleanupReplacesTheHelpersWithThePackage(t *testing.T) {
 		t.Errorf("config:\n%s", config.Content)
 	}
 	manifest, _ := edited(got.Fix, "package.json")
-	if !strings.Contains(manifest.Content, `"@monosmith/jest-preset": "^0.1.0"`) {
+	if !strings.Contains(manifest.Content, `"@monosmith/jest-preset": "^2.0.0-beta.1"`) {
 		t.Errorf("manifest:\n%s", manifest.Content)
 	}
 	for _, gone := range []string{"jest.resolver.cjs", "jest.asset-transform.cjs"} {
@@ -87,7 +87,7 @@ func TestFindCleanupKeepsCRLFAndAnExistingDependency(t *testing.T) {
 		"package.json":      `{"devDependencies": {"@monosmith/jest-preset": "^0.1.2"}}` + "\n",
 	})
 
-	got := FindCleanup(root, nil)
+	got := FindCleanup(root, nil, "1.0.0")
 
 	if got.Fix == nil {
 		t.Fatalf("no fix: %s", got.Manual)
@@ -109,7 +109,7 @@ func TestFindCleanupLeavesWhatItDoesNotRecognise(t *testing.T) {
 		"package.json":      "{}\n",
 	})
 
-	got := FindCleanup(root, nil)
+	got := FindCleanup(root, nil, "1.0.0")
 
 	if got.Fix != nil {
 		t.Fatalf("a preset the user edited must not be rewritten: %+v", got.Fix)
@@ -125,10 +125,10 @@ func TestFindCleanupIgnoresFilesTheUserWrote(t *testing.T) {
 		"package.json":      "{}\n",
 	})
 
-	if got := FindCleanup(root, nil); len(got.Files) != 0 || got.Fix != nil {
+	if got := FindCleanup(root, nil, "1.0.0"); len(got.Files) != 0 || got.Fix != nil {
 		t.Fatalf("a resolver smith did not write is not smith's to remove: %+v", got)
 	}
-	if got := FindCleanup(t.TempDir(), nil); len(got.Files) != 0 || got.Fix != nil {
+	if got := FindCleanup(t.TempDir(), nil, "1.0.0"); len(got.Files) != 0 || got.Fix != nil {
 		t.Fatalf("a workspace without the helpers has nothing to clean: %+v", got)
 	}
 }

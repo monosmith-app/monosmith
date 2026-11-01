@@ -147,6 +147,10 @@ func planWorkspaceGlobs(plan *convertplan.Plan, w *turboworkspace.Workspace, tra
 	}
 }
 
+// lockfilePlatformPackages are the wasm fallbacks a lockfile made on one OS
+// leaves out; smith doctor asks for them as direct dependencies.
+var lockfilePlatformPackages = map[string]bool{"@emnapi/core": true, "@emnapi/runtime": true}
+
 // planOverrides moves pnpm's and yarn's dependency overrides to npm's.
 func planOverrides(plan *convertplan.Plan, w *turboworkspace.Workspace) {
 	type source struct {
@@ -181,6 +185,18 @@ func planOverrides(plan *convertplan.Plan, w *turboworkspace.Workspace) {
 			default:
 				if plan.SetOverrides == nil {
 					plan.SetOverrides = map[string]string{}
+				}
+				if lockfilePlatformPackages[k] {
+					// npm refuses an override that differs from a direct dependency, and
+					// a lockfile made on one OS needs these as direct ones: a devDependency
+					// plus an override that follows it.
+					if plan.AddDevDependencies == nil {
+						plan.AddDevDependencies = map[string]string{}
+					}
+					plan.AddDevDependencies[k] = value
+					plan.SetOverrides[k] = "$" + k
+					plan.AddEdit("", s.where, fmt.Sprintf("%s: %s becomes a devDependency and the npm override \"$%s\" (npm refuses an override that differs from a direct dependency)", k, value, k))
+					continue
 				}
 				plan.SetOverrides[k] = value
 				plan.AddEdit("", s.where, fmt.Sprintf("%s: %s becomes an npm override", k, value))

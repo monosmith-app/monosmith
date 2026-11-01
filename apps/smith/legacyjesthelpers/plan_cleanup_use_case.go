@@ -27,8 +27,10 @@ type Cleanup struct {
 // their removal. projectDirs are the workspace-relative directories of the
 // projects whose Jest configs may name the asset transformer. The plan is
 // all or nothing: deleting a helper while something still loads it would
-// break every package's tests, so one thing unrecognised leaves Fix nil.
-func FindCleanup(root string, projectDirs []string) Cleanup {
+// break every package's tests, so one thing unrecognised leaves Fix nil. smith
+// is the running smith's version: the package is added at the range of its
+// release line (PackageRangeFor).
+func FindCleanup(root string, projectDirs []string, smith string) Cleanup {
 	var found Cleanup
 	read := func(rel string) (string, bool) {
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -76,7 +78,7 @@ func FindCleanup(root string, projectDirs []string) Cleanup {
 		found.Manual = "the workspace has no root package.json to add " + Package + " to: npm i -D " + Package + ", then delete " + strings.Join(found.Files, ", ")
 		return found
 	}
-	withPackage, err := addDevDependency(manifest)
+	withPackage, err := addDevDependency(manifest, PackageRangeFor(smith))
 	if err != nil {
 		found.Manual = "package.json could not be edited (" + err.Error() + "): npm i -D " + Package + ", then delete " + strings.Join(found.Files, ", ")
 		return found
@@ -118,7 +120,7 @@ func jestFiles(root string, dirs []string) []string {
 
 // addDevDependency lists the package in the root devDependencies, unless some
 // dependency section already does.
-func addDevDependency(manifest string) (string, error) {
+func addDevDependency(manifest, packageRange string) (string, error) {
 	doc, err := jsondoc.ParseDocument([]byte(manifest))
 	if err != nil {
 		return "", err
@@ -128,6 +130,6 @@ func addDevDependency(manifest string) (string, error) {
 			return manifest, nil
 		}
 	}
-	doc.Object("devDependencies", true).SetString(Package, PackageRange)
+	doc.Object("devDependencies", true).SetString(Package, packageRange)
 	return string(doc.Bytes()), nil
 }
