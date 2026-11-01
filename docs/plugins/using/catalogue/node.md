@@ -351,6 +351,10 @@ Tools smith pins (informational):
 
 Removal: `smith remove <project>` deletes the directory, drops its entries from `package-lock.json`, and runs `npm install` so `node_modules` and the lockfile forget it (npm alone would keep it, marked extraneous). Real dry run: `Would remove util (libs/util)`, `changes package-lock.json`, `would run npm install to update the lockfile`.
 
+## Declared projects
+
+A folder cannot be built by `npm run` alone: scripts, dependencies and tool configuration belong to the `package.json`, and a folder without one has no tasks smith can run in it. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
+
 ## Requirements and limits
 
 - `node` and `npm` on PATH; network for `npm install`. Node 24 is what CI uses and what the doctor expects.
