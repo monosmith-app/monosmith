@@ -117,6 +117,15 @@ type APISurfaceReader interface {
 	APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error)
 }
 
+// ChannelPublisher is implemented by a plugin whose Publish honours
+// PublishParams.Tag: it publishes under that release channel and does not move
+// the registry's stable pointer. Serve advertises the channels capability for it.
+type ChannelPublisher interface {
+	Publisher
+	// PublishesChannels is a marker; it does nothing.
+	PublishesChannels()
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)

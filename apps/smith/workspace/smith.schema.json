@@ -124,7 +124,8 @@
             "properties": {
               "branch": { "type": "string", "minLength": 1, "description": "The branch the channel releases from. Not [release] branch, and not the branch of another channel." },
               "prerelease": { "type": "string", "pattern": "^[A-Za-z][0-9A-Za-z-]*$", "description": "The prerelease identifier of the channel's versions, such as beta or rc." },
-              "major": { "type": "integer", "minimum": 1, "description": "The major version of the channel's line. The first release is <major>.0.0-<prerelease>.1." }
+              "major": { "type": "integer", "minimum": 1, "description": "The major version of the channel's line. The first release is <major>.0.0-<prerelease>.1." },
+              "dist_tag": { "type": "string", "pattern": "^[A-Za-z][0-9A-Za-z._-]*$", "not": { "const": "latest" }, "description": "The name the channel publishes under (npm's dist-tag), which keeps latest where it is. Default: the prerelease identifier." }
             }
           }
         }

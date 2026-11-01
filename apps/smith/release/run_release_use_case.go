@@ -340,6 +340,9 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 		return protocol.PublishResult{Skipped: "published by its tag (the manifest says it is never published)"}, nil
 	}
 	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec}
+	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
+		params.Tag = ch.Tag
+	}
 	var pr protocol.PublishResult
 	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodPublish, params, &pr, 30*time.Minute)
 	if err != nil {
@@ -585,7 +588,7 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 	for i, a := range assets {
 		files[i] = filepath.Join(s.Root, filepath.FromSlash(a))
 	}
-	out, err := githubrelease.Ensure(client, repo, githubrelease.Request{Tag: item.Tag, Title: item.Project + " " + item.Next, Notes: RenderNotes(item), Assets: files})
+	out, err := githubrelease.Ensure(client, repo, githubrelease.Request{Tag: item.Tag, Title: item.Project + " " + item.Next, Notes: RenderNotes(item), Prerelease: strings.Contains(item.Next, "-"), Assets: files})
 	if err != nil {
 		return fmt.Errorf("GitHub Release %s: %w (re-run the release to finish it)", item.Tag, err)
 	}

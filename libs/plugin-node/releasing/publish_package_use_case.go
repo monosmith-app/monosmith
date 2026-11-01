@@ -86,6 +86,11 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if err != nil {
 		return result, err
 	}
+	// A release channel publishes under its dist-tag, so latest stays put (npm
+	// refuses a prerelease without one).
+	if params.Tag != "" {
+		at = append(at, "--tag", params.Tag)
+	}
 	if staged == dir {
 		err = npm.run(dir, append([]string{"npm", "publish", "--access", "public"}, at...))
 	} else {

@@ -93,6 +93,7 @@ api_check = "warn"                    # warn when the commits' bump is smaller t
 # branch = "next"       # not the [release] branch
 # prerelease = "beta"   # 2.0.0-beta.1, 2.0.0-beta.2, ...
 # major = 2             # the first release is <major>.0.0-<prerelease>.1
+# dist_tag = "next"     # npm's dist-tag it publishes under; default: the prerelease id; never "latest"
 
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute

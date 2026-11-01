@@ -535,3 +535,23 @@ func TestACancellableErrorIsStillAPluginFailureWhenNobodyCancelled(t *testing.T)
 		t.Fatalf("an error that is not a cancel keeps its own code: %+v", resp)
 	}
 }
+
+// publishingLab is a lab that publishes; channelLab one that publishes channels.
+type publishingLab struct{ lab }
+
+func (publishingLab) Publish(protocol.PublishParams) (protocol.PublishResult, error) {
+	return protocol.PublishResult{}, nil
+}
+
+type channelLab struct{ publishingLab }
+
+func (channelLab) PublishesChannels() {}
+
+func TestOnlyAPluginThatPublishesChannelsAdvertisesTheCapability(t *testing.T) {
+	if c := serve.CapabilitiesOf(publishingLab{}); !c.Publish || c.Channels {
+		t.Fatalf("a plain publisher does not publish channels: %+v", c)
+	}
+	if c := serve.CapabilitiesOf(channelLab{}); !c.Publish || !c.Channels {
+		t.Fatalf("capabilities %+v", c)
+	}
+}

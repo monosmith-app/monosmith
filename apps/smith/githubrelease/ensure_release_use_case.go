@@ -10,6 +10,9 @@ type Request struct {
 	Tag   string
 	Title string
 	Notes string
+	// Prerelease marks the release as a prerelease, which GitHub never offers
+	// as the latest release.
+	Prerelease bool
 	// Assets are absolute paths of files to attach.
 	Assets []string
 }
@@ -31,7 +34,7 @@ func Ensure(c *Client, repo Repository, req Request) (Outcome, error) {
 	}
 	out := Outcome{}
 	if !found {
-		if r, err = c.CreateRelease(repo, req.Tag, req.Title, req.Notes); err != nil {
+		if r, err = c.CreateRelease(repo, req.Tag, req.Title, req.Notes, req.Prerelease); err != nil {
 			return out, err
 		}
 		out.Created = true

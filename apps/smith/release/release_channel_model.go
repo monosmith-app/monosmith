@@ -15,6 +15,8 @@ import (
 type Channel struct {
 	ID    string
 	Major int
+	// Tag is the name the channel publishes under (an npm dist-tag).
+	Tag string
 }
 
 // ChannelOf returns the channel that releases from branch, or nil when the
@@ -24,7 +26,11 @@ func ChannelOf(cfg workspace.ReleaseSection, branch string) *Channel {
 	if !ok {
 		return nil
 	}
-	return &Channel{ID: c.Prerelease, Major: c.Major}
+	tag := c.DistTag
+	if tag == "" {
+		tag = c.Prerelease
+	}
+	return &Channel{ID: c.Prerelease, Major: c.Major, Tag: tag}
 }
 
 // counter returns n of a version <Major>.x.y-<ID>.<n> of this channel.

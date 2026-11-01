@@ -37,6 +37,11 @@ type PublishParams struct {
 	// container image's sha-<short> and branch tags). Empty when unknown.
 	Commit string `json:"commit,omitempty"`
 	Branch string `json:"branch,omitempty"`
+	// Tag is the name of the release channel the version belongs to (npm's
+	// dist-tag "beta"). When set, the plugin publishes under it and leaves the
+	// registry's stable pointer where it is. Only sent to a plugin with the
+	// channels capability.
+	Tag string `json:"tag,omitempty"`
 }
 
 // AssetSpec describes the release files of an app.

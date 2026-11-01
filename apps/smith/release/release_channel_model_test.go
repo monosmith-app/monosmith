@@ -1,6 +1,7 @@
 package release
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -101,10 +102,43 @@ func TestBranchProblem(t *testing.T) {
 		"main":    "",
 		"":        "",
 		"feature": "releases run from main, not feature",
-		"next":    "next is a release channel: smith plans its versions (smith release --dry-run) but does not publish them yet",
+		"next":    "",
 	} {
 		if got := branchProblem(cfg, branch); got != want {
 			t.Errorf("branch %q: got %q, want %q", branch, got, want)
 		}
+	}
+}
+
+func TestAChannelPublishesUnderItsDistTagOrItsPrerelease(t *testing.T) {
+	cfg := workspace.ReleaseSection{Branch: "main", Channels: []workspace.ReleaseChannel{
+		{Branch: "next", Prerelease: "beta", Major: 2},
+		{Branch: "edge", Prerelease: "rc", Major: 3, DistTag: "edge"},
+	}}
+	if got := ChannelOf(cfg, "next").Tag; got != "beta" {
+		t.Errorf("default tag %q", got)
+	}
+	if got := ChannelOf(cfg, "edge").Tag; got != "edge" {
+		t.Errorf("dist_tag %q", got)
+	}
+}
+
+func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
+	pg := packages(t)
+	pg.Get("sdk").Deployers = []string{"docker"}
+	pg.Get("core").Release = &workspace.ProjectRelease{NPM: []string{"@acme/core"}}
+	plan := Plan{Items: []Item{{Project: "core", Plugin: "test"}, {Project: "sdk", Plugin: "other"}}}
+	got := strings.Join(channelProblems(plan, pg, func(p string) bool { return p == "test" }), "\n")
+	for _, want := range []string{
+		"sdk: the other plugin cannot publish a release channel",
+		"sdk: docker deploy a release channel",
+		"core: the binaries sent to package managers and registries have no release channel yet",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "core: the test plugin") {
+		t.Errorf("a plugin with channels is accepted:\n%s", got)
 	}
 }

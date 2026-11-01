@@ -213,6 +213,12 @@ export interface Capabilities {
    * commits ask for a smaller bump than the API change needs.
    */
   apiSurface?: boolean
+  /**
+   * Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without
+   * moving the registry's stable pointer (npm's latest). A host does not publish a prerelease
+   * channel with a plugin that lacks it.
+   */
+  channels?: boolean
 }
 
 /**
@@ -1020,6 +1026,12 @@ export interface PublishParams {
    */
   commit?: string
   branch?: string
+  /**
+   * Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When
+   * set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only
+   * sent to a plugin with the channels capability.
+   */
+  tag?: string
 }
 
 /**

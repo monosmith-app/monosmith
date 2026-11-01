@@ -147,6 +147,11 @@ type Capabilities struct {
 	// release can warn when the commits ask for a smaller bump than the API
 	// change needs.
 	APISurface bool `json:"apiSurface,omitempty"`
+	// Channels says the plugin publishes under PublishParams.Tag, a release
+	// channel's name, without moving the registry's stable pointer (npm's
+	// latest). A host does not publish a prerelease channel with a plugin
+	// that lacks it.
+	Channels bool `json:"channels,omitempty"`
 }
 
 // IsManifest reports whether a file's base name is one of a plugin's
