@@ -591,8 +591,14 @@ Set up once:
    application. Note its **Application (client) ID** and the **Directory
    (tenant) ID**.
 2. Under **Certificates & secrets, Federated credentials**, add one for
-   *GitHub Actions deploying Azure resources*: the organisation and
-   repository, and the entity **Branch** with the release branch (`main`). If a
+   *GitHub Actions deploying Azure resources*: the organisation, its
+   numeric **Organization ID**, the repository, its **Repository ID**, and the
+   entity **Branch** with the release branch (`main`). Entra builds the subject
+   from them, in the form GitHub sends for a repository that uses immutable
+   subjects (`repo:<org>@<org id>/<repo>@<repo id>:ref:refs/heads/<branch>`);
+   `gh api repos/<org>/<repo>` gives both IDs, and
+   `gh api repos/<org>/<repo>/actions/oidc/customization/sub` shows which form
+   the repository uses (`use_immutable_subject`). If a
    [release channel](#release-channels) publishes the extension, add one more for
    the channel's branch (`smith-v2`, say): the sign-in step runs there too, and
    Azure trusts only the branches it has a credential for.
