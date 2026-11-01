@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/plugindraft"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/plugininstall"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginmarket"
@@ -191,7 +192,7 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand())
+	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand(), plugindraft.Command())
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
