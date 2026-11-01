@@ -111,6 +111,13 @@ func TestNoProjectWarningExplainsARootPackage(t *testing.T) {
 	if !strings.Contains(root.Message, "package.json at the root describes the workspace, not a project") || len(root.Steps) != 2 {
 		t.Errorf("root package: %+v", root)
 	}
+	goRoot := noProjectWarning(has("go.mod"))
+	if !strings.Contains(goRoot.Message, "go.mod at the root is one module for the whole repository") || len(goRoot.Steps) != 2 || !strings.Contains(goRoot.Steps[0], "go work use") {
+		t.Errorf("root go module: %+v", goRoot)
+	}
+	if both := noProjectWarning(has("package.json", "go.mod")); !strings.Contains(both.Message, "package.json at the root") {
+		t.Errorf("a root package.json still comes first: %+v", both)
+	}
 	if bare := noProjectWarning(has()); !strings.Contains(bare.Steps[0], "smith adopt --init makes an empty workspace") {
 		t.Errorf("no manifest: %+v", bare)
 	}

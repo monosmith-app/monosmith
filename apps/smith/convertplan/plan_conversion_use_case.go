@@ -147,6 +147,10 @@ func planProject(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, n
 	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != ""}
 	plan.Projects = append(plan.Projects, pp)
 	if !pp.Supported {
+		if dir, ok := GoModuleAbove(p, in.Files); ok {
+			plan.Add(Unsupported, name, p.Root, fmt.Sprintf("a Go package of the module at %s: smith runs a Go project from a go.mod in its own folder, so nothing builds, tests or releases it after converting. Give it a go.mod of its own (go mod init <module>/%s in %s), list every module in a go.work at the root (go work init; go work use ./%s ...), then run smith convert again; its project.json is kept for reference", dir, p.Root, p.Root, p.Root))
+			return
+		}
 		plan.Add(Unsupported, name, p.Root, label+" project: smith v1 has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
 		return
 	}

@@ -326,6 +326,22 @@ Tools smith pins (informational):
 
 Removal: `smith remove <project>` deletes the directory and the plugin drops its `use` entry from `go.work`, which would otherwise break every `go` command. Real dry run: `Would remove util (libs/util)`, `changes go.work`, `the pipelines would be regenerated`. With no matching entry it changes nothing.
 
+## A repository with one root module
+
+smith runs a Go project from a `go.mod` in its own folder: one module per project, joined by a
+`go.work` at the root. A repository with a single `go.mod` at the root and its programs and
+libraries as packages of that module (`apps/a/main.go`, `libs/b/b.go`) has no project for smith
+to find: `smith adopt` says `no project found: the go.mod at the root is one module for the whole
+repository`, and `smith convert` reports each Go package of an Nx workspace as "a Go package of
+the module at the repository root". To bring such a repository under smith:
+
+1. In each program or library folder run `go mod init <module>/<folder>` (for example
+   `go mod init example.com/mvd/apps/mvd` in `apps/mvd`).
+2. At the root run `go work init` and `go work use ./apps/a ./libs/b ...`. The programs reach the
+   libraries through the workspace, and need a `require` of them in their `go.mod`.
+3. Remove the root `go.mod` if nothing else needs it, commit, and run `smith adopt` or
+   `smith convert` again.
+
 ## Requirements and limits
 
 - `go` on `PATH` (the plugin shells out to `go`; there is no embedded compiler). Generation also needs it: `smith add` fails if `go work init`, `go mod init` or `go work use` fails.
