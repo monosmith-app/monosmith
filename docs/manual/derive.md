@@ -67,6 +67,13 @@ their owner, and `smith.lock`. In a terminal, outside CI, it asks `Go ahead? [y/
 `[workspace]` and a clean git work tree, the run is one commit (`chore: derive files`) that
 [`smith undo`](undo.md) reverts.
 
+Besides what the project graph says, a plugin can derive a config file from the shape of the sibling
+projects: when at least three projects of one kind hold the same file, and two thirds of those that
+have it agree after the project name and references are substituted, that shape is derived for each
+project that has the file. A key or file that differs is the project's own: smith leaves it alone, and
+`--explain <file>` and `smith doctor` say that it diverges from its siblings (that is not drift and
+needs no choice). The rule is in [Derived files](../reference/derived-files.md).
+
 The states and the three ownership modes are in [Derived files](../reference/derived-files.md).
 
 ## Common errors

@@ -108,7 +108,10 @@ The `discover` result is a `protocol.Project`
 | `stack` | the stack recorded in the manifest, if any |
 | `tags` | for example the native tag that moves a project to the per-OS native job |
 | `toolchain` | the compiler or runtime version the plugin probed; it goes into every cache key |
-| `tagPrefix`, `version`, `description` | release inputs |
+| `tagPrefix`, `version`, `description`, `publishTo` | release inputs |
+| `settings` | the plugin's settings for this project, by plugin name |
+| `shape` | the dialect of the project: short facts about how it is made (`test.runner`, `build.tool`). `smith add` counts the shapes of siblings ([derived files, facts and siblings](derived-files-facts-and-siblings.md)) |
+| `facts` | set by the host, never by the plugin: the shared facts that hold for the project, merged from `smith.toml` and the plugins' defaults |
 
 The plugin, not the core, knows how to read its manifests. That is the point of the
 protocol: the core never parses `package.json` ([ADR 0002](decisions/0002-out-of-process-plugins.md)).
@@ -126,8 +129,10 @@ Every language plugin resolves the kind the same way, through
 2. else the **top-level directory**: `apps/` gives app, `libs/` lib, `packages/` package;
 3. else the plugin's **fallback**.
 
-smith.toml has no setting for the kind. To change it, write the marker where the plugin
-looks:
+smith.toml has no setting for the kind. `smith kind` changes it after the project exists: the
+plugin says which files change, and smith moves the folder with git and regenerates the pipelines
+(`apps/smith/kindchange`, protocol method `project/kind`). By hand, write the marker where the
+plugin looks:
 
 | Language | Kind and stack marker |
 |---|---|

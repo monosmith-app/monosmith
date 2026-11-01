@@ -65,6 +65,43 @@ a pull request (`releasepreview`) and the real release therefore print the same 
 The result is `Plan{Items, Unchanged}`. Each `Item` carries the project, plugin, current and next
 version, tag, level, the reason and the commits behind it.
 
+### Release channels
+
+A `[[release.channels]]` entry gives a branch its own line of prerelease versions
+([ADR 0051](decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md)).
+`release.PlanFor(session)` chooses the plan: `ChannelOf(cfg, PlanBranch(s))` returns the `Channel` of
+the branch (`release_channel_model.go`), or nil for a stable plan, and `MakeChannelPlan` then counts
+the channel instead of the stable line. `PlanBranch` is the branch checked out or, in a pull request
+build with a detached merge commit, the branch the pull request targets.
+
+- The first release of a project is `<major>.0.0-<prerelease>.1`, whatever stable versions exist.
+  Each later one raises the counter and keeps the numbers before it, so a breaking change inside a
+  channel does not start a new major.
+- The channel's last release is the highest tag of that line that the checked out branch contains
+  (`git tag --merged HEAD`). The stable plan ignores prerelease tags.
+- `Plan.Channel` carries the publish name, and `--dry-run`, the report and the pull request comment
+  print `ChannelNotice`.
+- `Preflight` accepts a channel branch as a release branch. It refuses a channel release when a
+  package's plugin lacks the `channels` capability, when a project has a deploy plugin, or when an
+  app sends binaries to package managers (`channelProblems`), because each would move a stable
+  pointer. An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev
+  are allowed. `[projects.<name>.release] channels = false` keeps a project out of the channel: on a
+  channel branch it is neither planned nor published.
+- `publish` receives the publish name as `PublishParams.tag` (`dist_tag`, default the prerelease
+  identifier, never `latest`). A plugin whose publish cannot move a stable pointer declares `channels` (the Go SDK marker
+  interface `serve.ChannelPublisher`). The Node plugin passes the name to `npm publish --tag`; the Python and .NET plugins declare it and ignore the name, because PyPI and NuGet order a prerelease below the release. A version
+  with a prerelease part gets a GitHub Release marked as a prerelease.
+
+### The public API check
+
+After the plan is made, `release.CheckAPI` (`check_api_use_case.go`) asks each package's plugin for
+its public API names now and at its last release tag (`api/surface`, capability `apiSurface`) and
+compares them (`DiffAPI`, `api_bump_policy.go`). A removed name needs a major bump (a minor below
+1.0) and a new name a minor bump. When the commits ask for less, the item gets a warning.
+`[release] api_check` is `"warn"` (the default), `"error"` (the release stops) or `"off"`. A plugin
+that cannot list its API gives no warning. `smith ci` calls the same check in the release phase
+([ADR 0044](decisions/0044-the-release-checks-the-bump-against-the-public-api.md)).
+
 Conventional commits and tag-only releases were chosen on 2026-10-15; the decision log gives no
 options considered for the tag-only model beyond what
 [ADR 0006](decisions/0006-conventional-commits-tag-only-releases.md) records.
@@ -91,7 +128,9 @@ names the project had. It reports a version published without a tag, or tags beh
 | each plugin's own required credentials, asked now through `ci` | so a contradictory docker setting fails before anything is published |
 
 `checkRegistries` then asks the registries whether they would accept the versions, before the first
-publish (`registry_probe_client.go`).
+publish (`registry_probe_client.go`). `smith release --rehearse` runs that kind of check on its own,
+for every registry any package publishes to, with read-only requests and no plan
+(`apps/smith/releaserehearsal`; [ADR 0043](decisions/0043-a-release-is-rehearsed-against-its-registries-with-read-only-requests.md)).
 
 ## Releasing one project
 
@@ -114,7 +153,7 @@ publish (`registry_probe_client.go`).
 6. **Distribute.** From the archives, the core builds npm packages (`npmbinaries`), PyPI wheels
    (`pypiwheels`), a .NET tool (`nugettool`) and platform gems (`rubygems`), and uploads them. Each
    is idempotent: a version the registry has is reported as existing. Then `linuxpackages` (`.deb`,
-   `.rpm`) and `packagemanifests` (Homebrew, Scoop, winget) produce files to attach. Native apps skip
+   `.rpm`) and `packagemanifests` (Homebrew, Scoop, winget, AUR, Nix flake) produce files to attach. Native apps skip
    the registries: their archives are built on separate runners (`smith ci native`).
 7. **Tag and push.** `CreateTag` (annotated), then `pushTag` to `[release] remote`.
 8. **GitHub Release** (when `[release] github_releases`): `githubrelease.Ensure` creates it with notes
@@ -167,6 +206,8 @@ token, and, on GitHub, an SLSA build-provenance attestation of the archives in `
 | Notes, GitHub Release | `render_release_notes_mapper.go`, `apps/smith/githubrelease` |
 | Re-packing | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems`, `pubpackage`, `linuxpackages`, `packagemanifests` |
 | SBOM | `apps/smith/sbom` |
+| Channels, API check | `release_channel_model.go`, `check_api_use_case.go`, `api_bump_policy.go` |
+| Registry rehearsal | `apps/smith/releaserehearsal` |
 | Pull request preview | `apps/smith/releasepreview` |
 | Protocol methods | `version/write`, `publish`, `published`, `ci` in `packages/plugin-sdk/protocol` |
 
@@ -179,6 +220,9 @@ token, and, on GitHub, an SLSA build-provenance attestation of the archives in `
 | No paid code signing; checksums, provenance, SBOM, attestations | [ADR 0011](decisions/0011-no-paid-code-signing.md) |
 | Release without publishing, bare tags | [ADR 0024](decisions/0024-release-without-publishing-and-bare-tags.md) |
 | Entra ID for the Marketplace | [ADR 0031](decisions/0031-marketplace-publishing-with-entra-id.md) |
+| Rehearse the registries, read-only | [ADR 0043](decisions/0043-a-release-is-rehearsed-against-its-registries-with-read-only-requests.md) |
+| Check the bump against the public API | [ADR 0044](decisions/0044-the-release-checks-the-bump-against-the-public-api.md) |
+| Release channels | [ADR 0051](decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md) |
 | npm audit blocks only what can be fixed | [ADR 0015](decisions/0015-npm-audit-blocks-only-fixable.md) |
 
 The order of steps inside `releaseOne` (stamp, build, publish, deploy, distribute, tag) has no

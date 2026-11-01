@@ -68,18 +68,25 @@ cd acme
 ```
 
 ```text
+  wrote smith.toml
   wrote README.md
   wrote .gitignore
   wrote .gitattributes
-  wrote smith.toml
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   committed
 
 Created acme. Next:
   cd acme
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
+
+The last three files are the MonoSmith agent, which lets Claude Code and VS Code work in the
+workspace through smith (see [the agent guide](../guides/agent.md)). `--no-agent` leaves them out.
 
 smith writes the files, runs `git init` on `main` and makes the first commit.
 The `smith.toml` it wrote is mostly comments explaining each setting; the only
@@ -103,6 +110,7 @@ Options (see [`smith new`](../reference/cli.md#smith-new)):
 | `--yes` | off | ask nothing; take the default of every question without a flag |
 | `--dir .` | `./<name>` | create the workspace in an existing clone |
 | `--recipe <path or URL>` | none | the [recipe](../reference/recipes.md) `smith add` builds projects from |
+| `--no-agent` | off | leave out the agent files (`smith agent install` adds them later) |
 
 With `--dir .`, files smith does not own are kept. In a folder that is not a git
 repository smith runs `git init`, and the first commit holds everything in the
@@ -136,11 +144,20 @@ smith add app api --lang go
 
 Each command installs what the project needs (the first Node project runs
 `npm install`, the first Python project makes a `.venv`) and ends by telling you
-how to import it and what to try. For the Go library:
+how to import it and what to try. Before it writes anything, `smith add` prints a plan of what
+it will create and change; in a terminal it asks `Go ahead? [y/N]` (`--yes` skips the question,
+`--dry-run` prints the plan and writes nothing). After it writes, it builds and tests the new
+project. For the Go library:
 
 ```text
+Plan: add lib core
+  Project core
+    create  libs/core/  (made by the go plugin)
+  Workspace
+    change  CI pipelines  (regenerated to install the new toolchain)
 Creating lib core in libs/core: go
 go: creating new go.mod: module example.com/acme/libs/core
+Updating the CI pipelines
 Wrote 9 file(s):
   .devcontainer/devcontainer.json
   .github/workflows/ci.yml
@@ -152,6 +169,9 @@ Wrote 9 file(s):
   libs/core/greeting/greet_use_case_test.go
   libs/core/greeting/greeting_contract.go
 Import it from another Go project as example.com/acme/libs/core/<slice>.
+Verifying: smith run build test -p core
+Verified: build and test passed in 700ms
+Done: lib core is ready (9 files written, 1s).
 Try: smith test -p core
 ```
 
@@ -399,7 +419,7 @@ about each.
 ## 7. The interactive shell
 
 Run `smith` with no arguments, in a terminal, and it opens a full-screen shell for the
-workspace: Home, Projects, Run, Doctor, Deps and Release as tabs (keys `1` to `6`),
+workspace: Home, Projects, Run, Doctor, Deps, Release and Settings as tabs (keys `1` to `7`),
 one key for each action (`b` build, `t` test, `l` lint, `c` typecheck, `w` lint and test
 what changed, `d` doctor, `a` add a project), a command palette on `:` and a help
 overlay on `?`. Nothing the shell does happens on its own: every action ends as an
@@ -496,5 +516,9 @@ regenerated with your slot contents kept. Files smith wrote once, like
 | change a setting | [Configuration](../reference/configuration.md) |
 | understand a word | [Glossary](../reference/glossary.md) |
 | fix a problem | [Troubleshooting](../guides/troubleshooting.md), [FAQ](../guides/faq.md) |
+| know who owns a file, attach the workspace state to a pull request, or give coding agents the rules | [Know your files, share the workspace and brief your agents](../guides/know-your-files-and-brief-your-agents.md) |
+| stop repeating the same config in every project | [Derived files](../guides/derived-files.md) |
+| choose a framework, a test runner and a style when you add a project | [`smith add`](../manual/add.md#building-from-choices), [`smith choices`](../manual/choices.md) |
+| undo a `smith add` or `smith upgrade` | [`smith undo`](../manual/undo.md) |
 | write a plugin for a language smith lacks | [Writing a plugin](../guides/writing-a-plugin.md) |
 | know how smith works inside | [Architecture](../architecture/architecture.md), [plugin system](../architecture/plugin-system.md), [execution and cache](../architecture/execution-and-cache.md) |

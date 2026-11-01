@@ -81,7 +81,7 @@ npm versions are the [node plugin's](node.md#toolchain).
 
 ## Releasing and CI
 
-The plugin has no `publish` and no `ci` method. A TypeScript package releases through the node
+The plugin has no `publish` and no `ci` method. With `[derive] enabled = true` it answers `smith derive` with the renderer `typescript.tsconfig`, which rewrites the `tsconfig.json` of a project it scaffolded (not one that has a `vite.config.ts`) from the template `smith add` used. A TypeScript package releases through the node
 plugin (`npm publish` of the build); see [node: Releasing](node.md#releasing).
 
 ## Requirements and limits

@@ -93,7 +93,7 @@ scaffold fails with `the vite plugin scaffolds the [html react react-p5 react-ta
 
 ## Settings, releasing, CI
 
-No settings; no `publish` or `ci` method (a built app is a static site, released by its tag).
+No settings; no `publish` or `ci` method (a built app is a static site, released by its tag). With `[derive] enabled = true` it answers `smith derive` with the renderer `vite.tsconfig`, the whole `tsconfig.json` of an app made from choices.
 
 ## Verified
 

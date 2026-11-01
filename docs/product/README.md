@@ -62,7 +62,7 @@ conventional commits. It is one static binary, licensed MIT.
 
 It is not a replacement for everything. It has no remote execution and no
 hermetic sandbox, its graph is per project and not per file, its Node plugin runs
-npm only, and it has no plugin registry yet. If you need those, the
+npm only, and it has no registry of third-party plugins yet (only a marketplace index). If you need those, the
 [decision guide](comparison/choosing.md) says which tool to look at.
 
 ## For engineers who want the technical documentation

@@ -11,7 +11,7 @@ The ruby plugin makes every `*.gemspec` below the workspace root a smith project
 | `--lang` values | `ruby` |
 | Manifest that makes a directory a project | `*.gemspec` (a gemspec at the workspace root is skipped; one gem per directory) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`ruby-app`, `ruby-lib`, `ruby-package`) |
 

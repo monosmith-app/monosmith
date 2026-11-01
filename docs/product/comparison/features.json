@@ -766,8 +766,9 @@
       "g": "ci",
       "label": "CircleCI, Bitbucket Pipelines or Jenkins generated",
       "s": {
-        "m": "N",
-        "e": "I",
+        "m": "P",
+        "e": "D",
+        "n": "CircleCI and Bitbucket Pipelines are generated on smith 2.0 (smith ci generate); Jenkins is not",
         "p": "#571"
       },
       "t": "YUUUUUUUUUUUUU",
@@ -997,7 +998,7 @@
       "s": {
         "m": "P",
         "e": "L",
-        "n": "CycloneDX on the release for npm and Go apps only",
+        "n": "CycloneDX on the release; the dependencies come from the plugins that list them (Node, Go, Python, Rust, .NET, Ruby, PHP, C++, Dart, JVM)",
         "p": "#348"
       },
       "t": "UUUUUUUUUUUYPU",

@@ -35,7 +35,7 @@ by design: one `turbo.json` on top of the package manager's workspaces.
 | Package manager | npm, Yarn or pnpm | npm for Node (a decision recorded in the design docs) |
 | Environment variables in the cache key | `globalEnv` values are in every task's hash, and a task's `env` lists the variables it depends on, with wildcards | a task's declared `env` table |
 | Release | no turbo command; the publishing guide uses Changesets ("We recommend `changesets`" for versioning, changelogs and publishing) | conventional commits to npm, PyPI, crates.io, NuGet, RubyGems, pub.dev and Maven repositories, Go modules and Packagist by tag |
-| CI | guides per provider (Vercel, GitHub Actions, CircleCI, GitLab CI, Travis CI, Buildkite) | generated pipelines for GitHub Actions, Azure Pipelines and GitLab CI |
+| CI | guides per provider (Vercel, GitHub Actions, CircleCI, GitLab CI, Travis CI, Buildkite) | generated pipelines for GitHub Actions, Azure Pipelines, GitLab CI, CircleCI and Bitbucket Pipelines |
 | Dependency alignment | the documentation points to `syncpack`, `manypkg` and `sherif`, or to the package manager | `smith sync`; `smith doctor` checks one version per production dependency |
 | Health check | `turbo boundaries` (experimental) checks workspace dependency violations; `turbo scan` is documented as removed | `smith doctor`, with `--fix` |
 | Remote execution | no mention in the documentation (searched "remote execution" and "distributed") | none |

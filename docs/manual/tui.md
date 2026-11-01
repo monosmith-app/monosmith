@@ -82,7 +82,7 @@ that does nothing. Esc never quits.
 
 | Key | Does |
 |---|---|
-| `1` to `6` | Show Home, Projects, Run, Doctor, Deps, Release. |
+| `1` to `7` | Show Home, Projects, Run, Doctor, Deps, Release, Settings. |
 | `Up` `Down`, `j` `k` | Move in a list. |
 | `Enter` | Open or run the selection. |
 | `Esc` | Back, close, clear. |

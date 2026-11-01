@@ -1,4 +1,4 @@
-# Derived files
+# Using derived files
 
 Some config repeats in every project and follows from what smith already knows. A `tsconfig.lib.json`
 differs between packages only by its `references`, which are the project's internal dependencies. A

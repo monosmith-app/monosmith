@@ -26,9 +26,9 @@ releases this repository itself.
 | Path | What it is |
 |---|---|
 | `apps/smith` | the `smith` command: the core, the CLI, the TUI, and every built-in plugin linked in |
-| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode), `python`, `go` (which also holds `pluginkit`, the plugin that scaffolds plugins), `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `docker`, `recipe`, `vertical-slices` |
+| `libs/plugin-<name>` | one built-in plugin each: `node`, `node-toolchains` (typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode, tauri), `python`, `go` (which also holds `pluginkit`, the plugin that scaffolds plugins), `dart`, `dotnet`, `rust`, `ruby`, `php`, `jvm`, `cpp`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `bundle` (projects with no language), `docker`, `recipe`, `vertical-slices`, `architectures` (the other architectures, such as hexagonal and clean) |
 | `libs/actions` | the one catalogue of what smith can do (`catalog`), read by the command line, the shell, the MCP server and the engine server ([ADR 0029](decisions/0029-one-list-of-actions.md)) |
-| `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates (`templating`), tool runs (`toolrun`), JSON documents (`jsondoc`), line endings (`lineendings`) and project kinds (`projectkind`). Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
+| `packages/plugin-sdk` | the protocol types (`protocol`), a server loop for plugins (`serve`), a client for hosts (`host`), framing (`transport`), the conformance suite (`conformance`), and helpers for templates (`templating`), tool runs (`toolrun`), JSON, TOML and XML documents (`jsondoc`, `tomltext`, `xmltext`), line endings (`lineendings`), file edits (`fileedits`), project kinds (`projectkind`) and the JSON Schema of the protocol (`protocolschema`, `schema`). Published as its own Go module (`packages/plugin-sdk/vX.Y.Z` tags) |
 | `packages/eslint-config` | `@monosmith/eslint-config`, the shared ESLint config with the vertical-slice rules (an npm package) |
 | `packages/jest-preset` | `@monosmith/jest-preset`, the Jest preset (values, TypeScript-aware resolver, React asset transform) that `smith convert` adds in place of Nx's Jest plugins (an npm package) |
 | `apps/vscode` | the VS Code extension, a client of `smith serve` ([VS Code architecture](vscode-architecture.md)) |
@@ -54,9 +54,9 @@ each slice's handler; most commands start by opening a `session`.
 | `remotecache` | a remote tier behind the local store (HTTP object store, S3, Azure Blob); every object signed with HMAC-SHA256; a failed check or an unreachable store is a miss |
 | `affected` | which projects a change can break: owners of changed files, their dependents, everything when a workspace file changed |
 | `release` | conventional commits to versions, in dependency order: stamp manifests, publish through the language plugin, distribute an app's binaries to registries, tag, push, GitHub Release; resumable and previewable (`--dry-run` is the same path) |
-| `releaselineage`, `releasepreview` | refusing tags that would give wrong versions; posting the release preview on a pull request |
+| `releaselineage`, `releasepreview`, `releaserehearsal`, `releaseassets` | refusing tags that would give wrong versions; posting the release preview on a pull request; `smith release --rehearse`, which asks every registry read-only questions before a first release; `smith release assets`, which builds an app's release files with its own build command, one runner per platform. `release` also holds the release channels of `[[release.channels]]` and the public API check ([release design](release-design.md)) |
 | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems` | re-packing an app's release archives as npm packages, PyPI wheels, a .NET tool and platform gems, and uploading them |
-| `packagemanifests` | Homebrew, Scoop, winget and AUR manifests attached to a GitHub Release |
+| `packagemanifests` | Homebrew, Scoop, winget and AUR manifests and a Nix flake, attached to a GitHub Release |
 | `githubrelease`, `gitclient` | the only doors to the GitHub Releases API and to git |
 | `cipipeline` | generating pipelines and running their phases (`smith ci <phase>`) |
 | `nativebuild` | `smith ci native`: projects built on their own OS runner |
@@ -65,6 +65,11 @@ each slice's handler; most commands start by opening a `session`.
 | `scaffold`, `upgrade` | `smith new` and `smith add`; bringing a workspace up to a newer smith |
 | `convert`, `convertplan`, `nxworkspace`, `adoption` | converting an Nx (or old-mnci) workspace, and adopting a repository that has no tool yet |
 | `convertchoices`, `legacyinventory`, `removalplan`, `fullconversion` | the full level of `smith convert`: the choices (lint, test runner, build, CI), the scan for old tooling nothing uses any more, the removals as doctor fixes asked one group at a time, and the run that applies them |
+| `derive`, `derivefile`, `derivelock` | `smith derive`: files written from facts and the project graph; the three ownership modes (whole file, region, keys); and the ownership record `smith.lock` ([ADR 0046](decisions/0046-derived-files-have-an-owner-and-a-record.md), [derived files, facts and siblings](derived-files-facts-and-siblings.md)) |
+| `factmerge`, `dialect`, `choiceselect`, `choiceview` | shared facts merged across layers with their origin ([ADR 0042](decisions/0042-plugins-publish-shared-facts-the-core-merges.md)); a new project following its siblings ([ADR 0041](decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md)); a selection of choices turned into a stack, and `smith choices` ([ADR 0045](decisions/0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md)) |
+| `operation`, `operationplan` | the plan a mutating command prints before it writes, and `smith undo` with `[workspace] commit_operations` ([ADR 0047](decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md)) |
+| `pluginmarket`, `plugininstall`, `pluginpack`, `pluginarchive`, `plugintrust`, `pluginadmit`, `pluginenv` | external plugins: finding one by name in the marketplace index, packing and installing the checksummed archive without running it, remembering and checking trust, and the minimal environment it starts with |
+| `agentfiles`, `kindchange`, `lockfilesync`, `taskfolding`, `languageserver`, `tauriadd`, `tauriprepare`, `updatenotice` | the agent files a workspace carries (`.claude/agents/smith.md`, `.mcp.json`); `smith kind`; keeping `package-lock.json` in step after smith edits manifests; folding repeated task overrides into `[[task_groups]]`; `smith lsp` for `smith.toml`; `smith tauri`; the quiet note that a newer smith exists |
 | `dependencies`, `devservers`, `explain`, `why`, `whymiss`, `report`, `agentdoc`, `graphview`, `stackview`, `configedit`, `clicontract`, `mcpserver`, `slicecheck` | the remaining commands: install/uninstall, `smith dev`, explain, why (file ownership), why-miss, report (the HTML page), agent file (AGENTS.md), graph, stacks, config edits, the `--json` contracts for editors, `smith mcp`, slice checks |
 | `engineserver`, `runevents` | `smith serve`: the engine as JSON-RPC on stdio, and the event stream of a run (`--json-events`) |
 | `doctorfix`, `corefixes` | applying the fixes doctor's findings carry: folding, questions, diffs, steps |
@@ -104,7 +109,9 @@ flowchart LR
 
 The methods, roles and stacks are described in [plugins.md](../reference/plugins.md) and
 [stacks.md](../reference/stacks.md). How plugins are distributed, installed by name and
-where they live is not decided yet, see #164.
+where they live is decided in [ADR 0038](decisions/0038-a-plugin-is-packed-as-a-checksummed-archive-and-installed-without-running-it.md)
+(packed archives), [ADR 0040](decisions/0040-plugins-are-found-by-name-in-a-marketplace-index.md) (the marketplace index) and
+[ADR 0036](decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md) (trust and the environment).
 
 ## Data flow
 
@@ -143,7 +150,7 @@ already has is skipped.
 
 `smith ci generate` collects each plugin's `ci` contribution (toolchains,
 setup and audit steps, credentials), builds one provider-neutral model, and
-renders it as GitHub Actions, Azure Pipelines or GitLab CI. The YAML stays
+renders it as GitHub Actions, Azure Pipelines, GitLab CI, CircleCI or Bitbucket Pipelines. The YAML stays
 thin: each job calls a phase, so a laptop runs what CI runs.
 
 ```mermaid

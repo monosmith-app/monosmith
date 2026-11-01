@@ -37,7 +37,7 @@ in `smith.toml` and the warning stops.
 - To see which architecture the workspace follows: run it without a name.
 - To switch the checks on or off without editing `smith.toml` by hand.
 
-The Settings tab of [`smith tui`](tui.md) has the same choice in its Architecture section.
+The Settings tab of [the terminal interface](tui.md) has the same choice in its Architecture section.
 
 ## Synopsis
 

@@ -84,7 +84,7 @@ Python package). Paths in output are shortened.
 | [`smith ci`](ci.md) | Run a CI phase, or regenerate the pipelines: [`ci generate`](ci-generate.md), [`ci check`](ci-check.md). |
 | [`smith pipeline`](pipeline.md) | Add a ready-made pipeline: e2e, package-zip, deploy-pages, deploy-azure-function. |
 | [`smith docker`](docker.md) | Docker image commands: [`docker description`](docker-description.md). |
-| [`smith release`](release.md) | Version, publish and tag every package with releasable commits: [`release pub`](release-pub.md). |
+| [`smith release`](release.md) | Version, publish and tag every package with releasable commits: [`release pub`](release-pub.md), [`release assets`](release-assets.md). |
 
 ## Inspect
 

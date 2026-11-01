@@ -37,6 +37,12 @@ flowchart LR
 | [How affected projects are computed](affected.md) | the base, the changed files, owners and dependents, and the fallback to everything |
 | [How tasks run, and how the cache decides](execution-and-cache.md) | the longer treatment of the three pages above, with the scheduler and process handling |
 
+## Derived files, facts and siblings (smith 2.0)
+
+| Page | Answers |
+|---|---|
+| [Derived files, shared facts and sibling inference](derived-files-facts-and-siblings.md) | how `smith derive` writes files from facts and the graph, the ownership record `smith.lock`, how facts are merged, how `smith add` follows its siblings, plan and undo, the report and the agent file |
+
 ## Plugins, recipes, CI and release
 
 | Page | Answers |
@@ -45,7 +51,7 @@ flowchart LR
 | [The plugin system](plugin-system.md) | why plugins are processes, how they are loaded, how they interact and fail |
 | [Design: recipes, and CI as part of them](recipes-and-ci.md) | the design of recipes with levels and slots, with what is built and what is not |
 | [How CI pipelines are generated](ci-generation.md) | the provider-neutral model, the phases, slots, the tracked-changes guard |
-| [How a release is decided and published](release-design.md) | conventional commits to versions, publishing, tags, SBOM and provenance |
+| [How a release is decided and published](release-design.md) | conventional commits to versions, release channels, the public API check, publishing, tags, SBOM and provenance |
 | [Releases and CI: how they are built](release-and-ci-internals.md) | the longer treatment of both |
 | [How adopt and convert work](adopt-and-convert.md) | inventory, plan, scratch copy, depth levels |
 
@@ -63,8 +69,9 @@ flowchart LR
 |---|---|
 | [Decision records](decisions/README.md) | one page per decision: context, options, decision, consequences, status, date |
 | [Technology: what smith is made of, and why](technology.md) | Go, the libraries, process boundaries, the security model, the test layers |
-| [Research](research/01-current-mnci-inventory.md) | the three research notes smith was planned from (dated snapshots of mnci, Nx and prior art) |
+| [Research](research/01-current-mnci-inventory.md) | the research notes smith was planned from (dated snapshots of mnci, Nx and prior art) and the integration QA of the 2.0 branch |
 
 The research notes are [the inventory of mnci](research/01-current-mnci-inventory.md),
 [the Nx subsystems](research/02-nx-subsystems.md) and
-[prior art and the stack](research/03-prior-art-and-stack.md).
+[prior art and the stack](research/03-prior-art-and-stack.md). The notes of the 2.0 branch are
+[the integration QA](research/smith-v2-integration-qa.md).

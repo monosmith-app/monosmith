@@ -11,7 +11,7 @@ The go plugin makes every `go.mod` below the workspace root a smith project. It 
 | `--lang` values | `go`, `golang` |
 | Manifest that makes a directory a project | `go.mod` (a `go.mod` at the workspace root is skipped; see [What it detects](#what-it-detects)) |
 | Requires / conflicts / provides | none / none / no task slots (`smith plugin list` shows `-` in the SLOTS and REQUIRES columns) |
-| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`. Not advertised: `version`, `published`. |
+| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. Not advertised: `version`, `published`. |
 | Stacks it publishes | none. The add-on [go-smith-plugin](go-smith-plugin.md) publishes the one stack whose language is `go`. |
 | Project kinds it can create | `app`, `lib`, `package` (`go-app`, `go-lib`, `go-package` in `smith kinds`) |
 
@@ -209,6 +209,8 @@ Where output goes: an app's `build` writes `dist/<module dir>/<name>[.exe]` (out
 ## Releasing
 
 Go has no manifest version, so the plugin has no `version` capability and nothing is written into `go.mod`.
+
+The plugin does not declare the `channels` capability, so a [release channel](../../../reference/releasing.md) refuses a Go package in its plan. Keep the module out of the channel with `[projects.<name>.release] channels = false`; a `v2.0.0-beta.1` tag could not be used by `go get` unless the module path ends in `/v2`.
 
 | Kind | What a release does |
 |---|---|

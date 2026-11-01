@@ -108,6 +108,23 @@ The first table has 39 rows (a row can cover several files): 9 accurate, 25 fixe
 - An Nx conversion and `smith new` inside an existing repository
   were not exercised.
 
+## Second pass, 2026-11-01 (smith 2.0 line)
+
+The architecture, plugins, product and contributing pages were checked again against `smith-v2` after about
+40 more commits. The classes of error found:
+
+- **Missing 2.0 coverage.** Derived files, shared facts, sibling inference, plan and undo, release channels,
+  the public API check, the registry rehearsal and the plugin marketplace had no architecture page or were
+  missing from the slice tables. They are in [derived files, facts and siblings](../architecture/derived-files-facts-and-siblings.md),
+  [release design](../architecture/release-design.md) and [architecture](../architecture/architecture.md).
+- **Generated tables gone stale.** The message tables of the protocol cheat sheet lacked `derive`, `apiSurface`,
+  `channels`, `facts`, `shape`, `choices` and `PublishParams.tag`; one host timeout was wrong. There is still no
+  generator for them: compare them with `packages/plugin-sdk/schema/protocol.schema.json` when the protocol changes.
+- **Counts.** The built-in plugins are 37 (`smith plugin list`: 18 language plugins, 19 others), not 24 or 25.
+- **Wrong names and paths.** The SDK generator paths and `serve.Run` (the function is `serve.Main`).
+- **"Not decided" notes that later records settled** (plugin install by name), and smith-side product claims
+  that 2.0 changed (CI providers, SBOM coverage, the age of the repository).
+
 ## Re-running the checks
 
 ```sh

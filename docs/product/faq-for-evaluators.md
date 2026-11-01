@@ -24,8 +24,7 @@ the test machine because `dart analyze` itself crashed. See
 Yes. A plugin is any program that speaks JSON-RPC 2.0 on stdin and stdout, so it can be written in
 any language; SDKs are published for Go, TypeScript, Python and C#, and a 102-line hand-framed plugin with no SDK
 passes `smith plugin check`. A plugin can add a language, tasks, a scaffold, CI steps or a release
-target. A team standard that needs no code is a recipe. There is no plugin registry yet, and plugins
-are placed on a search path or named in `smith.toml`. See
+target. A team standard that needs no code is a recipe. There is no registry of third-party plugins yet. Plugins are placed on a search path, named in `smith.toml`, or installed by name from a marketplace index (`smith plugin search`, `smith plugin install <name>`). See
 [Plugins and flexibility](comparison/plugins-and-flexibility.md).
 
 ### Can a plugin in a repository I cloned run code on my machine?

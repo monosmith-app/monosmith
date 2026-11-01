@@ -1,6 +1,6 @@
 # Plugins and flexibility: extend your monorepo tool in any language
 
-**Teach MonoSmith a new language, a team rule or a deploy target with a small program in the language you already use.** No new build language to learn, no fork, no rebuild. The 24 plugins that ship inside the `smith` binary go through the same door your plugin will, so what you write is not second class.
+**Teach MonoSmith a new language, a team rule or a deploy target with a small program in the language you already use.** No new build language to learn, no fork, no rebuild. The 37 plugins that ship inside the `smith` binary go through the same door your plugin will, so what you write is not second class.
 
 This page shows how that works, proves it with commands you can run, and sets it against the fourteen other tools in the [comparison](README.md). It is the extension and configuration half of the case for smith; the [language environments](languages-and-environments.md) and the [dependency graph](dependency-graph.md) are the other two.
 
@@ -66,9 +66,9 @@ A plugin is any executable that speaks JSON-RPC 2.0 on its standard input and ou
 
 What a plugin contributes is the set of methods it advertises: projects and their tasks, tasks added or replaced in other plugins' projects, generated files, versions, publishing, CI steps and toolchain setup, health checks with fixes, adding and removing dependencies, newest releases. smith never calls a method a plugin did not advertise. The wire format and the roles are in [What a plugin is](../../plugins/using/what-is-a-plugin.md); the field-level detail is in the [protocol cheat sheet](../../plugins/creating/protocol-cheat-sheet.md).
 
-### The range: 24 plugins built with it
+### The range: 37 plugins built with it
 
-`smith plugin list` shows 24: 12 language plugins (`bicep`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `node`, `php`, `python`, `recipe`, `ruby`, `rust`) and 12 add-ons (`angular`, `astro`, `docker`, `eslint`, `go-smith-plugin`, `jest`, `playwright`, `typescript`, `vertical-slices`, `vite`, `vitest`, `vscode`). One uses the language role to find Cargo crates, another uses the toolchain role to run Playwright, another uses the deploy role to build and push container images. Each has a page in the [catalogue](../../plugins/using/catalogue/README.md), written from the code and from runs.
+`smith plugin list` shows 37: 18 language plugins (`applescript`, `bicep`, `bundle`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `lua`, `node`, `objc`, `php`, `python`, `recipe`, `ruby`, `rust`, `swift`, `vba`) and 19 add-ons (`angular`, `astro`, `clean`, `ddd`, `docker`, `eslint`, `go-smith-plugin`, `hexagonal`, `jest`, `modular-monolith`, `mvc`, `package-by-layer`, `playwright`, `tauri`, `typescript`, `vertical-slices`, `vite`, `vitest`, `vscode`). One uses the language role to find Cargo crates, another uses the toolchain role to run Playwright, another uses the deploy role to build and push container images. Each has a page in the [catalogue](../../plugins/using/catalogue/README.md), written from the code and from runs.
 
 ### Several plugins, one project, checked for conflicts
 
@@ -126,7 +126,7 @@ The marks follow the [comparison's legend](README.md#legend): ✅ the tool's doc
 
 | Tool | Mechanism | You write it in | Credit and condition |
 |---|---|---|---|
-| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go, TypeScript, Python and C# | no registry yet; not sandboxed |
+| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go, TypeScript, Python and C# | no registry of third-party plugins yet (a marketplace index exists); not sandboxed |
 | Nx | plugins with generators, executors, `createNodes` and `createDependencies` | TypeScript or JavaScript: "The plugin is a Node package" | the largest ecosystem in this set: a plugin registry and community plugins; each plugin runs "in a separate forked process" |
 | Turborepo | no plugin API found; custom generators use Plop | JavaScript | focused on tasks and caching; `turbo gen` covers scaffolding |
 | Bazel | macros, rules, repository rules and module extensions in `.bzl` files | Starlark | "Support for a new language is typically done with a rule"; the Bazel Central Registry hosts modules |
@@ -154,7 +154,7 @@ Every tool above is good at its own job. What differs is what you still have to 
 
 ## Where another tool is the better choice
 
-- **You want a large ecosystem of ready-made third-party plugins, today.** Nx has a plugin registry and community plugins; Gradle has the Plugin Portal; Bazel has its Central Registry. smith has no registry yet ([#164](https://github.com/monosmith-app/monosmith/issues/164), [#565](https://github.com/monosmith-app/monosmith/issues/565)): plugins are executables you place on a search path or name in `smith.toml`.
+- **You want a large ecosystem of ready-made third-party plugins, today.** Nx has a plugin registry and community plugins; Gradle has the Plugin Portal; Bazel has its Central Registry. smith has no registry of third-party plugins yet, only a marketplace index ([#164](https://github.com/monosmith-app/monosmith/issues/164), [#565](https://github.com/monosmith-app/monosmith/issues/565)): plugins are executables you place on a search path or name in `smith.toml`.
 - **You need extensions to be sandboxed.** moon's WASM plugins get a sandboxed file system. smith's trust gate, minimal environment and digest pins reduce the risk and do not remove it: a trusted plugin runs with your privileges ([#565](https://github.com/monosmith-app/monosmith/issues/565)).
 - **You want an SDK in your language.** Go, TypeScript, Python and C# have published SDKs. For any other language you write the message framing yourself, about 40 lines, as the 102-line hand-framed Python example does ([#564](https://github.com/monosmith-app/monosmith/issues/564)).
 - **You need a plugin to run tasks in parallel with its own requests, or to be cancelled mid-call.** External plugins can declare both; the built-in plugins are called one request at a time and cannot be cancelled ([decision 0037](../../architecture/decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).
@@ -164,7 +164,7 @@ Every tool above is good at its own job. What differs is what you still have to 
 ## Try it
 
 ```sh
-smith plugin list                              # the 24 built-ins, and any external ones
+smith plugin list                              # the 37 built-ins, and any external ones
 smith stacks                                   # the 16 ready-made stacks
 smith plugin check ./path/to/your-plugin       # the conformance suite
 ```

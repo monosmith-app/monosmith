@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 
@@ -216,6 +216,7 @@ The tool versions in `requirements-dev.txt` and the Python version `3.12` are co
 | Skipping | before uploading, the plugin reads the simple index (`<index>/<normalised name>/`) and uploads only files it lacks. If twine itself reports `File already exists` or `409`, the result is "already published". An unreachable index reports nothing, so the upload is attempted. |
 | Registry | PyPI (`https://upload.pypi.org/legacy/`) unless `[registries.*] pypi_upload` is set for the project, or `TWINE_REPOSITORY_URL` is set. The simple index for the existence check is derived (`upload.pypi.org` to `pypi.org/simple/`, `test.pypi.org` likewise, `.../upload/` to `.../simple/`, anything else `<url>/simple/`). |
 | Credentials | `PYPI_TOKEN` (listed as a required secret when a package publishes to PyPI itself), or `TWINE_USERNAME` / `TWINE_PASSWORD`; for a `token` registry the variable named in `token_env`; for Azure Artifacts none (the pipeline's own token through `TwineAuthenticate@1`; elsewhere twine signs in through `artifacts-keyring`). |
+| Release channel | the plugin declares `channels`: PyPI orders a prerelease (`2.0.0b1`) below its release, so a channel version never becomes the one `pip install` picks, and no tag is needed |
 | Dry run | publish returns "dry run" and uploads nothing. Real output: |
 
 ```

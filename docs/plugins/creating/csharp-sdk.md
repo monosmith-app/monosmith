@@ -341,6 +341,8 @@ a plugin implements as many as it needs.
 | `IRemover` | `RemoveAsync` | `remove` | `remove` | `Remover` |
 | `IKindChanger` | `ChangeKindAsync` | `project/kind` | `changeKind` | `KindChanger` |
 | `IComponentLister` | `ComponentsAsync` | `sbom/components` | `components` | `ComponentLister` |
+| `IDeriver` | `DeriveAsync` | `derive` | `derive` | `Deriver` |
+| `IApiSurfaceReader` | `ApiSurfaceAsync` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `IContributor` | `ContributeAsync` | `contribute` | `contribute` | `Contributor` |
 | `IDependencyManager` | `InstallAsync` and `UninstallAsync` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `IDeclarationEditor` | `DeclaredAsync` and `RewriteAsync` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |

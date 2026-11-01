@@ -18,7 +18,7 @@ install CMake, Ninja, a compiler and cppcheck.
 | `--lang` values | `cpp`, `c++` |
 | Manifest that makes a directory a candidate project | `CMakeLists.txt` (it is a project only if it calls `project()`) |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `components` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest`: `smith install`, `smith up` and `smith sync` do nothing for C++, and nothing is cleaned outside a removed project's directory |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `cpp-app`, `cpp-lib`, `cpp-package`) |
