@@ -91,12 +91,16 @@ jobs:
 		b.WriteString(githubEntraEnv(m))
 	}
 	if m.Attest {
+		continueOnError := ""
+		if m.AttestOptional {
+			continueOnError = "        continue-on-error: true\n"
+		}
 		fmt.Fprintf(&b, `      - name: Attest build provenance
         if: github.event_name == 'push' && github.ref_name == '%s' && hashFiles('dist/release/**') != ''
-        uses: actions/attest-build-provenance@v3
+%s        uses: actions/attest-build-provenance@v3
         with:
           subject-path: dist/release/*/*
-`, m.ReleaseBranch)
+`, m.ReleaseBranch, continueOnError)
 	}
 	if m.Native {
 		b.WriteString(githubNativeJob(m))

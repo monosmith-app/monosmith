@@ -173,6 +173,11 @@ func Validate(cfg *Config) error {
 	if err := validateSiblingRepos(cfg); err != nil {
 		return err
 	}
+	switch cfg.CI.Attest {
+	case "", "on", "optional", "off":
+	default:
+		return fmt.Errorf("%s: [ci] attest must be \"on\", \"optional\" or \"off\", not %q", FileName, cfg.CI.Attest)
+	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
 		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
 	}
