@@ -116,9 +116,14 @@ type lab struct {
 	t       *testing.T
 	m       tea.Model
 	started [][]string
-	next    *scripted
-	clock   time.Time
-	quit    bool
+	// captured are the command lines the shell asked to read, capture answers
+	// them (a plain success when it is nil), and opened are the files it opened.
+	captured [][]string
+	capture  func(argv []string) sources.Captured
+	opened   []string
+	next     *scripted
+	clock    time.Time
+	quit     bool
 
 	// The fake fix engine: what ApplyFix was given, what it answers, and
 	// whether the context it was given was cancelled.
@@ -194,6 +199,14 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 			Plan: func(argv []string) []string {
 				return []string{"kit:build", "orders:build", "web:build", "sdk:test"}
 			},
+			Capture: func(argv []string) sources.Captured {
+				l.captured = append(l.captured, argv)
+				if l.capture != nil {
+					return l.capture(argv)
+				}
+				return defaultCapture(argv)
+			},
+			Open: func(path string) error { l.opened = append(l.opened, path); return nil },
 			Start: func(argv []string) (runner.Handle, error) {
 				l.started = append(l.started, argv)
 				if l.next == nil {

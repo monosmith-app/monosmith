@@ -96,6 +96,8 @@ func (m Model) activate() (Model, Result) {
 		return m.askTrust()
 	case kindInstall:
 		m.ed = newInstall()
+	case kindSearch:
+		m.ed = newSearch()
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		if a.Warning != "" && m.confirm != a.Name {

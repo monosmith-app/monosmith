@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -50,6 +51,32 @@ func (m Model) Title() string {
 		return ""
 	}
 	return m.action.Title
+}
+
+// WithAction puts an action in the menu, in the place of the one with the same
+// title (or at the end): the shell uses it for a form whose questions come from
+// what it just read, such as the choices of the plugins.
+func (m Model) WithAction(a Action) Model {
+	actions := slices.Clone(m.actions)
+	for i := range actions {
+		if actions[i].Title == a.Title {
+			actions[i] = a
+			m.actions = actions
+			return m
+		}
+	}
+	m.actions = append(actions, a)
+	return m
+}
+
+// ActionTitled returns the action with a title; ok is false when there is none.
+func (m Model) ActionTitled(title string) (Action, bool) {
+	for _, a := range m.actions {
+		if a.Title == title {
+			return a, true
+		}
+	}
+	return Action{}, false
 }
 
 // Reset returns the guide to its first screen, to be used again.
@@ -248,7 +275,7 @@ func (m Model) confirm() Model {
 				picked = append(picked, o.Value)
 			}
 		}
-		if len(picked) == 0 {
+		if len(picked) == 0 && !step.Optional {
 			m.err = "toggle at least one with space"
 			return m
 		}
@@ -374,6 +401,9 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		}
 		if step.Multi {
 			help = "up/down move · space or click toggles · enter confirm · esc back"
+			if step.Optional {
+				help = "up/down move · space or click toggles · enter confirms (nothing ticked skips this) · esc back"
+			}
 		}
 		lines = append(lines, "", th.Muted(help))
 	}

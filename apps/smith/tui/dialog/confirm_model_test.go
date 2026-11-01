@@ -108,3 +108,35 @@ func TestALongCommandWrapsAndStillFitsASmallScreen(t *testing.T) {
 		}
 	}
 }
+
+func TestANoticeTellsAndOnlyClosesWithOK(t *testing.T) {
+	c := NewNotice("Cannot add web like that", "smith said:", []string{"✖ svelte needs node", "  → pick another framework"}).Place(100, 30)
+	text := strings.Join(c.Lines(theme.Default()), "\n")
+	for _, want := range []string{"Cannot add web like that", "smith said:", "svelte needs node", "pick another framework", "OK  Enter"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q in\n%s", want, text)
+		}
+	}
+	for _, not := range []string{"The command that will run", "Run  Enter", "Cancel"} {
+		if strings.Contains(text, not) {
+			t.Fatalf("a notice runs nothing, but shows %q:\n%s", not, text)
+		}
+	}
+	for _, key := range []string{"enter", "esc", "y", "n", " "} {
+		if _, out := c.Key(key); !out.Done || out.Confirmed {
+			t.Fatalf("%q must close the notice without confirming: %+v", key, out)
+		}
+	}
+	if _, out := c.Key("x"); out.Done {
+		t.Fatal("other keys do nothing")
+	}
+}
+
+func TestClickingOKClosesTheNoticeWithoutConfirming(t *testing.T) {
+	c := NewNotice("Nothing to undo", "smith said:", nil).Place(100, 30)
+	r := c.Rect()
+	_, out := c.Click(r.X+r.W/2-2, r.Y+r.H-2)
+	if !out.Done || out.Confirmed {
+		t.Fatalf("%+v", out)
+	}
+}

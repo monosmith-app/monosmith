@@ -112,7 +112,7 @@ type Shell struct {
 	// stopping is set once Ctrl+C asked the run to stop.
 	stopping bool
 	// runSel is the task whose log is shown ("" for all output); runTop scrolls the task list.
-	runSel  string
+	runSel string
 	// runHome shows the start screen of the Run tab (the buttons) over a finished run; Esc
 	// opens it, Enter, a new run or , . leave it.
 	runHome bool
@@ -125,6 +125,13 @@ type Shell struct {
 	runAt int
 
 	confirm *dialog.Confirm
+	// choices says whether the choices of the plugins are read; offers are
+	// those that can be used, addPending is true while the Add form waits for
+	// them, and addBase is the plain Add form they are added to.
+	choices    choicesState
+	offers     []guide.ChoiceOffer
+	addPending bool
+	addBase    *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
 	pkg  *packageprompt.Prompt
 	help *dialog.Help
@@ -142,7 +149,9 @@ type Shell struct {
 	reopen bool
 	// reopenStart is the command the reopened shell starts with; start is the one this shell starts with.
 	reopenStart, startWith []string
-	toast                  toast.Toast
+	// reopenNote is the toast the reopened shell starts with.
+	reopenNote string
+	toast      toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
@@ -414,6 +423,10 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.deps = depsview.FromResult(msg)
 	case releaseview.Result:
 		s.release = releaseview.FromResult(msg)
+	case capturedMsg:
+		return s.captured(msg)
+	case openedMsg:
+		s.opened(msg)
 	case startRunMsg:
 		return s.execute(msg.argv, true)
 	case startedMsg:

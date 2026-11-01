@@ -118,6 +118,12 @@ var all = []Command{
 	{ID: "ws.doctor", Group: GroupWorkspace, Title: "Doctor", Hint: "check the workspace; every problem names its remedy", Keys: []string{"d"}, Kind: OpenDoctor, NeedsWorkspace: true, Presents: []string{"doctor"}, Footer: "doctor", ShowIn: []string{TabHome, TabProjects}},
 	{ID: "ws.ci", Group: GroupWorkspace, Title: "Regenerate CI pipelines…", Hint: "smith ci generate", Kind: Execute, Argv: []string{"ci", "generate"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.info", Group: GroupWorkspace, Title: "Info", Hint: "smith info: the installed smith and the workspace's settings", Kind: Execute, Argv: []string{"info"}, NeedsIdle: true},
+	{ID: "ws.undo", Group: GroupWorkspace, Title: "Undo the last change…", Hint: "smith undo: shows what it would revert, then asks", Kind: OpenUndo, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"undo"}},
+	{ID: "ws.report", Group: GroupWorkspace, Title: "Open the report", Hint: "smith report: one web page about the workspace, opened in your browser", Kind: OpenReport, NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"report"}},
+	{ID: "ws.agent-file", Group: GroupWorkspace, Title: "Write the agent file…", Hint: "smith agent file: AGENTS.md, what a coding agent should know about this workspace", Kind: Execute, Argv: []string{"agent", "file"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.derive-check", Group: GroupWorkspace, Title: "Check the derived files", Hint: "smith derive --check: which files follow from the project graph, and which were edited", Kind: Execute, Argv: []string{"derive", "--check"}, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.derive", Group: GroupWorkspace, Title: "Update the derived files…", Hint: "smith derive: rewrite the files that follow from the project graph", Kind: Execute, Argv: []string{"derive"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.why", Group: GroupWorkspace, Title: "Why is this file here?…", Hint: "smith why <file>: who owns it and how to change it", Kind: Guided, Guide: "Why is this file here?", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"why"}},
 
 	{ID: "cli.guide", Group: GroupHelp, Title: "Commands and docs", Hint: "smith help: every command, with its examples", Kind: Execute, Argv: []string{"help"}, NeedsIdle: true},
 

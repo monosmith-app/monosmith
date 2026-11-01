@@ -133,6 +133,9 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	s.confirm = nil
+	if c.Info {
+		return nil
+	}
 	if out.Confirmed {
 		return s.execute(c.Argv, true)
 	}
@@ -269,6 +272,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		}
 		return s.execute(commands.RunArgv(c.Task, project), false)
 	case commands.Guided:
+		if c.Guide == addProjectTitle {
+			return s.openAddProject()
+		}
 		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
 			s.guide = g
 		}
@@ -300,6 +306,10 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.activateSelection(c.Action)
 	case commands.OpenPackagePrompt:
 		s.openPackages(c.Action == "uninstall")
+	case commands.OpenUndo:
+		return s.openUndo()
+	case commands.OpenReport:
+		return s.openReport()
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
 	case commands.OpenAdoptWizard:
@@ -400,6 +410,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
+			}
+			if len(argv) > 0 && argv[0] == "add" && s.inWorkspace {
+				// The plan comes first: what would be written, and which sibling it follows.
+				return s.addPreview(argv)
 			}
 			if len(argv) > 0 {
 				return s.execute(argv, false)

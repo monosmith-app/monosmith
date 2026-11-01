@@ -53,6 +53,8 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "     " + pane.Cell(p.Name, 14) + pane.Cell(p.Version, 10) + th.Muted(p.Dir)
 	case kindInstall:
 		return "   " + th.Accent("+ Install a plugin…") + "  " + th.Muted("smith plugin install <source>")
+	case kindSearch:
+		return "   " + th.Accent("+ Find a plugin in the marketplace…") + "  " + th.Muted("smith plugin search")
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		return "   " + m.radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
@@ -164,6 +166,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	case kindInstall:
 		add(th.Bold("Install a plugin"), "From a directory, an archive, an https URL or a GitHub release: smith plugin install <source>.",
 			"Enter asks where it comes from and shows the command line. After you confirm it, it runs in the Run view. The plugin is checked, never started, and trusted only when you say so here.")
+	case kindSearch:
+		add(th.Bold("Find a plugin in the marketplace"), "Type a word (deploy, go, scaffold) or leave it empty to list every plugin. smith searches the marketplace and lets you pick one.",
+			"The one you pick is installed with smith plugin install, after a confirmation that shows the command line. It is checked, never started, and trusted only when you say so here.")
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
 		add(th.Bold(a.Name)+th.Muted("  "+a.Meaning),
@@ -232,7 +237,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 	}
 	var keys string
 	switch e.kind {
-	case editText, editInstall:
+	case editText, editInstall, editSearch:
 		if e.setting.Default != "" {
 			add(th.Muted("Default: " + e.setting.Default))
 		}
@@ -247,6 +252,9 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 			argv, _ := installArgv(e.input.Value())
 			lines = append(lines, "", " "+th.Muted("smith "+strings.Join(argv, " ")))
 			keys = "Enter shows the command · Esc cancels"
+		}
+		if e.kind == editSearch {
+			keys = "Enter searches · Esc cancels"
 		}
 	case editMulti:
 		lines = append(lines, "")

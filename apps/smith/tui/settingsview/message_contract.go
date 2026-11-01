@@ -53,4 +53,8 @@ type Result struct {
 	// Run is a smith command line (without the leading smith) the shell
 	// shows, asks about and runs in the Run view: the tab never runs it.
 	Run []string
+	// Search asks the shell to search the plugin marketplace for Term (empty:
+	// every plugin) and offer the plugins it finds.
+	Search bool
+	Term   string
 }

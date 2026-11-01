@@ -182,6 +182,13 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
+			Title: "Why is this file here?", Presents: "why", Hint: "smith why: who owns a file or a project folder, and how to change it", NeedsWorkspace: true,
+			Steps: []Step{{Key: "path", Prompt: "Which file or folder? (a path from where you started smith)", Placeholder: "packages/web/tsconfig.json"}},
+			Argv: func(a map[string][]string) []string {
+				return []string{"why", first(a, "path")}
+			},
+		},
+		{
 			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (for choices, run smith recipe new in a terminal)",
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,

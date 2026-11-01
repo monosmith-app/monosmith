@@ -35,22 +35,27 @@ func Interactive() bool {
 // an error.
 func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription) ([]string, error) {
 	var start []string
+	note := ""
 	for {
-		argv, reopen, err := chooseOnce(version, out, catalog, start)
+		argv, reopen, err := chooseOnce(version, out, catalog, start, note)
 		if err != nil || reopen == nil {
 			return argv, err
 		}
-		start = reopen.Start
+		start, note = reopen.Start, reopen.Note
 	}
 }
 
 // reopening asks for the shell to start again, now inside the workspace the
 // last one made; Start is a command to run as soon as it is open.
-type reopening struct{ Start []string }
+type reopening struct {
+	Start []string
+	// Note is a sentence for the first toast of the reopened shell.
+	Note string
+}
 
 // chooseOnce is one run of the shell. reopen is set when the folder became a
 // workspace inside it (adoption), so the shell starts again to open it.
-func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string) (argv []string, reopen *reopening, err error) {
+func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string, note string) (argv []string, reopen *reopening, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			argv, reopen, err = nil, nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
@@ -107,6 +112,9 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
+	if note != "" {
+		cfg.Notice = note
+	}
 	if inside {
 		s := sources.WorkspaceSources(".", version)
 		s.Settings = settingssource.New(".", pluginhost.Home(), version, os.Getenv)
@@ -125,7 +133,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	}
 	sh := final.(Shell)
 	if sh.reopen {
-		return nil, &reopening{Start: sh.reopenStart}, nil
+		return nil, &reopening{Start: sh.reopenStart, Note: sh.reopenNote}, nil
 	}
 	if line := sh.ExitSummary(); line != "" {
 		fmt.Fprintf(out, "%s\n", line)

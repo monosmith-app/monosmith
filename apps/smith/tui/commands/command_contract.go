@@ -40,6 +40,11 @@ const (
 	// OpenPackagePrompt opens the guided form that asks which project and which
 	// packages to install (Action "install") or remove (Action "uninstall").
 	OpenPackagePrompt
+	// OpenUndo reads what `smith undo` would revert, shows it and asks before
+	// it reverts.
+	OpenUndo
+	// OpenReport writes the HTML report to a temporary file and opens it.
+	OpenReport
 	// PaneKey is a key the open view handles itself (arrows, Enter, Space…):
 	// it is listed in the footer and the help but never run by the shell.
 	PaneKey
