@@ -333,6 +333,11 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 			spec = nil
 		}
 	}
+	if spec == nil && p.Kind == protocol.ProjectApp {
+		// The same for every language: an app is released by its tag, its release
+		// files and its deploy plugins. To publish it to a registry, make it a package.
+		return protocol.PublishResult{Skipped: "an app is released by its tag, its files and its deploy plugins, never to a registry"}, nil
+	}
 	if spec == nil && p.Registries != nil && p.Registries.NoPublish {
 		return protocol.PublishResult{Skipped: "published by its tag (registry = \"none\")"}, nil
 	}

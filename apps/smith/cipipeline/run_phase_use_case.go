@@ -292,6 +292,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 			}
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
+		markReleased(report)
 		var after []stepOutcome
 		if err == nil {
 			// Work plugins want after every push to the release branch, released

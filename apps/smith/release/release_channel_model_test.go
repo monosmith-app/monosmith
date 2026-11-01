@@ -1,11 +1,14 @@
 package release
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func TestPrereleaseCountersOrderByValue(t *testing.T) {
@@ -204,5 +207,15 @@ func TestAPullRequestBuildPlansForTheBranchItTargets(t *testing.T) {
 	t.Setenv("SYSTEM_PULLREQUEST_TARGETBRANCH", "refs/heads/next")
 	if got := PlanBranch(s); got != "next" {
 		t.Errorf("Azure: %q", got)
+	}
+}
+
+func TestAnAppIsNeverPublishedToARegistryByItsPlugin(t *testing.T) {
+	for _, r := range []*workspace.ProjectRelease{nil, {Build: "sh tools/pack.sh", Assets: []string{"out/*.mtp"}}} {
+		app := &projectgraph.Project{Project: protocol.Project{Name: "tool", Root: "apps/tool", Kind: protocol.ProjectApp}, Plugin: "python", Release: r}
+		res, err := publish(context.Background(), nil, app, Item{Project: "tool", Next: "0.1.0"}, false)
+		if err != nil || res.Published || !strings.Contains(res.Skipped, "an app is released by its tag") {
+			t.Errorf("release %+v: %+v, %v", r, res, err)
+		}
 	}
 }
