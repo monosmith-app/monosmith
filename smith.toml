@@ -74,8 +74,6 @@ command = ["npm", "run", "test", "--silent"]
 # The extension is an app: it is versioned by its tag, and the vscode plugin
 # packs it into a .vsix and publishes it to the Marketplace (and Open VSX).
 [projects.vscode.release]
-# The Marketplace takes no semver prerelease version (2.0.0-beta.1): the extension stays out of the 2.0 channel.
-channels = false
 
 [projects.vscode.tasks.lint]
 command = ["npm", "run", "lint", "--silent"]

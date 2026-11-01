@@ -65,6 +65,8 @@ name, and `smith release --dry-run`, the report and the pull request comment say
 build checks out a detached merge commit, so a plan then uses the branch the pull request targets
 (`GITHUB_BASE_REF` and its equivalents).
 
+A VS Code extension needs a translation: the Marketplace takes plain `major.minor.patch` versions and a `--pre-release` flag, so the vscode plugin publishes `2.0.0-beta.3` as `2.1.3` with the flag (the major, the odd minor after the channel's, the counter as the patch). The first stable release of the line then needs a version above the pre-releases, set with a `version(...)[x]` directive.
+
 Alternative not chosen: a flag on `smith release` (`--prerelease beta`). It leaves the pipeline and
 the guard without a statement of which branch releases what, and each run would repeat the choice.
 
