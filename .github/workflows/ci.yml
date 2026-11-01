@@ -124,7 +124,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
       - name: Release
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         run: smith ci release
         env:
           GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}

@@ -29,6 +29,13 @@ github_releases = true
 # (federated credential), not with a VSCE_PAT secret: see docs/reference/releasing.md.
 vsce_entra = true
 
+# The 2.0 line: pushes to smith-v2 release 2.0.0-beta.n under the npm tag "next"; main keeps 1.x.
+[[release.channels]]
+branch = "smith-v2"
+prerelease = "beta"
+major = 2
+dist_tag = "next"
+
 [projects.smith.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"
 product = "monosmith"
@@ -85,6 +92,11 @@ command = ["go", "run", "."]
 # source of truth for the plugin SDKs of other languages). A Go test fails when
 # the committed file is stale; plugin-sdk-ts then regenerates its types (smith
 # run generate --project plugin-sdk-ts).
+# The Go SDK module has no /v2 in its path, so a 2.x tag could not be used by go get: it stays out of the
+# 2.0 channel until the path moves.
+[projects.plugin-sdk.release]
+channels = false
+
 [projects.plugin-sdk.tasks.schema]
 command = ["go", "run", "./schemagen"]
 
