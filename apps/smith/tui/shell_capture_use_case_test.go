@@ -152,3 +152,23 @@ func TestReportTargetReadsTheOutputFile(t *testing.T) {
 		}
 	}
 }
+
+func TestReleasingOnAChannelRepeatsTheNoticeInTheConfirmation(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("6") // the plan is read
+	sh := l.sh()
+	sh.release.Plan.Channel = "next"
+	l.m = sh
+	l.keys("down", "up") // draws it again
+	l.has("Release channel `next`: prerelease versions")
+	l.keys("x")
+	l.has("Release", "Release channel `next`", "Packages and versions to publish:", "smith release")
+}
+
+func TestReleasingOnTheStableLineHasNoChannelNotice(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("6")
+	l.hasNot("Release channel")
+	l.keys("x")
+	l.hasNot("Release channel")
+}

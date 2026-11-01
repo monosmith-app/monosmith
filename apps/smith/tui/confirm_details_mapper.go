@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 )
 
@@ -34,7 +35,11 @@ func (s Shell) releaseDetails() []string {
 	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
 		return []string{"The plan is not loaded: open the Release view first (" + commands.ShortcutOf("view.release") + ") to see the packages and versions."}
 	}
-	lines := []string{"Packages and versions to publish:"}
+	var lines []string
+	if s.release.Plan.Channel != "" {
+		lines = append(lines, release.ChannelNotice(s.release.Plan.Channel), "")
+	}
+	lines = append(lines, "Packages and versions to publish:")
 	for _, item := range s.release.Plan.Items {
 		from := item.Current
 		if from == "" {

@@ -102,3 +102,20 @@ func TestOnlyAPlanWithoutBlockersCanBeReleasedOrDrilledInto(t *testing.T) {
 		t.Fatal("an empty plan has nothing to release")
 	}
 }
+
+func TestAPlanOnAReleaseChannelSaysItReleasesPrereleases(t *testing.T) {
+	m := planned()
+	if strings.Contains(render(m), "Release channel") {
+		t.Fatal("a stable plan has no channel notice")
+	}
+	m.Plan.Channel = "next"
+	out := render(m)
+	for _, want := range []string{"Release channel `next`: prerelease versions", "the stable version stays the latest", "web", "2.0.0"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Index(out, "Release channel") > strings.Index(out, "web") {
+		t.Fatalf("the notice comes before the versions:\n%s", out)
+	}
+}
