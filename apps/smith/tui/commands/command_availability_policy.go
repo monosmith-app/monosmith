@@ -47,7 +47,7 @@ func (c Command) Visible(s State) bool {
 	if c.ownsView() && !c.inView(s) {
 		return false
 	}
-	return (!c.OnlyOutside || !(s.InWorkspace || s.BrokenConfig)) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
+	return (!c.OnlyOutside || (!s.InWorkspace && !s.BrokenConfig)) && (!c.OnlyInside || s.InWorkspace) && (!c.NeedsContent || !s.EmptyFolder)
 }
 
 // plain is a key that types a character: one letter, digit or symbol.
