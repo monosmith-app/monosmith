@@ -395,8 +395,10 @@ class Capabilities(TypedDict, total=False):
     """
     channels: bool
     """
-    Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without
-    moving the registry's stable pointer (npm's latest). A host does not publish a prerelease
+    Channels says a prerelease version the plugin publishes never takes the place of the stable
+    one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving
+    the registry's stable pointer (npm's latest), or its registry orders a prerelease below the
+    release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release
     channel with a plugin that lacks it.
     """
 
@@ -1331,8 +1333,9 @@ class PublishParams(_PublishParamsRequired, total=False):
     tag: str
     """
     Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When
-    set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only
-    sent to a plugin with the channels capability.
+    set, the plugin publishes under it and leaves the registry's stable pointer where it is, or
+    ignores it when its registry has no such pointer. Only sent to a plugin with the channels
+    capability.
     """
 
 

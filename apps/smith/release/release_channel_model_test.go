@@ -127,20 +127,44 @@ func TestAChannelPublishesUnderItsDistTagOrItsPrerelease(t *testing.T) {
 func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
 	pg := packages(t)
 	pg.Get("sdk").Deployers = []string{"docker"}
-	pg.Get("core").Release = &workspace.ProjectRelease{NPM: []string{"@acme/core"}}
-	plan := Plan{Items: []Item{{Project: "core", Plugin: "test"}, {Project: "sdk", Plugin: "other"}}}
+	pg.Get("core").Release = &workspace.ProjectRelease{NPM: []string{"@acme/core"}, PackageManagers: []string{"brew"}}
+	pg.Get("web").Release = &workspace.ProjectRelease{NPM: []string{"@acme/web"}, PyPI: "acme-web", Pub: "acme_web"}
+	plan := Plan{Items: []Item{{Project: "core", Plugin: "test"}, {Project: "sdk", Plugin: "other"}, {Project: "web", Plugin: "other"}}}
 	got := strings.Join(channelProblems(plan, pg, func(p string) bool { return p == "test" }), "\n")
 	for _, want := range []string{
 		"sdk: the other plugin cannot publish a release channel",
+		"channels = false in [projects.sdk.release]",
 		"sdk: docker deploy a release channel",
-		"core: the binaries sent to package managers and registries have no release channel yet",
+		"core: the package managers (brew) always offer the newest version",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}
 	}
-	if strings.Contains(got, "core: the test plugin") {
-		t.Errorf("a plugin with channels is accepted:\n%s", got)
+	for _, not := range []string{"core: the test plugin", "web:"} {
+		if strings.Contains(got, not) {
+			t.Errorf("%q must be accepted: a plugin with channels, and an app whose binaries go to registries that order prereleases below releases:\n%s", not, got)
+		}
+	}
+}
+
+func TestAProjectWithChannelsFalseIsLeftOutOfAChannelPlan(t *testing.T) {
+	g := repo(t)
+	pg := packages(t)
+	no := false
+	pg.Get("gomod").Release = &workspace.ProjectRelease{Channels: &no}
+	commit(t, g, "packages/core/a", "feat(core): in")
+	commit(t, g, "packages/gomod/a", "feat: out")
+	plan, err := MakeChannelPlan(g, pg, &Channel{ID: "beta", Major: 2, Tag: "beta"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := byProject(plan)
+	if _, ok := items["gomod"]; ok || items["core"].Next != "2.0.0-beta.1" {
+		t.Fatalf("plan %+v", plan.Items)
+	}
+	if stable, _ := MakePlan(g, pg); byProject(stable)["gomod"].Next != "0.1.0" {
+		t.Fatal("the stable line still releases the project")
 	}
 }
 

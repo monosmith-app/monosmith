@@ -51,6 +51,11 @@ func (p *Python) Publish(params protocol.PublishParams) (protocol.PublishResult,
 	return releasing.Publish(p.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: PyPI orders a
+// prerelease (2.0.0b1) below its release, so a channel never becomes the version
+// pip installs; Publish needs no tag.
+func (p *Python) PublishesChannels() {}
+
 // Published implements serve.RegistryReader.
 func (p *Python) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(params)

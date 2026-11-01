@@ -810,13 +810,20 @@ with `npm install acme-kit@beta`.
 
 Smith checks this before it publishes anything, and refuses the release when a project in the plan:
 
-- uses a plugin that does not declare the `channels` capability (today the Node plugin does; the
-  others would put the prerelease in the place of the stable version),
+- is a package whose plugin does not declare the `channels` capability (today the Node, Python and
+  .NET plugins do: npm gets the channel's tag, and PyPI and NuGet order a prerelease below the
+  release; the others could put the prerelease in the place of the stable version),
 - is deployed by a deploy plugin (a container image's `latest` and branch tags),
-- sends its binaries to package managers or registries of their own (`[projects.x.release]`
-  `package_managers`, `linux_packages`, `npm`, `pypi`, `nuget`, `rubygems`, `pub`).
+- sends its binaries to package managers (`[projects.x.release]` `package_managers`), which always
+  offer the newest version.
 
-Leave such a project out of the channel's release, or release it from the release branch.
+An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev, and its
+Linux packages, are allowed: all but npm order a prerelease version below the release.
+
+Keep a project out of the channel with `channels = false` in its `[projects.x.release]`: on a
+channel branch it is neither planned nor published, and it keeps releasing from the release branch.
+Use it for a project that cannot take a prerelease yet. A Go module whose path lacks `/v2` is one:
+a `v2.0.0-beta.1` tag could not be used by `go get`.
 
 `smith ci generate` makes the pipelines of every provider trigger on a channel branch and run the
 release step there (not pack, and not the sign-in steps). `smith release --dry-run` and the pull

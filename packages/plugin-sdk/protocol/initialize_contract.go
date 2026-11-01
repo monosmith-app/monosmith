@@ -147,10 +147,12 @@ type Capabilities struct {
 	// release can warn when the commits ask for a smaller bump than the API
 	// change needs.
 	APISurface bool `json:"apiSurface,omitempty"`
-	// Channels says the plugin publishes under PublishParams.Tag, a release
-	// channel's name, without moving the registry's stable pointer (npm's
-	// latest). A host does not publish a prerelease channel with a plugin
-	// that lacks it.
+	// Channels says a prerelease version the plugin publishes never takes the
+	// place of the stable one: the plugin publishes under PublishParams.Tag, a
+	// release channel's name, without moving the registry's stable pointer
+	// (npm's latest), or its registry orders a prerelease below the release
+	// (PyPI, NuGet) and needs no tag. A host does not publish a package of a
+	// release channel with a plugin that lacks it.
 	Channels bool `json:"channels,omitempty"`
 }
 

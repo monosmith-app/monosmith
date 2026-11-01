@@ -47,9 +47,13 @@ behaves. The Go SDK declares it with the `ChannelPublisher` marker interface, an
 passes the name to `npm publish --tag`. The generated protocol types of the TypeScript, Python and
 C# SDKs carry the field, but those SDKs have no way yet for a plugin to declare it.
 
-Before it publishes, `smith release` refuses a channel release when a project in the plan has a
-plugin without `channels`, a deploy plugin, or binaries sent to package managers or registries of
-their own. Each of these would move a stable pointer. The GitHub Release of any version with a
+Before it publishes, `smith release` refuses a channel release when a package in the plan has a
+plugin without `channels`, when a project has a deploy plugin, or when an app's binaries are sent
+to package managers. Each of these would move a stable pointer. An app's binaries sent to npm,
+PyPI, NuGet, RubyGems and pub.dev are allowed: npm gets the channel's tag and the others order a
+prerelease version below the release. The Node, Python and .NET plugins declare `channels`; the
+Go plugin does not, because a Go module needs `/vN` in its path from the second major on. A project
+can stay out of a channel with `channels = false` in its `[projects.x.release]`. The GitHub Release of any version with a
 prerelease part is created as a prerelease.
 
 The pipeline and the preview (step 3): the generated pipeline of every provider triggers on a
