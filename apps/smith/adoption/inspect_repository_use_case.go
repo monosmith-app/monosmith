@@ -150,6 +150,15 @@ func noProjectWarning(exists func(string) bool) Item {
 			},
 		}
 	}
+	if exists("pyproject.toml") {
+		return Item{
+			Message: "no project found: the pyproject.toml at the root describes the whole repository, and smith looks for a Python project in its own folder (apps/, libs/ or packages/), one pyproject.toml each",
+			Steps: []string{
+				"move the code into packages/<name> (git mv src packages/<name>/src, and its pyproject.toml), commit, then run smith adopt again",
+				"or run smith adopt --init now and add projects with smith add app <name> --lang python",
+			},
+		}
+	}
 	return Item{
 		Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)",
 		Steps:   []string{"smith adopt --init makes an empty workspace; then smith add app <name> --lang <language>"},

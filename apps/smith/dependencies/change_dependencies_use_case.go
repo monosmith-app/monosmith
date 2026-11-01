@@ -60,6 +60,9 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 			var declared protocol.DeclaredResult
 			if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: []protocol.Project{p.Project}}, &declared, timeout); err == nil {
 				if missing, have := undeclared(declared.Declarations, p.Name, packages); len(missing) > 0 {
+					if len(have) == 0 {
+						return fmt.Errorf("%s does not declare %s. It declares no packages", p.Name, strings.Join(missing, ", "))
+					}
 					return fmt.Errorf("%s does not declare %s. It declares: %s", p.Name, strings.Join(missing, ", "), strings.Join(have, ", "))
 				}
 			}
