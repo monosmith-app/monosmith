@@ -84,10 +84,13 @@ func buildAndUpload(ctx context.Context, s *session.Session, req Request, p *pro
 		return 0, problem.New(fmt.Sprintf("the build of %s for %s failed (exit %d): %v", p.Name, platform, code, err),
 			"run it yourself from the workspace root: "+p.Release.Build)
 	}
-	files, err := assetFiles(os.DirFS(s.Root), s.Root, p.Release.Assets)
+	files, skipped, err := assetFiles(os.DirFS(s.Root), s.Root, p.Release.Assets)
 	if err != nil {
 		return 0, problem.New(fmt.Sprintf("%s for %s: %v", p.Name, platform, err),
 			"make build leave the files, or fix assets in [projects."+p.Name+".release]")
+	}
+	for _, g := range skipped {
+		fmt.Fprintf(req.Out, "no file matches %s on %s: skipped\n", g, platform)
 	}
 	r := p.Release
 	product := r.Product

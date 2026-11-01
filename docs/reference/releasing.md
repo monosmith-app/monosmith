@@ -136,6 +136,14 @@ release. Each runner runs the build, then uploads its own files with
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
 
+A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
+on Windows and Linux, as long as another glob of the list matches a file there:
+the runner prints `no file matches <glob> on <platform>: skipped` and uploads the
+rest. When no glob matches, the build left nothing and the job fails with
+`the build left no file matching assets "..."`, so a build that broke cannot pass
+as a platform without that file. See
+[ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
+
 Two settings tidy the files on upload. `asset_name` renames each file, with the
 placeholders `{product}` (default: the project name), `{version}`, `{platform}`
 (`windows-x64`) and `{ext}`; two files that get the same name keep the name of
