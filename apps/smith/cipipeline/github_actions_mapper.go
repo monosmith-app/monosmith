@@ -31,11 +31,11 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    steps:
+%[3]s    steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.TriggerBranches(), ", "), idToken(m))
+`, strings.Join(m.TriggerBranches(), ", "), idToken(m), githubCIOutputs(m))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -89,6 +89,16 @@ jobs:
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
 		b.WriteString(githubEntraEnv(m))
+	}
+	if githubHasDependents(m) {
+		// The marker comes right after the release, so a later step that fails
+		// (the attestation, say) does not keep the native and assets jobs from
+		// running on a release that exists.
+		fmt.Fprintf(&b, `      - name: Mark the release done
+        id: released
+        if: github.event_name == 'push' && %s
+        run: echo "done=true" >> "$GITHUB_OUTPUT"
+`, m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" }))
 	}
 	if m.Attest {
 		continueOnError := ""
@@ -159,6 +169,7 @@ func githubNativeJob(m Model) string {
 	fmt.Fprintf(&b, `
   native:
     needs: ci
+    if: ${{ always() && (needs.ci.result == 'success' || (github.event_name == 'push' && needs.ci.outputs.released == 'true')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -282,4 +293,18 @@ func header(comment string) string {
 
 func slot(indent, name string) string {
 	return indent + "# smith:slot " + name + "\n" + indent + "# smith:slot-end " + name + "\n"
+}
+
+// githubHasDependents says whether jobs run after the ci job: the native jobs
+// and the assets jobs.
+func githubHasDependents(m Model) bool { return m.Native || len(m.AssetPlatforms) > 0 }
+
+// githubCIOutputs is the ci job's outputs block: whether the release step went
+// through, for the jobs that need the release to exist rather than the whole
+// job to succeed. Empty when no job depends on the ci job.
+func githubCIOutputs(m Model) string {
+	if !githubHasDependents(m) {
+		return ""
+	}
+	return "    outputs:\n      released: ${{ steps.released.outputs.done }}\n"
 }

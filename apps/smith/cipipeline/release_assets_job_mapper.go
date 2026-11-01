@@ -26,7 +26,7 @@ func githubAssetsJob(m Model) string {
 	fmt.Fprintf(&b, `
   assets:
     needs: ci
-    if: github.event_name == 'push' && github.ref_name == '%s'
+    if: ${{ always() && needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == '%s' }}
     strategy:
       fail-fast: false
       matrix:

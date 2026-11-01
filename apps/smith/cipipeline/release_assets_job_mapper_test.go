@@ -11,7 +11,7 @@ func TestGitHubBuildsReleaseFilesOnARunnerPerPlatformAndUploadsThemWithoutArtifa
 	m := NewModel(Contributions{AssetPlatforms: []string{"windows-x64", "macos-arm64", "linux-arm64"}}, "dev", "main")
 	out := RenderGitHub(m)
 	for _, want := range []string{
-		"  assets:\n    needs: ci\n    if: github.event_name == 'push' && github.ref_name == 'main'",
+		"  assets:\n    needs: ci\n    if: ${{ always() && needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}",
 		"- platform: windows-x64\n            os: windows-latest",
 		"- platform: macos-arm64\n            os: macos-latest",
 		"- platform: linux-arm64\n            os: ubuntu-24.04-arm",

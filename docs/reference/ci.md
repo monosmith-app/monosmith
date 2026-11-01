@@ -341,6 +341,8 @@ Every AppleScript project is native, because `osacompile` exists on macOS only: 
 
 Every Objective-C project is native too, because `pod lib lint` needs Xcode: with only such projects native, set `native_runners = ["macos-latest"]`.
 
+On GitHub Actions the native and assets jobs wait for the ci job, but they do not need all of it to succeed. Right after the Release step the ci job sets an output (the "Mark the release done" step), and the jobs run when it is set, so a step that fails after the release (the attestation on a repository with none, say) does not leave the releases without their files. On a pull request they still need the whole ci job to succeed. A re-run of the failed ci job finishes the release and then runs them.
+
 On Azure Pipelines a workspace with a native project gets a `jobs:` pipeline:
 the ci job, and the native job with a matrix of runner images. Steps kept in
 the `smith:slot` markers move with the job.
