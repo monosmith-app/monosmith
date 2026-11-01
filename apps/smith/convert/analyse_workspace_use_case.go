@@ -29,6 +29,11 @@ type Analysis struct {
 	// Verdict says which.
 	Blocked bool
 	Verdict string
+	// Counts reads "53 projects (1 app, 52 packages) and 13 it cannot convert":
+	// the words the command line report uses, for a screen to show as they are,
+	// so both say the same. Blockers is how many findings stop the conversion.
+	Counts   string
+	Blockers int
 	// Dirty is true when the working tree has uncommitted changes.
 	Dirty bool
 }
@@ -38,6 +43,14 @@ type Analysis struct {
 // already a smith workspace, is not a git repository, or is not an Nx or
 // Turborepo workspace.
 func Analyse(root, version string) (*Analysis, error) {
+	return AnalyseWithProgress(root, version, nil)
+}
+
+// AnalyseWithProgress is Analyse that tells progress each stage of the read
+// ("Asking Nx to describe the projects…", "Planned 53 projects."), so a screen
+// can show what is happening during the minutes a large repository takes. A
+// nil progress is ignored.
+func AnalyseWithProgress(root, version string, progress Progress) (*Analysis, error) {
 	if _, err := os.Stat(filepath.Join(root, workspace.FileName)); err == nil {
 		return nil, problem.New("this is already a smith workspace ("+workspace.FileName+" exists)", "smith upgrade brings it up to the installed smith")
 	}
@@ -59,15 +72,16 @@ func Analyse(root, version string) (*Analysis, error) {
 			return string(raw)
 		},
 	}
-	plan, err := readPlan(root, files, input)
+	plan, err := readPlan(root, files, input, progress)
 	if err != nil {
 		return nil, err
 	}
 	a := &Analysis{
 		Root: root, Version: version, Plan: plan, Git: git, Files: files,
 		Source: sourceLabel(plan), Blocked: plan.Blocked(false), Verdict: Verdict(plan, false),
+		Counts: projectCount(plan), Blockers: plan.Count(convertplan.Blocker),
 	}
-	if status, err := git.Run("status", "--porcelain"); err == nil && status != "" {
+	if status, err := git.Run("status", "--porcelain"); err == nil && DirtyApartFromInstall(status) {
 		a.Dirty = true
 	}
 	return a, nil
