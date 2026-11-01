@@ -13,6 +13,21 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
+	// A project declared in smith.toml is a package of a module above its
+	// folder: it has no go.mod to list in go.work, and a repository whose
+	// projects are all declared needs no go.work.
+	all := params.Projects
+	var modules []protocol.Project
+	for _, p := range all {
+		if !declaredInModule(workspaceRoot, p.Root) {
+			modules = append(modules, p)
+		}
+	}
+	if len(modules) == 0 {
+		findings := CheckUncoveredImports(workspaceRoot, all)
+		return protocol.DoctorResult{Findings: append(findings, CheckToolVersions(workspaceRoot, toolchainVersion(workspaceRoot, all), usesGolangciLint(all))...)}
+	}
+	params.Projects = modules
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: []protocol.Finding{{
@@ -61,6 +76,8 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			findings = append(findings, CheckPackageImports(workspaceRoot, p))
 		}
 	}
+	lints = lints || usesGolangciLint(all)
+	findings = append(findings, CheckUncoveredImports(workspaceRoot, all)...)
 	required := work.GoVersion
 	if required == "" {
 		required = DefaultGoVersion

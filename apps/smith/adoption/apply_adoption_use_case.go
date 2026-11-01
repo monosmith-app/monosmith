@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
 // ErrDirty is a step asked for with uncommitted changes.
@@ -84,6 +85,17 @@ func Init(r Report, version string, install, eslint bool, out io.Writer) error {
 	}
 	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: r.Providers, Version: version, Out: out, NoCommit: true}); err != nil {
 		return err
+	}
+	if len(r.Declared) > 0 {
+		f, err := os.OpenFile(filepath.Join(r.Root, workspace.FileName), os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			return err
+		}
+		_, werr := f.WriteString(declarationsText(r.Declared))
+		if cerr := f.Close(); werr != nil || cerr != nil {
+			return errors.Join(werr, cerr)
+		}
+		fmt.Fprintf(out, "  declared %d Go project(s) of the root module in %s\n", len(r.Declared), workspace.FileName)
 	}
 	if err := CompleteWorkspace(r, install, eslint, out); err != nil {
 		return err

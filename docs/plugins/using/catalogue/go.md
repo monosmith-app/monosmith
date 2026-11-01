@@ -349,7 +349,7 @@ package below it, depends on it in the graph. The tasks are those of any Go proj
 folder (`go build`, `go test ./...`, `golangci-lint run`), cached on the folder's files and the
 module's `go.mod` and `go.sum`. A folder that imports a package of the module that no declared
 project holds (a shared `internal/` folder) is not part of any cache key: declare that folder as a
-`lib` too.
+`lib` too: `smith doctor` warns about it and names the folder.
 
 Limits: a module has one version, so a declared project is an app or a lib, never a package, and
 a library of the module cannot be released on its own (its apps are released by their tags and

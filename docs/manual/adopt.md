@@ -79,8 +79,15 @@ and its git history. With `--init` it writes `smith.toml`, `.gitattributes`, `RE
 (and the other providers' files), `.devcontainer/devcontainer.json`, `tools/smith/install.sh`, the MonoSmith agent
 (`.claude/agents/smith.md`,
 `.mcp.json` and `.vscode/mcp.json`, see [the agent guide](../guides/agent.md); `smith agent install` adds it
-later to a workspace that lacks it), `go.work` when there are Go projects, and edits `.gitignore`. It reads no
+later to a workspace that lacks it), `go.work` when there are Go modules, and edits `.gitignore`. It reads no
 smith-specific environment variable.
+
+A repository whose Go code is one module at the root (a `go.mod` there, and no other) has no manifest per
+project. Adopt finds the programs (each folder with a `package main`, an app) and the libraries (each folder
+under `libs/`, `pkg/` and `internal/`, a lib), lists them as projects, and with `--init` declares them in
+`smith.toml` as `[projects.<name>]` tables with a `root`, `language = "go"` and a `kind`
+([the Go plugin](../plugins/using/catalogue/go.md#projects-of-one-module)). It writes no `go.work` for them. A
+program in the module's own folder cannot be a project: adopt says so and asks you to move it to `cmd/<name>`.
 
 ## Examples
 

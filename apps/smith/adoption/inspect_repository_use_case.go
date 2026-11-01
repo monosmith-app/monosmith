@@ -56,10 +56,17 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 		return r, nil
 	}
 	status, _ := git.Run("status", "--porcelain")
-	r.Clean = strings.TrimSpace(status) == ""
+	r.Clean = cleanApartFromSmith(status)
 	r.Scope = scopeOf(root, r.Name)
 	r.Providers = providersOf(exists)
 
+	if exists("go.mod") {
+		var rootProgram bool
+		r.Declared, rootProgram = InferGoProjects(root)
+		if rootProgram {
+			r.Warnings = append(r.Warnings, Item{Message: "the root module's main package is in the repository's own folder, which cannot be a project", Step: "move it to cmd/<name> (git mv main.go cmd/<name>/main.go), commit, then run smith adopt again"})
+		}
+	}
 	cfg, err := previewConfig(r)
 	if err != nil {
 		return r, err
@@ -178,7 +185,8 @@ func previewConfig(r Report) (workspace.Config, error) {
 	for i, p := range r.Providers {
 		quoted[i] = fmt.Sprintf("%q", p)
 	}
-	return workspace.Parse([]byte(fmt.Sprintf("schema = %d\n\n[workspace]\nname = %q\nscope = %q\n\n[ci]\nproviders = [%s]\n", workspace.SchemaVersion, r.Name, r.Scope, strings.Join(quoted, ", "))))
+	text := fmt.Sprintf("schema = %d\n\n[workspace]\nname = %q\nscope = %q\n\n[ci]\nproviders = [%s]\n", workspace.SchemaVersion, r.Name, r.Scope, strings.Join(quoted, ", "))
+	return workspace.Parse([]byte(text + declarationsText(r.Declared)))
 }
 
 func rootRuntimeDependencies(root string) []string {
@@ -225,4 +233,22 @@ func predictedFailure(f doctor.Finding) Item {
 	}
 	item.Step = item.Steps[0]
 	return item
+}
+
+// cleanApartFromSmith says whether git status (--porcelain) lists nothing but
+// what smith itself leaves in the working tree: the .smith folder, which holds
+// the cache and the default tool configurations it derives and never commits. A
+// dry run that wrote them must not make the repository look changed.
+func cleanApartFromSmith(status string) bool {
+	for _, line := range strings.Split(status, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if f := strings.Fields(line); len(f) == 2 && (f[1] == ".smith/" || strings.HasPrefix(f[1], ".smith/")) {
+			continue
+		}
+		return false
+	}
+	return true
 }
