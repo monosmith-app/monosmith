@@ -36,6 +36,13 @@ secrets, and consumers need their own token to read it; see
 [configuration](configuration.md#private-registries)). Either way a version
 the registry already has is skipped, so a re-run completes a release.
 
+An app is never published to a registry, in any language: it is released by its tag, its
+GitHub Release with the files it attaches (`build`, `assets`, `platforms`; a plugin's own
+archives) and its deploy plugins. No `registry = "none"` is needed for it, and a Python
+app, a Rust binary crate and a .NET app behave alike. To publish a program to a registry,
+make it a package (`kind = "package"`), or give it an npm, PyPI, NuGet or RubyGems
+distribution under `[projects.<name>.release]`.
+
 A package that a registry builds from its tag (JitPack for Maven, Packagist,
 Go modules) sets `registry = "none"` under `[projects.<name>]` or `[release]`:
 the release versions it, tags it and creates the GitHub Release, publishes to

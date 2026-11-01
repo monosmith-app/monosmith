@@ -79,10 +79,14 @@ jobs:
 	}
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
+	releaseID := ""
+	if githubHasDependents(m) {
+		releaseID = "        id: release\n"
+	}
 	fmt.Fprintf(&b, `      - name: Release
-        if: github.event_name == 'push' && %s
+%[2]s        if: github.event_name == 'push' && %[1]s
         run: smith ci release
-`, m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" }))
+`, githubOnReleaseBranches(m), releaseID)
 	if len(m.Credentials) > 0 || m.VSCEEntra {
 		b.WriteString("        env:\n")
 		for _, c := range m.Credentials {
@@ -306,7 +310,7 @@ func githubCIOutputs(m Model) string {
 	if !githubHasDependents(m) {
 		return ""
 	}
-	return "    outputs:\n      released: ${{ steps.released.outputs.done }}\n"
+	return "    outputs:\n      released: ${{ steps.release.outputs.released || steps.released.outputs.done }}\n"
 }
 
 // githubOnReleaseBranches is the condition that holds on a push to the release
