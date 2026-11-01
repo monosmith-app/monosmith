@@ -44,7 +44,17 @@ func Kinds(set *pluginhost.PluginSet) []KindDescription {
 	return out
 }
 
+// displayNames are the names people use for the languages whose plugin name
+// does not capitalise into one.
+var displayNames = map[string]string{
+	"cpp": "C++", "dotnet": ".NET", "node": "Node.js", "jvm": "JVM", "php": "PHP", "vba": "VBA",
+	"objc": "Objective-C", "applescript": "AppleScript", "bicep": "Bicep", "dart": "Dart",
+}
+
 func title(s string) string {
+	if d, ok := displayNames[s]; ok {
+		return d
+	}
 	if s == "" {
 		return s
 	}

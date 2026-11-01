@@ -160,6 +160,7 @@ func tryHint(p *projectgraph.Project) string {
 // the current directory, then the first project to add (smith kinds lists the
 // languages).
 func nextSteps(name, rel, language string) string {
+	app := firstAppName(language)
 	if language == "" {
 		language = "<language>   # smith kinds lists the languages"
 	}
@@ -168,6 +169,17 @@ func nextSteps(name, rel, language string) string {
 	if rel != "." {
 		fmt.Fprintf(&b, "  cd %s\n", rel)
 	}
-	fmt.Fprintf(&b, "  smith add app web --lang %s\n", language)
+	fmt.Fprintf(&b, "  smith add app %s --lang %s\n", app, language)
 	return b.String()
+}
+
+// firstAppName is the name smith new suggests for the first app: "web" for
+// the languages that build websites, "api" for the rest, so a .NET or Go
+// workspace is not told to add a website.
+func firstAppName(language string) string {
+	switch language {
+	case "", "node", "dart":
+		return "web"
+	}
+	return "api"
 }
