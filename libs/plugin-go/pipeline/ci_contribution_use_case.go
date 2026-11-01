@@ -30,7 +30,7 @@ func toolchainVersion(workspaceRoot string, projects []protocol.Project) string 
 	}
 	newest := ""
 	for _, p := range projects {
-		src, err := os.ReadFile(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root), "go.mod"))
+		src, err := os.ReadFile(ModuleFile(workspaceRoot, p.Root))
 		if err != nil {
 			continue
 		}

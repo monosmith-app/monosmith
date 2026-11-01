@@ -85,8 +85,17 @@ func ConfigText(cfg workspace.Config) string {
 	}
 	for _, name := range sortedKeys(cfg.Projects) {
 		p := cfg.Projects[name]
-		if p.TagPrefix != "" {
-			fmt.Fprintf(&b, "\n[projects.%s]\ntag_prefix = %s\n", key(name), q(p.TagPrefix))
+		if p.TagPrefix != "" || p.Declared() {
+			fmt.Fprintf(&b, "\n[projects.%s]\n", key(name))
+			if p.Declared() {
+				fmt.Fprintf(&b, "root = %s\nlanguage = %s\n", q(p.Root), q(p.Language))
+				if p.Kind != "" {
+					fmt.Fprintf(&b, "kind = %s\n", q(p.Kind))
+				}
+			}
+			if p.TagPrefix != "" {
+				fmt.Fprintf(&b, "tag_prefix = %s\n", q(p.TagPrefix))
+			}
 		}
 		if r := p.Release; r != nil {
 			fmt.Fprintf(&b, "\n[projects.%s.release]\n", key(name))

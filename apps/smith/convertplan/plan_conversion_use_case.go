@@ -144,19 +144,34 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 
 func planProject(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, name string, released bool, pattern string, in Input) {
 	lang, label := Language(p)
-	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != ""}
+	// A Go package of a module declared above it has no manifest of its own:
+	// smith.toml declares it as a project (ADR 0052).
+	moduleDir, declared := "", false
+	if lang == "" {
+		if dir, ok := GoModuleAbove(p, in.Files); ok {
+			moduleDir, declared, lang = dir, true, "go"
+		}
+	}
+	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != "", Declared: declared}
 	plan.Projects = append(plan.Projects, pp)
 	if !pp.Supported {
-		if dir, ok := GoModuleAbove(p, in.Files); ok {
-			plan.Add(Unsupported, name, p.Root, fmt.Sprintf("a Go package of the module at %s: smith runs a Go project from a go.mod in its own folder, so nothing builds, tests or releases it after converting. Give it a go.mod of its own (go mod init <module>/%s in %s), list every module in a go.work at the root (go work init; go work use ./%s ...), then run smith convert again; its project.json is kept for reference", dir, p.Root, p.Root, p.Root))
-			return
-		}
 		plan.Add(Unsupported, name, p.Root, label+" project: smith v1 has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
 		return
 	}
 	kind := Kind(p, released)
+	if declared && kind == protocol.ProjectPackage {
+		// A module has one version, so a package of one cannot be released alone.
+		kind = protocol.ProjectLib
+		plan.Add(Changed, name, "kind", "a lib: a package of a module cannot be released on its own, since the module has one version")
+	}
 	pp.Kind = kind
-	pp.KindMarker = NeedsKindMarker(p, lang, kind)
+	if declared {
+		o := plan.Override(name)
+		o.Root, o.Language, o.Kind = p.Root, "go", string(kind)
+		plan.SetOverride(name, o)
+		plan.Add(Mapped, name, p.Root, "declared in smith.toml as a Go project of the module at "+moduleDir+": it has no go.mod of its own, so smith builds and tests it from the module's")
+	}
+	pp.KindMarker = !declared && NeedsKindMarker(p, lang, kind)
 	if pp.KindMarker {
 		plan.Add(Mapped, name, "kind", fmt.Sprintf("%s is declared in its manifest, since %s/ does not imply it", kind, strings.SplitN(p.Root, "/", 2)[0]))
 	}

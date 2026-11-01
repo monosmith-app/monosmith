@@ -3,6 +3,7 @@ package adoption
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,5 +67,15 @@ func TestSettleLockfileDoesNothingWhenPackageJsonDidNotChange(t *testing.T) {
 	settleLockfile(lockfilesync.Options{Root: npmRoot(t, true), Out: &out, Run: run}, false, &out)
 	if out.Len() != 0 {
 		t.Fatal(out.String())
+	}
+}
+
+func TestNoGoWorkIsWrittenForProjectsThatHaveNoGoMod(t *testing.T) {
+	root := t.TempDir()
+	if err := writeGoWork(root, []string{"apps/mvd", "libs/core"}, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "go.work")); err == nil {
+		t.Error("projects declared in the root module have no go.mod to use: a go.work with nothing in it breaks every go command")
 	}
 }
