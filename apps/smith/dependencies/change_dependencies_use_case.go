@@ -75,6 +75,7 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 }
 
 func installAll(s *session.Session, log io.Writer) error {
+	var failed []string
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
 		if !c.Supports(protocol.MethodInstall) {
@@ -91,9 +92,15 @@ func installAll(s *session.Session, log io.Writer) error {
 		}
 		var res protocol.DependencyResult
 		if err := c.Call(protocol.MethodInstall, protocol.InstallParams{Projects: projects}, &res, timeout); err != nil {
-			return fmt.Errorf("plugin %s: %w", name, err)
+			// One language that cannot install must not stop the others.
+			fmt.Fprintf(log, "! %s: skipped, %v\n", name, err)
+			failed = append(failed, name)
+			continue
 		}
 		report(log, fmt.Sprintf("%s: installed %d project(s)", name, len(projects)), res)
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("the other languages were installed, but %s could not be: fix the line above, then run smith install again", strings.Join(failed, ", "))
 	}
 	return nil
 }
