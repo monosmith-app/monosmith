@@ -578,6 +578,12 @@ type ProjectRelease struct {
 	// PubTag is that tag, with {name} (the release tag prefix without its
 	// "@") and {version}. Default: {name}-v{version}.
 	PubTag string `toml:"pub_tag"`
+	// Channels false keeps the project out of the release channels
+	// ([[release.channels]]): on a channel branch it is neither planned nor
+	// published. Use it for a project that cannot take a prerelease yet, such
+	// as a Go module whose path lacks the /v2 its channel's major needs.
+	// Default: true.
+	Channels *bool `toml:"channels"`
 	// Description, Homepage and License describe the app in those manifests
 	// and packages.
 	Description string `toml:"description"`

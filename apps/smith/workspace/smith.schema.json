@@ -358,6 +358,7 @@
               "nuget": { "type": "string", "pattern": "^[A-Za-z0-9_]+([.-][A-Za-z0-9_]+)*$", "description": ".NET tool package the app is published as (dotnet tool install -g <name>), with one <name>.<rid> package per platform. Needs NUGET_API_KEY." },
               "rubygems": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$", "description": "Gem the app is published as, one platform gem per platform. Needs GEM_HOST_API_KEY." },
               "pub": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "pub.dev package the app is published as (dart pub global activate <name>), holding every platform's binary. Published from GitHub Actions by the generated pub workflow, through pub.dev's automated publishing." },
+              "channels": { "type": "boolean", "description": "false keeps the project out of the release channels: on a channel branch it is neither planned nor published (for example a Go module whose path lacks the /v2 the channel's major needs). Default: true." },
               "pub_tag": { "type": "string", "description": "The tag pub.dev's automated publishing matches, with {name} (the release tag prefix without its @) and {version}. Default: {name}-v{version}." },
               "description": { "type": "string", "description": "What the app is, for the package manager manifests." },
               "homepage": { "type": "string", "description": "The app's homepage. Default: the GitHub repository." },

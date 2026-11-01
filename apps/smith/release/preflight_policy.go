@@ -120,27 +120,38 @@ func Preflight(s *session.Session, plan Plan) error {
 }
 
 // channelProblems lists what in the plan cannot be published as a release
-// channel without moving a stable pointer: a plugin that does not take the
-// channel's name (hasChannels), a deploy plugin (a container image's latest),
-// and an app's binaries sent to package managers or registries of their own.
+// channel without moving a stable pointer: a package whose plugin does not
+// declare the channels capability (hasChannels), a deploy plugin (a container
+// image's latest), and an app's binaries sent to a package manager. The
+// registries an app's binaries go to (npm, PyPI, NuGet, RubyGems, pub.dev, the
+// Linux packages) are safe: npm gets the channel's tag and the others order a
+// prerelease version below the release.
 func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plugin string) bool) []string {
 	var problems []string
 	for _, item := range plan.Items {
-		if !hasChannels(item.Plugin) {
-			problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot publish a release channel, so a prerelease would take the place of the stable version", item.Project, item.Plugin))
-		}
 		p := graph.Get(item.Project)
 		if p == nil {
 			continue
 		}
+		if publishedByItsPlugin(p) && !hasChannels(item.Plugin) {
+			problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot publish a release channel, so a prerelease could take the place of the stable version; keep the project out of the channel with channels = false in [projects.%s.release]", item.Project, item.Plugin, item.Project))
+		}
 		if len(p.Deployers) > 0 {
 			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; leave the project out of the channel's release", item.Project, strings.Join(p.Deployers, " and ")))
 		}
-		if r := p.Release; r != nil && (len(r.PackageManagers) > 0 || len(r.LinuxPackages) > 0 || len(r.NPM) > 0 || r.PyPI != "" || r.NuGet != "" || r.RubyGems != "" || r.Pub != "") {
-			problems = append(problems, fmt.Sprintf("%s: the binaries sent to package managers and registries have no release channel yet", item.Project))
+		if r := p.Release; r != nil && len(r.PackageManagers) > 0 {
+			problems = append(problems, fmt.Sprintf("%s: the package managers (%s) always offer the newest version, and have no release channel yet", item.Project, strings.Join(r.PackageManagers, ", ")))
 		}
 	}
 	return problems
+}
+
+// publishedByItsPlugin says whether the project's plugin publishes it to a
+// registry: a package, not a native one (published by the native jobs) and not
+// one released by its tag alone. An app is released by its tag, its assets and
+// its distribution.
+func publishedByItsPlugin(p *projectgraph.Project) bool {
+	return p.Kind == protocol.ProjectPackage && !Native(p) && p.PublishTo != "none" && (p.Registries == nil || !p.Registries.NoPublish)
 }
 
 // DistributionCredentials are the secrets publishing an app's binaries to

@@ -99,7 +99,7 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 	releasing := map[string]string{}
 	for _, name := range order {
 		p := graph.Get(name)
-		if !p.Releases() {
+		if !p.Releases() || (ch != nil && p.Release != nil && p.Release.Channels != nil && !*p.Release.Channels) {
 			continue
 		}
 		latest, tag, released := LatestTag(git, p)

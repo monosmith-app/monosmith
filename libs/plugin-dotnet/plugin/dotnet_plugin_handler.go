@@ -54,6 +54,11 @@ func (d *Dotnet) Publish(params protocol.PublishParams) (protocol.PublishResult,
 	return releasing.Publish(d.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: NuGet orders a
+// prerelease (2.0.0-beta.1) below its release, so a channel never becomes the
+// version a plain install picks; Publish needs no tag.
+func (d *Dotnet) PublishesChannels() {}
+
 // Published implements serve.RegistryReader.
 func (d *Dotnet) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(params)
