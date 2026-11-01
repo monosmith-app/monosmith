@@ -15,7 +15,7 @@ languages it supports, in a workspace that turns it on in `smith.toml`:
 
 You need not edit the file for this one: it is the workspace's **architecture**, and
 [`smith architecture`](../manual/architecture.md) (or the Architecture section of the Settings
-tab in [`smith tui`](../manual/tui.md)) lists the architectures smith knows, shows the one in
+tab in [the terminal interface](../manual/tui.md)) lists the architectures smith knows, shows the one in
 use and switches between them. Today they are `vertical-slices`, `hexagonal`, `clean`, `ddd`,
 `modular-monolith`, `mvc`, `package-by-layer` and `none` (no table, no checks); choosing `none` removes the table, with the `languages` and `exclude` under it.
 
