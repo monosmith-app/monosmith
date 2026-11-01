@@ -53,6 +53,11 @@ func (c *Cpp) Publish(params protocol.PublishParams) (protocol.PublishResult, er
 	return releasing.Publish(c.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a project is released by its tag. CMake takes only numbers in
+// project(VERSION), so the version writer leaves the prerelease to the tag.
+// No registry holds a stable pointer a prerelease could take.
+func (c *Cpp) PublishesChannels() {}
+
 // CI implements serve.CIContributor.
 func (c *Cpp) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(c.root, params), nil
