@@ -8,7 +8,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+// KillGrace is how long a stopped task has to exit after SIGTERM before its
+// whole process group is killed.
+var KillGrace = 3 * time.Second
 
 // Spec is one command to run.
 type Spec struct {
@@ -56,7 +61,12 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 		return exitCode(err)
 	case <-ctx.Done():
 		killTree(cmd)
-		<-done
+		select {
+		case <-done:
+		case <-time.After(KillGrace):
+			forceKillTree(cmd)
+			<-done
+		}
 		return -1, ctx.Err()
 	}
 }
