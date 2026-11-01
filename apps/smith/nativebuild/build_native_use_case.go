@@ -149,8 +149,11 @@ func attach(ctx context.Context, s *session.Session, native []*projectgraph.Proj
 			fmt.Fprintf(out, "%s was not released by this commit; nothing to attach\n", p.Name)
 			continue
 		}
-		spec := release.AssetSpec(p)
-		spec.Platforms = []string{runtime.GOOS + "/" + runtime.GOARCH}
+		spec := platformAssetSpec(p)
+		if spec == nil {
+			fmt.Fprintf(out, "%s builds its release files with its own command; the assets job attaches them\n", p.Name)
+			continue
+		}
 		var built protocol.PublishResult
 		params := protocol.PublishParams{Project: p.Project, Version: version, Assets: spec}
 		if ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodPublish, params, &built, 30*time.Minute); err != nil || !ok {
@@ -175,6 +178,19 @@ func attach(ctx context.Context, s *session.Session, native []*projectgraph.Proj
 		fmt.Fprintf(out, "attached %s to %s\n", strings.Join(res.Uploaded, ", "), tag)
 	}
 	return nil
+}
+
+// platformAssetSpec is what to build for p on this platform, or nil when p
+// makes its release files with its own build command ([projects.x.release]
+// build): the plugin builds no archives for it, and the assets job runs the
+// command and attaches the files.
+func platformAssetSpec(p *projectgraph.Project) *protocol.AssetSpec {
+	spec := release.AssetSpec(p)
+	if spec == nil {
+		return nil
+	}
+	spec.Platforms = []string{runtime.GOOS + "/" + runtime.GOARCH}
+	return spec
 }
 
 // taggedAt is the project's release tag pointing at commit, and its version.
