@@ -53,6 +53,7 @@ shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (be
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
+defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
 [recipes]                             # a different recipe for one project kind: app, lib or package
 package = "https://example.com/recipes/package.recipe.toml"

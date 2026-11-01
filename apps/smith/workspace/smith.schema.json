@@ -21,7 +21,8 @@
         "shared_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative folders (dist/drop) that several tasks fill on purpose, each with its own files. smith doctor does not report their overlap. Default: none." },
         "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." },
         "recipe": { "type": "string", "description": "The recipe new projects are created from: a path relative to smith.toml, or an https URL. smith add --stack bypasses it. Default: none (stacks only)." },
-        "commit_operations": { "type": "boolean", "description": "Commit every mutating command (add, remove, upgrade, derive, sync) as one commit when the work tree is clean before it; smith undo reverts the last. Default: false." }
+        "commit_operations": { "type": "boolean", "description": "Commit every mutating command (add, remove, upgrade, derive, sync) as one commit when the work tree is clean before it; smith undo reverts the last. Default: false." },
+        "defaults": { "type": "string", "pattern": "^\\d{4}\\.(0[1-9]|1[0-2])$", "description": "The defaults vintage (year.month) the workspace was made with. A newer smith keeps these defaults until smith upgrade --defaults adopts a newer vintage. Default: none (a workspace made before vintages)." }
       }
     },
     "ci": {

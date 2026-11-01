@@ -209,6 +209,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	if status, err := cachemaintenance.Inspect(s.LocalCacheDir(), session.CacheLimitBytes(s.Config)); err == nil {
 		out = append(out, localCacheFindings(status)...)
 	}
+	out = append(out, defaultsVintageFinding(s.Config.Workspace.Defaults))
 	out = append(out, toolchainPinFindings(s)...)
 	out = append(out, jestHelperFilesFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects, s.Config.Workspace.AllowedOutputs...)

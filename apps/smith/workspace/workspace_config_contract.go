@@ -129,6 +129,11 @@ type WorkspaceSection struct {
 	// work tree is clean before it starts. smith undo reverts the last such
 	// commit. Default: false (ADR 0047).
 	CommitOperations bool `toml:"commit_operations"`
+	// Defaults is the defaults vintage the workspace was made with (for
+	// example "2026.11", ADR 0054). A newer smith keeps the defaults of this
+	// vintage until `smith upgrade --defaults` adopts a newer one. Empty means
+	// a workspace made before vintages.
+	Defaults string `toml:"defaults"`
 }
 
 // CISection chooses which pipelines smith generates.

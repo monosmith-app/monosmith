@@ -120,6 +120,9 @@ func Validate(cfg *Config) error {
 	if cfg.Schema < SchemaVersion {
 		return fmt.Errorf("%s uses schema %d, this smith schema %d: run `smith upgrade`", FileName, cfg.Schema, SchemaVersion)
 	}
+	if err := validateDefaultsVintage(cfg); err != nil {
+		return err
+	}
 	if strings.TrimSpace(cfg.Workspace.Name) == "" {
 		return fmt.Errorf("%s: [workspace] name is required", FileName)
 	}
