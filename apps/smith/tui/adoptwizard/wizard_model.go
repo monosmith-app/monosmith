@@ -578,7 +578,7 @@ func (m Model) install() (Model, Outcome) {
 	}}
 	style := adoptStyle
 	style.Verb = "Installing…"
-	m = m.running(StageInstalling, "Installing the packages", job, withWorking(style, "starting npm"))
+	m = m.running(StageInstalling, "Installing the packages", job, withWorking(style, "starting the package manager"))
 	return m, Outcome{Job: &job}
 }
 
