@@ -26,7 +26,10 @@ func RemoveCommand(version string) *cobra.Command {
 		Long: `Remove a project: delete its directory, let its plugin clean what it owns
 outside it (the go.work entry, the npm lockfile, the Python venv), drop its
 tables from smith.toml and regenerate the pipelines. A project that others
-import is refused unless --force. Its release tags are kept.`,
+import is refused unless --force. Its release tags are kept.
+
+Afterwards it lists the tracked files that still name the project (a
+hand-written workflow, an editor task, a doc). It does not change them.`,
 		Example: "  smith remove web --dry-run\n  smith remove web",
 		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"the project to remove"}, Example: "smith remove web --dry-run", More: "smith projects lists them"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -45,7 +48,7 @@ import is refused unless --force. Its release tags are kept.`,
 					return errors.New("refusing to remove without a terminal; pass --yes")
 				}
 				// The dry run is the plan: it also refuses a project others import.
-				preview, err := RemoveProject(s, RemoveOptions{Name: opts.Name, Force: opts.Force, DryRun: true})
+				preview, err := RemoveProject(s, RemoveOptions{Name: opts.Name, Force: opts.Force, DryRun: true, SkipMentions: true})
 				if err != nil {
 					return err
 				}
@@ -78,6 +81,7 @@ import is refused unless --force. Its release tags are kept.`,
 			for _, n := range r.Notes {
 				fmt.Fprintf(out, "  %s\n", n)
 			}
+			WriteMentions(out, r)
 			return nil
 		},
 	}

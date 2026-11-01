@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/derivelock"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -22,6 +23,8 @@ type RemoveOptions struct {
 	DryRun bool
 	// Force removes a project other projects still import.
 	Force bool
+	// SkipMentions leaves out the scan for files that still name the project.
+	SkipMentions bool
 }
 
 // Removal is what removing a project changes (or, in a dry run, would).
@@ -33,6 +36,10 @@ type Removal struct {
 	// Files are the other files changed: plugin clean-up, smith.toml, pipelines.
 	Files []string `json:"files,omitempty"`
 	Notes []string `json:"notes,omitempty"`
+	// Mentions are tracked files that still name the project; smith does not change them.
+	Mentions []Mention `json:"mentions,omitempty"`
+	// MentionsRootOnly is true when the name is short and only the root path was searched.
+	MentionsRootOnly bool `json:"mentionsRootOnly,omitempty"`
 }
 
 // RemoveProject deletes a project's directory, lets its plugin clean what it
@@ -78,6 +85,7 @@ func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 	if opts.DryRun {
 		r.Notes = append(r.Notes, "the pipelines would be regenerated")
 		sort.Strings(r.Files)
+		r.findMentions(s.Root, opts)
 		return r, nil
 	}
 	if cfgChanged {
@@ -97,5 +105,22 @@ func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 	}
 	r.Files = append(r.Files, changed...)
 	sort.Strings(r.Files)
+	r.findMentions(s.Root, opts)
 	return r, nil
+}
+
+// findMentions fills Mentions, skipping the files smith changed.
+func (r *Removal) findMentions(root string, opts RemoveOptions) {
+	if opts.SkipMentions {
+		return
+	}
+	skip := append([]string(nil), r.Files...)
+	if rec, err := derivelock.Read(root); err == nil {
+		for _, f := range rec.Files {
+			if f.Owner == derivelock.OwnerSmith {
+				skip = append(skip, f.Path) // smith regenerates it: no need to review
+			}
+		}
+	}
+	r.Mentions, r.MentionsRootOnly = FindMentions(root, r.Project, r.Root, skip)
 }
