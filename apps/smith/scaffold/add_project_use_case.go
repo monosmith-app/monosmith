@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -43,7 +42,11 @@ type AddOptions struct {
 	// Fresh gives the project the built-in default of its stack and does not
 	// look at the sibling projects (smith add --fresh).
 	Fresh bool
-	Out   io.Writer
+	// Like names a project whose shape (build, test, layout, lint) the new
+	// project copies, instead of what most of its siblings share (smith add
+	// --like).
+	Like string
+	Out  io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -130,15 +133,8 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if st.Scaffold != "" {
 		generator = s.Plugins.Get(st.Scaffold)
 	}
-	if !generator.Supports(protocol.MethodGenerate) {
-		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
-	}
-	if !generator.Info.Scaffolds(kind) {
-		var can []string
-		for _, k := range generator.Info.ScaffoldKinds() {
-			can = append(can, string(k))
-		}
-		return nil, fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
+	if err := checkScaffolds(generator, kind); err != nil {
+		return nil, err
 	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
 	if reason := directoryReason(opts.Kind, conventional, parent); reason != "" {
