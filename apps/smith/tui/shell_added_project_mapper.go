@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
@@ -24,6 +25,23 @@ func addedNextSteps(th theme.Theme, name string) string {
 		th.Accent(commands.ShortcutOf("run.test")) + th.Muted(" runs its tests · ") +
 		th.Accent(commands.ShortcutOf("file.add")) + th.Muted(" adds another · ") +
 		th.Accent(commands.ShortcutOf("projects.install-package")) + th.Muted(" installs a package into "+name)
+}
+
+// mainLanguageWhy says in one line why the Add form starts on the language it
+// does: how many of the workspace's projects use it; "" with no projects.
+func (s Shell) mainLanguageWhy() string {
+	main := s.mainLanguage()
+	if main == "" {
+		return ""
+	}
+	n, total := 0, 0
+	for _, p := range s.list.Projects() {
+		total++
+		if p.Language == main {
+			n++
+		}
+	}
+	return fmt.Sprintf("Preselected: %d of the %d projects here use %s.", n, total, languagenames.Of(main))
 }
 
 // mainLanguage is the language most of the workspace's projects use: what a
