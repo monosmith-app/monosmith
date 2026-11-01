@@ -86,7 +86,13 @@ It is versioned by its tag (`cli@1.2.0`) only. Its plugin builds the release
 assets, one zip per platform and a `checksums.txt`, all under
 `dist/release/<app>/`. `platforms` are `os/arch` pairs in Go's spelling
 (`linux/amd64`, `windows/arm64`, `darwin/arm64`, the six of the default) whatever
-the language, and `asset_name` names each file the same way.
+the language, and `asset_name` names each file the same way. The default is these
+six: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
+and `windows/arm64`. A **native** app (cgo; Go, Rust) is the exception: `platforms`
+does not apply to it. Each runner of `smith ci native` builds its own platform
+only, so with the default `[ci] native_runners` it gets three archives
+(`linux/amd64`, `windows/amd64`, `darwin/arm64`). Add `ubuntu-24.04-arm`,
+`windows-11-arm` or `macos-15-intel` to `native_runners` for the other three.
 
 | Language | What the plugin builds |
 |---|---|

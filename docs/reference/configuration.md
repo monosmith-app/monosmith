@@ -684,7 +684,7 @@ split_repo = "acme/client-php"
 [projects.cli.release]
 asset_name = "{product}_{version}_{os}_{arch}.{ext}"   # the default
 product = "acme"                                      # default: the project name
-platforms = ["linux/amd64", "darwin/arm64", "windows/amd64"]  # default: six
+platforms = ["linux/amd64", "darwin/arm64", "windows/amd64"]  # default: six; a native app: one per native runner
 os_alias = { darwin = "macos" }                       # names in file names only
 arch_alias = { amd64 = "x64" }                        # the same for architectures
 version_variable = "main.version"                     # Go: stamped with -X

@@ -97,3 +97,13 @@ func TestResolveReleaseChecksAssetNamePlaceholders(t *testing.T) {
 		t.Fatalf("checksums without build: %v", err)
 	}
 }
+
+// A release table without platforms builds six: the docs name them. A native app
+// is the exception (one archive per native runner, not these).
+func TestResolveReleaseDefaultsToTheSixPlatformsTheDocsName(t *testing.T) {
+	want := []string{"linux/amd64", "linux/arm64", "darwin/amd64", "darwin/arm64", "windows/amd64", "windows/arm64"}
+	r, err := resolveWithDefaults(t, "os_alias = { windows = \"win\" }\n")
+	if err != nil || !slices.Equal(r.Platforms, want) {
+		t.Fatalf("%+v %v", r, err)
+	}
+}
