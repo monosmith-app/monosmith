@@ -28,13 +28,18 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			}
 			return ReadSnapshot(r, version)
 		},
-		SetPlugin: func(name string, enable bool) error {
+		SetPlugin: func(name string, enable bool) (string, error) {
 			r, err := root()
 			if err != nil {
-				return err
+				return "", err
 			}
-			_, err = pluginhost.EnablePlugins(r, []string{name}, enable)
-			return err
+			if _, err = pluginhost.EnablePlugins(r, []string{name}, enable); err != nil {
+				return "", err
+			}
+			if !enable {
+				return pluginhost.SwitchOffWarning([]string{name}), nil
+			}
+			return "", nil
 		},
 		SetArchitecture: func(name string) error {
 			r, err := root()

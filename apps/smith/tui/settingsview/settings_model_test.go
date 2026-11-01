@@ -23,14 +23,14 @@ type fake struct {
 func (f *fake) backend() Backend {
 	return Backend{
 		Load: func() Snapshot { return f.snap },
-		SetPlugin: func(name string, enable bool) error {
+		SetPlugin: func(name string, enable bool) (string, error) {
 			f.calls = append(f.calls, fmt.Sprintf("plugin %s %v", name, enable))
 			for i := range f.snap.Plugins {
 				if f.snap.Plugins[i].Name == name {
 					f.snap.Plugins[i].Enabled = enable
 				}
 			}
-			return f.setErr
+			return "", f.setErr
 		},
 		SetArchitecture: func(name string) error {
 			f.calls = append(f.calls, "architecture "+name)

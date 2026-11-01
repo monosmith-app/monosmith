@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
@@ -135,6 +136,10 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	// user's screen back on exit. Cell-motion mouse reports (clicks, drags,
 	// the wheel; no hover) keep Shift+drag free for the terminal's own text
 	// selection, and `m` turns the mouse off altogether.
+	// The background is decided here, from the environment, so lipgloss and
+	// termenv never ask the terminal: a terminal that ignores the query made
+	// the screen stay blank for five seconds.
+	lipgloss.SetHasDarkBackground(theme.DarkBackground(os.Getenv))
 	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
 	if err != nil {
 		return nil, nil, err
