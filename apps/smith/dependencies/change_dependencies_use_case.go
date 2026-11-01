@@ -55,6 +55,14 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 		return err
 	}
 	for _, p := range projects {
+		if c := s.Plugins.Get(p.Plugin); c != nil && c.Supports(protocol.MethodDeclared) {
+			var declared protocol.DeclaredResult
+			if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: []protocol.Project{p.Project}}, &declared, timeout); err == nil {
+				if missing, have := undeclared(declared.Declarations, p.Name, packages); len(missing) > 0 {
+					return fmt.Errorf("%s does not declare %s. It declares: %s", p.Name, strings.Join(missing, ", "), strings.Join(have, ", "))
+				}
+			}
+		}
 		var res protocol.DependencyResult
 		ok, err := s.Plugins.Call(p.Plugin, protocol.MethodUninstall, protocol.UninstallParams{Project: p.Project, Packages: packages}, &res, timeout)
 		if err := outcome(p, ok, err); err != nil {

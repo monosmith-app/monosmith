@@ -27,20 +27,20 @@ type SyncReport struct {
 // Sync makes every project of each plugin declare a shared dependency at the
 // same spec. With check it only reports. After rewriting it installs, so
 // lockfiles and the venv follow, unless install is false.
-func Sync(s *session.Session, check, install bool) (SyncReport, error) {
-	return converge(s, nil, check, install)
+func Sync(s *session.Session, check, install, crossMajor bool) (SyncReport, error) {
+	return converge(s, nil, check, install, crossMajor)
 }
 
 // Align is Sync for the named dependencies only, or for every fragmented one
 // when none is named: `smith deps up --align`.
-func Align(s *session.Session, names []string, check, install bool) (SyncReport, error) {
-	return converge(s, names, check, install)
+func Align(s *session.Session, names []string, check, install, crossMajor bool) (SyncReport, error) {
+	return converge(s, names, check, install, crossMajor)
 }
 
 // converge brings the declarations of each plugin's projects to one spec.
 // Dependencies that [dependencies] allow lists are left alone; with names,
 // only those are looked at.
-func converge(s *session.Session, names []string, check, install bool) (SyncReport, error) {
+func converge(s *session.Session, names []string, check, install, crossMajor bool) (SyncReport, error) {
 	var report SyncReport
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
@@ -62,6 +62,12 @@ func converge(s *session.Session, names []string, check, install bool) (SyncRepo
 			return slices.Contains(s.Config.Dependencies.Allow, d.Name) || (len(names) > 0 && !slices.Contains(names, d.Name))
 		})
 		drift := FindDrift(name, declared, local)
+		if crossMajor {
+			for i := range drift {
+				drift[i].Fixable = append(drift[i].Fixable, drift[i].Crossing...)
+				drift[i].Crossing = nil
+			}
+		}
 		report.Drift = append(report.Drift, drift...)
 		if check {
 			continue
@@ -129,6 +135,9 @@ func PrintSync(w io.Writer, r SyncReport, check bool) {
 				verb = "would be rewritten"
 			}
 			fmt.Fprintf(w, "  %-12s %s %s (%s)\n", where(site), site.Spec, verb, site.File)
+		}
+		for _, site := range d.Crossing {
+			fmt.Fprintf(w, "  %-12s %s left alone: it would move from major %d to %d, which can break the project. Pass --yes to allow it (%s)\n", where(site), site.Spec, majorOf(site.Spec), majorOf(d.Target), site.File)
 		}
 		for _, site := range d.Blocked {
 			fmt.Fprintf(w, "  %-12s %s left alone: smith does not rewrite this kind of spec (%s)\n", where(site), site.Spec, site.File)
