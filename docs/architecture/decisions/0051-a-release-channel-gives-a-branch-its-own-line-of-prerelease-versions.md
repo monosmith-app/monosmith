@@ -78,6 +78,11 @@ the guard without a statement of which branch releases what, and each run would 
   again at `.1`. Changing `major` starts a new line on purpose.
 - Promotion is a merge into the release branch: the next stable release there is computed from the
   stable tags as usual.
+- Go stays out (beta.13 review): ordering is safe, since the Go proxy never picks a prerelease tag as
+  the latest version, but a major of 2 or more needs `/vN` in the module path and a Go release is
+  only a tag. With no hook that runs before the tag (the Go plugin has no `version` step), smith
+  cannot refuse a bad path in time. A later `version` step that checks go.mod against the version
+  would allow it. The dry run and the pull request preview show the same refusal as a real release.
 - Not done: the other plugins' registries (each needs its own spelling of a prerelease and a stable pointer), and
   a way to declare `channels` in the TypeScript, Python and C# SDKs.
 

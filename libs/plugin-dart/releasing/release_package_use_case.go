@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -118,9 +117,9 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 		return protocol.PublishedResult{}, nil
 	}
 	result := protocol.PublishedResult{Registry: registry(pub)}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(result.Registry + "/api/packages/" + params.Project.Exports[0])
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Get(result.Registry + "/api/packages/" + params.Project.Exports[0])
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -135,7 +134,7 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 		Latest struct{ Version string } `json:"latest"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	result.Version = body.Latest.Version

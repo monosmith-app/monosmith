@@ -1,6 +1,7 @@
 package release
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -82,12 +83,7 @@ func Preflight(s *session.Session, plan Plan) error {
 	if mirrored {
 		problems = append(problems, splitrepo.Ready(s.Git)...)
 	}
-	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
-		problems = append(problems, channelProblems(plan, s.Graph, func(plugin string) bool {
-			c := s.Plugins.Get(plugin)
-			return c != nil && c.Info.Capabilities.Channels
-		})...)
-	}
+	problems = append(problems, ChannelRefusals(s, plan)...)
 	for name := range plugins {
 		var projects []protocol.Project
 		for _, p := range s.Graph.Projects {
@@ -117,6 +113,23 @@ func Preflight(s *session.Session, plan Plan) error {
 		return fmt.Errorf("cannot release:\n  - %s", strings.Join(problems, "\n  - "))
 	}
 	return nil
+}
+
+// ErrReported is returned by `smith release` when the report it printed already
+// says why the release stopped, so the command line does not print it again.
+var ErrReported = errors.New("the release stopped; the report above says why")
+
+// ChannelRefusals lists what a release from the current branch would refuse
+// because the branch is a release channel (see channelProblems), none on a
+// branch that is not. Both the real release and its preview ask it.
+func ChannelRefusals(s *session.Session, plan Plan) []string {
+	if ChannelOf(s.Config.Release, PlanBranch(s)) == nil {
+		return nil
+	}
+	return channelProblems(plan, s.Graph, func(plugin string) bool {
+		c := s.Plugins.Get(plugin)
+		return c != nil && c.Info.Capabilities.Channels
+	})
 }
 
 // channelProblems lists what in the plan cannot be published as a release

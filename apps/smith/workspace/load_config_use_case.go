@@ -75,6 +75,9 @@ func Parse(raw []byte) (Config, error) {
 			if needsNewerSmith(raw, strict) {
 				return cfg, &NewerSmithError{Detail: detail}
 			}
+			if strings.Contains(detail, "github_prerelease") {
+				detail += "\nA GitHub Release of a prerelease version is marked as a prerelease on its own, so there is nothing to set: remove github_prerelease."
+			}
 			return cfg, errors.New(detail)
 		}
 		var decodeErr *toml.DecodeError

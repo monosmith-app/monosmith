@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/releasepreview"
 	"github.com/monosmith-app/monosmith/apps/smith/releaserehearsal"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -50,6 +51,10 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 				if comment {
 					releasepreview.Post(markdown, cmd.ErrOrStderr())
 				}
+			}
+			if verbose {
+				// The plugins read it: a preview shows one line per tool unless asked.
+				_ = os.Setenv(toolrun.VerboseEnv, "1")
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err == nil {
@@ -91,6 +96,13 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			plan, err := PlanFor(s)
 			if err != nil {
 				return err
+			}
+			if dryRun {
+				// A real release refuses these in its preflight: the preview says so too.
+				if problems := ChannelRefusals(s, plan); len(problems) > 0 {
+					preview("### Release preview\n\n**Blocked:** this release would be refused:\n\n- " + strings.Join(problems, "\n- ") + "\n")
+					return fmt.Errorf("cannot release:\n  - %s", strings.Join(problems, "\n  - "))
+				}
 			}
 			if err := CheckAPI(cmd.Context(), s, &plan); err != nil {
 				preview("### Release preview\n\n**Blocked:** " + err.Error() + "\n")
@@ -146,6 +158,10 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 					fmt.Fprint(out, report.Markdown())
 				} else {
 					fmt.Fprint(out, report.Text())
+				}
+				if err != nil {
+					// The report above says "Stopped: <why>": do not print it again.
+					return ErrReported
 				}
 			}
 			return err

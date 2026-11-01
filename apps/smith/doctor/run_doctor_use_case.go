@@ -82,7 +82,13 @@ func UntrustedReport(root string, cfg workspace.Config) Report {
 }
 
 // Run collects every finding.
-func Run(s *session.Session) Report {
+func Run(s *session.Session) Report { return run(s, true) }
+
+// RunLocal collects every finding that needs no registry, for a caller that
+// must not wait on the network (`smith report`).
+func RunLocal(s *session.Session) Report { return run(s, false) }
+
+func run(s *session.Session, askRegistries bool) Report {
 	var findings []Finding
 	add := func(source string, fs ...protocol.Finding) {
 		for _, f := range fs {
@@ -90,7 +96,9 @@ func Run(s *session.Session) Report {
 		}
 	}
 	add("smith", CoreChecks(s)...)
-	add("smith", lineageChecks(s)...)
+	if askRegistries {
+		add("smith", lineageChecks(s)...)
+	}
 	add("smith", conventionCoverageChecks(s)...)
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)

@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // SimpleIndexURL returns the PEP 503 "simple" index matching an upload URL:
@@ -33,7 +34,7 @@ func SimpleIndexURL(uploadURL string) string {
 
 // httpGet fetches a page; tests replace it.
 var httpGet = func(url string) (string, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: protocol.RegistryLookupTimeout}
 	resp, err := client.Get(url)
 	if err != nil {
 		return "", err

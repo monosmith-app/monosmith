@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -105,6 +106,9 @@ func scanRequires(dir string) ([]string, error) {
 	seen := map[string]bool{}
 	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) && p != dir {
+				return nil // removed while the walk ran
+			}
 			return err
 		}
 		if d.IsDir() {
@@ -117,6 +121,9 @@ func scanRequires(dir string) ([]string, error) {
 			return nil
 		}
 		src, err := os.ReadFile(p)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
