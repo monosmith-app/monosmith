@@ -439,6 +439,9 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 	}
 	if len(r.NPM) > 0 {
 		release := npmbinaries.Release{Names: r.NPM, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/npm"}
+		if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
+			release.Tag = ch.Tag
+		}
 		for _, a := range archives {
 			release.Archives = append(release.Archives, npmbinaries.Archive{Path: a.path, OS: a.os, Arch: a.arch})
 		}

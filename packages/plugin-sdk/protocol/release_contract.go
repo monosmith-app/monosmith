@@ -39,8 +39,8 @@ type PublishParams struct {
 	Branch string `json:"branch,omitempty"`
 	// Tag is the name of the release channel the version belongs to (npm's
 	// dist-tag "beta"). When set, the plugin publishes under it and leaves the
-	// registry's stable pointer where it is. Only sent to a plugin with the
-	// channels capability.
+	// registry's stable pointer where it is, or ignores it when its registry
+	// has no such pointer. Only sent to a plugin with the channels capability.
 	Tag string `json:"tag,omitempty"`
 }
 

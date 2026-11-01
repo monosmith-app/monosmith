@@ -639,6 +639,7 @@ nuget = "acme"                                        # .NET tool packages (dotn
 rubygems = "acme"                                     # platform gems
 pub = "acme"                                          # pub.dev package, published by the pub workflow
 pub_tag = "{name}-v{version}"                         # the default: the tag pub.dev's automated publishing matches
+channels = true                                       # false keeps the project out of the release channels (releasing.md, Release channels)
 description = "What the app does"                     # shown by the registries and package managers
 license = "MIT"
 homepage = "https://cli.acme.dev"                     # default: the GitHub repository

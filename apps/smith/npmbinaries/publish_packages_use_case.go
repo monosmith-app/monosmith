@@ -2,6 +2,7 @@ package npmbinaries
 
 import (
 	"archive/zip"
+	"cmp"
 	"fmt"
 	"io"
 	"os"
@@ -33,6 +34,9 @@ type Release struct {
 	// checks the packages against it.
 	Repository string
 	Archives   []Archive
+	// Tag is the dist-tag a prerelease publishes under (a release channel's
+	// name). Default: next.
+	Tag string
 	// OutDir is the workspace-relative directory the packages are written to.
 	OutDir string
 }
@@ -195,7 +199,7 @@ func publishOne(dir, name string, r Release) (bool, error) {
 	args := []string{"publish", "--access", "public"}
 	if strings.Contains(r.Version, "-") {
 		// npm refuses a prerelease without a tag, so it never becomes latest.
-		args = append(args, "--tag", "next")
+		args = append(args, "--tag", cmp.Or(r.Tag, "next"))
 	}
 	if os.Getenv("ACTIONS_ID_TOKEN_REQUEST_URL") != "" && r.Repository != "" {
 		args = append(args, "--provenance")
