@@ -1,4 +1,4 @@
-# ADR 0054: `smith swap` changes one choice of a project, and stops where the migration is not automatic
+# ADR 0065: `smith swap` changes one choice of a project, and stops where the migration is not automatic
 
 - Status: accepted
 - Date: 2026-11-01

@@ -27,6 +27,18 @@ type Facts struct {
 // Architecture is an architecture name and what it means.
 type Architecture struct {
 	Name, Meaning string
+	// Rules is the one-line summary of the checker's rules, and Layers its
+	// parts from the inside out: both come from the ruleset `smith lint`
+	// enforces, so the agent file and the check cannot disagree. Empty for an
+	// architecture with no layers (vertical-slices).
+	Rules  string
+	Layers []Layer
+}
+
+// Layer is one part of an architecture as the checker knows it.
+type Layer struct {
+	Name, Meaning string
+	Folders       []string
 }
 
 // Project is one project and the choices it was made with.

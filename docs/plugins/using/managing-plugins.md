@@ -30,7 +30,7 @@ smith plugin list
 ```
 
 ```text
-PLUGIN           LEVELS                       SLOTS                REQUIRES
+PLUGIN           ROLES                        SLOTS                REQUIRES
 bicep            language,toolchain,scaffold  -                    -
 cpp              language,toolchain,scaffold  -                    -
 ...
@@ -60,7 +60,7 @@ Installed (search path: ~/work/inst/.smith/plugins, ~/.smith/plugins):
 | Column | Means |
 |---|---|
 | `PLUGIN` | the plugin's name, as it is written in `smith.toml` and in stacks |
-| `LEVELS` | the roles it can be chosen for. A language plugin that declares none shows the default: language, toolchain and scaffold |
+| `ROLES` | the roles it can be chosen for. A language plugin that declares none shows the default: language, toolchain and scaffold |
 | `SLOTS` | the tasks a toolchain owns; two plugins of one project may not share a slot |
 | `REQUIRES` | plugins that must be in the same project (`language plugin node`); `not <ref>` marks a conflict |
 

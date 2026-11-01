@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
+	"github.com/monosmith-app/monosmith/apps/smith/plugindraft"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
 	"github.com/monosmith-app/monosmith/apps/smith/plugininstall"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginmarket"
@@ -143,7 +144,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
-			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "LEVELS", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
+			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "ROLES", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue
@@ -191,7 +192,7 @@ func Command(version string) *cobra.Command {
 		},
 	}
 	list.Flags().BoolVar(&asJSON, "json", false, "print JSON")
-	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand())
+	cmd.AddCommand(list, checkCommand(version), packCommand(), installCommand(), searchCommand(), plugindraft.Command())
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]

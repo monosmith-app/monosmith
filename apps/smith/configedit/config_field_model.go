@@ -23,6 +23,9 @@ type Field struct {
 	Enum        []string `json:"enum,omitempty"`
 	Minimum     *int     `json:"minimum,omitempty"`
 	MinLength   int      `json:"minLength,omitempty"`
+	// Reason is one line saying why the default is what it is, from the
+	// schema's x-reason; empty when the schema gives none.
+	Reason string `json:"reason,omitempty"`
 }
 
 // Table and Key split the path.
@@ -34,6 +37,7 @@ func (f Field) Key() string { return strings.SplitN(f.Path, ".", 2)[1] }
 type schemaNode struct {
 	Type                 string                `json:"type"`
 	Description          string                `json:"description"`
+	Reason               string                `json:"x-reason"`
 	Properties           map[string]schemaNode `json:"properties"`
 	Items                *schemaNode           `json:"items"`
 	Enum                 []string              `json:"enum"`
@@ -64,7 +68,7 @@ func Fields() ([]Field, error) {
 			if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
 				continue // a table, or a list of tables ([[release.channels]]): edited in the file
 			}
-			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Minimum: p.Minimum, MinLength: p.MinLength}
+			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Reason: p.Reason, Minimum: p.Minimum, MinLength: p.MinLength}
 			if p.Items != nil {
 				f.Enum = p.Items.Enum
 			}

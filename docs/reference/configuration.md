@@ -53,6 +53,7 @@ shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (be
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
+defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
 [recipes]                             # a different recipe for one project kind: app, lib or package
 package = "https://example.com/recipes/package.recipe.toml"
@@ -77,6 +78,7 @@ audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts i
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
 allow = ["left-pad"]                  # dependencies that may differ between projects
+presets = ["@acme/eslint-config"]     # shared-config packages: smith up shows their bumps first, as one group (docs/guides/shared-presets.md)
 
 [boundaries]
 kinds = true                          # no project depends on an app: an error (unset: a warning; false: off)
@@ -600,6 +602,9 @@ depends_on = ["^build", "build", "^typecheck"]
 [projects.parser.tasks.test]
 depends_on = ["^build"]
 ```
+
+A rule for a folder is a group whose selector is the folder: `select = ["packages/*"]` is "everything
+under `packages/`" ([ADR 0058](../architecture/decisions/0058-folder-rules-are-task-groups-with-a-path-selector.md)).
 
 `select` lists selectors, written the way `--projects` and `[boundaries]` write
 them: a project name, a glob over names or folders (`libs/*`), `kind:app`,

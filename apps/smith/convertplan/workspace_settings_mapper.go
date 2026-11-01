@@ -13,6 +13,7 @@ import (
 // modules maps Go project roots to their module paths.
 func WorkspaceSettings(w *nxworkspace.Workspace, dirName string, hasFile func(string) bool, modules map[string]string) workspace.Config {
 	cfg := workspace.Config{Schema: workspace.SchemaVersion}
+	cfg.Workspace.Defaults = workspace.LatestDefaults
 	name, scope := splitPackageName(w.RootPackage.Name)
 	if name == "" || name == "source" {
 		name = dirName

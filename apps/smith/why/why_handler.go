@@ -39,6 +39,9 @@ tools. smith why-miss is a different command: it says why a task ran again.`,
 		Example: "  smith why packages/web/tsconfig.lib.json\n  smith why .github/workflows/ci.yml\n  smith why AGENTS.md --json",
 		Args:    commandargs.Exactly(commandargs.Spec{Names: []string{"a file"}, Example: "smith why packages/web/tsconfig.json", More: "smith why-miss <project>:<task> says why a task reran"}),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if answered, err := explainSetting(cmd, args[0], asJSON); answered || err != nil {
+				return err
+			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
 				return err

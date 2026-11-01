@@ -131,7 +131,7 @@ The rules, from [ADR 0041](../architecture/decisions/0041-smith-add-follows-the-
 - `--like <project>` takes the shape of that one project instead (build tool, test runner,
   layout, lint), for the keys the stack follows. It prints what it took, key by key, and the
   plan of `--dry-run` shows it too. It needs no three siblings, and it excludes `--fresh`
-  ([ADR 0055](../architecture/decisions/0055-smith-add-like-copies-the-shape-of-one-named-project.md)).
+  ([ADR 0066](../architecture/decisions/0066-smith-add-like-copies-the-shape-of-one-named-project.md)).
 - When several keys differ, the warning after the project is made is one line that names them all.
 
 The facts for a Node project are `build.tool` (`tsc`, `esbuild`, ...), `test.runner`

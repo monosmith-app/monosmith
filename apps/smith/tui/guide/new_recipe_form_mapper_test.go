@@ -37,7 +37,7 @@ func TestNewRecipeStepsRefuseWhatTheCommandRefuses(t *testing.T) {
 		t.Error("the version check disagrees with the command")
 	}
 	a := map[string][]string{"name": {"team"}}
-	if got := check["fixed"](a, "python"); !strings.Contains(got, "level=plugin") {
+	if got := check["fixed"](a, "python"); !strings.Contains(got, "role=plugin") {
 		t.Errorf("a fixed value without a level was accepted: %q", got)
 	}
 	if got := check["fixed"](a, "language=python,node"); got == "" {

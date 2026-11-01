@@ -60,7 +60,7 @@ func Validate(res Resolution, lookup PluginLookup) error {
 				}
 			}
 			if !isLevel && !slices.Contains(info.Provides, u.Key) {
-				return &ValidationError{Message: fmt.Sprintf("%s: use.%s names %s, which does not provide a %q slot (it provides: %s). A key of use is a level (language, scaffold, structure, deploy, toolchain) or the task a toolchain plugin provides", u.Origin, u.Key, name, u.Key, orNone(info.Provides))}
+				return &ValidationError{Message: fmt.Sprintf("%s: use.%s names %s, which does not provide a %q slot (it provides: %s). A key of use is a role (language, scaffold, structure, deploy, toolchain) or the task a toolchain plugin provides", u.Origin, u.Key, name, u.Key, orNone(info.Provides))}
 			}
 			if id := name + "/" + string(role); !seen[id] {
 				seen[id] = true

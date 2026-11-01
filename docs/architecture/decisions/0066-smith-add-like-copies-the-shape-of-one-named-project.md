@@ -1,4 +1,4 @@
-# ADR 0055: `smith add --like` copies the shape of one named project
+# ADR 0066: `smith add --like` copies the shape of one named project
 
 - Status: accepted
 - Date: 2026-11-01

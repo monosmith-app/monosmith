@@ -7,7 +7,7 @@ These architectures are in force. Code that breaks them fails `smith lint`.
 
 - `vertical-slices`: code grouped by what it does.
 
-One folder is one slice: one outcome, flat, with no sub-folders. Put new code in the slice it belongs to, or make a new slice. Do not make a folder named util, helper, common, shared, manager or misc.
+One folder is one slice: one outcome, flat, with no sub-folders. Put new code in the slice it belongs to, or make a new slice. Do not make a folder named `common`, `data`, `helper`, `manager`, `misc`, `processor`, `shared`, `util` (or their plurals).
 
 ## Naming and file roles
 

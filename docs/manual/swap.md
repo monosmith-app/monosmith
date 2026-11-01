@@ -8,7 +8,7 @@ shows what leaves, what joins and what the project has afterwards.
 smith does not move the dependencies, config files and imports of a project yet. No plugin offers
 that migration, and a swap that rewrote only the stack record would leave the project half changed.
 So `smith swap` stops after the plan and names what to change by hand. See
-[ADR 0054](../architecture/decisions/0054-smith-swap-changes-one-choice-of-a-project.md).
+[ADR 0065](../architecture/decisions/0065-smith-swap-changes-one-choice-of-a-project.md).
 
 ## When to use it
 

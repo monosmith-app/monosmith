@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/derivelock"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/libs/plugin-architectures/rules"
 )
 
 // doneTasks are the tasks that mean done, in the order they run.
@@ -47,7 +48,14 @@ func Collect(s *session.Session) (Facts, error) {
 	sort.Slice(f.Projects, func(i, j int) bool { return f.Projects[i].Root < f.Projects[j].Root })
 	for _, a := range architecture.Catalog() {
 		if arch[a.Name] {
-			f.Architectures = append(f.Architectures, Architecture{Name: a.Name, Meaning: a.Meaning})
+			arch := Architecture{Name: a.Name, Meaning: a.Meaning}
+			if rs, ok := rules.For(a.Name); ok {
+				arch.Rules = rs.Summary
+				for _, l := range rs.Layers {
+					arch.Layers = append(arch.Layers, Layer{Name: l.Name, Meaning: l.Meaning, Folders: l.Folders})
+				}
+			}
+			f.Architectures = append(f.Architectures, arch)
 		}
 	}
 	for l := range langs {

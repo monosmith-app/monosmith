@@ -95,6 +95,7 @@ func Run(s *session.Session) Report {
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)
 	add("smith", taskGroupChecks(s)...)
+	add("smith", overrideSuggestionChecks(s)...)
 	add("smith", tauriSidecarChecks(s)...)
 	add("smith", taskFoldChecks(s)...)
 	add("smith", sourceConditionChecks(s)...)
@@ -210,6 +211,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	if status, err := cachemaintenance.Inspect(s.LocalCacheDir(), session.CacheLimitBytes(s.Config)); err == nil {
 		out = append(out, localCacheFindings(status)...)
 	}
+	out = append(out, defaultsVintageFinding(s.Config.Workspace.Defaults))
 	out = append(out, toolchainPinFindings(s)...)
 	out = append(out, jestHelperFilesFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects, s.Config.Workspace.AllowedOutputs...)

@@ -46,6 +46,23 @@ lists every check with its remedy.
 - `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
   would fail `npm ci` on another. `smith doctor --fix` regenerates it.
 
+## Suggestions about the defaults
+
+Two warnings read the per-project task overrides in `smith.toml` ([ADR 0056](../architecture/decisions/0056-repeated-overrides-say-what-the-default-should-be.md)).
+They change nothing:
+
+- `repeated project overrides are a workspace default`: three projects or more, and 80 percent of
+  all projects, set the same value for the same task setting
+  (`[projects.<name>.tasks.test] cache = false`). The remedy is to set it once under
+  `[tasks.test]`. A smaller set of projects is folded into a `[[task_groups]]` entry by
+  `task settings shared by projects are written once`.
+- `a workspace default is not overridden by nearly every project`: a `[tasks.<task>]` setting that
+  at least three projects, and 80 percent of all projects, set to another value. The default is
+  probably wrong.
+
+`the workspace uses the latest defaults` compares the `[workspace] defaults` vintage with the
+latest one this smith knows; `smith upgrade --defaults` moves it ([ADR 0054](../architecture/decisions/0054-defaults-have-vintages.md)).
+
 ## Suggestions about a project's kind
 
 Two warnings point at [`smith kind`](kind.md). They are suggestions, never failures, and they
