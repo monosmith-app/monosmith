@@ -6,12 +6,14 @@ import {
   confirmAgentFile, confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellAgentFileOutcome, tellInstallOutcome, writeAgentFile,
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
-import { addProject, askAddRequest, confirmAddPlan, tellAddOutcome } from './add-project/index.ts'
+import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
 import {
-  addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, readDeriveStatus, tellDeriveChange, toExplainDocument,
+  addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
   type DeriveAction, type DeriveReport,
 } from './derive-files/index.ts'
 import { readFileWhy, readTaskWhy } from './why/index.ts'
+import { describeFailure } from './smith-run/index.ts'
+import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
 import { reportFile, writeReport } from './workspace-report/index.ts'
 import { toAdoptArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
@@ -844,7 +846,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
         async () => await smithIn(state, true, 600_000)(args),
       ),
-      ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? []),
+      ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? []),
       confirm: confirmAddPlan,
     })
     note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
@@ -892,13 +894,18 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       return
     }
     const change: DeriveAction & ('apply' | 'replace' | 'adopt' | 'eject') = action === 'apply' && status !== undefined ? applyActionFor(status) : action
+    let commit: boolean
     for (;;) {
       const answer = await confirmDeriveChange(change, change === 'apply' ? undefined : file)
       if (answer === 'no') return
-      if (answer === 'yes') break
-      await explain()
+      if (answer === 'yes' || answer === 'yes-commit') {
+        commit = answer === 'yes-commit'
+        break
+      }
+      if (answer === 'preview') await insight.show('derive-preview.md', toTextDocument('Derived files: what smith derive would write', await previewDerive(run)))
+      else await explain()
     }
-    const result = await changeDerivedFile(run, change, change === 'apply' ? undefined : file)
+    const result = await changeDerivedFile(run, change, change === 'apply' ? undefined : file, commit)
     const printed = result.ok ? result.output.split(/\r?\n/).filter(Boolean) : []
     for (const line of printed) note(line)
     tellDeriveChange(change, change === 'apply' ? undefined : file, result.ok, result.ok ? '' : result.message)
@@ -943,6 +950,41 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         break
       }
     }
+  }
+
+  /** Asks which choice of which project to swap, shows the plan of `smith swap --dry-run`, and swaps on a yes. */
+  const swapHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('swapping a choice')) return
+    const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
+    const given = node?.kind === 'project' ? node.project : undefined
+    output.show(true)
+    const outcome = await swapChoice({
+      run:   smithIn(state),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: swapping in ${state.name}… smith installs and tests the project.` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+      parse:   parseChoices,
+      ask:     async (choices) => await askSwapRequest(choices, state.snapshot?.projects ?? [], given),
+      confirm: confirmSwapPlan,
+    })
+    note(`MonoSmith: swap in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellSwapOutcome(outcome, note)
+    if (outcome.kind === 'swapped') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Lists where the workspace chose differently from smith's defaults (`smith divergences`), with the reason and the way back. */
+  const showDivergences = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    const result = await smithIn(state)(['divergences'])
+    if (result.code !== 0) {
+      void vscode.window.showWarningMessage(`MonoSmith: smith could not list the divergences. ${describeFailure(result)}`)
+
+      return
+    }
+    await insight.show('divergences.md', toTextDocument('Divergences from smith\'s defaults', result.stdout))
   }
 
   /** Shows what the last change smith committed did, and reverts it on a yes. */
@@ -1078,6 +1120,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.agentFile', writeAgentsFile),
     command<unknown>('monosmith.addProject', addProjectHere),
     command<unknown>('monosmith.undo', undoHere),
+    command<unknown>('monosmith.swap', swapHere),
+    command<unknown>('monosmith.divergences', showDivergences),
     command<unknown>('monosmith.openReport', openReport),
     command<unknown>('monosmith.why', showWhy),
     command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),

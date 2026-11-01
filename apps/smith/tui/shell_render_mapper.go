@@ -110,7 +110,8 @@ func (s Shell) body(strip tabs.Strip) []string {
 		// The strip's last row is the pane's top edge, and the title sits in the strip.
 		title = ""
 	}
-	main := pane.Frame(s.th, title, page.View(in.W, in.H).lines, l.Main.W, l.Main.H, false)
+	reserve := s.toastRows(in.H)
+	main := pane.Frame(s.th, title, page.View(in.W, in.H-reserve).lines, l.Main.W, l.Main.H, false)
 	edge := func(r string) string { return s.th.Border(r, false) }
 	if !l.HasDetail() {
 		if l.Tall {
@@ -119,7 +120,7 @@ func (s Shell) body(strip tabs.Strip) []string {
 		return main
 	}
 	din := l.DetailInner()
-	side := pane.Block(s.detailContent(din.W, din.H).lines, din.W, din.H)
+	side := pane.Block(s.detailContent(din.W, din.H-reserve).lines, din.W, din.H)
 	cut := func(line string) string { return ansi.Truncate(line, l.Main.W-1, "") + "\x1b[m" }
 	out := make([]string, 0, len(main))
 	if l.Tall {
@@ -131,6 +132,17 @@ func (s Shell) body(strip tabs.Strip) []string {
 		out = append(out, main[y]+side[y-1]+edge("│"))
 	}
 	return append(out, cut(main[len(main)-1])+edge("┴"+strings.Repeat("─", max(l.Detail.W-2, 0))+"╯"))
+}
+
+// toastRows is how many rows at the foot of the content stay empty while a
+// toast is shown, so the toast box never covers a line of the view. A small
+// screen keeps all its rows, and the toast then sits over the last ones.
+func (s Shell) toastRows(innerH int) int {
+	const box = 3
+	if !s.toast.Shown() || innerH < 2*box {
+		return 0
+	}
+	return box
 }
 
 // modalOpen is true while a box that takes the keyboard is drawn over the screen.

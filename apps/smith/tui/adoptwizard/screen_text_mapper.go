@@ -116,17 +116,24 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 			// The same diffs as the Doctor fix dialog shows for a fix.
 			b.WriteString("\n" + diffs)
 		}
+		b.WriteString(commitBox(commit))
 		return b.String()
 	}
 	b.WriteString(commandReview)
 	fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found;\n", len(f.Projects))
 	fmt.Fprintf(&b, "  your build and lint setup stay as they are. smith doctor then says what is left to do.\n")
+	b.WriteString(commitBox(commit))
+	return b.String()
+}
+
+// commitBox is the tick box that asks for the change to be committed; a click
+// on its line, or the c key, flips it.
+func commitBox(commit bool) string {
 	box := "[ ]"
 	if commit {
 		box = "[x]"
 	}
-	fmt.Fprintf(&b, "\n  %s Commit this change so it can be undone (press c to tick it)\n", box)
-	return b.String()
+	return fmt.Sprintf("\n  %s Commit this change so it can be undone (press c to tick it)\n", box)
 }
 
 // reviewHeader goes above the full plan.

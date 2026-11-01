@@ -48,6 +48,8 @@ export interface AddRequest {
   with:     string[]
   /** Give the stack's defaults instead of following the sibling projects. */
   fresh:    boolean
+  /** Copy this one project's shape instead of the majority's (`--like`). */
+  like?:    string
 }
 
 /**

@@ -246,20 +246,27 @@ func saveReport(root, text string) error {
 	return os.WriteFile(file, []byte(text), 0o644)
 }
 
-// stageNewFiles stages the files the conversion created that the builds load
-// (and smith.toml), so a clean of untracked files cannot lose them. It returns
-// what it staged.
+// stageNewFiles stages everything the conversion changed: the files it
+// created, the files it rewrote and the tracked files it removed. All of them
+// are staged together or none is, so git status shows one coherent change and a
+// clean of untracked files cannot lose a new file. It returns what it staged.
 func stageNewFiles(repo *gitclient.Git, plan *convertplan.Plan, res Result) []string {
-	var files []string
-	for _, f := range res.Created {
-		if _, kept := plan.Keep[f]; kept || f == workspace.FileName {
-			files = append(files, f)
+	files := append(append([]string(nil), res.Created...), res.Rewritten...)
+	if tracked, err := repo.Files(); err == nil {
+		known := make(map[string]bool, len(tracked))
+		for _, f := range tracked {
+			known[f] = true
+		}
+		for _, d := range plan.Delete {
+			if known[d] {
+				files = append(files, d)
+			}
 		}
 	}
 	if len(files) == 0 {
 		return nil
 	}
-	if _, err := repo.Run(append([]string{"add", "--"}, files...)...); err != nil {
+	if _, err := repo.Run(append([]string{"add", "-A", "--"}, files...)...); err != nil {
 		return nil
 	}
 	return files

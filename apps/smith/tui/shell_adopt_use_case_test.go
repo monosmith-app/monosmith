@@ -136,6 +136,8 @@ func (f *adoptFake) AdoptFix(bool) doctorfix.Planned { return doctorfix.Planned{
 
 func (f *adoptFake) AgentFix() (doctorfix.Planned, bool) { return doctorfix.Planned{}, false }
 
+func (f *adoptFake) CommitConversion() string { return "Committed abc12345." }
+
 func (f *adoptFake) Close() {
 	f.mu.Lock()
 	f.closed = true

@@ -3,6 +3,7 @@ package sources
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
@@ -17,7 +18,10 @@ func AdoptionOpener(dir, version string) adoptwizard.Opener {
 		if n, err := adoptflow.CountFiles(dir); err == nil {
 			fmt.Fprintln(out, adoptflow.ReadingLine(n))
 		}
-		s, err := adoptflow.Open(dir, version)
+		// Each stage the read reports becomes the step the dialog shows.
+		s, err := adoptflow.OpenWithProgress(dir, version, func(stage string) {
+			fmt.Fprintln(out, "… "+strings.TrimSuffix(stage, "…"))
+		})
 		if err != nil {
 			return nil, err
 		}

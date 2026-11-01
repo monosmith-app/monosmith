@@ -52,6 +52,10 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 				}
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if err == nil {
+				// Tags and branch are read once for the whole command.
+				s.Git = s.Git.WithRefCache()
+			}
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,7 @@
 package swapchoice
 
 import (
+	"bufio"
 	"fmt"
 	"strings"
 
@@ -25,9 +26,13 @@ uses: the project keeps one choice per axis, and what the new choice requires or
 conflicts with is checked. It then shows the plan: the choice that leaves, the
 choice that joins, and the choices the new one pulls in.
 
-smith moves a project's dependencies, config and imports only where the plugin
-that owns the choice can do it without losing your edits. No plugin does it yet,
-so smith swap stops after the plan and says what to change by hand. Run it with
+smith migrates the axes where it is mechanical. For the test runner (jest and
+vitest) it removes the packages, scripts, fields and config files the old runner
+wrote (only where you did not edit them), has the new runner write its own,
+moves test imports of describe, it and expect to the new module, records the new
+stack, installs once, and runs the project's build and tests. What it cannot move
+(jest.mock, jest.fn, files you edited) it lists. Other axes stop after the plan
+and say what to change by hand. Run it with
 --dry-run to see the plan and nothing else.`,
 		Example: "  smith swap web test vitest --dry-run\n  smith swap api lint oxlint",
 		Args:    cobra.ExactArgs(3),
@@ -48,20 +53,43 @@ so smith swap stops after the plan and says what to change by hand. Run it with
 			if err != nil {
 				return err
 			}
-			swap, err := PlanSwap(s.Plugins.Offers(), st.Choices, args[1], args[2])
+			swap, err := PlanSwap(s.Plugins.Offers(), ChoicesOf(s.Plugins.Offers(), st), args[1], args[2])
 			if err != nil {
 				return err
 			}
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "Swap %s of %s: %s -> %s\n", swap.Axis, p.Name, swap.From, swap.To)
 			fmt.Fprintf(out, "  leaves:  %s\n  joins:   %s\n  result:  %s\n", strings.Join(swap.Removed, ", "), strings.Join(swap.Added, ", "), strings.Join(swap.Choices, ", "))
+			prepared, err := PrepareMigration(s, p, swap)
+			if err != nil {
+				return err
+			}
+			for _, line := range prepared.Lines() {
+				fmt.Fprintln(out, line)
+			}
 			if dry, _ := cmd.Flags().GetBool("dry-run"); dry {
+				for _, line := range prepared.Migration.ByHand {
+					fmt.Fprintln(out, "  by hand: "+line)
+				}
 				fmt.Fprintln(out, "Dry run: nothing was changed.")
 				return nil
 			}
-			return problem.New(fmt.Sprintf("smith cannot move %s from %s to %s by itself yet", p.Name, swap.From, swap.To),
-				"change its dependencies, config files and imports by hand, then run smith doctor to check the result",
-				"or make a new project with smith add --with "+strings.Join(swap.Choices, ",")+" and move the code over")
+			if yes, _ := cmd.Flags().GetBool("yes"); !yes {
+				fmt.Fprint(out, "Go ahead? [y/N] ")
+				answer, _ := bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
+				if !strings.EqualFold(strings.TrimSpace(answer), "y") {
+					return problem.New("swap cancelled: nothing was changed", "run it again with --yes to go ahead without asking")
+				}
+			}
+			byHand, err := prepared.Apply(cmd.Context(), s, out)
+			for _, line := range byHand {
+				fmt.Fprintln(out, "Left to do by hand: "+line)
+			}
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(out, "Swapped %s to %s. smith doctor checks the result.\n", swap.Axis, swap.To)
+			return nil
 		},
 	}
 	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(_ *cobra.Command, args []string) string {

@@ -13,6 +13,7 @@ export function addArguments (request: AddRequest, mode: 'plan' | 'apply', fresh
     ...(request.stack === undefined ? [] : ['--stack', request.stack]),
     ...(request.with.length === 0 ? [] : ['--with', request.with.join(',')]),
     ...(fresh ? ['--fresh'] : []),
+    ...(fresh || request.like === undefined ? [] : ['--like', request.like]),
     mode === 'plan' ? '--dry-run' : '--yes',
     ...(mode === 'apply' && commit ? ['--commit'] : []),
   ]

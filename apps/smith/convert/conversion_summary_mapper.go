@@ -42,7 +42,11 @@ func Summary(plan *convertplan.Plan, lostSlots []string, staged []string) string
 	fmt.Fprintf(&b, "\nConverted %s. The full report is in %s.\n", projectCount(plan), ReportFile)
 	b.WriteString(keepSection(plan))
 	if len(staged) > 0 {
-		fmt.Fprintf(&b, "\nStaged with git add so they cannot be lost: %s\n", strings.Join(staged, ", "))
+		if len(staged) <= 6 {
+			fmt.Fprintf(&b, "\nStaged with git add so they cannot be lost: %s\n", strings.Join(staged, ", "))
+		} else {
+			fmt.Fprintf(&b, "\nStaged with git add so they cannot be lost: %d files (git status lists them)\n", len(staged))
+		}
 	}
 	b.WriteString("\n" + NextSteps(plan, false))
 	return b.String()

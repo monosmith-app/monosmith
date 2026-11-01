@@ -29,6 +29,9 @@ type Flow interface {
 	// ShowChanges writes the files Changes listed as diffs, the way the review
 	// of a fix shows them; it needs Prepare to have run.
 	ShowChanges(c adoptflow.Changes) (string, error)
+	// CommitConversion commits what the conversion changed as one operation
+	// that smith undo reverts, and says what happened.
+	CommitConversion() string
 	// Result is what the applied conversion found worth telling.
 	Result() convert.Highlights
 	// Install installs the packages the repository lists.

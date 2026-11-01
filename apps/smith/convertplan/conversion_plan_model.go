@@ -38,6 +38,10 @@ type Finding struct {
 	// Decide marks a finding the reader should weigh before applying (CI is
 	// replaced, release rules change), not one to skim.
 	Decide bool `json:"decide,omitempty"`
+	// Edit marks a finding that is a change convert makes to one of your files
+	// (a file removed, a field rewritten), as against a note about how a
+	// setting was carried over. The report lists the two apart.
+	Edit bool `json:"edit,omitempty"`
 }
 
 // ProjectPlan is how one Nx project becomes a smith project.
@@ -119,6 +123,12 @@ type Plan struct {
 // Add records a finding.
 func (p *Plan) Add(severity Severity, project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: severity, Project: project, Subject: subject, Message: message})
+}
+
+// AddEdit records a change convert makes to a file of the workspace: it is
+// reported under "Changes to your files", apart from the notes.
+func (p *Plan) AddEdit(project, subject, message string) {
+	p.Findings = append(p.Findings, Finding{Severity: Mapped, Project: project, Subject: subject, Message: message, Edit: true})
 }
 
 // Decide records a behaviour change the reader should decide on before the

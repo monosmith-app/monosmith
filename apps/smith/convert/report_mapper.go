@@ -28,6 +28,7 @@ var detailSections = []struct {
 	title    string
 }{
 	{convertplan.Changed, "Behaves differently"},
+	{convertplan.Mapped, "Changes to your files"},
 	{convertplan.Mapped, "Converted"},
 	{convertplan.Dropped, "Dropped"},
 }
@@ -145,7 +146,7 @@ func Details(plan *convertplan.Plan, opts ReportOptions) string {
 	for _, s := range detailSections {
 		var in []convertplan.Finding
 		for _, f := range findings {
-			if f.Severity == s.severity && !f.Decide {
+			if f.Severity == s.severity && !f.Decide && (s.severity != convertplan.Mapped || f.Edit == (s.title == "Changes to your files")) {
 				in = append(in, f)
 			}
 		}
@@ -156,7 +157,7 @@ func Details(plan *convertplan.Plan, opts ReportOptions) string {
 		if s.severity == convertplan.Dropped {
 			title += " (" + dropReason(plan) + ")"
 		}
-		if s.severity == convertplan.Mapped && !opts.Verbose {
+		if s.severity == convertplan.Mapped && s.title == "Converted" && !opts.Verbose {
 			title += ", nothing to do"
 		}
 		fmt.Fprintf(&b, "\n%s (%d):\n", title, len(in))

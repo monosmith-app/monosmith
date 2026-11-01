@@ -44,6 +44,13 @@ type Session struct {
 // wizard can tell it in its first screen. An error is a repository that
 // could not be read at all.
 func Open(dir, version string) (*Session, error) {
+	return OpenWithProgress(dir, version, nil)
+}
+
+// OpenWithProgress is Open that tells progress each stage of the read, in the
+// words convert uses ("Asking Nx to describe the projects…"). A nil progress
+// is ignored.
+func OpenWithProgress(dir, version string, progress convert.Progress) (*Session, error) {
 	root, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
@@ -64,7 +71,7 @@ func Open(dir, version string) (*Session, error) {
 		s.found.Blockers = []string{`This folder is not a git repository: smith makes its changes through git, so each one can be reviewed and undone. Run git init && git add -A && git commit -m "before smith", then open this again.`}
 		return s, nil
 	case exists("nx.json") || exists("turbo.json") || exists("turbo.jsonc"):
-		if err := s.openConvertible(exists); err != nil {
+		if err := s.openConvertible(exists, progress); err != nil {
 			return nil, err
 		}
 		return s, nil
@@ -87,13 +94,13 @@ func (s *Session) Close() {
 }
 
 // openConvertible reads an Nx or Turborepo workspace through convert.
-func (s *Session) openConvertible(exists func(string) bool) error {
+func (s *Session) openConvertible(exists func(string) bool, progress convert.Progress) error {
 	s.found.Kind = KindNx
 	s.found.Source = "Nx workspace"
 	if exists("turbo.json") || exists("turbo.jsonc") {
 		s.found.Kind, s.found.Source = KindTurborepo, "Turborepo workspace"
 	}
-	a, err := convert.Analyse(s.Root, s.Version)
+	a, err := convert.AnalyseWithProgress(s.Root, s.Version, progress)
 	if err != nil {
 		var p *problem.Error
 		switch {
@@ -114,6 +121,9 @@ func (s *Session) openConvertible(exists func(string) bool) error {
 		return nil
 	}
 	s.analysis = a
+	if progress != nil {
+		progress("Found " + a.Counts + ".")
+	}
 	s.found.Source = a.Source
 	s.found.Name = a.Plan.Config.Workspace.Name
 	for _, p := range a.Plan.Projects {
