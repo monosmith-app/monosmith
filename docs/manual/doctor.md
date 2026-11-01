@@ -25,7 +25,8 @@ can apply a fix it offers one: for Rust, a `rust-toolchain.toml` pinning the ver
 ## Checks that come from smith itself
 
 Besides each plugin's checks, smith runs checks of its own. These are the ones a workspace
-meets most often. Names are as doctor prints them.
+meets most often. Names are as doctor prints them. [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do)
+lists every check with its remedy.
 
 - `CI pipelines match the workspace`: the generated pipelines are current. The fix is
   `smith ci generate`.

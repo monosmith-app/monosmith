@@ -75,12 +75,12 @@ Interactions:
 ## Files and environment
 
 Reads the repository's manifests (`package.json` workspaces, `go.mod`, `pyproject.toml`)
-and its git history. With `--init` it writes `smith.toml`, `.gitattributes`,
-`README.md`, `.github/workflows/ci.yml` (and the other providers'
-files), `.devcontainer/devcontainer.json`, `go.work` when there are Go projects, and
-edits `.gitignore`. It reads no smith-specific environment variable. It does not write the
-MonoSmith agent: the result names `smith agent install`, which adds the agent for Claude Code and
-VS Code after showing the files.
+and its git history. With `--init` it writes `smith.toml`, `.gitattributes`, `README.md`, `.github/workflows/ci.yml`
+(and the other providers' files), `.devcontainer/devcontainer.json`, `tools/smith/install.sh`, the MonoSmith agent
+(`.claude/agents/smith.md`,
+`.mcp.json` and `.vscode/mcp.json`, see [the agent guide](../guides/agent.md); `smith agent install` adds it
+later to a workspace that lacks it), `go.work` when there are Go projects, and edits `.gitignore`. It reads no
+smith-specific environment variable.
 
 ## Examples
 
@@ -123,6 +123,10 @@ smith adopt --init --tags
   wrote README.md
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   wrote go.work: ./services/api
   committed: chore: adopt smith
 ✔ adopted. smith doctor still reports 2 thing(s) for you:
