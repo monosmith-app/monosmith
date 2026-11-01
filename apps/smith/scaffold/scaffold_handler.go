@@ -19,7 +19,7 @@ import (
 
 // AddCommand is `smith add`.
 func AddCommand(version string) *cobra.Command {
-	var lang, stack string
+	var lang, stack, like string
 	var choices, with []string
 	var verbose, fresh bool
 	cmd := &cobra.Command{
@@ -49,13 +49,15 @@ The project follows the siblings: when at least three projects of the same
 kind and language, and at least two thirds of them, share a build tool, a
 test runner or where their entry points lead, the new project does the same
 and says why. If they split, a terminal is asked; elsewhere the default is
-used and a warning says so. --fresh gives the stack's default instead.
+used and a warning says so. --fresh gives the stack's default instead, and
+--like <project> copies that one project's shape instead of the majority's.
 
 The project lints, type-checks, tests and builds immediately, and the CI
 pipelines are regenerated to install its toolchain.
 
-smith add leaves the files it wrote uncommitted (smith new commits what it
-wrote): review them with git status, then commit.`,
+smith add leaves the files it wrote uncommitted: review them with git status,
+then commit. With --commit (or commit_operations = true in smith.toml) smith
+commits them as one operation that smith undo can revert.`,
 		Example: `  smith add app web --lang node
   smith add app api --stack node-vitest
   smith add app web --with react,vitest,bootstrap
@@ -90,8 +92,11 @@ wrote): review them with git status, then commit.`,
 			interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 			began := time.Now()
 			addOpts := AddOptions{
-				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with,
+				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with, Like: like,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
+			}
+			if err := CheckAdd(s, addOpts); err != nil {
+				return err
 			}
 			yes, _ := cmd.Flags().GetBool("yes")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -128,6 +133,7 @@ wrote): review them with git status, then commit.`,
 	cmd.Flags().StringVarP(&stack, "stack", "s", "", "stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone)")
 	cmd.Flags().StringSliceVar(&with, "with", nil, "the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default")
 	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
+	cmd.Flags().StringVar(&like, "like", "", "copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(_ *cobra.Command, args []string) string {
