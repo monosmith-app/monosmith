@@ -12,7 +12,7 @@ The recipe format, validation rules and the answers file are in
 ## When to use it
 
 - [`smith recipe new`](recipe-new.md) to write a recipe by answering questions.
-- [`smith recipe check`](recipe-check.md) to validate one and see which plugin each level
+- [`smith recipe check`](recipe-check.md) to validate one and see which plugin each role
   would use and where each value came from.
 
 ## Subcommands

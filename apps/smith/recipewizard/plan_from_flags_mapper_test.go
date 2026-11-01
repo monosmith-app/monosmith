@@ -20,8 +20,8 @@ func TestPlanFromFlagsRefusesWhatARecipeCouldNotUse(t *testing.T) {
 		fixed []string
 		want  string
 	}{
-		"no equals":    {[]string{"python"}, "level=plugin"},
-		"empty plugin": {[]string{"language="}, "level=plugin"},
+		"no equals":    {[]string{"python"}, "role=plugin"},
+		"empty plugin": {[]string{"language="}, "role=plugin"},
 		"twice":        {[]string{"language=python", "language=node"}, "twice"},
 		"two for one":  {[]string{"language=python,node"}, "takes one plugin"},
 	} {

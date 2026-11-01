@@ -144,7 +144,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
-			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "LEVELS", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
+			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "ROLES", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue

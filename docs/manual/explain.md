@@ -3,7 +3,7 @@
 `smith explain` shows how a project's tasks resolved and where each of their fields came
 from: the language plugin, a stack's plugin, a convention, or `smith.toml`. For a project
 made from a recipe it also lists what the recipe decided for it (its choices, the plugin
-at each level and the plugins' settings), each with the recipe file and line it came from.
+at each role and the plugins' settings), each with the recipe file and line it came from.
 
 The text starts with one line per task (its command, whether it is cached, what it waits
 for), then each task's fields. Where a value came from is said once for all of them and

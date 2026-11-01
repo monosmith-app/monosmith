@@ -47,7 +47,7 @@ smith plugin list
 ```
 
 ```text
-PLUGIN           LEVELS                       SLOTS                REQUIRES
+PLUGIN           ROLES                        SLOTS                REQUIRES
 applescript      language,toolchain,scaffold  -                    -
 ...
 bicep            language,toolchain,scaffold  -                    -

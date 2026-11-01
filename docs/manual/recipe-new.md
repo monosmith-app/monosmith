@@ -4,8 +4,8 @@ parent: recipe.md
 # smith recipe new
 
 `smith recipe new [path]` writes a recipe by answering questions. It asks for the recipe's
-name, version and the recipe it extends, then goes through the levels (language, scaffold,
-each task slot such as lint and test, structure, deploy). For each level it lists the plugins
+name, version and the recipe it extends, then goes through the roles (language, scaffold,
+each task slot such as lint and test, structure, deploy). For each role it lists the plugins
 that fit what is chosen so far, and you say whether one is fixed, a choice the recipe's
 users make (python or csharp, say, with a plugin per answer), or left unset.
 
@@ -21,7 +21,7 @@ terminal, `--from-answers` reads the same answers from a file, so a script or a 
 the same recipe the questions would.
 
 A recipe whose plugins are all fixed needs neither questions nor a file: `--name` and one
-`--fixed level=plugin` for each level write it. A structure, deploy or toolchain level takes
+`--fixed role=plugin` for each role write it. A structure, deploy or toolchain role takes
 plugins joined by commas (`--fixed structure=slices,layers`). A choice the recipe's users
 make still needs the questions or an answers file. The interface's **Write a recipe** form
 (the guided menu) asks for these values and shows this command line before it runs.
@@ -30,7 +30,7 @@ make still needs the questions or an answers file. The interface's **Write a rec
 
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
-smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] --fixed <level=plugin>...
+smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] --fixed <role=plugin>...
 ```
 
 ## Arguments and flags
@@ -47,7 +47,7 @@ Usage: `smith recipe new [path] [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--extends <extends>` | string |  | the recipe this one extends: a path from the new file, or an https URL |
-| `--fixed <fixed>` | string, repeatable |  | fix a level's plugin, as level=plugin (language=python, structure=slices,layers); repeat for each level |
+| `--fixed <fixed>` | string, repeatable |  | fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role |
 | `--force` | boolean | off | replace the file if it exists |
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
 | `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |

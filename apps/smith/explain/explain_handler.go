@@ -23,7 +23,7 @@ func Command(version string) *cobra.Command {
 the language plugin, a stack's plugin, a convention, or smith.toml.
 
 For a project made from a recipe, smith explain <project> also lists what the
-recipe decided for it (its choices, the plugin at each level and the plugins'
+recipe decided for it (its choices, the plugin at each role and the plugins'
 settings), each with the recipe file and line it came from. --recipe prints
 only that, and with --json prints it for tools. The tasks' --json output is
 unchanged.

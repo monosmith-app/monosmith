@@ -6,12 +6,12 @@ import (
 )
 
 // PlanFromFlags builds the plan that `smith recipe new --name ... --fixed
-// level=plugin` describes, so a recipe whose plugins are all fixed needs
+// role=plugin` describes, so a recipe whose plugins are all fixed needs
 // neither questions nor an answers file. Each fixed value is a level, "=" and
 // one plugin, or for the additive levels (structure, deploy, toolchain) plugins
 // joined by commas. An empty version is 0.1.0.
 //
-// It returns an error when a fixed value is not level=plugin, names a level
+// It returns an error when a fixed value is not role=plugin, names a level
 // twice, or when the plan is not one a recipe can be made from (see Plan.Check).
 func PlanFromFlags(name, version, extends string, fixed []string) (Plan, error) {
 	if version == "" {
@@ -22,7 +22,7 @@ func PlanFromFlags(name, version, extends string, fixed []string) (Plan, error) 
 		level, value, ok := strings.Cut(f, "=")
 		level = strings.TrimSpace(level)
 		if !ok || level == "" || strings.TrimSpace(value) == "" {
-			return Plan{}, fmt.Errorf("--fixed %q must be level=plugin, like language=python or structure=slices,layers", f)
+			return Plan{}, fmt.Errorf("--fixed %q must be role=plugin, like language=python or structure=slices,layers", f)
 		}
 		if _, dup := plan.Levels[level]; dup {
 			return Plan{}, fmt.Errorf("--fixed names the level %q twice", level)
