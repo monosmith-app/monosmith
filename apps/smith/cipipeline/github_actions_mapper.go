@@ -19,7 +19,7 @@ on:
     branches: [%[1]s]
   pull_request:
     branches: [%[1]s]
-
+%[4]s
 permissions:
   contents: write
   pull-requests: write
@@ -30,12 +30,12 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+%[5]s    runs-on: ubuntu-latest
 %[3]s    steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.TriggerBranches(), ", "), idToken(m), githubCIOutputs(m))
+`, strings.Join(m.TriggerBranches(), ", "), idToken(m), githubCIOutputs(m), githubAssetsDispatch(m), githubCIOnlyWithoutAssetsTag(m))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))
@@ -94,16 +94,10 @@ jobs:
 		}
 		b.WriteString(githubEntraEnv(m))
 	}
-	if githubHasDependents(m) {
-		// The marker comes right after the release, so a later step that fails
-		// (the attestation, say) does not keep the native and assets jobs from
-		// running on a release that exists.
-		fmt.Fprintf(&b, `      - name: Mark the release done
-        id: released
-        if: github.event_name == 'push' && %s
-        run: echo "done=true" >> "$GITHUB_OUTPUT"
-`, m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" }))
-	}
+	// No marker step follows the release: smith ci release writes released=true to
+	// the step's output itself (markReleased), the moment a project is released, so
+	// a later step that fails does not keep the native and assets jobs from running
+	// on a release that exists, and a push that releases nothing starts neither.
 	if m.Attest {
 		continueOnError := ""
 		if m.AttestOptional {
@@ -310,7 +304,7 @@ func githubCIOutputs(m Model) string {
 	if !githubHasDependents(m) {
 		return ""
 	}
-	return "    outputs:\n      released: ${{ steps.release.outputs.released || steps.released.outputs.done }}\n"
+	return "    outputs:\n      released: ${{ steps.release.outputs.released }}\n"
 }
 
 // githubOnReleaseBranches is the condition that holds on a push to the release

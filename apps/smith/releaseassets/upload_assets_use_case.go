@@ -26,48 +26,95 @@ type Request struct {
 	// Project limits the run to one project. Default: every project that has
 	// a build command and was released at HEAD.
 	Project string
-	Out     io.Writer
+	// Tag, when set (project@version), builds that project's files from the
+	// current checkout and uploads them to the GitHub Release of that existing
+	// tag, replacing files of the same name. Default: the tags that point at HEAD.
+	Tag string
+	Out io.Writer
 }
+
+// Result is what Run did.
+type Result struct {
+	// Built are the projects whose files it uploaded.
+	Built []string
+	// Skipped is the one line that says why it built nothing, or empty.
+	Skipped string
+}
+
+// nothingReleased is the line of a run that finds no release of its own.
+const nothingReleased = "nothing released, skipping: no project with release files was released by this commit"
 
 // Run builds, for the platform, every project released at HEAD whose release
 // has a build command, and uploads its files to the project's GitHub Release.
-// It returns the projects it uploaded for.
-func Run(ctx context.Context, s *session.Session, req Request) ([]string, error) {
+// With req.Tag it does the same for that one existing tag, from the current
+// checkout. A run that finds no release exits without error, with Skipped set.
+func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 	platform := req.Platform
 	if platform == "" {
 		platform = workspace.HostCommandPlatform()
 	}
 	if !slices.Contains(workspace.CommandPlatforms, platform) {
-		return nil, problem.New(fmt.Sprintf("%q is not a platform smith builds release files for", platform),
+		return Result{}, problem.New(fmt.Sprintf("%q is not a platform smith builds release files for", platform),
 			"smith release assets --platform "+strings.Join(workspace.CommandPlatforms, " | "))
 	}
 	head, err := s.Git.RevParse("HEAD")
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
-	var done []string
-	for _, p := range s.Graph.Projects {
-		if !release.BuildsAssetsFromCommand(p) || (req.Project != "" && p.Name != req.Project) {
-			continue
+	type target struct {
+		p       *projectgraph.Project
+		tag     string
+		version string
+	}
+	var targets []target
+	if req.Tag != "" {
+		p, version := projectOfTag(s.Graph.Projects, req.Tag)
+		if p == nil {
+			return Result{}, problem.New(fmt.Sprintf("no project with release files releases the tag %q", req.Tag),
+				"use project@version of a project that has a build in its release table")
 		}
+		commit, err := s.Git.RevParse("refs/tags/" + req.Tag + "^{commit}")
+		if err != nil {
+			return Result{}, problem.New(fmt.Sprintf("the tag %q is not in this checkout", req.Tag), "git fetch --tags, then run it again")
+		}
+		if commit != head {
+			fmt.Fprintf(req.Out, "%s is not at HEAD: building the current checkout, with the version %s\n", req.Tag, version)
+		}
+		targets = append(targets, target{p, req.Tag, version})
+	} else {
+		for _, p := range s.Graph.Projects {
+			if !release.BuildsAssetsFromCommand(p) || (req.Project != "" && p.Name != req.Project) {
+				continue
+			}
+			if tag, version := release.TaggedAt(s, p, head); tag != "" {
+				targets = append(targets, target{p, tag, version})
+			}
+		}
+		if len(targets) == 0 {
+			fmt.Fprintln(req.Out, nothingReleased)
+			return Result{Skipped: nothingReleased}, nil
+		}
+	}
+	var res Result
+	for _, t := range targets {
+		p := t.p
 		if !slices.Contains(p.Release.Platforms, platform) {
 			fmt.Fprintf(req.Out, "%s has no %s build: its platforms are %s\n", p.Name, platform, strings.Join(p.Release.Platforms, ", "))
 			continue
 		}
-		tag, version := release.TaggedAt(s, p, head)
-		if tag == "" {
-			fmt.Fprintf(req.Out, "%s was not released by this commit; nothing to build\n", p.Name)
-			continue
-		}
-		fmt.Fprintf(req.Out, "building %s %s for %s: %s\n", p.Name, version, platform, p.Release.Build)
-		n, err := buildAndUpload(ctx, s, req, p, platform, tag, version)
+		fmt.Fprintf(req.Out, "building %s %s for %s: %s\n", p.Name, t.version, platform, p.Release.Build)
+		n, err := buildAndUpload(ctx, s, req, p, platform, t.tag, t.version)
 		if err != nil {
-			return done, err
+			return res, err
 		}
-		fmt.Fprintf(req.Out, "uploaded %d file(s) to %s\n", n, tag)
-		done = append(done, p.Name)
+		fmt.Fprintf(req.Out, "uploaded %d file(s) to %s\n", n, t.tag)
+		res.Built = append(res.Built, p.Name)
 	}
-	return done, nil
+	if len(res.Built) == 0 {
+		res.Skipped = "nothing to build on " + platform
+		fmt.Fprintln(req.Out, res.Skipped)
+	}
+	return res, nil
 }
 
 // buildAndUpload stamps the release's version into the project's version files
@@ -84,10 +131,13 @@ func buildAndUpload(ctx context.Context, s *session.Session, req Request, p *pro
 		return 0, problem.New(fmt.Sprintf("the build of %s for %s failed (exit %d): %v", p.Name, platform, code, err),
 			"run it yourself from the workspace root: "+p.Release.Build)
 	}
-	files, err := assetFiles(os.DirFS(s.Root), s.Root, p.Release.Assets)
+	files, skipped, err := assetFiles(os.DirFS(s.Root), s.Root, p.Release.Assets)
 	if err != nil {
 		return 0, problem.New(fmt.Sprintf("%s for %s: %v", p.Name, platform, err),
 			"make build leave the files, or fix assets in [projects."+p.Name+".release]")
+	}
+	for _, g := range skipped {
+		fmt.Fprintf(req.Out, "no file matches %s on %s: skipped\n", g, platform)
 	}
 	r := p.Release
 	product := r.Product

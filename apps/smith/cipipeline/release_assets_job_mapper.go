@@ -15,9 +15,35 @@ var githubAssetRunners = map[string]string{
 	"linux-arm64": "ubuntu-24.04-arm",
 }
 
+// githubAssetsDispatch is the workflow_dispatch trigger that runs the assets
+// job again for a release that exists: its assets_tag input is the tag
+// (project@version). Empty when the workflow has no assets job.
+func githubAssetsDispatch(m Model) string {
+	if len(m.AssetPlatforms) == 0 {
+		return ""
+	}
+	return `  workflow_dispatch:
+    inputs:
+      assets_tag:
+        description: "Run only the assets job again for this release tag (project@version), from this branch"
+        required: false
+        default: ""
+`
+}
+
+// githubCIOnlyWithoutAssetsTag is the ci job's condition when the workflow can
+// be dispatched for a tag: that run builds files only, so the ci job skips.
+func githubCIOnlyWithoutAssetsTag(m Model) string {
+	if len(m.AssetPlatforms) == 0 {
+		return ""
+	}
+	return "    if: ${{ inputs.assets_tag == '' }}\n"
+}
+
 // githubAssetsJob runs smith ci assets on a runner of each platform after the
 // ci job released: each runner builds and uploads its own files to the GitHub
-// Release with gh release upload, so no artifact storage is used.
+// Release with gh release upload, so no artifact storage is used. A dispatch
+// with assets_tag runs it without the ci job, for that existing tag.
 func githubAssetsJob(m Model) string {
 	if len(m.AssetPlatforms) == 0 {
 		return ""
@@ -26,7 +52,7 @@ func githubAssetsJob(m Model) string {
 	fmt.Fprintf(&b, `
   assets:
     needs: ci
-    if: ${{ always() && needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == '%s' }}
+    if: ${{ always() && ((needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == '%s') || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,8 +79,9 @@ func githubAssetsJob(m Model) string {
 	b.WriteString("      - name: Setup\n        run: smith ci setup --assets\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Build and upload the release files
-        run: smith ci assets
+        run: smith ci assets --tag "$ASSETS_TAG"
         env:
+          ASSETS_TAG: ${{ inputs.assets_tag }}
           SMITH_PLATFORM: ${{ matrix.platform }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 `)

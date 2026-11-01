@@ -86,7 +86,13 @@ It is versioned by its tag (`cli@1.2.0`) only. Its plugin builds the release
 assets, one zip per platform and a `checksums.txt`, all under
 `dist/release/<app>/`. `platforms` are `os/arch` pairs in Go's spelling
 (`linux/amd64`, `windows/arm64`, `darwin/arm64`, the six of the default) whatever
-the language, and `asset_name` names each file the same way.
+the language, and `asset_name` names each file the same way. The default is these
+six: `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64`
+and `windows/arm64`. A **native** app (cgo; Go, Rust) is the exception: `platforms`
+does not apply to it. Each runner of `smith ci native` builds its own platform
+only, so with the default `[ci] native_runners` it gets three archives
+(`linux/amd64`, `windows/amd64`, `darwin/arm64`). Add `ubuntu-24.04-arm`,
+`windows-11-arm` or `macos-15-intel` to `native_runners` for the other three.
 
 | Language | What the plugin builds |
 |---|---|
@@ -135,6 +141,21 @@ release. Each runner runs the build, then uploads its own files with
 `gh release upload --clobber`, so a re-run replaces a file and no job uses
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
+
+A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
+on Windows and Linux, as long as another glob of the list matches a file there:
+the runner prints `no file matches <glob> on <platform>: skipped` and uploads the
+rest. When no glob matches, the build left nothing and the job fails with
+`the build left no file matching assets "..."`, so a build that broke cannot pass
+as a platform without that file. See
+[ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
+
+To run the assets again for a release that exists, use `smith ci assets --tag
+<project@version>` or the `assets_tag` input of the workflow's manual run. It builds
+the current checkout (not the commit of the tag), stamps the tag's version and
+replaces files of the same name in the tag's GitHub Release. A push that releases
+nothing starts no assets job; if it did start, the job prints `nothing released,
+skipping` and exits 0.
 
 Two settings tidy the files on upload. `asset_name` renames each file, with the
 placeholders `{product}` (default: the project name), `{version}`, `{platform}`

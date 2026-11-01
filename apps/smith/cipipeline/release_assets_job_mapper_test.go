@@ -13,11 +13,13 @@ func TestGitHubBuildsReleaseFilesOnARunnerPerPlatformAndUploadsThemWithoutArtifa
 	m := NewModel(Contributions{AssetPlatforms: []string{"windows-x64", "macos-arm64", "linux-arm64"}}, "dev", "main")
 	out := RenderGitHub(m)
 	for _, want := range []string{
-		"  assets:\n    needs: ci\n    if: ${{ always() && needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}",
+		"  assets:\n    needs: ci\n    if: ${{ always() && ((needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}",
+		"  workflow_dispatch:\n    inputs:\n      assets_tag:",
+		"  ci:\n    if: ${{ inputs.assets_tag == '' }}\n    runs-on: ubuntu-latest",
 		"- platform: windows-x64\n            os: windows-latest",
 		"- platform: macos-arm64\n            os: macos-latest",
 		"- platform: linux-arm64\n            os: ubuntu-24.04-arm",
-		"run: smith ci assets\n        env:\n          SMITH_PLATFORM: ${{ matrix.platform }}",
+		"run: smith ci assets --tag \"$ASSETS_TAG\"\n        env:\n          ASSETS_TAG: ${{ inputs.assets_tag }}\n          SMITH_PLATFORM: ${{ matrix.platform }}",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("workflow lacks %q:\n%s", want, out)
