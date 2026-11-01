@@ -90,7 +90,11 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	}
 	sort.Slice(r.Projects, func(i, j int) bool { return r.Projects[i].Root < r.Projects[j].Root })
 	if len(r.Projects) == 0 {
-		r.Warnings = append(r.Warnings, noProjectWarning(exists))
+		if attachRootProject(&r, files) {
+			r.Warnings = withoutRootProgramWarning(r.Warnings)
+		} else {
+			r.Warnings = append(r.Warnings, noProjectWarning(exists))
+		}
 	}
 	for _, f := range release.CheckLineage(s, false) {
 		item := Item{Message: f.Message, Baseline: f.Baseline, Steps: f.Remedy}
