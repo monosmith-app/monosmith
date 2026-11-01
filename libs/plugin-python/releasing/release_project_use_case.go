@@ -57,7 +57,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	sort.Strings(dists)
 	var files []string
 	for _, d := range dists {
-		if strings.Contains(filepath.Base(d), "-"+params.Version) {
+		if isDistributionOf(filepath.Base(d), params.Version) {
 			files = append(files, d)
 		}
 	}
