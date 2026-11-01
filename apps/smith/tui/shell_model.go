@@ -253,7 +253,7 @@ func (s Shell) otherTasks() []string {
 	var names []string
 	for _, t := range p.Tasks {
 		switch t.Name {
-		case "uild", "	est", "lint", "	ypecheck":
+		case "build", "test", "lint", "typecheck":
 		default:
 			names = append(names, t.Name)
 		}

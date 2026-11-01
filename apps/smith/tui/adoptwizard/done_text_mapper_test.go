@@ -34,3 +34,10 @@ func TestTheConservativeReviewOffersTheCommitBox(t *testing.T) {
 		t.Fatalf("ticked:\n%s", text)
 	}
 }
+
+func TestTheConversionReviewOffersTheCommitBoxToo(t *testing.T) {
+	f := adoptflow.Found{Name: "app", Kind: adoptflow.KindNx, Source: "Nx workspace"}
+	if text := conservativeText(f, "", adoptflow.Changes{}, "", convert.Highlights{}, true); !strings.Contains(text, "[x] Commit this change so it can be undone") {
+		t.Fatalf("ticked:\n%s", text)
+	}
+}

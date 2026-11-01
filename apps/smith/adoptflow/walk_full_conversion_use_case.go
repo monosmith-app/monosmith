@@ -95,6 +95,16 @@ func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Wr
 	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
 }
 
+// CommitConversion commits what the conversion changed as one operation that
+// smith undo reverts, and returns the line that says what happened (or why
+// nothing was committed). The tree was clean before the conversion, so the
+// commit holds the conversion and nothing else.
+func (s *Session) CommitConversion() string {
+	var b strings.Builder
+	convert.CommitConversion(s.Root, &b)
+	return strings.TrimSpace(b.String())
+}
+
 // Result is what the conversion found worth telling, once it was applied.
 func (s *Session) Result() convert.Highlights {
 	if s.analysis == nil {

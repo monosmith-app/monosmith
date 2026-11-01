@@ -27,6 +27,8 @@ type Prompt struct {
 	remove   bool
 	dev      bool
 	input    textinput.Model
+	// languages maps a project to its language id, for the examples.
+	languages map[string]string
 	// focus is the packages (0), the development box (1), the buttons (2 and 3)
 	// and the project (4).
 	focus int
@@ -88,6 +90,19 @@ func (p Prompt) step(dir int) Prompt {
 		}
 	}
 	p.project = p.projects[(at+dir+len(p.projects))%len(p.projects)]
+	return p.examples()
+}
+
+// WithLanguages tells the prompt each project's language id, so the example
+// package names are the ones that project's package manager knows.
+func (p Prompt) WithLanguages(languages map[string]string) Prompt {
+	p.languages = languages
+	return p.examples()
+}
+
+// examples sets the placeholder to example names for the project's language.
+func (p Prompt) examples() Prompt {
+	p.input.Placeholder = ExampleNames(p.languages[p.project])
 	return p
 }
 

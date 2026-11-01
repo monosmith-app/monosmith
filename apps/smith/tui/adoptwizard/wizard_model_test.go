@@ -143,6 +143,11 @@ func (f *fakeFlow) AgentFix() (doctorfix.Planned, bool) {
 
 func (f *fakeFlow) Close() { f.closed = true }
 
+func (f *fakeFlow) CommitConversion() string {
+	f.note("commit")
+	return "Committed abc12345: chore: convert to smith (smith undo reverts it)."
+}
+
 func (f *fakeFlow) Changes() (adoptflow.Changes, error) {
 	f.note("changes")
 	return adoptflow.Changes{Created: []string{"smith.toml"}, Edited: []string{"apps/api/package.json", "libs/ui/package.json"}, Removed: []string{"nx.json"}}, f.fail("changes")

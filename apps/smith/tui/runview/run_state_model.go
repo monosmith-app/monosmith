@@ -170,7 +170,12 @@ func (r *Run) Counts() Counts {
 		case Passed:
 			c.Passed++
 		case Failed:
-			c.Failed++
+			// A task the person stopped did not fail: it counts as skipped.
+			if r.Cancelled && t.Reason == "interrupted" {
+				c.Skipped++
+			} else {
+				c.Failed++
+			}
 		case Skipped:
 			c.Skipped++
 		}

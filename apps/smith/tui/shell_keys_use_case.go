@@ -104,14 +104,16 @@ func (s *Shell) openPackages(remove bool) {
 		return
 	}
 	var names []string
+	languages := map[string]string{}
 	for _, pr := range s.list.Projects() {
 		names = append(names, pr.Name)
+		languages[pr.Name] = pr.Language
 	}
 	p := packageprompt.NewInstall(project, names)
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.Place(s.w, s.h)
+	p = p.WithLanguages(languages).Place(s.w, s.h)
 	s.pkg = &p
 }
 

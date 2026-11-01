@@ -33,6 +33,10 @@ type Wizard struct {
 	// cursor is the option under the cursor while asking.
 	cursor int
 	review []string
+	// summary is review with each diff cut to one line; full says the diffs show.
+	summary []string
+	hasDiff bool
+	full    bool
 	// top is the first visible line of the body.
 	top int
 
@@ -101,7 +105,7 @@ func (w Wizard) resolve() Wizard {
 	w.phase = Reviewing
 	planned := w.Fix
 	planned.Fix = fix
-	w.review = nil
+	w.review, w.summary, w.hasDiff, w.full = nil, nil, false, false
 	if w.show != nil {
 		text, err := w.show(planned)
 		if err != nil {
@@ -216,6 +220,10 @@ func (w Wizard) reviewKey(name string) (Wizard, Outcome) {
 			return w, Outcome{Decline: true}
 		}
 		return w, Outcome{Done: true}
+	case "d":
+		if w.hasDiff {
+			w.full, w.top = !w.full, 0
+		}
 	case "s":
 		if w.style.Skip != "" {
 			return w, Outcome{Skip: true}
