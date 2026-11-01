@@ -240,8 +240,36 @@ func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
-		Project: s.selectedProject(), Projects: s.list.Len(),
+		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(),
 	}
+}
+
+// otherTasks are the selected project's tasks that have no key of their own.
+func (s Shell) otherTasks() []string {
+	p, ok := s.list.Selected()
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, t := range p.Tasks {
+		switch t.Name {
+		case "uild", "	est", "lint", "	ypecheck":
+		default:
+			names = append(names, t.Name)
+		}
+	}
+	return names
+}
+
+// taskProjects counts, for each task, the projects that have it.
+func (s Shell) taskProjects() map[string]int {
+	counts := map[string]int{}
+	for _, p := range s.list.Projects() {
+		for _, t := range p.Tasks {
+			counts[t.Name]++
+		}
+	}
+	return counts
 }
 
 // viewReasons are the keys of the open view that cannot do anything now, and
@@ -265,6 +293,9 @@ func (s Shell) viewReasons() map[string]string {
 	case commands.TabDeps:
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = "no dependency to update"
+		}
+		if len(s.deps.Policy) > 0 {
+			r["deps.one-version"] = "dependencies.one_version is already on"
 		}
 		if s.deps.AlignArgv() == nil {
 			r["deps.align"] = "the one-version policy found nothing to align"

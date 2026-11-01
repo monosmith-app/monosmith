@@ -37,13 +37,19 @@ func (h Help) content(th theme.Theme, w int) []string {
 			out = append(out, th.Title(r.Group))
 			last = r.Group
 		}
-		gap := max(w-2-pane.Width(r.Title)-pane.Width(r.Shortcut), 1)
+		gap := w - 2 - pane.Width(r.Title) - pane.Width(r.Shortcut)
+		if gap < 2 {
+			// Too long for one line: the title wraps and the keys follow below it.
+			out = append(out, pane.Wrap("  "+r.Title, w, 4)...)
+			out = append(out, "    "+th.Bold(r.Shortcut))
+			continue
+		}
 		out = append(out, "  "+r.Title+strings.Repeat(" ", gap)+th.Bold(r.Shortcut))
 	}
 	if len(h.extra) > 0 {
 		out = append(out, "", th.Title("Mouse"))
 		for _, l := range h.extra {
-			out = append(out, "  "+l)
+			out = append(out, pane.Wrap("  "+l, w, 4)...)
 		}
 	}
 	return out
@@ -51,7 +57,7 @@ func (h Help) content(th theme.Theme, w int) []string {
 
 // Place centres the overlay on a screen of the given size.
 func (h Help) Place(sw, sh int) Help {
-	w := min(max(sw-6, 10), 64)
+	w := min(max(sw-6, 10), 92)
 	hh := min(max(sh-2, 3), 28)
 	h.rect = Rect{X: max((sw-w)/2, 0), Y: max((sh-hh)/2, 0), W: w, H: hh}
 	return h

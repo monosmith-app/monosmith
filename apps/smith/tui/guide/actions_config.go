@@ -189,7 +189,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (for choices, run smith recipe new in a terminal)",
+			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (to pick choices too, run smith recipe new outside this screen)",
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},

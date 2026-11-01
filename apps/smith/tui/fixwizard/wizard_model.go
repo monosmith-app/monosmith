@@ -145,7 +145,7 @@ func (w Wizard) begin() Wizard {
 // Fail shows how the fix stopped and offers Retry and Close.
 func (w Wizard) Fail(err error) Wizard {
 	w.phase, w.top = Failed, 0
-	w.headline, w.output = failureOf(err)
+	w.headline, w.output = failureOf(err, w.style.Name)
 	return w
 }
 

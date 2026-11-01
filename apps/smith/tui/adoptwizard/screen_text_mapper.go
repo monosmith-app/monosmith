@@ -48,6 +48,9 @@ func foundText(f adoptflow.Found) string {
 		}
 		fmt.Fprintf(&b, "  • %s  %s  %s\n", p.Name, projectWords(p), p.Root)
 	}
+	if len(f.Blockers) > 0 && !f.NeedsInstall {
+		fmt.Fprintf(&b, "\n%s to clear before smith can go on:\n", plural(len(f.Blockers), "blocker"))
+	}
 	for _, x := range f.Blockers {
 		// Missing packages are a step smith takes itself, not a dead end.
 		mark := "✖"

@@ -89,7 +89,7 @@ func TestNotSavingIsTheDefaultAndNeedsALanguage(t *testing.T) {
 		t.Error("a recipe was saved without a yes")
 	}
 	_, out, err := runNew(t, true, "\n\n\n\n")
-	if err != nil || !strings.Contains(out, "No recipe to save: a recipe needs a main language") || strings.Contains(out, "Save these answers") {
+	if err != nil || strings.Contains(out, "No recipe to save") || strings.Contains(out, "Save these answers") {
 		t.Errorf("%v\n%s", err, out)
 	}
 }

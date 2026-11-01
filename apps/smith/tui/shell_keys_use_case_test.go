@@ -130,7 +130,7 @@ func TestAViewsLettersAreItsOwnNotTheGlobalOnes(t *testing.T) {
 func TestCtrlPOpensThePaletteListingEveryCommandWithItsShortcut(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("ctrl+p")
-	l.has("Command palette", "Build", "Build orders", "smith run build -p orders", "Build all 4")
+	l.has("Command palette", "Build", "Build orders", "smith run build -p orders", "Build all 3")
 	l.typeText("typec")
 	l.has("Typecheck")
 	l.hasNot("Quit")

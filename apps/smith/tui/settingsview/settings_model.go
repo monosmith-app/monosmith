@@ -170,7 +170,7 @@ func orAuto(v string) string {
 func (m Model) Reasons() map[string]string {
 	r := map[string]string{}
 	if m.ed != nil {
-		for _, id := range []string{"settings.move", "settings.sections", "settings.trust", "settings.forget", "settings.unset"} {
+		for _, id := range []string{"settings.move", "settings.change", "settings.sections", "settings.trust", "settings.forget", "settings.unset"} {
 			r[id] = "finish or cancel the editor first (Esc)"
 		}
 		return r
