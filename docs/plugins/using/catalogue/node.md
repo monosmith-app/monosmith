@@ -226,14 +226,16 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 
 ## Derived files
 
-With `[derive] enabled = true`, the plugin answers `smith derive` with three renderers
-([Derived files](../../../reference/derived-files.md)):
+With `[derive] enabled = true`, the plugin answers `smith derive` with three renderers of its own and the TypeScript and Vite
+plugins add two more ([Derived files](../../../reference/derived-files.md)):
 
 | Renderer | Derives |
 |---|---|
 | `node.tsconfig.references` | the `references` key of `tsconfig.lib.json`, one entry for each internal dependency of the project graph |
 | `node.jest.display-name` | the `displayName` line of a `jest.config.{ts,js,cjs,mjs}` between `smith:begin` and `smith:end` markers, from the package name |
 | `node.sibling-shape` | a config file that three or more sibling projects share in one shape (`tsconfig*.json`, `.swcrc`, `jest.config.*` and the like), for each project that has it; a file or key that differs is left alone and reported as diverging |
+| `typescript.tsconfig` (the [typescript](typescript.md) plugin) | the whole `tsconfig.json` of a project the plugin scaffolded, from the template `smith add` used |
+| `vite.tsconfig` (the [vite](vite.md) plugin) | the whole `tsconfig.json` of an app made from choices, from the same choices |
 
 ## Releasing
 
@@ -258,6 +260,8 @@ $ smith release --dry-run --json      # excerpt
 ```
 
 The release's SBOM lists the packages of the nearest `package-lock.json` (the project's or the workspace's), falling back to the ranges in `package.json`, through the `sbom/components` method of the plugin protocol ([releasing](../../../reference/releasing.md#sbom-and-build-provenance)).
+
+A release channel (`[[release.channels]]`) publishes with `npm publish --tag <name>`, so `latest` stays on the stable version; the plugin declares the `channels` capability ([releasing](../../../reference/releasing.md)).
 
 The release compares the exported names of a package at its last tag and now, through the `api/surface` method, and warns when the commits give a smaller bump than the change needs. The plugin reads `exports`, `types`, `typings`, `module` and `main` of `package.json`, and the declaration, TypeScript or JavaScript file behind each (the source when the build output is not in the repository). It does not build. What it misses is listed in [releasing](../../../reference/releasing.md#the-bump-against-the-public-api).
 

@@ -210,6 +210,8 @@ Where output goes: an app's `build` writes `dist/<module dir>/<name>[.exe]` (out
 
 Go has no manifest version, so the plugin has no `version` capability and nothing is written into `go.mod`.
 
+The plugin does not declare the `channels` capability, so a [release channel](../../../reference/releasing.md) refuses a Go package in its plan. Keep the module out of the channel with `[projects.<name>.release] channels = false`; a `v2.0.0-beta.1` tag could not be used by `go get` unless the module path ends in `/v2`.
+
 | Kind | What a release does |
 |---|---|
 | package | smith computes the next version from conventional commits, creates the tag `<dir>/v<version>` (for example `packages/sdk/v0.1.0`) and pushes it. That tag is how `go get` finds a nested module's version. The plugin's publish step answers "published by its tag": there is no upload, no registry and no credential. |

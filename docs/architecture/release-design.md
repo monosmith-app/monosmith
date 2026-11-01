@@ -82,11 +82,14 @@ build with a detached merge commit, the branch the pull request targets.
 - `Plan.Channel` carries the publish name, and `--dry-run`, the report and the pull request comment
   print `ChannelNotice`.
 - `Preflight` accepts a channel branch as a release branch. It refuses a channel release when a
-  project's plugin lacks the `channels` capability, when a project has a deploy plugin, or when an
-  app sends binaries to package managers (`channelProblems`), because each would move a stable pointer.
+  package's plugin lacks the `channels` capability, when a project has a deploy plugin, or when an
+  app sends binaries to package managers (`channelProblems`), because each would move a stable
+  pointer. An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev
+  are allowed. `[projects.<name>.release] channels = false` keeps a project out of the channel: on a
+  channel branch it is neither planned nor published.
 - `publish` receives the publish name as `PublishParams.tag` (`dist_tag`, default the prerelease
-  identifier, never `latest`). A plugin that honours it declares `channels` (the Go SDK marker
-  interface `serve.ChannelPublisher`); the Node plugin passes it to `npm publish --tag`. A version
+  identifier, never `latest`). A plugin whose publish cannot move a stable pointer declares `channels` (the Go SDK marker
+  interface `serve.ChannelPublisher`). The Node plugin passes the name to `npm publish --tag`; the Python and .NET plugins declare it and ignore the name, because PyPI and NuGet order a prerelease below the release. A version
   with a prerelease part gets a GitHub Release marked as a prerelease.
 
 ### The public API check

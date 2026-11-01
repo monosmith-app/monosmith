@@ -315,6 +315,8 @@ rest are `Protocol` classes that document the signatures, and a plugin does not 
 | `remove` | `remove` | `remove` | `Remover` |
 | `change_kind` | `project/kind` | `changeKind` | `KindChanger` |
 | `components` | `sbom/components` | `components` | `ComponentLister` |
+| `derive` | `derive` | `derive` | `Deriver` |
+| `api_surface` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |

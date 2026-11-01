@@ -136,7 +136,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `components` | `sbom/components` | language |
 | `derive` | `derive` | language |
 | `apiSurface` | `api/surface` | language |
-| `channels` | (changes `publish`) | language; Go SDK only for now |
+| `channels` | (changes `publish`) | language; only the Go SDK can declare it for now |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
@@ -233,7 +233,7 @@ Capabilities are the optional methods a plugin implements.
 | `components` | `bool` | no | Components lists a project's dependencies for its SBOM. |
 | `derive` | `bool` | no | Derive says which files the plugin derives from facts and the project graph (smith derive). |
 | `apiSurface` | `bool` | no | APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs. |
-| `channels` | `bool` | no | Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest). A host does not publish a prerelease channel with a plugin that lacks it. |
+| `channels` | `bool` | no | Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it. |
 
 ### CancelParams
 
@@ -481,7 +481,7 @@ PublishParams asks a plugin to publish one project at one version.
 | `tagged` | `bool` | no | Tagged says the publish runs on the project's own tag, in the run the registry trusts (pub.dev's automated publishing); a registry that takes a package only from such a run is published to only then. |
 | `commit` | `string` | no | Commit is the full hash of the commit being released, and Branch the release branch, for a plugin that tags what it publishes with them (a container image's sha-<short> and branch tags). |
 | `branch` | `string` | no |  |
-| `tag` | `string` | no | Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only sent to a plugin with the channels capability. |
+| `tag` | `string` | no | Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability. |
 
 ### AssetSpec
 
