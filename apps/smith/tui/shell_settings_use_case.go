@@ -81,6 +81,9 @@ func (s *Shell) settingsResult(res settingsview.Result) tea.Cmd {
 	if res.Run != nil {
 		return s.execute(res.Run, false)
 	}
+	if res.Search {
+		return s.openPluginSearch(res.Term)
+	}
 	if res.Form != "" {
 		return s.perform(commands.Command{Kind: commands.Guided, Guide: res.Form})
 	}

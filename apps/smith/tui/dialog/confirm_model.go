@@ -22,6 +22,9 @@ type Confirm struct {
 	Details []string
 	// Argv is the command line without the program name; the shell runs it on confirmation.
 	Argv []string
+	// Info makes the dialog a notice: it only tells (Why and Details), has an
+	// OK button and runs nothing.
+	Info bool
 	// focus is 0 for Run, 1 for Cancel; hover is the button under the pointer or -1.
 	focus, hover int
 	rect         Rect
@@ -33,10 +36,19 @@ func NewConfirm(title, why string, argv []string) Confirm {
 	return Confirm{Title: title, Why: why, Command: commands.Line(argv), Argv: argv, hover: -1}
 }
 
+// NewNotice builds a dialog that only tells: a title, a sentence (Why) and
+// the lines of Details, closed with OK. It is how the shell shows the error of
+// a command, with the fix the command named.
+func NewNotice(title, why string, details []string) Confirm {
+	return Confirm{Title: title, Why: why, Details: details, Info: true, hover: -1}
+}
+
 const (
 	minWidth   = 44
+	noticeWide = 60
 	buttonRun  = "[ Run  Enter ]"
 	buttonStop = "[ Cancel  Esc ]"
+	buttonOK   = "[ OK  Enter ]"
 )
 
 // WithDetails adds the lines that say what the command will touch.
@@ -48,8 +60,14 @@ func (c Confirm) WithDetails(lines []string) Confirm {
 // Place centres the dialog on a screen of the given size.
 func (c Confirm) Place(sw, sh int) Confirm {
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
+	if c.Info {
+		w = min(noticeWide, max(sw-2, 10))
+	}
 	inner := w - 4
-	c.cmdLines = wrap(c.Command, inner-2)
+	c.cmdLines = nil
+	if !c.Info {
+		c.cmdLines = wrap(c.Command, inner-2)
+	}
 	body := c.bodyLines(inner)
 	h := len(body) + 4 // borders, blank line, buttons
 	h = min(h, max(sh, 3))
@@ -68,6 +86,9 @@ func (c Confirm) bodyLines(inner int) []string {
 			body = append(body, wrap(d, inner)...)
 		}
 	}
+	if c.Info {
+		return body
+	}
 	body = append(body, "", "The command that will run:")
 	for _, l := range c.cmdLines {
 		body = append(body, "  $ "+l)
@@ -79,6 +100,9 @@ func (c Confirm) bodyLines(inner int) []string {
 // (relative to the dialog's left edge) of each.
 func (c Confirm) buttonsRow(inner int) (spans [2][2]int) {
 	run, stop := ansi.StringWidth(buttonRun), ansi.StringWidth(buttonStop)
+	if c.Info {
+		run, stop = ansi.StringWidth(buttonOK), 0
+	}
 	total := run + 2 + stop
 	start := 2 + max((inner-total)/2, 0)
 	spans[0] = [2]int{start, start + run}
@@ -108,7 +132,11 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	rows = append(rows, row(""))
 	spans := c.buttonsRow(inner)
 	line := strings.Repeat(" ", spans[0][0]-2)
-	for i, label := range []string{buttonRun, buttonStop} {
+	labels := []string{buttonRun, buttonStop}
+	if c.Info {
+		labels = []string{buttonOK}
+	}
+	for i, label := range labels {
 		text := th.Muted(label)
 		switch i {
 		case c.focus:
@@ -117,7 +145,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 			text = th.Hover(label)
 		}
 		line += text
-		if i == 0 {
+		if i == 0 && len(labels) > 1 {
 			line += "  "
 		}
 	}
@@ -147,7 +175,7 @@ func (c Confirm) Hover(x, y int) Confirm { c.hover = c.buttonAt(x, y); return c 
 func (c Confirm) Click(x, y int) (Confirm, Outcome) {
 	switch c.buttonAt(x, y) {
 	case 0:
-		return c, Outcome{Done: true, Confirmed: true}
+		return c, Outcome{Done: true, Confirmed: !c.Info}
 	case 1:
 		return c, Outcome{Done: true}
 	}
@@ -159,6 +187,13 @@ func (c Confirm) Click(x, y int) (Confirm, Outcome) {
 
 // Key handles a key name.
 func (c Confirm) Key(name string) (Confirm, Outcome) {
+	if c.Info {
+		switch name {
+		case "enter", " ", "esc", "q", "y", "n", "ctrl+c":
+			return c, Outcome{Done: true}
+		}
+		return c, Outcome{}
+	}
 	switch name {
 	case "y", "Y":
 		return c, Outcome{Done: true, Confirmed: true}

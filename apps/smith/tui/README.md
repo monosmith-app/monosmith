@@ -39,9 +39,21 @@ A task run is started with `--json-events` (one JSON event per line, see
 [ADR 0026](../../../docs/architecture/decisions/0026-event-stream-and-smith-serve.md)), which
 `runview` reads; any other line, and every other command, is read as text.
 
+## Commands that show their text in a dialog
+
+Some commands are not shown in the Run tab: the shell runs the same smith as a child
+(`sources.CaptureCommand`), reads what it printed and shows it in a dialog (`dialog.Confirm`,
+or `dialog.NewNotice` for a text that only tells). `smith undo --dry-run` is read this way
+before `smith undo --yes` asks; `smith add ... --dry-run` is read before the real add; `smith
+choices --json` feeds the Add form (`guide.AddProjectAction`) and `smith plugin search --json`
+feeds the plugin install form (`guide.PluginInstallAction`). The files of these flows are
+`shell_capture_use_case.go` and `guide/add_project_choices_mapper.go`. The derived files of a
+project come from `derive.BuildPlan` (`sources/load_derived_files_use_case.go`), shown by
+`shell_derived_mapper.go`.
+
 ## Exception: the shell's own files stay in the package root
 
-- **Path:** `apps/smith/tui/*.go` (22 production files, plus `doc.go`: `shell_*.go`,
+- **Path:** `apps/smith/tui/*.go` (24 production files, plus `doc.go`: `shell_*.go`,
   `tui_handler.go`, `page_contract.go`, `confirm_details_mapper.go`,
   `release_preview_mapper.go`, `no_workspace_hint_mapper.go`).
 - **Rule waived:** a subfeature holds at most 12 production files

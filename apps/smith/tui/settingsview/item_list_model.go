@@ -49,6 +49,7 @@ const (
 	kindExternal
 	kindInstalled
 	kindInstall
+	kindSearch
 	kindArchitecture
 	kindTheme
 	kindIcons
@@ -82,6 +83,7 @@ func (m Model) items(s Section) []item {
 		for i, p := range m.snap.Installed {
 			add(kindInstalled, "Installed on the search path", p.Name+"\x00"+p.Dir, i)
 		}
+		add(kindSearch, "Install", "search", 0)
 		add(kindInstall, "Install", "install", 0)
 	case Architecture:
 		for i, a := range m.snap.Architectures {

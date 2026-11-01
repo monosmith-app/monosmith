@@ -72,3 +72,41 @@ func TestTheFooterNamesTheScopeOfTheRunKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestThePaletteOffersTheTwoPointZeroCommands(t *testing.T) {
+	want := map[string]string{
+		"ws.undo": "Undo the last change…", "ws.report": "Open the report", "ws.agent-file": "Write the agent file…",
+		"ws.derive-check": "Check the derived files", "ws.derive": "Update the derived files…", "ws.why": "Why is this file here?…",
+	}
+	for _, e := range PaletteEntries(State{View: TabHome, InWorkspace: true}) {
+		if title, ok := want[e.ID]; ok {
+			if e.Title != title || e.Unavailable != "" {
+				t.Errorf("%s: %q unavailable %q", e.ID, e.Title, e.Unavailable)
+			}
+			delete(want, e.ID)
+		}
+	}
+	for id := range want {
+		t.Errorf("%s is not in the palette", id)
+	}
+	outside := map[string]bool{}
+	for _, e := range PaletteEntries(State{View: TabHome}) {
+		outside[e.ID] = true
+	}
+	for _, id := range []string{"ws.undo", "ws.report", "ws.agent-file", "ws.derive-check", "ws.derive", "ws.why"} {
+		if outside[id] {
+			t.Errorf("%s needs a workspace", id)
+		}
+	}
+}
+
+func TestDescribeSaysWhatTheNewCommandsChange(t *testing.T) {
+	for argv, want := range map[string]string{
+		"undo --yes": "Undo the last change", "agent file": "Write the agent file", "derive": "Update the derived files",
+		"derive --eject a.json": "Own a derived file", "derive --adopt a.json": "Keep your edit", "derive --replace a.json": "Replace a derived file",
+	} {
+		if title, why := Describe(strings.Fields(argv)); !strings.HasPrefix(title, want) || why == "" {
+			t.Errorf("%q: %q / %q", argv, title, why)
+		}
+	}
+}

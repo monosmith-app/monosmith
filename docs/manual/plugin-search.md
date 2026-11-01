@@ -36,8 +36,8 @@ Usage: `smith plugin search [term] [flags]`
 <!-- smith:end plugin search -->
 
 A term of several words matches a plugin that contains every word, in any order, ignoring case.
-`--json` prints an array of the matching entries, with their `versions`, `url` and `sha256`; an empty
-result is `[]`.
+`--json` prints an array of the matching entries, each with its `name` (what `smith plugin install`
+takes), its `newest` stable version, and its `versions`, `url` and `sha256`; an empty result is `[]`.
 
 ## Which marketplace
 

@@ -61,8 +61,10 @@ func TestSearchCommandSaysWhenNothingMatchesAndPrintsJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got []Plugin
-	if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Description != "Deploys to the moon" {
+	var got []struct {
+		Name, Newest, Description string
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil || len(got) != 1 || got[0].Description != "Deploys to the moon" || got[0].Name != "deployer" || got[0].Newest == "" {
 		t.Fatalf("%v %+v\n%s", err, got, out)
 	}
 	out, _ = runSearch(t, srv.URL, "", "--json", "zzz")

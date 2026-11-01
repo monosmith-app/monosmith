@@ -50,6 +50,11 @@ type Sources struct {
 	// Start launches a smith command line as a child process (the smith
 	// binary itself) in the workspace.
 	Start func(argv []string) (runner.Handle, error)
+	// Capture runs a smith command line to its end and returns what it
+	// printed, for the plans and errors the shell shows in a dialog.
+	Capture func(argv []string) Captured
+	// Open opens a file with the program the system chooses (the report).
+	Open func(path string) error
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.
@@ -66,6 +71,8 @@ func WorkspaceSources(dir, version string) Sources {
 		return session.Open(session.Options{Dir: dir, Version: version, Log: io.Discard})
 	}
 	return Sources{
+		Capture: func(argv []string) Captured { return CaptureCommand(dir, argv) },
+		Open:    OpenPath,
 		Start: func(argv []string) (runner.Handle, error) {
 			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})
 			if err != nil {
@@ -143,11 +150,13 @@ func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 	for _, n := range affected.Compute(s.Git, s.Graph, base).Projects {
 		hit[n] = true
 	}
+	derived := loadDerivedFiles(s)
 	var out []projectlist.Project
 	for _, name := range s.Graph.Names() {
 		p := s.Graph.Get(name)
 		np := projectlist.Project{
-			Name: name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
+			Derived: derived[name],
+			Name:    name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
 			Stack: projectgraph.StackOf(p, s.Config), Deps: p.Deps, Dependents: s.Graph.Dependents(name), Affected: hit[name],
 		}
 		var tasks []string

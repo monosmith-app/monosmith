@@ -206,6 +206,9 @@ func (s Shell) projectPanel() detail.Panel {
 	if len(p.Dependents) > 0 {
 		secs = append(secs, detail.Section{Heading: "Used by", Items: p.Dependents})
 	}
+	if sec, ok := s.derivedSection(p); ok {
+		secs = append(secs, sec)
+	}
 	var actions []detail.Action
 	for _, t := range p.Tasks {
 		a := s.taskAction(t.Name)
@@ -216,8 +219,10 @@ func (s Shell) projectPanel() detail.Panel {
 		detail.Action{ID: "x:install", Label: "Install a package…", Hint: "adds packages to " + p.Name + " with its own toolchain (npm, the Python venv, go get)"},
 		detail.Action{ID: "x:uninstall", Label: "Remove a package…"},
 		detail.Action{ID: "x:explain", Label: "Explain"},
+		detail.Action{ID: "x:why", Label: "Why: who owns these files", Hint: "what produced the project's files and how to change them (smith why)"},
 		detail.Action{ID: "x:graph", Label: "Graph: needs and used by"},
 	)
+	actions = append(actions, s.derivedActions(p)...)
 	title := ""
 	if len(p.Tasks) > 0 {
 		title = "Run on " + p.Name
@@ -396,6 +401,9 @@ func (s Shell) workspacePanel() detail.Panel {
 	rows := []detail.Row{{Label: "workspace", Value: s.header}, {Label: "projects", Value: fmt.Sprint(len(projects))}, {Label: "affected", Value: fmt.Sprint(affected)}}
 	if s.branch != "" {
 		rows = append(rows, detail.Row{Label: "branch", Value: s.branch})
+	}
+	if n := derivedNeedingAction(projects); n > 0 {
+		rows = append(rows, detail.Row{Label: "derived files", Value: fmt.Sprintf("%d need action: pick the project, then Explain the derived files", n)})
 	}
 	return detail.Panel{
 		Sections: []detail.Section{{Heading: "Workspace", Rows: rows}},

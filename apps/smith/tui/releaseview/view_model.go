@@ -107,6 +107,10 @@ func (v Model) View(th theme.Theme, w int) (lines []string, rowOf map[int]int) {
 		lines = append(lines, "", th.Muted("smith release --dry-run shows the same"))
 	default:
 		lines = append(lines, v.headline(th), "")
+		if v.Plan.Channel != "" {
+			// A prerelease line is not the stable release: say so before the versions.
+			lines = append(lines, th.Warning(th.Icons.Warning+" "+release.ChannelNotice(v.Plan.Channel)), "")
+		}
 		for _, m := range v.Warnings {
 			lines = append(lines, th.Warning("warning: "+m))
 		}

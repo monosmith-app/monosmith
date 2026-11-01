@@ -34,6 +34,18 @@ func Describe(argv []string) (title, why string) {
 			return "Align dependency versions", "This rewrites manifests so each dependency has one version across the workspace, then installs."
 		}
 		return "Update dependencies", "This moves the chosen dependencies to their latest release in every project that declares them, then installs."
+	case verb == "undo":
+		return "Undo the last change", "This reverts the last change smith made with a new commit. Your history stays as it is."
+	case verb == "agent" && len(argv) > 1 && argv[1] == "file":
+		return "Write the agent file", "This writes AGENTS.md, and a short CLAUDE.md that imports it, from what smith knows about the workspace."
+	case verb == "derive" && slices.Contains(argv, "--eject"):
+		return "Own a derived file", "This marks the file as yours. smith stops rewriting it."
+	case verb == "derive" && slices.Contains(argv, "--adopt"):
+		return "Keep your edit of a derived file", "This takes your edit as the new baseline. smith keeps it and rewrites the rest."
+	case verb == "derive" && slices.Contains(argv, "--replace"):
+		return "Replace a derived file", "This overwrites the file with what smith derives. Your edit is lost."
+	case verb == "derive":
+		return "Update the derived files", "This rewrites the files that follow from the project graph. A file you edited is never overwritten."
 	case verb == "plugin" && len(argv) > 1 && argv[1] == "install":
 		return "Install a plugin", "This puts the plugin on this machine after checking it. smith does not start it."
 	case verb == "plugin":

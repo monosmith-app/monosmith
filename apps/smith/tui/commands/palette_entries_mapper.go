@@ -45,6 +45,7 @@ var paletteSections = map[string]string{
 	"rel.preview": SectionRelease, "rel.notes": SectionRelease, "rel.release": SectionRelease, "ws.ci": SectionRelease,
 
 	"ws.doctor": SectionHealth, "ws.fix": SectionHealth, "proj.upgrade": SectionHealth, "proj.plugins": SectionHealth, "ws.info": SectionHealth,
+	"ws.undo": SectionHealth, "ws.report": SectionHealth, "ws.derive-check": SectionHealth, "ws.derive": SectionHealth, "ws.why": SectionHealth, "ws.agent-file": SectionHealth,
 
 	"view.home": SectionGoTo, "view.projects": SectionGoTo, "view.run": SectionGoTo, "view.doctor": SectionGoTo,
 	"view.deps": SectionGoTo, "view.release": SectionGoTo, "view.settings": SectionGoTo,

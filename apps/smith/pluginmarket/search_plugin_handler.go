@@ -9,6 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// searchRow is a plugin as `--json` prints it: the entry of the index, plus
+// the name it is installed by (the index keeps it as the key, so Plugin does
+// not carry it) and its newest stable version.
+type searchRow struct {
+	Name   string `json:"name"`
+	Newest string `json:"newest"`
+	Plugin
+}
+
 // SearchCommand is `smith plugin search`. configured returns the [plugins]
 // marketplace value of the workspace smith.toml ("" outside a workspace or
 // when unset); client downloads the index.
@@ -42,10 +51,11 @@ the token to GitHub only.`,
 			if asJSON {
 				enc := json.NewEncoder(w)
 				enc.SetIndent("", "  ")
-				if found == nil {
-					found = []Plugin{}
+				rows := make([]searchRow, 0, len(found))
+				for _, p := range found {
+					rows = append(rows, searchRow{Name: p.Name, Newest: Newest(p), Plugin: p})
 				}
-				return enc.Encode(found)
+				return enc.Encode(rows)
 			}
 			if len(found) == 0 {
 				fmt.Fprintf(w, "No plugin matches in %s.\n", location)
@@ -53,7 +63,7 @@ the token to GitHub only.`,
 			}
 			fmt.Fprintf(w, "%-18s %-9s %-22s %s\n", "PLUGIN", "VERSION", "ROLES", "DESCRIPTION")
 			for _, p := range found {
-				fmt.Fprintf(w, "%-18s %-9s %-22s %s\n", p.Name, Newest(p),dash(strings.Join(p.Roles, ",")), p.Description)
+				fmt.Fprintf(w, "%-18s %-9s %-22s %s\n", p.Name, Newest(p), dash(strings.Join(p.Roles, ",")), p.Description)
 			}
 			fmt.Fprintf(w, "\nInstall one with: smith plugin install <name>[@version]\n")
 			return nil

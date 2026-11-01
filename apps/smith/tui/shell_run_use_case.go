@@ -126,8 +126,12 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	if name, ok := addedProject(s.run.Command); ok && s.run.OK() {
 		s.justAdded = name
 	}
-	s.last =lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
-	return s.refreshAfter(s.run.Command)
+	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
+	cmds := []tea.Cmd{s.refreshAfter(s.run.Command)}
+	if _, ok := reportTarget(s.run.Command); ok && s.run.OK() {
+		cmds = append(cmds, s.reportWritten(s.run.Command))
+	}
+	return tea.Batch(cmds...)
 }
 
 // refreshAfter reads again what a command that is not a task run may have
@@ -141,6 +145,8 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
 	cmds := []tea.Cmd{s.loadProjects()}
 	if len(argv) > 0 && argv[0] == "plugin" {
+		// A plugin that came or went changes the choices a project can be built from.
+		s.choices, s.offers = choicesNotAsked, nil
 		var reload tea.Cmd
 		s.settings, reload = s.settings.Reload()
 		cmds = append(cmds, reload)
@@ -156,6 +162,8 @@ func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
 		s.notify("Cancelled: "+s.run.CommandLine(), toast.Warning)
+	case s.run.OK() && undoable(s.run.Command):
+		s.notify(s.summary()+". "+undoHint(), toast.Success)
 	case s.run.OK():
 		s.notify(s.summary(), toast.Success)
 	default:

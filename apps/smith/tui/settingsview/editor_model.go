@@ -19,6 +19,8 @@ const (
 	editReview
 	// editInstall asks what plugin to install.
 	editInstall
+	// editSearch asks what to look for in the plugin marketplace.
+	editSearch
 )
 
 // editor is what fills the right pane while a value is being changed.
@@ -96,6 +98,15 @@ func newInstall() *editor {
 	}
 }
 
+func newSearch() *editor {
+	return &editor{
+		kind:  editSearch,
+		title: "Find a plugin in the marketplace",
+		about: "Words from the name, the description, the roles or the languages (for example: deploy go). Leave it empty to list every plugin.",
+		input: newInput("", "words to look for"),
+	}
+}
+
 // installArgv is the command line the typed text stands for, or why it is not one.
 func installArgv(typed string) ([]string, string) {
 	words := strings.Fields(typed)
@@ -157,6 +168,12 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		return m, Result{}
 	}
 	switch e.kind {
+	case editSearch:
+		if name == "enter" {
+			m.ed = nil
+			return m, Result{Search: true, Term: strings.TrimSpace(e.input.Value())}
+		}
+		e.input, _ = e.input.Update(msg)
 	case editText, editInstall:
 		if name == "enter" {
 			e.err = ""

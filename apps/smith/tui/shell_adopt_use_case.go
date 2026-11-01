@@ -51,6 +51,7 @@ func (s *Shell) afterAdopt(out adoptwizard.Outcome) tea.Cmd {
 		s.adopt.Dispose()
 		s.adopt = nil
 		s.reopen = true
+		s.reopenNote = "Brought into MonoSmith. " + undoHint()
 		if out.Build {
 			s.reopenStart = []string{"run", "build"}
 		}
