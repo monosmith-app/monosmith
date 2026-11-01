@@ -102,6 +102,9 @@ func Find(path string) (Field, error) {
 	if near := nearest(path, paths); len(near) > 0 {
 		message += "; did you mean " + strings.Join(near, " or ") + "?"
 	}
+	if strings.HasPrefix(path, "release.channels") {
+		return Field{}, errors.New("release channels are a list of tables, which smith config set does not edit: add a [[release.channels]] table to smith.toml (branch, prerelease, major, dist_tag). docs/reference/releasing.md, Release channels, shows one.")
+	}
 	return Field{}, errors.New(message + " Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).")
 }
 
