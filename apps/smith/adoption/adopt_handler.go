@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,8 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise, dryRun, install, eslint, commit bool
+	var asJSON, tags, initialise, dryRun, install, eslint, commit, yes bool
+	var move string
 	level := LevelConservative
 	cmd := &cobra.Command{
 		Use:   "adopt",
@@ -45,6 +47,16 @@ is asked for, and both steps need a clean git tree:
           commit: add --commit to commit the change as one operation that
           smith undo reverts
 
+A repository whose one project is at the root (a package.json, go.mod,
+pyproject.toml or Cargo.toml there) needs the project in a folder of its own,
+because smith manages one folder per project. --init asks where (apps/<name>,
+packages/<name>, libs/<name> or another folder) and never picks for you. Without
+a terminal, or with --yes, it moves nothing unless --move <folder> says where
+(--move none keeps the project where it is). The move is git mv of the project's
+files; the repository's own files (.git, .github, README, LICENSE, ...) stay.
+With --commit the move is a commit of its own, before the adoption's. --dry-run
+lists the git mv commands for the suggested folder, or for --move.
+
 --level conservative (the default) keeps the repository's build and lint setup.
 --level full, which makes smith the only tool, applies to Nx and Turborepo
 workspaces and is smith convert --level full's; for a plain repository adopt
@@ -55,10 +67,14 @@ smith convert (a report stays a --dry-run, --init applies), and --level, --json 
 --dry-run carry over, so one command brings in either kind of repository. Exits
 non-zero while something blocks.`,
 		Example: `  smith adopt --dry-run
-  smith adopt --tags --init`,
+  smith adopt --tags --init
+  smith adopt --init --move apps/web --commit`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
+			if move != "" && !initialise && !dryRun {
+				return problem.New("--move says where --init puts the project, and --init is not given", "smith adopt --init --move "+move, "or add --dry-run to see the git mv commands")
+			}
 			if Convertible(".") {
 				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint, commit)
 			}
@@ -84,6 +100,22 @@ non-zero while something blocks.`,
 			}
 			if (tags || initialise) && !report.Clean && report.Adoptable() {
 				return ErrDirty
+			}
+			if dryRun && move != "" && move != adoptmove.Leave && report.Adoptable() {
+				if err := planForDryRun(&report, move); err != nil {
+					return err
+				}
+			}
+			if initialise && report.Adoptable() {
+				c, plan, err := ChooseMove(report, MoveOptions{Dir: move, Yes: yes, In: cmd.InOrStdin(), Out: out})
+				if err != nil {
+					return err
+				}
+				if plan != nil {
+					if report, err = MoveRootProject(report, *c, *plan, commit, version, cmd.ErrOrStderr(), out); err != nil {
+						return err
+					}
+				}
 			}
 			if tags {
 				if _, err := CreateBaselines(report, out); err != nil {
@@ -123,6 +155,8 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&install, "install", false, "with --init, also run npm install for the Node projects")
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
+	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
+	cmd.Flags().BoolVar(&yes, "yes", false, "do not ask: a project at the root moves only when --move says where")
 	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd
 }
@@ -146,6 +180,8 @@ func printReport(w io.Writer, r Report) {
 		printItem(w, "!", x)
 	}
 	switch {
+	case len(r.Projects) == 0 && r.Adoptable() && r.RootProject != nil:
+		printMoveOffer(w, r)
 	case len(r.Projects) == 0 && r.Adoptable():
 		fmt.Fprintln(w, "! no project to adopt yet: follow a step above, or run smith adopt --init to make an empty workspace and add projects with smith add")
 	case len(r.Blockers) == 0 && r.Adoptable():

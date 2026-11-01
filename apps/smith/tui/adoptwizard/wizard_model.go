@@ -65,6 +65,11 @@ type Model struct {
 	commit bool
 	// commitNote is what committing the conversion said, once it ran.
 	commitNote *string
+	// moveTo is the answer to "where does the project at the root go?": a
+	// folder, adoptmove.Leave, or "" when there is no such question or it is
+	// not answered yet. moveName is the name as the person last edited it, and
+	// moveNote tells why the last answer was not usable.
+	moveTo, moveName, moveNote string
 }
 
 // prepared is what Prepare returned.
@@ -222,7 +227,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Skip:
 		return m.decline(true)
 	}
-	if (m.stage == StageLevel || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
+	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
 		return m.answered()
 	}
 	return m, Outcome{}
@@ -246,13 +251,16 @@ func (m Model) cancel() (Model, Outcome) {
 // goBack returns to the screen before the first question or the review.
 func (m Model) goBack() (Model, Outcome) {
 	switch m.stage {
-	case StageLevel:
+	case StageLevel, StageMove:
 		return m.showFound(), Outcome{}
 	case StageChoices:
 		return m.askLevel(), Outcome{}
 	case StageReview:
 		if m.full && len(m.asked) > 0 {
 			return m.askChoices(), Outcome{}
+		}
+		if m.hasRootProject() {
+			return m.askMove(), Outcome{}
 		}
 		if m.found.Full {
 			return m.askLevel(), Outcome{}
@@ -488,6 +496,9 @@ func (m Model) askChoices() Model {
 // answered reads the answer of the level question or of the choices.
 func (m Model) answered() (Model, Outcome) {
 	answers := m.fw.Answers()
+	if m.stage == StageMove {
+		return m.answeredMove(answers)
+	}
 	if m.stage == StageLevel {
 		if len(answers) == 1 && answers[0] == levelFull {
 			m.full = true
@@ -547,6 +558,9 @@ func (m Model) reviewFull() Model {
 // reviewConservative works out the files a conservative conversion changes
 // (on a scratch copy), then shows them; a plain repository shows its adoption.
 func (m Model) reviewConservative() (Model, Outcome) {
+	if m.asksWhereToMove() {
+		return m.askMove(), Outcome{}
+	}
 	if !m.found.Kind.Convertible() {
 		return m.showConservative(), Outcome{}
 	}
@@ -575,7 +589,7 @@ func (m Model) reviewConservative() (Model, Outcome) {
 func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
-		fix := m.flow.AdoptFix(m.commit)
+		fix := m.flow.AdoptFix(m.commit, m.moveTo)
 		shown, err := m.flow.ShowFix(fix)
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
@@ -611,7 +625,7 @@ func (m Model) install() (Model, Outcome) {
 func (m Model) startConversion() (Model, Outcome) {
 	flow, c := m.flow, m.choices
 	if !m.found.Kind.Convertible() {
-		fix := flow.AdoptFix(m.commit)
+		fix := flow.AdoptFix(m.commit, m.moveTo)
 		job := Job{Name: "adopting the repository", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return "", flow.ApplyFix(ctx, fix.Fix, out)
 		}}

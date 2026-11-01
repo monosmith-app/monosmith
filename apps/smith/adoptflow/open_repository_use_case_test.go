@@ -175,11 +175,11 @@ func TestAPlainRepositoryHasNoFullLevelYetAndTheReasonNamesTheIssue(t *testing.T
 	if _, _, err := s.Prepare(); err != ErrNotConvertible {
 		t.Fatalf("Prepare on a plain repository: %v", err)
 	}
-	fix := s.AdoptFix(false)
+	fix := s.AdoptFix(false, "")
 	if len(fix.Steps) != 1 || fix.Steps[0].Argv[1] != "adopt" || fix.Steps[0].Argv[2] != "--init" || len(fix.Steps[0].Argv) != 3 {
 		t.Fatalf("adopt fix %+v", fix)
 	}
-	if argv := s.AdoptFix(true).Steps[0].Argv; argv[len(argv)-1] != "--commit" {
+	if argv := s.AdoptFix(true, "").Steps[0].Argv; argv[len(argv)-1] != "--commit" {
 		t.Fatalf("committing adopt fix %v", argv)
 	}
 }

@@ -157,7 +157,7 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 	rows = append(rows, pane.Wrap(th.Bold(w.question.Question), inner, 0)...)
 	rows = append(rows, "")
 	for i, o := range w.question.Options {
-		label := fmt.Sprintf("%d) %s", i+1, o.Label)
+		label := fmt.Sprintf("%d) %s", i+1, strings.ReplaceAll(o.Label, "{name}", w.text))
 		if i == 0 {
 			label += "  (suggested)"
 		}
@@ -176,7 +176,18 @@ func (w Wizard) askingRows(th theme.Theme, inner int) (rows []string, optionRow 
 	}
 	// The row after the last option closes the last one's extent.
 	optionRow = append(optionRow, len(rows))
-	rows = append(rows, "", th.Muted("Up Down or a number picks · Enter chooses · Esc cancels"))
+	hint := "Up Down or a number picks · Enter chooses · Esc cancels"
+	if w.style.Input != "" {
+		field := w.text
+		if w.editing {
+			field += "▏"
+			hint = "Type the " + strings.ToLower(w.style.Input) + " · Backspace deletes · Enter or Esc stops editing"
+		} else {
+			hint = "Up Down or a number picks · e edits the " + strings.ToLower(w.style.Input) + " · Enter chooses · Esc cancels"
+		}
+		rows = append(rows, "", th.Bold(w.style.Input+": ")+field)
+	}
+	rows = append(rows, "", th.Muted(hint))
 	return rows, optionRow
 }
 

@@ -30,6 +30,7 @@ Every capability starts in the CLI. The TUI (`smith` in a terminal), the VS Code
 | Plugin on or off | `smith plugin enable`, `disable [--force]` | Settings tab (the note counts the projects that disappear) | terminal | - |
 | Settings (`smith config`) | `smith config set` | Settings tab | Settings command | - |
 | Bring a folder in | `smith adopt`, `smith convert` | adopt wizard | terminal (`smith`) | - |
+| Move the one project at the root into a folder (asks, never assumes) | `smith adopt --init` asks in a terminal; `--move <folder>` or `--move none` without one; `--dry-run` lists the `git mv` | adopt wizard step "Move it into a folder of its own": five options with the suggested one first, `e` edits the name, then the review with the unticked commit box | adopt command: quick pick of the five answers, input box for the name or folder, unticked "Commit this change so it can be undone" pick; runs `smith adopt --init --move` | - (no adopt flow yet; recorded only) |
 | Unreadable `smith.toml` | error with line and column | named in the header and wrapped in the Start screen; new and adopt are not offered | folder row: "smith failed: smith.toml:3:9 ..."; the adopt offer skips a folder with a smith.toml | tool window row: "smith failed: smith.toml:3:9 ... Try: ..." (unbuilt) |
 
 ## Rules

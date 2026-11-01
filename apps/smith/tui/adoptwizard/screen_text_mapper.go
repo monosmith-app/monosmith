@@ -65,6 +65,9 @@ func foundText(f adoptflow.Found) string {
 	switch {
 	case f.NeedsInstall:
 		fmt.Fprintf(&b, "\nNothing has changed yet. Installing only fills node_modules, which git does not track, so git cannot take it back. None of your own files are touched.\n")
+	case len(f.Blockers) == 0 && f.RootProject != nil:
+		fmt.Fprintf(&b, "\nThe project (%s, %q) is at the repository root. smith manages one folder per project, so the next screen asks where to move it. smith does not choose the folder for you.\n", f.RootProject.Manifest, f.RootProject.Name)
+		fmt.Fprintf(&b, "\nNothing has changed. The screens after list every file before anything is written.\n")
 	case len(f.Blockers) == 0:
 		fmt.Fprintf(&b, "\nNothing has changed. The next screens ask how far to go and list every file before anything is written.\n")
 		if !f.Full && f.NoFull != "" {
@@ -120,7 +123,11 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 		return b.String()
 	}
 	b.WriteString(commandReview)
-	fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found;\n", len(f.Projects))
+	if len(f.Projects) == 0 && f.RootProject != nil {
+		fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the project once it is moved (or an empty workspace if it stays);\n")
+	} else {
+		fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found;\n", len(f.Projects))
+	}
 	fmt.Fprintf(&b, "  your build and lint setup stay as they are. smith doctor then says what is left to do.\n")
 	b.WriteString(commitBox(commit))
 	return b.String()

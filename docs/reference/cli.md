@@ -101,7 +101,9 @@ Usage: `smith adopt [flags]`
 | `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
+| `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
+| `--yes` | do not ask: a project at the root moves only when --move says where | off |
 
 <!-- smith:end adopt -->
 

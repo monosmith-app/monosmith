@@ -18,7 +18,7 @@ import { describeFailure } from './smith-run/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
 import { reportFile, writeReport } from './workspace-report/index.ts'
-import { toAdoptArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
+import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
@@ -801,15 +801,18 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
    */
   const adopt = async (action: AdoptAction): Promise<void> => {
     const candidates = offers.length > 0
-      ? offers.map((offer) => ({ root: offer.root, name: offer.name, why: `found ${offer.marker}` }))
-      : blanks.filter((folder) => folder.kind === 'unrecognised').map((folder) => ({ root: folder.root, name: folder.name, why: 'no tool it recognises' }))
+      ? offers.map((offer) => ({ root: offer.root, name: offer.name, why: `found ${offer.marker}`, project: offer.project }))
+      : blanks.filter((folder) => folder.kind === 'unrecognised').map((folder) => ({ root: folder.root, name: folder.name, why: 'no tool it recognises', project: undefined }))
     const chosen = await chooseFolder(candidates)
     if (chosen === undefined) return
+    // One project at the root: ask where it goes (smith never picks), then run the step that does not ask again.
+    const answer = action === 'start' && chosen.project !== undefined ? await askWhereToMove(chosen.project) : undefined
+    if (answer === undefined && action === 'start' && chosen.project !== undefined) return
     const executable = await smithForTerminal(chosen.root)
     if (executable === undefined) return
     note(`MonoSmith: ${action === 'start' ? 'bringing' : 'previewing bringing'} ${chosen.name} into MonoSmith (${chosen.why}).`)
-    const terminal = openSmithTerminal(executable, toAdoptArguments(action), chosen.root)
-    if (action === 'start') offerUndoWhenDone(terminal, `${chosen.name} is converted`)
+    const terminal = openSmithTerminal(executable, answer === undefined ? toAdoptArguments(action) : toMoveArguments(answer.dir, answer.commit), chosen.root)
+    if (action === 'start' && (answer === undefined || answer.commit)) offerUndoWhenDone(terminal, `${chosen.name} is converted`)
   }
 
   /**

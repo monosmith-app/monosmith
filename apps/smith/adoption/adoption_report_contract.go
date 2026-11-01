@@ -1,6 +1,9 @@
 package adoption
 
-import "github.com/monosmith-app/monosmith/apps/smith/releaselineage"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
+)
 
 // What an item stops.
 const (
@@ -25,6 +28,11 @@ type Report struct {
 	Declared []DeclaredProject `json:"declared,omitempty"`
 	Blockers []Item            `json:"blockers"`
 	Warnings []Item            `json:"warnings"`
+	// RootProject is the one project at the repository root, when there is one
+	// and smith sees no project: smith needs it in a folder of its own, and
+	// --init asks where. MovePlan is the move for the suggested folder.
+	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
+	MovePlan    *adoptmove.Plan      `json:"movePlan,omitempty"`
 }
 
 // Item is one finding and the step that clears it.

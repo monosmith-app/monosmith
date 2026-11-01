@@ -156,6 +156,7 @@ func (s *Session) openPlain() error {
 	}
 	s.report = r
 	s.found.Name = r.Name
+	s.found.RootProject = r.RootProject
 	for _, p := range r.Projects {
 		s.found.Projects = append(s.found.Projects, Project{Name: p.Name, Root: p.Root, Language: p.Language, Kind: p.Kind})
 	}
