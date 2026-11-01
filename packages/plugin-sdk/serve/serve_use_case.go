@@ -297,7 +297,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, components := p.(ComponentLister)
 	_, derive := p.(Deriver)
 	_, apiSurface := p.(APISurfaceReader)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive}
+	_, channels := p.(ChannelPublisher)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

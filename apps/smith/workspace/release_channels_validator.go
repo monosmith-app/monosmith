@@ -7,6 +7,9 @@ import (
 
 var channelPrerelease = regexp.MustCompile(`^[A-Za-z][0-9A-Za-z-]*$`)
 
+// channelDistTag is a name npm accepts as a dist-tag that is no version or range.
+var channelDistTag = regexp.MustCompile(`^[A-Za-z][0-9A-Za-z._-]*$`)
+
 // validateReleaseChannels refuses a [[release.channels]] entry that would
 // release from the release branch, from the same branch as another channel, or
 // under a version that is not a semantic prerelease. r.Branch is already set.
@@ -25,6 +28,8 @@ func validateReleaseChannels(r ReleaseSection) error {
 			return fmt.Errorf("%s: prerelease must be an identifier such as \"beta\" or \"rc\", not %q", at, c.Prerelease)
 		case c.Major < 1:
 			return fmt.Errorf("%s: major must be 1 or more, not %d", at, c.Major)
+		case c.DistTag != "" && (!channelDistTag.MatchString(c.DistTag) || c.DistTag == "latest"):
+			return fmt.Errorf("%s: dist_tag must be a name that is no version, such as \"next\", and not \"latest\", not %q", at, c.DistTag)
 		}
 		seen[c.Branch] = true
 	}

@@ -73,6 +73,10 @@ func (n *Node) Publish(params protocol.PublishParams) (protocol.PublishResult, e
 	return releasing.Publish(n.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish passes a release
+// channel's name to npm as the dist-tag.
+func (n *Node) PublishesChannels() {}
+
 // Published implements serve.RegistryReader.
 func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(n.root, params)

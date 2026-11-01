@@ -803,8 +803,21 @@ the branch contains. A breaking change does not start a new major there, because
 channel's. The release branch ignores these tags and keeps its `1.x` line. `smith release
 --dry-run`, `smith report` and the pull request preview plan a channel branch like any other.
 
-A real release from a channel branch is refused for now: publishing a prerelease under its own
-dist-tag, without moving `latest`, is not built yet. See
+A real release from `next` publishes each package under the channel's name, `beta` here (set
+`dist_tag` to change it; it is never `latest`), so `latest` stays on the stable version. The GitHub
+Release is marked as a prerelease, which GitHub never offers as the latest release. Install it
+with `npm install acme-kit@beta`.
+
+Smith checks this before it publishes anything, and refuses the release when a project in the plan:
+
+- uses a plugin that does not declare the `channels` capability (today the Node plugin does; the
+  others would put the prerelease in the place of the stable version),
+- is deployed by a deploy plugin (a container image's `latest` and branch tags),
+- sends its binaries to package managers or registries of their own (`[projects.x.release]`
+  `package_managers`, `linux_packages`, `npm`, `pypi`, `nuget`, `rubygems`, `pub`).
+
+Leave such a project out of the channel's release, or release it from the release branch. The
+generated pipeline does not run on a channel branch yet; run `smith release` there yourself. See
 [ADR 0051](../architecture/decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md).
 
 ## Checked before anything is published

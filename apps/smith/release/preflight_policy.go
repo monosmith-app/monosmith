@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -21,9 +22,7 @@ func branchProblem(cfg workspace.ReleaseSection, branch string) string {
 		return ""
 	}
 	if _, channel := cfg.ChannelFor(branch); channel {
-		// A prerelease must not move a stable pointer such as npm's latest;
-		// that arrives with the channel's publish step.
-		return fmt.Sprintf("%s is a release channel: smith plans its versions (smith release --dry-run) but does not publish them yet", branch)
+		return ""
 	}
 	return fmt.Sprintf("releases run from %s, not %s", cfg.Branch, branch)
 }
@@ -83,6 +82,12 @@ func Preflight(s *session.Session, plan Plan) error {
 	if mirrored {
 		problems = append(problems, splitrepo.Ready(s.Git)...)
 	}
+	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
+		problems = append(problems, channelProblems(plan, s.Graph, func(plugin string) bool {
+			c := s.Plugins.Get(plugin)
+			return c != nil && c.Info.Capabilities.Channels
+		})...)
+	}
 	for name := range plugins {
 		var projects []protocol.Project
 		for _, p := range s.Graph.Projects {
@@ -112,6 +117,30 @@ func Preflight(s *session.Session, plan Plan) error {
 		return fmt.Errorf("cannot release:\n  - %s", strings.Join(problems, "\n  - "))
 	}
 	return nil
+}
+
+// channelProblems lists what in the plan cannot be published as a release
+// channel without moving a stable pointer: a plugin that does not take the
+// channel's name (hasChannels), a deploy plugin (a container image's latest),
+// and an app's binaries sent to package managers or registries of their own.
+func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plugin string) bool) []string {
+	var problems []string
+	for _, item := range plan.Items {
+		if !hasChannels(item.Plugin) {
+			problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot publish a release channel, so a prerelease would take the place of the stable version", item.Project, item.Plugin))
+		}
+		p := graph.Get(item.Project)
+		if p == nil {
+			continue
+		}
+		if len(p.Deployers) > 0 {
+			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; leave the project out of the channel's release", item.Project, strings.Join(p.Deployers, " and ")))
+		}
+		if r := p.Release; r != nil && (len(r.PackageManagers) > 0 || len(r.LinuxPackages) > 0 || len(r.NPM) > 0 || r.PyPI != "" || r.NuGet != "" || r.RubyGems != "" || r.Pub != "") {
+			problems = append(problems, fmt.Sprintf("%s: the binaries sent to package managers and registries have no release channel yet", item.Project))
+		}
+	}
+	return problems
 }
 
 // DistributionCredentials are the secrets publishing an app's binaries to

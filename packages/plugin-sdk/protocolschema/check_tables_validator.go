@@ -48,7 +48,7 @@ func CheckTables(docs *SourceDocs) error {
 		used[spec.Capability] = true
 	}
 	for f := range fields {
-		if !used[f] {
+		if !used[f] && !modifierCapabilities[f] {
 			problems = append(problems, fmt.Sprintf("capability %s is needed by no method in Methods", f))
 		}
 	}
@@ -72,3 +72,7 @@ func CheckTables(docs *SourceDocs) error {
 	slices.Sort(problems)
 	return fmt.Errorf("the protocol changed and the schema tables did not follow:\n  %s", strings.Join(problems, "\n  "))
 }
+
+// modifierCapabilities are the capabilities that no method needs because they
+// change how a method behaves: Channels makes publish take a release channel.
+var modifierCapabilities = map[string]bool{"Channels": true}

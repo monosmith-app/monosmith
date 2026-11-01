@@ -624,6 +624,10 @@ _SCHEMA_JSON = r'''{
         "apiSurface": {
           "type": "boolean",
           "description": "APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs."
+        },
+        "channels": {
+          "type": "boolean",
+          "description": "Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest). A host does not publish a prerelease channel with a plugin that lacks it."
         }
       }
     },
@@ -1868,6 +1872,10 @@ _SCHEMA_JSON = r'''{
         },
         "branch": {
           "type": "string"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag is the name of the release channel the version belongs to (npm's dist-tag \"beta\"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only sent to a plugin with the channels capability."
         }
       },
       "required": [

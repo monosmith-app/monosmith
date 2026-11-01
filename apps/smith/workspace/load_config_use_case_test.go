@@ -52,6 +52,8 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"2.beta\"\nmajor = 2\n": "prerelease must be an identifier",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\n": "major must be 1 or more",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nprerelease = \"beta\"\nmajor = 2\n": "branch must name",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"latest\"\n": "dist_tag must be",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"2.0\"\n": "dist_tag must be",
 		"schema = 9\n[workspace]\nname = \"a\"\n":                                                                         "upgrade smith",
 		"[workspace\nname = \"a\"\n":                                                                                        "smith.toml:",
 		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n":                              "settings of the docker convention",

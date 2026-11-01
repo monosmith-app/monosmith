@@ -601,6 +601,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs.</summary>
     public bool ApiSurface { get; init; }
 
+    /// <summary>Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest). A host does not publish a prerelease channel with a plugin that lacks it.</summary>
+    public bool Channels { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -624,6 +627,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Components = BooleanValue(Member(map, "components"), Join(path, "components")),
             Derive = BooleanValue(Member(map, "derive"), Join(path, "derive")),
             ApiSurface = BooleanValue(Member(map, "apiSurface"), Join(path, "apiSurface")),
+            Channels = BooleanValue(Member(map, "channels"), Join(path, "channels")),
         };
     }
 
@@ -716,6 +720,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("apiSurface");
             writer.Boolean(ApiSurface);
         }
+        if (Channels)
+        {
+            writer.Property("channels");
+            writer.Boolean(Channels);
+        }
         writer.EndObject();
     }
 
@@ -742,6 +751,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "components" => Components,
             "derive" => Derive,
             "apiSurface" => ApiSurface,
+            "channels" => Channels,
             _ => false,
         };
 }
@@ -3007,6 +3017,9 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
     /// <summary>The <c>branch</c> member of <c>PublishParams</c>.</summary>
     public string Branch { get; init; } = string.Empty;
 
+    /// <summary>Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only sent to a plugin with the channels capability.</summary>
+    public string Tag { get; init; } = string.Empty;
+
     /// <inheritdoc />
     public static PublishParams Read(JsonAny? value, string path)
     {
@@ -3021,6 +3034,7 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
             Tagged = BooleanValue(Member(map, "tagged"), Join(path, "tagged")),
             Commit = StringValue(Member(map, "commit"), Join(path, "commit")),
             Branch = StringValue(Member(map, "branch"), Join(path, "branch")),
+            Tag = StringValue(Member(map, "tag"), Join(path, "tag")),
         };
     }
 
@@ -3061,6 +3075,11 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
         {
             writer.Property("branch");
             writer.String(Branch);
+        }
+        if (Tag.Length > 0)
+        {
+            writer.Property("tag");
+            writer.String(Tag);
         }
         writer.EndObject();
     }

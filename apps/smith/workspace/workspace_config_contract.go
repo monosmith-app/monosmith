@@ -241,6 +241,9 @@ type ReleaseChannel struct {
 	Prerelease string `toml:"prerelease"`
 	// Major is the major version of the channel's line. It must be 1 or more.
 	Major int `toml:"major"`
+	// DistTag is the name the channel publishes under: npm's dist-tag, which
+	// keeps latest where it is. Default: Prerelease. It must not be "latest".
+	DistTag string `toml:"dist_tag"`
 }
 
 // ChannelFor returns the channel that releases from branch.

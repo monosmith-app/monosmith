@@ -103,3 +103,15 @@ func TestAnExtensionAppBuildsNoArchives(t *testing.T) {
 		t.Fatalf("result %+v: %v", res, err)
 	}
 }
+
+func TestAReleaseChannelPublishesUnderItsDistTagAndLooksUpWithoutIt(t *testing.T) {
+	calls := fakeNpm(t, "")
+	res, err := Publish("/ws", protocol.PublishParams{Project: protocol.Project{Root: "packages/sdk", Exports: []string{"@acme/sdk"}}, Version: "2.0.0-beta.1", Tag: "beta"})
+	if err != nil || !res.Published {
+		t.Fatalf("res %+v err %v", res, err)
+	}
+	want := []string{"npm view @acme/sdk@2.0.0-beta.1 version", "npm publish --access public --tag beta"}
+	if got := (*calls)[len(*calls)-2:]; strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("calls:\n%s", strings.Join(*calls, "\n"))
+	}
+}

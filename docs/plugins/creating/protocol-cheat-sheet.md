@@ -136,6 +136,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `components` | `sbom/components` | language |
 | `derive` | `derive` | language |
 | `apiSurface` | `api/surface` | language |
+| `channels` | (changes `publish`) | language; Go SDK only for now |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |

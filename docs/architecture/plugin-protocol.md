@@ -150,6 +150,7 @@ which capability each method needs.
 | `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
 | `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
 | `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
+| `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a release channel under `PublishParams.tag` without moving the stable pointer (npm's `latest`). The Go SDK declares it; the TypeScript, Python and C# SDKs have no way to yet |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |

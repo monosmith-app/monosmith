@@ -67,8 +67,8 @@ func (c *Client) ReleaseByTag(repo Repository, tag string) (Release, bool, error
 }
 
 // CreateRelease publishes a release for an existing tag.
-func (c *Client) CreateRelease(repo Repository, tag, name, notes string) (Release, error) {
-	body, _ := json.Marshal(map[string]any{"tag_name": tag, "name": name, "body": notes})
+func (c *Client) CreateRelease(repo Repository, tag, name, notes string, prerelease bool) (Release, error) {
+	body, _ := json.Marshal(map[string]any{"tag_name": tag, "name": name, "body": notes, "prerelease": prerelease})
 	var r Release
 	_, err := c.do(http.MethodPost, c.API+"/repos/"+repo.String()+"/releases", "application/json", body, &r)
 	return r, err

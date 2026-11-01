@@ -36,25 +36,35 @@ branch:
 - The stable plan ignores prerelease tags, as before. Prerelease versions compare by the semver
   rules, so `beta.9` sorts before `beta.10`.
 
-The channel is part of this decision in three steps. This record and its first step cover the
-configuration, the version computation and the branch guard. Until the publish step exists, a real
-release from a channel branch is refused, so that a prerelease can never move `latest`. Planning
-(`smith release --dry-run`, the report, the pull request preview) works. The publish step
-(dist-tag, GitHub prerelease, no move of `latest`) and the pipeline step are decided in the
-records that add them.
+The channel is built in three steps. The first covers the configuration, the version computation
+and the branch guard. The second, below, publishes. The third is the pipeline and the pull request
+preview.
+
+Publishing sends the channel's name to the plugin as `PublishParams.tag` (`dist_tag`, default the
+prerelease identifier, never `latest`). A plugin that publishes under it declares the new
+`channels` capability. It is a capability that no method needs, because it changes how `publish`
+behaves. The Go SDK declares it with the `ChannelPublisher` marker interface, and the Node plugin
+passes the name to `npm publish --tag`. The generated protocol types of the TypeScript, Python and
+C# SDKs carry the field, but those SDKs have no way yet for a plugin to declare it.
+
+Before it publishes, `smith release` refuses a channel release when a project in the plan has a
+plugin without `channels`, a deploy plugin, or binaries sent to package managers or registries of
+their own. Each of these would move a stable pointer. The GitHub Release of any version with a
+prerelease part is created as a prerelease.
 
 Alternative not chosen: a flag on `smith release` (`--prerelease beta`). It leaves the pipeline and
 the guard without a statement of which branch releases what, and each run would repeat the choice.
 
 ## Consequences
 
-- A long-lived branch can plan and, after the publish step, release its own line.
+- A long-lived branch can plan and release its own line, for Node packages.
 - A project whose latest channel tag has a different major than the channel starts the counter
   again at `.1`. Changing `major` starts a new line on purpose.
 - Promotion is a merge into the release branch: the next stable release there is computed from the
   stable tags as usual.
-- Not done in this step: publishing, the dist-tag, the GitHub prerelease flag, the generated
-  pipeline and the pull request preview naming the channel.
+- Not done: the generated pipeline and the pull request preview naming the channel (step 3), the
+  other plugins' registries (each needs its own spelling of a prerelease and a stable pointer), and
+  a way to declare `channels` in the TypeScript, Python and C# SDKs.
 
 ## Sources
 

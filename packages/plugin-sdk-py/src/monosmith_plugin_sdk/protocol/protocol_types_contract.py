@@ -166,7 +166,7 @@ MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate",
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -392,6 +392,12 @@ class Capabilities(TypedDict, total=False):
     """
     APISurface lists the names a project exports, at a git revision, so a release can warn when
     the commits ask for a smaller bump than the API change needs.
+    """
+    channels: bool
+    """
+    Channels says the plugin publishes under PublishParams.Tag, a release channel's name, without
+    moving the registry's stable pointer (npm's latest). A host does not publish a prerelease
+    channel with a plugin that lacks it.
     """
 
 
@@ -1322,6 +1328,12 @@ class PublishParams(_PublishParamsRequired, total=False):
     tags). Empty when unknown.
     """
     branch: str
+    tag: str
+    """
+    Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When
+    set, the plugin publishes under it and leaves the registry's stable pointer where it is. Only
+    sent to a plugin with the channels capability.
+    """
 
 
 class _PublishResultRequired(TypedDict):
