@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { readFileWhy, readTaskWhy } from './read-why.use-case.ts'
+import { readFileWhy, readSettingWhy, readTaskWhy } from './read-why.use-case.ts'
+
+describe('readSettingWhy', () => {
+  it('asks for JSON and puts the setting after --', async () => {
+    const calls: string[][] = []
+    const page = await readSettingWhy(async (args) => {
+      calls.push(args)
+
+      return { code: 0, stdout: JSON.stringify({ path: 'ci.devcontainer', source: 'default', default: 'false', explanation: 'x', change: 'smith config set ci.devcontainer <value>' }), stderr: '' }
+    }, 'ci.devcontainer')
+    expect(calls).toEqual([['why', '--json', '--', 'ci.devcontainer']])
+    expect(page).toContain('# Why: ci.devcontainer')
+  })
+})
 
 describe('readFileWhy', () => {
   it('asks for JSON and puts the file after --', async () => {

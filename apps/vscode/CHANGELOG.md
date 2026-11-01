@@ -9,6 +9,9 @@ the first release everything below is under Unreleased.
 
 - Swap a Choice of a Project: quick picks for the project, the decision and the answer, the plan of `smith swap --dry-run` first, then the swap with an optional commit.
 - Show Divergences from the Defaults lists what `smith divergences` finds.
+- Why asks about a setting of smith.toml (`smith why <setting>`): what it does, its value and the reason of its default.
+- Try a Command in a Copy runs `smith try` and shows the files it changed and the checks; it runs the command for real only on a yes.
+- Write the smith Launcher writes `tools/smith/smith` (`smith bootstrap`) after a question.
 - Add project asks which project to copy (`smith add --like`) when two or more projects share the language.
 - Every derive change offers "and commit (so Undo works)", and deriving every file offers Preview (`smith derive --dry-run`).
 - Add project offers the buttons Add and commit (so Undo works); smith commits nothing otherwise, and the notice says Not committed: review with git status. Add project refuses a name a project has already.

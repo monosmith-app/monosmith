@@ -1,5 +1,34 @@
 import { describe, expect, it } from 'vitest'
-import { toFileWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
+import { toFileWhyDocument, toSettingWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
+
+describe('toSettingWhyDocument', () => {
+  const unset = JSON.stringify({
+    path:        'workspace.commit_operations',
+    source:      'default',
+    default:     'false',
+    explanation: 'Commit every mutating command as one commit.',
+    reason:      'smith never commits unless you ask.',
+    change:      'smith config set workspace.commit_operations <value>',
+    undo:        'smith config unset workspace.commit_operations',
+  })
+
+  it('says what the setting does, its value, the reason of the default and how to change it', () => {
+    const page = toSettingWhyDocument(unset)
+    expect(page).toContain('# Why: workspace.commit_operations')
+    expect(page).toContain('Commit every mutating command as one commit.')
+    expect(page).toContain('- **value:** false (the default: smith.toml does not set it)')
+    expect(page).toContain('## Why the default is what it is\n\nsmith never commits unless you ask.')
+    expect(page).toContain('- smith config set workspace.commit_operations <value>')
+    expect(page).toContain('- to go back: smith config unset workspace.commit_operations')
+  })
+
+  it('shows the value of smith.toml and the default beside it', () => {
+    const page = toSettingWhyDocument(JSON.stringify({ path: 'ci.devcontainer', source: 'smith.toml', value: 'true', default: 'false', explanation: 'x', change: 'c' }))
+    expect(page).toContain('- **value:** true')
+    expect(page).toContain('- **default:** false')
+    expect(page).not.toContain('Why the default')
+  })
+})
 
 describe('toFileWhyDocument', () => {
   const derived = JSON.stringify({

@@ -11,7 +11,9 @@ import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
   type DeriveAction, type DeriveReport,
 } from './derive-files/index.ts'
-import { readFileWhy, readTaskWhy } from './why/index.ts'
+import { readFileWhy, readSettingWhy, readTaskWhy } from './why/index.ts'
+import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap-launcher/index.ts'
+import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
@@ -929,6 +931,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ...(file === undefined ? [] : [{ label: '$(file) This file', description: file.file, pick: 'file' as const }]),
       { label: '$(package) A project', description: 'how its tasks resolved and where each setting came from', pick: 'project' as const },
       { label: '$(play) A task', description: 'why it runs again instead of coming from the cache', pick: 'task' as const },
+      { label: '$(settings-gear) A setting', description: 'why a setting of smith.toml has its value, and why its default is what it is', pick: 'setting' as const },
     ]
     const chosen = argument instanceof vscode.Uri ? undefined : await vscode.window.showQuickPick(kinds, { title: 'MonoSmith: Why', placeHolder: 'What do you want to know about?' })
     switch (argument instanceof vscode.Uri ? 'file' : chosen?.pick) {
@@ -938,6 +941,12 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       }
       case 'project': {
         await showInsight(undefined, 'explain')
+        break
+      }
+      case 'setting': {
+        const state = await folderFor(argument)
+        const setting = state === undefined ? undefined : await vscode.window.showInputBox({ title: 'MonoSmith: Why', prompt: 'Which setting of smith.toml?', placeHolder: 'workspace.commit_operations' })
+        if (state !== undefined && setting !== undefined && setting.trim() !== '') await insight.show(`${setting.trim()}-why.md`, await readSettingWhy(smithIn(state), setting.trim()))
         break
       }
       case 'task': {
@@ -1021,6 +1030,31 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     const outcome = await writeAgentFile({ run: smithIn(state), confirm: async (lines) => await confirmAgentFile(lines, state.name) })
     note(`MonoSmith: AGENTS.md in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellAgentFileOutcome(outcome, state.root)
+  }
+
+  /** Runs a smith command in a temporary copy (`smith try`), shows what it did, and runs it for real on a yes. */
+  const tryHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('running a command for real')) return
+    const outcome = await tryCommand({
+      run:   smithIn(state),
+      ask:   askTryCommand,
+      show:  async (page) => { await insight.show('try.md', page) },
+      offer: offerTryApply,
+    })
+    note(`MonoSmith: try in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellTryOutcome(outcome)
+    if (outcome.kind === 'tried' && outcome.applied) await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Writes the launcher (`smith bootstrap`) that makes a laptop and CI run the same smith. */
+  const bootstrapHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('the smith launcher')) return
+    const outcome = await writeLauncher({ run: smithIn(state), confirm: async () => await confirmLauncher(state.name) })
+    note(`MonoSmith: launcher in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellLauncherOutcome(outcome)
+    if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
   }
 
   /** Opens `smith new --here` in a terminal on an empty folder. Nothing is written by this click: smith asks first and refuses a folder with files. */
@@ -1122,6 +1156,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.divergences', showDivergences),
+    command<unknown>('monosmith.try', tryHere),
+    command<unknown>('monosmith.bootstrap', bootstrapHere),
     command<unknown>('monosmith.openReport', openReport),
     command<unknown>('monosmith.why', showWhy),
     command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),

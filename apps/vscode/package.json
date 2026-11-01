@@ -327,6 +327,18 @@
         "icon": "$(git-compare)"
       },
       {
+        "command": "monosmith.try",
+        "title": "Try a Command in a Copy…",
+        "category": "MonoSmith",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "monosmith.bootstrap",
+        "title": "Write the smith Launcher…",
+        "category": "MonoSmith",
+        "icon": "$(rocket)"
+      },
+      {
         "command": "monosmith.openReport",
         "title": "Open Report",
         "category": "MonoSmith",
@@ -685,6 +697,14 @@
         },
         {
           "command": "monosmith.divergences",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.try",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.bootstrap",
           "when": "monosmith.state == ready"
         },
         {
