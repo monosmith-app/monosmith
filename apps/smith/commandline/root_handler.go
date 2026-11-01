@@ -54,6 +54,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/report"
+	"github.com/monosmith-app/monosmith/apps/smith/sandbox"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
@@ -101,7 +102,7 @@ already have), then build and doctor.`,
 			root.AddCommand(c)
 		}
 	}
-	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command())
+	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version), derive.Command(version), operation.UndoCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
