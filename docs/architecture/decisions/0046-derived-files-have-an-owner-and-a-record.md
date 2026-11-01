@@ -123,6 +123,11 @@ in the detail, and `smith ci verify` runs `smith derive --check` before the task
   locations, source resolution condition), `file` mode renderers (no renderer uses it yet), and
   `smith why <file>` (phase 6).
 
+- Update (2026-11-01): `smith why <file>`, listed above as not done, exists since
+  [ADR 0048](0048-why-report-and-agent-file-explain-the-workspace-to-people-and-agents.md). The
+  renderers of the `file` mode are those of [ADR 0049](0049-a-scaffold-is-also-the-renderer-of-its-own-files.md),
+  and the shape-based renderer is [ADR 0050](0050-config-that-sibling-projects-share-is-derived-from-their-shape.md).
+
 ## Future: three-way merge
 
 Smith keeps one hash, not the old content, so it cannot merge a hand edit with a change of the

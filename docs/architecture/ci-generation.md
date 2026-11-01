@@ -112,7 +112,7 @@ team's and is kept.
 ## The phases
 
 `smith ci <phase>` is `cipipeline.RunPhase` (`run_phase_use_case.go`). `Phases` is
-`setup, audit, verify, pack, native, release`.
+`setup, audit, verify, pack, native, assets, release`.
 
 ```mermaid
 flowchart LR
@@ -128,16 +128,23 @@ flowchart LR
 |---|---|---|
 | `setup` | `Contributions.Setup` steps | prints `nothing to setup` when empty |
 | `audit` | `Contributions.Audit` steps | passing verdicts are remembered (`audit_verdict_store.go`) |
-| `verify` | tasks `lint`, `typecheck`, `test`, `build` (`VerifyTasks`) | on a pull request only the affected projects (`affected.BaseFromEnv`); projects tagged `native` are excluded (`!tag:native`); then tasks a plugin marked `Verify` (an app's image build), skipped with a warning when their program is missing; then the tracked-changes guard |
+| `verify` | `smith derive --check` when `[derive] enabled` (`verifyDerived`), then tasks `lint`, `typecheck`, `test`, `build` (`VerifyTasks`) | on a pull request only the affected projects (`affected.BaseFromEnv`); projects tagged `native` are excluded (`!tag:native`); then tasks a plugin marked `Verify` (an app's image build), skipped with a warning when their program is missing; then the tracked-changes guard |
 | `pack` | the `package` task into `dist/drop` | the directory is always created so the artifact upload has a path; `nothing to pack` when no project has the task |
 | `native` | `nativebuild.Run` | lints, tests, builds and packages native projects on this OS |
-| `release` | `release.MakePlan`, `release.Execute` with `Push: true`, then `PostRelease` steps | see [release design](release-design.md) |
+| `assets` | `releaseassets.Run`: on one runner of a platform (`SMITH_PLATFORM`), the `[release]` build command of every project released at HEAD, then an upload of its files to the project's GitHub Release | prints `no release files to build` when no released project has a build command |
+| `release` | `release.PlanFor` (the plan of the branch: stable, or a [release channel](release-design.md#release-channels)), `release.CheckAPI`, `release.Execute` with `Push: true`, then `PostRelease` steps | see [release design](release-design.md) |
 
 A release channel (`[[release.channels]]`, [ADR 0051](decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md))
 puts its branch in `Model.ChannelBranches`. `TriggerBranches` includes it, and the `release` step of
 every provider (GitHub, GitLab, Azure, Bitbucket and CircleCI) runs on the release branch and on the
 channel branches; `pack` and the sign-in steps do not. With no channel the files are the same as
 before.
+
+Two more parts of the model are GitHub Actions only. `SiblingRepos` (`[[ci.sibling_repos]]`,
+`github_sibling_repos_mapper.go`) checks out other repositories beside the workspace for builds that
+need them. `AssetPlatforms` (the platforms an app's `[release]` build command runs for) adds a job
+after the release job, one runner per platform (`release_assets_job_mapper.go`), that runs
+`smith ci assets` and uploads its files to the GitHub Release with `gh release upload`.
 
 In the generated GitHub file `pack` and `release` run only for a push to the release branch
 (`github.event_name == 'push' && github.ref_name == '<branch>'`); the release preview step runs on
@@ -206,6 +213,7 @@ CycloneDX file with `sbom.Write` (from the components the project's plugin lists
 | Toolchain and setup spelling | `toolchain_setup_mapper.go`, `setup_steps_mapper.go`, `package_stores_mapper.go` |
 | Slots and pins | `slot_mapper.go`, `keep_action_pins_mapper.go` |
 | Phases and the guard | `run_phase_use_case.go`, `tracked_changes_policy.go` |
+| Assets job, sibling repositories | `release_assets_job_mapper.go`, `github_sibling_repos_mapper.go` |
 | Hand-set-up instructions | `manual_steps_mapper.go` (`smith ci check`) |
 | The `smith ci` commands | `ci_handler.go` |
 | Native job | `apps/smith/nativebuild` |
