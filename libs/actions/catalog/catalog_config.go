@@ -26,6 +26,7 @@ var catalog = []Action{
 	{Command: []string{"convert"}, Safety: Changes, NotInMCP: "no tool yet: converting an Nx or Turborepo workspace is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"upgrade"}, Safety: Changes},
 	{Command: []string{"bootstrap"}, Safety: Changes, NotInTUI: "a one-time setup of the repository: the command palette runs it", NotInMCP: "the person's step: the launcher is what starts smith, so an assistant already has it", NotInServe: noMethodYet},
+	{Command: []string{"copies"}, Safety: Reads, NotInTUI: "a measure for the command line and CI logs", NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"try"}, Safety: Reads, NotInTUI: "runs another smith command in a copy: the TUI's own confirmation shows the plan first", NotInMCP: "an assistant calls the command itself and reads its plan", NotInServe: noMethodYet},
 	{Command: []string{"config"}, Safety: Reads, NotInMCP: "smith serve answers settings in process (config.list, config.get); no MCP tool"},
 	{Command: []string{"config", "set"}, Safety: Changes, NotInMCP: settingsEdit},

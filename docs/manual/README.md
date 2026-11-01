@@ -61,6 +61,7 @@ Python package). Paths in output are shortened.
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
 | [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` or `none`), or choose another. |
 | [`smith upgrade`](upgrade.md) | Bring the workspace up to this smith and its recipes. |
+| [`smith copies`](copies.md) | Count the files that projects keep as exact copies of each other, and the lines they cost. |
 | [`smith try`](try.md) | Try a command that changes files in a temporary copy, check the result, then offer to run it for real. |
 | [`smith bootstrap`](bootstrap.md) | Write the launcher that runs the smith version the workspace pins. |
 
