@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"golang.org/x/term"
+
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +29,8 @@ colour. The page follows the light or dark setting of the browser. The release
 plan reads the commits since each package's last tag and asks no registry, so it
 is a preview, not a rehearsal: smith release --dry-run checks more.
 
-Without -o the page goes to the standard output.`,
+Without -o the page goes to the standard output, or, when that is a terminal,
+to smith-report.html.`,
 		Example: "  smith report -o smith-report.html\n  smith report > report.html",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -39,6 +42,10 @@ Without -o the page goes to the standard output.`,
 			out, err := Render(Gather(s))
 			if err != nil {
 				return err
+			}
+			if file == "" && cmd.OutOrStdout() == os.Stdout && term.IsTerminal(int(os.Stdout.Fd())) {
+				// A page of HTML on a terminal is noise: write it to a file.
+				file = "smith-report.html"
 			}
 			if file == "" {
 				fmt.Fprint(cmd.OutOrStdout(), out)
