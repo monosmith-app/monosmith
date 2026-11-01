@@ -1,4 +1,4 @@
-# ADR 0065: `smith swap` changes one choice of a project, and stops where the migration is not automatic
+# ADR 0065: `smith swap` changes one choice of a project, and migrates where the move is mechanical
 
 - Status: accepted
 - Date: 2026-11-01
@@ -20,10 +20,25 @@ existing project.
   decided about what fits: the solver decides.
 - The command prints the plan: the choice that leaves, the choice that joins, and the choices of the
   result. `--dry-run` stops there.
-- Without `--dry-run` the command refuses, with the manual steps, because moving dependencies,
-  config and imports needs a migration that the plugin owning the choice must provide. No plugin
-  provides one yet. A swap that rewrote only the stack record would leave the project half changed,
-  so smith does not do that.
+- Without `--dry-run` the command migrates the axes where the move is mechanical, and refuses, with the
+  manual steps, on the others. Today the mechanical axis is the test runner (Jest and Vitest). The
+  Node toolchain plugins already describe what a choice adds as a setup: dev dependencies, scripts,
+  fields and files. The swap computes the setup of the old and of the new plugin for the project and:
+  - removes the old plugin's root dev dependencies that the new one does not need (kept when another
+    project still uses the old plugin), its scripts and fields, and its config files, each only where
+    the project still has exactly what the plugin wrote; an edited script, field or file stays and is
+    listed as left to do by hand;
+  - has the new plugin write its own setup, which adds only what is absent;
+  - moves test imports of `describe`, `it`, `expect` and the hooks to the new module; a file that
+    uses `jest.fn`, `jest.mock` or `vi.*` is left and listed;
+  - records the new stack in the manifest (the stack whose toolchain is the current one with the
+    plugin replaced), installs the packages once, and runs the project's build and tests.
+  The lint axis has one choice (ESLint), so there is nothing to swap. A style swap edits entry files
+  and the Vite config through template slots, and is not mechanical yet: the command names the
+  change to make by hand.
+- A project made from a stack that a plugin publishes by name (`node-jest`) lists no choices. The
+  command reads its choices from its plugins: a plugin that offers one choice contributes it.
+- The solver check for a swap does not ask a choice to write the project, because the project exists.
 - The command takes the shared `--yes`, `--dry-run` and `--commit` flags of the mutating commands
   ([ADR 0047](0047-mutating-commands-show-a-plan-and-can-be-undone.md)), so a later plugin
   migration needs no change of the command line.
@@ -31,10 +46,11 @@ existing project.
 ## Consequences
 
 - People get an early, checked answer to "can this project use that runner, and what comes with it".
-- No file changes yet. A later record defines the plugin method that migrates one axis and says what
-  is reported (dependencies, config files, imports and tests that name the old choice).
-- The first axes to migrate are the ones smith already offers as choices: test runner, linter, style
-  framework.
+- A migration lives in the host, over the setup a plugin already gives, so no protocol method is
+  added. A plugin outside smith that owns a choice does not migrate yet; a later record can add a
+  plugin method for that.
+- A later step can cover the style axis once a style choice can say which lines of the entry file and
+  the Vite config it owns.
 
 ## Sources
 

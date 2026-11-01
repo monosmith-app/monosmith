@@ -28,7 +28,9 @@ Usage: `smith plugin disable <name>...`
 |---|---|---|
 | `name...` | yes | built-in plugin names |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--force` | boolean | off | switch the plugin off even when projects use it |
 
 <!-- smith:end plugin disable -->
 

@@ -59,7 +59,7 @@ func PlanSwap(offers []choiceselect.Offer, current []string, axis, to string) (S
 	if to == from {
 		return Swap{}, fmt.Errorf("the project already uses %s on the %s axis", to, axis)
 	}
-	sel, err := choiceselect.Solve(offers, append(kept, to))
+	sel, err := choiceselect.SolveForExisting(offers, append(kept, to))
 	if err != nil {
 		return Swap{}, fmt.Errorf("%s does not fit the rest of the project: %w", to, err)
 	}

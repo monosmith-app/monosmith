@@ -20,6 +20,17 @@ import (
 // plugin's project has that plugin in the selection. The first problem is the
 // error, in one sentence that names the choices at fault and the fix.
 func Solve(offers []Offer, names []string) (Selection, error) {
+	return solve(offers, names, false)
+}
+
+// SolveForExisting is Solve for a project that already exists: its scaffold is
+// written, so no choice has to write the project. It is what smith swap checks
+// a swapped set with.
+func SolveForExisting(offers []Offer, names []string) (Selection, error) {
+	return solve(offers, names, true)
+}
+
+func solve(offers []Offer, names []string, existing bool) (Selection, error) {
 	index, err := Index(offers)
 	if err != nil {
 		return Selection{}, err
@@ -61,7 +72,7 @@ func Solve(offers []Offer, names []string) (Selection, error) {
 			return Selection{}, fmt.Errorf("%w (%s %s added because the axis is needed)", err, strings.Join(added, ", "), plural(len(added), "was", "were"))
 		}
 	}
-	if err := checkRoles(chosen, offers); err != nil {
+	if err := checkRoles(chosen, offers, existing); err != nil {
 		return Selection{}, err
 	}
 	return Selection{Choices: order(chosen), Added: added}, nil
@@ -118,7 +129,7 @@ func checkSet(chosen []Offer, index map[string]Offer) error {
 
 // checkRoles applies the rules about who builds the project: one choice writes
 // it, and a choice with no role has the plugin it adds to in the selection.
-func checkRoles(chosen, offers []Offer) error {
+func checkRoles(chosen, offers []Offer, existing bool) error {
 	var scaffolds []Offer
 	owners := map[string]bool{}
 	for _, o := range chosen {
@@ -130,7 +141,7 @@ func checkRoles(chosen, offers []Offer) error {
 		}
 	}
 	switch {
-	case len(scaffolds) == 0:
+	case len(scaffolds) == 0 && !existing:
 		return fmt.Errorf("no choice in %s writes the project: add one of %s", strings.Join(namesOf(chosen), ", "), strings.Join(withRole(offers, protocol.RoleScaffold, chosen[0].Language), ", "))
 	case len(scaffolds) > 1:
 		return fmt.Errorf("%s and %s both write the project: keep one", scaffolds[0].Name, scaffolds[1].Name)
