@@ -33,8 +33,12 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 
 // Discover implements serve.Discoverer.
 func (p *Python) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(p.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(p.root, params.Manifests, params.Declared)
 }
+
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as folders of the distribution above them.
+func (p *Python) DescribesDeclared() {}
 
 // Generate implements serve.Generator.
 func (p *Python) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
