@@ -135,13 +135,12 @@ func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
 		"sdk: the other plugin cannot publish a release channel",
 		"channels = false in [projects.sdk.release]",
 		"sdk: docker deploy a release channel",
-		"core: the package managers (brew) always offer the newest version",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}
 	}
-	for _, not := range []string{"core: the test plugin", "web:"} {
+	for _, not := range []string{"core: the test plugin", "core: the package", "web:"} {
 		if strings.Contains(got, not) {
 			t.Errorf("%q must be accepted: a plugin with channels, and an app whose binaries go to registries that order prereleases below releases:\n%s", not, got)
 		}
