@@ -128,9 +128,9 @@ func githubRubyGemsSignIn(m Model, job string) string {
 		return ""
 	}
 	return fmt.Sprintf(`      - name: Sign in to RubyGems
-        if: github.event_name == 'push' && github.ref_name == '%s'
+        if: github.event_name == 'push' && %s
         uses: rubygems/configure-rubygems-credentials@v2.1.0
-`, m.ReleaseBranch)
+`, githubOnReleaseBranches(m))
 }
 
 // githubAzureSignIn signs in to Azure with the run's OIDC token (workload
@@ -144,13 +144,13 @@ func githubAzureSignIn(m Model, job string) string {
 		return ""
 	}
 	return fmt.Sprintf(`      - name: Sign in to Azure
-        if: github.event_name == 'push' && github.ref_name == '%s'
+        if: github.event_name == 'push' && %s
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
-`, m.ReleaseBranch)
+`, githubOnReleaseBranches(m))
 }
 
 // githubEntraEnv tells the release to publish extensions with the Azure
@@ -307,4 +307,11 @@ func githubCIOutputs(m Model) string {
 		return ""
 	}
 	return "    outputs:\n      released: ${{ steps.released.outputs.done }}\n"
+}
+
+// githubOnReleaseBranches is the condition that holds on a push to the release
+// branch or to a release channel's branch: where the release runs, and so where
+// the sign-in steps that mint its short-lived credentials run.
+func githubOnReleaseBranches(m Model) string {
+	return m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" })
 }

@@ -58,8 +58,9 @@ can stay out of a channel with `channels = false` in its `[projects.x.release]`.
 prerelease part is created as a prerelease.
 
 The pipeline and the preview (step 3): the generated pipeline of every provider triggers on a
-channel branch and runs the `release` step there, and only that step. Pack, upload, attest and the
-sign-in steps stay on the release branch, because the checks above already refuse what they would
+channel branch and runs the `release` step there, and only that step. The sign-in steps (Azure for
+the extension, RubyGems) run there too, because the release publishes from the branch; pack, upload
+and attest stay on the release branch, because the checks above already refuse what they would
 publish. A workspace with no channel gets the same files as before. The plan carries the channel's
 name, and `smith release --dry-run`, the report and the pull request comment say it. A pull request
 build checks out a detached merge commit, so a plan then uses the branch the pull request targets

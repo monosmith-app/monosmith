@@ -34,3 +34,21 @@ func TestWithNoJobAfterTheCiJobThereIsNoMarkerAndNoOutputs(t *testing.T) {
 		t.Errorf("a workspace with no native or asset jobs keeps its pipeline as it was:\n%s", out)
 	}
 }
+
+func TestTheSignInsRunWhereTheReleaseRunsAChannelBranchIncluded(t *testing.T) {
+	m := model()
+	m.VSCEEntra, m.RubyGemsTrusted = true, true
+	m.ChannelBranches = []string{"next"}
+	out := RenderGitHub(m)
+	for _, step := range []string{"Sign in to Azure", "Sign in to RubyGems"} {
+		want := "- name: " + step + "\n        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'next')\n"
+		if !strings.Contains(out, want) {
+			t.Errorf("%s must run on the channel branch too:\n%s", step, out)
+		}
+	}
+	plain := model()
+	plain.VSCEEntra = true
+	if !strings.Contains(RenderGitHub(plain), "- name: Sign in to Azure\n        if: github.event_name == 'push' && github.ref_name == 'main'\n") {
+		t.Error("without a channel the condition is as it was")
+	}
+}

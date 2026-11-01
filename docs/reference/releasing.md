@@ -831,7 +831,7 @@ Use it for a project that cannot take a prerelease yet. A Go module whose path l
 a `v2.0.0-beta.1` tag could not be used by `go get`.
 
 `smith ci generate` makes the pipelines of every provider trigger on a channel branch and run the
-release step there (not pack, and not the sign-in steps). `smith release --dry-run` and the pull
+release step there, with the sign-in steps before it (not pack). `smith release --dry-run` and the pull
 request preview name the channel, as the first line says: ``Release channel `beta`: prerelease
 versions, published under the `beta` tag; the stable version stays the latest.`` A pull request
 build plans for the branch it targets (GitHub, Azure, GitLab and Bitbucket say which one), so a

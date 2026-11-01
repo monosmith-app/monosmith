@@ -120,7 +120,7 @@ jobs:
           path: dist/drop
           if-no-files-found: ignore
       - name: Sign in to Azure
-        if: github.event_name == 'push' && github.ref_name == 'main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'smith-v2')
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
