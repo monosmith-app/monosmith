@@ -66,9 +66,9 @@ func TestDeclaredFoldersOfARootModuleAreProjectsOfThatModule(t *testing.T) {
 
 func TestAModuleInAFolderAboveTheDeclaredOneIsFound(t *testing.T) {
 	ws := t.TempDir()
-	os.MkdirAll(filepath.Join(ws, "services", "api", "cmd", "serve"), 0o755)
-	os.WriteFile(filepath.Join(ws, "services", "api", "go.mod"), []byte("module example.com/api\n\ngo 1.22\n"), 0o644)
-	os.WriteFile(filepath.Join(ws, "services", "api", "cmd", "serve", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644)
+	check(t, os.MkdirAll(filepath.Join(ws, "services", "api", "cmd", "serve"), 0o755))
+	check(t, os.WriteFile(filepath.Join(ws, "services", "api", "go.mod"), []byte("module example.com/api\n\ngo 1.22\n"), 0o644))
+	check(t, os.WriteFile(filepath.Join(ws, "services", "api", "cmd", "serve", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
 	res, err := DiscoverWithDeclared(ws, nil, []protocol.DeclaredProject{{Name: "serve", Root: "services/api/cmd/serve"}})
 	if err != nil || len(res.Projects) != 1 {
 		t.Fatalf("%v %v", res.Projects, err)
@@ -81,10 +81,10 @@ func TestAModuleInAFolderAboveTheDeclaredOneIsFound(t *testing.T) {
 
 func TestADeclarationThatCannotBeDescribedSaysWhy(t *testing.T) {
 	ws := rootModule(t)
-	os.WriteFile(filepath.Join(ws, "libs", "core", "go.mod"), []byte("module example.com/core\n\ngo 1.22\n"), 0o644)
+	check(t, os.WriteFile(filepath.Join(ws, "libs", "core", "go.mod"), []byte("module example.com/core\n\ngo 1.22\n"), 0o644))
 	bare := t.TempDir()
-	os.MkdirAll(filepath.Join(bare, "apps", "x"), 0o755)
-	os.WriteFile(filepath.Join(bare, "apps", "x", "main.go"), []byte("package main\n"), 0o644)
+	check(t, os.MkdirAll(filepath.Join(bare, "apps", "x"), 0o755))
+	check(t, os.WriteFile(filepath.Join(bare, "apps", "x", "main.go"), []byte("package main\n"), 0o644))
 	for name, c := range map[string]struct {
 		root, workspace, want string
 		kind                  protocol.ProjectKind
@@ -98,5 +98,12 @@ func TestADeclarationThatCannotBeDescribedSaysWhy(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: want %q, got %v", name, c.want, err)
 		}
+	}
+}
+
+func check(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
