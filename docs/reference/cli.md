@@ -96,7 +96,8 @@ Usage: `smith adopt [flags]`
 |---|---|---|
 | `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
 | `--eslint` | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies | off |
-| `--init` | write smith.toml and the pipelines, and commit | off |
+| `--commit` | with --init, commit the change as one operation, so smith undo can revert it | off |
+| `--init` | write smith.toml and the pipelines (nothing is committed unless --commit) | off |
 | `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
@@ -118,6 +119,7 @@ Usage: `smith convert [flags]`
 | `--allow-dirty` | convert even with uncommitted changes (not with --level full) | off |
 | `--build <build>` | full level: build with smith's stack build (smith) or keep the current build setup (keep) | `smith` |
 | `--ci <ci>` | full level: the pipeline smith generates (smith) or keep the current one (keep) | `smith` |
+| `--commit` | commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | report the plan without changing anything | off |
 | `--json` | print the plan as JSON | off |
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |

@@ -26,7 +26,7 @@ func ExistingWorkflows(files []string, read func(string) string, providers []str
 	}
 	var items []Item
 	for _, f := range files {
-		if path.Dir(f) != ".github/workflows" || !(strings.HasSuffix(f, ".yml") || strings.HasSuffix(f, ".yaml")) {
+		if path.Dir(f) != ".github/workflows" || (!strings.HasSuffix(f, ".yml") && !strings.HasSuffix(f, ".yaml")) {
 			continue
 		}
 		// The file smith owns has its own warning (it is kept as .pre-smith).
