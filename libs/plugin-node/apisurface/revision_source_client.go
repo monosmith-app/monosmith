@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/gitrevision"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -21,7 +22,7 @@ func NewSource(root, ref string) Source {
 	if ref == "" {
 		return worktreeSource{root: root}
 	}
-	return &gitSource{root: root, ref: ref, batch: newBatchReader(root, ref)}
+	return &gitSource{root: root, ref: ref, batch: gitrevision.NewReader(root, ref)}
 }
 
 // worktreeSource reads the files on disk.
@@ -39,13 +40,13 @@ func (w worktreeSource) Read(rel string) (string, bool) {
 // gitSource reads the files with git show, so no checkout is needed.
 type gitSource struct {
 	root, ref string
-	batch     *batchReader
+	batch     *gitrevision.Reader
 }
 
 // Read implements Source. The "./" makes the path relative to the workspace
 // root, which need not be the top of the repository.
 func (g *gitSource) Read(rel string) (string, bool) {
-	if body, ok := g.batch.Read(rel); ok || !g.batch.failed {
+	if body, ok := g.batch.Read(rel); ok || !g.batch.Failed() {
 		return body, ok
 	}
 	out, _, err := toolrun.Capture(g.root, []string{"git", "show", g.ref + ":./" + rel})

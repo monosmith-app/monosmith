@@ -1,14 +1,13 @@
-package apisurface
+package gitrevision
 
 import (
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
-func TestGitSourceReadsManyFilesWithOneProcess(t *testing.T) {
+func TestReaderReadsManyFilesWithOneProcess(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not available")
 	}
@@ -31,8 +30,8 @@ func TestGitSourceReadsManyFilesWithOneProcess(t *testing.T) {
 			t.Fatalf("git %v: %v\n%s", args, err, out)
 		}
 	}
-	src := NewSource(root, "v1")
-	defer src.(io.Closer).Close()
+	src := NewReader(root, "v1")
+	defer src.Close()
 	if body, ok := src.Read("pkg/index.ts"); !ok || body != "export const a = 1\n" {
 		t.Fatalf("read = %q, %v", body, ok)
 	}

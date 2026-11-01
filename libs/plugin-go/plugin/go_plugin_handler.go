@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/monosmith-app/monosmith/libs/plugin-go/apisurface"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
@@ -94,6 +95,11 @@ func (g *Go) Latest(params protocol.LatestParams) (protocol.LatestResult, error)
 // ChangeKind implements serve.KindChanger.
 func (g *Go) ChangeKind(params protocol.ChangeKindParams) (protocol.ChangeKindResult, error) {
 	return kindchange.Change(g.root, params)
+}
+
+// APISurface implements serve.APISurfaceReader.
+func (g *Go) APISurface(params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
+	return apisurface.List(g.root, params)
 }
 
 // Components implements serve.ComponentLister.

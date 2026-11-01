@@ -1,4 +1,6 @@
-package apisurface
+// Package gitrevision reads the files of a git revision through one long-lived
+// git process, for plugins that compare a project now with its last release.
+package gitrevision
 
 import (
 	"bufio"
@@ -16,10 +18,10 @@ import (
 // its repository, which does not change during a run.
 var prefixes sync.Map
 
-// batchReader reads many files of one git revision through a single
+// Reader reads many files of one git revision through a single
 // `git cat-file --batch` process. A git process per file costs 50 to 100 ms
 // on Windows, and an API check reads several files of every package twice.
-type batchReader struct {
+type Reader struct {
 	root, ref, prefix string
 	cmd               *exec.Cmd
 	in                io.WriteCloser
@@ -27,13 +29,37 @@ type batchReader struct {
 	failed            bool
 }
 
-// newBatchReader prepares a reader for ref. The git process starts on the
+// NewReader prepares a reader for ref. The git process starts on the
 // first Read.
-func newBatchReader(root, ref string) *batchReader {
-	return &batchReader{root: root, ref: ref}
+//
+// Parameters: root is the workspace root, which may be below the top of its
+// repository; ref is the git revision. Paths given to Read and List are
+// relative to root, with forward slashes.
+func NewReader(root, ref string) *Reader {
+	return &Reader{root: root, ref: ref}
 }
 
-func (b *batchReader) start() error {
+// Failed reports that the git process could not be used, so a false from Read
+// may mean a failure and not a missing file.
+func (b *Reader) Failed() bool { return b.failed }
+
+// List returns the files below dir at the revision, relative to the workspace
+// root. It returns nil when dir holds none or git fails.
+func (b *Reader) List(dir string) []string {
+	out, _, err := toolrun.Capture(b.root, []string{"git", "ls-tree", "-r", "--name-only", b.ref, "--", "./" + strings.TrimPrefix(dir, "./")})
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			files = append(files, line)
+		}
+	}
+	return files
+}
+
+func (b *Reader) start() error {
 	if cached, ok := prefixes.Load(b.root); ok {
 		b.prefix = cached.(string)
 	} else {
@@ -61,9 +87,9 @@ func (b *batchReader) start() error {
 	return nil
 }
 
-// Read implements Source. A path the revision does not hold, and any failure
+// Read returns the text of a file at the revision. A path the revision does not hold, and any failure
 // of the git process, answer false.
-func (b *batchReader) Read(rel string) (string, bool) {
+func (b *Reader) Read(rel string) (string, bool) {
 	if b.failed {
 		return "", false
 	}
@@ -101,7 +127,7 @@ func (b *batchReader) Read(rel string) (string, bool) {
 }
 
 // Close ends the git process.
-func (b *batchReader) Close() error {
+func (b *Reader) Close() error {
 	if b.cmd == nil {
 		return nil
 	}
