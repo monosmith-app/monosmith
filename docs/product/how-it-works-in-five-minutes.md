@@ -179,7 +179,7 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 
 ## 10. Plugins, stacks and recipes
 
-- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 24 built-in
+- A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 37 built-in
   plugins (eleven language plugins and one for recipes, and twelve add-ons for toolchains,
   scaffolds, structure rules and deploy targets) ship inside the binary; `smith plugin list`
   shows them. You can write a plugin in any language (SDKs exist for Go, TypeScript, Python and C#) and

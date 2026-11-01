@@ -1,7 +1,7 @@
 # The built-in plugin catalogue
 
-smith ships 25 plugins inside its binary: 12 language plugins and 13 add-ons (toolchain, structure,
-scaffold and deploy plugins). This section has one page for each, written from the plugin's code
+smith ships 37 plugins inside its binary: 18 language plugins and 19 add-ons (toolchain, structure,
+scaffold and deploy plugins, with the six architecture plugins counted one by one). This section has one page for each, written from the plugin's code
 and from real runs: what it detects, the project kinds and tasks it adds, what it scaffolds, its
 settings, how it handles the toolchain, how it releases, what it adds to CI, and where it is
 limited. Every page ends with what was and was not verified.

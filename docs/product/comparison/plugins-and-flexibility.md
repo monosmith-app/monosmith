@@ -1,6 +1,6 @@
 # Plugins and flexibility: extend your monorepo tool in any language
 
-**Teach MonoSmith a new language, a team rule or a deploy target with a small program in the language you already use.** No new build language to learn, no fork, no rebuild. The 24 plugins that ship inside the `smith` binary go through the same door your plugin will, so what you write is not second class.
+**Teach MonoSmith a new language, a team rule or a deploy target with a small program in the language you already use.** No new build language to learn, no fork, no rebuild. The 37 plugins that ship inside the `smith` binary go through the same door your plugin will, so what you write is not second class.
 
 This page shows how that works, proves it with commands you can run, and sets it against the fourteen other tools in the [comparison](README.md). It is the extension and configuration half of the case for smith; the [language environments](languages-and-environments.md) and the [dependency graph](dependency-graph.md) are the other two.
 
@@ -66,9 +66,9 @@ A plugin is any executable that speaks JSON-RPC 2.0 on its standard input and ou
 
 What a plugin contributes is the set of methods it advertises: projects and their tasks, tasks added or replaced in other plugins' projects, generated files, versions, publishing, CI steps and toolchain setup, health checks with fixes, adding and removing dependencies, newest releases. smith never calls a method a plugin did not advertise. The wire format and the roles are in [What a plugin is](../../plugins/using/what-is-a-plugin.md); the field-level detail is in the [protocol cheat sheet](../../plugins/creating/protocol-cheat-sheet.md).
 
-### The range: 24 plugins built with it
+### The range: 37 plugins built with it
 
-`smith plugin list` shows 24: 12 language plugins (`bicep`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `node`, `php`, `python`, `recipe`, `ruby`, `rust`) and 12 add-ons (`angular`, `astro`, `docker`, `eslint`, `go-smith-plugin`, `jest`, `playwright`, `typescript`, `vertical-slices`, `vite`, `vitest`, `vscode`). One uses the language role to find Cargo crates, another uses the toolchain role to run Playwright, another uses the deploy role to build and push container images. Each has a page in the [catalogue](../../plugins/using/catalogue/README.md), written from the code and from runs.
+`smith plugin list` shows 37: 18 language plugins (`applescript`, `bicep`, `bundle`, `cpp`, `dart`, `dotnet`, `go`, `jvm`, `lua`, `node`, `objc`, `php`, `python`, `recipe`, `ruby`, `rust`, `swift`, `vba`) and 19 add-ons (`angular`, `astro`, `clean`, `ddd`, `docker`, `eslint`, `go-smith-plugin`, `hexagonal`, `jest`, `modular-monolith`, `mvc`, `package-by-layer`, `playwright`, `tauri`, `typescript`, `vertical-slices`, `vite`, `vitest`, `vscode`). One uses the language role to find Cargo crates, another uses the toolchain role to run Playwright, another uses the deploy role to build and push container images. Each has a page in the [catalogue](../../plugins/using/catalogue/README.md), written from the code and from runs.
 
 ### Several plugins, one project, checked for conflicts
 
@@ -164,7 +164,7 @@ Every tool above is good at its own job. What differs is what you still have to 
 ## Try it
 
 ```sh
-smith plugin list                              # the 24 built-ins, and any external ones
+smith plugin list                              # the 37 built-ins, and any external ones
 smith stacks                                   # the 16 ready-made stacks
 smith plugin check ./path/to/your-plugin       # the conformance suite
 ```
