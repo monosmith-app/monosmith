@@ -79,7 +79,7 @@ func driftOf(s *session.Session) Drift {
 // the release branch. It does not ask a registry, so it can say less than
 // `smith release --dry-run`: the check of the public API is left out.
 func releaseOf(s *session.Session) Release {
-	plan, err := release.MakePlan(s.Git, s.Graph)
+	plan, err := release.PlanFor(s)
 	if err != nil {
 		return Release{Error: err.Error()}
 	}

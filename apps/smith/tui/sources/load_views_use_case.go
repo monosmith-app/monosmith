@@ -118,7 +118,7 @@ func WorkspaceSources(dir, version string) Sources {
 					out.Warnings = append(out.Warnings, f.Message)
 				}
 			}
-			out.Plan, out.Err = release.MakePlan(s.Git, s.Graph)
+			out.Plan, out.Err = release.PlanFor(s)
 			return out
 		},
 	}

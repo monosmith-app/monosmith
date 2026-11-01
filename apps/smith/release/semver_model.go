@@ -1,9 +1,11 @@
 package release
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var semverPattern = regexp.MustCompile(`^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$`)
@@ -45,7 +47,29 @@ func (v Version) Less(o Version) bool {
 	if v.Patch != o.Patch {
 		return v.Patch < o.Patch
 	}
-	return v.Pre != "" && (o.Pre == "" || v.Pre < o.Pre)
+	return v.Pre != "" && (o.Pre == "" || comparePre(v.Pre, o.Pre) < 0)
+}
+
+// comparePre orders two prerelease strings by the semver rules: dot-separated
+// identifiers compare one by one, numbers by value (beta.9 before beta.10) and
+// below words, and the shorter list wins when the rest is equal.
+func comparePre(a, b string) int {
+	as, bs := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(as) && i < len(bs); i++ {
+		an, aerr := strconv.Atoi(as[i])
+		bn, berr := strconv.Atoi(bs[i])
+		switch {
+		case aerr == nil && berr == nil && an != bn:
+			return cmp.Compare(an, bn)
+		case aerr == nil && berr != nil:
+			return -1
+		case aerr != nil && berr == nil:
+			return 1
+		case aerr != nil && berr != nil && as[i] != bs[i]:
+			return strings.Compare(as[i], bs[i])
+		}
+	}
+	return cmp.Compare(len(as), len(bs))
 }
 
 // Bump applies a level. Before 1.0 a breaking change is a minor bump, as the

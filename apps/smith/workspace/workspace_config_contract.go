@@ -223,6 +223,34 @@ type ReleaseSection struct {
 	// bump to use, "error" stops the release too, "off" does not look. Plugins
 	// that cannot list a public API are never checked. Default: "warn".
 	APICheck string `toml:"api_check"`
+	// Channels let a long-lived branch release its own line of prerelease
+	// versions (see ReleaseChannel). Default: none.
+	Channels []ReleaseChannel `toml:"channels"`
+}
+
+// ReleaseChannel makes a branch other than [release] branch release a line
+// of prerelease versions of its own: with branch "next", prerelease "beta" and
+// major 2 the releases are 2.0.0-beta.1, 2.0.0-beta.2 and so on, whatever
+// versions the release branch holds.
+type ReleaseChannel struct {
+	// Branch is the branch the channel releases from. It must differ from
+	// [release] branch and from the branch of every other channel.
+	Branch string `toml:"branch"`
+	// Prerelease is the prerelease identifier of the channel's versions, such
+	// as "beta" or "rc": letters, digits and hyphens, starting with a letter.
+	Prerelease string `toml:"prerelease"`
+	// Major is the major version of the channel's line. It must be 1 or more.
+	Major int `toml:"major"`
+}
+
+// ChannelFor returns the channel that releases from branch.
+func (r ReleaseSection) ChannelFor(branch string) (ReleaseChannel, bool) {
+	for _, c := range r.Channels {
+		if c.Branch == branch {
+			return c, true
+		}
+	}
+	return ReleaseChannel{}, false
 }
 
 // DependenciesSection is the one-version policy: a production dependency is

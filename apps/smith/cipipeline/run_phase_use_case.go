@@ -262,7 +262,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 		return err
 	case "release":
 		ensureIdentity(s)
-		plan, err := release.MakePlan(s.Git, s.Graph)
+		plan, err := release.PlanFor(s)
 		if err != nil {
 			return err
 		}
