@@ -6,14 +6,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
-)
 
-// sdistStaging matches the `<name>-<version>` folder that `python -m build`
-// stages inside the project and removes again.
-var sdistStaging = regexp.MustCompile(`^[A-Za-z0-9_.]+-\d+(\.\w+)*$`)
+	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
+)
 
 var skippedDirs = map[string]bool{"dist": true, "build": true, "node_modules": true, "__pycache__": true, "site-packages": true}
 
@@ -82,7 +79,7 @@ func scan(dir string) ([]scannedFile, map[string]bool, error) {
 		}
 		name := d.Name()
 		if d.IsDir() {
-			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info") || sdistStaging.MatchString(name)) {
+			if p != dir && (skippedDirs[name] || strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".egg-info") || discovery.IsSdistStaging(name)) {
 				return filepath.SkipDir
 			}
 			own[name] = true
@@ -93,6 +90,9 @@ func scan(dir string) ([]scannedFile, map[string]bool, error) {
 		}
 		own[strings.TrimSuffix(name, ".py")] = true
 		src, err := os.ReadFile(p)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil // a file removed while the walk ran
+		}
 		if err != nil {
 			return err
 		}
