@@ -49,6 +49,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
 	"github.com/monosmith-app/monosmith/apps/smith/kindchange"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginusage"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
@@ -120,7 +121,7 @@ already have), then build and doctor.`,
 	agentCmd := agentfiles.Command()
 	agentCmd.AddCommand(agentdoc.FileCommand(version))
 	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
-	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 
@@ -195,4 +196,12 @@ func run(version string, args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// pluginCommand is `smith plugin` with the check that stops switching off a
+// plugin some project uses, unless --force says it is meant.
+func pluginCommand(version string) *cobra.Command {
+	cmd := pluginhost.Command(version)
+	pluginusage.GuardDisable(cmd, version)
+	return cmd
 }
