@@ -65,11 +65,16 @@ Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
 				return err
 			}
 			defer s.Close()
+			if !s.Config.Derive.Enabled && check {
+				fmt.Fprintln(cmd.OutOrStdout(), "Derived files are off in this workspace ([derive] enabled is not true): nothing to check.")
+				return nil
+			}
 			if !s.Config.Derive.Enabled {
 				return problem.New("derived files are off in this workspace", "set enabled = true under [derive] in smith.toml")
 			}
 			yes, _ := cmd.Flags().GetBool("yes")
-			return run(cmd.OutOrStdout(), cmd.InOrStdin(), s, check, yes, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			return run(cmd.OutOrStdout(), cmd.InOrStdin(), s, check, yes, dryRun, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
 		},
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a derived file or the record is out of date")
@@ -77,10 +82,10 @@ Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
 	cmd.Flags().StringArrayVar(&replace, "replace", nil, "overwrite this drifted or diverged file with the derived content")
 	cmd.Flags().StringArrayVar(&adopt, "adopt", nil, "take the hand edit of this keys-mode file as the new baseline")
 	cmd.Flags().StringArrayVar(&eject, "eject", nil, "own this file: smith stops touching it")
-	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "derive files" }})
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(*cobra.Command, []string) string { return "derive files" }})
 }
 
-func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, explain []string, d Decision) error {
+func run(out io.Writer, in io.Reader, s *session.Session, check, yes, dryRun bool, explain []string, d Decision) error {
 	plan, rec, err := BuildPlan(s)
 	if err != nil {
 		return err
@@ -102,9 +107,10 @@ func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, expla
 	if check {
 		return CheckPlan(out, plan)
 	}
-	if _, err := operationplan.Present(out, in, PlanWrites(s.Root, plan), operationplan.Options{
-		Yes: yes, Ask: len(d.Replace)+len(d.Adopt)+len(d.Eject) == 0, Env: operationplan.DetectEnvironment(),
-	}); err != nil {
+	proceed, err := operationplan.Present(out, in, PlanWrites(s.Root, plan), operationplan.Options{
+		Yes: yes, DryRun: dryRun, Ask: len(d.Replace)+len(d.Adopt)+len(d.Eject) == 0, Env: operationplan.DetectEnvironment(),
+	})
+	if err != nil || !proceed {
 		return err
 	}
 	before := rec
