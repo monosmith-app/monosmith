@@ -44,6 +44,7 @@ func Command(version string) *cobra.Command {
 	}
 	for _, phase := range Phases {
 		var assets bool
+		var tag string
 		phaseCmd := &cobra.Command{
 			Use:   phase,
 			Short: "Run the " + phase + " phase",
@@ -56,11 +57,14 @@ func Command(version string) *cobra.Command {
 				defer s.Close()
 				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
 				defer stop()
-				return RunPhaseFor(ctx, s, phase, assets, c.OutOrStdout())
+				return RunPhaseFor(ctx, s, phase, assets, tag, c.OutOrStdout())
 			},
 		}
 		if phase == "setup" {
 			phaseCmd.Flags().BoolVar(&assets, "assets", false, "install for the assets job: leave out the projects whose [release] install is false")
+		}
+		if phase == "assets" {
+			phaseCmd.Flags().StringVar(&tag, "tag", "", "run again for an existing release tag (project@version): build the current checkout and replace the files of its GitHub Release")
 		}
 		cmd.AddCommand(phaseCmd)
 	}

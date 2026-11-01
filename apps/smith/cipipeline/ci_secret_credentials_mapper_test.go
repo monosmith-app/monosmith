@@ -19,7 +19,7 @@ func TestASecretReachesEveryJobThatRunsSmith(t *testing.T) {
 		t.Errorf("the secret is handed to setup, verify, native and assets (%d times):\n%s", n, out)
 	}
 	assets := out[strings.Index(out, "  assets:"):]
-	if !strings.Contains(assets, "run: smith ci assets\n        env:\n          SMITH_PLATFORM: ${{ matrix.platform }}\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          "+secret) {
+	if !strings.Contains(assets, "run: smith ci assets --tag \"$ASSETS_TAG\"\n        env:\n          ASSETS_TAG: ${{ inputs.assets_tag }}\n          SMITH_PLATFORM: ${{ matrix.platform }}\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          "+secret) {
 		t.Errorf("the assets build step reads it:\n%s", assets)
 	}
 	if strings.Count(assets, "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}") != 1 {

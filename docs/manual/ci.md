@@ -146,16 +146,20 @@ Builds the projects tagged `native` for the current OS. See [CI pipelines](../re
 <!-- smith:begin ci assets -->
 Run the assets phase
 
-Usage: `smith ci assets`
+Usage: `smith ci assets [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--tag <tag>` | string |  | run again for an existing release tag (project@version): build the current checkout and replace the files of its GitHub Release |
 
 <!-- smith:end ci assets -->
 
 Runs [`smith release assets`](release-assets.md) for the platform in `SMITH_PLATFORM`, which the
 generated GitHub Actions job sets from its matrix: the build command of each app released by
-this commit, then `gh release upload --clobber` of the files it left. With nothing to build it
-prints `no release files to build`.
+this commit, then `gh release upload --clobber` of the files it left. When this commit released
+nothing it prints `nothing released, skipping: ...`, writes the same words to the job summary
+and exits 0. With `--tag` (the `assets_tag` input of the workflow's manual run) it builds for
+that existing tag instead; see [Release assets](release-assets.md#run-it-again-for-a-tag).
 
 ### release
 

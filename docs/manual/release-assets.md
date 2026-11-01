@@ -18,7 +18,7 @@ these files. See [Releasing](../reference/releasing.md) for the `release` table.
 ## Synopsis
 
 ```sh
-smith release assets [--platform <platform>] [--project <app>]
+smith release assets [--platform <platform>] [--project <app>] [--tag <project@version>]
 ```
 
 ## Arguments and flags
@@ -32,18 +32,34 @@ Usage: `smith release assets [flags]`
 |---|---|---|---|
 | `--platform <platform>` | string |  detected | the platform of this machine: windows-x64, macos-arm64, macos-x64, linux-x64 or linux-arm64 (default: detected) |
 | `--project <project>` | string |  | build only this project |
+| `--tag <tag>` | string |  | build for an existing release tag (project@version) from the current checkout, replacing its files |
 
 <!-- smith:end release assets -->
 
 The platform is detected unless given: `windows-x64`, `macos-arm64`, `macos-x64`, `linux-x64`
 or `linux-arm64`. A project whose `platforms` leave it out is skipped.
 
+A glob in `assets` may match nothing on a platform (a `.dmg` glob on Windows) when another glob
+of the list matches. The run prints `no file matches <glob> on <platform>: skipped` and uploads
+the rest. When no glob matches, it fails.
+
+## Run it again for a tag
+
+`--tag <project@version>` builds that project's files from the **current checkout** and uploads
+them to the existing GitHub Release of the tag, replacing files of the same name. It builds
+the checkout, not the commit of the tag, because the usual reason to run again is a fix to
+`smith.toml`, the build command or the workflow, and the commit of the tag still has the fault.
+The version of the tag is stamped into the files. smith says so when HEAD is not the tag's
+commit. The tag must be in the checkout (`git fetch --tags`) and its Release must exist. In
+the generated GitHub workflow, run it from the Actions tab with the `assets_tag` input
+(`mvd@0.11.1`): only the assets job runs.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
-| 0 | The files were built and uploaded, or no project needed building on this platform. |
-| 1 | The platform is unknown, the build failed, a glob in `assets` matched no file, or `gh release upload` failed (gh missing, not signed in, or no release for the tag). |
+| 0 | The files were built and uploaded, or the run was skipped: nothing was released by this commit, or no project needed building on this platform. |
+| 1 | The platform is unknown, the build failed, no glob in `assets` matched a file, the `--tag` is unknown, or `gh release upload` failed (gh missing, not signed in, or no release for the tag). |
 
 ## Files and environment
 

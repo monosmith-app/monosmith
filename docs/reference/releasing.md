@@ -150,6 +150,13 @@ rest. When no glob matches, the build left nothing and the job fails with
 as a platform without that file. See
 [ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
 
+To run the assets again for a release that exists, use `smith ci assets --tag
+<project@version>` or the `assets_tag` input of the workflow's manual run. It builds
+the current checkout (not the commit of the tag), stamps the tag's version and
+replaces files of the same name in the tag's GitHub Release. A push that releases
+nothing starts no assets job; if it did start, the job prints `nothing released,
+skipping` and exits 0.
+
 Two settings tidy the files on upload. `asset_name` renames each file, with the
 placeholders `{product}` (default: the project name), `{version}`, `{platform}`
 (`windows-x64`) and `{ext}`; two files that get the same name keep the name of

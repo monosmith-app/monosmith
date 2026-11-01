@@ -39,19 +39,20 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "r
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
-	return RunPhaseFor(ctx, s, phase, false, out)
+	return RunPhaseFor(ctx, s, phase, false, "", out)
 }
 
 // RunPhaseFor runs one CI phase. With assets set, the setup phase installs
 // only what the assets job needs: it leaves out the projects whose [release]
-// install is false (smith ci setup --assets).
-func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, out io.Writer) error {
+// install is false (smith ci setup --assets). A tag (project@version) makes the
+// assets phase build for that existing release instead of the ones at HEAD.
+func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, tag string, out io.Writer) error {
 	begin := time.Now()
 	log := newPhaseLog(out, phase)
 	if !announces(phase) {
 		log.fold()
 	}
-	err := runPhase(ctx, s, phase, assets, log)
+	err := runPhase(ctx, s, phase, assets, tag, log)
 	log.close()
 	took := time.Since(begin)
 	if err != nil {
@@ -108,7 +109,7 @@ func announces(phase string) bool {
 	return false
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, log *phaseLog) error {
+func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, tag string, log *phaseLog) error {
 	out := log.out
 	switch phase {
 	case "setup", "audit":
@@ -266,9 +267,10 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 	case "native":
 		return nativebuild.Run(ctx, s, out)
 	case "assets":
-		done, err := releaseassets.Run(ctx, s, releaseassets.Request{Platform: os.Getenv("SMITH_PLATFORM"), Out: out})
-		if err == nil && len(done) == 0 {
-			fmt.Fprintln(out, "no release files to build: no project with a build command was released by this commit on this platform")
+		res, err := releaseassets.Run(ctx, s, releaseassets.Request{Platform: os.Getenv("SMITH_PLATFORM"), Tag: tag, Out: out})
+		if err == nil && res.Skipped != "" {
+			// The job summary says it too, so a run that did nothing does not read as a success.
+			log.conclusion = res.Skipped
 		}
 		return err
 	case "release":
