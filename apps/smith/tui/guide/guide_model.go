@@ -25,6 +25,8 @@ type Model struct {
 	filter string
 	// defaults are the options a step starts on, by step key.
 	defaults map[string]string
+	// defaultWhy is the line that says why a step starts on its default.
+	defaultWhy map[string]string
 	// Argv is the chosen command, empty until the questions are answered.
 	Argv []string
 	// Wizard names the wizard an action handed itself to (Action.Wizard).
@@ -83,6 +85,7 @@ func (m Model) ActionTitled(title string) (Action, bool) {
 func (m Model) Reset() Model {
 	r := NewModel(m.actions)
 	r.defaults = m.defaults
+	r.defaultWhy = m.defaultWhy
 	return r
 }
 
@@ -96,6 +99,18 @@ func (m Model) WithDefault(key, value string) Model {
 	}
 	d[key] = value
 	m.defaults = d
+	return m
+}
+
+// WithDefaultWhy sets the line a step shows under its question to say why it
+// starts on its default ("Preselected: ..."); the line is empty for no reason.
+func (m Model) WithDefaultWhy(key, why string) Model {
+	d := make(map[string]string, len(m.defaultWhy)+1)
+	for k, v := range m.defaultWhy {
+		d[k] = v
+	}
+	d[key] = why
+	m.defaultWhy = d
 	return m
 }
 
@@ -377,7 +392,11 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		}
 		lines = append(lines, th.Muted("enter confirm · esc back"))
 	default:
-		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "")
+		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
+		if why := m.defaultWhy[step.Key]; why != "" && m.defaults[step.Key] != "" {
+			lines = append(lines, th.Muted(why))
+		}
+		lines = append(lines, "")
 		if step.Filter {
 			if m.filter == "" {
 				lines = append(lines, th.Muted("Type to narrow the list"), "")
@@ -410,13 +429,24 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		}
 		lines = append(lines, "", th.Muted(help))
 	}
-	if m.err != "" {
+	if m.err != "" && !shown(lines, m.err) {
 		lines = append(lines, th.Failure(m.err))
 	}
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, optionAt
+}
+
+// shown reports whether a line of the screen already says text, so the same
+// hint is not printed twice.
+func shown(lines []string, text string) bool {
+	for _, l := range lines {
+		if strings.Contains(pane.Strip(l), text) {
+			return true
+		}
+	}
+	return false
 }
 
 // Row draws one selectable line: a pointer, an optional checkbox, the label

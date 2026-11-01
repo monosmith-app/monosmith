@@ -7,6 +7,7 @@ Every capability starts in the CLI. The TUI (`smith` in a terminal), the VS Code
 | List projects, affected marks | `smith projects`, `affected` | Projects tab | Projects view | Projects tool window |
 | Run a task on one project or all | `smith run`, `build`, `test` | `b` `t` `l` `c`, palette, per-project tasks in the palette | Run Task, Run All, Run Affected | Run task action |
 | Add a project with choices and siblings | `smith add --with --fresh --like` | Add form, plan with choices and siblings; the sibling question offers "Follow one project" and a list for `--like` | Add Project (quick picks, plan; "follow which project?" picks `--like`) | Tools > MonoSmith > Add Project (dialog, unticked commit box; no `--like` yet; unbuilt) |
+| Language the Add form starts on | `smith add --lang` | the language most projects use, with the line "Preselected: N of the M projects here use X." | - (the quick pick lists kinds, no preselection) | - |
 | Refuse a taken project name | `smith add` | live check in the form | input box check | - |
 | Remove a project | `smith remove` | pick list, starts on the selected project | - | - |
 | Commit a change so it can be undone | `--commit` on adopt, new, add, remove, convert, upgrade, derive, swap | unticked box "Commit this change so it can be undone" (key `c`, or a click on the box) in the confirmation of add, swap, derive and the others, also in the conversion review of the adopt wizard | "... and commit" buttons beside "Add project", "Swap" and each derive change | unticked box in the Add Project dialog (unbuilt) |
@@ -29,7 +30,7 @@ Every capability starts in the CLI. The TUI (`smith` in a terminal), the VS Code
 | Plugin on or off | `smith plugin enable`, `disable [--force]` | Settings tab (the note counts the projects that disappear) | terminal | - |
 | Settings (`smith config`) | `smith config set` | Settings tab | Settings command | - |
 | Bring a folder in | `smith adopt`, `smith convert` | adopt wizard | terminal (`smith`) | - |
-| Unreadable `smith.toml` | error with line and column | named in the header; adopt is not offered | folder row: "smith failed: smith.toml:3:9 ..." | tool window row: "smith failed: smith.toml:3:9 ... Try: ..." (unbuilt) |
+| Unreadable `smith.toml` | error with line and column | named in the header and wrapped in the Start screen; new and adopt are not offered | folder row: "smith failed: smith.toml:3:9 ..."; the adopt offer skips a folder with a smith.toml | tool window row: "smith failed: smith.toml:3:9 ... Try: ..." (unbuilt) |
 
 ## Rules
 

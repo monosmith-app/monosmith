@@ -116,6 +116,17 @@ func (s *Shell) adoptDone(msg fixDoneMsg) tea.Cmd {
 	return s.afterAdopt(out)
 }
 
+// brokenConfigBanner is what the guide leads with when smith.toml exists but
+// cannot be read: the whole message, wrapped, and the one way on.
+func (s Shell) brokenConfigBanner(w int) []string {
+	if s.inWorkspace || s.problem == "" {
+		return nil
+	}
+	lines := pane.Wrap(s.th.Warning("smith.toml cannot be read: ")+s.problem, w, 0)
+	lines = append(lines, pane.Wrap(s.th.Muted("Fix that line, then run smith again. Creating or adopting a workspace is not offered over this file."), w, 0)...)
+	return append(lines, "")
+}
+
 // adoptBanner is what the guide leads with in a folder that has files and is
 // not a workspace: the first thing to do. A click on it opens the wizard.
 func (s Shell) adoptBanner(w int) []string {

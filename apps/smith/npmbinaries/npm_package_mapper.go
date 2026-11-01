@@ -102,7 +102,7 @@ func Shim(binary string, platforms map[string]string) string {
 'use strict'
 // Runs the __BINARY__ binary npm installed for this platform, from one of the
 // optional dependencies; nothing is downloaded after install.
-const { spawnSync } = require('node:child_process')
+const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 
 const platforms = __PLATFORMS__
@@ -127,15 +127,23 @@ if (process.platform !== 'win32') {
     try { fs.chmodSync(binary, 0o755) } catch { /* a read-only install keeps its mode */ }
   }
 }
-const result = spawnSync(binary, process.argv.slice(2), { stdio: 'inherit' })
-if (result.error) {
-  console.error('__BINARY__: ' + result.error.message)
+// A stop request must reach the binary: forward it, never orphan the child.
+const child = spawn(binary, process.argv.slice(2), { stdio: 'inherit' })
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => { child.kill(sig) })
+}
+child.on('error', (error) => {
+  console.error('__BINARY__: ' + error.message)
   process.exit(1)
-}
-if (result.signal) {
-  process.kill(process.pid, result.signal)
-}
-process.exit(result.status ?? 1)
+})
+child.on('exit', (code, signal) => {
+  if (signal) {
+    process.removeAllListeners(signal)
+    process.kill(process.pid, signal)
+    return
+  }
+  process.exit(code ?? 1)
+})
 `)
 }
 

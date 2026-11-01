@@ -240,7 +240,7 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(),
 	}
 }

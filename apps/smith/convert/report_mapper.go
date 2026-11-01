@@ -284,7 +284,15 @@ func groupFindings(findings []convertplan.Finding, sorted bool) []group {
 	index := map[string]int{}
 	var groups []group
 	files := map[string]int{}
+	said := map[string]bool{}
 	for _, f := range findings {
+		if f.Project != "" {
+			// The same sentence for the same project is one note, whatever subject it came with.
+			if said[f.Project+"|"+f.Message] {
+				continue
+			}
+			said[f.Project+"|"+f.Message] = true
+		}
 		if f.Project == "" && f.Severity == convertplan.Manual {
 			if key, many, ok := fileKindOf(f.Message); ok {
 				i, seen := files[key]

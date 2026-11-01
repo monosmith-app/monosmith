@@ -275,6 +275,7 @@ func (s *Shell) showAddForm() tea.Cmd {
 	if s.addBase != nil {
 		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()))
 	}
+	g = g.WithDefaultWhy("lang", s.mainLanguageWhy())
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
 		s.guide = g
 	}

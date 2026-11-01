@@ -502,6 +502,12 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 		if step.Blocking {
 			return outcomes, errors.New(failureWithOutput(out, step.Name, msg, tail.String()))
 		}
+		if code == 127 {
+			// The shell could not find the tool: nothing was checked.
+			outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepSkipped, Took: time.Since(began)})
+			warn(out, step.Name+" was skipped: a tool it needs is not installed, so nothing was checked. Install it, or make the audit blocking for this ecosystem in [ci] audit.")
+			continue
+		}
 		failures = append(failures, msg)
 		outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepProblem, Took: time.Since(began)})
 		warn(out, msg+" — not blocking")

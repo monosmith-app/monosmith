@@ -146,6 +146,8 @@ func printReport(w io.Writer, r Report) {
 		printItem(w, "!", x)
 	}
 	switch {
+	case len(r.Projects) == 0 && r.Adoptable():
+		fmt.Fprintln(w, "! no project to adopt yet: follow a step above, or run smith adopt --init to make an empty workspace and add projects with smith add")
 	case len(r.Blockers) == 0 && r.Adoptable():
 		fmt.Fprintln(w, "✔ nothing blocks: smith adopt --init makes it a workspace (add --install to run npm install, --eslint to write the lint config), then says what smith doctor still reports")
 	case r.Adoptable():

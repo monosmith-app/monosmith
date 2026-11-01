@@ -14,7 +14,10 @@ func (s Shell) headerRow() string {
 		name = "smith"
 	}
 	parts := []string{" " + s.th.Bold(name)}
-	if !s.inWorkspace {
+	if !s.inWorkspace && s.problem != "" {
+		// The full message, with its line, is wrapped in the guide below.
+		parts = append(parts, s.th.Warning("smith.toml cannot be read: see the message below"))
+	} else if !s.inWorkspace {
 		parts = append(parts, s.th.Muted(strings.TrimSpace(s.noWorkspaceHint())))
 	}
 	if s.branch != "" {

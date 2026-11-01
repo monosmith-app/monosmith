@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -161,11 +162,14 @@ func jsonKind(goType string) string {
 	return "a " + goType
 }
 
+// exactVersion matches a range that names one version, like 22.1.0.
+var exactVersion = regexp.MustCompile(`^v?\d+\.\d+\.\d+`)
+
 // installedNxVersion is the version in range when it is a version, else the
-// version of the installed nx package (a pnpm catalog: or workspace: range
-// names no version), else range.
+// version of the installed nx package (a catalog:, workspace:, * or ^22 range
+// names no exact version), else range.
 func installedNxVersion(root, rng string) string {
-	if rng != "" && !strings.HasPrefix(rng, "catalog:") && !strings.HasPrefix(rng, "workspace:") {
+	if exactVersion.MatchString(rng) {
 		return rng
 	}
 	raw, err := os.ReadFile(filepath.Join(root, "node_modules", "nx", "package.json"))

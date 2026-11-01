@@ -84,7 +84,9 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	empty := !inside && sources.FolderIsEmpty(".")
 	var actions []guide.Action
 	for _, a := range append(guide.Actions(enabled, pluginhost.BuiltinNames(), enabled), guide.GeneratedForms(catalog)...) {
-		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && inside) || (a.NeedsContent && empty) {
+		// An unreadable smith.toml means the folder already is a workspace:
+		// neither creating nor adopting one is offered over it.
+		if (a.NeedsWorkspace && !inside) || (a.OutsideOnly && (inside || problem != "")) || (a.NeedsContent && empty) {
 			continue
 		}
 		actions = append(actions, a)

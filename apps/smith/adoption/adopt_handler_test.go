@@ -92,3 +92,13 @@ func TestInitOnAnAdoptedWorkspaceSaysWhyNotThatSomethingBlocks(t *testing.T) {
 		t.Errorf("only the adoption blockers belong in it: %v", err)
 	}
 }
+
+func TestPrintReportWithoutProjectsHasNoTick(t *testing.T) {
+	r := Report{Root: "/r", Clean: true, Warnings: []Item{{Message: "no project found: x", Step: "do y"}}}
+	var b bytes.Buffer
+	printReport(&b, r)
+	out := b.String()
+	if strings.Contains(out, "✔") || !strings.Contains(out, "! no project to adopt yet") {
+		t.Errorf("a report with no project must not end with a tick:\n%s", out)
+	}
+}
