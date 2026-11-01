@@ -37,9 +37,18 @@ func (d *Dart) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the folders smith.toml declares, as folders of the package above them.
+func (d *Dart) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: pub.dev orders a
+// prerelease below its release, so a plain pub get skips it, and pub takes the
+// semver spelling as it is. pub.dev publishes from the package's tag.
+func (d *Dart) PublishesChannels() {}
+
 // Discover implements serve.Discoverer.
 func (d *Dart) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(d.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(d.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.
