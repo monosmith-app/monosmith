@@ -14,7 +14,7 @@ import javax.swing.JComponent
  * Asks what to add: the kind (language and role), the name, and whether to commit the change. The
  * commit box is unticked: smith commits only when asked, and Undo then reverts the commit.
  */
-class AddProjectDialog(
+class AddProjectDialogHandler(
     ide: Project,
     kinds: List<SmithKindContract>,
     private val existing: Collection<String>,

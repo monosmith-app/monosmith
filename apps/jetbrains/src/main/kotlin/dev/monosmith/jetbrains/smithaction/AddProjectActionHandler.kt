@@ -43,7 +43,7 @@ class AddProjectActionHandler : SmithActionHandler() {
         kinds: List<SmithKindContract>,
         existing: List<String>,
     ) {
-        val dialog = AddProjectDialog(ide, kinds, existing)
+        val dialog = AddProjectDialogHandler(ide, kinds, existing)
         if (!dialog.showAndGet()) return
         val kind = dialog.kind
         val name = dialog.projectName
