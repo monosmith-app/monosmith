@@ -20,6 +20,10 @@ type Decision struct {
 	// Adopt takes the hand-edited content of a keys-mode file as the new
 	// baseline, when the file still has every derived key.
 	Adopt []string
+	// Reclaim gives an ejected, drifted or diverged file back to smith: it is
+	// rewritten with the derived content and the record says owner "smith"
+	// again. The caller has shown the diff.
+	Reclaim []string
 	// Eject gives the file to the person: the record says owner "you" and smith
 	// stops touching it.
 	Eject []string
@@ -32,6 +36,8 @@ type Outcome struct {
 	Replaced []string
 	Adopted  []string
 	Ejected  []string
+	// Reclaimed are the files given back to smith.
+	Reclaimed []string
 	// Held are the items Apply left alone because they need a decision.
 	Held []Item
 }
@@ -43,10 +49,14 @@ type Outcome struct {
 // does not fit the file, or a write fails.
 func Apply(root string, plan Plan, rec *derivelock.Record, d Decision) (Outcome, error) {
 	var out Outcome
-	for _, p := range slices.Concat(d.Replace, d.Adopt, d.Eject) {
+	for _, p := range slices.Concat(d.Replace, d.Adopt, d.Eject, d.Reclaim) {
 		if len(itemsAt(plan, p)) == 0 && len(rec.EntriesFor(p)) == 0 {
 			return out, problem.New("smith does not derive "+p, "smith derive --check lists the files it derives")
 		}
+	}
+	changes, err := PlanReclaim(root, plan, d.Reclaim)
+	if err != nil {
+		return out, err
 	}
 	for _, item := range plan.Items {
 		p := item.File.Path
@@ -54,6 +64,14 @@ func Apply(root string, plan Plan, rec *derivelock.Record, d Decision) (Outcome,
 		case slices.Contains(d.Eject, p):
 			rec.Set(entryOf(item, derivelock.OwnerYou))
 			out.Ejected = appendOnce(out.Ejected, p)
+		case slices.Contains(d.Reclaim, p):
+			if c := changes[p]; c.Changed() && !reclaimed(out, p) {
+				if err := write(root, Item{File: item.File, Merged: c.After}); err != nil {
+					return out, err
+				}
+			}
+			rec.Set(entryOf(item, derivelock.OwnerSmith))
+			out.Reclaimed = appendOnce(out.Reclaimed, p)
 		case item.Status == StatusCurrent || item.Status == StatusEjected:
 		case item.Status == StatusUnrecorded:
 			rec.Set(entryOf(item, derivelock.OwnerSmith))

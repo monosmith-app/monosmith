@@ -28,7 +28,7 @@ func TestTheSameOverrideInEnoughProjectsIsLifted(t *testing.T) {
 	}
 }
 
-func TestAMinorityIsLeftToTaskGroups(t *testing.T) {
+func TestAMinorityIsLeftToGroups(t *testing.T) {
 	cfg := cfgWith(3, func(int) workspace.TaskOverride { return workspace.TaskOverride{Cache: off()} }, nil)
 	if got := Analyse(cfg, 10, DefaultThreshold); len(got) != 0 {
 		t.Errorf("3 of 10 projects must not become a workspace default: %+v", got)

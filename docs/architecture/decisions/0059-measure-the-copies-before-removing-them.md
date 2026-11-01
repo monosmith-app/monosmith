@@ -46,3 +46,7 @@ it (it does for `tsconfig.base.json` through the plugin's inputs).
 ## Sources
 
 - `apps/smith/copymeasure/`, `docs/architecture/derived-files-facts-and-siblings.md`
+
+## Update 2026-11-01
+
+The owner decided not to build the removal of identical copies now. This record stays measure-only: `smith copies` counts, and nothing deletes.

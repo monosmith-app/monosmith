@@ -22,13 +22,13 @@ func sourceConditionChecks(s *session.Session) []protocol.Finding {
 }
 
 // SourceConditionFindings is sourceConditionChecks over the configuration.
-// It returns nothing when no task group or project task resets customConditions.
+// It returns nothing when no group or project task resets customConditions.
 func SourceConditionFindings(cfg workspace.Config) []protocol.Finding {
 	var where []string
-	for i, g := range cfg.TaskGroups {
+	for i, g := range cfg.Groups {
 		for task, t := range g.Tasks {
 			if resetsCustomConditions(t.Env) {
-				where = append(where, "[[task_groups]] "+strings.Join(g.Select, " and ")+" "+task+" (group "+strconv.Itoa(i+1)+")")
+				where = append(where, "[[groups]] "+strings.Join(g.Select, " and ")+" "+task+" (group "+strconv.Itoa(i+1)+")")
 			}
 		}
 	}

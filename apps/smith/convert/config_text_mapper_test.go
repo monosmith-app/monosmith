@@ -54,10 +54,10 @@ func TestConfigTextRoundTrips(t *testing.T) {
 	}
 }
 
-func TestConfigTextWritesTaskGroups(t *testing.T) {
+func TestConfigTextWritesGroups(t *testing.T) {
 	in := workspace.Config{
 		Workspace: workspace.WorkspaceSection{Name: "demo"},
-		TaskGroups: []workspace.TaskGroup{
+		Groups: []workspace.Group{
 			{Select: []string{"lang:node", "kind:lib"}, Tasks: map[string]workspace.TaskOverride{
 				"build": {Outputs: []string{"dist"}},
 				"test":  {DependsOn: []string{"^build"}, Env: map[string]string{"A": `{"x":1}`}},
@@ -70,8 +70,8 @@ func TestConfigTextWritesTaskGroups(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v\n%s", err, text)
 	}
-	if !reflect.DeepEqual(out.TaskGroups, in.TaskGroups) {
-		t.Fatalf("groups %+v\n%s", out.TaskGroups, text)
+	if !reflect.DeepEqual(out.Groups, in.Groups) {
+		t.Fatalf("groups %+v\n%s", out.Groups, text)
 	}
 	if out.Projects["odd"].Tasks["test"].Cwd != "." {
 		t.Fatalf("%+v", out.Projects)

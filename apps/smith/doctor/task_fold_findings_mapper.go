@@ -14,7 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// taskFoldChecks suggests [[task_groups]] when two or more projects repeat the
+// taskFoldChecks suggests [[groups]] when two or more projects repeat the
 // same task settings in smith.toml, and offers the rewrite as a fix. It is a
 // warning, and says nothing when nothing repeats.
 func taskFoldChecks(s *session.Session) []protocol.Finding {
@@ -59,11 +59,11 @@ func TaskFoldFinding(graph []*projectgraph.Project, cfg workspace.Config, src st
 		Check:   "task settings shared by projects are written once",
 		Warning: true,
 		Detail:  "projects repeat the same overrides in smith.toml: " + strings.Join(parts, "; "),
-		Remedy:  "fold them into a [[task_groups]] entry (see docs/reference/configuration.md, Task groups); smith doctor --fix writes it and keeps your comments",
+		Remedy:  "fold them into a [[groups]] entry (see docs/reference/configuration.md, Task groups); smith doctor --fix writes it and keeps your comments",
 	}
 	if text, ok := taskfolding.Rewrite(src, projects, res); ok {
 		finding.Fix = &protocol.Fix{
-			Description: "write the repeated task settings once, as task groups",
+			Description: "write the repeated task settings once, as groups",
 			Safe:        true,
 			Files:       []protocol.FileEdit{{Path: workspace.FileName, Content: text}},
 			AppliesTo:   dedupe(applies),

@@ -47,18 +47,18 @@ func TaskFieldLines(t TaskOverride) []string {
 	return out
 }
 
-// TaskGroupText writes one [[task_groups]] entry with its task tables, ending
+// GroupText writes one [[groups]] entry with its task tables, ending
 // in a newline and starting with a blank line.
-func TaskGroupText(g TaskGroup) string {
+func GroupText(g Group) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "\n[[task_groups]]\nselect = %s\n", tomlList(g.Select))
+	fmt.Fprintf(&b, "\n[[groups]]\nselect = %s\n", tomlList(g.Select))
 	names := make([]string, 0, len(g.Tasks))
 	for name := range g.Tasks {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Fprintf(&b, "\n[task_groups.tasks.%s]\n", tomlKey(name))
+		fmt.Fprintf(&b, "\n[groups.tasks.%s]\n", tomlKey(name))
 		for _, line := range TaskFieldLines(g.Tasks[name]) {
 			b.WriteString(line + "\n")
 		}

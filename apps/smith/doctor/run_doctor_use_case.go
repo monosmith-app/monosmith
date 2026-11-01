@@ -94,7 +94,7 @@ func Run(s *session.Session) Report {
 	add("smith", conventionCoverageChecks(s)...)
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)
-	add("smith", taskGroupChecks(s)...)
+	add("smith", groupChecks(s)...)
 	add("smith", overrideSuggestionChecks(s)...)
 	add("smith", tauriSidecarChecks(s)...)
 	add("smith", taskFoldChecks(s)...)

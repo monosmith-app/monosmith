@@ -9,7 +9,7 @@ import (
 )
 
 // Fold moves task overrides that two or more projects repeat identically into
-// task groups. A group selects by language and kind ("lang:node", "kind:lib",
+// groups. A group selects by language and kind ("lang:node", "kind:lib",
 // or both), and is only written when every project it selects that has the
 // task either repeats the override or sets its own: a project that would
 // start to take the group's values without having asked for them keeps the
@@ -33,7 +33,7 @@ func Fold(projects []Project) Result {
 			tasks[task] = true
 		}
 	}
-	groups := map[string]*workspace.TaskGroup{}
+	groups := map[string]*workspace.Group{}
 	for _, task := range sortedTasks(tasks) {
 		best, ok := bestFold(projects, task)
 		if !ok {
@@ -42,7 +42,7 @@ func Fold(projects []Project) Result {
 		key := strings.Join(best.selector, "\x00")
 		g := groups[key]
 		if g == nil {
-			g = &workspace.TaskGroup{Select: best.selector, Tasks: map[string]workspace.TaskOverride{}}
+			g = &workspace.Group{Select: best.selector, Tasks: map[string]workspace.TaskOverride{}}
 			groups[key] = g
 		}
 		g.Tasks[task] = best.value

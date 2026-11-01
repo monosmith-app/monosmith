@@ -42,7 +42,7 @@ func TestRepeatedOverridesAreSuggestedAsAGroupWithAFix(t *testing.T) {
 		t.Fatalf("fix = %+v", f.Fix)
 	}
 	text := f.Fix.Files[0].Content
-	if !strings.Contains(text, "[[task_groups]]") || strings.Contains(text, "[projects.a.tasks.build]") || !strings.Contains(text, "[workspace]") {
+	if !strings.Contains(text, "[[groups]]") || strings.Contains(text, "[projects.a.tasks.build]") || !strings.Contains(text, "[workspace]") {
 		t.Errorf("text:\n%s", text)
 	}
 

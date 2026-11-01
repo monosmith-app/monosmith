@@ -415,6 +415,7 @@ Usage: `smith derive [flags]`
 | `--dry-run` | show the plan and change nothing | off |
 | `--eject <eject>` | own this file: smith stops touching it (repeatable) |  |
 | `--explain <explain>` | say who owns this file and why it is in its state (repeatable) |  |
+| `--reclaim <reclaim>` | give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner (repeatable) |  |
 | `--replace <replace>` | overwrite this drifted or diverged file with the derived content (repeatable) |  |
 | `-y, --yes` | do not ask for confirmation | off |
 

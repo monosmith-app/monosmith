@@ -54,11 +54,17 @@ They change nothing:
 - `repeated project overrides are a workspace default`: three projects or more, and 80 percent of
   all projects, set the same value for the same task setting
   (`[projects.<name>.tasks.test] cache = false`). The remedy is to set it once under
-  `[tasks.test]`. A smaller set of projects is folded into a `[[task_groups]]` entry by
+  `[tasks.test]`. A smaller set of projects is folded into a `[[groups]]` entry by
   `task settings shared by projects are written once`.
 - `a workspace default is not overridden by nearly every project`: a `[tasks.<task>]` setting that
   at least three projects, and 80 percent of all projects, set to another value. The default is
   probably wrong.
+
+`smith.toml uses current key names` fires when `smith.toml` still has a key smith renamed
+(`[[task_groups]]`, now `[[groups]]`, [ADR 0067](../architecture/decisions/0067-groups-replace-task-groups-and-also-set-tags-and-release.md)).
+Every other smith command stops with one sentence that names `smith doctor --fix`; doctor is the one
+that still runs. `--fix` shows the rename as a diff, keeps comments and every other line, and then
+checks the workspace as usual.
 
 `the workspace uses the latest defaults` compares the `[workspace] defaults` vintage with the
 latest one this smith knows; `smith upgrade --defaults` moves it ([ADR 0054](../architecture/decisions/0054-defaults-have-vintages.md)).

@@ -8,11 +8,11 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/taskfolding"
 )
 
-// planTaskGroups writes the task overrides that several projects share once,
-// as [[task_groups]], instead of once per project. A task counts as one a
+// planGroups writes the task overrides that several projects share once,
+// as [[groups]], instead of once per project. A task counts as one a
 // project has when Nx had a target of that name or the conversion made it a
 // script; the rest of the plan keeps its per-project overrides.
-func planTaskGroups(plan *Plan, w *nxworkspace.Workspace) {
+func planGroups(plan *Plan, w *nxworkspace.Workspace) {
 	targets := map[string]map[string]bool{}
 	for _, p := range w.Projects {
 		has := map[string]bool{}
@@ -47,9 +47,9 @@ func planTaskGroups(plan *Plan, w *nxworkspace.Workspace) {
 		o.Tasks = folded.Overrides[p.Name]
 		plan.SetOverride(p.Name, o)
 	}
-	plan.Config.TaskGroups = append(plan.Config.TaskGroups, folded.Groups...)
+	plan.Config.Groups = append(plan.Config.Groups, folded.Groups...)
 	for _, f := range folded.Folded {
-		plan.Add(Mapped, "", f.Task, fmt.Sprintf("%d projects share the same %s settings, written once as a task group for %s (%s)",
+		plan.Add(Mapped, "", f.Task, fmt.Sprintf("%d projects share the same %s settings, written once as a group for %s (%s)",
 			len(f.Projects), f.Task, strings.Join(f.Select, " and "), strings.Join(f.Projects, ", ")))
 	}
 }
