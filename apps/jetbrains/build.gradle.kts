@@ -42,6 +42,8 @@ dependencies {
 
 // Print the violations in the log: CI keeps the report file on the agent.
 ktlint {
+    // Pinned: the plugin's default ktlint changes between its releases.
+    version.set("1.8.0")
     outputToConsole.set(true)
 }
 
