@@ -199,8 +199,8 @@ func TestSpaceTurnsABuiltInPluginOffAndTheListShowsIt(t *testing.T) {
 	if got := strings.Join(f.calls, ";"); got != "plugin node false" {
 		t.Fatalf("calls: %q", got)
 	}
-	if out := text(m, 100, 28); !strings.Contains(out, "[ ] node") || !strings.Contains(out, "node is off") {
-		t.Fatalf("the row and the note show the change:\n%s", out)
+	if out := text(m, 100, 28); !strings.Contains(out, "[ ] node") || strings.Contains(out, "node is off") {
+		t.Fatalf("the row shows the change, and the note is the shell's toast only:\n%s", out)
 	}
 	press(m, "enter")
 	if got := f.calls[len(f.calls)-1]; got != "plugin node true" {
@@ -629,8 +629,8 @@ func TestEnterChoosesAnArchitectureSavesItAndTheRadioFollows(t *testing.T) {
 		t.Fatalf("calls: %q", got)
 	}
 	out := text(m, 100, 28)
-	if !strings.Contains(out, "( ) vertical-slices") || !strings.Contains(out, "(●) none") || !strings.Contains(out, "Architecture: none") {
-		t.Fatalf("the radio and the note follow:\n%s", out)
+	if !strings.Contains(out, "( ) vertical-slices") || !strings.Contains(out, "(●) none") {
+		t.Fatalf("the radio follows:\n%s", out)
 	}
 	for _, r := range results {
 		if r.Failed {

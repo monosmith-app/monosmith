@@ -126,8 +126,8 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 		}
 		m.savedTheme, m.savedIcons = msg.Theme, msg.Icons
 		choice := msg.Choice
-		m.note, m.failed = "Style saved: "+describeStyle(msg.Theme, msg.Icons), false
-		return m, Result{Note: m.note, Theme: &choice}
+		m.note, m.failed = "", false
+		return m, Result{Note: "Style saved: " + describeStyle(msg.Theme, msg.Icons), Theme: &choice}
 	}
 	return m, Result{}
 }
@@ -146,7 +146,8 @@ func (m Model) applied(msg Applied) (Model, Result) {
 		return m, Result{Note: m.note, Failed: true}
 	}
 	m.ed = nil
-	m.note, m.failed = msg.Note, false
+	// The shell shows a success as a toast: keep it out of the pane, or it prints twice.
+	m.note, m.failed = "", false
 	if msg.Fresh != nil {
 		m.snap = *msg.Fresh
 		m = m.clampCursors()

@@ -202,7 +202,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 		TabHome:     "Enter next · r reload · b build · B build all · t test · w changed · d doctor",
 		TabDeps:     "Space mark · s safe · a all · u update · v align · o one version · r reload · b build · B build all · t test · y copy",
 		TabRelease:  "Enter commits · p preview · n notes · x release · r reload · b build · B build all · t test",
-		TabSettings: "↑↓ move · Enter change · Tab sections · Esc back · t trust · f forget · u reset · r reload",
+		TabSettings: "↑↓ move · Enter change · Tab list/sections · Esc back · t trust · f forget · u reset · r reload",
 	} {
 		if got := line(view); !strings.HasPrefix(got, want) {
 			t.Errorf("%s footer is\n%s\nwant\n%s", view, got, want)
@@ -391,11 +391,11 @@ func TestTheSettingsFooterOffersOnlyTheKeysThatDoSomethingForTheRow(t *testing.T
 		}
 		return out
 	}
-	if got := strings.Join(labels(nil), " "); got != "move change sections back trust forget reset reload" {
+	if got := strings.Join(labels(nil), " "); got != "move change list/sections back trust forget reset reload" {
 		t.Fatalf("every key: %q", got)
 	}
 	got := labels(map[string]string{"settings.trust": "x", "settings.forget": "x", "settings.unset": "x"})
-	if strings.Join(got, " ") != "move change sections back reload" {
+	if strings.Join(got, " ") != "move change list/sections back reload" {
 		t.Fatalf("a built-in plugin: %q", got)
 	}
 }

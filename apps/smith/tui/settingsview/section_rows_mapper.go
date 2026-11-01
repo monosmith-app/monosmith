@@ -99,7 +99,7 @@ func (m Model) pathWidth(w int) int {
 func (m Model) summary(it item) string {
 	switch it.kind {
 	case kindPlugin:
-		return "Space turns " + it.key + " on or off"
+		return "Enter or Space turns " + it.key + " on or off"
 	case kindExternal:
 		return "Enter reviews it before you trust it"
 	case kindSetting:
@@ -136,7 +136,7 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	switch it.kind {
 	case kindPlugin:
 		add(th.Bold(it.key)+th.Muted("  support for a language, built into smith"),
-			"Space turns it on or off for this workspace; at least one must stay on. Projects in a language that is off are not built, tested or checked.",
+			"Enter or Space turns it on or off for this workspace and saves smith.toml at once; at least one must stay on. Projects in a language that is off are not built, tested or checked.",
 			th.Muted("Tools that are always on: "+strings.Join(m.snap.Addons, ", ")+". The same as: smith plugin enable|disable "+it.key))
 	case kindExternal:
 		p := m.snap.External[it.idx]

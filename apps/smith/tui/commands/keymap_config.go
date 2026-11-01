@@ -85,7 +85,7 @@ var all = []Command{
 
 	{ID: "settings.move", Group: GroupWorkspace, Title: "Move in the list of sections or its rows", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Glyph: "↑↓", Kind: PaneKey, Views: vSettings, Footer: "move"},
 	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{"enter", " "}, Kind: PaneKey, Views: vSettings, Footer: "change"},
-	{ID: "settings.sections", Group: GroupWorkspace, Title: "Switch between the list of sections and its rows", Keys: []string{"tab", "left", "right"}, Shortcut: "Tab / Left Right", Glyph: "Tab", Kind: PaneKey, Views: vSettings, Footer: "sections"},
+	{ID: "settings.sections", Group: GroupWorkspace, Title: "Switch between the list of sections and its rows", Keys: []string{"tab", "left", "right"}, Shortcut: "Tab / Left Right", Glyph: "Tab", Kind: PaneKey, Views: vSettings, Footer: "list/sections"},
 	{ID: "settings.back", Group: GroupWorkspace, Title: "Back to the list of sections, or cancel the editor", Keys: []string{"esc"}, Kind: PaneKey, Views: vSettings, Footer: "back"},
 	{ID: "settings.trust", Group: GroupWorkspace, Title: "Review an external plugin and trust it", Hint: "smith plugin trust: what it is, what it runs, what it sees", Keys: []string{"t"}, Kind: PaneKey, Views: vSettings, Footer: "trust"},
 	{ID: "settings.forget", Group: GroupWorkspace, Title: "Forget that an external plugin is trusted", Hint: "smith plugin untrust", Keys: []string{"f"}, Kind: PaneKey, Views: vSettings, Footer: "forget"},
