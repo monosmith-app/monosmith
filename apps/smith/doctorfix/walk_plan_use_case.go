@@ -116,8 +116,15 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 	if stale(o, p, res) {
 		return nil
 	}
-	if err := ShowFix(o.Out, o.Root, p); err != nil {
-		return err
+	// The fix is shown once: before its first open question, or, when the
+	// answers given up front settle every question, as the resolved fix only.
+	shown := false
+	show := func() error {
+		if shown {
+			return nil
+		}
+		shown = true
+		return ShowFix(o.Out, o.Root, p)
 	}
 	answers := append([]int(nil), o.Choose...)
 	for {
@@ -126,6 +133,9 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			return err
 		}
 		if question != nil {
+			if err := show(); err != nil {
+				return err
+			}
 			if !o.Interactive {
 				res.Pending = append(res.Pending, pendingFor(o, p, answers, question))
 				return nil
@@ -148,6 +158,8 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			if err := ShowFix(o.Out, o.Root, chosen); err != nil {
 				return err
 			}
+		} else if err := show(); err != nil {
+			return err
 		}
 		switch {
 		case o.Interactive:
