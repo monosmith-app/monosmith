@@ -121,8 +121,8 @@ func Preflight(s *session.Session, plan Plan) error {
 
 // channelProblems lists what in the plan cannot be published as a release
 // channel without moving a stable pointer: a package whose plugin does not
-// declare the channels capability (hasChannels), a deploy plugin (a container
-// image's latest). The registries an app's binaries go to (npm, PyPI, NuGet,
+// declare the channels capability (hasChannels), a deploy plugin without it (a
+// container image's latest). The registries an app's binaries go to (npm, PyPI, NuGet,
 // RubyGems, pub.dev, the Linux packages) are safe: npm gets the channel's tag
 // and the others order a prerelease version below the release. The package
 // manager manifests are only attached to the GitHub Release, which is a
@@ -137,8 +137,14 @@ func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plug
 		if publishedByItsPlugin(p) && !hasChannels(item.Plugin) {
 			problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot publish a release channel, so a prerelease could take the place of the stable version; keep the project out of the channel with channels = false in [projects.%s.release]", item.Project, item.Plugin, item.Project))
 		}
-		if len(p.Deployers) > 0 {
-			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; leave the project out of the channel's release", item.Project, strings.Join(p.Deployers, " and ")))
+		var stable []string
+		for _, d := range p.Deployers {
+			if !hasChannels(d) {
+				stable = append(stable, d)
+			}
+		}
+		if len(stable) > 0 {
+			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; keep the project out of the channel with channels = false in [projects.%s.release]", item.Project, strings.Join(stable, " and "), item.Project))
 		}
 	}
 	return problems
