@@ -27,7 +27,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
-	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify bool
+	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify, commit bool
 	choices := convertchoices.Choices{Level: convertchoices.LevelConservative}
 	cmd := &cobra.Command{
 		Use:   "convert",
@@ -48,8 +48,17 @@ Run it with --dry-run first: the report lists what maps, what changes behaviour
 and what needs you. Nothing is dropped silently. An Nx workspace's packages must
 be installed, because Nx itself describes the projects: in a terminal convert
 asks and installs them (about two minutes), --yes installs without asking, and
-anywhere else it stops and says so. A Turborepo workspace is read from its
-files, so nothing needs to be installed.
+anywhere else it stops and says so. A pnpm or yarn workspace is installed with
+its own tool (pnpm install, yarn install): npm cannot read its catalog: and
+workspace: ranges, so install it that way first, or let --yes do it. A
+Turborepo workspace is read from its files, so nothing needs to be installed.
+
+A dry run also checks that the converted workspace loads, on a copy, and lists
+what it finds as blockers. Applying that fails part way puts the files it
+touched back. Nothing is committed unless you pass --commit, which commits the
+conversion as one operation that smith undo reverts. The install a dry run
+makes can leave .nx/ and package-lock.json untracked; convert ignores both when
+it checks that the tree is clean.
 
 --level full goes further: it makes smith the only tool. After the conversion
 it works out which files and devDependencies of the old tooling nothing uses
@@ -61,7 +70,16 @@ command stops, naming the flags that apply it. It needs a clean git tree, so
 git undoes everything.`,
 		Example: "  smith convert --dry-run\n  smith convert\n  smith convert --level full --dry-run\n  smith convert --level full --lint smith --test jest --build smith --ci smith --yes",
 		Args:    cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
+			// Reading and planning change nothing, so a failure there that no one
+			// foresaw is told as a problem with a way on, not as a stack trace.
+			defer func() {
+				if r := recover(); r != nil {
+					err = problem.New(fmt.Sprintf("convert stopped on something it did not expect (%v): nothing was changed", r),
+						"run smith convert --dry-run --verbose, and look at the last project it names",
+						"report it at https://github.com/monosmith-app/monosmith/issues with your nx.json or turbo.json")
+				}
+			}()
 			out := cmd.OutOrStdout()
 			given := convertchoices.Given{
 				Lint: cmd.Flags().Changed("lint"), Test: cmd.Flags().Changed("test"),
@@ -83,7 +101,7 @@ git undoes everything.`,
 				return problem.New("this folder is not a git repository: convert makes its changes through git, so each one can be reviewed and undone", `git init && git add -A && git commit -m "before smith", then run this again`)
 			}
 			if !dryRun && (!allowDirty || full) {
-				if status, err := git.Run("status", "--porcelain"); err == nil && status != "" {
+				if status, err := git.Run("status", "--porcelain"); err == nil && DirtyApartFromInstall(status) {
 					if full {
 						return problem.New("the working tree has uncommitted changes: --level full deletes files, and git restore is its way back, so the tree must be clean", "git add -A && git commit -m \"before smith\", then run this again")
 					}
@@ -116,9 +134,17 @@ git undoes everything.`,
 			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, Terminal: interactive() && !dryRun, In: os.Stdin, Out: told}); err != nil {
 				return err
 			}
-			plan, err := readPlan(root, files, input)
+			plan, err := readPlan(root, files, input, func(stage string) { fmt.Fprintln(told, stage) })
 			if err != nil {
 				return err
+			}
+			if !full && !plan.Blocked(strict) {
+				// The check that applying ends with, made on a copy first, so a
+				// workspace that would not load is a finding and not half a conversion.
+				fmt.Fprintln(told, "Checking that the converted workspace loads…")
+				if err := CheckLoads(root, files, plan, version); err != nil {
+					plan.Add(convertplan.Blocker, "", "converted workspace", fmt.Sprintf("it would not load once converted: %v. Fix that, then run this again", err))
+				}
 			}
 			blocked := plan.Blocked(strict)
 			options := ReportOptions{DryRun: dryRun, Strict: strict, Verbose: verbose}
@@ -149,7 +175,7 @@ git undoes everything.`,
 				return runFull(cmd, fullArgs{
 					Root: root, Git: git, Plan: plan, Version: version, Files: files, Strict: strict,
 					Choices: choices, Given: given, DryRun: dryRun, JSON: asJSON, Yes: yes,
-					SkipInstall: skipInstall, SkipVerify: skipVerify,
+					SkipInstall: skipInstall, SkipVerify: skipVerify, Commit: commit,
 				})
 			}
 			if dryRun {
@@ -176,6 +202,9 @@ git undoes everything.`,
 			}
 			staged := stageNewFiles(git, plan, res)
 			fmt.Fprint(log, Summary(plan, res.LostSlots, staged))
+			if commit {
+				CommitConversion(root, log)
+			}
 			return nil
 		},
 	}
@@ -186,6 +215,7 @@ git undoes everything.`,
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
 	f.BoolVar(&yes, "yes", false, "apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything)")
+	f.BoolVar(&commit, "commit", false, "commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it)")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes (not with --level full)")
 	level := (*string)(&choices.Level)
 	f.StringVar(level, "level", string(convertchoices.LevelConservative), "how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking)")
@@ -234,7 +264,10 @@ func stageNewFiles(repo *gitclient.Git, plan *convertplan.Plan, res Result) []st
 
 // readPlan reads the workspace in root, an Nx or a Turborepo one, and plans
 // its conversion.
-func readPlan(root string, files []string, input convertplan.Input) (*convertplan.Plan, error) {
+func readPlan(root string, files []string, input convertplan.Input, progress Progress) (*convertplan.Plan, error) {
+	if progress == nil {
+		progress = func(string) {}
+	}
 	has := func(name string) bool {
 		_, err := os.Stat(filepath.Join(root, name))
 		return err == nil
@@ -244,17 +277,25 @@ func readPlan(root string, files []string, input convertplan.Input) (*convertpla
 	case has("nx.json") && turbo:
 		return nil, errors.New("both nx.json and turbo.json are here: convert one tool at a time, so remove the one you no longer use first")
 	case turbo:
+		progress(fmt.Sprintf("Reading the Turborepo workspace (%s)…", plural(len(files), "file", "files")))
 		w, err := turboworkspace.Read(root, files)
 		if err != nil {
 			return nil, err
 		}
-		return turboplan.MakePlan(w, input), nil
+		progress("Planning the conversion…")
+		plan := turboplan.MakePlan(w, input)
+		progress(fmt.Sprintf("Planned %s.", projectCount(plan)))
+		return plan, nil
 	case !has("nx.json"):
 		return nil, errors.New("no nx.json or turbo.json here: convert runs at the root of an Nx or Turborepo workspace")
 	}
+	progress(fmt.Sprintf("Asking Nx to describe the projects (%s; on a large repository this takes minutes)…", plural(len(files), "file", "files")))
 	w, err := nxworkspace.Read(root, files)
 	if err != nil {
 		return nil, err
 	}
-	return convertplan.MakePlan(w, input), nil
+	progress(fmt.Sprintf("Nx described %s. Planning the conversion…", plural(len(w.Projects), "project", "projects")))
+	plan := convertplan.MakePlan(w, input)
+	progress(fmt.Sprintf("Planned %s.", projectCount(plan)))
+	return plan, nil
 }

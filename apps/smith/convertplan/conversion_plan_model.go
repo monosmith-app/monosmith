@@ -21,7 +21,7 @@ const (
 	Changed Severity = "changed"
 	// Manual is something the conversion could not do; the user must.
 	Manual Severity = "manual"
-	// Unsupported is a project or setting smith v1 has no plugin for.
+	// Unsupported is a project or setting smith has no plugin for.
 	Unsupported Severity = "unsupported"
 	// Blocker prevents the conversion.
 	Blocker Severity = "blocker"
@@ -125,6 +125,17 @@ func (p *Plan) Add(severity Severity, project, subject, message string) {
 // conversion is applied; the report lists it first.
 func (p *Plan) Decide(project, subject, message string) {
 	p.Findings = append(p.Findings, Finding{Severity: Changed, Project: project, Subject: subject, Message: message, Decide: true})
+}
+
+// Decided reports whether a decision finding already names the subject, so
+// one file is not announced twice.
+func (p *Plan) Decided(subject string) bool {
+	for _, f := range p.Findings {
+		if f.Decide && f.Subject == subject {
+			return true
+		}
+	}
+	return false
 }
 
 // Count returns how many findings have each severity.

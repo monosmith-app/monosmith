@@ -49,6 +49,21 @@ func Begin(root string) (*Pending, string) {
 	return &Pending{root: root, git: git}, ""
 }
 
+// Always is Begin for an operation the person asked to commit with --commit:
+// it skips the commit_operations setting, and the work tree check is the
+// caller's, because a command such as adopt or convert starts from a clean
+// tree and creates smith.toml itself.
+//
+// Parameters: root is the workspace root.
+// Returns: the pending operation, or nil when root is not a git work tree.
+func Always(root string) *Pending {
+	git := gitclient.New(root)
+	if !git.IsRepository() {
+		return nil
+	}
+	return &Pending{root: root, git: git}
+}
+
 // Finish commits what the operation changed and records it for smith undo. It
 // does nothing, and returns an empty hash, when the operation changed no file.
 // The commit runs the repository's hooks. If git refuses the commit, the

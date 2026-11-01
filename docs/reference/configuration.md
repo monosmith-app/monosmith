@@ -48,6 +48,8 @@ name = "acme"                         # required
 scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
+allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
+shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
@@ -411,6 +413,26 @@ examples users copy and install on their own. A Node package outside the root
 the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
+
+## Output folders outside the build directory
+
+`smith doctor` checks that every build writes into `dist/` and that no two tasks
+write the same folder. Two settings in `[workspace]` say that a case is on
+purpose. Both are lists of workspace-relative paths with forward slashes, and
+each path covers the folders under it:
+
+```toml
+[workspace]
+allowed_outputs = ["apps/mvd/appwindow/web"]  # a folder a tool embeds (go:embed)
+shared_outputs = ["dist/drop"]                # package tasks that fill one folder
+```
+
+- `allowed_outputs`: a task may write there although it is not under `dist/`.
+  Use it for a folder a tool reads from its own place, such as a `go:embed`
+  folder.
+- `shared_outputs`: several tasks may write there. A cache restore replaces a
+  task's output folders, so each task must write its own files. Giving each task
+  a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
 
 ## Shared schemas
 

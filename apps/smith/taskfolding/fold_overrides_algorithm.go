@@ -49,6 +49,12 @@ func Fold(projects []Project) Result {
 		var names []string
 		for _, p := range best.members {
 			own := res.Overrides[p.Name]
+			if own == nil {
+				// An earlier task folded away this name's last override (two
+				// projects can share a name): start again, never write to nil.
+				own = map[string]workspace.TaskOverride{}
+				res.Overrides[p.Name] = own
+			}
 			if reflect.DeepEqual(own[task], best.value) {
 				delete(own, task)
 				names = append(names, p.Name)

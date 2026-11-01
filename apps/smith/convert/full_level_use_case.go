@@ -38,6 +38,8 @@ type fullArgs struct {
 	// build, test, lint and doctor checks that follow it.
 	SkipInstall bool
 	SkipVerify  bool
+	// Commit commits the whole conversion as one operation at the end.
+	Commit bool
 }
 
 // fullJSON is `smith convert --level full --json`: the conversion plan as it
@@ -137,17 +139,32 @@ func runFull(cmd *cobra.Command, a fullArgs) error {
 	if len(run.Declined) > 0 {
 		fmt.Fprintf(log, "\nLeft as they were, as you chose: %s\n", strings.Join(run.Declined, ", "))
 	}
+	if a.Commit {
+		CommitConversion(a.Root, log)
+	}
 	return nil
 }
 
-// smithCommand is how the checks run smith: by name when the smith on the
-// path is this one, else by the path of the running executable.
+// smithCommand is how the checks run smith, and how a screen names the command
+// to the person: by name when the smith on the path is this one, or when this
+// is the platform binary an npm install put under node_modules (the "smith" on
+// the path is the shim that starts it), else by the path of the running
+// executable.
 func smithCommand() string {
 	self, err := os.Executable()
 	if err != nil {
 		return "smith"
 	}
-	if found, err := exec.LookPath("smith"); err == nil {
+	return commandFor(self, func(name string) (string, error) { return exec.LookPath(name) })
+}
+
+// commandFor names smith for the executable at self; lookPath finds a program
+// on the path.
+func commandFor(self string, lookPath func(string) (string, error)) string {
+	if strings.Contains(filepath.ToSlash(self), "/node_modules/") {
+		return "smith"
+	}
+	if found, err := lookPath("smith"); err == nil {
 		a, errA := filepath.EvalSymlinks(found)
 		b, errB := filepath.EvalSymlinks(self)
 		if errA == nil && errB == nil && strings.EqualFold(a, b) {

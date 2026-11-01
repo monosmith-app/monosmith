@@ -40,6 +40,7 @@ func Read(root string, files []string) (*Workspace, error) {
 	if w.NxVersion == "" {
 		w.NxVersion = w.RootPackage.Dependencies["nx"]
 	}
+	w.NxVersion = installedNxVersion(root, w.NxVersion)
 	graph, err := describe(root)
 	if err != nil {
 		return nil, err
@@ -135,7 +136,47 @@ func readJSON(root, rel string, out any) error {
 		return err
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
+		var typeErr *json.UnmarshalTypeError
+		if errors.As(err, &typeErr) && typeErr.Field != "" {
+			return problem.New(fmt.Sprintf("%s: %q should be %s, but it is %s here, a form smith does not read yet", rel, typeErr.Field, jsonKind(typeErr.Type.String()), typeErr.Value),
+				"change that entry to the form smith reads, or tell the smith team which Nx version writes it")
+		}
 		return fmt.Errorf("%s: %w", rel, err)
 	}
 	return nil
+}
+
+// jsonKind words a Go type for a person: the JSON thing it reads.
+func jsonKind(goType string) string {
+	switch {
+	case strings.HasPrefix(goType, "map["), strings.HasPrefix(goType, "struct"), strings.Contains(goType, "."):
+		return "an object"
+	case strings.HasPrefix(goType, "[]"):
+		return "a list"
+	case goType == "string":
+		return "a string"
+	case goType == "bool":
+		return "true or false"
+	}
+	return "a " + goType
+}
+
+// installedNxVersion is the version in range when it is a version, else the
+// version of the installed nx package (a pnpm catalog: or workspace: range
+// names no version), else range.
+func installedNxVersion(root, rng string) string {
+	if rng != "" && !strings.HasPrefix(rng, "catalog:") && !strings.HasPrefix(rng, "workspace:") {
+		return rng
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "node_modules", "nx", "package.json"))
+	if err != nil {
+		return rng
+	}
+	var pkg struct {
+		Version string `json:"version"`
+	}
+	if json.Unmarshal(raw, &pkg) != nil || pkg.Version == "" {
+		return rng
+	}
+	return pkg.Version
 }
