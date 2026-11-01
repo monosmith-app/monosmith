@@ -55,6 +55,12 @@ jobs:
           npm install --global --registry https://registry.npmjs.org/ monosmith
           smith --version
       # smith:slot before-publish
+      # This repository is smith: publish with the smith built from this commit, which reads its smith.toml.
+      - name: Build smith from this commit
+        run: |
+          go build -o "$HOME/.local/bin/smith" ./apps/smith
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          smith --version
       # smith:slot-end before-publish
       - name: Publish to pub.dev
         run: smith release pub --project "$PROJECT" --version "$VERSION"
