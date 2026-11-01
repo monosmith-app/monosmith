@@ -39,12 +39,19 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "r
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
+	return RunPhaseFor(ctx, s, phase, false, out)
+}
+
+// RunPhaseFor runs one CI phase. With assets set, the setup phase installs
+// only what the assets job needs: it leaves out the projects whose [release]
+// install is false (smith ci setup --assets).
+func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, out io.Writer) error {
 	begin := time.Now()
 	log := newPhaseLog(out, phase)
 	if !announces(phase) {
 		log.fold()
 	}
-	err := runPhase(ctx, s, phase, log)
+	err := runPhase(ctx, s, phase, assets, log)
 	log.close()
 	took := time.Since(begin)
 	if err != nil {
@@ -101,11 +108,15 @@ func announces(phase string) bool {
 	return false
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseLog) error {
+func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, log *phaseLog) error {
 	out := log.out
 	switch phase {
 	case "setup", "audit":
-		c, err := Collect(s)
+		collect := Collect
+		if assets && phase == "setup" {
+			collect = CollectForAssets
+		}
+		c, err := collect(s)
 		if err != nil {
 			return err
 		}

@@ -704,6 +704,7 @@ assets = ["out/*.zip", "out/*.zip.sha256"]            # globs of the files it le
 platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]  # a runner each
 asset_name = "{product}-{version}-{platform}.{ext}"   # optional: rename the files on upload ({product}, {version}, {platform}, {ext})
 checksums = true                                      # optional: attach <product>-<version>-<platform>.sha256 for what a runner uploads
+install = false                                       # optional: the build command needs none of this project's dependencies, so the assets job does not install it (default: true)
 
 # a Tauri app needs none of that: its plugin supplies build, assets, platforms, asset_name and checksums
 [projects.studio.release]

@@ -148,6 +148,15 @@ files (`package.json`, and the files a plugin keeps a version in, such as a Taur
 app's `tauri.conf.json` and `Cargo.toml`), so what it builds carries the version
 it uploads; the files are put back afterwards.
 
+`install = false` says the build command needs none of the project's dependencies
+(it only zips files, say). The assets job then runs `smith ci setup --assets`,
+which asks the plugins to install every project except those, so a dependency
+conflict that shows on one runner only (a Windows resolver failure for a Python
+package that is only zipped) cannot stop the job before the build. If no project
+of a plugin is left, that plugin adds no setup step, its toolchain included. The
+`ci` job and the native job install every project. `install` needs `build`.
+See [ADR 0068](../architecture/decisions/0068-the-assets-job-can-skip-installing-a-project.md).
+
 A plugin can supply the settings a table leaves out. The `tauri` plugin does for
 a Tauri app, so `[projects.studio.release]` with nothing in it is enough (with
 `github_releases = true`): see [the tauri plugin](../plugins/using/catalogue/tauri.md#releasing-the-installers).

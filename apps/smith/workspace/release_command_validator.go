@@ -20,6 +20,10 @@ func validateReleaseCommand(name string, r *ProjectRelease, tags []string, githu
 		if r.Build != "" {
 			return problem.New(table+" build is empty", "set build to the command that makes the files, e.g. build = \"make dist\"")
 		}
+		if r.Install != nil {
+			return problem.New(table+" sets install, which only a release with a build command uses",
+				"remove install, or add build = \"<the command that makes the files>\"")
+		}
 		if len(r.Assets) > 0 {
 			return problem.New(table+" lists assets but has no build, so nothing makes them",
 				"add build = \"<the command that makes the files>\", or remove assets to let the project's plugin build its archives")

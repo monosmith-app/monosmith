@@ -217,6 +217,7 @@ can run locally.
 | Phase | Does |
 |---|---|
 | `smith ci setup` | every setup step the plugins contributed |
+| `smith ci setup --assets` | the same, for the generated assets job: projects whose `[release] install` is `false` are left out |
 | `smith ci audit` | dependency vulnerability checks; non-blocking ones warn |
 | `smith ci verify` | `lint`, `typecheck`, `test`, `build` — affected projects only on a pull request, everything otherwise; then the tasks a plugin marks for verify, such as the docker convention's `image` (skipped, with a warning, where their program is not installed). When `[derive] enabled = true` it first runs `smith derive --check` and fails on a derived file or `smith.lock` that is out of date. It fails when the tasks left a tracked file changed, naming the file and the project whose tasks ran, since the release refuses a dirty tree (in CI, a file setup changed fails it too; locally, your own edits do not). `smith doctor` warns about the usual causes: a tracked file `.gitignore` ignores, and a tracked file inside a task's outputs |
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
