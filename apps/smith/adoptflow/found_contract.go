@@ -1,5 +1,7 @@
 package adoptflow
 
+import "github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+
 // Kind is what the folder is.
 type Kind string
 
@@ -42,6 +44,10 @@ type Found struct {
 	// clears it, and the wizard offers to.
 	NeedsInstall bool     `json:"needsInstall,omitempty"`
 	Warnings     []string `json:"warnings,omitempty"`
+	// RootProject is the one project at the repository root, when smith sees no
+	// project and a package.json, go.mod, pyproject.toml or Cargo.toml is
+	// there: the wizard asks where to move it (ADR 0069).
+	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
 	// Full is true when the full level is offered; NoFull says why not.
 	Full   bool   `json:"full"`
 	NoFull string `json:"noFull,omitempty"`

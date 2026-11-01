@@ -24,6 +24,11 @@ type Style struct {
 	Back bool
 	// NoRetry leaves Retry out of a failure: what failed cannot be run again.
 	NoRetry bool
+	// Input, when set, adds one editable text to every question, named by it
+	// ("Name"). e starts the editing, Enter or Esc ends it, and "{name}" in an
+	// option's label shows the text as it is typed. The caller reads it with
+	// Wizard.Text.
+	Input string
 }
 
 func (s Style) name() string {

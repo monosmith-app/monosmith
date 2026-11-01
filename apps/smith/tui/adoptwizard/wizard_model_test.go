@@ -129,8 +129,11 @@ func (f *fakeFlow) FinishFix(withLint bool) doctorfix.Planned {
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Install, then check", Steps: steps}}
 }
 
-func (f *fakeFlow) AdoptFix(commit bool) doctorfix.Planned {
+func (f *fakeFlow) AdoptFix(commit bool, move string) doctorfix.Planned {
 	argv := []string{"smith", "adopt", "--init"}
+	if move != "" {
+		argv = append(argv, "--move", move)
+	}
 	if commit {
 		argv = append(argv, "--commit")
 	}

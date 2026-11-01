@@ -49,7 +49,9 @@ type Flow interface {
 	Report() (string, error)
 	// AdoptFix is the conservative adoption of a plain repository; commit makes
 	// it one commit that smith undo can revert, otherwise nothing is committed.
-	AdoptFix(commit bool) doctorfix.Planned
+	// move is the folder the project at the root goes into, adoptmove.Leave to
+	// keep it there, or "" when the repository has no project at its root.
+	AdoptFix(commit bool, move string) doctorfix.Planned
 	// AgentFix is the offer to add the MonoSmith agent (smith agent install);
 	// ok is false when the workspace has it, or opted out.
 	AgentFix() (fix doctorfix.Planned, ok bool)
@@ -110,6 +112,8 @@ const (
 	StageInstalling
 	// StageListing works out the files a conservative conversion changes.
 	StageListing
+	// StageMove asks where the project at the repository root goes.
+	StageMove
 	// StageChoices asks the full level's choices.
 	StageChoices
 	// StagePlanning plans the removals for the choices.

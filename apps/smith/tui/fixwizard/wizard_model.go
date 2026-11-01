@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
@@ -32,7 +33,10 @@ type Wizard struct {
 	question *protocol.FixChoice
 	// cursor is the option under the cursor while asking.
 	cursor int
-	review []string
+	// text is the editable field of Style.Input; editing says it has the keys.
+	text    string
+	editing bool
+	review  []string
 	// summary is review with each diff cut to one line; full says the diffs show.
 	summary []string
 	hasDiff bool
@@ -176,7 +180,51 @@ func (w Wizard) Key(name string) (Wizard, Outcome) {
 	return w, Outcome{}
 }
 
+// maxText is the longest text the editable field takes.
+const maxText = 60
+
+// Text is the text of the editable field (Style.Input).
+func (w Wizard) Text() string { return w.text }
+
+// WithText sets the text of the editable field.
+func (w Wizard) WithText(text string) Wizard {
+	w.text = text
+	return w
+}
+
+// Editing is true while the editable field has the keys.
+func (w Wizard) Editing() bool { return w.editing }
+
+// editKey handles a key while the editable field has the keyboard: a printable
+// character is added, Backspace removes the last one, Enter or Esc stops.
+func (w Wizard) editKey(name string) (Wizard, Outcome) {
+	switch name {
+	case "enter", "esc":
+		w.editing = false
+	case "ctrl+c":
+		return w, Outcome{Done: true}
+	case "backspace":
+		if r := []rune(w.text); len(r) > 0 {
+			w.text = string(r[:len(r)-1])
+		}
+	default:
+		if r := []rune(name); len(r) == 1 && unicode.IsPrint(r[0]) && len([]rune(w.text)) < maxText {
+			w.text += name
+		}
+	}
+	return w, Outcome{}
+}
+
 func (w Wizard) askingKey(name string) (Wizard, Outcome) {
+	if w.style.Input != "" {
+		if w.editing {
+			return w.editKey(name)
+		}
+		if name == "e" {
+			w.editing = true
+			return w, Outcome{}
+		}
+	}
 	n := len(w.question.Options)
 	switch name {
 	case "esc", "ctrl+c", "q":

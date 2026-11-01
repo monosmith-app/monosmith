@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
@@ -181,14 +182,33 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 // step that runs smith adopt --init, which writes smith.toml and the
 // pipelines. With commit it also passes --commit, so the change becomes one
 // commit that smith undo can revert; without it nothing is committed.
-func (s *Session) AdoptFix(commit bool) doctorfix.Planned {
+//
+// move is the answer to "where should the project at the root go?": a folder
+// (the step runs git mv into it first, as a commit of its own with commit),
+// adoptmove.Leave to keep it where it is, or "" when the repository has no
+// project at its root. A step that runs without a terminal never asks, so a
+// repository with a root project always gets --move.
+func (s *Session) AdoptFix(commit bool, move string) doctorfix.Planned {
 	argv := []string{convert.SmithCommand(), "adopt", "--init"}
 	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
 	step := "adopt the repository (smith.toml, the CI pipelines)"
+	switch move {
+	case "":
+	case adoptmove.Leave:
+		argv = append(argv, "--move", move)
+		what += ", leaving the project at the root"
+	default:
+		argv = append(argv, "--move", move)
+		what = "Move the project into " + move + " (git mv; the repository's own files stay), then " + strings.ToLower(what[:1]) + what[1:]
+		step = "move the project into " + move + ", then " + step
+	}
 	if commit {
 		argv = append(argv, "--commit")
 		what += ", and commit them"
 		step += ", then one commit"
+		if move != "" && move != adoptmove.Leave {
+			what += " (the move is a commit of its own)"
+		}
 	}
 	return doctorfix.Planned{
 		Fix: protocol.Fix{
