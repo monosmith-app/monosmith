@@ -31,7 +31,7 @@ func TestReaderReadsManyFilesWithOneProcess(t *testing.T) {
 		}
 	}
 	src := NewReader(root, "v1")
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 	if body, ok := src.Read("pkg/index.ts"); !ok || body != "export const a = 1\n" {
 		t.Fatalf("read = %q, %v", body, ok)
 	}

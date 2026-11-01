@@ -25,7 +25,7 @@ func List(root string, params protocol.APISurfaceParams) (protocol.APISurfaceRes
 		files = readWorktree(root, dir)
 	} else {
 		reader := gitrevision.NewReader(root, params.Ref)
-		defer reader.Close()
+		defer func() { _ = reader.Close() }()
 		files = readRevision(reader, dir)
 	}
 	if _, ok := files["go.mod"]; !ok {
@@ -46,7 +46,7 @@ func readWorktree(root, dir string) map[string]string {
 		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git") {
 			return filepath.SkipDir
 		}
-		if d.IsDir() || !(strings.HasSuffix(p, ".go") || filepath.Base(p) == "go.mod") {
+		if d.IsDir() || (!strings.HasSuffix(p, ".go") && filepath.Base(p) != "go.mod") {
 			return nil
 		}
 		body, err := os.ReadFile(p)
@@ -64,7 +64,7 @@ func readWorktree(root, dir string) map[string]string {
 func readRevision(reader *gitrevision.Reader, dir string) map[string]string {
 	files := map[string]string{}
 	for _, p := range reader.List(dir) {
-		if !(strings.HasSuffix(p, ".go") || path.Base(p) == "go.mod") {
+		if !strings.HasSuffix(p, ".go") && path.Base(p) != "go.mod" {
 			continue
 		}
 		body, ok := reader.Read(p)

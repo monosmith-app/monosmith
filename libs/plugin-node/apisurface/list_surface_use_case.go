@@ -17,7 +17,7 @@ const maxFollowDepth = 16
 // package.json at the revision) is answered with Unreadable set, not an error.
 func List(root string, params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
 	src := &cachedSource{inner: NewSource(root, params.Ref), seen: map[string]cachedFile{}}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 	return list(src, params.Project.Root), nil
 }
 

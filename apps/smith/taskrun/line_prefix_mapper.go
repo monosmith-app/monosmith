@@ -52,7 +52,7 @@ func (w *prefixWriter) Flush() {
 func (w *prefixWriter) emit(line []byte) {
 	w.outMu.Lock()
 	defer w.outMu.Unlock()
-	var dest io.Writer = w.out
+	dest := io.Writer(w.out)
 	if w.hold {
 		dest = &w.held
 	}
