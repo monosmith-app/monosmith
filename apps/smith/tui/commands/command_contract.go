@@ -141,6 +141,12 @@ type State struct {
 	// the scope of a run with them.
 	Project  string
 	Projects int
+	// TaskProjects counts, by task name, the projects that have the task: ll
+	// runs only those. A nil map means every project.
+	TaskProjects map[string]int
+	// OtherTasks are the selected project's tasks that no key runs (not build,
+	// test, lint or typecheck): the palette lists them.
+	OtherTasks []string
 	// Reasons say, by command id, why the open view cannot do something now
 	// (nothing to update, no safe fix): the command is refused with that
 	// reason and the footer leaves its hint out.

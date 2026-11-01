@@ -88,7 +88,7 @@ func same(t *testing.T, tab, cli string) {
 func TestTurningAPluginOffWritesTheBytesPluginDisableWrites(t *testing.T) {
 	tab, cliDir := twoWorkspaces(t)
 	b := New(tab, t.TempDir(), "test", func(string) string { return "" })
-	if err := b.SetPlugin("python", false); err != nil {
+	if _, err := b.SetPlugin("python", false); err != nil {
 		t.Fatal(err)
 	}
 	cli(t, cliDir, pluginhost.Command("test"), "disable", "python")
@@ -97,11 +97,14 @@ func TestTurningAPluginOffWritesTheBytesPluginDisableWrites(t *testing.T) {
 		t.Fatalf("python is off:\n%s", read(t, tab))
 	}
 	// And back on.
-	if err := b.SetPlugin("python", true); err != nil {
+	if _, err := b.SetPlugin("python", true); err != nil {
 		t.Fatal(err)
 	}
 	cli(t, cliDir, pluginhost.Command("test"), "enable", "python")
 	same(t, tab, cliDir)
+	if strings.Contains(read(t, tab), "enabled =") {
+		t.Fatalf("every plugin is on again, so the list must not stay frozen in smith.toml:\n%s", read(t, tab))
+	}
 	snap := b.Load()
 	for _, p := range snap.Plugins {
 		if !p.Enabled {
@@ -118,11 +121,11 @@ func TestTheLastPluginCannotBeSwitchedOffEitherWay(t *testing.T) {
 		names = append(names, p.Name)
 	}
 	for _, n := range names[:len(names)-1] {
-		if err := b.SetPlugin(n, false); err != nil {
+		if _, err := b.SetPlugin(n, false); err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := b.SetPlugin(names[len(names)-1], false)
+	_, err := b.SetPlugin(names[len(names)-1], false)
 	if err == nil || !strings.Contains(err.Error(), "at least one plugin must stay enabled") {
 		t.Fatalf("%v", err)
 	}

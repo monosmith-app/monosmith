@@ -137,7 +137,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	if out.Confirmed {
-		return s.execute(c.Argv, true)
+		return s.execute(c.Final(), true)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
 	return nil
@@ -287,6 +287,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Guided:
 		if c.Guide == addProjectTitle {
 			return s.openAddProject()
+		}
+		if c.Guide == removeProjectTitle {
+			return s.openRemoveProject()
 		}
 		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
 			s.guide = g

@@ -4,15 +4,17 @@ import type { AddRequest } from './add-options.contract.ts'
  * The arguments of `smith add` for a request.
  * @param request - what the person chose
  * @param mode - `plan`: `--dry-run`, smith changes nothing; `apply`: `--yes`, smith writes without a question (the person already agreed)
- * @param fresh - overrides the request: give the stack's defaults and do not follow the siblings
+* @param fresh - overrides the request: give the stack's defaults and do not follow the siblings
+ * @param commit - with `apply`: `--commit`, so smith makes the change one commit that `smith undo` can revert; without it smith commits nothing
  */
-export function addArguments (request: AddRequest, mode: 'plan' | 'apply', fresh = request.fresh): string[] {
+export function addArguments (request: AddRequest, mode: 'plan' | 'apply', fresh = request.fresh, commit = false): string[] {
   return [
     'add', request.role, request.name, '--lang', request.language,
     ...(request.stack === undefined ? [] : ['--stack', request.stack]),
     ...(request.with.length === 0 ? [] : ['--with', request.with.join(',')]),
     ...(fresh ? ['--fresh'] : []),
     mode === 'plan' ? '--dry-run' : '--yes',
+    ...(mode === 'apply' && commit ? ['--commit'] : []),
   ]
 }
 

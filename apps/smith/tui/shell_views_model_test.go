@@ -142,6 +142,20 @@ func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.
 	l.has("$ smith release --dry-run --notes")
 }
 
+func TestAPreviewKeepsThePlanSoTheReleaseCanStartFromIt(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("6")
+	sh := l.sh()
+	sh.refreshAfter([]string{"release", "--dry-run", "--notes"})
+	if !sh.release.CanRelease() {
+		t.Fatal("a preview dropped the plan: x would say there is nothing to release")
+	}
+	sh.refreshAfter([]string{"add", "app", "x"})
+	if sh.release.Loaded {
+		t.Fatal("a change to the workspace must read the plan again")
+	}
+}
+
 type errString string
 
 func (e errString) Error() string { return string(e) }

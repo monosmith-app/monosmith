@@ -208,10 +208,15 @@ func (m Model) setPlugin(name string, enable bool) tea.Cmd {
 		return unavailable()
 	}
 	return m.run(func() (string, error) {
-		if err := set(name, enable); err != nil {
+		warning, err := set(name, enable)
+		if err != nil {
 			return "", err
 		}
-		return name + map[bool]string{true: " is on", false: " is off"}[enable], nil
+		note := name + map[bool]string{true: " is on", false: " is off"}[enable]
+		if warning != "" {
+			note += ". " + warning
+		}
+		return note, nil
 	})
 }
 

@@ -5,6 +5,10 @@ the first release everything below is under Unreleased.
 
 ## Unreleased
 
+### Added
+
+- Add project offers the buttons Add and commit (so Undo works); smith commits nothing otherwise, and the notice says Not committed: review with git status. Add project refuses a name a project has already.
+
 ### Changed
 
 - **VS Code 1.140 or newer is required** (it was 1.96). An older editor keeps the

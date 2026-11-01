@@ -19,7 +19,7 @@ func (s Shell) paletteBox() layout.Rect {
 	// Inside the frame of the content, whatever the size: never over the tabs,
 	// the footer or the frame's own edges.
 	main := s.lay().Main
-	w, h := min(max(s.w-8, 10), 76), min(max(main.H-2, 5), 28)
+	w, h := min(max(s.w-8, 10), 100), min(max(main.H-2, 5), 28)
 	return layout.Rect{X: (s.w - w) / 2, Y: main.Y + 1 + max((main.H-2-h)/3, 0), W: w, H: h}
 }
 
