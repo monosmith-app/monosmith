@@ -167,8 +167,8 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	return result, nil
 }
 
-// Published reads the newest release from the repository's
-// maven-metadata.xml: the registry smith.toml names for the package (signed
+// Published reads the newest release (never a prerelease, see NewestStable)
+// from the repository's maven-metadata.xml: the registry smith.toml names for the package (signed
 // in with its credentials when it has them, as GitHub Packages needs even to
 // read), else MAVEN_REPOSITORY_URL, else Maven Central.
 func Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
@@ -216,13 +216,14 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		return result, nil
 	}
 	var metadata struct {
-		Release string `xml:"versioning>release"`
+		Release  string   `xml:"versioning>release"`
+		Versions []string `xml:"versioning>versions>version"`
 	}
 	if err := xml.NewDecoder(resp.Body).Decode(&metadata); err != nil {
 		result.Unreachable, result.Detail = true, err.Error()
 		return result, nil
 	}
-	result.Version = metadata.Release
+	result.Version = NewestStable(metadata.Release, metadata.Versions)
 	return result, nil
 }
 
