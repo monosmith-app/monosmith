@@ -2,10 +2,43 @@
     <id>dev.monosmith.jetbrains</id>
     <name>MonoSmith</name>
     <vendor>MonoSmith</vendor>
-    <description>Lists the projects and tasks of a MonoSmith workspace and runs a task, showing the command line first. Uses the smith installed in the workspace or on the PATH.</description>
+    <description>Lists the projects and tasks of a MonoSmith workspace and runs a task, showing the command line first. Adds doctor (with fix), add project, undo, why and the release preview to the Tools menu. Uses the smith installed in the workspace or on the PATH.</description>
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.toolwindow.ProjectsToolWindowHandler"/>
     </extensions>
+
+    <actions>
+        <group id="MonoSmith.Menu" text="MonoSmith" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action id="MonoSmith.Doctor"
+                    class="dev.monosmith.jetbrains.smithaction.DoctorActionHandler"
+                    text="Doctor"
+                    description="Check the workspace with smith doctor"/>
+            <action id="MonoSmith.DoctorFix"
+                    class="dev.monosmith.jetbrains.smithaction.DoctorFixActionHandler"
+                    text="Doctor: Apply the Safe Fixes..."
+                    description="Show the fixes smith doctor can make and apply the safe ones"/>
+            <action id="MonoSmith.AddProject"
+                    class="dev.monosmith.jetbrains.smithaction.AddProjectActionHandler"
+                    text="Add Project..."
+                    description="Add a project with smith add; the commit box is unticked"/>
+            <action id="MonoSmith.Undo"
+                    class="dev.monosmith.jetbrains.smithaction.UndoActionHandler"
+                    text="Undo the Last Change..."
+                    description="Revert the last change smith committed (smith undo)"/>
+            <action id="MonoSmith.ReleasePreview"
+                    class="dev.monosmith.jetbrains.smithaction.ReleasePreviewActionHandler"
+                    text="Release Preview"
+                    description="Show what a release would publish (smith release --dry-run)"/>
+            <action id="MonoSmith.Why"
+                    class="dev.monosmith.jetbrains.smithaction.WhyActionHandler"
+                    text="Why Is This File Like This?"
+                    description="Explain the selected file with smith why">
+                <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+                <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            </action>
+        </group>
+    </actions>
 </idea-plugin>
