@@ -96,12 +96,28 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 	}
 }
 
-func TestAFinishedAddSaysItCanBeUndone(t *testing.T) {
+func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("a", "enter", "enter")
 	l.typeText("api").keys("enter", "enter") // follow the siblings
-	l.keys("enter")                          // the plan, then Run
+	l.has("[ ] Commit this change so it can be undone")
+	l.keys("c", "enter") // tick the box, then Run
+	if got := l.lastStarted(); !strings.HasSuffix(got, "--commit") {
+		t.Fatalf("started %q without --commit", got)
+	}
 	l.has("can be undone", "Undo the last change")
+}
+
+func TestAnUncommittedAddSaysSo(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("a", "enter", "enter")
+	l.typeText("api").keys("enter", "enter")
+	l.keys("enter") // the plan, then Run with the box unticked
+	if got := l.lastStarted(); strings.Contains(got, "--commit") {
+		t.Fatalf("started %q with --commit", got)
+	}
+	l.has("Not committed: review with git status")
+	l.hasNot("Undo the last change")
 }
 
 func TestSearchingThePluginMarketplaceInstallsTheOnePicked(t *testing.T) {

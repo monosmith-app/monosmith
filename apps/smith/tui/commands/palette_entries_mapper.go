@@ -70,6 +70,17 @@ func PaletteEntries(s State) []PaletteEntry {
 			title, hint := paletteText(c, s)
 			out = append(out, PaletteEntry{ID: c.ID, Section: section, Title: title, Hint: hint, Shortcut: c.Shortcut, Unavailable: c.Unavailable(s)})
 		}
+		if section == SectionBuild && s.Project != "" && s.InWorkspace {
+			// The selected project's own tasks (dev, storybook…) have no key of
+			// their own: the palette is their keyboard path.
+			busy := ""
+			if s.Running {
+				busy = "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
+			}
+			for _, task := range s.OtherTasks {
+				out = append(out, PaletteEntry{ID: "x:run:" + task, Section: section, Title: "Run " + task + " on " + s.Project, Hint: Line(RunArgv(task, s.Project)), Unavailable: busy})
+			}
+		}
 	}
 	return out
 }
@@ -80,13 +91,13 @@ func paletteText(c Command, s State) (title, hint string) {
 	switch {
 	case c.Kind == RunTask && c.All:
 		if s.Projects > 0 {
-			return fmt.Sprintf("%s all %d", c.verb(), s.Projects), Line(RunArgv(c.Task, ""))
+			return fmt.Sprintf("%s all %d", c.verb(), s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
 		}
 		return c.verb() + " all", Line(RunArgv(c.Task, ""))
 	case c.Kind == RunTask:
 		if s.RunProject() == "" {
 			if s.Projects > 0 {
-				return fmt.Sprintf("%s all %d", c.verb(), s.Projects), Line(RunArgv(c.Task, ""))
+				return fmt.Sprintf("%s all %d", c.verb(), s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
 			}
 			return c.verb() + " all", Line(RunArgv(c.Task, ""))
 		}

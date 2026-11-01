@@ -209,6 +209,9 @@ func Command(version string) *cobra.Command {
 					return err
 				}
 				fmt.Fprintf(c.OutOrStdout(), "enabled plugins: %s\n", strings.Join(enabled, ", "))
+				if !enable {
+					fmt.Fprintf(c.ErrOrStderr(), "warning: %s\n", SwitchOffWarning(args))
+				}
 				return nil
 			},
 		})
@@ -226,7 +229,7 @@ func Command(version string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
+			if err := writeEnabled(root, enabled); err != nil {
 				return err
 			}
 			fmt.Fprintf(c.OutOrStdout(), "enabled plugins: %s\n", strings.Join(enabled, ", "))
@@ -328,8 +331,29 @@ func EnablePlugins(root string, names []string, enable bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := workspace.SetEnabledPlugins(root, enabled); err != nil {
+	// A list that names every built-in plugin would freeze the set: a plugin a
+	// later smith adds would stay off. Only a switched-off plugin is written.
+	if err := writeEnabled(root, enabled); err != nil {
 		return nil, err
 	}
 	return enabled, nil
+}
+
+// writeEnabled stores the enabled list: the explicit list only when a plugin is
+// off, and no list at all when every built-in plugin is on.
+func writeEnabled(root string, enabled []string) error {
+	if slices.Equal(enabled, BuiltinNames()) {
+		return workspace.ClearEnabledPlugins(root)
+	}
+	return workspace.SetEnabledPlugins(root, enabled)
+}
+
+// SwitchOffWarning is what to tell a person who switched off built-in plugins:
+// what they detect disappears from smith until they are switched on again.
+// It returns "" when names is empty.
+func SwitchOffWarning(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	return "switched off " + strings.Join(names, ", ") + ": the projects, tasks and checks it detects are hidden from smith until you switch it on again"
 }

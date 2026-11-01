@@ -57,6 +57,12 @@ type Config struct {
 	// Notice is a quiet line shown once as a toast: smith was updated, or a
 	// newer one exists.
 	Notice string
+	// Problem is why smith.toml could not be read (with its line and column);
+	// "" when there is no such file or it reads well.
+	Problem string
+	// CommitOperations is true when smith.toml sets commit_operations, so every
+	// change smith makes is already a commit.
+	CommitOperations bool
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -75,9 +81,12 @@ type Shell struct {
 
 	inWorkspace bool
 	emptyFolder bool
-	sources     sources.Sources
-	tabs        []string
-	tab         string
+	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
+	problem   string
+	commitOps bool
+	sources   sources.Sources
+	tabs      []string
+	tab       string
 	// detailOpen is true while the detail of the selected project fills the
 	// pane, in the narrow layout (Enter opens it, Esc closes it).
 	detailOpen bool
@@ -132,6 +141,8 @@ type Shell struct {
 	offers     []guide.ChoiceOffer
 	addPending bool
 	addBase    *guide.Action
+	// removeBase is the plain Remove form, which the project list turns into a pick list.
+	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
 	pkg  *packageprompt.Prompt
 	help *dialog.Help
@@ -200,6 +211,7 @@ func NewShell(cfg Config) Shell {
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
+	sh.problem, sh.commitOps = cfg.Problem, cfg.CommitOperations
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}
@@ -228,8 +240,36 @@ func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
 		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, Reasons: s.viewReasons(),
-		Project: s.selectedProject(), Projects: s.list.Len(),
+		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(),
 	}
+}
+
+// otherTasks are the selected project's tasks that have no key of their own.
+func (s Shell) otherTasks() []string {
+	p, ok := s.list.Selected()
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, t := range p.Tasks {
+		switch t.Name {
+		case "uild", "	est", "lint", "	ypecheck":
+		default:
+			names = append(names, t.Name)
+		}
+	}
+	return names
+}
+
+// taskProjects counts, for each task, the projects that have it.
+func (s Shell) taskProjects() map[string]int {
+	counts := map[string]int{}
+	for _, p := range s.list.Projects() {
+		for _, t := range p.Tasks {
+			counts[t.Name]++
+		}
+	}
+	return counts
 }
 
 // viewReasons are the keys of the open view that cannot do anything now, and
@@ -253,6 +293,9 @@ func (s Shell) viewReasons() map[string]string {
 	case commands.TabDeps:
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = "no dependency to update"
+		}
+		if len(s.deps.Policy) > 0 {
+			r["deps.one-version"] = "dependencies.one_version is already on"
 		}
 		if s.deps.AlignArgv() == nil {
 			r["deps.align"] = "the one-version policy found nothing to align"
@@ -404,6 +447,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			}
 			s.list = projectlist.New(everythingIsNotNews(msg.Projects)).SelectProject(selected)
 			s.branch = msg.Branch
+			s.refreshProjectForms()
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)

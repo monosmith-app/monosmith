@@ -44,8 +44,9 @@ type Flow interface {
 	FinishFix(withLint bool) doctorfix.Planned
 	// Report is the full report of the applied conversion, as it was saved.
 	Report() (string, error)
-	// AdoptFix is the conservative adoption of a plain repository.
-	AdoptFix() doctorfix.Planned
+	// AdoptFix is the conservative adoption of a plain repository; commit makes
+	// it one commit that smith undo can revert, otherwise nothing is committed.
+	AdoptFix(commit bool) doctorfix.Planned
 	// AgentFix is the offer to add the MonoSmith agent (smith agent install);
 	// ok is false when the workspace has it, or opted out.
 	AgentFix() (fix doctorfix.Planned, ok bool)
@@ -82,6 +83,9 @@ type Outcome struct {
 	// Finished is set when the repository is a workspace now: the shell opens
 	// it, because it was started outside one.
 	Finished string
+	// Committed is true when the finished change is a commit, so smith undo can
+	// revert it. It is false when the person left the box unticked.
+	Committed bool
 	// Build asks the shell to start building everything once it is open.
 	Build bool
 }

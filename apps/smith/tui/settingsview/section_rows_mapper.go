@@ -117,7 +117,7 @@ func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 // emptyList is what a section with no rows says.
 func (m Model) emptyList(th theme.Theme, w int) []string {
 	if m.section == Recipes {
-		return append([]string{""}, indent(pane.Wrap(th.Muted("No recipe files (*.recipe.toml) in this workspace. A recipe is a team's choice of plugins and settings; smith recipe check <file> checks one."), w-2, 0))...)
+		return append([]string{""}, indent(pane.Wrap(th.Muted("No recipe files (*.recipe.toml) in this workspace. A recipe is a team's choice of plugins and settings; smith recipe check <file> checks one. Write one with Write a recipe in the Guide tab, or press : and search for recipe."), w-2, 0))...)
 	}
 	return []string{"", " " + th.Muted("Nothing here.")}
 }

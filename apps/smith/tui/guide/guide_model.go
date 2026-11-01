@@ -365,7 +365,10 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		lines = append(lines, th.Muted("Done: "+m.action.Title))
 	case step.Options == nil:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "", m.input.View(), "")
-		if v := strings.TrimSpace(m.input.Value()); v != "" {
+		if v := strings.TrimSpace(m.input.Value()); v == "" && m.input.Placeholder != "" && !step.Optional {
+			// The grey text is an example, not a default Enter would accept.
+			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))
+		} else if v != "" {
 			if problem := m.problem(step, v); problem != "" {
 				lines = append(lines, th.Failure(problem))
 			} else if step.Check != nil {

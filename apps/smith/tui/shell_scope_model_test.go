@@ -8,7 +8,7 @@ import (
 func TestTheFooterOfHomeNamesWhatBuildAndBuildAllRunOn(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"b build orders", "B build all 4", "t test orders"} {
+	for _, want := range []string{"b build orders", "B build all 3", "t test orders"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
@@ -32,7 +32,7 @@ func TestOnHomeTheRunKeysCoverTheWholeWorkspaceAndSayWhichScope(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("home")
 	footer := l.lines()[len(l.lines())-2]
-	if !strings.Contains(footer, "b build all 4") || strings.Contains(footer, "build orders") {
+	if !strings.Contains(footer, "b build all 3") || strings.Contains(footer, "build orders") {
 		t.Fatalf("the Home footer is %q", footer)
 	}
 	l.keys("b")
@@ -93,7 +93,7 @@ func TestThePaletteGroupsItsCommandsAndGivesEveryKeyOnce(t *testing.T) {
 	l := newLab(t, true, 140, 42)
 	l.keys("ctrl+p")
 	l.has("Build", "Projects")
-	l.has("Build orders", "Build all 4", "smith run build -p orders")
+	l.has("Build orders", "Build all 3", "smith run build -p orders")
 	l.hasNot("uninstall >", "install >")
 	seen := map[string]int{}
 	for _, e := range l.sh().pal.Entries() {

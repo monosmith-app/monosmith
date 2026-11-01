@@ -58,12 +58,12 @@ func scopedLabel(c Command, s State) string {
 	}
 	switch {
 	case c.All && s.Projects > 0:
-		return fmt.Sprintf("%s %d", c.Footer, s.Projects)
+		return fmt.Sprintf("%s %d", c.Footer, s.countFor(c.Task))
 	case !c.All && c.ScopeInFooter && s.RunProject() != "":
 		return c.Footer + " " + clip(s.RunProject(), maxScopeName)
 	case !c.All && c.ScopeInFooter && s.Projects > 0:
 		// Off the Projects view the key runs on the whole workspace.
-		return fmt.Sprintf("%s all %d", c.Footer, s.Projects)
+		return fmt.Sprintf("%s all %d", c.Footer, s.countFor(c.Task))
 	}
 	return c.Footer
 }

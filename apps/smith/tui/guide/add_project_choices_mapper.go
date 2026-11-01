@@ -54,15 +54,28 @@ const siblingsMin = 3
 // has projects to follow, whether the new one matches them or takes the
 // stack's own defaults (`--fresh`).
 //
-// base is the plain form, offers the usable choices and projects how many
-// projects the workspace has. It returns base unchanged when there is nothing
-// to add.
-func AddProjectAction(base Action, offers []ChoiceOffer, projects int) Action {
+// base is the plain form, offers the usable choices and existing the names of
+// the projects the workspace has: a name that one of them has is refused as
+// the person types it. The questions are only added when there is something
+// to ask.
+func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Action {
 	steps := slices.Clone(base.Steps)
+	for i := range steps {
+		if steps[i].Key == "name" && steps[i].Check != nil {
+			check := steps[i].Check
+			steps[i].Check = func(a map[string][]string, value string) string {
+				if slices.Contains(existing, value) {
+					return fmt.Sprintf("%s exists already: pick another name", value)
+				}
+				return check(a, value)
+			}
+		}
+	}
+	base.Steps = slices.Clone(steps)
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
 	}
-	if projects >= siblingsMin {
+	if len(existing) >= siblingsMin {
 		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?", Options: []Option{
 			{Label: "Yes, match the other projects", Value: "follow", Hint: "when most projects of this kind share a test runner or a build tool, so does this one"},
 			{Label: "No, use the stack's own defaults", Value: "fresh", Hint: "smith add --fresh"},
@@ -86,6 +99,28 @@ func AddProjectAction(base Action, offers []ChoiceOffer, projects int) Action {
 			argv = append(argv, "--fresh")
 		}
 		return argv
+	}
+	return out
+}
+
+// RemoveProjectAction is the "Remove a project" form with a list of the
+// projects to pick from, in place of a free-text name that can be mistyped.
+// names are the workspace's projects; a form with no project is returned as
+// it is.
+func RemoveProjectAction(base Action, names []string) Action {
+	if len(names) == 0 {
+		return base
+	}
+	pick := Step{Key: "name", Prompt: "Which project?", Filter: len(names) > 10}
+	for _, n := range names {
+		pick.Options = append(pick.Options, Option{Label: n, Value: n})
+	}
+	out := base
+	out.Steps = slices.Clone(base.Steps)
+	for i := range out.Steps {
+		if out.Steps[i].Key == "name" {
+			out.Steps[i] = pick
+		}
 	}
 	return out
 }
