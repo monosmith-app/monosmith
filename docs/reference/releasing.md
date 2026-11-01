@@ -813,12 +813,13 @@ Smith checks this before it publishes anything, and refuses the release when a p
 - is a package whose plugin does not declare the `channels` capability (today the Node, Python and
   .NET plugins do: npm gets the channel's tag, and PyPI and NuGet order a prerelease below the
   release; the others could put the prerelease in the place of the stable version),
-- is deployed by a deploy plugin (a container image's `latest` and branch tags),
-- sends its binaries to package managers (`[projects.x.release]` `package_managers`), which always
-  offer the newest version.
+- is deployed by a deploy plugin (a container image's `latest` and branch tags).
 
 An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev, and its
-Linux packages, are allowed: all but npm order a prerelease version below the release.
+Linux packages, are allowed: all but npm order a prerelease version below the release. The package
+manager manifests (Homebrew, Scoop, winget) are attached to the GitHub Release as usual; that
+release is a prerelease, which GitHub never offers as the latest, so the package managers keep
+pointing at the stable version.
 
 Keep a project out of the channel with `channels = false` in its `[projects.x.release]`: on a
 channel branch it is neither planned nor published, and it keeps releasing from the release branch.

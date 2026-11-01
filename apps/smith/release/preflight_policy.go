@@ -122,10 +122,11 @@ func Preflight(s *session.Session, plan Plan) error {
 // channelProblems lists what in the plan cannot be published as a release
 // channel without moving a stable pointer: a package whose plugin does not
 // declare the channels capability (hasChannels), a deploy plugin (a container
-// image's latest), and an app's binaries sent to a package manager. The
-// registries an app's binaries go to (npm, PyPI, NuGet, RubyGems, pub.dev, the
-// Linux packages) are safe: npm gets the channel's tag and the others order a
-// prerelease version below the release.
+// image's latest). The registries an app's binaries go to (npm, PyPI, NuGet,
+// RubyGems, pub.dev, the Linux packages) are safe: npm gets the channel's tag
+// and the others order a prerelease version below the release. The package
+// manager manifests are only attached to the GitHub Release, which is a
+// prerelease and so never the latest.
 func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plugin string) bool) []string {
 	var problems []string
 	for _, item := range plan.Items {
@@ -138,9 +139,6 @@ func channelProblems(plan Plan, graph *projectgraph.Graph, hasChannels func(plug
 		}
 		if len(p.Deployers) > 0 {
 			problems = append(problems, fmt.Sprintf("%s: %s deploy a release channel to the stable tags of an image or service; leave the project out of the channel's release", item.Project, strings.Join(p.Deployers, " and ")))
-		}
-		if r := p.Release; r != nil && len(r.PackageManagers) > 0 {
-			problems = append(problems, fmt.Sprintf("%s: the package managers (%s) always offer the newest version, and have no release channel yet", item.Project, strings.Join(r.PackageManagers, ", ")))
 		}
 	}
 	return problems

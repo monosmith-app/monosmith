@@ -48,8 +48,9 @@ passes the name to `npm publish --tag`. The generated protocol types of the Type
 C# SDKs carry the field, but those SDKs have no way yet for a plugin to declare it.
 
 Before it publishes, `smith release` refuses a channel release when a package in the plan has a
-plugin without `channels`, when a project has a deploy plugin, or when an app's binaries are sent
-to package managers. Each of these would move a stable pointer. An app's binaries sent to npm,
+plugin without `channels`, or when a project has a deploy plugin. Each of these would move a
+stable pointer. The package manager manifests of an app are attached to the GitHub Release, which
+is a prerelease on a channel, so they stay allowed. An app's binaries sent to npm,
 PyPI, NuGet, RubyGems and pub.dev are allowed: npm gets the channel's tag and the others order a
 prerelease version below the release. The Node, Python and .NET plugins declare `channels`; the
 Go plugin does not, because a Go module needs `/vN` in its path from the second major on. A project

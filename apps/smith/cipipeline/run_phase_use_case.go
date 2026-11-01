@@ -282,7 +282,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseL
 				log.fold()
 			}
 		} else {
-			log.heading(releaseIntro(plan, s.Config.Release.Branch, projects)...)
+			log.heading(releaseIntro(plan, release.PlanBranch(s), projects)...)
 			log.fold()
 			for _, item := range plan.Items {
 				fmt.Fprintf(out, "%s: %s -> %s (%s) because %s\n", item.Project, cmp.Or(item.Current, "new"), item.Next, bumpOf(item), item.Why())
