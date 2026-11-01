@@ -178,6 +178,9 @@ func Validate(cfg *Config) error {
 	default:
 		return fmt.Errorf("%s: [ci] attest must be \"on\", \"optional\" or \"off\", not %q", FileName, cfg.CI.Attest)
 	}
+	if err := validateCISecrets(cfg.CI.Secrets); err != nil {
+		return err
+	}
 	if cfg.CI.AuditMaxUnsafe < 0 {
 		return fmt.Errorf("%s: audit_max_unsafe must not be negative", FileName)
 	}

@@ -210,3 +210,19 @@ func TestParseReadsReleaseChannels(t *testing.T) {
 		t.Fatal("the release branch is not a channel")
 	}
 }
+
+func TestParseChecksCISecrets(t *testing.T) {
+	for input, want := range map[string]string{
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"API-TOKEN\"]\n":     "environment variables",
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"GITHUB_TOKEN\"]\n":   "reserves the GITHUB_ prefix",
+		"[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"A\", \"A\"]\n":         "twice",
+	} {
+		if _, err := Parse([]byte(input)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("input %q: want error containing %q, got %v", input, want, err)
+		}
+	}
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[ci]\nsecrets = [\"FETCH_TOKEN\", \"_X1\"]\n"))
+	if err != nil || len(cfg.CI.Secrets) != 2 {
+		t.Fatalf("%v %v", cfg.CI.Secrets, err)
+	}
+}

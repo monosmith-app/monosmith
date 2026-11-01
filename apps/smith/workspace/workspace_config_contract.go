@@ -133,6 +133,11 @@ type CISection struct {
 	// the job go on when GitHub refuses, as on a private repository of a free
 	// organisation, which has no attestations; "off" leaves the step out.
 	Attest string `toml:"attest"`
+	// Secrets name repository secrets the generated pipelines hand to every
+	// step that runs smith, as environment variables of the same name: the ci
+	// job, the native jobs and the assets jobs, for a build command that reads
+	// a token. Default: none.
+	Secrets []string `toml:"secrets"`
 	// Devcontainer writes .devcontainer/devcontainer.json with the
 	// toolchains CI installs, at the same versions. Default: false (smith new
 	// turns it on).
