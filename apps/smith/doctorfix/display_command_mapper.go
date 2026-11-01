@@ -1,9 +1,6 @@
 package doctorfix
 
-import (
-	"path/filepath"
-	"strings"
-)
+import "strings"
 
 // displayCommand is a step's command line as a person reads it: the program
 // smith runs is written "smith", not the path of the binary that happens to
@@ -13,7 +10,9 @@ func displayCommand(argv []string) string {
 		return ""
 	}
 	shown := append([]string(nil), argv...)
-	base := strings.TrimSuffix(strings.ToLower(filepath.Base(shown[0])), ".exe")
+	// A Windows path keeps its backslashes on other systems, so split on both.
+	base := strings.ToLower(shown[0])
+	base = strings.TrimSuffix(base[strings.LastIndexAny(base, `/\`)+1:], ".exe")
 	if base == "smith" || strings.HasPrefix(base, "smith-") {
 		shown[0] = "smith"
 	}

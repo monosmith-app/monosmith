@@ -161,7 +161,7 @@ func smithCommand() string {
 // commandFor names smith for the executable at self; lookPath finds a program
 // on the path.
 func commandFor(self string, lookPath func(string) (string, error)) string {
-	if strings.Contains(filepath.ToSlash(self), "/node_modules/") {
+	if strings.Contains(strings.ReplaceAll(self, `\`, "/"), "/node_modules/") {
 		return "smith"
 	}
 	if found, err := lookPath("smith"); err == nil {
