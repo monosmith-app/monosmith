@@ -8,9 +8,12 @@ import { toTerminalCommand } from './terminal-command.mapper.ts'
  * @param executable - the smith the folder runs
  * @param args - plain words, checked by the caller
  * @param cwd - the folder
+ * @returns the terminal, so a caller can watch the command end
  */
-export function openSmithTerminal (executable: string, args: readonly string[], cwd: string): void {
+export function openSmithTerminal (executable: string, args: readonly string[], cwd: string): vscode.Terminal {
   const terminal = vscode.window.createTerminal({ name: 'MonoSmith', cwd })
   terminal.show()
   terminal.sendText(toTerminalCommand(executable, args, vscode.env.shell))
+
+  return terminal
 }

@@ -295,10 +295,67 @@
         "title": "Talk to the MonoSmith agent",
         "category": "MonoSmith",
         "icon": "$(hubot)"
+      },
+      {
+        "command": "monosmith.agentFile",
+        "title": "Write AGENTS.md for AI agents",
+        "category": "MonoSmith",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "monosmith.addProject",
+        "title": "Add Project…",
+        "category": "MonoSmith",
+        "icon": "$(add)"
+      },
+      {
+        "command": "monosmith.undo",
+        "title": "Undo the Last Change…",
+        "category": "MonoSmith",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "monosmith.openReport",
+        "title": "Open Report",
+        "category": "MonoSmith",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "monosmith.why",
+        "title": "Why…",
+        "category": "MonoSmith",
+        "icon": "$(question)"
+      },
+      {
+        "command": "monosmith.derive.explain",
+        "title": "Explain Derived File",
+        "category": "MonoSmith",
+        "icon": "$(info)"
+      },
+      {
+        "command": "monosmith.derive.apply",
+        "title": "Apply Derived File",
+        "category": "MonoSmith",
+        "icon": "$(check)"
+      },
+      {
+        "command": "monosmith.derive.adopt",
+        "title": "Adopt Edit of Derived File",
+        "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.derive.eject",
+        "title": "Eject Derived File (Own It)",
+        "category": "MonoSmith"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "monosmith.addProject",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "navigation@0"
+        },
         {
           "command": "monosmith.filter",
           "when": "view == monosmith.projects && monosmith.state == ready",
@@ -390,6 +447,26 @@
           "group": "5_agent@3"
         },
         {
+          "command": "monosmith.agentFile",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "5_agent@4"
+        },
+        {
+          "command": "monosmith.openReport",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "3_check@3"
+        },
+        {
+          "command": "monosmith.undo",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "3_check@4"
+        },
+        {
+          "command": "monosmith.why",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "3_check@5"
+        },
+        {
           "command": "monosmith.openWalkthrough",
           "when": "view == monosmith.projects",
           "group": "4_smith@4"
@@ -403,6 +480,11 @@
           "command": "monosmith.health.refresh",
           "when": "view == monosmith.health",
           "group": "navigation@2"
+        },
+        {
+          "command": "monosmith.openReport",
+          "when": "view == monosmith.health",
+          "group": "navigation@3"
         },
         {
           "command": "monosmith.dependencies.up",
@@ -462,6 +544,46 @@
           "group": "1_inspect@2"
         },
         {
+          "command": "monosmith.why",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "1_inspect@3"
+        },
+        {
+          "command": "monosmith.why",
+          "when": "view == monosmith.projects && viewItem =~ /^task/",
+          "group": "1_output@2"
+        },
+        {
+          "command": "monosmith.derive.explain",
+          "when": "view == monosmith.health && viewItem =~ /^derived\\./",
+          "group": "inline@1"
+        },
+        {
+          "command": "monosmith.derive.apply",
+          "when": "view == monosmith.health && viewItem =~ /^derived\\./",
+          "group": "inline@2"
+        },
+        {
+          "command": "monosmith.derive.explain",
+          "when": "view == monosmith.health && viewItem =~ /^derived\\./",
+          "group": "0_derive@1"
+        },
+        {
+          "command": "monosmith.derive.apply",
+          "when": "view == monosmith.health && viewItem =~ /^derived\\./",
+          "group": "0_derive@2"
+        },
+        {
+          "command": "monosmith.derive.adopt",
+          "when": "view == monosmith.health && viewItem == derived.held",
+          "group": "0_derive@3"
+        },
+        {
+          "command": "monosmith.derive.eject",
+          "when": "view == monosmith.health && viewItem =~ /^derived\\./",
+          "group": "0_derive@4"
+        },
+        {
           "command": "monosmith.dependencies.update",
           "when": "view == monosmith.dependencies && viewItem == dependency",
           "group": "inline@1"
@@ -472,7 +594,97 @@
           "group": "0_update@1"
         }
       ],
+      "explorer/context": [
+        {
+          "command": "monosmith.why",
+          "when": "monosmith.state == ready && resourceScheme == file && !explorerResourceIsFolder",
+          "group": "monosmith@1"
+        },
+        {
+          "command": "monosmith.derive.explain",
+          "when": "resourcePath in monosmith.derivedPaths && !explorerResourceIsFolder",
+          "group": "monosmith@2"
+        },
+        {
+          "command": "monosmith.derive.apply",
+          "when": "resourcePath in monosmith.derivedPaths && !explorerResourceIsFolder",
+          "group": "monosmith@3"
+        },
+        {
+          "command": "monosmith.derive.adopt",
+          "when": "resourcePath in monosmith.derivedPaths && !explorerResourceIsFolder",
+          "group": "monosmith@4"
+        },
+        {
+          "command": "monosmith.derive.eject",
+          "when": "resourcePath in monosmith.derivedPaths && !explorerResourceIsFolder",
+          "group": "monosmith@5"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "monosmith.why",
+          "when": "monosmith.state == ready && resourceScheme == file",
+          "group": "monosmith@1"
+        },
+        {
+          "command": "monosmith.derive.explain",
+          "when": "resourcePath in monosmith.derivedPaths",
+          "group": "monosmith@2"
+        },
+        {
+          "command": "monosmith.derive.apply",
+          "when": "resourcePath in monosmith.derivedPaths",
+          "group": "monosmith@3"
+        },
+        {
+          "command": "monosmith.derive.adopt",
+          "when": "resourcePath in monosmith.derivedPaths",
+          "group": "monosmith@4"
+        },
+        {
+          "command": "monosmith.derive.eject",
+          "when": "resourcePath in monosmith.derivedPaths",
+          "group": "monosmith@5"
+        }
+      ],
       "commandPalette": [
+        {
+          "command": "monosmith.addProject",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.undo",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.openReport",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.why",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.agentFile",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.derive.explain",
+          "when": "resourcePath in monosmith.derivedPaths"
+        },
+        {
+          "command": "monosmith.derive.apply",
+          "when": "resourcePath in monosmith.derivedPaths"
+        },
+        {
+          "command": "monosmith.derive.adopt",
+          "when": "resourcePath in monosmith.derivedPaths"
+        },
+        {
+          "command": "monosmith.derive.eject",
+          "when": "resourcePath in monosmith.derivedPaths"
+        },
         {
           "command": "monosmith.new",
           "when": "monosmith.state == empty"

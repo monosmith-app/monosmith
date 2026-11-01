@@ -9,6 +9,11 @@ describe('statusMenuEntries', () => {
     expect(commands).toEqual(expect.arrayContaining(['monosmith.runAffected', 'monosmith.doctor', 'monosmith.refresh', 'monosmith.showOutput', 'monosmith.openSettings', 'monosmith.talkToAgent']))
   })
 
+  it('offers to add a project, open the report and undo the last change', () => {
+    const commands = statusMenuEntries(idle).map((entry) => entry.command)
+    expect(commands).toEqual(expect.arrayContaining(['monosmith.addProject', 'monosmith.openReport', 'monosmith.undo']))
+  })
+
   it('offers cancel only while a run goes, and first', () => {
     expect(statusMenuEntries(idle).some((entry) => entry.command === 'monosmith.cancelRun')).toBe(false)
     expect(statusMenuEntries({ ...idle, running: true })[0]?.command).toBe('monosmith.cancelRun')
