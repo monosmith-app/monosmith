@@ -48,7 +48,33 @@ Usage: `smith remove <project> [flags]`
   commit (`chore: remove core`); [`smith undo`](undo.md) reverts it.
 - `--force` removes a project other projects still import; their imports are left
   broken.
-- `--json` prints what changed: `project`, `root` and `notes`.
+- `--json` prints what changed: `project`, `root`, `files`, `notes` and `mentions`.
+
+## Files that still name the project
+
+smith cannot know about a hand-written workflow, a `.code-workspace` task or a doc that names the
+project. After the removal (and in `--dry-run`), it searches the files git tracks for the project name
+as a whole word and for its former root path. It prints the result under `Still mentions <name>`:
+at most 20 files with the first matching line, then `and N more`, in three groups: workflow files
+(`.github/workflows`, `azure-pipelines*`, `.gitlab-ci*`), editor files (`*.code-workspace`, `.vscode`,
+`.idea`) and other files.
+
+smith does not change these files. Review them. The search skips binary files, lockfiles, the removed
+directory and files smith regenerates, and it never fails the command. A name of 4 characters or fewer
+(`web`, `api`) is too common as a word, so only the root path is searched, and the output says so.
+In `--json`, `mentions` is a list of `{file, line, kind}` with `kind` one of `workflow`, `editor` or
+`other`; `mentionsRootOnly` is true for a short name.
+
+```text
+Still mentions mvd-tui
+  smith does not change these files. Review them.
+  workflow files
+    .github/workflows/release.yml:3
+  editor files
+    mvd.code-workspace:2
+  other files
+    docs.md:2
+```
 
 ## Exit codes
 
