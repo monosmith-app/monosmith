@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
@@ -36,23 +35,50 @@ func CheckLineage(s *session.Session, fetch bool) []releaselineage.Finding {
 	// goroutine fills its own slot, so the order is the graph's.
 	subjects := make([]releaselineage.Subject, len(releasing))
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	hung := map[string]bool{} // plugins whose registry did not answer in time
+	turn := make(chan struct{}, lookupsAtOnce)
 	for i, p := range releasing {
 		subjects[i] = releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefixSet, Tags: tags}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			turn <- struct{}{}
+			defer func() { <-turn }()
+			mu.Lock()
+			skip := hung[p.Plugin]
+			mu.Unlock()
+			if skip {
+				// An earlier lookup of this plugin found its registry silent:
+				// do not make every other project wait the same time.
+				subjects[i].Unreachable, subjects[i].Detail = true, protocol.RegistryUnreachableDetail
+				return
+			}
 			var res protocol.PublishedResult
-			if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublished, protocol.PublishedParams{Project: p.Project}, &res, time.Minute); ok {
+			if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublished, protocol.PublishedParams{Project: p.Project}, &res, lookupCallTimeout); ok {
 				if err != nil {
 					res = protocol.PublishedResult{Unreachable: true, Detail: err.Error()}
 				}
 				subjects[i].Published, subjects[i].Unreachable, subjects[i].Registry, subjects[i].Detail = res.Version, res.Unreachable, res.Registry, res.Detail
+				if res.Unreachable && res.Detail == protocol.RegistryUnreachableDetail {
+					mu.Lock()
+					hung[p.Plugin] = true
+					mu.Unlock()
+				}
 			}
 		}()
 	}
 	wg.Wait()
 	return append(findings, releaselineage.Assess(subjects)...)
 }
+
+// lookupsAtOnce is how many registry lookups the check has in flight at once.
+const lookupsAtOnce = 8
+
+// lookupCallTimeout is the host's backstop for one registry lookup. A plugin
+// ends a silent lookup after protocol.RegistryLookupTimeout, so the backstop,
+// which kills the plugin, is reached only by a plugin that does not.
+const lookupCallTimeout = 4 * protocol.RegistryLookupTimeout
 
 // alternatives are the names a project's tags may carry from before: its
 // exported package names, scoped and unscoped, and its own name.

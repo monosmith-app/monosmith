@@ -2,6 +2,7 @@ package releasing
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,9 +11,11 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// capture runs npm and returns stdout and stderr; tests replace it.
+// capture runs a registry lookup and returns stdout and stderr; tests replace
+// it. A lookup the registry does not answer within the lookup timeout is
+// stopped, so the plugin itself keeps answering.
 var capture = func(dir string, argv []string) (string, string, error) {
-	return toolrun.Capture(dir, argv)
+	return toolrun.CaptureTimeout(dir, argv, protocol.RegistryLookupTimeout)
 }
 
 // Published asks the registry .npmrc points at for the newest version of a
@@ -67,6 +70,9 @@ func view(workspaceRoot, name string, at []string, result protocol.PublishedResu
 	case err == nil:
 		result.Version = strings.TrimSpace(out)
 	case strings.Contains(errOut, "E404") || strings.Contains(errOut, "404 Not Found"):
+	case errors.Is(err, toolrun.ErrTimeout):
+		result.Unreachable = true
+		result.Detail = protocol.RegistryUnreachableDetail
 	default:
 		result.Unreachable = true
 		result.Detail = firstLine(errOut, err.Error())

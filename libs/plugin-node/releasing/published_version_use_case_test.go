@@ -2,9 +2,11 @@ package releasing
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 func TestPublished(t *testing.T) {
@@ -17,6 +19,7 @@ func TestPublished(t *testing.T) {
 		{"1.4.0\n", "", nil, protocol.PublishedResult{Version: "1.4.0"}},
 		{"", "npm error code E404\nnpm error 404 Not Found - GET https://registry/@acme%2fsdk", errors.New("exit 1"), protocol.PublishedResult{}},
 		{"", "npm error code ECONNREFUSED\nnpm error connect ECONNREFUSED", errors.New("exit 1"), protocol.PublishedResult{Unreachable: true, Detail: "npm error code ECONNREFUSED"}},
+		{"", "", fmt.Errorf("npm view %w after 8s", toolrun.ErrTimeout), protocol.PublishedResult{Unreachable: true, Detail: protocol.RegistryUnreachableDetail}},
 	} {
 		capture = func(_ string, argv []string) (string, string, error) {
 			if argv[1] == "config" {

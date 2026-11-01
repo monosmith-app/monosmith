@@ -30,7 +30,7 @@ func Gather(s *session.Session) Data {
 	for _, c := range s.Graph.Cycles() {
 		d.Cycles = append(d.Cycles, strings.Join(c, " → "))
 	}
-	d.Health = healthOf(doctor.Run(s))
+	d.Health = healthOf(doctor.RunLocal(s))
 	d.Drift = driftOf(s)
 	d.Release = releaseOf(s)
 	return d

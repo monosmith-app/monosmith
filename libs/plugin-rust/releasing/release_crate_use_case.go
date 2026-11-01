@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -64,6 +63,10 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	return protocol.PublishResult{Published: !params.DryRun, Registry: "crates.io"}, nil
 }
 
+// registryClient asks crates.io; it gives up after the registry lookup timeout.
+// Tests replace it.
+var registryClient = &http.Client{Timeout: protocol.RegistryLookupTimeout}
+
 // CratesAPI is crates.io's API root; tests replace it.
 var CratesAPI = "https://crates.io/api/v1"
 
@@ -83,9 +86,9 @@ func NewestStable(crate string) protocol.PublishedResult {
 	req, _ := http.NewRequest(http.MethodGet, CratesAPI+"/crates/"+crate, nil)
 	// crates.io refuses requests without a User-Agent that says who asks.
 	req.Header.Set("User-Agent", "smith (https://github.com/monosmith-app/monosmith)")
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
+	resp, err := registryClient.Do(req)
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result
 	}
 	defer func() { _ = resp.Body.Close() }()

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -104,9 +103,9 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 		return protocol.PublishedResult{}, nil
 	}
 	result := protocol.PublishedResult{Registry: host()}
-	resp, err := (&http.Client{Timeout: 15 * time.Second}).Get(result.Registry + "/api/v1/versions/" + params.Project.Exports[0] + "/latest.json")
+	resp, err := (&http.Client{Timeout: protocol.RegistryLookupTimeout}).Get(result.Registry + "/api/v1/versions/" + params.Project.Exports[0] + "/latest.json")
 	if err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -119,7 +118,7 @@ func Published(params protocol.PublishedParams) (protocol.PublishedResult, error
 	}
 	var body struct{ Version string }
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		result.Unreachable, result.Detail = true, err.Error()
+		result.Unreachable, result.Detail = true, protocol.LookupFailure(err)
 		return result, nil
 	}
 	// RubyGems answers "unknown" for a gem it does not have.
