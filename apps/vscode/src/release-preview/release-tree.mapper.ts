@@ -16,7 +16,9 @@ const LEVEL_COLORS: Record<string, string> = {
 export function toReleaseRows (preview: ReleasePreview): ListResult {
   const results = preview.results ?? []
   const unchanged = preview.unchanged ?? []
+  const channel = preview.channel === undefined || preview.channel === '' ? undefined : preview.channel
   const nodes: ListNode[] = [
+    ...(channel === undefined ? [] : [toChannelRow(channel)]),
     ...(preview.error === undefined ? [] : [{ id: 'release:error', label: preview.error, icon: 'error', color: 'charts.red' }]),
     ...results.map((result) => toResultRow(result)),
     ...(unchanged.length === 0
@@ -29,11 +31,30 @@ export function toReleaseRows (preview: ReleasePreview): ListResult {
           children:    unchanged.map((name) => ({ id: `release:unchanged:${name}`, label: name, icon: 'package' })),
         }]),
   ]
+  const suffix = channel === undefined ? '' : ` · channel ${channel}`
   if (results.length === 0) {
-    return { nodes, message: preview.error === undefined ? 'Nothing to release.' : undefined, summary: 'nothing to release' }
+    return { nodes, message: preview.error === undefined ? 'Nothing to release.' : undefined, summary: `nothing to release${suffix}` }
   }
 
-  return { nodes, summary: `${results.length} to release` }
+  return { nodes, summary: `${results.length} to release${suffix}` }
+}
+
+/** The notice `smith release` prints for a channel, worded as smith words it. */
+function channelNotice (channel: string): string {
+  return `Release channel \`${channel}\`: prerelease versions, published under the \`${channel}\` tag; the stable version stays the latest.`
+}
+
+function toChannelRow (channel: string): ListNode {
+  return {
+    id:          'release:channel',
+    label:       `Release channel ${channel}`,
+    description: 'prerelease versions',
+    icon:        'beaker',
+    color:       'charts.yellow',
+    tooltip:     channelNotice(channel),
+    children:    [{ id: 'release:channel:notice', label: channelNotice(channel), icon: 'info', tooltip: channelNotice(channel) }],
+    expanded:    true,
+  }
 }
 
 function toResultRow (result: ReleaseResult): ListNode {

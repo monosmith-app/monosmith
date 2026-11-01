@@ -19,6 +19,8 @@ export interface ReleaseResult {
 /** What `smith release --dry-run --json` prints. Unknown fields are ignored. */
 export interface ReleasePreview {
   dryRun?:    boolean
+  /** The release channel of the branch (`next`, `beta`); absent on the stable line. Its versions are prereleases. */
+  channel?:   string
   results?:   ReleaseResult[]
   /** The packages with nothing to release. */
   unchanged?: string[]

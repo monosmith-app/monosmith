@@ -33,6 +33,22 @@ describe('toReleaseRows', () => {
     expect(toReleaseRows({ dryRun: true, results: [], unchanged: [] })).toEqual({ nodes: [], message: 'Nothing to release.', summary: 'nothing to release' })
   })
 
+  it('puts the release channel and its notice first, and in the summary', () => {
+    const { nodes, summary } = toReleaseRows({ ...preview, channel: 'next' })
+    expect(nodes[0]).toMatchObject({ label: 'Release channel next', description: 'prerelease versions' })
+    expect(nodes[0]?.children?.[0]?.label).toBe('Release channel `next`: prerelease versions, published under the `next` tag; the stable version stays the latest.')
+    expect(nodes[1]).toMatchObject({ label: 'sdk' })
+    expect(summary).toBe('2 to release · channel next')
+  })
+
+  it('shows no channel row on the stable line', () => {
+    expect(toReleaseRows({ ...preview, channel: '' }).nodes[0]).toMatchObject({ label: 'sdk' })
+  })
+
+  it('keeps the channel in the summary when nothing releases', () => {
+    expect(toReleaseRows({ channel: 'beta', results: [] }).summary).toBe('nothing to release · channel beta')
+  })
+
   it('shows an error the plan stopped with', () => {
     const { nodes, message } = toReleaseRows({ error: 'not on the release branch' })
     expect(nodes[0]).toMatchObject({ label: 'not on the release branch', icon: 'error' })
