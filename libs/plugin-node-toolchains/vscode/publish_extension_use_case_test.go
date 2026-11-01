@@ -156,3 +156,30 @@ func TestANativeExtensionIsPublishedForEachPlatform(t *testing.T) {
 		t.Errorf("commands: %v", *runs)
 	}
 }
+
+func TestAChannelVersionIsPublishedAsAPreReleaseUnderAPlainVersion(t *testing.T) {
+	ws := extensionWorkspace(t, true)
+	t.Setenv("VSCE_PAT", "token")
+	t.Setenv("OVSX_PAT", "token")
+	t.Setenv("VSCE_AZURE_CREDENTIAL", "")
+	runs := recordRuns(t)
+	params := extensionApp()
+	params.Version = "2.0.0-beta.3"
+	if result, err := publishExtension(ws, params); err != nil || !result.Published {
+		t.Fatalf("published %v: %v", result, err)
+	}
+	raw, _ := os.ReadFile(filepath.Join(ws, "dist", "apps", "ext", "package.json"))
+	if !strings.Contains(string(raw), `"version": "2.1.3"`) {
+		t.Errorf("the manifest takes the Marketplace version:\n%s", raw)
+	}
+	if len(*runs) != 3 || !strings.Contains((*runs)[0], "vsce package") || !strings.Contains((*runs)[0], " --pre-release ") || !strings.HasSuffix((*runs)[2], "--pre-release") {
+		t.Errorf("packing and Open VSX are flagged as pre-release: %q", *runs)
+	}
+	if strings.Contains((*runs)[1], "--pre-release") {
+		t.Errorf("publishing a packed file takes the flag from the package: %q", (*runs)[1])
+	}
+	stable := recordRuns(t)
+	if _, err := publishExtension(ws, extensionApp()); err != nil || strings.Contains(strings.Join(*stable, "\n"), "--pre-release") {
+		t.Errorf("a stable version is no pre-release (%v): %q", err, *stable)
+	}
+}

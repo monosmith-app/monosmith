@@ -821,6 +821,10 @@ manager manifests (Homebrew, Scoop, winget) are attached to the GitHub Release a
 release is a prerelease, which GitHub never offers as the latest, so the package managers keep
 pointing at the stable version.
 
+A VS Code extension on a channel is published as a pre-release under a plain version, because the
+Marketplace takes no semver prerelease tag: `2.0.0-beta.3` becomes `2.1.3` (see the
+[vscode plugin](../plugins/using/catalogue/vscode.md)).
+
 Keep a project out of the channel with `channels = false` in its `[projects.x.release]`: on a
 channel branch it is neither planned nor published, and it keeps releasing from the release branch.
 Use it for a project that cannot take a prerelease yet. A Go module whose path lacks `/v2` is one:
