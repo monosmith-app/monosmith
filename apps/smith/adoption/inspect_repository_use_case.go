@@ -124,6 +124,15 @@ func noProjectWarning(exists func(string) bool) Item {
 			},
 		}
 	}
+	if exists("go.mod") {
+		return Item{
+			Message: "no project found: the go.mod at the root is one module for the whole repository, and smith runs a Go project from a go.mod in its own folder (one module per project, joined by a go.work)",
+			Steps: []string{
+				"give each program or library its own go.mod (go mod init <module>/apps/<name> in its folder), list them in a go.work at the root (go work init; go work use ./apps/<name> ...), make the programs require the libraries, commit, then run smith adopt again",
+				"or run smith adopt --init now and add projects with smith add app <name> --lang go",
+			},
+		}
+	}
 	return Item{
 		Message: "no project found: smith knows a project by its manifest (package.json in a workspace, go.mod, pyproject.toml)",
 		Steps:   []string{"smith adopt --init makes an empty workspace; then smith add app <name> --lang <language>"},

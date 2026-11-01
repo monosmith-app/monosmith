@@ -356,6 +356,17 @@ a library of the module cannot be released on its own (its apps are released by 
 release files). A folder with a `go.mod` of its own is found by it and must not be declared.
 `smith adopt` and `smith convert` write the declarations for you.
 
+### Or one module per project
+
+If you would rather have a module per project (each program or library its own releasable unit), split the root module:
+
+1. In each program or library folder run `go mod init <module>/<folder>` (for example
+   `go mod init example.com/mvd/apps/mvd` in `apps/mvd`; the import paths do not change).
+2. At the root run `go work init` and `go work use ./apps/a ./libs/b ...`. The programs reach the
+   libraries through the workspace, and need a `require` of them in their `go.mod`.
+3. Remove the root `go.mod` if nothing else needs it, commit, and run `smith adopt` or
+   `smith convert` again.
+
 ## Requirements and limits
 
 - `go` on `PATH` (the plugin shells out to `go`; there is no embedded compiler). Generation also needs it: `smith add` fails if `go work init`, `go mod init` or `go work use` fails.
