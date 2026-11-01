@@ -1332,6 +1332,47 @@ public sealed record DeclaredParams : IProtocolValue<DeclaredParams>
     }
 }
 
+/// <summary>DeclaredProject is a project smith.toml declares: a folder with no manifest.</summary>
+public sealed record DeclaredProject : IProtocolValue<DeclaredProject>
+{
+    /// <summary>Name is the project's name, the key of its [projects.&lt;name&gt;] table.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Root is the workspace-relative folder.</summary>
+    public required string Root { get; init; }
+
+    /// <summary>Kind is "app", "lib" or "package", or empty for the plugin's choice.</summary>
+    public ProjectKind Kind { get; init; }
+
+    /// <inheritdoc />
+    public static DeclaredProject Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new DeclaredProject
+        {
+            Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Root = StringValue(Member(map, "root"), Join(path, "root")),
+            Kind = ProjectKind.Read(Member(map, "kind"), Join(path, "kind")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("name");
+        writer.String(Name);
+        writer.Property("root");
+        writer.String(Root);
+        if (!Kind.IsEmpty)
+        {
+            writer.Property("kind");
+            Kind.Write(writer);
+        }
+        writer.EndObject();
+    }
+}
+
 /// <summary>DeclaredResult is every declaration, and the version installed of each name where the plugin can tell.</summary>
 public sealed record DeclaredResult : IProtocolValue<DeclaredResult>
 {
@@ -1620,6 +1661,9 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
     /// <summary>The <c>manifests</c> member of <c>DiscoverParams</c>.</summary>
     public IReadOnlyList<string> Manifests { get; init; } = [];
 
+    /// <summary>Declared are the projects smith.toml declares for this plugin's language ([projects.&lt;name&gt;] with a root and a language): folders with no manifest of their own, such as a program that is a package of the Go module above it. The plugin describes each one in its result, or answers with an error saying why it cannot.</summary>
+    public IReadOnlyList<DeclaredProject> Declared { get; init; } = [];
+
     /// <inheritdoc />
     public static DiscoverParams Read(JsonAny? value, string path)
     {
@@ -1627,6 +1671,7 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
         return new DiscoverParams
         {
             Manifests = ListOf(Member(map, "manifests"), Join(path, "manifests"), StringValue),
+            Declared = ListOf(Member(map, "declared"), Join(path, "declared"), DeclaredProject.Read),
         };
     }
 
@@ -1636,6 +1681,11 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
         writer.BeginObject();
         writer.Property("manifests");
         MessageWritingAlgorithm.List(writer, Manifests, (builder1, item1) => builder1.String(item1));
+        if (Declared is { Count: > 0 })
+        {
+            writer.Property("declared");
+            MessageWritingAlgorithm.List(writer, Declared, (builder1, item1) => item1.Write(builder1));
+        }
         writer.EndObject();
     }
 }

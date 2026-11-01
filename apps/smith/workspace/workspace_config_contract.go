@@ -198,6 +198,9 @@ type AgentSection struct {
 // AgentEnabled reports whether the workspace keeps the MonoSmith agent files.
 func (c Config) AgentEnabled() bool { return c.Agent.Enabled == nil || *c.Agent.Enabled }
 
+// Declared reports whether the table declares a project, one with a Root.
+func (o ProjectOverride) Declared() bool { return o.Root != "" }
+
 // ReleaseSection configures `smith release`.
 type ReleaseSection struct {
 	// Branch is the only branch a real release runs from. Default: main.
@@ -442,8 +445,20 @@ type DockerOverride struct {
 	Verify *bool `toml:"verify"`
 }
 
-// ProjectOverride adjusts one project.
+// ProjectOverride adjusts one project, or declares one that has no manifest of
+// its own (Root and Language).
 type ProjectOverride struct {
+	// Root declares a project at a workspace-relative folder that has no
+	// manifest of its own, such as a program or a library that is a package of
+	// the Go module above it. Language names the plugin that owns it. Default:
+	// none, the project is the one a plugin finds by a manifest.
+	Root string `toml:"root"`
+	// Language is the language of a declared project ("go"): the plugin that
+	// describes it. Needs Root.
+	Language string `toml:"language"`
+	// Kind is the kind of a declared project: "app", "lib" or "package".
+	// Default: the plugin's own choice (an app when the folder holds a program).
+	Kind string `toml:"kind"`
 	// TagPrefix replaces the release tag prefix ("<name>@" by default), so a
 	// converted project keeps its existing tags.
 	TagPrefix string `toml:"tag_prefix"`

@@ -221,6 +221,9 @@ func Validate(cfg *Config) error {
 		conv.Registries = registries
 		cfg.Conventions[name] = conv
 	}
+	if err := validateDeclaredProjects(cfg.Projects); err != nil {
+		return err
+	}
 	for name, po := range cfg.Projects {
 		if po.Docker != nil {
 			if _, ok := cfg.Conventions["docker"]; !ok {

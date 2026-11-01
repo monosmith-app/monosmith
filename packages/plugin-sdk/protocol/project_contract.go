@@ -4,6 +4,22 @@ package protocol
 // host found. Paths are workspace-relative and use forward slashes.
 type DiscoverParams struct {
 	Manifests []string `json:"manifests"`
+	// Declared are the projects smith.toml declares for this plugin's language
+	// ([projects.<name>] with a root and a language): folders with no manifest
+	// of their own, such as a program that is a package of the Go module above
+	// it. The plugin describes each one in its result, or answers with an error
+	// saying why it cannot.
+	Declared []DeclaredProject `json:"declared,omitempty"`
+}
+
+// DeclaredProject is a project smith.toml declares: a folder with no manifest.
+type DeclaredProject struct {
+	// Name is the project's name, the key of its [projects.<name>] table.
+	Name string `json:"name"`
+	// Root is the workspace-relative folder.
+	Root string `json:"root"`
+	// Kind is "app", "lib" or "package", or empty for the plugin's choice.
+	Kind ProjectKind `json:"kind,omitempty"`
 }
 
 // DiscoverResult describes every manifest that is a project of this plugin.

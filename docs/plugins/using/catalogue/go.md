@@ -326,6 +326,36 @@ Tools smith pins (informational):
 
 Removal: `smith remove <project>` deletes the directory and the plugin drops its `use` entry from `go.work`, which would otherwise break every `go` command. Real dry run: `Would remove util (libs/util)`, `changes go.work`, `the pipelines would be regenerated`. With no matching entry it changes nothing.
 
+## Projects of one module
+
+A repository can keep one `go.mod` at the root, or one per area, with its programs and libraries
+as packages of it. smith finds a project by a manifest, so you declare such a project in
+`smith.toml`, with its folder and its language:
+
+```toml
+[projects.mvd]
+root = "apps/mvd"
+language = "go"          # kind is an app when the folder holds a program, else a lib
+
+[projects.core]
+root = "libs/core"
+language = "go"
+kind = "lib"
+```
+
+smith then treats each as a project of the module whose `go.mod` is in the folder or above it. It
+exports the package path (`example.com/mvd/libs/core`), so a program that imports it, or any
+package below it, depends on it in the graph. The tasks are those of any Go project and run in the
+folder (`go build`, `go test ./...`, `golangci-lint run`), cached on the folder's files and the
+module's `go.mod` and `go.sum`. A folder that imports a package of the module that no declared
+project holds (a shared `internal/` folder) is not part of any cache key: declare that folder as a
+`lib` too.
+
+Limits: a module has one version, so a declared project is an app or a lib, never a package, and
+a library of the module cannot be released on its own (its apps are released by their tags and
+release files). A folder with a `go.mod` of its own is found by it and must not be declared.
+`smith adopt` and `smith convert` write the declarations for you.
+
 ## Requirements and limits
 
 - `go` on `PATH` (the plugin shells out to `go`; there is no embedded compiler). Generation also needs it: `smith add` fails if `go work init`, `go mod init` or `go work use` fails.

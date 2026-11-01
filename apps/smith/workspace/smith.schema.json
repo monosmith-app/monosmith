@@ -272,6 +272,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "root": { "type": "string", "description": "Declares a project at this workspace-relative folder when it has no manifest of its own (a program or a library that is a package of the Go module above it). Needs language." },
+          "language": { "type": "string", "description": "The language of a declared project (go): the plugin that describes it. Needs root." },
+          "kind": { "enum": ["app", "lib", "package"], "description": "The kind of a declared project. Default: an app when the folder holds a program, else a lib." },
           "bare_tags": { "type": "boolean", "description": "Tag releases with the bare version (0.1.0) instead of <name>@0.1.0, for a registry that uses the tag name as the version (JitPack). Only one project can; it excludes tag_prefix." },
               "tag_prefix": { "type": "string", "description": "Replaces the release tag prefix (<name>@ by default)." },
           "stack": { "type": "string", "description": "Replaces the stack the project's manifest records." },
