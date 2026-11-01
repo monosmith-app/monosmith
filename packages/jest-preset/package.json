@@ -6,10 +6,27 @@
     "access": "public"
   },
   "main": "./jest-preset.cjs",
+  "exports": {
+    ".": "./jest-preset.cjs",
+    "./jest-preset": "./jest-preset.cjs",
+    "./jest-preset.cjs": "./jest-preset.cjs",
+    "./resolver": "./resolver.cjs",
+    "./resolver.cjs": "./resolver.cjs",
+    "./asset-transform": "./asset-transform.cjs",
+    "./asset-transform.cjs": "./asset-transform.cjs",
+    "./style-stub": "./style-stub.cjs",
+    "./file-stub": "./file-stub.cjs",
+    "./react": "./react/jest-preset.cjs",
+    "./react/jest-preset": "./react/jest-preset.cjs",
+    "./react/jest-preset.cjs": "./react/jest-preset.cjs",
+    "./package.json": "./package.json"
+  },
   "files": [
     "jest-preset.cjs",
     "resolver.cjs",
     "asset-transform.cjs",
+    "style-stub.cjs",
+    "file-stub.cjs",
     "react",
     "src",
     "!src/**/*.spec.*"
