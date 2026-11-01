@@ -290,6 +290,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == addProjectTitle {
 			return s.openAddProject()
 		}
+		if c.Guide == swapTitle {
+			return s.openSwap()
+		}
 		if c.Guide == removeProjectTitle {
 			return s.openRemoveProject()
 		}
@@ -428,6 +431,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
+			}
+			if len(argv) > 0 && argv[0] == "swap" && s.inWorkspace {
+				// The plan comes first: what leaves, what joins, what is left by hand.
+				return s.swapPreview(argv)
 			}
 			if len(argv) > 0 && argv[0] == "add" && s.inWorkspace {
 				// The plan comes first: what would be written, and which sibling it follows.

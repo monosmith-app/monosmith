@@ -194,6 +194,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if st.Default != "" {
 			add(th.Muted("Default: ") + st.Default)
 		}
+		if st.Reason != "" {
+			add(th.Muted("Why: ") + st.Reason)
+		}
 		if len(st.Choices) > 0 {
 			add(th.Muted("Choices: ") + strings.Join(st.Choices, ", "))
 		}
@@ -240,6 +243,9 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 	case editText, editInstall, editSearch:
 		if e.setting.Default != "" {
 			add(th.Muted("Default: " + e.setting.Default))
+		}
+		if e.setting.Reason != "" {
+			add(th.Muted("Why: " + e.setting.Reason))
 		}
 		if e.setting.Type == "array" {
 			add(th.Muted("Separate the items with commas."))

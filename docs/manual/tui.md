@@ -171,7 +171,7 @@ Project graph, Manage plugins, Upgrade workspace (asks to confirm) and Remove pr
 Health section also holds the 2.0 commands, described in
 [Undo, report, why and derived files](#undo-report-why-and-derived-files): Undo the last
 change, Open the report, Write the agent file, Check the derived files, Update the derived
-files and Why is this file here?
+files and Why is this here?
 The palette and every box drawn over the screen stay inside the frame; behind a box the
 view is emptied so no text shows at its edges, and a toast sits inside the content area.
 
@@ -193,7 +193,12 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Write the agent file…** | `smith agent file` after a confirmation: `AGENTS.md`, and a short `CLAUDE.md` that imports it. |
 | **Check the derived files** | `smith derive --check` in the Run view: writes nothing, fails when a derived file is out of date or was edited. |
 | **Update the derived files…** | `smith derive` after a confirmation: writes the files that follow from the project graph. A file you edited is never overwritten. |
-| **Why is this file here?…** | A form that asks for a path and runs `smith why <path>`: who owns the file, what produced it and how to change it. A project folder works too. |
+| **Preview the derived files** | `smith derive --dry-run` in the Run view: the plan of the update, nothing is written. |
+| **Why is this here?…** | A form that asks for a file, a folder or a setting and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. |
+| **Divergences from the defaults** | `smith divergences` in the Run view: every override, ejected file and drift, each with the reason and how to go back. |
+| **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the Run view says what changed. Your files stay as they are. |
+| **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
+| **Swap a choice…** | Under Projects in the palette. Pick the project, the decision (test, lint, style) and the answer. smith shows the plan of `smith swap --dry-run` first, with the unticked box "Commit this change so it can be undone"; Run does the swap. |
 
 After an add, a convert or an adopt finishes, the toast says it can be undone and where.
 
@@ -225,7 +230,8 @@ and does are on the right. `Tab` (or `Left` and `Right`) moves between the two; 
 the same, and a double-click does what `Enter` does. Everything it writes is what the
 matching command writes: a test compares `smith.toml` byte for byte with the result of
 `smith plugin disable`, `smith plugin trust --pin` and `smith config set`, and comments and
-every other line stay as they are.
+every other line stay as they are. A setting whose default has a recorded reason shows it under
+the setting as "Why:", the same text as `smith why <setting>`.
 
 **Plugins.** The built-in language plugins, each on or off (`Space`; at least one must stay
 on, as with `smith plugin disable`). Below them, the external plugins the workspace declares
@@ -367,8 +373,8 @@ build the command line, which the shell runs and shows.
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
 choices become `--with a,b`. A workspace with three or more projects is also asked whether the
-new one should do what the others do (the default) or take the stack's own defaults
-(`--fresh`). Then the shell runs `smith add ... --dry-run` and shows its plan in a dialog:
+new one should do what the others do (the default), follow one project you pick from a list
+(`--like <project>`) or take the stack's own defaults (`--fresh`). Then the shell runs `smith add ... --dry-run` and shows its plan in a dialog:
 the files it would write and, when it applies, which sibling project it follows
 (`follows web: same test runner`). `y` runs the real add, `Esc` writes nothing. A wrong
 combination (a choice for another language, one that needs a choice you left out) shows what

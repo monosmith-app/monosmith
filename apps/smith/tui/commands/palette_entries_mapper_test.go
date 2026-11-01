@@ -76,7 +76,8 @@ func TestTheFooterNamesTheScopeOfTheRunKeys(t *testing.T) {
 func TestThePaletteOffersTheTwoPointZeroCommands(t *testing.T) {
 	want := map[string]string{
 		"ws.undo": "Undo the last change…", "ws.report": "Open the report", "ws.agent-file": "Write the agent file…",
-		"ws.derive-check": "Check the derived files", "ws.derive": "Update the derived files…", "ws.why": "Why is this file here?…",
+		"ws.derive-check": "Check the derived files", "ws.derive": "Update the derived files…", "ws.why": "Why is this here?…",
+		"ws.derive-preview": "Preview the derived files", "ws.divergences": "Divergences from the defaults", "ws.try": "Try a command in a copy…", "ws.bootstrap": "Write the launcher…", "proj.swap": "Swap a choice…",
 	}
 	for _, e := range PaletteEntries(State{View: TabHome, InWorkspace: true}) {
 		if title, ok := want[e.ID]; ok {
@@ -93,7 +94,7 @@ func TestThePaletteOffersTheTwoPointZeroCommands(t *testing.T) {
 	for _, e := range PaletteEntries(State{View: TabHome}) {
 		outside[e.ID] = true
 	}
-	for _, id := range []string{"ws.undo", "ws.report", "ws.agent-file", "ws.derive-check", "ws.derive", "ws.why"} {
+	for _, id := range []string{"ws.undo", "ws.report", "ws.agent-file", "ws.derive-check", "ws.derive", "ws.why", "ws.derive-preview", "ws.divergences", "ws.try", "ws.bootstrap", "proj.swap"} {
 		if outside[id] {
 			t.Errorf("%s needs a workspace", id)
 		}

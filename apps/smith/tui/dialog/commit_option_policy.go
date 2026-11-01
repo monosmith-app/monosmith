@@ -7,7 +7,7 @@ const CommitLabel = "Commit this change so it can be undone"
 
 // committing lists the commands that can end in a commit: the ones that change
 // the workspace and accept --commit.
-var committing = []string{"adopt", "new", "add", "remove", "convert", "upgrade"}
+var committing = []string{"adopt", "new", "add", "remove", "convert", "upgrade", "swap", "derive"}
 
 // Committable is true for a command that accepts --commit, so its confirmation
 // offers the box. A command that already carries the flag is not offered it twice.
