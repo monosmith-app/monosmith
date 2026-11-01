@@ -42,6 +42,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 		asJSON bool
 		// jsonEvents prints the event stream as JSON lines instead of text.
 		jsonEvents bool
+		verbose    bool
 	)
 	cmd := &cobra.Command{
 		Use:   use,
@@ -57,6 +58,9 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 			} else if len(args) > 0 {
 				req.Projects = append(req.Projects, args...)
 			}
+			// smith build shows failures and one line per project; --verbose
+			// shows every log.
+			req.Quiet = !verbose && len(fixed) == 1 && fixed[0] == "build"
 			req.Out = textOutput(cmd.OutOrStdout(), cmd.ErrOrStderr(), asJSON)
 			if jsonEvents {
 				// Stdout carries the event stream and nothing else: each task's
@@ -102,6 +106,7 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 	f.IntVar(&req.Parallel, "parallel", 0, "tasks to run at once (default: CPU count)")
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
+	f.BoolVar(&verbose, "verbose", false, "smith build: show the log of every project, not only the ones that fail")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")
 	f.BoolVar(&jsonEvents, "json-events", false, "print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else")
 	cmd.MarkFlagsMutuallyExclusive("json", "json-events")
