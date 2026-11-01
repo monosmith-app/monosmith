@@ -8,7 +8,7 @@ import (
 // NxJSON is the part of nx.json a conversion reads.
 type NxJSON struct {
 	NamedInputs    map[string][]Input `json:"namedInputs"`
-	TargetDefaults TargetDefaults      `json:"targetDefaults"`
+	TargetDefaults TargetDefaults     `json:"targetDefaults"`
 	Plugins        []PluginEntry      `json:"plugins"`
 	Release        *Release           `json:"release"`
 	DefaultBase    string             `json:"defaultBase"`
@@ -138,7 +138,7 @@ type LegacySettings struct {
 	} `json:"registry"`
 	// CI is one provider, or a list of them.
 	CI    StringList `json:"ci"`
-	Agent string `json:"agent"`
+	Agent string     `json:"agent"`
 	Stack struct {
 		TestRunner string `json:"testRunner"`
 	} `json:"stack"`

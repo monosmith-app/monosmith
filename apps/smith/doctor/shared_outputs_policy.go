@@ -12,8 +12,10 @@ import (
 // SharedOutputs lists the pairs of tasks whose outputs overlap: one directory
 // is the other, or holds it. A cache hit replaces a task's output directories
 // wholesale, so restoring one task deletes what the other wrote, and two
-// package tasks that both declare dist/drop fail each other mid-write.
-func SharedOutputs(projects []*projectgraph.Project) []string {
+// package tasks that both declare dist/drop fail each other mid-write. A
+// directory in allowed ([workspace] shared_outputs) may be written by several
+// tasks, each into its own files: overlap inside it is not reported.
+func SharedOutputs(projects []*projectgraph.Project, allowed ...string) []string {
 	type output struct{ task, dir string }
 	var all []output
 	for _, p := range projects {
@@ -34,7 +36,11 @@ func SharedOutputs(projects []*projectgraph.Project) []string {
 	for i, a := range all {
 		for _, b := range all[i+1:] {
 			overlap := a.dir == b.dir || strings.HasPrefix(b.dir, a.dir+"/") || strings.HasPrefix(a.dir, b.dir+"/")
-			if a.task == b.task || !overlap {
+			shorter := a.dir
+			if len(b.dir) < len(shorter) {
+				shorter = b.dir
+			}
+			if a.task == b.task || !overlap || InsideAny(shorter, allowed) {
 				continue
 			}
 			where := a.dir

@@ -40,8 +40,8 @@ func checkLockfilePlatformDeps(root string) []protocol.Finding {
 	if len(shown) > 5 {
 		shown = shown[:5]
 	}
-	f.Detail = fmt.Sprintf("npm ci on another OS (CI) fails: the lockfile lacks %d package(s) it depends on, such as %s. It was probably made on one OS", len(missing), strings.Join(shown, ", "))
-	f.Remedy = "regenerate package-lock.json and commit it (`smith doctor --fix` does it)"
+	f.Detail = fmt.Sprintf("npm ci on another OS (CI, Linux) fails: the lockfile lacks %d package(s) it depends on, such as %s. npm leaves out the optional packages of other platforms (such as the wasm fallbacks @emnapi/core and @emnapi/runtime) when the lockfile is made on one OS", len(missing), strings.Join(shown, ", "))
+	f.Remedy = "regenerate package-lock.json and commit it (`smith doctor --fix` does it: it removes the file and runs npm install --package-lock-only)\nif npm ci still fails on Linux, add the missing packages to the root devDependencies (npm install -D " + strings.Join(shown, " ") + ")"
 	f.Fix = &protocol.Fix{
 		Description: "regenerate package-lock.json so it holds the packages of every platform",
 		Steps: []protocol.FixStep{
