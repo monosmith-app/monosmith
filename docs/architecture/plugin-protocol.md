@@ -189,7 +189,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 
 | Method | Request | Response | Contribution to the whole |
 |---|---|---|---|
-| `discover` | `DiscoverParams{manifests}` (paths whose base name matches) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
+| `discover` | `DiscoverParams{manifests, declared}` (paths whose base name matches; the projects `smith.toml` declares for the plugin's language: a name, a root and a kind) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
 | `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release, facts}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out, publish default [shared facts](#shared-facts) |
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |

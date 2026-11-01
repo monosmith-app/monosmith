@@ -44,6 +44,7 @@ __all__ = [
     "Credential",
     "Declaration",
     "DeclaredParams",
+    "DeclaredProject",
     "DeclaredResult",
     "DependencyResult",
     "DeriveParams",
@@ -652,6 +653,20 @@ class DeclaredParams(TypedDict):
     projects: list[Project]
 
 
+class _DeclaredProjectRequired(TypedDict):
+    name: str
+    """Name is the project's name, the key of its [projects.<name>] table."""
+    root: str
+    """Root is the workspace-relative folder."""
+
+
+class DeclaredProject(_DeclaredProjectRequired, total=False):
+    """DeclaredProject is a project smith.toml declares: a folder with no manifest."""
+
+    kind: ProjectKind
+    """Kind is "app", "lib" or "package", or empty for the plugin's choice."""
+
+
 class _DeclaredResultRequired(TypedDict):
     declarations: list[Declaration]
 
@@ -776,13 +791,23 @@ class DevcontainerFeature(_DevcontainerFeatureRequired, total=False):
     options: dict[str, str]
 
 
-class DiscoverParams(TypedDict):
+class _DiscoverParamsRequired(TypedDict):
+    manifests: list[str]
+
+
+class DiscoverParams(_DiscoverParamsRequired, total=False):
     """
     DiscoverParams asks a plugin to describe the projects behind manifests the host found. Paths
     are workspace-relative and use forward slashes.
     """
 
-    manifests: list[str]
+    declared: list[DeclaredProject]
+    """
+    Declared are the projects smith.toml declares for this plugin's language ([projects.<name>]
+    with a root and a language): folders with no manifest of their own, such as a program that is
+    a package of the Go module above it. The plugin describes each one in its result, or answers
+    with an error saying why it cannot.
+    """
 
 
 class DiscoverResult(TypedDict):

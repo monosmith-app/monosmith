@@ -436,6 +436,16 @@ export interface DeclaredParams {
   projects: Project[]
 }
 
+/** DeclaredProject is a project smith.toml declares: a folder with no manifest. */
+export interface DeclaredProject {
+  /** Name is the project's name, the key of its [projects.<name>] table. */
+  name: string
+  /** Root is the workspace-relative folder. */
+  root: string
+  /** Kind is "app", "lib" or "package", or empty for the plugin's choice. */
+  kind?: ProjectKind
+}
+
 /**
  * DeclaredResult is every declaration, and the version installed of each name where the plugin can
  * tell.
@@ -538,6 +548,13 @@ export interface DevcontainerFeature {
  */
 export interface DiscoverParams {
   manifests: string[]
+  /**
+   * Declared are the projects smith.toml declares for this plugin's language ([projects.<name>]
+   * with a root and a language): folders with no manifest of their own, such as a program that is a
+   * package of the Go module above it. The plugin describes each one in its result, or answers with
+   * an error saying why it cannot.
+   */
+  declared?: DeclaredProject[]
 }
 
 /**

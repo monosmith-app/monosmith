@@ -127,6 +127,11 @@ stack = "node-vitest"                 # replaces the stack web's manifest record
 [projects.sdk]
 registry = "public-npm"               # this package publishes here instead of [release] registry
 
+[projects.mvd]                        # a project with no manifest of its own: a program or a library that is a package of the Go module above it (plugins/using/catalogue/go.md)
+root = "apps/mvd"                     # its folder; with language, this declares it
+language = "go"                       # the plugin that describes it
+kind = "app"                          # default: an app when the folder holds a program, else a lib; never "package" for Go
+
 [projects.java]
 registry = "none"                     # tag it and create its GitHub Release, publish it to no registry (a registry that builds from the tag, such as JitPack); no credentials are asked for
 bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0, because JitPack uses the tag name as the version; one project only, not with tag_prefix

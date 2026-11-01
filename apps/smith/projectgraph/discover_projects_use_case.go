@@ -37,6 +37,7 @@ func Discover(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost
 // call that refuses. smith doctor and smith graph use it to report the cycle.
 func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catalog *pluginhost.Catalog, cfg workspace.Config) (*Graph, error) {
 	var projects []*Project
+	asked := map[string]bool{}
 	for _, c := range plugins.Clients {
 		if !c.Info.Capabilities.Discover {
 			continue
@@ -47,16 +48,30 @@ func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catal
 				manifests = append(manifests, f)
 			}
 		}
-		if len(manifests) == 0 {
+		declared := declaredFor(c.Info.Plugin.Name, c.Info.Languages, cfg)
+		if len(manifests) == 0 && len(declared) == 0 {
 			continue
 		}
 		sort.Strings(manifests)
 		var res protocol.DiscoverResult
-		if err := c.Call(protocol.MethodDiscover, protocol.DiscoverParams{Manifests: manifests}, &res, time.Minute); err != nil {
+		if err := c.Call(protocol.MethodDiscover, protocol.DiscoverParams{Manifests: manifests, Declared: declared}, &res, time.Minute); err != nil {
 			return nil, err
 		}
+		described := map[string]string{}
 		for _, p := range res.Projects {
+			described[p.Name] = p.Root
 			projects = append(projects, &Project{Project: p, Plugin: c.Info.Plugin.Name})
+		}
+		for _, d := range declared {
+			asked[d.Name] = true
+			if root, ok := described[d.Name]; !ok || root != d.Root {
+				return nil, fmt.Errorf("smith.toml [projects.%s] declares a %s project at %s, which the %s plugin did not describe: it needs a folder it can read", d.Name, cfg.Projects[d.Name].Language, d.Root, c.Info.Plugin.Name)
+			}
+		}
+	}
+	for name, po := range cfg.Projects {
+		if po.Declared() && !asked[name] {
+			return nil, fmt.Errorf("smith.toml [projects.%s] declares language %q, which no enabled plugin has: see smith plugin list", name, po.Language)
 		}
 	}
 	for _, p := range projects {
