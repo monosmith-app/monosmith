@@ -49,6 +49,8 @@ if (command === 'config' && subcommand === 'set' && rest[0] === 'agent.enabled')
   process.stdout.write(`✔ agent.enabled = ${rest[1]}\n`)
   process.exit(0)
 }
+// The Health view asks `smith derive --check`; this workspace has not turned derived files on.
+if (command === 'derive') stop('derived files are off in this workspace', 'set enabled = true under [derive] in smith.toml')
 const optedOut = () => fs.existsSync('smith.toml') && fs.readFileSync('smith.toml', 'utf8').includes('enabled = false')
 const agentFinding = () => ({
   check:   'The MonoSmith agent files are installed and current',
