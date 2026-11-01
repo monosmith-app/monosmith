@@ -19,12 +19,19 @@ func cfgWith(n int, override func(i int) workspace.TaskOverride, defaults map[st
 
 func TestTheSameOverrideInEnoughProjectsIsLifted(t *testing.T) {
 	cfg := cfgWith(3, func(int) workspace.TaskOverride { return workspace.TaskOverride{Cache: off()} }, nil)
-	got := Analyse(cfg, 10, DefaultThreshold)
+	got := Analyse(cfg, 3, DefaultThreshold)
 	if len(got) != 1 || got[0].Kind != Lift || got[0].Task != "test" || got[0].Field != "cache" || got[0].Value != "false" || len(got[0].Projects) != 3 {
 		t.Fatalf("got %+v", got)
 	}
-	if got := Analyse(cfg, 10, 4); len(got) != 0 {
+	if got := Analyse(cfg, 3, 4); len(got) != 0 {
 		t.Errorf("below the threshold: %+v", got)
+	}
+}
+
+func TestAMinorityIsLeftToTaskGroups(t *testing.T) {
+	cfg := cfgWith(3, func(int) workspace.TaskOverride { return workspace.TaskOverride{Cache: off()} }, nil)
+	if got := Analyse(cfg, 10, DefaultThreshold); len(got) != 0 {
+		t.Errorf("3 of 10 projects must not become a workspace default: %+v", got)
 	}
 }
 

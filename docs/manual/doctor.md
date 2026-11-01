@@ -51,9 +51,11 @@ lists every check with its remedy.
 Two warnings read the per-project task overrides in `smith.toml` ([ADR 0056](../architecture/decisions/0056-repeated-overrides-say-what-the-default-should-be.md)).
 They change nothing:
 
-- `repeated project overrides are a workspace default`: three projects or more set the same
-  value for the same task setting (`[projects.<name>.tasks.test] cache = false`). The remedy is to
-  set it once under `[tasks.test]`.
+- `repeated project overrides are a workspace default`: three projects or more, and 80 percent of
+  all projects, set the same value for the same task setting
+  (`[projects.<name>.tasks.test] cache = false`). The remedy is to set it once under
+  `[tasks.test]`. A smaller set of projects is folded into a `[[task_groups]]` entry by
+  `task settings shared by projects are written once`.
 - `a workspace default is not overridden by nearly every project`: a `[tasks.<task>]` setting that
   at least three projects, and 80 percent of all projects, set to another value. The default is
   probably wrong.

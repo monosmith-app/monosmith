@@ -16,8 +16,9 @@ const (
 	// DefaultThreshold is how many projects must set the same value before smith
 	// suggests a workspace default.
 	DefaultThreshold = 3
-	// replaceShare is the share of all projects that must override a default
-	// before smith calls it a wrong default.
+	// replaceShare is the share of all projects that must set a value before it
+	// is a default, or before a default is called wrong. Fewer is a job for
+	// [[task_groups]] (smith doctor says so already).
 	replaceShare = 0.8
 )
 
@@ -44,7 +45,7 @@ func Analyse(cfg workspace.Config, total, threshold int) []Suggestion {
 	}
 	var out []Suggestion
 	for k, projects := range setBy {
-		if len(projects) < threshold {
+		if len(projects) < threshold || float64(len(projects)) < replaceShare*float64(total) {
 			continue
 		}
 		if def, ok := fieldsOf(cfg.Tasks[k.task])[k.field]; ok && def == k.value {

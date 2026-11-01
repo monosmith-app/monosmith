@@ -602,6 +602,9 @@ depends_on = ["^build", "build", "^typecheck"]
 depends_on = ["^build"]
 ```
 
+A rule for a folder is a group whose selector is the folder: `select = ["packages/*"]` is "everything
+under `packages/`" ([ADR 0058](../architecture/decisions/0058-folder-rules-are-task-groups-with-a-path-selector.md)).
+
 `select` lists selectors, written the way `--projects` and `[boundaries]` write
 them: a project name, a glob over names or folders (`libs/*`), `kind:app`,
 `kind:lib`, `kind:package`, `lang:<language>` or `tag:<tag>`. A project is in

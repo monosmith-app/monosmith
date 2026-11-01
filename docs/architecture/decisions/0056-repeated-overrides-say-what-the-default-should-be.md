@@ -13,9 +13,12 @@ project, it is the wrong default.
 
 `smith doctor` reads `[projects.<name>.tasks.<task>]` and reports, as warnings with a remedy:
 
-- Lift: the same task, field and value in at least three projects (the threshold is a constant,
-  `overridelearn.DefaultThreshold`, until a person asks to change it). Skipped when `[tasks.<task>]`
-  already has that value.
+- Lift: the same task, field and value in at least three projects and in at least 80 percent of all
+  projects (the threshold is a constant, `overridelearn.DefaultThreshold`, until a person asks to
+  change it). Skipped when `[tasks.<task>]` already has that value. A smaller share is not a
+  workspace default: moving it there would change the projects that did not ask. That case is the
+  job of `[[task_groups]]`, and `smith doctor` already reports it ("task settings shared by
+  projects are written once", with a fix).
 - Replace: a field the workspace default `[tasks.<task>]` sets, which at least three projects, and 80
   percent of all projects, set to another value.
 

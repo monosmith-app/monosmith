@@ -39,6 +39,6 @@ func overrideSuggestionFinding(sg overridelearn.Suggestion) protocol.Finding {
 		Check:   "repeated project overrides are a workspace default",
 		Warning: true,
 		Detail:  fmt.Sprintf("%d projects set %s = %s (%s)", len(sg.Projects), setting, sg.Value, names),
-		Remedy:  fmt.Sprintf("make it the default: set %s = %s under [tasks.%s] in smith.toml, then remove it from the projects (or use a [[task_groups]] entry when only some kinds need it)", sg.Field, sg.Value, sg.Task),
+		Remedy:  fmt.Sprintf("make it the default for all projects: set %s = %s under [tasks.%s] in smith.toml, then remove it from the projects that set it", sg.Field, sg.Value, sg.Task),
 	}
 }
