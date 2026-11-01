@@ -70,7 +70,7 @@ The chart is a starting point. Read the cases below before you rely on it.
 | The repository is **JVM or Android only** | [Gradle](gradle.md) | keep Gradle; smith would only wrap it |
 | The repository is **Rust only** | [Cargo workspaces](cargo.md) | Cargo already provides the workspace, the lockfile and inherited dependencies |
 | You have **a few packages and a single language** and builds are short | [workspaces](workspaces.md) | a cache, generator and release tool are costs you may not need yet |
-| You need a **vendor with a track record** and a support contract | an established tool | smith's repository history is ten days old and its support is GitHub issues |
+| You need a **vendor with a track record** and a support contract | an established tool | smith's repository history starts on 2026-10-15, 17 days before 2026-11-01 and its support is GitHub issues |
 
 ## Questions to ask whichever tool you pick
 

@@ -126,7 +126,7 @@ The marks follow the [comparison's legend](README.md#legend): ✅ the tool's doc
 
 | Tool | Mechanism | You write it in | Credit and condition |
 |---|---|---|---|
-| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go, TypeScript, Python and C# | no registry yet; not sandboxed |
+| **MonoSmith** | plugins in five roles, over JSON-RPC on stdio; stacks and recipes as data | any language; SDKs for Go, TypeScript, Python and C# | no registry of third-party plugins yet (a marketplace index exists); not sandboxed |
 | Nx | plugins with generators, executors, `createNodes` and `createDependencies` | TypeScript or JavaScript: "The plugin is a Node package" | the largest ecosystem in this set: a plugin registry and community plugins; each plugin runs "in a separate forked process" |
 | Turborepo | no plugin API found; custom generators use Plop | JavaScript | focused on tasks and caching; `turbo gen` covers scaffolding |
 | Bazel | macros, rules, repository rules and module extensions in `.bzl` files | Starlark | "Support for a new language is typically done with a rule"; the Bazel Central Registry hosts modules |
@@ -154,7 +154,7 @@ Every tool above is good at its own job. What differs is what you still have to 
 
 ## Where another tool is the better choice
 
-- **You want a large ecosystem of ready-made third-party plugins, today.** Nx has a plugin registry and community plugins; Gradle has the Plugin Portal; Bazel has its Central Registry. smith has no registry yet ([#164](https://github.com/monosmith-app/monosmith/issues/164), [#565](https://github.com/monosmith-app/monosmith/issues/565)): plugins are executables you place on a search path or name in `smith.toml`.
+- **You want a large ecosystem of ready-made third-party plugins, today.** Nx has a plugin registry and community plugins; Gradle has the Plugin Portal; Bazel has its Central Registry. smith has no registry of third-party plugins yet, only a marketplace index ([#164](https://github.com/monosmith-app/monosmith/issues/164), [#565](https://github.com/monosmith-app/monosmith/issues/565)): plugins are executables you place on a search path or name in `smith.toml`.
 - **You need extensions to be sandboxed.** moon's WASM plugins get a sandboxed file system. smith's trust gate, minimal environment and digest pins reduce the risk and do not remove it: a trusted plugin runs with your privileges ([#565](https://github.com/monosmith-app/monosmith/issues/565)).
 - **You want an SDK in your language.** Go, TypeScript, Python and C# have published SDKs. For any other language you write the message framing yourself, about 40 lines, as the 102-line hand-framed Python example does ([#564](https://github.com/monosmith-app/monosmith/issues/564)).
 - **You need a plugin to run tasks in parallel with its own requests, or to be cancelled mid-call.** External plugins can declare both; the built-in plugins are called one request at a time and cannot be cancelled ([decision 0037](../../architecture/decisions/0037-cancel-and-concurrency-in-the-plugin-protocol.md)).

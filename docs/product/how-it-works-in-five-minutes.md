@@ -180,7 +180,7 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 ## 10. Plugins, stacks and recipes
 
 - A **plugin** is a program that speaks JSON-RPC over stdin and stdout. The 37 built-in
-  plugins (eleven language plugins and one for recipes, and twelve add-ons for toolchains,
+  plugins (eighteen language plugins, among them one for recipes and one for projects with no language, and nineteen add-ons for toolchains,
   scaffolds, structure rules and deploy targets) ship inside the binary; `smith plugin list`
   shows them. You can write a plugin in any language (SDKs exist for Go, TypeScript, Python and C#) and
   check it with `smith plugin check`. A plugin a repository names does not start until you
@@ -193,6 +193,28 @@ Model Context Protocol. See [Editors](../guides/editors.md).
 
 See [Plugins](../reference/plugins.md), [Stacks](../reference/stacks.md) and
 [Recipes](../reference/recipes.md).
+
+## 11. What smith 2.0 adds
+
+The commands in steps 1 to 10 were run on 1.62.0. These features are new on the 2.0 line
+(`smith-v2` branch); each is described in the [architecture notes](../architecture/derived-files-facts-and-siblings.md).
+
+- **Derived files.** With `[derive] enabled = true`, `smith derive` writes the files that follow from the
+  project graph and shared facts (for a Node workspace a `tsconfig.json`, the `references` of a
+  `tsconfig.lib.json`, a Jest `displayName`). `smith.lock` records who owns each file, so smith never
+  overwrites a hand edit: it shows a diff and asks you to replace, adopt or eject. `smith ci verify` runs
+  `smith derive --check`.
+- **New projects follow their siblings.** `smith add` reads how the existing projects of the same kind and
+  language are made (test runner, build tool, tsconfig files) and copies what most of them agree on.
+  `smith add --with react,vitest,bootstrap` picks frameworks, tests and styles from `smith choices`.
+- **A plan before a write, and undo.** `add`, `remove`, `upgrade` and `derive` print what they create, change
+  and remove. With `[workspace] commit_operations = true` each is one commit, and `smith undo` reverts the last.
+- **Understand the workspace.** `smith why <file>` says who owns a file and how to change it; `smith report` writes
+  one HTML page (graph, health, drift, choices, release plan); `smith agent file` writes `AGENTS.md`.
+- **Release channels and checks.** `[[release.channels]]` gives a branch its own line of prerelease versions
+  (`2.0.0-beta.1`) published without moving the stable version; `smith release --rehearse` checks the registries
+  before a first release; the release warns when the commits ask for a smaller version bump than the change to a
+  Node package's public API needs.
 
 ## What to read next
 
