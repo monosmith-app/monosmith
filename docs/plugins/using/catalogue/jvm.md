@@ -20,8 +20,8 @@ install.
 | `--lang` values | `jvm`, `java` |
 | Manifests that make a directory a candidate project | `pom.xml`, `build.gradle.kts`, `build.gradle` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest`, `changeKind`, `components` |
-| Not advertised | `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
+| Not advertised | `declared`: a declared project is refused (see Declared projects). `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
 | Stacks it publishes | `kotlin` ("a Kotlin module built with Gradle, linted with ktlint"), `android` ("an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint") |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `jvm-app`, `jvm-lib`, `jvm-package`); the `android` stack makes apps only |
 | Tasks | `build`, `test`, `lint`, `start` |
@@ -319,7 +319,8 @@ neither is configurable.
 | Publish: Maven package | `mvn -B -q -pl <g:a> deploy -DskipTests -s dist/maven/settings.xml -DaltDeploymentRepository=smith::<url>`; the settings define a server `smith` reading `MAVEN_USERNAME` and `MAVEN_PASSWORD` from the environment |
 | Publish: Gradle package | `gradle --console=plain -q :path:publishAllPublicationsToSmithRepository` with the same variables set |
 | Repository | `[registries.<name>] maven` named by `[release] registry` or `[projects.<p>] registry`, else `MAVEN_REPOSITORY_URL`. With neither the release stops: `set MAVEN_REPOSITORY_URL to the repository <name> deploys to` |
-| Registry query | `GET <repository>/<group path>/<artifactId>/maven-metadata.xml`, field `versioning/release`; the repository is the named registry (signed in when credentials exist), else `MAVEN_REPOSITORY_URL`, else `https://repo1.maven.org/maven2` |
+| Release channel | the plugin declares `channels`: Maven and Gradle order `2.0.0-beta.1` below `2.0.0` and take that spelling as it is, so a fixed version never picks it, and a repository has no channel tag. Maven sets `release` in `maven-metadata.xml` to the last version deployed, a prerelease too, so the registry query then reads the newest version without a `-` from the `versions` list. A build that asks for the `RELEASE` or `LATEST` keyword, or for an open version range, can still see a prerelease. JitPack builds each tag on its own, so a channel tag is a separate version there. |
+| Registry query | `GET <repository>/<group path>/<artifactId>/maven-metadata.xml`, field `versioning/release` (the newest version of `versioning/versions` without a `-` when `release` is a prerelease); the repository is the named registry (signed in when credentials exist), else `MAVEN_REPOSITORY_URL`, else `https://repo1.maven.org/maven2` |
 | Dry run | `smith release --dry-run` plans without deploying; the result says "dry run" and names the repository |
 
 Private registries (`[registries.<name>]`, see
@@ -442,6 +443,10 @@ same with or without `mvn` or `gradle` on the machine.
 the module's `<module>` line out of the root `pom.xml` and its `include(...)` line
 out of `settings.gradle.kts` (`--dry-run` lists the files it would change), and
 smith regenerates the pipelines.
+
+## Declared projects
+
+The plugin does not declare `declared`. A Maven or Gradle module is one build unit, and the packages inside it cannot be built, tested or linted on their own, so a folder is not a project. smith refuses a `[projects.<name>]` declaration for `jvm` with "finds a project by its manifest only: give the folder a manifest of its own" (a `pom.xml` or `build.gradle(.kts)`, or a module of the build above it).
 
 ## Requirements and limits
 
