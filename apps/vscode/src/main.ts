@@ -1,10 +1,19 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { isAbsolute, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { basename, isAbsolute, join } from 'node:path'
 import * as vscode from 'vscode'
 import {
-  confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellInstallOutcome,
+  confirmAgentFile, confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellAgentFileOutcome, tellInstallOutcome, writeAgentFile,
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
+import { addProject, askAddRequest, confirmAddPlan, tellAddOutcome } from './add-project/index.ts'
+import {
+  addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, readDeriveStatus, tellDeriveChange, toExplainDocument,
+  type DeriveAction, type DeriveReport,
+} from './derive-files/index.ts'
+import { readFileWhy, readTaskWhy } from './why/index.ts'
+import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
+import { reportFile, writeReport } from './workspace-report/index.ts'
 import { toAdoptArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
 import { setContextKey } from './context-keys/index.ts'
@@ -33,7 +42,7 @@ import {
   type RunEvent, type RunPlan, type RunTarget, type TaskStatusStore,
 } from './task-run/index.ts'
 import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './workspace/index.ts'
-import { findSmithRoots, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged } from './workspace-folders/index.ts'
+import { findSmithRoots, folderOfFile, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged, toFolderPath } from './workspace-folders/index.ts'
 import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter } from './workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 
@@ -541,20 +550,44 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   }
 
   const fixableRoots = new Set<string>()
+  const deriveReports = new Map<string, DeriveReport>()
+  const deriveProblems = createDeriveDiagnostics()
+
+  /** Runs smith in the folder of a state; the caller checked that the state has a smith. */
+  const smithIn = (state: FolderState, log = true, timeoutMs = 60_000): ((args: string[]) => ReturnType<typeof runSmith>) => async (args) => {
+    if (state.location === undefined) return { code: 1, stdout: '', stderr: '✖ smith was not found\n  → install smith in the workspace, or set monosmith.path\n' }
+    if (log) note(`$ smith ${args.join(' ')}${states().length > 1 ? ` (${state.name})` : ''}`)
+
+    return await runSmith(state.location.executable, args, state.root, timeoutMs)
+  }
+
+  /** Adds what `smith derive --check` finds to the rows of the doctor, and to the Problems panel. */
+  const withDerivedFiles = async (state: FolderState, rows: ListResult): Promise<ListResult> => {
+    const report = await readDeriveStatus(smithIn(state, false))
+    deriveReports.set(state.root, report)
+    if (readSettings().problems) deriveProblems.update(state.root, report)
+
+    return addDeriveRows(rows, report)
+  }
+
   const health = createListView({
     id:    'monosmith.health',
     title: 'Health',
     load:  async () => {
       fixableRoots.clear()
+      deriveReports.clear()
 
       return await loadAcross('smith is not running, so there is nothing to check.', async (state, connection) => {
         const reading: HealthReading = await readHealth(connection)
         if (reading.preview !== undefined) fixableRoots.add(state.root)
 
-        return toHealthRows(reading.report, reading.preview)
+        return await withDerivedFiles(state, toHealthRows(reading.report, reading.preview))
       })
     },
-    loaded: () => { void setContextKey('monosmith.fixable', fixableRoots.size > 0) },
+    loaded: () => {
+      void setContextKey('monosmith.fixable', fixableRoots.size > 0)
+      void setContextKey('monosmith.derivedPaths', [...deriveReports].flatMap(([root, report]) => report.files.map((file) => vscode.Uri.file(join(root, file.path)).fsPath)))
+    },
   })
   const dependencies = createListView({
     id:    'monosmith.dependencies',
@@ -700,7 +733,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     const given = typeof root === 'string' ? folders.get(root) : undefined
     if (given?.session !== undefined) return given
     const state = await folderOf()
-    if (state === undefined) void vscode.window.showInformationMessage('MonoSmith: smith is not running in a folder, so there is nothing to add the agent to.')
+    if (state === undefined) void vscode.window.showInformationMessage('MonoSmith: smith is not running in a folder, so there is nothing to do yet. Open a folder with a smith.toml and wait for the MonoSmith view to say it is ready.')
 
     return state
   }
@@ -771,7 +804,181 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     const executable = await smithForTerminal(chosen.root)
     if (executable === undefined) return
     note(`MonoSmith: ${action === 'start' ? 'bringing' : 'previewing bringing'} ${chosen.name} into MonoSmith (${chosen.why}).`)
-    openSmithTerminal(executable, toAdoptArguments(action), chosen.root)
+    const terminal = openSmithTerminal(executable, toAdoptArguments(action), chosen.root)
+    if (action === 'start') offerUndoWhenDone(terminal, `${chosen.name} is converted`)
+  }
+
+  /**
+   * Offers Undo when the command in the terminal ends well. It needs the
+   * shell integration of the terminal; without it the offer is not made, and
+   * "Undo the last change" stays in the palette.
+   */
+  function offerUndoWhenDone (terminal: vscode.Terminal, what: string): void {
+    const ended = vscode.window.onDidEndTerminalShellExecution((event) => {
+      if (event.terminal !== terminal) return
+      ended.dispose()
+      if (event.exitCode !== 0) return
+      void vscode.window.showInformationMessage(`MonoSmith: ${what}. If it is not what you wanted, undo it in one step.`, 'Undo the last change').then(async (choice) => {
+        if (choice !== undefined) await vscode.commands.executeCommand('monosmith.undo')
+      })
+    })
+    context.subscriptions.push(ended)
+  }
+
+  /** Says a command that writes files needs a trusted workspace; true when it may go on. */
+  const mayWrite = (what: string): boolean => {
+    if (isWorkspaceTrusted()) return true
+    void vscode.window.showWarningMessage(`MonoSmith: ${what} writes files and needs a trusted workspace. Trust the workspace, then try again.`)
+
+    return false
+  }
+
+  /** Asks what to add, shows the plan of `smith add --dry-run`, and adds on a yes. */
+  const addProjectHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('adding a project')) return
+    output.show(true)
+    const outcome = await addProject({
+      run:   smithIn(state),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+      ask:     askAddRequest,
+      confirm: confirmAddPlan,
+    })
+    note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellAddOutcome(outcome, note)
+    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** The folder and file a derive or why command works on: a Health row, a file given by the explorer or the editor, or the open editor. */
+  const fileTarget = (argument: unknown): { state: FolderState, file: string } | undefined => {
+    const tagged = readFolderData((argument as ListNode | undefined)?.data)
+    if (tagged !== undefined) {
+      const state = folders.get(tagged.root)
+
+      return state === undefined ? undefined : { state, file: tagged.data }
+    }
+    const uri = argument instanceof vscode.Uri ? argument : vscode.window.activeTextEditor?.document.uri
+    if (uri?.scheme !== 'file') return undefined
+    const root = folderOfFile(ready().map((state) => state.root), uri.fsPath)
+    const state = root === undefined ? undefined : folders.get(root)
+    const file = root === undefined ? undefined : toFolderPath(root, uri.fsPath)
+
+    return state === undefined || file === undefined ? undefined : { state, file }
+  }
+
+  const deriveFile = async (argument: unknown, action: 'explain' | 'apply' | 'adopt' | 'eject'): Promise<void> => {
+    const target = fileTarget(argument)
+    if (target === undefined) {
+      void vscode.window.showInformationMessage('MonoSmith: choose a derived file first. Right-click it in the Health view, or open it in the editor and run the command again.')
+
+      return
+    }
+    const { state, file } = target
+    const run = smithIn(state)
+    const explain = async (): Promise<void> => { await insight.show(`${basename(file)}-derive.md`, toExplainDocument(file, await explainDerivedFile(run, file))) }
+    if (action === 'explain') {
+      await explain()
+
+      return
+    }
+    if (!mayWrite('changing a derived file')) return
+    const status = deriveReports.get(state.root)?.files.find((item) => item.path === file)?.status
+    if (action === 'apply' && status === undefined) {
+      void vscode.window.showInformationMessage(`MonoSmith: smith has nothing to write for ${file}. Refresh the Health view to read the derived files again.`)
+
+      return
+    }
+    const change: DeriveAction & ('apply' | 'replace' | 'adopt' | 'eject') = action === 'apply' && status !== undefined ? applyActionFor(status) : action
+    for (;;) {
+      const answer = await confirmDeriveChange(change, change === 'apply' ? undefined : file)
+      if (answer === 'no') return
+      if (answer === 'yes') break
+      await explain()
+    }
+    const result = await changeDerivedFile(run, change, change === 'apply' ? undefined : file)
+    const printed = result.ok ? result.output.split(/\r?\n/).filter(Boolean) : []
+    for (const line of printed) note(line)
+    tellDeriveChange(change, change === 'apply' ? undefined : file, result.ok, result.ok ? '' : result.message)
+    await health.reload()
+    await refreshFolder(state.root, 'full', true)
+  }
+
+  /** Shows why a file is as it is, why a task runs again, or how a project resolved. */
+  const showWhy = async (argument: unknown): Promise<void> => {
+    const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
+    const whyTask = async (root: string, project: string, task: string): Promise<void> => {
+      const state = folders.get(root)
+      if (state !== undefined) await insight.show(`${project}-${task}-why.md`, await readTaskWhy(smithIn(state), project, task))
+    }
+    if (node?.kind === 'task' && node.project !== undefined && node.task !== undefined) return await whyTask(node.root, node.project, node.task)
+    if (node?.kind === 'project') return await showInsight(node, 'explain')
+
+    const file = fileTarget(argument)
+    // A file given by the explorer or the editor menu is answered at once; from the palette the person says what to ask about.
+    const kinds = [
+      ...(file === undefined ? [] : [{ label: '$(file) This file', description: file.file, pick: 'file' as const }]),
+      { label: '$(package) A project', description: 'how its tasks resolved and where each setting came from', pick: 'project' as const },
+      { label: '$(play) A task', description: 'why it runs again instead of coming from the cache', pick: 'task' as const },
+    ]
+    const chosen = argument instanceof vscode.Uri ? undefined : await vscode.window.showQuickPick(kinds, { title: 'MonoSmith: Why', placeHolder: 'What do you want to know about?' })
+    switch (argument instanceof vscode.Uri ? 'file' : chosen?.pick) {
+      case 'file': {
+        if (file !== undefined) await insight.show(`${basename(file.file)}-why.md`, await readFileWhy(smithIn(file.state), file.file))
+        break
+      }
+      case 'project': {
+        await showInsight(undefined, 'explain')
+        break
+      }
+      case 'task': {
+        const picked = await pickTask(readyWorkspaces())
+        if (picked?.target.kind === 'task') await whyTask(picked.root, picked.target.project, picked.target.task)
+        else if (picked !== undefined) void vscode.window.showInformationMessage('MonoSmith: choose one task of a project, not all of its tasks.')
+        break
+      }
+      default: {
+        break
+      }
+    }
+  }
+
+  /** Shows what the last change smith committed did, and reverts it on a yes. */
+  const undoHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('undoing a change')) return
+    const outcome = await undoLastChange({ run: smithIn(state), confirm: async (plan) => await confirmUndo(plan, state.name) })
+    note(`MonoSmith: undo in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellUndoOutcome(outcome)
+    if (outcome.kind === 'undone') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Writes the HTML report of the workspace to a temp file and opens it in the browser. */
+  const openReport = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    const outcome = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: writing the report of ${state.name}…` },
+      async () => await writeReport(smithIn(state), reportFile(tmpdir(), state.name)),
+    )
+    if (!outcome.ok) {
+      void vscode.window.showWarningMessage(`MonoSmith: the report was not written. ${outcome.message}`)
+
+      return
+    }
+    note(`MonoSmith: report of ${state.name}: ${outcome.file}`)
+    await vscode.env.openExternal(vscode.Uri.file(outcome.file))
+  }
+
+  /** Writes AGENTS.md, from the agent menu or from the notice after the agent install. */
+  const writeAgentsFile = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('AGENTS.md')) return
+    const outcome = await writeAgentFile({ run: smithIn(state), confirm: async (lines) => await confirmAgentFile(lines, state.name) })
+    note(`MonoSmith: AGENTS.md in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellAgentFileOutcome(outcome, state.root)
   }
 
   /** Opens `smith new --here` in a terminal on an empty folder. Nothing is written by this click: smith asks first and refuses a folder with files. */
@@ -800,6 +1007,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     dependencies,
     release,
     diagnostics,
+    deriveProblems,
     logDocs,
     insight,
     registerSmithTasks(taskFolders),
@@ -867,6 +1075,15 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.installAgent', async (argument) => { await installFiles('agent', argument) }),
     command<unknown>('monosmith.installMcp', async (argument) => { await installFiles('mcp', argument) }),
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
+    command<unknown>('monosmith.agentFile', writeAgentsFile),
+    command<unknown>('monosmith.addProject', addProjectHere),
+    command<unknown>('monosmith.undo', undoHere),
+    command<unknown>('monosmith.openReport', openReport),
+    command<unknown>('monosmith.why', showWhy),
+    command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),
+    command<unknown>('monosmith.derive.apply', async (argument) => { await deriveFile(argument, 'apply') }),
+    command<unknown>('monosmith.derive.adopt', async (argument) => { await deriveFile(argument, 'adopt') }),
+    command<unknown>('monosmith.derive.eject', async (argument) => { await deriveFile(argument, 'eject') }),
     command('monosmith.health.refresh', async () => { await health.reload() }),
     command('monosmith.health.fix', fixHealth),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
@@ -882,7 +1099,10 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       if (logs.has(logKey(target.root, task))) await logDocs.open(target.root, task)
       else void vscode.window.showInformationMessage(`MonoSmith: ${task} has not run since the editor started, so there is no output to show.`)
     }),
-    command('monosmith.clearProblems', async () => { diagnostics.clearAll() }),
+    command('monosmith.clearProblems', async () => {
+      diagnostics.clearAll()
+      deriveProblems.clearAll()
+    }),
     command('monosmith.affectedOnly.on', async () => { setFilter({ ...tree.filter(), affectedOnly: true }) }),
     command('monosmith.affectedOnly.off', async () => { setFilter({ ...tree.filter(), affectedOnly: false }) }),
     command('monosmith.filter', async () => { askFilterText(tree.filter().text, (text) => { setFilter({ ...tree.filter(), text }) }) }),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPreview, readPreview, readWrite, sayProblem } from './install-outcome.mapper.ts'
+import { isPreview, readPreview, readWrite } from './install-outcome.mapper.ts'
 
 const PREVIEW = '● Add .vscode/mcp.json\n--- a/.vscode/mcp.json\n+++ b/.vscode/mcp.json\n+{}\n\n● Add .mcp.json\n--- a/.mcp.json\n+++ b/.mcp.json\n+{}\n'
 const NO_TERMINAL = '✖ nothing was written: there is no terminal to ask on\n  → run it again with --yes to write the files above\n'
@@ -42,11 +42,5 @@ describe('readWrite', () => {
 
   it('refuses on a failure', () => {
     expect(readWrite({ code: 1, stdout: '', stderr: '✖ no smith.toml here\n' })).toEqual({ kind: 'refused', message: 'no smith.toml here' })
-  })
-})
-
-describe('sayProblem', () => {
-  it('drops the marks and keeps each way out', () => {
-    expect(sayProblem('✖ it broke\n  → do this\n  → or that\n')).toBe('it broke Try: do this Try: or that')
   })
 })

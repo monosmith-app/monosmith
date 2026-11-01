@@ -67,7 +67,11 @@ the `vscode` API is a `*.client.ts`; the rest runs without VS Code and is unit t
 | `project-insight` | `explain` and `graph` rendered as documents |
 | `empty-folder` | find a folder with no files and offer `smith new --here` in a terminal (`findBlankFolders`, `toNewArguments`) |
 | `adopt-offer` | find a folder that holds a repository smith can bring in, and offer a bare `smith` (its screen asks how far to go) or `smith adopt --dry-run` in a terminal (`findRepositoryOffers`, `toAdoptArguments`) |
-| `agent-install` | offer the MonoSmith agent and the `smith mcp` registration (`monosmith.installAgent`, `monosmith.installMcp`), run `smith agent install --claude --vscode` (or `smith mcp install --vscode`) as a preview first and write with `--yes`, open Claude Code on the agent (`monosmith.talkToAgent`), and record an opt-out with `smith config set agent.enabled false` |
+| `agent-install` | offer the MonoSmith agent and the `smith mcp` registration (`monosmith.installAgent`, `monosmith.installMcp`), run `smith agent install --claude --vscode` (or `smith mcp install --vscode`) as a preview first and write with `--yes`, open Claude Code on the agent (`monosmith.talkToAgent`), write `AGENTS.md` with `smith agent file` (`monosmith.agentFile`), and record an opt-out with `smith config set agent.enabled false` |
+| `smith-run` | what a run of the `smith` executable leaves (`SmithRun`) and how its `✖` problem and `→` fixes are worded for a person (`sayProblem`, `describeFailure`) |
+| `add-project` | `monosmith.addProject`: read `smith kinds`, `choices` and `stacks` as JSON, ask with quick picks, show the plan of `smith add --dry-run`, add with `--yes` after a yes (`--fresh` offered when the plan follows the siblings) |
+| `derive-files` | read `smith derive --check` (text; no JSON yet) into rows of the Health view and Problems entries, and `--explain`, `--replace`, `--adopt`, `--eject` after a yes |
+| `why`, `undo-change`, `workspace-report` | `smith why --json` and `smith why-miss --json` as pages, `smith undo --dry-run` then `--yes`, `smith report -o <temp file>` opened in the browser |
 | `refresh` | what makes the views stale, and a coalescer |
 | `settings`, `status-bar`, `context-keys`, `smith-terminal`, `extension-api` | `monosmith.*` settings, the status item, context keys, opening a terminal, and the small state API the integration tests read |
 

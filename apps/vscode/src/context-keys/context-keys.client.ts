@@ -8,11 +8,13 @@ import * as vscode from 'vscode'
  * project, group or folder), `monosmith.hasLastRun` (a run was started
  * before, so it can be run again), `monosmith.affectedOnly` and
  * `monosmith.filtered` (the view is narrowed to the affected projects, or by a
- * text) and `monosmith.fixable` (the doctor proposes fixes).
+ * text), `monosmith.fixable` (the doctor proposes fixes) and
+ * `monosmith.derivedPaths` (the absolute paths of the derived files that need
+ * action, which a menu tests with `resourcePath in monosmith.derivedPaths`).
  */
-export type ContextKey = 'monosmith.running' | 'monosmith.state' | 'monosmith.repoKind' | 'monosmith.selectionKind' | 'monosmith.hasLastRun' | 'monosmith.affectedOnly' | 'monosmith.filtered' | 'monosmith.fixable'
+export type ContextKey = 'monosmith.running' | 'monosmith.state' | 'monosmith.repoKind' | 'monosmith.selectionKind' | 'monosmith.hasLastRun' | 'monosmith.affectedOnly' | 'monosmith.filtered' | 'monosmith.fixable' | 'monosmith.derivedPaths'
 
 /** Sets a context key. */
-export async function setContextKey (key: ContextKey, value: boolean | string): Promise<void> {
+export async function setContextKey (key: ContextKey, value: boolean | string | string[]): Promise<void> {
   await vscode.commands.executeCommand('setContext', key, value)
 }

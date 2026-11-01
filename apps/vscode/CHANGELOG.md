@@ -12,6 +12,10 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- **The 2.0 commands.** Add Project… (quick picks, the plan of `smith add --dry-run`, then the add),
+  derived files in the Health view and the Problems panel with Explain, Apply, Adopt and Eject,
+  Why… on a file, task or project, Undo the Last Change…, Open Report, Write AGENTS.md for AI
+  agents, and the release channel in the Release Preview. Each command that writes asks first.
 - **Start in an empty folder.** An empty folder says `This folder is empty.` and offers
   Create a new MonoSmith workspace (`smith new --here` in a terminal, which asks its questions);
   a folder with files but no tool smith recognises offers Bring this folder into MonoSmith
