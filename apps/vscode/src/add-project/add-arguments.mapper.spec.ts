@@ -15,6 +15,11 @@ describe('addArguments', () => {
     ])
   })
 
+  it('copies one project with --like, unless the stack defaults are asked for', () => {
+    expect(addArguments({ ...request, like: 'api' }, 'plan')).toEqual(['add', 'app', 'web', '--lang', 'node', '--like', 'api', '--dry-run'])
+    expect(addArguments({ ...request, like: 'api' }, 'plan', true)).not.toContain('--like')
+  })
+
   it('lets the caller override --fresh', () => {
     expect(addArguments(request, 'apply', true)).toContain('--fresh')
   })
