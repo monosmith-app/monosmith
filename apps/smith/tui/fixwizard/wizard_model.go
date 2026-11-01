@@ -112,6 +112,7 @@ func (w Wizard) resolve() Wizard {
 			text = "● " + fix.Description + "\n  could not show the changes: " + err.Error()
 		}
 		w.review = strings.Split(strings.TrimRight(text, "\n"), "\n")
+		w.summary, w.hasDiff = summarizeDiffs(w.review)
 	}
 	return w
 }

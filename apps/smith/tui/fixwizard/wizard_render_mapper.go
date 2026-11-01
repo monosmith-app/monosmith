@@ -134,7 +134,7 @@ func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) 
 	case Asking:
 		return w.askingRows(th, inner)
 	case Reviewing:
-		return reviewLines(th, strings.Join(w.review, "\n"), inner), nil
+		return reviewLines(th, strings.Join(w.reviewShown(), "\n"), inner), nil
 	case Applying:
 		return w.applyingRows(th, tick, inner), nil
 	}

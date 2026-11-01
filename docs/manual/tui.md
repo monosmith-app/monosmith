@@ -298,9 +298,11 @@ Opened by `f` or `F` in Doctor. It is the interactive form of
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).
    `Up` `Down` (or `j` `k`, `Tab`) move, a digit picks that option, `Enter` or `Space`
    chooses, `b`, `Left` or `Backspace` goes back one question, `Esc`, `q` or `Ctrl+C` leaves.
-2. **Review.** What will change: files as diffs, the commands it will run, the projects it
-   covers. `Enter` or `y` applies; `n`, `Esc` or `q` leaves; `Up` `Down` `PgUp` `PgDn` `Home`
-   `End` scroll.
+2. **Review.** What will change: one line for each file (what happens and how many lines), the
+   commands it will run, the projects it covers. `d` shows the diffs and hides them again.
+   `Enter` or `y` applies; `n`, `Esc` or `q` leaves; `Up` `Down` `PgUp` `PgDn` `Home` `End`
+   scroll. In the adopt wizard the review of a conversion has the same unticked box, "Commit this
+   change so it can be undone": `c` or a click ticks it.
 3. **Progress.** Step by step with a bar. `Esc` or `Ctrl+C` stops the step.
 4. **Failure.** The failing step's output. `r` or `Enter` retries, `y` copies the failure
    text, `Esc`, `q`, `c` or `Ctrl+C` closes.
