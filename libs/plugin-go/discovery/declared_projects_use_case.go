@@ -14,14 +14,15 @@ import (
 
 // DiscoverWithDeclared is Discover plus the projects smith.toml declares: a
 // program or a library that is a package of the Go module above its folder,
-// with no go.mod of its own.
-func DiscoverWithDeclared(workspaceRoot string, manifests []string, declared []protocol.DeclaredProject) (protocol.DiscoverResult, error) {
-	result, err := Discover(workspaceRoot, manifests)
+// with no go.mod of its own. settings are the projects' Go settings by project
+// name (DiscoverParams.Settings); their tags go to the tasks.
+func DiscoverWithDeclared(workspaceRoot string, manifests []string, declared []protocol.DeclaredProject, settings map[string]map[string]any) (protocol.DiscoverResult, error) {
+	result, err := discover(workspaceRoot, manifests, settings)
 	if err != nil || len(declared) == 0 {
 		return result, err
 	}
 	for _, d := range declared {
-		project, err := describeDeclared(workspaceRoot, d)
+		project, err := describeDeclared(workspaceRoot, d, settings)
 		if err != nil {
 			return result, fmt.Errorf("[projects.%s] at %s: %w", d.Name, d.Root, err)
 		}
@@ -37,7 +38,7 @@ func DiscoverWithDeclared(workspaceRoot string, manifests []string, declared []p
 // it; the tasks are those of a module project, run in the folder, whose go
 // commands work from a folder of the module; the module's go.mod and go.sum are
 // task inputs, since the folder does not hold them.
-func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protocol.Project, error) {
+func describeDeclared(workspaceRoot string, d protocol.DeclaredProject, settings map[string]map[string]any) (protocol.Project, error) {
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(d.Root))
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
 		return protocol.Project{}, fmt.Errorf("the folder does not exist")
@@ -84,6 +85,11 @@ func describeDeclared(workspaceRoot string, d protocol.DeclaredProject) (protoco
 		exported += "/" + rel
 	}
 	tasks := Tasks(d.Name, d.Root, kind, mod.Native, lint)
+	tags, err := projectBuildTags(settings, d.Name)
+	if err != nil {
+		return protocol.Project{}, err
+	}
+	withBuildTags(tasks, tags)
 	for name, t := range tasks {
 		if len(t.Inputs) == 0 {
 			continue

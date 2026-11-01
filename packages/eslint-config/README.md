@@ -260,7 +260,7 @@ the other two rules are about imports, which a file's suffix has no bearing on.
 
 | Rule | Reports |
 |---|---|
-| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`); a folder nested inside a subfeature; anything but `index`/`main` at the root of `src` |
+| `vertical-slices/file-role` | A name not in kebab-case; a production file without its role suffix (`.use-case`, `.algorithm`, `.policy`, `.model`, `.contract`, `.mapper`, `.validator`, `.repository`, `.client`, `.store`, `.error`, `.config`, `.enum`, `.handler`; the message adds that a front-end file, a `.ts` file under a UI project, also has `.route`, `.component`, `.section`, `.hook`, `.style`, `.content`, `.mock` and `.fixture`, opt-in through the `verticalSlices.roles` option); a folder nested inside a subfeature; anything but `index`/`main` at the root of `src` |
 | `vertical-slices/no-deep-import` | A sibling reached past its index (`'../billing/fee.policy'` instead of `'../billing'`, or `'../billing/index.ts'` under `nodenext`), and a subfeature importing its own index |
 | `vertical-slices/no-slice-cycle` | Two subfeatures importing each other — **type-only imports included** |
 

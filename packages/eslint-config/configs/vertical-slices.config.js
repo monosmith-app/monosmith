@@ -149,7 +149,7 @@ export const plugin = {
         type:     'problem',
         messages: {
           case:    'Name files and folders in kebab-case: "{{name}}".',
-          role:    'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is.',
+          role:    'A production file ends in its role - .{{roles}} - so "{{name}}" says what it is. If this is a front-end file (a .ts file under a UI project), the front-end roles .route, .component, .section, .hook, .style, .content, .mock and .fixture exist too: allow them with the verticalSlices.roles option.',
           nesting: 'A subfeature is flat: "{{name}}" sits in a folder inside one. Split the subfeature instead of nesting it.',
           root:    'Only index and main live at the root of src; "{{name}}" belongs in a subfeature.',
         },

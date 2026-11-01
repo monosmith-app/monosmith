@@ -1674,6 +1674,9 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
     /// <summary>Declared are the projects smith.toml declares for this plugin's language ([projects.&lt;name&gt;] with a root and a language): folders with no manifest of their own, such as a program that is a package of the Go module above it. The plugin describes each one in its result, or answers with an error saying why it cannot.</summary>
     public IReadOnlyList<DeclaredProject> Declared { get; init; } = [];
 
+    /// <summary>Settings are this plugin's settings for projects, by project name, from smith.toml [projects.&lt;project&gt;.settings.&lt;plugin&gt;]. They reach the plugin here because the tasks it describes may depend on them (the Go plugin's build tags). A project with no settings is absent.</summary>
+    public IReadOnlyDictionary<string, JsonMap> Settings { get; init; } = new Dictionary<string, JsonMap>();
+
     /// <inheritdoc />
     public static DiscoverParams Read(JsonAny? value, string path)
     {
@@ -1682,6 +1685,7 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
         {
             Manifests = ListOf(Member(map, "manifests"), Join(path, "manifests"), StringValue),
             Declared = ListOf(Member(map, "declared"), Join(path, "declared"), DeclaredProject.Read),
+            Settings = MapOf(Member(map, "settings"), Join(path, "settings"), ObjectOf),
         };
     }
 
@@ -1695,6 +1699,11 @@ public sealed record DiscoverParams : IProtocolValue<DiscoverParams>
         {
             writer.Property("declared");
             MessageWritingAlgorithm.List(writer, Declared, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Settings is { Count: > 0 })
+        {
+            writer.Property("settings");
+            MessageWritingAlgorithm.Map(writer, Settings, (builder1, member1) => builder1.Any(member1));
         }
         writer.EndObject();
     }

@@ -143,6 +143,10 @@ bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
+[projects.mvd.settings.go]            # Go build tags: tags, tags_linux, tags_windows, tags_darwin (plugins/using/catalogue/go.md)
+tags = ["production"]
+tags_linux = ["gtk3"]
+
 [projects.studio.settings.tauri]      # a Tauri app's sidecar programs and resources, copied for tauri-build (plugins/using/catalogue/tauri.md)
 sidecars = [{ name = "videocraw", project = "cli", bin = "videocraw" }, { name = "tool", from = "tools/tool" }]
 resources = ["assets/models", { from = "$VIDEOPLUGINS/dist", to = "plugins/" }]

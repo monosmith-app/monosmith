@@ -230,6 +230,9 @@ func Validate(cfg *Config) error {
 	if err := validateDeclaredProjects(cfg.Projects); err != nil {
 		return err
 	}
+	if err := validateGoBuildTags(cfg.Projects); err != nil {
+		return err
+	}
 	for name, po := range cfg.Projects {
 		if po.Docker != nil {
 			if _, ok := cfg.Conventions["docker"]; !ok {

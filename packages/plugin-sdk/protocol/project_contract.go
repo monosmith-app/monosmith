@@ -10,6 +10,11 @@ type DiscoverParams struct {
 	// it. The plugin describes each one in its result, or answers with an error
 	// saying why it cannot.
 	Declared []DeclaredProject `json:"declared,omitempty"`
+	// Settings are this plugin's settings for projects, by project name, from
+	// smith.toml [projects.<project>.settings.<plugin>]. They reach the plugin
+	// here because the tasks it describes may depend on them (the Go plugin's
+	// build tags). A project with no settings is absent.
+	Settings map[string]map[string]any `json:"settings,omitempty"`
 }
 
 // DeclaredProject is a project smith.toml declares: a folder with no manifest.

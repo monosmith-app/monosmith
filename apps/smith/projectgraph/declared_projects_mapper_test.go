@@ -25,3 +25,17 @@ func TestDeclaredProjectsGoToThePluginThatOwnsTheirLanguage(t *testing.T) {
 		t.Errorf("%+v", none)
 	}
 }
+
+func TestDiscoverSettingsAreThePluginsTablesByProjectName(t *testing.T) {
+	cfg := workspace.Config{Projects: map[string]workspace.ProjectOverride{
+		"mvd": {Settings: map[string]map[string]any{"go": {"tags": []any{"production"}}, "docker": {"x": 1}}},
+		"web": {Settings: map[string]map[string]any{"docker": {"x": 1}}},
+	}}
+	got := discoverSettings("go", cfg)
+	if len(got) != 1 || got["mvd"]["tags"] == nil {
+		t.Fatalf("only the go table of mvd: %+v", got)
+	}
+	if none := discoverSettings("rust", cfg); none != nil {
+		t.Errorf("%+v", none)
+	}
+}

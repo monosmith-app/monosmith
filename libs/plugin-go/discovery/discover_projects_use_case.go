@@ -16,6 +16,12 @@ import (
 // root is a single-module repository, not a project of a monorepo, and is
 // skipped.
 func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult, error) {
+	return discover(workspaceRoot, manifests, nil)
+}
+
+// discover is Discover with the projects' settings by name, which add the
+// build tags to their tasks.
+func discover(workspaceRoot string, manifests []string, settings map[string]map[string]any) (protocol.DiscoverResult, error) {
 	result := protocol.DiscoverResult{Projects: []protocol.Project{}}
 	for _, manifest := range manifests {
 		root := path.Dir(manifest)
@@ -41,6 +47,12 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 		if err != nil {
 			return result, fmt.Errorf("%s: %w", manifest, err)
 		}
+		tags, err := projectBuildTags(settings, name)
+		if err != nil {
+			return result, err
+		}
+		tasks := Tasks(name, root, kind, mod.Native, lint)
+		withBuildTags(tasks, tags)
 		project := protocol.Project{
 			Name:     name,
 			Root:     root,
@@ -48,7 +60,7 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Kind:     kind,
 			Exports:  []string{mod.Path},
 			Imports:  imports,
-			Tasks:    Tasks(name, root, kind, mod.Native, lint),
+			Tasks:    tasks,
 			Stack:    mod.Stack,
 		}
 		if mod.Native {

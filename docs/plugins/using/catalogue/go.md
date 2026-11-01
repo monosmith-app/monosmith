@@ -176,10 +176,11 @@ The plugin publishes no stack of its own. `--stack` for Go means `go-smith-plugi
 
 ## Settings
 
-The Go plugin has no `[projects.<p>.settings.go]` table and reads no environment variable of its own. What can be configured:
+The Go plugin reads one table, `[projects.<p>.settings.go]` (build tags), and no environment variable of its own. What can be configured:
 
 | Where | Key | Effect | Read in |
 |---|---|---|---|
+| `smith.toml` | `[projects.<p>.settings.go] tags = ["production"]`, `tags_linux`, `tags_windows`, `tags_darwin` | build tags: `tags` always, then the list of the OS smith runs on (a tag in both is passed once) | `discovery/build_tags_policy.go` |
 | `go.mod` comment | `// smith:kind app\|lib\|package` | the project kind | `discovery/go_module_mapper.go` |
 | `go.mod` comment | `// smith:stack <name>` | the stack (letters, digits, `. @ / - _`) | same |
 | `go.mod` comment | `// smith:native` | the module builds on each OS with `CGO_ENABLED=1`, and `smith ci verify` leaves it to `smith ci native` | same, `discovery/module_tasks_config.go` |
@@ -189,6 +190,16 @@ The Go plugin has no `[projects.<p>.settings.go]` table and reads no environment
 | `smith.toml` | `[projects.<app>.release]` | release assets (`platforms`, `asset_name`, `product`, `os_alias`, `arch_alias`, `version_variable`, ...) | `releasing/` |
 | `smith.toml` | `[ci] audit_policies = ["go"]`, `audit_warn = ["go"]` | adds `go mod verify` to the audit | `pipeline/ci_contribution_use_case.go` |
 | `smith.toml` | `[tasks.*]`, `[projects.<p>.tasks.*]` | override any task above | host |
+
+### Build tags
+
+```toml
+[projects.mvd.settings.go]
+tags       = ["production"]
+tags_linux = ["gtk3"]       # Wails 3 on Linux: -tags=production,gtk3
+```
+
+The plugin passes the tags as `-tags=a,b` to the `build`, `test`, `package` and `start` commands, and as `--build-tags a,b` to `golangci-lint`. The tags are part of the command, so changing them misses the task cache. A value that is not a list of tag names (letters, digits, `_`, `.`) stops `smith` at load with a message that names the key. This replaces `env = { GOFLAGS = "-tags=..." }` on each task. `smith ci native` is not changed.
 
 ## Toolchain
 

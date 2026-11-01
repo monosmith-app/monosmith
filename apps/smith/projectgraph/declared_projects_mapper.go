@@ -25,3 +25,19 @@ func declaredFor(plugin string, languages []string, cfg workspace.Config) []prot
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
+
+// discoverSettings collects, by project name, the settings smith.toml gives
+// the plugin ([projects.<name>.settings.<plugin>]), for the plugin to read
+// while it describes the projects. Nil when no project has any.
+func discoverSettings(plugin string, cfg workspace.Config) map[string]map[string]any {
+	var out map[string]map[string]any
+	for name, po := range cfg.Projects {
+		if s := ProjectSettings(plugin, po); s != nil {
+			if out == nil {
+				out = map[string]map[string]any{}
+			}
+			out[name] = s
+		}
+	}
+	return out
+}
