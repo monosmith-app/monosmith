@@ -46,7 +46,7 @@ type Found struct {
 	Warnings     []string `json:"warnings,omitempty"`
 	// RootProject is the one project at the repository root, when smith sees no
 	// project and a package.json, go.mod, pyproject.toml or Cargo.toml is
-	// there: the wizard asks where to move it (ADR 0069).
+	// there: the wizard asks where to move it (ADR 0070).
 	RootProject *adoptmove.Candidate `json:"rootProject,omitempty"`
 	// Full is true when the full level is offered; NoFull says why not.
 	Full   bool   `json:"full"`

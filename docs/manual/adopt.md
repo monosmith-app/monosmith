@@ -24,7 +24,7 @@ adopt wizard, which does the same in screens; see
 ## Synopsis
 
 ```sh
-smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint]] [--level conservative|full]
+smith adopt [--dry-run] [--json] [--tags] [--init [--install] [--eslint] [--move <folder>|none] [--yes]] [--level conservative|full]
 ```
 
 ## Arguments and flags
@@ -43,7 +43,9 @@ Usage: `smith adopt [flags]`
 | `--install` | boolean | off | with --init, also run npm install for the Node projects |
 | `--json` | boolean | off | print the report as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
+| `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
+| `--yes` | boolean | off | do not ask: a project at the root moves only when --move says where |
 
 <!-- smith:end adopt -->
 
@@ -72,12 +74,56 @@ Interactions:
 - A pipeline of yours at a path smith owns is kept beside the new one as
   `<file>.pre-smith`. A `.gitignore` of yours is kept and gets `.smith/` added.
 
+## A project at the repository root
+
+smith manages one folder per project (`apps/<name>`, `libs/<name>`, `packages/<name>`). A
+repository whose one project sits at the root (a `package.json`, `go.mod`, `pyproject.toml`
+or `Cargo.toml` there) has no such folder, so `--init` asks where to move it, and never picks
+for you:
+
+```text
+Move it into a folder of its own so smith can manage it?
+  1) apps/web-app (suggested)
+  2) packages/web-app
+  3) libs/web-app
+  4) another folder
+  5) no, leave it
+```
+
+- The suggestion is an app folder when the project looks like a program (a `start` script
+  or `bin` in `package.json`, a `package main`, project scripts in `pyproject.toml`,
+  `src/main.rs`), else a package folder.
+- The name comes from the manifest: the npm scope or module path is dropped and the rest
+  becomes kebab-case. You can edit it. Answer 4 asks for the whole folder.
+- Without a terminal, or with `--yes`, `--init` moves nothing unless `--move <folder>` says
+  where, for example `smith adopt --init --move apps/web`. Without it the command stops and
+  prints the exact commands. `--move none` keeps the project at the root (an empty workspace,
+  add projects with `smith add`).
+- The move is `git mv` of the project's files. These stay at the root: `.git`, `.gitignore`,
+  `.github` and the other CI files, editor and agent settings, `smith.toml`, README, LICENSE,
+  CHANGELOG, `docs`, compose files, and for Node the lockfile (`package-lock.json` is
+  rewritten by `npm install` for the workspace layout). Everything else moves, including
+  source, tests, configs and, for Go, `go.mod` and `go.sum` (the module path does not change).
+  Lines of `.gitignore` that start with `/` and name a moved entry follow it.
+- It refuses, and changes nothing, when the root holds two manifests (a Go module and a
+  `package.json`), when the folder already holds files, or when the folder's first part is a
+  file or a folder that would move.
+- `smith adopt --dry-run` prints the question and the `git mv` commands for the suggested
+  folder; with `--move <folder>` it prints the commands for that folder.
+- The move is staged, not committed. With `--commit` it is a commit of its own
+  (`chore: move <name> into <folder>`, `git revert HEAD` takes it back), followed by the
+  adoption commit that `smith undo` reverts.
+
+The adopt wizard of the terminal interface and the VS Code adopt command ask the same
+question, with a name field and a "Commit this change so it can be undone" box that starts
+unticked, and then run the step with `--move`.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | The report was printed with nothing blocking, or the requested steps were applied. |
-| 1 | Something blocks (dirty tree, a recognised Nx or Turborepo workspace, an unsupported `--level`), the folder is already a workspace, or a step failed. |
+| 1 | Something blocks (dirty tree, a recognised Nx or Turborepo workspace, an unsupported `--level`), the folder is already a workspace (a `smith.toml` that cannot be read is reported with its file, line and column), a project at the root has no `--move` answer, or a step failed. |
 
 ## Files and environment
 

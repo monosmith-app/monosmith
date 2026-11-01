@@ -3,5 +3,5 @@
 // because smith needs one folder per project. It finds the project, derives its
 // name, offers the folders it may go in, works out which files belong to the
 // project and which to the repository, and moves them with git mv. smith never
-// chooses the folder: the caller asks the person (ADR 0069).
+// chooses the folder: the caller asks the person (ADR 0070).
 package adoptmove
