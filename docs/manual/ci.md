@@ -62,9 +62,11 @@ The phases take no flags. [`smith ci generate`](ci-generate.md) has `--check`;
 <!-- smith:begin ci setup -->
 Run the setup phase
 
-Usage: `smith ci setup`
+Usage: `smith ci setup [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--assets` | boolean | off | install for the assets job: leave out the projects whose [release] install is false |
 
 <!-- smith:end ci setup -->
 
