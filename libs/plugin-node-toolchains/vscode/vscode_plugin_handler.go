@@ -72,6 +72,11 @@ func (p *VSCode) Publish(params protocol.PublishParams) (protocol.PublishResult,
 	return publishExtension(p.root, params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: a prerelease version is
+// published to the Marketplace as a pre-release under a plain version (see
+// MarketplaceVersion), which stable users are not offered.
+func (p *VSCode) PublishesChannels() {}
+
 // CI implements serve.CIContributor: the tokens an extension app's release reads.
 func (p *VSCode) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return ciExtensions(p.root, params), nil

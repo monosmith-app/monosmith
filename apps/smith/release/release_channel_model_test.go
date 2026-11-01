@@ -126,11 +126,11 @@ func TestAChannelPublishesUnderItsDistTagOrItsPrerelease(t *testing.T) {
 
 func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
 	pg := packages(t)
-	pg.Get("sdk").Deployers = []string{"docker"}
+	pg.Get("sdk").Deployers = []string{"docker", "vscode"}
 	pg.Get("core").Release = &workspace.ProjectRelease{NPM: []string{"@acme/core"}, PackageManagers: []string{"brew"}}
 	pg.Get("web").Release = &workspace.ProjectRelease{NPM: []string{"@acme/web"}, PyPI: "acme-web", Pub: "acme_web"}
 	plan := Plan{Items: []Item{{Project: "core", Plugin: "test"}, {Project: "sdk", Plugin: "other"}, {Project: "web", Plugin: "other"}}}
-	got := strings.Join(channelProblems(plan, pg, func(p string) bool { return p == "test" }), "\n")
+	got := strings.Join(channelProblems(plan, pg, func(p string) bool { return p == "test" || p == "vscode" }), "\n")
 	for _, want := range []string{
 		"sdk: the other plugin cannot publish a release channel",
 		"channels = false in [projects.sdk.release]",
@@ -140,7 +140,7 @@ func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}
 	}
-	for _, not := range []string{"core: the test plugin", "core: the package", "web:"} {
+	for _, not := range []string{"core: the test plugin", "core: the package", "web:", "docker and vscode", "vscode deploy"} {
 		if strings.Contains(got, not) {
 			t.Errorf("%q must be accepted: a plugin with channels, and an app whose binaries go to registries that order prereleases below releases:\n%s", not, got)
 		}
