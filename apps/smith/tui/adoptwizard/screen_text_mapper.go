@@ -98,7 +98,7 @@ func projectsLine(f adoptflow.Found) string {
 }
 
 // conservativeText is the review of the conservative level.
-func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, diffs string, r convert.Highlights) string {
+func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, diffs string, r convert.Highlights, commit bool) string {
 	var b strings.Builder
 	if f.Kind.Convertible() {
 		tool := strings.TrimSuffix(f.Source, " workspace")
@@ -116,8 +116,13 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 		return b.String()
 	}
 	b.WriteString(commandReview)
-	fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found and makes one commit;\n", len(f.Projects))
+	fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found;\n", len(f.Projects))
 	fmt.Fprintf(&b, "  your build and lint setup stay as they are. smith doctor then says what is left to do.\n")
+	box := "[ ]"
+	if commit {
+		box = "[x]"
+	}
+	fmt.Fprintf(&b, "\n  %s Commit this change so it can be undone (press c to tick it)\n", box)
 	return b.String()
 }
 
@@ -165,13 +170,18 @@ func plural(n int, noun string) string {
 
 // doneText is the last screen, in three parts: what is done, what behaves
 // differently now, and what needs the person.
-func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, declined []string, kept []legacyinventory.Kept, notes []string) string {
+func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, declined []string, kept []legacyinventory.Kept, notes []string, committed bool) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "✓ %q is a smith workspace now", f.Name)
-	if r.Projects != "" {
-		fmt.Fprintf(&b, ": %s", r.Projects)
+	if len(f.Projects) == 0 && r.Projects == "" {
+		fmt.Fprintf(&b, "● %q has a smith.toml now, but smith found no project in it\n", f.Name)
+		b.WriteString("  Add one with smith add, or move your code into folders that hold a manifest (package.json, go.mod, pyproject.toml).\n")
+	} else {
+		fmt.Fprintf(&b, "✓ %q is a smith workspace now", f.Name)
+		if r.Projects != "" {
+			fmt.Fprintf(&b, ": %s", r.Projects)
+		}
+		b.WriteString("\n")
 	}
-	b.WriteString("\n")
 	if checked != "" {
 		fmt.Fprintf(&b, "  It works: %s.\n", checked)
 		switch len(r.Checks) {
@@ -189,7 +199,11 @@ func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, 
 	if len(declined) > 0 {
 		fmt.Fprintf(&b, "  Left as they were, as you chose: %s\n", strings.Join(declined, ", "))
 	}
-	fmt.Fprintf(&b, "  Nothing is committed yet: git status lists the changes, and git can take them back.\n")
+	if committed {
+		fmt.Fprintf(&b, "  Committed as one change: smith undo reverts it.\n")
+	} else {
+		fmt.Fprintf(&b, "  Not committed: review with git status. git can take the changes back.\n")
+	}
 	if len(r.Checks) > 0 {
 		fmt.Fprintf(&b, "\n! Needs you (%d)\n", len(r.Checks))
 		for _, c := range r.Checks {

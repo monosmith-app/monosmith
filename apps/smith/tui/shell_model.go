@@ -57,6 +57,12 @@ type Config struct {
 	// Notice is a quiet line shown once as a toast: smith was updated, or a
 	// newer one exists.
 	Notice string
+	// Problem is why smith.toml could not be read (with its line and column);
+	// "" when there is no such file or it reads well.
+	Problem string
+	// CommitOperations is true when smith.toml sets commit_operations, so every
+	// change smith makes is already a commit.
+	CommitOperations bool
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -75,9 +81,12 @@ type Shell struct {
 
 	inWorkspace bool
 	emptyFolder bool
-	sources     sources.Sources
-	tabs        []string
-	tab         string
+	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
+	problem   string
+	commitOps bool
+	sources   sources.Sources
+	tabs      []string
+	tab       string
 	// detailOpen is true while the detail of the selected project fills the
 	// pane, in the narrow layout (Enter opens it, Esc closes it).
 	detailOpen bool
@@ -200,6 +209,7 @@ func NewShell(cfg Config) Shell {
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
+	sh.problem, sh.commitOps = cfg.Problem, cfg.CommitOperations
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}

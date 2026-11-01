@@ -28,7 +28,7 @@ type StepError struct {
 }
 
 func (e *StepError) Error() string {
-	return fmt.Sprintf("step %d of %d failed (%s): %v", e.Number, e.Total, strings.Join(e.Step.Argv, " "), e.Err)
+	return fmt.Sprintf("step %d of %d failed (%s): %v", e.Number, e.Total, displayCommand(e.Step.Argv), e.Err)
 }
 
 func (e *StepError) Unwrap() error { return e.Err }
@@ -80,7 +80,7 @@ func stepName(s protocol.FixStep) string {
 	if s.Description != "" {
 		return s.Description
 	}
-	return strings.Join(s.Argv, " ")
+	return displayCommand(s.Argv)
 }
 
 func tail(text string, lines int) string {

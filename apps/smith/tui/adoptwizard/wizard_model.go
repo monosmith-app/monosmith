@@ -60,6 +60,9 @@ type Model struct {
 	// changesDiff shows them as diffs, the way the Doctor fix dialog does.
 	changes     adoptflow.Changes
 	changesDiff string
+	// commit is true when the person ticked "Commit this change so it can be
+	// undone" in the review of a plain repository's adoption.
+	commit bool
 }
 
 // prepared is what Prepare returned.
@@ -130,9 +133,24 @@ func (m Model) Wheel(delta int) Model {
 
 // Key handles a key name.
 func (m Model) Key(name string) (Model, Outcome) {
+	if name == "c" && m.togglesCommit() {
+		m.commit = !m.commit
+		return m.showConservative(), Outcome{}
+	}
 	fw, out := m.fw.Key(name)
 	m.fw = fw
 	return m.react(out)
+}
+
+// togglesCommit is true in the review of a plain repository's adoption, the
+// only step of the wizard that can make a commit.
+func (m Model) togglesCommit() bool {
+	return m.stage == StageReview && !m.full && !m.found.Kind.Convertible() && m.fw.Phase() == fixwizard.Reviewing
+}
+
+// finished is the outcome that opens the workspace.
+func (m Model) finished(build bool) Outcome {
+	return Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: build, Committed: m.commit && !m.found.Kind.Convertible()}
 }
 
 // Click handles a left press.
@@ -171,7 +189,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Decline && m.stage == StageAgent:
 		return m.done(), Outcome{}
 	case out.Decline && m.stage == StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready.", Build: true}
+		return m, m.finished(true)
 	case out.Decline:
 		return m.decline(false)
 	case out.Skip && m.stage == StageDone:
@@ -189,7 +207,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 func (m Model) cancel() (Model, Outcome) {
 	switch m.stage {
 	case StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+		return m, m.finished(false)
 	case StageReport, StageAgent:
 		return m.done(), Outcome{}
 	case StageGroup, StageChecking:
@@ -252,7 +270,7 @@ func (m Model) confirm() (Model, Outcome) {
 		style.Verb = "Installing the agent…"
 		return m.runFix(StageAgentInstalling, fix, job, style), Outcome{Job: &job}
 	case StageDone:
-		return m, Outcome{Close: true, Finished: "Workspace " + m.found.Name + " is ready."}
+		return m, m.finished(false)
 	case StageReport:
 		return m.done(), Outcome{}
 	}
@@ -532,14 +550,14 @@ func (m Model) reviewConservative() (Model, Outcome) {
 func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
-		fix := m.flow.AdoptFix()
+		fix := m.flow.AdoptFix(m.commit)
 		shown, err := m.flow.ShowFix(fix)
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
 		}
-		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{})
+		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{}, m.commit)
 	} else {
-		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result())
+		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result(), false)
 	}
 	style := adoptStyle
 	style.Apply, style.Back, style.Review = "Go ahead", true, "what will change"
@@ -568,7 +586,7 @@ func (m Model) install() (Model, Outcome) {
 func (m Model) startConversion() (Model, Outcome) {
 	flow, c := m.flow, m.choices
 	if !m.found.Kind.Convertible() {
-		fix := flow.AdoptFix()
+		fix := flow.AdoptFix(m.commit)
 		job := Job{Name: "adopting the repository", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return "", flow.ApplyFix(ctx, fix.Fix, out)
 		}}
@@ -670,7 +688,7 @@ func (m Model) done() Model {
 	if m.found.Kind.Convertible() {
 		style.Skip = "Read the report"
 	}
-	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes)
+	text := doneText(m.found, m.flow.Result(), checked, m.applied, m.declinedN, m.kept, m.notes, m.commit && !m.found.Kind.Convertible())
 	return m.reviewOf(StageDone, "done", strings.TrimLeft(text, "\n"), style)
 }
 

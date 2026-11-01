@@ -137,7 +137,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	if out.Confirmed {
-		return s.execute(c.Argv, true)
+		return s.execute(c.Final(), true)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
 	return nil

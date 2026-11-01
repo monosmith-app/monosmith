@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -142,7 +143,7 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		s.tell("Cannot add "+name+" like that", "smith said:", failureText(msg.res))
 		return nil
 	}
-	c := dialog.NewConfirm("Add "+name+"?", "Nothing is written yet. This is the plan; Run makes the project, and Esc leaves everything as it is. You can undo it afterwards.", argv).
+	c := dialog.NewConfirm("Add "+name+"?", "Nothing is written yet. This is the plan; Run makes the project, and Esc leaves everything as it is. Tick the box to commit it, so it can be undone.", argv).
 		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
@@ -306,14 +307,16 @@ func undoHint() string {
 	return "It can be undone: open the palette (" + commands.ShortcutOf("file.palette") + ") and choose Undo the last change"
 }
 
-// undoable is true for the commands whose work `smith undo` can revert.
-func undoable(argv []string) bool {
-	if len(argv) == 0 {
-		return false
-	}
-	switch argv[0] {
-	case "add", "convert", "adopt":
-		return true
-	}
-	return false
+// notCommittedHint is the sentence a toast adds to a change that is not a commit.
+func notCommittedHint() string {
+	return "Not committed: review with git status"
+}
+
+// changesFiles is true for the commands that write files and can commit them.
+func changesFiles(argv []string) bool { return dialog.CanCommit(argv) }
+
+// undoable is true for a command whose work `smith undo` can revert: one that
+// was run with --commit, or in a workspace that sets commit_operations.
+func undoable(argv []string, commitOps bool) bool {
+	return dialog.CanCommit(argv) && (commitOps || slices.Contains(argv, "--commit"))
 }

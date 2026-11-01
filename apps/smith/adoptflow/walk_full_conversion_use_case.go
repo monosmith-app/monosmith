@@ -169,15 +169,21 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 
 // AdoptFix is the conservative adoption of a plain repository as a fix: one
 // step that runs smith adopt --init, which writes smith.toml and the
-// pipelines and commits.
-func (s *Session) AdoptFix() doctorfix.Planned {
+// pipelines. With commit it also passes --commit, so the change becomes one
+// commit that smith undo can revert; without it nothing is committed.
+func (s *Session) AdoptFix(commit bool) doctorfix.Planned {
+	argv := []string{convert.SmithCommand(), "adopt", "--init"}
+	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
+	step := "adopt the repository (smith.toml, the CI pipelines)"
+	if commit {
+		argv = append(argv, "--commit")
+		what += ", and commit them"
+		step += ", then one commit"
+	}
 	return doctorfix.Planned{
 		Fix: protocol.Fix{
-			Description: "Make this repository a smith workspace: write smith.toml and the pipelines, and commit them",
-			Steps: []protocol.FixStep{{
-				Description: "adopt the repository (smith.toml, the CI pipelines, one commit)",
-				Argv:        []string{convert.SmithCommand(), "adopt", "--init"},
-			}},
+			Description: what,
+			Steps:       []protocol.FixStep{{Description: step, Argv: argv}},
 		},
 		Checks: []string{"adopt"},
 	}

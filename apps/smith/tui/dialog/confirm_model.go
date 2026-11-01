@@ -29,11 +29,25 @@ type Confirm struct {
 	focus, hover int
 	rect         Rect
 	cmdLines     []string
+	// Offer shows the box "Commit this change so it can be undone"; Commit is
+	// true once it is ticked. It starts unticked: smith commits only when asked.
+	Offer, Commit    bool
+	screenW, screenH int
 }
 
 // NewConfirm builds the dialog for a command line (smith's arguments).
 func NewConfirm(title, why string, argv []string) Confirm {
-	return Confirm{Title: title, Why: why, Command: commands.Line(argv), Argv: argv, hover: -1}
+	return Confirm{Title: title, Why: why, Command: commands.Line(argv), Argv: argv, hover: -1, Offer: Committable(argv)}
+}
+
+// Final is the command line that runs on confirmation: Argv, with --commit
+// when the box is ticked.
+func (c Confirm) Final() []string { return WithCommit(c.Argv, c.Offer && c.Commit) }
+
+// toggleCommit ticks or unticks the box and redraws the command line.
+func (c Confirm) toggleCommit() Confirm {
+	c.Commit = !c.Commit
+	return c.Place(c.screenW, c.screenH)
 }
 
 // NewNotice builds a dialog that only tells: a title, a sentence (Why) and
@@ -59,7 +73,13 @@ func (c Confirm) WithDetails(lines []string) Confirm {
 
 // Place centres the dialog on a screen of the given size.
 func (c Confirm) Place(sw, sh int) Confirm {
+	c.screenW, c.screenH = sw, sh
+	c.Command = commands.Line(c.Final())
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
+	if c.Offer {
+		// Wide enough for the box line, which is not cut.
+		w = min(max(w, ansi.StringWidth(CommitLabel)+14), max(sw-2, 10))
+	}
 	if c.Info {
 		w = min(noticeWide, max(sw-2, 10))
 	}
@@ -88,6 +108,13 @@ func (c Confirm) bodyLines(inner int) []string {
 	}
 	if c.Info {
 		return body
+	}
+	if c.Offer {
+		box := "[ ] "
+		if c.Commit {
+			box = "[x] "
+		}
+		body = append(body, "", box+CommitLabel+"  (C)")
 	}
 	body = append(body, "", "The command that will run:")
 	for _, l := range c.cmdLines {
@@ -167,12 +194,21 @@ func (c Confirm) buttonAt(x, y int) int {
 	return -1
 }
 
+// commitRow is the index, in the body, of the line with the box.
+func (c Confirm) commitRow() int {
+	inner := max(c.rect.W-4, 1)
+	return len(c.bodyLines(inner)) - len(c.cmdLines) - 3
+}
+
 // Hover highlights the button under the pointer.
 func (c Confirm) Hover(x, y int) Confirm { c.hover = c.buttonAt(x, y); return c }
 
 // Click handles a left press: a button runs or cancels; a press outside the
 // dialog cancels; a press inside elsewhere does nothing.
 func (c Confirm) Click(x, y int) (Confirm, Outcome) {
+	if c.Offer && c.rect.Contains(x, y) && y == c.rect.Y+1+c.commitRow() {
+		return c.toggleCommit(), Outcome{}
+	}
 	switch c.buttonAt(x, y) {
 	case 0:
 		return c, Outcome{Done: true, Confirmed: !c.Info}
@@ -195,6 +231,10 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		return c, Outcome{}
 	}
 	switch name {
+	case "c", "C":
+		if c.Offer {
+			return c.toggleCommit(), Outcome{}
+		}
 	case "y", "Y":
 		return c, Outcome{Done: true, Confirmed: true}
 	case "n", "N", "esc", "ctrl+c", "q":
