@@ -37,8 +37,8 @@ branch:
   rules, so `beta.9` sorts before `beta.10`.
 
 The channel is built in three steps. The first covers the configuration, the version computation
-and the branch guard. The second, below, publishes. The third is the pipeline and the pull request
-preview.
+and the branch guard. The second publishes. The third, last in this record, is the pipeline and the
+pull request preview.
 
 Publishing sends the channel's name to the plugin as `PublishParams.tag` (`dist_tag`, default the
 prerelease identifier, never `latest`). A plugin that publishes under it declares the new
@@ -52,6 +52,14 @@ plugin without `channels`, a deploy plugin, or binaries sent to package managers
 their own. Each of these would move a stable pointer. The GitHub Release of any version with a
 prerelease part is created as a prerelease.
 
+The pipeline and the preview (step 3): the generated pipeline of every provider triggers on a
+channel branch and runs the `release` step there, and only that step. Pack, upload, attest and the
+sign-in steps stay on the release branch, because the checks above already refuse what they would
+publish. A workspace with no channel gets the same files as before. The plan carries the channel's
+name, and `smith release --dry-run`, the report and the pull request comment say it. A pull request
+build checks out a detached merge commit, so a plan then uses the branch the pull request targets
+(`GITHUB_BASE_REF` and its equivalents).
+
 Alternative not chosen: a flag on `smith release` (`--prerelease beta`). It leaves the pipeline and
 the guard without a statement of which branch releases what, and each run would repeat the choice.
 
@@ -62,8 +70,7 @@ the guard without a statement of which branch releases what, and each run would 
   again at `.1`. Changing `major` starts a new line on purpose.
 - Promotion is a merge into the release branch: the next stable release there is computed from the
   stable tags as usual.
-- Not done: the generated pipeline and the pull request preview naming the channel (step 3), the
-  other plugins' registries (each needs its own spelling of a prerelease and a stable pointer), and
+- Not done: the other plugins' registries (each needs its own spelling of a prerelease and a stable pointer), and
   a way to declare `channels` in the TypeScript, Python and C# SDKs.
 
 ## Sources

@@ -48,7 +48,7 @@ type Options struct {
 // and tagged in dependency order; it stops at the first failure, keeping what
 // already finished.
 func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (Report, error) {
-	report := Report{DryRun: opts.DryRun, Started: time.Now().UTC(), Unchanged: plan.Unchanged, Results: []ReportResult{}}
+	report := Report{DryRun: opts.DryRun, Channel: plan.Channel, Started: time.Now().UTC(), Unchanged: plan.Unchanged, Results: []ReportResult{}}
 	defer func() { report.Finished = time.Now().UTC(); writeReport(s.Root, report) }()
 
 	if len(plan.Items) == 0 {

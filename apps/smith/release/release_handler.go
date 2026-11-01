@@ -104,10 +104,10 @@ package on their own, before a first release, and publishes nothing.`,
 			}
 			if len(plan.Items) == 0 {
 				if dryRun {
-					preview(Report{DryRun: true, Unchanged: plan.Unchanged}.Markdown())
+					preview(Report{DryRun: true, Channel: plan.Channel, Unchanged: plan.Unchanged}.Markdown())
 				}
 				if asJSON {
-					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Unchanged: plan.Unchanged, Results: []ReportResult{}})
+					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Channel: plan.Channel, Unchanged: plan.Unchanged, Results: []ReportResult{}})
 				}
 				return nil
 			}
@@ -186,6 +186,9 @@ func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 	out := cmd.OutOrStdout()
 	if dryRun {
 		fmt.Fprintln(out, "Dry run: nothing is published or tagged.")
+	}
+	if plan.Channel != "" {
+		fmt.Fprintln(out, ChannelNotice(plan.Channel))
 	}
 	if len(plan.Items) == 0 {
 		fmt.Fprintln(out, NothingToRelease())

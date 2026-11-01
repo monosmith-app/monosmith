@@ -82,10 +82,15 @@ func azureSteps(m Model) string {
     condition: %[1]s
 `, onPush, azureEnv("    ", m.TaskCredentials()))
 	}
+	onRelease := fmt.Sprintf("and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'), %s)", m.branchCondition(
+		func(branch string) string {
+			return fmt.Sprintf("eq(variables['Build.SourceBranch'], 'refs/heads/%s')", branch)
+		},
+		func(c []string) string { return "or(" + strings.Join(c, ", ") + ")" }))
 	fmt.Fprintf(&b, `  - bash: smith ci release
     displayName: Release
     condition: %s
-`, onPush)
+`, onRelease)
 	if len(m.Credentials) > 0 {
 		b.WriteString("    env:\n")
 		for _, c := range m.Credentials {

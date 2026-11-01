@@ -133,6 +133,12 @@ flowchart LR
 | `native` | `nativebuild.Run` | lints, tests, builds and packages native projects on this OS |
 | `release` | `release.MakePlan`, `release.Execute` with `Push: true`, then `PostRelease` steps | see [release design](release-design.md) |
 
+A release channel (`[[release.channels]]`, [ADR 0051](decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md))
+puts its branch in `Model.ChannelBranches`. `TriggerBranches` includes it, and the `release` step of
+every provider (GitHub, GitLab, Azure, Bitbucket and CircleCI) runs on the release branch and on the
+channel branches; `pack` and the sign-in steps do not. With no channel the files are the same as
+before.
+
 In the generated GitHub file `pack` and `release` run only for a push to the release branch
 (`github.event_name == 'push' && github.ref_name == '<branch>'`); the release preview step runs on
 pull requests. On GitHub Actions each phase also appends a line to the job summary

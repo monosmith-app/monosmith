@@ -1,11 +1,13 @@
 package release
 
 import (
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -74,4 +76,25 @@ func latestChannelTag(git *gitclient.Git, p *projectgraph.Project, c Channel) (V
 		}
 	}
 	return best, bestTag, found
+}
+
+// ChannelNotice says, in a plan or a preview, that the versions belong to a
+// release channel and what that means for the stable pointer.
+func ChannelNotice(channel string) string {
+	return "Release channel `" + channel + "`: prerelease versions, published under the `" + channel + "` tag; the stable version stays the latest."
+}
+
+// PlanBranch is the branch a release plan is for: the branch checked out or,
+// in a pull request build, which checks out a detached merge commit, the
+// branch the pull request targets.
+func PlanBranch(s *session.Session) string {
+	if b := s.Git.CurrentBranch(); b != "" {
+		return b
+	}
+	for _, name := range []string{"GITHUB_BASE_REF", "SYSTEM_PULLREQUEST_TARGETBRANCH", "CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "BITBUCKET_PR_DESTINATION_BRANCH"} {
+		if v := strings.TrimPrefix(os.Getenv(name), "refs/heads/"); v != "" {
+			return v
+		}
+	}
+	return ""
 }
