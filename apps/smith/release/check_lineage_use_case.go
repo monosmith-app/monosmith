@@ -3,6 +3,7 @@ package release
 import (
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -24,21 +25,32 @@ func CheckLineage(s *session.Session, fetch bool) []releaselineage.Finding {
 		}
 	}
 	tags, _ := s.Git.Tags("")
-	var subjects []releaselineage.Subject
+	var releasing []*projectgraph.Project
 	for _, p := range s.Graph.Projects {
-		if !p.Releases() {
-			continue
+		if p.Releases() {
+			releasing = append(releasing, p)
 		}
-		subject := releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefixSet, Tags: tags}
-		var res protocol.PublishedResult
-		if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublished, protocol.PublishedParams{Project: p.Project}, &res, time.Minute); ok {
-			if err != nil {
-				res = protocol.PublishedResult{Unreachable: true, Detail: err.Error()}
-			}
-			subject.Published, subject.Unreachable, subject.Registry, subject.Detail = res.Version, res.Unreachable, res.Registry, res.Detail
-		}
-		subjects = append(subjects, subject)
 	}
+	// The registry lookups wait on the network, so they run together; the
+	// plugin's declared concurrency bounds how many it takes at once. Each
+	// goroutine fills its own slot, so the order is the graph's.
+	subjects := make([]releaselineage.Subject, len(releasing))
+	var wg sync.WaitGroup
+	for i, p := range releasing {
+		subjects[i] = releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefixSet, Tags: tags}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var res protocol.PublishedResult
+			if ok, err := s.Plugins.Call(p.Plugin, protocol.MethodPublished, protocol.PublishedParams{Project: p.Project}, &res, time.Minute); ok {
+				if err != nil {
+					res = protocol.PublishedResult{Unreachable: true, Detail: err.Error()}
+				}
+				subjects[i].Published, subjects[i].Unreachable, subjects[i].Registry, subjects[i].Detail = res.Version, res.Unreachable, res.Registry, res.Detail
+			}
+		}()
+	}
+	wg.Wait()
 	return append(findings, releaselineage.Assess(subjects)...)
 }
 
