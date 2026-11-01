@@ -53,6 +53,26 @@ as diffs and walks the choices; `smith doctor --fix --only "<fix>" --choose 1,2
 Set `SMITH_NO_UPDATE_CHECK=1` to stop `smith info` asking GitHub for the newest
 release.
 
+## Commands an editor can call besides the four
+
+The VS Code extension reads the views from `smith serve`. For what changes files it runs the
+`smith` command itself, in the workspace folder, so it prints the same text a terminal shows,
+asks the person first, and passes `--yes` only after the person agreed. An editor can do the same:
+
+| To offer | Run | Reads |
+|---|---|---|
+| Add a project | `smith kinds --json`, `smith stacks --json`, `smith choices --json` for the questions; `smith add <kind> <name> --lang <language> [--stack <stack>] [--with a,b] [--fresh] --dry-run` for the plan; the same with `--yes` to add | JSON for the lists. The plan is text. `smith choices --json` lists every choice with its `axis`, `language`, `requires`, `default` and `many`; filter by language. |
+| Derived files | `smith derive --check`; `--explain=<file>`, `--replace=<file>`, `--adopt=<file>`, `--eject=<file>` with `--yes` | Text only: one line per file that needs action, `State  path  (renderer)  detail`, then a count. A `--json` output for `--check` would let an editor stop reading lines. |
+| Who owns a file | `smith why --json -- <file>` | `path`, `known`, `kind`, `owner`, `summary`, `project`, `source`, `rule` and `change` (the steps). |
+| Why a task runs again | `smith why-miss <project>:<task> --json` | `status` (`hit`, `changed`, `no-earlier-run`), `key`, `lastRun` and `differences`. |
+| Undo | `smith undo --dry-run`, then `smith undo --yes` | Text. Needs `commit_operations = true` under `[workspace]`. |
+| A report | `smith report -o <file>` | An HTML page. |
+| The agent file | `smith agent file --check`, then `smith agent file` | Text. `--check` fails when `AGENTS.md` or `CLAUDE.md` is missing or old. |
+| The release channel | `smith release --dry-run --json` (or `release.preview` over `serve`) | `channel` is set on a channel branch. The Markdown form starts with the notice. |
+
+A problem goes to standard error as `✖ what failed`, then a line `  → the fix` for each way out.
+Show both to the person.
+
 ## Starting in an empty folder
 
 An editor that opens a folder with no `smith.toml` can offer two commands, both of which ask
