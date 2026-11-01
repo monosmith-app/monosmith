@@ -19,7 +19,7 @@ pub.dev or a private pub repository, and installs and removes pub dependencies.
 | `--lang` values | `dart`, `flutter` (`--lang flutter` reaches this plugin but makes a plain Dart project; see Creating a project) |
 | Manifest that makes a directory a candidate project | `pubspec.yaml` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components` |
 | Not advertised | none of the dependency capabilities |
 | Stacks it publishes | `flutter`: "a Flutter app for the web, in the pub workspace" |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `dart-app`, `dart-lib`, `dart-package`); the `flutter` stack makes apps only |

@@ -22,7 +22,7 @@ flowchart TB
   smith(["MonoSmith<br/>the smith command"])
   repo[("Workspace<br/>git repository<br/>smith.toml + project manifests")]
   tools["Language toolchains<br/>npm, go, python, cargo, dotnet, docker ..."]
-  ci["CI providers<br/>GitHub Actions, Azure Pipelines, GitLab CI"]
+  ci["CI providers<br/>GitHub Actions, Azure Pipelines, GitLab CI,<br/>CircleCI, Bitbucket Pipelines"]
   gh["GitHub<br/>Releases API, git remote"]
   reg["Registries<br/>npm, PyPI, NuGet, RubyGems, pub.dev,<br/>container registries, VS Marketplace, Open VSX"]
   store[("Remote cache<br/>HTTPS, S3 or Azure Blob")]
@@ -104,7 +104,7 @@ flowchart TB
 | Core | the slices listed in [Architecture](architecture.md) | session, graphs, scheduling, cache, release, CI generation | in-process |
 | Built-in plugins | `libs/plugin-*`, constructed by `pluginhost.Builtins` and `pluginhost.BuiltinAddons` | everything language-specific: discovery, tasks, scaffolding, versioning, publishing, CI needs, health checks | the host starts `smith plugin serve <name>` as a child process |
 | External plugins | declared under `[plugins.external.<name>]` or found on `.smith/plugins`, `SMITH_PLUGIN_PATH`, `$SMITH_HOME/plugins` | languages and rules smith lacks | any executable; see [The plugin system](plugin-system.md) |
-| Plugin SDK | `packages/plugin-sdk`: `protocol`, `serve`, `host`, `transport`, `conformance`, `templating`, `toolrun`, `jsondoc`, `projectkind` | the protocol types, a server loop for plugins, the client smith uses, and the conformance suite | a Go module, released as `packages/plugin-sdk/v<version>` |
+| Plugin SDK | `packages/plugin-sdk`: `protocol`, `serve`, `host`, `transport`, `conformance`, `templating`, `toolrun`, `jsondoc`, `tomltext`, `xmltext`, `fileedits`, `projectkind` | the protocol types, a server loop for plugins, the client smith uses, and the conformance suite | a Go module, released as `packages/plugin-sdk/v<version>` |
 | Local cache | `apps/smith/taskcache` | task results by key | files under `.smith/cache/v1` |
 | Remote cache | `apps/smith/remotecache` | results shared between machines | HTTPS, `s3://` or `azblob://` |
 | VS Code extension | `apps/vscode` (`smith-client`, `workspace-view`, `task-run` and others) | the editor front end | spawns `smith serve` in each workspace folder |
@@ -148,11 +148,11 @@ needed it instead of corrupting the host ([ADR 0002](decisions/0002-out-of-proce
 
 | Boundary | What is trusted | What is checked |
 |---|---|---|
-| plugin process | built-ins are part of the binary; an external plugin is code you run | its answers are decoded against the protocol types; `smith plugin check` tests conformance; `smith.toml` pins an external plugin's version |
+| plugin process | built-ins are part of the binary; an external plugin is code you run | the user must trust it before it starts (`plugintrust`, `pluginadmit`: the record names the workspace, the command and a hash of the files it runs); it gets a minimal environment (`pluginenv`); its answers are decoded against the protocol types; `smith plugin check` tests conformance; `smith.toml` pins an external plugin's version; an archive installed by name is checked against its SHA-256 and never run while installing |
 | task process | the task's declared `inputs`; smith does not sandbox | the command is argv; the environment is the caller's plus `SMITH_*` variables |
 | remote cache | nothing | every object is signed with `SMITH_CACHE_KEY`; failures are misses |
 | MCP and `smith serve` params | nothing | values become single arguments; one that looks like an option is refused |
-| registries and GitHub | credentials in the environment | secrets are named in the generated pipeline and listed by `smith ci check` |
+| registries and GitHub | credentials in the environment | secrets are named in the generated pipeline and listed by `smith ci check`; `smith release --rehearse` asks the registries read-only questions before a first release |
 
 ## Decisions
 

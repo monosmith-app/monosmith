@@ -28,7 +28,7 @@ running Node, Go and Python projects beside them.
 | Cache | Gradle's task outputs | content-addressed cache across all languages, including Gradle tasks it runs |
 | Affected | up-to-date checks skip tasks whose inputs and outputs are unchanged; no selection by git range found | `smith affected` selects projects from a base branch; the cache skips unchanged tasks |
 | Release | publishing plugins such as `maven-publish` ("lets you publish artifacts ... to a Maven repository"); choosing and writing versions is left to the build | versions and tags from commits, then publish |
-| CI generation | a section with recipes for CircleCI, GitHub Actions, GitLab CI, Jenkins, TeamCity and Travis CI; no generator found | generated pipelines for three providers |
+| CI generation | a section with recipes for CircleCI, GitHub Actions, GitLab CI, Jenkins, TeamCity and Travis CI; no generator found | generated pipelines for five providers (GitHub Actions, Azure Pipelines, GitLab CI, CircleCI, Bitbucket Pipelines) |
 | Scaffolding | `gradle init` (Build Init plugin) creates new builds | `smith add`, recipes |
 | Dependency alignment | a how-to for aligning versions of modules in one platform; version catalogs; no repository-wide lint command found | `smith sync`; `smith doctor` checks one version per production dependency |
 | Editors | the user guide lists integration with Android Studio, IntelliJ IDEA, Eclipse (Buildship), NetBeans, Visual Studio, Xcode and CLion | a VS Code extension, a terminal interface and an MCP server |

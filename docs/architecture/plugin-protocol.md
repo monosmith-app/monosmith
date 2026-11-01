@@ -26,7 +26,7 @@ flowchart LR
   end
   hostclient <-->|"stdin/stdout<br/>Content-Length framing"| builtin["built-in plugin<br/>smith plugin serve NAME<br/>(a child smith process)"]
   hostclient <-->|"stdin/stdout"| external["external plugin<br/>plugin.json command"]
-  builtin -.->|"packages/plugin-sdk/serve"| sdk["serve.Run loop"]
+  builtin -.->|"packages/plugin-sdk/serve"| sdk["serve.Main loop"]
   external -.->|"any language"| sdk2["its own loop"]
 ```
 
@@ -67,7 +67,7 @@ Schema (draft 2020-12) generated from them,
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../packages/plugin-sdk/schema/protocol.schema.json),
 is the contract for every other language. It has one definition per message (a member is required
 when its Go field has no `omitempty`; the doc comments are the descriptions), and next to the
-definitions `x-methods` (each of the 20 methods with its params, its result and the capability it needs,
+definitions `x-methods` (each of the 21 methods with its params, its result and the capability it needs,
 `null` for `initialize` and `shutdown`, and `notification: true` with no result for `cancel`), `x-errorCodes`, `x-roles` (with each role's cardinality and the
 kinds that default to it), `x-protocolVersion` and `x-transport` (the framing and the largest message).
 
@@ -75,7 +75,7 @@ kinds that default to it), `x-protocolVersion` and `x-transport` (the framing an
 |---|---|---|
 | reflect over the types and read the package's source for comments and enumerations | `packages/plugin-sdk/protocolschema`, run by `go run ./schemagen` (`smith run schema -p plugin-sdk`) | the protocol has a method, an error code or a capability that `protocolschema`'s tables do not describe |
 | compare the committed file with what the generator writes | the Go test `TestCommittedSchemaIsCurrent` | someone changed `protocol` and not the schema |
-| generate each SDK's types from the schema | the TypeScript SDK: `tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`); the Python SDK: `tools/generate_protocol` (`smith run generate -p plugin-sdk-py`); the C# SDK: `Generator` (`smith run generate -p plugin-sdk-dotnet`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
+| generate each SDK's types from the schema | the TypeScript SDK: `packages/plugin-sdk-ts/tools/generate-protocol` (`smith run generate -p plugin-sdk-ts`); the Python SDK: `packages/plugin-sdk-py/tools/generate_protocol` (`smith run generate -p plugin-sdk-py`); the C# SDK: `packages/plugin-sdk-dotnet/Generator` (`smith run generate -p plugin-sdk-dotnet`) | its test finds the generated files stale; another test finds a method the SDK cannot serve |
 | check that the SDKs agree on the wire | `packages/plugin-sdk-ts/integration` (a TypeScript and a Go plugin) `packages/plugin-sdk-py/tests/integration` (a Go, a TypeScript and a Python plugin) and `packages/plugin-sdk-dotnet/tests/Integration` (those and a C# plugin): the same logic answers the same requests with the same bytes, compared by response id where requests run together | an SDK writes members in another order, leaves out different zero values, or escapes differently |
 
 Three things about the wire that the schema cannot say, and that a new SDK must do (the Go SDK does
@@ -96,8 +96,8 @@ in `initialize`:
 
 | Plugin | Command | Notes |
 |---|---|---|
-| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `recipe`) | `smith plugin serve <name>`, i.e. the running binary again | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
-| a built-in addon in `BuiltinAddons` (`vertical-slices`, `eslint`, `jest`, `vitest`, `playwright`, `typescript`, `vite`, `angular`, `astro`, `vscode`, `go-smith-plugin`, `docker`) | the same | always started unless replaced |
+| a built-in language plugin in `Builtins` (`node`, `go`, `python`, `rust`, `dotnet`, `ruby`, `php`, `cpp`, `dart`, `jvm`, `bicep`, `lua`, `applescript`, `vba`, `swift`, `objc`, `bundle`, `recipe`) | `smith plugin serve <name>`, i.e. the running binary again | all of them unless `[plugins] enabled` lists some; skipped when `[plugins.external.<name>]` replaces it |
+| a built-in addon in `BuiltinAddons` (`vertical-slices`, `eslint`, `jest`, `vitest`, `playwright`, `typescript`, `vite`, `angular`, `astro`, `vscode`, `tauri`, `go-smith-plugin`, `docker`, and one for each architecture beyond vertical slices) | the same | always started unless replaced |
 | an external plugin, `[plugins.external.<name>]` | the `command` of the `plugin.json` found on the search path, or the command in `smith.toml` | the name it answers to and its version are checked (`checkExternal`) |
 
 The search path (`pluginhost.SearchPath`) is the workspace's `.smith/plugins`, each directory of
@@ -107,8 +107,10 @@ directory holding `<name>/plugin.json` wins. `plugin.json` has `name`, `version`
 filled in (`plugin_manifest_contract.go`). A plugin that fails to start stops the command, naming it.
 
 Built-in plugins use the same protocol on purpose: they are its first users, and an external plugin
-can replace one by name without the core noticing. How plugins are published, found and installed
-by name is not decided; see the open list in the [decision records](decisions/README.md#open-not-decided-yet).
+can replace one by name without the core noticing. A plugin is packed as a checksummed archive and installed by path, URL or name
+([ADR 0038](decisions/0038-a-plugin-is-packed-as-a-checksummed-archive-and-installed-without-running-it.md),
+[ADR 0040](decisions/0040-plugins-are-found-by-name-in-a-marketplace-index.md)); an external plugin starts only
+once the user trusts it, and gets a minimal environment ([ADR 0036](decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md)).
 
 ## The handshake
 
@@ -150,7 +152,7 @@ which capability each method needs.
 | `components` | `sbom/components` | `ComponentLister` | `release`, for the SBOM it attaches |
 | `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
 | `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
-| `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a package of a release channel: under `PublishParams.tag` without moving the stable pointer (npm's `latest`), or with no tag when the registry orders a prerelease below the release (PyPI, NuGet). The Node, Python and .NET plugins declare it; the Go SDK can; the TypeScript, Python and C# SDKs have no way to yet |
+| `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a package of a release channel: under `PublishParams.tag` without moving the stable pointer (npm's `latest`), or with no tag when the registry orders a prerelease below the release (PyPI, NuGet). The built-in Node, Python and .NET plugins declare it through the Go SDK; the TypeScript, Python and C# SDKs have no way to yet |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |

@@ -10,18 +10,20 @@ released by the smith it contains.
 apps/smith/                     the CLI: the language-agnostic core, one package per slice
 apps/vscode/                    the VS Code extension (TypeScript; talks to `smith serve`)
 packages/plugin-sdk/            the plugin protocol, framing, runtime, host client and helpers (published)
+packages/plugin-sdk-ts/, plugin-sdk-py/, plugin-sdk-dotnet/   the TypeScript, Python and C# plugin SDKs; their protocol types are generated from packages/plugin-sdk/schema/protocol.schema.json (`smith run generate`)
 packages/eslint-config/         @monosmith/eslint-config: the shared ESLint config with the vertical-slice rules (published)
 packages/jest-preset/           @monosmith/jest-preset: the Jest preset, resolver and asset transform that replace Nx's Jest plugins (published)
 libs/actions/                   the catalog of what smith can do, read by the CLI, the shell, the MCP server and `smith serve`
 libs/plugin-recipe/             the recipe language plugin (a `*.recipe.toml` is a project, released as `name@x.y.z`)
 libs/plugin-node/               the Node language plugin
-libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright, vite, angular, astro and vscode plugins and their stacks
+libs/plugin-node-toolchains/    the typescript, eslint, jest, vitest, playwright, vite, angular, astro, vscode and tauri plugins and their stacks
 libs/plugin-go/                 the Go language plugin, and the go-smith-plugin scaffold
 libs/plugin-python/             the Python language plugin
 libs/plugin-rust/, plugin-dotnet/, plugin-ruby/, plugin-php/, plugin-cpp/,
-  plugin-dart/, plugin-jvm/, plugin-bicep/, plugin-lua/, plugin-applescript/, plugin-vba/, plugin-swift/, plugin-objc/    the other language plugins
+  plugin-dart/, plugin-jvm/, plugin-bicep/, plugin-lua/, plugin-applescript/, plugin-vba/, plugin-swift/, plugin-objc/, plugin-bundle/    the other language plugins
 libs/plugin-docker/             the docker deploy plugin and convention
 libs/plugin-vertical-slices/    the vertical-slices structure plugin
+libs/plugin-architectures/      the other architectures (hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer), one plugin each
 install.sh, install.ps1         installers for people; install.sh is also embedded (apps/smith/cipipeline/smith_installer.sh, a test keeps the copies equal) and vendored as tools/smith/install.sh into projects with no Node, Python or .NET toolchain (the others install the monosmith package; see smith_install_policy.go)
 docs/                           documentation, decisions and research
 ```
@@ -69,7 +71,7 @@ Core slices in `apps/smith`:
 | `npmaudit`, `npmpolicy`, `npmdepscheck`, `pydepscheck`, `godepscheck`, `npmprune`, `pypolicy`, `rustpolicy` | the hidden `smith npm-*`, `py-*`, `go-deps-check` and `rust-policy` steps the language plugins' tasks call |
 | `commandargs`, `problem` | the check of positional arguments, and the "problem and next step" message form |
 | `githubrelease` | GitHub Releases and their assets |
-| `packagemanifests` | the Homebrew, Scoop, winget and AUR manifests attached to an app's GitHub Release |
+| `packagemanifests` | the Homebrew, Scoop, winget and AUR manifests and the Nix flake attached to an app's GitHub Release |
 | `npmbinaries`, `pypiwheels`, `nugettool`, `rubygems` | an app's binaries as npm packages, PyPI wheels, a .NET tool and platform gems |
 | `npmpack`, `npmaudit` | the node plugin's `smith npm-pack` and `smith npm-audit` steps |
 | `remotecache` | the shared remote cache (HTTP, S3, Azure Blob) behind the local one |
@@ -80,6 +82,12 @@ Core slices in `apps/smith`:
 | `pipelinetemplate` | `smith pipeline`: ready-made pipelines |
 | `slicecheck` | `smith slices check`, the vertical-slices convention's check |
 | `doctor`, `explain`, `whymiss`, `stackview`, `graphview` | inspection commands |
+| `derive`, `derivefile`, `derivelock`, `factmerge`, `dialect`, `choiceselect`, `choiceview` | `smith derive` and its ownership record `smith.lock`, shared facts, following sibling projects, and `smith choices` (see [derived files, facts and siblings](../architecture/derived-files-facts-and-siblings.md)) |
+| `operation`, `operationplan` | the plan printed before a write and `smith undo` |
+| `why`, `report`, `agentdoc`, `agentfiles` | `smith why`, `smith report`, `smith agent file` and `smith agent install` |
+| `pluginmarket`, `plugininstall`, `pluginpack`, `pluginarchive`, `plugintrust`, `pluginadmit`, `pluginenv` | external plugins: marketplace search, install, pack, trust and environment |
+| `releaserehearsal`, `releaseassets` | `smith release --rehearse` and `smith release assets` |
+| `kindchange`, `lockfilesync`, `taskfolding`, `languageserver`, `tauriadd`, `tauriprepare`, `updatenotice` | `smith kind`; the lockfile step of adopt and convert; folding task overrides into `[[task_groups]]`; `smith lsp`; `smith tauri`; the update notice |
 | `clicontract` | `smith commands`, `smith kinds`, `smith info`: the --json contracts editors read |
 | `mcpserver` | `smith mcp` |
 | `tui` | the interactive shell a bare `smith` opens |

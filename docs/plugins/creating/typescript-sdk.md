@@ -250,6 +250,8 @@ Promise<result>`. The names follow the Go interfaces.
 | `remove` | `remove` | `remove` | `Remover` |
 | `changeKind` | `project/kind` | `changeKind` | `KindChanger` |
 | `components` | `sbom/components` | `components` | `ComponentLister` |
+| `derive` | `derive` | `derive` | `Deriver` |
+| `apiSurface` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |

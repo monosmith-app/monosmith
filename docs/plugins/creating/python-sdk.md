@@ -27,7 +27,7 @@ Schema is committed as
 [`packages/plugin-sdk/schema/protocol.schema.json`](../../../packages/plugin-sdk/schema/protocol.schema.json):
 one definition per message, a methods table (each of the 20 methods with its params, its result and the
 capability it needs), the error codes, the roles and the protocol version. The Python types are
-generated from that file by `tools/generate_protocol`, so they cannot drift from the Go ones: a Go test
+generated from that file by `packages/plugin-sdk-py/tools/generate_protocol`, so they cannot drift from the Go ones: a Go test
 fails when the schema is stale, a Python test fails when the generated modules are, and a test fails
 when the schema has a method the SDK cannot serve.
 
@@ -315,6 +315,8 @@ rest are `Protocol` classes that document the signatures, and a plugin does not 
 | `remove` | `remove` | `remove` | `Remover` |
 | `change_kind` | `project/kind` | `changeKind` | `KindChanger` |
 | `components` | `sbom/components` | `components` | `ComponentLister` |
+| `derive` | `derive` | `derive` | `Deriver` |
+| `api_surface` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |

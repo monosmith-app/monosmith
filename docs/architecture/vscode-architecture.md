@@ -65,6 +65,9 @@ the `vscode` API is a `*.client.ts`; the rest runs without VS Code and is unit t
 | `health` | `doctor`, the Health tree, the fix preview and `doctor.fix` |
 | `dependencies`, `release-preview` | `updates` and `release.preview` as trees |
 | `project-insight` | `explain` and `graph` rendered as documents |
+| `empty-folder` | find a folder with no files and offer `smith new --here` in a terminal (`findBlankFolders`, `toNewArguments`) |
+| `adopt-offer` | find a folder that holds a repository smith can bring in, and offer a bare `smith` (its screen asks how far to go) or `smith adopt --dry-run` in a terminal (`findRepositoryOffers`, `toAdoptArguments`) |
+| `agent-install` | offer the MonoSmith agent and the `smith mcp` registration (`monosmith.installAgent`, `monosmith.installMcp`), run `smith agent install --claude --vscode` (or `smith mcp install --vscode`) as a preview first and write with `--yes`, open Claude Code on the agent (`monosmith.talkToAgent`), and record an opt-out with `smith config set agent.enabled false` |
 | `refresh` | what makes the views stale, and a coalescer |
 | `settings`, `status-bar`, `context-keys`, `smith-terminal`, `extension-api` | `monosmith.*` settings, the status item, context keys, opening a terminal, and the small state API the integration tests read |
 
