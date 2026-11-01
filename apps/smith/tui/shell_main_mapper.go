@@ -93,8 +93,9 @@ func (s Shell) mainContent(w, h int) content {
 		in := s.mainInner()
 		c.lines = s.settings.View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
 	case commands.TabGuide:
-		banner := s.adoptBanner(w)
-		for i := range banner {
+		broken := s.brokenConfigBanner(w)
+		banner := append(broken, s.adoptBanner(w)...)
+		for i := len(broken); i < len(banner); i++ {
 			c.hits[i] = hit{kind: "action", id: "file.adopt"}
 		}
 		lines, optionAt := s.guide.Body(s.th, w)

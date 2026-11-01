@@ -136,6 +136,9 @@ type State struct {
 	Running bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
+	// BrokenConfig is true when smith.toml exists but cannot be read: the
+	// folder is a workspace, so the commands that start one are hidden.
+	BrokenConfig bool
 	// Project is the project the run keys act on (the one selected in the list),
 	// and Projects how many the workspace has; the footer and the palette name
 	// the scope of a run with them.
