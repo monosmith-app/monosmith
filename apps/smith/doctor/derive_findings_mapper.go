@@ -43,5 +43,15 @@ func deriveFindings(plan derive.Plan) []protocol.Finding {
 	if len(out) == 0 {
 		out = append(out, protocol.Finding{Check: "derived files are up to date", OK: true})
 	}
+	if n := len(plan.Diverging); n > 0 {
+		// A file that differs from its siblings is the project's own, so this
+		// passes: it tells, it does not ask for an action.
+		out = append(out, protocol.Finding{
+			Check:  "config files that differ from their sibling projects are yours",
+			Detail: fmt.Sprintf("%d files diverge from siblings (first: %s); smith leaves them alone", n, plan.Diverging[0].Path),
+			Remedy: "smith derive --explain <file> says how a file differs",
+			OK:     true,
+		})
+	}
 	return out
 }

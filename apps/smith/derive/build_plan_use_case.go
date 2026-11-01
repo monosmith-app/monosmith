@@ -25,24 +25,28 @@ type Proposal struct {
 // BuildPlan asks every plugin that derives for its files, reads the files from
 // disk and compares them with the record. It writes nothing. It returns an
 // error when the record cannot be read, a plugin answers with a path outside
-// the workspace, or two renderers claim the same file in the whole-file mode.
+// the workspace, or two renderers claim the same file in the whole-file mode
+// with different content.
 func BuildPlan(s *session.Session) (Plan, derivelock.Record, error) {
 	rec, err := derivelock.Read(s.Root)
 	if err != nil {
 		return Plan{}, rec, err
 	}
-	proposals, err := collect(s, rec.OwnedBySmith())
+	proposals, diverging, err := collect(s, rec.OwnedBySmith())
 	if err != nil {
 		return Plan{}, rec, err
 	}
 	plan, err := PlanFor(s.Root, rec, proposals)
+	plan.Diverging = diverging
 	return plan, rec, err
 }
 
 // PlanFor classifies proposals against the files under root and the record.
 func PlanFor(root string, rec derivelock.Record, proposals []Proposal) (Plan, error) {
 	var plan Plan
-	whole := map[string]string{}
+	proposals = preferRecorded(rec, proposals)
+	whole := map[string]protocol.DerivedFile{}
+	owner := map[string]string{}
 	for _, p := range proposals {
 		f := p.File
 		if err := checkPath(f.Path); err != nil {
@@ -50,9 +54,13 @@ func PlanFor(root string, rec derivelock.Record, proposals []Proposal) (Plan, er
 		}
 		if f.Mode == protocol.DeriveFile {
 			if other, dup := whole[f.Path]; dup {
-				return Plan{}, fmt.Errorf("plugins %s and %s both own the whole file %s", other, p.Plugin, f.Path)
+				if other.Content == f.Content {
+					// Two renderers agree on the file: the first one keeps it.
+					continue
+				}
+				return Plan{}, fmt.Errorf("plugins %s and %s both own the whole file %s", owner[f.Path], p.Plugin, f.Path)
 			}
-			whole[f.Path] = p.Plugin
+			whole[f.Path], owner[f.Path] = f, p.Plugin
 		}
 		disk, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(f.Path)))
 		if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
@@ -71,9 +79,50 @@ func PlanFor(root string, rec derivelock.Record, proposals []Proposal) (Plan, er
 	return plan, nil
 }
 
-// collect calls the derive method of each plugin that advertises it.
-func collect(s *session.Session, owned []string) ([]Proposal, error) {
+// preferRecorded settles a dispute over a whole file. When several renderers
+// propose the same file with different content and the record lists exactly one
+// of them for it, the others give way: the record says who has written the file.
+// Without such a record the dispute stays, and PlanFor reports it.
+func preferRecorded(rec derivelock.Record, proposals []Proposal) []Proposal {
+	byPath := map[string][]int{}
+	for i, p := range proposals {
+		if p.File.Mode == protocol.DeriveFile {
+			byPath[p.File.Path] = append(byPath[p.File.Path], i)
+		}
+	}
+	drop := map[int]bool{}
+	for path, idx := range byPath {
+		var recorded []int
+		for _, i := range idx {
+			if rec.Find(path, proposals[i].File.Renderer) != nil {
+				recorded = append(recorded, i)
+			}
+		}
+		if len(idx) < 2 || len(recorded) != 1 {
+			continue
+		}
+		for _, i := range idx {
+			if i != recorded[0] && proposals[i].File.Content != proposals[recorded[0]].File.Content {
+				drop[i] = true
+			}
+		}
+	}
+	if len(drop) == 0 {
+		return proposals
+	}
 	var out []Proposal
+	for i, p := range proposals {
+		if !drop[i] {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// collect calls the derive method of each plugin that advertises it.
+func collect(s *session.Session, owned []string) ([]Proposal, []Divergence, error) {
+	var out []Proposal
+	var diverging []Divergence
 	for _, c := range s.Plugins.Clients {
 		if !c.Info.Capabilities.Derive {
 			continue
@@ -90,13 +139,17 @@ func collect(s *session.Session, owned []string) ([]Proposal, error) {
 		}
 		var res protocol.DeriveResult
 		if err := c.Call(protocol.MethodDerive, params, &res, time.Minute); err != nil {
-			return nil, problem.New("plugin "+c.Info.Plugin.Name+" failed to derive: "+err.Error(), "report this to the plugin's maintainers")
+			return nil, nil, problem.New("plugin "+c.Info.Plugin.Name+" failed to derive: "+err.Error(), "report this to the plugin's maintainers")
 		}
 		for _, f := range res.Files {
 			out = append(out, Proposal{Plugin: c.Info.Plugin.Name, File: f})
 		}
+		for _, d := range res.Diverging {
+			diverging = append(diverging, Divergence{Plugin: c.Info.Plugin.Name, DivergentFile: d})
+		}
 	}
-	return out, nil
+	slices.SortFunc(diverging, func(a, b Divergence) int { return strings.Compare(a.Path, b.Path) })
+	return out, diverging, nil
 }
 
 // checkPath rejects a path that leaves the workspace.

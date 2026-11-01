@@ -226,13 +226,14 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
 
 ## Derived files
 
-With `[derive] enabled = true`, the plugin answers `smith derive` with two renderers
+With `[derive] enabled = true`, the plugin answers `smith derive` with three renderers
 ([Derived files](../../../reference/derived-files.md)):
 
 | Renderer | Derives |
 |---|---|
 | `node.tsconfig.references` | the `references` key of `tsconfig.lib.json`, one entry for each internal dependency of the project graph |
 | `node.jest.display-name` | the `displayName` line of a `jest.config.{ts,js,cjs,mjs}` between `smith:begin` and `smith:end` markers, from the package name |
+| `node.sibling-shape` | a config file that three or more sibling projects share in one shape (`tsconfig*.json`, `.swcrc`, `jest.config.*` and the like), for each project that has it; a file or key that differs is left alone and reported as diverging |
 
 ## Releasing
 
