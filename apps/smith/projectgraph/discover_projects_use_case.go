@@ -57,7 +57,7 @@ func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catal
 		}
 		sort.Strings(manifests)
 		var res protocol.DiscoverResult
-		if err := c.Call(protocol.MethodDiscover, protocol.DiscoverParams{Manifests: manifests, Declared: declared}, &res, time.Minute); err != nil {
+		if err := c.Call(protocol.MethodDiscover, protocol.DiscoverParams{Manifests: manifests, Declared: declared, Settings: discoverSettings(c.Info.Plugin.Name, cfg)}, &res, time.Minute); err != nil {
 			return nil, err
 		}
 		described := map[string]string{}

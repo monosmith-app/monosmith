@@ -856,6 +856,11 @@
           "type": "array",
           "items": {"$ref": "#/$defs/DeclaredProject"},
           "description": "Declared are the projects smith.toml declares for this plugin's language ([projects.<name>] with a root and a language): folders with no manifest of their own, such as a program that is a package of the Go module above it. The plugin describes each one in its result, or answers with an error saying why it cannot."
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": {"type": "object"},
+          "description": "Settings are this plugin's settings for projects, by project name, from smith.toml [projects.<project>.settings.<plugin>]. They reach the plugin here because the tasks it describes may depend on them (the Go plugin's build tags). A project with no settings is absent."
         }
       },
       "required": ["manifests"]

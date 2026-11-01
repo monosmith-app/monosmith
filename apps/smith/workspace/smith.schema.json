@@ -335,7 +335,20 @@
           },
           "settings": {
             "type": "object",
-            "description": "Plugins' settings for this project, by plugin name: what a recipe's settings became when it created the project. A plugin reads its own table.",
+            "description": "Plugins' settings for this project, by plugin name: what a recipe's settings became when it created the project. A plugin reads its own table. The go table takes build tags: tags, and tags_linux, tags_windows, tags_darwin for one OS.",
+            "properties": {
+              "go": {
+                "type": "object",
+                "description": "The Go plugin's settings. The build tags go to go build, test, run and package (-tags) and to golangci-lint (--build-tags).",
+                "properties": {
+                  "tags": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9_.]+$" }, "description": "Build tags for every OS, such as [\"production\"]." },
+                  "tags_linux": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9_.]+$" }, "description": "Build tags added on Linux, such as [\"gtk3\"]." },
+                  "tags_windows": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9_.]+$" }, "description": "Build tags added on Windows." },
+                  "tags_darwin": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9_.]+$" }, "description": "Build tags added on macOS." }
+                },
+                "additionalProperties": {}
+              }
+            },
             "additionalProperties": { "type": "object", "additionalProperties": {} }
           },
           "recipe": {

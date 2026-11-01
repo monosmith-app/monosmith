@@ -33,7 +33,7 @@ func rootModule(t *testing.T) string {
 
 func TestDeclaredFoldersOfARootModuleAreProjectsOfThatModule(t *testing.T) {
 	ws := rootModule(t)
-	res, err := DiscoverWithDeclared(ws, []string{"go.mod"}, []protocol.DeclaredProject{{Name: "mvd", Root: "apps/mvd"}, {Name: "core", Root: "libs/core", Kind: protocol.ProjectLib}})
+	res, err := DiscoverWithDeclared(ws, []string{"go.mod"}, []protocol.DeclaredProject{{Name: "mvd", Root: "apps/mvd"}, {Name: "core", Root: "libs/core", Kind: protocol.ProjectLib}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestAModuleInAFolderAboveTheDeclaredOneIsFound(t *testing.T) {
 	check(t, os.MkdirAll(filepath.Join(ws, "services", "api", "cmd", "serve"), 0o755))
 	check(t, os.WriteFile(filepath.Join(ws, "services", "api", "go.mod"), []byte("module example.com/api\n\ngo 1.22\n"), 0o644))
 	check(t, os.WriteFile(filepath.Join(ws, "services", "api", "cmd", "serve", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
-	res, err := DiscoverWithDeclared(ws, nil, []protocol.DeclaredProject{{Name: "serve", Root: "services/api/cmd/serve"}})
+	res, err := DiscoverWithDeclared(ws, nil, []protocol.DeclaredProject{{Name: "serve", Root: "services/api/cmd/serve"}}, nil)
 	if err != nil || len(res.Projects) != 1 {
 		t.Fatalf("%v %v", res.Projects, err)
 	}
@@ -94,7 +94,7 @@ func TestADeclarationThatCannotBeDescribedSaysWhy(t *testing.T) {
 		"no module above": {"apps/x", bare, "no go.mod in a folder above", ""},
 		"a package kind":  {"apps/mvd", ws, "cannot be released on its own", protocol.ProjectPackage},
 	} {
-		_, err := DiscoverWithDeclared(c.workspace, nil, []protocol.DeclaredProject{{Name: "p", Root: c.root, Kind: c.kind}})
+		_, err := DiscoverWithDeclared(c.workspace, nil, []protocol.DeclaredProject{{Name: "p", Root: c.root, Kind: c.kind}}, nil)
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: want %q, got %v", name, c.want, err)
 		}

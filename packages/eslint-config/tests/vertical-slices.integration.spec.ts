@@ -77,6 +77,9 @@ const FIXTURES: Record<string, string> = {
 let workspace: string
 let reported: Record<string, string[]>
 
+/** The messages of the last run, by file, beside the rule ids `lintAll` returns. */
+const texts: Record<string, string[]> = {}
+
 function lintAll (directory: string): Record<string, string[]> {
   const result = spawnSync(eslintBin, ['.', '--format', 'json', '--no-error-on-unmatched-pattern'], {
     cwd:      directory,
@@ -85,11 +88,12 @@ function lintAll (directory: string): Record<string, string[]> {
   })
   const stdout = result.stdout?.trim()
   if (!stdout?.startsWith('[')) throw new Error(`eslint produced no JSON.\nstdout: ${result.stdout}\nstderr: ${result.stderr}`)
-  const parsed = JSON.parse(stdout) as { filePath: string, messages: { ruleId: string | null }[] }[]
+  const parsed = JSON.parse(stdout) as { filePath: string, messages: { ruleId: string | null, message: string }[] }[]
   const byFile: Record<string, string[]> = {}
   for (const file of parsed) {
     const relative = file.filePath.slice(directory.length + 1).replaceAll('\\', '/')
     byFile[relative] = file.messages.map(message => message.ruleId ?? 'FATAL')
+    texts[relative] = file.messages.map(message => message.message)
   }
 
   return byFile
@@ -175,6 +179,15 @@ describe('monosmith({ verticalSlices: { roles } })', () => {
 
   it('still reports a file with no role at all', () => {
     expect(slicesIn('packages/app/src/buttons/helper.ts')).toEqual(['vertical-slices/file-role'])
+  })
+
+  it('tells a file with no role that the front-end roles exist and the roles option opts in', () => {
+    const [message] = texts['packages/app/src/buttons/helper.ts'] ?? []
+    expect(message).toContain('.use-case')
+    expect(message).toContain('front-end')
+    expect(message).toContain('.hook')
+    expect(message).toContain('.content')
+    expect(message).toContain('verticalSlices.roles')
   })
 })
 

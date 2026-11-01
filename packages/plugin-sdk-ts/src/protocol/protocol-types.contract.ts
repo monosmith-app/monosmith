@@ -562,6 +562,13 @@ export interface DiscoverParams {
    * an error saying why it cannot.
    */
   declared?: DeclaredProject[]
+  /**
+   * Settings are this plugin's settings for projects, by project name, from smith.toml
+   * [projects.<project>.settings.<plugin>]. They reach the plugin here because the tasks it
+   * describes may depend on them (the Go plugin's build tags). A project with no settings is
+   * absent.
+   */
+  settings?: Record<string, Record<string, unknown>>
 }
 
 /**

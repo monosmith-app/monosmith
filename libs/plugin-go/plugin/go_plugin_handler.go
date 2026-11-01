@@ -38,7 +38,7 @@ func (g *Go) DescribesDeclared() {}
 
 // Discover implements serve.Discoverer.
 func (g *Go) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.DiscoverWithDeclared(g.root, params.Manifests, params.Declared)
+	return discovery.DiscoverWithDeclared(g.root, params.Manifests, params.Declared, params.Settings)
 }
 
 // Generate implements serve.Generator.
