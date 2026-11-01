@@ -27,6 +27,27 @@ func writeCore(t *testing.T, pubspec string) (string, protocol.Project) {
 	return ws, protocol.Project{Name: "core", Root: "packages/core", Kind: protocol.ProjectPackage, Exports: []string{"acme_core"}}
 }
 
+func TestAPrereleaseIsWrittenAsSemverAndPublishedFromTheTag(t *testing.T) {
+	ws, core := writeCore(t, "name: acme_core\nversion: 1.0.0\n")
+	if _, err := WriteVersion(ws, protocol.VersionParams{Project: core, Version: "2.0.0-beta.3"}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(filepath.Join(ws, "packages", "core", "pubspec.yaml"))
+	if string(got) != "name: acme_core\nversion: 2.0.0-beta.3\n" {
+		t.Fatalf("pub takes the semver prerelease as it is: %q", got)
+	}
+	var ran []string
+	real := PubRunner
+	defer func() { PubRunner = real }()
+	PubRunner = func(_ string, argv []string) error { ran = append(ran, strings.Join(argv, " ")); return nil }
+	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "2.0.0-beta.3", Tag: "beta"}); err != nil || res.Published || res.Skipped == "" || len(ran) != 0 {
+		t.Fatal("off its tagged run, a prerelease waits for the pub workflow like a release", err, res)
+	}
+	if res, err := Publish(ws, protocol.PublishParams{Project: core, Version: "2.0.0-beta.3", Tag: "beta", Tagged: true}); err != nil || !res.Published || strings.Join(ran, "|") != "dart pub publish --force" {
+		t.Fatal("pub has no channel tag: the prerelease is published like a release", err, res, ran)
+	}
+}
+
 func TestPublish(t *testing.T) {
 	var ran []string
 	real := PubRunner

@@ -11,7 +11,7 @@ The ruby plugin makes every `*.gemspec` below the workspace root a smith project
 | `--lang` values | `ruby` |
 | Manifest that makes a directory a project | `*.gemspec` (a gemspec at the workspace root is skipped; one gem per directory) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`ruby-app`, `ruby-lib`, `ruby-package`) |
 
@@ -175,6 +175,7 @@ The machine needs `ruby` and `bundle` (Bundler). Generated gems require Ruby 3.2
 |---|---|
 | Version | `spec.version = '...'` in the gemspec. The release rewrites that assignment (keeping the quote style), builds and pushes, then restores the file. A gemspec that computes its version is left alone (no change is made). |
 | Tag | `<name>@<version>`, name being the directory name: `kit@0.1.0` (real). |
+| Release channel | the plugin declares `channels`: RubyGems orders a prerelease below its release, so `gem install` and Bundler skip it. RubyGems spells `2.0.0-beta.1` as `2.0.0.pre.beta.1`, so the release writes that into the gemspec and packs `<name>-2.0.0.pre.beta.1.gem`. A gemspec that computes its version is left alone. |
 | What is published | `package` gems only: `gem build <gemspec> --output dist/<dir>/<gem>-<version>.gem`, then `gem push <file> --host <host>`. Apps and libs are released by their tag; an app with `[projects.<app>.release]` is tagged and gets a GitHub Release, without assets (`Ruby release assets are not built yet`). |
 | Registry | `https://rubygems.org`, or `GEM_HOST`. `published` reads `<host>/api/v1/versions/<gem>/latest.json` (RubyGems answers `unknown` for a gem it has not got). |
 | Credentials | `GEM_HOST_API_KEY` (required; listed when a package exists). With `[release] rubygems_trusted_publishing = true`, GitHub only: the workflow gets `id-token: write` and a `rubygems/configure-rubygems-credentials@v2.1.0` step before the release, and the secret is no longer listed. |
@@ -241,6 +242,12 @@ Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo
 - `smith up` asks rubygems.org (`/api/v1/versions/<gem>/latest.json`) for the newest release and runs `bundle install` afterwards, so `Gemfile.lock` follows. A gem rubygems.org does not have (a private server's) is skipped.
 
 Removal: `smith remove <gem>` deletes the directory and takes its `gemspec path:` line out of the root `Gemfile`. Real dry run: `Would remove core (libs/core)`, `changes Gemfile`, `the pipelines would be regenerated`.
+
+## Declared projects
+
+The plugin declares `declared`. A folder of a gem (its `exe/`, a folder of `lib/`, a folder with specs) has no gemspec of its own, so declare it in `smith.toml` with `root` and `language = "ruby"`. smith finds the gemspec above the folder and runs the gem's tasks in the folder: RuboCop, RSpec when the folder has a `spec/` directory, and for an `app` the gem's executable that is in the folder (`bundle exec ruby <file>`). The gemspec is a task input, and the project imports what the gemspec depends on. It exports nothing, because a gem is required by its name, not by a folder.
+
+smith refuses, naming the folder: a folder that does not exist, one with a gemspec of its own, one with no gemspec above it, an app with no executable of the gem in its folder, and the kind `package` (a gem has one version).
 
 ## Requirements and limits
 

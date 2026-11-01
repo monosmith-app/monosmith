@@ -17,6 +17,16 @@ func TestSetVersion(t *testing.T) {
 	}
 }
 
+func TestAPrereleaseIsWrittenAsSemverAndPublishedByItsTag(t *testing.T) {
+	if out, ok := SetVersion("{\n    \"name\": \"acme/core\",\n    \"version\": \"1.0.0\"\n}\n", "2.0.0-beta.3"); !ok || out != "{\n    \"name\": \"acme/core\",\n    \"version\": \"2.0.0-beta.3\"\n}\n" {
+		t.Fatalf("Composer reads the semver prerelease as beta stability: %q", out)
+	}
+	res, err := Publish(protocol.PublishParams{Project: protocol.Project{Kind: protocol.ProjectPackage}, Version: "2.0.0-beta.3", Tag: "beta"})
+	if err != nil || res.Published || res.Skipped == "" {
+		t.Fatal("Packagist takes the prerelease from the repository's tag, as it takes a release", err, res)
+	}
+}
+
 func TestPublishIsTheTag(t *testing.T) {
 	res, err := Publish(protocol.PublishParams{Project: protocol.Project{Kind: protocol.ProjectPackage}})
 	if err != nil || res.Published || res.Skipped == "" {

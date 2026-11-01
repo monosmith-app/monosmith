@@ -19,7 +19,7 @@ pipelines which PHP to install.
 | `--lang` value | `php` |
 | Manifest that makes a directory a candidate project | `composer.json` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared` |
 | Not advertised | none of the dependency capabilities |
 | Stacks it publishes | none. The `php` language alone is the stack; a project records no stack unless `extra.smith.stack` names one |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `php-app`, `php-lib`, `php-package`) |
@@ -298,6 +298,7 @@ See [configuration: toolchains](../../../reference/configuration.md#toolchains).
 | Version write | at release time `version` is replaced in place (formatting kept); if there is no `version` field, one is added after the `name` line. The manifest is restored afterwards: the tag is the record. A dry run reports the file and writes nothing |
 | Tag | `<project>@<version>`, for example `sdk@0.1.0`; change it with `[projects.<name>] tag_prefix` |
 | Publish | nothing is uploaded. For a package the result is "Packagist publishes from the repository's tags" (registry `packagist.org`); for other kinds "released by its tag" |
+| Release channel | the plugin declares `channels`: Packagist reads the version from the repository tag, Composer ranks a beta tag below its release, and the default `minimum-stability` of `stable` skips it. The release writes the semver spelling as it is into `composer.json`. There is nothing to upload. |
 | Registry query | `Published` asks `https://repo.packagist.org/p2/<vendor>/<name>.json` for the newest stable version (versions with `-`, `@` or a `dev` prefix are skipped, a leading `v` is dropped). A 404 means "not published"; a network failure or other status means "unreachable", not an error |
 | Credentials | none |
 | Private registry | not supported by the plugin |
@@ -404,6 +405,12 @@ runs `composer remove <name> --no-update` and
 `composer config --unset repositories.<dir-dashed>` at the root, then
 `composer update` so `composer.lock` stops naming the package too (`--dry-run`
 only lists `composer.json` and `composer.lock`).
+
+## Declared projects
+
+The plugin declares `declared`. A folder of a package (its `src/` or a folder of it, its `bin/`) has no `composer.json` of its own, so declare it in `smith.toml` with `root` and `language = "php"`. smith finds the package whose `composer.json` is above the folder (the workspace's own does not count) and runs PHPStan over the whole folder, PHPUnit when the folder has a `tests/` directory, and for an `app` the package's `bin` executable that is in the folder. The workspace `vendor/` serves them all, and the `composer.json` is a task input. The project imports what the `composer.json` requires. It exports nothing, because a package is required by its name, not by a folder.
+
+smith refuses, naming the folder: a folder that does not exist, one with a `composer.json` of its own, one with no package above it, an app with no `bin` executable in its folder, and the kind `package` (a package has one version).
 
 ## Requirements and limits
 

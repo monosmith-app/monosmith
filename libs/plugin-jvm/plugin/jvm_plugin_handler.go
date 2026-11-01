@@ -39,6 +39,13 @@ func (j *JVM) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	}, nil
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Maven and Gradle order
+// 2.0.0-beta.1 below 2.0.0, both take that spelling as it is, and Published never
+// reports a prerelease as the newest release. The plugin has no
+// DescribesDeclared: a Maven or Gradle module is one build unit, and a folder of
+// packages inside it cannot be built or tested on its own.
+func (j *JVM) PublishesChannels() {}
+
 // Discover implements serve.Discoverer.
 func (j *JVM) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
 	return discovery.Discover(j.root, params.Manifests)

@@ -34,9 +34,18 @@ func (r *Rust) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the programs smith.toml declares, as binaries of the crate above them.
+func (r *Rust) DescribesDeclared() {}
+
+// PublishesChannels implements serve.ChannelPublisher: crates.io orders a
+// prerelease below its release, so a plain dependency never takes it, and
+// cargo takes the semver spelling as it is.
+func (r *Rust) PublishesChannels() {}
+
 // Discover implements serve.Discoverer.
 func (r *Rust) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(r.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)
 }
 
 // Generate implements serve.Generator.

@@ -86,7 +86,7 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if len(params.Project.Exports) > 0 {
 		name = params.Project.Exports[0]
 	}
-	packed := filepath.Join(out, name+"-"+params.Version+".gem")
+	packed := filepath.Join(out, name+"-"+GemVersion(params.Version)+".gem")
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))
 	if err := GemRunner(dir, []string{"gem", "build", file, "--output", packed}); err != nil {
 		return result, err
