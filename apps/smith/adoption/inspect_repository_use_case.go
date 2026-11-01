@@ -59,6 +59,15 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	r.Clean = cleanApartFromSmith(status)
 	r.Scope = scopeOf(root, r.Name)
 	r.Providers = providersOf(exists)
+	files, _ := git.Files()
+	read := func(rel string) string {
+		raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		return string(raw)
+	}
+	if item, ok := PnpmWorkspace(files, read); ok {
+		r.Blockers = append(r.Blockers, item)
+		return r, nil
+	}
 
 	if exists("go.mod") {
 		var rootProgram bool
@@ -112,6 +121,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 			r.Warnings = append(r.Warnings, Item{Message: path + " is yours, at a path smith's pipeline uses", Step: "--init keeps it as " + path + ".pre-smith; move your own steps into the generated file's slots"})
 		}
 	}
+	r.Warnings = append(r.Warnings, ExistingWorkflows(files, read, r.Providers)...)
 	if deps := rootRuntimeDependencies(root); len(deps) > 0 && hasNodeProjects(r.Projects) {
 		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -w <project> <package> for each project that imports it, then drop it from the root"})
 	}

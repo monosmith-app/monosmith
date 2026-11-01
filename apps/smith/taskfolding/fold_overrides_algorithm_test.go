@@ -85,3 +85,15 @@ func TestOtherKindsAreLeftAlone(t *testing.T) {
 		t.Errorf("the app keeps its override: %v", got.Overrides)
 	}
 }
+
+// Two projects can share a name (a Node and a Rust project in one folder).
+// Folding the first one's last override away must not leave the second one
+// writing into a nil map.
+func TestProjectsSharingANameDoNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Fold panicked: %v", r)
+		}
+	}()
+	Fold([]Project{lib("a", build()), lib("b", build()), lib("same", build()), lib("same", build())})
+}

@@ -31,7 +31,7 @@ already has a `smith.toml` (use [`smith upgrade`](upgrade.md)).
 ## Synopsis
 
 ```sh
-smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--skip-install] [--skip-verify] [--json] [--verbose]
+smith convert [--dry-run] [--level conservative|full] [--lint smith|keep] [--test jest|vitest|keep] [--build smith|keep] [--ci smith|keep] [--yes] [--strict] [--allow-dirty] [--commit] [--skip-install] [--skip-verify] [--json] [--verbose]
 ```
 
 ## Arguments and flags
@@ -46,6 +46,7 @@ Usage: `smith convert [flags]`
 | `--allow-dirty` | boolean | off | convert even with uncommitted changes (not with --level full) |
 | `--build <build>` | `smith` or `keep` | `smith` | full level: build with smith's stack build (smith) or keep the current build setup (keep) |
 | `--ci <ci>` | `smith` or `keep` | `smith` | full level: the pipeline smith generates (smith) or keep the current one (keep) |
+| `--commit` | boolean | off | commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | report the plan without changing anything |
 | `--json` | boolean | off | print the plan as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) |
@@ -64,7 +65,18 @@ Interactions:
 - Run it with `--dry-run` first. An Nx workspace's packages must be installed, because Nx
   itself describes the projects: in a terminal smith asks "Install them now?" and does it
   (about two minutes), `--yes` installs without asking, and elsewhere it stops and says so.
+  A pnpm or yarn workspace is installed with its own tool (`pnpm install`, `yarn install`),
+  because npm cannot read its `catalog:` and `workspace:` ranges: install it that way
+  first, or let `--yes` do it. The install can leave `.nx/` and `package-lock.json`
+  untracked; the dirty-tree check ignores both.
   A Turborepo workspace is read from its files, so nothing needs to be installed.
+- A long read prints its stages (asking Nx to describe the projects, planning, checking
+  the result). The dry run also applies the plan to a copy and checks that the converted
+  workspace loads; a failure is a blocker in the report. Cycles of devDependencies are
+  allowed and `smith doctor` reports them. When applying fails after it started, the
+  files it touched are put back and the message says so.
+- Nothing is committed unless `--commit` is given: the conversion is then one commit
+  (`chore: convert to smith`) that `smith undo` reverts.
 - `--lint`, `--test`, `--build` and `--ci` are the choices behind `--level full`. In a
   terminal the ones you do not give are asked; elsewhere the plan is printed with
   the default for each (`lint: keep   tests: keep   build: smith   CI: smith`) and the

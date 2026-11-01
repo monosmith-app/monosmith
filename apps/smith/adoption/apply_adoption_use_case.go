@@ -11,6 +11,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -62,9 +63,11 @@ func adoptionBlocked(r Report) error {
 // path smith owns is kept beside it as .pre-smith, smith.toml and the root files
 // smith needs are written (theirs kept), the steps doctor would ask for (go.work,
 // npm workspaces, and with install npm install) are taken, the pipelines are
-// generated for the projects found, and it all becomes one commit. It ends by
-// saying what smith doctor still reports.
-func Init(r Report, version string, install, eslint bool, out io.Writer) error {
+// generated for the projects found. Nothing is committed unless commit is true
+// (smith adopt --commit) or the workspace sets commit_operations: the changes
+// stay in the work tree, where git can take them back. It ends by saying what
+// smith doctor still reports.
+func Init(r Report, version string, install, eslint, commit bool, out io.Writer) error {
 	if !r.Adoptable() {
 		return adoptionBlocked(r)
 	}
@@ -112,10 +115,16 @@ func Init(r Report, version string, install, eslint bool, out io.Writer) error {
 	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
 		return err
 	}
-	if err := git.CommitAll("chore: adopt smith"); err != nil {
-		fmt.Fprintf(out, "  not committed (%v); commit when ready\n", strings.SplitN(err.Error(), "\n", 2)[0])
+	if !commit && !s.Config.Workspace.CommitOperations {
+		fmt.Fprintln(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time")
 		return DescribeOutcome(r.Root, version, out)
 	}
-	fmt.Fprintln(out, "  committed: chore: adopt smith")
+	if pending := operation.Always(r.Root); pending == nil {
+		fmt.Fprintln(out, "  not committed: this folder is not a git work tree")
+	} else if hash, err := pending.Finish("adopt smith"); err != nil {
+		fmt.Fprintf(out, "  not committed (%v); commit when ready\n", strings.SplitN(err.Error(), "\n", 2)[0])
+	} else if hash != "" {
+		fmt.Fprintln(out, "  committed: chore: adopt smith (smith undo reverts it)")
+	}
 	return DescribeOutcome(r.Root, version, out)
 }

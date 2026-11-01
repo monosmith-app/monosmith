@@ -23,7 +23,7 @@ func Convertible(dir string) bool {
 // handOverToConvert runs smith convert for an Nx or Turborepo workspace, so
 // that adopt is the one way in: a report is convert's --dry-run and --init is
 // convert applying.
-func handOverToConvert(cmd *cobra.Command, level string, asJSON, dryRun, initialise, tags, install, eslint bool) error {
+func handOverToConvert(cmd *cobra.Command, level string, asJSON, dryRun, initialise, tags, install, eslint, commit bool) error {
 	switch {
 	case tags:
 		return problem.New("--tags does not apply to an Nx or Turborepo workspace: the conversion carries its release tags over", "smith adopt --init")
@@ -45,6 +45,9 @@ func handOverToConvert(cmd *cobra.Command, level string, asJSON, dryRun, initial
 	}
 	if asJSON {
 		flags["json"] = "true"
+	}
+	if commit {
+		flags["commit"] = "true"
 	}
 	for name, value := range flags {
 		if err := conv.Flags().Set(name, value); err != nil {

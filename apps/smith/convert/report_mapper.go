@@ -38,7 +38,7 @@ func sourceLabel(plan *convertplan.Plan) string {
 	case plan.Source == convertplan.SourceTurborepo:
 		return "Turborepo workspace"
 	case plan.Legacy:
-		return "Nx workspace (set up by an earlier version of this tool)"
+		return "Nx workspace (set up by the old mnci)"
 	}
 	return "Nx workspace"
 }
@@ -57,6 +57,7 @@ func Report(plan *convertplan.Plan, opts ReportOptions) string {
 	if opts.DryRun && !plan.Blocked(opts.Strict) {
 		b.WriteString("\n" + NextSteps(plan, true))
 	}
+	b.WriteString(repeatedBlockers(plan, opts.Strict))
 	return b.String()
 }
 
@@ -98,13 +99,29 @@ func Verdict(plan *convertplan.Plan, strict bool) string {
 	return b.String()
 }
 
+// repeatedBlockers ends a long report with the blockers again, so the reader
+// who scrolled to the bottom sees what stops the conversion without going back.
+func repeatedBlockers(plan *convertplan.Plan, strict bool) string {
+	blockers, checks := attention(plan)
+	if !plan.Blocked(strict) || len(blockers) == 0 || len(checks) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\nFix first, then run this again:\n")
+	for i, g := range groupFindings(blockers, false) {
+		fmt.Fprintf(&b, "  %d. %s\n", i+1, g.line())
+	}
+	return b.String()
+}
+
 // attention splits the findings that need a person: blockers, then what to
-// decide or do (decisions, manual work, unsupported projects).
+// decide or do (decisions, unsupported projects, manual work), in that order:
+// what stops being built comes before what needs a hand.
 func attention(plan *convertplan.Plan) (blockers, checks []convertplan.Finding) {
 	for _, group := range []func(convertplan.Finding) bool{
 		func(f convertplan.Finding) bool { return f.Decide },
-		func(f convertplan.Finding) bool { return !f.Decide && f.Severity == convertplan.Manual },
 		func(f convertplan.Finding) bool { return !f.Decide && f.Severity == convertplan.Unsupported },
+		func(f convertplan.Finding) bool { return !f.Decide && f.Severity == convertplan.Manual },
 	} {
 		for _, f := range plan.Findings {
 			if f.Severity != convertplan.Blocker && group(f) {
@@ -206,9 +223,29 @@ func withoutShadowed(findings []convertplan.Finding) []convertplan.Finding {
 type group struct {
 	subject, message string
 	projects         []string
+	// files are the files one message about files applies to (a finding with
+	// no project); many is its wording once there are several.
+	files []string
+	many  string
+}
+
+// fileKindOf recognises the findings that name one file each and repeat for
+// hundreds of files. It returns the wording for several of them ("%d" is how
+// many) and a key that groups them.
+func fileKindOf(message string) (key, many string, ok bool) {
+	switch {
+	case strings.HasPrefix(message, "imports Nx ("):
+		return "imports-nx", "%d files import Nx, which convert removes; rewrite them without Nx", true
+	case strings.HasPrefix(message, "uses @nx/eslint-plugin in a way convert cannot rewrite"):
+		return "nx-eslint", "%d ESLint configs use @nx/eslint-plugin in a way convert cannot rewrite; replace it with typescript-eslint in each", true
+	}
+	return "", "", false
 }
 
 func (g group) line() string {
+	if len(g.files) > 1 {
+		return fmt.Sprintf(g.many, len(g.files))
+	}
 	if len(g.projects) == 1 {
 		return g.projects[0] + " " + g.subject + ": " + g.message
 	}
@@ -218,16 +255,25 @@ func (g group) line() string {
 // projectLine names the projects of a message shared by several: all of them
 // when verbose, otherwise a few and a count.
 func (g group) projectLine(verbose bool) string {
+	if len(g.files) > 1 {
+		return listed(g.files, "files", verbose)
+	}
 	if len(g.projects) < 2 {
 		return ""
 	}
-	shown := g.projects
+	return listed(g.projects, "projects", verbose)
+}
+
+// listed reads "67 files: a, b, c, d, e and 62 more": all of them when
+// verbose, otherwise the first five and a count.
+func listed(names []string, noun string, verbose bool) string {
+	shown := names
 	rest := ""
 	if limit := 5; !verbose && len(shown) > limit {
 		rest = fmt.Sprintf(" and %d more", len(shown)-limit)
 		shown = shown[:limit]
 	}
-	return fmt.Sprintf("%d projects: %s%s", len(g.projects), strings.Join(shown, ", "), rest)
+	return fmt.Sprintf("%d %s: %s%s", len(names), noun, strings.Join(shown, ", "), rest)
 }
 
 // groupFindings merges findings that say the same thing about different
@@ -236,7 +282,20 @@ func (g group) projectLine(verbose bool) string {
 func groupFindings(findings []convertplan.Finding, sorted bool) []group {
 	index := map[string]int{}
 	var groups []group
+	files := map[string]int{}
 	for _, f := range findings {
+		if f.Project == "" && f.Severity == convertplan.Manual {
+			if key, many, ok := fileKindOf(f.Message); ok {
+				i, seen := files[key]
+				if !seen {
+					files[key] = len(groups)
+					i = len(groups)
+					groups = append(groups, group{subject: f.Subject, message: f.Message, many: many})
+				}
+				groups[i].files = append(groups[i].files, f.Subject)
+				continue
+			}
+		}
 		message := f.Message
 		key := f.Subject + "\x00" + message
 		if f.Project != "" {
@@ -258,6 +317,7 @@ func groupFindings(findings []convertplan.Finding, sorted bool) []group {
 	}
 	for i := range groups {
 		sort.Strings(groups[i].projects)
+		sort.Strings(groups[i].files)
 	}
 	if !sorted {
 		return groups

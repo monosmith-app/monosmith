@@ -109,6 +109,14 @@ type WorkspaceSection struct {
 	// whose manifests are not projects: discovery leaves them out in every
 	// language, and a change there affects no project.
 	Exclude []string `toml:"exclude"`
+	// AllowedOutputs are workspace-relative paths a task may write to outside
+	// the build directory (dist/): a folder a tool needs the output in, such as
+	// a go:embed folder. smith doctor does not report them.
+	AllowedOutputs []string `toml:"allowed_outputs"`
+	// SharedOutputs are workspace-relative folders (dist/drop) that several
+	// tasks fill on purpose, each with its own files; smith doctor does not
+	// report their overlap.
+	SharedOutputs []string `toml:"shared_outputs"`
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`

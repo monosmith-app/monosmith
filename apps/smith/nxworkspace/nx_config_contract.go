@@ -8,7 +8,7 @@ import (
 // NxJSON is the part of nx.json a conversion reads.
 type NxJSON struct {
 	NamedInputs    map[string][]Input `json:"namedInputs"`
-	TargetDefaults map[string]Target  `json:"targetDefaults"`
+	TargetDefaults TargetDefaults     `json:"targetDefaults"`
 	Plugins        []PluginEntry      `json:"plugins"`
 	Release        *Release           `json:"release"`
 	DefaultBase    string             `json:"defaultBase"`
@@ -16,6 +16,39 @@ type NxJSON struct {
 	NxCloudToken   string             `json:"nxCloudAccessToken"`
 	// Mnci is the settings block the old mnci (4.x) keeps in nx.json.
 	Mnci *LegacySettings `json:"mnci"`
+}
+
+// TargetDefaults maps a target name to its defaults. Nx 24 also allows a list
+// of entries for one target (each may be filtered by project or plugin); the
+// entries are read and merged in order, a filter is not applied, because the
+// project graph smith reads from Nx has the defaults applied already.
+type TargetDefaults map[string]Target
+
+// UnmarshalJSON accepts {"test": {...}} and {"test": [{...}, {...}]}.
+func (d *TargetDefaults) UnmarshalJSON(raw []byte) error {
+	var entries map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		return fmt.Errorf("targetDefaults should be an object keyed by target name: %w", err)
+	}
+	out := make(TargetDefaults, len(entries))
+	for name, entry := range entries {
+		var list []Target
+		if json.Unmarshal(entry, &list) == nil {
+			var merged Target
+			for _, t := range list {
+				merged = merged.overlay(t)
+			}
+			out[name] = merged
+			continue
+		}
+		var one Target
+		if err := json.Unmarshal(entry, &one); err != nil {
+			return fmt.Errorf("targetDefaults.%s should be an object or a list of objects: %w", name, err)
+		}
+		out[name] = one
+	}
+	*d = out
+	return nil
 }
 
 // PluginEntry is a plugin name, with options when nx.json gives an object.
@@ -103,8 +136,9 @@ type LegacySettings struct {
 	Registry      struct {
 		Kind string `json:"kind"`
 	} `json:"registry"`
-	CI    string `json:"ci"`
-	Agent string `json:"agent"`
+	// CI is one provider, or a list of them.
+	CI    StringList `json:"ci"`
+	Agent string     `json:"agent"`
 	Stack struct {
 		TestRunner string `json:"testRunner"`
 	} `json:"stack"`

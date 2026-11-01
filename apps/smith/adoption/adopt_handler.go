@@ -26,7 +26,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 
 // Command is `smith adopt`.
 func Command(version string) *cobra.Command {
-	var asJSON, tags, initialise, dryRun, install, eslint bool
+	var asJSON, tags, initialise, dryRun, install, eslint, commit bool
 	level := LevelConservative
 	cmd := &cobra.Command{
 		Use:   "adopt",
@@ -38,10 +38,12 @@ is asked for, and both steps need a clean git tree:
 
   --tags  creates, locally, the release tags a project needs where its tags
           were made under another name (nothing is pushed)
-  --init  writes smith.toml and the pipelines and commits (with --install it also
-          runs npm install; with --eslint it writes the root eslint.config.mjs and
-          adds @monosmith/eslint-config to the devDependencies); a pipeline of yours
-          at a path smith owns is kept beside it as .pre-smith
+  --init  writes smith.toml and the pipelines (with --install it also runs npm
+          install; with --eslint it writes the root eslint.config.mjs and adds
+          @monosmith/eslint-config to the devDependencies); a pipeline of yours
+          at a path smith owns is kept beside it as .pre-smith. It does not
+          commit: add --commit to commit the change as one operation that
+          smith undo reverts
 
 --level conservative (the default) keeps the repository's build and lint setup.
 --level full, which makes smith the only tool, applies to Nx and Turborepo
@@ -58,7 +60,7 @@ non-zero while something blocks.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
 			if Convertible(".") {
-				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint)
+				return handOverToConvert(cmd, level, asJSON, dryRun, initialise, tags, install, eslint, commit)
 			}
 			switch level {
 			case LevelConservative:
@@ -69,6 +71,9 @@ non-zero while something blocks.`,
 					"the full level for plain repositories is tracked in "+FullLevelIssue)
 			default:
 				return problem.New(fmt.Sprintf("--level %q is not one of conservative, full", level), "smith adopt --level conservative")
+			}
+			if commit && !initialise {
+				return problem.New("--commit commits what --init writes, and --init is not given", "smith adopt --init --commit")
 			}
 			if dryRun && (tags || initialise) {
 				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags or --init", "drop --dry-run to take the steps, or drop the steps to only look")
@@ -86,7 +91,7 @@ non-zero while something blocks.`,
 				}
 			}
 			if initialise {
-				return Init(report, version, install, eslint, out)
+				return Init(report, version, install, eslint, commit, out)
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {
@@ -117,7 +122,8 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&tags, "tags", false, "create the baseline release tags the report asks for, locally")
 	cmd.Flags().BoolVar(&install, "install", false, "with --init, also run npm install for the Node projects")
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
-	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines, and commit")
+	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
+	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd
 }
 

@@ -17,6 +17,8 @@
         "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme." },
         "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo." },
         "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." },
+        "allowed_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative paths a task may write to outside the build directory (dist/), such as a folder a tool embeds (go:embed). smith doctor does not report them. Default: none." },
+        "shared_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative folders (dist/drop) that several tasks fill on purpose, each with its own files. smith doctor does not report their overlap. Default: none." },
         "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." },
         "recipe": { "type": "string", "description": "The recipe new projects are created from: a path relative to smith.toml, or an https URL. smith add --stack bypasses it. Default: none (stacks only)." },
         "commit_operations": { "type": "boolean", "description": "Commit every mutating command (add, remove, upgrade, derive, sync) as one commit when the work tree is clean before it; smith undo reverts the last. Default: false." }

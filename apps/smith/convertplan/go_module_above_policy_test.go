@@ -37,7 +37,7 @@ func TestConvertDeclaresAGoPackageOfARootModuleAsAProject(t *testing.T) {
 		if strings.Contains(item.Message, "declared in smith.toml") {
 			got = item.Message
 		}
-		if strings.Contains(item.Message, "smith v1 has no plugin for it") {
+		if strings.Contains(item.Message, "smith has no plugin for it") {
 			t.Errorf("a Go package has a plugin: %q", item.Message)
 		}
 	}
