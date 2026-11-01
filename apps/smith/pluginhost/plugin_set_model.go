@@ -3,6 +3,7 @@ package pluginhost
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"slices"
 	"sort"
 	"strings"
@@ -39,7 +40,7 @@ func (s *PluginSet) ForLanguage(lang string) (*host.Client, error) {
 			return c, nil
 		}
 	}
-	return nil, fmt.Errorf("no plugin handles language %q; available: %s", lang, strings.Join(s.Languages(), ", "))
+	return nil, fmt.Errorf("no plugin handles language %q; available: %s.%s", lang, strings.Join(s.Languages(), ", "), nearmatch.Suggestion(lang, s.Languages()))
 }
 
 // Languages lists every language plugin that can generate.

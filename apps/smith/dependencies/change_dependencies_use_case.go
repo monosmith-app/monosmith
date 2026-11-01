@@ -3,6 +3,7 @@ package dependencies
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"io"
 	"strings"
 	"time"
@@ -113,7 +114,7 @@ func resolve(g *projectgraph.Graph, targets []string) ([]*projectgraph.Project, 
 			}
 		}
 		if p == nil {
-			return nil, fmt.Errorf("no project %q: name it by its name or its directory (projects: %s)", t, strings.Join(g.Names(), ", "))
+			return nil, fmt.Errorf("no project %q: name it by its name or its directory (projects: %s).%s", t, strings.Join(g.Names(), ", "), nearmatch.Suggestion(t, g.Names()))
 		}
 		out = append(out, p)
 	}

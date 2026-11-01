@@ -73,7 +73,7 @@ var BuiltinAddons = map[string]func(version string) serve.Plugin{
 	playwright.Name: func(v string) serve.Plugin { return playwright.New(v) },
 	tauri.Name:      func(v string) serve.Plugin { return tauri.New(v) },
 	typescript.Name: func(v string) serve.Plugin { return typescript.New(v) },
-	vite.Name:      func(v string) serve.Plugin { return vite.New(v) },
+	vite.Name:       func(v string) serve.Plugin { return vite.New(v) },
 	angular.Name:    func(v string) serve.Plugin { return angular.New(v) },
 	astro.Name:      func(v string) serve.Plugin { return astro.New(v) },
 	vscode.Name:     func(v string) serve.Plugin { return vscode.New(v) },
