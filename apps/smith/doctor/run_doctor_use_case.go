@@ -94,9 +94,11 @@ func Run(s *session.Session) Report {
 	add("smith", conventionCoverageChecks(s)...)
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)
-	add("smith", taskGroupChecks(s)...)
+	add("smith", groupChecks(s)...)
+	add("smith", overrideSuggestionChecks(s)...)
 	add("smith", tauriSidecarChecks(s)...)
 	add("smith", taskFoldChecks(s)...)
+	add("smith", sourceConditionChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
@@ -209,20 +211,21 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	if status, err := cachemaintenance.Inspect(s.LocalCacheDir(), session.CacheLimitBytes(s.Config)); err == nil {
 		out = append(out, localCacheFindings(status)...)
 	}
+	out = append(out, defaultsVintageFinding(s.Config.Workspace.Defaults))
 	out = append(out, toolchainPinFindings(s)...)
 	out = append(out, jestHelperFilesFindings(s)...)
-	outside := OutsideBuildDir(s.Graph.Projects)
+	outside := OutsideBuildDir(s.Graph.Projects, s.Config.Workspace.AllowedOutputs...)
 	out = append(out, protocol.Finding{
 		Check: "every build writes to " + protocol.BuildDir + "/", OK: len(outside) == 0,
 		Detail: Summary(outside, "; ", shownProblems),
-		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin",
+		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
 	out = append(out, buildWritesFinding(s))
-	shared := SharedOutputs(s.Graph.Projects)
+	shared := SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
 	out = append(out, protocol.Finding{
 		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
 		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),
-		Remedy: "give each task its own directory (dist/drop/<project dir>/ for a package task) in its command and in smith.toml outputs = [...]",
+		Remedy: "give each task its own directory (dist/drop/<project dir>/ for a package task) in its command and in smith.toml outputs = [...]; or, when tasks fill one folder on purpose, list it under [workspace] shared_outputs",
 	})
 	badServe := BadServe(s.Graph)
 	out = append(out, protocol.Finding{

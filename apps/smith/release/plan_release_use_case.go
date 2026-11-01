@@ -96,7 +96,16 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 	if ch != nil {
 		plan.Channel = ch.Tag
 	}
-	releasing := map[string]string{}
+	git = git.WithRefCache()
+	// First every project's last release, then one read of the history that
+	// answers for all of them.
+	type lastRelease struct {
+		latest              Version
+		tag                 string
+		released, onChannel bool
+	}
+	last := map[string]lastRelease{}
+	var tags []string
 	for _, name := range order {
 		p := graph.Get(name)
 		if !p.Releases() || (ch != nil && p.Release != nil && p.Release.Channels != nil && !*p.Release.Channels) {
@@ -109,6 +118,18 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 				latest, tag, released, onChannel = v, t, true, true
 			}
 		}
+		last[name] = lastRelease{latest, tag, released, onChannel}
+		tags = append(tags, tag)
+	}
+	index := newCommitIndex(git, tags)
+	releasing := map[string]string{}
+	for _, name := range order {
+		l, ok := last[name]
+		if !ok {
+			continue
+		}
+		p := graph.Get(name)
+		latest, tag, released, onChannel := l.latest, l.tag, l.released, l.onChannel
 		current := latest
 		if !released {
 			current = Version{}
@@ -116,8 +137,10 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 				current = v
 			}
 		}
-		raw, err := git.Log(tag, SourceRoots(graph, p)...)
-		if err != nil {
+		var raw []gitclient.Commit
+		if index.answers(tag) {
+			raw = index.log(tag, SourceRoots(graph, p))
+		} else if raw, err = git.Log(tag, SourceRoots(graph, p)...); err != nil {
 			return Plan{}, err
 		}
 		var commits []Commit
@@ -145,7 +168,7 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		if released {
 			item.Current = latest.String()
 		}
-		forced, err := directiveFor(git, tag, name)
+		forced, err := directiveFrom(index, git, tag, name)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -185,6 +208,19 @@ func SourceRoots(graph *projectgraph.Graph, p *projectgraph.Project) []string {
 		}
 	}
 	return roots
+}
+
+// directiveFrom is directiveFor answered from the index when it can.
+func directiveFrom(index *commitIndex, git *gitclient.Git, since, project string) (string, error) {
+	if !index.answers(since) {
+		return directiveFor(git, since, project)
+	}
+	for _, c := range index.log(since, []string{""}) {
+		if d, ok := ParseDirective(c.Subject); ok && d.Project == project {
+			return d.Version, nil
+		}
+	}
+	return "", nil
 }
 
 // directiveFor finds the newest version(<project>)[x] directive since a tag,

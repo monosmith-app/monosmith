@@ -13,6 +13,8 @@ import (
 // Git runs git in a repository.
 type Git struct {
 	Dir string
+	// refs, when set, caches the tags and the branch (see WithRefCache).
+	refs *refCache
 }
 
 // New returns a client for the repository containing dir.
@@ -34,6 +36,7 @@ func (g *Git) RunWithEnv(env []string, args ...string) (string, error) {
 func (g *Git) raw(args ...string) (string, error) { return g.rawEnv(nil, args...) }
 
 func (g *Git) rawEnv(env []string, args ...string) (string, error) {
+	g.forget(args)
 	full := append([]string{"-c", "core.quotepath=off", "--no-optional-locks"}, args...)
 	cmd := exec.Command("git", full...)
 	cmd.Dir = g.Dir
@@ -127,9 +130,22 @@ func (g *Git) IsShallow() bool {
 
 // CurrentBranch returns the checked-out branch, or "" when detached.
 func (g *Git) CurrentBranch() string {
+	if g.refs != nil {
+		g.refs.mu.Lock()
+		set, branch := g.refs.branchSet, g.refs.branch
+		g.refs.mu.Unlock()
+		if set {
+			return branch
+		}
+	}
 	out, err := g.Run("symbolic-ref", "--quiet", "--short", "HEAD")
 	if err != nil {
-		return ""
+		out = ""
+	}
+	if g.refs != nil {
+		g.refs.mu.Lock()
+		g.refs.branch, g.refs.branchSet = out, true
+		g.refs.mu.Unlock()
 	}
 	return out
 }
@@ -142,6 +158,9 @@ func (g *Git) HasCommits() bool {
 
 // Tags lists tags starting with prefix.
 func (g *Git) Tags(prefix string) ([]string, error) {
+	if g.refs != nil {
+		return g.cachedTags(prefix)
+	}
 	out, err := g.Run("tag", "--list", prefix+"*")
 	if err != nil || out == "" {
 		return nil, err
@@ -161,6 +180,11 @@ func (g *Git) TagsMerged(prefix string) ([]string, error) {
 
 // TagCommit returns the commit a tag points to, or "" if the tag is absent.
 func (g *Git) TagCommit(tag string) string {
+	if g.refs != nil {
+		if c, ok := g.cachedTagCommit(tag); ok {
+			return c
+		}
+	}
 	out, err := g.RevParse("refs/tags/" + tag)
 	if err != nil {
 		return ""

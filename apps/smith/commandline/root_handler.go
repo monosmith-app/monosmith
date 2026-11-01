@@ -30,6 +30,7 @@ import (
 	"golang.org/x/term"
 	"os"
 
+	"github.com/monosmith-app/monosmith/apps/smith/bootstrap"
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/cachecommand"
 	"github.com/monosmith-app/monosmith/apps/smith/choiceview"
@@ -37,8 +38,10 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
+	"github.com/monosmith-app/monosmith/apps/smith/copymeasure"
 	"github.com/monosmith-app/monosmith/apps/smith/dependencies"
 	"github.com/monosmith-app/monosmith/apps/smith/derive"
+	"github.com/monosmith-app/monosmith/apps/smith/divergences"
 	"github.com/monosmith-app/monosmith/apps/smith/dockerdescription"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/eject"
@@ -46,6 +49,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
 	"github.com/monosmith-app/monosmith/apps/smith/kindchange"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginusage"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/pubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/recipe"
@@ -53,9 +57,11 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaseassets"
 	"github.com/monosmith-app/monosmith/apps/smith/report"
+	"github.com/monosmith-app/monosmith/apps/smith/sandbox"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/slicecheck"
 	"github.com/monosmith-app/monosmith/apps/smith/stackview"
+	"github.com/monosmith-app/monosmith/apps/smith/swapchoice"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriadd"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
@@ -100,7 +106,7 @@ already have), then build and doctor.`,
 			root.AddCommand(c)
 		}
 	}
-	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version))
+	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), swapchoice.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
 	add("work", devservers.Command(version), derive.Command(version), operation.UndoCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
@@ -115,7 +121,7 @@ already have), then build and doctor.`,
 	agentCmd := agentfiles.Command()
 	agentCmd.AddCommand(agentdoc.FileCommand(version))
 	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
-	add("inspect", doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginhost.Command(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 
@@ -190,4 +196,12 @@ func run(version string, args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// pluginCommand is `smith plugin` with the check that stops switching off a
+// plugin some project uses, unless --force says it is meant.
+func pluginCommand(version string) *cobra.Command {
+	cmd := pluginhost.Command(version)
+	pluginusage.GuardDisable(cmd, version)
+	return cmd
 }

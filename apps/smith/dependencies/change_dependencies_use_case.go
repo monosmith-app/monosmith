@@ -3,6 +3,7 @@ package dependencies
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"io"
 	"strings"
 	"time"
@@ -55,6 +56,14 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 		return err
 	}
 	for _, p := range projects {
+		if c := s.Plugins.Get(p.Plugin); c != nil && c.Supports(protocol.MethodDeclared) {
+			var declared protocol.DeclaredResult
+			if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: []protocol.Project{p.Project}}, &declared, timeout); err == nil {
+				if missing, have := undeclared(declared.Declarations, p.Name, packages); len(missing) > 0 {
+					return fmt.Errorf("%s does not declare %s. It declares: %s", p.Name, strings.Join(missing, ", "), strings.Join(have, ", "))
+				}
+			}
+		}
 		var res protocol.DependencyResult
 		ok, err := s.Plugins.Call(p.Plugin, protocol.MethodUninstall, protocol.UninstallParams{Project: p.Project, Packages: packages}, &res, timeout)
 		if err := outcome(p, ok, err); err != nil {
@@ -66,6 +75,7 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 }
 
 func installAll(s *session.Session, log io.Writer) error {
+	var failed []string
 	for _, c := range s.Plugins.Clients {
 		name := c.Info.Plugin.Name
 		if !c.Supports(protocol.MethodInstall) {
@@ -82,9 +92,15 @@ func installAll(s *session.Session, log io.Writer) error {
 		}
 		var res protocol.DependencyResult
 		if err := c.Call(protocol.MethodInstall, protocol.InstallParams{Projects: projects}, &res, timeout); err != nil {
-			return fmt.Errorf("plugin %s: %w", name, err)
+			// One language that cannot install must not stop the others.
+			fmt.Fprintf(log, "! %s: skipped, %v\n", name, err)
+			failed = append(failed, name)
+			continue
 		}
 		report(log, fmt.Sprintf("%s: installed %d project(s)", name, len(projects)), res)
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("the other languages were installed, but %s could not be: fix the line above, then run smith install again", strings.Join(failed, ", "))
 	}
 	return nil
 }
@@ -105,7 +121,7 @@ func resolve(g *projectgraph.Graph, targets []string) ([]*projectgraph.Project, 
 			}
 		}
 		if p == nil {
-			return nil, fmt.Errorf("no project %q: name it by its name or its directory (projects: %s)", t, strings.Join(g.Names(), ", "))
+			return nil, fmt.Errorf("no project %q: name it by its name or its directory (projects: %s).%s", t, strings.Join(g.Names(), ", "), nearmatch.Suggestion(t, g.Names()))
 		}
 		out = append(out, p)
 	}

@@ -2,7 +2,7 @@
 name: smith
 description: Knows what smith can do and drives it. Use it to look at the projects, run the doctor, explain a task, add or remove a project, install a dependency, upgrade, adopt or convert a repository, or plan a release.
 ---
-<!-- smith:generated sha256=e451d1439d55 by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
+<!-- smith:generated sha256=d44d09c25c5c by smith agent install. Delete this line to keep your own edits; smith then leaves the file alone. -->
 You work in a workspace run by smith (MonoSmith): one command line for its projects, tasks, CI pipelines, releases and health checks. Use smith for anything it owns, and do not edit those files by hand.
 
 The smith MCP server (registered as `smith mcp` in .mcp.json and .vscode/mcp.json) gives you tools that run smith commands. If the tools are not there, run the same commands in the terminal.
@@ -20,8 +20,8 @@ Read-only tools, use them freely:
 - smith_doctor: Check the workspace's health, as JSON; every failed check names its remedy
 - smith_release_preview: What the next release would version, tag and publish, as JSON; changes nothing
 - smith_updates: Declared dependencies with newer releases, grouped patch, minor and major, and the tools smith pins against their newest releases, as JSON; changes nothing
-- smith_explain: How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each level and the settings
-- smith_recipe_check: Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each level and the merged settings with the file and line each came from, or why it is not valid
+- smith_explain: How a project's tasks resolved and where each field came from (the language plugin, a stack, a convention, smith.toml), as JSON; with recipe, only what the project's recipe decided: its choices, the plugin at each role and the settings
+- smith_recipe_check: Resolve and validate a recipe without writing anything, as JSON: the choices asked, the plugin for each role and the merged settings with the file and line each came from, or why it is not valid
 - smith_plugin_list: The built-in plugins and those installed on the plugin search path, as JSON: the levels each can be chosen for (roles), the slots it fills (provides), its requirements and conflicts, and what it implements
 - smith_doctor_fixes: The fixes smith_doctor's findings have, as diffs, and which of them are safe (they only restore what smith or a plugin owns, like go.work or a generated pipeline); changes nothing
 - smith_upgrade_preview: What smith upgrade would change after a newer smith or recipe: the migration of smith.toml, the files smith owns it regenerates or deletes, and the projects a recipe brings up to date, as JSON; changes nothing

@@ -17,7 +17,7 @@ import (
 // Command is `smith derive`.
 func Command(version string) *cobra.Command {
 	var check bool
-	var explain, adopt, eject, replace []string
+	var explain, adopt, eject, replace, reclaim []string
 	cmd := &cobra.Command{
 		Use:   "derive",
 		Short: "Write the files that follow from facts and the project graph, and report hand edits",
@@ -48,6 +48,11 @@ diff and never overwrites it. Then you choose, per file:
   --adopt <file>    keep the edit as the new baseline (a file smith owns by
                     keys, that still has every derived key)
   --eject <file>    own the file: the record says "you" and smith stops
+  --reclaim <file>  the opposite of --eject, in one step: give an ejected or
+                    drifted file back to smith. It shows the diff of what will
+                    be overwritten, asks (or --yes), writes the derived content
+                    and records smith as the owner again. --dry-run shows the
+                    diff only; --commit commits the change for smith undo.
 
 A file that exists, is not in the record and differs from the derived content is
 left alone in the same way (--replace takes it over, --eject keeps it).
@@ -57,7 +62,7 @@ or when a file needs a choice. smith ci verify runs it. --explain <file> says
 who owns a file, which renderer wrote it and why it is in its state.
 
 Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
-		Example: "  smith derive\n  smith derive --check\n  smith derive --explain packages/web/tsconfig.lib.json\n  smith derive --replace packages/web/tsconfig.lib.json\n  smith derive --eject packages/web/tsconfig.lib.json",
+		Example: "  smith derive\n  smith derive --check\n  smith derive --explain packages/web/tsconfig.lib.json\n  smith derive --replace packages/web/tsconfig.lib.json\n  smith derive --eject packages/web/tsconfig.lib.json\n  smith derive --reclaim packages/web/tsconfig.lib.json --commit",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -65,22 +70,28 @@ Derived files are opt-in: set [derive] enabled = true in smith.toml.`,
 				return err
 			}
 			defer s.Close()
+			if !s.Config.Derive.Enabled && check {
+				fmt.Fprintln(cmd.OutOrStdout(), "Derived files are off in this workspace ([derive] enabled is not true): nothing to check.")
+				return nil
+			}
 			if !s.Config.Derive.Enabled {
 				return problem.New("derived files are off in this workspace", "set enabled = true under [derive] in smith.toml")
 			}
 			yes, _ := cmd.Flags().GetBool("yes")
-			return run(cmd.OutOrStdout(), cmd.InOrStdin(), s, check, yes, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject})
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			return run(cmd.OutOrStdout(), cmd.InOrStdin(), s, check, yes, dryRun, explain, Decision{Replace: replace, Adopt: adopt, Eject: eject, Reclaim: reclaim})
 		},
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a derived file or the record is out of date")
 	cmd.Flags().StringArrayVar(&explain, "explain", nil, "say who owns this file and why it is in its state")
 	cmd.Flags().StringArrayVar(&replace, "replace", nil, "overwrite this drifted or diverged file with the derived content")
 	cmd.Flags().StringArrayVar(&adopt, "adopt", nil, "take the hand edit of this keys-mode file as the new baseline")
+	cmd.Flags().StringArrayVar(&reclaim, "reclaim", nil, "give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner")
 	cmd.Flags().StringArrayVar(&eject, "eject", nil, "own this file: smith stops touching it")
-	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "derive files" }})
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(*cobra.Command, []string) string { return "derive files" }})
 }
 
-func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, explain []string, d Decision) error {
+func run(out io.Writer, in io.Reader, s *session.Session, check, yes, dryRun bool, explain []string, d Decision) error {
 	plan, rec, err := BuildPlan(s)
 	if err != nil {
 		return err
@@ -102,9 +113,20 @@ func run(out io.Writer, in io.Reader, s *session.Session, check, yes bool, expla
 	if check {
 		return CheckPlan(out, plan)
 	}
-	if _, err := operationplan.Present(out, in, PlanWrites(s.Root, plan), operationplan.Options{
-		Yes: yes, Ask: len(d.Replace)+len(d.Adopt)+len(d.Eject) == 0, Env: operationplan.DetectEnvironment(),
-	}); err != nil {
+	writes := PlanWrites(s.Root, plan)
+	if len(d.Reclaim) > 0 {
+		changes, err := PlanReclaim(s.Root, plan, d.Reclaim)
+		if err != nil {
+			return err
+		}
+		PrintReclaimDiffs(out, d.Reclaim, changes)
+		fmt.Fprintln(out)
+		writes = ReclaimPlan(d.Reclaim, changes)
+	}
+	proceed, err := operationplan.Present(out, in, writes, operationplan.Options{
+		Yes: yes, DryRun: dryRun, Ask: len(d.Reclaim) > 0 || len(d.Replace)+len(d.Adopt)+len(d.Eject) == 0, Env: operationplan.DetectEnvironment(),
+	})
+	if err != nil || !proceed {
 		return err
 	}
 	before := rec
@@ -159,10 +181,11 @@ func printOutcome(out io.Writer, plan Plan, o Outcome) {
 	list("recorded", o.Recorded)
 	list("adopted", o.Adopted)
 	list("ejected", o.Ejected)
+	list("reclaimed", o.Reclaimed)
 	for _, h := range o.Held {
 		fmt.Fprintf(out, "  %-9s %s  (%s)  %s\n", string(h.Status), h.File.Path, h.File.Renderer, h.Detail)
 	}
-	changed := len(o.Written) + len(o.Replaced) + len(o.Recorded) + len(o.Adopted) + len(o.Ejected)
+	changed := len(o.Written) + len(o.Replaced) + len(o.Recorded) + len(o.Adopted) + len(o.Ejected) + len(o.Reclaimed)
 	fmt.Fprintf(out, "%d derived files: %s.\n", len(plan.Items), strings.Join(summary(changed, len(o.Held)), ", "))
 }
 

@@ -47,7 +47,7 @@ func NewCommand(version string) *cobra.Command {
 		Use:   "new [path]",
 		Short: "Write a recipe by answering questions",
 		Long: `Asks for a recipe's name, version and the recipe it extends, then goes through
-the levels (language, scaffold, each task slot such as lint and test,
+the roles (language, scaffold, each task slot such as lint and test,
 structure, deploy). For each it lists the plugins that fit what is chosen so
 far, and you say whether one is fixed, a choice the recipe's users make
 (python or csharp, say, with a plugin per answer), or left unset.
@@ -59,7 +59,7 @@ replaced only after you confirm, or with --force.
 
 Without a terminal, --from-answers reads the same answers from a file, so a
 script or a test gets the same recipe the questions would. A recipe whose
-plugins are all fixed needs no file either: --name and --fixed level=plugin
+plugins are all fixed needs no file either: --name and --fixed role=plugin
 (as often as needed) write it, which is what the interface's form runs. A
 choice the recipe's users make still needs the questions or an answers file.`,
 		Example: `  smith recipe new
@@ -80,7 +80,7 @@ choice the recipe's users make still needs the questions or an answers file.`,
 	cmd.Flags().StringVar(&opts.Name, "name", "", "the recipe's name; with --fixed, nothing is asked")
 	cmd.Flags().StringVar(&opts.RecipeVersion, "recipe-version", "", "the recipe's version (0.1.0 when not given)")
 	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
-	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a level's plugin, as level=plugin (language=python, structure=slices,layers); repeat for each level")
+	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
 	return cmd
 }

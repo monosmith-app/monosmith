@@ -2,6 +2,7 @@ package taskgraph
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"sort"
 	"strings"
 
@@ -16,7 +17,7 @@ func Build(pg *projectgraph.Graph, projects, tasks []string) (*Graph, error) {
 	for _, name := range projects {
 		p := pg.Get(name)
 		if p == nil {
-			return nil, fmt.Errorf("no project named %q (projects: %s)", name, strings.Join(pg.Names(), ", "))
+			return nil, fmt.Errorf("no project named %q (projects: %s).%s", name, strings.Join(pg.Names(), ", "), nearmatch.Suggestion(name, pg.Names()))
 		}
 		for _, t := range tasks {
 			if _, ok := p.Tasks[t]; !ok {

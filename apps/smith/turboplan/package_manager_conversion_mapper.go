@@ -128,7 +128,7 @@ func planWorkspaceGlobs(plan *convertplan.Plan, w *turboworkspace.Workspace, tra
 	}
 	if w.Pnpm != nil && len(w.Pnpm.Packages) > 0 {
 		plan.SetWorkspaces = w.Pnpm.Packages
-		plan.Add(convertplan.Mapped, "", "pnpm-workspace.yaml", "its packages become the package.json \"workspaces\" field: "+strings.Join(w.Pnpm.Packages, ", "))
+		plan.AddEdit("", "pnpm-workspace.yaml", "its packages become the package.json \"workspaces\" field: "+strings.Join(w.Pnpm.Packages, ", "))
 	}
 	if tracked["pnpm-workspace.yaml"] {
 		plan.DeletePath("pnpm-workspace.yaml")
@@ -183,7 +183,7 @@ func planOverrides(plan *convertplan.Plan, w *turboworkspace.Workspace) {
 					plan.SetOverrides = map[string]string{}
 				}
 				plan.SetOverrides[k] = value
-				plan.Add(convertplan.Mapped, "", s.where, fmt.Sprintf("%s: %s becomes an npm override", k, value))
+				plan.AddEdit("", s.where, fmt.Sprintf("%s: %s becomes an npm override", k, value))
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func planSpecifiers(plan *convertplan.Plan, w *turboworkspace.Workspace) {
 		}
 	}
 	if count > 0 {
-		plan.Add(convertplan.Mapped, "", "dependency specifiers", fmt.Sprintf("%d workspace: and catalog: ranges become what npm accepts (workspace:* is *, workspace:^ is ^<the package's version>, catalog: is its range from pnpm-workspace.yaml), e.g. %s", count, strings.Join(examples, "; ")))
+		plan.AddEdit("", "dependency specifiers", fmt.Sprintf("%d workspace: and catalog: ranges become what npm accepts (workspace:* is *, workspace:^ is ^<the package's version>, catalog: is its range from pnpm-workspace.yaml), e.g. %s", count, strings.Join(examples, "; ")))
 	}
 }
 

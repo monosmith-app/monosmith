@@ -23,14 +23,14 @@ type fake struct {
 func (f *fake) backend() Backend {
 	return Backend{
 		Load: func() Snapshot { return f.snap },
-		SetPlugin: func(name string, enable bool) error {
+		SetPlugin: func(name string, enable bool) (string, error) {
 			f.calls = append(f.calls, fmt.Sprintf("plugin %s %v", name, enable))
 			for i := range f.snap.Plugins {
 				if f.snap.Plugins[i].Name == name {
 					f.snap.Plugins[i].Enabled = enable
 				}
 			}
-			return f.setErr
+			return "", f.setErr
 		},
 		SetArchitecture: func(name string) error {
 			f.calls = append(f.calls, "architecture "+name)
@@ -86,7 +86,7 @@ func sample() *fake {
 			Installed:  []InstalledPlugin{{Name: "kiwi", Version: "1.2.0", Dir: "/home/me/.smith/plugins/kiwi"}},
 			SearchPath: []string{"/ws/.smith/plugins", "/home/me/.smith/plugins"},
 			Settings: []Setting{
-				{Path: "ci.devcontainer", Type: "boolean", Explanation: "Write a devcontainer.", Default: "false"},
+				{Path: "ci.devcontainer", Type: "boolean", Explanation: "Write a devcontainer.", Default: "false", Reason: "a devcontainer is only useful when the team opens the repository in one"},
 				{Path: "ci.providers", Type: "array", Explanation: "Which CI systems.", Default: `["github"]`, Choices: []string{"github", "azure", "gitlab"}, Value: `["github"]`, Set: true, Current: []string{"github"}},
 				{Path: "ci.branches", Type: "array", Explanation: "Branches.", Default: "the release branch"},
 				{Path: "cache.max_size_mb", Type: "integer", Explanation: "Cache size.", Default: "2048", Value: "512", Set: true, Current: []string{"512"}},
@@ -752,4 +752,13 @@ func TestSearchWithNoWordsListsEveryPlugin(t *testing.T) {
 		}
 	}
 	t.Fatalf("an empty field is a search for everything: %+v", results)
+}
+
+func TestASettingShowsWhyItsDefaultIsWhatItIs(t *testing.T) {
+	m := opened(t, sample())
+	m, _ = press(m, "left", "down", "down", "down", "right") // Workspace section
+	got := text(m, 120, 30)
+	if !strings.Contains(got, "Why: a devcontainer is only useful") {
+		t.Fatalf("the reason is not next to the setting: %s", got)
+	}
 }

@@ -46,6 +46,7 @@ Usage: `smith lint [project]... [flags]`
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
 | `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `--verbose` | boolean | off | smith build: show the log of every project, not only the ones that fail |
 
 <!-- smith:end lint -->
 

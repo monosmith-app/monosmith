@@ -32,6 +32,7 @@ Usage: `smith plugin <command>`
 |---|---|
 | `smith plugin check` | Check that a plugin keeps the protocol's promises |
 | `smith plugin disable` | Disable built-in plugins in smith.toml |
+| `smith plugin draft` | Draft what a language plugin needs from a sample project: manifests, version line, tasks, publish step |
 | `smith plugin enable` | Enable built-in plugins in smith.toml |
 | `smith plugin install` | Install a packaged plugin, checked against its sha256 |
 | `smith plugin list` | List the built-in plugins, the external ones the workspace uses (trusted or not) and the ones installed on the plugin search path |

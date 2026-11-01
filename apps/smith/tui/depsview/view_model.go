@@ -362,7 +362,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		patch, minor, major := v.levelCounts()
 		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
 		if safe := patch + minor; safe > 0 {
-			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(" The "+fmt.Sprint(major)+" major ones can break your code: take them one at a time."), w, 0)...)
+			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(majorWarning(major)), w, 0)...)
 		}
 		lines = append(lines, "")
 		nameW := 8
@@ -424,4 +424,16 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		lines[i] = pane.Fit(lines[i], w)
 	}
 	return lines, rowOf
+}
+
+// majorWarning is the sentence about major releases after the count of the safe
+// ones: nothing when there is none, singular and plural otherwise.
+func majorWarning(major int) string {
+	switch major {
+	case 0:
+		return ""
+	case 1:
+		return " The 1 major one can break your code: take it on its own."
+	}
+	return fmt.Sprintf(" The %d major ones can break your code: take them one at a time.", major)
 }

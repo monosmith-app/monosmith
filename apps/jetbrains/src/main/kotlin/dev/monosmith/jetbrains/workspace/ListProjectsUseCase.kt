@@ -20,7 +20,10 @@ object ListProjectsUseCase {
                         .withWorkingDirectory(root)
                         .withCharset(StandardCharsets.UTF_8),
                 )
-            check(output.exitCode == 0) { output.stderr.ifBlank { "smith projects exited with ${output.exitCode}" } }
+            check(output.exitCode == 0) {
+                // An unreadable smith.toml reaches the tool window as "smith.toml:3:9 ...", with the fix.
+                ProblemTextMapper.toLine(output.stderr).ifBlank { "smith projects exited with ${output.exitCode}" }
+            }
             ProjectsJsonMapper.toProjects(output.stdout)
         }
 }

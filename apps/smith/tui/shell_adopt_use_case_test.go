@@ -132,9 +132,11 @@ func (f *adoptFake) Report() (string, error) { return "The report", nil }
 
 func (f *adoptFake) Install(context.Context, io.Writer) error { return nil }
 
-func (f *adoptFake) AdoptFix() doctorfix.Planned { return doctorfix.Planned{} }
+func (f *adoptFake) AdoptFix(bool) doctorfix.Planned { return doctorfix.Planned{} }
 
 func (f *adoptFake) AgentFix() (doctorfix.Planned, bool) { return doctorfix.Planned{}, false }
+
+func (f *adoptFake) CommitConversion() string { return "Committed abc12345." }
 
 func (f *adoptFake) Close() {
 	f.mu.Lock()

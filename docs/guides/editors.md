@@ -150,7 +150,7 @@ writes:
 
 | To | Tool | Runs |
 |---|---|---|
-| see the plan of a recipe: the choices asked, the plugin at each level, the merged settings and where each came from, or why it is invalid | `smith_recipe_check` (`choices`: `name=answer`, `all`) | `smith recipe check <recipe> --json` |
+| see the plan of a recipe: the choices asked, the plugin at each role, the merged settings and where each came from, or why it is invalid | `smith_recipe_check` (`choices`: `name=answer`, `all`) | `smith recipe check <recipe> --json` |
 | write a recipe from an answers file, checked for every combination first | `smith_recipe_new` (`answers`, `path`, `force`) | `smith recipe new --from-answers` |
 | create a project from the workspace's recipe, answering its choices | `smith_add_project` (`choices`) | `smith add <kind> <name> --choice name=answer` |
 | see why a task or setting has its value | `smith_explain` (`target`, `recipe`) | `smith explain <project>[:<task>] --json` |

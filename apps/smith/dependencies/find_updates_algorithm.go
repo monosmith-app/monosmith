@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -21,6 +22,27 @@ type Update struct {
 	Level string `json:"level"`
 	// Sites are the declarations up rewrites, each keeping its operator.
 	Sites []protocol.Declaration `json:"sites"`
+	// Preset is true for a package listed in [dependencies] presets: a team's
+	// shared preset, bumped as one change in every project (ADR 0060).
+	Preset bool `json:"preset,omitempty"`
+}
+
+// Group is the heading of the update in the up report: "preset" for a preset
+// package, else its Level.
+func (u Update) Group() string {
+	if u.Preset {
+		return "preset"
+	}
+	return u.Level
+}
+
+// MarkPresets sets Preset on the updates whose package is in presets and puts
+// them first, keeping the order of the others.
+func MarkPresets(updates []Update, presets []string) {
+	for i := range updates {
+		updates[i].Preset = slices.Contains(presets, updates[i].Name)
+	}
+	sort.SliceStable(updates, func(i, j int) bool { return updates[i].Preset && !updates[j].Preset })
 }
 
 // Projects names the declaring projects, "(root)" for the root manifest.

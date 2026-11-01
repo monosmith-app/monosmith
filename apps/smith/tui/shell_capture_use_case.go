@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,6 +19,7 @@ import (
 const (
 	capUndo    = "undo"
 	capAdd     = "add"
+	capSwap    = "swap"
 	capChoices = "choices"
 	capSearch  = "plugin-search"
 )
@@ -69,6 +71,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.undoRead(msg)
 	case capAdd:
 		return s.addPlanRead(msg)
+	case capSwap:
+		return s.swapPlanRead(msg)
 	case capChoices:
 		return s.choicesRead(msg)
 	case capSearch:
@@ -142,23 +146,93 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		s.tell("Cannot add "+name+" like that", "smith said:", failureText(msg.res))
 		return nil
 	}
-	c := dialog.NewConfirm("Add "+name+"?", "Nothing is written yet. This is the plan; Run makes the project, and Esc leaves everything as it is. You can undo it afterwards.", argv).
+	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len()), argv).
 		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
 
+// swapTitle is the title of the guided form that swaps a choice of a project.
+const swapTitle = "Swap a choice"
+
+// swapPreview asks smith what a swap would do, before it does it.
+func (s *Shell) swapPreview(argv []string) tea.Cmd {
+	if s.sources.Capture == nil {
+		return s.execute(append(slices.Clone(argv), "--yes"), false)
+	}
+	s.say("Planning the swap: nothing is changed yet…")
+	return s.capture(capSwap, append(slices.Clone(argv), "--dry-run"))
+}
+
+// swapPlanRead shows the plan of a swap, with what it moves and what is left
+// by hand, and asks before the real swap runs. The commit box is offered
+// unticked. The reason of a refused swap is shown as it is.
+func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
+	argv := msg.argv[:len(msg.argv)-1]
+	if !msg.res.OK {
+		s.tell("Cannot swap that", "smith said:", failureText(msg.res))
+		return nil
+	}
+	title := "Swap the choice?"
+	if len(argv) > 3 {
+		title = "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
+	}
+	c := dialog.NewConfirm(title, "This is the plan. smith moves what it can and lists what is left to do by hand.", append(slices.Clone(argv), "--yes")).
+		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
+	s.confirm = &c
+	return nil
+}
+
+// openSwap opens the form that swaps a choice of a project, with the choices
+// the plugins offer. The choices are read the first time, which takes a moment.
+func (s *Shell) openSwap() tea.Cmd {
+	return s.openChoiceForm(formSwap)
+}
+
+// showSwapForm opens the Swap a choice form.
+func (s *Shell) showSwapForm() tea.Cmd {
+	g := s.guide
+	if s.swapBase == nil {
+		if base, ok := g.ActionTitled(swapTitle); ok {
+			s.swapBase = &base
+		}
+	}
+	if s.swapBase != nil {
+		var projects []guide.SwapProject
+		for _, p := range s.list.Projects() {
+			projects = append(projects, guide.SwapProject{Name: p.Name, Language: p.Language})
+		}
+		g = g.WithAction(guide.SwapProjectAction(*s.swapBase, s.offers, projects))
+	}
+	if g, ok := g.WithDefault("project", s.selectedProject()).Pick(swapTitle); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// The forms that wait for the choices of the plugins.
+const (
+	formAdd  = "add"
+	formSwap = "swap"
+)
+
 // openAddProject opens the form that adds a project, with the choices the
 // plugins offer. The choices are read the first time, which takes a moment.
 func (s *Shell) openAddProject() tea.Cmd {
+	return s.openChoiceForm(formAdd)
+}
+
+// openChoiceForm opens the form (formAdd or formSwap) that needs the choices
+// of the plugins, reading them first when they are not known.
+func (s *Shell) openChoiceForm(form string) tea.Cmd {
 	switch {
 	case s.sources.Capture == nil || s.choices == choicesKnown:
-		return s.showAddForm()
+		return s.showChoiceForm(form)
 	case s.choices == choicesAsked:
-		s.addPending = true
+		s.formPending = form
 		return nil
 	}
-	s.choices, s.addPending = choicesAsked, true
+	s.choices, s.formPending = choicesAsked, form
 	s.say("Reading the choices your plugins offer…")
 	return s.capture(capChoices, []string{"choices", "--json"})
 }
@@ -175,11 +249,19 @@ func (s *Shell) choicesRead(msg capturedMsg) tea.Cmd {
 	if s.choices != choicesKnown {
 		s.notify("Could not read the choices, so the form has none: "+firstLine(failureText(msg.res)), toast.Warning)
 	}
-	if s.addPending {
-		s.addPending = false
-		return s.showAddForm()
+	if form := s.formPending; form != "" {
+		s.formPending = ""
+		return s.showChoiceForm(form)
 	}
 	return nil
+}
+
+// showChoiceForm opens the form that waited for the choices.
+func (s *Shell) showChoiceForm(form string) tea.Cmd {
+	if form == formSwap {
+		return s.showSwapForm()
+	}
+	return s.showAddForm()
 }
 
 // showAddForm opens the Add a project form.
@@ -191,9 +273,52 @@ func (s *Shell) showAddForm() tea.Cmd {
 		}
 	}
 	if s.addBase != nil {
-		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.list.Len()))
+		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()))
 	}
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// removeProjectTitle is the title of the guided form that removes a project.
+const removeProjectTitle = "Remove a project"
+
+// projectNames are the names of the workspace's projects, in list order.
+func (s Shell) projectNames() []string {
+	var names []string
+	for _, p := range s.list.Projects() {
+		names = append(names, p.Name)
+	}
+	return names
+}
+
+// refreshProjectForms puts the project names into the Remove form of the menu,
+// so a form opened from the Guide tab lists the projects too.
+func (s *Shell) refreshProjectForms() {
+	if s.removeBase == nil {
+		base, ok := s.guide.ActionTitled(removeProjectTitle)
+		if !ok {
+			return
+		}
+		s.removeBase = &base
+	}
+	s.guide = s.guide.WithAction(guide.RemoveProjectAction(*s.removeBase, s.projectNames()))
+}
+
+// openRemoveProject opens the form that removes a project as a pick list that
+// starts on the selected project.
+func (s *Shell) openRemoveProject() tea.Cmd {
+	g := s.guide
+	if s.removeBase == nil {
+		if base, ok := g.ActionTitled(removeProjectTitle); ok {
+			s.removeBase = &base
+		}
+	}
+	if s.removeBase != nil {
+		g = g.WithAction(guide.RemoveProjectAction(*s.removeBase, s.projectNames()))
+	}
+	if g, ok := g.WithDefault("name", s.selectedProject()).Pick(removeProjectTitle); ok {
 		s.guide = g
 	}
 	return s.gotoTab(commands.TabGuide)
@@ -306,14 +431,16 @@ func undoHint() string {
 	return "It can be undone: open the palette (" + commands.ShortcutOf("file.palette") + ") and choose Undo the last change"
 }
 
-// undoable is true for the commands whose work `smith undo` can revert.
-func undoable(argv []string) bool {
-	if len(argv) == 0 {
-		return false
-	}
-	switch argv[0] {
-	case "add", "convert", "adopt":
-		return true
-	}
-	return false
+// notCommittedHint is the sentence a toast adds to a change that is not a commit.
+func notCommittedHint() string {
+	return "Not committed: review with git status"
+}
+
+// changesFiles is true for the commands that write files and can commit them.
+func changesFiles(argv []string) bool { return dialog.CanCommit(argv) }
+
+// undoable is true for a command whose work `smith undo` can revert: one that
+// was run with --commit, or in a workspace that sets commit_operations.
+func undoable(argv []string, commitOps bool) bool {
+	return dialog.CanCommit(argv) && (commitOps || slices.Contains(argv, "--commit"))
 }

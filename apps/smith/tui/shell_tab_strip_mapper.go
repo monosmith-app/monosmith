@@ -71,6 +71,8 @@ func (s Shell) tabBadge(id string) string {
 				return s.th.Failure(fmt.Sprintf("%s%d", s.th.Icons.Failed, n))
 			} else if s.run.OK() {
 				return s.th.Success(s.th.Icons.Passed)
+			} else if s.run.Cancelled {
+				return s.th.Warning(s.th.Icons.Warning)
 			}
 		}
 	case commands.TabDoctor:

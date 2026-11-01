@@ -35,7 +35,12 @@ npm, PyPI, NuGet and RubyGems registry is asked whether it accepts the
 credential and the names, so a bad key stops the release before anything is
 published. What was published where is kept in dist/release/<project>/journal.json
 (smith release --status). smith release --rehearse runs registry checks for every
-package on their own, before a first release, and publishes nothing.`,
+package on their own, before a first release, and publishes nothing.
+
+A branch other than the release branch can release a line of prerelease
+versions of its own (2.0.0-beta.1, beta.2, ...): declare it as a
+[[release.channels]] table in smith.toml (smith config set does not edit lists
+of tables). docs/reference/releasing.md, Release channels, has an example.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
 			if comment && !dryRun {
@@ -47,6 +52,10 @@ package on their own, before a first release, and publishes nothing.`,
 				}
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
+			if err == nil {
+				// Tags and branch are read once for the whole command.
+				s.Git = s.Git.WithRefCache()
+			}
 			if err != nil {
 				return err
 			}

@@ -84,7 +84,7 @@ var all = []Command{
 	{ID: "deps.one-version", Group: GroupProjects, Title: "Require one version of each dependency", Hint: "smith config set dependencies.one_version true", Keys: []string{"o"}, Kind: Execute, Argv: []string{"config", "set", "dependencies.one_version", "true"}, Confirm: true, Views: vDeps, NeedsWorkspace: true, NeedsIdle: true, Footer: "one version"},
 
 	{ID: "settings.move", Group: GroupWorkspace, Title: "Move in the list of sections or its rows", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Glyph: "↑↓", Kind: PaneKey, Views: vSettings, Footer: "move"},
-	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{" ", "enter"}, Kind: PaneKey, Views: vSettings, Footer: "change"},
+	{ID: "settings.change", Group: GroupWorkspace, Title: "Change the selected plugin or setting: a switch flips, a list is ticked, text is typed", Keys: []string{"enter", " "}, Kind: PaneKey, Views: vSettings, Footer: "change"},
 	{ID: "settings.sections", Group: GroupWorkspace, Title: "Switch between the list of sections and its rows", Keys: []string{"tab", "left", "right"}, Shortcut: "Tab / Left Right", Glyph: "Tab", Kind: PaneKey, Views: vSettings, Footer: "sections"},
 	{ID: "settings.back", Group: GroupWorkspace, Title: "Back to the list of sections, or cancel the editor", Keys: []string{"esc"}, Kind: PaneKey, Views: vSettings, Footer: "back"},
 	{ID: "settings.trust", Group: GroupWorkspace, Title: "Review an external plugin and trust it", Hint: "smith plugin trust: what it is, what it runs, what it sees", Keys: []string{"t"}, Kind: PaneKey, Views: vSettings, Footer: "trust"},
@@ -123,7 +123,11 @@ var all = []Command{
 	{ID: "ws.agent-file", Group: GroupWorkspace, Title: "Write the agent file…", Hint: "smith agent file: AGENTS.md, what a coding agent should know about this workspace", Kind: Execute, Argv: []string{"agent", "file"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.derive-check", Group: GroupWorkspace, Title: "Check the derived files", Hint: "smith derive --check: which files follow from the project graph, and which were edited", Kind: Execute, Argv: []string{"derive", "--check"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "ws.derive", Group: GroupWorkspace, Title: "Update the derived files…", Hint: "smith derive: rewrite the files that follow from the project graph", Kind: Execute, Argv: []string{"derive"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
-	{ID: "ws.why", Group: GroupWorkspace, Title: "Why is this file here?…", Hint: "smith why <file>: who owns it and how to change it", Kind: Guided, Guide: "Why is this file here?", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"why"}},
+	{ID: "ws.derive-preview", Group: GroupWorkspace, Title: "Preview the derived files", Hint: "smith derive --dry-run: the plan of the update, nothing is written", Kind: Execute, Argv: []string{"derive", "--dry-run"}, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.why", Group: GroupWorkspace, Title: "Why is this here?…", Hint: "smith why <file or setting>: who owns a file, or why a setting has its value, and how to change it", Kind: Guided, Guide: "Why is this here?", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"why"}},
+	{ID: "ws.divergences", Group: GroupWorkspace, Title: "Divergences from the defaults", Hint: "smith divergences: every override, ejected file and drift, with the reason and how to go back", Kind: Execute, Argv: []string{"divergences"}, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "ws.try", Group: GroupWorkspace, Title: "Try a command in a copy…", Hint: "smith try <command>: runs it in a temporary copy, then doctor, and says what changed. Your files stay as they are", Kind: Guided, Guide: "Try a command in a copy", NeedsWorkspace: true, NeedsIdle: true, Presents: []string{"try"}},
+	{ID: "ws.bootstrap", Group: GroupWorkspace, Title: "Write the launcher…", Hint: "smith bootstrap: tools/smith/smith, so a laptop and CI run the same smith", Kind: Execute, Argv: []string{"bootstrap"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
 
 	{ID: "cli.guide", Group: GroupHelp, Title: "Commands and docs", Hint: "smith help: every command, with its examples", Kind: Execute, Argv: []string{"help"}, NeedsIdle: true},
 
@@ -138,6 +142,7 @@ var all = []Command{
 	{ID: "proj.graph", Group: GroupProjects, Title: "Project graph", Hint: "smith graph", Kind: Execute, Argv: []string{"graph"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.plugins", Group: GroupProjects, Title: "Manage plugins…", Hint: "choose which built-in plugins are on", Kind: Guided, Guide: "Manage plugins", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.upgrade", Group: GroupProjects, Title: "Upgrade workspace…", Hint: "smith upgrade: migrate smith.toml, regenerate what smith owns", Kind: Execute, Argv: []string{"upgrade"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "proj.swap", Group: GroupProjects, Title: "Swap a choice…", Hint: "smith swap <project> <axis> <choice>: change a test runner, a linter or a style; the plan comes first", Kind: Guided, Guide: "Swap a choice", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.remove", Group: GroupProjects, Title: "Remove project…", Hint: "smith remove: its directory, its traces in the workspace, its CI", Kind: Guided, Guide: "Remove a project", NeedsWorkspace: true, NeedsIdle: true},
 
 	// Release

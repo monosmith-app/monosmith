@@ -83,6 +83,7 @@ state `drift` and the diff, and it exits with an error until you choose:
 |---|---|---|
 | the derived content back | `smith derive --replace <file>` | smith overwrites the file |
 | to keep your edit as it is | `smith derive --adopt <file>` | smith takes the edit as the new baseline. Only for a file smith owns by keys, that still has every derived key |
+| to give an ejected or edited file back to smith, in one step | `smith derive --reclaim <file>` | the diff, a question, then the derived content and owner `smith` in the record (`--dry-run` shows only the diff, `--commit` makes it undoable) |
 | to own the file | `smith derive --eject <file>` | the record says owner `you`; smith does not touch the file again |
 
 `smith derive --explain <file>` says who owns a file, which renderer wrote it, and why it is in its

@@ -64,6 +64,9 @@ func Load(root string) (Config, error) {
 // rather than a silently ignored setting.
 func Parse(raw []byte) (Config, error) {
 	var cfg Config
+	if removed := FindRemovedKeys(raw); len(removed) > 0 {
+		return cfg, &RemovedKeysError{Keys: removed}
+	}
 	dec := toml.NewDecoder(bytes.NewReader(raw)).DisallowUnknownFields()
 	if err := dec.Decode(&cfg); err != nil {
 		var strict *toml.StrictMissingError
@@ -119,6 +122,9 @@ func Validate(cfg *Config) error {
 	}
 	if cfg.Schema < SchemaVersion {
 		return fmt.Errorf("%s uses schema %d, this smith schema %d: run `smith upgrade`", FileName, cfg.Schema, SchemaVersion)
+	}
+	if err := validateDefaultsVintage(cfg); err != nil {
+		return err
 	}
 	if strings.TrimSpace(cfg.Workspace.Name) == "" {
 		return fmt.Errorf("%s: [workspace] name is required", FileName)
@@ -251,7 +257,7 @@ func Validate(cfg *Config) error {
 	if err := validateBoundaries(cfg); err != nil {
 		return err
 	}
-	if err := validateTaskGroups(cfg); err != nil {
+	if err := validateGroups(cfg); err != nil {
 		return err
 	}
 	if err := validateRegistries(cfg); err != nil {

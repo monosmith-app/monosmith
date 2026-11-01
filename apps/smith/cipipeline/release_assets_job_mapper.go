@@ -50,7 +50,7 @@ func githubAssetsJob(m Model) string {
 	}
 	b.WriteString(githubInstallSmith(m, true))
 	b.WriteString(githubSiblingPreBuilds(m))
-	b.WriteString("      - name: Setup\n        run: smith ci setup\n")
+	b.WriteString("      - name: Setup\n        run: smith ci setup --assets\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Build and upload the release files
         run: smith ci assets

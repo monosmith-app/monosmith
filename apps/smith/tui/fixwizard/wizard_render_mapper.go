@@ -28,6 +28,13 @@ func (w Wizard) buttons() []button {
 		out = append(out, button{spell("Cancel", "Esc"), "esc"})
 	case Reviewing:
 		out = append(out, button{spell(w.style.apply(), "Enter"), "enter"})
+		if w.hasDiff {
+			label := "Show changes"
+			if w.full {
+				label = "Hide changes"
+			}
+			out = append(out, button{spell(label, "d"), "d"})
+		}
 		if w.style.Decline != "" {
 			out = append(out, button{spell(w.style.Decline, "n"), "n"})
 		}
@@ -127,7 +134,7 @@ func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) 
 	case Asking:
 		return w.askingRows(th, inner)
 	case Reviewing:
-		return reviewLines(th, strings.Join(w.review, "\n"), inner), nil
+		return reviewLines(th, strings.Join(w.reviewShown(), "\n"), inner), nil
 	case Applying:
 		return w.applyingRows(th, tick, inner), nil
 	}
@@ -244,6 +251,24 @@ func (w Wizard) optionAt(y int) (int, bool) {
 	return 0, false
 }
 
+// TextAt is the plain text of the body line drawn on screen row y, or "" when
+// no body line is there. A caller uses it to give a line of the review a click
+// target, such as a tick box.
+func (w Wizard) TextAt(y int) string {
+	rows := w.bodyRows()
+	line := y - w.Rect().Y - 1
+	if line < 0 || line >= w.visible() {
+		return ""
+	}
+	if len(rows) > w.visible() {
+		line += detail.ClampTop(w.top, len(rows), w.visible())
+	}
+	if line >= len(rows) {
+		return ""
+	}
+	return pane.Strip(rows[line])
+}
+
 // Lines draws the dialog: Rect().H lines of Rect().W cells. tick moves the
 // spinner while a step runs.
 func (w Wizard) Lines(th theme.Theme, tick int) []string {
@@ -285,4 +310,13 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	}
 	out = append(out, row(line))
 	return pane.Frame(th, w.title(), out, r.W, r.H, true)
+}
+
+// reviewShown is the review text as it is drawn: a line for each changed file,
+// or the whole diff once the reader asks for it.
+func (w Wizard) reviewShown() []string {
+	if w.full || !w.hasDiff {
+		return w.review
+	}
+	return w.summary
 }

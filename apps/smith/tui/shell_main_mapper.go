@@ -433,12 +433,19 @@ func (s Shell) taskLine(id string, w int, now time.Time) string {
 	if t.Reason != "" && t.Status != runview.Passed {
 		detail += "  " + t.Reason
 	}
+	if t.Status == runview.Running && strings.HasSuffix(t.ID, ":lint") && s.run.Elapsed(t, now) >= slowLintAfter {
+		detail += "  (lint checks every file: it is often the slow step)"
+	}
 	line := " " + s.statusIcon(t.Status) + " " + pad(t.ID, nameW) + " " + s.th.Muted(detail)
 	if id == s.runSel {
 		line = s.th.Selected(pane.Fit(pane.Strip(line), w))
 	}
 	return pane.Fit(line, w)
 }
+
+// slowLintAfter is how long a lint task runs before the list says why it takes
+// time.
+const slowLintAfter = 5 * time.Second
 
 func yesNoMark(s Shell, b bool) string {
 	if b {

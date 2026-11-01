@@ -1,6 +1,10 @@
 package guide
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+import (
+	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+)
 
 // Step is one question: a choice from options, or free text when Options is nil.
 type Step struct {
@@ -182,14 +186,30 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Why is this file here?", Presents: "why", Hint: "smith why: who owns a file or a project folder, and how to change it", NeedsWorkspace: true,
-			Steps: []Step{{Key: "path", Prompt: "Which file or folder? (a path from where you started smith)", Placeholder: "packages/web/tsconfig.json"}},
+			Title: "Why is this here?", Presents: "why", Hint: "smith why: who owns a file or a project folder, or why a setting has its value, and how to change it", NeedsWorkspace: true,
+			Steps: []Step{{Key: "path", Prompt: "Which file, folder or setting? (a path from where you started smith, or a setting such as ci.devcontainer)", Placeholder: "packages/web/tsconfig.json"}},
 			Argv: func(a map[string][]string) []string {
 				return []string{"why", first(a, "path")}
 			},
 		},
 		{
-			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (for choices, run smith recipe new in a terminal)",
+			Title: "Try a command in a copy", Presents: "try", Hint: "smith try: runs a command that changes files in a temporary copy, runs doctor on the result and says what changed. Your files stay as they are", NeedsWorkspace: true,
+			Steps: []Step{{Key: "command", Prompt: "Which smith command? (add, remove, up, upgrade, derive, kind, eject, sync or bootstrap, with its arguments)", Placeholder: "add package billing"}},
+			Argv: func(a map[string][]string) []string {
+				return append([]string{"try"}, strings.Fields(first(a, "command"))...)
+			},
+		},
+		{
+			Title: "Swap a choice", Presents: "swap", Hint: "smith swap: change a test runner, a linter or a style of a project; the plan comes first", NeedsWorkspace: true,
+			Steps: []Step{
+				{Key: "project", Prompt: "Which project?", Placeholder: "web"},
+				{Key: "axis", Prompt: "Which decision? (smith choices lists them)", Placeholder: "test"},
+				{Key: "choice", Prompt: "Which answer?", Placeholder: "vitest"},
+			},
+			Argv: SwapArgv,
+		},
+		{
+			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (to pick choices too, run smith recipe new outside this screen)",
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},

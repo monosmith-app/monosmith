@@ -40,6 +40,8 @@ Usage: `smith upgrade [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | change nothing; fail when something would change |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--defaults` | boolean | off | move the workspace to the latest defaults vintage (smith doctor says which it uses) |
 | `--dry-run` | boolean | off | show the plan, with the change to smith.toml, and change nothing |
 | `--json` | boolean | off | print the result as JSON |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
@@ -49,6 +51,10 @@ Usage: `smith upgrade [flags]`
 - `--dry-run` shows the plan, including the change to `smith.toml`, and changes nothing.
   Exit code 0 either way.
 - `--check` also changes nothing, and fails (exit 1) when something would change.
+- `--defaults` moves the workspace to the latest defaults vintage, with a plan, and does nothing
+  else. A workspace keeps the defaults of the vintage in `[workspace] defaults` whatever smith version
+  runs ([ADR 0054](../architecture/decisions/0054-defaults-have-vintages.md)); `smith doctor` says
+  which vintage it uses.
 - `--json` prints the result as JSON (`{}` when nothing changed).
 - In a terminal, outside CI, smith upgrade first prints the plan (from a dry run) and asks
   `Go ahead? [y/N]`. `--yes` skips the question; without a terminal it never asks.

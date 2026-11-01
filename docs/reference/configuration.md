@@ -48,9 +48,12 @@ name = "acme"                         # required
 scope = "@acme"                       # npm scope for Node projects
 module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
+allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
+shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
+defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
 [recipes]                             # a different recipe for one project kind: app, lib or package
 package = "https://example.com/recipes/package.recipe.toml"
@@ -75,6 +78,7 @@ audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts i
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
 allow = ["left-pad"]                  # dependencies that may differ between projects
+presets = ["@acme/eslint-config"]     # shared-config packages: smith up shows their bumps first, as one group (docs/guides/shared-presets.md)
 
 [boundaries]
 kinds = true                          # no project depends on an app: an error (unset: a warning; false: off)
@@ -412,6 +416,26 @@ the workspace, so `smith doctor` asks you to either add it to `"workspaces"`
 or exclude it. `smith convert` excludes such packages itself when Nx knew
 them only through their `package.json`.
 
+## Output folders outside the build directory
+
+`smith doctor` checks that every build writes into `dist/` and that no two tasks
+write the same folder. Two settings in `[workspace]` say that a case is on
+purpose. Both are lists of workspace-relative paths with forward slashes, and
+each path covers the folders under it:
+
+```toml
+[workspace]
+allowed_outputs = ["apps/mvd/appwindow/web"]  # a folder a tool embeds (go:embed)
+shared_outputs = ["dist/drop"]                # package tasks that fill one folder
+```
+
+- `allowed_outputs`: a task may write there although it is not under `dist/`.
+  Use it for a folder a tool reads from its own place, such as a `go:embed`
+  folder.
+- `shared_outputs`: several tasks may write there. A cache restore replaces a
+  task's output folders, so each task must write its own files. Giving each task
+  a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
+
 ## Shared schemas
 
 Projects in different languages are linked by the schema they share. Each
@@ -526,8 +550,8 @@ it off), and `serve`, `serve_url` and `serve_timeout`, which start an app around
 the task ([Serving an app for a task](tasks-and-cache.md#serving-an-app-for-a-task)).
 
 There is exactly one precedence rule: **plugin → `[tasks.<task>]` → matching
-`[[task_groups]]` (in file order) → `[projects.<name>.tasks.<task>]`**, later
-wins, field by field. See [Task groups](#task-groups) for the third layer. To see the
+`[[groups]]` (in file order) → `[projects.<name>.tasks.<task>]`**, later
+wins, field by field. See [Groups](#groups) for the third layer. To see the
 result and where each value came from:
 
 ```sh
@@ -553,25 +577,27 @@ dependency a plugin gave the task and the override leaves out (`build`,
 `^build`) is gone. `smith doctor` names each one as a warning, so the drop is
 deliberate rather than silent.
 
-## Task groups
+## Groups
 
 When several projects need the same overrides (every Node library builds into
 `dist`, tests need the same variable), state them once, for the group, instead
-of once per project:
+of once per project. A group can also give its projects `tags` and a
+`release` table (below). The table was called `[[task_groups]]` before smith 2.0;
+`smith doctor --fix` renames it in an old `smith.toml` and keeps the comments.
 
 ```toml
 # every Node library
-[[task_groups]]
+[[groups]]
 select = ["lang:node", "kind:lib"]
 
-[task_groups.tasks.build]
+[groups.tasks.build]
 outputs = ["dist"]
 
-[task_groups.tasks.test]
+[groups.tasks.test]
 depends_on = ["^build", "logger:build"]
 env = { TS_NODE_COMPILER_OPTIONS = '{"module":"commonjs"}' }
 
-[task_groups.tasks.typecheck]
+[groups.tasks.typecheck]
 depends_on = ["^build", "build", "^typecheck"]
 
 # one library uses all of that except for its test task
@@ -579,12 +605,26 @@ depends_on = ["^build", "build", "^typecheck"]
 depends_on = ["^build"]
 ```
 
+A rule for a folder is a group whose selector is the folder: `select = ["packages/*"]` is "everything
+under `packages/`" ([ADR 0058](../architecture/decisions/0058-folder-rules-are-task-groups-with-a-path-selector.md),
+[ADR 0067](../architecture/decisions/0067-groups-replace-task-groups-and-also-set-tags-and-release.md)).
+
+```toml
+# every package of the workspace: tags and a release, in one place
+[[groups]]
+select = ["packages/*"]
+tags = ["published"]
+
+[groups.release]
+platforms = ["linux/amd64", "darwin/arm64"]
+```
+
 `select` lists selectors, written the way `--projects` and `[boundaries]` write
 them: a project name, a glob over names or folders (`libs/*`), `kind:app`,
 `kind:lib`, `kind:package`, `lang:<language>` or `tag:<tag>`. A project is in
 the group when it matches **every** selector (add a second group for "or").
 A group sets the same fields as `[tasks.<task>]`, and changes only tasks the
-project already has.
+project already has. It sets at least one of `tasks`, `tags` and `release`.
 
 - Groups apply in the order of the file. When two groups match a project and
   set the same field of the same task, the later one wins; fields only one of
@@ -592,13 +632,19 @@ project already has.
 - A project's own `[projects.<name>.tasks.<task>]` wins over every group,
   field by field: `parser` above keeps the group's `build` and `typecheck`, and
   its `test` takes its own `depends_on` and the group's `env`.
-- `tag:` selectors see the tags set in `[projects.<name>] tags`.
+- `tags` are added to the tags of every project the group selects, like
+  `[projects.<name>] tags`. `tag:` selectors see the tags a project sets, and
+  the tags an earlier group gave.
+- `release` is the `[projects.<name>.release]` table of every selected project
+  that has none of its own. A project's own table replaces the group's whole;
+  the two are not merged. A group cannot name the published package (`npm`,
+  `pypi`, `nuget`, `rubygems`, `pub`): that name is the project's.
 - `smith explain parser:test` says where each value came from, for example
-  `from smith.toml [[task_groups]] select = ["lang:node", "kind:lib"]`.
+  `from smith.toml [[groups]] select = ["lang:node", "kind:lib"]`.
 - Cache keys follow the resolved task, so a change in a group re-runs exactly
   the tasks it changes.
 - `smith.toml` is rejected when a group has no `select`, an empty selector or
-  an unknown `kind:`, or sets no task. `smith doctor` warns about a group that
+  an unknown `kind:`, or sets none of `tasks`, `tags` and `release`. `smith doctor` warns about a group that
   matches no project.
 - The `depends_on` rules above apply unchanged: a group's list replaces the
   plugin's, and the dependencies it leaves out are named by `smith doctor`.
@@ -606,7 +652,7 @@ project already has.
 `smith convert` writes the settings that projects of one language and kind
 share as a group. For a workspace that already repeats them, `smith doctor`
 warns ("task settings shared by projects are written once") and `smith doctor
---fix` rewrites `smith.toml`: the repeated tables move into `[[task_groups]]`
+--fix` rewrites `smith.toml`: the repeated tables move into `[[groups]]`
 entries added at the end of the file, a project that differs keeps its own
 table (with the group's other fields added, so it runs as before), and every
 other line, comments included, stays. The fix is only offered when the
@@ -658,6 +704,7 @@ assets = ["out/*.zip", "out/*.zip.sha256"]            # globs of the files it le
 platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64", "linux-arm64"]  # a runner each
 asset_name = "{product}-{version}-{platform}.{ext}"   # optional: rename the files on upload ({product}, {version}, {platform}, {ext})
 checksums = true                                      # optional: attach <product>-<version>-<platform>.sha256 for what a runner uploads
+install = false                                       # optional: the build command needs none of this project's dependencies, so the assets job does not install it (default: true)
 
 # a Tauri app needs none of that: its plugin supplies build, assets, platforms, asset_name and checksums
 [projects.studio.release]

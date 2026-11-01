@@ -3,6 +3,7 @@ package scaffolding
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func Remove(workspaceRoot string, params protocol.RemoveParams) (protocol.Remove
 			return protocol.RemoveResult{}, fmt.Errorf("package-lock.json: %w", err)
 		}
 		if changed {
-			if err := os.WriteFile(lockPath, forgotten, 0o644); err != nil {
+			if err := lineendings.WriteFile(lockPath, forgotten, 0o644); err != nil {
 				return protocol.RemoveResult{}, err
 			}
 		}

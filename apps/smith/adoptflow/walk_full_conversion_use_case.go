@@ -95,6 +95,16 @@ func (s *Session) Convert(_ context.Context, c convertchoices.Choices, out io.Wr
 	return s.analysis.Convert(c.Level == convertchoices.LevelFull && c.CI == convertchoices.Keep, log)
 }
 
+// CommitConversion commits what the conversion changed as one operation that
+// smith undo reverts, and returns the line that says what happened (or why
+// nothing was committed). The tree was clean before the conversion, so the
+// commit holds the conversion and nothing else.
+func (s *Session) CommitConversion() string {
+	var b strings.Builder
+	convert.CommitConversion(s.Root, &b)
+	return strings.TrimSpace(b.String())
+}
+
 // Result is what the conversion found worth telling, once it was applied.
 func (s *Session) Result() convert.Highlights {
 	if s.analysis == nil {
@@ -169,15 +179,21 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 
 // AdoptFix is the conservative adoption of a plain repository as a fix: one
 // step that runs smith adopt --init, which writes smith.toml and the
-// pipelines and commits.
-func (s *Session) AdoptFix() doctorfix.Planned {
+// pipelines. With commit it also passes --commit, so the change becomes one
+// commit that smith undo can revert; without it nothing is committed.
+func (s *Session) AdoptFix(commit bool) doctorfix.Planned {
+	argv := []string{convert.SmithCommand(), "adopt", "--init"}
+	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
+	step := "adopt the repository (smith.toml, the CI pipelines)"
+	if commit {
+		argv = append(argv, "--commit")
+		what += ", and commit them"
+		step += ", then one commit"
+	}
 	return doctorfix.Planned{
 		Fix: protocol.Fix{
-			Description: "Make this repository a smith workspace: write smith.toml and the pipelines, and commit them",
-			Steps: []protocol.FixStep{{
-				Description: "adopt the repository (smith.toml, the CI pipelines, one commit)",
-				Argv:        []string{convert.SmithCommand(), "adopt", "--init"},
-			}},
+			Description: what,
+			Steps:       []protocol.FixStep{{Description: step, Argv: argv}},
 		},
 		Checks: []string{"adopt"},
 	}

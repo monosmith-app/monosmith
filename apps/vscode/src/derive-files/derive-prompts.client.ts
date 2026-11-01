@@ -12,18 +12,23 @@ const WORDS: Record<'apply' | 'replace' | 'adopt' | 'eject', { button: string, e
  * Asks before a change to a derived file, and says what the change does.
  * @param action - what the person chose
  * @param file - the file, or undefined for every derived file
- * @returns `yes`, `explain` (show the diff first) or `no`
+ * @returns `yes`, `yes-commit` (make it one commit, so Undo works), `explain` (show the diff of the file first), `preview` (show what a plain derive would write) or `no`
  */
-export async function confirmDeriveChange (action: 'apply' | 'replace' | 'adopt' | 'eject', file: string | undefined): Promise<'yes' | 'explain' | 'no'> {
+export async function confirmDeriveChange (action: 'apply' | 'replace' | 'adopt' | 'eject', file: string | undefined): Promise<'yes' | 'yes-commit' | 'explain' | 'preview' | 'no'> {
   const words = WORDS[action]
   const explain = 'Explain first'
+  const preview = 'Preview'
+  const commit = `${words.button} and commit (so Undo works)`
   const choice = await vscode.window.showWarningMessage(
     `MonoSmith: ${words.button.toLowerCase()} ${file ?? 'the derived files'}?`,
-    { modal: true, detail: `${words.effect}\n\nReview the changes with git afterwards.` },
+    { modal: true, detail: `${words.effect}\n\nBy default smith leaves the files uncommitted: review them with git. The commit button makes it one commit that Undo can revert.` },
     words.button,
-    ...(file === undefined ? [] : [explain]),
+    commit,
+    file === undefined ? preview : explain,
   )
   if (choice === words.button) return 'yes'
+  if (choice === commit) return 'yes-commit'
+  if (choice === preview) return 'preview'
 
   return choice === explain ? 'explain' : 'no'
 }

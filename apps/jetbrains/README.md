@@ -9,13 +9,21 @@ A first slice of the JetBrains plugin of issue #303, after the VS Code extension
 - **Double-click a task** to run `smith run <task> -p <project>` in a Run window. The first line
   is the command line, so you see what is about to run.
 - The projects come from the documented `smith projects --json` contract, never from human output.
+- The **Tools > MonoSmith** menu runs, in a Run window that prints the command line first:
+  **Doctor** (`smith doctor`), **Doctor: Apply the Safe Fixes** (`smith doctor --fix`, after a question),
+  **Add Project** (a dialog for the kind, the name and an **unticked** "Commit this change so it can be
+  undone" box; it runs `smith add --yes`, with `--commit` only when ticked), **Undo the Last Change**
+  (`smith undo --yes`, after a question), **Release Preview** (`smith release --dry-run`) and
+  **Why Is This File Like This?** (`smith why <file>`, also in the editor and project view menus).
+- An unreadable `smith.toml` shows in the tool window as `smith failed: smith.toml:3:9 ... Try: ...`.
 - smith is the **installed** one ([ADR 0025](../../docs/architecture/decisions/0025-ide-plugins-run-the-installed-smith.md)):
   `node_modules/.bin/smith`, then `.smith/bin/smith`, then `smith` on the `PATH`.
 
 ## Not built yet
 
 A `smith.path` setting, the protocol range check and install hints, `smith serve` for live results,
-affected projects, doctor, the release preview, new project from a recipe, and the language
+affected projects, a doctor view in the tool window (the action runs the command), a refresh
+button for the tool window, add with `--like`, swap, derive, new project from a recipe, and the language
 server (`smith lsp`, not built in the engine either).
 
 ## Build and test
@@ -40,5 +48,6 @@ the workspace, so `smith release` does not release it.
 Slices under `src/main/kotlin/dev/monosmith/jetbrains/`, named `<Name><Role>` as `smith slices check`
 requires for Kotlin: `workspace` (find the root, list the projects, the contract and its JSON
 mapper), `smithcommand` (which smith, the command lines), `taskrun` (run a task), `toolwindow`
-(the IDE entry point, a handler). The pure parts have unit tests; the IDE parts are compiled
+(the IDE entry point, a handler), `smithaction` (the menu actions, a handler each, and the add
+dialog). The pure parts have unit tests; the IDE parts are compiled
 against the platform but not tested in a running IDE.

@@ -28,7 +28,7 @@ func deriveFindings(plan derive.Plan) []protocol.Finding {
 	var out []protocol.Finding
 	for _, i := range plan.Pending() {
 		f := protocol.Finding{
-			Check:  "derived file " + i.File.Path + " (" + i.File.Renderer + ") is up to date",
+			Check:  "derived file " + i.File.Path + " (" + i.File.Renderer + ") matches what smith derives",
 			Detail: fmt.Sprintf("%s: %s (owner: %s)", i.Status, i.Detail, i.Owner),
 			Remedy: "run smith derive",
 		}

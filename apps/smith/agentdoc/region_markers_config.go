@@ -17,10 +17,6 @@ const (
 	ClaudeFile = "CLAUDE.md"
 )
 
-// sliceRoles are the file roles of the vertical-slices convention, as
-// docs/reference/conventions.md lists them.
-var sliceRoles = []string{"handler", "use_case", "algorithm", "policy", "model", "contract", "mapper", "validator", "repository", "client", "store", "middleware", "error", "config", "enum"}
-
 // namingByLanguage is how a language spells a file name under the
 // vertical-slices convention.
 var namingByLanguage = map[string]string{

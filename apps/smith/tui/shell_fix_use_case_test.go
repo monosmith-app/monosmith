@@ -179,6 +179,10 @@ func TestFixWizardReviewScrollsWithTheWheel(t *testing.T) {
 	}
 	l.m = sh
 	l.keys("4", "r", "f")
+	// The review opens on one line per file; d shows the whole diff, which scrolls.
+	l.has("Fix · review", "big.txt  new file  +60 -0", "Show changes")
+	l.hasNot("↓ more")
+	l.keys("d")
 	l.has("Fix · review", "↓ more")
 	l.hasNot("↑ more")
 	l.send(wheel(50, 10, 1))

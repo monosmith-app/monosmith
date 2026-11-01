@@ -1,1 +1,1 @@
-export { readFileWhy, readTaskWhy } from './read-why.use-case.ts'
+export { readFileWhy, readSettingWhy, readTaskWhy } from './read-why.use-case.ts'

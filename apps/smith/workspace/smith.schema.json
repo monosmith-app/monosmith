@@ -17,16 +17,19 @@
         "scope": { "type": "string", "description": "npm scope for Node packages, e.g. @acme." },
         "module_prefix": { "type": "string", "description": "Go module path prefix, e.g. github.com/acme/repo." },
         "exclude": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs (examples/**) of directories whose manifests are not projects, in any language." },
+        "allowed_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative paths a task may write to outside the build directory (dist/), such as a folder a tool embeds (go:embed). smith doctor does not report them. Default: none." },
+        "shared_outputs": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative folders (dist/drop) that several tasks fill on purpose, each with its own files. smith doctor does not report their overlap. Default: none." },
         "registry": { "type": "string", "description": "The [registries] entry the workspace installs from. Default: the public registries." },
         "recipe": { "type": "string", "description": "The recipe new projects are created from: a path relative to smith.toml, or an https URL. smith add --stack bypasses it. Default: none (stacks only)." },
-        "commit_operations": { "type": "boolean", "description": "Commit every mutating command (add, remove, upgrade, derive, sync) as one commit when the work tree is clean before it; smith undo reverts the last. Default: false." }
+        "commit_operations": { "type": "boolean", "x-reason": "smith never commits unless you ask, so your history stays yours; turn it on to make every change one commit that smith undo can revert (ADR 0047).", "description": "Commit every mutating command (add, remove, upgrade, derive, sync) as one commit when the work tree is clean before it; smith undo reverts the last. Default: false." },
+        "defaults": { "type": "string", "pattern": "^\\d{4}\\.(0[1-9]|1[0-2])$", "x-reason": "a newer smith must not change the defaults of a workspace by itself; moving to a newer vintage is your decision (ADR 0054).", "description": "The defaults vintage (year.month) the workspace was made with. A newer smith keeps these defaults until smith upgrade --defaults adopts a newer vintage. Default: none (a workspace made before vintages)." }
       }
     },
     "ci": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "attest": { "enum": ["on", "optional", "off"], "description": "What the generated GitHub pipeline does about the build provenance attestation of a release's archives: on attests and fails the release job when GitHub refuses (default); optional attests but lets the job go on when GitHub refuses (a private repository of a free organisation has no attestations); off leaves the step out." },
+        "attest": { "enum": ["on", "optional", "off"], "x-reason": "users can check that an archive was built from this repository; attesting is on, and fails loudly when GitHub refuses, so a missing proof is never silent.", "description": "What the generated GitHub pipeline does about the build provenance attestation of a release's archives: on attests and fails the release job when GitHub refuses (default); optional attests but lets the job go on when GitHub refuses (a private repository of a free organisation has no attestations); off leaves the step out." },
         "secrets": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }, "uniqueItems": true, "description": "Repository secrets the generated pipelines hand to every step that runs smith (the ci job, the native jobs and the assets jobs) as environment variables of the same name, for a build command that reads a token. A name may not start with GITHUB_. Default: none." },
         "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci", "bitbucket"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
@@ -64,7 +67,8 @@
       "additionalProperties": false,
       "properties": {
         "one_version": { "type": "boolean", "description": "Report a dependency that projects of one ecosystem declare at different versions, and a dev tool declared outside the root. Default: false (smith new turns it on)." },
-        "allow": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Dependencies that may differ between projects: doctor, smith sync and smith deps up --align leave them alone." }
+        "allow": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Dependencies that may differ between projects: doctor, smith sync and smith deps up --align leave them alone." },
+        "presets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Packages that carry the team's shared configuration (an ESLint config, a Jest preset): smith up shows their updates first, as one group. Default: none." }
       }
     },
     "boundaries": {
@@ -108,11 +112,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "branch": { "type": "string", "description": "The only branch a real release runs from. Default: main." },
-        "remote": { "type": "string", "description": "The remote release tags are pushed to. Default: origin." },
-        "github_releases": { "type": "boolean", "description": "Create a GitHub Release for every tag (needs GITHUB_TOKEN). Default: false." },
-        "tag_format": { "type": "string", "pattern": "\\{name\\}", "description": "The release tag prefix of every project that sets no tag_prefix: {name} is the project's name and {scope} is [workspace] scope, so \"{scope}/{name}@\" gives @acme/kit@ for kit. Must contain {name}. A prefix a plugin reports (a Go module's <dir>/v) wins. Default: \"{name}@\"." },
-        "api_check": { "enum": ["warn", "error", "off"], "description": "What smith does when the commits ask for a smaller version bump than the change of a package's public API needs (a removed export needs a major, an added one a minor). warn prints the warning and the bump to use; error stops the release too; off does not look. Only plugins that can list a public API (Node) are checked. Default: warn." },
+        "branch": { "type": "string", "x-reason": "a release from another branch would publish work nobody reviewed.", "description": "The only branch a real release runs from. Default: main." },
+        "remote": { "type": "string", "x-reason": "origin is the name git gives the repository you cloned from.", "description": "The remote release tags are pushed to. Default: origin." },
+        "github_releases": { "type": "boolean", "x-reason": "it needs a token in CI, so a first release works without any setup.", "description": "Create a GitHub Release for every tag (needs GITHUB_TOKEN). Default: false." },
+        "tag_format": { "type": "string", "pattern": "\\{name\\}", "x-reason": "a tag per project keeps two packages from sharing a tag, which a monorepo cannot tell apart.", "description": "The release tag prefix of every project that sets no tag_prefix: {name} is the project's name and {scope} is [workspace] scope, so \"{scope}/{name}@\" gives @acme/kit@ for kit. Must contain {name}. A prefix a plugin reports (a Go module's <dir>/v) wins. Default: \"{name}@\"." },
+        "api_check": { "enum": ["warn", "error", "off"], "x-reason": "the commit message may be right and the check wrong, so it warns and does not stop the release unless you choose error.", "description": "What smith does when the commits ask for a smaller version bump than the change of a package's public API needs (a removed export needs a major, an added one a minor). warn prints the warning and the bump to use; error stops the release too; off does not look. Only plugins that can list a public API (Node) are checked. Default: warn." },
         "vsce_entra": { "type": "boolean", "description": "Publish VS Code extensions with Microsoft Entra ID instead of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its OIDC token (workload identity federation) and vsce publishes as that identity. Needs the repository secrets AZURE_CLIENT_ID and AZURE_TENANT_ID, and the app registered as a member of the Marketplace publisher. GitHub Actions only. Default: false." },
         "rubygems_trusted_publishing": { "type": "boolean", "description": "Publish gems with the GitHub workflow's OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY secret. Each gem must be registered as a trusted publisher on rubygems.org first. GitHub Actions only. Default: false." },
         "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." },
@@ -137,15 +141,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "description": "Keep the MonoSmith agent files (.claude/agents/smith.md, .mcp.json, .vscode/mcp.json). false says they are absent on purpose: smith doctor and smith upgrade leave them alone. Default: true." }
+        "enabled": { "type": "boolean", "x-reason": "the agent files tell an AI assistant how to work in this workspace; false says they are absent on purpose.", "description": "Keep the MonoSmith agent files (.claude/agents/smith.md, .mcp.json, .vscode/mcp.json). false says they are absent on purpose: smith doctor and smith upgrade leave them alone. Default: true." }
       }
     },
     "cache": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "dir": { "type": "string", "description": "The task cache directory, workspace-relative or absolute. Default: .smith/cache." },
-        "max_size_mb": { "type": "integer", "minimum": 0, "description": "Keep the local cache under this size: after a run that stored results, the least recently used entries past it are removed. 0 means no limit. Default: 2048." },
+        "dir": { "type": "string", "x-reason": "inside the workspace the cache belongs to one repository, and smith doctor checks that git ignores it.", "description": "The task cache directory, workspace-relative or absolute. Default: .smith/cache." },
+        "max_size_mb": { "type": "integer", "minimum": 0, "x-reason": "an unbounded cache grows for ever; 2 GB holds hundreds of builds and the least recently used leave first.", "description": "Keep the local cache under this size: after a run that stored results, the least recently used entries past it are removed. 0 means no limit. Default: 2048." },
         "remote": { "type": "string", "pattern": "^(https?|s3|azblob)://", "description": "A shared cache behind the local one: https://host/path, s3://bucket/prefix or azblob://account/container/prefix. Objects are signed with SMITH_CACHE_KEY; one that fails verification is a miss." },
         "remote_read_only": { "type": "boolean", "description": "Read the remote cache without writing to it (SMITH_CACHE_READ_ONLY=1 does the same). Default: false." }
       }
@@ -252,16 +256,19 @@
       "description": "Overrides of a task for every project, by task name.",
       "additionalProperties": { "$ref": "#/definitions/task" }
     },
-    "task_groups": {
+    "groups": {
       "type": "array",
-      "description": "Task overrides for the projects a group selects, between [tasks.<task>] and [projects.<name>.tasks.<task>]. With several groups matching, a later one wins field by field.",
+      "description": "Task overrides, tags and a release for the projects a group selects. A group's tasks sit between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several groups matching, a later one wins field by field. A group sets at least one of tasks, tags and release.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["select", "tasks"],
+        "required": ["select"],
+        "anyOf": [{ "required": ["tasks"] }, { "required": ["tags"] }, { "required": ["release"] }],
         "properties": {
           "select": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Selectors; a project must match all of them: a name, a glob, kind:<app|lib|package>, lang:<language> or tag:<tag>." },
-          "tasks": { "type": "object", "additionalProperties": { "$ref": "#/definitions/task" }, "description": "Overrides by task name, with the fields of [tasks.<task>]." }
+          "tasks": { "type": "object", "additionalProperties": { "$ref": "#/definitions/task" }, "description": "Overrides by task name, with the fields of [tasks.<task>]." },
+          "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "description": "Tags added to the ones the plugin reports for every project the group selects, like [projects.<name>] tags." },
+          "release": { "$ref": "#/properties/projects/additionalProperties/properties/release", "description": "The release table of every selected project that sets none of its own; a project's own table replaces it. It cannot name the published package (npm, pypi, nuget, rubygems, pub)." }
         }
       }
     },
@@ -349,6 +356,7 @@
             "properties": {
               "asset_name": { "type": "string", "description": "Asset file name pattern; placeholders {product}, {version}, {os}, {arch}, {ext}. With build the files are renamed on upload and the placeholders are {product}, {version}, {platform}, {ext}." },
               "checksums": { "type": "boolean", "description": "With build, attach a SHA-256 checksums file of the files each runner uploads." },
+              "install": { "type": "boolean", "description": "With build, whether the assets job installs this project's dependencies first. false: the build command needs none of them, so smith ci setup --assets leaves the project out. Default: true." },
               "product": { "type": "string", "description": "Fills {product}. Default: the project name." },
               "build": { "type": "string", "minLength": 1, "description": "A shell command, run at the workspace root on one runner per platform, that makes the files assets names. They are uploaded to the GitHub Release with gh release upload (never an artifact), whatever the language. The command sees SMITH_PLATFORM, SMITH_VERSION and SMITH_TAG. Needs [release] github_releases, assets and platforms (a Tauri app's plugin supplies all three); excludes os_alias, arch_alias, version_variable, package_managers, linux_packages, npm, pypi, nuget, rubygems and pub." },
               "assets": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "description": "Workspace-relative globs of the files build leaves, each uploaded to the release. Needs build (a Tauri app's plugin supplies both)." },

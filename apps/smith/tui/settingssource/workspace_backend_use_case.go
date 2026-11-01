@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
+	"github.com/monosmith-app/monosmith/apps/smith/pluginusage"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/userprefs"
@@ -28,13 +29,25 @@ func New(dir, home, version string, getenv func(string) string) settingsview.Bac
 			}
 			return ReadSnapshot(r, version)
 		},
-		SetPlugin: func(name string, enable bool) error {
+		SetPlugin: func(name string, enable bool) (string, error) {
 			r, err := root()
 			if err != nil {
-				return err
+				return "", err
 			}
-			_, err = pluginhost.EnablePlugins(r, []string{name}, enable)
-			return err
+			if _, err = pluginhost.EnablePlugins(r, []string{name}, enable); err != nil {
+				return "", err
+			}
+			if !enable {
+				warning := pluginhost.SwitchOffWarning([]string{name})
+				// The same count `smith plugin disable` shows.
+				if used, err := pluginusage.Projects(r, version, []string{name}); err == nil {
+					if count := pluginusage.Warning(used, []string{name}); count != "" {
+						warning = "it hides projects: " + count + ". " + warning
+					}
+				}
+				return warning, nil
+			}
+			return "", nil
 		},
 		SetArchitecture: func(name string) error {
 			r, err := root()

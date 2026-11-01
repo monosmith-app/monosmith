@@ -133,6 +133,9 @@ marks the ones that changed.`,
 				return nil
 			}
 			fmt.Fprint(cmd.OutOrStdout(), out)
+			if format == "text" && len(g.Projects) > 1 && !hasEdges(g) {
+				fmt.Fprintln(cmd.ErrOrStderr(), "No project depends on another. Edges appear when a project imports the package or module another one exports.")
+			}
 			return nil
 		},
 	}

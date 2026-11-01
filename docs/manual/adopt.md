@@ -3,8 +3,8 @@
 `smith adopt` reads a repository that smith does not manage yet (npm workspaces, Go
 modules, Python projects) and reports what bringing it under smith involves: the
 projects smith would see, what blocks, and the step that clears each blocker. By
-default it changes nothing. With `--init` it writes `smith.toml` and the pipelines
-and commits.
+default it changes nothing. With `--init` it writes `smith.toml` and the pipelines.
+It commits only with `--commit`.
 
 ## When to use it
 
@@ -36,9 +36,10 @@ Usage: `smith adopt [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | with --init, commit the change as one operation, so smith undo can revert it |
 | `--dry-run` | boolean | off | only report (this is the default; the flag makes it explicit) |
 | `--eslint` | boolean | off | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies |
-| `--init` | boolean | off | write smith.toml and the pipelines, and commit |
+| `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
 | `--install` | boolean | off | with --init, also run npm install for the Node projects |
 | `--json` | boolean | off | print the report as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
@@ -52,8 +53,14 @@ Interactions:
   makes it explicit.
 - `--tags` and `--init` both need a clean git tree. `--tags` creates, locally, the
   release tags a project needs where its tags were made under another name; nothing
-  is pushed. `--init` writes `smith.toml` and the pipelines and commits them
-  (`chore: adopt smith`). They can be combined: `smith adopt --tags --init`.
+  is pushed. `--init` writes `smith.toml` and the pipelines and leaves them in the
+  work tree. With `--commit` (or `commit_operations = true`) it commits them as
+  `chore: adopt smith`, and `smith undo` reverts that commit. They can be combined:
+  `smith adopt --tags --init --commit`.
+- A repository that uses pnpm (`pnpm-workspace.yaml`, or `workspace:` and `catalog:`
+  ranges) blocks `--init`: smith installs with npm, which cannot read them. The report
+  names the way on. A workflow of yours under `.github/workflows` is listed with a
+  warning that CI would run twice beside the one smith generates.
 - `--install` and `--eslint` only mean something with `--init`. `--install` runs
   `npm install` for the Node projects. `--eslint` writes the two-line root
   `eslint.config.mjs` and adds `@monosmith/eslint-config` to the root devDependencies.
@@ -135,7 +142,7 @@ smith adopt --init --tags
   wrote .mcp.json
   wrote .vscode/mcp.json
   wrote go.work: ./services/api
-  committed: chore: adopt smith
+  not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time
 ✔ adopted. smith doctor still reports 2 thing(s) for you:
   ✖ node_modules is missing at the workspace root
     → run `npm install` at the workspace root

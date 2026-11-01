@@ -4,22 +4,27 @@ import type { DeriveAction, DeriveStatus } from './derive-report.contract.ts'
  * The arguments of `smith derive` for an action. The file goes in `--flag=file`
  * form, so a name that starts with a dash is never read as an option.
  * @param action - what to do
- * @param file - the file, relative to the folder; needed by every action but `check` and a plain `apply`
+ * @param file - the file, relative to the folder; needed by every action but `check`, `preview` and a plain `apply`
+ * @param commit - with a change: `--commit`, so smith makes it one commit that `smith undo` can revert; without it smith commits nothing
  * @returns the arguments; `apply` and the three choices pass `--yes`, because the person agreed in the editor
  */
-export function deriveArguments (action: DeriveAction, file = ''): string[] {
+export function deriveArguments (action: DeriveAction | 'preview', file = '', commit = false): string[] {
+  const also = commit ? ['--commit'] : []
   switch (action) {
     case 'check': {
       return ['derive', '--check']
     }
+    case 'preview': {
+      return ['derive', '--dry-run']
+    }
     case 'apply': {
-      return ['derive', '--yes']
+      return ['derive', '--yes', ...also]
     }
     case 'explain': {
       return ['derive', `--explain=${file}`]
     }
     default: {
-      return ['derive', `--${action}=${file}`, '--yes']
+      return ['derive', `--${action}=${file}`, '--yes', ...also]
     }
   }
 }

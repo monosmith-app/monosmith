@@ -47,7 +47,8 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   const answer = await deps.confirm(request, plan.stdout.trim(), followsSiblings(plan.stdout))
   if (answer === 'cancel') return { kind: 'cancelled' }
 
-  const done = await deps.apply(addArguments(request, 'apply', answer === 'fresh' || request.fresh))
+  const committed = answer.endsWith('-commit')
+  const done = await deps.apply(addArguments(request, 'apply', answer.startsWith('fresh') || request.fresh, committed))
 
-  return done.code === 0 ? { kind: 'added', name: request.name, lines: done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } : { kind: 'refused', message: describeFailure(done) }
+  return done.code === 0 ? { kind: 'added', name: request.name, lines: done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), committed } : { kind: 'refused', message: describeFailure(done) }
 }

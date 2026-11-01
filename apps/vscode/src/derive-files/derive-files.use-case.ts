@@ -28,6 +28,19 @@ export async function explainDerivedFile (run: RunSmithIn, file: string): Promis
   return result.stdout
 }
 
+/**
+ * Shows what a plain `smith derive` would write, and writes nothing (`--dry-run`).
+ * @param run - runs smith in the folder
+ * @returns smith's plan
+ * @throws Error with smith's words and the fix, when smith has no answer
+ */
+export async function previewDerive (run: RunSmithIn): Promise<string> {
+  const result = await run(deriveArguments('preview'))
+  if (result.code !== 0) throw new Error(describeFailure(result))
+
+  return result.stdout
+}
+
 /** How a change to a derived file ended: what smith printed, or why it refused. */
 export type DeriveChange = { ok: true, output: string } | { ok: false, message: string }
 
@@ -37,9 +50,10 @@ export type DeriveChange = { ok: true, output: string } | { ok: false, message: 
  * @param run - runs smith in the folder
  * @param action - what to do
  * @param file - the file, relative to the folder; absent for `apply` of every file
+ * @param commit - make the change one commit, so Undo works
  */
-export async function changeDerivedFile (run: RunSmithIn, action: Exclude<DeriveAction, 'check' | 'explain'>, file?: string): Promise<DeriveChange> {
-  const result = await run(deriveArguments(action, file))
+export async function changeDerivedFile (run: RunSmithIn, action: Exclude<DeriveAction, 'check' | 'explain'>, file?: string, commit = false): Promise<DeriveChange> {
+  const result = await run(deriveArguments(action, file, commit))
 
   return result.code === 0 ? { ok: true, output: result.stdout } : { ok: false, message: describeFailure(result) }
 }

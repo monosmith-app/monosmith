@@ -104,14 +104,16 @@ func (s *Shell) openPackages(remove bool) {
 		return
 	}
 	var names []string
+	languages := map[string]string{}
 	for _, pr := range s.list.Projects() {
 		names = append(names, pr.Name)
+		languages[pr.Name] = pr.Language
 	}
 	p := packageprompt.NewInstall(project, names)
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.Place(s.w, s.h)
+	p = p.WithLanguages(languages).Place(s.w, s.h)
 	s.pkg = &p
 }
 
@@ -137,7 +139,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	if out.Confirmed {
-		return s.execute(c.Argv, true)
+		return s.execute(c.Final(), true)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
 	return nil
@@ -288,6 +290,12 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == addProjectTitle {
 			return s.openAddProject()
 		}
+		if c.Guide == swapTitle {
+			return s.openSwap()
+		}
+		if c.Guide == removeProjectTitle {
+			return s.openRemoveProject()
+		}
 		if g, ok := s.guide.WithDefault("lang", s.mainLanguage()).Pick(c.Guide); ok {
 			s.guide = g
 		}
@@ -423,6 +431,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
+			}
+			if len(argv) > 0 && argv[0] == "swap" && s.inWorkspace {
+				// The plan comes first: what leaves, what joins, what is left by hand.
+				return s.swapPreview(argv)
 			}
 			if len(argv) > 0 && argv[0] == "add" && s.inWorkspace {
 				// The plan comes first: what would be written, and which sibling it follows.

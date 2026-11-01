@@ -87,7 +87,7 @@ language and a kind together.
 
 The [plugin](#plugin) that understands one language: it finds the projects
 from their manifests (`package.json`, `go.mod`, …), turns imports into graph
-edges and writes versions. A project has exactly one. See [Roles](#role-or-level).
+edges and writes versions. A project has exactly one. See [Roles](#role).
 
 ## lib
 
@@ -126,7 +126,7 @@ prints them.
 
 ## recipe
 
-A TOML file describing which plugin fills each [level](#role-or-level) of a
+A TOML file describing which plugin fills each [role](#role) of a
 project and with what settings, plus a few questions to ask when someone adds
 a project. It is data, never code. A team writes one so every new project is
 made the same way. See [Recipes](recipes.md).
@@ -136,11 +136,13 @@ made the same way. See [Recipes](recipes.md).
 The branch real releases run from (`[release] branch`, default `main`).
 `smith release` refuses to publish from any other.
 
-## role or level
+## role
 
-The part a [plugin](#plugin) plays in a project. The two words mean the same
-thing: `smith plugin list` calls the column LEVELS, the protocol calls the
-field `roles`.
+The part a [plugin](#plugin) plays in a project. The word was once "level" as
+well; "role" is the one word now (`smith plugin list` shows ROLES, `smith recipe new`
+takes `--fixed role=plugin`, the protocol field is `roles`). The recipe file
+still writes the table `[levels.<role>]` and the protocol still writes `level` in
+`requires`: those are names in a format, kept for the files that exist.
 
 | Role | Does | A project has |
 |---|---|---|
@@ -193,7 +195,7 @@ reads (inputs), the directories it writes (outputs) and the tasks it waits for
 ## toolchain
 
 Two meanings. The **toolchain role** is described under
-[role or level](#role-or-level). A **toolchain** in CI is a runtime the
+[role](#role). A **toolchain** in CI is a runtime the
 pipeline must install (Node.js 24, Go, Python 3.12); a plugin says which and
 how. See [CI pipelines](ci.md#how-it-is-built).
 

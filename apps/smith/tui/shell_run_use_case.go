@@ -142,6 +142,11 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 	if _, isRun := commands.ParseRun(argv); isRun {
 		return nil
 	}
+	if isPreview(argv) {
+		// A preview writes nothing: the plan on the Release tab stays, so the
+		// release can start from it.
+		return nil
+	}
 	s.release, s.deps = releaseview.Model{}, depsview.Model{}
 	cmds := []tea.Cmd{s.loadProjects()}
 	if len(argv) > 0 && argv[0] == "plugin" {
@@ -162,8 +167,10 @@ func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
 		s.notify("Cancelled: "+s.run.CommandLine(), toast.Warning)
-	case s.run.OK() && undoable(s.run.Command):
+	case s.run.OK() && undoable(s.run.Command, s.commitOps):
 		s.notify(s.summary()+". "+undoHint(), toast.Success)
+	case s.run.OK() && changesFiles(s.run.Command):
+		s.notify(s.summary()+". "+notCommittedHint(), toast.Success)
 	case s.run.OK():
 		s.notify(s.summary(), toast.Success)
 	default:

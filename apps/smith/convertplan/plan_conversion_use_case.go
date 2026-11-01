@@ -101,6 +101,9 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 			continue
 		}
 		name := path.Base(p.Root)
+		if manifests := manifestsAt(p); len(manifests) > 1 {
+			plan.Add(Blocker, name, p.Root, fmt.Sprintf("%s has %s: smith makes one project of each manifest, so they would all be called %q. Move one of them into a folder of its own first", p.Root, strings.Join(manifests, " and "), name))
+		}
 		if other, dup := byName[name]; dup {
 			plan.Add(Blocker, name, p.Root, fmt.Sprintf("%s and %s would both be called %q: smith names projects after their directory, so rename one directory first", other, p.Root, name))
 		}
@@ -129,9 +132,9 @@ func MakePlanWith(w *nxworkspace.Workspace, in Input, removal Removal) *Plan {
 	planBuildOutputs(plan, w)
 	planPythonTools(plan, in)
 	planNodeStack(plan)
-	planTaskGroups(plan, w)
+	planGroups(plan, w)
 	for _, ci := range []string{".github/workflows/ci.yml", "azure-pipelines.yml"} {
-		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") {
+		if has[ci] && !strings.Contains(in.Read(ci), "mnci:slot") && !plan.Decided(ci) {
 			plan.Decide("", ci, "replaced by the pipeline smith generates; the old one stays in git history, so move any custom steps into its smith:slot sections")
 		}
 	}
@@ -155,7 +158,7 @@ func planProject(plan *Plan, w *nxworkspace.Workspace, p *nxworkspace.Project, n
 	pp := &ProjectPlan{Nx: p.Name, Name: name, Root: p.Root, Language: lang, Supported: lang != "", Declared: declared}
 	plan.Projects = append(plan.Projects, pp)
 	if !pp.Supported {
-		plan.Add(Unsupported, name, p.Root, label+" project: smith v1 has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
+		plan.Add(Unsupported, name, p.Root, label+" project: smith has no plugin for it, so nothing builds, tests or releases it after converting; its project.json is kept for reference")
 		return
 	}
 	kind := Kind(p, released)

@@ -57,6 +57,10 @@ the token to GitHub only.`,
 				}
 				return enc.Encode(rows)
 			}
+			if len(idx.Plugins) == 0 {
+				fmt.Fprintf(w, "The marketplace at %s lists no plugins yet, so there is nothing to search.\n", location)
+				return nil
+			}
 			if len(found) == 0 {
 				fmt.Fprintf(w, "No plugin matches in %s.\n", location)
 				return nil

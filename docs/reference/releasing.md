@@ -148,6 +148,15 @@ files (`package.json`, and the files a plugin keeps a version in, such as a Taur
 app's `tauri.conf.json` and `Cargo.toml`), so what it builds carries the version
 it uploads; the files are put back afterwards.
 
+`install = false` says the build command needs none of the project's dependencies
+(it only zips files, say). The assets job then runs `smith ci setup --assets`,
+which asks the plugins to install every project except those, so a dependency
+conflict that shows on one runner only (a Windows resolver failure for a Python
+package that is only zipped) cannot stop the job before the build. If no project
+of a plugin is left, that plugin adds no setup step, its toolchain included. The
+`ci` job and the native job install every project. `install` needs `build`.
+See [ADR 0068](../architecture/decisions/0068-the-assets-job-can-skip-installing-a-project.md).
+
 A plugin can supply the settings a table leaves out. The `tauri` plugin does for
 a Tauri app, so `[projects.studio.release]` with nothing in it is enough (with
 `github_releases = true`): see [the tauri plugin](../plugins/using/catalogue/tauri.md#releasing-the-installers).
@@ -789,10 +798,19 @@ the source it comes from otherwise (`dist/index.d.ts` is read as `src/index.ts`)
 `export * from`. It never builds. A private package has no public API. A subpath export is listed
 as `./sub:name`.
 
+**Go.** The Go plugin parses the `.go` files of the module with `go/parser` (at the tag, through
+git, and now from disk). The API is every exported function, type, constant and variable, the
+exported methods of exported types, the exported fields of structs and the methods of interfaces.
+A name in a package below the module root is listed as `dir:Name`. Test files, `internal`,
+`testdata`, `vendor`, hidden folders, `package main` and the packages of a nested module are not
+part of the API. Build tags are not evaluated.
+
+**Languages checked.** Node and Go. Python, C# and the other languages give no warning yet.
+
 **Not detected.** A changed signature or type with the same name (only names are compared).
 Wildcard subpath exports (`"./*"`). A second declarator in one `export const a = 1, b = 2` and
 destructured exports. The implicit exports of an ambient `.d.ts` file. A regular expression
-literal with an unbalanced brace. Other languages: Go and C# plugins can add the same method
+literal with an unbalanced brace. Other languages: a plugin can add the same method
 (`api/surface`, see [the protocol](../architecture/plugin-protocol.md)) with no change to smith;
 until then they are not checked. The reason is in
 [ADR 0044](../architecture/decisions/0044-the-release-checks-the-bump-against-the-public-api.md).

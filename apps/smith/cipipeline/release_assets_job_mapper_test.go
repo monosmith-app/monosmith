@@ -4,7 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func TestGitHubBuildsReleaseFilesOnARunnerPerPlatformAndUploadsThemWithoutArtifacts(t *testing.T) {
@@ -26,6 +28,37 @@ func TestGitHubBuildsReleaseFilesOnARunnerPerPlatformAndUploadsThemWithoutArtifa
 	}
 	if plain := RenderGitHub(NewModel(Contributions{}, "dev", "main")); strings.Contains(plain, "smith ci assets") {
 		t.Errorf("a workspace without a build command gets no assets job")
+	}
+}
+
+func TestAssetsJobSetsUpWithTheAssetsFlagAndTheCiJobDoesNot(t *testing.T) {
+	out := RenderGitHub(NewModel(Contributions{AssetPlatforms: []string{"linux-x64"}}, "dev", "main"))
+	if strings.Count(out, "run: smith ci setup --assets\n") != 1 || strings.Count(out, "run: smith ci setup\n") < 1 {
+		t.Errorf("only the assets job passes --assets:\n%s", out)
+	}
+	if i := strings.Index(out, "  assets:"); !strings.Contains(out[i:], "smith ci setup --assets") || strings.Contains(out[:i], "--assets") {
+		t.Errorf("--assets belongs to the assets job:\n%s", out)
+	}
+}
+
+func TestTheAssetsSetupLeavesOutTheProjectsThatOptedOutOfInstall(t *testing.T) {
+	no, yes := false, true
+	project := func(name string, install *bool, build string) *projectgraph.Project {
+		return &projectgraph.Project{Project: protocol.Project{Name: name}, Plugin: "python", Release: &workspace.ProjectRelease{Build: build, Install: install}}
+	}
+	all := []*projectgraph.Project{project("zip", &no, "make zip"), project("keep", &yes, "make"), project("unset", nil, "make"), project("noBuild", &no, "")}
+	names := func(assets bool) string {
+		var got []string
+		for _, p := range servedProjects(all, "python", assets) {
+			got = append(got, p.Name)
+		}
+		return strings.Join(got, ",")
+	}
+	if got := names(false); got != "zip,keep,unset,noBuild" {
+		t.Errorf("the ci job installs every project: %s", got)
+	}
+	if got := names(true); got != "keep,unset,noBuild" {
+		t.Errorf("the assets job leaves out install = false: %s", got)
 	}
 }
 

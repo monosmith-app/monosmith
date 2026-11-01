@@ -28,12 +28,28 @@ type Pending struct {
 // Parameters: root is the workspace root.
 // Returns: the pending operation or nil, and a note for the person or "".
 func Begin(root string) (*Pending, string) {
+	return begin(root, false)
+}
+
+// BeginRequested is Begin for a run with --commit: it skips the
+// commit_operations setting, and tells the person why when it cannot commit.
+//
+// Parameters: root is the workspace root.
+// Returns: the pending operation or nil, and a note for the person or "".
+func BeginRequested(root string) (*Pending, string) {
+	return begin(root, true)
+}
+
+func begin(root string, requested bool) (*Pending, string) {
 	cfg, err := workspace.Load(root)
-	if err != nil || !cfg.Workspace.CommitOperations {
+	if err != nil || (!requested && !cfg.Workspace.CommitOperations) {
 		return nil, ""
 	}
 	git := gitclient.New(root)
 	if !git.IsRepository() {
+		if requested {
+			return nil, "not committing this operation: the workspace is not in a git repository"
+		}
 		return nil, ""
 	}
 	if _, err := git.Run("rev-parse", "--verify", "--quiet", "HEAD"); err != nil {
@@ -47,6 +63,21 @@ func Begin(root string) (*Pending, string) {
 		return nil, "not committing this operation: the work tree has uncommitted changes"
 	}
 	return &Pending{root: root, git: git}, ""
+}
+
+// Always is Begin for an operation the person asked to commit with --commit:
+// it skips the commit_operations setting, and the work tree check is the
+// caller's, because a command such as adopt or convert starts from a clean
+// tree and creates smith.toml itself.
+//
+// Parameters: root is the workspace root.
+// Returns: the pending operation, or nil when root is not a git work tree.
+func Always(root string) *Pending {
+	git := gitclient.New(root)
+	if !git.IsRepository() {
+		return nil
+	}
+	return &Pending{root: root, git: git}
 }
 
 // Finish commits what the operation changed and records it for smith undo. It

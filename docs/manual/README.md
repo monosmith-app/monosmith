@@ -61,6 +61,10 @@ Python package). Paths in output are shortened.
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
 | [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` or `none`), or choose another. |
 | [`smith upgrade`](upgrade.md) | Bring the workspace up to this smith and its recipes. |
+| [`smith divergences`](divergences.md) | List where the workspace differs from smith's defaults, each with why and how to undo it. |
+| [`smith copies`](copies.md) | Count the files that projects keep as exact copies of each other, and the lines they cost. |
+| [`smith try`](try.md) | Try a command that changes files in a temporary copy, check the result, then offer to run it for real. |
+| [`smith bootstrap`](bootstrap.md) | Write the launcher that runs the smith version the workspace pins. |
 
 ## Work
 
@@ -101,7 +105,7 @@ Python package). Paths in output are shortened.
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md), [`smith choices`](choices.md) | What `smith add` accepts. |
-| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
+| [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`draft`](plugin-draft.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
 | [`smith boundaries`](boundaries.md) | Check which projects depend on which against your rules in `[boundaries]`. |
 | [`smith slices`](slices.md) | Check the vertical-slice layout: [`slices check`](slices-check.md). |

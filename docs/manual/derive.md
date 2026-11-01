@@ -18,7 +18,7 @@ command stops with a message and nothing else in smith looks at derived files.
 ## Synopsis
 
 ```sh
-smith derive [--check] [--explain <file>] [--replace <file>] [--adopt <file>] [--eject <file>] [--yes]
+smith derive [--check] [--dry-run] [--explain <file>] [--replace <file>] [--adopt <file>] [--eject <file>] [--reclaim <file>] [--yes] [--commit]
 ```
 
 ## Arguments and flags
@@ -32,8 +32,11 @@ Usage: `smith derive [flags]`
 |---|---|---|---|
 | `--adopt <adopt>` | string, repeatable |  | take the hand edit of this keys-mode file as the new baseline |
 | `--check` | boolean | off | write nothing; fail when a derived file or the record is out of date |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | show the plan and change nothing |
 | `--eject <eject>` | string, repeatable |  | own this file: smith stops touching it |
 | `--explain <explain>` | string, repeatable |  | say who owns this file and why it is in its state |
+| `--reclaim <reclaim>` | string, repeatable |  | give this ejected or drifted file back to smith: shows the diff, asks, rewrites it and records smith as the owner |
 | `--replace <replace>` | string, repeatable |  | overwrite this drifted or diverged file with the derived content |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
 
@@ -50,7 +53,31 @@ smith derive --explain packages/web/tsconfig.lib.json
 smith derive --replace packages/web/tsconfig.lib.json   # the derived content wins
 smith derive --adopt packages/web/tsconfig.lib.json     # keep the hand edit as the baseline
 smith derive --eject packages/web/tsconfig.lib.json     # the file is yours from now on
+smith derive --reclaim packages/web/tsconfig.lib.json   # give it back: diff, question, rewrite, smith owns it
+smith derive --reclaim packages/web/tsconfig.lib.json --dry-run   # only the diff
 ```
+
+## Giving a file back to smith
+
+`--reclaim <file>` is the opposite of `--eject`, and the one step that undoes a divergence
+(`smith divergences` names it). It works for a file you ejected, a file with a hand edit (`drift`)
+and a file smith found and did not record (`diverged`). It does these things in order:
+
+1. It shows the diff of what smith will overwrite, from the file on disk to the derived content.
+   Keys and regions that smith does not own stay as they are.
+2. It asks `Go ahead? [y/N]`. `--yes` answers for you, and `--dry-run` stops after the diff.
+3. It writes the file and records the owner `smith` in `smith.lock` again.
+
+`--commit` commits the change as one operation, so `smith undo` can revert it. Without it nothing
+is committed. A file that smith cannot edit (`broken`: a region without its markers) or no longer
+derives is refused with the reason. A file that differs from its sibling projects (`differs` in
+`smith divergences`) has no derived content to put back: make it like its siblings by hand.
+
+## Dry run and a workspace without derive
+
+`--dry-run` prints the plan of the files derive would write and writes nothing, with exit code 0.
+`--check` in a workspace where `[derive] enabled` is not true prints that derived files are off and
+exits 0: there is nothing to check.
 
 ## What it does
 

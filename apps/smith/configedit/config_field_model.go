@@ -23,6 +23,9 @@ type Field struct {
 	Enum        []string `json:"enum,omitempty"`
 	Minimum     *int     `json:"minimum,omitempty"`
 	MinLength   int      `json:"minLength,omitempty"`
+	// Reason is one line saying why the default is what it is, from the
+	// schema's x-reason; empty when the schema gives none.
+	Reason string `json:"reason,omitempty"`
 }
 
 // Table and Key split the path.
@@ -34,6 +37,7 @@ func (f Field) Key() string { return strings.SplitN(f.Path, ".", 2)[1] }
 type schemaNode struct {
 	Type                 string                `json:"type"`
 	Description          string                `json:"description"`
+	Reason               string                `json:"x-reason"`
 	Properties           map[string]schemaNode `json:"properties"`
 	Items                *schemaNode           `json:"items"`
 	Enum                 []string              `json:"enum"`
@@ -64,7 +68,7 @@ func Fields() ([]Field, error) {
 			if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
 				continue // a table, or a list of tables ([[release.channels]]): edited in the file
 			}
-			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Minimum: p.Minimum, MinLength: p.MinLength}
+			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Reason: p.Reason, Minimum: p.Minimum, MinLength: p.MinLength}
 			if p.Items != nil {
 				f.Enum = p.Items.Enum
 			}
@@ -101,6 +105,9 @@ func Find(path string) (Field, error) {
 	message := path + " is not a setting smith config edits"
 	if near := nearest(path, paths); len(near) > 0 {
 		message += "; did you mean " + strings.Join(near, " or ") + "?"
+	}
+	if strings.HasPrefix(path, "release.channels") {
+		return Field{}, errors.New("release channels are a list of tables, which smith config set does not edit: add a [[release.channels]] table to smith.toml (branch, prerelease, major, dist_tag). docs/reference/releasing.md, Release channels, shows one")
 	}
 	return Field{}, errors.New(message + " Run smith config list to see them (stacks, tasks and projects are edited in smith.toml).")
 }
@@ -196,6 +203,9 @@ func (f Field) Encode(args []string) (string, error) {
 		if len(f.Enum) > 0 && !slices.Contains(f.Enum, args[0]) {
 			return "", fmt.Errorf("%s takes %s, not %q", f.Path, strings.Join(f.Enum, " or "), args[0])
 		}
+		if f.Path == "workspace.scope" && args[0] != "" && !npmScope.MatchString(args[0]) {
+			return "", fmt.Errorf("%s is an npm scope: an @ and lowercase words joined by dashes, like @acme, not %q", f.Path, args[0])
+		}
 		return Quote(args[0]), nil
 	case "array":
 		if len(f.Enum) > 0 {
@@ -218,6 +228,9 @@ func (f Field) Encode(args []string) (string, error) {
 	}
 	return "", fmt.Errorf("%s has a type smith config does not edit (%s)", f.Path, f.Type)
 }
+
+// npmScope is what npm accepts as a scope: an @ and a lowercase name.
+var npmScope = regexp.MustCompile(`^@[a-z0-9-~][a-z0-9-._~]*$`)
 
 var bareKey = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 

@@ -117,7 +117,7 @@ func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 // emptyList is what a section with no rows says.
 func (m Model) emptyList(th theme.Theme, w int) []string {
 	if m.section == Recipes {
-		return append([]string{""}, indent(pane.Wrap(th.Muted("No recipe files (*.recipe.toml) in this workspace. A recipe is a team's choice of plugins and settings; smith recipe check <file> checks one."), w-2, 0))...)
+		return append([]string{""}, indent(pane.Wrap(th.Muted("No recipe files (*.recipe.toml) in this workspace. A recipe is a team's choice of plugins and settings; smith recipe check <file> checks one. Write one with Write a recipe in the Guide tab, or press : and search for recipe."), w-2, 0))...)
 	}
 	return []string{"", " " + th.Muted("Nothing here.")}
 }
@@ -194,6 +194,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 		if st.Default != "" {
 			add(th.Muted("Default: ") + st.Default)
 		}
+		if st.Reason != "" {
+			add(th.Muted("Why: ") + st.Reason)
+		}
 		if len(st.Choices) > 0 {
 			add(th.Muted("Choices: ") + strings.Join(st.Choices, ", "))
 		}
@@ -240,6 +243,9 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 	case editText, editInstall, editSearch:
 		if e.setting.Default != "" {
 			add(th.Muted("Default: " + e.setting.Default))
+		}
+		if e.setting.Reason != "" {
+			add(th.Muted("Why: " + e.setting.Reason))
 		}
 		if e.setting.Type == "array" {
 			add(th.Muted("Separate the items with commas."))

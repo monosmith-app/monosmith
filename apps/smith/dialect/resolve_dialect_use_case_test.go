@@ -27,7 +27,7 @@ func TestResolveFollowsWhatTheSiblingsAgreeOnAndSaysWhy(t *testing.T) {
 		t.Errorf("a matching project has no warning: %v", got)
 	}
 	got := d.Warnings(map[string]string{"test.runner": "jest", "build.tool": "esbuild", "layout": "src,test"})
-	if len(got) != 2 || !strings.Contains(got[1], "3 of 3 sibling libs have test.runner = @swc/jest; the new lib has test.runner = jest") {
+	if len(got) != 1 || !strings.Contains(got[0], "3 of 3 sibling libs have test.runner = @swc/jest, the new lib has jest") || !strings.Contains(got[0], "layout = src, the new lib has src,test") {
 		t.Errorf("warnings %v", got)
 	}
 }

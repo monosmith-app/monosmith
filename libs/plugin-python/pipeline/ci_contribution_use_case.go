@@ -21,6 +21,9 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	setup := []protocol.Step{
 		{Name: "Create the Python venv", Command: append(append([]string{}, launcher...), "-m", "venv", "--upgrade-deps", ".venv"), Blocking: true},
 	}
+	// The interpreter's version comes first, so a version that differs between
+	// runners (a resolver failure on one OS only) is visible in the log.
+	setup = append(setup, protocol.Step{Name: "Show the Python version", Command: []string{py, "--version"}})
 	// A private index goes into the venv's own pip configuration, so every
 	// install through the venv uses it. On Azure Pipelines PipAuthenticate@1
 	// sets PIP_INDEX_URL with the pipeline's token, which takes precedence.
@@ -29,8 +32,10 @@ func CI(params protocol.CIParams) protocol.CIResult {
 		setup = append(setup, protocol.Step{Name: "Point pip at the private index", Command: []string{py, "-m", "pip", "config", "--site", "set", "global.index-url", index}, Blocking: true})
 	}
 	setup = append(setup, protocol.Step{Name: "Install the Python toolchain", Command: []string{py, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", venv.RequirementsFile}, Blocking: true})
+	// Project installs run without --quiet: it hides the resolver's report of
+	// what conflicts, the one thing a failed install needs to show.
 	for _, p := range params.Projects {
-		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: []string{py, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-e", "./" + p.Root}, Blocking: true})
+		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: []string{py, "-m", "pip", "install", "--disable-pip-version-check", "-e", "./" + p.Root}, Blocking: true})
 	}
 	result := protocol.CIResult{
 		Toolchains: []protocol.Toolchain{runtime(venv.PythonVersion)},

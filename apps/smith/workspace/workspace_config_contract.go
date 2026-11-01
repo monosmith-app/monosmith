@@ -47,12 +47,13 @@ type Config struct {
 	// instead of [workspace] recipe.
 	Recipes map[string]string       `toml:"recipes"`
 	Tasks   map[string]TaskOverride `toml:"tasks"`
-	// TaskGroups set task fields for the projects their selectors name, so a
-	// set of similar projects states its overrides once. Each group sits
-	// between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several
-	// matching, a later group wins field by field.
-	TaskGroups []TaskGroup                `toml:"task_groups"`
-	Projects   map[string]ProjectOverride `toml:"projects"`
+	// Groups set task fields, tags and the release for the projects their
+	// selectors name, so a set of similar projects states them once. A
+	// group's tasks sit between [tasks.<task>] and
+	// [projects.<name>.tasks.<task>]; with several matching, a later group
+	// wins field by field.
+	Groups   []Group                    `toml:"groups"`
+	Projects map[string]ProjectOverride `toml:"projects"`
 	// Registries are private package registries, by name, that the
 	// workspace installs from ([workspace] registry) and publishes to
 	// ([release] registry, [projects.<name>] registry).
@@ -109,6 +110,14 @@ type WorkspaceSection struct {
 	// whose manifests are not projects: discovery leaves them out in every
 	// language, and a change there affects no project.
 	Exclude []string `toml:"exclude"`
+	// AllowedOutputs are workspace-relative paths a task may write to outside
+	// the build directory (dist/): a folder a tool needs the output in, such as
+	// a go:embed folder. smith doctor does not report them.
+	AllowedOutputs []string `toml:"allowed_outputs"`
+	// SharedOutputs are workspace-relative folders (dist/drop) that several
+	// tasks fill on purpose, each with its own files; smith doctor does not
+	// report their overlap.
+	SharedOutputs []string `toml:"shared_outputs"`
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`
@@ -121,6 +130,11 @@ type WorkspaceSection struct {
 	// work tree is clean before it starts. smith undo reverts the last such
 	// commit. Default: false (ADR 0047).
 	CommitOperations bool `toml:"commit_operations"`
+	// Defaults is the defaults vintage the workspace was made with (for
+	// example "2026.11", ADR 0054). A newer smith keeps the defaults of this
+	// vintage until `smith upgrade --defaults` adopts a newer one. Empty means
+	// a workspace made before vintages.
+	Defaults string `toml:"defaults"`
 }
 
 // CISection chooses which pipelines smith generates.
@@ -283,6 +297,11 @@ type DependenciesSection struct {
 	// (a library pinned for a legacy app): doctor, smith sync and
 	// smith deps up --align leave them alone.
 	Allow []string `toml:"allow"`
+	// Presets lists the packages that carry the team's shared configuration
+	// (an ESLint config, a Jest preset, a tsconfig base): smith up shows their
+	// updates first, as one group, because a preset bump changes every project
+	// that uses it (ADR 0060). Default: none.
+	Presets []string `toml:"presets"`
 }
 
 // BoundariesSection says which projects may depend on which. smith doctor
@@ -566,6 +585,11 @@ type ProjectRelease struct {
 	// Checksums attaches, with Build, a SHA-256 checksums file of the files
 	// each runner uploads. Default: off (on for the apps whose plugin says).
 	Checksums *bool `toml:"checksums"`
+	// Install, with Build, says whether the assets job installs this
+	// project's dependencies before it runs Build. false means the build
+	// command needs none of them (it only zips files, say), so smith ci setup
+	// --assets leaves the project out. Default: true.
+	Install *bool `toml:"install"`
 	// Product fills {product}. Default: the project name.
 	Product string `toml:"product"`
 	// Platforms are os/arch pairs. Default: DefaultPlatforms.
@@ -617,14 +641,24 @@ type ProjectRelease struct {
 	License     string `toml:"license"`
 }
 
-// TaskGroup is one [[task_groups]] entry: task overrides for every project
-// that all its selectors name. A selector is written the way --projects
-// writes one: a name, a glob, kind:<kind>, lang:<language> or tag:<tag>.
-type TaskGroup struct {
+// Group is one [[groups]] entry: task overrides, tags and a release for every
+// project that all its selectors name. A selector is written the way
+// --projects writes one: a name, a glob (packages/*), kind:<kind>,
+// lang:<language> or tag:<tag>. A group sets at least one of Tasks, Tags and
+// Release.
+type Group struct {
 	// Select lists the selectors; a project must match every one.
 	Select []string `toml:"select"`
 	// Tasks are the overrides, by task name, with the fields of [tasks.<task>].
 	Tasks map[string]TaskOverride `toml:"tasks"`
+	// Tags are added to the tags of every project the group names, like
+	// [projects.<name>] tags.
+	Tags []string `toml:"tags"`
+	// Release is the [projects.<name>.release] table of every project the
+	// group names that sets none of its own; a project's own table replaces
+	// it whole. A group cannot name the package a project is published as
+	// (npm, pypi, nuget, rubygems, pub), because that name is the project's.
+	Release *ProjectRelease `toml:"release"`
 }
 
 // TaskOverride replaces individual fields of a plugin-inferred task. Unset

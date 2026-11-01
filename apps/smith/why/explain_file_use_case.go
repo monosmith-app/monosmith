@@ -162,8 +162,25 @@ func explainGenerated(in Inputs, e *Explanation) bool {
 	return true
 }
 
+// writtenOnceAtRoot are the files at the root of the workspace that a plugin
+// writes once, when smith add creates the first project that needs them.
+var writtenOnceAtRoot = map[string]bool{
+	"package.json": true, "tsconfig.base.json": true, "tsconfig.json": true,
+	"eslint.config.mjs": true, "eslint.config.js": true, "ruff.toml": true,
+	"requirements-dev.txt": true, "go.work": true, "Directory.Build.props": true,
+	".prettierrc": true, ".editorconfig": true, ".gitignore": true,
+}
+
 // explainPlain fills e for a file that no record claims.
 func explainPlain(e *Explanation) {
+	if e.Project == "" && writtenOnceAtRoot[e.Path] {
+		e.Known, e.Kind, e.Owner = true, KindProject, OwnerYou
+		e.Rule = "scaffold: smith add writes it once, when the first project that needs it is created"
+		e.Source = "the plugin of the first project that needs it"
+		e.Summary = "Written once by smith add; yours now. smith does not rewrite it."
+		e.Change = []string{"edit it as you like"}
+		return
+	}
 	if e.Project == "" {
 		e.Kind = KindUnknown
 		e.Summary = "smith does not know this file. No project contains it and no record lists it."

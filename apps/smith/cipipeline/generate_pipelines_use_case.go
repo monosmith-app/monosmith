@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachecredentials"
+	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
@@ -20,17 +21,38 @@ import (
 
 // Collect asks every plugin what CI needs for its projects.
 func Collect(s *session.Session) (Contributions, error) {
+	return collect(s, false)
+}
+
+// CollectForAssets is Collect for the assets job's setup: the plugins hear
+// of every project except those whose [release] install is false, because
+// their build command needs none of the project's dependencies.
+func CollectForAssets(s *session.Session) (Contributions, error) {
+	return collect(s, true)
+}
+
+// servedProjects are the projects a plugin is asked about. For the assets job
+// it leaves out those whose [release] install is false.
+func servedProjects(all []*projectgraph.Project, plugin string, assets bool) []protocol.Project {
+	var projects []protocol.Project
+	for _, p := range all {
+		if assets && release.SkipsAssetsInstall(p) {
+			continue
+		}
+		if p.ServedBy(plugin) {
+			projects = append(projects, p.Project)
+		}
+	}
+	return projects
+}
+
+func collect(s *session.Session, assets bool) (Contributions, error) {
 	var c Contributions
 	for _, client := range s.Plugins.Clients {
 		if !client.Info.Capabilities.CI {
 			continue
 		}
-		var projects []protocol.Project
-		for _, p := range s.Graph.Projects {
-			if p.ServedBy(client.Info.Plugin.Name) {
-				projects = append(projects, p.Project)
-			}
-		}
+		projects := servedProjects(s.Graph.Projects, client.Info.Plugin.Name, assets)
 		if len(projects) == 0 {
 			continue
 		}

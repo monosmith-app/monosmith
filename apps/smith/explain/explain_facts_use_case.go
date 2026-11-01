@@ -3,6 +3,7 @@ package explain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"sort"
 	"strings"
 
@@ -26,7 +27,7 @@ type FactLine struct {
 func ExplainFacts(g *projectgraph.Graph, name, key string) ([]FactLine, error) {
 	p := g.Get(name)
 	if p == nil {
-		return nil, fmt.Errorf("no project named %q (projects: %s)", name, strings.Join(g.Names(), ", "))
+		return nil, fmt.Errorf("no project named %q (projects: %s).%s", name, strings.Join(g.Names(), ", "), nearmatch.Suggestion(name, g.Names()))
 	}
 	keys := make([]string, 0, len(p.FactDetail))
 	for k := range p.FactDetail {

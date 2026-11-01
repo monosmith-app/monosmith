@@ -129,8 +129,12 @@ func (f *fakeFlow) FinishFix(withLint bool) doctorfix.Planned {
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Install, then check", Steps: steps}}
 }
 
-func (f *fakeFlow) AdoptFix() doctorfix.Planned {
-	return doctorfix.Planned{Fix: protocol.Fix{Description: "Make this repository a smith workspace", Steps: []protocol.FixStep{{Description: "adopt", Argv: []string{"smith", "adopt", "--init"}}}}}
+func (f *fakeFlow) AdoptFix(commit bool) doctorfix.Planned {
+	argv := []string{"smith", "adopt", "--init"}
+	if commit {
+		argv = append(argv, "--commit")
+	}
+	return doctorfix.Planned{Fix: protocol.Fix{Description: "Make this repository a smith workspace", Steps: []protocol.FixStep{{Description: "adopt", Argv: argv}}}}
 }
 
 func (f *fakeFlow) AgentFix() (doctorfix.Planned, bool) {
@@ -138,6 +142,11 @@ func (f *fakeFlow) AgentFix() (doctorfix.Planned, bool) {
 }
 
 func (f *fakeFlow) Close() { f.closed = true }
+
+func (f *fakeFlow) CommitConversion() string {
+	f.note("commit")
+	return "Committed abc12345: chore: convert to smith (smith undo reverts it)."
+}
 
 func (f *fakeFlow) Changes() (adoptflow.Changes, error) {
 	f.note("changes")

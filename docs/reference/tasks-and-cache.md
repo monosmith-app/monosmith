@@ -37,12 +37,12 @@ elsewhere through a process group.
 
 Each project's tasks come from its plugin; smith.toml changes them in three
 layers, the later winning field by field: `[tasks.<task>]` (every project),
-`[[task_groups]]` (the projects a group selects, such as `lang:node` and
+`[[groups]]` (the projects a group selects, such as `lang:node` and
 `kind:lib`) and `[projects.<name>.tasks.<task>]` (one project). A workspace
 whose libraries share the same overrides states them once in a group, and the
 one library that differs overrides only its own task. `smith explain
 <project>:<task>` shows which layer each value came from. See
-[Task groups](configuration.md#task-groups). The cache key follows the
+[Groups](configuration.md#groups). The cache key follows the
 resolved task, whichever layer a value came from.
 
 ### Default tool configuration

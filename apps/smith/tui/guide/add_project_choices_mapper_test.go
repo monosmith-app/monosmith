@@ -43,7 +43,7 @@ func plainAdd() Action {
 
 func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 	offers, _ := ParseChoices(offersJSON)
-	a := AddProjectAction(plainAdd(), offers, 0)
+	a := AddProjectAction(plainAdd(), offers, nil)
 	m := NewModel([]Action{a})
 	m, ok := m.Pick("Add a project")
 	if !ok {
@@ -69,7 +69,7 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 
 func TestAddProjectSkipsTheChoicesWhenNothingIsTicked(t *testing.T) {
 	offers, _ := ParseChoices(offersJSON)
-	m, _ := NewModel([]Action{AddProjectAction(plainAdd(), offers, 0)}).Pick("Add a project")
+	m, _ := NewModel([]Action{AddProjectAction(plainAdd(), offers, nil)}).Pick("Add a project")
 	m = press(m, "enter", "n", "o", "d", "e", "enter", "w", "e", "b", "enter", "enter")
 	if !m.Done() || strings.Join(m.Argv, " ") != "add app web --lang node" {
 		t.Fatalf("done=%v argv %q", m.Done(), m.Argv)
@@ -78,11 +78,12 @@ func TestAddProjectSkipsTheChoicesWhenNothingIsTicked(t *testing.T) {
 
 func TestAddProjectOffersFreshOnlyWhereThereAreSiblingsToFollow(t *testing.T) {
 	plain := plainAdd()
-	if got := AddProjectAction(plain, nil, 2); len(got.Steps) != len(plain.Steps) {
+	if got := AddProjectAction(plain, nil, []string{"a", "b"}); len(got.Steps) != len(plain.Steps) {
 		t.Fatal("two projects follow nobody: no extra question")
 	}
-	a := AddProjectAction(plain, nil, 3)
-	if len(a.Steps) != len(plain.Steps)+1 || a.Steps[len(a.Steps)-1].Key != "follow" {
+	a := AddProjectAction(plain, nil, []string{"a", "b", "c"})
+	// The question about following comes with "which one?", asked only after "Follow one project".
+	if len(a.Steps) != len(plain.Steps)+2 || a.Steps[len(a.Steps)-2].Key != "follow" || a.Steps[len(a.Steps)-1].Key != "like" {
 		t.Fatalf("three projects make a question about following them: %+v", a.Steps)
 	}
 	if got := a.Argv(map[string][]string{"kind": {"lib"}, "name": {"core"}, "lang": {"go"}, "follow": {"fresh"}}); !reflect.DeepEqual(got, []string{"add", "lib", "core", "--lang", "go", "--fresh"}) {
@@ -90,6 +91,16 @@ func TestAddProjectOffersFreshOnlyWhereThereAreSiblingsToFollow(t *testing.T) {
 	}
 	if got := a.Argv(map[string][]string{"kind": {"lib"}, "name": {"core"}, "lang": {"go"}, "follow": {"follow"}}); len(got) != 5 {
 		t.Fatalf("following the siblings is the default and adds no flag: %v", got)
+	}
+	if got := a.Argv(map[string][]string{"kind": {"lib"}, "name": {"core"}, "lang": {"go"}, "follow": {"like"}, "like": {"b"}}); !reflect.DeepEqual(got, []string{"add", "lib", "core", "--lang", "go", "--like", "b"}) {
+		t.Fatalf("following one project names it: %v", got)
+	}
+	like := a.Steps[len(a.Steps)-1]
+	if !like.Skip(map[string][]string{"follow": {"fresh"}}) || like.Skip(map[string][]string{"follow": {"like"}}) {
+		t.Fatal("the project to follow is asked only after Follow one project")
+	}
+	if len(like.Options) != 3 {
+		t.Fatalf("every project is offered: %+v", like.Options)
 	}
 }
 

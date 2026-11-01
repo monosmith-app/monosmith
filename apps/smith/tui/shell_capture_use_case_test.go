@@ -69,7 +69,7 @@ func TestAddAsksForTheChoicesThenShowsThePlanBeforeWriting(t *testing.T) {
 	l.has("Build it from choices", "framework: react", "test: vitest")
 	l.keys("space", "enter") // react
 	l.has("Should it do what the other projects here do?", "smith add --fresh")
-	l.keys("down", "enter")
+	l.keys("down", "down", "enter")
 	l.has("Add api?", "Nothing is written yet", "follows web", "smith add app api --lang go --with react --fresh")
 	for _, argv := range l.started {
 		t.Fatalf("the plan must come before any write: %v", argv)
@@ -87,7 +87,7 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 	})
 	l.keys("a", "enter", "enter")
 	l.typeText("api").keys("enter") // no choices for go, then the sibling question
-	l.keys("down", "enter")
+	l.keys("down", "down", "enter")
 	l.has("Cannot add api like that", "svelte needs the node language", "pick a node project")
 	l.keys("enter")
 	l.hasNot("Cannot add api")
@@ -96,12 +96,28 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 	}
 }
 
-func TestAFinishedAddSaysItCanBeUndone(t *testing.T) {
+func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("a", "enter", "enter")
 	l.typeText("api").keys("enter", "enter") // follow the siblings
-	l.keys("enter")                          // the plan, then Run
+	l.has("[ ] Commit this change so it can be undone")
+	l.keys("c", "enter") // tick the box, then Run
+	if got := l.lastStarted(); !strings.HasSuffix(got, "--commit") {
+		t.Fatalf("started %q without --commit", got)
+	}
 	l.has("can be undone", "Undo the last change")
+}
+
+func TestAnUncommittedAddSaysSo(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("a", "enter", "enter")
+	l.typeText("api").keys("enter", "enter")
+	l.keys("enter") // the plan, then Run with the box unticked
+	if got := l.lastStarted(); strings.Contains(got, "--commit") {
+		t.Fatalf("started %q with --commit", got)
+	}
+	l.has("Not committed: review with git status")
+	l.hasNot("Undo the last change")
 }
 
 func TestSearchingThePluginMarketplaceInstallsTheOnePicked(t *testing.T) {
@@ -241,5 +257,54 @@ func TestTheWorkspaceCountsTheDerivedFilesThatNeedAction(t *testing.T) {
 	}
 	if got := derivedNeedingAction(sampleProjects); got != 0 {
 		t.Fatalf("a workspace with derived files off needs none, got %d", got)
+	}
+}
+
+func TestAddCanFollowOneNamedProject(t *testing.T) {
+	l := newLab(t, true, 120, 40)
+	l.answers(map[string]sources.Captured{
+		"add app api --lang go --like orders --dry-run": {OK: true, Text: "Plan: add app api\n  create  apps/api/  (follows web)"},
+	})
+	l.keys("a", "enter", "enter")
+	l.typeText("api").keys("enter") // no choices for go, then the question about the siblings
+	l.keys("down", "enter")         // Follow one project
+	l.has("Follow which project?", "web", "orders")
+	l.keys("enter") // orders, the first
+	l.has("Add api?", "smith add app api --lang go --like orders")
+}
+
+func TestSwapShowsThePlanBeforeChangingAnythingAndOffersTheCommitBoxUnticked(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.answers(map[string]sources.Captured{
+		"choices --json":                 {OK: true, Text: `[{"axis":"test","name":"jest","description":"Jest","language":"node","default":true},{"axis":"test","name":"vitest","description":"Vitest","language":"node"}]`},
+		"swap web test vitest --dry-run": {OK: true, Text: "Swap test of web: jest -> vitest\n  leaves:  jest\n  joins:   vitest\nDry run: nothing was changed."},
+	})
+	l.keys("ctrl+p").typeText("Swap a choice").keys("enter")
+	l.has("Which project?", "web")
+	l.keys("enter") // the first project, web
+	l.has("Which decision?", "test")
+	l.keys("enter")
+	l.has("Swap test to which answer?", "jest", "vitest")
+	l.keys("down", "enter")
+	l.has("Swap test of web to vitest?", "leaves: jest", "[ ] Commit this change so it can be undone", "smith swap web test vitest --yes")
+	if len(l.started) != 0 {
+		t.Fatalf("the plan must come before any change: %v", l.started)
+	}
+	l.keys("c", "enter")
+	if got := l.lastStarted(); got != "swap web test vitest --yes --commit" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestASwapSmithRefusesShowsItsReasonAndChangesNothing(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.answers(map[string]sources.Captured{
+		"choices --json":               {OK: true, Text: `[{"axis":"test","name":"jest","description":"Jest","language":"node"},{"axis":"test","name":"vitest","description":"Vitest","language":"node"}]`},
+		"swap web test jest --dry-run": {Text: "✖ web already uses jest"},
+	})
+	l.keys("ctrl+p").typeText("Swap a choice").keys("enter", "enter", "enter", "enter")
+	l.has("Cannot swap that", "web already uses jest")
+	if len(l.started) != 0 {
+		t.Fatalf("a refused plan changes nothing: %v", l.started)
 	}
 }

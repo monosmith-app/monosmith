@@ -16,9 +16,11 @@ const TITLE = 'MonoSmith: Add project'
  * (the default of the language, a stack, or choices such as a framework, a
  * test runner and a style) and the name.
  * @param options - what `smith kinds`, `smith choices` and `smith stacks` list
+* @param existing - the names the workspace has already: a new project cannot take one
+ * @param projects - the workspace's projects, to offer one to copy the shape of (`--like`)
  * @returns the request, or undefined when the person pressed Escape at any question
  */
-export async function askAddRequest (options: AddOptions): Promise<AddRequest | undefined> {
+export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | undefined> {
   const roles = [...new Set(options.kinds.map((kind) => roleOf(kind.kind, kind.language)))]
   const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: `${TITLE} (1/4): what kind?`, placeHolder: 'app, lib or package' })
   if (role === undefined) return undefined
@@ -33,14 +35,34 @@ export async function askAddRequest (options: AddOptions): Promise<AddRequest | 
   const build = await askBuild(options, language.label)
   if (build === undefined) return undefined
 
+  const like = await askLike(projects.filter((project) => project.language === language.label))
+  if (like === null) return undefined
+
   const name = await vscode.window.showInputBox({
     title:         `${TITLE} (4/4): name`,
     prompt:        `The name of the new ${role.label}`,
-    placeHolder:   'billing-api',
-    validateInput: (value) => checkProjectName(value),
+    placeHolder:   'for example billing-api',
+    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
   })
 
-  return name === undefined ? undefined : { role: role.label, name, language: language.label, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }) }
+  return name === undefined ? undefined : { role: role.label, name, language: language.label, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
+}
+
+/**
+ * Offers to copy the shape (build, test, layout, lint) of one project of the same language, when there are two or more.
+ * @param siblings - the workspace's projects of the language
+ * @returns the project to copy, undefined for what most siblings do, or null when the person pressed Escape
+ */
+async function askLike (siblings: ReadonlyArray<{ name: string, language: string }>): Promise<string | undefined | null> {
+  if (siblings.length < 2) return undefined
+  const majority = 'What most projects do'
+  const picked = await vscode.window.showQuickPick(
+    [{ label: majority, description: 'smith follows the siblings that agree' }, ...siblings.map((project) => ({ label: project.name, description: 'copy the shape of this project' }))],
+    { title: `${TITLE}: follow which project?`, placeHolder: 'The new project copies the build, test, layout and lint of one project (smith add --like)' },
+  )
+  if (picked === undefined) return null
+
+  return picked.label === majority ? undefined : picked.label
 }
 
 /** The third question: the default of the language, a stack, or choices. */
@@ -91,14 +113,17 @@ async function askBuild (options: AddOptions, language: string): Promise<{ stack
  */
 export async function confirmAddPlan (request: AddRequest, plan: string, follows: boolean): Promise<PlanAnswer> {
   const add = 'Add project'
+  const commitAdd = 'Add and commit (so Undo works)'
   const fresh = 'Add with the stack defaults'
+  const commitFresh = 'Stack defaults, and commit'
   const open = 'Open the plan'
   for (;;) {
     const choice = await vscode.window.showInformationMessage(
       `MonoSmith: add the ${request.role} ${request.name} (${request.language})?`,
-      { modal: true, detail: `${plan}\n\nNothing was changed yet. smith leaves the files uncommitted; review them with git, or undo the change.${follows ? '\n\n"Add with the stack defaults" skips the shape of the sibling projects (smith add --fresh).' : ''}` },
+      { modal: true, detail: `${plan}\n\nNothing was changed yet. By default smith leaves the files uncommitted: review them with git. The commit buttons make it one commit that Undo can revert.${follows ? '\n\n"Add with the stack defaults" skips the shape of the sibling projects (smith add --fresh).' : ''}` },
       add,
-      ...(follows ? [fresh] : []),
+      commitAdd,
+      ...(follows ? [fresh, commitFresh] : []),
       open,
     )
     if (choice === open) {
@@ -107,8 +132,10 @@ export async function confirmAddPlan (request: AddRequest, plan: string, follows
       continue
     }
     if (choice === add) return 'add'
+    if (choice === commitAdd) return 'add-commit'
+    if (choice === fresh) return 'fresh'
 
-    return choice === fresh ? 'fresh' : 'cancel'
+    return choice === commitFresh ? 'fresh-commit' : 'cancel'
   }
 }
 
@@ -123,8 +150,8 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
       for (const line of outcome.lines) onOutput(line)
       const undo = 'Undo'
       void vscode.window.showInformationMessage(
-        `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. The files are not committed: review them with git.`,
-        undo,
+        `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status.'}`,
+        ...(outcome.committed ? [undo] : []),
       ).then(async (choice) => {
         if (choice === undo) await vscode.commands.executeCommand('monosmith.undo')
       })

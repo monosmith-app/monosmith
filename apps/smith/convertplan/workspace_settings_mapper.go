@@ -13,6 +13,7 @@ import (
 // modules maps Go project roots to their module paths.
 func WorkspaceSettings(w *nxworkspace.Workspace, dirName string, hasFile func(string) bool, modules map[string]string) workspace.Config {
 	cfg := workspace.Config{Schema: workspace.SchemaVersion}
+	cfg.Workspace.Defaults = workspace.LatestDefaults
 	name, scope := splitPackageName(w.RootPackage.Name)
 	if name == "" || name == "source" {
 		name = dirName
@@ -25,11 +26,15 @@ func WorkspaceSettings(w *nxworkspace.Workspace, dirName string, hasFile func(st
 		if legacy.Scope != "" {
 			cfg.Workspace.Scope = legacy.Scope
 		}
-		switch legacy.CI {
-		case "github", "azure":
-			cfg.CI.Providers = []string{legacy.CI}
-		case "both":
-			cfg.CI.Providers = []string{"github", "azure"}
+		for _, ci := range legacy.CI {
+			switch ci {
+			case "github", "azure":
+				if !contains(cfg.CI.Providers, ci) {
+					cfg.CI.Providers = append(cfg.CI.Providers, ci)
+				}
+			case "both":
+				cfg.CI.Providers = []string{"github", "azure"}
+			}
 		}
 	}
 	if len(cfg.CI.Providers) == 0 {

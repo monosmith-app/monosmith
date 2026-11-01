@@ -80,7 +80,11 @@ itself.`,
 				if !r.Set {
 					value = "(default)"
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", r.Path, value, r.Description)
+				text := r.Description
+				if r.Reason != "" {
+					text += " Why: " + r.Reason
+				}
+				fmt.Fprintf(w, "%s\t%s\t%s\n", r.Path, value, text)
 			}
 			return w.Flush()
 		},

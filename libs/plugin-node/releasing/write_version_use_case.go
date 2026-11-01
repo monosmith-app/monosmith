@@ -1,6 +1,7 @@
 package releasing
 
 import (
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"os"
 	"path"
 	"path/filepath"
@@ -22,7 +23,7 @@ func WriteVersion(workspaceRoot string, params protocol.VersionParams) (protocol
 		return protocol.VersionResult{}, err
 	}
 	if !params.DryRun {
-		if err := os.WriteFile(full, out, 0o644); err != nil {
+		if err := lineendings.WriteFile(full, out, 0o644); err != nil {
 			return protocol.VersionResult{}, err
 		}
 	}

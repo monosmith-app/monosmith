@@ -78,6 +78,16 @@ func TestResolveReleaseNeedsGitHubReleasesForTheDefaults(t *testing.T) {
 	}
 }
 
+func TestResolveReleaseKeepsInstallAndRejectsItWithoutABuild(t *testing.T) {
+	r, err := parseAndResolve(releaseHead + "build = \"zip -r out.zip app\"\nassets = [\"out.zip\"]\nplatforms = [\"linux-x64\"]\ninstall = false\n")
+	if err != nil || r.Install == nil || *r.Install {
+		t.Fatalf("install = false is kept: %+v %v", r, err)
+	}
+	if _, err := parseAndResolve(releaseHead + "install = false\n"); err == nil || !strings.Contains(err.Error(), "install") {
+		t.Fatalf("install without build: %v", err)
+	}
+}
+
 func TestResolveReleaseChecksAssetNamePlaceholders(t *testing.T) {
 	_, err := parseAndResolve(releaseHead + "build = \"make\"\nassets = [\"a\"]\nplatforms = [\"linux-x64\"]\nasset_name = \"{os}.{ext}\"\n")
 	if err == nil || !strings.Contains(err.Error(), "{os}") {

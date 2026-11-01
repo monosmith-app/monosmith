@@ -76,6 +76,9 @@ type Setting struct {
 	// Explanation is what the setting does; Default what it is when unset.
 	Explanation string
 	Default     string
+	// Reason is one line saying why the default is what it is; empty when
+	// the schema gives none.
+	Reason string
 	// Choices are the values an array setting may hold.
 	Choices []string
 	// Value is the value as written in smith.toml; Set is false when the

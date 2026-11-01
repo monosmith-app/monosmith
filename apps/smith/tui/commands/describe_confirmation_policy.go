@@ -34,6 +34,10 @@ func Describe(argv []string) (title, why string) {
 			return "Align dependency versions", "This rewrites manifests so each dependency has one version across the workspace, then installs."
 		}
 		return "Update dependencies", "This moves the chosen dependencies to their latest release in every project that declares them, then installs."
+	case verb == "swap":
+		return "Swap a choice", "This replaces one choice of the project, such as its test runner, moves what the old choice wrote, installs and runs its tests."
+	case verb == "bootstrap":
+		return "Write the launcher", "This writes tools/smith/smith and tools/smith/smith.cmd. They run the smith version that smith.toml pins."
 	case verb == "undo":
 		return "Undo the last change", "This reverts the last change smith made with a new commit. Your history stays as it is."
 	case verb == "agent" && len(argv) > 1 && argv[1] == "file":

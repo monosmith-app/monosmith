@@ -48,13 +48,18 @@ export interface AddRequest {
   with:     string[]
   /** Give the stack's defaults instead of following the sibling projects. */
   fresh:    boolean
+  /** Copy this one project's shape instead of the majority's (`--like`). */
+  like?:    string
 }
 
-/** What the person decided after reading the plan. */
-export type PlanAnswer = 'add' | 'fresh' | 'cancel'
+/**
+ * What the person decided after reading the plan. The -commit answers tick
+ * the box that is unticked by default: make the change one commit, so Undo works.
+ */
+export type PlanAnswer = 'add' | 'add-commit' | 'fresh' | 'fresh-commit' | 'cancel'
 
 /** How adding a project ended. */
 export type AddOutcome =
-  | { kind: 'added', name: string, lines: string[] } |
+  | { kind: 'added', name: string, lines: string[], committed: boolean } |
   { kind: 'refused', message: string } |
   { kind: 'cancelled' }

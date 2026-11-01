@@ -18,6 +18,7 @@ type NpmRunner func(args ...string) string
 // must not stop a release. The dry run of `npm audit fix` runs only when
 // something would block, to confirm there is a change to make.
 func AuditNpm(npm NpmRunner, log func(string)) bool {
+	log("Auditing dependencies with npm (asks the registry, this can take a minute)...")
 	var whole, shipped AuditReport
 	out := npm("audit", "--json")
 	if err := json.Unmarshal([]byte(out), &whole); err != nil {

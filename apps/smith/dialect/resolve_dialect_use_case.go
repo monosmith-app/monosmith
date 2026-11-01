@@ -75,6 +75,7 @@ func Resolve(r Request) Dialect {
 		}
 	}
 	reader := bufio.NewReader(readerOrEmpty(r.In))
+	var unasked []string
 	for _, f := range splits {
 		if !r.Follows[f.Key] {
 			fmt.Fprintf(r.Out, "The sibling %ss differ on %s: %s\n", r.Kind, f.Key, describeCounts(f))
@@ -82,7 +83,7 @@ func Resolve(r Request) Dialect {
 		}
 		pick, asked := ask(r, reader, f)
 		if !asked {
-			fmt.Fprintf(r.Out, "Warning: the sibling %ss split on %s (%s); using the default. Run smith add in a terminal to choose.\n", r.Kind, f.Key, describeCounts(f))
+			unasked = append(unasked, fmt.Sprintf("%s (%s)", f.Key, describeCounts(f)))
 			continue
 		}
 		if pick >= 0 {
@@ -90,6 +91,9 @@ func Resolve(r Request) Dialect {
 			d.Shape[f.Key] = c.Value
 			d.expected[f.Key] = expectation{c.Value, c.N, f.Total}
 		}
+	}
+	if len(unasked) > 0 {
+		fmt.Fprintf(r.Out, "Warning: the sibling %ss split on %s; using the default. Run smith add in a terminal to choose.\n", r.Kind, strings.Join(unasked, " and "))
 	}
 	if len(d.Shape) == 0 {
 		d.Shape = nil
@@ -105,14 +109,24 @@ func (d Dialect) Warnings(shape map[string]string) []string {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	var out []string
+	var parts []string
 	for _, k := range keys {
 		e := d.expected[k]
 		if got := shape[k]; got != e.value {
-			out = append(out, fmt.Sprintf("Warning: %d of %d sibling %ss have %s = %s; the new %s has %s = %s. Its stack does not follow that key.", e.n, e.total, d.kind, k, e.value, d.kind, k, valueOrNone(got)))
+			parts = append(parts, fmt.Sprintf("%d of %d sibling %ss have %s = %s, the new %s has %s", e.n, e.total, d.kind, k, e.value, d.kind, valueOrNone(got)))
 		}
 	}
-	return out
+	if len(parts) == 0 {
+		return nil
+	}
+	return []string{"Warning: " + strings.Join(parts, "; ") + ". Its stack does not follow " + pluralKeys(len(parts)) + "."}
+}
+
+func pluralKeys(n int) string {
+	if n == 1 {
+		return "that key"
+	}
+	return "those keys"
 }
 
 func valueOrNone(v string) string {

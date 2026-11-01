@@ -34,7 +34,7 @@ func PlanAdd(s *session.Session, opts AddOptions) operationplan.Plan {
 				dir = nodeWorkspaceDirectory(s.Root, dir, opts.Name)
 			}
 			stackPlugins = st.Plugins()
-			plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: "made by the " + language.Info.Plugin.Name + " plugin"})
+			plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: "made by the " + language.Info.Plugin.Name + " plugin" + followNote(s, opts, kind, language.Info.Plugin.Name)})
 			for _, name := range stackPlugins {
 				plan.Add("Added by the "+name+" plugin", operationplan.Line{Action: operationplan.Change, Path: dir + "/" + opts.Name + "/", Note: "its files and tasks"})
 			}

@@ -44,9 +44,9 @@ func ShowFix(w io.Writer, root string, p Planned) error {
 	}
 	for i, s := range p.Steps {
 		if s.Description != "" {
-			fmt.Fprintf(w, "  step %d: %s\n          $ %s\n", i+1, s.Description, strings.Join(s.Argv, " "))
+			fmt.Fprintf(w, "  step %d: %s\n          $ %s\n", i+1, s.Description, displayCommand(s.Argv))
 		} else {
-			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, strings.Join(s.Argv, " "))
+			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, displayCommand(s.Argv))
 		}
 	}
 	for _, c := range p.Choices {
