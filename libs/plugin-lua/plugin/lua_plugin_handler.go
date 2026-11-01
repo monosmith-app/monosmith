@@ -36,8 +36,12 @@ func (l *Lua) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 
 // Discover implements serve.Discoverer.
 func (l *Lua) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(l.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(l.root, params.Manifests, params.Declared)
 }
+
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as folders of the rock above them.
+func (l *Lua) DescribesDeclared() {}
 
 // Generate implements serve.Generator.
 func (l *Lua) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
@@ -53,6 +57,10 @@ func (l *Lua) WriteVersion(params protocol.VersionParams) (protocol.VersionResul
 func (l *Lua) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
 	return releasing.Publish(params)
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing,
+// and LuaRocks orders a prerelease word (2.0.0-beta.1-1) below the release.
+func (l *Lua) PublishesChannels() {}
 
 // CI implements serve.CIContributor.
 func (l *Lua) CI(params protocol.CIParams) (protocol.CIResult, error) {

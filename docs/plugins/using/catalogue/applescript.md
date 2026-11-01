@@ -16,7 +16,7 @@ comment of the project's main script. A project is released by its tag.
 | `--lang` value | `applescript` |
 | Manifest that makes a directory a project | `*.applescript` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `channels` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app` and `lib`. `package` is refused: nothing publishes AppleScript |
@@ -81,6 +81,7 @@ are the three header comments above.
 | Version write | the comment is replaced in place, or added as the first line when absent |
 | Tag | `<project>@<version>` |
 | Publish | nothing is uploaded: "released by its tag" |
+| Release channel | the plugin declares `channels`: nothing is uploaded, so no registry pointer can move, and the version is a comment that takes `2.0.0-beta.1` as it is |
 | Credentials | none |
 
 ## CI
@@ -106,6 +107,10 @@ is installed`, which fails on any system but macOS and names the remedy above.
 **Dependencies.** None: `smith install`, `smith sync` and `smith up` do nothing.
 
 **Remove.** No remove support; `smith remove` deletes the project's directory.
+
+## Declared projects
+
+AppleScript has no project file above a folder of scripts: the scripts themselves are the manifest, so a declared folder would have nothing to belong to. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
 
 ## Requirements and limits
 

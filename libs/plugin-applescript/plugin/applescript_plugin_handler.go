@@ -54,6 +54,10 @@ func (a *AppleScript) Publish(params protocol.PublishParams) (protocol.PublishRe
 	return releasing.Publish(params)
 }
 
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing: a script is released by its tag, and the version is a comment.
+// No registry holds a stable pointer a prerelease could take.
+func (a *AppleScript) PublishesChannels() {}
+
 // CI implements serve.CIContributor.
 func (a *AppleScript) CI(params protocol.CIParams) (protocol.CIResult, error) {
 	return pipeline.CI(params), nil

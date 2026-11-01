@@ -245,6 +245,10 @@ Dependencies: the plugin lists the `PackageReference` of every project and of it
 
 Removal: the plugin cleans nothing outside the project directory. Real dry run: `Would remove core (libs/core)`, `the pipelines would be regenerated`.
 
+## Declared projects
+
+`dotnet build` and `dotnet test` need a `.csproj` or `.fsproj`; a folder without one cannot be built alone, so the folder needs a project file of its own. smith refuses a `[projects.<name>]` declaration for the language with "finds a project by its manifest only: give the folder a manifest of its own".
+
 ## Requirements and limits
 
 - The .NET SDK on PATH; generated projects need SDK 10 (they target `net10.0`). `smith add` itself needs no SDK (it only writes files), the first build does, plus network access to restore xunit.

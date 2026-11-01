@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 
@@ -314,6 +314,10 @@ $ smith uninstall -w sdk requests
 ```
 
 Removal: `smith remove <project>` deletes the directory and runs `pip uninstall --yes <import name>` in `.venv` so nothing imports a package whose source is gone. Real dry run: `would uninstall py_demo_web from .venv`.
+
+## Declared projects
+
+A folder with no `pyproject.toml` of its own, under a `pyproject.toml` with a `[project]` table (the nearest one above it), can be declared with `[projects.<name>]`, a `root` and `language = "python"`. Its import name, the folder name with `-` and `.` turned into `_`, is the export, so a project that imports it depends on it. Its tasks are `lint` (ruff), `typecheck` (mypy) and `test` (pytest) run in the folder, and an app also has `start` (`python -m <import name>`). The `pyproject.toml` above is an input of each task. A declared project is an app or a lib, never a package: the distribution has one version. A missing folder, a folder with a `pyproject.toml` of its own and a missing manifest above are refused with a message that names the `[projects.<name>]` table.
 
 ## Requirements and limits
 
