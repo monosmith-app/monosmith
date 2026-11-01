@@ -78,6 +78,7 @@ audit_max_unsafe = 0                   # unsafe blocks the rust policy accepts i
 [dependencies]
 one_version = true                    # one version per production dependency; dev tools at the root (below); default: false, smith new writes true
 allow = ["left-pad"]                  # dependencies that may differ between projects
+presets = ["@acme/eslint-config"]     # shared-config packages: smith up shows their bumps first, as one group (docs/guides/shared-presets.md)
 
 [boundaries]
 kinds = true                          # no project depends on an app: an error (unset: a warning; false: off)

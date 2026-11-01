@@ -67,6 +67,7 @@ func FindAvailable(s *session.Session) (UpReport, error) {
 	sort.SliceStable(report.Updates, func(i, j int) bool {
 		return levelIndex(report.Updates[i].Level) < levelIndex(report.Updates[j].Level)
 	})
+	MarkPresets(report.Updates, s.Config.Dependencies.Presets)
 	return report, nil
 }
 
@@ -119,9 +120,13 @@ func PrintUp(w io.Writer, r UpReport) {
 	}
 	current := ""
 	for _, u := range r.Updates {
-		if u.Level != current {
-			current = u.Level
-			fmt.Fprintln(w, current)
+		if u.Group() != current {
+			current = u.Group()
+			if current == "preset" {
+				fmt.Fprintln(w, "preset (your team's shared config, bumped in every project that uses it)")
+			} else {
+				fmt.Fprintln(w, current)
+			}
 		}
 		fmt.Fprintf(w, "  %-28s %s → %s  %s\n", u.Name, u.Current, u.Latest, strings.Join(u.Projects(), ", "))
 	}

@@ -296,6 +296,11 @@ type DependenciesSection struct {
 	// (a library pinned for a legacy app): doctor, smith sync and
 	// smith deps up --align leave them alone.
 	Allow []string `toml:"allow"`
+	// Presets lists the packages that carry the team's shared configuration
+	// (an ESLint config, a Jest preset, a tsconfig base): smith up shows their
+	// updates first, as one group, because a preset bump changes every project
+	// that uses it (ADR 0060). Default: none.
+	Presets []string `toml:"presets"`
 }
 
 // BoundariesSection says which projects may depend on which. smith doctor
