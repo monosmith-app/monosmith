@@ -844,7 +844,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
         async () => await smithIn(state, true, 600_000)(args),
       ),
-      ask:     askAddRequest,
+      ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? []),
       confirm: confirmAddPlan,
     })
     note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)

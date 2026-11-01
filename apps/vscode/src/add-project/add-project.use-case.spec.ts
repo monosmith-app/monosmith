@@ -40,7 +40,7 @@ function fake (options: { plan?: SmithRun, apply?: SmithRun, request?: AddReques
 describe('addProject', () => {
   it('plans with --dry-run, shows the plan, then adds with --yes', async () => {
     const f = fake({})
-    expect(await addProject(f.deps)).toEqual({ kind: 'added', name: 'web', lines: ['Done: app web is ready.'] })
+    expect(await addProject(f.deps)).toEqual({ kind: 'added', name: 'web', lines: ['Done: app web is ready.'], committed: false })
     expect(f.ran.at(-1)).toEqual(['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--dry-run'])
     expect(f.applied).toEqual([['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--yes']])
     expect(f.shown[0]?.plan).toContain('Plan: add app web')
@@ -51,6 +51,18 @@ describe('addProject', () => {
     await addProject(f.deps)
     expect(f.shown[0]?.follows).toBe(true)
     expect(f.applied[0]).toContain('--fresh')
+  })
+
+  it('adds --commit only when the person ticked the box', async () => {
+    const f = fake({ answer: 'add-commit' })
+    expect(await addProject(f.deps)).toMatchObject({ kind: 'added', committed: true })
+    expect(f.applied[0]?.at(-1)).toBe('--commit')
+    const fresh = fake({ plan: OK('Plan: add app web\n  follows api\n'), answer: 'fresh-commit' })
+    await addProject(fresh.deps)
+    expect(fresh.applied[0]).toEqual(expect.arrayContaining(['--fresh', '--commit']))
+    const plain = fake({})
+    await addProject(plain.deps)
+    expect(plain.applied[0]).not.toContain('--commit')
   })
 
   it('adds nothing when the person cancels the questions or the plan', async () => {
