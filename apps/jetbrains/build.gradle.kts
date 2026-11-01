@@ -40,6 +40,11 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+// Print the violations in the log: CI keeps the report file on the agent.
+ktlint {
+    outputToConsole.set(true)
+}
+
 intellijPlatform {
     pluginConfiguration {
         name = "MonoSmith"
