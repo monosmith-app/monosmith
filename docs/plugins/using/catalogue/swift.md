@@ -21,7 +21,7 @@ Apple-platform app targets are not discovered.
 | `--lang` value | `swift` |
 | Manifest that makes a directory a project | `Package.swift` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind`, `channels`, `declared` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app`, `lib` and `package` |
@@ -90,6 +90,7 @@ The plugin reads no `smith.toml` setting and no environment variable.
 | Version write | the comment is replaced in place, or added under the `swift-tools-version` line, which must stay first |
 | Tag | `<project>@<version>` by default |
 | Publish | nothing is uploaded: "released by its tag" |
+| Release channel | the plugin declares `channels`: nothing is uploaded, and SwiftPM resolves the git tag as a semantic version, which orders `2.0.0-beta.1` below `2.0.0`. The `smithVersion` comment takes it as it is |
 | Credentials | none |
 
 SwiftPM resolves semantic-version tags (`1.2.3` or `v1.2.3`), not `name@1.2.3`. For a
@@ -119,6 +120,10 @@ nothing for Swift. Edit `Package.swift`.
 **Changing the kind.** `smith kind` edits the `smithKind` comment and, when the folder
 moves, the `.package(path:)` entries of its own manifest that leave it and those other
 projects make on it.
+
+## Declared projects
+
+A folder with no `Package.swift` of its own, under a `Package.swift` (the nearest one above it), can be declared with `[projects.<name>]`, a `root` and `language = "swift"`. The folder is a SwiftPM target and its name is the target name (`Sources/Core` is `Core`), which is the export, so a project that imports the module depends on it. It is an app when the manifest has an `executableTarget` of that name, else a lib. Its tasks are `build` (`swift build --target <name> --package-path <manifest folder>`) and `test` (`swift test --filter ^<name>Tests\.`), and `Package.swift`, `Package.resolved` and the target's `Tests/<name>Tests` are inputs. A declared project is an app or a lib, never a package: the package has one version. A missing folder, a folder with a `Package.swift` of its own and a missing manifest above are refused with a message that names the `[projects.<name>]` table. If the target's folder is not named for it (a `path:` argument), declare nothing: the target name cannot be read from the folder.
 
 ## Requirements and limits
 

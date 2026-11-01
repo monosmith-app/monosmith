@@ -34,8 +34,12 @@ func (s *Swift) Describe(params protocol.InitializeParams) (protocol.InitializeR
 
 // Discover implements serve.Discoverer.
 func (s *Swift) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
-	return discovery.Discover(s.root, params.Manifests)
+	return discovery.DiscoverWithDeclared(s.root, params.Manifests, params.Declared)
 }
+
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as targets of the Package.swift above them.
+func (s *Swift) DescribesDeclared() {}
 
 // Generate implements serve.Generator.
 func (s *Swift) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
@@ -51,6 +55,11 @@ func (s *Swift) WriteVersion(params protocol.VersionParams) (protocol.VersionRes
 func (s *Swift) Publish(params protocol.PublishParams) (protocol.PublishResult, error) {
 	return releasing.Publish(params)
 }
+
+// PublishesChannels implements serve.ChannelPublisher: Publish uploads nothing,
+// and SwiftPM resolves a package from the git tag, where a prerelease version
+// (2.0.0-beta.1) is ordered below the release and a "from:" requirement skips it.
+func (s *Swift) PublishesChannels() {}
 
 // CI implements serve.CIContributor.
 func (s *Swift) CI(params protocol.CIParams) (protocol.CIResult, error) {
