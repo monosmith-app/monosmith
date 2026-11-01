@@ -38,6 +38,18 @@ func TestFromListsOverridesEjectedDriftAndDifferingFiles(t *testing.T) {
 	}
 }
 
+func TestTheUndoOfAFileOwnedByYouIsOneCommand(t *testing.T) {
+	items := []derive.Item{
+		{File: protocol.DerivedFile{Path: "a.json"}, Status: derive.StatusEjected},
+		{File: protocol.DerivedFile{Path: "b.json"}, Status: derive.StatusDrift},
+	}
+	for _, d := range From(workspace.Config{}, items, nil) {
+		if !strings.Contains(d.Undo, "smith derive --reclaim "+d.Subject) || strings.Contains(d.Undo, "smith.lock") {
+			t.Errorf("%s: undo = %q", d.Subject, d.Undo)
+		}
+	}
+}
+
 func TestAnEmptyListIsGoodNews(t *testing.T) {
 	var b bytes.Buffer
 	Print(&b, From(workspace.Config{}, nil, nil))

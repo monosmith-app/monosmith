@@ -82,19 +82,19 @@ func From(cfg workspace.Config, items []derive.Item, diverging []derive.Divergen
 			out = append(out, Divergence{
 				Kind: Ejected, Subject: path,
 				Why:  "you own this file; smith does not touch it",
-				Undo: fmt.Sprintf("to let smith own it again, remove its entry from smith.lock, then run smith derive --replace %s", path),
+				Undo: fmt.Sprintf("smith derive --reclaim %s gives it back to smith (it shows the diff and asks first)", path),
 			})
 		case derive.StatusDrift, derive.StatusBroken:
 			out = append(out, Divergence{
 				Kind: Drift, Subject: path,
 				Why:  it.Detail,
-				Undo: fmt.Sprintf("smith derive --replace %s puts back what smith derives; --adopt or --eject keeps your edit", path),
+				Undo: fmt.Sprintf("smith derive --reclaim %s puts back what smith derives (it shows the diff and asks first); --adopt or --eject keeps your edit", path),
 			})
 		case derive.StatusDiverged:
 			out = append(out, Divergence{
 				Kind: Drift, Subject: path,
 				Why:  "the file exists, differs from what smith derives, and smith.lock does not list it",
-				Undo: fmt.Sprintf("smith derive --replace %s puts back what smith derives", path),
+				Undo: fmt.Sprintf("smith derive --reclaim %s puts back what smith derives (it shows the diff and asks first)", path),
 			})
 		}
 	}
