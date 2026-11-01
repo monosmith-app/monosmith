@@ -4,6 +4,7 @@ package goldenpath
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -42,7 +43,7 @@ func siblingPackage(name string) map[string]string {
 // Nx one, whose packages build with esbuild into dist and test with @swc/jest,
 // smith add package gives the new package the same build, the same test runner
 // and the same entry points, says why, asks nothing, and warns about the one
-// thing its stack cannot follow (the third tsconfig file). --fresh gives the
+// tsconfig files it follows. --fresh gives the
 // stack's own default.
 func TestAddFollowsTheDialectOfSiblings(t *testing.T) {
 	if _, err := exec.LookPath("npm"); err != nil {
@@ -70,12 +71,18 @@ func TestAddFollowsTheDialectOfSiblings(t *testing.T) {
 		"test.runner = @swc/jest (3 of 3 packages)",
 		"build.tool = esbuild (3 of 3 packages)",
 		"exports.target = dist (3 of 3 packages)",
-		"Warning: 3 of 3 sibling packages have tsconfig.files = tsconfig.build.json,tsconfig.json,tsconfig.spec.json",
+		"tsconfig.files = tsconfig.build.json,tsconfig.json,tsconfig.spec.json (3 of 3 packages)",
 		"Done: package delta is ready",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the output lacks %q:\n%s", want, out)
 		}
+	}
+	if strings.Contains(out, "have tsconfig.files") {
+		t.Errorf("smith warns about the tsconfig files although the new package follows its siblings:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(w.dir, "packages", "delta", "tsconfig.spec.json")); err != nil {
+		t.Errorf("the siblings have a tsconfig.spec.json and the new package has none")
 	}
 	manifest := w.read("packages/delta/package.json")
 	for _, want := range []string{`"build": "esbuild src/index.ts`, `"main": "../../dist/packages/delta/index.js"`, `"@swc/jest"`} {

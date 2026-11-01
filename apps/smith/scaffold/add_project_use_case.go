@@ -118,6 +118,7 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	// A Node project goes where the root package.json workspaces reach it.
 	parent := projectkind.Directory(kind)
+	conventional := parent
 	if language.Info.Plugin.Name == "node" {
 		parent = nodeWorkspaceDirectory(s.Root, parent, opts.Name)
 	}
@@ -140,6 +141,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		return nil, fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
 	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
+	if reason := directoryReason(opts.Kind, conventional, parent); reason != "" {
+		fmt.Fprintln(opts.Out, reason)
+	}
 	var res protocol.GenerateResult
 	// A workspace without a module prefix (a converted one) takes the one its
 	// git remote gives, so the Go module path is the repository's own.

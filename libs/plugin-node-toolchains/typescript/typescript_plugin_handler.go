@@ -32,7 +32,7 @@ func (p *TypeScript) Describe(params protocol.InitializeParams) (protocol.Initia
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
 		Provides:  []string{"build", "typecheck"},
-		Follows:   []string{discovery.ShapeBuildTool, discovery.ShapeExportsTarget},
+		Follows:   []string{discovery.ShapeBuildTool, discovery.ShapeExportsTarget, discovery.ShapeBuildOutput, discovery.ShapeExportsMap, discovery.ShapeTsconfigFiles},
 		Stacks: []protocol.Stack{{
 			Name:        "node-ts",
 			Description: "TypeScript on Node, built and type-checked with tsc; no lint or tests",
@@ -56,10 +56,10 @@ func (p *TypeScript) Contribute(params protocol.ContributeParams) (protocol.Cont
 
 // Generate implements serve.Generator: the TypeScript starter.
 func (p *TypeScript) Generate(params protocol.GenerateParams) (protocol.GenerateResult, error) {
-	set := templates
+	set := setFor(params.Shape)
 	if params.Shape[discovery.ShapeBuildTool] == "esbuild" {
 		// A project that builds with esbuild needs it in the workspace.
-		set.DevDependencies = maps.Clone(templates.DevDependencies)
+		set.DevDependencies = maps.Clone(set.DevDependencies)
 		set.DevDependencies["esbuild"] = esbuildVersion
 	}
 	return scaffolding.GenerateFrom(p.root, params, set)

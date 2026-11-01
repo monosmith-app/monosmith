@@ -66,7 +66,10 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NPM != "" {
 		registry, at = r.Publish.NPM, []string{"--registry", r.Publish.NPM}
 	} else {
-		registry, _ = npm.output(workspaceRoot, []string{"npm", "config", "get", "registry"})
+		registry = registries.configured(workspaceRoot, func() string {
+			out, _ := npm.output(workspaceRoot, []string{"npm", "config", "get", "registry"})
+			return out
+		})
 	}
 	result := protocol.PublishResult{Registry: strings.TrimSpace(registry)}
 	if params.DryRun {

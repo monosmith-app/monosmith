@@ -1,6 +1,7 @@
 package jest
 
 import (
+	"encoding/json"
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
@@ -23,7 +24,7 @@ var stacks = []protocol.Stack{{
 
 // New returns the plugin; version is reported in the handshake.
 func New(version string) *tooling.Toolchain {
-	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Choices: choices.Choices(), Follows: []string{discovery.ShapeTestRunner}, Setup: setup}
+	return &tooling.Toolchain{Name: Name, Version: version, Provides: []string{"test"}, Stacks: stacks, Choices: choices.Choices(), Follows: []string{discovery.ShapeTestRunner, discovery.ShapeJestConfig}, Setup: setup}
 }
 
 func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
@@ -38,18 +39,60 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 	devDependencies["jest"] = "^30.5.2"
 	mapper := map[string]string{`^(\.{1,2}/.*)\.js$`: "$1"}
 	maps.Copy(mapper, aliases.JestModuleNameMapper())
-	return tooling.Setup{
+	options := map[string]any{
+		"testEnvironment":  "node",
+		"roots":            []string{"<rootDir>/src"},
+		"moduleNameMapper": mapper,
+		"transform":        map[string]any{`^.+\.ts$`: transform},
+	}
+	setup := tooling.Setup{
 		DevDependencies: devDependencies,
 		Files:           tooling.StarterSpec(workspaceRoot, params, "@jest/globals"),
 		Scripts:         map[string]string{"test": "jest"},
 		// Jest runs CommonJS: the compiler turns TypeScript into it, and a
 		// relative import rewritten to .js finds the .ts source.
-		Fields: map[string]any{"jest": map[string]any{
-			"testEnvironment":  "node",
-			"roots":            []string{"<rootDir>/src"},
-			"moduleNameMapper": mapper,
-			"transform":        map[string]any{`^.+\.ts$`: transform},
-		}},
+		Fields: map[string]any{"jest": options},
+	}
+	if params.Shape[discovery.ShapeJestConfig] == discovery.ShapeConfigFile {
+		// The siblings keep the configuration in a jest.config.cts, which Jest
+		// loads through ts-node.
+		devDependencies["ts-node"] = "^10.9.2"
+		setup.Fields = nil
+		if setup.Files == nil {
+			setup.Files = map[string]string{}
+		}
+		maps.Copy(setup.Files, configFiles(params.Name, options, transform))
+	}
+	return setup
+}
+
+// configFiles are the jest.config.cts of a project and, for a transform that
+// takes options (@swc/jest), the .spec.swcrc it reads them from.
+func configFiles(name string, options map[string]any, transform []any) map[string]string {
+	rest := maps.Clone(options)
+	rest["displayName"] = name
+	if transform[0] != discovery.ShapeSwcJest {
+		body, _ := json.MarshalIndent(rest, "", "  ")
+		return map[string]string{"jest.config.cts": "module.exports = " + string(body) + "\n"}
+	}
+	delete(rest, "transform")
+	body, _ := json.MarshalIndent(rest, "", "  ")
+	swc, _ := json.MarshalIndent(transform[1], "", "  ")
+	return map[string]string{
+		".spec.swcrc": string(swc) + "\n",
+		"jest.config.cts": `/* eslint-disable */
+const { readFileSync } = require('fs')
+
+// Reading the SWC compilation config for the spec files
+const swcJestConfig = JSON.parse(readFileSync(` + "`${__dirname}/.spec.swcrc`" + `, 'utf-8'))
+
+// Disable .swcrc look-up by SWC core because we're passing in swcJestConfig ourselves
+swcJestConfig.swcrc = false
+
+module.exports = ` + string(body[:len(body)-2]) + `,
+  "transform": { "^.+\\.ts$": ["@swc/jest", swcJestConfig] }
+}
+`,
 	}
 }
 

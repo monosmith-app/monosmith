@@ -32,7 +32,7 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NPM != "" {
 		registry, at = r.Publish.NPM, []string{"--registry", r.Publish.NPM}
 	} else {
-		registry, _, _ = capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
+		registry = configuredRegistry(workspaceRoot)
 	}
 	result := protocol.PublishedResult{Registry: strings.TrimSpace(registry)}
 	// A bare name on the public registry belongs to whoever published it first,
@@ -47,8 +47,16 @@ func Published(workspaceRoot string, params protocol.PublishedParams) (protocol.
 // package a project depends on. Unlike Published it does not ask who owns the
 // name: a dependency belongs to whoever published it.
 func Latest(workspaceRoot, name string) protocol.PublishedResult {
-	registry, _, _ := capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
-	return view(workspaceRoot, name, nil, protocol.PublishedResult{Registry: strings.TrimSpace(registry)})
+	return view(workspaceRoot, name, nil, protocol.PublishedResult{Registry: strings.TrimSpace(configuredRegistry(workspaceRoot))})
+}
+
+// configuredRegistry is the registry npm is configured with at the workspace
+// root, asked once per root for a short while.
+func configuredRegistry(workspaceRoot string) string {
+	return registries.configured(workspaceRoot, func() string {
+		registry, _, _ := capture(workspaceRoot, []string{"npm", "config", "get", "registry"})
+		return registry
+	})
 }
 
 // view runs npm view for a package's version and records the answer in result.

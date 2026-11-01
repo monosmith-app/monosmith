@@ -93,3 +93,27 @@ func TestProjectShapeFindsWhereTheEntryPointsLead(t *testing.T) {
 		}
 	}
 }
+
+func TestProjectShapeSaysWhereTheBuildWritesAndHowJestIsConfigured(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		files  map[string]string
+		output string
+		mapped string
+		jest   string
+	}{
+		{"own dist, exports map, config file", map[string]string{
+			"package.json":    `{"scripts":{"build":"esbuild src/index.ts --outfile=dist/index.esm.js && tsc -p tsconfig.lib.json --declarationDir dist/src"},"exports":{".":"./dist/index.esm.js"}}`,
+			"jest.config.cts": "",
+		}, ShapeOutputProject, ShapeMapped, ShapeConfigFile},
+		{"workspace dist, inline jest", map[string]string{
+			"package.json": `{"scripts":{"build":"esbuild src/index.ts --outdir=../../dist/packages/a && tsc --outDir ../../dist/packages/a"},"exports":"./src/index.ts","jest":{}}`,
+		}, ShapeOutputWorkspace, ShapeNone, ShapeConfigPackage},
+		{"nothing", map[string]string{"package.json": `{"scripts":{"build":"vite build"}}`}, ShapeNone, ShapeNone, ShapeNone},
+	} {
+		shape := shapeOf(t, c.files)
+		if shape[ShapeBuildOutput] != c.output || shape[ShapeExportsMap] != c.mapped || shape[ShapeJestConfig] != c.jest {
+			t.Errorf("%s: got %s %s %s, want %s %s %s", c.name, shape[ShapeBuildOutput], shape[ShapeExportsMap], shape[ShapeJestConfig], c.output, c.mapped, c.jest)
+		}
+	}
+}

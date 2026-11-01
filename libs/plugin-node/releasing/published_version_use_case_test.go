@@ -31,3 +31,26 @@ func TestPublished(t *testing.T) {
 		}
 	}
 }
+
+func TestPublishedAsksNpmForTheRegistryOnceForManyProjects(t *testing.T) {
+	registries.forget()
+	real := capture
+	defer func() { capture = real }()
+	configs := 0
+	capture = func(_ string, argv []string) (string, string, error) {
+		if argv[1] == "config" {
+			configs++
+			return "https://registry.example/\n", "", nil
+		}
+		return "1.0.0\n", "", nil
+	}
+	root := t.TempDir()
+	for _, name := range []string{"@acme/a", "@acme/b", "@acme/c"} {
+		if _, err := Published(root, protocol.PublishedParams{Project: protocol.Project{Exports: []string{name}}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if configs != 1 {
+		t.Fatalf("npm config get registry ran %d times, want 1", configs)
+	}
+}

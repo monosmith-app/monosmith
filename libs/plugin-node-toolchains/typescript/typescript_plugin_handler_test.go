@@ -78,7 +78,7 @@ func generated(t *testing.T, kind protocol.ProjectKind, shape map[string]string)
 	ws := t.TempDir()
 	p := New("1.0.0")
 	info, _ := p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
-	if len(info.Follows) != 2 {
+	if len(info.Follows) != 5 {
 		t.Fatalf("follows %v", info.Follows)
 	}
 	params := protocol.GenerateParams{Kind: kind, Name: "dep", Directory: "packages/dep", Shape: shape, Workspace: protocol.WorkspaceInfo{Name: "Acme", Scope: "acme"}}
@@ -123,5 +123,75 @@ func TestTypeScriptLibWithoutShapeKeepsTheDefault(t *testing.T) {
 	}
 	if strings.Contains(root, `"esbuild"`) {
 		t.Errorf("the root pins esbuild without being asked:\n%s", root)
+	}
+}
+
+func generatedFiles(t *testing.T, kind protocol.ProjectKind, shape map[string]string) (ws string) {
+	t.Helper()
+	scaffolding.Installer = func(string) error { return nil }
+	ws = t.TempDir()
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	params := protocol.GenerateParams{Kind: kind, Name: "dep", Directory: "packages/dep", Shape: shape, Workspace: protocol.WorkspaceInfo{Name: "Acme", Scope: "acme"}}
+	if _, err := p.Generate(params); err != nil {
+		t.Fatal(err)
+	}
+	return ws
+}
+
+func read(t *testing.T, ws, rel string) string {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(ws, filepath.FromSlash(rel)))
+	if err != nil {
+		t.Fatalf("%s: %v", rel, err)
+	}
+	return string(raw)
+}
+
+// Siblings with tsconfig.json, tsconfig.lib.json and tsconfig.spec.json give
+// the new package the same three files, and the scripts read the right one.
+func TestTypeScriptPackageFollowsTheTsconfigSetOfSiblings(t *testing.T) {
+	ws := generatedFiles(t, protocol.ProjectPackage, map[string]string{
+		"build.tool": "esbuild", "exports.target": "dist",
+		"tsconfig.files": "tsconfig.json,tsconfig.lib.json,tsconfig.spec.json",
+	})
+	if _, err := os.Stat(filepath.Join(ws, "packages", "dep", "tsconfig.build.json")); err == nil {
+		t.Errorf("tsconfig.build.json written although the siblings have none")
+	}
+	solution := read(t, ws, "packages/dep/tsconfig.json")
+	for _, want := range []string{`"files": []`, `./tsconfig.lib.json`, `./tsconfig.spec.json`} {
+		if !strings.Contains(solution, want) {
+			t.Errorf("tsconfig.json lacks %s:\n%s", want, solution)
+		}
+	}
+	if lib := read(t, ws, "packages/dep/tsconfig.lib.json"); !strings.Contains(lib, `"rootDir": "src"`) || !strings.Contains(lib, `.spec.ts`) {
+		t.Errorf("tsconfig.lib.json:\n%s", lib)
+	}
+	if spec := read(t, ws, "packages/dep/tsconfig.spec.json"); !strings.Contains(spec, `"include": ["src/**/*.spec.ts"]`) {
+		t.Errorf("tsconfig.spec.json:\n%s", spec)
+	}
+	manifest := read(t, ws, "packages/dep/package.json")
+	for _, want := range []string{`tsc -p tsconfig.lib.json --declaration`, `"typecheck": "tsc -p tsconfig.lib.json --noEmit"`} {
+		if !strings.Contains(manifest, want) {
+			t.Errorf("package.json lacks %s:\n%s", want, manifest)
+		}
+	}
+}
+
+// Siblings that build into their own dist folder and export a map get the same.
+func TestTypeScriptPackageFollowsSiblingsThatBuildIntoTheirOwnDist(t *testing.T) {
+	manifest, _ := generated(t, protocol.ProjectPackage, map[string]string{
+		"build.tool": "esbuild", "exports.target": "dist", "build.output": "project", "exports.map": "map",
+	})
+	for _, want := range []string{
+		`--outdir=dist &&`, `--declarationDir dist"`, `"main": "./dist/index.js"`,
+		`"import": "./dist/index.js"`, `"files": ["dist"]`, `"./package.json": "./package.json"`,
+	} {
+		if !strings.Contains(manifest, want) {
+			t.Errorf("package.json lacks %s:\n%s", want, manifest)
+		}
+	}
+	if strings.Contains(manifest, "../../dist") || strings.Contains(manifest, "--outDir") {
+		t.Errorf("the build leaves the project folder:\n%s", manifest)
 	}
 }
