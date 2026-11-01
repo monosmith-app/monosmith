@@ -1,5 +1,5 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { toFileWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
+import { toFileWhyDocument, toSettingWhyDocument, toTaskWhyDocument } from './why-document.mapper.ts'
 
 /** Runs smith in the workspace folder with these arguments. */
 export type RunSmithIn = (args: string[]) => Promise<SmithRun>
@@ -22,6 +22,18 @@ function pageOf (run: SmithRun, toPage: (json: string) => string): string {
  */
 export async function readFileWhy (run: RunSmithIn, file: string): Promise<string> {
   return pageOf(await run(['why', '--json', '--', file]), toFileWhyDocument)
+}
+
+/**
+ * Asks smith why a setting of smith.toml has its value, and why its default is
+ * what it is (`smith why <setting> --json`).
+ * @param run - runs smith in the folder
+ * @param setting - the setting, such as `ci.devcontainer`
+ * @returns a Markdown page
+ * @throws Error with smith's words and the fix, when smith has no answer
+ */
+export async function readSettingWhy (run: RunSmithIn, setting: string): Promise<string> {
+  return pageOf(await run(['why', '--json', '--', setting]), toSettingWhyDocument)
 }
 
 /**

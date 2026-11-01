@@ -25,12 +25,17 @@ smith plugin draft <sample-folder> --lang <name> [-o <file>] [--stdout]
 <!-- smith:begin plugin draft -->
 Draft what a language plugin needs from a sample project: manifests, version line, tasks, publish step
 
-Usage: `smith plugin draft <sample-folder> --lang <name> [flags]`
+Usage: `smith plugin draft <sample-folder> <name> [flags]`
+
+| Argument | Required | Meaning |
+|---|---|---|
+| `sample-folder` | yes |  |
+| `name` | yes |  |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--lang` | string | - | the language's name, lower case (required) |
-| `-o, --output` | string | - | the draft file (default <lang>.plugin-draft.toml) |
+| `--lang <lang>` | string |  | the language's name, lower case (required) |
+| `-o, --output <output>` | string | <lang>.plugin-draft.toml | the draft file (default <lang>.plugin-draft.toml) |
 | `--stdout` | boolean | off | print the draft instead of writing a file |
 
 <!-- smith:end plugin draft -->

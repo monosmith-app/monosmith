@@ -135,12 +135,13 @@ type Shell struct {
 
 	confirm *dialog.Confirm
 	// choices says whether the choices of the plugins are read; offers are
-	// those that can be used, addPending is true while the Add form waits for
-	// them, and addBase is the plain Add form they are added to.
-	choices    choicesState
-	offers     []guide.ChoiceOffer
-	addPending bool
-	addBase    *guide.Action
+	// those that can be used, formPending names the form (add or swap) that waits
+	// for them, and addBase and swapBase are the plain forms they are added to.
+	choices     choicesState
+	offers      []guide.ChoiceOffer
+	formPending string
+	addBase     *guide.Action
+	swapBase    *guide.Action
 	// removeBase is the plain Remove form, which the project list turns into a pick list.
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.

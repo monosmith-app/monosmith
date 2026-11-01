@@ -26,6 +26,7 @@ Usage: `smith bootstrap [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | change nothing; fail when the launcher is missing or out of date |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end bootstrap -->

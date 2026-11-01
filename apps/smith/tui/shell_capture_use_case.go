@@ -19,6 +19,7 @@ import (
 const (
 	capUndo    = "undo"
 	capAdd     = "add"
+	capSwap    = "swap"
 	capChoices = "choices"
 	capSearch  = "plugin-search"
 )
@@ -70,6 +71,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.undoRead(msg)
 	case capAdd:
 		return s.addPlanRead(msg)
+	case capSwap:
+		return s.swapPlanRead(msg)
 	case capChoices:
 		return s.choicesRead(msg)
 	case capSearch:
@@ -149,17 +152,87 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 	return nil
 }
 
+// swapTitle is the title of the guided form that swaps a choice of a project.
+const swapTitle = "Swap a choice"
+
+// swapPreview asks smith what a swap would do, before it does it.
+func (s *Shell) swapPreview(argv []string) tea.Cmd {
+	if s.sources.Capture == nil {
+		return s.execute(append(slices.Clone(argv), "--yes"), false)
+	}
+	s.say("Planning the swap: nothing is changed yet…")
+	return s.capture(capSwap, append(slices.Clone(argv), "--dry-run"))
+}
+
+// swapPlanRead shows the plan of a swap, with what it moves and what is left
+// by hand, and asks before the real swap runs. The commit box is offered
+// unticked. The reason of a refused swap is shown as it is.
+func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
+	argv := msg.argv[:len(msg.argv)-1]
+	if !msg.res.OK {
+		s.tell("Cannot swap that", "smith said:", failureText(msg.res))
+		return nil
+	}
+	title := "Swap the choice?"
+	if len(argv) > 3 {
+		title = "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
+	}
+	c := dialog.NewConfirm(title, "This is the plan. smith moves what it can and lists what is left to do by hand.", append(slices.Clone(argv), "--yes")).
+		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
+	s.confirm = &c
+	return nil
+}
+
+// openSwap opens the form that swaps a choice of a project, with the choices
+// the plugins offer. The choices are read the first time, which takes a moment.
+func (s *Shell) openSwap() tea.Cmd {
+	return s.openChoiceForm(formSwap)
+}
+
+// showSwapForm opens the Swap a choice form.
+func (s *Shell) showSwapForm() tea.Cmd {
+	g := s.guide
+	if s.swapBase == nil {
+		if base, ok := g.ActionTitled(swapTitle); ok {
+			s.swapBase = &base
+		}
+	}
+	if s.swapBase != nil {
+		var projects []guide.SwapProject
+		for _, p := range s.list.Projects() {
+			projects = append(projects, guide.SwapProject{Name: p.Name, Language: p.Language})
+		}
+		g = g.WithAction(guide.SwapProjectAction(*s.swapBase, s.offers, projects))
+	}
+	if g, ok := g.WithDefault("project", s.selectedProject()).Pick(swapTitle); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// The forms that wait for the choices of the plugins.
+const (
+	formAdd  = "add"
+	formSwap = "swap"
+)
+
 // openAddProject opens the form that adds a project, with the choices the
 // plugins offer. The choices are read the first time, which takes a moment.
 func (s *Shell) openAddProject() tea.Cmd {
+	return s.openChoiceForm(formAdd)
+}
+
+// openChoiceForm opens the form (formAdd or formSwap) that needs the choices
+// of the plugins, reading them first when they are not known.
+func (s *Shell) openChoiceForm(form string) tea.Cmd {
 	switch {
 	case s.sources.Capture == nil || s.choices == choicesKnown:
-		return s.showAddForm()
+		return s.showChoiceForm(form)
 	case s.choices == choicesAsked:
-		s.addPending = true
+		s.formPending = form
 		return nil
 	}
-	s.choices, s.addPending = choicesAsked, true
+	s.choices, s.formPending = choicesAsked, form
 	s.say("Reading the choices your plugins offer…")
 	return s.capture(capChoices, []string{"choices", "--json"})
 }
@@ -176,11 +249,19 @@ func (s *Shell) choicesRead(msg capturedMsg) tea.Cmd {
 	if s.choices != choicesKnown {
 		s.notify("Could not read the choices, so the form has none: "+firstLine(failureText(msg.res)), toast.Warning)
 	}
-	if s.addPending {
-		s.addPending = false
-		return s.showAddForm()
+	if form := s.formPending; form != "" {
+		s.formPending = ""
+		return s.showChoiceForm(form)
 	}
 	return nil
+}
+
+// showChoiceForm opens the form that waited for the choices.
+func (s *Shell) showChoiceForm(form string) tea.Cmd {
+	if form == formSwap {
+		return s.showSwapForm()
+	}
+	return s.showAddForm()
 }
 
 // showAddForm opens the Add a project form.

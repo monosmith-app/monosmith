@@ -24,11 +24,15 @@ The commands it accepts: add, remove, up, upgrade, derive, kind, eject, sync, bo
 <!-- smith:begin try -->
 Try a command that changes files in a temporary copy, check the result, then offer to run it for real
 
-Usage: `smith try <command> [args...] [flags]`
+Usage: `smith try <command> [flags]`
+
+| Argument | Required | Meaning |
+|---|---|---|
+| `command` | yes |  |
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--checks` | strings | doctor | checks to run in the copy after the command: doctor, build, test, lint, typecheck |
+| `--checks <checks>` | string, repeatable |  | checks to run in the copy after the command: doctor, build, test, lint, typecheck |
 | `--json` | boolean | off | print the result as JSON and do not apply |
 | `--keep` | boolean | off | leave the copy on disk and print its folder |
 | `-y, --yes` | boolean | off | run the command for real when the try passed, without asking |

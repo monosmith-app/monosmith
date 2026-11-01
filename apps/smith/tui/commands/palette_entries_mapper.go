@@ -37,7 +37,7 @@ var paletteSections = map[string]string{
 	"run.lint": SectionBuild, "run.lint-all": SectionBuild,
 	"run.typecheck": SectionBuild, "run.typecheck-all": SectionBuild, "run.verify": SectionBuild, "run.affected": SectionBuild, "run.stop": SectionBuild,
 
-	"file.add": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,
+	"file.add": SectionProjects, "proj.swap": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,
 	"projects.install-package": SectionProjects, "projects.remove-package": SectionProjects,
 
 	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies,
@@ -45,7 +45,7 @@ var paletteSections = map[string]string{
 	"rel.preview": SectionRelease, "rel.notes": SectionRelease, "rel.release": SectionRelease, "ws.ci": SectionRelease,
 
 	"ws.doctor": SectionHealth, "ws.fix": SectionHealth, "proj.upgrade": SectionHealth, "proj.plugins": SectionHealth, "ws.info": SectionHealth,
-	"ws.undo": SectionHealth, "ws.report": SectionHealth, "ws.derive-check": SectionHealth, "ws.derive": SectionHealth, "ws.why": SectionHealth, "ws.agent-file": SectionHealth,
+	"ws.undo": SectionHealth, "ws.report": SectionHealth, "ws.derive-check": SectionHealth, "ws.derive": SectionHealth, "ws.derive-preview": SectionHealth, "ws.why": SectionHealth, "ws.divergences": SectionHealth, "ws.try": SectionHealth, "ws.bootstrap": SectionHealth, "ws.agent-file": SectionHealth,
 
 	"view.home": SectionGoTo, "view.projects": SectionGoTo, "view.run": SectionGoTo, "view.doctor": SectionGoTo,
 	"view.deps": SectionGoTo, "view.release": SectionGoTo, "view.settings": SectionGoTo,

@@ -1034,3 +1034,68 @@ Usage: `smith mcp <command>`
 No flags.
 
 <!-- smith:end mcp -->
+
+### smith bootstrap
+
+[Manual page](../manual/bootstrap.md)
+
+<!-- smith:begin bootstrap -->
+Write the launcher that runs the smith version the workspace pins
+
+Usage: `smith bootstrap [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--check` | change nothing; fail when the launcher is missing or out of date | off |
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `-y, --yes` | do not ask for confirmation | off |
+
+<!-- smith:end bootstrap -->
+
+### smith copies
+
+[Manual page](../manual/copies.md)
+
+<!-- smith:begin copies -->
+Count the files that projects keep as exact copies of each other, and the lines they cost
+
+Usage: `smith copies [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print the result as JSON | off |
+
+<!-- smith:end copies -->
+
+### smith divergences
+
+[Manual page](../manual/divergences.md)
+
+<!-- smith:begin divergences -->
+List where the workspace differs from smith's defaults, each with why and how to undo it
+
+Usage: `smith divergences [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print the list as JSON | off |
+
+<!-- smith:end divergences -->
+
+### smith try
+
+[Manual page](../manual/try.md)
+
+<!-- smith:begin try -->
+Try a command that changes files in a temporary copy, check the result, then offer to run it for real
+
+Usage: `smith try <command> [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--checks <checks>` | checks to run in the copy after the command: doctor, build, test, lint, typecheck (repeatable) |  |
+| `--json` | print the result as JSON and do not apply | off |
+| `--keep` | leave the copy on disk and print its folder | off |
+| `-y, --yes` | run the command for real when the try passed, without asking | off |
+
+<!-- smith:end try -->

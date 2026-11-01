@@ -47,6 +47,36 @@ export function toFileWhyDocument (json: string): string {
 }
 
 /**
+ * Lays out the answer of `smith why <setting> --json` as a Markdown page: what
+ * the setting does, its value and where it comes from, why its default is what
+ * it is, and how to change it and go back.
+ * @param json - what smith printed
+ * @returns the page
+ * @throws SyntaxError when the text is not JSON, TypeError when it is not an object
+ */
+export function toSettingWhyDocument (json: string): string {
+  const answer = asAnswer(json)
+  const set = answer.source === 'smith.toml'
+  const value = set ? show(answer.value) : `${show(answer.default ?? 'none')} (the default: smith.toml does not set it)`
+
+  return [
+    `# Why: ${show(answer.path ?? 'this setting')}`,
+    '',
+    show(answer.explanation ?? 'smith gave no explanation.'),
+    '',
+    `- **value:** ${value}`,
+    ...(set && answer.default !== undefined ? [`- **default:** ${show(answer.default)}`] : []),
+    ...(answer.reason === undefined || answer.reason === '' ? [] : ['', '## Why the default is what it is', '', show(answer.reason)]),
+    '',
+    '## How to change it',
+    '',
+    `- ${show(answer.change ?? 'smith named no step.')}`,
+    ...(answer.undo === undefined || answer.undo === '' ? [] : [`- to go back: ${show(answer.undo)}`]),
+    '',
+  ].join('\n')
+}
+
+/**
  * Lays out the answer of `smith why-miss <project>:<task> --json` as a
  * Markdown page: whether the task would run again, and what differs from the
  * last run.

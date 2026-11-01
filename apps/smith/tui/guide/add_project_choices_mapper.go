@@ -78,8 +78,17 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 	if len(existing) >= siblingsMin {
 		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?", Options: []Option{
 			{Label: "Yes, match the other projects", Value: "follow", Hint: "when most projects of this kind share a test runner or a build tool, so does this one"},
+			{Label: "Follow one project", Value: "like", Hint: "smith add --like <project>: take its choices, whatever the others do"},
 			{Label: "No, use the stack's own defaults", Value: "fresh", Hint: "smith add --fresh"},
 		}})
+		like := Step{
+			Key: "like", Prompt: "Follow which project?", Filter: len(existing) > 10,
+			Skip: func(a map[string][]string) bool { return first(a, "follow") != "like" },
+		}
+		for _, n := range existing {
+			like.Options = append(like.Options, Option{Label: n, Value: n})
+		}
+		steps = append(steps, like)
 	}
 	if len(steps) == len(base.Steps) {
 		return base
@@ -95,8 +104,11 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 		if len(picked) > 0 {
 			argv = append(argv, "--with", strings.Join(picked, ","))
 		}
-		if first(a, "follow") == "fresh" {
+		switch first(a, "follow") {
+		case "fresh":
 			argv = append(argv, "--fresh")
+		case "like":
+			argv = append(argv, "--like", first(a, "like"))
 		}
 		return argv
 	}
