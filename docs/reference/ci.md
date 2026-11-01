@@ -227,7 +227,7 @@ can run locally.
 
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,
 and each phase adds a line (passed or failed, and how long it took) and the
-release its report to the job summary.
+release its report to the job summary. When a blocking setup or audit step fails, its whole captured output (the last 64 KB) is printed again in a log group named after the step, so a cause that scrolled past (such as pip's conflict report) is one click away; the error keeps its last 30 lines.
 
 ## Packing
 
