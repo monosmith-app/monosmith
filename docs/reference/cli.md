@@ -61,7 +61,7 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--agent` | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) | off |
+| `--agent` | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) | on |
 | `--architecture <architecture>` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) | `vertical-slices` |
 | `--cache-dir <cache-dir>` | the task cache folder inside the workspace (default .smith/cache) | `.smith/cache` |
 | `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |

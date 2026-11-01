@@ -212,9 +212,18 @@ smith add go-lib core
 ```
 
 ```text
+Plan: add lib core
+  Project core
+    create  libs/core/  (made by the go plugin)
+  Workspace
+    change  CI pipelines  (regenerated to install the new toolchain)
 Creating lib core in libs/core: go
-Wrote 7 file(s):
+go: creating new go.mod: module github.com/acme/acme/libs/core
+Updating the CI pipelines
+Wrote 9 file(s):
+  .devcontainer/devcontainer.json
   .github/workflows/ci.yml
+  go.work
   libs/core/doc.go
   libs/core/go.mod
   libs/core/greeting/doc.go
@@ -222,6 +231,9 @@ Wrote 7 file(s):
   libs/core/greeting/greet_use_case_test.go
   libs/core/greeting/greeting_contract.go
 Import it from another Go project as github.com/acme/acme/libs/core/<slice>.
+Verifying: smith run build test -p core
+Verified: build and test passed in 700ms
+Done: lib core is ready (9 files written, 1s).
 Try: smith test -p core
 ```
 
