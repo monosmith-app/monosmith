@@ -592,7 +592,10 @@ Set up once:
    (tenant) ID**.
 2. Under **Certificates & secrets, Federated credentials**, add one for
    *GitHub Actions deploying Azure resources*: the organisation and
-   repository, and the entity **Branch** with the release branch (`main`).
+   repository, and the entity **Branch** with the release branch (`main`). If a
+   [release channel](#release-channels) publishes the extension, add one more for
+   the channel's branch (`smith-v2`, say): the sign-in step runs there too, and
+   Azure trusts only the branches it has a credential for.
 3. Find the identity's Azure DevOps ID, which is what the Marketplace
    knows it by (not the client ID): a federated app has no password to sign in
    with from a terminal, so run this once in a workflow, after `azure/login`
@@ -606,7 +609,8 @@ Set up once:
 
 With the setting on, `smith ci generate` gives the workflow `id-token: write`,
 adds a `Sign in to Azure` step (`azure/login`, with no subscription) right
-before the release step, only on a push to the release branch, tells the
+before the release step, only on a push to the release branch or a release
+channel's branch, tells the
 release step to publish with that sign-in (`VSCE_AZURE_CREDENTIAL`, which makes
 smith run `vsce publish --azure-credential`), and no longer passes `VSCE_PAT`
 as a secret. The release does not ask for `VSCE_PAT` either. The same holds
