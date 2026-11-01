@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -142,7 +143,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
-			fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", "PLUGIN", "LEVELS", "SLOTS", "REQUIRES")
+			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "LEVELS", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue
@@ -158,7 +159,11 @@ func Command(version string) *cobra.Command {
 				for _, ref := range r.Conflicts {
 					needs = append(needs, "not "+ref.String())
 				}
-				fmt.Fprintf(out, "%-16s %-28s %-20s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), orDash(strings.Join(needs, "; ")))
+				declared, channels := "-", "-"
+				if caps, ok := r.Capabilities.(protocol.Capabilities); ok && slices.Contains(r.Roles, protocol.RoleLanguage) {
+					declared, channels = yesNo(caps.Declared), yesNo(caps.Channels)
+				}
+				fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), declared, channels, orDash(strings.Join(needs, "; ")))
 			}
 			fmt.Fprintf(out, "\nExternal plugins this workspace uses (smith starts them only when trusted):\n")
 			if len(statuses) == 0 {

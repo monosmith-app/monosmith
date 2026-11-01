@@ -620,6 +620,10 @@ export const protocolSchema: SchemaDocument = {
         "channels": {
           "type": "boolean",
           "description": "Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it."
+        },
+        "declared": {
+          "type": "boolean",
+          "description": "Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so."
         }
       }
     },

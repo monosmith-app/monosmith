@@ -70,6 +70,8 @@ func Check(c *host.Client, opts Options) Report {
 
 	checkScheduling(c, &r)
 	checkChoices(c, &r)
+	checkCapabilityPairs(c, &r)
+	checkDeclared(c, &r)
 
 	call := func(check, method string, params, result any) bool {
 		if !c.Supports(method) {

@@ -49,6 +49,9 @@ func DiscoverAllowingCycles(files []string, plugins *pluginhost.PluginSet, catal
 			}
 		}
 		declared := declaredFor(c.Info.Plugin.Name, c.Info.Languages, cfg)
+		if len(declared) > 0 && !c.Info.Capabilities.Declared {
+			return nil, fmt.Errorf("smith.toml [projects.%s] declares a %s project at %s, but the %s plugin finds a project by its manifest only: give the folder a manifest of its own (smith plugin list shows the plugins that describe declared projects)", declared[0].Name, cfg.Projects[declared[0].Name].Language, declared[0].Root, c.Info.Plugin.Name)
+		}
 		if len(manifests) == 0 && len(declared) == 0 {
 			continue
 		}

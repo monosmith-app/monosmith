@@ -604,6 +604,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it.</summary>
     public bool Channels { get; init; }
 
+    /// <summary>Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so.</summary>
+    public bool Declared { get; init; }
+
     /// <inheritdoc />
     public static Capabilities Read(JsonAny? value, string path)
     {
@@ -628,6 +631,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             Derive = BooleanValue(Member(map, "derive"), Join(path, "derive")),
             ApiSurface = BooleanValue(Member(map, "apiSurface"), Join(path, "apiSurface")),
             Channels = BooleanValue(Member(map, "channels"), Join(path, "channels")),
+            Declared = BooleanValue(Member(map, "declared"), Join(path, "declared")),
         };
     }
 
@@ -725,6 +729,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("channels");
             writer.Boolean(Channels);
         }
+        if (Declared)
+        {
+            writer.Property("declared");
+            writer.Boolean(Declared);
+        }
         writer.EndObject();
     }
 
@@ -752,6 +761,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "derive" => Derive,
             "apiSurface" => ApiSurface,
             "channels" => Channels,
+            "declared" => Declared,
             _ => false,
         };
 }

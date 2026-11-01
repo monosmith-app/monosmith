@@ -221,6 +221,13 @@ export interface Capabilities {
    * plugin that lacks it.
    */
   channels?: boolean
+  /**
+   * Declared says the plugin describes the projects smith.toml declares for its language
+   * (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a
+   * project by its manifest only, and the host refuses a declaration for its language with a
+   * message that says so.
+   */
+  declared?: boolean
 }
 
 /**

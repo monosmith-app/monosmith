@@ -31,6 +31,10 @@ func (g *Go) Describe(params protocol.InitializeParams) (protocol.InitializeResu
 	}, nil
 }
 
+// DescribesDeclared implements serve.DeclaredDescriber: Discover also describes
+// the projects smith.toml declares, as packages of the module above them.
+func (g *Go) DescribesDeclared() {}
+
 // Discover implements serve.Discoverer.
 func (g *Go) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
 	return discovery.DiscoverWithDeclared(g.root, params.Manifests, params.Declared)

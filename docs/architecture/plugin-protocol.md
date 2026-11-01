@@ -153,6 +153,7 @@ which capability each method needs.
 | `derive` | `derive` | `Deriver` | `smith derive`, `smith doctor`, `smith ci verify` (when `[derive] enabled`) |
 | `apiSurface` | `api/surface` | `APISurfaceReader` | `release`, for the version check against the public API (optional) |
 | `channels` | (none: it changes `publish`) | `ChannelPublisher` | `release`, to publish a package of a release channel: under `PublishParams.tag` without moving the stable pointer (npm's `latest`), or with no tag when the registry orders a prerelease below the release (PyPI, NuGet). The built-in Node, Python and .NET plugins declare it through the Go SDK; the TypeScript, Python and C# SDKs have no way to yet |
+| `declared` | (none: it changes `discover`) | `DeclaredDescriber` | `projectgraph.Discover`, to describe the projects `smith.toml` declares for the plugin's language (`DiscoverParams.declared`): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so |
 | `version` | `version/write` | `Versioner` | `release` |
 | `publish` | `publish` | `Publisher` | `release` (registry or release archives; deploy plugins too) |
 | `published` | `published` | `RegistryReader` | release lineage checks, doctor |

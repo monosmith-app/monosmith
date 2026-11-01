@@ -137,6 +137,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `derive` | `derive` | language |
 | `apiSurface` | `api/surface` | language |
 | `channels` | (changes `publish`) | language; only the Go SDK can declare it for now |
+| `declared` | (changes `discover`) | language; only the Go SDK can declare it for now |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
