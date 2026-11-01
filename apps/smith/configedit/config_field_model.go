@@ -61,12 +61,16 @@ func Fields() ([]Field, error) {
 		sort.Strings(keys)
 		for _, k := range keys {
 			p := node.Properties[k]
-			if p.Type == "object" {
-				continue
+			if p.Type == "object" || (p.Type == "array" && p.Items != nil && p.Items.Type == "object") {
+				continue // a table, or a list of tables ([[release.channels]]): edited in the file
 			}
 			f := Field{Path: table + "." + k, Type: p.Type, Description: p.Description, Minimum: p.Minimum, MinLength: p.MinLength}
 			if p.Items != nil {
 				f.Enum = p.Items.Enum
+			}
+			if p.Type == "" && len(p.Enum) > 0 {
+				// A string that takes one of a few words: the schema gives only the choices.
+				f.Type, f.Enum = "string", p.Enum
 			}
 			out = append(out, f)
 		}
@@ -188,6 +192,9 @@ func (f Field) Encode(args []string) (string, error) {
 	case "string":
 		if len(args[0]) < f.MinLength {
 			return "", fmt.Errorf("%s cannot be empty", f.Path)
+		}
+		if len(f.Enum) > 0 && !slices.Contains(f.Enum, args[0]) {
+			return "", fmt.Errorf("%s takes %s, not %q", f.Path, strings.Join(f.Enum, " or "), args[0])
 		}
 		return Quote(args[0]), nil
 	case "array":
