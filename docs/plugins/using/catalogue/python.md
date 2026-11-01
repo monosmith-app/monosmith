@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 

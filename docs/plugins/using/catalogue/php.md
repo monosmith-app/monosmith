@@ -19,7 +19,7 @@ pipelines which PHP to install.
 | `--lang` value | `php` |
 | Manifest that makes a directory a candidate project | `composer.json` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components` |
 | Not advertised | none of the dependency capabilities |
 | Stacks it publishes | none. The `php` language alone is the stack; a project records no stack unless `extra.smith.stack` names one |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `php-app`, `php-lib`, `php-package`) |

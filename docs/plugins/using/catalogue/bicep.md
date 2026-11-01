@@ -21,7 +21,7 @@ anything: the pipeline that owns your environment does that with the files in
 | `--lang` value | `bicep` |
 | Manifest that makes a directory a project | `main.bicep` |
 | Requires, conflicts, provides (task slots) | none |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `changeKind` |
 | Not advertised | `remove`, `published`, `dependencies`, `declarations`, `latest` |
 | Stacks it publishes | none |
 | Project kinds `smith add` can create | `app` and `lib`. `package` is refused (see below) |

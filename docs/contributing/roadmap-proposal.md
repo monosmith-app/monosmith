@@ -5,6 +5,14 @@
 > 2026-10-25 (smith 1.63.0). Nothing here is committed, dated or promised, and the product
 > pages do not mention it. The owner decides what, if anything, becomes work.
 
+> **Update, 2026-11-01 (smith 2.0 line).** Some gaps below were closed after this page was written,
+> as far as the code shows: the import-cycle failure (#558, fixed after 1.65.0; see
+> [project discovery](../architecture/project-discovery.md#step-7-the-checks-that-end-discovery)),
+> the plugin trust prompt and minimal environment ([ADR 0036](../architecture/decisions/0036-external-plugins-are-trusted-and-get-a-minimal-environment.md)),
+> registry checks before a first publish ([ADR 0043](../architecture/decisions/0043-a-release-is-rehearsed-against-its-registries-with-read-only-requests.md)),
+> the TypeScript, Python and C# SDKs, and CircleCI and Bitbucket Pipelines generation. SBOM coverage grew to ten
+> language plugins. The ranking below is unchanged and was not re-done.
+
 ## How the gaps were ranked
 
 Every row of the comparison where another tool is ✅ and smith is ❌ or ◐ is a gap, and

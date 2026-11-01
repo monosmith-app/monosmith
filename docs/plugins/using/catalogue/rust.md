@@ -11,7 +11,7 @@ The rust plugin makes every crate in a root Cargo workspace a smith project. It 
 | `--lang` values | `rust` |
 | Manifest that makes a directory a project | `Cargo.toml` with a `[package]` table. A root `Cargo.toml`, and a manifest without `[package]` (a virtual workspace), are not projects. |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`rust-app`, `rust-lib`, `rust-package`) |
 

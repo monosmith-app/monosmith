@@ -11,7 +11,7 @@ The go plugin makes every `go.mod` below the workspace root a smith project. It 
 | `--lang` values | `go`, `golang` |
 | Manifest that makes a directory a project | `go.mod` (a `go.mod` at the workspace root is skipped; see [What it detects](#what-it-detects)) |
 | Requires / conflicts / provides | none / none / no task slots (`smith plugin list` shows `-` in the SLOTS and REQUIRES columns) |
-| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`. Not advertised: `version`, `published`. |
+| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. Not advertised: `version`, `published`. |
 | Stacks it publishes | none. The add-on [go-smith-plugin](go-smith-plugin.md) publishes the one stack whose language is `go`. |
 | Project kinds it can create | `app`, `lib`, `package` (`go-app`, `go-lib`, `go-package` in `smith kinds`) |
 

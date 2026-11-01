@@ -11,7 +11,7 @@ The node plugin makes every `package.json` below the workspace root a smith proj
 | `--lang` values | `node`, `javascript`, `js` |
 | Manifest that makes a directory a project | `package.json` (the one at the workspace root holds tooling only and is never a project) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `derive`, `apiSurface`, `channels`. |
 | Stacks it publishes | none itself. The add-ons publish them: `node-jest`, `node-vitest`, `node-ts`, `node-vitest-playwright`, `vscode-extension`, `react`, `vue`, `svelte`, `html`, `angular`, `docs-site`, `react-p5` (from `smith stacks --json`). `[default_stacks] node = "node-jest"` is what `smith new` writes. |
 | Project kinds it can create | `app`, `lib`, `package` (`node-app`, `node-lib`, `node-package`) |
 

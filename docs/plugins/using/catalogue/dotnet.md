@@ -11,7 +11,7 @@ The dotnet plugin makes every `.csproj` and `.fsproj` below the workspace root a
 | `--lang` values | `dotnet`, `csharp`, `fsharp` (see the note in [Creating a project](#creating-a-project)) |
 | Manifests that make a directory a project | `*.csproj`, `*.fsproj` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`. Not advertised: `remove`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`. Not advertised: `remove`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`dotnet-app`, `dotnet-lib`, `dotnet-package`) |
 
