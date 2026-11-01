@@ -24,6 +24,8 @@ func validateReleaseChannels(r ReleaseSection) error {
 			return fmt.Errorf("%s: branch %q is the [release] branch, which releases stable versions", at, c.Branch)
 		case seen[c.Branch]:
 			return fmt.Errorf("%s: branch %q is the branch of another channel", at, c.Branch)
+		case c.Prerelease == "":
+			return fmt.Errorf("%s: prerelease must be an identifier such as \"beta\" or \"rc\". To promote the channel, do not remove it: merge the channel branch %q into the release branch %q, and the next release there is stable", at, c.Branch, r.Branch)
 		case !channelPrerelease.MatchString(c.Prerelease):
 			return fmt.Errorf("%s: prerelease must be an identifier such as \"beta\" or \"rc\", not %q", at, c.Prerelease)
 		case c.Major < 1:

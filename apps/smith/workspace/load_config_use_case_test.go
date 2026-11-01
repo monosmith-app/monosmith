@@ -51,6 +51,8 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"rc\"\nmajor = 3\n": "branch of another channel",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"2.beta\"\nmajor = 2\n": "prerelease must be an identifier",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\n": "major must be 1 or more",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nmajor = 2\n": "merge the channel branch",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ngithub_prerelease = true\n": "marked as a prerelease on its own",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nprerelease = \"beta\"\nmajor = 2\n": "branch must name",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"latest\"\n": "dist_tag must be",
 		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\ndist_tag = \"2.0\"\n": "dist_tag must be",

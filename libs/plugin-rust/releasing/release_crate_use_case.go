@@ -6,14 +6,22 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-// CargoRunner runs cargo; tests replace it.
-var CargoRunner = func(dir string, argv []string) error { return toolrun.Run(dir, argv) }
+// CargoRunner runs cargo; tests replace it. A dry run shows one line, not
+// cargo's index update and compiler log: the whole output comes when cargo
+// fails or SMITH_VERBOSE is set (`smith release --verbose`).
+var CargoRunner = func(dir string, argv []string) error {
+	if slices.Contains(argv, "--dry-run") {
+		return toolrun.Quiet(dir, argv)
+	}
+	return toolrun.Run(dir, argv)
+}
 
 // WriteVersion records a release's version in the crate's Cargo.toml and the
 // requirement on it in every dependency the plugin was told of.

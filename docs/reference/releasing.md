@@ -833,16 +833,27 @@ channel's. The release branch ignores these tags and keeps its `1.x` line. `smit
 --dry-run`, `smith report` and the pull request preview plan a channel branch like any other.
 
 A real release from `next` publishes each package under the channel's name, `beta` here (set
-`dist_tag` to change it; it is never `latest`), so `latest` stays on the stable version. The GitHub
-Release is marked as a prerelease, which GitHub never offers as the latest release. Install it
-with `npm install acme-kit@beta`.
+`dist_tag` to change it; the default is the prerelease id, not `next`, and it is never `latest`),
+so `latest` stays on the stable version. The GitHub Release of any prerelease version is marked as
+a prerelease on its own, which GitHub never offers as the latest release: there is no setting for
+it (`github_prerelease` is an unknown key). Install it with `npm install acme-kit@beta`.
+
+To promote the line, merge the channel branch into the release branch: the next release there is
+stable (`1.4.2 → 2.0.0`). Removing `prerelease` from the channel is an error, because a channel
+without a prerelease id would release stable versions from the wrong branch.
 
 Smith checks this before it publishes anything, and refuses the release when a project in the plan:
 
-- is a package whose plugin does not declare the `channels` capability (today the Node, Python and
-  .NET plugins do: npm gets the channel's tag, and PyPI and NuGet order a prerelease below the
-  release; the others could put the prerelease in the place of the stable version),
+- is a package whose plugin does not declare the `channels` capability (the Node, Python, .NET,
+  Rust, JVM, Ruby and Dart plugins, and those that release by tag alone, do: npm gets the
+  channel's tag, and the other registries order a prerelease below the release). The Go plugin does
+  not: a Go module needs `/vN` in its module path from major 2 on, so a `v2.0.0-beta.1` tag of a
+  module whose path lacks `/v2` is unusable for `go get`. A Go release is only a tag, so smith
+  cannot check the path before the tag exists; keep such a package out with `channels = false`,
 - is deployed by a deploy plugin (a container image's `latest` and branch tags).
+
+`smith release --dry-run`, `smith release --dry-run --comment` and the pull request preview show
+the same refusal as a real release (`Blocked:`), once.
 
 An app's binaries sent to npm (under the channel's tag), PyPI, NuGet, RubyGems and pub.dev, and its
 Linux packages, are allowed: all but npm order a prerelease version below the release. The package

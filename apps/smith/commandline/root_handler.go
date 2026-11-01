@@ -190,7 +190,7 @@ func run(version string, args []string) int {
 			fmt.Fprintln(os.Stderr, "smith: "+message)
 		case errors.As(err, &p):
 			fmt.Fprintln(os.Stderr, p.Error())
-		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid):
+		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported):
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
 		}
 		return 1
