@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { mcpConfigText } from './mcp-config.mapper.ts'
 import type { InstallOutcome, InstallPreview, InstallScope } from './install-run.contract.ts'
+import type { AgentFileOutcome } from './write-agent-file.use-case.ts'
 
 const DOCS = 'https://github.com/monosmith-app/monosmith/blob/main/docs/guides/agent.md'
 const CLAUDE_CODE = 'https://claude.com/claude-code'
@@ -33,11 +34,14 @@ export function tellInstallOutcome (outcome: InstallOutcome, scope: InstallScope
   switch (outcome.kind) {
     case 'written': {
       const open = 'Open .vscode/mcp.json'
+      const agentsFile = 'Write AGENTS.md'
       void vscode.window.showInformationMessage(
-        `MonoSmith: added ${what(scope)}. In VS Code, start the smith server from .vscode/mcp.json; it asks you to trust it once.`,
+        `MonoSmith: added ${what(scope)}. In VS Code, start the smith server from .vscode/mcp.json; it asks you to trust it once. AGENTS.md tells other agents the rules of the workspace.`,
         open,
+        agentsFile,
       ).then(async (choice) => {
         if (choice === open) await vscode.window.showTextDocument(vscode.Uri.joinPath(vscode.Uri.file(root), '.vscode', 'mcp.json'))
+        else if (choice === agentsFile) await vscode.commands.executeCommand('monosmith.agentFile', { root })
       })
       break
     }
@@ -82,5 +86,47 @@ export async function explainNoClaudeCode (): Promise<void> {
     void vscode.window.showInformationMessage('MonoSmith: copied the MCP config. Add it to the .mcp.json of your client.')
   } else if (choice === 'Open the docs') {
     await vscode.env.openExternal(vscode.Uri.parse(DOCS))
+  }
+}
+
+/**
+ * Names what `AGENTS.md` lacks and asks before smith writes it. smith keeps
+ * the text outside its markers.
+ * @param outOfDate - the lines `smith agent file --check` printed
+ * @param folder - the name of the workspace folder
+ * @returns whether the person agreed
+ */
+export async function confirmAgentFile (outOfDate: readonly string[], folder: string): Promise<boolean> {
+  const detail = `${outOfDate.map((line) => `● ${line}`).join('\n')}\n\nsmith writes only the lines between its markers. Your own text in AGENTS.md and CLAUDE.md stays. Review the files with git afterwards.`
+  const choice = await vscode.window.showInformationMessage(`MonoSmith: write AGENTS.md for the AI agents of ${folder}?`, { modal: true, detail }, 'Write')
+
+  return choice === 'Write'
+}
+
+/**
+ * Says how writing `AGENTS.md` ended. It does not wait for the person to read it.
+ * @param outcome - what `writeAgentFile` returned
+ * @param root - the workspace folder, to open the file from
+ */
+export function tellAgentFileOutcome (outcome: AgentFileOutcome, root: string): void {
+  switch (outcome.kind) {
+    case 'written': {
+      const open = 'Open AGENTS.md'
+      void vscode.window.showInformationMessage('MonoSmith: AGENTS.md is written. Commit it so every agent and teammate reads the same rules.', open).then(async (choice) => {
+        if (choice === open) await vscode.window.showTextDocument(vscode.Uri.joinPath(vscode.Uri.file(root), 'AGENTS.md'))
+      })
+      break
+    }
+    case 'current': {
+      void vscode.window.showInformationMessage('MonoSmith: AGENTS.md is already current.')
+      break
+    }
+    case 'refused': {
+      void vscode.window.showWarningMessage(`MonoSmith: AGENTS.md was not written. ${outcome.message}`)
+      break
+    }
+    case 'declined': {
+      break
+    }
   }
 }

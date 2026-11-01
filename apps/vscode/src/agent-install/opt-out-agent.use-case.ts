@@ -1,6 +1,5 @@
 import { optOutArguments } from './install-arguments.mapper.ts'
-import { sayProblem } from './install-outcome.mapper.ts'
-import type { SmithRun } from './install-run.contract.ts'
+import { sayProblem, type SmithRun } from '../smith-run/index.ts'
 
 /**
  * Records `[agent] enabled = false` in smith.toml through `smith config set`,

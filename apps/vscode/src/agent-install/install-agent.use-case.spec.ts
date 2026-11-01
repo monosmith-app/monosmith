@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { installAgent } from './install-agent.use-case.ts'
-import type { InstallPreview, SmithRun } from './install-run.contract.ts'
+import type { SmithRun } from '../smith-run/index.ts'
+import type { InstallPreview } from './install-run.contract.ts'
 
 const PREVIEW_RUN: SmithRun = { code: 1, stdout: '● Add .vscode/mcp.json\n--- a\n+++ b\n', stderr: '✖ nothing was written: there is no terminal to ask on\n' }
 const WRITTEN_RUN: SmithRun = { code: 0, stdout: '✓ Wrote .vscode/mcp.json\n', stderr: '' }
