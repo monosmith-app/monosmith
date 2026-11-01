@@ -137,7 +137,7 @@ flowchart LR
 A release channel (`[[release.channels]]`, [ADR 0051](decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md))
 puts its branch in `Model.ChannelBranches`. `TriggerBranches` includes it, and the `release` step of
 every provider (GitHub, GitLab, Azure, Bitbucket and CircleCI) runs on the release branch and on the
-channel branches; `pack` and the sign-in steps do not. With no channel the files are the same as
+channel branches, and so do the sign-in steps before it (Azure, RubyGems: an extension or a gem is published from there); `pack` does not. With no channel the files are the same as
 before.
 
 Two more parts of the model are GitHub Actions only. `SiblingRepos` (`[[ci.sibling_repos]]`,
