@@ -89,7 +89,10 @@ jobs:
       # smith:slot before-setup
       # This repository is smith: every step below runs the smith built from this commit.
       - name: Build smith from this commit
-        run: go build -o "$HOME/.local/bin/smith" ./apps/smith
+        run: |
+          go build -o "$HOME/.local/bin/smith" ./apps/smith
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          smith --version
       # smith:slot-end before-setup
       - name: Setup
         run: smith ci setup
