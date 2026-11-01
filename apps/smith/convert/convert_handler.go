@@ -202,6 +202,9 @@ git undoes everything.`,
 			}
 			staged := stageNewFiles(git, plan, res)
 			fmt.Fprint(log, Summary(plan, res.LostSlots, staged))
+			if !skipInstall {
+				CheckConverted(root, version, log)
+			}
 			if commit {
 				CommitConversion(root, log)
 			}

@@ -21,7 +21,10 @@ type Drift struct {
 	// Fixable are the declarations sync rewrites; Blocked are those it must
 	// leave alone and reports.
 	Fixable []protocol.Declaration `json:"fixable"`
-	Blocked []protocol.Declaration `json:"blocked,omitempty"`
+	// Crossing are declarations whose major version differs from the target:
+	// sync rewrites them only when told to cross majors.
+	Crossing []protocol.Declaration `json:"crossing,omitempty"`
+	Blocked  []protocol.Declaration `json:"blocked,omitempty"`
 }
 
 var (
@@ -98,6 +101,8 @@ func FindDrift(plugin string, declared protocol.DeclaredResult, local map[string
 		for _, s := range sites {
 			switch {
 			case s.Spec == target:
+			case s.Rewritable && crossesMajor(s.Spec, target):
+				d.Crossing = append(d.Crossing, s)
 			case s.Rewritable:
 				d.Fixable = append(d.Fixable, s)
 			default:
@@ -138,4 +143,24 @@ func targetOf(sites []protocol.Declaration, installed string) (string, string) {
 		}
 	}
 	return best, "highest"
+}
+
+// majorOf is the first number of the version a spec names, or -1.
+func majorOf(spec string) int {
+	_, v, ok := splitSpec(spec)
+	if !ok {
+		return -1
+	}
+	n, err := strconv.Atoi(strings.SplitN(v, ".", 2)[0])
+	if err != nil {
+		return -1
+	}
+	return n
+}
+
+// crossesMajor reports whether moving a declaration from spec to target
+// changes the major version. A spec with no readable major never crosses.
+func crossesMajor(spec, target string) bool {
+	a, b := majorOf(spec), majorOf(target)
+	return a >= 0 && b >= 0 && a != b
 }

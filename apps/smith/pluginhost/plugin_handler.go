@@ -251,6 +251,9 @@ func Toggle(current, names []string, enable bool) ([]string, error) {
 	}
 	for _, n := range names {
 		if _, ok := Builtins[n]; !ok {
+			if _, addon := BuiltinAddons[n]; addon {
+				return nil, fmt.Errorf("%s is an add-on plugin, not a language: it is always loaded and acts only on projects whose stack names it, so it cannot be disabled. Only the language plugins can: %s. To stop it acting, change the stack of the project (smith stacks) or remove [conventions.%s] from smith.toml", n, strings.Join(BuiltinNames(), ", "), n)
+			}
 			return nil, fmt.Errorf("no built-in plugin %q (built-in: %s)", n, strings.Join(BuiltinNames(), ", "))
 		}
 		set[n] = enable

@@ -2,6 +2,7 @@ package explain
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"sort"
 	"strings"
 
@@ -27,7 +28,7 @@ func Explain(g *projectgraph.Graph, target string) ([]Task, error) {
 	name, only, _ := strings.Cut(target, ":")
 	p := g.Get(name)
 	if p == nil {
-		return nil, fmt.Errorf("no project named %q (projects: %s)", name, strings.Join(g.Names(), ", "))
+		return nil, fmt.Errorf("no project named %q (projects: %s).%s", name, strings.Join(g.Names(), ", "), nearmatch.Suggestion(name, g.Names()))
 	}
 	names := make([]string, 0, len(p.Tasks))
 	for t := range p.Tasks {

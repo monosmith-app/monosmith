@@ -36,9 +36,9 @@ Usage: `smith adopt [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | with --init, commit the change as one operation, so smith undo can revert it |
 | `--dry-run` | boolean | off | only report (this is the default; the flag makes it explicit) |
 | `--eslint` | boolean | off | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies |
-| `--commit` | boolean | off | with --init, commit the change as one operation, so smith undo can revert it |
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
 | `--install` | boolean | off | with --init, also run npm install for the Node projects |
 | `--json` | boolean | off | print the report as JSON |

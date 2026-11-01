@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
@@ -43,7 +42,11 @@ type AddOptions struct {
 	// Fresh gives the project the built-in default of its stack and does not
 	// look at the sibling projects (smith add --fresh).
 	Fresh bool
-	Out   io.Writer
+	// Like names a project whose shape (build, test, layout, lint) the new
+	// project copies, instead of what most of its siblings share (smith add
+	// --like).
+	Like string
+	Out  io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -130,15 +133,8 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if st.Scaffold != "" {
 		generator = s.Plugins.Get(st.Scaffold)
 	}
-	if !generator.Supports(protocol.MethodGenerate) {
-		return nil, fmt.Errorf("plugin %s cannot generate projects", generator.Info.Plugin.Name)
-	}
-	if !generator.Info.Scaffolds(kind) {
-		var can []string
-		for _, k := range generator.Info.ScaffoldKinds() {
-			can = append(can, string(k))
-		}
-		return nil, fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
+	if err := checkScaffolds(generator, kind); err != nil {
+		return nil, err
 	}
 	fmt.Fprintln(opts.Out, createStep(opts.Kind, opts.Name, dir, st, language.Info.Plugin.Name))
 	if reason := directoryReason(opts.Kind, conventional, parent); reason != "" {
@@ -164,7 +160,10 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		siblings = siblingDialect(s, opts, kind, language, st)
 		params.Shape = siblings.Shape
 	}
-	if err := generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute); err != nil {
+	var times stepTimes
+	if err := times.Do("create", func() error {
+		return generator.Call(protocol.MethodGenerate, params, &res, 20*time.Minute)
+	}); err != nil {
 		return nil, err
 	}
 	pending := res.InstallPending
@@ -178,7 +177,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	if project.Stack != st.Name {
 		return &res, fmt.Errorf("%s generated %s, but its manifest does not record stack %s", generator.Info.Plugin.Name, opts.Name, st.Name)
 	}
-	if err := addParts(s, project, st, params, settings, &res, &pending, opts.Out); err != nil {
+	if err := times.Do("tools", func() error {
+		return addParts(s, project, st, params, settings, &res, &pending, opts.Out)
+	}); err != nil {
 		return &res, err
 	}
 	if project = s.Graph.Get(opts.Name); project != nil {
@@ -186,12 +187,15 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 			fmt.Fprintln(opts.Out, warning)
 		}
 	}
-	if err := installPending(language, pending, &res, opts.Out); err != nil {
+	if err := times.Do("install", func() error { return installPending(language, pending, &res, opts.Out) }); err != nil {
 		return &res, err
 	}
 	fmt.Fprintln(opts.Out, "Updating the CI pipelines")
-	changed, _, err := cipipeline.Regenerate(s)
-	if err != nil {
+	var changed []string
+	if err := times.Do("pipelines", func() (err error) {
+		changed, _, err = cipipeline.Regenerate(s)
+		return err
+	}); err != nil {
 		return &res, err
 	}
 	res.Files = append(res.Files, changed...)
@@ -205,6 +209,9 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}
 	sort.Strings(res.Files)
 	res.Files = slices.Compact(res.Files)
+	if line := times.Line(); line != "" {
+		fmt.Fprintln(opts.Out, line)
+	}
 	return &res, nil
 }
 
@@ -315,6 +322,8 @@ func installPending(language *host.Client, pending bool, res *protocol.GenerateR
 		return fmt.Errorf("plugin %s left the dependencies to install but cannot install them", name)
 	}
 	fmt.Fprintln(out, "Installing packages (once, for everything added above)")
+	stop := heartbeat(out, "installing", 5*time.Second)
+	defer stop()
 	var installed protocol.DependencyResult
 	if err := language.Call(protocol.MethodInstall, protocol.InstallParams{Quiet: true}, &installed, 20*time.Minute); err != nil {
 		return fmt.Errorf("installing dependencies with %s: %w", name, err)

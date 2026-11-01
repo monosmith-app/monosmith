@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"os"
 	"path/filepath"
 	"sort"
@@ -41,7 +42,7 @@ type Removal struct {
 func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 	p := s.Graph.Get(opts.Name)
 	if p == nil {
-		return Removal{}, fmt.Errorf("no project named %q (projects: %s)", opts.Name, strings.Join(s.Graph.Names(), ", "))
+		return Removal{}, fmt.Errorf("no project named %q (projects: %s).%s", opts.Name, strings.Join(s.Graph.Names(), ", "), nearmatch.Suggestion(opts.Name, s.Graph.Names()))
 	}
 	r := Removal{Project: p.Name, Root: p.Root, Dependents: s.Graph.Dependents(p.Name)}
 	if len(r.Dependents) > 0 && !opts.Force {

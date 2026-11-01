@@ -118,7 +118,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 			}
 			defer s.Close()
 			if align {
-				aligned, err := Align(s, names, check, !noInstall)
+				aligned, err := Align(s, names, check, !noInstall, yes)
 				if asJSON {
 					enc := json.NewEncoder(cmd.OutOrStdout())
 					enc.SetIndent("", "  ")
@@ -165,6 +165,17 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 					return nil
 				}
 			}
+			if yes {
+				var majors []string
+				for _, u := range chosen {
+					if u.Level == "major" {
+						majors = append(majors, u.Name)
+					}
+				}
+				if len(majors) > 0 {
+					fmt.Fprintf(out, "! --yes also takes major updates, which can break the project: %s\n", strings.Join(majors, ", "))
+				}
+			}
 			files, err := Apply(s, chosen, !noInstall)
 			if err != nil {
 				return err
@@ -187,12 +198,13 @@ func interactive() bool {
 }
 
 func syncCommand(version string) *cobra.Command {
-	var check, asJSON, noInstall bool
+	var check, asJSON, noInstall, yes bool
 	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Make every project declare a shared dependency at the same version (same as up --align)",
 		Long: `Make every project declare a shared dependency at the same spec, language by
-language. The target is the version installed, with the operator most
+language. Declarations on another major version than the target are left alone
+unless you pass --yes. The target is the version installed, with the operator most
 declarations use; when nothing says what is installed, the highest version
 declared. Peer dependencies and the workspace's own packages are left alone,
 and so is a spec smith does not understand well enough to rewrite (a URL, a git
@@ -207,7 +219,7 @@ lockfiles and the venv follow.`,
 				return err
 			}
 			defer s.Close()
-			report, err := Sync(s, check, !noInstall)
+			report, err := Sync(s, check, !noInstall, yes)
 			if asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -223,5 +235,6 @@ lockfiles and the venv follow.`,
 	cmd.Flags().BoolVar(&check, "check", false, "report only; fail when declarations disagree")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "also rewrite declarations whose major version differs from the target")
 	return cmd
 }

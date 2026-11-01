@@ -2,6 +2,7 @@ package configedit
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/lineendings"
 	"os"
 	"path/filepath"
 
@@ -67,5 +68,5 @@ func edit(root string, change func(string) (string, error)) error {
 	if _, err := workspace.Parse([]byte(out)); err != nil {
 		return fmt.Errorf("refusing to write an invalid %s: %w", workspace.FileName, err)
 	}
-	return os.WriteFile(file, []byte(out), 0o644)
+	return lineendings.WriteFile(file, []byte(out), 0o644)
 }

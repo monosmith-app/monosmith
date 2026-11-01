@@ -2,6 +2,7 @@ package projectgraph
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"path"
 	"slices"
 	"strings"
@@ -40,7 +41,7 @@ func (g *Graph) Select(patterns []string) ([]string, error) {
 			}
 		}
 		if !matched {
-			return nil, fmt.Errorf("no project matches %q (projects: %s)", pattern, strings.Join(g.Names(), ", "))
+			return nil, fmt.Errorf("no project matches %q (projects: %s).%s", pattern, strings.Join(g.Names(), ", "), nearmatch.Suggestion(pattern, g.Names()))
 		}
 	}
 	for _, pattern := range exclude {

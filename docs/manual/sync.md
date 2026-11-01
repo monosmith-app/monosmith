@@ -36,11 +36,18 @@ Usage: `smith sync [flags]`
 | `--check` | boolean | off | report only; fail when declarations disagree |
 | `--json` | boolean | off | print the report as JSON |
 | `--no-install` | boolean | off | rewrite the manifests without installing |
+| `-y, --yes` | boolean | off | also rewrite declarations whose major version differs from the target |
 
 <!-- smith:end sync -->
 
 With `commit_operations = true` under `[workspace]` and a clean git work tree, a run that rewrites
 declarations is one commit (`chore: align dependency versions`); [`smith undo`](undo.md) reverts it.
+
+## Major versions
+
+A declaration on another major version than the target (zod 3 when 4 is installed) is left alone, and
+the report says so. Pass `--yes` to rewrite it too. `smith up --yes` prints a warning line that names
+the major updates it takes.
 
 ## Exit codes
 

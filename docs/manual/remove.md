@@ -31,6 +31,7 @@ Usage: `smith remove <project> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show what would change; change nothing |
 | `--force` | boolean | off | remove a project other projects still import |
 | `--json` | boolean | off | print what changed as JSON |

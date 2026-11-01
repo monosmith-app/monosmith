@@ -29,7 +29,7 @@ func validateReleaseChannels(r ReleaseSection) error {
 		case c.Major < 1:
 			return fmt.Errorf("%s: major must be 1 or more, not %d", at, c.Major)
 		case c.DistTag != "" && (!channelDistTag.MatchString(c.DistTag) || c.DistTag == "latest"):
-			return fmt.Errorf("%s: dist_tag must be a name that is no version, such as \"next\", and not \"latest\", not %q", at, c.DistTag)
+			return fmt.Errorf("%s: dist_tag must be a name that is no version, such as \"next\". \"latest\" is kept for stable releases, so %q cannot be used", at, c.DistTag)
 		}
 		seen[c.Branch] = true
 	}

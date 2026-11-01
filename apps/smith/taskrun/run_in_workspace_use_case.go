@@ -26,7 +26,10 @@ type Request struct {
 	Parallel int
 	Bail     bool
 	NoCache  bool
-	Out      io.Writer
+	// Quiet keeps the output of tasks that succeed (and of cache hits) off
+	// the screen; a failed task still shows all of its output.
+	Quiet bool
+	Out   io.Writer
 	// Events, when set, receives the run's event stream. RunID names the run
 	// in it; empty means a generated one.
 	Events runevents.Sink
@@ -132,7 +135,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	meter := cachemaintenance.NewWriteMeter(store)
 	summary := Run(ctx, g, Options{
 		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
-		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Out: req.Out, ToolVersion: s.Version,
+		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(),
 	})
 	pruneAfterRun(s, meter, os.Stderr)

@@ -50,6 +50,11 @@ Usage: `smith report [flags]`
 
 Without `-o` the page goes to the standard output.
 
+## Where the page goes
+
+Without `-o`, the page goes to the standard output. When the standard output is a terminal, it goes to
+`smith-report.html` instead, because a page of HTML on a terminal is noise.
+
 ## Exit codes
 
 | Code | Meaning |

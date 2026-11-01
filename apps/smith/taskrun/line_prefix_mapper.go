@@ -15,6 +15,10 @@ type prefixWriter struct {
 	outMu   *sync.Mutex
 	pending []byte
 	log     bytes.Buffer
+	// hold keeps the prefixed lines in held instead of writing them; Release
+	// writes them. A quiet run holds a task's output until it knows the task failed.
+	hold bool
+	held bytes.Buffer
 	// onLine, when set, receives every line without its prefix, for the event stream.
 	onLine func(string)
 }
@@ -48,12 +52,24 @@ func (w *prefixWriter) Flush() {
 func (w *prefixWriter) emit(line []byte) {
 	w.outMu.Lock()
 	defer w.outMu.Unlock()
-	_, _ = io.WriteString(w.out, w.prefix)
-	_, _ = w.out.Write(bytes.TrimRight(line, "\r\n"))
-	_, _ = io.WriteString(w.out, "\n")
+	dest := io.Writer(w.out)
+	if w.hold {
+		dest = &w.held
+	}
+	_, _ = io.WriteString(dest, w.prefix)
+	_, _ = dest.Write(bytes.TrimRight(line, "\r\n"))
+	_, _ = io.WriteString(dest, "\n")
 	if w.onLine != nil {
 		w.onLine(string(bytes.TrimRight(line, "\r\n")))
 	}
+}
+
+// Release writes the lines a quiet run held back, for a task that failed.
+func (w *prefixWriter) Release() {
+	w.outMu.Lock()
+	defer w.outMu.Unlock()
+	_, _ = w.out.Write(w.held.Bytes())
+	w.held.Reset()
 }
 
 // Replay writes a cached log through the same prefixing.

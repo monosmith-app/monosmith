@@ -40,6 +40,7 @@ Usage: `smith upgrade [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | change nothing; fail when something would change |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show the plan, with the change to smith.toml, and change nothing |
 | `--json` | boolean | off | print the result as JSON |
 | `-y, --yes` | boolean | off | do not ask for confirmation |

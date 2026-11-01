@@ -3,6 +3,7 @@ package adoption
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"io"
 	"os"
 	"path/filepath"
@@ -115,6 +116,7 @@ func Init(r Report, version string, install, eslint, commit bool, out io.Writer)
 	if _, _, err := cipipeline.Write(s.Root, s.Config, cipipeline.NewModel(contributions, cipipeline.SmithVersionFor(s.Config, version), s.Config.Release.Branch)); err != nil {
 		return err
 	}
+	doctor.ReportCommandBugs(s, "smith adopt", out)
 	if !commit && !s.Config.Workspace.CommitOperations {
 		fmt.Fprintln(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time")
 		return DescribeOutcome(r.Root, version, out)

@@ -31,6 +31,9 @@ func siblingDialect(s *session.Session, opts AddOptions, kind protocol.ProjectKi
 			follows[key] = true
 		}
 	}
+	if like, err := likeProject(s, opts); err == nil && like != nil {
+		return dialect.Exemplar(like.Name, like.Shape, string(kind), follows, opts.Out)
+	}
 	var in io.Reader
 	interactive := false
 	if opts.Recipe != nil {

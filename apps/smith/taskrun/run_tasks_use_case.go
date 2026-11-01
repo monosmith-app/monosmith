@@ -39,7 +39,9 @@ type Options struct {
 	Bail bool
 	// NoCache runs every task, still saving results.
 	NoCache bool
-	Out     io.Writer
+	// Quiet holds a task output and shows it only if the task fails.
+	Quiet bool
+	Out   io.Writer
 	// ToolVersion goes into every key.
 	ToolVersion string
 	// Events, when set, receives the run's event stream; nil means nobody listens.
@@ -149,7 +151,11 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, t.Def.Outputs, entry)
 			if err == nil {
 				_ = taskcache.Remember(r.opts.Storage, t.ID, key)
-				Replay(prefix, log, r.opts.Out, &r.outMu, r.outputOf(t.ID))
+				replayTo := r.opts.Out
+				if r.opts.Quiet {
+					replayTo = io.Discard
+				}
+				Replay(prefix, log, replayTo, &r.outMu, r.outputOf(t.ID))
 				r.say("%s ✔ from cache\n", t.ID)
 				return Result{Task: t.ID, Status: Cached, Key: key, Saved: entry.Duration}
 			}
@@ -172,6 +178,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	}
 	out := newPrefixWriter(prefix, r.opts.Out, &r.outMu)
 	out.onLine = r.outputOf(t.ID)
+	out.hold = r.opts.Quiet
 	began := time.Now()
 	var app *served
 	if t.Def.Serve != "" {
@@ -197,6 +204,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 				reason = "cancelled"
 			}
 		}
+		out.Release()
 		r.say("%s ✖ %s\n", t.ID, reason)
 		if hint := FailureHint(out.log.String(), r.opts.Root); hint != "" {
 			r.say("%s → %s\n", t.ID, hint)
