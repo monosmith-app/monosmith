@@ -39,12 +39,18 @@ Usage: `smith build [project]... [flags]`
 | `--no-cache` | boolean | off | run every task even if a cached result exists |
 | `--parallel <parallel>` | integer | the number of CPUs | tasks to run at once (default: CPU count) |
 | `-p, --projects <projects>` | string, repeatable |  | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude |
+| `--verbose` | boolean | off | smith build: show the log of every project, not only the ones that fail |
 
 <!-- smith:end build -->
 
 Positional `project` names and `-p` are two ways to select projects; the selector syntax
 (`web`, `apps/*`, `kind:app`, `lang:go`, `tag:x`, `!api`) and every interaction between the
 flags are described on [`smith run`](run.md#arguments-and-flags).
+
+## Output
+
+A project that builds shows one line with its time. The log of a project that fails is shown in full,
+and so is every log with `--verbose`. A result taken from the cache shows no log.
 
 ## Exit codes
 

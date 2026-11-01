@@ -29,6 +29,7 @@ Usage: `smith deps up [packages...] [flags]`
 |---|---|---|---|
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
 | `--no-install` | boolean | off | rewrite the manifests without installing |
 | `-y, --yes` | boolean | off | take every update without prompting |

@@ -27,7 +27,7 @@ manifests it finds (see [`smith projects`](projects.md)). To delete one, use
 ## Synopsis
 
 ```sh
-smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--verbose] [--dry-run] [--yes]
+smith add <kind> <name> [--lang <language>] [--stack <stack>] [--with <choice,...>] [--choice name=answer ...] [--fresh] [--like <project>] [--verbose] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
@@ -45,9 +45,11 @@ Usage: `smith add <kind> <name> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show the plan and change nothing |
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
+| `--like <like>` | string |  | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
 | `--with <with>` | string, repeatable |  | the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default |
@@ -126,6 +128,11 @@ The rules, from [ADR 0041](../architecture/decisions/0041-smith-add-follows-the-
   have is a warning (`Warning: 3 of 3 sibling packages have tsconfig.files = ...; the new
   package has ...`). The warning means the stack cannot follow that key.
 - `--fresh` skips all of it: the project gets the default of its stack.
+- `--like <project>` takes the shape of that one project instead (build tool, test runner,
+  layout, lint), for the keys the stack follows. It prints what it took, key by key, and the
+  plan of `--dry-run` shows it too. It needs no three siblings, and it excludes `--fresh`
+  ([ADR 0055](../architecture/decisions/0055-smith-add-like-copies-the-shape-of-one-named-project.md)).
+- When several keys differ, the warning after the project is made is one line that names them all.
 
 The facts for a Node project are `build.tool` (`tsc`, `esbuild`, ...), `test.runner`
 (`jest`, `ts-jest`, `@swc/jest`, `vitest`, ...), `exports.target` (`dist`, `src`),
@@ -155,7 +162,7 @@ and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI
 
 By default smith add leaves the files it wrote uncommitted (`smith new` commits what it wrote):
 review them with `git status`, then commit. With `commit_operations = true` under `[workspace]`
-and a clean git work tree, it commits them as one commit (`chore: add package billing`), and
+and a clean git work tree, or when you pass `--commit`, it commits them as one commit (`chore: add package billing`), and
 [`smith undo`](undo.md) reverts that commit.
 
 ## Exit codes
