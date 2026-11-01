@@ -27,7 +27,11 @@ abstract class SmithActionHandler :
         val ide = event.project ?: return
         val root = ide.basePath?.let(Path::of)?.let { FindWorkspaceRootUseCase.find(it, Files::exists) }
         if (root == null) {
-            Messages.showInfoMessage(ide, "There is no smith.toml in this project or above it, so there is no MonoSmith workspace to work on.", "MonoSmith")
+            Messages.showInfoMessage(
+                ide,
+                "There is no smith.toml in this project or above it, so there is no MonoSmith workspace to work on.",
+                "MonoSmith",
+            )
             return
         }
         perform(event, ide, root)

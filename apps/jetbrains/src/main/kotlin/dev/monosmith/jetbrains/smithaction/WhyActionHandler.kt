@@ -23,7 +23,11 @@ class WhyActionHandler : SmithActionHandler() {
         val file = event.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
         val relative = runCatching { root.relativize(Path.of(file.path)).toString().replace('\\', '/') }.getOrNull()
         if (relative == null || relative.startsWith("..")) {
-            Messages.showInfoMessage(ide, "${file.name} is outside the MonoSmith workspace at $root, so smith has nothing to say about it.", "MonoSmith")
+            Messages.showInfoMessage(
+                ide,
+                "${file.name} is outside the MonoSmith workspace at $root, so smith has nothing to say about it.",
+                "MonoSmith",
+            )
             return
         }
         RunSmithCommandUseCase.run(ide, root, "smith why $relative") { ActionCommandAlgorithm.why(it, relative) }
