@@ -12,8 +12,8 @@ Code and VS Code can call smith's tools instead of guessing command names.
 | `.mcp.json` | Claude Code | Registers `smith mcp` as a project MCP server |
 | `.vscode/mcp.json` | VS Code | Registers `smith mcp` for agent mode (`servers`, with `"type": "stdio"`) |
 
-`smith new` writes all three. In an existing repository, `smith adopt` and `smith convert`
-tell you about `smith agent install`, and `smith doctor` warns until it is done. The adopt and
+`smith new` and `smith adopt --init` write all three. In a converted repository, `smith convert`
+tells you about `smith agent install`, and `smith doctor` warns until it is done. The adopt and
 convert wizard in the terminal interface offers it as its last step, before the result: it shows
 the command it will run and installs on Enter. In the interface, "Install the MonoSmith agent"
 is also in the menus of a workspace and in the command palette (`smith agent install`).

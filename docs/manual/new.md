@@ -39,7 +39,7 @@ Usage: `smith new <name> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--agent` | boolean | off | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) |
+| `--agent` | boolean | on | add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default) |
 | `--architecture <architecture>` | string | `vertical-slices` | the code layout smith checks: vertical-slices, hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer, none (default vertical-slices) |
 | `--cache-dir <cache-dir>` | string | `.smith/cache` | the task cache folder inside the workspace (default .smith/cache) |
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
@@ -189,7 +189,8 @@ For another workspace: smith new <name> --recipe-file /work/acme/recipes/team.re
 
 Writes, in the new folder: `.gitignore`, `.gitattributes`, `smith.toml`, `README.md`,
 `.github/workflows/ci.yml` (and `azure-pipelines.yml` or `.gitlab-ci.yml` for the other
-providers), `.devcontainer/devcontainer.json`, and the MonoSmith agent: `.claude/agents/smith.md`,
+providers), `.devcontainer/devcontainer.json`, `tools/smith/install.sh` (the installer the pipelines run when the
+workspace has no npm, pip or `dotnet tool` to install smith with), and the MonoSmith agent: `.claude/agents/smith.md`,
 `.mcp.json` and `.vscode/mcp.json` (see [the agent guide](../guides/agent.md)). It then runs `git init -b main`, stages
 what is in the folder and commits it as `chore: create the <name> workspace with smith`.
 
@@ -215,11 +216,15 @@ smith new demo2 --ci github,azure --scope @demo --module-prefix github.com/demo/
   wrote .github/workflows/ci.yml
   wrote azure-pipelines.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   committed
 
 Created demo2. Next:
   cd demo2
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
 
 In a folder that already has a file in it, with `--dir .`:
@@ -235,11 +240,14 @@ smith new notes --dir .
   wrote .gitignore
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   committed
 
 Created notes. Next:
-  cd .
-  smith add app web --lang node
+  smith add app web --lang <language>   # smith kinds lists the languages
 ```
 
 When the folder was not a git repository, `git init` ran and the first commit held

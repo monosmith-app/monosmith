@@ -1,7 +1,7 @@
 # smith config
 
 `smith config` reads and changes the settings of `smith.toml`'s `[workspace]`, `[ci]`,
-`[release]`, `[cache]` and `[plugins]` tables, and the per-language default stack
+`[release]`, `[cache]`, `[plugins]` and `[agent]` tables, and the per-language default stack
 (`default_stacks.node`). Values are checked against the file's JSON Schema, and only the
 setting's value changes: comments and every other line stay as they are. Stacks,
 conventions, tasks and projects are edited in the file itself.

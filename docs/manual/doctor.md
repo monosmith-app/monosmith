@@ -22,6 +22,30 @@ can apply a fix it offers one: for Rust, a `rust-toolchain.toml` pinning the ver
 `rustup toolchain install`, which also makes CI and the dev container follow the pin. A
 `[toolchains]` pin in `smith.toml` is a separate check, against the same probed version.
 
+## Checks that come from smith itself
+
+Besides each plugin's checks, smith runs checks of its own. These are the ones a workspace
+meets most often. Names are as doctor prints them. [Troubleshooting](../guides/troubleshooting.md#what-smith-doctor-reports-and-what-to-do)
+lists every check with its remedy.
+
+- `CI pipelines match the workspace`: the generated pipelines are current. The fix is
+  `smith ci generate`.
+- `The MonoSmith agent files are installed and current`: `.claude/agents/smith.md`,
+  `.mcp.json` and `.vscode/mcp.json` match this smith. A warning, with `smith agent install`
+  as the remedy; `enabled = false` under `[agent]` in `smith.toml` switches the check off.
+- `derived files are up to date`, `derived file <path> (<renderer>) is up to date` and
+  `config files that differ from their sibling projects are yours`: only when
+  `[derive] enabled = true`. A hand edit to a derived file is reported with the choices
+  `smith derive --replace`, `--adopt` or `--eject`; see [`smith derive`](derive.md).
+- `release tags resolve under each project's tag prefix` and `release tags are not behind the
+  registry`: every project's latest tag is found under its tag prefix, and no version is
+  already published beyond it. When the registry cannot be asked, doctor says so and skips
+  the comparison. See [Releasing](../reference/releasing.md).
+- `the clone has full history`, `tracked files are not generated files`, `every build writes to
+  dist/` and `projects depend only on what the boundaries allow`.
+- `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
+  would fail `npm ci` on another. `smith doctor --fix` regenerates it.
+
 ## Suggestions about a project's kind
 
 Two warnings point at [`smith kind`](kind.md). They are suggestions, never failures, and they

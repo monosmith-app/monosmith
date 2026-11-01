@@ -69,6 +69,10 @@ smith adopt --tags --init
   wrote README.md
   wrote .github/workflows/ci.yml
   wrote .devcontainer/devcontainer.json
+  wrote tools/smith/install.sh
+  wrote .claude/agents/smith.md
+  wrote .mcp.json
+  wrote .vscode/mcp.json
   wrote go.work: ./services/api
   committed: chore: adopt smith
 ✔ adopted. smith doctor still reports 2 thing(s) for you:
@@ -81,8 +85,9 @@ smith adopt --tags --init
 `--init` takes the workspace name from the directory, the npm scope from the root
 `package.json` and the CI providers from the ones the repository already uses. It
 runs `go work init` and `go work use` for the Go projects, adds the Node projects to
-the root `package.json` `"workspaces"`, adds `.smith/` to your `.gitignore` and ends by
-checking the workspace as `smith doctor` does, so anything left over is listed with its
+the root `package.json` `"workspaces"`, adds `.smith/` to your `.gitignore`,
+writes the MonoSmith agent files (`.claude/agents/smith.md`, `.mcp.json` and `.vscode/mcp.json`, see
+[the agent guide](../guides/agent.md)) and ends by checking the workspace as `smith doctor` does, so anything left over is listed with its
 first step. `--install` also runs `npm install`; `--eslint` writes the two-line root
 `eslint.config.mjs` and adds `@monosmith/eslint-config` to the root devDependencies.
 

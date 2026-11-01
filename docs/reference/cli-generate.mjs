@@ -52,6 +52,7 @@ const defaults = {
   'convert|level': '`conservative`',
   'convert|lint': '`smith` when the ESLint config imports a shared config smith replaces, else `keep`',
   'convert|test': 'the runner the workspace uses, else `keep`',
+  'new|agent': 'on',
   'new|ci': '`github`',
   'new|architecture': '`vertical-slices`',
   'new|cache-dir': '`.smith/cache`',
