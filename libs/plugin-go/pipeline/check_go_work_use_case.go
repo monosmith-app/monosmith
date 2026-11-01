@@ -24,7 +24,8 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		}
 	}
 	if len(modules) == 0 {
-		return protocol.DoctorResult{Findings: CheckToolVersions(workspaceRoot, toolchainVersion(workspaceRoot, all), usesGolangciLint(all))}
+		findings := CheckUncoveredImports(workspaceRoot, all)
+		return protocol.DoctorResult{Findings: append(findings, CheckToolVersions(workspaceRoot, toolchainVersion(workspaceRoot, all), usesGolangciLint(all))...)}
 	}
 	params.Projects = modules
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
@@ -76,6 +77,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		}
 	}
 	lints = lints || usesGolangciLint(all)
+	findings = append(findings, CheckUncoveredImports(workspaceRoot, all)...)
 	required := work.GoVersion
 	if required == "" {
 		required = DefaultGoVersion
