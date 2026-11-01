@@ -55,11 +55,11 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | View | Key | Shows |
 |---|---|---|
 | Home | `1` | The health of the workspace in one headline, the facts behind it (checks, affected projects, the last run, outdated dependencies) and the one thing to do next, with its key. |
-| Projects | `2` | Every project, ordered by kind and then name, with its language; the detail pane shows its properties and the actions that apply to it. |
+| Projects | `2` | Every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
 | Deps | `5` | Dependencies with newer releases, grouped patch, minor and major, and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
-| Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. |
+| Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 
 Home chooses the **next action** by priority: what is broken first (`doctor could not run`,
@@ -167,7 +167,11 @@ until you type; searching finds it with the reason. Nothing is typed as a raw co
 a command that needs an answer opens its own form, such as Install a package (project
 preselected, then the packages) or Add project. Commands that have no key are reached here:
 Regenerate CI pipelines (asks to confirm), Info, Show what changed (`smith affected`),
-Project graph, Manage plugins, Upgrade workspace (asks to confirm) and Remove project.
+Project graph, Manage plugins, Upgrade workspace (asks to confirm) and Remove project. The
+Health section also holds the 2.0 commands, described in
+[Undo, report, why and derived files](#undo-report-why-and-derived-files): Undo the last
+change, Open the report, Write the agent file, Check the derived files, Update the derived
+files and Why is this file here?
 The palette and every box drawn over the screen stay inside the frame; behind a box the
 view is emptied so no text shows at its edges, and a toast sits inside the content area.
 
@@ -177,6 +181,41 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons.
+
+### Undo, report, why and derived files
+
+These are in the palette (`:`), under Health. None has a key of its own.
+
+| Palette entry | What it does |
+|---|---|
+| **Undo the last change…** | Runs `smith undo --dry-run` first and shows what it would revert in a dialog. `y` or `Enter` then runs `smith undo --yes`, which reverts it with a new commit; `Esc` leaves everything as it is. When smith has nothing to undo, a notice shows its reason and the fix (for example `commit_operations = true` under `[workspace]` in `smith.toml`); `Enter` closes it. |
+| **Open the report** | Runs `smith report -o <file>` with a file in the temporary folder named after the workspace (`smith-report-<workspace>.html`), opens it in your browser and tells you the path in a toast, so you can open it again. |
+| **Write the agent file…** | `smith agent file` after a confirmation: `AGENTS.md`, and a short `CLAUDE.md` that imports it. |
+| **Check the derived files** | `smith derive --check` in the Run view: writes nothing, fails when a derived file is out of date or was edited. |
+| **Update the derived files…** | `smith derive` after a confirmation: writes the files that follow from the project graph. A file you edited is never overwritten. |
+| **Why is this file here?…** | A form that asks for a path and runs `smith why <path>`: who owns the file, what produced it and how to change it. A project folder works too. |
+
+After an add, a convert or an adopt finishes, the toast says it can be undone and where.
+
+**Derived files on the Projects tab.** When the workspace turned derived files on
+(`[derive] enabled = true`), the detail of a project has a **Derived files** section with one
+row per file and its state in words: *up to date*, *out of date*, *missing*, *not recorded
+yet*, *edited by hand*, *differs from what smith derives*, *yours* (ejected) and *the
+project's own* (it differs from its sibling projects). The heading counts the files that need
+action, and the Workspace detail (no project selected) counts them for the whole workspace.
+The Doctor tab keeps reporting them as checks. The actions of the detail run the matching
+command, and each one that changes a file shows its command line in a confirmation first:
+
+| Action | Command |
+|---|---|
+| Explain the derived files | `smith derive --explain <file>` for each file (owner, renderer, why it is in its state) |
+| Update the derived files | `smith derive` (the whole workspace) |
+| Keep my edit of a derived file | `smith derive --adopt <file>` for each hand-edited keys file |
+| Own the files I edited | `smith derive --eject <file>` for each file that waits for a choice |
+| Replace the files I edited | `smith derive --replace <file>` for each file that waits for a choice; the edit is lost |
+
+An action that no file of the project takes is shown off, with the reason under it. The
+**Why** action of the same detail runs `smith why <project folder>`.
 
 ## Settings
 
@@ -201,7 +240,12 @@ URL or `github:owner/repo@tag`; an archive or URL needs its sha256 typed after t
 shows the command line as you type, `smith plugin install <source> [--sha256 <digest>]`. `Enter`
 again shows it in the confirmation dialog, and `y` runs it in the Run view, so its output is the
 command's own. The plugin is checked and never started; trusting it is the review above. The tab
-reads the plugins again when the command ends.
+reads the plugins again when the command ends. The row above it, **Find a plugin in the
+marketplace…**, asks for words (or nothing, to list every plugin), runs
+`smith plugin search <words> --json` and shows the plugins found as a list you can narrow by
+typing, with the newest version, what it does and its roles. `Enter` on one shows the
+`smith plugin install <name>` confirmation, as above. An empty result says to search with fewer
+words, and a failed search shows the command's error in a notice.
 
 **Architecture.** How the code of the workspace is laid out, as radio rows with what each
 choice means beside it: `vertical-slices` (code grouped by what it does, one flat folder per
@@ -315,7 +359,18 @@ Entries of the Start menu and of the palette that need arguments (create a works
 project, manage plugins, remove a project, and forms generated from the command catalogue)
 ask one question at a time: a choice (`Up` `Down`, `Enter`, `Esc` back one step), several
 choices (`Space` toggles, `Enter` confirms) or free text with a placeholder. The answers
-build the command line, which the shell runs and shows. A command that needs a terminal of
+build the command line, which the shell runs and shows.
+
+**Add a project** asks the kind, the language and the name, then, from what the plugins
+publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
+style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
+choices become `--with a,b`. A workspace with three or more projects is also asked whether the
+new one should do what the others do (the default) or take the stack's own defaults
+(`--fresh`). Then the shell runs `smith add ... --dry-run` and shows its plan in a dialog:
+the files it would write and, when it applies, which sibling project it follows
+(`follows web: same test runner`). `y` runs the real add, `Esc` writes nothing. A wrong
+combination (a choice for another language, one that needs a choice you left out) shows what
+smith said, with its fix, in a notice instead of the plan. A command that needs a terminal of
 its own (it asks questions) is handed back to smith to run after the shell closes; the shell
 prints `→ smith <command line>`.
 

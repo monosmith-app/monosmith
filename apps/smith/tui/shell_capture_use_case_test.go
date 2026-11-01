@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 )
 
@@ -171,4 +172,74 @@ func TestReleasingOnTheStableLineHasNoChannelNotice(t *testing.T) {
 	l.hasNot("Release channel")
 	l.keys("x")
 	l.hasNot("Release channel")
+}
+
+// derivedLab is a Projects tab whose first project has derived files.
+func derivedLab(t *testing.T) *lab {
+	t.Helper()
+	l := newLab(t, true, 160, 100)
+	projects := append([]projectlist.Project(nil), sampleProjects...)
+	projects[0].Derived = []projectlist.DerivedFile{
+		{Path: "apps/web/tsconfig.json", Status: projectlist.StatusCurrent},
+		{Path: "apps/web/jest.config.js", Status: projectlist.StatusStale},
+		{Path: "apps/web/package.json", Status: projectlist.StatusDrift, Keys: true},
+	}
+	sh := l.sh()
+	sh.list = projectlist.New(projects).SelectProject("web")
+	l.m = sh
+	return l
+}
+
+func TestTheProjectDetailListsItsDerivedFilesInPlainWords(t *testing.T) {
+	l := derivedLab(t)
+	l.has("Derived files (2 need action)", "apps/web/jest.config.js", "out of date", "apps/web/package.json", "edited by hand", "up to date")
+	l.has("Explain the derived files", "Update the derived files", "Keep my edit of a derived file", "Own the files I edited")
+}
+
+func TestAProjectWithoutDerivedFilesHasNoSuchSection(t *testing.T) {
+	l := newLab(t, true, 160, 100)
+	l.hasNot("Derived files", "Own the files I edited")
+}
+
+func TestDerivedActionsRunTheCommandsTheLabelsPromise(t *testing.T) {
+	for label, want := range map[string]string{
+		"Explain the derived files": "derive --explain apps/web/tsconfig.json --explain apps/web/jest.config.js --explain apps/web/package.json",
+		"Why: who owns these files": "why apps/web",
+	} {
+		l := derivedLab(t)
+		l.clickText(label)
+		if got := l.lastStarted(); got != want {
+			t.Errorf("%s: started %q, want %q", label, got, want)
+		}
+	}
+}
+
+func TestChangingDerivedFilesAsksFirstAndShowsTheCommand(t *testing.T) {
+	for label, want := range map[string]string{
+		"Update the derived files":       "smith derive",
+		"Keep my edit of a derived file": "smith derive --adopt apps/web/package.json",
+		"Own the files I edited":         "smith derive --eject apps/web/package.json",
+	} {
+		l := derivedLab(t)
+		l.clickText(label)
+		l.has(want)
+		if len(l.started) != 0 {
+			t.Errorf("%s ran before the answer: %v", label, l.started)
+		}
+		l.keys("enter")
+		if got := l.lastStarted(); !strings.HasPrefix("smith "+got, want) {
+			t.Errorf("%s: started %q", label, got)
+		}
+	}
+}
+
+func TestTheWorkspaceCountsTheDerivedFilesThatNeedAction(t *testing.T) {
+	l := derivedLab(t)
+	sh := l.sh()
+	if got := derivedNeedingAction(sh.list.Projects()); got != 2 {
+		t.Fatalf("stale and drift need action, got %d", got)
+	}
+	if got := derivedNeedingAction(sampleProjects); got != 0 {
+		t.Fatalf("a workspace with derived files off needs none, got %d", got)
+	}
 }

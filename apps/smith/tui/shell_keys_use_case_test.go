@@ -420,7 +420,14 @@ func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l.has("Add a project", "What are you adding?")
 	// Enter on the language keeps the default: what most projects here use (Go).
 	l.keys("down", "down", "enter", "enter").typeText("sdk").keys("enter")
-	l.has("The command that will run:", "$ smith add package sdk --lang go")
+	// Four projects are enough to follow: the form asks, and Enter keeps the default (match them).
+	l.has("Should it do what the other projects here do?")
+	l.keys("enter")
+	// The plan comes first; nothing is written until the person says yes.
+	l.has("Add sdk?", "Nothing is written yet", "The command that will run:", "$ smith add package sdk --lang go")
+	if len(l.started) != 0 {
+		t.Fatalf("started before the answer: %v", l.started)
+	}
 	l.keys("y")
 	if l.lastStarted() != "add package sdk --lang go" {
 		t.Fatalf("started %q", l.lastStarted())

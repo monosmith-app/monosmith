@@ -718,3 +718,38 @@ func TestTheArchitectureSectionFitsASmallTerminal(t *testing.T) {
 		t.Fatalf("%s", out)
 	}
 }
+
+func TestSearchAsksForWordsAndHandsThemToTheShell(t *testing.T) {
+	f := sample()
+	m := opened(t, f)
+	m, _ = press(m, "end", "up", "enter")
+	if !m.Modal() || !strings.Contains(text(m, 100, 28), "Find a plugin in the marketplace") {
+		t.Fatalf("the row opens a field: %s", text(m, 100, 28))
+	}
+	m, _ = press(m, "d", "e", "p", "l", "o", "y", " ", "g", "o")
+	m, results := press(m, "enter")
+	var got *Result
+	for i, r := range results {
+		if r.Search {
+			got = &results[i]
+		}
+	}
+	if got == nil || got.Term != "deploy go" || m.Modal() {
+		t.Fatalf("Enter hands the words to the shell and closes the field: %+v", results)
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("the tab must not search by itself: %v", f.calls)
+	}
+}
+
+func TestSearchWithNoWordsListsEveryPlugin(t *testing.T) {
+	m := opened(t, sample())
+	m, _ = press(m, "end", "up", "enter")
+	_, results := press(m, "enter")
+	for _, r := range results {
+		if r.Search && r.Term == "" {
+			return
+		}
+	}
+	t.Fatalf("an empty field is a search for everything: %+v", results)
+}

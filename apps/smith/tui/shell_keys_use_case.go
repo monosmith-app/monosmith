@@ -191,6 +191,19 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if project != "" {
 			return s.execute([]string{"explain", project}, false)
 		}
+	case "why":
+		if p, ok := s.list.Selected(); ok {
+			return s.execute([]string{"why", p.Root}, false)
+		}
+	case "derive-explain", "derive-apply", "derive-adopt", "derive-eject", "derive-replace":
+		p, ok := s.list.Selected()
+		if !ok {
+			return nil
+		}
+		if argv := p.DeriveArgv(strings.TrimPrefix(action, "derive-")); argv != nil {
+			return s.execute(argv, false)
+		}
+		s.say("No file of " + p.Name + " needs that")
 	case "rerun":
 		if argv := s.repeatArgv(); argv != nil {
 			return s.execute(argv, false)

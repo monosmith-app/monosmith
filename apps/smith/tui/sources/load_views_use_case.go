@@ -150,11 +150,13 @@ func loadProjects(open func() (*session.Session, error)) ProjectsLoaded {
 	for _, n := range affected.Compute(s.Git, s.Graph, base).Projects {
 		hit[n] = true
 	}
+	derived := loadDerivedFiles(s)
 	var out []projectlist.Project
 	for _, name := range s.Graph.Names() {
 		p := s.Graph.Get(name)
 		np := projectlist.Project{
-			Name: name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
+			Derived: derived[name],
+			Name:    name, Kind: string(p.Kind), Language: p.Language, Root: p.Root, Version: p.Version,
 			Stack: projectgraph.StackOf(p, s.Config), Deps: p.Deps, Dependents: s.Graph.Dependents(name), Affected: hit[name],
 		}
 		var tasks []string
