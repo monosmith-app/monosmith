@@ -43,7 +43,8 @@ func Command(version string) *cobra.Command {
   release  version, publish and tag every package with releasable commits`,
 	}
 	for _, phase := range Phases {
-		cmd.AddCommand(&cobra.Command{
+		var assets bool
+		phaseCmd := &cobra.Command{
 			Use:   phase,
 			Short: "Run the " + phase + " phase",
 			Args:  cobra.NoArgs,
@@ -55,9 +56,13 @@ func Command(version string) *cobra.Command {
 				defer s.Close()
 				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
 				defer stop()
-				return RunPhase(ctx, s, phase, c.OutOrStdout())
+				return RunPhaseFor(ctx, s, phase, assets, c.OutOrStdout())
 			},
-		})
+		}
+		if phase == "setup" {
+			phaseCmd.Flags().BoolVar(&assets, "assets", false, "install for the assets job: leave out the projects whose [release] install is false")
+		}
+		cmd.AddCommand(phaseCmd)
 	}
 	var check bool
 	generate := &cobra.Command{

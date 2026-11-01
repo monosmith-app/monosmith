@@ -39,12 +39,19 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "r
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
+	return RunPhaseFor(ctx, s, phase, false, out)
+}
+
+// RunPhaseFor runs one CI phase. With assets set, the setup phase installs
+// only what the assets job needs: it leaves out the projects whose [release]
+// install is false (smith ci setup --assets).
+func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, out io.Writer) error {
 	begin := time.Now()
 	log := newPhaseLog(out, phase)
 	if !announces(phase) {
 		log.fold()
 	}
-	err := runPhase(ctx, s, phase, log)
+	err := runPhase(ctx, s, phase, assets, log)
 	log.close()
 	took := time.Since(begin)
 	if err != nil {
@@ -101,11 +108,15 @@ func announces(phase string) bool {
 	return false
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, log *phaseLog) error {
+func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, log *phaseLog) error {
 	out := log.out
 	switch phase {
 	case "setup", "audit":
-		c, err := Collect(s)
+		collect := Collect
+		if assets && phase == "setup" {
+			collect = CollectForAssets
+		}
+		c, err := collect(s)
 		if err != nil {
 			return err
 		}
@@ -489,7 +500,7 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 			msg = step.Name + ": " + err.Error()
 		}
 		if step.Blocking {
-			return outcomes, errors.New(failureWithOutput(out, msg, tail.String()))
+			return outcomes, errors.New(failureWithOutput(out, step.Name, msg, tail.String()))
 		}
 		failures = append(failures, msg)
 		outcomes = append(outcomes, stepOutcome{Name: step.Name, Verdict: stepProblem, Took: time.Since(began)})
@@ -502,10 +513,12 @@ func runSteps(ctx context.Context, root string, steps []protocol.Step, remembere
 }
 
 // failureWithOutput is the failure of a blocking step with the end of its
-// output after it. When that output names a log file smith can read (npm's
-// debug log stays on the agent), the file's end is printed first, in a CI log
-// group, so the cause can be found from the pipeline.
-func failureWithOutput(out io.Writer, msg, output string) string {
+// output after it. The step's whole captured output (up to tailKeep bytes) is
+// printed again in a CI log group named after the step, so a cause the live
+// stream scrolled past (pip's conflict block) is one click away. When the
+// output names a log file smith can read (npm's debug log stays on the agent),
+// the file's end is printed first in its own group.
+func failureWithOutput(out io.Writer, step, msg, output string) string {
 	if path := logFileNamed(output); path != "" {
 		if raw, err := os.ReadFile(path); err == nil {
 			group(out, "log file "+path)
@@ -516,7 +529,18 @@ func failureWithOutput(out io.Writer, msg, output string) string {
 	if strings.TrimSpace(output) == "" {
 		return msg
 	}
+	group(out, step+": full output")
+	if !inGroupedLog() {
+		fmt.Fprintf(out, "%s: full output\n", step)
+	}
+	fmt.Fprintf(out, "%s\n", strings.TrimRight(output, "\r\n"))
+	endGroup(out)
 	return msg + "\n" + lastLines(output, outputTailLines)
+}
+
+// inGroupedLog reports whether the CI log folds groups (GitHub or Azure).
+func inGroupedLog() bool {
+	return os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("TF_BUILD") != ""
 }
 
 // ensureIdentity gives CI a committer identity for annotated release tags.

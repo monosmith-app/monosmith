@@ -585,6 +585,11 @@ type ProjectRelease struct {
 	// Checksums attaches, with Build, a SHA-256 checksums file of the files
 	// each runner uploads. Default: off (on for the apps whose plugin says).
 	Checksums *bool `toml:"checksums"`
+	// Install, with Build, says whether the assets job installs this
+	// project's dependencies before it runs Build. false means the build
+	// command needs none of them (it only zips files, say), so smith ci setup
+	// --assets leaves the project out. Default: true.
+	Install *bool `toml:"install"`
 	// Product fills {product}. Default: the project name.
 	Product string `toml:"product"`
 	// Platforms are os/arch pairs. Default: DefaultPlatforms.
