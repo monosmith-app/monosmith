@@ -36,6 +36,7 @@ no trust, so the commands in the guides that check a plugin work as written.
 | Page | Read it when |
 |---|---|
 | [Writing a plugin: quickstart](quickstart.md) | you want a working plugin in ten minutes |
+| [What every language plugin does the same](language-plugin-contract.md) | you write or review a language plugin and want it to behave like the others |
 | [The plugin protocol cheat sheet](protocol-cheat-sheet.md) | you need a method, a message or a field, in a table |
 | [Creating a language plugin](language-plugin.md) | |
 | [Creating a toolchain plugin](toolchain-plugin.md) | |

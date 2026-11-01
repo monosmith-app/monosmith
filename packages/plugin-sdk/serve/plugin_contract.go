@@ -126,6 +126,15 @@ type ChannelPublisher interface {
 	PublishesChannels()
 }
 
+// DeclaredDescriber is implemented by a plugin whose Discover also describes
+// the projects smith.toml declares (DiscoverParams.Declared): folders with no
+// manifest of their own. Serve advertises the declared capability for it.
+type DeclaredDescriber interface {
+	Discoverer
+	// DescribesDeclared is a marker; it does nothing.
+	DescribesDeclared()
+}
+
 // Contributor is a convention: it adds tasks to the projects it applies to.
 type Contributor interface {
 	Contribute(params protocol.ContributeParams) (protocol.ContributeResult, error)

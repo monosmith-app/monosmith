@@ -167,7 +167,7 @@ MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate",
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -401,6 +401,13 @@ class Capabilities(TypedDict, total=False):
     the registry's stable pointer (npm's latest), or its registry orders a prerelease below the
     release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release
     channel with a plugin that lacks it.
+    """
+    declared: bool
+    """
+    Declared says the plugin describes the projects smith.toml declares for its language
+    (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a
+    project by its manifest only, and the host refuses a declaration for its language with a
+    message that says so.
     """
 
 

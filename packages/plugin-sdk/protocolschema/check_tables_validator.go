@@ -75,4 +75,4 @@ func CheckTables(docs *SourceDocs) error {
 
 // modifierCapabilities are the capabilities that no method needs because they
 // change how a method behaves: Channels makes publish take a release channel.
-var modifierCapabilities = map[string]bool{"Channels": true}
+var modifierCapabilities = map[string]bool{"Channels": true, "Declared": true}
