@@ -16,7 +16,9 @@ const maxFollowDepth = 16
 // empty). A project with nothing to list (private, no entry file, no
 // package.json at the revision) is answered with Unreadable set, not an error.
 func List(root string, params protocol.APISurfaceParams) (protocol.APISurfaceResult, error) {
-	return list(&cachedSource{inner: NewSource(root, params.Ref), seen: map[string]cachedFile{}}, params.Project.Root), nil
+	src := &cachedSource{inner: NewSource(root, params.Ref), seen: map[string]cachedFile{}}
+	defer src.Close()
+	return list(src, params.Project.Root), nil
 }
 
 // list reads the surface of the package in dir (workspace-relative) from src.

@@ -1,6 +1,7 @@
 package apisurface
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 
@@ -20,7 +21,7 @@ func NewSource(root, ref string) Source {
 	if ref == "" {
 		return worktreeSource{root: root}
 	}
-	return &gitSource{root: root, ref: ref}
+	return &gitSource{root: root, ref: ref, batch: newBatchReader(root, ref)}
 }
 
 // worktreeSource reads the files on disk.
@@ -38,11 +39,15 @@ func (w worktreeSource) Read(rel string) (string, bool) {
 // gitSource reads the files with git show, so no checkout is needed.
 type gitSource struct {
 	root, ref string
+	batch     *batchReader
 }
 
 // Read implements Source. The "./" makes the path relative to the workspace
 // root, which need not be the top of the repository.
 func (g *gitSource) Read(rel string) (string, bool) {
+	if body, ok := g.batch.Read(rel); ok || !g.batch.failed {
+		return body, ok
+	}
 	out, _, err := toolrun.Capture(g.root, []string{"git", "show", g.ref + ":./" + rel})
 	if err != nil {
 		return "", false
@@ -70,4 +75,15 @@ func (c *cachedSource) Read(rel string) (string, bool) {
 	body, ok := c.inner.Read(rel)
 	c.seen[rel] = cachedFile{body, ok}
 	return body, ok
+}
+
+// Close ends the git process the source reads through.
+func (g *gitSource) Close() error { return g.batch.Close() }
+
+// Close ends what the source read through, when it holds a process.
+func (c *cachedSource) Close() error {
+	if closer, ok := c.inner.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
 }
