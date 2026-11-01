@@ -113,7 +113,21 @@
         "api_check": { "enum": ["warn", "error", "off"], "description": "What smith does when the commits ask for a smaller version bump than the change of a package's public API needs (a removed export needs a major, an added one a minor). warn prints the warning and the bump to use; error stops the release too; off does not look. Only plugins that can list a public API (Node) are checked. Default: warn." },
         "vsce_entra": { "type": "boolean", "description": "Publish VS Code extensions with Microsoft Entra ID instead of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its OIDC token (workload identity federation) and vsce publishes as that identity. Needs the repository secrets AZURE_CLIENT_ID and AZURE_TENANT_ID, and the app registered as a member of the Marketplace publisher. GitHub Actions only. Default: false." },
         "rubygems_trusted_publishing": { "type": "boolean", "description": "Publish gems with the GitHub workflow's OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY secret. Each gem must be registered as a trusted publisher on rubygems.org first. GitHub Actions only. Default: false." },
-        "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." }
+        "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." },
+        "channels": {
+          "type": "array",
+          "description": "Branches that release a line of prerelease versions of their own, such as 2.0.0-beta.1, 2.0.0-beta.2 from a next branch, whatever versions [release] branch holds. Default: none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["branch", "prerelease", "major"],
+            "properties": {
+              "branch": { "type": "string", "minLength": 1, "description": "The branch the channel releases from. Not [release] branch, and not the branch of another channel." },
+              "prerelease": { "type": "string", "pattern": "^[A-Za-z][0-9A-Za-z-]*$", "description": "The prerelease identifier of the channel's versions, such as beta or rc." },
+              "major": { "type": "integer", "minimum": 1, "description": "The major version of the channel's line. The first release is <major>.0.0-<prerelease>.1." }
+            }
+          }
+        }
       }
     },
     "agent": {

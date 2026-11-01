@@ -182,6 +182,9 @@ func Validate(cfg *Config) error {
 	if cfg.Release.Remote == "" {
 		cfg.Release.Remote = "origin"
 	}
+	if err := validateReleaseChannels(cfg.Release); err != nil {
+		return err
+	}
 	switch cfg.Release.APICheck {
 	case "":
 		cfg.Release.APICheck = "warn"

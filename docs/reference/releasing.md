@@ -786,6 +786,27 @@ literal with an unbalanced brace. Other languages: Go and C# plugins can add the
 until then they are not checked. The reason is in
 [ADR 0044](../architecture/decisions/0044-the-release-checks-the-bump-against-the-public-api.md).
 
+## Release channels
+
+A long-lived branch can release a line of prerelease versions of its own, while the release branch
+keeps releasing stable ones:
+
+```toml
+[[release.channels]]
+branch = "next"
+prerelease = "beta"
+major = 2
+```
+
+On `next` the plan numbers releases `2.0.0-beta.1`, `2.0.0-beta.2` and so on, from the tags that
+the branch contains. A breaking change does not start a new major there, because the major is the
+channel's. The release branch ignores these tags and keeps its `1.x` line. `smith release
+--dry-run`, `smith report` and the pull request preview plan a channel branch like any other.
+
+A real release from a channel branch is refused for now: publishing a prerelease under its own
+dist-tag, without moving `latest`, is not built yet. See
+[ADR 0051](../architecture/decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md).
+
 ## Checked before anything is published
 
 Before the first publish of a real release, smith asks npm, PyPI, NuGet and

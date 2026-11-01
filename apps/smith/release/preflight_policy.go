@@ -14,6 +14,20 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
+// branchProblem says why a real release cannot run from branch ("" when it
+// can, or when the branch is unknown, as in a detached checkout).
+func branchProblem(cfg workspace.ReleaseSection, branch string) string {
+	if branch == "" || branch == cfg.Branch {
+		return ""
+	}
+	if _, channel := cfg.ChannelFor(branch); channel {
+		// A prerelease must not move a stable pointer such as npm's latest;
+		// that arrives with the channel's publish step.
+		return fmt.Sprintf("%s is a release channel: smith plans its versions (smith release --dry-run) but does not publish them yet", branch)
+	}
+	return fmt.Sprintf("releases run from %s, not %s", cfg.Branch, branch)
+}
+
 // Preflight refuses a real release that would fail halfway or corrupt history:
 // a shallow clone, the wrong branch, uncommitted changes (manifests are
 // stamped and restored), or a missing publish credential.
@@ -22,8 +36,10 @@ func Preflight(s *session.Session, plan Plan) error {
 	if s.Git.IsShallow() {
 		problems = append(problems, "the clone is shallow, so versions cannot be computed from history: fetch with full depth (actions/checkout fetch-depth: 0)")
 	}
-	if branch := s.Git.CurrentBranch(); branch != "" && branch != s.Config.Release.Branch && os.Getenv("SMITH_RELEASE_ANY_BRANCH") == "" {
-		problems = append(problems, fmt.Sprintf("releases run from %s, not %s", s.Config.Release.Branch, branch))
+	if os.Getenv("SMITH_RELEASE_ANY_BRANCH") == "" {
+		if p := branchProblem(s.Config.Release, s.Git.CurrentBranch()); p != "" {
+			problems = append(problems, p)
+		}
 	}
 	if out, err := s.Git.Run("status", "--porcelain", "--untracked-files=no"); err == nil {
 		if changed := Uncommitted(out); len(changed) > 0 {

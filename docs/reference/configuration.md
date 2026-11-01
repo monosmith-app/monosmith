@@ -88,6 +88,12 @@ vsce_entra = false                    # publish VS Code extensions as a Microsof
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
 api_check = "warn"                    # warn when the commits' bump is smaller than the public API change needs; "error" stops the release, "off" skips (releasing.md, The bump against the public API)
 
+# A branch that releases a line of prerelease versions of its own (releasing.md, Release channels):
+# [[release.channels]]
+# branch = "next"       # not the [release] branch
+# prerelease = "beta"   # 2.0.0-beta.1, 2.0.0-beta.2, ...
+# major = 2             # the first release is <major>.0.0-<prerelease>.1
+
 [cache]
 dir = ".smith/cache"                   # workspace-relative, or absolute
 max_size_mb = 2048                     # keep the local cache under this size in MB; 0 = no limit ("The cache size limit")

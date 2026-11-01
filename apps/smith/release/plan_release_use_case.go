@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
 )
 
 // Item is one package's planned release.
@@ -69,6 +70,21 @@ func LatestTag(git *gitclient.Git, p *projectgraph.Project) (Version, string, bo
 // that touched it since its last tag. A package whose dependency releases is
 // released too (at least a patch), so its published range stays correct.
 func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
+	return MakeChannelPlan(git, graph, nil)
+}
+
+// PlanFor plans the release of the branch the session has checked out: a
+// channel branch plans prerelease versions of its channel, any other branch
+// stable ones.
+func PlanFor(s *session.Session) (Plan, error) {
+	return MakeChannelPlan(s.Git, s.Graph, ChannelOf(s.Config.Release, s.Git.CurrentBranch()))
+}
+
+// MakeChannelPlan is MakePlan for a release channel (nil: stable releases).
+// On a channel the next version is the channel's counter, raised once whatever
+// the commits ask for, and the commits counted are those since the channel's
+// last release, or since the last stable release when it has none.
+func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel) (Plan, error) {
 	order, err := graph.Order()
 	if err != nil {
 		return Plan{}, err
@@ -81,6 +97,12 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 			continue
 		}
 		latest, tag, released := LatestTag(git, p)
+		onChannel := false
+		if ch != nil {
+			if v, t, ok := latestChannelTag(git, p, *ch); ok {
+				latest, tag, released, onChannel = v, t, true, true
+			}
+		}
 		current := latest
 		if !released {
 			current = Version{}
@@ -122,6 +144,9 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 			return Plan{}, err
 		}
 		next := current.Bump(level)
+		if ch != nil {
+			next = ch.Next(latest, onChannel)
+		}
 		if forced != "" {
 			v, err := ParseVersion(forced)
 			if err != nil {

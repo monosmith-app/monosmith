@@ -47,6 +47,11 @@ func TestParseRejectsMistakes(t *testing.T) {
 		"[workspace]\nname = \"a\"\n[release]\nrubygems_trusted_publishing = true\n[ci]\nproviders=[\"github\",\"gitlab\"]": "works on GitHub Actions only",
 		"[workspace]\nname = \"a\"\n[release]\nvsce_entra = true\n[ci]\nproviders=[\"github\",\"azure\"]":                   "vsce_entra works on GitHub Actions only",
 		"[workspace]\nname = \"a\"\n[release]\napi_check = \"strict\"\n": "api_check must be",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"main\"\nprerelease = \"beta\"\nmajor = 2\n": "is the [release] branch",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"rc\"\nmajor = 3\n": "branch of another channel",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"2.beta\"\nmajor = 2\n": "prerelease must be an identifier",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\n": "major must be 1 or more",
+		"[workspace]\nname = \"a\"\n[[release.channels]]\nprerelease = \"beta\"\nmajor = 2\n": "branch must name",
 		"schema = 9\n[workspace]\nname = \"a\"\n":                                                                         "upgrade smith",
 		"[workspace\nname = \"a\"\n":                                                                                        "smith.toml:",
 		"[workspace]\nname = \"a\"\n[conventions.vertical-slices]\nregistry = \"ghcr.io/a\"\n":                              "settings of the docker convention",
@@ -188,5 +193,18 @@ func TestCacheSizeLimitIsSetByTheFileAndZeroMeansNoLimit(t *testing.T) {
 		if err != nil || cfg.Cache.MaxSizeMB != want {
 			t.Errorf("%q: MaxSizeMB = %d (%v), want %d", input, cfg.Cache.MaxSizeMB, err, want)
 		}
+	}
+}
+
+func TestParseReadsReleaseChannels(t *testing.T) {
+	cfg, err := Parse([]byte("[workspace]\nname = \"a\"\n[release]\nbranch = \"trunk\"\n[[release.channels]]\nbranch = \"next\"\nprerelease = \"beta\"\nmajor = 2\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c, ok := cfg.Release.ChannelFor("next"); !ok || c.Prerelease != "beta" || c.Major != 2 {
+		t.Fatalf("channel %+v, %v", c, ok)
+	}
+	if _, ok := cfg.Release.ChannelFor("trunk"); ok {
+		t.Fatal("the release branch is not a channel")
 	}
 }

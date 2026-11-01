@@ -79,7 +79,7 @@ package on their own, before a first release, and publishes nothing.`,
 				preview("### Release preview\n\n**Blocked:** the release tags would give wrong versions, so there is no plan:\n\n- " + strings.Join(blockers, "\n- ") + "\n")
 				return fmt.Errorf("cannot release: the release tags would give wrong versions, so no plan is shown:\n  - %s", strings.Join(blockers, "\n  - "))
 			}
-			plan, err := MakePlan(s.Git, s.Graph)
+			plan, err := PlanFor(s)
 			if err != nil {
 				return err
 			}

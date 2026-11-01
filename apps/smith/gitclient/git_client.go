@@ -149,6 +149,16 @@ func (g *Git) Tags(prefix string) ([]string, error) {
 	return strings.Split(strings.ReplaceAll(out, "\r\n", "\n"), "\n"), nil
 }
 
+// TagsMerged lists the tags starting with prefix that HEAD contains: the
+// releases of the branch checked out, not those of other branches.
+func (g *Git) TagsMerged(prefix string) ([]string, error) {
+	out, err := g.Run("tag", "--merged", "HEAD", "--list", prefix+"*")
+	if err != nil || out == "" {
+		return nil, err
+	}
+	return strings.Split(strings.ReplaceAll(out, "\r\n", "\n"), "\n"), nil
+}
+
 // TagCommit returns the commit a tag points to, or "" if the tag is absent.
 func (g *Git) TagCommit(tag string) string {
 	out, err := g.RevParse("refs/tags/" + tag)
