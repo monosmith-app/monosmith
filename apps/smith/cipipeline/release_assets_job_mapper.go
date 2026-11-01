@@ -58,5 +58,11 @@ func githubAssetsJob(m Model) string {
           SMITH_PLATFORM: ${{ matrix.platform }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 `)
+	// The build command may read the secrets [ci] secrets names, and the cache's.
+	for _, c := range m.TaskCredentials() {
+		if c.Env != "GITHUB_TOKEN" {
+			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
+		}
+	}
 	return b.String()
 }

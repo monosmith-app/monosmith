@@ -27,6 +27,7 @@
       "additionalProperties": false,
       "properties": {
         "attest": { "enum": ["on", "optional", "off"], "description": "What the generated GitHub pipeline does about the build provenance attestation of a release's archives: on attests and fails the release job when GitHub refuses (default); optional attests but lets the job go on when GitHub refuses (a private repository of a free organisation has no attestations); off leaves the step out." },
+        "secrets": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }, "uniqueItems": true, "description": "Repository secrets the generated pipelines hand to every step that runs smith (the ci job, the native jobs and the assets jobs) as environment variables of the same name, for a build command that reads a token. A name may not start with GITHUB_. Default: none." },
         "providers": { "type": "array", "items": { "enum": ["github", "azure", "gitlab", "circleci", "bitbucket"] }, "uniqueItems": true, "description": "Pipelines to generate. Default: [\"github\"]." },
         "devcontainer": { "type": "boolean", "description": "Write .devcontainer/devcontainer.json with the toolchains CI installs. Default: false." },
         "native_runners": { "type": "array", "items": { "type": "string" }, "description": "Machines the native job runs on, one per OS. Default: ubuntu-latest, windows-latest, macos-latest." },

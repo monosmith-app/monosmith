@@ -78,6 +78,7 @@ func Collect(s *session.Session) (Contributions, error) {
 	}
 	// A remote cache is read by every step that runs tasks.
 	c.Add(protocol.CIResult{Credentials: cachecredentials.For(s.Config.Cache.Remote)})
+	c.Add(protocol.CIResult{Credentials: SecretCredentials(s.Config.CI.Secrets)})
 	c.NativeRunners, c.NativeLinuxPackages = s.Config.CI.NativeRunners, s.Config.CI.NativeLinuxPackages
 	if s.Config.Release.GitHubReleases {
 		c.Add(protocol.CIResult{Credentials: []protocol.Credential{{Env: "GITHUB_TOKEN", Description: "creates GitHub Releases and uploads their assets", Required: true}}})

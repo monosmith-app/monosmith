@@ -366,6 +366,24 @@ and the installed one only bootstraps.
 
 ## Secrets
 
+### Your own secrets
+
+A build command that reads a token (a fetch step before a native build, say) needs it in
+the job that runs it. Name the repository secrets in `[ci] secrets`:
+
+```toml
+[ci]
+secrets = ["FETCH_TOKEN"]
+```
+
+The generated pipelines hand each one, as an environment variable of the same name, to
+every step that runs smith: setup, verify, release, the native jobs and the assets jobs
+(GitHub Actions `${{ secrets.FETCH_TOKEN }}`, Azure `$(FETCH_TOKEN)`; on GitLab, Bitbucket
+and CircleCI a CI/CD variable of that name is already in the environment). A name may not
+start with `GITHUB_`. None is required, so a local run needs none.
+
+### Secrets smith uses
+
 | Secret | Used for |
 |---|---|
 | `NODE_AUTH_TOKEN` | `npm publish` (the generated `.npmrc` reads it), and an app's npm packages |
