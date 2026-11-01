@@ -20,8 +20,11 @@ type Report struct {
 	// Clean is true when git has no uncommitted changes; the steps need it.
 	Clean    bool          `json:"clean"`
 	Projects []ProjectLine `json:"projects"`
-	Blockers []Item        `json:"blockers"`
-	Warnings []Item        `json:"warnings"`
+	// Declared are the projects --init declares in smith.toml for a repository
+	// whose Go code is one module at the root (ADR 0052).
+	Declared []DeclaredProject `json:"declared,omitempty"`
+	Blockers []Item            `json:"blockers"`
+	Warnings []Item            `json:"warnings"`
 }
 
 // Item is one finding and the step that clears it.

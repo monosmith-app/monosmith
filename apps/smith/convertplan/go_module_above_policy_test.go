@@ -28,21 +28,27 @@ func TestAGoPackageOfARootModuleIsToldToGetItsOwnGoMod(t *testing.T) {
 	}
 }
 
-func TestConvertSaysWhatToDoForAGoPackageOfARootModule(t *testing.T) {
+func TestConvertDeclaresAGoPackageOfARootModuleAsAProject(t *testing.T) {
 	p := goPackage("apps/mvd", "apps/mvd/main.go")
+	p.Type = "app"
 	plan := MakePlan(&nxworkspace.Workspace{Projects: []*nxworkspace.Project{p}}, Input{DirName: "acme", Files: []string{"go.mod", "apps/mvd/main.go"}, Read: func(string) string { return "" }})
 	var got string
 	for _, item := range plan.Findings {
-		if strings.Contains(item.Message, "Go package") {
+		if strings.Contains(item.Message, "declared in smith.toml") {
 			got = item.Message
 		}
 		if strings.Contains(item.Message, "smith v1 has no plugin for it") {
-			t.Errorf("the generic message is wrong for Go: %q", item.Message)
+			t.Errorf("a Go package has a plugin: %q", item.Message)
 		}
 	}
-	for _, want := range []string{"a Go package of the module at the repository root", "go mod init <module>/apps/mvd in apps/mvd", "go work use ./apps/mvd"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("missing %q in %q", want, got)
-		}
+	if !strings.Contains(got, "a Go project of the module at the repository root") {
+		t.Errorf("the finding says it is declared: %q", got)
+	}
+	pp := plan.Projects[0]
+	if !pp.Supported || !pp.Declared || pp.Language != "go" || pp.KindMarker {
+		t.Errorf("a supported declared Go project, no kind marker in a manifest it lacks: %+v", pp)
+	}
+	if o := plan.Config.Projects[pp.Name]; o.Root != "apps/mvd" || o.Language != "go" || o.Kind != "app" {
+		t.Errorf("the declaration goes to smith.toml: %+v", o)
 	}
 }
