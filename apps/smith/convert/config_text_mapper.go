@@ -83,8 +83,8 @@ func ConfigText(cfg workspace.Config) string {
 		}
 	}
 	writeTasks(&b, "tasks", cfg.Tasks)
-	for _, g := range cfg.TaskGroups {
-		b.WriteString(workspace.TaskGroupText(g))
+	for _, g := range cfg.Groups {
+		b.WriteString(workspace.GroupText(g))
 	}
 	for _, name := range sortedKeys(cfg.Projects) {
 		p := cfg.Projects[name]

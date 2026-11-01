@@ -15,10 +15,10 @@ func nodeLib(name string) *Project {
 	}}}
 }
 
-func TestAProjectOverridesItsTaskGroupField(t *testing.T) {
+func TestAProjectOverridesItsGroupField(t *testing.T) {
 	cfg := workspace.Config{
 		Tasks: map[string]workspace.TaskOverride{"build": {Outputs: []string{"out"}, Inputs: []string{"src/**"}}},
-		TaskGroups: []workspace.TaskGroup{
+		Groups: []workspace.Group{
 			{Select: []string{"lang:node", "kind:lib"}, Tasks: map[string]workspace.TaskOverride{
 				"build": {Outputs: []string{"dist"}},
 				"test":  {Env: map[string]string{"A": "1"}, DependsOn: []string{"^build"}},
@@ -56,11 +56,11 @@ func TestAProjectOverridesItsTaskGroupField(t *testing.T) {
 	if got := special.Tasks["test"].DependsOn; strings.Join(got, ",") != "^build,logger:build" {
 		t.Errorf("a project override of one field keeps the group's others: %v", got)
 	}
-	want := `smith.toml [[task_groups]] select = ["lang:node", "kind:lib"]`
+	want := `smith.toml [[groups]] select = ["lang:node", "kind:lib"]`
 	if got := plain.Sources["build.outputs"]; got != want {
 		t.Errorf("source = %q, want %q", got, want)
 	}
-	if got := plain.Sources["test.dependsOn"]; got != `smith.toml [[task_groups]] select = ["libs/*"]` {
+	if got := plain.Sources["test.dependsOn"]; got != `smith.toml [[groups]] select = ["libs/*"]` {
 		t.Errorf("source = %q", got)
 	}
 	if got := special.Sources["test.env"]; got != "smith.toml [projects.special.tasks.test]" {
@@ -71,7 +71,7 @@ func TestAProjectOverridesItsTaskGroupField(t *testing.T) {
 func TestAGroupSeesTagsFromSmithToml(t *testing.T) {
 	p := nodeLib("a")
 	cfg := workspace.Config{
-		TaskGroups: []workspace.TaskGroup{{Select: []string{"tag:ui"}, Tasks: map[string]workspace.TaskOverride{"build": {Outputs: []string{"dist"}}}}},
+		Groups: []workspace.Group{{Select: []string{"tag:ui"}, Tasks: map[string]workspace.TaskOverride{"build": {Outputs: []string{"dist"}}}}},
 		Projects:   map[string]workspace.ProjectOverride{"a": {Tags: []string{"ui"}}},
 	}
 	if err := ApplyOverrides(p, cfg); err != nil {

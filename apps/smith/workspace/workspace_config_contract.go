@@ -47,12 +47,13 @@ type Config struct {
 	// instead of [workspace] recipe.
 	Recipes map[string]string       `toml:"recipes"`
 	Tasks   map[string]TaskOverride `toml:"tasks"`
-	// TaskGroups set task fields for the projects their selectors name, so a
-	// set of similar projects states its overrides once. Each group sits
-	// between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several
-	// matching, a later group wins field by field.
-	TaskGroups []TaskGroup                `toml:"task_groups"`
-	Projects   map[string]ProjectOverride `toml:"projects"`
+	// Groups set task fields, tags and the release for the projects their
+	// selectors name, so a set of similar projects states them once. A
+	// group's tasks sit between [tasks.<task>] and
+	// [projects.<name>.tasks.<task>]; with several matching, a later group
+	// wins field by field.
+	Groups   []Group                    `toml:"groups"`
+	Projects map[string]ProjectOverride `toml:"projects"`
 	// Registries are private package registries, by name, that the
 	// workspace installs from ([workspace] registry) and publishes to
 	// ([release] registry, [projects.<name>] registry).
@@ -635,14 +636,24 @@ type ProjectRelease struct {
 	License     string `toml:"license"`
 }
 
-// TaskGroup is one [[task_groups]] entry: task overrides for every project
-// that all its selectors name. A selector is written the way --projects
-// writes one: a name, a glob, kind:<kind>, lang:<language> or tag:<tag>.
-type TaskGroup struct {
+// Group is one [[groups]] entry: task overrides, tags and a release for every
+// project that all its selectors name. A selector is written the way
+// --projects writes one: a name, a glob (packages/*), kind:<kind>,
+// lang:<language> or tag:<tag>. A group sets at least one of Tasks, Tags and
+// Release.
+type Group struct {
 	// Select lists the selectors; a project must match every one.
 	Select []string `toml:"select"`
 	// Tasks are the overrides, by task name, with the fields of [tasks.<task>].
 	Tasks map[string]TaskOverride `toml:"tasks"`
+	// Tags are added to the tags of every project the group names, like
+	// [projects.<name>] tags.
+	Tags []string `toml:"tags"`
+	// Release is the [projects.<name>.release] table of every project the
+	// group names that sets none of its own; a project's own table replaces
+	// it whole. A group cannot name the package a project is published as
+	// (npm, pypi, nuget, rubygems, pub), because that name is the project's.
+	Release *ProjectRelease `toml:"release"`
 }
 
 // TaskOverride replaces individual fields of a plugin-inferred task. Unset

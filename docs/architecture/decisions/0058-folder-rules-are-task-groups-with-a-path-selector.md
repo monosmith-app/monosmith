@@ -1,5 +1,7 @@
 # ADR 0058: Folder rules are task groups with a path selector
 
+> Update: `[[task_groups]]` is now `[[groups]]` and also sets `tags` and `release`: [ADR 0067](0067-groups-replace-task-groups-and-also-set-tags-and-release.md). The text below keeps the old name.
+
 - Status: rejected (no `[folders]` table)
 - Date: 2026-11-01
 

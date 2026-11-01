@@ -12,15 +12,15 @@ import (
 func TestAGroupThatNamesNoProjectIsWarnedAbout(t *testing.T) {
 	lib := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "a", Root: "libs/a", Language: "node", Kind: protocol.ProjectLib}}
 	tasks := map[string]workspace.TaskOverride{"build": {}}
-	groups := []workspace.TaskGroup{
+	groups := []workspace.Group{
 		{Select: []string{"lang:node", "kind:lib"}, Tasks: tasks},
 		{Select: []string{"lang:node", "kind:app"}, Tasks: tasks},
 	}
-	got := TaskGroupFindings([]*projectgraph.Project{lib}, groups)
+	got := GroupFindings([]*projectgraph.Project{lib}, groups)
 	if len(got) != 1 || !got[0].Warning || !strings.Contains(got[0].Detail, `"kind:app"`) {
 		t.Fatalf("findings = %+v", got)
 	}
-	if len(TaskGroupFindings([]*projectgraph.Project{lib}, nil)) != 0 {
+	if len(GroupFindings([]*projectgraph.Project{lib}, nil)) != 0 {
 		t.Error("no groups, nothing to say")
 	}
 }

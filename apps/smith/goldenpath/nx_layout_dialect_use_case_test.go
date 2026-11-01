@@ -139,7 +139,7 @@ func TestAddFollowsTheTsconfigSetAndTheBuildOutputOfAnNxLayout(t *testing.T) {
 // outputs of its Node projects. The new package builds there too, so the task's
 // cache and the build agree and smith doctor stays green.
 func TestAddFollowsSiblingsThatBuildIntoTheirOwnDist(t *testing.T) {
-	w := nxWorkspace(t, func(string) string { return "dist" }, "\n[[task_groups]]\nselect = [\"lang:node\"]\n\n[task_groups.tasks.build]\noutputs = [\"dist\"]\n")
+	w := nxWorkspace(t, func(string) string { return "dist" }, "\n[[groups]]\nselect = [\"lang:node\"]\n\n[groups.tasks.build]\noutputs = [\"dist\"]\n")
 	added := w.smith(true, "add", "package", "bar", "--lang", "node")
 	assertFollowsNxSiblings(t, w, added)
 	manifest := w.read("packages/bar/package.json")

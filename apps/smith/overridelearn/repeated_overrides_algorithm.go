@@ -18,7 +18,7 @@ const (
 	DefaultThreshold = 3
 	// replaceShare is the share of all projects that must set a value before it
 	// is a default, or before a default is called wrong. Fewer is a job for
-	// [[task_groups]] (smith doctor says so already).
+	// [[groups]] (smith doctor says so already).
 	replaceShare = 0.8
 )
 

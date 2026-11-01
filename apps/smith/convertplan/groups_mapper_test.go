@@ -15,16 +15,16 @@ func sharedTestLib(t *testing.T, name, env string) *nxworkspace.Project {
 
 // A workspace of libraries that Nx configured the same way gets the shared
 // settings once, as a task group; the one that differs keeps its own.
-func TestPlanWritesSettingsSharedByLibrariesAsATaskGroup(t *testing.T) {
+func TestPlanWritesSettingsSharedByLibrariesAsAGroup(t *testing.T) {
 	w := &nxworkspace.Workspace{Projects: []*nxworkspace.Project{
 		sharedTestLib(t, "a", "ci"), sharedTestLib(t, "b", "ci"), sharedTestLib(t, "c", "ci"), sharedTestLib(t, "odd", "local"),
 	}}
 	plan := MakePlan(w, Input{DirName: "acme", Read: func(string) string { return "" }})
 
-	if len(plan.Config.TaskGroups) != 1 {
-		t.Fatalf("groups = %+v; projects = %+v", plan.Config.TaskGroups, plan.Config.Projects)
+	if len(plan.Config.Groups) != 1 {
+		t.Fatalf("groups = %+v; projects = %+v", plan.Config.Groups, plan.Config.Projects)
 	}
-	g := plan.Config.TaskGroups[0]
+	g := plan.Config.Groups[0]
 	if strings.Join(g.Select, ",") != "lang:node,kind:lib" {
 		t.Errorf("select = %v", g.Select)
 	}
@@ -40,7 +40,7 @@ func TestPlanWritesSettingsSharedByLibrariesAsATaskGroup(t *testing.T) {
 	if odd.Env["MODE"] != "local" || strings.Join(odd.DependsOn, ",") != strings.Join(g.Tasks["test"].DependsOn, ",") {
 		t.Errorf("odd = %+v, group = %+v; it keeps its env and gets the group's other fields", odd, g.Tasks["test"])
 	}
-	if mapped := findings(plan, Mapped); !strings.Contains(mapped, "test: 3 projects share the same test settings, written once as a task group for lang:node and kind:lib (a, b, c)") {
+	if mapped := findings(plan, Mapped); !strings.Contains(mapped, "test: 3 projects share the same test settings, written once as a group for lang:node and kind:lib (a, b, c)") {
 		t.Errorf("mapped:\n%s", mapped)
 	}
 }
@@ -48,8 +48,8 @@ func TestPlanWritesSettingsSharedByLibrariesAsATaskGroup(t *testing.T) {
 func TestPlanKeepsOverridesThatOnlyOneProjectHas(t *testing.T) {
 	w := &nxworkspace.Workspace{Projects: []*nxworkspace.Project{sharedTestLib(t, "a", "ci"), project("b", "libs/b", "lib", []string{"package.json"}, nil)}}
 	plan := MakePlan(w, Input{DirName: "acme", Read: func(string) string { return "" }})
-	if len(plan.Config.TaskGroups) != 0 {
-		t.Errorf("groups = %+v", plan.Config.TaskGroups)
+	if len(plan.Config.Groups) != 0 {
+		t.Errorf("groups = %+v", plan.Config.Groups)
 	}
 	if len(plan.Config.Projects["a"].Tasks) == 0 {
 		t.Error("a lost its override")

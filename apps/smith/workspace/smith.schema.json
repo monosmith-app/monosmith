@@ -256,16 +256,19 @@
       "description": "Overrides of a task for every project, by task name.",
       "additionalProperties": { "$ref": "#/definitions/task" }
     },
-    "task_groups": {
+    "groups": {
       "type": "array",
-      "description": "Task overrides for the projects a group selects, between [tasks.<task>] and [projects.<name>.tasks.<task>]. With several groups matching, a later one wins field by field.",
+      "description": "Task overrides, tags and a release for the projects a group selects. A group's tasks sit between [tasks.<task>] and [projects.<name>.tasks.<task>]; with several groups matching, a later one wins field by field. A group sets at least one of tasks, tags and release.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["select", "tasks"],
+        "required": ["select"],
+        "anyOf": [{ "required": ["tasks"] }, { "required": ["tags"] }, { "required": ["release"] }],
         "properties": {
           "select": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Selectors; a project must match all of them: a name, a glob, kind:<app|lib|package>, lang:<language> or tag:<tag>." },
-          "tasks": { "type": "object", "additionalProperties": { "$ref": "#/definitions/task" }, "description": "Overrides by task name, with the fields of [tasks.<task>]." }
+          "tasks": { "type": "object", "additionalProperties": { "$ref": "#/definitions/task" }, "description": "Overrides by task name, with the fields of [tasks.<task>]." },
+          "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true, "description": "Tags added to the ones the plugin reports for every project the group selects, like [projects.<name>] tags." },
+          "release": { "$ref": "#/properties/projects/additionalProperties/properties/release", "description": "The release table of every selected project that sets none of its own; a project's own table replaces it. It cannot name the published package (npm, pypi, nuget, rubygems, pub)." }
         }
       }
     },

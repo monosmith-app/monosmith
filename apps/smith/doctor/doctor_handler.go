@@ -50,6 +50,13 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				return errors.New("--json prints the report and its fixes; apply them with --fix, without --json")
 			}
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
+			if _, old := workspace.AsRemovedKeys(err); old {
+				fixed, repairErr := repairRemovedKeys(cmd, asJSON, fix, yes)
+				if repairErr != nil || !fixed {
+					return repairErr
+				}
+				s, err = session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr(), AllowCycles: true})
+			}
 			if errors.Is(err, pluginadmit.ErrUntrusted) {
 				return reportUntrusted(cmd, asJSON)
 			}
