@@ -80,9 +80,9 @@ jobs:
 	b.WriteString(githubRubyGemsSignIn(m, "ci"))
 	b.WriteString(githubAzureSignIn(m, "ci"))
 	fmt.Fprintf(&b, `      - name: Release
-        if: github.event_name == 'push' && github.ref_name == '%s'
+        if: github.event_name == 'push' && %s
         run: smith ci release
-`, m.ReleaseBranch)
+`, m.branchCondition(func(branch string) string { return "github.ref_name == '" + branch + "'" }, func(c []string) string { return "(" + strings.Join(c, " || ") + ")" }))
 	if len(m.Credentials) > 0 || m.VSCEEntra {
 		b.WriteString("        env:\n")
 		for _, c := range m.Credentials {

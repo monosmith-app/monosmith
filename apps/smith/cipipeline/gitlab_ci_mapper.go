@@ -23,8 +23,7 @@ func RenderGitLab(m Model) string {
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "%[1]s" && $CI_PIPELINE_SOURCE == "push"
-
+%[1]s
 ci:
   image: %[2]s
   variables:
@@ -32,7 +31,7 @@ ci:
     SMITH_VERSION: %[3]s
 %[4]s%[5]s  before_script:
     - apt-get update -qq && apt-get install -y -qq curl git ca-certificates xz-utils >/dev/null
-`, m.ReleaseBranch, GitLabImage, yamlValue(m.SmithVersion), gitlabStoreVariables(m.Stores), gitlabStores(m.Stores))
+`, gitlabPushRules(m), GitLabImage, yamlValue(m.SmithVersion), gitlabStoreVariables(m.Stores), gitlabStores(m.Stores))
 	for _, t := range m.Toolchains {
 		b.WriteString(gitlabSetup(t))
 	}
@@ -59,8 +58,9 @@ ci:
 	if m.Pack {
 		b.WriteString("    - " + yamlValue("if "+onPush+"; then smith ci pack; fi") + "\n")
 	}
+	onRelease := fmt.Sprintf(`[ "$CI_PIPELINE_SOURCE" = "push" ] && %s`, m.branchCondition(func(branch string) string { return fmt.Sprintf(`[ "$CI_COMMIT_BRANCH" = "%s" ]`, branch) }, func(c []string) string { return "{ " + strings.Join(c, " || ") + "; }" }))
 	b.WriteString("    # Releasing pushes tags: GITLAB_TOKEN needs write_repository.\n")
-	b.WriteString("    - " + yamlValue("if "+onPush+`; then git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"; smith ci release; fi`) + "\n")
+	b.WriteString("    - " + yamlValue("if "+onRelease+`; then git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"; smith ci release; fi`) + "\n")
 	if m.Pack {
 		b.WriteString(`  artifacts:
     name: drop
@@ -92,6 +92,16 @@ func gitlabSetup(t protocol.Toolchain) string {
 	fmt.Fprintf(&b, "    # %s %s\n", t.Name, t.Version)
 	for _, line := range strings.Split(strings.TrimSpace(t.Install), "\n") {
 		b.WriteString("    - " + yamlValue(strings.TrimSpace(line)) + "\n")
+	}
+	return b.String()
+}
+
+// gitlabPushRules are the workflow rules that run a pipeline on a push to the
+// release branch and to each channel branch.
+func gitlabPushRules(m Model) string {
+	var b strings.Builder
+	for _, branch := range m.ReleaseBranches() {
+		fmt.Fprintf(&b, "    - if: $CI_COMMIT_BRANCH == \"%s\" && $CI_PIPELINE_SOURCE == \"push\"\n", branch)
 	}
 	return b.String()
 }

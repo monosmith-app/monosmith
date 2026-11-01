@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -140,5 +141,45 @@ func TestAChannelReleaseNeedsAPluginThatPublishesChannels(t *testing.T) {
 	}
 	if strings.Contains(got, "core: the test plugin") {
 		t.Errorf("a plugin with channels is accepted:\n%s", got)
+	}
+}
+
+func TestAPlanAndItsPreviewNameTheirChannel(t *testing.T) {
+	g := repo(t)
+	pg := packages(t)
+	commit(t, g, "packages/core/a", "feat(core): first")
+	plan, err := MakeChannelPlan(g, pg, &Channel{ID: "beta", Major: 2, Tag: "next"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Channel != "next" {
+		t.Fatalf("channel %q", plan.Channel)
+	}
+	if md := (Report{DryRun: true, Channel: plan.Channel}).Markdown(); !strings.Contains(md, "Release channel `next`: prerelease versions, published under the `next` tag") {
+		t.Errorf("the preview must name the channel:\n%s", md)
+	}
+	if stable, _ := MakePlan(g, pg); stable.Channel != "" || strings.Contains((Report{DryRun: true}).Markdown(), "channel") {
+		t.Error("a stable plan names no channel")
+	}
+}
+
+func TestAPullRequestBuildPlansForTheBranchItTargets(t *testing.T) {
+	g := repo(t)
+	commit(t, g, "README.md", "docs: start")
+	s := &session.Session{Git: g}
+	if got := PlanBranch(s); got != g.CurrentBranch() || got == "" {
+		t.Fatalf("on a branch the plan is for that branch, got %q", got)
+	}
+	if _, err := g.Run("checkout", "-q", "--detach"); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GITHUB_BASE_REF", "next")
+	if got := PlanBranch(s); got != "next" {
+		t.Errorf("GitHub: %q", got)
+	}
+	t.Setenv("GITHUB_BASE_REF", "")
+	t.Setenv("SYSTEM_PULLREQUEST_TARGETBRANCH", "refs/heads/next")
+	if got := PlanBranch(s); got != "next" {
+		t.Errorf("Azure: %q", got)
 	}
 }

@@ -19,6 +19,9 @@ type Model struct {
 	// SmithVersion is installed by the pipeline; "latest" when smith is a dev build.
 	SmithVersion  string
 	ReleaseBranch string
+	// ChannelBranches are the branches of the release channels ([[release.channels]]),
+	// which release prerelease versions of their own.
+	ChannelBranches []string
 	// Branches are the branches the GitHub and Azure pipelines trigger on
 	// (push and pull request), from [ci] branches. Empty means the release
 	// branch only.
@@ -175,13 +178,36 @@ func (c *Contributions) Add(r protocol.CIResult) {
 }
 
 // TriggerBranches are the branches the pipelines trigger on: Branches, with the
-// release branch first when they leave it out, or the release branch alone.
+// release branch and the channel branches first when they leave them out, or
+// those alone.
 func (m Model) TriggerBranches() []string {
 	out := []string{}
-	if !slices.Contains(m.Branches, m.ReleaseBranch) {
-		out = append(out, m.ReleaseBranch)
+	for _, b := range m.ReleaseBranches() {
+		if !slices.Contains(m.Branches, b) {
+			out = append(out, b)
+		}
 	}
 	return append(out, m.Branches...)
+}
+
+// ReleaseBranches are the branches `smith ci release` runs on: the release
+// branch, then each release channel's branch. Packing and the other steps that
+// publish more than a package stay on the release branch.
+func (m Model) ReleaseBranches() []string {
+	return append([]string{m.ReleaseBranch}, m.ChannelBranches...)
+}
+
+// branchCondition joins one condition per release branch with join, which
+// writes the provider's "any of" for two or more.
+func (m Model) branchCondition(one func(branch string) string, join func(conditions []string) string) string {
+	var conditions []string
+	for _, b := range m.ReleaseBranches() {
+		conditions = append(conditions, one(b))
+	}
+	if len(conditions) == 1 {
+		return conditions[0]
+	}
+	return join(conditions)
 }
 
 // NewModel builds the model, sorted so the YAML is deterministic.

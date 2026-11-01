@@ -32,6 +32,9 @@ type Item struct {
 // Plan is every package that will release, in dependency order.
 type Plan struct {
 	Items []Item `json:"items"`
+	// Channel names the release channel the plan is for (its publish name, such
+	// as "beta"); empty for the stable line.
+	Channel string `json:"channel,omitempty"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
 }
@@ -73,11 +76,11 @@ func MakePlan(git *gitclient.Git, graph *projectgraph.Graph) (Plan, error) {
 	return MakeChannelPlan(git, graph, nil)
 }
 
-// PlanFor plans the release of the branch the session has checked out: a
+// PlanFor plans the release of the branch the session is on (see PlanBranch): a
 // channel branch plans prerelease versions of its channel, any other branch
 // stable ones.
 func PlanFor(s *session.Session) (Plan, error) {
-	return MakeChannelPlan(s.Git, s.Graph, ChannelOf(s.Config.Release, s.Git.CurrentBranch()))
+	return MakeChannelPlan(s.Git, s.Graph, ChannelOf(s.Config.Release, PlanBranch(s)))
 }
 
 // MakeChannelPlan is MakePlan for a release channel (nil: stable releases).
@@ -90,6 +93,9 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 		return Plan{}, err
 	}
 	var plan Plan
+	if ch != nil {
+		plan.Channel = ch.Tag
+	}
 	releasing := map[string]string{}
 	for _, name := range order {
 		p := graph.Get(name)

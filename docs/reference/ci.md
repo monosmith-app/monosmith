@@ -46,6 +46,12 @@ The release branch is always one of them, even if the list leaves it out. It
 stays the only branch a release runs from: the pack, upload and release steps
 keep their condition on it, so a push to `dev` runs verify and nothing more.
 Pull requests into any of the listed branches get the release preview comment.
+
+A [release channel](releasing.md#release-channels) adds its branch to the triggers and to the
+release step only: a push to the channel branch runs verify and `smith ci release`, which
+publishes the channel's prerelease versions. Pack, upload and the sign-in steps stay on the release
+branch. The preview comment on a pull request into a channel branch names the channel and shows
+the prerelease versions, because a pull request build plans for the branch it targets.
 `smith doctor` reports a pipeline that does not match the list, and
 `smith ci generate` rewrites it. GitLab, CircleCI and Bitbucket are not affected.
 

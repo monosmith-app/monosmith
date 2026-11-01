@@ -88,6 +88,10 @@ func Collect(s *session.Session) (Contributions, error) {
 // Rendered maps each configured provider's file to its content.
 func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Branches = cfg.CI.Branches
+	m.ChannelBranches = nil
+	for _, c := range cfg.Release.Channels {
+		m.ChannelBranches = append(m.ChannelBranches, c.Branch)
+	}
 	m.SiblingRepos = cfg.CI.SiblingRepos
 	out := map[string]string{}
 	for _, p := range cfg.CI.Providers {

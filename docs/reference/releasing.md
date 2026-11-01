@@ -816,8 +816,14 @@ Smith checks this before it publishes anything, and refuses the release when a p
 - sends its binaries to package managers or registries of their own (`[projects.x.release]`
   `package_managers`, `linux_packages`, `npm`, `pypi`, `nuget`, `rubygems`, `pub`).
 
-Leave such a project out of the channel's release, or release it from the release branch. The
-generated pipeline does not run on a channel branch yet; run `smith release` there yourself. See
+Leave such a project out of the channel's release, or release it from the release branch.
+
+`smith ci generate` makes the pipelines of every provider trigger on a channel branch and run the
+release step there (not pack, and not the sign-in steps). `smith release --dry-run` and the pull
+request preview name the channel, as the first line says: ``Release channel `beta`: prerelease
+versions, published under the `beta` tag; the stable version stays the latest.`` A pull request
+build plans for the branch it targets (GitHub, Azure, GitLab and Bitbucket say which one), so a
+pull request into `next` previews `2.0.0-beta.n`. See
 [ADR 0051](../architecture/decisions/0051-a-release-channel-gives-a-branch-its-own-line-of-prerelease-versions.md).
 
 ## Checked before anything is published

@@ -11,7 +11,9 @@ import (
 // Report is the machine-readable record of a release run, written to
 // .smith/release-report.json and printed by --json.
 type Report struct {
-	DryRun   bool           `json:"dryRun"`
+	DryRun bool `json:"dryRun"`
+	// Channel names the release channel the run is for, as Plan.Channel.
+	Channel  string         `json:"channel,omitempty"`
 	Started  time.Time      `json:"started"`
 	Finished time.Time      `json:"finished"`
 	Results  []ReportResult `json:"results"`
@@ -63,6 +65,9 @@ func (r Report) Markdown() string {
 		title = "Release preview"
 	}
 	fmt.Fprintf(&b, "### %s\n\n", title)
+	if r.Channel != "" {
+		fmt.Fprintf(&b, "%s\n\n", ChannelNotice(r.Channel))
+	}
 	if len(r.Results) == 0 {
 		b.WriteString("Nothing to release.\n")
 	} else {
