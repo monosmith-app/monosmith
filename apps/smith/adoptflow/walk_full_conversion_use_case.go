@@ -181,7 +181,7 @@ func (s *Session) InitPlan(c adoptdecision.Choices) string {
 // each as a flag, so --yes takes these and no default of its own.
 func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
 	fix := s.AdoptFix(commit, move)
-	step := &fix.Fix.Steps[0]
+	step := &fix.Steps[0]
 	at := slices.Index(step.Argv, "--yes") + 1
 	step.Argv = slices.Insert(step.Argv, at, c.Argv()...)
 	return fix
