@@ -3,10 +3,11 @@ package toolcatalog
 import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 
 // checked is the date the install entries below were checked against the
-// package managers' own catalogues: winget with `winget search --exact`, brew
-// against formulae.brew.sh, apt against packages.debian.org (Ubuntu uses the
-// same names), pacman against archlinux.org. The dnf names are the binary
-// package names of Fedora and were not looked up on a page.
+// package catalogues named in installCatalogues: winget with `winget search
+// --exact`, brew against formulae.brew.sh, apt against packages.debian.org and
+// packages.ubuntu.com, dnf against the Fedora package data (mdapi), pacman
+// against archlinux.org. The .NET entries were also read on the Microsoft
+// Learn install pages of Ubuntu, Debian and Fedora.
 const checked = "2026-11-02"
 
 // install builds one install entry.
@@ -51,7 +52,7 @@ var entries = []protocol.ToolNeed{
 		Install: []protocol.ToolInstall{
 			install("fnm", "{major}"),
 			install("winget", "OpenJS.NodeJS.LTS"), install("brew", "node"),
-			install("apt", "nodejs npm"), install("dnf", "nodejs npm"), install("pacman", "nodejs npm"),
+			install("apt", "nodejs npm"), install("dnf", "nodejs nodejs-npm"), install("pacman", "nodejs npm"),
 		},
 		Download: "https://nodejs.org/en/download", Source: "https://nodejs.org/en/download", Checked: checked,
 	},
@@ -93,7 +94,8 @@ var entries = []protocol.ToolNeed{
 		Suggested:   "10",
 		Install: []protocol.ToolInstall{
 			install("winget", "Microsoft.DotNet.SDK.{major}"), install("brew-cask", "dotnet-sdk"),
-			install("apt", "dotnet-sdk-{major}.0"), install("dnf", "dotnet-sdk-{major}.0"), install("pacman", "dotnet-sdk"),
+			{Manager: "apt", Package: "dotnet-sdk-{major}.0", Note: "Ubuntu has it in its own feed; Debian needs the Microsoft package feed added first (see the official page)"},
+			install("dnf", "dotnet-sdk-{major}.0"), install("pacman", "dotnet-sdk"),
 		},
 		Download: "https://dotnet.microsoft.com/download", Source: "https://learn.microsoft.com/dotnet/core/install/", Checked: checked,
 	},
@@ -175,10 +177,11 @@ var entries = []protocol.ToolNeed{
 		Program:     "docker",
 		Install: []protocol.ToolInstall{
 			install("winget", "Docker.DockerDesktop"), install("brew-cask", "docker-desktop"),
-			{Manager: "apt", Package: "docker.io", Note: "start the docker service and add your user to the docker group afterwards"},
+			{Manager: "apt", Package: "docker.io", Note: "the distribution's own build, not Docker's; start the docker service and add your user to the docker group afterwards"},
+			{Manager: "dnf", Package: "moby-engine", Note: "Fedora's own build of the engine, not Docker's; start the docker service and add your user to the docker group afterwards"},
 			{Manager: "pacman", Package: "docker", Note: "start the docker service and add your user to the docker group afterwards"},
 		},
-		Download: "https://docs.docker.com/get-docker/", Source: "https://docs.docker.com/get-docker/", Checked: checked,
+		Download: "https://docs.docker.com/get-docker/", Source: "https://docs.docker.com/engine/install/", Checked: checked,
 	},
 	{
 		Name: "azure-functions-core-tools", Title: "Azure Functions Core Tools", Optional: true, Choice: "azure-functions",

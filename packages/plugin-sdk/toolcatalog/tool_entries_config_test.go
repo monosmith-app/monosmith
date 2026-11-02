@@ -37,6 +37,26 @@ func TestEntriesAreComplete(t *testing.T) {
 	}
 }
 
+// TestEveryInstallEntryHasASourceAndADate fails for an install entry that no
+// catalogue page covers or whose tool carries no check date.
+func TestEveryInstallEntryHasASourceAndADate(t *testing.T) {
+	for _, e := range entries {
+		for _, in := range e.Install {
+			if installCatalogues[in.Manager] == "" {
+				t.Errorf("%s/%s: no catalogue page is recorded for this manager", e.Name, in.Manager)
+			}
+			if !strings.HasPrefix(e.Source, "https://") || e.Checked == "" {
+				t.Errorf("%s/%s: the entry needs a source address and a check date", e.Name, in.Manager)
+			}
+		}
+	}
+	for manager, page := range installCatalogues {
+		if !strings.HasPrefix(page, "https://") || !slices.Contains(knownManagers, manager) {
+			t.Errorf("catalogue %s: bad page %q", manager, page)
+		}
+	}
+}
+
 func TestForPanicsOnUnknownName(t *testing.T) {
 	defer func() {
 		if recover() == nil {
