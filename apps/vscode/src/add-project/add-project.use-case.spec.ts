@@ -13,7 +13,7 @@ const REQUEST: AddRequest = { role: 'app', name: 'web', language: 'node', with: 
 function fake (options: { plan?: SmithRun, apply?: SmithRun, request?: AddRequest, answer?: PlanAnswer, lists?: SmithRun[] }) {
   const ran: string[][] = []
   const applied: string[][] = []
-  const shown: Array<{ plan: string, follows: boolean }> = []
+  const shown: Array<{ plan: string, follows: boolean, choices: string }> = []
   const offered: AddOptions[] = []
   const deps: AddDeps = {
     run: async (args) => {
@@ -35,8 +35,8 @@ function fake (options: { plan?: SmithRun, apply?: SmithRun, request?: AddReques
 
       return options.request ?? REQUEST
     },
-    confirm: async (_request, plan, follows) => {
-      shown.push({ plan, follows })
+    confirm: async (_request, plan, follows, choices) => {
+      shown.push({ plan, follows, choices })
 
       return options.answer ?? 'add'
     },
@@ -73,6 +73,12 @@ describe('addProject', () => {
     expect(f.ran.at(-1)).toEqual(['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--dry-run'])
     expect(f.applied).toEqual([['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--yes']])
     expect(f.shown[0]?.plan).toContain('Plan: add app web')
+  })
+
+  it('tells the confirmation what was chosen, in words', async () => {
+    const f = fake({})
+    await addProject(f.deps)
+    expect(f.shown[0]?.choices).toBe('Your choices: vitest (default).')
   })
 
   it('says the project was made when its first check could not run for a missing tool', async () => {
