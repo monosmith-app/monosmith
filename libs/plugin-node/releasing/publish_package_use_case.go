@@ -177,10 +177,15 @@ func Finalize(workspaceRoot string, params protocol.PublishParams) (protocol.Pub
 
 // notFetchableNote says why a dist-tag did not move and how to move it.
 func notFetchableNote(move protocol.TagMove, out npmpropagation.Outcome) string {
-	why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", len(move.Awaits))
+	missing := "the platform packages"
 	if len(out.Missing) > 0 {
-		why = strings.Join(out.Missing, ", ") + " could not be fetched from the registry in time"
+		var named []string
+		for _, n := range out.Missing {
+			named = append(named, n+"@"+move.Version)
+		}
+		missing = strings.Join(named, ", ")
 	}
-	return fmt.Sprintf("the dist-tag %q was not moved: %s (waited %s). Published as %q; when npm serves them, run: %s",
-		move.Tag, why, out.Waited.Round(time.Second), pendingTag, move.Command())
+	return fmt.Sprintf("the dist-tag %q of %s was not moved: npm said it published %s but the registry still does not serve it after %s. "+
+		"Run the release again: it republishes what is missing. Or, when npm serves it, run: %s",
+		move.Tag, move.Package, missing, out.Waited.Round(time.Second), move.Command())
 }

@@ -274,23 +274,92 @@ func TestNoProbeWhenEveryWrapperIsAlreadyPublished(t *testing.T) {
 	}
 }
 
-func TestAPublishThatLeavesNoPackageStopsTheReleaseNamingIt(t *testing.T) {
+func TestAPackageNpmHasNotServedYetDoesNotFailThePublish(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "")
-	fakeAwait(t, true, nil)
+	fakeAwait(t, false, nil)
 	reg := newRegistry(t)
 	reg.lose["@acme/cli-linux-x64"] = true
 	var pauses int
 	pause = func(time.Duration) { pauses++ }
-	_, err := Publish(root, release(t, root), false)
-	if err == nil || !strings.Contains(err.Error(), "@acme/cli-linux-x64@5.0.0") || !strings.Contains(err.Error(), "does not have it") {
-		t.Fatalf("error %v: it must name the missing package", err)
+	res, err := Publish(root, release(t, root), false)
+	if err != nil {
+		t.Fatalf("a slow registry is not an error: %v", err)
 	}
-	if pauses != readBackChecks-1 {
-		t.Errorf("paused %d times, want %d", pauses, readBackChecks-1)
+	if pauses < readBackChecks-1 {
+		t.Errorf("paused %d times, want at least %d: the read-back is quick", pauses, readBackChecks-1)
 	}
-	if slices.ContainsFunc(reg.published, func(p string) bool { return strings.HasPrefix(p, "acme-cli ") }) {
-		t.Error("a wrapper was published after a platform package went missing")
+	if !slices.Contains(res.Published, "@acme/cli-linux-x64@5.0.0") || len(res.PendingMoves) != 2 {
+		t.Errorf("the release goes on and the wrappers wait under pending: %+v", res)
+	}
+	if got := reg.published[len(reg.published)-1]; !strings.HasSuffix(got, "--tag pending") {
+		t.Errorf("last publish %q", got)
+	}
+}
+
+// timedRegistry serves each package from a time on, by the fake clock.
+type timedRegistry struct {
+	clock *fakeClock
+	from  map[string]time.Duration
+	start time.Time
+}
+
+func (r *timedRegistry) Lookup(name, _ string) (bool, string) {
+	from, ok := r.from[name]
+	if !ok || r.clock.now.Sub(r.start) < from {
+		return false, ""
+	}
+	return true, "https://registry.example/" + name
+}
+func (r *timedRegistry) Fetchable(string) bool { return true }
+
+type fakeClock struct{ now time.Time }
+
+func (c *fakeClock) Now() time.Time        { return c.now }
+func (c *fakeClock) Sleep(d time.Duration) { c.now = c.now.Add(d) }
+
+// finalizeWith runs Finalize with the real wait on a fake clock and registry.
+func finalizeWith(t *testing.T, from map[string]time.Duration) (Finalized, *fakeRegistry, []string) {
+	t.Helper()
+	clock := &fakeClock{now: time.Unix(1000, 0)}
+	timed := &timedRegistry{clock: clock, from: from, start: clock.now}
+	original := awaitPlatforms
+	var progress []string
+	awaitPlatforms = func(_ string, r Release, names []string) npmpropagation.Outcome {
+		return npmpropagation.Await(timed, clock, npmpropagation.Config{Max: r.PropagationWait, Progress: func(l string) { progress = append(progress, l) }}, names, r.Version)
+	}
+	t.Cleanup(func() { awaitPlatforms = original })
+	reg := newRegistry(t)
+	reg.tags["acme"] = map[string]string{"pending": "5.0.0"}
+	r := release(t, t.TempDir())
+	r.PropagationWait = 15 * time.Minute
+	got, err := Finalize(t.TempDir(), r, []protocol.TagMove{{Package: "acme", Version: "5.0.0", Tag: "next", Awaits: []string{"@acme/cli-linux-x64"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got, reg, progress
+}
+
+func TestAPackageThatAppearsAtMinuteEightGetsItsTagMoved(t *testing.T) {
+	got, reg, progress := finalizeWith(t, map[string]time.Duration{"@acme/cli-linux-x64": 8 * time.Minute})
+	if !slices.Equal(got.Moved, []string{"acme@5.0.0 next"}) || len(got.Pending) != 0 || reg.tags["acme"]["next"] != "5.0.0" {
+		t.Errorf("finalized %+v tags %v", got, reg.tags)
+	}
+	if len(progress) == 0 || !strings.Contains(progress[0], "waiting for npm") {
+		t.Errorf("progress %v", progress)
+	}
+}
+
+func TestAPackageThatNeverAppearsLeavesTheTagPendingAndSaysHowToFinish(t *testing.T) {
+	got, reg, _ := finalizeWith(t, map[string]time.Duration{})
+	if len(got.Moved) != 0 || len(got.Pending) != 1 || reg.tags["acme"]["next"] != "" || reg.tags["acme"]["pending"] != "5.0.0" {
+		t.Errorf("finalized %+v tags %v", got, reg.tags)
+	}
+	note := strings.ToLower(strings.Join(got.Notes, "\n"))
+	for _, want := range []string{"@acme/cli-linux-x64@5.0.0", "still does not serve it after 15m0s", "run the release again", "npm dist-tag add acme@5.0.0 next"} {
+		if !strings.Contains(note, strings.ToLower(want)) {
+			t.Errorf("note lacks %q:\n%s", want, note)
+		}
 	}
 }
 
@@ -355,6 +424,9 @@ func TestIncompleteSeesWhatARerunStillHasToDo(t *testing.T) {
 	root := t.TempDir()
 	reg := newRegistry(t)
 	pairs := [][2]string{{"linux", "amd64"}, {"windows", "amd64"}}
+	original := fetchable
+	fetchable = func(_, name, version string) bool { return reg.have[name+"@"+version] }
+	t.Cleanup(func() { fetchable = original })
 	for _, name := range []string{"@acme/cli-win32-x64", "@acme/cli", "acme"} {
 		reg.have[name+"@5.0.0"] = true
 	}
