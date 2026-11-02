@@ -40,6 +40,9 @@ func checkFolderEmpty(dir string) error {
 // newArgs lets smith new --here take no name, which then comes from the folder.
 func newArgs(inner cobra.PositionalArgs) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
+		if asked, _ := cmd.Flags().GetBool("questions"); asked {
+			return cobra.NoArgs(cmd, args)
+		}
 		if here, _ := cmd.Flags().GetBool("here"); here {
 			return cobra.MaximumNArgs(1)(cmd, args)
 		}

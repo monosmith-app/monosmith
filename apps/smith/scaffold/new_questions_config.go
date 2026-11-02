@@ -70,6 +70,11 @@ type NewQuestion struct {
 	Applies func(answers map[string]string) bool
 	// Check rejects a free-text answer.
 	Check func(value string) error
+	// When names the answers that make the question apply (key to value), for
+	// tools that read the questions as data; Applies stays what decides.
+	When map[string]string
+	// Many says the answer may name several options, joined by commas.
+	Many bool
 }
 
 // NodeStacks are the stacks smith new offers Node projects, the default first.
@@ -115,7 +120,7 @@ func NewQuestions() []NewQuestion {
 	hasLanguage := func(a map[string]string) bool { return a[AnswerLanguage] != "" && a[AnswerLanguage] != LanguageLater }
 	saving := func(a map[string]string) bool { return hasLanguage(a) && a[AnswerSaveRecipe] == "yes" }
 	return []NewQuestion{
-		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for? (CI = where your tests run on every push)", Default: "github", Flag: "ci", Options: []NewOption{
+		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for? (CI = where your tests run on every push)", Default: "github", Flag: "ci", Many: true, Options: []NewOption{
 			{Label: "GitHub Actions", Value: "github", Hint: "default"},
 			{Label: "Azure Pipelines", Value: "azure"},
 			{Label: "GitLab CI", Value: "gitlab"},
@@ -123,7 +128,7 @@ func NewQuestions() []NewQuestion {
 			{Label: "Bitbucket Pipelines", Value: "bitbucket"},
 		}},
 		{Key: AnswerLanguage, Prompt: "What is the main language of this workspace?", Default: LanguageLater, Flag: "language", Options: languages},
-		{Key: AnswerNodeStack, Prompt: "Which tests and lint for Node projects?", Default: DefaultNodeStack, Flag: "default-stack", Options: NodeStacks(), Applies: isNode},
+		{Key: AnswerNodeStack, Prompt: "Which tests and lint for Node projects?", Default: DefaultNodeStack, Flag: "default-stack", Options: NodeStacks(), Applies: isNode, When: map[string]string{AnswerLanguage: "node"}},
 		{Key: AnswerArchitecture, Prompt: "Which code layout should smith check?", Default: DefaultArchitecture, Flag: "architecture", Options: layouts},
 		{Key: AnswerAgent, Prompt: "Add the MonoSmith agent, so Claude Code and VS Code can work in this workspace through smith?", Default: "yes", Flag: "agent", Options: []NewOption{
 			{Label: "Yes", Value: "yes", Hint: "writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)"},
@@ -137,14 +142,14 @@ func NewQuestions() []NewQuestion {
 			{Label: "Keep the defaults", Value: "no", Hint: "you can change any of it later in smith.toml"},
 			{Label: "More options", Value: MoreYes},
 		}},
-		{Key: AnswerReleaseBranch, Prompt: "Which branch do releases run from?", Default: DefaultReleaseBranch, Flag: "release-branch", Advanced: true, Applies: more, Check: nonEmpty("a branch name")},
-		{Key: AnswerReleaseRemote, Prompt: "Which git remote receives the release tags?", Default: DefaultReleaseRemote, Flag: "release-remote", Advanced: true, Applies: more, Check: nonEmpty("a remote name")},
-		{Key: AnswerGitHubReleases, Prompt: "Create a GitHub Release for every release tag?", Default: "no", Flag: "github-releases", Advanced: true, Applies: more, Options: []NewOption{
+		{Key: AnswerReleaseBranch, Prompt: "Which branch do releases run from?", Default: DefaultReleaseBranch, Flag: "release-branch", Advanced: true, Applies: more, When: map[string]string{AnswerMore: MoreYes}, Check: nonEmpty("a branch name")},
+		{Key: AnswerReleaseRemote, Prompt: "Which git remote receives the release tags?", Default: DefaultReleaseRemote, Flag: "release-remote", Advanced: true, Applies: more, When: map[string]string{AnswerMore: MoreYes}, Check: nonEmpty("a remote name")},
+		{Key: AnswerGitHubReleases, Prompt: "Create a GitHub Release for every release tag?", Default: "no", Flag: "github-releases", Advanced: true, Applies: more, When: map[string]string{AnswerMore: MoreYes}, Options: []NewOption{
 			{Label: "No", Value: "no", Hint: "default; tags only"},
 			{Label: "Yes", Value: "yes", Hint: "needs GITHUB_TOKEN in CI"},
 		}},
-		{Key: AnswerCacheDir, Prompt: "Where should the task cache live (a folder inside the workspace)?", Default: DefaultCacheDir, Flag: "cache-dir", Advanced: true, Applies: more, Check: nonEmpty("a folder")},
-		{Key: AnswerCacheMaxMB, Prompt: "How large may the cache grow, in MB (0 for no limit)?", Default: strconv.Itoa(DefaultCacheMaxMB), Flag: "cache-max-mb", Advanced: true, Applies: more, Check: func(v string) error {
+		{Key: AnswerCacheDir, Prompt: "Where should the task cache live (a folder inside the workspace)?", Default: DefaultCacheDir, Flag: "cache-dir", Advanced: true, Applies: more, When: map[string]string{AnswerMore: MoreYes}, Check: nonEmpty("a folder")},
+		{Key: AnswerCacheMaxMB, Prompt: "How large may the cache grow, in MB (0 for no limit)?", Default: strconv.Itoa(DefaultCacheMaxMB), Flag: "cache-max-mb", Advanced: true, Applies: more, When: map[string]string{AnswerMore: MoreYes}, Check: func(v string) error {
 			if n, err := strconv.Atoi(v); err != nil || n < 0 {
 				return fmt.Errorf("%q is not a size in MB: use a whole number, 0 for no limit", v)
 			}

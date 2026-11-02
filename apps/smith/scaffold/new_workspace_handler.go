@@ -24,7 +24,7 @@ var newIsInteractive = isInteractive
 // newFlags are the variables the flags of smith new write to, besides the
 // ones NewOptions holds.
 type newFlags struct {
-	yes, here, dryRun                      bool
+	yes, here, dryRun, questions, asJSON   bool
 	ci, defaultStacks                      []string
 	language, architecture, branch, remote string
 	githubReleases                         bool
@@ -58,6 +58,18 @@ nothing is asked.`,
   smith new acme --dir . --architecture hexagonal       # in an existing clone`,
 		Args: newArgs(argsOrAsk(commandargs.Spec{Names: []string{"a name for the workspace"}, Example: "smith new acme", More: "to bring in a repository you already have, run smith adopt --dry-run instead"}, isInteractive)),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if f.questions {
+				// Read-only: an editor draws the same questions the terminal asks.
+				if !f.asJSON {
+					return problem.New("--questions prints the questions as data", "add --json")
+				}
+				raw, err := NewQuestionsJSON()
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+				return nil
+			}
 			in := bufio.NewReader(cmd.InOrStdin())
 			out := cmd.OutOrStdout()
 			if f.here {
@@ -156,6 +168,8 @@ nothing is asked.`,
 		},
 	}
 	flags := cmd.Flags()
+	flags.BoolVar(&f.questions, "questions", false, "print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json)")
+	flags.BoolVar(&f.asJSON, "json", false, "with --questions: print them as JSON")
 	flags.BoolVar(&f.here, "here", false, "create the workspace in the current folder, which must be empty; the name defaults to the folder's")
 	flags.StringVar(&opts.Dir, "dir", "", "directory to create the workspace in (default ./<name>)")
 	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
