@@ -144,12 +144,10 @@ install them. Nothing else in the composer changes.
 
 ## Electron: packaging and sources
 
-Checked on 2026-11-02: Electron's own packaging guide names Electron Forge as the recommended
-all-in-one tool, and `electron-builder` as the usual alternative. Forge's quick start also needs
-a bundler plugin and writes a lot of configuration. The template uses **Electron Forge**
-(`@electron-forge/cli`, `make` creates the distributable) when the sources confirm it is current,
-else `electron-builder`. The choice made, with the URLs, is recorded in the Electron section of
-the Node catalogue page once the template runs. Sources:
+Checked on 2026-11-02: the Electron packaging page says "We recommend using Electron Forge" and does not
+name electron-builder. The template uses **Electron Forge 8** (`@electron-forge/cli`), with `electron-forge
+package` on the assembled build folder (`package` only: no installer, no signing). It ran offline from
+the npm cache of a machine that had the network for the first install. Sources:
 
 - Electron tutorial and process model: https://www.electronjs.org/docs/latest/tutorial/process-model
 - Context isolation and `contextBridge`: https://www.electronjs.org/docs/latest/tutorial/context-isolation
@@ -166,5 +164,11 @@ the Node catalogue page once the template runs. Sources:
 - `electron` cannot be combined with a React renderer in v2.
 - The architecture and CI items are findable, but turning them on stays with `smith plugin` and
   a recipe. The composer says that in the item, instead of pretending it writes them.
-- The first check of Tauri as a choice for a new app is run in a scratch workspace; the result is
-  written in the Node catalogue page.
+- Tauri as a choice for a new app passed the scratch check: `smith add app tw --lang node --with
+  react,tauri` wrote the web app and `src-tauri`. The Rust build was not run, so `route` stayed unused
+  for choices (it is used for workspace plugins). `smith tauri add` is unchanged and points here.
+- The Electron template was scaffolded in a scratch workspace outside the repository and ran
+  `smith run lint typecheck test build package` (Electron 45.2.1, Forge 8.0.1, Windows x64). `start`
+  opens a window and was not run in a headless session.
+- Two parallel changes touch the same generated protocol files (the tool-requirement member of the
+  install work): regenerate with `smith run schema -p plugin-sdk` and `smith run generate` after a merge.

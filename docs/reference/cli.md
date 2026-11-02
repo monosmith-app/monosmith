@@ -903,6 +903,26 @@ Usage: `smith choices [flags]`
 
 <!-- smith:end choices -->
 
+### smith compose
+
+[Manual page](../manual/compose.md)
+
+<!-- smith:begin compose -->
+Search everything smith can build a project from, and compose the stack
+
+Usage: `smith compose [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print JSON: the catalogue, and with --with the check and the plan | off |
+| `--kind <kind>` | the kind of project the plan is for: app, lib or package |  |
+| `-l, --lang <lang>` | show only this language's items, and check --with for it |  |
+| `--name <name>` | the project name the plan uses (<name> when not given) |  |
+| `--search <search>` | find items by words: name, title, alias (desktop, serverless, web) or description |  |
+| `--with <with>` | check this selection and print its plan, comma separated (react,vitest) (repeatable) |  |
+
+<!-- smith:end compose -->
+
 ### smith plugin
 
 [Manual page](../manual/plugin.md)
