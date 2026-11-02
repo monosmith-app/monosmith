@@ -156,6 +156,7 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 		if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil {
 			return changed, lost, err
 		}
+		removeEmptyParents(root, path)
 		changed = append(changed, path)
 	}
 	for path, content := range rendered {
@@ -180,6 +181,24 @@ func Write(root string, cfg workspace.Config, m Model) (changed, lost []string, 
 		changed = append(changed, path)
 	}
 	return changed, lost, nil
+}
+
+// removeEmptyParents removes the folders a removed file leaves empty, from its
+// own folder up to (not including) the workspace root. A folder that still
+// holds a file stays.
+func removeEmptyParents(root, path string) {
+	for dir := filepath.Dir(filepath.FromSlash(path)); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if os.Remove(filepath.Join(root, dir)) != nil {
+			return
+		}
+	}
+}
+
+// PackageManagerInstallsSmith reports whether a project written in the named
+// language makes the pipelines install smith with a package manager (npm, pip or
+// dotnet), so the committed install script is no longer used.
+func PackageManagerInstallsSmith(language string) bool {
+	return !SmithInstallFor(Model{Toolchains: []protocol.Toolchain{{Name: language}}}).Script
 }
 
 // fileMode is 0755 for the installer (where the OS has modes) and 0644 for
