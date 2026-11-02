@@ -157,6 +157,7 @@ Usage: `smith add <kind> <name> [flags]`
 |---|---|---|
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--commit-anyway` | with --commit, commit even when the check of the new project fails (the files exist, a tool is missing) | off |
 | `--dry-run` | show the plan and change nothing | off |
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |

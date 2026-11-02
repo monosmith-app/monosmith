@@ -125,10 +125,10 @@ commits them as one operation that smith undo can revert.`,
 			project := s.Graph.Get(args[1])
 			toolinstall.Notice(cmd.Context(), s, out, []string{project.Language}, addOpts.With)
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
-				return err
+				return operation.AfterWork(err)
 			}
 			if err := CheckNewProject(s, project, out); err != nil {
-				return err
+				return operation.AfterWork(err)
 			}
 			fmt.Fprintln(out, doneStep(kind, args[1], len(res.Files), time.Since(began).Round(100*time.Millisecond).String()))
 			if hint := tryHint(project); hint != "" {
@@ -144,7 +144,7 @@ commits them as one operation that smith undo can revert.`,
 	cmd.Flags().StringVar(&like, "like", "", "copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
-	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, Describe: func(_ *cobra.Command, args []string) string {
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, ChecksResult: true, Describe: func(_ *cobra.Command, args []string) string {
 		return "add " + strings.Join(args, " ")
 	}})
 }
