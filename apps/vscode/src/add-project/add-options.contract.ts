@@ -26,6 +26,12 @@ export interface ChoiceOption {
   suggested:   boolean
   /** The choices it does not go with. */
   conflicts:   string[]
+  /** What a person calls it ("Electron"); absent when the name is enough. */
+  title?:      string
+  /** Where it sits in the stack (`framework`, `shell`, `host`); absent means the layer of its axis. */
+  layer?:      string
+  /** Words that find it ("desktop", "serverless"). */
+  aliases?:    string[]
 }
 
 /** One stack of `smith stacks --json`. */

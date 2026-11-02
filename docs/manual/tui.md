@@ -371,7 +371,20 @@ build the command line, which the shell runs and shows.
 
 **Compose a stack** (palette, or `A` in the Projects view, or Home when the workspace has no project) is one screen to search languages, frameworks, desktop shells and cloud hosts, tick them, see each conflict explained, and end in the plan; see [`smith compose`](compose.md).
 
-**Add a project** asks the kind, the language and the name, then, from what the plugins
+**Add a project** starts with "What are you building?": a website or web app, an API or backend
+service, a function app (Azure, AWS, Google), a desktop app (Tauri, Electron), a library for
+my other projects, or a package I publish. Each line shows what people usually pick and one
+sentence about what you get. Type to narrow the list with the words people use: `react`,
+`azure function`, `electron`, `tauri`, `lambda`, `api`. The words come from the same catalogue
+as the composer, so a plugin that adds a framework or a shell makes the line findable. The
+outcome answers the kind. The language is asked only when more than one fits (a website is
+Node only, so none is asked; a function app asks Node, Python or C#), with the line
+"Preselected: N of the M projects here use X." when that language is in the list. A website,
+a function app and a desktop app then ask which framework, cloud or desktop shell; what you
+type in the first question starts that list on the match, and the pick starts ticked in the
+choices below. The last line, "I know the language: show every language", keeps the long way:
+the kind, then the full list of languages. After the outcome and the language, the form asks
+the name, then, from what the plugins
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
 choices become `--with a,b`. A workspace with three or more projects is also asked whether the
