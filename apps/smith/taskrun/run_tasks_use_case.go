@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
@@ -48,6 +49,10 @@ type Options struct {
 	Events *runevents.RunStream
 	// Command is the command line the run stands for, reported in run.started.
 	Command string
+	// SharedOutputs are the workspace-relative folders ([workspace]
+	// shared_outputs) that several tasks fill on purpose. A task keeps what is
+	// already in them instead of clearing them before it runs or restoring them.
+	SharedOutputs []string
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -119,6 +124,18 @@ func (r *runner) record(res Result) {
 	}
 }
 
+// clearable returns the task's outputs a run may clear: the ones outside
+// [workspace] shared_outputs, whose files belong to several tasks.
+func (r *runner) clearable(t *taskgraph.Task) []string {
+	var out []string
+	for _, o := range t.Def.Outputs {
+		if !buildoutputs.InsideAny(path.Join(t.Project.Root, o), r.opts.SharedOutputs) {
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
 func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	for _, d := range t.Deps {
 		<-r.done[d]
@@ -148,7 +165,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	prefix := t.ID + " │ "
 	if t.Def.Cache && !r.opts.NoCache && r.opts.Storage != nil {
 		if entry, err := taskcache.Lookup(r.opts.Storage, key); err == nil {
-			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, t.Def.Outputs, entry)
+			log, err := taskcache.Restore(r.opts.Storage, r.opts.Root, t.Project.Root, r.clearable(t), entry)
 			if err == nil {
 				_ = taskcache.Remember(r.opts.Storage, t.ID, key)
 				replayTo := r.opts.Out
@@ -165,7 +182,9 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 	r.say("%s ▶ %s\n", t.ID, strings.Join(t.Def.Command, " "))
 	for _, o := range t.Def.Outputs {
 		dir := filepath.Join(r.opts.Root, filepath.FromSlash(path.Join(t.Project.Root, o)))
-		_ = os.RemoveAll(dir)
+		if !buildoutputs.InsideAny(path.Join(t.Project.Root, o), r.opts.SharedOutputs) {
+			_ = os.RemoveAll(dir)
+		}
 		if t.Name == "generate" {
 			// A generator writes into its output directory, so it exists.
 			_ = os.MkdirAll(dir, 0o755)

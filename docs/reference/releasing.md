@@ -142,6 +142,19 @@ release. Each runner runs the build, then uploads its own files with
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
 
+On a Linux runner the assets job first installs the apt packages of `[ci]
+native_linux_packages` (the native job installs them too), so a Linux app that
+needs GTK or WebKit headers does not call `apt-get` in its own `build`.
+
+A `build` that runs several smith tasks into one folder (a zip task and a
+`package-dmg` task that both write `dist/drop`) needs that folder in
+`[workspace] shared_outputs`. A task clears its output folders before it runs
+and when it restores them from the cache, so without the setting the second
+task deletes the files of the first. A folder listed there (or inside a listed
+folder) is kept as it is. Without the setting, `smith ci generate`, `smith
+doctor` and the assets run print a warning that names both tasks and the two
+fixes: list the folder, or give each task its own folder.
+
 A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
 on Windows and Linux, as long as another glob of the list matches a file there:
 the runner prints `no file matches <glob> on <platform>: skipped` and uploads the
@@ -151,9 +164,17 @@ as a platform without that file. See
 [ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
 
 To run the assets again for a release that exists, use `smith ci assets --tag
-<project@version>` or the `assets_tag` input of the workflow's manual run. It builds
-the current checkout (not the commit of the tag), stamps the tag's version and
-replaces files of the same name in the tag's GitHub Release. A push that releases
+<project@version>` or the `assets_tag` input of the workflow's manual run. When the
+tag is not at HEAD, you choose the code with `--source current|tag` (the
+`assets_source` input of the workflow). `current` builds the code as it is now,
+named with the tag's version: a fix reaches the files, but they carry newer code
+under an old number. `tag` builds the tag's own commit in a temporary git
+worktree, with the smith.toml of that commit: the exact code that was released.
+Without `--source`, a terminal is asked and any other run is refused, naming both
+flags. If the tag's commit has no assets config for the project (the config did
+not exist yet), smith says so with the commit and tells you to use
+`--source current`. The files replace files of the same name in the tag's GitHub
+Release. A push that releases
 nothing starts no assets job; if it did start, the job prints `nothing released,
 skipping` and exits 0.
 

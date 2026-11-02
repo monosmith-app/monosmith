@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -45,7 +46,7 @@ func Command(version string) *cobra.Command {
 	}
 	for _, phase := range Phases {
 		var assets bool
-		var tag string
+		var run AssetsRun
 		phaseCmd := &cobra.Command{
 			Use:   phase,
 			Short: "Run the " + phase + " phase",
@@ -58,14 +59,16 @@ func Command(version string) *cobra.Command {
 				defer s.Close()
 				ctx, stop := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
 				defer stop()
-				return RunPhaseFor(ctx, s, phase, assets, tag, c.OutOrStdout())
+				run.In, run.Terminal = c.InOrStdin(), operationplan.DetectEnvironment().Terminal
+				return RunPhaseFor(ctx, s, phase, assets, run, c.OutOrStdout())
 			},
 		}
 		if phase == "setup" {
 			phaseCmd.Flags().BoolVar(&assets, "assets", false, "install for the assets job: leave out the projects whose [release] install is false")
 		}
 		if phase == "assets" {
-			phaseCmd.Flags().StringVar(&tag, "tag", "", "run again for an existing release tag (project@version): build the current checkout and replace the files of its GitHub Release")
+			phaseCmd.Flags().StringVar(&run.Tag, "tag", "", "run again for an existing release tag (project@version) and replace the files of its GitHub Release")
+			phaseCmd.Flags().StringVar(&run.Source, "source", "", "with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one")
 		}
 		cmd.AddCommand(phaseCmd)
 	}
@@ -86,6 +89,9 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 				return err
 			}
 			defer s.Close()
+			for _, w := range buildoutputs.OverlapWarnings(s.Graph.Projects, s.Config.Workspace.SharedOutputs...) {
+				fmt.Fprintln(c.ErrOrStderr(), w)
+			}
 			if check {
 				contributions, err := Collect(s)
 				if err != nil {

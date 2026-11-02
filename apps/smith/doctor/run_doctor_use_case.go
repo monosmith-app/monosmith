@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
@@ -229,7 +230,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
 	out = append(out, buildWritesFinding(s))
-	shared := SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
+	shared := buildoutputs.SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
 	out = append(out, protocol.Finding{
 		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
 		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),
