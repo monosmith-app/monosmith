@@ -263,6 +263,15 @@ review them with `git status`, then commit. With `commit_operations = true` unde
 and a clean git work tree, or when you pass `--commit`, it commits them as one commit (`chore: add package billing`), and
 [`smith undo`](undo.md) reverts that commit.
 
+When you pass `--commit` and the work tree already holds changes of your own, smith commits nothing and says so; it
+does not suggest `--commit` again. In a terminal it asks: commit only the files this operation changed (the default),
+stop here and leave everything uncommitted, or cancel. Without a terminal, commit or stash your changes and run
+`smith commit add app web --only-operation` (see [`smith commit`](commit.md)), or review with `git status`.
+
+smith never deletes a file silently. When the new project makes the pipelines install smith with npm, pip or dotnet,
+the generated `tools/smith/install.sh` is not used any more: the plan lists it as `remove`, with the reason, and the
+folder it leaves empty is removed with it.
+
 ## Exit codes
 
 | Code | Meaning |
