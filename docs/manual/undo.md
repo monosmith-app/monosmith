@@ -4,10 +4,12 @@
 `derive` or `sync`. It uses `git revert`, so the result is a new commit and the history stays as it
 was.
 
-Operations are committed only when you opt in. Set `commit_operations = true` under `[workspace]`
-in `smith.toml`. Then each of those commands, started in a git work tree with no uncommitted
-change, makes one commit (`chore: add package billing`) and records it in `.smith/operations.json`.
-A run in a dirty work tree makes no commit and says why.
+Operations are committed only when you opt in. Pass `--commit` to the command, or set
+`commit_operations = true` under `[workspace]` in `smith.toml`. Then the command, started in a git
+work tree with no uncommitted change, makes one commit (`chore: add package billing`) and records
+it in `.smith/operations.json`. A run in a dirty work tree makes no commit and says why
+(`not committing this operation: the work tree has uncommitted changes`). If you did not opt in,
+[`smith commit`](commit.md) makes the commit afterwards, and then `smith undo` can revert it.
 
 ## When to use it
 

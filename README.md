@@ -2,18 +2,20 @@
 
 # MonoSmith
 
-**One command to build, test, ship and release a monorepo in any of eleven languages.**
+**One command to build, test, ship and release a monorepo in sixteen languages.**
 
-- **Eleven languages, ready-made.** `smith add` scaffolds a Node, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart, JVM or Bicep project that lints, tests and builds on its first run, and CI, a dev container and the release already know about it. No BUILD files, no per-language rules. [Compared with 14 tools](docs/product/comparison/languages-and-environments.md)
+- **Sixteen languages, ready-made.** `smith add` scaffolds a Node, Python, Go, Rust, .NET, Ruby, PHP, C and C++, Dart, JVM, Bicep, Lua, AppleScript, VBA, Swift or Objective-C project that lints, tests and builds on its first run, and CI, a dev container and the release already know about it. It starts from what you are building (a website, an API, a function app, a desktop app, a library or a package), not from a list of settings. No BUILD files, no per-language rules. [Compared with 14 tools](docs/product/comparison/languages-and-environments.md)
 - **One dependency graph for all of them.** Read from your manifests, imports and shared schemas, it orders tasks, keys the cache, selects `--affected`, and answers `smith graph --blast-radius <file>` and `--diff main`. [Compared](docs/product/comparison/dependency-graph.md)
-- **Extend it in any language.** A plugin is any program that speaks JSON-RPC; 24 ship in the binary, with SDKs for Go, TypeScript and Python, `smith plugin check`, stacks and recipes for team standards, and a trust gate for plugins a repository names. [Compared](docs/product/comparison/plugins-and-flexibility.md)
-- **Cached, affected, and CI and releases you do not write.** Tasks replay from a content-addressed cache, local or shared (HTTP, S3, Azure Blob); GitHub Actions, Azure Pipelines and GitLab CI are generated and `smith doctor` fails when they drift; conventional commits version and publish in dependency order, and a failed release resumes.
+- **Extend it in any language.** A plugin is any program that speaks JSON-RPC; more than 30 ship in the binary, with SDKs for Go, TypeScript and Python, `smith plugin check`, stacks and recipes for team standards, and a trust gate for plugins a repository names. [Compared](docs/product/comparison/plugins-and-flexibility.md)
+- **Cached, affected, and CI and releases you do not write.** Tasks replay from a content-addressed cache, local or shared (HTTP, S3, Azure Blob); GitHub Actions, Azure Pipelines, GitLab CI, CircleCI and Bitbucket Pipelines are generated and `smith doctor` fails when they drift; conventional commits version and publish in dependency order, and a failed release resumes.
+- **It asks, and it never commits behind your back.** Every decision is a choice with its consequence and a marked default; without a terminal smith refuses and names the flag. Changes stay in your work tree until you add `--commit` or run `smith commit`, and `smith undo` reverts a committed one.
 - **A way in and a way to check.** `smith convert` brings Nx, Turborepo and mnci workspaces over and reports what it could not map; one static binary, MIT licensed. smith is young: read the [honest FAQ](docs/product/faq-for-evaluators.md).
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/monosmith-app/monosmith/main/install.sh | sh   # Windows: irm .../install.ps1 | iex
 smith new acme && cd acme
-smith add app web --lang node && smith add lib core --lang go
+smith add                    # in a terminal: "What are you building?"
+smith add app web --lang node --yes && smith add lib core --lang go --yes   # the same, as commands
 smith build        # in dependency order, cached
 smith doctor       # is the workspace healthy?
 ```
@@ -23,7 +25,7 @@ smith doctor       # is the workspace healthy?
 ## Overview
 
 MonoSmith runs a monorepo in Node, Go, Python, Rust, .NET, Ruby, PHP, C++,
-Dart, the JVM and Bicep from one command, `smith`. It scaffolds projects, runs
+Dart, the JVM, Bicep, Lua, AppleScript, VBA, Swift and Objective-C from one command, `smith`. It scaffolds projects, runs
 their tasks in dependency order from a cache, generates the CI pipeline from
 what is in the repository, and releases from conventional commits.
 
@@ -35,9 +37,13 @@ any language without touching `smith`.
 ```sh
 smith new acme && cd acme
 smith add app web --lang node        # deployed, never published
-smith add lib core --lang go         # imported internally, never published
+smith add lib core --lang go         # internal, never published
 smith add package sdk --lang python  # published on release
-smith add app api --stack react      # a stack: the plugins a project is built with
+smith add app site --lang node --with react,vitest   # built from choices: a framework and a test runner
+smith install -w web workspace:ui    # let one project use an internal library
+smith compose                        # search everything a project can be built from
+smith tools                          # the programs the workspace needs, and which are installed
+smith commit                         # commit what the last command changed, so smith undo can revert it
 
 smith build                          # every project, in dependency order, cached
 smith test --affected                # only what changed since main
@@ -85,12 +91,14 @@ and Turborepo workspaces and those made by mnci.
 | | |
 |---|---|
 | **Three kinds** | `app` (deployed), `lib` (internal), `package` (published). The kind decides what release does with a project. |
-| **Eleven languages** | Node (JavaScript and TypeScript), Python, Go, Rust, .NET (C#, F#), Ruby, PHP, C and C++ (CMake), Dart and Flutter, the JVM (Java with Maven, Kotlin with Gradle, Android) and Bicep, each through a built-in plugin. |
-| **Stacks** | A project records the plugins it is built with: React, Vue, Svelte, Angular, an Astro docs site or a VS Code extension next to a plain Node library, in the same workspace. |
+| **Sixteen languages** | Node (JavaScript and TypeScript), Python, Go, Rust, .NET (C#, F#), Ruby, PHP, C and C++ (CMake), Dart and Flutter, the JVM (Java with Maven, Kotlin with Gradle, Android), Bicep, Lua, AppleScript, VBA, Swift and Objective-C, each through a built-in plugin. |
+| **Stacks and choices** | A project records the plugins it is built with: React, Vue, Svelte, Angular, an Astro docs site, a VS Code extension, a function app (Azure Functions, AWS Lambda, Google Cloud Functions for Node, Python and C#) or a desktop app (Electron, Tauri). `smith compose` searches all of it and ends in the `smith add` line. |
+| **Internal libraries** | `smith install -w web workspace:ui` links a library of the workspace in the form of the language. Nothing is downloaded. |
+| **Release channels** | A branch such as `next` releases its own line of prerelease versions; `--hold` and `--bump` change a plan. |
 | **No configuration to write** | Projects, tasks and dependencies come from the manifests (`package.json`, `go.mod`, `Cargo.toml`, `*.csproj`, …) and from what the sources import. `smith.toml` names the workspace; everything else has a default. |
 | **Cache** | A task whose inputs did not change replays its output and log from a content-addressed cache, locally or from a shared remote (HTTP, S3, Azure Blob). |
 | **Affected** | `--affected` runs only the projects a change can break, and runs everything when it cannot be sure. |
-| **CI generated** | GitHub Actions, Azure Pipelines and GitLab CI, derived from the plugins in use, calling `smith ci <phase>` — the same commands you run locally. |
+| **CI generated** | GitHub Actions, Azure Pipelines, GitLab CI, CircleCI and Bitbucket Pipelines, derived from the plugins in use, calling `smith ci <phase>` — the same commands you run locally. |
 | **Release** | feat → minor, fix → patch, breaking → major. Packages release in dependency order to their registries (npm, PyPI, crates.io, NuGet, RubyGems, pub.dev, a Maven repository, Go module tags); an app releases per-platform binaries to GitHub Releases and, if you ask, to npm, PyPI, NuGet and RubyGems. A failed release resumes when re-run. |
 | **Conventions** | `vertical-slices` checks that code is laid out by what it does, in each language's own naming style. `docker` builds and pushes an image for every app with a `Dockerfile`. |
 | **Convert** | `smith convert` turns an Nx or Turborepo workspace, or one made by the old Nx-based mnci, into a smith workspace, keeping its projects and release tags. It reports anything it cannot map. |

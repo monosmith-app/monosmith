@@ -65,7 +65,7 @@ asks the person first, and passes `--yes` only after the person agreed. An edito
 | Derived files | `smith derive --check`; `--explain=<file>`, `--replace=<file>`, `--adopt=<file>`, `--eject=<file>` with `--yes` | Text only: one line per file that needs action, `State  path  (renderer)  detail`, then a count. A `--json` output for `--check` would let an editor stop reading lines. |
 | Who owns a file | `smith why --json -- <file>` | `path`, `known`, `kind`, `owner`, `summary`, `project`, `source`, `rule` and `change` (the steps). |
 | Why a task runs again | `smith why-miss <project>:<task> --json` | `status` (`hit`, `changed`, `no-earlier-run`), `key`, `lastRun` and `differences`. |
-| Undo | `smith undo --dry-run`, then `smith undo --yes` | Text. Needs `commit_operations = true` under `[workspace]`. |
+| Undo | `smith undo --dry-run`, then `smith undo --yes` | Text. Reverts an operation that was committed (`--commit`, `smith commit` or `commit_operations = true` under `[workspace]`). |
 | A report | `smith report -o <file>` | An HTML page. |
 | The agent file | `smith agent file --check`, then `smith agent file` | Text. `--check` fails when `AGENTS.md` or `CLAUDE.md` is missing or old. |
 | The release channel | `smith release --dry-run --json` (or `release.preview` over `serve`) | `channel` is set on a channel branch. The Markdown form starts with the notice. |

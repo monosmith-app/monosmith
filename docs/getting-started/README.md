@@ -6,8 +6,8 @@ time; each stands alone afterwards.
 | Page | Read it when |
 |---|---|
 | [Installing smith](installing.md) | you have not installed `smith` yet, or want another channel (npm, pipx, .NET tool, gem, pub, a plain download, `.deb`, `.rpm`), to upgrade, or to check a download |
-| [Your first workspace](first-workspace.md) | you are starting a monorepo from nothing: `smith new`, `smith add`, tasks and the cache, `smith doctor`, CI and a first release, in about twenty minutes |
-| [Adopting an existing repository](adopting.md) | you already have a repository with npm workspaces, Go modules or Python projects and want smith to run it without moving files |
+| [Your first workspace](first-workspace.md) | you are starting a monorepo from nothing: `smith new`, `smith add` from "What are you building?", a library used by an app, tasks and the cache, `smith doctor`, CI and a first release, in about twenty minutes |
+| [Adopting an existing repository](adopting.md) | you already have a repository with npm workspaces, Go modules or Python projects and want smith to run it; smith asks before it moves anything |
 | [Converting from Nx (and from the old mnci)](converting.md) | your repository is an Nx, Turborepo or mnci workspace |
 
 Which one?

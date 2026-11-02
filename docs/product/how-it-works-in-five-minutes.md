@@ -44,7 +44,7 @@ missing. See [Installing](../getting-started/installing.md).
 | You have | Run | What happens |
 |---|---|---|
 | nothing | `smith new acme` | writes `smith.toml`, the CI pipeline, a dev container, runs `git init` and commits |
-| a repository with npm workspaces, Go modules or Python projects | `smith adopt --dry-run`, then `smith adopt --init` | the dry run lists the projects smith would see and what blocks; `--init` writes `smith.toml` and the pipelines and commits |
+| a repository with npm workspaces, Go modules or Python projects | `smith adopt --dry-run`, then `smith adopt --init` | the dry run lists the projects smith would see and what blocks; `--init` writes `smith.toml` and the pipelines, and commits only with `--commit` |
 | an Nx or Turborepo workspace, or one made by mnci | `smith convert --dry-run`, then `smith convert` | see [Migration stories](migration-stories.md) |
 
 ## 3. Add projects
@@ -62,8 +62,11 @@ A project has one of three **kinds**, which decides what release does with it:
 project comes with one worked example that already passes lint, type-check, test
 and build, and adding it regenerates the CI pipeline.
 
-To use one project from another you import it; there is no manifest to edit.
-smith reads the imports to learn the graph (`smith graph`, or
+In a terminal, `smith add` starts from "What are you building?" (a website, an API, a function
+app, a desktop app, a library or a package) instead of from settings.
+To use one library from another project, run `smith install -w web workspace:core`: smith writes
+the dependency in the form of the language and downloads nothing.
+smith reads the dependencies and the imports to learn the graph (`smith graph`, or
 `smith graph --format tui` to browse it). Ask the graph what a change reaches with
 `smith graph --blast-radius <project or file>`, and what a branch did to it with
 `smith graph --diff main`. Shared schemas (OpenAPI, protobuf, GraphQL, AsyncAPI) link
@@ -208,7 +211,8 @@ The commands in steps 1 to 10 were run on 1.62.0. These features are new on the 
   language are made (test runner, build tool, tsconfig files) and copies what most of them agree on.
   `smith add --with react,vitest,bootstrap` picks frameworks, tests and styles from `smith choices`.
 - **A plan before a write, and undo.** `add`, `remove`, `upgrade` and `derive` print what they create, change
-  and remove. With `[workspace] commit_operations = true` each is one commit, and `smith undo` reverts the last.
+  and remove. smith never commits unasked. With `--commit` (or `[workspace] commit_operations = true`) each is
+  one commit, `smith commit` commits the last one afterwards, and `smith undo` reverts it.
 - **Understand the workspace.** `smith why <file>` says who owns a file and how to change it; `smith report` writes
   one HTML page (graph, health, drift, choices, release plan); `smith agent file` writes `AGENTS.md`.
 - **Release channels and checks.** `[[release.channels]]` gives a branch its own line of prerelease versions
