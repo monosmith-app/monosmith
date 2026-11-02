@@ -172,7 +172,9 @@ async function askPreset (options: AddOptions, outcome: OutcomeOption, language:
   const later = '$(clock) Decide in the next question'
   const layer = outcome.items[0]?.layer ?? ''
   const question = options.layers[layer] === undefined ? 'Which one?' : `Which ${options.layers[layer].toLowerCase()}?`
-  const rows = [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])]
+  // "Decide in the next question" is first, so the list reads in order and Enter on it picks nothing.
+  const laterRows = outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }]
+  const rows = [...laterRows, ...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description }))]
   const start = typedItem(items, typed)
   // Nothing typed: the cursor starts on "Decide in the next question", so Enter picks nothing.
   const startRow = rows.find((row) => (start === undefined ? row.label === later : row.description === start))

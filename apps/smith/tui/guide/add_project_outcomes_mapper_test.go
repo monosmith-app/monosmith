@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -90,7 +91,7 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 	if !strings.Contains(m.View(), "Which framework?") {
 		t.Fatalf("the framework is asked, not the language:\n%s", m.View())
 	}
-	m = press(m, "home", "down", "enter") // Vue (the cursor starts on "Decide in the next question")
+	m = press(m, "down", "down", "enter") // Vue (the cursor starts on "Decide in the next question")
 	m = press(m, "s", "i", "t", "e", "enter")
 	if !strings.Contains(m.View(), "[x] framework: vue") {
 		t.Fatalf("the pick starts ticked in the choices:\n%s", m.View())
@@ -135,7 +136,7 @@ func TestAFrameworkThePersonPickedIsTickedAndInTheCommand(t *testing.T) {
 		with  string
 	}{"Plain page": {0, "html"}, "React": {1, "react"}, "Svelte": {2, "svelte"}, "Vue": {3, "vue"}} {
 		m := press(frameworkForm(t), "enter") // A website
-		m = press(m, "home")                  // the cursor starts on "Decide in the next question"
+		m = press(m, "down")                  // the first row is "Decide in the next question"
 		m = press(m, strings.Split(strings.Repeat("down ", tc.downs), " ")[:tc.downs]...)
 		m = press(m, "enter")                     // the framework
 		m = press(m, "s", "i", "t", "e", "enter") // the name
@@ -153,10 +154,85 @@ func TestAFrameworkThePersonPickedIsTickedAndInTheCommand(t *testing.T) {
 	}
 }
 
+// tickedValues are the values ticked in the choices question on screen.
+func tickedValues(m Model) []string {
+	var out []string
+	for i, o := range m.current().Options {
+		if m.marked[i] {
+			out = append(out, o.Value)
+		}
+	}
+	return out
+}
+
+// TestTheChoicesListOpensOnTheTickedPickOnASmallScreen makes the tick visible
+// on a short terminal: the list starts at the framework that was picked.
+func TestTheChoicesListOpensOnTheTickedPickOnASmallScreen(t *testing.T) {
+	m := press(frameworkForm(t), "enter", "down", "enter", "s", "i", "t", "e", "enter") // Plain page
+	if got := tickedValues(m); len(got) != 1 || got[0] != "html" {
+		t.Fatalf("html is not ticked: %v", got)
+	}
+	if m.current().Options[m.cursor].Value != "html" {
+		t.Fatalf("the cursor is on %q, so the tick may be out of sight", m.current().Options[m.cursor].Value)
+	}
+}
+
+// TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere follows the keys
+// of G-1: React, name web, Enter to the plan, Esc back to the framework, Svelte.
+func TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere(t *testing.T) {
+	m := press(frameworkForm(t), "enter")         // A website
+	m = press(m, "down", "down", "enter")         // React (the first row is "Decide in the next question")
+	m = press(m, "w", "e", "b", "enter", "enter") // the name, the choices
+	m = press(m, "enter")                         // "Use these": the plan
+	if !m.Done() || !strings.Contains(strings.Join(m.Argv, " "), "--with react") {
+		t.Fatalf("the first plan is not React: %v", m.Argv)
+	}
+	m = m.Reopen()
+	m = press(m, "esc", "esc", "esc") // the environments, the choices, the name: back at the framework
+	if !strings.Contains(m.View(), "› React") {
+		t.Fatalf("the framework question starts on the earlier answer:\n%s", m.View())
+	}
+	m = press(m, "down", "enter") // Svelte
+	if !strings.Contains(m.View(), "type to replace it") {
+		t.Fatalf("the name does not say that typing replaces it:\n%s", m.View())
+	}
+	m = press(m, "w", "e", "b") // typing replaces: no "webweb"
+	if v := m.View(); !strings.Contains(v, "> web") || strings.Contains(v, "webweb") {
+		t.Fatalf("typing appended to the earlier name:\n%s", v)
+	}
+	m = press(m, "enter")
+	if got := tickedValues(m); len(got) != 1 || got[0] != "svelte" {
+		t.Fatalf("the choices still hold the old pick: %v", got)
+	}
+	m = press(m, "enter", "enter")
+	if got := strings.Join(m.Argv, " "); !strings.Contains(got, "--with svelte") || strings.Contains(got, "react") || !strings.Contains(got, " web ") {
+		t.Fatalf("the second plan: %q", got)
+	}
+}
+
+// TestOtherTicksSurviveAChangedFramework keeps what the person ticked besides.
+func TestOtherTicksSurviveAChangedFramework(t *testing.T) {
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter")
+	// the choices: react is ticked; also tick vitest (listed after the frameworks)
+	for i, o := range m.current().Options {
+		if o.Value == "vitest" {
+			m.marked[i] = true
+		}
+	}
+	m = press(m, "enter", "enter") // the plan
+	m = m.Reopen()
+	m = press(m, "esc", "esc", "esc", "down", "enter") // Svelte, the name
+	m = press(m, "enter")                              // the choices
+	got := tickedValues(m)
+	if !slices.Contains(got, "svelte") || slices.Contains(got, "react") {
+		t.Fatalf("the framework was not replaced: %v", got)
+	}
+}
+
 // TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem keeps the one
 // question short: Use these ends it, with prd as the build and the files kept.
 func TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "home", "down", "enter", "s", "i", "t", "e", "enter", "enter")
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "enter")
 	if view := m.View(); !strings.Contains(view, "Use these: lcl, dev, uat, prd") || !strings.Contains(view, "Change the names…") || !strings.Contains(view, "Change the build default, the output or the .env files…") {
 		t.Fatalf("the question lacks its options:\n%s", view)
 	}
@@ -169,7 +245,7 @@ func TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem(t *testing.T
 
 // TestChangingTheDetailsAsksTheOutputAndTheFiles opens the detailed questions.
 func TestChangingTheDetailsAsksTheOutputAndTheFiles(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "home", "down", "enter", "s", "i", "t", "e", "enter", "enter", "down", "down", "enter")
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "enter", "down", "down", "enter")
 	for _, want := range []string{"Which environment is", "Where do the builds go?", "Keep them in git?"} {
 		if !strings.Contains(m.View(), want) {
 			t.Fatalf("want %q on screen:\n%s", want, m.View())

@@ -53,7 +53,7 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 	if !strings.Contains(m.View(), "Which framework?") {
 		t.Fatalf("a website asks its framework:\n%s", m.View())
 	}
-	m = press(m, "home", "enter") // React: the cursor starts on "Decide in the next question"
+	m = press(m, "down", "enter") // React: Decide in the next question is first
 	m = press(m, "w", "e", "b", "enter")
 	view := m.View()
 	for _, want := range []string{"Build it from choices", "[x] framework: react", "styles (needs react)", "test: vitest"} {
