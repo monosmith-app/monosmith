@@ -115,7 +115,11 @@ jobs:
 	b.WriteString(githubAssetsJob(m))
 	if m.ManualRelease {
 		// A manual release runs the same steps as a push to a release branch.
-		return strings.ReplaceAll(b.String(), "if: github.event_name == 'push' &&", "if: "+githubReleaseEvent(m)+" &&")
+		out := strings.ReplaceAll(b.String(), "if: github.event_name == 'push' &&", "if: "+githubReleaseEvent(m)+" &&")
+		// The run name shows a manual release in the Actions list; the other
+		// events keep what GitHub shows by default (the pull request title, or
+		// the commit message).
+		return strings.Replace(out, "name: ci\n", "name: ci\n\nrun-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || github.event.head_commit.message || 'ci' }}\n", 1)
 	}
 	return b.String()
 }
