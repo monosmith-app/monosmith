@@ -19,6 +19,18 @@ func Elapsed(d time.Duration) string {
 	return fmt.Sprintf("%dm %02ds", s/60, s%60)
 }
 
+// OfProjects names the projects a wait works on: "every project" while their
+// number is not known, else "the 23 projects" ("the project" for one).
+func OfProjects(n int) string {
+	switch {
+	case n <= 0:
+		return "every project"
+	case n == 1:
+		return "the project"
+	}
+	return fmt.Sprintf("the %d projects", n)
+}
+
 // Waiting appends the elapsed time to what a wait is doing, once it is long
 // enough to notice: "Asking npm… 12s".
 func Waiting(what string, d time.Duration) string {

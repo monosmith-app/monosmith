@@ -13,6 +13,14 @@ func TestElapsedIsSecondsThenMinutes(t *testing.T) {
 	}
 }
 
+func TestOfProjectsCountsTheProjectsWhenTheyAreKnown(t *testing.T) {
+	for n, want := range map[int]string{0: "every project", 1: "the project", 23: "the 23 projects"} {
+		if got := OfProjects(n); got != want {
+			t.Fatalf("%d: %q, want %q", n, got, want)
+		}
+	}
+}
+
 func TestWaitingAddsTheTimeOnlyOnceItIsNoticeable(t *testing.T) {
 	if got := Waiting("Asking npm…", time.Second); got != "Asking npm…" {
 		t.Fatalf("%q", got)

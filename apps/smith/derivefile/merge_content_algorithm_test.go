@@ -34,6 +34,23 @@ func TestKeysModeKeepsTheKeysItDoesNotOwn(t *testing.T) {
 	}
 }
 
+func TestKeysModeKeepsCommentsAndLineEndingsOfATsconfig(t *testing.T) {
+	disk := []byte("{\r\n  // hand comment\r\n  \"extends\": \"../../base.json\",\r\n  \"references\": []\r\n}\r\n")
+	f := jsonKeys(map[string]any{"references": []any{map[string]any{"path": "../core"}}})
+	out, err := Merge(f, disk, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "// hand comment\r\n") || !strings.Contains(string(out), "../core") || strings.Contains(strings.ReplaceAll(string(out), "\r\n", ""), "\n") {
+		t.Errorf("comment or line ends lost: %q", out)
+	}
+	present, _, err := Present(f, out)
+	wanted, _ := Wanted(f)
+	if err != nil || string(present) != string(wanted) {
+		t.Errorf("present %q, wanted %q (%v)", present, wanted, err)
+	}
+}
+
 func TestKeysModeCreatesAMissingFile(t *testing.T) {
 	out, err := Merge(jsonKeys(map[string]any{"references": []any{}}), nil, false)
 	if err != nil || !strings.Contains(string(out), `"references": []`) {

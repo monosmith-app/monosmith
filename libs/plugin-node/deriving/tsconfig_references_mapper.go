@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"path"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -68,7 +69,7 @@ func inFileOrder(wanted []any, content []byte) []any {
 	var doc struct {
 		References []any `json:"references"`
 	}
-	dec := json.NewDecoder(bytes.NewReader(content))
+	dec := json.NewDecoder(bytes.NewReader(jsondoc.StripComments(content)))
 	dec.UseNumber()
 	if dec.Decode(&doc) != nil {
 		return wanted

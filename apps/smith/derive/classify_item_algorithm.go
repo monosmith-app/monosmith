@@ -57,6 +57,9 @@ func classifyMissing(item Item, entry *derivelock.Entry) Item {
 	if entry == nil {
 		item.Detail = "the renderer derives it and it does not exist yet; derive writes it"
 	}
+	if item.File.Mode == protocol.DeriveKeys {
+		item.Detail += ", with only the keys smith owns; the rest of the file is yours to add back"
+	}
 	return item
 }
 

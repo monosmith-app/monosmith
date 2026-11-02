@@ -54,7 +54,7 @@ func (s Shell) mainContent(w, h int) content {
 		}
 		// Beside the list the detail tells a check in full; alone, the list expands it.
 		doctor := s.doctor
-		doctor.Waited = s.waited()
+		doctor.Waited, doctor.Covered = s.waited(), len(s.list.Projects())
 		lines, rowOf := doctor.View(s.th, w, !s.lay().HasDetail())
 		sel := 0
 		f, found := doctor.Selected()
@@ -74,7 +74,7 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, pane.Scrollbar(s.th, lines, w, top, total)...)
 	case commands.TabRelease:
 		release := s.release
-		release.Waited = s.waited()
+		release.Waited, release.Projects = s.waited(), len(s.list.Projects())
 		lines, rowOf := release.View(s.th, w)
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "release", index: i}
@@ -83,7 +83,7 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
 		deps := s.deps
-		deps.Waited = s.waited()
+		deps.Waited, deps.Projects = s.waited(), len(s.list.Projects())
 		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
