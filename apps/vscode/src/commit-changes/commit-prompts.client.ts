@@ -1,38 +1,37 @@
 import * as vscode from 'vscode'
-import type { CommitChangesOutcome, CommitScope } from './commit-changes.use-case.ts'
+import type { CommitChangesOutcome, CommitPlan, CommitScope } from './commit-changes.use-case.ts'
 
 /**
- * Asks which files the commit holds. The default, first, leaves the person's own changes out.
- * @param operation - the words that name the operation
+ * Shows the files of the plan and asks which ones go into the commit. With other
+ * changes in the work tree the default, first, leaves them out; without them it
+ * is a plain yes or no. Nothing is committed before this answer.
+ * @param plan - what `smith commit --dry-run` printed, with the extra files
  * @returns the scope, or undefined when the person cancels
  */
-export async function askCommitScope (operation: string): Promise<CommitScope | undefined> {
-  const only = 'Only the files this operation changed'
-  const everything = 'Everything git shows as changed'
+export async function chooseCommitScope (plan: CommitPlan): Promise<CommitScope | undefined> {
+  if (plan.extras.length === 0) {
+    const commit = 'Commit these changes'
+    const only = await vscode.window.showInformationMessage(
+      'MonoSmith: commit the changes of the last operation?',
+      { modal: true, detail: `${plan.text}\n\nIt is one commit that Undo can revert.` },
+      commit,
+    )
+
+    return only === commit ? 'operation' : undefined
+  }
+  const only = 'Only the files the last operation changed'
+  const everything = `Everything git shows as changed (${plan.extras.length} more)`
   const choice = await vscode.window.showInformationMessage(
-    `MonoSmith: which files go into the commit "${operation}"?`,
-    { modal: true, detail: 'The first choice leaves your own changes in the work tree. The second takes every changed file, your own work included. You see the list before anything is committed.' },
+    'MonoSmith: which files go into the commit?',
+    {
+      modal:  true,
+      detail: `${plan.text}\n\nThe first choice leaves your own changes in the work tree. The second also takes these files:\n${plan.extras.map((file) => `  ${file}`).join('\n')}\n\nIt is one commit that Undo can revert.`,
+    },
     only,
     everything,
   )
 
   return choice === only ? 'operation' : (choice === everything ? 'all' : undefined)
-}
-
-/**
- * Shows the files that would be committed and asks.
- * @param plan - the text of `smith commit --dry-run`
- * @param operation - the words that name the operation
- * @returns whether the person agreed
- */
-export async function confirmCommit (plan: string, operation: string): Promise<boolean> {
-  const choice = await vscode.window.showInformationMessage(
-    `MonoSmith: commit these changes as "${operation}"?`,
-    { modal: true, detail: `${plan}\n\nThe list is everything git shows as changed: check it. It is one commit that Undo can revert.` },
-    'Commit these changes',
-  )
-
-  return choice === 'Commit these changes'
 }
 
 /**

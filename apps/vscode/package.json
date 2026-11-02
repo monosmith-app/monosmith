@@ -84,19 +84,22 @@
       "monosmith": [
         {
           "id": "monosmith.projects",
-          "name": "Projects"
+          "name": "Projects",
+          "initialSize": 3
         },
         {
           "id": "monosmith.dependencies",
           "name": "Dependencies",
           "when": "monosmith.state == ready",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "initialSize": 2
         },
         {
           "id": "monosmith.release",
           "name": "Release Preview",
           "when": "monosmith.state == ready",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "initialSize": 2
         }
       ]
     },
@@ -335,6 +338,48 @@
         "icon": "$(sync)"
       },
       {
+        "command": "monosmith.release",
+        "title": "Release…",
+        "category": "MonoSmith",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "monosmith.commit",
+        "title": "Commit the Changes…",
+        "category": "MonoSmith",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "monosmith.addLibrary",
+        "title": "Add a Library to a Project…",
+        "category": "MonoSmith",
+        "icon": "$(add)"
+      },
+      {
+        "command": "monosmith.installPackage",
+        "title": "Install a Package in a Project…",
+        "category": "MonoSmith",
+        "icon": "$(package)"
+      },
+      {
+        "command": "monosmith.removeProject",
+        "title": "Remove a Project…",
+        "category": "MonoSmith",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "monosmith.changeKind",
+        "title": "Make a Project an App, Library or Package…",
+        "category": "MonoSmith",
+        "icon": "$(symbol-class)"
+      },
+      {
+        "command": "monosmith.unlinkLibrary",
+        "title": "Unlink a Library from a Project…",
+        "category": "MonoSmith",
+        "icon": "$(debug-disconnect)"
+      },
+      {
         "command": "monosmith.undo",
         "title": "Undo the Last Change…",
         "category": "MonoSmith",
@@ -525,6 +570,11 @@
           "group": "3_check@3"
         },
         {
+          "command": "monosmith.commit",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "3_check@3"
+        },
+        {
           "command": "monosmith.undo",
           "when": "view == monosmith.projects && monosmith.state == ready",
           "group": "3_check@4"
@@ -573,6 +623,11 @@
           "command": "monosmith.dependencies.refresh",
           "when": "view == monosmith.dependencies",
           "group": "navigation@2"
+        },
+        {
+          "command": "monosmith.release",
+          "when": "view == monosmith.release",
+          "group": "navigation@0"
         },
         {
           "command": "monosmith.release.refresh",
@@ -625,6 +680,36 @@
           "command": "monosmith.why",
           "when": "view == monosmith.projects && viewItem == project",
           "group": "1_inspect@3"
+        },
+        {
+          "command": "monosmith.addLibrary",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@1"
+        },
+        {
+          "command": "monosmith.installPackage",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@2"
+        },
+        {
+          "command": "monosmith.unlinkLibrary",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@3"
+        },
+        {
+          "command": "monosmith.swap",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@4"
+        },
+        {
+          "command": "monosmith.changeKind",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@5"
+        },
+        {
+          "command": "monosmith.removeProject",
+          "when": "view == monosmith.projects && viewItem == project",
+          "group": "2_change@6"
         },
         {
           "command": "monosmith.why",
@@ -746,6 +831,34 @@
         },
         {
           "command": "monosmith.syncVersions",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.commit",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.addLibrary",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.installPackage",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.removeProject",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.changeKind",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.unlinkLibrary",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.release",
           "when": "monosmith.state == ready"
         },
         {

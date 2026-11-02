@@ -64,7 +64,7 @@ async function askOutcome (options: AddOptions): Promise<'compose' | { role: str
   const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages, outcome)
   if (language === undefined) return undefined
 
-  const preset = await askPreset(outcome, language)
+  const preset = await askPreset(options, outcome, language)
 
   return preset === undefined ? undefined : { role: outcome.role, language, preset }
 }
@@ -91,6 +91,7 @@ async function askEveryLanguage (options: AddOptions): Promise<{ role: string, l
 async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<OutcomeRow | undefined> {
   const pick = vscode.window.createQuickPick<vscode.QuickPickItem & { row: OutcomeRow }>()
   pick.title = `${TITLE}: what are you building?`
+  pick.ignoreFocusOut = true
   pick.placeholder = 'Type to narrow the list: try react, azure function, electron, tauri, api'
   const show = (): void => {
     pick.items = outcomeRows(outcomes, pick.value).map((row) => ({ ...rowItem(row), row, alwaysShow: true }))
@@ -146,12 +147,13 @@ async function askLanguage (options: AddOptions, role: string, fitting: readonly
 }
 
 /** Asks which framework, desktop shell or cloud the outcome uses; a website or a desktop app may decide later, a function app may not. */
-async function askPreset (outcome: OutcomeOption, language: string): Promise<string[] | undefined> {
+async function askPreset (options: AddOptions, outcome: OutcomeOption, language: string): Promise<string[] | undefined> {
   const items = outcome.items.filter((item) => item.language === language)
   if (items.length === 0) return []
 
   const later = '$(clock) Decide in the next question'
-  const question = { framework: 'Which framework?', shell: 'Which desktop shell?', host: 'Which cloud?' }[outcome.items[0]?.layer ?? ''] ?? 'Which one?'
+  const layer = outcome.items[0]?.layer ?? ''
+  const question = options.layers[layer] === undefined ? 'Which one?' : `Which ${options.layers[layer].toLowerCase()}?`
   const picked = await vscode.window.showQuickPick(
     [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])],
     { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick starts selected in the choices that follow`.trim(), matchOnDescription: true },
@@ -203,26 +205,27 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
     }
     const defaults = axis.choices.filter((choice) => choice.isDefault).map((choice) => choice.name)
     const entries = axis.choices.map((choice) => ({
-      label:       choice.name,
-      description: `${choice.isDefault ? '(default) ' : ''}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
+      name:        choice.name,
+      label:       choice.title ?? choice.name,
+      description: `${choice.isDefault ? '(default) ' : ''}${choice.layer === undefined ? '' : `${options.layers[choice.layer] ?? choice.layer} `}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
       detail:      choice.description,
       picked:      choice.isDefault || preset.includes(choice.name),
     }))
     const hint = whatIs(axis.axis)
     if (axis.many) {
-      const answer = await vscode.window.showQuickPick(entries, { title: `${TITLE}: ${axis.axis}`, placeHolder: `${hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true })
+      const answer = await vscode.window.showQuickPick(entries, { title: `${TITLE}: ${options.layers[axis.axis]?.toLowerCase() ?? axis.axis}`, placeHolder: `${hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true, ignoreFocusOut: true })
       if (answer === undefined) return undefined
-      picked.push(...answer.map((item) => item.label))
+      picked.push(...answer.map((item) => item.name))
       continue
     }
     // A single-choice axis is a radio list: one answer, so two cannot be ticked.
-    const none = { label: '$(close) None', description: 'leave this out', detail: '' }
+    const none = { name: '', label: '$(close) None', description: 'leave this out', detail: '' }
     const answer = await vscode.window.showQuickPick(
-      [...entries.map(({ label, description, detail }) => ({ label, description, detail })), ...(defaults.length > 0 ? [] : [none])],
-      { title: `${TITLE}: ${axis.axis} (one)`, placeHolder: `${hint} ${axis.axis} takes one choice.`.trim() },
+      [...entries.map(({ name, label, description, detail }) => ({ name, label, description, detail })), ...(defaults.length > 0 ? [] : [none])],
+      { title: `${TITLE}: ${options.layers[axis.axis]?.toLowerCase() ?? axis.axis} (one)`, placeHolder: `${hint} ${axis.axis} takes one choice.`.trim() },
     )
     if (answer === undefined) return undefined
-    if (answer !== none) picked.push(answer.label)
+    if (answer !== none) picked.push(answer.name)
   }
 
   return { with: picked }

@@ -49,7 +49,10 @@ async function askNextStep (failure: DoctorFailure, operation: string, next?: Do
       break
     }
     case leave: {
-      void vscode.window.showInformationMessage(`MonoSmith: ${failure.name} is left uncommitted. smith remembers its files. Commit them when you decide: smith commit ${operation} --only-operation.`)
+      const later = 'Commit the changes…'
+      void vscode.window.showInformationMessage(`MonoSmith: ${failure.name} is left uncommitted. smith remembers its files. Commit them when you decide: run "MonoSmith: Commit the changes…".`, later).then(async (again) => {
+        if (again === later) await next?.commit(operation)
+      })
       break
     }
   }

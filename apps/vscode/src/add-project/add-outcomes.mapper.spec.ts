@@ -42,7 +42,7 @@ describe('parseOutcomes', () => {
   })
 
   it('gives nothing, not an error, when smith lists no outcomes', () => {
-    expect(parseOutcomes('{"items":[]}')).toEqual({ outcomes: [], languages: [] })
+    expect(parseOutcomes('{"items":[]}')).toEqual({ outcomes: [], languages: [], layers: {} })
   })
 
   it('rejects text that is not a catalogue', () => {

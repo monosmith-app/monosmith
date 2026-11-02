@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toReleaseRows } from './release-tree.mapper.ts'
+import { explanationLines, toReleaseRows } from './release-tree.mapper.ts'
 
 describe('toReleaseRows', () => {
   const preview = {
@@ -53,5 +53,31 @@ describe('toReleaseRows', () => {
     const { nodes, message } = toReleaseRows({ error: 'not on the release branch' })
     expect(nodes[0]).toMatchObject({ label: 'not on the release branch', icon: 'error' })
     expect(message).toBeUndefined()
+  })
+})
+
+describe('the explanation of a release that has nothing to release', () => {
+  const said = [
+    'Dry run: nothing is published or tagged.',
+    'Nothing to release: no package has a feat: or fix: commit since its last release.',
+    '  → Only feat: (a minor version) and fix: (a patch) commits make a release.',
+    '  → Apps and libraries never release: make a package with smith kind <name> package.',
+    '      git commit --allow-empty -m "feat: first version"',
+  ].join('\n')
+
+  it('keeps the lines of smith and drops the dry-run notice and the arrows', () => {
+    expect(explanationLines(said)).toEqual([
+      'Nothing to release: no package has a feat: or fix: commit since its last release.',
+      'Only feat: (a minor version) and fix: (a patch) commits make a release.',
+      'Apps and libraries never release: make a package with smith kind <name> package.',
+      'git commit --allow-empty -m "feat: first version"',
+    ])
+  })
+
+  it('shows them under "Why nothing releases", open, above the other rows', () => {
+    const { nodes, message } = toReleaseRows({ results: [] }, explanationLines(said))
+    expect(message).toBe('Nothing to release.')
+    expect(nodes[0]).toMatchObject({ label: 'Why nothing releases', expanded: true })
+    expect(nodes[0]?.children?.map((child) => child.label)).toContain('Apps and libraries never release: make a package with smith kind <name> package.')
   })
 })

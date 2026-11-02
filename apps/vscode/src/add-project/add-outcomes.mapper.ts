@@ -80,10 +80,10 @@ function records (value: unknown): Json[] {
  * outcomes smith builds from its catalogue (the same list the terminal screen
  * shows) and the languages with their names.
  * @param json - what `smith compose --json` printed
- * @returns the outcomes and the languages; both empty when smith is too old to list outcomes
+ * @returns the outcomes, the languages and the title of each layer (`shell` is "Desktop shell"); empty when smith is too old to list them
  * @throws SyntaxError when the text is not JSON, TypeError when it is not an object
  */
-export function parseOutcomes (json: string): { outcomes: OutcomeOption[], languages: LanguageInfo[] } {
+export function parseOutcomes (json: string): { outcomes: OutcomeOption[], languages: LanguageInfo[], layers: Record<string, string> } {
   const value: unknown = JSON.parse(json)
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no catalogue')
   const root = value as Json
@@ -108,7 +108,9 @@ export function parseOutcomes (json: string): { outcomes: OutcomeOption[], langu
     .filter((item) => item.kind === 'language' && text(item.name) !== '')
     .map((item) => ({ name: text(item.name), title: text(item.title) || text(item.name), description: text(item.description) }))
 
-  return { outcomes, languages }
+  const layers = Object.fromEntries(records(root.layers).filter((layer) => text(layer.id) !== '' && text(layer.title) !== '').map((layer) => [text(layer.id), text(layer.title)]))
+
+  return { outcomes, languages, layers }
 }
 
 /**

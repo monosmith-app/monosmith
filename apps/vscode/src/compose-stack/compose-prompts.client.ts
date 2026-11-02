@@ -20,6 +20,7 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
   pick.canSelectMany = true
   pick.matchOnDescription = true
   pick.matchOnDetail = true
+  pick.ignoreFocusOut = true
   pick.placeholder = 'Search, then tick what you want: a language, a framework, a desktop shell, a cloud host'
   let current = [...ticked]
   let updating = false
@@ -35,9 +36,12 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
       }
       entries.push({ ...pickLabels(item), id: item.id, alwaysShow: current.includes(item.id) })
     }
+    // Rebuilding the list moves the cursor to the first row: put it back, so the arrow keys carry on from where they were.
+    const active = new Set(pick.activeItems.map((entry) => entry.id))
     updating = true
     pick.items = entries
     pick.selectedItems = entries.filter((entry) => entry.id !== undefined && current.includes(entry.id))
+    pick.activeItems = entries.filter((entry) => entry.id !== undefined && active.has(entry.id))
     updating = false
     setTitle()
   }

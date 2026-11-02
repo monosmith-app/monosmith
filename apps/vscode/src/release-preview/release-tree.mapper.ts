@@ -11,9 +11,11 @@ const LEVEL_COLORS: Record<string, string> = {
  * Lays the release plan out as rows: a row per package that would release,
  * with the version it moves to and under it why, its tag and the commits that
  * cause it, then the packages with nothing to release, closed.
- * Publishing is not offered here: it is `smith release`, which asks first.
+ * Publishing is not offered here: it is `MonoSmith: Release…`, which asks first.
+ * @param preview - the plan of `smith release --dry-run`
+ * @param explanation - what the CLI says when nothing releases (see `explanationLines`), shown as rows
  */
-export function toReleaseRows (preview: ReleasePreview): ListResult {
+export function toReleaseRows (preview: ReleasePreview, explanation: readonly string[] = []): ListResult {
   const results = preview.results ?? []
   const unchanged = preview.unchanged ?? []
   const channel = preview.channel === undefined || preview.channel === '' ? undefined : preview.channel
@@ -33,7 +35,11 @@ export function toReleaseRows (preview: ReleasePreview): ListResult {
   ]
   const suffix = channel === undefined ? '' : ` · channel ${channel}`
   if (results.length === 0) {
-    return { nodes, message: preview.error === undefined ? 'Nothing to release.' : undefined, summary: `nothing to release${suffix}` }
+    const why: ListNode[] = explanation.length === 0
+      ? []
+      : [{ id: 'release:why', label: 'Why nothing releases', icon: 'info', expanded: true, children: explanation.map((line, index) => ({ id: `release:why:${index}`, label: line, icon: 'dash', tooltip: line })) }]
+
+    return { nodes: [...why, ...nodes], message: preview.error === undefined ? 'Nothing to release.' : undefined, summary: `nothing to release${suffix}` }
   }
 
   return { nodes, summary: `${results.length} to release${suffix}` }
@@ -78,4 +84,16 @@ function toResultRow (result: ReleaseResult): ListNode {
     tooltip:     [`${result.project} ${from} → ${result.next}`, result.reason, result.forced === true ? 'Forced.' : undefined].filter(Boolean).join('\n'),
     children,
   }
+}
+
+/**
+ * Picks the explanation out of the text `smith release --dry-run` prints when nothing releases:
+ * which commits count, that apps and libraries never release, and the way to a first release.
+ * @param text - the text smith printed
+ * @returns the lines, without the dry-run notice, the arrows and the indent; empty when smith explained nothing
+ */
+export function explanationLines (text: string): string[] {
+  return text.split(/\r?\n/)
+    .map((line) => line.replace(/^\s*→\s*/, '').trim())
+    .filter((line) => line !== '' && !line.startsWith('Dry run:'))
 }
