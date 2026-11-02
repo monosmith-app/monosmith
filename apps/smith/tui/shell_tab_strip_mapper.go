@@ -31,10 +31,10 @@ func (s Shell) renderStrip(hover string) tabs.Strip {
 	list := make([]tabs.Tab, 0, len(s.tabs))
 	for _, id := range s.tabs {
 		t := tabs.Tab{ID: id, Label: tabTitles[id], Short: shortTitles[id], Badge: s.tabBadge(id)}
-		if id == commands.TabGuide && s.confirm != nil && s.Form != "" {
-			// A form that was answered and waits for its confirmation: the tab
-			// names the form, not "Start".
-			t.Label = s.Form
+		if name := s.guideModalName(); id == commands.TabGuide && name != "" {
+			// A form that was answered and waits for its confirmation, or a box
+			// that took its place: the tab names it, not "Start".
+			t.Label = name
 		}
 		if id == commands.TabRun || id == commands.TabDoctor {
 			t.Reserve = badgeRoom

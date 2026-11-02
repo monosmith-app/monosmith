@@ -31,8 +31,30 @@ func (p tabPage) Title() string {
 		if t := s.guide.Title(); t != "" {
 			return t
 		}
+		if t := s.guideModalName(); t != "" {
+			return t
+		}
 	}
 	return tabTitles[s.tab]
+}
+
+// guideModalName is what the Start tab is doing while a box is open over it and
+// the form is no longer on screen: the form that waits for its confirmation, the
+// composer, the adopt wizard. It is "" when no such box is open, and the tab
+// keeps its own name.
+func (s Shell) guideModalName() string {
+	if s.tab != commands.TabGuide {
+		return ""
+	}
+	switch {
+	case s.confirm != nil && s.Form != "":
+		return s.Form
+	case s.compose != nil:
+		return "Compose a stack"
+	case s.adopt != nil:
+		return "Bring into MonoSmith"
+	}
+	return ""
 }
 
 // Footer implements Page.

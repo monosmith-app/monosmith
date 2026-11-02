@@ -32,6 +32,8 @@ func RunScopeLabel(argv []string, projects int) string {
 		return verb + " · " + strings.Join(req.Projects, ", ")
 	case req.Affected:
 		return verb + " · affected projects"
+	case projects == 1:
+		return verb + " · the only project"
 	case projects > 0:
 		return fmt.Sprintf("%s · all %d projects", verb, projects)
 	}

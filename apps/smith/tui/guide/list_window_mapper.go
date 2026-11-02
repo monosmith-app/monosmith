@@ -8,9 +8,11 @@ import (
 const (
 	// wordsHint is the line a folded glossary leaves.
 	wordsHint = "what do these words mean? press ?"
-	// shortScreen is the number of screen rows under which a glossary folds.
-	shortScreen = 30
-	// minListRows is how many rows of the list the screen always keeps.
+	// glossaryListRows is how many lines of the list a glossary must leave. A row of
+	// the list wraps to two or three lines, so 16 lines are about 7 rows; when the
+	// words would leave fewer, they fold to the one line above.
+	glossaryListRows = 16
+	// minListRows is how many rows of the list the pane always keeps.
 	minListRows = 8
 )
 
@@ -18,15 +20,14 @@ const (
 // options when it does not fit (see pane.Window): the question stays at the
 // top and the keys at the bottom, the wheel scrolls the list, and the
 // selection keeps in view when a key moves it. A glossary folds to one line
-// when the terminal has fewer than 30 rows, or when it would leave the list
-// fewer than 8 rows; "?" opens it.
+// whenever the pane would leave the list fewer than 16 rows (the height of the
+// pane decides, not that of the terminal); "?" opens it.
 //
-// Parameters: th is the theme; w and h are the cells of the pane; screen is
-// the number of rows of the whole terminal.
+// Parameters: th is the theme; w and h are the cells of the pane.
 // Returns: the lines, and optionAt that maps each line of an option to the
 // option, for a click.
-func (m Model) Window(th theme.Theme, w, h, screen int) (lines []string, optionAt map[int]int) {
-	fold := m.HasGlossary() && !m.words && screen < shortScreen
+func (m Model) Window(th theme.Theme, w, h int) (lines []string, optionAt map[int]int) {
+	fold := false
 	for {
 		lines, optionAt = m.body(th, w-1, fold)
 		first, last, ok := optionSpan(optionAt)
@@ -35,7 +36,7 @@ func (m Model) Window(th theme.Theme, w, h, screen int) (lines []string, optionA
 		}
 		head, rows, foot := lines[:first], lines[first:last+1], lines[last+1:]
 		room := h - len(head) - len(foot)
-		if room < minListRows+1 && m.HasGlossary() && !fold {
+		if room < glossaryListRows && m.HasGlossary() && !m.words && !fold {
 			fold = true // the words give way to the list
 			continue
 		}
