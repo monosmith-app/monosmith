@@ -151,3 +151,4 @@ Issues, pull requests and commits as links; research and architecture pages.
 Do not invent a rationale. If the history does not say why, write "Rationale not recorded."
 and link the commit or pull request. To change a decision, write a new record and mark the old
 one `superseded by NNNN`; do not edit its decision.
+| [0082](0082-a-dist-tag-moves-only-after-the-platform-packages-are-fetchable.md) | A dist-tag moves only after the platform packages are fetchable | accepted | 2026-11-02 | the release waits (`propagation_wait`, 15m) until each platform package is found and its tarball is fetchable on three probes 30 s apart; else the wrappers go under `pending`, the exact command is printed, exit code 2; the launcher says which of three situations a missing package is |
