@@ -8,6 +8,7 @@ import { typedItem } from './add-choice-rows.mapper.ts'
 import { pickChoices, type ChoicePrompts } from './pick-choices.use-case.ts'
 import { showNotice } from '../notice-buttons/index.ts'
 import { isWebApp } from './web-environments.mapper.ts'
+import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
 import { askWebEnvironments } from './web-environments-prompts.client.ts'
 
 const ROLES: Record<string, string> = {
@@ -29,7 +30,7 @@ const TITLE = 'MonoSmith: Add project'
  * @returns the request, `compose` when the person chose to compose a stack, or undefined when they pressed Escape at any question
  */
 export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | 'compose' | undefined> {
-  const found = await askOutcome(options)
+  const found = await askOutcome(options, projects)
   if (found === undefined || found === 'compose') return found
 
   const { role, language, preset, outcomeId } = found
@@ -65,16 +66,16 @@ const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
  * @param options - what smith lists
  * @returns the kind, the language and the choice the outcome named; `compose` for the composer; undefined when the person pressed Escape
  */
-async function askOutcome (options: AddOptions): Promise<'compose' | { role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
+async function askOutcome (options: AddOptions, projects: ReadonlyArray<{ language: string }>): Promise<'compose' | { role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
   const found = await pickOutcomeRow(options.outcomes)
   if (found === undefined) return undefined
   const { row: picked, typed } = found
   if (picked.kind === 'compose') return 'compose'
-  if (picked.kind === 'every') return askEveryLanguage(options)
+  if (picked.kind === 'every') return askEveryLanguage(options, projects)
   if (picked.kind === 'none') return undefined
 
   const { outcome } = picked
-  const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages, outcome)
+  const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages, projects, outcome)
   if (language === undefined) return undefined
 
   const preset = await askPreset(options, outcome, language, typed)
@@ -83,12 +84,12 @@ async function askOutcome (options: AddOptions): Promise<'compose' | { role: str
 }
 
 /** The old way: the kind, then every language of that kind. */
-async function askEveryLanguage (options: AddOptions): Promise<{ role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
+async function askEveryLanguage (options: AddOptions, projects: ReadonlyArray<{ language: string }>): Promise<{ role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
   const roles = [...new Set(options.kinds.map((kind) => roleOf(kind.kind, kind.language)))]
   const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: `${TITLE}: what kind?`, placeHolder: 'app, lib or package' })
   if (role === undefined) return undefined
 
-  const language = await askLanguage(options, role.label, options.kinds.map((kind) => kind.language))
+  const language = await askLanguage(options, role.label, options.kinds.map((kind) => kind.language), projects)
 
   return language === undefined ? undefined : { role: role.label, language, preset: [] }
 }
@@ -149,10 +150,11 @@ function rowItem (row: OutcomeRow): vscode.QuickPickItem {
  * Asks the language among those that fit, by the name a person knows, with
  * what each offers for the thing being built (the clouds of a function app).
  */
-async function askLanguage (options: AddOptions, role: string, fitting: readonly string[], outcome?: OutcomeOption): Promise<string | undefined> {
-  const rows = languageRows(options.languages, options.kinds, role, fitting, outcome)
+async function askLanguage (options: AddOptions, role: string, fitting: readonly string[], projects: ReadonlyArray<{ language: string }>, outcome?: OutcomeOption): Promise<string | undefined> {
+  const main = mainLanguage(projects, fitting)
+  const rows = startOnMainLanguage(languageRows(options.languages, options.kinds, role, fitting, outcome), main)
   const language = await vscode.window.showQuickPick(
-    rows.map((row) => ({ label: row.label, description: row.description, detail: row.detail, language: row.language })),
+    rows.map((row) => ({ label: row.label, description: row.language === main?.language ? `${row.description} ${main.why}`.trim() : row.description, detail: row.detail, language: row.language })),
     { title: `${TITLE}: which language?`, placeHolder: outcome?.items[0]?.layer === 'host' ? 'The language of the function; the clouds it can run in are listed next to it' : 'Pick the language', matchOnDescription: true, matchOnDetail: true },
   )
 

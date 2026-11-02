@@ -616,6 +616,12 @@
         "title": "Choose the Architecture of the Workspace…",
         "category": "MonoSmith",
         "icon": "$(layers)"
+      },
+      {
+        "command": "monosmith.tauriAdd",
+        "title": "Make an App a Tauri Desktop App…",
+        "category": "MonoSmith",
+        "icon": "$(device-desktop)"
       }
     ],
     "menus": {
@@ -924,6 +930,11 @@
           "command": "monosmith.architecture",
           "when": "view == monosmith.projects && monosmith.state == ready",
           "group": "6_more@26"
+        },
+        {
+          "command": "monosmith.tauriAdd",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@27"
         }
       ],
       "view/item/context": [
@@ -1418,6 +1429,10 @@
         },
         {
           "command": "monosmith.architecture",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.tauriAdd",
           "when": "monosmith.state == ready"
         }
       ]

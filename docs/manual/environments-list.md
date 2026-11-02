@@ -24,12 +24,18 @@ smith environments list [project]
 <!-- smith:begin environments list -->
 List the environments of the web apps and the task that builds each
 
-Usage: `smith environments list [project]`
+Usage: `smith environments list [project] [--json]`
 
 | Argument | Required | Meaning |
 |---|---|---|
 | `project` | no |  |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--json` | boolean | off | print the web apps and their environments as JSON |
+
+`--json` prints a list with one entry for each web app: `project`, `envFiles`, `output`, `default`
+and `environments`, a list of `name` and `task`. The VS Code extension reads it to offer the web
+apps and the names that `environments remove` accepts.
 
 <!-- smith:end environments list -->

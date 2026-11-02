@@ -181,6 +181,20 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
     args: (a) => ['mcp', 'install', ...list(a, 'tools')],
   },
   {
+    id:          'tauriAdd',
+    title:       'Make an App a Tauri Desktop App…',
+    mode:        'change',
+    planFlag:    '--dry-run',
+    yes:         true,
+    verb:        'Add Tauri to the app',
+    consequence: 'It writes src-tauri and the tauri tasks in the app. Nothing is committed.',
+    steps:       [
+      { key: 'project', kind: 'text', title: 'MonoSmith: Tauri (1/2): which app?', prompt: 'The name of a web app of the workspace.', placeholder: 'web' },
+      { key: 'identifier', kind: 'text', title: 'MonoSmith: Tauri (2/2): the bundle identifier', prompt: 'Like com.yourcompany.yourapp. Enter takes com.<workspace>.<project>, which is the default.', placeholder: 'com.acme.web', optional: true },
+    ],
+    args: (a) => ['tauri', 'add', text(a, 'project'), ...(text(a, 'identifier') === '' ? [] : ['--identifier', text(a, 'identifier')])],
+  },
+  {
     id:    'info',
     title: 'Info: the Installed smith and the Settings',
     mode:  'read',
