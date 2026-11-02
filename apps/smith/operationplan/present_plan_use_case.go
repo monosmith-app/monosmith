@@ -59,8 +59,8 @@ func Present(out io.Writer, in io.Reader, plan Plan, o Options) (bool, error) {
 		fmt.Fprintln(out, "Applying it without asking: [workspace] confirm = \"risky\" asks only when a plan deletes or edits files.")
 		return true, nil
 	}
-	if !ShouldAsk(o.Env, o.Yes) {
-		return false, ErrNeedsAnswer()
+	if err := NeedsAnswerFor(plan, o); err != nil {
+		return false, err
 	}
 	fmt.Fprint(out, "Go ahead? [y/N] ")
 	answer, _ := bufio.NewReader(in).ReadString('\n')
@@ -68,6 +68,25 @@ func Present(out io.Writer, in io.Reader, plan Plan, o Options) (bool, error) {
 		return false, ErrDeclined
 	}
 	return true, nil
+}
+
+// NeedsAnswerFor reports, before anything changes, whether Present would refuse
+// the plan because nobody can confirm it. A command that moves or writes files
+// before it presents the plan calls this first.
+//
+// Parameters: plan is what the command will do; o says how it is presented.
+// Returns: ErrNeedsAnswer() when Present would refuse, nil otherwise.
+func NeedsAnswerFor(plan Plan, o Options) error {
+	if plan.Empty() || !o.Ask || o.Yes || o.DryRun {
+		return nil
+	}
+	if mode := cmp.Or(o.Confirm, DefaultConfirm); mode == ConfirmRisky && !plan.Risky() {
+		return nil
+	}
+	if !ShouldAsk(o.Env, o.Yes) {
+		return ErrNeedsAnswer()
+	}
+	return nil
 }
 
 // ErrNeedsAnswer is the refusal for a run that has no terminal and no --yes.

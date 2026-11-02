@@ -10,7 +10,7 @@ import (
 
 // UndoCommand is `smith undo`.
 func UndoCommand() *cobra.Command {
-	var yes, dryRun bool
+	var yes, dryRun, clean bool
 	cmd := &cobra.Command{
 		Use:   "undo",
 		Short: "Revert the last operation smith committed (add, remove, upgrade, derive, sync)",
@@ -22,7 +22,11 @@ reverts it with git revert: a new commit, history untouched.
 It refuses, and says why, when a later commit or an uncommitted change touches
 the same files, or when the commit is no longer in the history. --dry-run shows
 what it would revert. --yes skips the question; without a terminal, or in CI,
-smith undo refuses unless --yes is given.`,
+smith undo refuses unless --yes is given.
+
+git revert cannot remove files git ignores. When the undone project left generated
+folders behind (node_modules, dist, a venv), smith undo lists them. In a terminal it asks
+whether to delete them; --clean deletes them without asking; otherwise it only says what is left.`,
 		Example: "  smith undo --dry-run\n  smith undo",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -46,10 +50,17 @@ smith undo refuses unless --yes is given.`,
 				return err
 			}
 			fmt.Fprintf(out, "Reverted %s in commit %s.\n", c.Record.Command, short(hash))
-			return nil
+			var removed []string
+			for _, l := range c.Changes {
+				if l.Action == operationplan.Remove {
+					removed = append(removed, l.Path)
+				}
+			}
+			return settleLeftovers(cmd, root, FindLeftovers(root, removed), clean, yes)
 		},
 	}
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be reverted and change nothing")
+	cmd.Flags().BoolVar(&clean, "clean", false, "also delete the generated folders the project left behind (node_modules, dist), which git ignores")
 	return cmd
 }

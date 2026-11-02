@@ -173,6 +173,7 @@ func orNone(stack string) string {
 
 func iconCommandHandler(version string) *cobra.Command {
 	var project string
+	var yes, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "icon <logo.png>",
 		Short: "Make the app's icons from a square PNG",
@@ -191,6 +192,10 @@ or the one named with -p.`,
 				return err
 			}
 			defer s.Close()
+			goOn, err := operationplan.Gate(cmd.OutOrStdout(), cmd.InOrStdin(), "make the icons from "+args[0], "Icons you may have edited", []operationplan.Line{{Action: operationplan.Change, Path: "src-tauri/icons", Note: "overwritten from " + args[0]}}, yes, dryRun)
+			if err != nil || !goOn {
+				return err
+			}
 			name, err := MakeIcons(s, project, args[0])
 			if err != nil {
 				return err
@@ -200,5 +205,7 @@ or the one named with -p.`,
 		},
 	}
 	cmd.Flags().StringVarP(&project, "project", "p", "", "the app, when more than one project has a src-tauri")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the icons are made only with --yes")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be overwritten and change nothing")
 	return cmd
 }

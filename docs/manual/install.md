@@ -15,6 +15,10 @@ package needs a target: `smith install -w <project> <package>`.
 To remove a dependency use [`smith uninstall`](uninstall.md); to update, [`smith up`](up.md);
 to make versions agree, [`smith sync`](sync.md).
 
+## Asking first
+
+Naming a package (`smith install -w web zod`) shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. A plain `smith install` only restores what the workspace already declares and asks nothing.
+
 ## Synopsis
 
 ```sh

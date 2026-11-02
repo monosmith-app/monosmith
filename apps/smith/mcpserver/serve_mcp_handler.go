@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +29,8 @@ as the server's command, started in the workspace.`,
 				return err
 			}
 			server := Server{Tools: Tools, Version: version, Run: func(args []string) Outcome {
+				// The assistant's host asks the person before it calls a tool, which is the confirmation.
+				args = catalog.WithConfirmation(args)
 				c := exec.Command(self, args...)
 				// Not a terminal and in CI mode: no command stops to ask.
 				c.Env = append(os.Environ(), "CI=1", "NO_COLOR=1")

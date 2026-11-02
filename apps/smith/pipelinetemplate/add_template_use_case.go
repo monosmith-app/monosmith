@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -25,7 +26,51 @@ type Options struct {
 }
 
 // Add writes a template for each provider and returns the files written.
+// Every check runs before the first write, so a refusal leaves no file behind.
 func Add(s *session.Session, name string, opts Options) ([]string, error) {
+	files, err := planTemplate(s, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	var written []string
+	for _, f := range files {
+		if err := os.MkdirAll(filepath.Dir(f.path), 0o755); err != nil {
+			return written, err
+		}
+		if err := os.WriteFile(f.path, []byte(f.content), 0o644); err != nil {
+			return written, err
+		}
+		written = append(written, f.rel)
+	}
+	return written, nil
+}
+
+// PlanLines are the files Add would write, without writing any.
+//
+// Parameters: s is the session; name the template; opts what Add takes.
+// Returns: one plan line per file (a create, or a change when it is replaced), or the
+// error Add would return.
+func PlanLines(s *session.Session, name string, opts Options) ([]operationplan.Line, error) {
+	files, err := planTemplate(s, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	var lines []operationplan.Line
+	for _, f := range files {
+		action := operationplan.Create
+		if _, err := os.Stat(f.path); err == nil {
+			action = operationplan.Change
+		}
+		lines = append(lines, operationplan.Line{Action: action, Path: f.rel, Note: name + " pipeline"})
+	}
+	return lines, nil
+}
+
+// plannedFile is a pipeline file Add will write.
+type plannedFile struct{ rel, path, content string }
+
+// planTemplate renders and checks the files of a template; it writes nothing.
+func planTemplate(s *session.Session, name string, opts Options) ([]plannedFile, error) {
 	t, ok := Find(name)
 	if !ok {
 		var names []string
@@ -47,11 +92,11 @@ func Add(s *session.Session, name string, opts Options) ([]string, error) {
 		return nil, err
 	}
 	model := cipipeline.NewModel(contributions, s.Version, s.Config.Release.Branch)
-	var written []string
+	var files []plannedFile
 	for _, provider := range providers {
 		if !slices.Contains(t.Providers, provider) {
 			if len(opts.Providers) > 0 {
-				return written, fmt.Errorf("%s has no %s form (it has %s)", name, provider, strings.Join(t.Providers, ", "))
+				return nil, fmt.Errorf("%s has no %s form (it has %s)", name, provider, strings.Join(t.Providers, ", "))
 			}
 			continue
 		}
@@ -59,22 +104,16 @@ func Add(s *session.Session, name string, opts Options) ([]string, error) {
 		rel := Path(name, provider)
 		path := filepath.Join(s.Root, filepath.FromSlash(rel))
 		if _, err := os.Stat(path); err == nil && !opts.Force {
-			return written, fmt.Errorf("%s exists and is yours; pass --force to replace it", rel)
+			return nil, fmt.Errorf("%s exists and is yours; pass --force to replace it", rel)
 		} else if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return written, err
+			return nil, err
 		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return written, err
-		}
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			return written, err
-		}
-		written = append(written, rel)
+		files = append(files, plannedFile{rel: rel, path: path, content: content})
 	}
-	if len(written) == 0 {
+	if len(files) == 0 {
 		return nil, fmt.Errorf("%s has no form for this workspace's CI (%s); pass --ci %s", name, strings.Join(providers, ", "), t.Providers[0])
 	}
-	return written, nil
+	return files, nil
 }
 
 func appFor(s *session.Session, t Template, project string) (App, error) {

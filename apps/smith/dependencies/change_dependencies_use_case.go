@@ -93,6 +93,9 @@ func addPackages(s *session.Session, p *projectgraph.Project, packages []string,
 		return outcome(p, ok, err)
 	})
 	if err != nil {
+		if hint := UnknownNameHint(s.Graph.Names(), packages); hint != "" {
+			err = fmt.Errorf("%w\n%s", err, hint)
+		}
 		return err
 	}
 	what := "installed"

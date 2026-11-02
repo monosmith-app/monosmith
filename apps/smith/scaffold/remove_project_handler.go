@@ -115,6 +115,11 @@ hand-written workflow, an editor task, a doc). It does not change them.`,
 				fmt.Fprintf(out, "  %s\n", n)
 			}
 			WriteMentions(out, r)
+			if !opts.DryRun {
+				for _, line := range RecoveryLines(r) {
+					fmt.Fprintln(out, line)
+				}
+			}
 			return nil
 		},
 	}

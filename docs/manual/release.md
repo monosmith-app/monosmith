@@ -213,7 +213,10 @@ When no commit releases anything:
 
 ```text
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).
-  → Releases come from conventional commits: commit with a message like "feat: add search" or "fix: handle empty input" ...
+  → Only feat: (a minor version) and fix: (a patch) commits make a release. The commits smith makes itself, such as "chore: add app web", never do.
+  → Commit your own work with a message like "feat: add search" or "fix: handle empty input" ...
+  → For a first release of projects that were never released, this is the commit that counts (smith does not make it for you):
+      git commit --allow-empty -m "feat: first version"
 Unchanged: 1 packages (--verbose names them)
 ```
 

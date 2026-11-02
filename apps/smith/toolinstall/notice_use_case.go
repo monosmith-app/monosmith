@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -37,12 +38,36 @@ func NoticeText(list []Status) string {
 	return b.String()
 }
 
-// Notice prints a warning for each tool the workspace needs that is missing,
-// for `smith add` and `smith install`. extraLanguages and extraChoices add the
-// tools of a language or choice that no project uses yet.
-func Notice(ctx context.Context, s *session.Session, out io.Writer, extraLanguages, extraChoices []string) {
-	needs := WorkspaceNeeds(s, extraLanguages, extraChoices)
+// Notice prints a warning for each tool that is missing, for `smith add` and
+// `smith install`. A command that touches some projects warns only about the
+// tools those projects need, so a Python change never warns about the .NET SDK.
+// extraLanguages and extraChoices add the tools of a language or choice that no
+// project uses yet.
+//
+// Parameters: projects are the projects the command touches; nil means all of
+// them (a plain install restores every project).
+func Notice(ctx context.Context, s *session.Session, out io.Writer, projects, extraLanguages, extraChoices []string) {
+	needs := OnlyProjects(WorkspaceNeeds(s, extraLanguages, extraChoices), projects)
 	fmt.Fprint(out, NoticeText(DetectAll(ctx, ExecDetector{}, needs)))
+}
+
+// OnlyProjects keeps the tools that the named projects use, and the tools no
+// project owns (git, the GitHub CLI, a tool named on the command line).
+//
+// Parameters: needs are the tools of the workspace; projects are the projects a
+// command touches; nil keeps every tool.
+// Returns: the tools the command can need.
+func OnlyProjects(needs []Need, projects []string) []Need {
+	if projects == nil {
+		return needs
+	}
+	var out []Need
+	for _, n := range needs {
+		if len(n.Projects) == 0 || slices.ContainsFunc(n.Projects, func(p string) bool { return slices.Contains(projects, p) }) {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // NoticeForLanguage prints the warnings for the tools of a language by name,

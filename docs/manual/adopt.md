@@ -133,6 +133,11 @@ Move it into a folder of its own so smith can manage it?
 - The move is staged, not committed. With `--commit` it is a commit of its own
   (`chore: move <name> into <folder>`, `git revert HEAD` takes it back), followed by the
   adoption commit that `smith undo` reverts.
+- The move is the last thing to be decided, never the first thing to happen. `--init` settles the
+  folder, every open question and the confirmation before it changes one file. Without a
+  terminal it refuses first and names every missing flag in one message (`--move`,
+  `--gitattributes`, `--agent`, `--ci`, and `--yes` for the confirmation). If you decline the
+  confirmation after the move, smith puts the move back (`git reset --hard`), so the tree is as it was.
 
 The adopt wizard of the terminal interface and the VS Code adopt command ask the same
 question, with a name field and a "Commit this change so it can be undone" box that starts
