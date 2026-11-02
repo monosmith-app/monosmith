@@ -14,6 +14,7 @@ import {
 } from './derive-files/index.ts'
 import { readFileWhy, readSettingWhy, readTaskWhy } from './why/index.ts'
 import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap-launcher/index.ts'
+import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
@@ -1084,6 +1085,22 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Offers the ways to get the tools the workspace needs (`smith tools install`): a pick per tool with the command in front of the person. */
+  const installToolsHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    const outcome = await installTools({
+      run:           smithIn(state, true, 600_000),
+      chooseWay:     chooseToolWay,
+      chooseAdmin:   chooseToolAdmin,
+      openPage:      openToolPage,
+      showCommands:  showToolCommands,
+      runInTerminal: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
+    })
+    note(`MonoSmith: tools in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellToolsOutcome(outcome)
+  }
+
   /** Opens `smith new --here` in a terminal on an empty folder. Nothing is written by this click: smith asks first and refuses a folder with files. */
   const createWorkspace = async (): Promise<void> => {
     const chosen = await chooseFolder(blanks.filter((folder) => folder.kind === 'empty'))
@@ -1186,6 +1203,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.divergences', showDivergences),
     command<unknown>('monosmith.try', tryHere),
     command<unknown>('monosmith.bootstrap', bootstrapHere),
+    command<unknown>('monosmith.installTools', installToolsHere),
     command<unknown>('monosmith.openReport', openReport),
     command<unknown>('monosmith.why', showWhy),
     command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),
