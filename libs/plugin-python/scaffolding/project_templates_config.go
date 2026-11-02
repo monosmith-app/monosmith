@@ -10,7 +10,7 @@ name = "[[.Distribution]]"
 version = "0.0.0"
 description = "[[.Name]]"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [[.Dependencies]]
 
 [tool.smith]
 kind = "[[.Kind]]"
