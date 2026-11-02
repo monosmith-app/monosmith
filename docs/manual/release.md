@@ -154,6 +154,7 @@ Release rehearsal: asking 1 registry with read-only requests; nothing is publish
 | Code | Meaning |
 |---|---|
 | 0 | Released, or the dry run printed, or there was nothing to release. |
+| 2 | The release is done, but npm did not serve every platform package within `[release] propagation_wait`, so a dist-tag was not moved: the report names the `npm dist-tag add` command to run later (CI shows a warning). |
 | 1 | A failed `--rehearse` check, a preflight problem, a wrong release tag, a failed publish, a declined confirmation, or `--comment` without `--dry-run`. |
 
 ## Files and environment

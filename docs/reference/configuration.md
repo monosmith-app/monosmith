@@ -98,6 +98,7 @@ rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC to
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
 api_check = "warn"                    # warn when the commits' bump is smaller than the public API change needs; "error" stops the release, "off" skips (releasing.md, The bump against the public API)
+propagation_wait = "15m"              # the longest to wait for the platform packages of an npm release to be fetchable before a dist-tag moves; "0" does not wait (releasing.md, npm, PyPI, NuGet and RubyGems)
 
 # A branch that releases a line of prerelease versions of its own (releasing.md, Release channels):
 # [[release.channels]]
