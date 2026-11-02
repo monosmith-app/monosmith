@@ -71,8 +71,12 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		argv = catalog.WithConfirmation(argv)
 	}
 	if !s.inWorkspace {
-		// No workspace means no Run tab to show the output (smith new, adopt
-		// and convert start here): the terminal runs it after the shell quits.
+		if s.sources.Start != nil && runsOutside(argv) {
+			// There is no Run tab before a workspace: a dialog shows the output.
+			return s.startOutside(argv)
+		}
+		// Anything else that starts here (smith adopt) runs in the terminal
+		// after the shell quits.
 		s.Argv, s.quit = argv, true
 		return nil
 	}
@@ -114,6 +118,7 @@ func (s *Shell) started(msg startedMsg) tea.Cmd {
 		s.run.Feed("could not start: "+msg.err.Error(), s.now())
 		s.run.End(1, false, s.now())
 		s.notify("Could not start: "+msg.err.Error(), toast.Error)
+		s.showOutside()
 		return nil
 	}
 	s.proc = msg.proc
@@ -143,11 +148,13 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	s.keepLines(msg.lines)
 	if msg.exit == nil {
+		s.showOutside()
 		return waitCmd(msg.proc)
 	}
 	exit := *msg.exit
 	s.run.End(exit.Code, exit.Cancelled, now)
 	s.proc, s.stopping = nil, false
+	s.showOutside()
 	if s.runSel == "" {
 		s.runSel = s.firstFailed()
 	}

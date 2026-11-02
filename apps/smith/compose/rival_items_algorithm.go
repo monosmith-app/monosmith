@@ -14,7 +14,7 @@ func Rivals(ticked []Item, pick Item) []Item {
 	}
 	var out []Item
 	for _, t := range ticked {
-		if t.ID != pick.ID && t.Kind == KindChoice && t.Axis == pick.Axis && t.Language == pick.Language && !(t.Many && pick.Many) {
+		if t.ID != pick.ID && t.Kind == KindChoice && t.Axis == pick.Axis && t.Language == pick.Language && (!t.Many || !pick.Many) {
 			out = append(out, t)
 		}
 	}

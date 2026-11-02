@@ -195,6 +195,46 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
+			Title: "Convert an Nx or Turborepo workspace", Presents: "convert", Hint: "smith convert: projects keep their folders, tasks become smith tasks, the old tool goes; you see the plan first", OutsideOnly: true, NeedsContent: true,
+			Steps: []Step{
+				{Key: "level", Prompt: "How far should the conversion go?", Options: []Option{
+					{Label: "Conservative: keep what works, list the rest", Value: "conservative", Hint: "the old tool is removed; ESLint, the test runner and the build stay as they are (default)"},
+					{Label: "Full: smith becomes the only tool", Value: "full", Hint: "also deletes the old tooling nothing uses any more; needs a clean working tree"},
+				}},
+				{Key: "lint", Prompt: "Lint with", Options: []Option{
+					{Label: "Keep the current setup", Value: "keep", Hint: "your ESLint config stays (default)"},
+					{Label: "smith's ESLint config", Value: "smith", Hint: "your own ESLint configs and plugins are removed"},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "test", Prompt: "Test runner", Options: []Option{
+					{Label: "Keep the current setup", Value: "keep", Hint: "(default)"},
+					{Label: "Jest", Value: "jest", Hint: "the Vitest configs and packages go"},
+					{Label: "Vitest", Value: "vitest", Hint: "the Jest configs and packages go"},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "build", Prompt: "Build with", Options: []Option{
+					{Label: "smith's stack build", Value: "smith", Hint: "rollup or webpack configs nothing uses go (default)"},
+					{Label: "Keep the current build setup", Value: "keep", Hint: "nothing about the build changes"},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "ci", Prompt: "Pipelines", Options: []Option{
+					{Label: "The pipelines smith generates", Value: "smith", Hint: "the current CI files are replaced (default)"},
+					{Label: "Keep the current pipelines", Value: "keep", Hint: "smith writes none"},
+				}, Skip: func(a map[string][]string) bool { return first(a, "level") != "full" }},
+				{Key: "commit", Prompt: "Commit the conversion so it can be undone?", Options: []Option{
+					{Label: "No: leave the files uncommitted", Value: "no", Hint: "review the changes and commit when you are ready (default)"},
+					{Label: "Yes: one commit that smith undo can revert", Value: "yes", Hint: "the conversion is one commit"},
+				}},
+			},
+			Argv: func(a map[string][]string) []string {
+				argv := []string{"convert"}
+				if first(a, "level") == "full" {
+					argv = append(argv, "--level", "full", "--lint", first(a, "lint"), "--test", first(a, "test"), "--build", first(a, "build"), "--ci", first(a, "ci"))
+				}
+				if first(a, "commit") == "yes" {
+					argv = append(argv, "--commit")
+				}
+				return argv
+			},
+		},
+		{
 			Title: "Remove a project", Presents: "remove", Hint: "smith remove: its directory, its traces in the workspace, its CI", NeedsWorkspace: true,
 			Steps: []Step{
 				{Key: "name", Prompt: "Which project?", Placeholder: "web"},
