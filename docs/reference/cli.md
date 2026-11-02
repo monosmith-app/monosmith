@@ -450,6 +450,7 @@ Usage: `smith undo [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--clean` | also delete the generated folders the project left behind (node_modules, dist), which git ignores | off |
 | `--dry-run` | show what would be reverted and change nothing | off |
 | `-y, --yes` | do not ask for confirmation | off |
 

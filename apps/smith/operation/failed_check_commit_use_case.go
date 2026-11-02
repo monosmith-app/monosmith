@@ -64,7 +64,7 @@ func settleAfterFailedCheck(c *cobra.Command, before map[string]bool, requested 
 	}
 	_ = WritePending(root, Uncommitted{Command: command, Files: files})
 	out := c.OutOrStdout()
-	choice := verifyLeave
+	var choice verifyChoice
 	switch f := c.Flags().Lookup(commitAnywayFlag); {
 	case !requested:
 		fmt.Fprintln(out, notCommittedAfterFailure(false, command))

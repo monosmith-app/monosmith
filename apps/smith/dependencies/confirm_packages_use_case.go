@@ -32,3 +32,21 @@ func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, target
 	}
 	return operationplan.Gate(cmd.OutOrStdout(), cmd.InOrStdin(), verb+" "+strings.Join(packages, ", "), "Dependencies of", lines, yes, false)
 }
+
+// touchedProjects names the projects an install touches, for the tool warnings:
+// the -w targets when packages are named, and nil (every project) for a plain
+// install, which restores everything the workspace declares.
+func touchedProjects(s *session.Session, targets, packages []string) []string {
+	if len(packages) == 0 {
+		return nil
+	}
+	projects, err := resolve(s.Graph, targets)
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(projects))
+	for _, p := range projects {
+		names = append(names, p.Name)
+	}
+	return names
+}

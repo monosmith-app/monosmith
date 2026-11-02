@@ -31,6 +31,7 @@ Usage: `smith undo [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--clean` | boolean | off | also delete the generated folders the project left behind (node_modules, dist), which git ignores |
 | `--dry-run` | boolean | off | show what would be reverted and change nothing |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
 
@@ -46,6 +47,11 @@ refuses, with the reason and the next step, when:
 - the commit is not in the history of the current branch (it was rewritten);
 - a later commit changed one of its files: undo the later work first, or use `git revert`;
 - one of its files has an uncommitted change.
+
+`git revert` cannot remove files that git ignores. When the undone project left generated folders behind
+(`node_modules`, `dist`, a venv), `smith undo` lists them under "Left behind". In a terminal it asks whether to
+delete them; `--clean` deletes them without asking; with neither it only says what is left and names `--clean`.
+A folder that holds a tracked file, or a file of yours that git does not ignore, is never listed or deleted.
 
 Operations undo one at a time, newest first. See [ADR 0047](../architecture/decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md).
 

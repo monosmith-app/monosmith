@@ -67,6 +67,13 @@ Without a terminal smith refuses and names the flags: `--keep-copy` (answer 1) o
 (answer 2). `--yes` alone does not choose, because it cannot know which you want. A folder that
 holds nothing git cannot restore is deleted as before, after the plan.
 
+## Getting the project back
+
+After the removal smith prints how to get the project back. A copy kept under `.smith/removed/<name>-<time>/`
+is moved back to the project folder. Otherwise `git restore --source=HEAD --staged --worktree -- <folder>`
+brings the files back as of the last commit (a file git never tracked is not there); `git diff` shows the other
+edits of the removal, and `smith undo` reverts the whole removal when it was committed (`--commit`).
+
 ## Files that still name the project
 
 smith cannot know about a hand-written workflow, a `.code-workspace` task or a doc that names the

@@ -65,7 +65,7 @@ project, --registry for the package.`,
 			if !yes && interactive() {
 				link.Ask = internallink.NewTerminalAsker(cmd.InOrStdin(), cmd.OutOrStdout())
 			}
-			toolinstall.Notice(cmd.Context(), s, cmd.ErrOrStderr(), nil, nil)
+			toolinstall.Notice(cmd.Context(), s, cmd.ErrOrStderr(), touchedProjects(s, targets, args), nil, nil)
 			return Install(s, targets, args, dev, cmd.OutOrStdout(), link)
 		},
 	}
