@@ -98,7 +98,7 @@ func (s Shell) mainContent(w, h int) content {
 		for i := len(broken); i < len(banner); i++ {
 			c.hits[i] = hit{kind: "action", id: "file.adopt"}
 		}
-		lines, optionAt := s.guide.Body(s.th, w)
+		lines, optionAt := s.guide.Window(s.th, w, max(h-len(banner), 1), s.h)
 		for row, i := range optionAt {
 			c.hits[len(banner)+row] = hit{kind: "option", index: i}
 		}

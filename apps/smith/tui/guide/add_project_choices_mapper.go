@@ -193,7 +193,7 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 	step := Step{
 		Key:      withKeyPrefix + lang,
 		Prompt:   "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
-		Note:     choiceWords(offers),
+		Glossary: true,
 		Multi:    true,
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
@@ -206,10 +206,12 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		},
 	}
 	asked := askedAxes(offers)
+	var listed []ChoiceOffer
 	for _, o := range offers {
 		if slices.Contains(asked, o.Axis) {
 			continue // asked in its own question, once a choice that needs it is ticked
 		}
+		listed = append(listed, o)
 		hint := o.Description
 		if len(o.Requires) > 0 {
 			hint += " (needs " + strings.Join(o.Requires, ", ") + ")"
@@ -219,6 +221,8 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		}
 		step.Options = append(step.Options, Option{Label: o.Axis + ": " + o.Name, Value: o.Name, Hint: hint, Group: o.Axis, Many: o.Many})
 	}
+	// The words are the ones of the rows on the list, not of every offer.
+	step.Note = choiceWords(listed)
 	return step
 }
 

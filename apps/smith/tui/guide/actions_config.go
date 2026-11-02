@@ -44,6 +44,9 @@ type Step struct {
 	// Note is a muted line under the question; Try is the examples shown in the
 	// place of "Type to narrow the list" on a Filter step.
 	Note, Try string
+	// Glossary marks a Note that explains the words of the list: on a short
+	// screen it folds to one line, and "?" opens it.
+	Glossary bool
 }
 
 // Option is one answer.
