@@ -369,6 +369,12 @@
         "icon": "$(question)"
       },
       {
+        "command": "monosmith.health.fixFinding",
+        "title": "Fix This Check",
+        "category": "MonoSmith",
+        "icon": "$(wrench)"
+      },
+      {
         "command": "monosmith.derive.explain",
         "title": "Explain Derived File",
         "category": "MonoSmith",
@@ -604,6 +610,11 @@
           "command": "monosmith.why",
           "when": "view == monosmith.projects && viewItem =~ /^task/",
           "group": "1_output@2"
+        },
+        {
+          "command": "monosmith.health.fixFinding",
+          "when": "view == monosmith.health && viewItem == health.fix",
+          "group": "inline@1"
         },
         {
           "command": "monosmith.derive.explain",

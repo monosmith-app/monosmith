@@ -51,6 +51,17 @@ function toProblemRow (finding: DoctorFinding, id: string, icon: string, color: 
   const children: ListNode[] = [
     ...(detail === undefined || detail === '' ? [] : [{ id: `${id}:problem`, label: firstClause(detail), icon: 'info', tooltip: detail }]),
     ...(remedy === undefined || remedy === '' ? [] : [{ id: `${id}:remedy`, label: firstClause(remedy), icon: 'lightbulb', tooltip: `Fix: ${remedy}` }]),
+    // A fix runs in the editor: smith shows what it would change and asks first, so no remedy has to be typed into a terminal.
+    ...(finding.fix === undefined
+      ? []
+      : [{
+          id:      `${id}:fix`,
+          label:   `Fix: ${finding.fix.description}`,
+          icon:    'wrench',
+          context: 'health.fix',
+          data:    finding.check,
+          tooltip: 'Shows what it changes and asks before it applies anything.',
+        }]),
   ]
 
   return {
