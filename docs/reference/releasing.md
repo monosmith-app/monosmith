@@ -590,9 +590,9 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 A package whose `optionalDependencies` pin packages at the version being published (the platform
 packages of a binary launcher), and the npm packages of an app (`[projects.x.release] npm`), do not
 get their dist-tag until npm serves the platform packages. smith publishes the platform packages
-first. It reads each one back from the registry right after `npm publish` returned: a package that
-is still missing after six checks, 5 seconds apart, stops the release with an error that names it
-(run the release again; it publishes what is missing). It then probes once, without waiting. If
+first. It reads each one back from the registry right after `npm publish` returned, three quick
+checks; a package that is not there yet is not an error, because npm takes minutes to serve it. It
+then probes once, without waiting. If
 every platform package is fetchable the way a person fetches it (`npm view <pkg>@<version>` finds
 it, and a HEAD request of its tarball URL answers), the wrapper packages (`monosmith`,
 `@monosmith/cli`) are published under `next`, or `latest` for a stable version. If not, they are
@@ -618,7 +618,10 @@ propagation_wait = "15m"        # the default; "0" does not wait: one probe, and
 propagation_wait = "30m"        # this project only
 ```
 
-If the limit passes first, smith moves no dist-tag. The packages stay under the dist-tag `pending`,
+If the limit passes first, smith moves no dist-tag, and the note names each package that npm said it
+published but the registry still does not serve (`pkg@version`); running the release again
+republishes it (a re-run treats a package as missing when `npm view` or its tarball does not
+answer). The packages stay under the dist-tag `pending`,
 the tag and the release are complete, and the report names the exact command that moves the tag
 (`npm dist-tag add <name>@<version> next`). The step prints a warning annotation in GitHub Actions
 and Azure Pipelines, and `smith release` and `smith ci release` exit with code 2, never silently.

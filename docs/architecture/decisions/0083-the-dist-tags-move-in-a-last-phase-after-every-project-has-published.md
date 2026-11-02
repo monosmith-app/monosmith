@@ -39,9 +39,17 @@ Release 2.0.0-beta.25 was the first real use, and it showed two faults.
   npm packages of the project: it publishes the ones the registry lacks (it rebuilds their files),
   and it hands every wrapper whose dist-tag `pending` equals the version to the last phase. A
   finished release is left alone. The `pending` tag is removed when the real tag moves.
-- Each platform package is read back from the registry right after `npm publish` returned 0. Six
-  checks, 5 s apart. A package that is still missing stops the release with an error that names it,
-  prints what npm printed, and says to run the release again.
+- Each platform package is read back from the registry right after `npm publish` returned 0: three
+  quick checks, 2 s apart. A package that is not there yet is not an error. npm needs minutes to
+  serve a new package, so the release goes on, the wrappers take `pending` and the last phase waits.
+  Only when that wait ends (`propagation_wait`, default 15 min) and a package is still not
+  fetchable, smith says so: the note names `pkg@version` ("npm said it published it but the
+  registry still does not serve it after 15m"), tells the user to run the release again (it
+  republishes what is missing), prints the `npm dist-tag add` command, and the release exits with
+  code 2. The first version of this decision failed the release after 25 s (beta.26); this
+  amendment replaces that.
+- A re-run decides a package is missing with the same probe as the wait: `npm view` finds it and a
+  HEAD request of its tarball answers. A package npm never stored fails both and is republished.
 
 ## Consequences
 

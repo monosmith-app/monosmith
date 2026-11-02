@@ -180,12 +180,8 @@ func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, erro
 		step := r
 		step.Version = m.Version
 		if got := awaitPlatforms(dir, step, m.Awaits); !got.Ready {
-			why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", len(m.Awaits))
-			if len(got.Missing) > 0 {
-				why = strings.Join(got.Missing, ", ") + " could not be fetched from the registry in time"
-			}
 			out.Pending = append(out.Pending, m)
-			out.Notes = append(out.Notes, fmt.Sprintf("the dist-tag %q of %s was not moved: %s (waited %s). When npm serves them, run: %s", m.Tag, m.Package, why, got.Waited.Round(time.Second), m.Command()))
+			out.Notes = append(out.Notes, NotServedNote(m, got))
 			continue
 		}
 		if _, stderr, err := npm(dir, "dist-tag", "add", m.Package+"@"+m.Version, m.Tag); err != nil {
@@ -196,6 +192,23 @@ func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, erro
 		out.Moved = append(out.Moved, m.Package+"@"+m.Version+" "+m.Tag)
 	}
 	return out, nil
+}
+
+// NotServedNote says why a dist-tag was not moved when the wait ended: npm said
+// it published the packages, the registry still does not serve them. It names
+// each package and says how to finish, by hand or by running the release again.
+func NotServedNote(m protocol.TagMove, out npmpropagation.Outcome) string {
+	missing := "the platform packages"
+	if len(out.Missing) > 0 {
+		var named []string
+		for _, n := range out.Missing {
+			named = append(named, n+"@"+m.Version)
+		}
+		missing = strings.Join(named, ", ")
+	}
+	return fmt.Sprintf("the dist-tag %q of %s was not moved: npm said it published %s but the registry still does not serve it after %s. "+
+		"Run the release again: it republishes what is missing and moves the tag. Or, when npm serves it, run: %s",
+		m.Tag, m.Package, missing, out.Waited.Round(time.Second), m.Command())
 }
 
 // Incomplete reports what a re-run of an already released version still has
@@ -214,7 +227,7 @@ func Incomplete(root string, r Release, pairs [][2]string) (missing []string, mo
 	}
 	slices.Sort(awaits)
 	for _, name := range append(slices.Clone(awaits), r.Names...) {
-		if !registryHas(root, name, r.Version) {
+		if !fetchable(root, name, r.Version) {
 			missing = append(missing, name)
 		}
 	}
@@ -340,12 +353,24 @@ var awaitPlatforms = func(dir string, r Release, names []string) npmpropagation.
 	return npmpropagation.Await(reg, npmpropagation.RealClock{}, npmpropagation.Config{Max: r.PropagationWait, Progress: r.Progress}, names, r.Version)
 }
 
-// readBackChecks and readBackDelay bound the read-back after a publish; pause
-// is replaced by tests so they never sleep.
+// readBackChecks and readBackDelay bound the quick read-back after a publish;
+// pause is replaced by tests so they never sleep.
 const (
-	readBackChecks = 6
-	readBackDelay  = 5 * time.Second
+	readBackChecks = 3
+	readBackDelay  = 2 * time.Second
 )
+
+// fetchable reports whether a person can fetch name@version now: npm view
+// finds it and a HEAD request of its tarball answers. A package npm never
+// stored fails both; tests replace it.
+var fetchable = func(dir, name, version string) bool {
+	reg := npmpropagation.NPM{Dir: dir, Output: func(dir string, argv []string) (string, error) {
+		out, _, err := npm(dir, argv[1:]...)
+		return out, err
+	}}
+	found, tarball := reg.Lookup(name, version)
+	return found && tarball != "" && reg.Fetchable(tarball)
+}
 
 var pause = time.Sleep
 
@@ -359,10 +384,11 @@ func writeAuth(dir string) error {
 }
 
 // publishOne publishes a package directory unless the registry has its
-// version, then reads it back: npm can answer success for a package that never
-// appears, and that must stop the release naming the package, not show up as a
-// wait that never ends. On GitHub Actions with an OIDC token the package
-// carries provenance.
+// version, then reads it back a few times. A package that is not there yet is
+// not an error: npm takes minutes to serve a new package, so the release goes
+// on, the wrappers take "pending" and the last phase waits (see Finalize); only
+// the end of that wait calls the package missing. On GitHub Actions with an
+// OIDC token the package carries provenance.
 func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	if registryHas(dir, name, r.Version) {
 		return false, nil
@@ -377,7 +403,7 @@ func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	if os.Getenv("ACTIONS_ID_TOKEN_REQUEST_URL") != "" && r.Repository != "" {
 		args = append(args, "--provenance")
 	}
-	stdout, stderr, err := npm(dir, args...)
+	_, stderr, err := npm(dir, args...)
 	if err != nil {
 		return false, fmt.Errorf("npm publish %s: %w\n%s", name, err, strings.TrimSpace(stderr))
 	}
@@ -386,17 +412,8 @@ func publishOne(dir, name string, r Release, tag string) (bool, error) {
 			pause(readBackDelay)
 		}
 		if registryHas(dir, name, r.Version) {
-			return true, nil
+			break
 		}
 	}
-	return false, fmt.Errorf("npm said it published %s@%s, but the registry does not have it after %d checks over %s. Run the release again: it publishes what is missing. npm printed:\n%s",
-		name, r.Version, readBackChecks, (readBackChecks-1)*readBackDelay, tail(strings.TrimSpace(stdout+"\n"+stderr)))
-}
-
-// tail keeps the last 800 bytes of npm's output.
-func tail(s string) string {
-	if len(s) > 800 {
-		return "..." + s[len(s)-800:]
-	}
-	return s
+	return true, nil
 }
