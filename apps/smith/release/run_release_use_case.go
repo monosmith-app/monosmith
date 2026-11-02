@@ -97,6 +97,16 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 		report.Error = strings.Join(failures, "; ")
 		return report, errors.New(report.Error)
 	}
+	// The dist-tags move last, once every project has published: the wait for
+	// npm blocks no publish, and no short-lived credential of a later project
+	// (a federated sign-in, a trusted-publishing token) runs out meanwhile.
+	if !opts.DryRun {
+		say := func(format string, args ...any) { fmt.Fprintf(opts.Out, "smith: "+format+"\n", args...) }
+		if err := FinalizeTags(ctx, s, &report, say); err != nil {
+			report.Error = err.Error()
+			return report, err
+		}
+	}
 	if len(report.PendingTags()) > 0 {
 		return report, ErrPropagationPending
 	}
@@ -109,6 +119,11 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 	if commit := s.Git.TagCommit(item.Tag); commit != "" {
 		res.Status = "already-released"
 		say("%s already exists", item.Tag)
+		if !opts.DryRun {
+			if err := resumeNPM(ctx, s, p, item, versions, opts, res, say); err != nil {
+				return err
+			}
+		}
 		if opts.DryRun || !s.Config.Release.GitHubReleases {
 			return nil
 		}
@@ -124,40 +139,17 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return dispatchPub(s, p, item, res, say)
 	}
 
-	deps := map[string]string{}
-	for _, d := range s.Graph.TransitiveDeps(p.Name) {
-		for _, e := range s.Graph.Get(d).Exports {
-			if v, ok := versions[e]; ok {
-				deps[e] = v
-			}
-		}
-	}
-	var vr protocol.VersionResult
-	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: item.Next, Dependencies: deps, DryRun: opts.DryRun}, &vr, time.Minute)
+	stamped, restore, err := stampVersion(ctx, s, p, item, versions, opts, res, say)
 	if err != nil {
-		return fmt.Errorf("writing version: %w", err)
+		return err
 	}
-	extra, err := WriteConventionVersions(ctx, s, p, item.Next, opts.DryRun)
-	if err != nil {
-		return fmt.Errorf("writing version: %w", err)
-	}
-	vr.Files = append(vr.Files, extra...)
-	if ok || len(extra) > 0 {
-		res.Files = vr.Files
-	}
-	if !opts.DryRun && len(vr.Files) > 0 {
-		defer func() {
-			if err := s.Git.RestoreFiles(vr.Files...); err != nil {
-				say("could not restore %v: %v", vr.Files, err)
-			}
-		}()
-	}
+	defer restore()
 
 	// An app's assets are built by publishing; its own build is not needed.
 	if !opts.DryRun && p.Release == nil {
 		if _, has := p.Tasks["build"]; has {
 			say("building %s", item.Next)
-			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: len(vr.Files) > 0})
+			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: len(stamped) > 0})
 			if err != nil {
 				return err
 			}
@@ -179,7 +171,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		say("note: %s", note)
 		res.Publish = strings.TrimSpace(res.Publish + " " + note)
 	}
-	res.PendingTags = append(res.PendingTags, pr.PendingTags...)
+	res.addPending(p.Plugin, pr.PendingMoves...)
 	if BuildsAssetsFromCommand(p) {
 		say("%s are made by `%s` on a runner each (smith ci assets, or smith release assets on this machine) and uploaded to the GitHub Release: %s",
 			strings.Join(p.Release.Platforms, ", "), p.Release.Build, strings.Join(p.Release.Assets, ", "))
@@ -231,6 +223,42 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return dispatchPub(s, p, item, res, say)
 	}
 	return nil
+}
+
+// stampVersion writes the release version into the project's files and the
+// convention files. The returned function puts the files back as they were; it
+// does nothing in a dry run or when nothing was written.
+func stampVersion(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, versions map[string]string, opts Options, res *ReportResult, say func(string, ...any)) ([]string, func(), error) {
+	deps := map[string]string{}
+	for _, d := range s.Graph.TransitiveDeps(p.Name) {
+		for _, e := range s.Graph.Get(d).Exports {
+			if v, ok := versions[e]; ok {
+				deps[e] = v
+			}
+		}
+	}
+	var vr protocol.VersionResult
+	ok, err := s.Plugins.CallContext(ctx, p.Plugin, protocol.MethodVersion, protocol.VersionParams{Project: p.Project, Version: item.Next, Dependencies: deps, DryRun: opts.DryRun}, &vr, time.Minute)
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("writing version: %w", err)
+	}
+	extra, err := WriteConventionVersions(ctx, s, p, item.Next, opts.DryRun)
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("writing version: %w", err)
+	}
+	vr.Files = append(vr.Files, extra...)
+	if ok || len(extra) > 0 {
+		res.Files = vr.Files
+	}
+	restore := func() {}
+	if !opts.DryRun && len(vr.Files) > 0 {
+		restore = func() {
+			if err := s.Git.RestoreFiles(vr.Files...); err != nil {
+				say("could not restore %v: %v", vr.Files, err)
+			}
+		}
+	}
+	return vr.Files, restore, nil
 }
 
 // packageManifests writes the package manager manifests a release asks for
@@ -467,10 +495,10 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 		release.Progress = func(line string) { say("%s", line) }
 		result, err := npmbinaries.Publish(s.Root, release, dryRun)
 		report("npm", result.Published, result.Existing, result.Skipped)
-		for _, command := range result.PendingTags {
-			say("note: the dist-tag was not moved: npm did not serve every platform package in time. When it does, run: %s", command)
-			res.PendingTags = append(res.PendingTags, command)
+		for _, move := range result.PendingMoves {
+			say("the dist-tag %s of %s moves at the end of the release, once npm serves the platform packages", move.Tag, move.Package)
 		}
+		res.addPending("", result.PendingMoves...)
 		if err != nil {
 			return fmt.Errorf("npm: %w", err)
 		}

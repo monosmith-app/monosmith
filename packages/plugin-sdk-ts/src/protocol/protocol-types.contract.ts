@@ -1158,11 +1158,17 @@ export interface PublishParams {
    */
   tag?: string
   /**
-   * PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the
-   * packages of the release to be fetchable from the registry: a duration such as "15m", "0" to not
-   * wait. Empty means the default. Only npm has such a wait.
+   * PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the
+   * release to be fetchable from the registry: a duration such as "15m", "0" to not wait. Empty
+   * means the default. Only npm has such a wait. A publish never waits.
    */
   propagationWait?: string
+  /**
+   * Finalize turns the call into the last phase of a release: nothing is published; for each move
+   * the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it
+   * after every project has published, so a wait never blocks another publish.
+   */
+  finalize?: TagMove[]
 }
 
 /**
@@ -1179,11 +1185,14 @@ export interface PublishResult {
    */
   notes?: string[]
   /**
-   * PendingTags are the exact commands that move the dist-tags the publish did not move, because
-   * the packages the release needs were not fetchable yet. The release then ends with a warning,
-   * never silently.
+   * PendingMoves are the dist-tags the call did not move, because the packages the release needs
+   * were not fetchable yet. A publish returns them for the host to move at the end of the release;
+   * a Finalize call returns the ones still waiting when its time ran out. The release then ends
+   * with a warning, never silently.
    */
-  pendingTags?: string[]
+  pendingMoves?: TagMove[]
+  /** Moved names the dist-tags a Finalize call moved ("name@version tag"). */
+  moved?: string[]
   /**
    * Assets are the workspace-relative files built for the release, in upload order; in a dry run,
    * the files that would be built.
@@ -1402,6 +1411,20 @@ export interface Step {
    * repeated. Only the audit phase reads it.
    */
   cacheFiles?: string[]
+}
+
+/**
+ * TagMove is a dist-tag a publish left where it was, because the packages the release needs were
+ * not fetchable yet.
+ */
+export interface TagMove {
+  /** Package and Version name the package that carries the tag. */
+  package: string
+  version: string
+  /** Tag is the dist-tag to move to Version. */
+  tag: string
+  /** Awaits are the packages that must be fetchable first. */
+  awaits: string[]
 }
 
 /** Task is a command the host can run, hash and cache. */

@@ -43,6 +43,8 @@ type ReportResult struct {
 	// PendingTags are the exact commands that move the dist-tags the release
 	// did not move, because npm did not serve every platform package in time.
 	PendingTags []string `json:"pendingTags,omitempty"`
+	// moves are the dist-tags the last phase of the release still has to move.
+	moves []pendingMove
 	// Images are the container images the release pushed, one per registry,
 	// with their tags and the manifest digest the registry holds: what a
 	// deploy step or a GitOps manifest refers to.

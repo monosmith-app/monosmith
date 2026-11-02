@@ -3314,8 +3314,11 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
     /// <summary>Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability.</summary>
     public string Tag { get; init; } = string.Empty;
 
-    /// <summary>PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the packages of the release to be fetchable from the registry: a duration such as "15m", "0" to not wait. Empty means the default. Only npm has such a wait.</summary>
+    /// <summary>PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the release to be fetchable from the registry: a duration such as "15m", "0" to not wait. Empty means the default. Only npm has such a wait. A publish never waits.</summary>
     public string PropagationWait { get; init; } = string.Empty;
+
+    /// <summary>Finalize turns the call into the last phase of a release: nothing is published; for each move the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it after every project has published, so a wait never blocks another publish.</summary>
+    public IReadOnlyList<TagMove> Finalize { get; init; } = [];
 
     /// <inheritdoc />
     public static PublishParams Read(JsonAny? value, string path)
@@ -3333,6 +3336,7 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
             Branch = StringValue(Member(map, "branch"), Join(path, "branch")),
             Tag = StringValue(Member(map, "tag"), Join(path, "tag")),
             PropagationWait = StringValue(Member(map, "propagationWait"), Join(path, "propagationWait")),
+            Finalize = ListOf(Member(map, "finalize"), Join(path, "finalize"), TagMove.Read),
         };
     }
 
@@ -3384,6 +3388,11 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
             writer.Property("propagationWait");
             writer.String(PropagationWait);
         }
+        if (Finalize is { Count: > 0 })
+        {
+            writer.Property("finalize");
+            MessageWritingAlgorithm.List(writer, Finalize, (builder1, item1) => item1.Write(builder1));
+        }
         writer.EndObject();
     }
 }
@@ -3403,8 +3412,11 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
     /// <summary>Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];
 
-    /// <summary>PendingTags are the exact commands that move the dist-tags the publish did not move, because the packages the release needs were not fetchable yet. The release then ends with a warning, never silently.</summary>
-    public IReadOnlyList<string> PendingTags { get; init; } = [];
+    /// <summary>PendingMoves are the dist-tags the call did not move, because the packages the release needs were not fetchable yet. A publish returns them for the host to move at the end of the release; a Finalize call returns the ones still waiting when its time ran out. The release then ends with a warning, never silently.</summary>
+    public IReadOnlyList<TagMove> PendingMoves { get; init; } = [];
+
+    /// <summary>Moved names the dist-tags a Finalize call moved ("name@version tag").</summary>
+    public IReadOnlyList<string> Moved { get; init; } = [];
 
     /// <summary>Assets are the workspace-relative files built for the release, in upload order; in a dry run, the files that would be built.</summary>
     public IReadOnlyList<string> Assets { get; init; } = [];
@@ -3428,7 +3440,8 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
             Skipped = StringValue(Member(map, "skipped"), Join(path, "skipped")),
             Registry = StringValue(Member(map, "registry"), Join(path, "registry")),
             Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
-            PendingTags = ListOf(Member(map, "pendingTags"), Join(path, "pendingTags"), StringValue),
+            PendingMoves = ListOf(Member(map, "pendingMoves"), Join(path, "pendingMoves"), TagMove.Read),
+            Moved = ListOf(Member(map, "moved"), Join(path, "moved"), StringValue),
             Assets = ListOf(Member(map, "assets"), Join(path, "assets"), StringValue),
             AssetPlatforms = MapOf(Member(map, "assetPlatforms"), Join(path, "assetPlatforms"), StringValue),
             Binary = StringValue(Member(map, "binary"), Join(path, "binary")),
@@ -3457,10 +3470,15 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
         }
-        if (PendingTags is { Count: > 0 })
+        if (PendingMoves is { Count: > 0 })
         {
-            writer.Property("pendingTags");
-            MessageWritingAlgorithm.List(writer, PendingTags, (builder1, item1) => builder1.String(item1));
+            writer.Property("pendingMoves");
+            MessageWritingAlgorithm.List(writer, PendingMoves, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Moved is { Count: > 0 })
+        {
+            writer.Property("moved");
+            MessageWritingAlgorithm.List(writer, Moved, (builder1, item1) => builder1.String(item1));
         }
         if (Assets is { Count: > 0 })
         {
@@ -4268,6 +4286,50 @@ public sealed record Step : IProtocolValue<Step>
             writer.Property("cacheFiles");
             MessageWritingAlgorithm.List(writer, CacheFiles, (builder1, item1) => builder1.String(item1));
         }
+        writer.EndObject();
+    }
+}
+
+/// <summary>TagMove is a dist-tag a publish left where it was, because the packages the release needs were not fetchable yet.</summary>
+public sealed record TagMove : IProtocolValue<TagMove>
+{
+    /// <summary>Package and Version name the package that carries the tag.</summary>
+    public required string Package { get; init; }
+
+    /// <summary>The <c>version</c> member of <c>TagMove</c>.</summary>
+    public required string Version { get; init; }
+
+    /// <summary>Tag is the dist-tag to move to Version.</summary>
+    public required string Tag { get; init; }
+
+    /// <summary>Awaits are the packages that must be fetchable first.</summary>
+    public IReadOnlyList<string> Awaits { get; init; } = [];
+
+    /// <inheritdoc />
+    public static TagMove Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new TagMove
+        {
+            Package = StringValue(Member(map, "package"), Join(path, "package")),
+            Version = StringValue(Member(map, "version"), Join(path, "version")),
+            Tag = StringValue(Member(map, "tag"), Join(path, "tag")),
+            Awaits = ListOf(Member(map, "awaits"), Join(path, "awaits"), StringValue),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("package");
+        writer.String(Package);
+        writer.Property("version");
+        writer.String(Version);
+        writer.Property("tag");
+        writer.String(Tag);
+        writer.Property("awaits");
+        MessageWritingAlgorithm.List(writer, Awaits, (builder1, item1) => builder1.String(item1));
         writer.EndObject();
     }
 }

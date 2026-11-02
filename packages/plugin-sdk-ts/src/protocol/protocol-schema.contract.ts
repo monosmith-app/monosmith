@@ -2051,7 +2051,14 @@ export const protocolSchema: SchemaDocument = {
         },
         "propagationWait": {
           "type": "string",
-          "description": "PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the packages of the release to be fetchable from the registry: a duration such as \"15m\", \"0\" to not wait. Empty means the default. Only npm has such a wait."
+          "description": "PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the release to be fetchable from the registry: a duration such as \"15m\", \"0\" to not wait. Empty means the default. Only npm has such a wait. A publish never waits."
+        },
+        "finalize": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TagMove"
+          },
+          "description": "Finalize turns the call into the last phase of a release: nothing is published; for each move the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it after every project has published, so a wait never blocks another publish."
         }
       },
       "required": [
@@ -2079,12 +2086,19 @@ export const protocolSchema: SchemaDocument = {
           },
           "description": "Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them."
         },
-        "pendingTags": {
+        "pendingMoves": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TagMove"
+          },
+          "description": "PendingMoves are the dist-tags the call did not move, because the packages the release needs were not fetchable yet. A publish returns them for the host to move at the end of the release; a Finalize call returns the ones still waiting when its time ran out. The release then ends with a warning, never silently."
+        },
+        "moved": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "PendingTags are the exact commands that move the dist-tags the publish did not move, because the packages the release needs were not fetchable yet. The release then ends with a warning, never silently."
+          "description": "Moved names the dist-tags a Finalize call moved (\"name@version tag\")."
         },
         "assets": {
           "type": "array",
@@ -2492,6 +2506,36 @@ export const protocolSchema: SchemaDocument = {
         "name",
         "command",
         "blocking"
+      ]
+    },
+    "TagMove": {
+      "description": "TagMove is a dist-tag a publish left where it was, because the packages the release needs were not fetchable yet.",
+      "type": "object",
+      "properties": {
+        "package": {
+          "type": "string",
+          "description": "Package and Version name the package that carries the tag."
+        },
+        "version": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag is the dist-tag to move to Version."
+        },
+        "awaits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Awaits are the packages that must be fetchable first."
+        }
+      },
+      "required": [
+        "package",
+        "version",
+        "tag",
+        "awaits"
       ]
     },
     "Task": {

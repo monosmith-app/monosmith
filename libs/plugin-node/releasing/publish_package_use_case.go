@@ -29,6 +29,9 @@ var npm = struct {
 // already has is skipped, which is what makes a re-run after a partial
 // release safe.
 func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
+	if len(params.Finalize) > 0 {
+		return Finalize(workspaceRoot, params)
+	}
 	// An extension app has no archives: the vscode plugin packs and publishes
 	// its .vsix.
 	if params.Project.Kind == protocol.ProjectApp {
@@ -95,18 +98,13 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	tag := params.Tag
 	if manifest, readErr := os.ReadFile(filepath.Join(staged, "package.json")); readErr == nil {
 		if platforms := SameReleaseOptionalDependencies(manifest, params.Version); len(platforms) > 0 {
-			wait, werr := npmpropagation.ParseWait(params.PropagationWait)
-			if werr != nil {
-				return result, werr
-			}
-			if out := awaitPlatforms(workspaceRoot, at, wait, platforms, params.Version); !out.Ready {
+			// One quick probe, never a wait: the host moves the dist-tag after
+			// every project has published (see Finalize).
+			if out := awaitPlatforms(workspaceRoot, at, 0, platforms, params.Version); !out.Ready {
 				// A launcher whose platform packages cannot be fetched yet would install
-				// and fail: keep the dist-tag where it is, and say how to move it.
-				moved := cmp.Or(params.Tag, "latest")
+				// and fail: keep the dist-tag where it is; the host moves it at the end.
 				tag = pendingTag
-				command := fmt.Sprintf("npm dist-tag add %s@%s %s", name, params.Version, moved)
-				result.PendingTags = append(result.PendingTags, command)
-				result.Notes = append(result.Notes, notFetchableNote(moved, out, len(platforms), command))
+				result.PendingMoves = append(result.PendingMoves, protocol.TagMove{Package: name, Version: params.Version, Tag: cmp.Or(params.Tag, "latest"), Awaits: platforms})
 			}
 		}
 	}
@@ -140,12 +138,49 @@ var awaitPlatforms = func(workspaceRoot string, at []string, wait time.Duration,
 	return npmpropagation.Await(reg, npmpropagation.RealClock{}, cfg, names, version)
 }
 
+// Finalize is the last phase of a release: for each move it waits, for up to
+// params.PropagationWait, until the packages the move awaits are fetchable the
+// way a person fetches them, then moves the dist-tag. A move whose packages do
+// not appear in time stays in PendingMoves with a note naming the command that
+// moves it by hand.
+//
+// Parameters: workspaceRoot is the workspace; params carries the moves, the
+// project (for its registry) and the wait.
+// Returns: the moves done (Moved) and the ones still waiting (PendingMoves).
+// Errors: the wait is not a duration, or npm refuses to move a tag.
+func Finalize(workspaceRoot string, params protocol.PublishParams) (protocol.PublishResult, error) {
+	var result protocol.PublishResult
+	wait, err := npmpropagation.ParseWait(params.PropagationWait)
+	if err != nil {
+		return result, err
+	}
+	var at []string
+	if r := params.Project.Registries; r != nil && r.Publish != nil && r.Publish.NPM != "" {
+		at = []string{"--registry", r.Publish.NPM}
+	}
+	for _, move := range params.Finalize {
+		out := awaitPlatforms(workspaceRoot, at, wait, move.Awaits, move.Version)
+		if !out.Ready {
+			result.PendingMoves = append(result.PendingMoves, move)
+			result.Notes = append(result.Notes, notFetchableNote(move, out))
+			continue
+		}
+		if err := npm.run(workspaceRoot, append([]string{"npm", "dist-tag", "add", move.Package + "@" + move.Version, move.Tag}, at...)); err != nil {
+			return result, fmt.Errorf("moving the dist-tag %s of %s: %w", move.Tag, move.Package, err)
+		}
+		// The pending tag has done its job; a leftover would make a re-run look for work.
+		_ = npm.run(workspaceRoot, append([]string{"npm", "dist-tag", "rm", move.Package, pendingTag}, at...))
+		result.Moved = append(result.Moved, move.Package+"@"+move.Version+" "+move.Tag)
+	}
+	return result, nil
+}
+
 // notFetchableNote says why a dist-tag did not move and how to move it.
-func notFetchableNote(tag string, out npmpropagation.Outcome, total int, command string) string {
-	why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", total)
+func notFetchableNote(move protocol.TagMove, out npmpropagation.Outcome) string {
+	why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", len(move.Awaits))
 	if len(out.Missing) > 0 {
 		why = strings.Join(out.Missing, ", ") + " could not be fetched from the registry in time"
 	}
 	return fmt.Sprintf("the dist-tag %q was not moved: %s (waited %s). Published as %q; when npm serves them, run: %s",
-		tag, why, out.Waited.Round(time.Second), pendingTag, command)
+		move.Tag, why, out.Waited.Round(time.Second), pendingTag, move.Command())
 }

@@ -3,6 +3,7 @@ package npmbinaries
 import (
 	"archive/zip"
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"io"
 	"maps"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -43,8 +45,8 @@ type Release struct {
 	Tag string
 	// OutDir is the workspace-relative directory the packages are written to.
 	OutDir string
-	// PropagationWait is the longest the wrappers wait for the platform
-	// packages to be fetchable from the registry; 0 probes once.
+	// PropagationWait is the longest Finalize waits for the platform packages
+	// to be fetchable from the registry; 0 probes once. Publish never waits.
 	PropagationWait time.Duration
 	// Progress receives the progress lines of that wait; nil prints nothing.
 	Progress func(line string)
@@ -55,10 +57,10 @@ type Result struct {
 	Published, Existing []string
 	// Skipped are the archives no npm platform matches.
 	Skipped []string
-	// PendingTags are the exact commands that move the dist-tag of each
-	// wrapper that was published under "pending" because the platform
-	// packages were not fetchable in time.
-	PendingTags []string
+	// PendingMoves are the dist-tags of the wrappers that sit under "pending"
+	// because the platform packages were not fetchable yet; Finalize moves
+	// them once every project has published.
+	PendingMoves []protocol.TagMove
 }
 
 // npm runs the npm CLI and returns what it printed; tests replace it.
@@ -70,7 +72,10 @@ var npm = func(dir string, args ...string) (stdout, stderr string, err error) {
 // wrapper packages depending on them all, and publishes them in that order,
 // so no wrapper ever points at a missing platform package. A version the
 // registry already has is left alone, so a re-run completes a release. A dry
-// run only names the packages.
+// run only names the packages. It never waits for the registry: a wrapper
+// whose platform packages are not fetchable at one quick probe takes the
+// dist-tag "pending" and is returned in PendingMoves. A package the registry
+// does not have right after npm said it published it is an error.
 func Publish(root string, r Release, dryRun bool) (Result, error) {
 	var res Result
 	if len(r.Names) == 0 {
@@ -109,26 +114,30 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 			return res, err
 		}
 	}
-	// The wrappers are published only when every platform package can be
-	// fetched the way a person fetches it; else they take the dist-tag
-	// "pending", so no dist-tag points at a launcher with no binary.
+	// The wrappers are published under the dist-tag "pending" unless every
+	// platform package can be fetched the way a person fetches it at one quick
+	// probe, so no dist-tag points at a launcher with no binary.
 	tag := ""
+	awaits := platformNames(platforms)
 	for i, b := range order {
 		if dryRun {
 			res.Published = append(res.Published, b.name+"@"+r.Version)
 			continue
 		}
+		wrapper := i >= len(order)-len(r.Names)
 		if i == len(order)-len(r.Names) && slices.ContainsFunc(order[i:], func(w built) bool { return !registryHas(w.dir, w.name, r.Version) }) {
-			if out := awaitPlatforms(b.dir, r, platformNames(platforms)); !out.Ready {
+			once := r
+			once.PropagationWait = 0
+			if out := awaitPlatforms(b.dir, once, awaits); !out.Ready {
 				tag = pendingTag
 			}
 		}
 		published, err := publishOne(b.dir, b.name, r, cmp.Or(tag, intendedTag(r)))
-		if published && tag == pendingTag {
-			res.PendingTags = append(res.PendingTags, fmt.Sprintf("npm dist-tag add %s@%s %s", b.name, r.Version, cmp.Or(intendedTag(r), "latest")))
-		}
 		if err != nil {
 			return res, err
+		}
+		if wrapper && ((published && tag == pendingTag) || (!published && hasPendingTag(b.dir, b.name, r.Version))) {
+			res.PendingMoves = append(res.PendingMoves, protocol.TagMove{Package: b.name, Version: r.Version, Tag: cmp.Or(intendedTag(r), "latest"), Awaits: awaits})
 		}
 		if published {
 			res.Published = append(res.Published, b.name+"@"+r.Version)
@@ -137,6 +146,95 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 		}
 	}
 	return res, nil
+}
+
+// Finalized says what the last phase of a release did.
+type Finalized struct {
+	// Moved are the dist-tags moved ("name@version tag").
+	Moved []string
+	// Pending are the moves whose packages did not become fetchable in time.
+	Pending []protocol.TagMove
+	// Notes say why a move is pending and the command that does it by hand.
+	Notes []string
+}
+
+// Finalize is the last phase of a release: for each move it waits, for up to
+// r.PropagationWait, until the packages the move awaits are fetchable, then
+// moves the dist-tag and removes "pending". It runs after every project has
+// published, so the wait blocks nothing else.
+//
+// Parameters: root is the workspace; r carries the wait, the progress sink and
+// the output directory; moves are the dist-tags to move.
+// Returns: what was moved and what is still pending.
+// Errors: npm refuses to move a tag.
+func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, error) {
+	var out Finalized
+	for _, m := range moves {
+		dir := filepath.Join(root, filepath.FromSlash(r.OutDir), folder(m.Package))
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return out, err
+		}
+		if err := writeAuth(dir); err != nil {
+			return out, err
+		}
+		step := r
+		step.Version = m.Version
+		if got := awaitPlatforms(dir, step, m.Awaits); !got.Ready {
+			why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", len(m.Awaits))
+			if len(got.Missing) > 0 {
+				why = strings.Join(got.Missing, ", ") + " could not be fetched from the registry in time"
+			}
+			out.Pending = append(out.Pending, m)
+			out.Notes = append(out.Notes, fmt.Sprintf("the dist-tag %q of %s was not moved: %s (waited %s). When npm serves them, run: %s", m.Tag, m.Package, why, got.Waited.Round(time.Second), m.Command()))
+			continue
+		}
+		if _, stderr, err := npm(dir, "dist-tag", "add", m.Package+"@"+m.Version, m.Tag); err != nil {
+			return out, fmt.Errorf("npm dist-tag add %s@%s %s: %w\n%s", m.Package, m.Version, m.Tag, err, strings.TrimSpace(stderr))
+		}
+		// A leftover "pending" would make a re-run look for work.
+		_, _, _ = npm(dir, "dist-tag", "rm", m.Package, pendingTag)
+		out.Moved = append(out.Moved, m.Package+"@"+m.Version+" "+m.Tag)
+	}
+	return out, nil
+}
+
+// Incomplete reports what a re-run of an already released version still has
+// to do: the packages the registry does not have, and the wrappers still under
+// "pending". With none of either, the release of the packages is done.
+//
+// Parameters: root is the workspace; r names the packages and the version; pairs
+// are the "os/arch" platforms the release publishes.
+// Returns: the missing packages and the moves of the pending wrappers.
+func Incomplete(root string, r Release, pairs [][2]string) (missing []string, moves []protocol.TagMove) {
+	var awaits []string
+	for _, p := range pairs {
+		if name, ok := PlatformPackage(r.Names[0], p[0], p[1]); ok {
+			awaits = append(awaits, name)
+		}
+	}
+	slices.Sort(awaits)
+	for _, name := range append(slices.Clone(awaits), r.Names...) {
+		if !registryHas(root, name, r.Version) {
+			missing = append(missing, name)
+		}
+	}
+	for _, name := range r.Names {
+		if hasPendingTag(root, name, r.Version) {
+			moves = append(moves, protocol.TagMove{Package: name, Version: r.Version, Tag: cmp.Or(intendedTag(r), "latest"), Awaits: awaits})
+		}
+	}
+	return missing, moves
+}
+
+// hasPendingTag reports whether the dist-tag "pending" of name is version: the
+// wrapper was published and its real dist-tag was never moved.
+func hasPendingTag(dir, name, version string) bool {
+	out, _, err := npm(dir, "view", name, "dist-tags", "--json", "--prefer-online")
+	if err != nil {
+		return false
+	}
+	var tags map[string]string
+	return json.Unmarshal([]byte(out), &tags) == nil && tags[pendingTag] == version
 }
 
 // folder is a package's directory name: @acme/cli → acme-cli.
@@ -242,18 +340,35 @@ var awaitPlatforms = func(dir string, r Release, names []string) npmpropagation.
 	return npmpropagation.Await(reg, npmpropagation.RealClock{}, npmpropagation.Config{Max: r.PropagationWait, Progress: r.Progress}, names, r.Version)
 }
 
+// readBackChecks and readBackDelay bound the read-back after a publish; pause
+// is replaced by tests so they never sleep.
+const (
+	readBackChecks = 6
+	readBackDelay  = 5 * time.Second
+)
+
+var pause = time.Sleep
+
+// writeAuth gives a package directory an .npmrc using NODE_AUTH_TOKEN, when set
+// (npm never packs an .npmrc); otherwise npm's own login is used.
+func writeAuth(dir string) error {
+	if os.Getenv("NODE_AUTH_TOKEN") == "" {
+		return nil
+	}
+	return os.WriteFile(filepath.Join(dir, ".npmrc"), []byte("//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n"), 0o600)
+}
+
 // publishOne publishes a package directory unless the registry has its
-// version. With NODE_AUTH_TOKEN set, the directory gets an .npmrc using it
-// (npm never packs an .npmrc); otherwise npm's own login is used. On GitHub
-// Actions with an OIDC token the package carries provenance.
+// version, then reads it back: npm can answer success for a package that never
+// appears, and that must stop the release naming the package, not show up as a
+// wait that never ends. On GitHub Actions with an OIDC token the package
+// carries provenance.
 func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	if registryHas(dir, name, r.Version) {
 		return false, nil
 	}
-	if os.Getenv("NODE_AUTH_TOKEN") != "" {
-		if err := os.WriteFile(filepath.Join(dir, ".npmrc"), []byte("//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n"), 0o600); err != nil {
-			return false, err
-		}
+	if err := writeAuth(dir); err != nil {
+		return false, err
 	}
 	args := []string{"publish", "--access", "public"}
 	if tag != "" {
@@ -262,8 +377,26 @@ func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	if os.Getenv("ACTIONS_ID_TOKEN_REQUEST_URL") != "" && r.Repository != "" {
 		args = append(args, "--provenance")
 	}
-	if _, stderr, err := npm(dir, args...); err != nil {
+	stdout, stderr, err := npm(dir, args...)
+	if err != nil {
 		return false, fmt.Errorf("npm publish %s: %w\n%s", name, err, strings.TrimSpace(stderr))
 	}
-	return true, nil
+	for i := 0; i < readBackChecks; i++ {
+		if i > 0 {
+			pause(readBackDelay)
+		}
+		if registryHas(dir, name, r.Version) {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("npm said it published %s@%s, but the registry does not have it after %d checks over %s. Run the release again: it publishes what is missing. npm printed:\n%s",
+		name, r.Version, readBackChecks, (readBackChecks-1)*readBackDelay, tail(strings.TrimSpace(stdout+"\n"+stderr)))
+}
+
+// tail keeps the last 800 bytes of npm's output.
+func tail(s string) string {
+	if len(s) > 800 {
+		return "..." + s[len(s)-800:]
+	}
+	return s
 }
