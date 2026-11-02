@@ -232,6 +232,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	})
 	out = append(out, buildWritesFinding(s))
 	out = append(out, outputOverlapFinding(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs, readConfigText(s.Root)))
+	out = append(out, webEnvironmentFindings(s.Root, s.Graph.Projects)...)
 	badServe := BadServe(s.Graph)
 	out = append(out, protocol.Finding{
 		Check: "every task that serves an app can start it", OK: len(badServe) == 0,

@@ -53,8 +53,9 @@ fixes in one long sentence and did not say what goes wrong in words a person can
 - Per environment the plugin writes `.env.<env>` (starter `VITE_` lines and a header that says the
   values end in the browser bundle and a secret never goes there), one `build(mode)` function in
   `vite.build.ts` and a `vite.config.ts` that calls it. `lcl` keeps sourcemaps and does not minify,
-  `dev` does not minify, `uat` and `prd` minify with the default minifier (esbuild). `terser` is not
-  the default: it needs the extra dependency `terser`, and esbuild is faster and ships with Vite.
+  `dev` does not minify, `uat` and `prd` minify with the minifier Vite ships with (`minify: true`). `terser` is not
+  the default: it needs the extra dependency `terser`. `minify: 'esbuild'` is not used either: Vite 8
+  does not bundle esbuild, so the build fails without it.
 - The default environment is the task `build` (so lint, pack, assets and `^build` keep working); the
   other environments are tasks `build:<env>`. No task `build:<default>` exists, because two tasks
   would write one folder, which Part A reports. Build all: `smith run build build:lcl build:dev

@@ -23,6 +23,7 @@ func AddCommand(version string) *cobra.Command {
 	var lang, stack, like string
 	var choices, with []string
 	var verbose, fresh bool
+	var envFlags EnvironmentFlags
 	cmd := &cobra.Command{
 		Use:   "add <kind> <name>",
 		Short: "Add a project: an app, an internal lib or a publishable package (to add a dependency, use smith install)",
@@ -61,7 +62,7 @@ then commit. With --commit (or commit_operations = true in smith.toml) smith
 commits them as one operation that smith undo can revert.`,
 		Example: `  smith add app web --lang node
   smith add app api --stack node-vitest
-  smith add app web --with react,vitest,bootstrap
+  smith add app web --with react,vitest,bootstrap --environments lcl,dev,uat,prd
   smith add lib core --lang go
   smith add package sdk --lang python
   smith add package billing --choice language=python --choice kind=library   # from the workspace's recipe`,
@@ -99,10 +100,14 @@ commits them as one operation that smith undo can revert.`,
 			if addOpts.With, err = CompleteWith(s, addOpts, cmd.InOrStdin(), cmd.OutOrStdout(), interactive); err != nil {
 				return err
 			}
+			yes, _ := cmd.Flags().GetBool("yes")
+			// --yes asks nothing, so a web app then names its environments by flag.
+			if addOpts.Environments, err = CompleteEnvironments(s, addOpts, envFlags, cmd.InOrStdin(), cmd.OutOrStdout(), interactive && !yes); err != nil {
+				return err
+			}
 			if err := CheckAdd(s, addOpts); err != nil {
 				return err
 			}
-			yes, _ := cmd.Flags().GetBool("yes")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			proceed, err := operationplan.Present(cmd.OutOrStdout(), cmd.InOrStdin(), PlanAdd(s, addOpts), operationplan.Options{
 				Yes: yes, DryRun: dryRun, Ask: true, Env: operationplan.DetectEnvironment(),
@@ -142,6 +147,10 @@ commits them as one operation that smith undo can revert.`,
 	cmd.Flags().StringSliceVar(&with, "with", nil, "the choices the project is built from, comma separated: smith choices lists them (react,vitest,bootstrap); an axis left out takes its default")
 	cmd.Flags().BoolVar(&fresh, "fresh", false, "give the project the built-in default of its stack, without following the sibling projects")
 	cmd.Flags().StringVar(&like, "like", "", "copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken")
+	cmd.Flags().StringSliceVar(&envFlags.Environments, "environments", nil, "a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one")
+	cmd.Flags().StringVar(&envFlags.Default, "default-environment", "", "a web app: the environment the task build builds, which CI and releases use (default: prd, else the last)")
+	cmd.Flags().StringVar(&envFlags.Output, "environment-output", "", "a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app)")
+	cmd.Flags().StringVar(&envFlags.EnvFiles, "env-files", "", "a web app: commit the .env.<env> files (commit, default) or only an .env.example (example)")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's output as it runs (it is shown only if it fails otherwise)")
 	cmd.Flags().StringArrayVar(&choices, "choice", nil, "answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal")
 	return operation.Wrap(cmd, operation.Spec{AddYes: true, AddDryRun: true, ChecksResult: true, Describe: func(_ *cobra.Command, args []string) string {

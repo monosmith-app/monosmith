@@ -51,6 +51,11 @@ func PlanAdd(s *session.Session, opts AddOptions) operationplan.Plan {
 		note := "the stack decides the files: it comes from the recipe, the choices or the language"
 		plan.Add("Project "+opts.Name, operationplan.Line{Action: operationplan.Create, Path: dir + "/" + opts.Name + "/", Note: note})
 	}
+	if opts.Environments != nil {
+		for _, l := range EnvironmentLines(dir+"/"+opts.Name, *opts.Environments) {
+			plan.Add("Environments: one build each, with its own .env file", l)
+		}
+	}
 	if len(opts.With) > 0 || s.Config.Workspace.Recipe != "" && opts.Stack == "" {
 		plan.Add("Workspace", operationplan.Line{Action: operationplan.Change, Path: "smith.toml", Note: "the stack of the project is saved"})
 	}
