@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
@@ -32,6 +33,7 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Kind:      protocol.KindLanguage,
 		Languages: []string{"dotnet", "csharp", "fsharp"},
 		Manifests: []string{"*.csproj", "*.fsproj"},
+		Choices:   functions.Choices(),
 	}, nil
 }
 
@@ -107,7 +109,9 @@ func (d *Dotnet) Latest(params protocol.LatestParams) (protocol.LatestResult, er
 
 // Doctor implements serve.DoctorContributor.
 func (d *Dotnet) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
-	return pipeline.Doctor(d.root, params), nil
+	res := pipeline.Doctor(d.root, params)
+	res.Findings = append(res.Findings, functions.Findings(d.root, params.Projects)...)
+	return res, nil
 }
 
 // ChangeKind implements serve.KindChanger.
