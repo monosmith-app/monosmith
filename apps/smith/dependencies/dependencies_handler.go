@@ -58,6 +58,9 @@ project, --registry for the package.`,
 				return err
 			}
 			defer s.Close()
+			if goOn, err := confirmPackages(cmd, s, "add", targets, args, yes); err != nil || !goOn {
+				return err
+			}
 			link := LinkOptions{Registry: registry, Range: linkRange}
 			if !yes && interactive() {
 				link.Ask = internallink.NewTerminalAsker(cmd.InOrStdin(), cmd.OutOrStdout())
@@ -74,7 +77,7 @@ project, --registry for the package.`,
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")
 
 	var from []string
-	var fromRegistry bool
+	var fromRegistry, uninstallYes bool
 	uninstall := &cobra.Command{
 		Use:     "uninstall <packages...>",
 		Aliases: []string{"un"},
@@ -90,9 +93,13 @@ uninstall -w <project> <package>.`,
 				return err
 			}
 			defer s.Close()
+			if goOn, err := confirmPackages(cmd, s, "remove", from, args, uninstallYes); err != nil || !goOn {
+				return err
+			}
 			return Uninstall(s, from, args, cmd.OutOrStdout(), fromRegistry)
 		},
 	}
+	uninstall.Flags().BoolVarP(&uninstallYes, "yes", "y", false, "do not ask; without a terminal the packages are removed only with --yes")
 	uninstall.Flags().BoolVar(&fromRegistry, "registry", false, "remove the names as registry packages, even when a name is also a project of this workspace")
 	uninstall.Flags().StringArrayVarP(&from, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version), depsCommand(version)}

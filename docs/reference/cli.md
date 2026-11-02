@@ -69,6 +69,7 @@ Usage: `smith new <name> [flags]`
 | `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
 | `--devcontainer` | add .devcontainer/devcontainer.json (default) | off |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
+| `--dry-run` | show the files smith would create and the first commit, and change nothing | off |
 | `--first-commit <first-commit>` | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |  |
 | `--github-releases` | create a GitHub Release for every release tag | off |
 | `--here` | create the workspace in the current folder, which must be empty; the name defaults to the folder's | off |
@@ -84,7 +85,7 @@ Usage: `smith new <name> [flags]`
 | `--release-remote <release-remote>` | the git remote that receives release tags (default origin) | `origin` |
 | `--save-recipe <save-recipe>` | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |  |
 | `--scope <scope>` | npm scope for packages (default @<name>) | `@<name>` |
-| `-y, --yes` | take the default for every question that has no flag | off |
+| `-y, --yes` | take the default for every question that has no flag, and print each | off |
 
 <!-- smith:end new -->
 
@@ -486,6 +487,7 @@ Usage: `smith eject [tool...] [flags]`
 | `--all` | eject every default that applies | off |
 | `--dry-run` | show what would be copied and what would be replaced; change nothing | off |
 | `--force` | replace a file that exists already (the diff of what is lost is printed first) | off |
+| `-y, --yes` | do not ask; without a terminal the files are copied only with --yes | off |
 
 <!-- smith:end eject -->
 
@@ -542,6 +544,7 @@ Alias: `smith un`
 |---|---|---|
 | `--registry` | remove the names as registry packages, even when a name is also a project of this workspace | off |
 | `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
+| `-y, --yes` | do not ask; without a terminal the packages are removed only with --yes | off |
 
 <!-- smith:end uninstall -->
 
@@ -648,8 +651,10 @@ Usage: `smith pipeline [template] [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--ci <ci>` | github, azure or both (default: the workspace's providers) | the workspace's providers |
+| `--dry-run` | show the files that would be written and change nothing | off |
 | `--force` | replace a pipeline file that exists | off |
 | `--project <project>` | the app a deploy template builds |  |
+| `-y, --yes` | do not ask; without a terminal the files are written only with --yes | off |
 
 <!-- smith:end pipeline -->
 

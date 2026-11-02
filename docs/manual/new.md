@@ -47,6 +47,7 @@ Usage: `smith new <name> [flags]`
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
 | `--devcontainer` | boolean | off | add .devcontainer/devcontainer.json (default) |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
+| `--dry-run` | boolean | off | show the files smith would create and the first commit, and change nothing |
 | `--first-commit <first-commit>` | string |  | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
 | `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
@@ -62,7 +63,7 @@ Usage: `smith new <name> [flags]`
 | `--release-remote <release-remote>` | string | `origin` | the git remote that receives release tags (default origin) |
 | `--save-recipe <save-recipe>` | string |  | save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language) |
 | `--scope <scope>` | string | `@<name>` | npm scope for packages (default @<name>) |
-| `-y, --yes` | boolean | off | take the default for every question that has no flag |
+| `-y, --yes` | boolean | off | take the default for every question that has no flag, and print each |
 
 <!-- smith:end new -->
 
@@ -88,9 +89,12 @@ error listed below.
 
 ## What smith chooses for you
 
-With `--yes`, or without a terminal, smith prints a "Chosen for you" block: the agent files, the dev
+With `--yes` smith prints a "Chosen for you" block: the agent files, the dev
 container and the CI, each with the flag that changes it (`--no-agent`, `--no-devcontainer`,
-`--ci`). In a terminal the agent files and the dev container are questions.
+`--ci`). In a terminal the agent files and the dev container are questions. Without a terminal and
+without `--yes`, smith refuses and names every open flag in one message (`--ci`, `--language`,
+`--architecture`, `--agent`, `--devcontainer`, `--first-commit`), because it does not choose in silence.
+`--dry-run` shows the files smith would create and the first commit, and changes nothing.
 
 The Go module prefix comes from the origin remote. With no remote, a terminal asks (a suggestion from
 your git user name, `example.com/<name>`, or one you type); otherwise smith uses `example.com/<name>`
@@ -98,8 +102,9 @@ and says so. `--module-prefix <prefix>` sets it.
 
 ## The first commit
 
-In a new folder smith makes the first commit of its own files. `--no-commit` writes the files and
-commits nothing. In a folder that holds files and is not a git repository, smith runs `git init`,
+In a new folder smith makes the first commit of its own files (`chore: create the <name> workspace
+with smith`), and says so before it writes. In a terminal it asks whether to make it. `--first-commit
+none` or `--no-commit` writes the files and commits nothing. In a folder that holds files and is not a git repository, smith runs `git init`,
 lists the files and asks what the first commit holds:
 
 1. Only smith's files (the default). Your files stay uncommitted.

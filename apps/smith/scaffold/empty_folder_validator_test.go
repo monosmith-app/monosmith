@@ -40,7 +40,7 @@ func TestHereFillsAnEmptyFolderAndNamesItAfterTheFolder(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(folder, ".vscode"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := runNewHere(t, folder); err != nil {
+	if out, err := runNewHere(t, folder, "--yes"); err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	if _, err := workspace.Load(folder); err != nil {

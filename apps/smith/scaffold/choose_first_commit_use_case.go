@@ -78,7 +78,7 @@ func ChooseFirstCommit(r CommitRequest) (CommitDecision, error) {
 		if r.Mode == CommitAll {
 			return CommitDecision{}, problem.New("--first-commit all needs a folder that is not a git repository yet", "use --first-commit smith or none")
 		}
-		return CommitDecision{Mode: r.Mode}, nil
+		return CommitDecision{Mode: askFreshFirstCommit(r)}, nil
 	}
 	content, err := InspectFolder(r.Dir)
 	if err != nil {
@@ -88,7 +88,7 @@ func ChooseFirstCommit(r CommitRequest) (CommitDecision, error) {
 		if r.Mode == CommitAll {
 			return CommitDecision{Mode: ""}, nil
 		}
-		return CommitDecision{Mode: r.Mode}, nil
+		return CommitDecision{Mode: askFreshFirstCommit(r)}, nil
 	}
 	mode := r.Mode
 	if mode == "" {
@@ -164,4 +164,33 @@ func confirmSecrets(r CommitRequest, secrets []string) bool {
 	}
 	answer, _ := askNewQuestion(q, r.In, r.Out)
 	return answer == "yes"
+}
+
+// askFreshFirstCommit settles the first commit of a folder with nothing of the
+// person's in it: a flag answers, a terminal is asked, and otherwise the usual
+// rule (commit smith's files) holds and the command says so.
+//
+// Parameters: r is the request.
+// Returns: the mode: the flag, CommitNone when the person chose nothing, "" for the usual rule.
+func askFreshFirstCommit(r CommitRequest) string {
+	if r.Mode != "" || !r.Interactive {
+		return r.Mode
+	}
+	q := NewQuestion{
+		Prompt:  "Should smith commit the files it writes? (smith runs git init either way)",
+		Default: CommitSmith,
+		Flag:    "first-commit",
+		Options: []NewOption{
+			{Label: "Yes, commit smith's files", Value: CommitSmith, Hint: "chore: create the " + filepath.Base(r.Dir) + " workspace with smith (default)"},
+			{Label: "No, leave them uncommitted", Value: CommitNone, Hint: "you commit when you are ready"},
+		},
+	}
+	answer, _ := askNewQuestion(q, r.In, r.Out)
+	fmt.Fprintf(r.Out, "First commit: %s (change it with --first-commit smith|none, or --no-commit)\n", map[string]string{
+		CommitSmith: "smith's files", CommitNone: "nothing",
+	}[answer])
+	if answer == CommitNone {
+		return CommitNone
+	}
+	return ""
 }

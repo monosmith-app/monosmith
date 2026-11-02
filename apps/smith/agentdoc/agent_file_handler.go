@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -14,7 +15,7 @@ import (
 
 // FileCommand is `smith agent file`.
 func FileCommand(version string) *cobra.Command {
-	var check, noClaude bool
+	var check, noClaude, yes, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "file",
 		Short: "Write AGENTS.md (and a CLAUDE.md that points to it) from the workspace's rules",
@@ -51,9 +52,27 @@ CLAUDE.md gets a short region that imports AGENTS.md. --no-claude-md skips it.
 			if err != nil {
 				return err
 			}
+			if !check {
+				var lines []operationplan.Line
+				for _, c := range changes {
+					switch {
+					case !c.Differs:
+					case c.Exists:
+						lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: c.Path, Note: "the generated region is rewritten, your text stays"})
+					default:
+						lines = append(lines, operationplan.Line{Action: operationplan.Create, Path: c.Path})
+					}
+				}
+				goOn, err := operationplan.Gate(cmd.OutOrStdout(), cmd.InOrStdin(), "write the agent files", "Agent files", lines, yes, dryRun)
+				if err != nil || !goOn {
+					return err
+				}
+			}
 			return finish(cmd, s.Root, changes, check)
 		},
 	}
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are written only with --yes")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the files that would be written and change nothing")
 	cmd.Flags().BoolVar(&check, "check", false, "write nothing; fail when a file is missing or out of date")
 	cmd.Flags().BoolVar(&noClaude, "no-claude-md", false, "do not write CLAUDE.md")
 	return cmd

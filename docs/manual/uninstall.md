@@ -13,6 +13,10 @@ explicitly, and `--registry` removes a registry package that has the name of a p
 
 - A dependency is no longer used by a project.
 
+## Asking first
+
+`smith uninstall` shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`.
+
 ## Synopsis
 
 ```sh
@@ -36,6 +40,7 @@ Alias: `smith un`
 |---|---|---|---|
 | `--registry` | boolean | off | remove the names as registry packages, even when a name is also a project of this workspace |
 | `-w, --workspace <workspace>` | string, repeatable |  | target project, by name or directory; repeat it for several |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the packages are removed only with --yes |
 
 <!-- smith:end uninstall -->
 

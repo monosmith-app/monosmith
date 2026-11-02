@@ -402,7 +402,7 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l.clickText("Remove a package")
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
-	if got := l.lastStarted(); got != "uninstall -w orders left-pad" {
+	if got := l.lastStarted(); got != "uninstall -w orders left-pad --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
