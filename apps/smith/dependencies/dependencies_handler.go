@@ -1,6 +1,8 @@
 package dependencies
 
 import (
+	"bufio"
+	"io"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
@@ -111,7 +114,9 @@ func depsCommand(version string) *cobra.Command {
 }
 
 func newUpCommand(version string) *cobra.Command {
-	var check, yes, asJSON, noInstall, align bool
+	var check, yes, asJSON, noInstall, align, dryRun, major bool
+	var prefer string
+	var to []string
 	cmd := &cobra.Command{
 		Use:   "up [packages...]",
 		Short: "Show dependencies with newer releases and update the ones you pick (same as deps up; --align is sync)",
@@ -139,7 +144,11 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 			}
 			defer s.Close()
 			if align {
-				aligned, err := Align(s, names, check, !noInstall, yes)
+				opts, err := syncOptions(cmd, names, check, dryRun, !noInstall, major, yes, prefer, to)
+				if err != nil {
+					return err
+				}
+				aligned, err := Align(s, opts)
 				if asJSON {
 					enc := json.NewEncoder(cmd.OutOrStdout())
 					enc.SetIndent("", "  ")
@@ -147,7 +156,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 						return encErr
 					}
 				} else {
-					PrintSync(cmd.OutOrStdout(), aligned, check)
+					printSyncResult(cmd.OutOrStdout(), aligned, check, dryRun)
 				}
 				return err
 			}
@@ -172,7 +181,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				if len(unknown) > 0 {
 					return fmt.Errorf("no update for %s", strings.Join(unknown, ", "))
 				}
-			case yes:
+			case yes && !check:
 			case check || !interactive():
 				fmt.Fprintln(out, "\nReport only: pick with smith up in a terminal, name packages, or pass --yes.")
 				return nil
@@ -186,15 +195,33 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 					return nil
 				}
 			}
-			if yes {
-				var majors []string
-				for _, u := range chosen {
-					if u.Level == "major" {
-						majors = append(majors, u.Name)
+			if check {
+				if len(names) > 0 {
+					fmt.Fprintln(out, "\nWould update:")
+					for _, u := range chosen {
+						fmt.Fprintf(out, "  %s %s -> %s (%s)\n", u.Name, u.Current, u.Latest, u.Level)
 					}
 				}
-				if len(majors) > 0 {
-					fmt.Fprintf(out, "! --yes also takes major updates, which can break the project: %s\n", strings.Join(majors, ", "))
+				fmt.Fprintln(out, "Report only: nothing was changed.")
+				return nil
+			}
+			if majors := Majors(chosen); len(majors) > 0 && !major {
+				// A major update can break the project, so it is a choice of its own.
+				switch {
+				case yes || len(names) > 0 && !operationplan.ShouldAsk(operationplan.DetectEnvironment(), false):
+					fmt.Fprintf(out, "Left out: %s. A major update can break the project; read its release notes, then add --major to take it.\n", describeMajors(majors))
+					chosen = WithoutMajors(chosen)
+				case len(names) > 0:
+					fmt.Fprintf(out, "\nThese are major updates and can break the project: %s.\nTake them? [y/N] ", describeMajors(majors))
+					answer, _ := bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
+					if !strings.EqualFold(strings.TrimSpace(answer), "y") {
+						chosen = WithoutMajors(chosen)
+						fmt.Fprintln(out, "Left out the major updates.")
+					}
+				}
+				if len(chosen) == 0 {
+					fmt.Fprintln(out, "Nothing updated.")
+					return nil
 				}
 			}
 			files, err := Apply(s, chosen, !noInstall)
@@ -207,7 +234,11 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 	}
 	cmd.Flags().BoolVar(&align, "align", false, "bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ")
 	cmd.Flags().BoolVar(&check, "check", false, "report only; never prompt, never write")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "take every update without prompting")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "take every patch and minor update without prompting; major updates stay out unless --major is given")
+	cmd.Flags().BoolVar(&major, "major", false, "also take major updates (with --yes or named packages), and with --align let a declaration move to another major version")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "with --align: show the plan and change nothing")
+	cmd.Flags().StringVar(&prefer, "prefer", "", "with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")
+	cmd.Flags().StringSliceVar(&to, "to", nil, "with --align: the version of one dependency, as <name>=<version>")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the updates and tools as JSON; never write")
 	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "align dependency versions" }})
@@ -219,20 +250,30 @@ func interactive() bool {
 }
 
 func syncCommand(version string) *cobra.Command {
-	var check, asJSON, noInstall, yes bool
+	var check, asJSON, noInstall, yes, dryRun, major bool
+	var prefer string
+	var to []string
 	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Make every project declare a shared dependency at the same version (same as up --align)",
 		Long: `Make every project declare a shared dependency at the same spec, language by
 language. Declarations on another major version than the target are left alone
-unless you pass --yes. The target is the version installed, with the operator most
+unless you pass --major. The target is the version installed, with the operator most
 declarations use; when nothing says what is installed, the highest version
 declared. Peer dependencies and the workspace's own packages are left alone,
 and so is a spec smith does not understand well enough to rewrite (a URL, a git
 ref, a compound range): sync reports those. After rewriting it installs, so
-lockfiles and the venv follow.`,
+lockfiles and the venv follow.
+
+Sync shows a plan first: for each dependency, what every project declares now
+and what it will declare. In a terminal it asks which version wins (smith's
+pick, the highest, the lowest, or one by one) and then asks to write. Without
+a terminal it refuses unless you pass --yes, --prefer or --to, and --dry-run
+shows the plan and changes nothing.`,
 		Example: `  smith sync --check   # in CI: fail when declarations disagree
-  smith sync`,
+  smith sync --dry-run
+  smith sync --prefer highest --yes
+  smith sync --to axios=^1.6.0 --yes`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
@@ -240,7 +281,11 @@ lockfiles and the venv follow.`,
 				return err
 			}
 			defer s.Close()
-			report, err := Sync(s, check, !noInstall, yes)
+			opts, err := syncOptions(cmd, nil, check, dryRun, !noInstall, major, yes, prefer, to)
+			if err != nil {
+				return err
+			}
+			report, err := Sync(s, opts)
 			if asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -248,7 +293,7 @@ lockfiles and the venv follow.`,
 					return encErr
 				}
 			} else {
-				PrintSync(cmd.OutOrStdout(), report, check)
+				printSyncResult(cmd.OutOrStdout(), report, check, dryRun)
 			}
 			return err
 		},
@@ -256,6 +301,62 @@ lockfiles and the venv follow.`,
 	cmd.Flags().BoolVar(&check, "check", false, "report only; fail when declarations disagree")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
 	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "also rewrite declarations whose major version differs from the target")
-	return cmd
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "write the plan without asking")
+	cmd.Flags().BoolVar(&major, "major", false, "also rewrite declarations whose major version differs from the target")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan and change nothing")
+	cmd.Flags().StringVar(&prefer, "prefer", "", "which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")
+	cmd.Flags().StringSliceVar(&to, "to", nil, "the version of one dependency, as <name>=<version>")
+	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "sync dependency versions" }})
+}
+
+// syncOptions builds the options of sync and up --align from the flags: the
+// questions a person answers, or the flags that answer them.
+func syncOptions(cmd *cobra.Command, names []string, check, dryRun, install, major, yes bool, prefer string, to []string) (SyncOptions, error) {
+	if err := ValidatePrefer(prefer); err != nil {
+		return SyncOptions{}, err
+	}
+	targets := map[string]string{}
+	for _, v := range to {
+		name, spec, ok := strings.Cut(v, "=")
+		if !ok || name == "" || spec == "" {
+			return SyncOptions{}, fmt.Errorf("--to %q: write it as <name>=<version>", v)
+		}
+		targets[name] = spec
+	}
+	r := Reviewer{
+		In: bufio.NewReader(cmd.InOrStdin()), Out: cmd.OutOrStdout(),
+		Yes: yes, Preview: dryRun, Install: install, CrossMajor: major,
+		Asks:   operationplan.ShouldAsk(operationplan.DetectEnvironment(), false),
+		Prefer: prefer, To: targets,
+	}
+	return SyncOptions{Names: names, Check: check, DryRun: dryRun, Install: install, CrossMajor: major, Settle: r.Settle}, nil
+}
+
+// printSyncResult prints what a sync or align run did after the plan was shown.
+// A check prints the whole report, because no plan was shown.
+func printSyncResult(w io.Writer, r SyncReport, check, dryRun bool) {
+	switch {
+	case check:
+		PrintSync(w, r, true)
+	case dryRun:
+	case len(r.Drift) == 0:
+		fmt.Fprintln(w, "✔ Every project agrees on every shared dependency version.")
+	default:
+		fmt.Fprintf(w, "✔ %d dependencies converged (%s)\n", len(r.Drift), strings.Join(r.Files, ", "))
+	}
+	if check || dryRun {
+		return
+	}
+	for _, p := range r.Unchecked {
+		fmt.Fprintf(w, "⊘ %s: not compared; its plugin does not list declarations\n", p)
+	}
+}
+
+// describeMajors lists major updates as "name 1.2.0 -> 3.0.0".
+func describeMajors(us []Update) string {
+	var parts []string
+	for _, u := range us {
+		parts = append(parts, u.Name+" "+u.Current+" -> "+u.Latest)
+	}
+	return strings.Join(parts, ", ")
 }

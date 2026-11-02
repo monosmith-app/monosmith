@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 )
 
 // PrintPlan writes one line per derived file that needs action, then a count.
@@ -29,7 +29,7 @@ func PrintDiffs(w io.Writer, items []Item) {
 		if i.Present == nil || i.Wanted == nil {
 			continue
 		}
-		fmt.Fprintf(w, "\n%s (owner %s, %s):\n%s", i.File.Path, i.Owner, i.File.Renderer, doctorfix.UnifiedDiff(i.File.Path, string(i.Present), string(i.Wanted)))
+		fmt.Fprintf(w, "\n%s (owner %s, %s):\n%s", i.File.Path, i.Owner, i.File.Renderer, textdiff.UnifiedDiff(i.File.Path, string(i.Present), string(i.Wanted)))
 	}
 }
 

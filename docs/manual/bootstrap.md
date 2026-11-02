@@ -10,10 +10,16 @@ laptop and CI use the same smith, the one the workspace pins in `[ci] smith_vers
   `smith.toml` (or the other way round).
 - You want a first `git clone`, then one command, with no install step to document.
 
+## What smith shows before it writes
+
+`smith bootstrap` shows the plan: the launcher files it creates and, for one that exists with
+other content, a diff of what is replaced. It asks in a terminal; without a terminal it needs
+`--yes`. `--dry-run` shows the plan and writes nothing.
+
 ## Synopsis
 
 ```sh
-smith bootstrap [--check] [--yes]
+smith bootstrap [--check] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
@@ -27,6 +33,7 @@ Usage: `smith bootstrap [flags]`
 |---|---|---|---|
 | `--check` | boolean | off | change nothing; fail when the launcher is missing or out of date |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | show what would be written, with a diff of a launcher that exists, and change nothing |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end bootstrap -->

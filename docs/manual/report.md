@@ -32,7 +32,7 @@ For the graph alone, use [`smith graph --format html`](graph.md).
 ## Synopsis
 
 ```sh
-smith report [-o <file>]
+smith report [-o <file>] [--force]
 ```
 
 ## Arguments and flags
@@ -44,6 +44,7 @@ Usage: `smith report [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--force` | boolean | off | replace the file when it exists with other content (the diff is printed) |
 | `-o, --output <output>` | string |  | write the page to a file |
 
 <!-- smith:end report -->
@@ -51,6 +52,8 @@ Usage: `smith report [flags]`
 Without `-o` the page goes to the standard output.
 
 ## Where the page goes
+
+A file that exists with other content is not replaced silently: smith names the file, shows a diff and asks for `--force`.
 
 Without `-o`, the page goes to the standard output. When the standard output is a terminal, it goes to
 `smith-report.html` instead, because a page of HTML on a terminal is noise.

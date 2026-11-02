@@ -25,6 +25,33 @@ type Drift struct {
 	// sync rewrites them only when told to cross majors.
 	Crossing []protocol.Declaration `json:"crossing,omitempty"`
 	Blocked  []protocol.Declaration `json:"blocked,omitempty"`
+	// Sites are every declaration of the dependency, the ones that already
+	// agree with the target too.
+	Sites []protocol.Declaration `json:"sites,omitempty"`
+	// Installed is the version the package manager has installed, "" when unknown.
+	Installed string `json:"installed,omitempty"`
+	// pickTarget is smith's own target, kept when the person picks another.
+	pickTarget string
+}
+
+// classify sets the target of a drift and sorts its sites into the ones sync
+// rewrites, the ones that would cross a major version, and the ones it must
+// leave alone.
+func classify(d Drift, target string) Drift {
+	d.Target = target
+	d.Fixable, d.Crossing, d.Blocked = nil, nil, nil
+	for _, s := range d.Sites {
+		switch {
+		case s.Spec == target:
+		case s.Rewritable && crossesMajor(s.Spec, target):
+			d.Crossing = append(d.Crossing, s)
+		case s.Rewritable:
+			d.Fixable = append(d.Fixable, s)
+		default:
+			d.Blocked = append(d.Blocked, s)
+		}
+	}
+	return d
 }
 
 var (
@@ -97,19 +124,7 @@ func FindDrift(plugin string, declared protocol.DeclaredResult, local map[string
 		if target == "" {
 			continue
 		}
-		d := Drift{Plugin: plugin, Name: name, Target: target, Reason: reason}
-		for _, s := range sites {
-			switch {
-			case s.Spec == target:
-			case s.Rewritable && crossesMajor(s.Spec, target):
-				d.Crossing = append(d.Crossing, s)
-			case s.Rewritable:
-				d.Fixable = append(d.Fixable, s)
-			default:
-				d.Blocked = append(d.Blocked, s)
-			}
-		}
-		out = append(out, d)
+		out = append(out, classify(Drift{Plugin: plugin, Name: name, Reason: reason, Sites: sites, Installed: declared.Installed[name]}, target))
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out

@@ -2,6 +2,7 @@ package operationplan
 
 import (
 	"bufio"
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -23,7 +24,17 @@ type Options struct {
 	Ask bool
 	// Env is the terminal state; DetectEnvironment gives the real one.
 	Env Environment
+	// Confirm is [workspace] confirm: "always" or "risky". Empty takes
+	// DefaultConfirm, which the command line sets from smith.toml.
+	Confirm string
 }
+
+// DefaultConfirm is the value of [workspace] confirm for this run. The root
+// command sets it before any command runs; empty means "always".
+var DefaultConfirm string
+
+// ConfirmRisky is the value of confirm that asks only for a risky plan.
+const ConfirmRisky = "risky"
 
 // Present prints the plan and decides whether the command goes on. With
 // DryRun it prints the plan and returns false. When ShouldAsk holds, it asks
@@ -42,6 +53,10 @@ func Present(out io.Writer, in io.Reader, plan Plan, o Options) (bool, error) {
 		return false, nil
 	}
 	if plan.Empty() || !o.Ask || o.Yes {
+		return true, nil
+	}
+	if mode := cmp.Or(o.Confirm, DefaultConfirm); mode == ConfirmRisky && !plan.Risky() {
+		fmt.Fprintln(out, "Applying it without asking: [workspace] confirm = \"risky\" asks only when a plan deletes or edits files.")
 		return true, nil
 	}
 	if !ShouldAsk(o.Env, o.Yes) {

@@ -286,7 +286,14 @@ func (v Model) UpArgv() []string {
 	if len(names) == 0 {
 		return nil
 	}
-	return append([]string{"deps", "up"}, names...)
+	argv := append([]string{"deps", "up"}, names...)
+	for _, r := range v.Rows {
+		if r.Level == "major" && slices.Contains(names, r.Name) {
+			// A major update was marked on purpose: the command takes it only with --major.
+			return append(argv, "--major")
+		}
+	}
+	return argv
 }
 
 // AlignArgv is the command line that brings the policy's drifting dependencies

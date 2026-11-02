@@ -17,7 +17,7 @@ system smith does not know.
 ## Synopsis
 
 ```sh
-smith plugin draft <sample-folder> --lang <name> [-o <file>] [--stdout]
+smith plugin draft <sample-folder> --lang <name> [-o <file> [--force]] [--stdout]
 ```
 
 ## Arguments and flags
@@ -34,6 +34,7 @@ Usage: `smith plugin draft <sample-folder> <name> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--force` | boolean | off | replace the draft file when it exists with other content (the diff is printed) |
 | `--lang <lang>` | string |  | the language's name, lower case (required) |
 | `-o, --output <output>` | string | <lang>.plugin-draft.toml | the draft file (default <lang>.plugin-draft.toml) |
 | `--stdout` | boolean | off | print the draft instead of writing a file |

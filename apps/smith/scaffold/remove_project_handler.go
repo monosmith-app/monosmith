@@ -62,6 +62,7 @@ hand-written workflow, an editor task, a doc). It does not change them.`,
 				}
 				plan := PlanRemoval(s.Root, preview)
 				planned := planOut(cmd, asJSON)
+				presented := planned
 				if len(preview.Unsaved) > 0 && !opts.KeepCopy && !opts.Delete {
 					// Deleting would lose files git cannot bring back: smith asks, and --yes
 					// does not answer for the person.
@@ -72,12 +73,14 @@ hand-written workflow, an editor task, a doc). It does not change them.`,
 					}
 					opts.KeepCopy, opts.Delete = choice == removeKeepCopy, choice == removeDelete
 					yes = true // the choice was the confirmation
+					// The plan is on the screen already: Present must not print it again.
+					presented = io.Discard
 				}
 				if opts.KeepCopy {
 					preview.KeptAt = ".smith/removed/" + opts.Name + "-<time>"
 					plan = PlanRemoval(s.Root, preview)
 				}
-				if _, err := operationplan.Present(planned, cmd.InOrStdin(), plan, operationplan.Options{
+				if _, err := operationplan.Present(presented, cmd.InOrStdin(), plan, operationplan.Options{
 					Yes: yes, Ask: true, Env: operationplan.DetectEnvironment(),
 				}); err != nil {
 					return err

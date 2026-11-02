@@ -26,10 +26,24 @@ Do not use it to cut a release from a feature branch: `releases run from main, n
 <branch>` (see the environment variables). Versions come from commit messages; there is no
 flag to set one.
 
+## What smith asks before it publishes
+
+Publishing and tagging cannot be undone, so smith shows each package with the reason it
+releases (the commits) and asks. In a terminal you can release all of them, change the bump
+of one package (patch, minor or major), hold a package back (it keeps its version and does
+not release this time), or cancel. A package that releases only because a package it depends
+on releases is held back with it. The last question says what cannot be undone: the tags
+that are created and pushed and the registries that receive the packages. Without a
+terminal smith refuses unless `--yes` is given. `--hold <project>` and
+`--bump <project>=minor` give the same answers as flags, in a terminal or in CI.
+
+A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
+release channel decide their version themselves, so `--bump` refuses them and names why.
+
 ## Synopsis
 
 ```sh
-smith release [--dry-run [--comment]] [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
+smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
 smith release pub --project <app> --version <version>
 ```
 
@@ -47,9 +61,11 @@ Usage: `smith release <command> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--bump <bump>` | string, repeatable |  | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major |
 | `--comment` | boolean | off | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment |
 | `--dry-run` | boolean | off | show what would be released; change nothing |
 | `--format <format>` | `text` or `markdown` | `text` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |
+| `--hold <hold>` | string, repeatable |  | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too |
 | `--json` | boolean | off | print the release report as JSON |
 | `--no-push` | boolean | off | create tags locally only |
 | `--notes` | boolean | off | also print each release's notes (what its GitHub Release says) |

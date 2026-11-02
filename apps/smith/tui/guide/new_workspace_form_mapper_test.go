@@ -11,8 +11,17 @@ import (
 
 func TestTheFormAsksWhatSmithNewAsks(t *testing.T) {
 	var formKeys, commandKeys []string
+	var decisions []string
 	for _, s := range NewWorkspaceSteps() {
+		if s.Key == answerFirstCommit || s.Key == answerFirstCommitSecrets || s.Key == answerModulePrefix {
+			// Decisions smith new settles with its own helpers when the folder or the language calls for them.
+			decisions = append(decisions, s.Key)
+			continue
+		}
 		formKeys = append(formKeys, s.Key)
+	}
+	if want := []string{answerFirstCommit, answerFirstCommitSecrets, answerModulePrefix}; !reflect.DeepEqual(decisions, want) {
+		t.Fatalf("the form asks the decisions %v, want %v", decisions, want)
 	}
 	commandKeys = append(commandKeys, "name")
 	for _, q := range scaffold.NewQuestions() {
@@ -69,8 +78,8 @@ func TestQuestionsThatDoNotApplyAreSkipped(t *testing.T) {
 }
 
 func TestSavingARecipeFromTheFormUsesTheWorkspaceNameByDefault(t *testing.T) {
-	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {""}})
-	if want := []string{"new", "acme", "--yes", "--language", "go", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
+	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "module-prefix": {"github.com/me/acme"}, "save-recipe": {"yes"}, "recipe-name": {""}})
+	if want := []string{"new", "acme", "--yes", "--language", "go", "--module-prefix", "github.com/me/acme", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
 	}
 	got = NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {"team"}})

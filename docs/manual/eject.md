@@ -14,10 +14,16 @@ reads it, replaces the default whole, and smith stops passing a configuration of
 
 Without arguments it only lists what could be ejected, so it is safe to run to see what smith owns.
 
+## Files that are replaced
+
+A file that exists with other content is never replaced silently. Without `--force` smith refuses
+and names the file. With `--force` it prints a diff of what is lost, then replaces it. `--dry-run`
+prints the same diffs and copies nothing.
+
 ## Synopsis
 
 ```sh
-smith eject [tool...] [--all] [--force]
+smith eject [tool...] [--all] [--force] [--dry-run]
 ```
 
 ## Arguments and flags
@@ -34,7 +40,8 @@ Usage: `smith eject [tool...] [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--all` | boolean | off | eject every default that applies |
-| `--force` | boolean | off | replace a file that exists already |
+| `--dry-run` | boolean | off | show what would be copied and what would be replaced; change nothing |
+| `--force` | boolean | off | replace a file that exists already (the diff of what is lost is printed first) |
 
 <!-- smith:end eject -->
 

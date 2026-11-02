@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -185,6 +186,5 @@ func newBanner(name string, icons theme.Icons) string {
 // Value, a Label and a Hint; def is the Value Enter takes.
 // Returns: the Value of the answer.
 func AskChoice(prompt string, options []NewOption, def string, in *bufio.Reader, out io.Writer) string {
-	answer, _ := askNewQuestion(NewQuestion{Prompt: prompt, Options: options, Default: def}, in, out)
-	return answer
+	return choiceprompt.Ask(prompt, options, def, in, out)
 }

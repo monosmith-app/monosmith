@@ -136,6 +136,9 @@ type Shell struct {
 	runAt int
 
 	confirm *dialog.Confirm
+	// releaseWaiting is a release command line that waits for the plan to be
+	// read, so its confirmation can list the packages and versions.
+	releaseWaiting []string
 	// choices says whether the choices of the plugins are read; offers are
 	// those that can be used, formPending names the form (add or swap) that waits
 	// for them, and addBase and swapBase are the plain forms they are added to.
@@ -478,6 +481,11 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.deps = depsview.FromResult(msg)
 	case releaseview.Result:
 		s.release = releaseview.FromResult(msg)
+		if argv := s.releaseWaiting; argv != nil {
+			// The release was asked before the plan was read: ask now, with the plan.
+			s.releaseWaiting = nil
+			return s.execute(argv, false)
+		}
 	case capturedMsg:
 		return s.captured(msg)
 	case openedMsg:

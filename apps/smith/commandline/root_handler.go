@@ -21,12 +21,14 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/npmpolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/npmprune"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/pydepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 	"os"
 	"strings"
@@ -80,6 +82,19 @@ func withWizard(cmd *cobra.Command, version string) *cobra.Command {
 	return cmd
 }
 
+// applyConfirmSetting reads [workspace] confirm from the workspace the command
+// runs in, so every plan presents itself the way the person set. A missing or
+// broken smith.toml leaves the default (every plan asks).
+func applyConfirmSetting() {
+	root, err := workspace.FindRoot(".")
+	if err != nil {
+		return
+	}
+	if cfg, err := workspace.Load(root); err == nil {
+		operationplan.DefaultConfirm = cfg.Workspace.Confirm
+	}
+}
+
 // Root builds the smith command.
 func Root(version string) *cobra.Command {
 	root := &cobra.Command{
@@ -99,6 +114,8 @@ already have), then build and doctor.`,
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// [workspace] confirm says which plans ask; every plan reads it from here.
+		PersistentPreRun: func(*cobra.Command, []string) { applyConfirmSetting() },
 	}
 	root.AddGroup(&cobra.Group{ID: "start", Title: "Create:"}, &cobra.Group{ID: "work", Title: "Work:"}, &cobra.Group{ID: "ship", Title: "Ship:"}, &cobra.Group{ID: "inspect", Title: "Inspect:"})
 	add := func(group string, cmds ...*cobra.Command) {

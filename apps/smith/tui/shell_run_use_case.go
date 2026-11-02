@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +36,18 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		return nil
 	case catalog.Changes:
 		if !confirmed {
+			if argv[0] == "release" && !s.release.Loaded && s.release.Err == nil && s.sources.Release != nil && !slices.Contains(argv, "--dry-run") {
+				// Publishing cannot be undone: read the plan first, then ask.
+				s.releaseWaiting = slices.Clone(argv)
+				s.say("Reading the release plan…")
+				load := s.sources.Release
+				return func() tea.Msg { return load() }
+			}
+			if flag, ok := catalog.PlanFlag(argv); ok && s.sources.Capture != nil {
+				// The dialog shows what the command will do, not a sentence about it.
+				s.say("Planning: nothing is changed yet…")
+				return s.capture(capPlan, append(slices.Clone(argv), flag))
+			}
 			title, why := commands.Describe(argv)
 			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Place(s.w, s.h)
 			s.confirm = &c

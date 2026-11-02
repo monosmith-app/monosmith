@@ -15,10 +15,17 @@ move and a dozen references, and smith does all of it.
 To see what a change involves without making it, add `--dry-run`: it lists every file that
 would be edited and the move, and changes nothing.
 
+## What smith asks before it writes
+
+A kind change moves a folder and edits many files, so smith asks the work tree to be clean
+(`--allow-dirty` goes on anyway), shows the plan with a diff of each file it edits and asks.
+Without a terminal it needs `--yes`. `--dry-run` shows the plan. Nothing is committed unless you
+pass `--commit`, which makes the change one commit that `smith undo` reverts.
+
 ## Synopsis
 
 ```sh
-smith kind <project> <app|lib|package> [--dry-run] [--force] [--json]
+smith kind <project> <app|lib|package> [--dry-run] [--yes] [--force] [--allow-dirty] [--commit] [--json]
 ```
 
 ## Arguments and flags
@@ -35,9 +42,12 @@ Usage: `smith kind <project> <kind> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--allow-dirty` | boolean | off | go ahead although the work tree has uncommitted changes |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | list every file edit and the move; change nothing |
 | `--force` | boolean | off | go ahead although other projects import it or it was already released |
 | `--json` | boolean | off | print the plan and what was done as JSON |
+| `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end kind -->
 
