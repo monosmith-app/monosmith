@@ -98,7 +98,7 @@ func (s Shell) mainContent(w, h int) content {
 		for i := len(broken); i < len(banner); i++ {
 			c.hits[i] = hit{kind: "action", id: "file.adopt"}
 		}
-		lines, optionAt := s.guide.Window(s.th, w, max(h-len(banner), 1), s.h)
+		lines, optionAt := s.guide.Window(s.th, w, max(h-len(banner), 1))
 		for row, i := range optionAt {
 			c.hits[len(banner)+row] = hit{kind: "option", index: i}
 		}
@@ -135,7 +135,11 @@ func (s Shell) projectsContent(w, h int) content {
 	}
 	// The explanations wrap instead of running off the pane.
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted("On: ")+s.th.Bold(scope), w, 0)...)
-	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s)", len(projects), affected, s.th.Icons.Dot)), w, 0)...)
+	noun := "projects"
+	if len(projects) == 1 {
+		noun = "project"
+	}
+	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d %s · %d affected by the changes (%s)", len(projects), noun, affected, s.th.Icons.Dot)), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted("↑ = projects it needs · ↓ = projects that use it"), w, 0)...)
 	c.hits[len(c.lines)] = hit{kind: "action", id: "file.add"}
 	c.lines = append(c.lines, s.newProjectButton(), "")

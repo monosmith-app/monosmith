@@ -121,7 +121,7 @@ export function tellActionOutcome (outcome: ProjectActionOutcome, done: string, 
   switch (outcome.kind) {
     case 'done': {
       for (const line of outcome.lines) onOutput(line)
-      const commit = 'Commit the changes…'
+      const commit = 'Commit changes…'
       void vscode.window.showInformationMessage(`MonoSmith: ${done}. Not committed: review with git status, or commit it so Undo can revert it.`, commit).then(async (choice) => {
         if (choice === commit) await vscode.commands.executeCommand('monosmith.commit', { root })
       })

@@ -1005,7 +1005,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   /** Releases the workspace: the plan, the packages to hold back, the bumps to change, then the last question. */
   const releaseHere = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
-    if (state?.location === undefined || !mayWrite('releasing')) return
+    if (state === undefined) return
+    if (state.location === undefined) {
+      void vscode.window.showWarningMessage(`MonoSmith: smith was not found for ${state.name}, so nothing can be released. Install smith, then run "MonoSmith: Release…" again.`)
+
+      return
+    }
+    if (!mayWrite('releasing')) return
     output.show(true)
     const outcome = await releaseWorkspace({
       run:   smithIn(state),

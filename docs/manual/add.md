@@ -146,7 +146,7 @@ VS Code the result is a choice: open the install page, install it with smith, ch
 checking; nothing is lost.
 
 smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
-run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit these changes now".
+run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit now".
 
 ## Desktop apps and the composer
 

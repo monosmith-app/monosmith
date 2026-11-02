@@ -4,6 +4,7 @@ import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-optio
 import { parseMissingTool } from './add-missing-tool.mapper.ts'
 import { parseChoices, parseKinds, parseStacks } from './add-options.mapper.ts'
 import { fitOutcomes, parseOutcomes } from './add-outcomes.mapper.ts'
+import { choicesInWords } from './add-choice-rows.mapper.ts'
 
 /** What adding a project needs from the editor. */
 export interface AddDeps {
@@ -17,8 +18,8 @@ export interface AddDeps {
    * to compose a stack instead (the caller opens the composer).
    */
   ask:     (options: AddOptions) => Promise<AddRequest | 'compose' | undefined>
-  /** Shows the plan and asks. `followsSiblings` tells whether `fresh` would change the project. */
-  confirm: (request: AddRequest, plan: string, followsSiblings: boolean) => Promise<PlanAnswer>
+  /** Shows the plan and asks. `followsSiblings` tells whether `fresh` would change the project; `choices` says what was chosen, in words. */
+  confirm: (request: AddRequest, plan: string, followsSiblings: boolean, choices: string) => Promise<PlanAnswer>
 }
 
 async function readOptions (run: AddDeps['run']): Promise<AddOptions | string> {
@@ -55,7 +56,7 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   const plan = await deps.run(addArguments(request, 'plan'))
   if (plan.code !== 0) return { kind: 'refused', message: describeFailure(plan) }
 
-  const answer = await deps.confirm(request, plan.stdout.trim(), followsSiblings(plan.stdout))
+  const answer = await deps.confirm(request, plan.stdout.trim(), followsSiblings(plan.stdout), choicesInWords(request, options))
   if (answer === 'cancel') return { kind: 'cancelled' }
 
   const committed = answer.endsWith('-commit')

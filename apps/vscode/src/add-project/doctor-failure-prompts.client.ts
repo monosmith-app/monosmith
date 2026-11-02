@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { describeDoctorFailure, type DoctorFailure } from '../smith-run/index.ts'
+import { showNotice } from '../notice-buttons/index.ts'
 
 /** What the notice of a project that fails its checks can do beyond showing text: the editor carries these out. */
 export interface DoctorFailureFollowUp {
@@ -24,16 +25,20 @@ export function tellDoctorFailure (failure: DoctorFailure, operation: string, li
 }
 
 async function askNextStep (failure: DoctorFailure, operation: string, next?: DoctorFailureFollowUp): Promise<void> {
-  const install = 'Install the tools'
+  const install = 'Install tools'
   const health = 'Open Health'
   const commit = 'Commit anyway'
-  const leave = 'Leave it uncommitted'
-  const choice = await vscode.window.showWarningMessage(
-    describeDoctorFailure(failure),
-    install,
-    health,
-    ...(next === undefined || failure.committed ? [] : [commit]),
-    leave,
+  const leave = 'Keep uncommitted'
+  const canCommit = next !== undefined && !failure.committed
+  const choice = await showNotice(
+    'warning',
+    `${describeDoctorFailure(failure)} Install tools fetches what is missing. Open Health lists every check.${canCommit ? ' Commit anyway makes one commit that Undo can revert.' : ''}`,
+    [
+      { label: install, detail: 'Install the tools the project needs, with smith tools install.' },
+      { label: health, detail: 'Open the Health view: it lists every check and its remedy.' },
+      ...(canCommit ? [{ label: commit, detail: 'Commit the files now, although a check fails. It is one commit that Undo can revert.' }] : []),
+      { label: leave, detail: 'Leave the files uncommitted: review them with git, and commit when you decide.' },
+    ],
   )
   switch (choice) {
     case install: {

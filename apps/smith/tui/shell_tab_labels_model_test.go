@@ -6,9 +6,38 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 )
+
+func TestTheTabBarNamesTheAddFormWhileItsConfirmationIsOpen(t *testing.T) {
+	argv := []string{"add", "app", "web", "--lang", "node", "--with", "react", "--dry-run"}
+	l := newLab(t, true, 110, 32)
+	sh := l.sh()
+	sh.tab, sh.Form = commands.TabGuide, "Add a project"
+	sh.addPlanRead(capturedMsg{argv: argv, res: sources.Captured{OK: true, Text: realAddPlan}})
+	l.m = sh
+	shown := l.sh()
+	if got := shown.page().Title(); got != "Add a project" {
+		t.Fatalf("the right label of the tab bar says %q", got)
+	}
+	if head := strings.Join(l.lines()[:5], "\n"); strings.Contains(head, "Start") {
+		t.Fatalf("the tab bar still says Start:\n%s", head)
+	}
+}
+
+func TestTheStartTabKeepsItsNameWhenAConfirmationBelongsToAnotherTab(t *testing.T) {
+	l := newLab(t, true, 110, 32)
+	sh := l.sh()
+	sh.tab, sh.Form = commands.TabRelease, "Add a project"
+	sh.compose = &composer.Model{}
+	if got := sh.guideModalName(); got != "" {
+		t.Fatalf("another tab is open, but the Start tab is called %q", got)
+	}
+}
 
 // stripText is the tab strip as plain text.
 func stripText(l *lab) string {

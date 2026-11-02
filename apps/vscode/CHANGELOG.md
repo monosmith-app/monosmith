@@ -7,6 +7,11 @@ the first release everything below is under Unreleased.
 
 ### Fixed
 
+- Add project: pressing Enter through the steps gives the safe defaults. Every list of one answer starts on its default (Vitest for the test runner) or on "None" when the axis has none (desktop shell, style), listed first; it no longer starts on Tauri, Bootstrap or Jest. The confirmation says the choices in words and marks the defaults ("React, ESLint (default), Vitest (default); no desktop shell, no style").
+- Add project: the framework is asked once. The answer of "Which framework?" is kept, a website no longer lists AWS Lambda or Electron, and the framework list starts on what you typed in the first question (`react`).
+- Notifications show at most three buttons with short verbs (Install tools, Open Health, More…); the long explanation is in the message and the other buttons are behind "More…".
+- `MonoSmith: Release…` says why when nothing releases and offers "Open Preview" and, when a package exists that no commit releases, "Without a commit…".
+
 - New workspace is a flow of its own, not a bare terminal: "How do you want to set it up?" (the defaults, which list what they choose; Customise, which asks CI, language, Node tests, code layout, agent files, dev container and the first commit; or answer in a terminal), the name with the folder name filled in and said to be the folder's, then a summary and the list of files before anything is written.
 - Terminals show `smith new --here`, not the full path of smith: the folder of smith goes first on the PATH of the terminal.
 - The Projects view of a workspace with no project shows "Add your first project".

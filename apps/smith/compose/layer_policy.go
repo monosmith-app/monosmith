@@ -33,6 +33,20 @@ func AboutLayer(id string) string {
 	return ""
 }
 
+// TitleOfLayer is what a person calls a layer ("Desktop shell"), to say a
+// choice in words.
+//
+// Parameters: id is a layer id.
+// Returns: the title, or the id itself for a layer smith does not know.
+func TitleOfLayer(id string) string {
+	for _, l := range knownLayers {
+		if l.ID == id {
+			return l.Title
+		}
+	}
+	return id
+}
+
 // LayerOf is the layer of a choice: the layer its plugin names, else its axis.
 //
 // Parameters: layer is protocol.Choice.Layer; axis is protocol.Choice.Axis.

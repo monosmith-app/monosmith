@@ -7,7 +7,7 @@
 smith never commits unasked. [`smith add`](add.md), `remove`, `upgrade`, `derive` and `swap` leave their files
 uncommitted unless you pass `--commit` or set `commit_operations = true`. When you decide afterwards that you
 want the commit, this command makes it. The terminal interface and the VS Code extension call it from
-"Commit these changes now", after a change.
+"Commit now", after a change.
 
 ## When to use it
 
