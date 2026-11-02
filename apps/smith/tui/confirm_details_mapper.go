@@ -18,6 +18,8 @@ func (s Shell) confirmDetails(argv []string) []string {
 	}
 	var lines []string
 	switch {
+	case isForcedRelease(argv):
+		lines = forcedReleaseDetails(argv)
 	case argv[0] == "release":
 		lines = s.releaseDetails()
 	case argv[0] == "doctor" && slices.Contains(argv, "--fix"):

@@ -45,7 +45,7 @@ A package that no commit releases is "not in this plan", and `--bump` offers a w
 it as a manual release ("no commit since mvd@0.14.0 releases this"), and the last question says that
 a new tag at HEAD, a registry publish, a GitHub Release and the assets follow and cannot be undone.
 Without a terminal it needs `--yes` as well. `--force` alone is refused and prints the usage. The
-report and the tag message say the release was manual. CI can start it with `[ci] manual_release`
+report and the tag message say the release was manual. The terminal UI (key `f` in the Release view) and the VS Code release command offer the same path as a choice, with the consequences shown. CI can start it with `[ci] manual_release`
 (see [CI](../reference/ci.md#a-release-started-by-hand)).
 
 A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a

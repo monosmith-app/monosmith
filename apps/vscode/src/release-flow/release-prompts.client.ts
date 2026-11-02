@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { forcedConsequences } from './forced-release.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
 
 const TITLE = 'MonoSmith: Release'
@@ -71,7 +72,7 @@ export async function confirmRelease (plan: string, choices: ReleaseChoices): Pr
   const bumped = choices.bump.length === 0 ? '' : `\nChanged bumps: ${choices.bump.join(', ')}.`
   const choice = await vscode.window.showWarningMessage(
     'MonoSmith: release now?',
-    { modal: true, detail: `${plan}${held}${bumped}\n\nThis cannot be undone. smith creates the tags, pushes them and publishes the packages to the registries. Undo does not revert it.` },
+    { modal: true, detail: `${plan}${held}${bumped}${forcedConsequences(choices.forced ?? [])}\n\nThis cannot be undone. smith creates the tags, pushes them and publishes the packages to the registries. Undo does not revert it.` },
     go,
   )
 

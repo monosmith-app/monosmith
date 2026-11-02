@@ -35,7 +35,7 @@ import { pickArguments, readUpdates, toDependencyRows, updateArguments } from '.
 import { createListView, groupByFolder, readFolderData, tagWithFolder, type ListNode, type ListResult } from './list-view/index.ts'
 import { createInsightDocuments, readExplain, readGraph } from './project-insight/index.ts'
 import { pickProject, pickTask, pickTaskName, showStatusMenu } from './quick-pick/index.ts'
-import { chooseBump, chooseHold, confirmRelease, releaseWorkspace, tellReleaseOutcome } from './release-flow/index.ts'
+import { chooseBump, chooseForced, chooseHold, confirmRelease, releaseWorkspace, tellReleaseOutcome } from './release-flow/index.ts'
 import { explanationLines, readReleasePreview, toReleaseRows } from './release-preview/index.ts'
 import { readSettings } from './settings/index.ts'
 import { openSmithTerminal } from './smith-terminal/index.ts'
@@ -1015,6 +1015,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ),
       chooseHold,
       chooseBump,
+      chooseForced,
       confirm: confirmRelease,
     })
     note(`MonoSmith: release in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
