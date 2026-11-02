@@ -4,7 +4,7 @@ import type { WorkspaceProject, WorkspaceSnapshot } from '../workspace/index.ts'
 /** One row of the MonoSmith view. */
 export interface TreeNode {
   id:          string
-  kind:        'folder' | 'group' | 'project' | 'task' | 'action'
+  kind:        'folder' | 'group' | 'project' | 'task' | 'action' | 'environments' | 'environment'
   label:       string
   description: string
   /** A codicon id; the view tints it for a project. */
@@ -33,8 +33,18 @@ export interface TreeNode {
   children:    TreeNode[]
 }
 
+/** A web app built once per environment, as `smith environments list --json` says. */
+export interface WebAppEnvironments {
+  project:      string
+  /** The environment `smith run build` builds. */
+  default:      string
+  environments: Array<{ name: string, task: string }>
+}
+
 /** A folder of the editor, as the view shows it. */
 export interface TreeFolder {
+  /** The web apps of the folder and their environments; absent when smith listed none. */
+  webApps?:      readonly WebAppEnvironments[]
   root:          string
   name:          string
   /** What smith said; absent while the folder has no running smith. */
@@ -92,10 +102,10 @@ export function toTree (folders: readonly TreeFolder[], factsOf: (root: string, 
   if (folders.every((folder) => folder.snapshot === undefined)) return []
   const first = folders[0]
   const narrowed = filter.text.trim() !== '' || filter.affectedOnly
-  if (folders.length === 1 && first?.snapshot !== undefined) return [...agentRow(first, narrowed), ...toGroups(first.root, first.snapshot, factsOf, filter)]
+  if (folders.length === 1 && first?.snapshot !== undefined) return [...agentRow(first, narrowed), ...toGroups(first.root, first.snapshot, factsOf, filter, first.webApps)]
 
   return folders.flatMap((folder): TreeNode[] => {
-    const children = folder.snapshot === undefined ? [] : [...agentRow(folder, narrowed), ...toGroups(folder.root, folder.snapshot, factsOf, filter)]
+    const children = folder.snapshot === undefined ? [] : [...agentRow(folder, narrowed), ...toGroups(folder.root, folder.snapshot, factsOf, filter, folder.webApps)]
     if (narrowed && children.length === 0) return []
     const projects = folder.snapshot?.projects.map((project) => project.name) ?? []
     const description = folder.snapshot === undefined ? (folder.note ?? '') : `${projects.length} projects`
@@ -164,7 +174,7 @@ export function countProjects (nodes: readonly TreeNode[]): number {
   return nodes.reduce((sum, node) => sum + (node.kind === 'project' ? 1 : countProjects(node.children)), 0)
 }
 
-function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter): TreeNode[] {
+function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: string, task: string) => TaskFacts | undefined, filter: ViewFilter, webApps: readonly WebAppEnvironments[] = []): TreeNode[] {
   const known = new Set(GROUPS.map((group) => group.kind))
   const groups = [
     ...GROUPS,
@@ -181,7 +191,7 @@ function toGroups (root: string, snapshot: WorkspaceSnapshot, factsOf: (root: st
       const nameMatches = needle === '' || project.name.toLowerCase().includes(needle) || project.language.toLowerCase().includes(needle)
       const tasks = nameMatches ? project.tasks : project.tasks.filter((task) => task.toLowerCase().includes(needle))
 
-      return !nameMatches && tasks.length === 0 ? [] : [toProject(root, project, tasks, { affected, dot: affected && !everyAffected, reveal: !nameMatches }, factsOf)]
+      return !nameMatches && tasks.length === 0 ? [] : [withEnvironments(toProject(root, project, tasks, { affected, dot: affected && !everyAffected, reveal: !nameMatches }, factsOf), webApps.find((app) => app.project === project.name))]
     })
     if (children.length === 0) return []
 
@@ -226,6 +236,46 @@ function toProject (root: string, project: WorkspaceProject, tasks: readonly str
     ].filter(Boolean).join('\n'),
     children: tasks.map((task) => toTask(root, project.name, task, factsOf(root, `${project.name}:${task}`))),
   }
+}
+
+/**
+ * Puts an Environments section under a web app: one row for each environment, the default marked, with
+ * the task that builds it. The section has the inline add action and each row the inline remove action.
+ * @param node - the project row
+ * @param app - what `smith environments list --json` says of the project, when it is a web app
+ */
+function withEnvironments (node: TreeNode, app: WebAppEnvironments | undefined): TreeNode {
+  if (app === undefined || app.environments.length === 0) return node
+  const root = node.root
+  const project = node.project ?? app.project
+  const rows = app.environments.map((env): TreeNode => ({
+    id:          `environment:${root}:${project}:${env.name}`,
+    kind:        'environment',
+    label:       env.name,
+    description: env.name === app.default ? 'default: smith run build' : (env.task === '' ? '' : `smith run ${env.task}`),
+    icon:        'globe',
+    root,
+    projects:    [project],
+    project,
+    spoken:      `${project} environment ${env.name}${env.name === app.default ? ', the one smith run build builds' : ''}`,
+    tooltip:     `${env.name}${env.name === app.default ? ' (the default: CI and releases build this one)' : ''}. Remove it with the minus button; its .env file stays.`,
+    children:    [],
+  }))
+  const section: TreeNode = {
+    id:          `environments:${root}:${project}`,
+    kind:        'environments',
+    label:       'Environments',
+    description: app.environments.map((env) => env.name).join(', '),
+    icon:        'symbol-enum',
+    root,
+    projects:    [project],
+    project,
+    spoken:      `${project} environments: ${app.environments.map((env) => env.name).join(', ')}`,
+    tooltip:     `The environments ${project} is built for. Add one with the plus button.`,
+    children:    rows,
+  }
+
+  return { ...node, children: [...node.children, section] }
 }
 
 function toTask (root: string, project: string, task: string, facts: TaskFacts | undefined): TreeNode {

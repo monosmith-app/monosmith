@@ -23,10 +23,11 @@ const quote = (arg: string): string => /\s/.test(arg) ? `"${arg}"` : arg
  * changes anything.
  * @param command - which command, its steps and the arguments the answers build
  * @param deps - how to run smith and ask the person
+ * @param preset - answers already known (the app of the row the person pressed a button on); their steps are not asked
  * @returns how it ended; it never throws
  */
-export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps): Promise<GuidedOutcome> {
-  const answers: GuidedAnswers = {}
+export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps, preset: GuidedAnswers = {}): Promise<GuidedOutcome> {
+  const answers: GuidedAnswers = { ...preset }
   let apps: WebApp[] | undefined
   const webApps = async (): Promise<WebApp[]> => {
     if (apps !== undefined) return apps
@@ -37,7 +38,7 @@ export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps
   }
 
   for (const step of command.steps) {
-    if (step.when?.(answers) === false) continue
+    if (step.when?.(answers) === false || answers[step.key] !== undefined) continue
     const resolved = await resolve(step, answers, deps, webApps)
     if ('refused' in resolved) return { kind: 'refused', message: resolved.refused }
     const answer = await deps.ask(resolved)
