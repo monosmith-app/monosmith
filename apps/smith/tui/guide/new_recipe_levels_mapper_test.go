@@ -132,13 +132,17 @@ func TestRecipeFormLetsTheUsersChooseALevelAndWritesChosen(t *testing.T) {
 	if view := m.View(); !strings.Contains(view, "question do the users read") {
 		t.Fatalf("the question the users read is asked next:\n%s", view)
 	}
+	// the question starts filled in, to edit: Enter keeps it.
+	if view := m.View(); !strings.Contains(view, "Which language do you want?") {
+		t.Fatalf("the question starts as an answer, not as a grey example:\n%s", view)
+	}
 	// the question, the two plugins they can end up with, the answers (Enter keeps the plugin names).
-	m = keys(m, "Which language?", "enter", "space", "down", "space", "enter")
+	m = keys(m, "enter", "space", "down", "space", "enter")
 	if view := m.View(); !strings.Contains(view, "node, python") {
 		t.Fatalf("the answers start on the plugin names, to edit:\n%s", view)
 	}
 	m = keys(m, "enter", "enter", "enter", "enter", "enter")
-	want := "recipe new --name team --chosen language=Which language?:node=node,python=python"
+	want := "recipe new --name team --chosen language=Which language do you want?:node=node,python=python"
 	if got := argvOf(m); got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -146,11 +150,11 @@ func TestRecipeFormLetsTheUsersChooseALevelAndWritesChosen(t *testing.T) {
 
 func TestRecipeFormLetsTheUsersChooseALevelThatTakesManyPlugins(t *testing.T) {
 	// language node, lint unset; structure: chosen, a question, then answers where one joins two plugins.
-	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "enter", "enter", "down", "enter", "Which layout?", "enter")
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "enter", "enter", "down", "enter", "enter")
 	if view := m.View(); !strings.Contains(view, "layers=layers, slices=slices") {
 		t.Fatalf("each plugin starts as an answer of its own, to edit:\n%s", view)
 	}
-	want := "recipe new --name team --fixed language=node --chosen structure=Which layout?:layers=layers,slices=slices"
+	want := "recipe new --name team --fixed language=node --chosen structure=Which structure do you want?:layers=layers,slices=slices"
 	if got := argvOf(keys(m, "enter")); got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -175,7 +179,7 @@ func TestRecipeGroupsRefuseWhatTheCommandRefuses(t *testing.T) {
 }
 
 func TestRecipeFormRefusesAChoiceWithOneAnswer(t *testing.T) {
-	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter", "Which language?", "enter", "space", "enter")
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter", "enter", "space", "enter")
 	if !strings.Contains(m.View(), "at least two plugins") {
 		t.Fatalf("one plugin is a fixed plugin, not a choice:\n%s", m.View())
 	}

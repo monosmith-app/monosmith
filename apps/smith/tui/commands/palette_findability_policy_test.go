@@ -44,7 +44,7 @@ func TestEveryCatalogueActionIsFindableInThePalette(t *testing.T) {
 		}
 		return false
 	}
-	for _, name := range []string{"commit", "tools install", "compose", "without a releasing commit", "one version of each dependency"} {
+	for _, name := range []string{"commit", "tools install", "compose", "without a releasing commit", "search for more","one version of each dependency"} {
 		if !found(name) {
 			t.Errorf("typing %q in the palette finds nothing", name)
 		}
