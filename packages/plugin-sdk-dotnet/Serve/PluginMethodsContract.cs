@@ -75,6 +75,16 @@ internal static class PluginMethods
             plugin => plugin is IDependencyManager,
             value => UninstallParams.Read(value, "params"),
             async (plugin, parameters, cancellation) => await ((IDependencyManager)plugin).UninstallAsync((UninstallParams)parameters, cancellation)),
+        [ProtocolMethods.DependenciesLink] = new(
+            ProtocolMethods.DependenciesLink,
+            plugin => plugin is ILinker,
+            value => LinkParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((ILinker)plugin).LinkAsync((LinkParams)parameters, cancellation)),
+        [ProtocolMethods.DependenciesUnlink] = new(
+            ProtocolMethods.DependenciesUnlink,
+            plugin => plugin is ILinker,
+            value => UnlinkParams.Read(value, "params"),
+            async (plugin, parameters, cancellation) => await ((ILinker)plugin).UnlinkAsync((UnlinkParams)parameters, cancellation)),
         [ProtocolMethods.DependenciesDeclared] = new(
             ProtocolMethods.DependenciesDeclared,
             plugin => plugin is IDeclarationEditor,
@@ -123,6 +133,7 @@ internal static class PluginMethods
             Components = plugin is IComponentLister,
             Derive = plugin is IDeriver,
             ApiSurface = plugin is IApiSurfaceReader,
+            Link = plugin is ILinker,
             Dependencies = plugin is IDependencyManager,
             Declarations = plugin is IDeclarationEditor,
             Latest = plugin is ILatestReader,

@@ -28,6 +28,10 @@ const (
 	MethodInstall = "dependencies/install"
 	// MethodUninstall removes packages from a project.
 	MethodUninstall = "dependencies/uninstall"
+	// MethodLink makes a project depend on another project of the workspace.
+	MethodLink = "dependencies/link"
+	// MethodUnlink removes that dependency.
+	MethodUnlink = "dependencies/unlink"
 	// MethodDeclared lists the dependencies manifests declare.
 	MethodDeclared = "dependencies/declared"
 	// MethodRewrite changes declared specs in place.

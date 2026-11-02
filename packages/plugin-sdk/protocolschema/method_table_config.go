@@ -120,6 +120,18 @@ var Methods = []MethodSpec{
 		Capability: "Dependencies",
 	},
 	{
+		Method:      protocol.MethodLink,
+		Description: "Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.",
+		Params:      reflect.TypeFor[protocol.LinkParams](), Result: reflect.TypeFor[protocol.LinkResult](),
+		Capability: "Link",
+	},
+	{
+		Method:      protocol.MethodUnlink,
+		Description: "Removes the dependency of a project on a library of the same workspace.",
+		Params:      reflect.TypeFor[protocol.UnlinkParams](), Result: reflect.TypeFor[protocol.DependencyResult](),
+		Capability: "Link",
+	},
+	{
 		Method:      protocol.MethodDeclared,
 		Description: "Lists the dependencies the manifests of the plugin's projects declare.",
 		Params:      reflect.TypeFor[protocol.DeclaredParams](), Result: reflect.TypeFor[protocol.DeclaredResult](),

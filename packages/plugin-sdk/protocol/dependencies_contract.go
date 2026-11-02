@@ -32,6 +32,62 @@ type DependencyResult struct {
 	Notes []string `json:"notes,omitempty"`
 }
 
+// LinkParams asks a plugin to make Project depend on Library, a lib or package
+// of the same workspace and language, in the ecosystem's own form, and to
+// install or lock as that needs. The host has checked that both exist, that
+// the languages match, that Library is not an app, and that the link makes no
+// cycle; the plugin answers with an error that names the file when it cannot
+// write the dependency.
+type LinkParams struct {
+	// Project is the project that gains the dependency.
+	Project Project `json:"project"`
+	// Library is the project it depends on.
+	Library Project `json:"library"`
+	// Quiet keeps the package manager's output unless it fails.
+	Quiet bool `json:"quiet,omitempty"`
+	// Plan asks for the plan only: the plugin writes nothing and answers with
+	// the manifest, the line it would write and the choices the user has.
+	Plan bool `json:"plan,omitempty"`
+	// Spec is the version range the user chose from LinkResult.Options; empty
+	// means the plugin's default, or the form the workspace already uses.
+	Spec string `json:"spec,omitempty"`
+}
+
+// LinkResult is what a link wrote, or with LinkParams.Plan would write.
+type LinkResult struct {
+	// Files are the workspace-relative files changed (or to be changed).
+	Files []string `json:"files,omitempty"`
+	// Notes are for the user.
+	Notes []string `json:"notes,omitempty"`
+	// Manifest is the file the dependency goes into, workspace-relative.
+	Manifest string `json:"manifest,omitempty"`
+	// Line is the dependency as it is written there, for the plan shown
+	// before anything is written ("@acme/core": "*").
+	Line string `json:"line,omitempty"`
+	// Options are the real choices of the range written, with the default
+	// first. Empty when the ecosystem has none, or the workspace already
+	// follows a convention (then Line shows it).
+	Options []LinkOption `json:"options,omitempty"`
+}
+
+// LinkOption is one way to write the dependency, with its consequence in
+// words a person who read no manual can follow.
+type LinkOption struct {
+	// Spec is the value passed back in LinkParams.Spec.
+	Spec string `json:"spec"`
+	// Label is the option in a few words.
+	Label string `json:"label"`
+	// Meaning says what happens with this option.
+	Meaning string `json:"meaning"`
+}
+
+// UnlinkParams asks a plugin to remove the dependency of Project on Library.
+// Notes of the result say so when the manifest held no such dependency.
+type UnlinkParams struct {
+	Project Project `json:"project"`
+	Library Project `json:"library"`
+}
+
 // DeclaredParams asks for the dependencies the plugin's projects declare
 // (and the workspace root's manifest, when the ecosystem has one).
 type DeclaredParams struct {

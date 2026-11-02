@@ -187,6 +187,28 @@ _SCHEMA_JSON = r'''{
       "capability": "dependencies",
       "notification": false
     },
+    "dependencies/link": {
+      "description": "Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.",
+      "params": {
+        "$ref": "#/$defs/LinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/LinkResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
+    "dependencies/unlink": {
+      "description": "Removes the dependency of a project on a library of the same workspace.",
+      "params": {
+        "$ref": "#/$defs/UnlinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/DependencyResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
     "dependencies/declared": {
       "description": "Lists the dependencies the manifests of the plugin's projects declare.",
       "params": {
@@ -600,6 +622,10 @@ _SCHEMA_JSON = r'''{
         "dependencies": {
           "type": "boolean",
           "description": "Dependencies installs and uninstalls packages in its projects."
+        },
+        "link": {
+          "type": "boolean",
+          "description": "Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand."
         },
         "declarations": {
           "type": "boolean",
@@ -1697,6 +1723,94 @@ _SCHEMA_JSON = r'''{
         }
       }
     },
+    "LinkOption": {
+      "description": "LinkOption is one way to write the dependency, with its consequence in words a person who read no manual can follow.",
+      "type": "object",
+      "properties": {
+        "spec": {
+          "type": "string",
+          "description": "Spec is the value passed back in LinkParams.Spec."
+        },
+        "label": {
+          "type": "string",
+          "description": "Label is the option in a few words."
+        },
+        "meaning": {
+          "type": "string",
+          "description": "Meaning says what happens with this option."
+        }
+      },
+      "required": [
+        "spec",
+        "label",
+        "meaning"
+      ]
+    },
+    "LinkParams": {
+      "description": "LinkParams asks a plugin to make Project depend on Library, a lib or package of the same workspace and language, in the ecosystem's own form, and to install or lock as that needs. The host has checked that both exist, that the languages match, that Library is not an app, and that the link makes no cycle; the plugin answers with an error that names the file when it cannot write the dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project",
+          "description": "Project is the project that gains the dependency."
+        },
+        "library": {
+          "$ref": "#/$defs/Project",
+          "description": "Library is the project it depends on."
+        },
+        "quiet": {
+          "type": "boolean",
+          "description": "Quiet keeps the package manager's output unless it fails."
+        },
+        "plan": {
+          "type": "boolean",
+          "description": "Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line it would write and the choices the user has."
+        },
+        "spec": {
+          "type": "string",
+          "description": "Spec is the version range the user chose from LinkResult.Options; empty means the plugin's default, or the form the workspace already uses."
+        }
+      },
+      "required": [
+        "project",
+        "library"
+      ]
+    },
+    "LinkResult": {
+      "description": "LinkResult is what a link wrote, or with LinkParams.Plan would write.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files are the workspace-relative files changed (or to be changed)."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are for the user."
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Manifest is the file the dependency goes into, workspace-relative."
+        },
+        "line": {
+          "type": "string",
+          "description": "Line is the dependency as it is written there, for the plan shown before anything is written (\"@acme/core\": \"*\")."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LinkOption"
+          },
+          "description": "Options are the real choices of the range written, with the default first. Empty when the ecosystem has none, or the workspace already follows a convention (then Line shows it)."
+        }
+      }
+    },
     "PackageStore": {
       "description": "PackageStore is where a package manager keeps what it downloaded (npm's ~/.npm, Go's module cache). A generated pipeline restores it before setup and saves it after a run, keyed on Files, so `npm ci` or `go mod download` fetches only what changed. A pull request from a fork restores it and never writes the base repository's cache.",
       "type": "object",
@@ -2487,6 +2601,22 @@ _SCHEMA_JSON = r'''{
       "required": [
         "project",
         "packages"
+      ]
+    },
+    "UnlinkParams": {
+      "description": "UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result say so when the manifest held no such dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "library": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "required": [
+        "project",
+        "library"
       ]
     },
     "VersionParams": {
