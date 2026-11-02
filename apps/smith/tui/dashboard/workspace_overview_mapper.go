@@ -52,8 +52,10 @@ func plural(n int, one, many string) string {
 }
 
 // whereToGo is the list of places the tabs lead to, one line each, so a
-// first-time user sees what the rest of smith is for.
-func whereToGo(th theme.Theme, w int) []string {
+// first-time user sees what the rest of smith is for. It starts with the two
+// ways to make a project, as buttons; at maps the line of each button (an
+// index into the lines) to its command.
+func whereToGo(th theme.Theme, w int) (lines []string, at map[int]string) {
 	places := []struct{ id, what string }{
 		{"view.projects", "every project, what it needs and what depends on it"},
 		{"view.run", "build, test and lint, and watch them run"},
@@ -61,7 +63,15 @@ func whereToGo(th theme.Theme, w int) []string {
 		{"view.deps", "newer versions of what the projects install"},
 		{"view.release", "what the next release would publish"},
 	}
-	lines := []string{"", " " + th.Muted("Where to go")}
+	lines, at = []string{"", " " + th.Muted("Where to go")}, map[int]string{}
+	for _, b := range []struct{ id, label, what string }{
+		{"file.add", "Add a project", "say what you are building, smith picks the tools"},
+		{"file.compose", "Compose a stack", "search frameworks, desktop shells and cloud hosts"},
+	} {
+		at[len(lines)] = b.id
+		button := th.Accent("[ " + b.label + "  " + commands.ShortcutOf(b.id) + " ]")
+		lines = append(lines, "  "+button+" "+th.Muted(b.what))
+	}
 	for _, p := range places {
 		c, ok := commands.ByID(p.id)
 		if !ok {
@@ -69,5 +79,5 @@ func whereToGo(th theme.Theme, w int) []string {
 		}
 		lines = append(lines, pane.Wrap("  "+th.Accent(pane.Cell(c.Shortcut, 3))+pane.Cell(c.Title, 14)+th.Muted(p.what), w, 19)...)
 	}
-	return lines
+	return lines, at
 }

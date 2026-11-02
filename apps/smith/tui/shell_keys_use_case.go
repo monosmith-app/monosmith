@@ -93,6 +93,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 			return s.paneKey(msg)
 		}
 	}
+	if name == "?" && s.formOpen() && s.guide.HasGlossary() {
+		// On a question that has words to explain, ? opens or folds them.
+		return s.paneKey(msg)
+	}
 	if c, reason, ok := commands.ByKey(name, s.state()); ok {
 		if reason != "" {
 			s.say(c.Title + " is unavailable: " + reason)

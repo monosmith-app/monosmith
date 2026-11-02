@@ -98,7 +98,7 @@ func (s Shell) mainContent(w, h int) content {
 		for i := len(broken); i < len(banner); i++ {
 			c.hits[i] = hit{kind: "action", id: "file.adopt"}
 		}
-		lines, optionAt := s.guide.Body(s.th, w)
+		lines, optionAt := s.guide.Window(s.th, w, max(h-len(banner), 1), s.h)
 		for row, i := range optionAt {
 			c.hits[len(banner)+row] = hit{kind: "option", index: i}
 		}
@@ -119,7 +119,9 @@ func (s Shell) projectsContent(w, h int) content {
 	}
 	projects := s.list.Projects()
 	if len(projects) == 0 {
-		return withLines(c, s.th.Muted("No projects yet. Press "+commands.ShortcutOf("file.add")+" to add one."))
+		c.hits[0], c.hits[1] = hit{kind: "action", id: "file.add"}, hit{kind: "action", id: "file.compose"}
+		return withLines(c, s.newProjectButton(), s.th.Accent("[ Compose a stack  "+commands.ShortcutOf("file.compose")+" ]"),
+			"", s.th.Muted("No projects yet. Add one, or compose a stack from frameworks, desktop shells and cloud hosts."))
 	}
 	scope := "every project"
 	if p := s.selectedProject(); p != "" {
@@ -135,7 +137,8 @@ func (s Shell) projectsContent(w, h int) content {
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted("On: ")+s.th.Bold(scope), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted(fmt.Sprintf("%d projects · %d affected by the changes (%s)", len(projects), affected, s.th.Icons.Dot)), w, 0)...)
 	c.lines = append(c.lines, pane.Wrap(s.th.Muted("↑ = projects it needs · ↓ = projects that use it"), w, 0)...)
-	c.lines = append(c.lines, "")
+	c.hits[len(c.lines)] = hit{kind: "action", id: "file.add"}
+	c.lines = append(c.lines, s.newProjectButton(), "")
 
 	nameW, tasksW, hasStack := 8, 0, false
 	for _, p := range projects {
@@ -187,6 +190,11 @@ func (s Shell) projectsContent(w, h int) content {
 	}
 	copy(c.lines[first:], pane.Scrollbar(s.th, c.lines[first:], w, top, len(projects)))
 	return c
+}
+
+// newProjectButton is the row that starts the Add wizard from the list of projects.
+func (s Shell) newProjectButton() string {
+	return s.th.Accent("[ + New project  " + commands.ShortcutOf("file.add") + " ]")
 }
 
 // taskList is a project's task names on one line.

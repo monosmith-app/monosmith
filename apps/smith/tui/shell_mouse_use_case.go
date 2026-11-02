@@ -220,7 +220,11 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
-	case s.tools != nil, s.compose != nil, s.result != nil:
+	case s.compose != nil:
+		c := s.compose.Wheel(dir * wheelStep)
+		s.compose = &c
+		return nil
+	case s.tools != nil, s.result != nil:
 		return nil
 	case s.adopt != nil:
 		m := s.adopt.Wheel(dir * wheelStep)
@@ -274,7 +278,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 				s.doctorScroll = &pane.Scroll{}
 			}
 			s.doctorScroll.By(dir * wheelStep)
-		case commands.TabGuide, commands.TabRelease:
+		case commands.TabGuide:
+			// The wheel scrolls the list of the question; the selection stays.
+			s.guide = s.guide.Wheel(dir * wheelStep)
+		case commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}

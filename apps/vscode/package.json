@@ -530,6 +530,11 @@
           "group": "3_check@2"
         },
         {
+          "command": "monosmith.composeStack",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "0_create@1"
+        },
+        {
           "command": "monosmith.restart",
           "when": "view == monosmith.projects",
           "group": "4_smith@1"

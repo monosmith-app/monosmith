@@ -59,11 +59,11 @@ func (m Model) browseBody(th theme.Theme, inner, height int) []string {
 	keys := th.Muted("enter tick · tab " + map[bool]string{true: "catalogue", false: "your stack"}[m.stack] + " · ctrl+n next · esc back")
 	room := max(height-len(lines)-len(status)-1, 3)
 	list := m.listLines(th, inner)
-	top := 0
-	if m.cursorLine >= room {
-		top = m.cursorLine - room + 1
+	for i := range list {
+		list[i] = pane.Fit(list[i], inner-1) // the scrollbar takes the last cell
 	}
-	lines = append(lines, list[min(top, len(list)):min(top+room, len(list))]...)
+	shown, _ := pane.Window(th, list, inner, room, m.cursorLine, m.scroll)
+	lines = append(lines, shown...)
 	for len(lines) < height-len(status)-1 {
 		lines = append(lines, "")
 	}

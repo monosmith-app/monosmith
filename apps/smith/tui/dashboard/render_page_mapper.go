@@ -10,10 +10,19 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Lines draws the page in w cells: the headline, the next action, then the
-// facts. actionRow is the first line of the next action and commandID the
-// command a click on it runs ("" when there is none).
+// Lines is Page without the buttons: the lines, the row of the next action
+// and the command a click on it runs.
 func Lines(th theme.Theme, f Facts, w int) (lines []string, actionRow int, commandID string) {
+	lines, actionRow, commandID, _ = Page(th, f, w)
+	return lines, actionRow, commandID
+}
+
+// Page draws the page in w cells: the headline, the next action, then the
+// facts and the places to go, with a button each to add a project and to
+// compose a stack. actionRow is the first line of the next action and
+// commandID the command a click on it runs ("" when there is none); buttons
+// maps the line of each button to its command.
+func Page(th theme.Theme, f Facts, w int) (lines []string, actionRow int, commandID string, buttons map[int]string) {
 	next := NextAction(f)
 	lines = append(lines, "", " "+headline(th, f), "")
 	actionRow = len(lines)
@@ -37,11 +46,16 @@ func Lines(th theme.Theme, f Facts, w int) (lines []string, actionRow int, comma
 	if f.SettingsTip {
 		row("Settings", th.Accent("New here?")+" Plugins, the colour theme and the settings of smith.toml are in the Settings tab: press "+commands.ShortcutOf("view.settings"))
 	}
-	lines = append(lines, whereToGo(th, w)...)
+	where, at := whereToGo(th, w)
+	buttons = map[int]string{}
+	for i, id := range at {
+		buttons[len(lines)+i] = id
+	}
+	lines = append(lines, where...)
 	for i := range lines {
 		lines[i] = pane.Fit(lines[i], w)
 	}
-	return lines, actionRow, next.CommandID
+	return lines, actionRow, next.CommandID, buttons
 }
 
 // headline is the whole workspace's state in a few words.

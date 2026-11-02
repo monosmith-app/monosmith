@@ -40,13 +40,46 @@ type Model struct {
 	prefill map[string][]string
 	// done is set when a command is chosen, or the user backed out of the top.
 	done bool
+	// view is where the list's window starts; a pointer, so it survives the
+	// copies of the model between frames (see pane.Scroll).
+	view *listView
+	// words opens the glossary of a step on a short screen.
+	words bool
+}
+
+// listView is the window of the list on screen: where it starts, and how many
+// rows a page key moves.
+type listView struct {
+	scroll pane.Scroll
+	page   int
 }
 
 // NewModel builds the guide.
 func NewModel(actions []Action) Model {
 	in := textinput.New()
 	in.CharLimit = 50
-	return Model{actions: actions, input: in, marked: map[int]bool{}}
+	return Model{actions: actions, input: in, marked: map[int]bool{}, view: &listView{}}
+}
+
+// Wheel scrolls the list by delta lines; the selection stays where it is.
+func (m Model) Wheel(delta int) Model {
+	if m.view != nil {
+		m.view.scroll.By(delta)
+	}
+	return m
+}
+
+// HasGlossary reports whether the question on screen has words to explain
+// that the "?" key opens or folds.
+func (m Model) HasGlossary() bool {
+	s := m.current()
+	return s != nil && s.Glossary
+}
+
+// newView starts the list of the next question at its top.
+func (m Model) newView() Model {
+	m.view, m.words = &listView{}, false
+	return m
 }
 
 // Done reports whether the guide finished: with Argv set, a command was
@@ -258,6 +291,7 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		switch {
 		case m.action != nil:
 			m.action, m.step, m.cursor, m.err = nil, 0, 0, ""
+			m = m.newView()
 		case key.String() == "esc":
 			m.done = true
 		}
@@ -265,6 +299,16 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		m.cursor = max(m.cursor-1, 0)
 	case "down", "j":
 		m.cursor = min(m.cursor+1, max(m.optionCount()-1, 0))
+	case "pgup", "pgdown", "home", "end":
+		page := 8
+		if m.view != nil && m.view.page > 1 {
+			page = m.view.page - 1
+		}
+		m.cursor = pane.MoveCursor(m.cursor, m.optionCount(), key.String(), page)
+	case "?":
+		if m.HasGlossary() {
+			m.words = !m.words
+		}
 	case " ":
 		if step != nil && step.Multi {
 			m.marked, m.notice = ToggleOption(m.marked, step.Options, m.cursor)
@@ -298,7 +342,7 @@ func (m Model) confirm() Model {
 			return m
 		}
 		m.action, m.step, m.answers, m.cursor, m.marked = &a, 0, map[string][]string{}, 0, map[int]bool{}
-		return m.advance()
+		return m.newView().advance()
 	}
 	step := m.current()
 	if step == nil {
@@ -351,7 +395,7 @@ func (m Model) confirm() Model {
 	}
 	m.step++
 	m.cursor, m.marked, m.err, m.filter, m.notice = 0, map[int]bool{}, "", "", ""
-	return m.advance()
+	return m.newView().advance()
 }
 
 func (m Model) advance() Model {
@@ -442,6 +486,11 @@ func (m Model) View() string {
 // Body draws the current screen in w cells. A long entry wraps onto further
 // lines; optionAt maps every line an option takes to the option, for a click.
 func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int) {
+	return m.body(th, w, false)
+}
+
+// body is Body with the glossary of the step folded to one line when fold is true.
+func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt map[int]int) {
 	optionAt = map[int]int{}
 	add := func(i int, row string) {
 		for _, l := range pane.Wrap(row, w, 4) {
@@ -487,9 +536,13 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		if why := m.defaultWhy[step.Key]; why != "" && hasOption(step.Options, m.defaults[step.Key]) {
 			lines = append(lines, th.Muted(why))
 		}
-		for _, note := range strings.Split(step.Note, "\n") {
-			if note != "" {
-				lines = append(lines, th.Muted(note))
+		if step.Glossary && fold {
+			lines = append(lines, th.Muted(wordsHint))
+		} else {
+			for _, note := range strings.Split(step.Note, "\n") {
+				if note != "" {
+					lines = append(lines, th.Muted(note))
+				}
 			}
 		}
 		lines = append(lines, "")

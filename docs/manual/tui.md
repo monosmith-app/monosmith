@@ -54,8 +54,8 @@ goes away by itself. A result toast belongs to the view it was raised on.
 
 | View | Key | Shows |
 |---|---|---|
-| Home | `1` | The health of the workspace in one headline, the facts behind it (checks, affected projects, the last run, outdated dependencies) and the one thing to do next, with its key. |
-| Projects | `2` | Every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
+| Home | `1` | The health of the workspace in one headline, the facts behind it (checks, affected projects, the last run, outdated dependencies) and the one thing to do next, with its key. "Where to go" starts with two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
+| Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
 | Deps | `5` | Dependencies with newer releases, grouped patch, minor and major, and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
@@ -450,7 +450,12 @@ prints `→ smith <command line>`.
 
 The mouse is on by default: click a tab, a row, a footer hint, a detail action or a dialog
 button; double-click a project, a guide option or a row of the Settings tab to open or change it; use the wheel to scroll. The wheel scrolls
-a list and never moves the selection, and a thin scrollbar on the right edge shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. In Deps, click a row's box to
+a list and never moves the selection, and a thin scrollbar on the right edge shows where the visible part sits in a list or log that is longer than its pane; a click selects a row without moving the list. The same rule holds in every list of a form
+(the choices of Add a project, the languages, the plugin lists of a recipe) and in the Compose a
+stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
+selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.
+The words list under the choices question folds to one line, "what do these words mean? press ?",
+when the terminal has fewer than 30 rows (`?` opens it); the list always keeps at least 8 rows. In Deps, click a row's box to
 mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
 and click the box in the heading to mark all or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`
