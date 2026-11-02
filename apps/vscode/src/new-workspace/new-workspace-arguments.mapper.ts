@@ -1,4 +1,5 @@
-import type { NewQuestion, NewWorkspaceChoices } from './new-workspace.contract.ts'
+import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
 
 /** What "Start with the defaults" chooses: the same defaults as `smith new --yes` and the TUI. */
 export const DEFAULT_CHOICES: Omit<NewWorkspaceChoices, 'name'> = {
@@ -11,7 +12,7 @@ export const DEFAULT_CHOICES: Omit<NewWorkspaceChoices, 'name'> = {
   commit:       true,
 }
 
-function labelOf (questions: readonly NewQuestion[], key: string, value: string): string {
+function labelOf (questions: readonly SmithQuestion[], key: string, value: string): string {
   return questions.find((question) => question.key === key)?.answers.find((answer) => answer.value === value)?.label ?? value
 }
 
@@ -45,7 +46,7 @@ export function toCreateArguments (choices: NewWorkspaceChoices, preview = false
  * @param questions - the questions of `smith new`, which give each answer its label
  * @returns the lines of the summary
  */
-export function describeChoices (choices: NewWorkspaceChoices, folderName: string, questions: readonly NewQuestion[]): string[] {
+export function describeChoices (choices: NewWorkspaceChoices, folderName: string, questions: readonly SmithQuestion[]): string[] {
   return [
     `Name: ${choices.name}${choices.name === folderName ? ' (the name of this folder)' : ''}`,
     `CI: ${choices.ci.map((value) => labelOf(questions, 'ci', value)).join(', ')}`,

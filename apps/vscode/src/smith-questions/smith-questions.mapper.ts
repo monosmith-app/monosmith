@@ -1,4 +1,4 @@
-import type { NewAnswer, NewQuestion } from './new-workspace.contract.ts'
+import type { SmithAnswer, SmithQuestion } from './smith-question.contract.ts'
 
 function text (value: unknown): string {
   return typeof value === 'string' ? value : ''
@@ -10,7 +10,7 @@ function text (value: unknown): string {
  * @returns the questions in smith's order
  * @throws Error when the text is not a JSON list
  */
-export function parseNewQuestions (json: string): NewQuestion[] {
+export function parseQuestions (json: string): SmithQuestion[] {
   const list: unknown = JSON.parse(json)
   if (!Array.isArray(list)) throw new TypeError('smith did not print a list of questions')
 
@@ -26,7 +26,7 @@ export function parseNewQuestions (json: string): NewQuestion[] {
       atEnd:    item.atEnd === true,
       when:     Object.fromEntries(Object.entries((item.when ?? {}) as Record<string, unknown>).map(([key, value]) => [key, text(value)])),
       answers:  (Array.isArray(item.options) ? item.options as Array<Record<string, unknown>> : [])
-        .map((option): NewAnswer => ({ value: text(option.value), label: text(option.label), hint: text(option.hint) })),
+        .map((option): SmithAnswer => ({ value: text(option.value), label: text(option.label), hint: text(option.hint) })),
     }))
 }
 
@@ -36,7 +36,7 @@ export function parseNewQuestions (json: string): NewQuestion[] {
  * @param questions - every question of `smith new`
  * @returns the questions to draw, in order
  */
-export function askableQuestions (questions: readonly NewQuestion[]): NewQuestion[] {
+export function askableQuestions (questions: readonly SmithQuestion[]): SmithQuestion[] {
   return questions.filter((question) => !question.advanced && !question.atEnd && question.flag !== '' && question.answers.length > 0)
 }
 
@@ -46,6 +46,6 @@ export function askableQuestions (questions: readonly NewQuestion[]): NewQuestio
  * @param answers - the answers so far, key to value
  * @returns true when every answer its `when` names holds
  */
-export function appliesWhen (question: NewQuestion, answers: Readonly<Record<string, string>>): boolean {
+export function appliesWhen (question: SmithQuestion, answers: Readonly<Record<string, string>>): boolean {
   return Object.entries(question.when).every(([key, value]) => answers[key] === value)
 }

@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from '../add-project/index.ts'
 import { askCustomAnswers } from './custom-answers.use-case.ts'
-import type { NewQuestion, NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
+import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import type { SetupWay } from './new-workspace.use-case.ts'
 
 const TITLE = 'MonoSmith: New workspace'
@@ -40,7 +41,14 @@ export async function askWorkspaceName (folderName: string): Promise<string | un
   })
 }
 
-async function pickQuestion (question: NewQuestion, current: readonly string[]): Promise<string[] | undefined> {
+/**
+ * Shows one question of `smith new` or `smith convert` as a quick pick: the answers with smith's
+ * hints, the default marked, and a tick box when the question takes many.
+ * @param question - the question
+ * @param current - the values picked at first
+ * @returns the values picked, or undefined when the person pressed Escape or ticked nothing
+ */
+export async function pickQuestion (question: SmithQuestion, current: readonly string[]): Promise<string[] | undefined> {
   const items = question.answers.map((answer) => {
     const hint = answer.hint.replace(/\s*\(?default\)?$/, '').trim()
 
@@ -75,7 +83,7 @@ async function pickYesNo (title: string, yes: string, no: string, current: boole
  * @param questions - the questions of `smith new`
  * @returns the choices, or undefined when the person pressed Escape at any question
  */
-export async function askCustomChoices (start: NewWorkspaceChoices, questions: readonly NewQuestion[]): Promise<NewWorkspaceChoices | undefined> {
+export async function askCustomChoices (start: NewWorkspaceChoices, questions: readonly SmithQuestion[]): Promise<NewWorkspaceChoices | undefined> {
   const answered = await askCustomAnswers(questions, start, pickQuestion)
   if (answered === undefined) return undefined
   const commit = await pickYesNo('make the first commit?', 'smith commits its own files as the first commit', 'smith writes the files and commits nothing', start.commit)

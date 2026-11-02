@@ -1,11 +1,5 @@
-import { appliesWhen, askableQuestions } from './new-questions.mapper.ts'
-import type { NewQuestion, NewWorkspaceChoices } from './new-workspace.contract.ts'
-
-/**
- * Shows one question and returns the values picked: one for a single choice, several for a question
- * that takes many. Resolves undefined when the person cancels.
- */
-export type PickAnswer = (question: NewQuestion, current: readonly string[]) => Promise<string[] | undefined>
+import { appliesWhen, askableQuestions, type PickAnswer, type SmithQuestion } from '../smith-questions/index.ts'
+import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
 
 /**
  * Asks the questions of `smith new` as smith lists them. A question is asked only when the answers
@@ -16,7 +10,7 @@ export type PickAnswer = (question: NewQuestion, current: readonly string[]) => 
  * @param pick - draws one question
  * @returns the choices with the answers, or undefined when the person cancelled at any question
  */
-export async function askCustomAnswers (questions: readonly NewQuestion[], start: NewWorkspaceChoices, pick: PickAnswer): Promise<NewWorkspaceChoices | undefined> {
+export async function askCustomAnswers (questions: readonly SmithQuestion[], start: NewWorkspaceChoices, pick: PickAnswer): Promise<NewWorkspaceChoices | undefined> {
   const answers: Record<string, string> = {
     'ci':           start.ci.join(','),
     'language':     start.language,

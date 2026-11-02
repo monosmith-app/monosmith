@@ -26,12 +26,29 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
   (Remove, Make a project an app/library/package, Unlink, Swap a choice, Sync versions), Environments,
   Derived Files, Commit the Changes, Undo, Release, Release Preview, Doctor, Doctor: Apply the Safe Fixes,
   Divergences, Run Task in All Projects, Run Affected, Start Dev Servers, Update and Align Dependencies, Open the
-  Report, Search and Install a Plugin, Settings, Bring This Folder In (adopt), Convert This Workspace, Try a Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a
-  Project and Why. **Why** is also in the editor and project view menus.
+  Report, Search and Install a Plugin, Settings, Bring This Folder In (adopt), Convert This Workspace, Try a
+  Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a Project and Why.
+  **Why** is also in the editor and project view menus. Five groups hold the rest:
+  - **Plugins**: **Turn a Plugin On…** and **Off…**. The plugins come from `smith plugin list --json`. When
+    projects use a plugin, smith refuses to turn it off and names them; the plugin shows that list and runs
+    `--force` only after a second yes.
+  - **Cache**: status and check for damage (they print in the Output tab), then **Remove What Is Broken…**,
+    **Trim to Its Limit…** and **Delete It All…**, each after its plan or what it costs.
+  - **Pipelines and Apps**: **Add a Ready-Made Pipeline…** (the templates come from `smith pipeline`),
+    **Regenerate the CI Pipelines…** (a diff of every file), **Make an App a Tauri Desktop App…** (asks the
+    bundle identifier), **Make the Icons of a Tauri App…** and **Set the Docker Hub Descriptions…** (the
+    repositories first, the call only after a yes).
+  - **Look Up**: **Why Would a Task Run Again?…**, **Tools the Workspace Needs**, **Info** and **Copies Between
+    Projects**. They only read.
+  - **Dependencies: Require One Version…** edits `dependencies.one_version` through the settings editor with its
+    reason and the plan of `smith config set`. **Write the Agent File** and **Connect smith to a Coding
+    Assistant…** (`smith mcp install`; the assistants start unticked) are in the menu too.
 - The projects, kinds, choices, outcomes, tools, recipe levels and doctor fixes all come from smith's JSON
   (`projects`, `affected`, `kinds`, `choices`, `compose`, `tools install --dry-run`, `recipe new --list-levels`,
-  `doctor`, `release --dry-run`, `up`, `config list`, `plugin search`, `adopt --dry-run`, `new --questions`). The plugin holds no list of languages, frameworks or tools. The lists of
-  `smith new` come from `smith new --questions --json` too. The plugin holds no list of CI systems, languages or layouts.
+  `doctor`, `release --dry-run`, `up`, `config list`, `plugin list`, `plugin search`, `adopt --dry-run`,
+  `new --questions`, `convert --questions`). The plugin holds no list of languages, frameworks, tools, CI
+  systems or layouts. The questions of `smith new` come from `smith new --questions --json`, and the level and
+  the four choices of `smith convert` come from `smith convert --questions --json`.
 - Each question shows the one-line "what is this" of its layer from the catalogue (`about` in `smith compose --json`).
 
 ## The rules of every flow
@@ -54,12 +71,17 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
 
 ## Not built
 
-Plugin on/off (`plugin enable`, `disable`), the `dependencies.one_version` toggle, the live `smith serve`
-connection, the language server (`smith lsp`, not built in the engine either) and the Go module prefix
-question of `smith new`. "Let smith run it" for a tool that needs administrator rights runs in the Output
-tab, where a `sudo` password cannot be typed. The four choices of `smith convert` are the answers its help
-lists (smith has no JSON for them). The dialogs, notifications and tool window have not been run in a real
-IDE: CI compiles them against the platform, and the flows are tested with a fake smith and a fake person.
+The live `smith serve` connection and the language server (`smith lsp`, not built in the engine either).
+The Go module prefix question of `smith new` is not asked: smith writes its default, as the VS Code flow
+does. "Let smith run
+it" for a tool that needs administrator rights runs in the Output tab, where a `sudo` password cannot be
+typed. Four functions have no JetBrains version, and each has its reason in the
+[feature parity](../../docs/reference/feature-parity.md) table: the footer keys of the TUI, the files named
+with `-o` or `--force`, `smith plugin draft` (a plugin author works at a terminal on a sample project) and
+the scroll of the lists (the IDE's own lists scroll as the IDE does).
+
+The dialogs, notifications and tool window have not been run in a real IDE: CI compiles them against the
+platform, and every flow has unit tests with a fake smith and a fake person (`FakePortsHarness`).
 
 ## Build and test
 
@@ -91,5 +113,7 @@ compiled against the platform.
 - Features, one slice each: `addproject`, `addchoices`, `composestack`, `installdependency`, `projectactions`,
   `swapchoice`, `syncversions`, `commitchanges`, `undochange`, `releaseflow`, `health`, `installtools`,
   `derivefiles`, `newworkspace`, `newrecipe`, `trycommand`, `workspacetools`, `smithversion`, `runacross`,
-  `dependencies`, `workspacereport`, `pluginmarket`, `settings`, `adoptfolder`, `convertfolder`, `devservers`.
+  `dependencies`, `workspacereport`, `pluginmarket`, `pluginswitch`, `settings`, `adoptfolder`, `convertfolder`,
+  `devservers`, `cachecontrol`, `pipelinetemplate`, `ciregenerate`, `tauriapp`, `dockerhub`, `mcpinstall`,
+  `agentfile`, `readcommands`.
 - Entry points: `toolwindow` (the tool window) and `smithaction` (one handler for each menu action).

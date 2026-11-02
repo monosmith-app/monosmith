@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
-import { parseNewQuestions } from './new-questions.mapper.ts'
+import { parseQuestions } from '../smith-questions/index.ts'
 
 describe('toCreateArguments', () => {
   it('gives every question a flag, so smith asks nothing and decides nothing in silence', () => {
@@ -26,7 +26,7 @@ describe('toCreateArguments', () => {
   })
 })
 
-const QUESTIONS = parseNewQuestions(JSON.stringify([
+const QUESTIONS = parseQuestions(JSON.stringify([
   { key: 'ci', flag: 'ci', options: [{ value: 'github', label: 'GitHub Actions' }] },
   { key: 'language', flag: 'language', options: [{ value: 'later', label: 'Decide later' }, { value: 'node', label: 'TypeScript / JavaScript' }] },
   { key: 'node-stack', flag: 'default-stack', options: [{ value: 'node-vitest', label: 'Vitest' }] },

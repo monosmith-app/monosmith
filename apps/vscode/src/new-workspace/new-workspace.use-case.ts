@@ -1,6 +1,7 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { parseNewQuestions } from './new-questions.mapper.ts'
-import type { NewQuestion, NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
+import { parseQuestions } from '../smith-questions/index.ts'
+import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
 
 /** How the person wants to set the workspace up. */
@@ -19,7 +20,7 @@ export interface NewWorkspaceDeps {
   /** Asks the name, saying that the folder's name is used unless another is typed. Resolves undefined when the person cancels. */
   askName:    (folderName: string) => Promise<string | undefined>
   /** Asks each question of `smith new` with the defaults as the pre-selected answers. Resolves undefined when the person cancels. */
-  askCustom:  (start: NewWorkspaceChoices, questions: readonly NewQuestion[]) => Promise<NewWorkspaceChoices | undefined>
+  askCustom:  (start: NewWorkspaceChoices, questions: readonly SmithQuestion[]) => Promise<NewWorkspaceChoices | undefined>
   /** Shows what will be chosen and the files smith lists, and asks. */
   confirm:    (summary: readonly string[], plan: string) => Promise<boolean>
 }
@@ -37,9 +38,9 @@ export interface NewWorkspaceDeps {
 export async function createWorkspace (deps: NewWorkspaceDeps): Promise<NewWorkspaceOutcome> {
   const asked = await deps.run(['new', '--questions', '--json'])
   if (asked.code !== 0) return { kind: 'refused', message: describeFailure(asked) }
-  let questions: NewQuestion[]
+  let questions: SmithQuestion[]
   try {
-    questions = parseNewQuestions(asked.stdout)
+    questions = parseQuestions(asked.stdout)
   } catch {
     return { kind: 'refused', message: 'smith did not list the questions of `smith new`. Update smith and try again.' }
   }

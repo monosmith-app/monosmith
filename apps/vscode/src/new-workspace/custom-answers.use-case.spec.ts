@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { askCustomAnswers, type PickAnswer } from './custom-answers.use-case.ts'
+import type { PickAnswer, SmithQuestion } from '../smith-questions/index.ts'
+import { askCustomAnswers } from './custom-answers.use-case.ts'
 import { DEFAULT_CHOICES } from './new-workspace-arguments.mapper.ts'
-import type { NewQuestion } from './new-workspace.contract.ts'
 
-const ask = (key: string, values: string[], over: Partial<NewQuestion> = {}): NewQuestion => ({
+const ask = (key: string, values: string[], over: Partial<SmithQuestion> = {}): SmithQuestion => ({
   key,
   prompt:   `prompt of ${key}`,
   default:  values[0] ?? '',
@@ -16,7 +16,7 @@ const ask = (key: string, values: string[], over: Partial<NewQuestion> = {}): Ne
   ...over,
 })
 
-const QUESTIONS: NewQuestion[] = [
+const QUESTIONS: SmithQuestion[] = [
   ask('ci', ['github', 'azure'], { many: true }),
   ask('language', ['later', 'node', 'go']),
   ask('node-stack', ['node-jest', 'node-vitest'], { when: { language: 'node' } }),
