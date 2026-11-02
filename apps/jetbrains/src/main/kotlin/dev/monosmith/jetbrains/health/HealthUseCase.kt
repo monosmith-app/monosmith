@@ -1,10 +1,11 @@
 package dev.monosmith.jetbrains.health
 
 import com.intellij.openapi.project.Project
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.notice.NoticeClient
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
-import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
@@ -53,8 +54,22 @@ object HealthUseCase {
         ide: Project,
         root: Path,
         finding: DoctorFindingContract,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: fix ${finding.check}") {
-        val fix = finding.fix ?: return@start NoticeClient.info(ide, "smith has no fix for this check. ${finding.remedy}")
+    ) = BackgroundFlowClient.start(ide, "MonoSmith: fix ${finding.check}") { runFix(IdePortsClient.of(ide, root), finding) }
+
+    /**
+     * Runs the fix of one check with the given ports.
+     *
+     * @return true when smith applied the fix
+     */
+    fun runFix(
+        ports: FlowPortsContract,
+        finding: DoctorFindingContract,
+    ): Boolean {
+        val fix =
+            finding.fix ?: run {
+                ports.notice.info("smith has no fix for this check. ${finding.remedy}")
+                return false
+            }
         val answers = mutableListOf<Int>()
         for (question in fix.questions) {
             val rows =
@@ -71,55 +86,67 @@ object HealthUseCase {
                         },
                     )
                 }
-            val picked = PromptClient.pickOne(ide, "MonoSmith: fix ${finding.check}", question.question, rows) ?: return@start
+            val picked = ports.prompt.pickOne("MonoSmith: fix ${finding.check}", question.question, rows) ?: return false
             answers.add(picked.name.toInt() + 1)
         }
-        val review = SmithRunClient.run(ide, root, FixReviewMapper.arguments(fix, answers, apply = false))
+        val review = ports.smith.run(FixReviewMapper.arguments(fix, answers, apply = false))
         val shown = FixReviewMapper.review(review.stdout)
-        if (shown.isEmpty()) return@start NoticeClient.warn(ide, "Nothing was changed. ${FailureTextMapper.describe(review)}")
-        PromptClient.plan(
-            ide,
+        if (shown.isEmpty()) {
+            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(review)}")
+            return false
+        }
+        ports.prompt.plan(
             "MonoSmith: fix ${finding.check}?",
             "${fix.description}. This is what smith would change. Nothing is changed until you apply it. Nothing is committed.",
             shown,
             "Apply",
             offerCommit = false,
-        ) ?: return@start
-        val done = SmithRunClient.run(ide, root, FixReviewMapper.arguments(fix, answers, apply = true), show = true)
-        WorkspaceChangedStore.changed(ide)
+        ) ?: return false
+        val done = ports.smith.run(FixReviewMapper.arguments(fix, answers, apply = true), show = true)
+        ports.changed()
         val incomplete = FixReviewMapper.stillFailing(done.code, done.lines)
-        if (done.ok || incomplete) {
-            NoticeClient.info(
-                ide,
-                if (incomplete) {
-                    "The fix is applied. Another check still fails."
-                } else {
-                    "The fix is applied. Review it with the Commit window."
-                },
-            )
-        } else {
-            NoticeClient.warn(ide, "Nothing was changed. ${FailureTextMapper.describe(done)}")
+        if (!done.ok && !incomplete) {
+            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(done)}")
+            return false
         }
+        val said =
+            if (incomplete) {
+                "The fix is applied. Another check still fails."
+            } else {
+                "The fix is applied. Review it with the Commit window."
+            }
+        ports.notice.info(said)
+        return true
     }
 
     /** `smith doctor --fix`: shows the safe fixes as diffs and applies them after a yes. A fix with a question has its own Fix row. */
     fun fixSafe(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: apply the safe fixes") {
-        val review = SmithRunClient.run(ide, root, listOf("doctor", "--fix"))
+    ) = BackgroundFlowClient.start(ide, "MonoSmith: apply the safe fixes") { runFixSafe(IdePortsClient.of(ide, root)) }
+
+    /**
+     * Runs the safe fixes with the given ports.
+     *
+     * @return true when smith applied the safe fixes
+     */
+    fun runFixSafe(ports: FlowPortsContract): Boolean {
+        val review = ports.smith.run(listOf("doctor", "--fix"))
         val shown = FixReviewMapper.review(review.stdout)
-        if (shown.isEmpty()) return@start NoticeClient.info(ide, "smith has no safe fix to apply. ${FailureTextMapper.describe(review)}")
-        PromptClient.plan(
-            ide,
+        if (shown.isEmpty()) {
+            ports.notice.info("smith has no safe fix to apply. ${FailureTextMapper.describe(review)}")
+            return false
+        }
+        ports.prompt.plan(
             "MonoSmith: apply the safe fixes?",
             "Each fix is shown as a diff. Nothing is changed until you apply. A fix with a question has its own Fix row in the Health tab. Nothing is committed.",
             shown,
             "Apply the safe fixes",
             offerCommit = false,
-        ) ?: return@start
-        SmithRunClient.run(ide, root, listOf("doctor", "--fix", "--yes"), show = true)
-        WorkspaceChangedStore.changed(ide)
-        NoticeClient.info(ide, "The safe fixes are applied. Review them with the Commit window.")
+        ) ?: return false
+        ports.smith.run(listOf("doctor", "--fix", "--yes"), show = true)
+        ports.changed()
+        ports.notice.info("The safe fixes are applied. Review them with the Commit window.")
+        return true
     }
 }

@@ -1,12 +1,10 @@
 package dev.monosmith.jetbrains.commitchanges
 
 import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.notice.NoticeClient
-import dev.monosmith.jetbrains.prompt.PromptClient
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
 
 /**
@@ -28,30 +26,45 @@ object CommitChangesUseCase {
         operation: String = "",
         then: () -> Unit = {},
     ) = BackgroundFlowClient.start(ide, "MonoSmith: commit the changes") {
-        val plan = SmithRunClient.run(ide, root, CommitPlanAlgorithm.arguments(operation, null))
-        if (!plan.ok) return@start NoticeClient.warn(ide, "Nothing was committed. ${FailureTextMapper.describe(plan)}")
+        if (run(IdePortsClient.of(ide, root), operation)) then()
+    }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @param operation the words that name the operation, such as "add app web"; empty for the last operation
+     * @return true when smith made the commit
+     */
+    fun run(
+        ports: FlowPortsContract,
+        operation: String = "",
+    ): Boolean {
+        val plan = ports.smith.run(CommitPlanAlgorithm.arguments(operation, null))
+        if (!plan.ok) {
+            ports.notice.warn("Nothing was committed. ${FailureTextMapper.describe(plan)}")
+            return false
+        }
         val read = CommitPlanAlgorithm.read(plan.stdout)
         val more = read.extras.size
         val extras = if (more == 0) "" else " Git also shows $more other changed files; they stay out unless you pick all."
         val header = "smith makes one commit that Undo can revert. Pick which files go in. Nothing is committed until you do.$extras"
         val answer =
-            PromptClient.plan(
-                ide,
+            ports.prompt.plan(
                 "MonoSmith: commit the changes",
                 header,
                 read.text,
                 "Commit only the files of the operation",
                 offerCommit = false,
                 others = listOf("Commit everything git shows"),
-            ) ?: return@start
+            ) ?: return false
         val scope = if (answer.other == 0) "all" else "operation"
-        val done = SmithRunClient.run(ide, root, CommitPlanAlgorithm.arguments(operation, scope), show = true)
-        WorkspaceChangedStore.changed(ide)
-        if (done.ok) {
-            NoticeClient.info(ide, done.lines.lastOrNull() ?: "The changes are committed as one change. Undo reverts it.")
-            then()
-        } else {
-            NoticeClient.warn(ide, "Nothing was committed. ${FailureTextMapper.describe(done)}")
+        val done = ports.smith.run(CommitPlanAlgorithm.arguments(operation, scope), show = true)
+        ports.changed()
+        if (!done.ok) {
+            ports.notice.warn("Nothing was committed. ${FailureTextMapper.describe(done)}")
+            return false
         }
+        ports.notice.info(done.lines.lastOrNull() ?: "The changes are committed as one change. Undo reverts it.")
+        return true
     }
 }

@@ -1,11 +1,12 @@
 package dev.monosmith.jetbrains.derivefiles
 
 import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.notice.NoticeClient
+import dev.monosmith.jetbrains.commitchanges.CommitChangesUseCase
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
-import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
@@ -73,15 +74,27 @@ object DeriveFilesUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, TITLE) {
-        val run = SmithRunClient.run(ide, root, DeriveReportMapper.arguments("check"))
+    ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root)) { CommitChangesUseCase.start(ide, root, it) } }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @param commitLater starts the Commit action for an operation
+     * @return true when smith changed a derived file
+     */
+    fun run(
+        ports: FlowPortsContract,
+        commitLater: (String) -> Unit,
+    ): Boolean {
+        val run = ports.smith.run(DeriveReportMapper.arguments("check"))
         val files = DeriveReportMapper.files(run.stdout)
         if (files.isEmpty()) {
-            return@start if (run.ok) {
-                NoticeClient.info(ide, "Every derived file is current.")
+            if (run.ok) {
+                ports.notice.info("Every derived file is current.")
             } else {
-                NoticeClient.warn(ide, FailureTextMapper.describe(run))
+                ports.notice.warn(FailureTextMapper.describe(run))
             }
+            return false
         }
         val rows =
             listOf(
@@ -94,25 +107,23 @@ object DeriveFilesUseCase {
             ) +
                 files.map { ChoiceRowContract(it.path, it.path, "${it.status} · ${it.renderer}", it.detail) }
         val picked =
-            PromptClient
+            ports.prompt
                 .pickOne(
-                    ide,
                     TITLE,
                     "${files.size} derived files need action. Pick one. The first answer is the default.",
                     rows,
                 )?.name
-                ?: return@start
-        if (picked == ALL) return@start applyAll(ide, root)
+                ?: return false
+        if (picked == ALL) return applyAll(ports, commitLater)
         val file = files.first { it.path == picked }
         val action =
-            PromptClient.pickOne(ide, "$TITLE: ${file.path}", "${file.status}: ${file.detail}", actionRows(file))?.name ?: return@start
+            ports.prompt.pickOne("$TITLE: ${file.path}", "${file.status}: ${file.detail}", actionRows(file))?.name ?: return false
         if (action == "explain") {
-            SmithRunClient.run(ide, root, DeriveReportMapper.arguments("explain", file.path), show = true)
-            return@start
+            ports.smith.run(DeriveReportMapper.arguments("explain", file.path), show = true)
+            return false
         }
-        PlanThenApplyUseCase.run(
-            ide,
-            root,
+        return PlanThenApplyUseCase.run(
+            ports,
             PlanStepContract(
                 title = "MonoSmith: $action ${file.path}?",
                 planArgs = null,
@@ -124,16 +135,16 @@ object DeriveFilesUseCase {
                 done = "${file.path}: $action is done. Commit it together with smith.lock",
                 operation = "derive",
             ),
+            commitLater,
         )
     }
 
     private fun applyAll(
-        ide: Project,
-        root: Path,
-    ) {
+        ports: FlowPortsContract,
+        commitLater: (String) -> Unit,
+    ): Boolean =
         PlanThenApplyUseCase.run(
-            ide,
-            root,
+            ports,
             PlanStepContract(
                 title = "MonoSmith: write the derived files?",
                 planArgs = DeriveReportMapper.arguments("preview"),
@@ -144,6 +155,6 @@ object DeriveFilesUseCase {
                 done = "The derived files are written. Commit them together with smith.lock",
                 operation = "derive",
             ),
+            commitLater,
         )
-    }
 }

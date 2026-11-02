@@ -8,6 +8,18 @@ import kotlin.test.assertTrue
 
 class ConvertFolderTest {
     private val fake = FakePortsHarness()
+    private val questions =
+        """
+        [{"key":"level","prompt":"How far?","default":"conservative","flag":"level","options":[{"value":"conservative","label":"conservative"},{"value":"full","label":"full"}]},
+         {"key":"lint","prompt":"Lint with:","default":"keep","flag":"lint","when":{"level":"full"},"options":[{"value":"keep","label":"keep"},{"value":"smith","label":"smith"}]},
+         {"key":"test","prompt":"Run tests with:","default":"keep","flag":"test","when":{"level":"full"},"options":[{"value":"keep","label":"keep"},{"value":"jest","label":"jest"},{"value":"vitest","label":"vitest"}]},
+         {"key":"build","prompt":"Build with:","default":"smith","flag":"build","when":{"level":"full"},"options":[{"value":"smith","label":"smith"},{"value":"keep","label":"keep"}]},
+         {"key":"ci","prompt":"CI pipeline:","default":"smith","flag":"ci","when":{"level":"full"},"options":[{"value":"smith","label":"smith"},{"value":"keep","label":"keep"}]}]
+        """.trimIndent()
+
+    init {
+        fake.answers["convert --questions --json"] = fake.ok(questions)
+    }
 
     @Test
     fun theConservativeLevelNamesNoChoices() {
@@ -23,15 +35,6 @@ class ConvertFolderTest {
             listOf("convert", "--level", "full", "--lint", "smith", "--test", "jest", "--build", "keep", "--ci", "smith", "--yes"),
             ConvertArgumentsAlgorithm.arguments(ConvertChoicesContract("full", "smith", "jest", "keep", "smith"), apply = true),
         )
-    }
-
-    @Test
-    fun theFirstAnswerOfEveryQuestionChangesTheLeastOrIsSmithsDefault() {
-        assertEquals("conservative", ConvertArgumentsAlgorithm.levelRows.first().name)
-        assertEquals("keep", ConvertArgumentsAlgorithm.lintRows.first().name)
-        assertEquals("keep", ConvertArgumentsAlgorithm.testRows.first().name)
-        assertEquals("smith", ConvertArgumentsAlgorithm.buildRows.first().name)
-        assertEquals("smith", ConvertArgumentsAlgorithm.ciRows.first().name)
     }
 
     @Test
@@ -60,5 +63,36 @@ class ConvertFolderTest {
         fake.ones.add("conservative")
         assertFalse(ConvertFolderUseCase.run(fake.ports) {})
         assertTrue(fake.calls.none { "--yes" in it })
+    }
+
+    @Test
+    fun theConservativeLevelAsksOnlyTheLevelBecauseTheChoicesApplyToTheFullLevelOnly() {
+        fake.ones.add("conservative")
+        fake.plans.add(null)
+        ConvertFolderUseCase.run(fake.ports) {}
+        assertEquals(1, fake.rowsSeen.size)
+        assertEquals(
+            "conservative",
+            fake.rowsSeen
+                .single()
+                .first()
+                .name,
+        )
+    }
+
+    @Test
+    fun theFullLevelShowsEachQuestionWithSmithsDefaultFirst() {
+        fake.ones.addAll(listOf("full", "keep", "keep", "smith", "smith"))
+        fake.plans.add(null)
+        ConvertFolderUseCase.run(fake.ports) {}
+        assertEquals(listOf("conservative", "keep", "keep", "smith", "smith"), fake.rowsSeen.map { it.first().name })
+    }
+
+    @Test
+    fun anOldSmithThatCannotListTheQuestionsConvertsNothing() {
+        fake.answers["convert --questions --json"] = fake.fail("✖ unknown flag: --questions")
+        assertFalse(ConvertFolderUseCase.run(fake.ports) {})
+        assertTrue(fake.warnings.single().contains("Update smith"))
+        assertEquals(1, fake.calls.size)
     }
 }

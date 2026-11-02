@@ -1,5 +1,6 @@
 package dev.monosmith.jetbrains.flowports
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.notice.NoticeClient
@@ -72,5 +73,6 @@ object IdePortsClient {
                     ) = NoticeClient.warn(ide, message, buttons)
                 },
             changed = { WorkspaceChangedStore.changed(ide) },
+            openUrl = { page -> PromptClient.onUi { BrowserUtil.browse(page) } },
         )
 }

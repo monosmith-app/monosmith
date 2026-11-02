@@ -3,16 +3,16 @@ package dev.monosmith.jetbrains.composestack
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.addproject.ProjectNameValidator
 import dev.monosmith.jetbrains.commitchanges.CommitChangesUseCase
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.installtools.InstallToolsUseCase
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
-import dev.monosmith.jetbrains.notice.NoticeClient
+import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
+import dev.monosmith.jetbrains.workspace.PortProjectsUseCase
 import java.nio.file.Path
 
 /**
@@ -26,25 +26,60 @@ object ComposeStackUseCase {
     private const val COMMITTED = "Committed as one change: Undo reverts it."
     private const val UNCOMMITTED = "Not committed: review it with the Commit window, or commit it now."
 
+    /**
+     * The step that shows the catalogue and returns the ids ticked, or null when the person cancels.
+     * The IDE one is a dialog; a test gives a function that answers from a script.
+     */
+    fun interface PickStack {
+        /** Shows [report] with [ticked] ticked and [message] on top; returns the ids ticked, or null on Cancel. */
+        fun pick(
+            report: ComposeReportContract,
+            ticked: List<String>,
+            message: String,
+        ): List<String>?
+    }
+
     /** Starts the flow in a background task. */
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, TITLE) { compose(ide, root) }
+    ) = BackgroundFlowClient.start(ide, TITLE) {
+        val pick =
+            PickStack { report, ticked, message ->
+                PromptClient.onUi {
+                    val dialog = ComposePickDialogHandler(ide, report.layers, report.items, ticked, message, "Next: check")
+                    if (dialog.showAndGet()) dialog.selected else null
+                }
+            }
+        run(IdePortsClient.of(ide, root), pick, { InstallToolsUseCase.start(ide, root) }) { CommitChangesUseCase.start(ide, root, it) }
+    }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @param pick shows the catalogue and returns the ticks
+     * @param installTools starts the install of the missing tools; the plan offers it
+     * @param commitLater starts the Commit action for an operation
+     * @return true when smith added the project or wrote the recipe
+     */
+    fun run(
+        ports: FlowPortsContract,
+        pick: PickStack,
+        installTools: () -> Unit,
+        commitLater: (String) -> Unit,
+    ): Boolean = compose(ports, pick, installTools, commitLater)
 
     private fun read(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
         args: List<String>,
     ): ComposeReportContract? {
-        val run = SmithRunClient.run(ide, root, args)
+        val run = ports.smith.run(args)
         if (!run.ok) {
-            NoticeClient.warn(ide, "Nothing was added. ${FailureTextMapper.describe(run)}")
+            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(run)}")
             return null
         }
         return runCatching { ComposeReportJsonMapper.toReport(run.stdout) }.getOrElse {
-            NoticeClient.warn(
-                ide,
+            ports.notice.warn(
                 "smith printed its catalogue in a form this plugin does not read. Update the plugin, or run smith compose in a terminal.",
             )
             null
@@ -52,19 +87,17 @@ object ComposeStackUseCase {
     }
 
     private fun compose(
-        ide: Project,
-        root: Path,
-    ) {
-        val first = read(ide, root, ComposeStackAlgorithm.arguments(null, emptyList())) ?: return
+        ports: FlowPortsContract,
+        pick: PickStack,
+        installTools: () -> Unit,
+        commitLater: (String) -> Unit,
+    ): Boolean {
+        val first = read(ports, ComposeStackAlgorithm.arguments(null, emptyList())) ?: return false
         var ticked = emptyList<String>()
         var message = ""
         while (true) {
-            val chosen =
-                PromptClient.onUi {
-                    val dialog = ComposePickDialogHandler(ide, first.layers, first.items, ticked, message, "Next: check")
-                    if (dialog.showAndGet()) dialog.selected else null
-                }
-            if (chosen.isNullOrEmpty()) return
+            val chosen = pick.pick(first, ticked, message)
+            if (chosen.isNullOrEmpty()) return false
             val (settled, note) = ComposeStackAlgorithm.settleRivals(first.items, ticked, chosen)
             ticked = settled
 
@@ -73,18 +106,18 @@ object ComposeStackUseCase {
             val language =
                 ticks.firstOrNull { it.kind == "language" }?.name ?: ticks.firstOrNull { it.kind == "choice" }?.language.orEmpty()
             val plugins = ticks.filter { it.kind == "plugin" }
-            plugins.forEach { NoticeClient.info(ide, "${it.title} is not part of one project. Turn it on with: ${it.route}") }
+            plugins.forEach { ports.notice.info("${it.title} is not part of one project. Turn it on with: ${it.route}") }
             ticked = ticked.filter { id -> plugins.none { it.id == id } }
             val picks = ticks.filter { it.kind == "choice" }.map { it.name }
             if (picks.isEmpty()) {
                 message = say("Tick the choice that writes the project too: a framework, a desktop shell or a cloud host.")
                 continue
             }
-            val checked = read(ide, root, ComposeStackAlgorithm.arguments(language, picks)) ?: return
+            val checked = read(ports, ComposeStackAlgorithm.arguments(language, picks)) ?: return false
             val check = checked.check
             if (check == null) {
-                NoticeClient.warn(ide, "smith did not check the selection. Update smith, or run smith compose in a terminal.")
-                return
+                ports.notice.warn("smith did not check the selection. Update smith, or run smith compose in a terminal.")
+                return false
             }
             if (check.conflict.isNotEmpty()) {
                 message = say("Conflict: ${check.conflict}")
@@ -97,7 +130,7 @@ object ComposeStackUseCase {
                         .sortedByDescending {
                             it.suggested
                         }.map {
-                            dev.monosmith.jetbrains.prompt.ChoiceRowContract(
+                            ChoiceRowContract(
                                 it.name,
                                 it.title,
                                 if (it.suggested) "(suggested)" else "",
@@ -105,8 +138,7 @@ object ComposeStackUseCase {
                             )
                         }
                 val answer =
-                    PromptClient.pickOne(
-                        ide,
+                    ports.prompt.pickOne(
                         "$TITLE: ${question.axis}",
                         "${question.choice} needs an answer on the ${question.axis} axis. ${question.about} The suggested answer is first.",
                         rows,
@@ -126,95 +158,82 @@ object ComposeStackUseCase {
                 message = say(check.missing)
                 continue
             }
-            if (note.isNotEmpty()) NoticeClient.info(ide, note)
-            return finish(ide, root, check, stackName = ComposeStackAlgorithm.stackSummary(first.items, check.language, picks))
+            if (note.isNotEmpty()) ports.notice.info(note)
+            return finish(ports, check, ComposeStackAlgorithm.stackSummary(first.items, check.language, picks), installTools, commitLater)
         }
     }
 
     private fun finish(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
         check: ComposeCheckContract,
         stackName: String,
-    ) {
+        installTools: () -> Unit,
+        commitLater: (String) -> Unit,
+    ): Boolean {
         // The name comes before the plan because the files of the plan depend on it (apps/<name>/).
-        val existing = ListProjectsUseCase.list(root).getOrDefault(emptyList()).map { it.name }
+        val existing = PortProjectsUseCase.list(ports).getOrDefault(emptyList()).map { it.name }
         val name =
-            PromptClient.text(ide, "$TITLE: 2 of 3, name", "The name of the new project ($stackName). The files are named after it:") {
+            ports.prompt.text("$TITLE: 2 of 3, name", "The name of the new project ($stackName). The files are named after it:") {
                 ProjectNameValidator.problem(it, existing)
-            } ?: return
-        while (true) {
-            val planned =
-                read(ide, root, ComposeStackAlgorithm.arguments(check.language, check.selection, kind = "app", name = name)) ?: return
-            val plan = planned.plan
-            if (plan == null || plan.argv.size < 2) return NoticeClient.warn(ide, "smith made no plan for these picks.")
-            val missing = ComposeStackAlgorithm.toolsToInstall(plan)
-            val answer =
-                PromptClient.plan(
-                    ide,
-                    "$TITLE: 3 of 3, plan",
-                    "Nothing is written yet. By default smith leaves the files uncommitted.",
-                    ComposeStackAlgorithm.describePlan(plan),
-                    "Add the project",
-                    offerCommit = true,
-                    others =
-                        listOfNotNull(
-                            if (missing.isNotEmpty()) "Install the tools first" else null,
-                            if (plan.recipeArgv.size >
-                                1
-                            ) {
-                                "Keep it as a recipe"
-                            } else {
-                                null
-                            },
-                        ),
-                ) ?: return
-            val others = listOfNotNull(if (missing.isNotEmpty()) "tools" else null, if (plan.recipeArgv.size > 1) "recipe" else null)
-            when (others.getOrNull(answer.other)) {
-                "tools" -> {
-                    return InstallToolsUseCase.start(ide, root)
-                }
-
-                "recipe" -> {
-                    val done = SmithRunClient.run(ide, root, plan.recipeArgv.drop(1), show = true)
-                    return if (done.ok) {
-                        NoticeClient.info(
-                            ide,
-                            done.lines.lastOrNull() ?: "The recipe is written.",
-                        )
-                    } else {
-                        NoticeClient.warn(ide, "Nothing was written. ${FailureTextMapper.describe(done)}")
-                    }
-                }
+            } ?: return false
+        val planned =
+            read(ports, ComposeStackAlgorithm.arguments(check.language, check.selection, kind = "app", name = name)) ?: return false
+        val plan = planned.plan
+        if (plan == null || plan.argv.size < 2) {
+            ports.notice.warn("smith made no plan for these picks.")
+            return false
+        }
+        val missing = ComposeStackAlgorithm.toolsToInstall(plan)
+        val answer =
+            ports.prompt.plan(
+                "$TITLE: 3 of 3, plan",
+                "Nothing is written yet. By default smith leaves the files uncommitted.",
+                ComposeStackAlgorithm.describePlan(plan),
+                "Add the project",
+                offerCommit = true,
+                others =
+                    listOfNotNull(
+                        if (missing.isNotEmpty()) "Install the tools first" else null,
+                        if (plan.recipeArgv.size > 1) "Keep it as a recipe" else null,
+                    ),
+            ) ?: return false
+        val others = listOfNotNull(if (missing.isNotEmpty()) "tools" else null, if (plan.recipeArgv.size > 1) "recipe" else null)
+        when (others.getOrNull(answer.other)) {
+            "tools" -> {
+                installTools()
+                return false
             }
-            val args = plan.argv.drop(1) + (if (answer.commit) listOf("--commit") else emptyList()) + "--yes"
-            val done = SmithRunClient.run(ide, root, args, show = true)
-            WorkspaceChangedStore.changed(ide)
-            if (done.ok) {
-                val commit = if (answer.commit) COMMITTED else UNCOMMITTED
-                val buttons =
-                    if (answer.commit) {
-                        emptyList()
-                    } else {
-                        listOf(
-                            NoticeButtonContract(
-                                "Commit now",
-                                "Make one commit that Undo can revert; you choose the files first.",
-                            ) {
-                                CommitChangesUseCase.start(ide, root, "add app $name")
-                            },
-                        )
-                    }
-                NoticeClient.info(ide, "$name is added. $commit", buttons)
+
+            "recipe" -> {
+                val done = ports.smith.run(plan.recipeArgv.drop(1), show = true)
+                if (!done.ok) {
+                    ports.notice.warn("Nothing was written. ${FailureTextMapper.describe(done)}")
+                    return false
+                }
+                ports.notice.info(done.lines.lastOrNull() ?: "The recipe is written.")
+                return true
+            }
+        }
+        val args = plan.argv.drop(1) + (if (answer.commit) listOf("--commit") else emptyList()) + "--yes"
+        val done = ports.smith.run(args, show = true)
+        ports.changed()
+        if (!done.ok) {
+            val problem = FailureTextMapper.describe(done)
+            val command = TaskCommandAlgorithm.display(listOf("smith") + args)
+            ports.notice.warn("Nothing was added. $problem The command was: $command")
+            return false
+        }
+        val buttons =
+            if (answer.commit) {
+                emptyList()
             } else {
-                NoticeClient.warn(
-                    ide,
-                    "Nothing was added. ${FailureTextMapper.describe(
-                        done,
-                    )} The command was: ${TaskCommandAlgorithm.display(listOf("smith") + args)}",
+                listOf(
+                    NoticeButtonContract("Commit now", "Make one commit that Undo can revert; you choose the files first.") {
+                        commitLater("add app $name")
+                    },
                 )
             }
-            return
-        }
+        ports.notice.info("$name is added. ${if (answer.commit) COMMITTED else UNCOMMITTED}", buttons)
+        return true
     }
 }

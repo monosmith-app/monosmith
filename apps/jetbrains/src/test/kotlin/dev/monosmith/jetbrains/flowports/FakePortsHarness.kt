@@ -26,6 +26,7 @@ class FakePortsHarness(
     val plans = ArrayDeque<PlanAnswerContract?>()
     val texts = ArrayDeque<String?>()
     var changedCount = 0
+    val opened = mutableListOf<String>()
 
     val ports =
         FlowPortsContract(
@@ -106,7 +107,23 @@ class FakePortsHarness(
                     }
                 },
             changed = { changedCount++ },
+            openUrl = { opened.add(it) },
         )
+
+    /** Presses the only button of the last notice. */
+    fun pressLastButton() {
+        val last = buttons.last()
+        last.single().action()
+    }
+
+    /** The names of the rows of the last question. */
+    fun lastRowNames(): List<String> = rowsSeen.last().map { it.name }
+
+    /** The name of the first row of the first question. */
+    fun firstRowName(): String {
+        val rows = rowsSeen.first()
+        return rows.first().name
+    }
 
     /** A plan answer: the main button, with the commit box as given. */
     fun yes(commit: Boolean = false) = PlanAnswerContract(commit, emptyList(), -1)
