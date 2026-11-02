@@ -43,7 +43,7 @@ Usage: `smith ci <command>`
 | `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
-| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff) |
 | `smith ci native` | Run the native phase |
 | `smith ci pack` | Run the pack phase |
 | `smith ci release` | Run the release phase |
@@ -150,7 +150,8 @@ Usage: `smith ci assets [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--tag <tag>` | string |  | run again for an existing release tag (project@version): build the current checkout and replace the files of its GitHub Release |
+| `--source <source>` | string |  | with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one |
+| `--tag <tag>` | string |  | run again for an existing release tag (project@version) and replace the files of its GitHub Release |
 
 <!-- smith:end ci assets -->
 

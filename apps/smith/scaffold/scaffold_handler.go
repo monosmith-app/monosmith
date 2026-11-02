@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"os"
 	"strings"
 	"time"
@@ -95,6 +96,9 @@ commits them as one operation that smith undo can revert.`,
 				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with, Like: like,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
 			}
+			if addOpts.With, err = CompleteWith(s, addOpts, cmd.InOrStdin(), cmd.OutOrStdout(), interactive); err != nil {
+				return err
+			}
 			if err := CheckAdd(s, addOpts); err != nil {
 				return err
 			}
@@ -115,7 +119,11 @@ commits them as one operation that smith undo can revert.`,
 			for _, n := range res.Notes {
 				fmt.Fprintln(out, n)
 			}
+			if hint := libraryUseHint(kind, args[1]); hint != "" {
+				fmt.Fprintln(out, hint)
+			}
 			project := s.Graph.Get(args[1])
+			toolinstall.Notice(cmd.Context(), s, out, []string{project.Language}, addOpts.With)
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
 				return err
 			}

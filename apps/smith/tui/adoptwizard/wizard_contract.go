@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
@@ -51,7 +52,12 @@ type Flow interface {
 	// it one commit that smith undo can revert, otherwise nothing is committed.
 	// move is the folder the project at the root goes into, adoptmove.Leave to
 	// keep it there, or "" when the repository has no project at its root.
-	AdoptFix(commit bool, move string) doctorfix.Planned
+	AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned
+	// InitFacts are the facts of the repository that shape the decisions of
+	// adopt --init; InitPlan is what it does for the choices, as the review
+	// shows it, with a diff of each file of the person it edits.
+	InitFacts() adoptdecision.Facts
+	InitPlan(c adoptdecision.Choices) string
 	// AgentFix is the offer to add the MonoSmith agent (smith agent install);
 	// ok is false when the workspace has it, or opted out.
 	AgentFix() (fix doctorfix.Planned, ok bool)
@@ -114,6 +120,9 @@ const (
 	StageListing
 	// StageMove asks where the project at the repository root goes.
 	StageMove
+	// StageInit asks the decisions of adopt --init: line endings, the CI
+	// provider and a pipeline of the person's own.
+	StageInit
 	// StageChoices asks the full level's choices.
 	StageChoices
 	// StagePlanning plans the removals for the choices.

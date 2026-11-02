@@ -46,8 +46,9 @@ nothing. --check does the same and fails when something would change, for CI.`,
 			if defaults {
 				return runAdoptDefaults(cmd, check, yes)
 			}
-			if !check && operationplan.ShouldAsk(operationplan.DetectEnvironment(), yes) {
-				// A person at a terminal sees the plan, from a dry run, and confirms it.
+			if !check {
+				// The plan comes from a dry run. A person confirms it; without a terminal
+				// and without --yes the run is refused.
 				preview, err := Upgrade(".", version, true, io.Discard)
 				if err != nil {
 					return err
@@ -58,7 +59,7 @@ nothing. --check does the same and fails when something would change, for CI.`,
 						return err
 					}
 					if _, err := operationplan.Present(cmd.OutOrStdout(), cmd.InOrStdin(), PlanUpgrade(root, preview), operationplan.Options{
-						Ask: true, Env: operationplan.DetectEnvironment(),
+						Yes: yes, Ask: true, Env: operationplan.DetectEnvironment(),
 					}); err != nil {
 						return err
 					}
@@ -154,10 +155,10 @@ func runAdoptDefaults(cmd *cobra.Command, check, yes bool) error {
 		fmt.Fprintf(out, "would change: the defaults of %s to %s\n", orUnrecorded(change.From), change.To)
 		return errors.New("the workspace does not use the latest defaults: run smith upgrade --defaults")
 	}
-	if operationplan.ShouldAsk(operationplan.DetectEnvironment(), yes) {
+	{
 		plan := operationplan.Plan{Title: "move to the latest defaults"}
 		plan.Add("smith.toml", operationplan.Line{Action: operationplan.Change, Path: "smith.toml", Note: "[workspace] defaults: " + orUnrecorded(change.From) + " to " + change.To})
-		if _, err := operationplan.Present(out, cmd.InOrStdin(), operationplan.WithOwners(root, plan), operationplan.Options{Ask: true, Env: operationplan.DetectEnvironment()}); err != nil {
+		if _, err := operationplan.Present(out, cmd.InOrStdin(), operationplan.WithOwners(root, plan), operationplan.Options{Yes: yes, Ask: true, Env: operationplan.DetectEnvironment()}); err != nil {
 			return err
 		}
 	}

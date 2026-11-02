@@ -66,6 +66,10 @@ type InitializeResult struct {
 	// owns. The host lists them (smith choices) and checks a selection of them
 	// (smith add --with). Absent means the plugin owns none.
 	Choices []Choice `json:"choices,omitempty"`
+	// Tools are the programs the plugin needs on the person's machine. The
+	// host detects them and, when one is missing, presents the ways to get it
+	// (smith tools). Absent means the plugin declares none.
+	Tools []ToolNeed `json:"tools,omitempty"`
 }
 
 // Scaffolds says whether the plugin can scaffold a project of the kind.
@@ -129,6 +133,12 @@ type Capabilities struct {
 	Published bool `json:"published,omitempty"`
 	// Dependencies installs and uninstalls packages in its projects.
 	Dependencies bool `json:"dependencies,omitempty"`
+	// Link makes a project depend on a library of the same workspace in the
+	// ecosystem's own form (a workspace dependency, a path dependency, a
+	// project reference), and takes it out again. A plugin without it is
+	// refused by the host with one sentence that tells the user to add the
+	// dependency by hand.
+	Link bool `json:"link,omitempty"`
 	// Declarations lists and rewrites declared dependency specs (sync, up).
 	Declarations bool `json:"declarations,omitempty"`
 	// Latest reports the newest releases of dependencies and pinned tools.

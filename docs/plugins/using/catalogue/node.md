@@ -11,7 +11,7 @@ The node plugin makes every `package.json` below the workspace root a smith proj
 | `--lang` values | `node`, `javascript`, `js` |
 | Manifest that makes a directory a project | `package.json` (the one at the workspace root holds tooling only and is never a project) |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `derive`, `apiSurface`, `channels`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `derive`, `apiSurface`, `channels`, `link`. |
 | Stacks it publishes | none itself. The add-ons publish them: `node-jest`, `node-vitest`, `node-ts`, `node-vitest-playwright`, `vscode-extension`, `react`, `vue`, `svelte`, `html`, `angular`, `docs-site`, `react-p5` (from `smith stacks --json`). `[default_stacks] node = "node-jest"` is what `smith new` writes. |
 | Project kinds it can create | `app`, `lib`, `package` (`node-app`, `node-lib`, `node-package`) |
 
@@ -187,6 +187,42 @@ The plain-JavaScript starter in detail:
 
 The "Try: smith test -p util" hint is printed for plain JavaScript too, although that starter has no `test` script.
 
+## Function apps
+
+`smith add app api --lang node --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: TypeScript with the Azure Functions v4 model (`src/functions`, `host.json`), a `handler` export with `template.yaml` for AWS, the Functions Framework for Google. Runtimes `node24` (suggested) and `node22`. The files come from the [functions](functions.md) plugin, which publishes the choices for Node, as [vite](vite.md) does for browser apps. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
+## Electron and Tauri
+
+`smith add app desk --lang node --with electron` writes an Electron app in TypeScript: a main
+process (`src/main/app.handler.ts`), a preload script that uses `contextBridge`
+(`src/preload/bridge.handler.cts`, built to `.cjs` because a sandboxed preload cannot be a module),
+and one renderer page with a content security policy. The window has `contextIsolation` on,
+`nodeIntegration` off and `sandbox` on, and a unit test checks that. The page greets by asking the
+main process through the preload api, which uses the greeting slice. The tasks are `build`,
+`typecheck`, `lint`, `test`, `start` (builds, then opens the window from the build folder) and
+`package` (Electron Forge makes the app folder under `dist/apps/<name>/out`). There is no installer
+and no code signing in v2. The first install downloads the Electron binary, so it needs a network.
+Electron is on the framework axis with `layer = "shell"`, `needs = ["lint", "test"]`, and conflicts
+with `jest`, the function hosts and `tauri`. Packaging uses Electron Forge because the Electron
+documentation recommends it ([application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution),
+[Forge CLI](https://www.electronforge.io/cli), [process model](https://www.electronjs.org/docs/latest/tutorial/process-model),
+[context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)).
+Versions checked on 2026-11-02: Electron 45.2.1, Electron Forge 8.0.1.
+
+`--with react,tauri` makes a new web app that is also a Tauri app (the `tauri` plugin publishes the
+choice `tauri` on the `shell` axis); it writes `src-tauri` as the stack `react-tauri` does. Both
+choices are found with `smith compose` (search "desktop"). Checked in a scratch workspace: electron
+ran lint, typecheck, test, build and package; `react,tauri` scaffolded and built the web app (the
+Rust build was not run).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.node]` table. All configuration is in `package.json`, in the workspace files, and in `smith.toml`.
@@ -298,6 +334,10 @@ Real, with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registr
 registry=https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/
 # smith:registry-end
 ```
+
+## Linking an internal library
+
+`smith install -w <project> @acme/core` writes the library's package name in `dependencies` of the project's `package.json` and runs `npm install`, which links the workspace copy. The range follows what the workspace's libraries already use; with no habit yet, smith asks between `*` (any version, nothing to edit later) and the library's current `^x.y.z`, and `--range` decides in advance. `smith uninstall -w <project> @acme/core` removes it from every dependency section. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

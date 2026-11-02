@@ -4,8 +4,8 @@ import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 export interface LauncherDeps {
   /** Runs smith in the workspace folder with these arguments. */
   run:     (args: string[]) => Promise<SmithRun>
-  /** Asks whether to write the launcher files. */
-  confirm: () => Promise<boolean>
+  /** Asks whether to write the launcher files, showing the plan smith printed (the files, with a diff of one that exists). */
+  confirm: (plan: string) => Promise<boolean>
 }
 
 /** How writing ended: written (`lines` are what smith printed), refused with smith's words, or declined by the person. */
@@ -16,14 +16,17 @@ export type LauncherOutcome =
 
 /**
  * Writes the launcher that makes a laptop and CI run the same smith
- * (`smith bootstrap`: tools/smith/smith and tools/smith/smith.cmd). It asks
- * first, because the files are meant to be committed.
+ * (`smith bootstrap`: tools/smith/smith and tools/smith/smith.cmd). It reads
+ * the plan first (`--dry-run`) and asks with that plan in front of the person,
+ * because the files are meant to be committed and one that exists is replaced.
  * @param deps - how to run smith and ask the person
  * @returns how it ended; it never throws
  */
 export async function writeLauncher (deps: LauncherDeps): Promise<LauncherOutcome> {
-  if (!await deps.confirm()) return { kind: 'declined' }
-  const done = await deps.run(['bootstrap'])
+  const planned = await deps.run(['bootstrap', '--dry-run'])
+  if (planned.code !== 0) return { kind: 'refused', message: describeFailure(planned) }
+  if (!await deps.confirm(planned.stdout.trim())) return { kind: 'declined' }
+  const done = await deps.run(['bootstrap', '--yes'])
 
   return done.code === 0 ? { kind: 'written', lines: done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } : { kind: 'refused', message: describeFailure(done) }
 }

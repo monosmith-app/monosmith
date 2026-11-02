@@ -179,6 +179,28 @@ export const protocolSchema: SchemaDocument = {
       "capability": "dependencies",
       "notification": false
     },
+    "dependencies/link": {
+      "description": "Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.",
+      "params": {
+        "$ref": "#/$defs/LinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/LinkResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
+    "dependencies/unlink": {
+      "description": "Removes the dependency of a project on a library of the same workspace.",
+      "params": {
+        "$ref": "#/$defs/UnlinkParams"
+      },
+      "result": {
+        "$ref": "#/$defs/DependencyResult"
+      },
+      "capability": "link",
+      "notification": false
+    },
     "dependencies/declared": {
       "description": "Lists the dependencies the manifests of the plugin's projects declare.",
       "params": {
@@ -593,6 +615,10 @@ export const protocolSchema: SchemaDocument = {
           "type": "boolean",
           "description": "Dependencies installs and uninstalls packages in its projects."
         },
+        "link": {
+          "type": "boolean",
+          "description": "Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand."
+        },
         "declarations": {
           "type": "boolean",
           "description": "Declarations lists and rewrites declared dependency specs (sync, up)."
@@ -696,6 +722,21 @@ export const protocolSchema: SchemaDocument = {
         "description": {
           "type": "string"
         },
+        "title": {
+          "type": "string",
+          "description": "Title is the name shown to a person (\"Electron\" for electron). Without it the name is shown."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Aliases are words that find the choice when a person searches the catalogue (smith compose): \"desktop\", \"serverless\", \"web\"."
+        },
+        "layer": {
+          "type": "string",
+          "description": "Layer is where the choice sits in the stack of a project: \"framework\", \"shell\" (a desktop shell), \"host\" (where cloud code runs), \"test\", \"lint\", \"style\" or a layer of the plugin's own. Without it the layer is the axis. It is for display and grouping: the axis decides conflicts."
+        },
         "language": {
           "type": "string",
           "description": "Language is the language plugin the choice applies to (\"node\")."
@@ -717,6 +758,10 @@ export const protocolSchema: SchemaDocument = {
         "default": {
           "type": "boolean",
           "description": "Default marks the choice the host adds when a selection needs its axis and has no choice on it."
+        },
+        "suggested": {
+          "type": "boolean",
+          "description": "Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by itself: an axis that a choice needs and that has no Default is asked, and the person answers (ADR 0072)."
         },
         "many": {
           "type": "boolean",
@@ -1593,6 +1638,13 @@ export const protocolSchema: SchemaDocument = {
             "$ref": "#/$defs/Choice"
           },
           "description": "Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none."
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolNeed"
+          },
+          "description": "Tools are the programs the plugin needs on the person's machine. The host detects them and, when one is missing, presents the ways to get it (smith tools). Absent means the plugin declares none."
         }
       },
       "required": [
@@ -1686,6 +1738,94 @@ export const protocolSchema: SchemaDocument = {
           "items": {
             "$ref": "#/$defs/ToolPin"
           }
+        }
+      }
+    },
+    "LinkOption": {
+      "description": "LinkOption is one way to write the dependency, with its consequence in words a person who read no manual can follow.",
+      "type": "object",
+      "properties": {
+        "spec": {
+          "type": "string",
+          "description": "Spec is the value passed back in LinkParams.Spec."
+        },
+        "label": {
+          "type": "string",
+          "description": "Label is the option in a few words."
+        },
+        "meaning": {
+          "type": "string",
+          "description": "Meaning says what happens with this option."
+        }
+      },
+      "required": [
+        "spec",
+        "label",
+        "meaning"
+      ]
+    },
+    "LinkParams": {
+      "description": "LinkParams asks a plugin to make Project depend on Library, a lib or package of the same workspace and language, in the ecosystem's own form, and to install or lock as that needs. The host has checked that both exist, that the languages match, that Library is not an app, and that the link makes no cycle; the plugin answers with an error that names the file when it cannot write the dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project",
+          "description": "Project is the project that gains the dependency."
+        },
+        "library": {
+          "$ref": "#/$defs/Project",
+          "description": "Library is the project it depends on."
+        },
+        "quiet": {
+          "type": "boolean",
+          "description": "Quiet keeps the package manager's output unless it fails."
+        },
+        "plan": {
+          "type": "boolean",
+          "description": "Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line it would write and the choices the user has."
+        },
+        "spec": {
+          "type": "string",
+          "description": "Spec is the version range the user chose from LinkResult.Options; empty means the plugin's default, or the form the workspace already uses."
+        }
+      },
+      "required": [
+        "project",
+        "library"
+      ]
+    },
+    "LinkResult": {
+      "description": "LinkResult is what a link wrote, or with LinkParams.Plan would write.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files are the workspace-relative files changed (or to be changed)."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are for the user."
+        },
+        "manifest": {
+          "type": "string",
+          "description": "Manifest is the file the dependency goes into, workspace-relative."
+        },
+        "line": {
+          "type": "string",
+          "description": "Line is the dependency as it is written there, for the plan shown before anything is written (\"@acme/core\": \"*\")."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LinkOption"
+          },
+          "description": "Options are the real choices of the range written, with the default first. Empty when the ecosystem has none, or the workspace already follows a convention (then Line shows it)."
         }
       }
     },
@@ -2406,6 +2546,121 @@ export const protocolSchema: SchemaDocument = {
         "command"
       ]
     },
+    "ToolInstall": {
+      "description": "ToolInstall is one way to get a tool with a package manager. Manager is one of: \"winget\", \"brew\", \"brew-cask\", \"apt\", \"dnf\", \"pacman\", \"npm\", \"uv\", \"fnm\" and \"rustup\". The host builds the exact command from the manager and Package; Package may hold {major} and {major.minor}, which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup) are offered only when they are already on the machine.",
+      "type": "object",
+      "properties": {
+        "manager": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string",
+          "description": "Note adds a sentence the person needs before choosing (\"a new terminal is needed\")."
+        }
+      },
+      "required": [
+        "manager",
+        "package"
+      ]
+    },
+    "ToolNeed": {
+      "description": "ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is, how to detect it, how each system gets it); the host decides how to ask.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name identifies the tool across plugins and in commands (smith tools install python). Two plugins that need the same tool use the same Name."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title is what the tool is called in text: \"Python\", \"the .NET SDK\". Doctor words the check \"<Title> is installed\"."
+        },
+        "why": {
+          "type": "string",
+          "description": "Why says in plain words what smith needs the tool for."
+        },
+        "consequence": {
+          "type": "string",
+          "description": "Consequence says what stops working while the tool is missing, as the end of a sentence that starts \"If you skip it, \": \"smith test and smith build fail for the python projects\"."
+        },
+        "program": {
+          "type": "string",
+          "description": "Program is the program that carries the tool on PATH (\"python3\")."
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternatives are other programs that also count (\"python\", \"py\")."
+        },
+        "versionArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "VersionArgs are the arguments that make Program print its version. Absent means --version."
+        },
+        "pins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolVersionPin"
+          },
+          "description": "Pins are the files where a workspace pins the version it wants. The first pin the host finds gives the version range. Absent means any version counts."
+        },
+        "choice": {
+          "type": "string",
+          "description": "Choice limits the tool to stacks that have this choice (\"azure-functions\"): the tool is not needed by a project built without it. Absent means every project of the plugin needs it."
+        },
+        "systems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Systems limits the tool to these systems, named as Go names them (\"windows\", \"darwin\", \"linux\"): the Xcode Command Line Tools exist only on \"darwin\". Absent means every system."
+        },
+        "suggested": {
+          "type": "string",
+          "description": "Suggested is the version smith installs when no pin says one: \"3.13\". It fills {major} and {major.minor} in the install entries."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure."
+        },
+        "install": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolInstall"
+          },
+          "description": "Install are the ways to get the tool, per package manager and system."
+        },
+        "download": {
+          "type": "string",
+          "description": "Download is the official page of the tool, for the person who installs it by hand or has no package manager."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source is the address of the page the Install entries were checked against."
+        },
+        "checked": {
+          "type": "string",
+          "description": "Checked is the date (YYYY-MM-DD) the entries were last checked."
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "why",
+        "consequence",
+        "program",
+        "download",
+        "source",
+        "checked"
+      ]
+    },
     "ToolPin": {
       "description": "ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv) against the newest release; informational.",
       "type": "object",
@@ -2428,6 +2683,23 @@ export const protocolSchema: SchemaDocument = {
       "required": [
         "name",
         "pinned"
+      ]
+    },
+    "ToolVersionPin": {
+      "description": "ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of: \"text\" (the first word of the file, as in .nvmrc and .python-version), \"go-mod\" (the toolchain line, else the go line), \"pyproject\" (requires-python), \"global-json\" (sdk.version) and \"rust-toolchain\" (the channel).",
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "File is the base name of the file, looked up at the workspace root and in the folders of the projects that use the tool."
+        },
+        "format": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "format"
       ]
     },
     "Toolchain": {
@@ -2479,6 +2751,22 @@ export const protocolSchema: SchemaDocument = {
       "required": [
         "project",
         "packages"
+      ]
+    },
+    "UnlinkParams": {
+      "description": "UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result say so when the manifest held no such dependency.",
+      "type": "object",
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/Project"
+        },
+        "library": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "required": [
+        "project",
+        "library"
       ]
     },
     "VersionParams": {

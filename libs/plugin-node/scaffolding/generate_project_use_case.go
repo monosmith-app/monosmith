@@ -1,6 +1,7 @@
 package scaffolding
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -129,8 +130,13 @@ func kindTemplates(kind protocol.ProjectKind, set TemplateSet) (map[string]strin
 func pairs(m map[string]string) []Pair {
 	out := make([]Pair, 0, len(m))
 	for _, name := range slices.Sorted(maps.Keys(m)) {
-		quoted, _ := json.Marshal(m[name])
-		out = append(out, Pair{Name: name, Value: string(quoted[1 : len(quoted)-1])})
+		// HTML escaping would write && as &: a script is shell text, not HTML.
+		var quoted bytes.Buffer
+		enc := json.NewEncoder(&quoted)
+		enc.SetEscapeHTML(false)
+		_ = enc.Encode(m[name])
+		text := strings.TrimSuffix(quoted.String(), "\n")
+		out = append(out, Pair{Name: name, Value: text[1 : len(text)-1]})
 	}
 	return out
 }

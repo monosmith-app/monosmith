@@ -3,12 +3,15 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,8 +32,10 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: d.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("dotnet", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"dotnet", "csharp", "fsharp"},
 		Manifests: []string{"*.csproj", "*.fsproj"},
+		Choices:   functions.Choices(),
 	}, nil
 }
 
@@ -89,6 +94,16 @@ func (d *Dotnet) Rewrite(params protocol.RewriteParams) (protocol.DependencyResu
 	return dependencies.Rewrite(d.root, params)
 }
 
+// Link implements serve.Linker.
+func (d *Dotnet) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(d.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (d *Dotnet) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(d.root, params)
+}
+
 // Latest implements serve.LatestReader.
 func (d *Dotnet) Latest(params protocol.LatestParams) (protocol.LatestResult, error) {
 	return dependencies.Latest(d.root, params)
@@ -96,7 +111,9 @@ func (d *Dotnet) Latest(params protocol.LatestParams) (protocol.LatestResult, er
 
 // Doctor implements serve.DoctorContributor.
 func (d *Dotnet) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
-	return pipeline.Doctor(d.root, params), nil
+	res := pipeline.Doctor(d.root, params)
+	res.Findings = append(res.Findings, functions.Findings(d.root, params.Projects)...)
+	return res, nil
 }
 
 // ChangeKind implements serve.KindChanger.

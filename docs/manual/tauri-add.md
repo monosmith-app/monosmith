@@ -26,10 +26,18 @@ exists, so running it again is safe.
 
 It prints each file it wrote or edited and the commands to run next. The files stay uncommitted.
 
+## What smith asks
+
+`smith tauri add` shows the plan (the Rust files, the two `package.json` edits, `smith.toml`, the
+install and the pipelines) and asks the bundle identifier of the app, like
+`com.yourcompany.yourapp`. The operating system and the app stores know the app by that name and
+it is hard to change after you ship. Without a terminal smith needs `--identifier` or `--yes`
+(which takes `com.<workspace>.<project>` and says so). `--dry-run` shows the plan.
+
 ## Synopsis
 
 ```sh
-smith tauri add <project> [--json]
+smith tauri add <project> [--identifier <id>] [--dry-run] [--yes] [--json]
 ```
 
 ## Arguments and flags
@@ -45,7 +53,11 @@ Usage: `smith tauri add <project> [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | show what would be written and change nothing |
+| `--identifier <identifier>` | string |  | the bundle identifier of the app, like com.yourcompany.yourapp (smith asks when you leave it out) |
 | `--json` | boolean | off | print what was done as JSON |
+| `-y, --yes` | boolean | off | write without asking; the bundle identifier is com.<workspace>.<project> unless --identifier says otherwise |
 
 <!-- smith:end tauri add -->
 

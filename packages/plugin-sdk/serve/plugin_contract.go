@@ -126,6 +126,14 @@ type ChannelPublisher interface {
 	PublishesChannels()
 }
 
+// Linker is implemented by a plugin that makes a project depend on a library
+// of the same workspace, and takes the dependency out. Serve advertises the
+// link capability for it.
+type Linker interface {
+	Link(params protocol.LinkParams) (protocol.LinkResult, error)
+	Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error)
+}
+
 // DeclaredDescriber is implemented by a plugin whose Discover also describes
 // the projects smith.toml declares (DiscoverParams.Declared): folders with no
 // manifest of their own. Serve advertises the declared capability for it.

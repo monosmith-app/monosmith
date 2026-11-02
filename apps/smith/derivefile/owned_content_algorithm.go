@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/jsondoc"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/tomltext"
 )
@@ -128,10 +129,10 @@ func presentKeys(f protocol.DerivedFile, disk []byte) (map[string]any, error) {
 	switch f.Format {
 	case "json":
 		var all map[string]any
-		dec := json.NewDecoder(bytes.NewReader(disk))
+		dec := json.NewDecoder(bytes.NewReader(jsondoc.StripComments(disk)))
 		dec.UseNumber()
 		if err := dec.Decode(&all); err != nil {
-			return nil, fmt.Errorf("%s is not a JSON object smith can read (comments are not supported): %w", f.Path, err)
+			return nil, fmt.Errorf("%s is not a JSON object smith can read: %w", f.Path, err)
 		}
 		for k := range f.Keys {
 			if v, ok := all[k]; ok {

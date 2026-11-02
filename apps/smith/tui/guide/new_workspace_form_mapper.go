@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
@@ -11,9 +12,12 @@ import (
 // form and the command ask the same. The first option of each is the default
 // and a text question left empty takes its default.
 func NewWorkspaceSteps() []Step {
-	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}}
+	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}, setupStep()}
 	for _, q := range scaffold.NewQuestions() {
 		step := Step{Key: q.Key, Prompt: q.Prompt}
+		if q.Key == scaffold.AnswerArchitecture {
+			step.Note = WhatIs("slice")
+		}
 		if q.Advanced {
 			step.Prompt += " Enter keeps " + q.Default + "."
 		}
@@ -32,12 +36,18 @@ func NewWorkspaceSteps() []Step {
 				}
 			}
 		}
-		if applies := q.Applies; applies != nil {
-			step.Skip = func(a map[string][]string) bool { return !applies(singleAnswers(a)) }
+		applies := q.Applies
+		step.Skip = func(a map[string][]string) bool {
+			return first(a, answerSetup) == setupDefaults || (applies != nil && !applies(singleAnswers(a)))
 		}
 		steps = append(steps, step)
 	}
-	return steps
+	// The decisions come before the questions smith new asks at the end.
+	at := slices.IndexFunc(steps, func(st Step) bool { return st.Key == scaffold.AnswerSaveRecipe })
+	if at < 0 {
+		at = len(steps)
+	}
+	return slices.Insert(steps, at, decisionSteps()...)
 }
 
 // singleAnswers is the first answer of each question.
@@ -64,12 +74,15 @@ func NewWorkspaceArgv(a map[string][]string) []string {
 			argv = append(argv, "--"+q.Flag, "node="+value)
 		case scaffold.AnswerAgent:
 			argv = append(argv, "--no-agent")
+		case scaffold.AnswerDevcontainer:
+			argv = append(argv, "--no-devcontainer")
 		case scaffold.AnswerGitHubReleases:
 			argv = append(argv, "--"+q.Flag)
 		default:
 			argv = append(argv, "--"+q.Flag, value)
 		}
 	}
+	argv = append(argv, decisionFlags(a)...)
 	if first(a, scaffold.AnswerSaveRecipe) == "yes" {
 		name := strings.TrimSpace(first(a, scaffold.AnswerRecipeName))
 		if name == "" {

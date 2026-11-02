@@ -1,6 +1,8 @@
 package guide
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,8 +13,20 @@ import (
 
 func TestTheFormAsksWhatSmithNewAsks(t *testing.T) {
 	var formKeys, commandKeys []string
+	var decisions []string
 	for _, s := range NewWorkspaceSteps() {
+		if s.Key == answerFirstCommit || s.Key == answerFirstCommitSecrets || s.Key == answerModulePrefix {
+			// Decisions smith new settles with its own helpers when the folder or the language calls for them.
+			decisions = append(decisions, s.Key)
+			continue
+		}
+		if s.Key == answerSetup {
+			continue // the first question of the form only chooses between the defaults and these questions
+		}
 		formKeys = append(formKeys, s.Key)
+	}
+	if want := []string{answerFirstCommit, answerFirstCommitSecrets, answerModulePrefix}; !reflect.DeepEqual(decisions, want) {
+		t.Fatalf("the form asks the decisions %v, want %v", decisions, want)
 	}
 	commandKeys = append(commandKeys, "name")
 	for _, q := range scaffold.NewQuestions() {
@@ -59,18 +73,71 @@ func TestQuestionsThatDoNotApplyAreSkipped(t *testing.T) {
 		seen = append(seen, m.current().Key)
 		m, _ = m.Handle(enter)
 	}
-	want := []string{"name", "ci", "language", "architecture", "agent", "more"}
+	want := []string{"name", "setup"}
 	if !reflect.DeepEqual(seen, want) || !m.Done() {
-		t.Fatalf("with every default the form asks %v, got %v (done %v)", want, seen, m.Done())
+		t.Fatalf("starting with the defaults asks only %v, got %v (done %v)", want, seen, m.Done())
 	}
 	if !reflect.DeepEqual(m.Argv, []string{"new", "acme", "--yes"}) {
 		t.Errorf("%v", m.Argv)
 	}
 }
 
+func TestCustomiseAsksTheSixQuestionsAndKeepsTheirDefaults(t *testing.T) {
+	m := NewModel([]Action{newWorkspaceAction(t)})
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	m.input.SetValue("acme")
+	enter := tea.KeyMsg{Type: tea.KeyEnter}
+	m, _ = m.Handle(enter) // the name
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyDown})
+	var seen []string
+	for i := 0; i < 20 && !m.Done(); i++ {
+		seen = append(seen, m.current().Key)
+		m, _ = m.Handle(enter)
+	}
+	want := []string{"setup", "ci", "language", "architecture", "agent", "devcontainer", "more"}
+	if !reflect.DeepEqual(seen, want) || !reflect.DeepEqual(m.Argv, []string{"new", "acme", "--yes"}) {
+		t.Fatalf("customise asks %v, got %v, argv %v", want, seen, m.Argv)
+	}
+}
+
+func TestTheDefaultsAreListedWithHowToChangeEachAndWhatCIMeans(t *testing.T) {
+	step := setupStep()
+	for _, want := range []string{"CI = where your tests run on every push", "CI: GitHub Actions", "language: decide later", "code layout: vertical-slices", "agent files: yes", "dev container: yes", "change it later", "smith still asks what the first commit holds"} {
+		if !strings.Contains(step.Note, want) {
+			t.Errorf("the defaults screen lacks %q:\n%s", want, step.Note)
+		}
+	}
+	if len(step.Options) != 2 || step.Options[0].Value != setupDefaults || !strings.Contains(step.Options[0].Hint, "default") || step.Options[1].Value != setupCustom {
+		t.Fatalf("the defaults come first and are marked: %+v", step.Options)
+	}
+}
+
+func TestTheRiskQuestionsAreStillAskedWithTheDefaults(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll("acme", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join("acme", "notes.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join("acme", ".env"), []byte("KEY=1"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	answers := map[string][]string{"name": {"acme"}, answerSetup: {setupDefaults}}
+	var asked []string
+	for _, st := range NewWorkspaceSteps() {
+		if (st.Key == answerFirstCommit || st.Key == answerFirstCommitSecrets) && !st.Skip(answers) {
+			asked = append(asked, st.Key)
+		}
+	}
+	if !reflect.DeepEqual(asked, []string{answerFirstCommitSecrets}) {
+		t.Fatalf("a folder with files and a secret is asked what the first commit holds, defaults or not: %v", asked)
+	}
+}
+
 func TestSavingARecipeFromTheFormUsesTheWorkspaceNameByDefault(t *testing.T) {
-	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {""}})
-	if want := []string{"new", "acme", "--yes", "--language", "go", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
+	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "module-prefix": {"github.com/me/acme"}, "save-recipe": {"yes"}, "recipe-name": {""}})
+	if want := []string{"new", "acme", "--yes", "--language", "go", "--module-prefix", "github.com/me/acme", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
 	}
 	got = NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {"team"}})
@@ -110,12 +177,13 @@ func TestAWorkspaceNameThatSmithRefusesIsRefusedOnTheSpot(t *testing.T) {
 }
 
 func TestResumeKeepsTheAnswersAndShowsTheProblem(t *testing.T) {
-	answers := map[string][]string{"name": {"acme"}, "ci": {"azure"}, "language": {"go"}}
+	answers := map[string][]string{"name": {"acme"}, "setup": {"custom"}, "ci": {"azure"}, "language": {"go"}}
 	m, ok := NewModel([]Action{newWorkspaceAction(t)}).Resume("Create a workspace", answers, "acme already holds a smith workspace")
 	if !ok || m.err != "acme already holds a smith workspace" || m.input.Value() != "acme" {
 		t.Fatalf("ok %v, error %q, name %q", ok, m.err, m.input.Value())
 	}
 	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter}) // the setup question started on Customise
 	if step := m.current(); step.Key != "ci" || step.Options[m.cursor].Value != "azure" {
 		t.Fatalf("the ci question must start on the earlier answer: cursor %d", m.cursor)
 	}

@@ -36,16 +36,20 @@ Usage: `smith adopt [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--agent <agent>` | string |  | with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false) |
+| `--ci <ci>` | string, repeatable |  | with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none |
+| `--ci-existing <ci-existing>` | string |  | with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider |
 | `--commit` | boolean | off | with --init, commit the change as one operation, so smith undo can revert it |
 | `--dry-run` | boolean | off | only report (this is the default; the flag makes it explicit) |
 | `--eslint` | boolean | off | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies |
+| `--gitattributes <gitattributes>` | string |  | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |
 | `--init` | boolean | off | write smith.toml and the pipelines (nothing is committed unless --commit) |
 | `--install` | boolean | off | with --init, also run npm install for the Node projects |
 | `--json` | boolean | off | print the report as JSON |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
-| `--yes` | boolean | off | do not ask: a project at the root moves only when --move says where |
+| `--yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
 
 <!-- smith:end adopt -->
 
@@ -73,6 +77,22 @@ Interactions:
   project's repository).
 - A pipeline of yours at a path smith owns is kept beside the new one as
   `<file>.pre-smith`. A `.gitignore` of yours is kept and gets `.smith/` added.
+
+## What `--init` asks
+
+`--init` does not decide in silence. It asks four questions, each with its consequence, then prints
+the plan with a diff of every file of yours it edits, and asks `Go ahead? [y/N]`:
+
+| Question | Flag | Safe default |
+|---|---|---|
+| Write `.gitattributes` with `* text=auto eol=lf`? (asked only if the repository has none) | `--gitattributes add\|skip` | skip: your line endings stay |
+| Add the agent files and merge the MCP server into `.mcp.json`? | `--agent add\|skip\|never` | skip; `never` records `[agent] enabled = false` |
+| Which CI? GitHub, Azure, GitLab, CircleCI and Bitbucket are detected | `--ci <provider>\|none` | the provider the repository uses, else GitHub |
+| A pipeline of yours at the path smith writes: replace it (yours moves to `<file>.pre-smith`) or keep it? | `--ci-existing replace\|keep` | replace, keeping the copy |
+
+Without a terminal and without `--yes` it refuses and names these flags. With `--yes` each open
+question takes its safe default and a line says which. `--init --dry-run` prints the same plan and
+changes nothing.
 
 ## A project at the repository root
 

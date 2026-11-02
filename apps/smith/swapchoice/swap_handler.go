@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
@@ -53,7 +54,8 @@ and say what to change by hand. Run it with
 			if err != nil {
 				return err
 			}
-			swap, err := PlanSwap(s.Plugins.Offers(), ChoicesOf(s.Plugins.Offers(), st), args[1], args[2])
+			offers := choiceselect.OfLanguage(s.Plugins.Offers(), st.Language)
+			swap, err := PlanSwap(offers, ChoicesOf(offers, st), args[1], args[2])
 			if err != nil {
 				return err
 			}

@@ -31,6 +31,8 @@ type Model struct {
 	Loading bool
 	// Waited is how long that run has taken so far, set by the shell for drawing.
 	Waited time.Duration
+	// Covered is how many projects the run covers, set by the shell for drawing (0 when unknown).
+	Covered int
 	// ShowPassed lists the checks that passed; by default they are one
 	// collapsed line after the problems.
 	ShowPassed bool
@@ -175,7 +177,7 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	}
 	if v.Report == nil {
-		return []string{th.Muted(progress.Waiting("Running the health checks on every project…", v.Waited))}, rowOf
+		return []string{th.Muted(progress.Waiting("Running the health checks on "+progress.OfProjects(v.Covered)+"…", v.Waited))}, rowOf
 	}
 	lines = append(lines, " "+v.Headline(th), "")
 	position := 0

@@ -11,7 +11,7 @@ The dotnet plugin makes every `.csproj` and `.fsproj` below the workspace root a
 | `--lang` values | `dotnet`, `csharp`, `fsharp` (see the note in [Creating a project](#creating-a-project)) |
 | Manifests that make a directory a project | `*.csproj`, `*.fsproj` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`. Not advertised: `remove`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `link`. Not advertised: `remove`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`dotnet-app`, `dotnet-lib`, `dotnet-package`) |
 
@@ -131,6 +131,18 @@ Wrote 6 file(s):
 
 `fsharp` is accepted as a `--lang` value, but the templates are C#: a project made with `--lang fsharp` is a C# project. Existing `.fsproj` projects are discovered and built, but the plugin does not generate F#. No F# project was run here.
 
+## Function apps
+
+`smith add app api --lang dotnet --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the isolated worker for Azure (`Program.cs`, `host.json`, the Worker packages), a class library with `Amazon.Lambda.Core` and the serializer attribute plus `template.yaml` for AWS, a Functions Framework class (`Google.Cloud.Functions.Hosting`) for Google. Runtimes `dotnet10` (suggested) and `dotnet8` (not with Google, which retires it on 2026-11-10). `package` is `dotnet publish` into `dist/dotnet/publish/<project>/release`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 | Where | Key | Effect | Read in |
@@ -211,6 +223,10 @@ Real output of `smith ci generate` (GitHub):
 | Credentials, sign-in | `NUGET_API_KEY` (required; only when a package publishes to nuget.org). Azure Artifacts feed: `NuGetAuthenticate@1`, no secret. GitHub Packages: `GITHUB_TOKEN` and `packages: read` (`write` when publishing there). `token` feed: the variable named in `token_env`. |
 
 Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`: the Azure pipeline got `- task: NuGetAuthenticate@1` before the cache step, and `smith ci check` asked for the Feed Publisher role on the project's build service.
+
+## Linking an internal library
+
+`smith install -w <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

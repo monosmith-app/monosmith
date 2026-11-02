@@ -230,6 +230,14 @@ func dispatch(p Plugin, req protocol.Request) (any, *protocol.ResponseError) {
 		if d, ok := p.(DependencyManager); ok {
 			return call(req.Params, d.Uninstall)
 		}
+	case protocol.MethodLink:
+		if l, ok := p.(Linker); ok {
+			return call(req.Params, l.Link)
+		}
+	case protocol.MethodUnlink:
+		if l, ok := p.(Linker); ok {
+			return call(req.Params, l.Unlink)
+		}
 	case protocol.MethodDeclared:
 		if d, ok := p.(DeclarationEditor); ok {
 			return call(req.Params, d.Declared)
@@ -299,7 +307,8 @@ func CapabilitiesOf(p Plugin) protocol.Capabilities {
 	_, apiSurface := p.(APISurfaceReader)
 	_, channels := p.(ChannelPublisher)
 	_, declared := p.(DeclaredDescriber)
-	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared}
+	_, link := p.(Linker)
+	return protocol.Capabilities{Discover: discover, Generate: generate, Version: version, Publish: publish, CI: ci, Doctor: doctor, Contribute: contribute, Remove: remove, ChangeKind: changeKind, Published: published, Dependencies: dependencies, Declarations: declarations, Latest: latest, Cancel: cancel, Components: components, APISurface: apiSurface, Derive: derive, Channels: channels, Declared: declared, Link: link}
 }
 
 func call[P, R any](raw json.RawMessage, fn func(P) (R, error)) (any, *protocol.ResponseError) {

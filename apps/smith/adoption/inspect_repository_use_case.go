@@ -60,6 +60,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	r.Clean = cleanApartFromSmith(status)
 	r.Scope = scopeOf(root, r.Name)
 	r.Providers = providersOf(exists)
+	r.Detected = detectedProviders(exists)
 	files, _ := git.Files()
 	read := func(rel string) string {
 		raw, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -191,15 +192,25 @@ func scopeOf(root, name string) string {
 
 // providersOf keeps the CI providers the repository already uses.
 func providersOf(exists func(string) bool) []string {
-	var out []string
-	if exists(".github/workflows") {
-		out = append(out, "github")
-	}
-	if exists(cipipeline.AzurePath) {
-		out = append(out, "azure")
-	}
+	out := detectedProviders(exists)
 	if len(out) == 0 {
 		out = []string{"github"}
+	}
+	return out
+}
+
+// detectedProviders are the CI providers the repository already has a
+// pipeline for: GitHub Actions, Azure Pipelines, GitLab CI, CircleCI and
+// Bitbucket Pipelines. It is empty when there is none.
+func detectedProviders(exists func(string) bool) []string {
+	var out []string
+	for _, c := range []struct{ provider, path string }{
+		{"github", ".github/workflows"}, {"azure", cipipeline.AzurePath}, {"gitlab", cipipeline.GitLabPath},
+		{"circleci", ".circleci"}, {"bitbucket", cipipeline.BitbucketPath},
+	} {
+		if exists(c.path) {
+			out = append(out, c.provider)
+		}
 	}
 	return out
 }

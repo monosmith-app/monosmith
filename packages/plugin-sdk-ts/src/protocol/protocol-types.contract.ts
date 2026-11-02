@@ -194,6 +194,13 @@ export interface Capabilities {
   published?: boolean
   /** Dependencies installs and uninstalls packages in its projects. */
   dependencies?: boolean
+  /**
+   * Link makes a project depend on a library of the same workspace in the ecosystem's own form (a
+   * workspace dependency, a path dependency, a project reference), and takes it out again. A plugin
+   * without it is refused by the host with one sentence that tells the user to add the dependency
+   * by hand.
+   */
+  link?: boolean
   /** Declarations lists and rewrites declared dependency specs (sync, up). */
   declarations?: boolean
   /** Latest reports the newest releases of dependencies and pinned tools. */
@@ -292,6 +299,19 @@ export interface Choice {
    */
   name: string
   description?: string
+  /** Title is the name shown to a person ("Electron" for electron). Without it the name is shown. */
+  title?: string
+  /**
+   * Aliases are words that find the choice when a person searches the catalogue (smith compose):
+   * "desktop", "serverless", "web".
+   */
+  aliases?: string[]
+  /**
+   * Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop
+   * shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's own.
+   * Without it the layer is the axis. It is for display and grouping: the axis decides conflicts.
+   */
+  layer?: string
   /** Language is the language plugin the choice applies to ("node"). */
   language: string
   /**
@@ -307,6 +327,12 @@ export interface Choice {
   needs?: string[]
   /** Default marks the choice the host adds when a selection needs its axis and has no choice on it. */
   default?: boolean
+  /**
+   * Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by
+   * itself: an axis that a choice needs and that has no Default is asked, and the person answers
+   * (ADR 0072).
+   */
+  suggested?: boolean
   /**
    * Many allows the choice next to other choices of its axis that are Many too. By default a
    * selection has one choice per axis.
@@ -825,6 +851,12 @@ export interface InitializeResult {
    * owns none.
    */
   choices?: Choice[]
+  /**
+   * Tools are the programs the plugin needs on the person's machine. The host detects them and,
+   * when one is missing, presents the ways to get it (smith tools). Absent means the plugin
+   * declares none.
+   */
+  tools?: ToolNeed[]
 }
 
 /**
@@ -880,6 +912,65 @@ export interface LatestResult {
   latest?: Record<string, string>
   unreachable?: Record<string, string>
   tools?: ToolPin[]
+}
+
+/**
+ * LinkOption is one way to write the dependency, with its consequence in words a person who read no
+ * manual can follow.
+ */
+export interface LinkOption {
+  /** Spec is the value passed back in LinkParams.Spec. */
+  spec: string
+  /** Label is the option in a few words. */
+  label: string
+  /** Meaning says what happens with this option. */
+  meaning: string
+}
+
+/**
+ * LinkParams asks a plugin to make Project depend on Library, a lib or package of the same
+ * workspace and language, in the ecosystem's own form, and to install or lock as that needs. The
+ * host has checked that both exist, that the languages match, that Library is not an app, and that
+ * the link makes no cycle; the plugin answers with an error that names the file when it cannot
+ * write the dependency.
+ */
+export interface LinkParams {
+  /** Project is the project that gains the dependency. */
+  project: Project
+  /** Library is the project it depends on. */
+  library: Project
+  /** Quiet keeps the package manager's output unless it fails. */
+  quiet?: boolean
+  /**
+   * Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line
+   * it would write and the choices the user has.
+   */
+  plan?: boolean
+  /**
+   * Spec is the version range the user chose from LinkResult.Options; empty means the plugin's
+   * default, or the form the workspace already uses.
+   */
+  spec?: string
+}
+
+/** LinkResult is what a link wrote, or with LinkParams.Plan would write. */
+export interface LinkResult {
+  /** Files are the workspace-relative files changed (or to be changed). */
+  files?: string[]
+  /** Notes are for the user. */
+  notes?: string[]
+  /** Manifest is the file the dependency goes into, workspace-relative. */
+  manifest?: string
+  /**
+   * Line is the dependency as it is written there, for the plan shown before anything is written
+   * ("@acme/core": "*").
+   */
+  line?: string
+  /**
+   * Options are the real choices of the range written, with the default first. Empty when the
+   * ecosystem has none, or the workspace already follows a convention (then Line shows it).
+   */
+  options?: LinkOption[]
 }
 
 /**
@@ -1341,6 +1432,89 @@ export interface Task {
 }
 
 /**
+ * ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew",
+ * "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". The host builds the exact
+ * command from the manager and Package; Package may hold {major} and {major.minor}, which the
+ * pinned or suggested version fills. The language's own installers (uv, fnm, rustup) are offered
+ * only when they are already on the machine.
+ */
+export interface ToolInstall {
+  manager: string
+  package: string
+  /** Note adds a sentence the person needs before choosing ("a new terminal is needed"). */
+  note?: string
+}
+
+/**
+ * ToolNeed is a program on the person's machine that a plugin needs to build, test or run its
+ * projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in
+ * InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to
+ * get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is,
+ * how to detect it, how each system gets it); the host decides how to ask.
+ */
+export interface ToolNeed {
+  /**
+   * Name identifies the tool across plugins and in commands (smith tools install python). Two
+   * plugins that need the same tool use the same Name.
+   */
+  name: string
+  /**
+   * Title is what the tool is called in text: "Python", "the .NET SDK". Doctor words the check
+   * "<Title> is installed".
+   */
+  title: string
+  /** Why says in plain words what smith needs the tool for. */
+  why: string
+  /**
+   * Consequence says what stops working while the tool is missing, as the end of a sentence that
+   * starts "If you skip it, ": "smith test and smith build fail for the python projects".
+   */
+  consequence: string
+  /** Program is the program that carries the tool on PATH ("python3"). */
+  program: string
+  /** Alternatives are other programs that also count ("python", "py"). */
+  alternatives?: string[]
+  /** VersionArgs are the arguments that make Program print its version. Absent means --version. */
+  versionArgs?: string[]
+  /**
+   * Pins are the files where a workspace pins the version it wants. The first pin the host finds
+   * gives the version range. Absent means any version counts.
+   */
+  pins?: ToolVersionPin[]
+  /**
+   * Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
+   * needed by a project built without it. Absent means every project of the plugin needs it.
+   */
+  choice?: string
+  /**
+   * Systems limits the tool to these systems, named as Go names them ("windows", "darwin",
+   * "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.
+   */
+  systems?: string[]
+  /**
+   * Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and
+   * {major.minor} in the install entries.
+   */
+  suggested?: string
+  /**
+   * Optional marks a tool whose absence only costs a feature (running a function app locally).
+   * Doctor reports it as a warning, not a failure.
+   */
+  optional?: boolean
+  /** Install are the ways to get the tool, per package manager and system. */
+  install?: ToolInstall[]
+  /**
+   * Download is the official page of the tool, for the person who installs it by hand or has no
+   * package manager.
+   */
+  download: string
+  /** Source is the address of the page the Install entries were checked against. */
+  source: string
+  /** Checked is the date (YYYY-MM-DD) the entries were last checked. */
+  checked: string
+}
+
+/**
  * ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv)
  * against the newest release; informational.
  */
@@ -1351,6 +1525,21 @@ export interface ToolPin {
   latest?: string
   /** Newer is true when Latest is a release the pin does not cover. */
   newer?: boolean
+}
+
+/**
+ * ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of:
+ * "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod" (the toolchain
+ * line, else the go line), "pyproject" (requires-python), "global-json" (sdk.version) and
+ * "rust-toolchain" (the channel).
+ */
+export interface ToolVersionPin {
+  /**
+   * File is the base name of the file, looked up at the workspace root and in the folders of the
+   * projects that use the tool.
+   */
+  file: string
+  format: string
 }
 
 /**
@@ -1380,6 +1569,15 @@ export interface Toolchain {
 export interface UninstallParams {
   project: Project
   packages: string[]
+}
+
+/**
+ * UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result
+ * say so when the manifest held no such dependency.
+ */
+export interface UnlinkParams {
+  project: Project
+  library: Project
 }
 
 /** VersionParams asks a plugin to record a new version in a project manifest. */
@@ -1520,6 +1718,21 @@ export interface ProtocolMethods {
     params: UninstallParams
     result: DependencyResult
     capability: 'dependencies'
+  }
+  /**
+   * Makes a project depend on a library of the same workspace and language, in the ecosystem's own
+   * form, then installs or locks as that needs.
+   */
+  'dependencies/link': {
+    params: LinkParams
+    result: LinkResult
+    capability: 'link'
+  }
+  /** Removes the dependency of a project on a library of the same workspace. */
+  'dependencies/unlink': {
+    params: UnlinkParams
+    result: DependencyResult
+    capability: 'link'
   }
   /** Lists the dependencies the manifests of the plugin's projects declare. */
   'dependencies/declared': {

@@ -136,7 +136,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 	summary := Run(ctx, g, Options{
 		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
 		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
-		Events: stream, Command: req.Command(),
+		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
 	})
 	pruneAfterRun(s, meter, os.Stderr)
 	return summary, nil

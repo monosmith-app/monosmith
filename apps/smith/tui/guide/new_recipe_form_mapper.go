@@ -15,7 +15,7 @@ import (
 func NewRecipeSteps() []Step {
 	return []Step{
 		{
-			Key: "name", Prompt: "What is the recipe called? (lowercase words joined by dashes)", Placeholder: "team",
+			Key: "name", Prompt: "What is the recipe called? (lowercase words joined by dashes)", Placeholder: "team", Note: WhatIs("recipe"),
 			Check: func(_ map[string][]string, v string) string { return planProblem(v, "", nil) },
 		},
 		{

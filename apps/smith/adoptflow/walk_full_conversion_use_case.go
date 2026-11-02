@@ -7,8 +7,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
+	"github.com/monosmith-app/monosmith/apps/smith/adoption"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
@@ -16,6 +19,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/fullconversion"
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -159,6 +163,30 @@ func (s *Session) Report() (string, error) {
 	return string(raw), err
 }
 
+// InitFacts are the facts of the repository that shape the questions of
+// adopt --init: whether it has a .gitattributes, the CI it uses, the
+// pipelines it has of its own.
+func (s *Session) InitFacts() adoptdecision.Facts { return adoption.InitFacts(s.report) }
+
+// InitPlan is what adopt --init does for these choices, as the text the review
+// shows: the files it creates, the files of the person it edits with a diff,
+// and the pipelines it moves aside. It reads and writes nothing.
+func (s *Session) InitPlan(c adoptdecision.Choices) string {
+	var b strings.Builder
+	operationplan.Render(&b, adoption.PlanInit(s.report, c, false))
+	return b.String()
+}
+
+// AdoptFixChosen is AdoptFix with the choices of the person: the step carries
+// each as a flag, so --yes takes these and no default of its own.
+func (s *Session) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
+	fix := s.AdoptFix(commit, move)
+	step := &fix.Steps[0]
+	at := slices.Index(step.Argv, "--yes") + 1
+	step.Argv = slices.Insert(step.Argv, at, c.Argv()...)
+	return fix
+}
+
 // AgentFix offers the MonoSmith agent files as one step that runs smith agent
 // install --yes; ok is false when the workspace has them or opted out.
 func (s *Session) AgentFix() (doctorfix.Planned, bool) {
@@ -189,7 +217,10 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 // project at its root. A step that runs without a terminal never asks, so a
 // repository with a root project always gets --move.
 func (s *Session) AdoptFix(commit bool, move string) doctorfix.Planned {
-	argv := []string{convert.SmithCommand(), "adopt", "--init"}
+	// --yes: this step runs without a terminal. Each open choice of --init takes its
+	// safe default (no .gitattributes, no agent files, the CI the repository uses) and the
+	// output says which; the wizard offers the agent files in its own step.
+	argv := []string{convert.SmithCommand(), "adopt", "--init", "--yes"}
 	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
 	step := "adopt the repository (smith.toml, the CI pipelines)"
 	switch move {

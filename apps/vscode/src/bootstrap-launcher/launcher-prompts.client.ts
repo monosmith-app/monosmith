@@ -4,12 +4,13 @@ import type { LauncherOutcome } from './write-launcher.use-case.ts'
 /**
  * Asks whether to write the launcher files.
  * @param folder - the name of the workspace folder
+ * @param plan - the plan smith printed: the files it writes, with a diff of one that exists
  * @returns whether the person agreed
  */
-export async function confirmLauncher (folder: string): Promise<boolean> {
+export async function confirmLauncher (folder: string, plan: string): Promise<boolean> {
   const choice = await vscode.window.showInformationMessage(
     `MonoSmith: write the smith launcher in ${folder}?`,
-    { modal: true, detail: 'smith writes tools/smith/smith and tools/smith/smith.cmd. They run the smith version that smith.toml pins, so a laptop and CI use the same one. Commit them.' },
+    { modal: true, detail: `${plan}\n\nThey run the smith version that smith.toml pins, so a laptop and CI use the same one. A launcher that exists is replaced. Commit them.` },
     'Write',
   )
 

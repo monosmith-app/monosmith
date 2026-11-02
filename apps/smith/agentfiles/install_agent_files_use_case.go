@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 )
@@ -63,7 +63,7 @@ func (i Install) Run() error {
 	}
 	if len(edited) > 0 {
 		for _, f := range edited {
-			fmt.Fprintf(i.Out, "● %s differs from what smith writes\n%s\n", f.Path, doctorfix.UnifiedDiff(f.Path, f.Old, f.New))
+			fmt.Fprintf(i.Out, "● %s differs from what smith writes\n%s\n", f.Path, textdiff.UnifiedDiff(f.Path, f.Old, f.New))
 		}
 		return problem.New(edited[0].Path+" was changed after smith wrote it, so smith left everything as it is",
 			"keep your version: nothing to do (smith doctor accepts it)",
@@ -74,7 +74,7 @@ func (i Install) Run() error {
 		return nil
 	}
 	for _, f := range todo {
-		fmt.Fprintf(i.Out, "● %s\n%s\n", f.action(), doctorfix.UnifiedDiff(f.Path, f.Old, f.New))
+		fmt.Fprintf(i.Out, "● %s\n%s\n", f.action(), textdiff.UnifiedDiff(f.Path, f.Old, f.New))
 	}
 	if !i.Yes {
 		interactive := i.Interactive

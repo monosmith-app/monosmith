@@ -25,3 +25,14 @@ func TestOutsideBuildDir(t *testing.T) {
 		t.Fatalf("got:\n%s", strings.Join(got, "\n"))
 	}
 }
+
+func TestAnAllowedOutputOutsideDistIsNotReported(t *testing.T) {
+	stage := &projectgraph.Project{Project: protocol.Project{Name: "mvd", Root: "apps/mvd", Tasks: map[string]protocol.Task{"stage-web": {Outputs: []string{"appwindow/web"}}}}}
+	projects := []*projectgraph.Project{stage}
+	if got := OutsideBuildDir(projects); len(got) != 1 {
+		t.Fatalf("without the setting it is reported: %v", got)
+	}
+	if got := OutsideBuildDir(projects, "apps/mvd/appwindow/web"); len(got) != 0 {
+		t.Errorf("with the setting it is not: %v", got)
+	}
+}

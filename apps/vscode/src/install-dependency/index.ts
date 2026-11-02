@@ -1,0 +1,5 @@
+export { installDependency, type InstallDeps } from './install-dependency.use-case.ts'
+export { askInstallRequest, tellDependencyOutcome } from './install-prompts.client.ts'
+export { installArguments, parsePackages } from './install-arguments.mapper.ts'
+export { linkableLibraries, mayLink } from './linkable-libraries.policy.ts'
+export type { InstallOutcome, InstallRequest, LinkNode } from './install-request.contract.ts'

@@ -125,6 +125,12 @@ type WorkspaceSection struct {
 	// to smith.toml, or an https URL (docs/reference/recipes.md). Empty means
 	// stacks only. `smith add --stack` bypasses it.
 	Recipe string `toml:"recipe"`
+	// Confirm says which plans ask before they are applied: "always" (the
+	// default) asks for every plan; "risky" asks only for a plan that deletes
+	// a file or edits a file that exists, and applies a plan that only creates
+	// files after printing it (ADR 0073). A flag always wins: --yes never
+	// asks, a terminal is never needed for a plan that is not risky.
+	Confirm string `toml:"confirm"`
 	// CommitOperations makes every mutating command (smith add, remove,
 	// upgrade, derive, sync) commit what it changed as one commit, when the
 	// work tree is clean before it starts. smith undo reverts the last such

@@ -44,6 +44,10 @@ install (smith i) installs: pnpm-workspace.yaml moves into package.json
 pnpm and yarn lockfiles and settings go, and scripts that call turbo, pnpm or
 yarn call smith and npm.
 
+Without a terminal convert does not apply unless you pass --yes. In a terminal
+it lists the files it deletes and whether a pnpm or yarn workspace switches to
+npm, then asks: apply, show the report and stop, or cancel.
+
 Run it with --dry-run first: the report lists what maps, what changes behaviour
 and what needs you. Nothing is dropped silently. An Nx workspace's packages must
 be installed, because Nx itself describes the projects: in a terminal convert
@@ -186,10 +190,20 @@ git undoes everything.`,
 			if asJSON {
 				log = cmd.ErrOrStderr()
 			}
-			if !yes && interactive() {
-				fmt.Fprint(log, "\nThis deletes the old tool's files and rewrites package.json files and the CI pipelines (git can undo it). `smith convert --dry-run` lists every change.\nApply? [y/N] ")
+			if !yes {
+				if !interactive() {
+					return problem.New("nobody can confirm this conversion: there is no terminal and --yes was not given",
+						"--yes applies it (it deletes the old tooling listed by --dry-run)", "--dry-run reports what it would change and changes nothing")
+				}
+				fmt.Fprint(log, ConfirmationText(plan))
+				fmt.Fprint(log, "\nWhat now?\n  1) Apply the conversion\n  2) Show the full report first and stop (the same as --dry-run)\n  3) Cancel\nChoice [3]: ")
 				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-				if !strings.EqualFold(strings.TrimSpace(answer), "y") && !strings.EqualFold(strings.TrimSpace(answer), "yes") {
+				switch strings.ToLower(strings.TrimSpace(answer)) {
+				case "1", "apply", "y", "yes":
+				case "2":
+					fmt.Fprint(out, Report(plan, ReportOptions{DryRun: true, Strict: strict, Verbose: verbose}))
+					return errors.New("convert stopped after the report: nothing changed")
+				default:
 					return errors.New("convert cancelled: nothing changed")
 				}
 			}
@@ -218,7 +232,7 @@ git undoes everything.`,
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
-	f.BoolVar(&yes, "yes", false, "apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything)")
+	f.BoolVar(&yes, "yes", false, "apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything)")
 	f.BoolVar(&commit, "commit", false, "commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it)")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes (not with --level full)")
 	level := (*string)(&choices.Level)
@@ -234,6 +248,9 @@ git undoes everything.`,
 // interactive is true in a terminal that can answer a question; CI and pipes
 // apply without asking, as convert always has.
 func interactive() bool {
+	if os.Getenv("SMITH_FORCE_INTERACTIVE") == "1" {
+		return true
+	}
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 }
 

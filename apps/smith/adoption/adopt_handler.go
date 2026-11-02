@@ -1,13 +1,16 @@
 package adoption
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +32,7 @@ var ErrBlocked = errors.New("something blocks; each blocker above names the step
 func Command(version string) *cobra.Command {
 	var asJSON, tags, initialise, dryRun, install, eslint, commit, yes bool
 	var move string
+	var decided adoptdecision.Flags
 	level := LevelConservative
 	cmd := &cobra.Command{
 		Use:   "adopt",
@@ -91,8 +95,8 @@ non-zero while something blocks.`,
 			if commit && !initialise {
 				return problem.New("--commit commits what --init writes, and --init is not given", "smith adopt --init --commit")
 			}
-			if dryRun && (tags || initialise) {
-				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags or --init", "drop --dry-run to take the steps, or drop the steps to only look")
+			if dryRun && tags {
+				return problem.New("--dry-run reports and changes nothing, so it cannot be combined with --tags", "drop --dry-run to take the step, or drop the step to only look")
 			}
 			report, err := Inspect(".", version, cmd.ErrOrStderr())
 			if err != nil {
@@ -106,7 +110,7 @@ non-zero while something blocks.`,
 					return err
 				}
 			}
-			if initialise && report.Adoptable() {
+			if initialise && !dryRun && report.Adoptable() {
 				c, plan, err := ChooseMove(report, MoveOptions{Dir: move, Yes: yes, In: cmd.InOrStdin(), Out: out})
 				if err != nil {
 					return err
@@ -122,8 +126,27 @@ non-zero while something blocks.`,
 					return err
 				}
 			}
-			if initialise {
-				return Init(report, version, install, eslint, commit, out)
+			if initialise && !dryRun {
+				decided.CIGiven = cmd.Flags().Changed("ci")
+				env := operationplan.DetectEnvironment()
+				// One reader for the questions and the confirmation: two would each swallow the other's input.
+				in := bufio.NewReader(cmd.InOrStdin())
+				choices, err := adoptdecision.Resolve(adoptdecision.Request{
+					Flags: decided, Facts: InitFacts(report), Yes: yes,
+					Interactive: env.Terminal && !env.CI,
+					In:          in, Out: out,
+				})
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(out)
+				proceed, err := operationplan.Present(out, in, PlanInit(report, choices, install), operationplan.Options{
+					Yes: yes, Ask: true, Env: env,
+				})
+				if err != nil || !proceed {
+					return err
+				}
+				return Init(report, version, install, eslint, commit, choices, out)
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {
@@ -138,7 +161,18 @@ non-zero while something blocks.`,
 				}
 			} else {
 				printReport(out, report)
-				if !tags && report.Adoptable() {
+				if initialise && dryRun && report.Adoptable() {
+					// A dry run settles the open choices with their safe defaults, asks nothing, and shows the plan.
+					decided.CIGiven = cmd.Flags().Changed("ci")
+					choices, err := adoptdecision.Resolve(adoptdecision.Request{Flags: decided, Facts: InitFacts(report), Preview: true, Out: out})
+					if err != nil {
+						return err
+					}
+					fmt.Fprintln(out)
+					operationplan.Render(out, PlanInit(report, choices, install))
+					fmt.Fprintln(out, "Dry run: nothing was changed.")
+				}
+				if !tags && !initialise && report.Adoptable() {
 					fmt.Fprintln(out, "\nNothing changed (adopt only reports). To apply:\n  → smith adopt --init")
 				}
 			}
@@ -156,7 +190,11 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
 	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
-	cmd.Flags().BoolVar(&yes, "yes", false, "do not ask: a project at the root moves only when --move says where")
+	cmd.Flags().BoolVar(&yes, "yes", false, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
+	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
+	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")
+	cmd.Flags().StringSliceVar(&decided.CI, "ci", nil, "with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none")
+	cmd.Flags().StringVar(&decided.Existing, "ci-existing", "", "with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider")
 	cmd.Flags().BoolVar(&commit, "commit", false, "with --init, commit the change as one operation, so smith undo can revert it")
 	return cmd
 }

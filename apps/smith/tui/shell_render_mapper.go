@@ -147,7 +147,7 @@ func (s Shell) toastRows(innerH int) int {
 
 // modalOpen is true while a box that takes the keyboard is drawn over the screen.
 func (s Shell) modalOpen() bool {
-	return s.palOpen || s.help != nil || s.pkg != nil || s.confirm != nil || s.fix != nil || s.adopt != nil
+	return s.palOpen || s.help != nil || s.pkg != nil || s.confirm != nil || s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
 }
 
 // overlays composes the palette, dialogs and toast over the rendered
@@ -184,6 +184,18 @@ func (s Shell) overlays(rows []string) []string {
 	if s.adopt != nil {
 		r := s.adopt.Rect()
 		rows = pane.Overlay(rows, s.adopt.Lines(s.th, s.tick), r.X, r.Y)
+	}
+	if s.compose != nil {
+		r := s.compose.Rect()
+		rows = pane.Overlay(rows, s.compose.Lines(s.th), r.X, r.Y)
+	}
+	if s.tools != nil {
+		r := s.tools.Rect()
+		rows = pane.Overlay(rows, s.tools.Lines(s.th), r.X, r.Y)
+	}
+	if s.result != nil {
+		r := s.result.Rect()
+		rows = pane.Overlay(rows, s.result.Lines(s.th), r.X, r.Y)
 	}
 	if lines := s.toast.Lines(s.th, s.w-4); lines != nil {
 		// The frame's bottom edge is the row above the footer: the toast sits

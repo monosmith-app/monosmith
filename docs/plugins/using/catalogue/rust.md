@@ -11,7 +11,7 @@ The rust plugin makes every crate in a root Cargo workspace a smith project. It 
 | `--lang` values | `rust` |
 | Manifest that makes a directory a project | `Cargo.toml` with a `[package]` table. A root `Cargo.toml`, and a manifest without `[package]` (a virtual workspace), are not projects. |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`, `link`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`rust-app`, `rust-lib`, `rust-package`) |
 
@@ -248,6 +248,10 @@ Real output of `smith ci generate` (GitHub):
 | Credentials | `CARGO_REGISTRY_TOKEN` (required, only when a package crate exists). `smith ci check`: `GitHub: add the repository secrets CARGO_REGISTRY_TOKEN`. |
 
 `smith rust-policy --max-unsafe=0` over the three generated crates printed nothing and exited 0. cargo-deny is not installed here, so the full opt-in audit was not run.
+
+## Linking an internal library
+
+`smith install -w <project> shop-core` runs `cargo add --path <library>` in the project's `Cargo.toml`, so the dependency is a path dependency and `Cargo.lock` follows. `smith uninstall` runs `cargo remove`. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

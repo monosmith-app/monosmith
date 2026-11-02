@@ -109,17 +109,24 @@ func (p *Pending) Finish(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log, err := ReadLog(p.root)
+	return hash, recordOperation(p.root, command, hash, staged)
+}
+
+// recordOperation appends a committed operation to the log for smith undo and
+// forgets the uncommitted operation it replaces.
+func recordOperation(root, command, hash, files string) error {
+	clearPending(root)
+	log, err := ReadLog(root)
 	if err != nil {
-		return hash, err
+		return err
 	}
 	id := 1
 	if n := len(log.Operations); n > 0 {
 		id = log.Operations[n-1].ID + 1
 	}
 	log.Operations = append(log.Operations, Record{
-		ID: id, Command: command, Commit: hash, Files: strings.Split(staged, "\n"),
+		ID: id, Command: command, Commit: hash, Files: strings.Split(files, "\n"),
 		Time: time.Now().UTC().Format(time.RFC3339),
 	})
-	return hash, WriteLog(p.root, log)
+	return WriteLog(root, log)
 }

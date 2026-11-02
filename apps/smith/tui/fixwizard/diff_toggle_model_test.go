@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 )
 
 // realShow writes a fix the way doctorfix.ShowFix does: the description, a unified diff per file, the steps.
@@ -12,7 +13,7 @@ func realShow(p doctorfix.Planned) (string, error) {
 	var b strings.Builder
 	b.WriteString("● " + p.Description + "\n")
 	for _, f := range p.Files {
-		b.WriteString(doctorfix.UnifiedDiff(f.Path, "one\ntwo\nthree\n", "one\nTWO\nthree\nfour\n"))
+		b.WriteString(textdiff.UnifiedDiff(f.Path, "one\ntwo\nthree\n", "one\nTWO\nthree\nfour\n"))
 	}
 	for i, s := range p.Steps {
 		b.WriteString("  step " + string(rune('1'+i)) + ": $ " + strings.Join(s.Argv, " ") + "\n")

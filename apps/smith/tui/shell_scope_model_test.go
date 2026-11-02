@@ -72,13 +72,15 @@ func TestThePaletteInstallOpensTheGuidedFormOnTheProjectOnScreenAndOffersNoRawCo
 	l.has("Install packages", "Project: ‹ orders ›", "development dependency")
 	l.hasNot("Command palette")
 	// Nothing to confirm until a package is typed: the form never offers a command that fails.
-	l.keys("enter")
+	// The first Enter answers the "Add" question with its default (the registry);
+	// the second, on the empty packages field, says what is missing.
+	l.keys("enter", "enter")
 	l.has("type at least one package")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v", l.started)
 	}
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders zod" {
+	if got := l.lastStarted(); got != "install -w orders --registry zod" {
 		t.Fatalf("started %q", got)
 	}
 }

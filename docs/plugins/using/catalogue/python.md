@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`, `link` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 
@@ -168,6 +168,18 @@ twine==7.0.0
 
 The plugin publishes no stack. `--stack` accepts a stack declared with `language = "python"` in `smith.toml`.
 
+## Function apps
+
+`smith add app api --lang python --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the Python v2 model for Azure (`function_app.py`, `host.json`, `requirements.txt`), a `lambda_handler` with `template.yaml` for AWS, a Functions Framework entry point (`main.py`) for Google. Runtimes `python313` (suggested), `python312`, `python314`. The plugin publishes the choices itself, and finds a function app again by its files, so its `start`, `build` and `package` tasks run `start.py` and `package.py`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.python]` keys. What it reads:
@@ -271,6 +283,10 @@ smith ci audit passed
 ```
 
 With the `python` audit policy turned on, the generated `requirements-dev.txt` passes: the hash rule applies to each project's `requirements.txt`, while the index and URL rules still cover the toolchain file.
+
+## Linking an internal library
+
+`smith install -w <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

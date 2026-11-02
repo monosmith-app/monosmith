@@ -101,6 +101,104 @@ selection leaves out takes its default. The result is saved in `smith.toml` as a
 `choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
 [Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 
+## In the terminal interface and in VS Code
+
+The command takes the kind and the language as arguments, and that does not change. The
+guided form of the terminal interface and of VS Code starts one step earlier, with "What are
+you building?" (a website, an API, a function app, a desktop app, a library, a package), and
+asks the language only where the answer leaves more than one. It builds the same
+`smith add <kind> <name> --lang <language> --with <choices>` line, and shows it in the plan
+before anything is written. "I know the language" keeps the order kind, then language. See
+[the terminal interface](tui.md#guided-forms).
+
+## After the add
+
+When the project is a library, `smith add` ends with `Use it from an app: smith install -w <app> <library>`: a
+library is not a dependency of any app until you say so (see [`smith install`](install.md)). In the terminal
+interface, press `+` on the app and pick the library.
+
+When the first build or test of the new project cannot run because a tool is missing (the .NET SDK for a C#
+project, for example), the project is made and kept. The command prints which tool is missing and where to get
+it, exits with 1, and says `smith tools install` chooses how to install it. In the terminal interface and in
+VS Code the result is a choice: open the install page, install it with smith, check again, or continue without
+checking; nothing is lost.
+
+smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
+run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit these changes now".
+
+## Desktop apps and the composer
+
+Two choices make a desktop app from a new Node project. `electron` writes a minimal Electron app on
+its own, so it is on the `framework` axis and cannot be combined with `react` (the error says
+`both on the framework axis: keep one`). `tauri` wraps a web app that another choice writes:
+`--with react,tauri`. Neither goes with a cloud function host, and the two do not go together.
+For an app that exists, [`smith tauri add`](tauri-add.md) stays.
+
+[`smith compose`](compose.md) searches all of this in one place (try "desktop" or "serverless"),
+explains each conflict as you tick, and ends in the `smith add` line.
+
+## Function apps
+
+A serverless function app is a choice on the `framework` axis, so `--with` builds one in Node, Python
+and C#. There are nine templates:
+
+| Host (`--with`) | Local tool | What `smith add` writes besides the code | Deploy |
+|---|---|---|---|
+| `azure-functions` | Azure Functions Core Tools (`func`) | `host.json`, `local.settings.sample.json` (`local.settings.json` is git-ignored), the v4 model in Node (`src/functions`), the v2 model in Python (`function_app.py`, `requirements.txt`), the isolated worker in C# (`Program.cs`) | [`smith pipeline deploy-azure-function`](pipeline.md) |
+| `aws-lambda` | AWS SAM CLI (`sam`), and Docker for `sam local` | `template.yaml`, a sample event, the handler (`handler` in Node, `lambda_handler` in Python, `Amazon.Lambda.Core` with the serializer in C#) | none: template only |
+| `gcp-functions` | the Functions Framework, a dependency of the app | the entry point (`src/index.ts`, `main.py`, a `Google.Cloud.Functions.Hosting` class) | none: template only |
+
+AWS and Google get templates only: they run, test and package locally, and smith writes no CI or
+deploy pipeline for them. Azure keeps the pipeline it has.
+
+smith never picks the trigger or the runtime for you. At a terminal it says which files the host
+writes, lists the options with the suggested one marked, and asks:
+
+```sh
+smith add app api --lang node --with azure-functions
+```
+
+```text
+azure-functions: a serverless Azure Functions app (Node v4 model): host.json, ...
+azure-functions needs an answer on the trigger axis. smith does not choose it for you:
+  1) blob-trigger: answers a new file in storage (...)
+  2) http-trigger (suggested): answers an HTTP request (...)
+  ...
+trigger [http-trigger]:
+```
+
+Without a terminal, smith refuses before it writes anything, and names the answers. The answer is
+part of `--with`:
+
+```text
+smith: azure-functions needs a choice on the trigger axis, and none is the default: add one of blob-trigger, http-trigger (suggested), queue-trigger, timer-trigger to --with
+```
+
+```sh
+smith add app api --lang python --with azure-functions,http-trigger,python313
+```
+
+| Axis | Choices | Suggested |
+|---|---|---|
+| trigger | `http-trigger`, `timer-trigger`, `queue-trigger`, `blob-trigger` (an Azure Storage queue or blob, AWS SQS or S3, Google Pub/Sub or Cloud Storage) | `http-trigger` |
+| runtime, Node | `node24`, `node22` | `node24`, the Active LTS |
+| runtime, Python | `python313`, `python312`, `python314` | `python313` |
+| runtime, C# | `dotnet10`, `dotnet8` | `dotnet10`, the current LTS |
+
+A combination a host cannot do is a clear error before any write: `timer-trigger` with
+`gcp-functions` (on Google a schedule is a Cloud Scheduler job that calls an HTTP or Pub/Sub
+function), `dotnet8` with `gcp-functions` (Google retires it on 2026-11-10), two hosts, or a host with
+`react`: `azure-functions and react are both on the framework axis: keep one`. The tables are the
+runtimes the three platforms support on 2026-11-02; [ADR 0074](../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md)
+lists the sources.
+
+Every app has the tasks `build`, `test`, `lint`, `start` and `package`. The build goes to the
+workspace's `dist/` like every build; `start` builds and runs the function locally; `package` writes a
+zip (Node, Python) or the publish folder (C#) under `dist/`. The tests call the handler directly and
+need no cloud tool. `smith doctor` warns, never fails, when `func` or `sam` is missing and says how
+to get it. The Node apps are linted and tested with the defaults (`eslint`, `vitest`); `jest` is
+refused with a function host.
+
 ## Following the siblings
 
 A workspace has habits: its libs build with esbuild, its packages test with
@@ -158,7 +256,7 @@ The name must be kebab-case.
 Before it writes, smith add prints a plan: the project directory, what each plugin of the stack
 adds, and the workspace files that change (with the owner, `smith` or `you`, where `smith.lock`
 records one). In a terminal, outside CI, it asks `Go ahead? [y/N]`; `--yes` skips the question,
-and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it never asks.
+and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it refuses and names `--yes` (apply) and `--dry-run` (see the plan). The plan lists the pipeline and dev container files that smith generated and may rewrite, by name.
 
 By default smith add leaves the files it wrote uncommitted (`smith new` commits what it wrote):
 review them with `git status`, then commit. With `commit_operations = true` under `[workspace]`

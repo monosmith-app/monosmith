@@ -6,13 +6,17 @@ import {
   confirmAgentFile, confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellAgentFileOutcome, tellInstallOutcome, writeAgentFile,
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
+import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
+import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
 import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
+import { askCommitScope, commitChanges, confirmCommit, tellCommitOutcome } from './commit-changes/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
   type DeriveAction, type DeriveReport,
 } from './derive-files/index.ts'
 import { readFileWhy, readSettingWhy, readTaskWhy } from './why/index.ts'
 import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap-launcher/index.ts'
+import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
@@ -855,7 +859,62 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       confirm: confirmAddPlan,
     })
     note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellAddOutcome(outcome, note)
+    tellAddOutcome(outcome, note, {
+      commit: async (operation) => {
+        const scope = await askCommitScope(operation)
+        if (scope === undefined) return
+        const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation, scope)
+        note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
+        tellCommitOutcome(done)
+      },
+      checkAgain: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
+    })
+    if (outcome.kind === 'added' || outcome.kind === 'unchecked') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Searches the catalogue, composes the stack, shows the plan of `smith add`, and adds on a yes. */
+  const composeStackHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('composing a stack')) return
+    output.show(true)
+    const existing = state.snapshot?.projects.map((project) => project.name) ?? []
+    const outcome = await composeStack({
+      run:   smithIn(state),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: composing in ${state.name}… smith installs and tests the new project.` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+      pick:    pickItems,
+      answer:  answerQuestion,
+      askName: async () => await askProjectName(existing),
+      tell:    (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
+      confirm: confirmComposePlan,
+    })
+    note(`MonoSmith: compose in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellComposeOutcome(outcome, note)
+    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Asks library or registry first, then what to add, and runs `smith install`. */
+  const addDependencyHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('adding a dependency')) return
+    const projects = state.snapshot?.projects ?? []
+    if (projects.length === 0) {
+      void vscode.window.showInformationMessage('MonoSmith: this workspace has no project to add a dependency to.')
+
+      return
+    }
+    output.show(true)
+    const outcome = await installDependency({
+      ask:   async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps }))),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding a dependency in ${state.name}…` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+    })
+    note(`MonoSmith: add dependency in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellDependencyOutcome(outcome, note)
     if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
   }
 
@@ -1054,10 +1113,26 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const bootstrapHere = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
     if (state?.location === undefined || !mayWrite('the smith launcher')) return
-    const outcome = await writeLauncher({ run: smithIn(state), confirm: async () => await confirmLauncher(state.name) })
+    const outcome = await writeLauncher({ run: smithIn(state), confirm: async (plan) => await confirmLauncher(state.name, plan) })
     note(`MonoSmith: launcher in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellLauncherOutcome(outcome)
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Offers the ways to get the tools the workspace needs (`smith tools install`): a pick per tool with the command in front of the person. */
+  const installToolsHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    const outcome = await installTools({
+      run:           smithIn(state, true, 600_000),
+      chooseWay:     chooseToolWay,
+      chooseAdmin:   chooseToolAdmin,
+      openPage:      openToolPage,
+      showCommands:  showToolCommands,
+      runInTerminal: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
+    })
+    note(`MonoSmith: tools in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellToolsOutcome(outcome)
   }
 
   /** Opens `smith new --here` in a terminal on an empty folder. Nothing is written by this click: smith asks first and refuses a folder with files. */
@@ -1156,11 +1231,14 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
     command<unknown>('monosmith.agentFile', writeAgentsFile),
     command<unknown>('monosmith.addProject', addProjectHere),
+    command<unknown>('monosmith.composeStack', composeStackHere),
+    command<unknown>('monosmith.addDependency', addDependencyHere),
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.divergences', showDivergences),
     command<unknown>('monosmith.try', tryHere),
     command<unknown>('monosmith.bootstrap', bootstrapHere),
+    command<unknown>('monosmith.installTools', installToolsHere),
     command<unknown>('monosmith.openReport', openReport),
     command<unknown>('monosmith.why', showWhy),
     command<unknown>('monosmith.derive.explain', async (argument) => { await deriveFile(argument, 'explain') }),

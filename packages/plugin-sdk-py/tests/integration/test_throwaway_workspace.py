@@ -72,8 +72,8 @@ def workspace() -> Iterator[Workspace]:
 
 
 def test_creates_widget_projects_with_the_plugin_and_discovers_them_with_their_graph_edge(workspace: Workspace) -> None:
-    assert workspace.run("add", "lib", "core", "--lang", "widget")[0] == 0
-    assert workspace.run("add", "app", "shop", "--lang", "widget")[0] == 0
+    assert workspace.run("add", "lib", "core", "--lang", "widget", "--yes")[0] == 0
+    assert workspace.run("add", "app", "shop", "--lang", "widget", "--yes")[0] == 0
     manifest = workspace.directory / "apps" / "shop" / "widget.json"
     document = JsonDocument.parse(manifest.read_text(encoding="utf-8"))
     document.set_json("uses", ["core"])

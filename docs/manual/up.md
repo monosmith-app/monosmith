@@ -16,10 +16,17 @@ golangci-lint) with their newest releases.
 - `smith up --align` to bring one dependency that projects declare at different versions to
   one (this updates nothing; it is [`smith sync`](sync.md) for the named packages).
 
+## Major updates are a choice of their own
+
+`--yes` takes patch and minor updates only. A major update can break the project, so smith
+leaves it out, lists it ("name 1.2.0 -> 3.0.0") and says that `--major` takes it. A package you
+name that has only a major update asks in a terminal and needs `--major` without one. With
+`--align`, the plan and the questions are those of `smith sync`.
+
 ## Synopsis
 
 ```sh
-smith up [package]... [--yes] [--check] [--json] [--no-install] [--align]
+smith up [package]... [--yes] [--major] [--check] [--json] [--no-install] [--align [--dry-run] [--prefer highest|lowest|installed] [--to <name>=<version>]]
 ```
 
 ## Arguments and flags
@@ -38,9 +45,13 @@ Usage: `smith up [packages...] [flags]`
 | `--align` | boolean | off | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ |
 | `--check` | boolean | off | report only; never prompt, never write |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | with --align: show the plan and change nothing |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
+| `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
 | `--no-install` | boolean | off | rewrite the manifests without installing |
-| `-y, --yes` | boolean | off | take every update without prompting |
+| `--prefer <prefer>` | string |  the installed one, else the highest | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
+| `--to <to>` | string, repeatable |  | with --align: the version of one dependency, as <name>=<version> |
+| `-y, --yes` | boolean | off | take every patch and minor update without prompting; major updates stay out unless --major is given |
 
 <!-- smith:end up -->
 

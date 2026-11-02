@@ -278,6 +278,9 @@ Choice is one option on an axis of a project's make-up: a framework, a test runn
 | `axis` | `string` | yes | Axis is the question the choice answers: "framework", "test", "style", "lint". The plugins agree on the name; the host only compares it. |
 | `name` | `string` | yes | Name identifies the choice in a selection and is unique among the choices of all loaded plugins. |
 | `description` | `string` | no |  |
+| `title` | `string` | no | Title is the name shown to a person ("Electron" for electron). Without it the name is shown. |
+| `aliases` | `[]string` | no | Aliases are words that find the choice when a person searches the catalogue (smith compose): "desktop", "serverless", "web". |
+| `layer` | `string` | no | Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's own. Without it the layer is the axis. It is for display and grouping: the axis decides conflicts. |
 | `language` | `string` | yes | Language is the language plugin the choice applies to ("node"). |
 | `roles` | `[]Role` | no | Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin of the selection already writes, as a style does. |
 | `needs` | `[]string` | no | Needs are axes that the selection must have a choice on. An axis the person leaves out is filled with the default of the axis. |

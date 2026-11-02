@@ -52,6 +52,7 @@ allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside d
 shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
+confirm = "risky"                     # which plans ask: "always" (default) or "risky": only a plan that deletes or edits files asks (ADR 0073)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
 defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
@@ -376,6 +377,15 @@ no uncommitted change before the command. Smith lists each commit in `.smith/ope
 workspace that does not opt in sees no change. Before they write, `add`, `remove`, `upgrade` and
 `derive` print a plan and, in a terminal outside CI, ask; `--yes` skips the question. See
 [ADR 0047](../architecture/decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md).
+
+`[workspace] confirm` says which plans ask. `"always"` (the default) asks for every plan, and
+without a terminal a plan needs `--yes`. `"risky"` asks only for a plan that can lose something:
+one that deletes a file, or edits a file that exists and shows a diff of it. A plan that only
+creates files, or edits files smith owns, is printed and applied, with a line that says so, in a
+terminal or not. A flag always wins: `--yes` never asks. Release, `remove` of a folder with files
+git cannot bring back, and the choices that name a different result (which version wins, the first
+commit of `smith new`) are questions, not confirmations, so this setting does not skip them. See
+[ADR 0073](../architecture/decisions/0073-release-sync-and-every-plan-show-what-they-change.md).
 
 ## Derived files
 

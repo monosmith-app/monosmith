@@ -2,6 +2,7 @@ package doctorfix
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 	"io"
 	"os"
 	"strings"
@@ -40,7 +41,7 @@ func ShowFix(w io.Writer, root string, p Planned) error {
 		if e.Delete {
 			after = ""
 		}
-		fmt.Fprint(w, UnifiedDiff(e.Path, string(before), after))
+		fmt.Fprint(w, textdiff.UnifiedDiff(e.Path, string(before), after))
 	}
 	for i, s := range p.Steps {
 		if s.Description != "" {

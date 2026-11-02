@@ -18,6 +18,12 @@ export const PLUGIN_INTERFACES = [
   { name: 'IDeriver', capability: 'derive', summary: 'A plugin that says which files it derives from facts and the project graph.', methods: { derive: 'DeriveAsync' } },
   { name: 'IApiSurfaceReader', capability: 'apiSurface', summary: 'A plugin that lists the public API names of a project at a git revision, for the release version check.', methods: { 'api/surface': 'ApiSurfaceAsync' } },
   {
+    name: 'ILinker',
+    capability: 'link',
+    summary: 'A plugin that makes a project depend on a library of the same workspace, and takes the dependency out. Both methods, or the capability is not advertised.',
+    methods: { 'dependencies/link': 'LinkAsync', 'dependencies/unlink': 'UnlinkAsync' },
+  },
+  {
     name: 'IDependencyManager',
     capability: 'dependencies',
     summary: 'A plugin that installs and uninstalls packages in its projects. Both methods, or the capability is not advertised.',

@@ -38,6 +38,8 @@ func Describe(argv []string) (title, why string) {
 		return "Swap a choice", "This replaces one choice of the project, such as its test runner, moves what the old choice wrote, installs and runs its tests."
 	case verb == "bootstrap":
 		return "Write the launcher", "This writes tools/smith/smith and tools/smith/smith.cmd. They run the smith version that smith.toml pins."
+	case verb == "commit":
+		return "Commit these changes", "This commits every file listed below as one commit that smith undo can revert. Check the list: a change of your own in the same work tree goes with it."
 	case verb == "undo":
 		return "Undo the last change", "This reverts the last change smith made with a new commit. Your history stays as it is."
 	case verb == "agent" && len(argv) > 1 && argv[1] == "file":

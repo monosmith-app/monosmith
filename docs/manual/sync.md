@@ -18,10 +18,22 @@ lockfiles and the venv follow.
 A dependency that may differ between projects is listed in `smith.toml` under
 `[dependencies] allow = [...]`; sync leaves it alone.
 
+## What smith asks before it writes
+
+`smith sync` shows a plan first: for each dependency, what every project declares now and
+what it will declare. In a terminal it asks which version wins when projects disagree: smith's
+pick (the installed version, else the highest declared), the highest declared, the lowest
+declared, or one dependency at a time (smith then lists every version it can use and where
+each comes from). It asks once more before it writes and runs the install. Without a terminal
+smith refuses unless `--yes` (take the plan as it stands), `--prefer highest|lowest|installed`
+(pick the winner for every dependency) or `--to <name>=<version>` (pick it for one) is given.
+`--dry-run` prints the plan and changes nothing. A declaration on another major version stays
+as it is unless `--major` is given.
+
 ## Synopsis
 
 ```sh
-smith sync [--check] [--no-install] [--json]
+smith sync [--check] [--dry-run] [--yes] [--prefer highest|lowest|installed] [--to <name>=<version>]... [--major] [--no-install] [--json]
 ```
 
 ## Arguments and flags
@@ -34,9 +46,14 @@ Usage: `smith sync [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | report only; fail when declarations disagree |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | show the plan and change nothing |
 | `--json` | boolean | off | print the report as JSON |
+| `--major` | boolean | off | also rewrite declarations whose major version differs from the target |
 | `--no-install` | boolean | off | rewrite the manifests without installing |
-| `-y, --yes` | boolean | off | also rewrite declarations whose major version differs from the target |
+| `--prefer <prefer>` | string |  the installed one, else the highest | which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
+| `--to <to>` | string, repeatable |  | the version of one dependency, as <name>=<version> |
+| `-y, --yes` | boolean | off | write the plan without asking |
 
 <!-- smith:end sync -->
 

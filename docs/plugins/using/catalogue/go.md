@@ -11,7 +11,7 @@ The go plugin makes every `go.mod` below the workspace root a smith project. It 
 | `--lang` values | `go`, `golang` |
 | Manifest that makes a directory a project | `go.mod` (a `go.mod` at the workspace root is skipped; see [What it detects](#what-it-detects)) |
 | Requires / conflicts / provides | none / none / no task slots (`smith plugin list` shows `-` in the SLOTS and REQUIRES columns) |
-| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`. Not advertised: `version`, `published`. |
+| Capabilities advertised | `discover`, `generate`, `publish`, `ci`, `doctor`, `remove`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `link`. Not advertised: `version`, `published`. |
 | Stacks it publishes | none. The add-on [go-smith-plugin](go-smith-plugin.md) publishes the one stack whose language is `go`. |
 | Project kinds it can create | `app`, `lib`, `package` (`go-app`, `go-lib`, `go-package` in `smith kinds`) |
 
@@ -288,6 +288,10 @@ variables:
 | Credentials, permissions | none; the plugin asks for no secret. The workflow-level `permissions` come from smith, not from this plugin. |
 
 Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each module and `smith ci audit passed in 5.9s`. A `native` module is built by the extra `native` job on each OS (`smith ci native`), see [CI](../../../reference/ci.md#native-projects).
+
+## Linking an internal library
+
+`smith install -w <project> core-go` requires the library's module path in the project's `go.mod` (`require example.com/shop/libs/core-go v0.0.0`) and adds the library to `go.work` with `go work use`, which is how Go finds the folder; nothing is fetched. A workspace with no `go.work` gets a `replace` line instead. A requirement in `go.mod` is also a graph edge before any file imports the module. `smith uninstall` removes the requirement and its `replace`, and leaves `go.work` alone. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

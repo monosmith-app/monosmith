@@ -29,6 +29,9 @@ const maxArgTries = 3
 // isInteractive reports whether a person is at a terminal that can answer: not
 // a pipe, and not CI.
 func isInteractive() bool {
+	if os.Getenv("SMITH_FORCE_INTERACTIVE") == "1" {
+		return true
+	}
 	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) && os.Getenv("CI") == ""
 }
 

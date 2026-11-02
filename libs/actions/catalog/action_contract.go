@@ -34,6 +34,12 @@ type Action struct {
 	// Asks means that, when it changes the workspace, it asks for a yes on a
 	// terminal, so an interface that has confirmed it itself passes --yes.
 	Asks bool
+	// Plan is the flag that prints what the action would do and changes
+	// nothing (--dry-run, or --check for a report). An interface that confirms
+	// the action itself runs it first and shows the text in the dialog, so the
+	// person answers yes to a plan and not to a sentence. Empty means the
+	// action has no such flag.
+	Plan string
 	// NotInTUI is why the interactive shell's menus and guided forms leave
 	// it out (it stays reachable from the command palette). Empty means a
 	// menu entry or a guided form presents it.

@@ -22,6 +22,9 @@ type Line struct {
 	Note string
 	// Owner is "smith" or "you" when smith.lock records the path, else empty.
 	Owner string
+	// Diff is the unified diff of a file that exists and may be hand-edited.
+	// It may be empty; Render shows at most MaxDiffLines of it.
+	Diff string
 }
 
 // Group is the lines that one feature adds, under one heading.
@@ -47,6 +50,20 @@ func (p *Plan) Add(heading string, l Line) {
 		}
 	}
 	p.Groups = append(p.Groups, Group{Heading: heading, Lines: []Line{l}})
+}
+
+// Risky reports whether the plan can lose something: it deletes a path, or it
+// edits a file that exists and shows a diff of it, or one the person owns.
+// A plan that only creates files, or edits files smith owns, is not risky.
+func (p Plan) Risky() bool {
+	for _, g := range p.Groups {
+		for _, l := range g.Lines {
+			if l.Action == Remove || (l.Action == Change && (l.Diff != "" || l.Owner == "you")) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Empty reports whether the plan lists no path.

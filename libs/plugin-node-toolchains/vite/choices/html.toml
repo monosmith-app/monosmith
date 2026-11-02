@@ -1,6 +1,8 @@
 axis = "framework"
 name = "html"
 description = "a page in TypeScript with no framework, built with Vite"
+title = "Plain page"
+aliases = ["web", "static", "vanilla", "no framework", "browser"]
 language = "node"
 roles = ["scaffold", "toolchain"]
 needs = ["lint", "test"]

@@ -8,11 +8,13 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Node is the Node.js/TypeScript language plugin.
@@ -37,6 +39,7 @@ func (n *Node) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "node", Version: n.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("node", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"node", "javascript", "js"},
 		Manifests: []string{"package.json"},
 		// Concurrency lets the host ask the registry about many projects at
@@ -115,6 +118,20 @@ func (n *Node) Uninstall(params protocol.UninstallParams) (protocol.DependencyRe
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	return dependencies.Uninstall(n.root, params)
+}
+
+// Link implements serve.Linker.
+func (n *Node) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Link(n.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (n *Node) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Unlink(n.root, params)
 }
 
 // Declared implements serve.DeclarationEditor.

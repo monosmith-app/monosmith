@@ -77,11 +77,17 @@ func (s *Shell) stepRun(dir int) {
 }
 
 // repeatArgv is the command the repeat key runs: the run shown, else the last.
+// A command that makes something that exists afterwards is not offered again:
+// running `smith add` twice fails the second time, because the project is there.
 func (s Shell) repeatArgv() []string {
+	argv := s.lastArg
 	if s.run != nil {
-		return s.run.Command
+		argv = s.run.Command
 	}
-	return s.lastArg
+	if !repeatable(argv) {
+		return nil
+	}
+	return argv
 }
 
 // failedArgv is the command line that runs again the tasks of the shown run
@@ -143,6 +149,9 @@ func (s Shell) runReasons() map[string]string {
 			r["run.again"] = none
 		}
 		return r
+	}
+	if s.repeatArgv() == nil {
+		r["run.again"] = notRepeatableReason(s.run.Command)
 	}
 	if s.failedArgv() == nil {
 		r["run.again-failed"] = "no task failed or was skipped"

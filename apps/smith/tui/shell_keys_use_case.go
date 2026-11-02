@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/packageprompt"
 	"strings"
 
@@ -39,6 +40,12 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch {
+	case s.result != nil:
+		return s.resultKey(name)
+	case s.tools != nil:
+		return s.toolsKey(name)
+	case s.compose != nil:
+		return s.composeKey(msg)
 	case s.adopt != nil:
 		return s.adoptKey(name)
 	case s.fix != nil:
@@ -113,8 +120,25 @@ func (s *Shell) openPackages(remove bool) {
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.WithLanguages(languages).Place(s.w, s.h)
+	p = p.WithLanguages(languages).WithLibraries(s.linkableLibraries).Place(s.w, s.h)
 	s.pkg = &p
+}
+
+// linkableLibraries lists the libraries of the workspace the project may
+// depend on (not itself, not an app, the same language, no cycle).
+func (s *Shell) linkableLibraries(project string) []packageprompt.Library {
+	projects := s.list.Projects()
+	nodes := make([]internallink.Node, len(projects))
+	versions := map[string]string{}
+	for i, pr := range projects {
+		nodes[i] = internallink.Node{Name: pr.Name, Root: pr.Root, Kind: pr.Kind, Language: pr.Language, Deps: pr.Deps}
+		versions[pr.Name] = pr.Version
+	}
+	var out []packageprompt.Library
+	for _, n := range internallink.ValidLibraries(nodes, project) {
+		out = append(out, packageprompt.Library{Name: n.Name, Kind: n.Kind, Language: n.Language, Version: versions[n.Name]})
+	}
+	return out
 }
 
 // afterPackages acts on the package prompt's outcome: the command it shows runs.
@@ -333,6 +357,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.openReport()
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
+	case commands.OpenCompose:
+		return s.openCompose()
 	case commands.OpenAdoptWizard:
 		return s.openAdopt()
 	case commands.OpenFixWizard:

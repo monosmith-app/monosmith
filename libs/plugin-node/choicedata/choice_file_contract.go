@@ -9,12 +9,20 @@ type File struct {
 	Name        string `toml:"name"`
 	Description string `toml:"description"`
 	Language    string `toml:"language"`
+	// Title, Aliases and Layer are what smith compose shows and searches
+	// (protocol.Choice): the display name, the words that find the choice and
+	// the layer of the stack it sits on.
+	Title   string   `toml:"title"`
+	Aliases []string `toml:"aliases"`
+	Layer   string   `toml:"layer"`
 	// Roles are "scaffold" and/or "toolchain".
 	Roles []string `toml:"roles"`
 	// Needs, Default, Many, Requires and Conflicts are the selection rules the
 	// host applies (protocol.Choice).
-	Needs     []string `toml:"needs"`
-	Default   bool     `toml:"default"`
+	Needs   []string `toml:"needs"`
+	Default bool     `toml:"default"`
+	// Suggested is the choice an asker pre-selects (protocol.Choice).
+	Suggested bool     `toml:"suggested"`
 	Many      bool     `toml:"many"`
 	Requires  []string `toml:"requires"`
 	Conflicts []string `toml:"conflicts"`

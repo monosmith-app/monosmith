@@ -34,24 +34,27 @@ type Result struct {
 	Files []string `json:"files"`
 }
 
-// AddTauri makes an existing Node app a Tauri app: its stack gains the tauri
-// toolchain (in smith.toml), then the tauri plugin writes src-tauri, adds the
-// CLI, the API package and the tauri script, and keeps src-tauri out of a root
-// Cargo workspace, never overwriting a file that exists. Dependencies are
-// installed and the pipelines regenerated. When it fails smith.toml is put back.
-func AddTauri(s *session.Session, name string) (res Result, err error) {
+// Inspect checks that a project can become a Tauri app and works out the stack
+// it will have, changing nothing.
+//
+// Parameters: s is the session; name is the project.
+// Returns: the project, a Result with the facts known so far (project, stack,
+// previous stack, whether src-tauri exists), the stack and whether smith.toml
+// must declare it; a problem when the project cannot be wrapped.
+func Inspect(s *session.Session, name string) (*projectgraph.Project, Result, protocol.Stack, bool, error) {
+	var res Result
 	p := s.Graph.Get(name)
 	if p == nil {
-		return res, problem.New("the workspace has no project "+name, "smith projects lists them")
+		return nil, res, protocol.Stack{}, false, problem.New("the workspace has no project "+name, "smith projects lists them")
 	}
 	if p.Language != "node" {
-		return res, problem.New(name+" is a "+p.Language+" project; Tauri wraps a Node app", "smith add app "+name+"-desktop --stack react-tauri makes a new one")
+		return nil, res, protocol.Stack{}, false, problem.New(name+" is a "+p.Language+" project; Tauri wraps a Node app", "smith add app "+name+"-desktop --stack react-tauri makes a new one")
 	}
 	if p.Kind != protocol.ProjectApp {
-		return res, problem.New(name+" is a "+string(p.Kind)+", not an app", "smith kind "+name+" app")
+		return nil, res, protocol.Stack{}, false, problem.New(name+" is a "+string(p.Kind)+", not an app", "smith kind "+name+" app")
 	}
 	if _, statErr := os.Stat(filepath.Join(s.Root, filepath.FromSlash(p.Root), "index.html")); statErr != nil {
-		return res, problem.New(p.Root+" has no index.html: there is no web page for Tauri to wrap", "start from a web app (smith add app "+name+" --stack react), or write src-tauri with `npx tauri init`")
+		return nil, res, protocol.Stack{}, false, problem.New(p.Root+" has no index.html: there is no web page for Tauri to wrap", "start from a web app (smith add app "+name+" --stack react), or write src-tauri with `npx tauri init`")
 	}
 	res = Result{Project: name, SrcTauriExisted: tauriapp.Detect(s.Root, p.Root)}
 
@@ -61,7 +64,7 @@ func AddTauri(s *session.Session, name string) (res Result, err error) {
 		if st, getErr := s.Stacks.Get(cur); getErr == nil {
 			current = st
 		} else if cur != protocol.NoStack {
-			return res, problem.New("the stack "+cur+" of "+name+" cannot be used: "+getErr.Error(), "smith stacks says what is wrong with it")
+			return nil, res, protocol.Stack{}, false, problem.New("the stack "+cur+" of "+name+" cannot be used: "+getErr.Error(), "smith stacks says what is wrong with it")
 		}
 	}
 	st, declare := DeriveStack(current, name, func(n string) (protocol.Stack, bool) {
@@ -69,9 +72,27 @@ func AddTauri(s *session.Session, name string) (res Result, err error) {
 		return found, getErr == nil
 	})
 	if err := pluginhost.ValidateStack(st, s.Plugins); err != nil {
-		return res, problem.New("the stack "+st.Name+" would not be valid: "+err.Error(), "name the stack yourself in smith.toml with tauri last in its toolchain")
+		return nil, res, protocol.Stack{}, false, problem.New("the stack "+st.Name+" would not be valid: "+err.Error(), "name the stack yourself in smith.toml with tauri last in its toolchain")
 	}
 	res.Stack, res.DeclaredStack = st.Name, declare
+	return p, res, st, declare, nil
+}
+
+// AddTauri makes an existing Node app a Tauri app: its stack gains the tauri
+// toolchain (in smith.toml), then the tauri plugin writes src-tauri, adds the
+// CLI, the API package and the tauri script, and keeps src-tauri out of a root
+// Cargo workspace, never overwriting a file that exists. Dependencies are
+// installed and the pipelines regenerated. When it fails smith.toml is put back.
+func AddTauri(s *session.Session, name, identifier string) (res Result, err error) {
+	p, res, st, declare, err := Inspect(s, name)
+	if err != nil {
+		return res, err
+	}
+	if identifier != "" && !res.SrcTauriExisted {
+		if err := ValidIdentifier(identifier); err != nil {
+			return res, err
+		}
+	}
 
 	configFile := filepath.Join(s.Root, workspace.FileName)
 	original, err := os.ReadFile(configFile)
@@ -125,6 +146,16 @@ func AddTauri(s *session.Session, name string) (res Result, err error) {
 		return res, err
 	}
 	res.Files = append(res.Files, gen.Files...)
+	if identifier != "" && !res.SrcTauriExisted {
+		conf := filepath.Join(s.Root, filepath.FromSlash(p.Root), tauriapp.SrcDir, "tauri.conf.json")
+		if raw, readErr := os.ReadFile(conf); readErr == nil {
+			if text, ok := SetIdentifier(string(raw), identifier); ok {
+				if err = os.WriteFile(conf, []byte(text), 0o644); err != nil {
+					return res, err
+				}
+			}
+		}
+	}
 	if gen.InstallPending {
 		language, langErr := s.Plugins.ForLanguage(p.Language)
 		if langErr != nil || !language.Supports(protocol.MethodInstall) {

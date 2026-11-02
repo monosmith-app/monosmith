@@ -20,6 +20,9 @@ type Report struct {
 	Name      string   `json:"name"`
 	Scope     string   `json:"scope"`
 	Providers []string `json:"providers"`
+	// Detected are the CI providers the repository already has a pipeline for;
+	// Providers falls back to github when it is empty.
+	Detected []string `json:"detected,omitempty"`
 	// Clean is true when git has no uncommitted changes; the steps need it.
 	Clean    bool          `json:"clean"`
 	Projects []ProjectLine `json:"projects"`

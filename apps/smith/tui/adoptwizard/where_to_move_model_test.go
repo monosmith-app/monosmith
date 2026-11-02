@@ -24,7 +24,7 @@ func TestAProjectAtTheRootIsAskedWhereItGoesAndNothingIsAssumed(t *testing.T) {
 	}
 	w.want("Move it into a folder of its own so smith can manage it?",
 		"1) apps/web  (suggested)", "2) packages/web", "3) libs/web", "4) another folder", "5) no, leave it", "Name: web", "e edits the name")
-	w.press("enter")
+	w.press("enter").init()
 	if w.m.Stage() != StageReview {
 		t.Fatalf("stage %v, want the review", w.m.Stage())
 	}
@@ -38,7 +38,7 @@ func TestAProjectAtTheRootIsAskedWhereItGoesAndNothingIsAssumed(t *testing.T) {
 func TestALibraryAtTheRootSuggestsAPackageFolder(t *testing.T) {
 	w := start(t, rootProjectFlow(false)).press("enter")
 	w.want("1) packages/web  (suggested)", "2) apps/web")
-	w.press("enter")
+	w.press("enter").init()
 	w.want("$ smith adopt --init --move packages/web")
 }
 
@@ -56,7 +56,7 @@ func TestTheNameIsEditedWithE(t *testing.T) {
 		t.Fatalf("stage %v:\n%s", w.m.Stage(), w.screen())
 	}
 	w.press("e", "backspace", "enter")
-	w.press("2")
+	w.press("2").init()
 	w.want("$ smith adopt --init --move packages/ui")
 }
 
@@ -71,12 +71,12 @@ func TestAnUnusableNameAsksAgainWithTheReason(t *testing.T) {
 
 func TestAnotherFolderTakesTheWholeText(t *testing.T) {
 	w := start(t, rootProjectFlow(true)).press("enter")
-	w.press("e", "backspace", "backspace", "backspace", "t", "o", "o", "l", "s", "/", "w", "enter", "4")
+	w.press("e", "backspace", "backspace", "backspace", "t", "o", "o", "l", "s", "/", "w", "enter", "4").init()
 	w.want("$ smith adopt --init --move tools/w")
 }
 
 func TestLeavingTheProjectPassesNone(t *testing.T) {
-	w := start(t, rootProjectFlow(true)).press("enter", "5")
+	w := start(t, rootProjectFlow(true)).press("enter", "5").init()
 	w.want("$ smith adopt --init --move none")
 }
 

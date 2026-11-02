@@ -17,22 +17,32 @@ for a provider the workspace no longer asks for is deleted.
 by hand or changing `ci.*` with [`smith config set`](config-set.md). `smith upgrade`
 regenerates these files too, together with the rest of what smith owns.
 
+## What smith shows before it writes
+
+`smith ci generate` rewrites files that smith owns and deletes the ones of a provider you
+dropped from `[ci] providers`. Edits you made outside a `smith:slot` marker are lost. So smith
+prints every file it would create, rewrite or delete with a diff, and asks in a terminal;
+without a terminal it needs `--yes`. `--dry-run` shows the diff and writes nothing. The same
+files change when `add`, `remove`, `convert`, `upgrade` or `adopt` regenerate the pipelines.
+
 ## Synopsis
 
 ```sh
-smith ci generate [--check]
+smith ci generate [--check] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
 
 <!-- smith:begin ci generate -->
-Rewrite the CI pipelines from the workspace's projects (--check only reports drift)
+Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff)
 
 Usage: `smith ci generate [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | report drift without writing |
+| `--dry-run` | boolean | off | show every file it would create, rewrite or delete, with a diff; write nothing |
+| `-y, --yes` | boolean | off | write without asking |
 
 <!-- smith:end ci generate -->
 

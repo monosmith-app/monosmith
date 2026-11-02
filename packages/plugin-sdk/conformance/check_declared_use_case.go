@@ -44,6 +44,9 @@ func checkCapabilityPairs(c *host.Client, r *Report) {
 	if caps.Channels {
 		r.add("a plugin that publishes channels publishes", caps.Publish, "the channels capability changes publish: it needs the publish capability")
 	}
+	if caps.Link {
+		r.add("a plugin that links a library discovers", caps.Discover, "the link capability reads the exports of projects: it needs the discover capability")
+	}
 	if caps.Declared {
 		r.add("a plugin that describes declared projects discovers", caps.Discover, "the declared capability changes discover: it needs the discover capability")
 	}

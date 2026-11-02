@@ -16,6 +16,17 @@ type Choice struct {
 	// choices of all loaded plugins.
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	// Title is the name shown to a person ("Electron" for electron). Without
+	// it the name is shown.
+	Title string `json:"title,omitempty"`
+	// Aliases are words that find the choice when a person searches the
+	// catalogue (smith compose): "desktop", "serverless", "web".
+	Aliases []string `json:"aliases,omitempty"`
+	// Layer is where the choice sits in the stack of a project: "framework",
+	// "shell" (a desktop shell), "host" (where cloud code runs), "test",
+	// "lint", "style" or a layer of the plugin's own. Without it the layer is
+	// the axis. It is for display and grouping: the axis decides conflicts.
+	Layer string `json:"layer,omitempty"`
 	// Language is the language plugin the choice applies to ("node").
 	Language string `json:"language"`
 	// Roles are the roles the choice's plugin plays in a stack built from it:
@@ -29,6 +40,10 @@ type Choice struct {
 	// Default marks the choice the host adds when a selection needs its axis
 	// and has no choice on it.
 	Default bool `json:"default,omitempty"`
+	// Suggested marks the choice an asker pre-selects on its axis. The solver
+	// never adds it by itself: an axis that a choice needs and that has no
+	// Default is asked, and the person answers (ADR 0072).
+	Suggested bool `json:"suggested,omitempty"`
 	// Many allows the choice next to other choices of its axis that are Many
 	// too. By default a selection has one choice per axis.
 	Many bool `json:"many,omitempty"`

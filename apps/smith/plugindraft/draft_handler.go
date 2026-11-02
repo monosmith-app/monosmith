@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 
+	"github.com/monosmith-app/monosmith/apps/smith/guardedwrite"
 	"github.com/spf13/cobra"
 )
 
@@ -15,6 +15,7 @@ var langName = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 // Command is `smith plugin draft`.
 func Command() *cobra.Command {
 	var lang, output string
+	var force bool
 	var stdout bool
 	cmd := &cobra.Command{
 		Use:   "draft <sample-folder> --lang <name>",
@@ -51,7 +52,7 @@ Then scaffold the plugin and run its conformance suite:
 			if output == "" {
 				output = lang + ".plugin-draft.toml"
 			}
-			if err := os.WriteFile(filepath.Clean(output), []byte(text), 0o644); err != nil {
+			if err := guardedwrite.WriteFile(output, []byte(text), force, "--force", out); err != nil {
 				return err
 			}
 			fmt.Fprintf(out, "Wrote %s: %d manifests, %d tasks, %d publish lines found in %s.\n", output, len(d.Manifests), len(d.Tasks), len(d.Publish), args[0])
@@ -65,6 +66,7 @@ Then scaffold the plugin and run its conformance suite:
 	}
 	cmd.Flags().StringVar(&lang, "lang", "", "the language's name, lower case (required)")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "the draft file (default <lang>.plugin-draft.toml)")
+	cmd.Flags().BoolVar(&force, "force", false, "replace the draft file when it exists with other content (the diff is printed)")
 	cmd.Flags().BoolVar(&stdout, "stdout", false, "print the draft instead of writing a file")
 	return cmd
 }

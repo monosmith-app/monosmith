@@ -92,7 +92,7 @@ that does nothing. Esc never quits.
 | `Ctrl+C` | Stop the run in progress; pressed again, quit. |
 | `m` | Turn the mouse on or off. Off lets the terminal select text; Shift+drag selects with it on. |
 | `y` | Copy the focused item (remedy, command, project path or package) to the clipboard, through the terminal (OSC 52), so it also works over SSH and in tmux panes that allow it. Works in Projects, Run, Doctor, Deps. |
-| `r` | Read the view again (Home, Doctor, Release, Deps). |
+| `r` | Reload this view: read the files and the checks again, run nothing (Home, Doctor, Release, Deps). The footer says `r reload view`. On the Run view `r` is `run again`: it runs the last command line again. |
 
 ### Run tasks (in a workspace)
 
@@ -117,6 +117,7 @@ each title (`Build orders`, `Build all 23`).
 |---|---|---|
 | Home | `Enter` | Do the suggested next action. |
 | any workspace view | `d` | Open Doctor (shown in the footer of Home and Projects). |
+| Home, Projects, Doctor, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; on the Run view the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
 | any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -w <project> ...` line, then runs it in the Run view. The palette's and the detail's "Install a package…" open the same form. |
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. |
@@ -124,7 +125,7 @@ each title (`Build orders`, `Build all 23`).
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
 | Projects, Run, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |
-| Run | `r` | Run the last command again. |
+| Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
 | Run | `Esc` | Show all output. |
@@ -181,6 +182,32 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons.
+
+### What a word means
+
+A form that uses a word of smith says what it means on the same screen, in one line, from the
+[glossary](../reference/glossary.md) and from the layers of the composer: the choices question explains
+`stack`, `framework`, `shell` and `host`, Manage plugins explains `plugin`, Write a recipe explains
+`recipe`, and the code layout question explains a `slice` (`vertical-slices`).
+
+### After a change: the result dialog
+
+When a run ends, a dialog says what happened and offers the next steps as choices, each with its
+consequence. The first line is always the one that does nothing, because smith never commits or installs unasked.
+
+- **A change that is not committed** (`add`, `remove`, `upgrade`, `derive`, `swap`): "Added app web", what was
+  created and how many files, then **Leave them uncommitted** (the default), **Commit only the files this operation changed** or
+  **Commit everything git shows as changed** (your own work included). A commit choice reads the files first
+  (`smith commit <operation> --only-operation --dry-run`, or `--all`), shows them in the usual
+  confirmation, and then makes one commit named from the operation (`chore: add app web`) that `smith undo`
+  can revert. The box in the confirmation before the change stays unticked. After a library, the dialog also
+  says how an app uses it: press `+` on the app and pick it, or `smith install -w <app> <library>`.
+- **An add that could not be checked because a tool is missing**: the project exists on disk, and the dialog
+  says so (`api-cs was created in apps/api-cs (12 files)`), then why the first build and test could not run
+  (`the .NET SDK is not installed`). Choices: **Open the install page** (copies the link and opens it),
+  **Install it with smith** (the tools dialog, which asks how before it runs anything, then returns here),
+  **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
+  (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
 
 ### Undo, report, why and derived files
 
@@ -369,7 +396,28 @@ ask one question at a time: a choice (`Up` `Down`, `Enter`, `Esc` back one step)
 choices (`Space` toggles, `Enter` confirms) or free text with a placeholder. The answers
 build the command line, which the shell runs and shows.
 
-**Add a project** asks the kind, the language and the name, then, from what the plugins
+**Create a workspace** asks the name, then "How do you want to set it up?". **Start with the defaults** (the
+first line) shows what will be chosen (CI, language, code layout, agent files, dev container), says that CI is
+where your tests run on every push, and tells how to change each later; with it the name is the only answer.
+**Customise** asks the questions one at a time. Either way, smith asks what the first commit holds when the folder
+has files and no git repository, and about files that look like secrets.
+
+**Compose a stack** (palette, or `A` in the Projects view, or Home when the workspace has no project) is one screen to search languages, frameworks, desktop shells and cloud hosts, tick them, see each conflict explained, and end in the plan; see [`smith compose`](compose.md).
+
+**Add a project** starts with "What are you building?": a website or web app, an API or backend
+service, a function app (Azure, AWS, Google), a desktop app (Tauri, Electron), a library for
+my other projects, or a package I publish. Each line shows what people usually pick and one
+sentence about what you get. Type to narrow the list with the words people use: `react`,
+`azure function`, `electron`, `tauri`, `lambda`, `api`. The words come from the same catalogue
+as the composer, so a plugin that adds a framework or a shell makes the line findable. The
+outcome answers the kind. The language is asked only when more than one fits (a website is
+Node only, so none is asked; a function app asks Node, Python or C#), with the line
+"Preselected: N of the M projects here use X." when that language is in the list. A website,
+a function app and a desktop app then ask which framework, cloud or desktop shell; what you
+type in the first question starts that list on the match, and the pick starts ticked in the
+choices below. The last line, "I know the language: show every language", keeps the long way:
+the kind, then the full list of languages. After the outcome and the language, the form asks
+the name, then, from what the plugins
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
 choices become `--with a,b`. A workspace with three or more projects is also asked whether the

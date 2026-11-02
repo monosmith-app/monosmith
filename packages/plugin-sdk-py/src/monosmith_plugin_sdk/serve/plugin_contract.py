@@ -42,6 +42,8 @@ from ..protocol import (
     InstallParams,
     LatestParams,
     LatestResult,
+    LinkParams,
+    LinkResult,
     PluginDescription,
     PublishedParams,
     PublishedResult,
@@ -51,6 +53,7 @@ from ..protocol import (
     RemoveResult,
     RewriteParams,
     UninstallParams,
+    UnlinkParams,
     VersionParams,
     VersionResult,
 )
@@ -145,6 +148,14 @@ class DependencyManager(Protocol):
     def install(self, params: InstallParams, cancel: CancelToken) -> DependencyResult: ...
 
     def uninstall(self, params: UninstallParams, cancel: CancelToken) -> DependencyResult: ...
+
+
+class Linker(Protocol):
+    """`dependencies/link` and `dependencies/unlink`: both, or the capability is not advertised."""
+
+    def link(self, params: LinkParams, cancel: CancelToken) -> LinkResult: ...
+
+    def unlink(self, params: UnlinkParams, cancel: CancelToken) -> DependencyResult: ...
 
 
 class DeclarationEditor(Protocol):

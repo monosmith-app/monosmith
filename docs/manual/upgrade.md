@@ -57,7 +57,7 @@ Usage: `smith upgrade [flags]`
   which vintage it uses.
 - `--json` prints the result as JSON (`{}` when nothing changed).
 - In a terminal, outside CI, smith upgrade first prints the plan (from a dry run) and asks
-  `Go ahead? [y/N]`. `--yes` skips the question; without a terminal it never asks.
+  `Go ahead? [y/N]`. `--yes` skips the question; without a terminal it refuses unless `--yes` is given.
 - With `commit_operations = true` under `[workspace]` and a clean git work tree, the upgrade is one
   commit (`chore: upgrade the workspace`); [`smith undo`](undo.md) reverts it.
 

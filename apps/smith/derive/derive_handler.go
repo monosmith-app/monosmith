@@ -38,7 +38,8 @@ things are derived:
 
 A plugin renders such a file, or part of it, and smith keeps a record of what it
 wrote in smith.lock: the owner (smith or you), the renderer and a hash of the
-content. Delete a derived file and smith derive writes it back.
+content. Delete a derived file and smith derive writes it back. A file smith owns
+by keys (a tsconfig's references) comes back with those keys only.
 
 A file smith owns is rewritten when its inputs change. When its content no
 longer matches the record, someone edited it: derive reports the drift with a
@@ -114,6 +115,14 @@ func run(out io.Writer, in io.Reader, s *session.Session, check, yes, dryRun boo
 		return CheckPlan(out, plan)
 	}
 	writes := PlanWrites(s.Root, plan)
+	if len(d.Replace) > 0 {
+		// --replace throws a hand edit away: show what is lost before it goes.
+		fmt.Fprintln(out, "--replace overwrites these files with what smith derives; the lines marked - are lost:")
+		for _, p := range d.Replace {
+			PrintDiffs(out, itemsAt(plan, p))
+		}
+		fmt.Fprintln(out)
+	}
 	if len(d.Reclaim) > 0 {
 		changes, err := PlanReclaim(s.Root, plan, d.Reclaim)
 		if err != nil {

@@ -93,8 +93,11 @@ is planned ([ADR 0046](../architecture/decisions/0046-derived-files-have-an-owne
 
 ## Limits
 
-- Smith edits JSON with its own writer. A file in `keys` mode is indented with two spaces when
-  smith writes it. JSON with comments is reported as `broken`.
+- A file in `keys` mode is edited in place. Smith replaces the value of an owned key and leaves
+  the rest of the text as it is: comments (a tsconfig may have them), trailing commas, the order
+  of the keys and the indentation. A key the file lacks goes last. The value of an owned key is
+  written with two-space indentation. The order of the references does not count: the same set in
+  another order is not drift, and a rewrite keeps the order of the file.
 - A region needs its markers and its file. Smith never creates them.
 - Smith derives a config file from the shape of the sibling projects only when three or more
   projects, and two thirds of those that have it, hold the same shape. A file that differs is yours

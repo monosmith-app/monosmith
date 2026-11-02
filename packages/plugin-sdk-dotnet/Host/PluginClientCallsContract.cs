@@ -205,6 +205,38 @@ public static class PluginClientCalls
         return client.CallAsync<UninstallParams, DependencyResult>(ProtocolMethods.DependenciesUninstall, parameters, timeout, cancellation);
     }
 
+    /// <summary>Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<LinkResult> LinkAsync(
+        this PluginClient client,
+        LinkParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<LinkParams, LinkResult>(ProtocolMethods.DependenciesLink, parameters, timeout, cancellation);
+    }
+
+    /// <summary>Removes the dependency of a project on a library of the same workspace.</summary>
+    /// <param name="client">The connected plugin.</param>
+    /// <param name="parameters">The params of the request.</param>
+    /// <param name="cancellation">Cancels the call.</param>
+    /// <param name="timeout">How long the call may take; the default is two minutes.</param>
+    /// <returns>The result of the method.</returns>
+    public static Task<DependencyResult> UnlinkAsync(
+        this PluginClient client,
+        UnlinkParams parameters,
+        CancellationToken cancellation = default,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client.CallAsync<UnlinkParams, DependencyResult>(ProtocolMethods.DependenciesUnlink, parameters, timeout, cancellation);
+    }
+
     /// <summary>Lists the dependencies the manifests of the plugin's projects declare.</summary>
     /// <param name="client">The connected plugin.</param>
     /// <param name="parameters">The params of the request.</param>

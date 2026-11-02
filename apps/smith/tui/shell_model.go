@@ -8,8 +8,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
@@ -22,12 +24,14 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
 )
 
 var tabTitles = map[string]string{
@@ -136,6 +140,9 @@ type Shell struct {
 	runAt int
 
 	confirm *dialog.Confirm
+	// releaseWaiting is a release command line that waits for the plan to be
+	// read, so its confirmation can list the packages and versions.
+	releaseWaiting []string
 	// choices says whether the choices of the plugins are read; offers are
 	// those that can be used, formPending names the form (add or swap) that waits
 	// for them, and addBase and swapBase are the plain forms they are added to.
@@ -158,7 +165,22 @@ type Shell struct {
 	adopt    *adoptwizard.Model
 	adopting *fixRun
 	adopter  adoptwizard.Opener
-	exitNote string
+	// compose is the "Compose a stack" screen while it is open; composeCat is
+	// the catalogue it was read from, kept for the next time.
+	compose    *composer.Model
+	composeCat *compose.Catalogue
+	// tools is the "Install the missing tools" dialog while it is open;
+	// toolsProc is the install it streams and toolsArgv the command it came from.
+	tools *toolsdialog.Model
+	// result is the dialog that closes a run that changed files or could not be
+	// checked; resultKept is the failure one, shown again after the tools install;
+	// runLines is the output of the run that is going or ended last.
+	result     *resultdialog.Model
+	resultKept *resultdialog.Model
+	runLines   []string
+	toolsProc  runner.Handle
+	toolsArgv  []string
+	exitNote   string
 	// reopen is true when the shell leaves only to start again inside the workspace it made.
 	reopen bool
 	// reopenStart is the command the reopened shell starts with; start is the one this shell starts with.
@@ -478,6 +500,15 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.deps = depsview.FromResult(msg)
 	case releaseview.Result:
 		s.release = releaseview.FromResult(msg)
+		if argv := s.releaseWaiting; argv != nil {
+			// The release was asked before the plan was read: ask now, with the plan.
+			s.releaseWaiting = nil
+			return s.execute(argv, false)
+		}
+	case toolsStartedMsg:
+		return s.toolsStarted(msg)
+	case toolsOutputMsg:
+		return s.toolsOutput(msg)
 	case capturedMsg:
 		return s.captured(msg)
 	case openedMsg:
@@ -506,6 +537,18 @@ func (s *Shell) resize(w, h int) {
 	if s.adopt != nil {
 		placed := s.adopt.Place(w, h)
 		s.adopt = &placed
+	}
+	if s.tools != nil {
+		placed := s.tools.Place(w, h)
+		s.tools = &placed
+	}
+	if s.compose != nil {
+		placed := s.compose.Place(w, h)
+		s.compose = &placed
+	}
+	if s.result != nil {
+		placed := s.result.Place(w, h)
+		s.result = &placed
 	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {

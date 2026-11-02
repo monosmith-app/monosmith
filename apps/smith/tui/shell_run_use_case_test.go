@@ -169,7 +169,7 @@ func TestRunAgainRepeatsTheLastCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("t")
 	l.keys("r")
-	l.has("r again")
+	l.has("r run again")
 	if len(l.started) != 2 || l.started[0][0] != l.started[1][0] || l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %v", l.started)
 	}

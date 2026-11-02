@@ -1,0 +1,11 @@
+axis = "trigger"
+name = "timer-trigger"
+description = "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls"
+title = "Timer trigger"
+aliases = ["serverless", "schedule", "cron"]
+layer = "host"
+language = "node"
+conflicts = ["gcp-functions"]
+
+[slots]
+trigger = ["timer"]

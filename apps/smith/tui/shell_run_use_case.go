@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,12 +30,27 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		// What plugin, recipe and config list print is the Settings tab.
 		return s.showSettings(section)
 	}
+	if isToolsInstall(argv) {
+		return s.openTools(argv)
+	}
 	switch catalog.Classify(argv) {
 	case catalog.NeedsTerminal:
 		s.Argv, s.quit = argv, true
 		return nil
 	case catalog.Changes:
 		if !confirmed {
+			if argv[0] == "release" && !s.release.Loaded && s.release.Err == nil && s.sources.Release != nil && !slices.Contains(argv, "--dry-run") {
+				// Publishing cannot be undone: read the plan first, then ask.
+				s.releaseWaiting = slices.Clone(argv)
+				s.say("Reading the release plan…")
+				load := s.sources.Release
+				return func() tea.Msg { return load() }
+			}
+			if flag, ok := catalog.PlanFlag(argv); ok && s.sources.Capture != nil {
+				// The dialog shows what the command will do, not a sentence about it.
+				s.say("Planning: nothing is changed yet…")
+				return s.capture(capPlan, append(slices.Clone(argv), flag))
+			}
 			title, why := commands.Describe(argv)
 			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Place(s.w, s.h)
 			s.confirm = &c
@@ -57,7 +73,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
-	s.run, s.runHome = runview.NewRun(argv, nil, s.now()), false
+	s.run, s.runHome, s.runLines, s.resultKept = runview.NewRun(argv, nil, s.now()), false, nil, nil
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {
@@ -113,6 +129,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	for _, l := range msg.lines {
 		s.run.Feed(l, now)
 	}
+	s.keepLines(msg.lines)
 	if msg.exit == nil {
 		return waitCmd(msg.proc)
 	}
@@ -123,6 +140,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 		s.runSel = s.firstFailed()
 	}
 	s.finished()
+	s.afterRun()
 	if name, ok := addedProject(s.run.Command); ok && s.run.OK() {
 		s.justAdded = name
 	}

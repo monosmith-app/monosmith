@@ -66,8 +66,8 @@ public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisp
         Prepare();
 
         // Creates widget projects with the plugin and discovers them with their graph edge.
-        Assert.Equal(0, Smith("add", "lib", "core", "--lang", "widget").Status);
-        Assert.Equal(0, Smith("add", "app", "shop", "--lang", "widget").Status);
+        Assert.Equal(0, Smith("add", "lib", "core", "--lang", "widget", "--yes").Status);
+        Assert.Equal(0, Smith("add", "app", "shop", "--lang", "widget", "--yes").Status);
         var manifest = Path.Combine(_directory, "apps", "shop", "widget.json");
         var document = EditableJsonDocument.Parse(File.ReadAllText(manifest));
         document.SetJson("uses", new JsonList(["core"]));

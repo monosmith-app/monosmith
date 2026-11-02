@@ -21,6 +21,13 @@ func ExpandStack(st protocol.Stack, offers []Offer) (protocol.Stack, error) {
 		return st, nil
 	}
 	sel, err := Solve(offers, st.Choices)
+	if err != nil && st.Language != "" {
+		// A name that several languages offer (ADR 0072) is read in the language
+		// the stack names.
+		if scoped, scopedErr := SolveIn(offers, st.Language, st.Choices); scopedErr == nil {
+			sel, err = scoped, nil
+		}
+	}
 	if err != nil {
 		return st, err
 	}

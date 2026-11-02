@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
+	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 )
 
@@ -31,6 +32,7 @@ const (
 	AnswerNodeStack      = "node-stack"
 	AnswerArchitecture   = "architecture"
 	AnswerAgent          = "agent"
+	AnswerDevcontainer   = "devcontainer"
 	AnswerMore           = "more"
 	AnswerReleaseBranch  = "release-branch"
 	AnswerReleaseRemote  = "release-remote"
@@ -45,7 +47,7 @@ const (
 const MoreYes = "yes"
 
 // NewOption is one answer to a question.
-type NewOption struct{ Label, Value, Hint string }
+type NewOption = choiceprompt.Option
 
 // NewQuestion is one question of smith new. With no Options it is free text
 // and an empty answer takes Default.
@@ -113,7 +115,7 @@ func NewQuestions() []NewQuestion {
 	hasLanguage := func(a map[string]string) bool { return a[AnswerLanguage] != "" && a[AnswerLanguage] != LanguageLater }
 	saving := func(a map[string]string) bool { return hasLanguage(a) && a[AnswerSaveRecipe] == "yes" }
 	return []NewQuestion{
-		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for?", Default: "github", Flag: "ci", Options: []NewOption{
+		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for? (CI = where your tests run on every push)", Default: "github", Flag: "ci", Options: []NewOption{
 			{Label: "GitHub Actions", Value: "github", Hint: "default"},
 			{Label: "Azure Pipelines", Value: "azure"},
 			{Label: "GitLab CI", Value: "gitlab"},
@@ -126,6 +128,10 @@ func NewQuestions() []NewQuestion {
 		{Key: AnswerAgent, Prompt: "Add the MonoSmith agent, so Claude Code and VS Code can work in this workspace through smith?", Default: "yes", Flag: "agent", Options: []NewOption{
 			{Label: "Yes", Value: "yes", Hint: "writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)"},
 			{Label: "No", Value: "no", Hint: "you can add it later with smith agent install"},
+		}},
+		{Key: AnswerDevcontainer, Prompt: "Add a dev container, so VS Code and Codespaces open this workspace with its toolchains installed?", Default: "yes", Flag: "devcontainer", Options: []NewOption{
+			{Label: "Yes", Value: "yes", Hint: "writes .devcontainer/devcontainer.json (default)"},
+			{Label: "No", Value: "no", Hint: "sets [ci] devcontainer = false in smith.toml"},
 		}},
 		{Key: AnswerMore, Prompt: "Change anything else? Release branch and remote, GitHub Releases, the cache.", Default: "no", Flag: "", Options: []NewOption{
 			{Label: "Keep the defaults", Value: "no", Hint: "you can change any of it later in smith.toml"},

@@ -1,6 +1,6 @@
 # ADR 0069: The assets phase can run again for a tag, and a glob can be optional
 
-- Status: accepted
+- Status: accepted (the source of the code a rerun builds is changed by [ADR 0075](0075-an-assets-rerun-for-a-tag-asks-which-code-to-build.md))
 - Date: 2026-11-01
 
 ## Context

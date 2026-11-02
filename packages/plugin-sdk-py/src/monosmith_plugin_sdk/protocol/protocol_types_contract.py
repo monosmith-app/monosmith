@@ -71,6 +71,9 @@ __all__ = [
     "InstallParams",
     "LatestParams",
     "LatestResult",
+    "LinkOption",
+    "LinkParams",
+    "LinkResult",
     "PackageStore",
     "Peer",
     "PluginKind",
@@ -96,9 +99,13 @@ __all__ = [
     "Stack",
     "Step",
     "Task",
+    "ToolInstall",
+    "ToolNeed",
     "ToolPin",
+    "ToolVersionPin",
     "Toolchain",
     "UninstallParams",
+    "UnlinkParams",
     "VersionParams",
     "VersionResult",
     "WorkspaceInfo",
@@ -163,11 +170,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -187,6 +194,8 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "published": "published",
     "dependencies/install": "dependencies",
     "dependencies/uninstall": "dependencies",
+    "dependencies/link": "link",
+    "dependencies/unlink": "link",
     "dependencies/declared": "declarations",
     "dependencies/rewrite": "declarations",
     "dependencies/latest": "latest",
@@ -373,6 +382,13 @@ class Capabilities(TypedDict, total=False):
     """Published reports what a registry has of a project."""
     dependencies: bool
     """Dependencies installs and uninstalls packages in its projects."""
+    link: bool
+    """
+    Link makes a project depend on a library of the same workspace in the ecosystem's own form (a
+    workspace dependency, a path dependency, a project reference), and takes it out again. A
+    plugin without it is refused by the host with one sentence that tells the user to add the
+    dependency by hand.
+    """
     declarations: bool
     """Declarations lists and rewrites declared dependency specs (sync, up)."""
     latest: bool
@@ -484,6 +500,22 @@ class Choice(_ChoiceRequired, total=False):
     """
 
     description: str
+    title: str
+    """
+    Title is the name shown to a person ("Electron" for electron). Without it the name is shown.
+    """
+    aliases: list[str]
+    """
+    Aliases are words that find the choice when a person searches the catalogue (smith compose):
+    "desktop", "serverless", "web".
+    """
+    layer: str
+    """
+    Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop
+    shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's
+    own. Without it the layer is the axis. It is for display and grouping: the axis decides
+    conflicts.
+    """
     roles: list[Role]
     """
     Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes
@@ -499,6 +531,12 @@ class Choice(_ChoiceRequired, total=False):
     """
     Default marks the choice the host adds when a selection needs its axis and has no choice on
     it.
+    """
+    suggested: bool
+    """
+    Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by
+    itself: an axis that a choice needs and that has no Default is asked, and the person answers
+    (ADR 0072).
     """
     many: bool
     """
@@ -1117,6 +1155,12 @@ class InitializeResult(_InitializeResultRequired, total=False):
     them (smith choices) and checks a selection of them (smith add --with). Absent means the
     plugin owns none.
     """
+    tools: list[ToolNeed]
+    """
+    Tools are the programs the plugin needs on the person's machine. The host detects them and,
+    when one is missing, presents the ways to get it (smith tools). Absent means the plugin
+    declares none.
+    """
 
 
 class Input(TypedDict):
@@ -1177,6 +1221,71 @@ class LatestResult(TypedDict, total=False):
     latest: dict[str, str]
     unreachable: dict[str, str]
     tools: list[ToolPin]
+
+
+class LinkOption(TypedDict):
+    """
+    LinkOption is one way to write the dependency, with its consequence in words a person who
+    read no manual can follow.
+    """
+
+    spec: str
+    """Spec is the value passed back in LinkParams.Spec."""
+    label: str
+    """Label is the option in a few words."""
+    meaning: str
+    """Meaning says what happens with this option."""
+
+
+class _LinkParamsRequired(TypedDict):
+    project: Project
+    """Project is the project that gains the dependency."""
+    library: Project
+    """Library is the project it depends on."""
+
+
+class LinkParams(_LinkParamsRequired, total=False):
+    """
+    LinkParams asks a plugin to make Project depend on Library, a lib or package of the same
+    workspace and language, in the ecosystem's own form, and to install or lock as that needs.
+    The host has checked that both exist, that the languages match, that Library is not an app,
+    and that the link makes no cycle; the plugin answers with an error that names the file when
+    it cannot write the dependency.
+    """
+
+    quiet: bool
+    """Quiet keeps the package manager's output unless it fails."""
+    plan: bool
+    """
+    Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the
+    line it would write and the choices the user has.
+    """
+    spec: str
+    """
+    Spec is the version range the user chose from LinkResult.Options; empty means the plugin's
+    default, or the form the workspace already uses.
+    """
+
+
+class LinkResult(TypedDict, total=False):
+    """LinkResult is what a link wrote, or with LinkParams.Plan would write."""
+
+    files: list[str]
+    """Files are the workspace-relative files changed (or to be changed)."""
+    notes: list[str]
+    """Notes are for the user."""
+    manifest: str
+    """Manifest is the file the dependency goes into, workspace-relative."""
+    line: str
+    """
+    Line is the dependency as it is written there, for the plan shown before anything is written
+    ("@acme/core": "*").
+    """
+    options: list[LinkOption]
+    """
+    Options are the real choices of the range written, with the default first. Empty when the
+    ecosystem has none, or the workspace already follows a convention (then Line shows it).
+    """
 
 
 class PackageStore(TypedDict):
@@ -1703,6 +1812,97 @@ class Task(_TaskRequired, total=False):
     """ServeTimeout is how long to wait for ServeURL, as a Go duration ("60s"); empty means 60s."""
 
 
+class _ToolInstallRequired(TypedDict):
+    manager: str
+    package: str
+
+
+class ToolInstall(_ToolInstallRequired, total=False):
+    """
+    ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget",
+    "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". The host builds
+    the exact command from the manager and Package; Package may hold {major} and {major.minor},
+    which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup)
+    are offered only when they are already on the machine.
+    """
+
+    note: str
+    """Note adds a sentence the person needs before choosing ("a new terminal is needed")."""
+
+
+class _ToolNeedRequired(TypedDict):
+    name: str
+    """
+    Name identifies the tool across plugins and in commands (smith tools install python). Two
+    plugins that need the same tool use the same Name.
+    """
+    title: str
+    """
+    Title is what the tool is called in text: "Python", "the .NET SDK". Doctor words the check
+    "<Title> is installed".
+    """
+    why: str
+    """Why says in plain words what smith needs the tool for."""
+    consequence: str
+    """
+    Consequence says what stops working while the tool is missing, as the end of a sentence that
+    starts "If you skip it, ": "smith test and smith build fail for the python projects".
+    """
+    program: str
+    """Program is the program that carries the tool on PATH ("python3")."""
+    download: str
+    """
+    Download is the official page of the tool, for the person who installs it by hand or has no
+    package manager.
+    """
+    source: str
+    """Source is the address of the page the Install entries were checked against."""
+    checked: str
+    """Checked is the date (YYYY-MM-DD) the entries were last checked."""
+
+
+class ToolNeed(_ToolNeedRequired, total=False):
+    """
+    ToolNeed is a program on the person's machine that a plugin needs to build, test or run its
+    projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in
+    InitializeResult.Tools. The host detects them, and when one is missing it presents the ways
+    to get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the
+    tool is, how to detect it, how each system gets it); the host decides how to ask.
+    """
+
+    alternatives: list[str]
+    """Alternatives are other programs that also count ("python", "py")."""
+    versionArgs: list[str]
+    """VersionArgs are the arguments that make Program print its version. Absent means --version."""
+    pins: list[ToolVersionPin]
+    """
+    Pins are the files where a workspace pins the version it wants. The first pin the host finds
+    gives the version range. Absent means any version counts.
+    """
+    choice: str
+    """
+    Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
+    needed by a project built without it. Absent means every project of the plugin needs it.
+    """
+    systems: list[str]
+    """
+    Systems limits the tool to these systems, named as Go names them ("windows", "darwin",
+    "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.
+    """
+    suggested: str
+    """
+    Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and
+    {major.minor} in the install entries.
+    """
+    optional: bool
+    """
+    Optional marks a tool whose absence only costs a feature (running a function app locally).
+    Doctor reports it as a warning, not a failure.
+    """
+    install: list[ToolInstall]
+    """Install are the ways to get the tool, per package manager and system."""
+
+
 class _ToolPinRequired(TypedDict):
     name: str
     pinned: str
@@ -1718,6 +1918,22 @@ class ToolPin(_ToolPinRequired, total=False):
     """Latest is empty when its release feed could not be reached."""
     newer: bool
     """Newer is true when Latest is a release the pin does not cover."""
+
+
+class ToolVersionPin(TypedDict):
+    """
+    ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one
+    of: "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod" (the
+    toolchain line, else the go line), "pyproject" (requires-python), "global-json" (sdk.version)
+    and "rust-toolchain" (the channel).
+    """
+
+    file: str
+    """
+    File is the base name of the file, looked up at the workspace root and in the folders of the
+    projects that use the tool.
+    """
+    format: str
 
 
 class _ToolchainRequired(TypedDict):
@@ -1752,6 +1968,16 @@ class UninstallParams(TypedDict):
 
     project: Project
     packages: list[str]
+
+
+class UnlinkParams(TypedDict):
+    """
+    UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the
+    result say so when the manifest held no such dependency.
+    """
+
+    project: Project
+    library: Project
 
 
 class _VersionParamsRequired(TypedDict):
@@ -1854,4 +2080,10 @@ class PluginDescription(_PluginDescriptionRequired, total=False):
     Choices are the options on an axis (framework, test, style) the plugin owns. The host lists
     them (smith choices) and checks a selection of them (smith add --with). Absent means the
     plugin owns none.
+    """
+    tools: list[ToolNeed]
+    """
+    Tools are the programs the plugin needs on the person's machine. The host detects them and,
+    when one is missing, presents the ways to get it (smith tools). Absent means the plugin
+    declares none.
     """

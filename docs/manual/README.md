@@ -75,6 +75,7 @@ Python package). Paths in output are shortened.
 | [`smith dev`](dev.md) | Start several projects together. |
 | [`smith derive`](derive.md) | Write the files that follow from facts and the project graph (tsconfig references, Jest display name), keep their owner in `smith.lock`, and report hand edits. |
 | [`smith undo`](undo.md) | Revert the last operation smith committed (`add`, `remove`, `upgrade`, `derive`, `sync`), with `git revert`. |
+| [`smith commit`](commit.md) | Commit the changes of the work tree as one operation that `smith undo` can revert, after the fact. |
 | [`smith eject`](eject.md) | Copy smith's default configuration of a tool (ruff, mypy, pytest, golangci-lint, rustfmt, phpstan) into the repository, to own it. |
 | [`smith install`](install.md), [`smith uninstall`](uninstall.md) | Add or remove packages in a project, or install the whole workspace. |
 | [`smith up`](up.md) | Show dependencies with newer releases and update the ones you pick. |
@@ -103,8 +104,10 @@ Python package). Paths in output are shortened.
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
 | [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
+| [`smith tools`](tools.md), [`smith tools install`](tools-install.md) | The programs the workspace needs on this machine, and the presented choice to install what is missing. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md), [`smith choices`](choices.md) | What `smith add` accepts. |
+| [`smith compose`](compose.md) | Search everything a project can be built from, compose the stack and see the plan. |
 | [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`draft`](plugin-draft.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |
 | [`smith recipe`](recipe.md) | Check recipes: [`check`](recipe-check.md), [`new`](recipe-new.md). |
 | [`smith boundaries`](boundaries.md) | Check which projects depend on which against your rules in `[boundaries]`. |

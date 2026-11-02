@@ -3,6 +3,7 @@ package adoptwizard
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"io"
 	"strings"
 
@@ -70,6 +71,11 @@ type Model struct {
 	// not answered yet. moveName is the name as the person last edited it, and
 	// moveNote tells why the last answer was not usable.
 	moveTo, moveName, moveNote string
+	// initQuestions are the decisions of adopt --init being asked; initChoices
+	// the answers once given; initAsked says they were.
+	initQuestions []adoptdecision.Question
+	initChoices   adoptdecision.Choices
+	initAsked     bool
 }
 
 // prepared is what Prepare returned.
@@ -227,7 +233,7 @@ func (m Model) react(out fixwizard.Outcome) (Model, Outcome) {
 	case out.Skip:
 		return m.decline(true)
 	}
-	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
+	if (m.stage == StageLevel || m.stage == StageMove || m.stage == StageInit || m.stage == StageChoices) && m.fw.Phase() == fixwizard.Reviewing {
 		return m.answered()
 	}
 	return m, Outcome{}
@@ -253,11 +259,20 @@ func (m Model) goBack() (Model, Outcome) {
 	switch m.stage {
 	case StageLevel, StageMove:
 		return m.showFound(), Outcome{}
+	case StageInit:
+		if m.hasRootProject() {
+			return m.askMove(), Outcome{}
+		}
+		return m.showFound(), Outcome{}
 	case StageChoices:
 		return m.askLevel(), Outcome{}
 	case StageReview:
 		if m.full && len(m.asked) > 0 {
 			return m.askChoices(), Outcome{}
+		}
+		if !m.found.Kind.Convertible() && m.initAsked {
+			m.initAsked = false
+			return m.askInit(), Outcome{}
 		}
 		if m.hasRootProject() {
 			return m.askMove(), Outcome{}
@@ -499,6 +514,9 @@ func (m Model) answered() (Model, Outcome) {
 	if m.stage == StageMove {
 		return m.answeredMove(answers)
 	}
+	if m.stage == StageInit {
+		return m.answeredInit(answers)
+	}
 	if m.stage == StageLevel {
 		if len(answers) == 1 && answers[0] == levelFull {
 			m.full = true
@@ -562,7 +580,7 @@ func (m Model) reviewConservative() (Model, Outcome) {
 		return m.askMove(), Outcome{}
 	}
 	if !m.found.Kind.Convertible() {
-		return m.showConservative(), Outcome{}
+		return m.afterMove(), Outcome{}
 	}
 	flow := m.flow
 	job := Job{Name: "working out which files change", Run: func(context.Context, io.Writer) (any, error) {
@@ -589,11 +607,13 @@ func (m Model) reviewConservative() (Model, Outcome) {
 func (m Model) showConservative() Model {
 	text := ""
 	if !m.found.Kind.Convertible() {
-		fix := m.flow.AdoptFix(m.commit, m.moveTo)
+		fix := m.flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices)
 		shown, err := m.flow.ShowFix(fix)
 		if err != nil {
 			shown = "● " + fix.Description + "\n  could not show the changes: " + err.Error() + "\n"
 		}
+		// The plan shows every file smith writes, and a diff of each file of yours it edits.
+		shown += "\n" + m.flow.InitPlan(m.initChoices)
 		text = conservativeText(m.found, shown, adoptflow.Changes{}, "", convert.Highlights{}, m.commit)
 	} else {
 		text = conservativeText(m.found, "", m.changes, m.changesDiff, m.flow.Result(), m.commit)
@@ -625,7 +645,7 @@ func (m Model) install() (Model, Outcome) {
 func (m Model) startConversion() (Model, Outcome) {
 	flow, c := m.flow, m.choices
 	if !m.found.Kind.Convertible() {
-		fix := flow.AdoptFix(m.commit, m.moveTo)
+		fix := flow.AdoptFixChosen(m.commit, m.moveTo, m.initChoices)
 		job := Job{Name: "adopting the repository", Steps: len(fix.Steps), Run: func(ctx context.Context, out io.Writer) (any, error) {
 			return "", flow.ApplyFix(ctx, fix.Fix, out)
 		}}

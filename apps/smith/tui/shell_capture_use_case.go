@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
 // What a captured command was asked for.
@@ -20,6 +21,7 @@ const (
 	capUndo    = "undo"
 	capAdd     = "add"
 	capSwap    = "swap"
+	capPlan    = "plan"
 	capChoices = "choices"
 	capSearch  = "plugin-search"
 )
@@ -50,6 +52,8 @@ type capturedMsg struct {
 // openedMsg says whether the system opened the report.
 type openedMsg struct {
 	path string
+	// link is true when path is an address the failure dialog opened, not the report.
+	link bool
 	err  error
 }
 
@@ -73,11 +77,35 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.addPlanRead(msg)
 	case capSwap:
 		return s.swapPlanRead(msg)
+	case capPlan:
+		return s.planRead(msg)
 	case capChoices:
 		return s.choicesRead(msg)
+	case capCompose:
+		return s.composeRead(msg)
+	case capComposePlan:
+		return s.composePlanRead(msg)
+	case capTools:
+		return s.toolsRead(msg)
 	case capSearch:
 		return s.searchRead(msg)
 	}
+	return nil
+}
+
+// planRead shows the plan a command printed with its plan flag (--dry-run or
+// --check) as the details of the confirmation, and asks before the real
+// command runs. The reason of a refused plan is shown as it is.
+func (s *Shell) planRead(msg capturedMsg) tea.Cmd {
+	argv := msg.argv[:len(msg.argv)-1]
+	title, why := commands.Describe(argv)
+	if !msg.res.OK {
+		s.tell("Cannot "+strings.ToLower(title), "smith said:", failureText(msg.res))
+		return nil
+	}
+	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).
+		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Place(s.w, s.h)
+	s.confirm = &c
 	return nil
 }
 
@@ -397,6 +425,14 @@ func (s *Shell) reportWritten(argv []string) tea.Cmd {
 
 // opened tells the person where the report is.
 func (s *Shell) opened(msg openedMsg) {
+	if msg.link {
+		if msg.err != nil {
+			s.notify("Could not open the page. The link is copied: paste it in a browser.", toast.Warning)
+			return
+		}
+		s.notify("Opened "+msg.path+" in your browser. The link is copied too.", toast.Success)
+		return
+	}
 	if msg.err != nil {
 		s.notify(fmt.Sprintf("Report written to %s, but the browser did not open (%v). Open that file yourself.", msg.path, msg.err), toast.Warning)
 		return

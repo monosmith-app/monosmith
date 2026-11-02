@@ -46,7 +46,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 		t.Fatalf("started %v before the confirmation", l.started)
 	}
 	l.keys("y")
-	if got := l.lastStarted(); got != "deps up axios react" {
+	if got := l.lastStarted(); got != "deps up axios react --major --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -54,7 +54,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "down", "enter", "y")
-	if got := l.lastStarted(); got != "deps up zod" {
+	if got := l.lastStarted(); got != "deps up zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -66,7 +66,7 @@ func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l.keys("a")
 	l.has("0 marked")
 	l.keys("v", "y")
-	if got := l.lastStarted(); got != "deps up --align" {
+	if got := l.lastStarted(); got != "deps up --align --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -185,7 +185,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 		{"1", "Do the suggested next action"},
 		{"2", "Open the detail of the project"},
 		{"3", "Run the last command again"},
-		{"4", "Read the view again"},
+		{"4", "Reload this view: read the files again, run nothing"},
 		{"5", "Update the marked ones"},
 		{"6", "Print the release notes"},
 	}
@@ -382,8 +382,9 @@ func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testi
 	l := newLab(t, true, 140, 34)
 	l.keys("+")
 	l.has("Install packages", "Project: ‹ orders ›", "Packages, separated by spaces", "development dependency")
+	// Typing while the "Add" answer is the registry goes straight to the packages field.
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders zod" {
+	if got := l.lastStarted(); got != "install -w orders --registry zod" {
 		t.Fatalf("started %q", got)
 	}
 }

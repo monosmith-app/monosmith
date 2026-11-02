@@ -19,6 +19,8 @@ type Model struct {
 	Loaded bool
 	// Waited is how long the load has taken so far, set by the shell for drawing.
 	Waited time.Duration
+	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
+	Projects int
 	Rows   []Row
 	Policy []PolicyLine
 	Err    error
@@ -286,7 +288,14 @@ func (v Model) UpArgv() []string {
 	if len(names) == 0 {
 		return nil
 	}
-	return append([]string{"deps", "up"}, names...)
+	argv := append([]string{"deps", "up"}, names...)
+	for _, r := range v.Rows {
+		if r.Level == "major" && slices.Contains(names, r.Name) {
+			// A major update was marked on purpose: the command takes it only with --major.
+			return append(argv, "--major")
+		}
+	}
+	return argv
 }
 
 // AlignArgv is the command line that brings the policy's drifting dependencies
@@ -318,6 +327,14 @@ func (v Model) levelCounts() (patch, minor, major int) {
 	return
 }
 
+// inProjects says whose dependencies a load asks about, once the count is known.
+func inProjects(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return " of " + progress.OfProjects(n)
+}
+
 // View draws the view in a w by h area; rowOf maps a line to the row drawn on it.
 func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int) {
 	rowOf = map[int]int{}
@@ -325,7 +342,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	case v.Err != nil:
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	case !v.Loaded:
-		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency.", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
+		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency"+inProjects(v.Projects)+".", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
 	}
 	var tail []string
 	tail = append(tail, "", th.Title("One version"))

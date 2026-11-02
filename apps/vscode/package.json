@@ -309,6 +309,18 @@
         "icon": "$(add)"
       },
       {
+        "command": "monosmith.composeStack",
+        "title": "Compose a Stack…",
+        "category": "MonoSmith",
+        "icon": "$(search)"
+      },
+      {
+        "command": "monosmith.addDependency",
+        "title": "Add Dependency…",
+        "category": "MonoSmith",
+        "icon": "$(package)"
+      },
+      {
         "command": "monosmith.undo",
         "title": "Undo the Last Change…",
         "category": "MonoSmith",
@@ -337,6 +349,12 @@
         "title": "Write the smith Launcher…",
         "category": "MonoSmith",
         "icon": "$(rocket)"
+      },
+      {
+        "command": "monosmith.installTools",
+        "title": "Install the Tools the Workspace Needs…",
+        "category": "MonoSmith",
+        "icon": "$(tools)"
       },
       {
         "command": "monosmith.openReport",
@@ -688,6 +706,14 @@
           "when": "monosmith.state == ready"
         },
         {
+          "command": "monosmith.composeStack",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.addDependency",
+          "when": "monosmith.state == ready"
+        },
+        {
           "command": "monosmith.undo",
           "when": "monosmith.state == ready"
         },
@@ -705,6 +731,10 @@
         },
         {
           "command": "monosmith.bootstrap",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.installTools",
           "when": "monosmith.state == ready"
         },
         {

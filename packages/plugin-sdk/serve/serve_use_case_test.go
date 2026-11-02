@@ -555,3 +555,23 @@ func TestOnlyAPluginThatPublishesChannelsAdvertisesTheCapability(t *testing.T) {
 		t.Fatalf("capabilities %+v", c)
 	}
 }
+
+// linkLab links a library; the capability needs both Link and Unlink.
+type linkLab struct{ lab }
+
+func (linkLab) Link(protocol.LinkParams) (protocol.LinkResult, error) {
+	return protocol.LinkResult{}, nil
+}
+
+func (linkLab) Unlink(protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return protocol.DependencyResult{}, nil
+}
+
+func TestOnlyAPluginThatLinksAdvertisesTheLinkCapability(t *testing.T) {
+	if serve.CapabilitiesOf(lab{}).Link {
+		t.Fatal("a plain plugin does not link")
+	}
+	if !serve.CapabilitiesOf(linkLab{}).Link {
+		t.Fatal("a plugin that links advertises it")
+	}
+}

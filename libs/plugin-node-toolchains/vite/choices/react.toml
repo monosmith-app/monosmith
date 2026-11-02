@@ -1,6 +1,8 @@
 axis = "framework"
 name = "react"
 description = "a React 19 app in TypeScript, built with Vite"
+title = "React"
+aliases = ["web", "frontend", "ui", "browser", "spa", "jsx"]
 language = "node"
 roles = ["scaffold", "toolchain"]
 needs = ["lint", "test"]

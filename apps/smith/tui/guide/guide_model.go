@@ -23,6 +23,9 @@ type Model struct {
 	err     string
 	// filter is what was typed to narrow a Filter step's options.
 	filter string
+	// searched is what was typed in the last Filter step that was answered; a
+	// later step can start on the option it names (Step.Preselect).
+	searched string
 	// defaults are the options a step starts on, by step key.
 	defaults map[string]string
 	// defaultWhy is the line that says why a step starts on its default.
@@ -340,6 +343,9 @@ func (m Model) confirm() Model {
 			m.err = "nothing matches \"" + m.filter + "\": backspace to widen the list"
 			return m
 		}
+		if step.Filter {
+			m.searched = m.filter
+		}
 		m.answers[step.Key] = []string{opts[min(m.cursor, len(opts)-1)].Value}
 	}
 	m.step++
@@ -349,10 +355,22 @@ func (m Model) confirm() Model {
 
 func (m Model) advance() Model {
 	for m.action != nil {
-		if s := m.current(); s == nil || s.Skip == nil || !s.Skip(m.answers) {
+		s := m.current()
+		if s == nil {
 			break
 		}
-		m.step++
+		if s.Skip != nil && s.Skip(m.answers) {
+			m.step++
+			continue
+		}
+		if s.Auto != nil {
+			if v := s.Auto(m.answers); v != "" {
+				m.answers[s.Key] = []string{v}
+				m.step++
+				continue
+			}
+		}
+		break
 	}
 	step := m.current()
 	if step == nil {
@@ -364,7 +382,8 @@ func (m Model) advance() Model {
 	}
 	if step.Multi {
 		for i, o := range step.Options {
-			m.marked[i] = o.Hint == "enabled" || step.Key == "tasks"
+			m.marked[i] = o.Hint == "enabled" || step.Key == "tasks" ||
+				(step.Ticked != nil && slices.Contains(step.Ticked(m.answers), o.Value))
 		}
 	}
 	if step.Options == nil {
@@ -377,6 +396,15 @@ func (m Model) advance() Model {
 		for i, o := range step.Options {
 			if o.Value == want {
 				m.cursor = i
+			}
+		}
+	}
+	if step.Preselect != nil && m.searched != "" && !step.Multi {
+		if want := step.Preselect(m.searched, step.Options); want != "" {
+			for i, o := range step.Options {
+				if o.Value == want {
+					m.cursor = i
+				}
 			}
 		}
 	}
@@ -430,7 +458,13 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 	case step == nil:
 		lines = append(lines, th.Muted("Done: "+m.action.Title))
 	case step.Options == nil:
-		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "", m.input.View(), "")
+		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
+		for _, note := range strings.Split(step.Note, "\n") {
+			if note != "" {
+				lines = append(lines, th.Muted(note))
+			}
+		}
+		lines = append(lines, "", m.input.View(), "")
 		if v := strings.TrimSpace(m.input.Value()); v == "" && m.input.Placeholder != "" && !step.Optional {
 			// The grey text is an example, not a default Enter would accept.
 			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))
@@ -449,13 +483,22 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		lines = append(lines, th.Muted("enter confirm · esc back"))
 	default:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
-		if why := m.defaultWhy[step.Key]; why != "" && m.defaults[step.Key] != "" {
+		if why := m.defaultWhy[step.Key]; why != "" && hasOption(step.Options, m.defaults[step.Key]) {
 			lines = append(lines, th.Muted(why))
+		}
+		for _, note := range strings.Split(step.Note, "\n") {
+			if note != "" {
+				lines = append(lines, th.Muted(note))
+			}
 		}
 		lines = append(lines, "")
 		if step.Filter {
 			if m.filter == "" {
-				lines = append(lines, th.Muted("Type to narrow the list"), "")
+				narrow := "Type to narrow the list"
+				if step.Try != "" {
+					narrow += ": try " + step.Try
+				}
+				lines = append(lines, th.Muted(narrow), "")
 			} else {
 				lines = append(lines, th.Muted("Showing matches for ")+th.Bold(m.filter)+th.Muted(" (esc clears it)"), "")
 			}
@@ -510,6 +553,11 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		}
 	}
 	return wrapped, moved
+}
+
+// hasOption reports whether an option has the value; "" is never an option.
+func hasOption(options []Option, value string) bool {
+	return value != "" && slices.ContainsFunc(options, func(o Option) bool { return o.Value == value })
 }
 
 // shown reports whether a line of the screen already says text, so the same

@@ -59,6 +59,8 @@ export function statusMenuEntries (state: MenuState): MenuEntry[] {
     },
     { label: '$(refresh) Refresh', description: 'read the projects and what is affected again', command: 'monosmith.refresh' },
     { label: '$(add) Add project…', description: 'smith shows the plan and asks first', command: 'monosmith.addProject' },
+    { label: '$(search) Compose a stack…', description: 'search frameworks, desktop shells and cloud hosts, then see the plan', command: 'monosmith.composeStack' },
+    { label: '$(package) Add dependency…', description: 'a library of this workspace, or a package from the registry', command: 'monosmith.addDependency' },
     { label: '$(globe) Open report', description: 'one page: projects, health, derived files', command: 'monosmith.openReport' },
     { label: '$(discard) Undo the last change', description: 'smith shows what it reverts and asks first', command: 'monosmith.undo' },
     { label: '$(hubot) Talk to the MonoSmith agent', description: 'Claude Code with smith’s tools', command: 'monosmith.talkToAgent' },

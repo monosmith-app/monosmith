@@ -15,7 +15,7 @@ its folder to `[workspace] exclude` with [`smith config set`](config-set.md) ins
 ## Synopsis
 
 ```sh
-smith remove <project> [--dry-run] [--force] [--json] [--yes]
+smith remove <project> [--dry-run] [--force] [--keep-copy | --delete] [--json] [--yes]
 ```
 
 ## Arguments and flags
@@ -32,9 +32,11 @@ Usage: `smith remove <project> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--delete` | boolean | off | delete the folder for good, including files git cannot bring back |
 | `--dry-run` | boolean | off | show what would change; change nothing |
 | `--force` | boolean | off | remove a project other projects still import |
 | `--json` | boolean | off | print what changed as JSON |
+| `--keep-copy` | boolean | off | move the project folder to .smith/removed/<name>-<time>/ instead of deleting it |
 | `-y, --yes` | boolean | off | do not ask for confirmation |
 
 <!-- smith:end remove -->
@@ -49,6 +51,20 @@ Usage: `smith remove <project> [flags]`
 - `--force` removes a project other projects still import; their imports are left
   broken.
 - `--json` prints what changed: `project`, `root`, `files`, `notes` and `mentions`.
+
+## Files git cannot bring back
+
+Deleting the folder loses what git does not hold: untracked files and uncommitted changes. When the
+folder has any, smith lists them and asks what to do with the folder:
+
+1. Move it to `.smith/removed/<name>-<time>/` (the default). The project leaves the workspace and
+   nothing is lost. `.smith/` is ignored by git.
+2. Delete it for good. The files listed cannot be brought back.
+3. Cancel. Nothing changes.
+
+Without a terminal smith refuses and names the flags: `--keep-copy` (answer 1) or `--delete`
+(answer 2). `--yes` alone does not choose, because it cannot know which you want. A folder that
+holds nothing git cannot restore is deleted as before, after the plan.
 
 ## Files that still name the project
 

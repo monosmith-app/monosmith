@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { choiceNames, choicesByAxis, parseChoices, parseKinds, parseStacks, roleOf } from './add-options.mapper.ts'
+import { askedAxes, choiceNames, choicesByAxis, hostTerms, parseChoices, parseKinds, parseStacks, roleOf } from './add-options.mapper.ts'
 
 describe('parseKinds', () => {
   it('keeps the kinds with a name and a language', () => {
@@ -19,8 +19,8 @@ describe('parseChoices', () => {
       { axis: 'test', name: 'vitest', description: 'Vitest', default: true },
     ])
     expect(parseChoices(json)).toEqual([
-      { axis: 'style', name: 'chakra', description: 'Chakra', language: 'node', requires: ['react'], isDefault: false, many: false },
-      { axis: 'test', name: 'vitest', description: 'Vitest', requires: [], isDefault: true, many: false },
+      { axis: 'style', name: 'chakra', description: 'Chakra', language: 'node', requires: ['react'], isDefault: false, many: false, needs: [], suggested: false, conflicts: [] },
+      { axis: 'test', name: 'vitest', description: 'Vitest', requires: [], isDefault: true, many: false, needs: [], suggested: false, conflicts: [] },
     ])
   })
 })
@@ -67,5 +67,29 @@ describe('choiceNames', () => {
     expect(choiceNames(choices, 'node')).toEqual(['react'])
     expect(choiceNames(choices, 'python')).toEqual(['fastapi'])
     expect(choiceNames(choices, 'rust')).toEqual([])
+  })
+})
+
+describe('the axes smith asks', () => {
+  const choices = parseChoices(JSON.stringify([
+    { axis: 'framework', name: 'azure-functions', description: 'a serverless Azure Functions app', language: 'node', needs: ['trigger', 'runtime', 'lint'] },
+    { axis: 'framework', name: 'react', description: 'a React app', language: 'node', needs: ['lint'] },
+    { axis: 'lint', name: 'eslint', description: 'lint', language: 'node', default: true },
+    { axis: 'trigger', name: 'http-trigger', description: 'an HTTP request', language: 'node', suggested: true },
+    { axis: 'runtime', name: 'node24', description: 'Node.js 24', language: 'node', suggested: true, conflicts: ['gcp-functions'] },
+    { axis: 'framework', name: 'azure-functions', description: 'a serverless Azure Functions app', language: 'python', needs: ['trigger'] },
+  ]))
+
+  it('are the axes a choice needs and no choice defaults', () => {
+    expect(askedAxes(choices, 'node')).toEqual(['trigger', 'runtime'])
+    expect(askedAxes(choices, 'rust')).toEqual([])
+  })
+
+  it('reads the suggested answer and the conflicts', () => {
+    expect(choices.find((choice) => choice.name === 'node24')).toMatchObject({ suggested: true, conflicts: ['gcp-functions'] })
+  })
+
+  it('describe the hosts in words, so the language filter finds them', () => {
+    expect(hostTerms(choices, 'node')).toEqual(['a serverless Azure Functions app'])
   })
 })

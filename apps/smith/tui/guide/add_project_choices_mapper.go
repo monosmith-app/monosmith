@@ -11,13 +11,24 @@ import (
 // ChoiceOffer is one choice of a project as `smith choices --json` lists it:
 // a framework, a test runner or a style that a plugin publishes.
 type ChoiceOffer struct {
-	Axis        string   `json:"axis"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Language    string   `json:"language"`
-	Default     bool     `json:"default"`
-	Requires    []string `json:"requires"`
-	Conflicts   []string `json:"conflicts"`
+	Axis        string `json:"axis"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	// Title and Aliases are what smith compose searches: the display name and the
+	// words that find the choice ("desktop", "serverless").
+	Title   string   `json:"title"`
+	Aliases []string `json:"aliases"`
+	// Layer is where the choice sits in the stack (framework, shell, host); empty
+	// means the layer of its axis.
+	Layer    string `json:"layer"`
+	Language string `json:"language"`
+	Default  bool   `json:"default"`
+	// Suggested marks the answer a question pre-selects; Needs are the axes the
+	// choice needs an answer on (a function host needs a trigger and a runtime).
+	Suggested bool     `json:"suggested"`
+	Needs     []string `json:"needs"`
+	Requires  []string `json:"requires"`
+	Conflicts []string `json:"conflicts"`
 	// Problem says why the choice cannot be used here; empty when it can.
 	Problem string `json:"problem"`
 }
@@ -76,9 +87,11 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 			steps[i].Options = withChoiceNames(steps[i].Options, offers)
 		}
 	}
+	steps = withOutcomes(steps, offers)
 	base.Steps = slices.Clone(steps)
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
+		steps = append(steps, axisSteps(lang, offersOf(offers, lang))...)
 	}
 	if len(existing) >= siblingsMin {
 		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?", Options: []Option{
@@ -105,6 +118,9 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 		var picked []string
 		for _, lang := range offerLanguages(offers) {
 			picked = append(picked, a[withKeyPrefix+lang]...)
+			for _, axis := range askedAxes(offersOf(offers, lang)) {
+				picked = append(picked, a[axisKey(lang, axis)]...)
+			}
 		}
 		if len(picked) > 0 {
 			argv = append(argv, "--with", strings.Join(picked, ","))
@@ -126,9 +142,20 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 func withChoiceNames(options []Option, offers []ChoiceOffer) []Option {
 	out := slices.Clone(options)
 	for i := range out {
-		for _, o := range offersOf(offers, out[i].Value) {
-			if !slices.Contains(out[i].Also, o.Name) {
-				out[i].Also = append(slices.Clone(out[i].Also), o.Name)
+		own := offersOf(offers, out[i].Value)
+		asked := askedAxes(own)
+		for _, o := range own {
+			// The language filter is a view of the catalogue (ADR 0076): a choice is
+			// found by its name, its title and its aliases, the words smith compose
+			// searches ("desktop", "serverless", "google", "cloud run").
+			words := append([]string{o.Name, o.Title}, o.Aliases...)
+			if needsAsked(o, asked) {
+				words = append(words, o.Description)
+			}
+			for _, w := range words {
+				if w != "" && !slices.Contains(out[i].Also, w) {
+					out[i].Also = append(slices.Clone(out[i].Also), w)
+				}
 			}
 		}
 	}
@@ -163,11 +190,23 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 	step := Step{
 		Key:      withKeyPrefix + lang,
 		Prompt:   "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
+		Note:     choiceWords(offers),
 		Multi:    true,
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
+		// What the outcome question picked (Tauri, React, Azure Functions) starts ticked.
+		Ticked: func(a map[string][]string) []string {
+			if first(a, pickKey) == pickNone {
+				return nil
+			}
+			return a[pickKey]
+		},
 	}
+	asked := askedAxes(offers)
 	for _, o := range offers {
+		if slices.Contains(asked, o.Axis) {
+			continue // asked in its own question, once a choice that needs it is ticked
+		}
 		hint := o.Description
 		if len(o.Requires) > 0 {
 			hint += " (needs " + strings.Join(o.Requires, ", ") + ")"

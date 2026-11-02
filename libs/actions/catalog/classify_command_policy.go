@@ -37,6 +37,20 @@ func Classify(argv []string) Safety {
 	return safety
 }
 
+// PlanFlag is the flag that makes a command line print its plan and change
+// nothing, for a command that changes the workspace and has such a flag.
+//
+// Parameters: argv is the command line without the program name.
+// Returns: the flag, and false when the command has none, already carries it,
+// or does not change the workspace.
+func PlanFlag(argv []string) (string, bool) {
+	action, ok := Find(argv)
+	if !ok || action.Plan == "" || Classify(argv) != Changes || slices.Contains(argv, action.Plan) {
+		return "", false
+	}
+	return action.Plan, true
+}
+
 // WithConfirmation returns the command line that runs after the user has
 // confirmed: an action that asks on a terminal it does not have gets --yes.
 // The confirmation shows this line, so what runs is what was confirmed.

@@ -56,7 +56,7 @@ Usage: `smith convert [flags]`
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
 | `--test <test>` | `jest`, `vitest` or `keep` | the runner the workspace uses, else `keep` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep |
 | `--verbose` | boolean | off | name every project a finding applies to, not just a few |
-| `--yes` | boolean | off | apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything) |
+| `--yes` | boolean | off | apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything) |
 
 <!-- smith:end convert -->
 
@@ -89,7 +89,9 @@ Interactions:
 - `--allow-dirty` converts with uncommitted changes. It is refused with
   `--level full`, which needs a clean git tree so that git can undo everything.
 - `--strict` turns any item that needs manual work or is unsupported into a failure.
-- `--yes` applies without asking; a terminal otherwise asks before changing anything.
+- `--yes` applies without asking. Without a terminal and without `--yes` convert refuses. In a
+  terminal it lists the files it deletes and says when a pnpm or yarn workspace switches to npm,
+  then offers: apply, show the report and stop, or cancel.
 - `--skip-install` skips the `npm install` afterwards. `--skip-verify` (full level)
   installs but does not build, test, lint and run `smith doctor` afterwards.
 - `--json` prints the plan: `root`, `source`, `projects`, `findings` (each with a

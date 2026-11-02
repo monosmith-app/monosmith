@@ -6,13 +6,14 @@ import (
 	"runtime"
 
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
 
 // Command is `smith bootstrap`.
 func Command() *cobra.Command {
-	var check bool
+	var check, dryRun bool
 	cmd := &cobra.Command{
 		Use:   "bootstrap",
 		Short: "Write the launcher that runs the smith version the workspace pins",
@@ -24,7 +25,10 @@ tools/smith/install.sh when the workspace has one, or with npx. Without a pin,
 or with "latest", it runs the smith on PATH.
 
 It changes no setting. Run it again to refresh the files after upgrading smith;
---check fails when they are missing or out of date, for CI.`,
+--check fails when they are missing or out of date, for CI.
+
+smith shows what it will write first, with a diff of a launcher that exists and
+differs, and asks; without a terminal it needs --yes. --dry-run shows the plan.`,
 		Example: "  smith bootstrap\n  tools/smith/smith doctor",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -32,11 +36,25 @@ It changes no setting. Run it again to refresh the files after upgrading smith;
 			if err != nil {
 				return err
 			}
+			out := cmd.OutOrStdout()
+			if !check {
+				plan, err := PlanShims(root)
+				if err != nil {
+					return err
+				}
+				yes, _ := cmd.Flags().GetBool("yes")
+				goOn, err := operationplan.Present(out, cmd.InOrStdin(), plan, operationplan.Options{Yes: yes, DryRun: dryRun, Ask: true, Env: operationplan.DetectEnvironment()})
+				if err != nil || !goOn {
+					if err == nil && dryRun && plan.Empty() {
+						fmt.Fprintln(out, "The launcher is up to date.")
+					}
+					return err
+				}
+			}
 			changed, err := WriteShims(root, check)
 			if err != nil {
 				return err
 			}
-			out := cmd.OutOrStdout()
 			if len(changed) == 0 {
 				fmt.Fprintln(out, "The launcher is up to date.")
 				return nil
@@ -58,5 +76,6 @@ It changes no setting. Run it again to refresh the files after upgrading smith;
 		},
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "change nothing; fail when the launcher is missing or out of date")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be written, with a diff of a launcher that exists, and change nothing")
 	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(*cobra.Command, []string) string { return "write the smith launcher" }})
 }

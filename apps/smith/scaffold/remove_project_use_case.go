@@ -11,6 +11,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/derivelock"
+	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -25,6 +26,13 @@ type RemoveOptions struct {
 	Force bool
 	// SkipMentions leaves out the scan for files that still name the project.
 	SkipMentions bool
+	// KeepCopy moves the folder to .smith/removed/<name>-<time>/ instead of
+	// deleting it, so nothing is lost (smith remove --keep-copy).
+	KeepCopy bool
+	// Delete deletes the folder for good, including files git cannot bring
+	// back (smith remove --delete). A folder that holds such files is refused
+	// unless KeepCopy or Delete is set.
+	Delete bool
 }
 
 // Removal is what removing a project changes (or, in a dry run, would).
@@ -36,6 +44,13 @@ type Removal struct {
 	// Files are the other files changed: plugin clean-up, smith.toml, pipelines.
 	Files []string `json:"files,omitempty"`
 	Notes []string `json:"notes,omitempty"`
+	// Unsaved are the files in the folder that git cannot bring back: untracked
+	// files and uncommitted changes.
+	Unsaved []string `json:"unsaved,omitempty"`
+	// Ignored counts the ignored entries of the folder (node_modules, build output).
+	Ignored int `json:"ignored,omitempty"`
+	// KeptAt is where the folder was moved (or would be) with KeepCopy.
+	KeptAt string `json:"keptAt,omitempty"`
 	// Mentions are tracked files that still name the project; smith does not change them.
 	Mentions []Mention `json:"mentions,omitempty"`
 	// MentionsRootOnly is true when the name is short and only the root path was searched.
@@ -55,6 +70,15 @@ func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 	if len(r.Dependents) > 0 && !opts.Force {
 		return r, fmt.Errorf("%s is imported by %s: remove those imports first, or pass --force to remove it anyway", p.Name, strings.Join(r.Dependents, ", "))
 	}
+	unsaved := ListUnsavedFiles(s.Root, p.Root)
+	r.Unsaved, r.Ignored = unsaved.Files, unsaved.Ignored
+	if opts.KeepCopy {
+		r.KeptAt = ".smith/removed/" + p.Name + "-" + time.Now().Format("20060102-150405")
+	}
+	if !opts.DryRun && len(r.Unsaved) > 0 && !opts.KeepCopy && !opts.Delete {
+		return r, problem.New(fmt.Sprintf("%s holds %d file(s) that git cannot bring back (untracked or not committed)", p.Name, len(r.Unsaved)),
+			"--keep-copy moves the folder to .smith/removed/ instead of deleting it", "--delete deletes it for good")
+	}
 	cfgPath := filepath.Join(s.Root, workspace.FileName)
 	raw, err := os.ReadFile(cfgPath)
 	if err != nil {
@@ -68,7 +92,16 @@ func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 		r.Files = append(r.Files, workspace.FileName)
 	}
 	if !opts.DryRun {
-		if err := os.RemoveAll(filepath.Join(s.Root, filepath.FromSlash(p.Root))); err != nil {
+		dir := filepath.Join(s.Root, filepath.FromSlash(p.Root))
+		if opts.KeepCopy {
+			target := filepath.Join(s.Root, filepath.FromSlash(r.KeptAt))
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return r, err
+			}
+			if err := os.Rename(dir, target); err != nil {
+				return r, fmt.Errorf("moving %s to %s: %w", p.Root, r.KeptAt, err)
+			}
+		} else if err := os.RemoveAll(dir); err != nil {
 			return r, err
 		}
 	}

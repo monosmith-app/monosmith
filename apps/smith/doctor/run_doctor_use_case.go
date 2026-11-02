@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"context"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"maps"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
@@ -115,6 +117,7 @@ func run(s *session.Session, askRegistries bool) Report {
 	add("smith", lockfilePlatformChecks(s)...)
 	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
+	findings = ToolFindings(context.Background(), s, findings)
 	report := Report{Findings: findings}
 	report.tally()
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
@@ -229,7 +232,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
 	out = append(out, buildWritesFinding(s))
-	shared := SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
+	shared := buildoutputs.SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
 	out = append(out, protocol.Finding{
 		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
 		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),

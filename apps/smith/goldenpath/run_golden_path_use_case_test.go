@@ -28,7 +28,7 @@ type workspace struct {
 // smith runs the binary and returns its output; wantOK says whether it must succeed.
 func (w *workspace) smith(wantOK bool, args ...string) string {
 	w.t.Helper()
-	cmd := exec.Command(w.bin, args...)
+	cmd := exec.Command(w.bin, withYes(args)...)
 	cmd.Dir = w.dir
 	// A smith home of its own, so the trust a test records is not the developer's.
 	cmd.Env = append(append(os.Environ(), "SMITH_HOME="+filepath.Join(filepath.Dir(w.bin), "smith-home")), w.env...)
@@ -39,6 +39,26 @@ func (w *workspace) smith(wantOK bool, args ...string) string {
 		w.t.Fatalf("smith %s: err=%v\n%s", strings.Join(args, " "), err, out)
 	}
 	return string(out)
+}
+
+// withYes adds --yes to a command that changes the workspace and refuses to run
+// without a terminal or --yes (ADR 0072), unless the test already says --yes,
+// --dry-run or --check: these tests play a person who confirms every plan.
+func withYes(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	changes := false
+	switch args[0] {
+	case "add", "upgrade", "derive", "undo", "convert":
+		changes = true
+	case "adopt":
+		changes = slices.Contains(args, "--init")
+	}
+	if !changes || slices.Contains(args, "--yes") || slices.Contains(args, "--dry-run") || slices.Contains(args, "--check") {
+		return args
+	}
+	return append(append([]string{}, args...), "--yes")
 }
 
 // trust trusts an external plugin the workspace declares, and pins its digest:

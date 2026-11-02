@@ -21,12 +21,14 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/npmpolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/npmprune"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/pipelinetemplate"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
 	"github.com/monosmith-app/monosmith/apps/smith/pydepscheck"
 	"github.com/monosmith-app/monosmith/apps/smith/pypolicy"
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
+	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
 	"os"
 	"strings"
@@ -37,6 +39,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/choiceview"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/composeview"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
 	"github.com/monosmith-app/monosmith/apps/smith/copymeasure"
@@ -66,6 +69,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriadd"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"github.com/monosmith-app/monosmith/apps/smith/tui"
 	"github.com/monosmith-app/monosmith/apps/smith/upgrade"
 	"github.com/monosmith-app/monosmith/apps/smith/why"
@@ -78,6 +82,19 @@ import (
 func withWizard(cmd *cobra.Command, version string) *cobra.Command {
 	cmd.AddCommand(recipewizard.NewCommand(version))
 	return cmd
+}
+
+// applyConfirmSetting reads [workspace] confirm from the workspace the command
+// runs in, so every plan presents itself the way the person set. A missing or
+// broken smith.toml leaves the default (every plan asks).
+func applyConfirmSetting() {
+	root, err := workspace.FindRoot(".")
+	if err != nil {
+		return
+	}
+	if cfg, err := workspace.Load(root); err == nil {
+		operationplan.DefaultConfirm = cfg.Workspace.Confirm
+	}
 }
 
 // Root builds the smith command.
@@ -99,6 +116,8 @@ already have), then build and doctor.`,
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		// [workspace] confirm says which plans ask; every plan reads it from here.
+		PersistentPreRun: func(*cobra.Command, []string) { applyConfirmSetting() },
 	}
 	root.AddGroup(&cobra.Group{ID: "start", Title: "Create:"}, &cobra.Group{ID: "work", Title: "Work:"}, &cobra.Group{ID: "ship", Title: "Ship:"}, &cobra.Group{ID: "inspect", Title: "Inspect:"})
 	add := func(group string, cmds ...*cobra.Command) {
@@ -109,11 +128,11 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), swapchoice.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
-	add("work", devservers.Command(version), derive.Command(version), operation.UndoCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
+	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
-	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version))
+	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version, cipipeline.AssetsPrepare))
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)
@@ -122,7 +141,7 @@ already have), then build and doctor.`,
 	agentCmd := agentfiles.Command()
 	agentCmd.AddCommand(agentdoc.FileCommand(version))
 	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
-	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), composeview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 
@@ -215,7 +234,7 @@ func runCommand(version string, args []string) (int, string) {
 			return 1, "smith: " + message
 		case errors.As(err, &p):
 			return 1, p.Error()
-		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported):
+		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported) && !errors.Is(err, toolinstall.ErrMissing):
 			return 1, "smith: " + err.Error()
 		}
 		return 1, ""

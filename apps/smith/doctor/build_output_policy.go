@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -30,7 +31,7 @@ func OutsideBuildDir(projects []*projectgraph.Project, allowed ...string) []stri
 				// A package whose smith.toml declares the dist/ beside its
 				// package.json (main and types point there) has chosen it.
 				ownDist := resolved == path.Join(p.Root, "dist") || strings.HasPrefix(resolved, path.Join(p.Root, "dist")+"/")
-				if InsideAny(resolved, allowed) || protocol.InBuildDir(resolved) || (ownDist && strings.HasPrefix(from, "smith.toml")) {
+				if buildoutputs.InsideAny(resolved, allowed) || protocol.InBuildDir(resolved) || (ownDist && strings.HasPrefix(from, "smith.toml")) {
 					continue
 				}
 				if from == "" {

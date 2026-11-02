@@ -63,6 +63,18 @@ that mirrors the project's (`apps/web` builds into `dist/apps/web`). Delete
 `dist/` to clean everything. `smith doctor` fails a task whose output goes
 anywhere else.
 
+## framework
+
+How an app or a library is written: a web framework such as React or Vue, or a whole starter. It is a
+choice on the framework layer of a project (see [`smith compose`](../manual/compose.md)). A terminal form
+shows it as `framework = how the app or library is written`.
+
+## host
+
+Where code runs in the cloud: an Azure Functions, AWS Lambda or Google Cloud Functions app, with the trigger
+and the runtime it asks for. It is a choice on the host layer of a project (see
+[`smith compose`](../manual/compose.md)).
+
 ## fix
 
 What `smith doctor --fix` applies for a failed check: new file contents, commands
@@ -157,6 +169,11 @@ still writes the table `[levels.<role>]` and the protocol still writes `level` i
 The CycloneDX software bill of materials `smith release` attaches to the GitHub
 Release of an app, listing its dependencies. See
 [Releasing](releasing.md#sbom-and-build-provenance).
+
+## shell
+
+What wraps an app as a program you install on a computer: Tauri or Electron. It is a choice on the shell layer
+of a project (see [`smith compose`](../manual/compose.md)).
 
 ## slice
 
