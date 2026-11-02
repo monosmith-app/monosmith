@@ -1884,6 +1884,11 @@ class ToolNeed(_ToolNeedRequired, total=False):
     Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
     needed by a project built without it. Absent means every project of the plugin needs it.
     """
+    systems: list[str]
+    """
+    Systems limits the tool to these systems, named as Go names them ("windows", "darwin",
+    "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.
+    """
     suggested: str
     """
     Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and

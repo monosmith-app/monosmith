@@ -203,13 +203,13 @@ func TestThePlanOffersRunCopyAndRecipe(t *testing.T) {
 		Command: "smith add app shell --lang node --with electron,eslint,vitest",
 		Argv:    []string{"smith", "add", "app", "shell", "--lang", "node", "--with", "electron,eslint,vitest"},
 		Files:   []compose.PlanLine{{Action: "create", Path: "apps/shell/"}},
-		Tools:   []compose.Tool{{Choice: "electron", Name: "Node.js", Install: "install Node"}},
+		Tools:   []compose.Tool{{Choice: "electron", Name: "node", Title: "Node.js", State: "missing", Command: "smith tools install node"}},
 		Notes:   []string{"eslint and vitest are added by default"},
 
 		RecipeArgv: []string{"smith", "recipe", "new", "--name", "x"}, RecipeNote: "A recipe fixes the plugins.",
 	}
 	m = m.WithPlan(plan, nil)
-	for _, want := range []string{"smith add app shell", "create apps/shell/", "It needs these tools", "run it now"} {
+	for _, want := range []string{"smith add app shell", "create apps/shell/", "It needs these tools", "smith tools install node", "run it now"} {
 		if !strings.Contains(text(m), want) {
 			t.Fatalf("the plan shows %q:\n%s", want, text(m))
 		}

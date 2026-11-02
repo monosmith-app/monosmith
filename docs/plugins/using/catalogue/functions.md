@@ -43,7 +43,7 @@ greeting slice, `src/functions/greeting.handler.ts` with its test, `scripts/asse
 | `typecheck` | `tsc -p tsconfig.json --noEmit` |
 | `lint`, `test` | `eslint .`, `vitest run` |
 | `start` | builds, then runs the function locally (see above) |
-| `package` | builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them) |
+| `package` | builds, then zips `dist/apps/<name>/<name>.zip`; Azure's zip holds the production dependencies, Google's does not (the platform installs them). A library of the workspace (smith install -w <app> workspace:<lib>) is built and shipped too: Node packs it into a tarball under the stage and points the manifest at it, Python copies its packages into the zip, .NET publishes the project reference. A Node library must have a build that writes to the workspace's dist/ |
 
 ## Doctor
 

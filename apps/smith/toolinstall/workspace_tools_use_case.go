@@ -3,6 +3,8 @@ package toolinstall
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -26,8 +28,8 @@ func sourcesOf(s *session.Session) []Source {
 		return nil
 	}
 	for _, c := range s.Plugins.Clients {
-		if len(c.Info.Tools) > 0 {
-			out = append(out, Source{Plugin: c.Info.Plugin.Name, Languages: c.Info.Languages, Tools: c.Info.Tools})
+		if tools := ForSystem(c.Info.Tools, runtime.GOOS); len(tools) > 0 {
+			out = append(out, Source{Plugin: c.Info.Plugin.Name, Languages: c.Info.Languages, Tools: tools})
 		}
 	}
 	return out
@@ -43,7 +45,7 @@ func usesOf(s *session.Session) []Use {
 		u := Use{Project: p.Name, Language: p.Language, Root: filepath.Join(s.Root, filepath.FromSlash(p.Root))}
 		if p.Stack != "" {
 			if st, err := s.Stacks.Get(p.Stack); err == nil {
-				u.Choices = st.Choices
+				u.Choices = append(slices.Clone(st.Choices), st.Toolchain...)
 			}
 		}
 		out = append(out, u)

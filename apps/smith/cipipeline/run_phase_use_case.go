@@ -53,6 +53,19 @@ func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writ
 	return RunPhaseFor(ctx, s, phase, false, AssetsRun{}, out)
 }
 
+// AssetsPrepare returns the step that installs the dependencies in the
+// worktree of a tag before its release files are built: the same install
+// `smith ci assets` runs, so `smith release assets --source tag` builds from
+// the same state (ADR 0075).
+//
+// Parameters: out receives the install output.
+// Returns: a function for releaseassets.Request.Prepare.
+func AssetsPrepare(out io.Writer) func(ctx context.Context, ws *session.Session) error {
+	return func(ctx context.Context, ws *session.Session) error {
+		return RunPhaseFor(ctx, ws, "setup", true, AssetsRun{}, out)
+	}
+}
+
 // RunPhaseFor runs one CI phase. With assets set, the setup phase installs
 // only what the assets job needs: it leaves out the projects whose [release]
 // install is false (smith ci setup --assets). A tag (project@version) makes the
@@ -281,9 +294,7 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		res, err := releaseassets.Run(ctx, s, releaseassets.Request{
 			Platform: os.Getenv("SMITH_PLATFORM"), Tag: run.Tag, Source: run.Source, Terminal: run.Terminal, In: run.In, Out: out,
 			// A tag's own commit is a fresh checkout without the installed dependencies.
-			Prepare: func(ctx context.Context, ws *session.Session) error {
-				return RunPhaseFor(ctx, ws, "setup", true, AssetsRun{}, out)
-			},
+			Prepare: AssetsPrepare(out),
 		})
 		if err == nil && res.Skipped != "" {
 			// The job summary says it too, so a run that did nothing does not read as a success.

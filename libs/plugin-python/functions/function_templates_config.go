@@ -51,9 +51,15 @@ __all__ = ["[[.Handler]]"]
 `,
 	"[[.Dir]]/package.py": `"""Stages the deployed files into the workspace's dist/ ("build") and zips them ("zip")."""
 
+import json
+import re
 import shutil
 import sys
+import tomllib
+from importlib.metadata import PackageNotFoundError, distribution
 from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 OUT = Path("[[.BuildDir]]")
 STAGE = OUT / "app"
@@ -71,6 +77,52 @@ FLATTEN = False
 IGNORE = shutil.ignore_patterns("__pycache__", "*.egg-info", "*.pyc")
 
 
+def requirement_name(requirement: str) -> str:
+    """The distribution name of a requirement line ("core-py>=1" gives "core-py")."""
+    return re.split(r"[\s;<>=!~\[(]", requirement.strip(), maxsplit=1)[0]
+
+
+def workspace_library(name: str) -> Path | None:
+    """The folder of a library of this workspace, or None for a package of a registry.
+
+    smith installs a library of the workspace into the venv from its folder, and pip
+    records that folder in direct_url.json. The registry has no such package, so the
+    zip must carry the library's code.
+    """
+    try:
+        raw = distribution(name).read_text("direct_url.json")
+    except PackageNotFoundError:
+        return None
+    url = urlparse(json.loads(raw).get("url", "")) if raw else None
+    return Path(url2pathname(url.path)) if url and url.scheme == "file" else None
+
+
+def library_packages(folder: Path, name: str) -> list[Path]:
+    """The importable packages of a library: its import name under src/, else every package there."""
+    roots = [folder / "src", folder]
+    wanted = name.replace("-", "_").lower()
+    for root in roots:
+        if (root / wanted / "__init__.py").is_file():
+            return [root / wanted]
+    return [p.parent for p in sorted((folder / "src").glob("*/__init__.py"))]
+
+
+def workspace_packages() -> list[Path]:
+    """The packages of the workspace libraries the app depends on, and of the libraries they depend on."""
+    packages: dict[str, list[Path]] = {}
+    pending = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8")).get("project", {}).get("dependencies", [])
+    while pending:
+        name = requirement_name(pending.pop())
+        folder = None if name in packages else workspace_library(name)
+        if folder is None:
+            continue
+        packages[name] = library_packages(folder, name)
+        if not packages[name]:
+            sys.exit(f"{name} is a library of this workspace but has no package to ship: look in {folder}")
+        pending.extend(distribution(name).requires or [])
+    return [p for found in packages.values() for p in found]
+
+
 def build() -> None:
     """Copy the files that are deployed into the build folder."""
     shutil.rmtree(STAGE, ignore_errors=True)
@@ -82,6 +134,9 @@ def build() -> None:
             shutil.copytree(path, target, ignore=IGNORE, dirs_exist_ok=True)
         else:
             shutil.copy2(path, STAGE / path)
+    # The libraries of the workspace are not on the registry: the code goes into the zip.
+    for package in workspace_packages():
+        shutil.copytree(package, STAGE / package.name, ignore=IGNORE, dirs_exist_ok=True)
 
 
 def pack() -> None:

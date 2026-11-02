@@ -132,7 +132,7 @@ already have), then build and doctor.`,
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
-	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version))
+	releaseCmd.AddCommand(pubrelease.Command(version), releaseassets.Command(version, cipipeline.AssetsPrepare))
 	add("ship", releaseCmd, cipipeline.Command(version), pipelinetemplate.Command(version), dockerdescription.Command(version))
 	add("inspect", graphview.Commands(version)...)
 	add("inspect", clicontract.Commands(version)...)

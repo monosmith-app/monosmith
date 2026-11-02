@@ -53,13 +53,22 @@ Usage: `smith tools <command> [flags]`
 
 0; 1 outside a workspace.
 
+In the interactive shell, `tools install` opens a dialog instead of leaving for the terminal. It asks
+how to get each missing tool and shows the exact command of the option under the cursor. When the
+command needs administrator rights, it asks a second question: run it yourself, let smith run it,
+or skip. The output of the install streams in the dialog, and each tool ends with a result. A
+command that asks for a password (`sudo`) is handed over to the terminal, with your answer given.
+Esc cancels, and nothing is installed.
+
 ## Files and environment
 
 Reads the plugins' tool declarations, and the pin files named above at the workspace root and in
 the folders of the projects that use the tool. It runs only version commands (`python3 --version`).
 It changes nothing. Git is always listed; the GitHub CLI is listed when the workspace has a
 `.github` folder. The tools for running a function app locally (Azure Functions Core Tools, the AWS
-SAM CLI) are listed only when a project's stack has that choice.
+SAM CLI, and for a Tauri app Rust, the Xcode Command Line Tools, the Microsoft C++ Build Tools,
+WebView2 and the WebKitGTK libraries) are listed only when a project's stack has that choice. A tool
+that exists on one system only is listed on that system only.
 
 ## Examples
 

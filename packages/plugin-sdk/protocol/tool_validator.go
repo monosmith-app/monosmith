@@ -9,6 +9,9 @@ import (
 // ToolManagers are the package managers a ToolInstall may name.
 var ToolManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup"}
 
+// ToolSystems are the systems a ToolNeed may limit itself to.
+var ToolSystems = []string{"windows", "darwin", "linux"}
+
 // ToolPinFormats are the formats a ToolVersionPin may name.
 var ToolPinFormats = []string{"text", "go-mod", "pyproject", "global-json", "rust-toolchain"}
 
@@ -26,6 +29,11 @@ func ValidateToolNeed(t ToolNeed) error {
 		return fmt.Errorf("tool %s: download and source must be https addresses", t.Name)
 	case len(t.Checked) != len("2006-01-02"):
 		return fmt.Errorf("tool %s: checked must be a date (YYYY-MM-DD)", t.Name)
+	}
+	for _, sys := range t.Systems {
+		if !slices.Contains(ToolSystems, sys) {
+			return fmt.Errorf("tool %s: a system is one of %s, got %q", t.Name, strings.Join(ToolSystems, ", "), sys)
+		}
 	}
 	for _, in := range t.Install {
 		if !slices.Contains(ToolManagers, in.Manager) || in.Package == "" {

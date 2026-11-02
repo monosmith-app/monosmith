@@ -1,21 +1,19 @@
 package compose
 
-// Tool is a program a selection needs on the computer.
+// Tool is a program a selection needs on the computer, with whether it is
+// there. The composer never installs anything itself: the line in Command is
+// what the person runs (ADR 0077).
 type Tool struct {
-	// Choice is the pick that needs it.
+	// Choice is the pick that needs it: a choice, or the language.
 	Choice string `json:"choice"`
-	// Name is what the tool is called in text.
+	// Name is the tool's name in `smith tools install <name>`.
 	Name string `json:"name"`
-	// Binary is the program on PATH; empty when the project installs it itself.
+	// Title is what the tool is called in text.
+	Title string `json:"title"`
+	// Binary is the program on PATH.
 	Binary string `json:"binary,omitempty"`
-	// Install says how to get it, in one sentence.
-	Install string `json:"install,omitempty"`
+	// State is "installed", "outdated" or "missing".
+	State string `json:"state"`
+	// Command is the line that offers the install: `smith tools install <name>`.
+	Command string `json:"command"`
 }
-
-// ToolSource says which tools a pick needs. It is the hook where the data of
-// the tool installer joins the composer: a source returns nothing for a pick
-// that needs no tool. The composer never installs anything itself.
-//
-// Parameters: choice is the choice name; language is its language.
-// Returns: the tools, or nil.
-type ToolSource func(choice, language string) []Tool

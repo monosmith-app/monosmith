@@ -52,7 +52,10 @@ choice, never an action in silence.
   it is.
 - An install can still fail for reasons smith cannot see (no network, no rights). The output of
   the manager is shown, and the page and the manual way stay on offer.
-- The Tauri and Electron prerequisites and the compilers of C and C++ are not declared yet.
+- A tool can be limited to a system (`systems`: `windows`, `darwin`, `linux`), so the Xcode Command Line Tools are not asked on Windows. The Tauri plugin declares Rust, the Xcode Command Line Tools, the Microsoft C++ Build Tools, WebView2 and the WebKitGTK libraries, limited to the choice `tauri`. Electron needs only Node. The C and C++ plugin declares a compiler per system. The Docker plugin declares Docker.
+- Every install entry was checked against its package catalogue on the date in `checked` (the Fedora names against the Fedora package data, the .NET names on the Microsoft Learn pages). An entry that cannot be found is removed from the install options; the official page stays. Windows cannot tell whether the C++ workload is inside the Build Tools: smith checks only that the Visual Studio Installer is there.
+- In the interactive shell, `tools install` opens a dialog (`apps/smith/tui/toolsdialog`): one question per missing tool with the exact command of each option and the marked default, a second question when the command needs administrator rights, the output of the install as it streams, and a result per tool. It reads the choices with `tools install --dry-run --json` and runs the answer with `--manager` (and `--with-admin` only after the second answer). A `sudo` command asks for a password, so it is handed over to the terminal with the answer given. A command with `--yes`, `--manager` or `--dry-run` keeps the terminal hand-over.
+- `smith compose` and the composer screens list every tool of the chosen stack with its state and the line `smith tools install <tool>`, from the same data.
 
 ## Sources
 

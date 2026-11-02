@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/versionsync"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name in a stack's toolchain list and in smith.toml
@@ -36,6 +37,8 @@ func (p *Tauri) Describe(params protocol.InitializeParams) (protocol.InitializeR
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  []string{TaskName},
 		Choices:   Choices(),
+		// What a Tauri app needs on top of Node: Rust, and the system pieces of each system.
+		Tools: toolcatalog.ForChoice(Name, "rust", "xcode-clt", "msvc-build-tools", "webview2", "tauri-linux-libs"),
 		Stacks: []protocol.Stack{{
 			Name:        Stack,
 			Description: "TypeScript on Node, linted by eslint, unit-tested with Vitest, packaged as a desktop app with Tauri",

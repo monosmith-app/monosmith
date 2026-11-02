@@ -10,8 +10,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
@@ -30,6 +30,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
 )
 
 var tabTitles = map[string]string{
@@ -167,7 +168,12 @@ type Shell struct {
 	// the catalogue it was read from, kept for the next time.
 	compose    *composer.Model
 	composeCat *compose.Catalogue
-	exitNote string
+	// tools is the "Install the missing tools" dialog while it is open;
+	// toolsProc is the install it streams and toolsArgv the command it came from.
+	tools     *toolsdialog.Model
+	toolsProc runner.Handle
+	toolsArgv []string
+	exitNote  string
 	// reopen is true when the shell leaves only to start again inside the workspace it made.
 	reopen bool
 	// reopenStart is the command the reopened shell starts with; start is the one this shell starts with.
@@ -492,6 +498,10 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 			s.releaseWaiting = nil
 			return s.execute(argv, false)
 		}
+	case toolsStartedMsg:
+		return s.toolsStarted(msg)
+	case toolsOutputMsg:
+		return s.toolsOutput(msg)
 	case capturedMsg:
 		return s.captured(msg)
 	case openedMsg:
@@ -520,6 +530,10 @@ func (s *Shell) resize(w, h int) {
 	if s.adopt != nil {
 		placed := s.adopt.Place(w, h)
 		s.adopt = &placed
+	}
+	if s.tools != nil {
+		placed := s.tools.Place(w, h)
+		s.tools = &placed
 	}
 	if s.compose != nil {
 		placed := s.compose.Place(w, h)

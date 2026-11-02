@@ -284,7 +284,11 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 	if len(p.Tools) > 0 {
 		lines = append(lines, th.Bold("It needs these tools:"))
 		for _, t := range p.Tools {
-			lines = append(lines, "  "+t.Name+th.Muted(" ("+t.Choice+"): "+t.Install))
+			text := "  " + t.Title + th.Muted(" ("+t.State+", for "+t.Choice+")")
+			if t.State != "installed" {
+				text += th.Muted(": " + t.Command)
+			}
+			lines = append(lines, text)
 		}
 		lines = append(lines, "")
 	}

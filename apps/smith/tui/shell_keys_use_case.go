@@ -40,6 +40,8 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch {
+	case s.tools != nil:
+		return s.toolsKey(name)
 	case s.compose != nil:
 		return s.composeKey(msg)
 	case s.adopt != nil:
