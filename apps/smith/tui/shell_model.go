@@ -476,8 +476,19 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	case tea.WindowSizeMsg:
 		s.resize(msg.Width, msg.Height)
 	case tea.KeyMsg:
+		if s.belowMinimum() {
+			// Nothing is drawn but the hint: a key must not act on a screen the
+			// person cannot see (Enter could start a command). Ctrl+C still leaves.
+			if msg.String() == "ctrl+c" {
+				s.quit = true
+			}
+			return nil
+		}
 		return s.key(msg)
 	case tea.MouseMsg:
+		if s.belowMinimum() {
+			return nil
+		}
 		return s.mouse(msg)
 	case tickMsg:
 		s.tick++

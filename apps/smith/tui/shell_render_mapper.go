@@ -35,6 +35,12 @@ const (
 	minHeight = 9
 )
 
+// belowMinimum is true while the terminal is too small to draw the screens.
+// Its size is known (a size of zero is the start, before the first size).
+func (s Shell) belowMinimum() bool {
+	return s.w >= 1 && s.h >= 1 && (s.w < minWidth || s.h < minHeight)
+}
+
 // tooSmall is the one-line hint shown on a terminal below the minimum, cut to
 // the width when even the hint does not fit.
 func (s Shell) tooSmall() string {

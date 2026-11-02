@@ -19,6 +19,21 @@ func TestTheTabStripAndTheFootersHelpAndQuitAreNeverCutAboveTheMinimumWidth(t *t
 	}
 }
 
+// TestBelowTheMinimumKeysDoNothingButLeave keeps an unseen screen from running
+// a command: Enter on the plan of an add would start it.
+func TestBelowTheMinimumKeysDoNothingButLeave(t *testing.T) {
+	l := newLab(t, true, minWidth-1, 24)
+	before := l.sh().tab
+	l.keys("a", "enter", "enter", "6", "?")
+	if sh := l.sh(); sh.tab != before || sh.quit || sh.confirm != nil {
+		t.Fatalf("keys acted below the minimum: tab %q (was %q), confirm %v", sh.tab, before, sh.confirm)
+	}
+	l.keys("ctrl+c")
+	if !l.sh().quit {
+		t.Fatal("Ctrl+C does not leave a terminal that is too small")
+	}
+}
+
 func TestBelowTheMinimumTheScreenIsOneHintLine(t *testing.T) {
 	l := newLab(t, true, minWidth-1, 24)
 	lines := l.lines()
