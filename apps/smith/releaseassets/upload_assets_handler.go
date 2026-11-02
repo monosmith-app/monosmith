@@ -1,13 +1,20 @@
 package releaseassets
 
 import (
+	"context"
+	"io"
+
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
 
 // Command is `smith release assets`.
-func Command(version string) *cobra.Command {
+//
+// Parameters: version is smith's version; prepare makes the install step for
+// the worktree of a tag from the writer the command prints to (the package
+// that owns the CI phases gives it, so this package does not import it).
+func Command(version string, prepare func(out io.Writer) func(ctx context.Context, s *session.Session) error) *cobra.Command {
 	var req Request
 	cmd := &cobra.Command{
 		Use:   "assets",
@@ -33,6 +40,9 @@ asked and anything else is refused. Files of the same name are replaced.`,
 			}
 			defer s.Close()
 			req.Out, req.In, req.Terminal = cmd.OutOrStdout(), cmd.InOrStdin(), operationplan.DetectEnvironment().Terminal
+			if prepare != nil {
+				req.Prepare = prepare(req.Out)
+			}
 			_, err = Run(cmd.Context(), s, req)
 			return err
 		},
