@@ -111,6 +111,21 @@ asks the language only where the answer leaves more than one. It builds the same
 before anything is written. "I know the language" keeps the order kind, then language. See
 [the terminal interface](tui.md#guided-forms).
 
+## After the add
+
+When the project is a library, `smith add` ends with `Use it from an app: smith install -w <app> <library>`: a
+library is not a dependency of any app until you say so (see [`smith install`](install.md)). In the terminal
+interface, press `+` on the app and pick the library.
+
+When the first build or test of the new project cannot run because a tool is missing (the .NET SDK for a C#
+project, for example), the project is made and kept. The command prints which tool is missing and where to get
+it, exits with 1, and says `smith tools install` chooses how to install it. In the terminal interface and in
+VS Code the result is a choice: open the install page, install it with smith, check again, or continue without
+checking; nothing is lost.
+
+smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
+run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit these changes now".
+
 ## Desktop apps and the composer
 
 Two choices make a desktop app from a new Node project. `electron` writes a minimal Electron app on

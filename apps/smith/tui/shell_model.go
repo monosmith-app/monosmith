@@ -24,6 +24,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
@@ -170,10 +171,16 @@ type Shell struct {
 	composeCat *compose.Catalogue
 	// tools is the "Install the missing tools" dialog while it is open;
 	// toolsProc is the install it streams and toolsArgv the command it came from.
-	tools     *toolsdialog.Model
-	toolsProc runner.Handle
-	toolsArgv []string
-	exitNote  string
+	tools *toolsdialog.Model
+	// result is the dialog that closes a run that changed files or could not be
+	// checked; resultKept is the failure one, shown again after the tools install;
+	// runLines is the output of the run that is going or ended last.
+	result     *resultdialog.Model
+	resultKept *resultdialog.Model
+	runLines   []string
+	toolsProc  runner.Handle
+	toolsArgv  []string
+	exitNote   string
 	// reopen is true when the shell leaves only to start again inside the workspace it made.
 	reopen bool
 	// reopenStart is the command the reopened shell starts with; start is the one this shell starts with.
@@ -538,6 +545,10 @@ func (s *Shell) resize(w, h int) {
 	if s.compose != nil {
 		placed := s.compose.Place(w, h)
 		s.compose = &placed
+	}
+	if s.result != nil {
+		placed := s.result.Place(w, h)
+		s.result = &placed
 	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {

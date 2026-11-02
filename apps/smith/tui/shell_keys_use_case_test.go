@@ -28,7 +28,7 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 	}
 	l.keys("4")
 	footer = l.lines()[len(l.lines())-2]
-	for _, want := range []string{"F fix all", "g group", "r reload", "q quit"} {
+	for _, want := range []string{"F fix all", "g group", "r reload view", "q quit"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the Doctor footer lacks %q: %q", want, footer)
 		}
@@ -339,7 +339,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("✗ go.work lists every module", "F fix all", "r reload")
+	l.has("✗ go.work lists every module", "F fix all", "r reload view")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "Problem", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")

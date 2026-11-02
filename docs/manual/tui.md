@@ -117,6 +117,7 @@ each title (`Build orders`, `Build all 23`).
 |---|---|---|
 | Home | `Enter` | Do the suggested next action. |
 | any workspace view | `d` | Open Doctor (shown in the footer of Home and Projects). |
+| Home, Projects, Doctor, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; on the Run view the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
 | any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -w <project> ...` line, then runs it in the Run view. The palette's and the detail's "Install a package…" open the same form. |
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. |
@@ -124,7 +125,7 @@ each title (`Build orders`, `Build all 23`).
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
 | Projects, Run, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |
-| Run | `r` | Run the last command again. |
+| Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
 | Run | `Esc` | Show all output. |
@@ -181,6 +182,24 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons.
+
+### After a change: the result dialog
+
+When a run ends, a dialog says what happened and offers the next steps as choices, each with its
+consequence. The first line is always the one that does nothing, because smith never commits or installs unasked.
+
+- **A change that is not committed** (`add`, `remove`, `upgrade`, `derive`, `swap`): "Added app web", what was
+  created and how many files, then **Leave them uncommitted** (the default) or **Commit these changes now**.
+  The second one reads the files first (`smith commit <operation> --dry-run`), shows them in the usual
+  confirmation, and then makes one commit named from the operation (`chore: add app web`) that `smith undo`
+  can revert. The box in the confirmation before the change stays unticked. After a library, the dialog also
+  says how an app uses it: press `+` on the app and pick it, or `smith install -w <app> <library>`.
+- **An add that could not be checked because a tool is missing**: the project exists on disk, and the dialog
+  says so (`api-cs was created in apps/api-cs (12 files)`), then why the first build and test could not run
+  (`the .NET SDK is not installed`). Choices: **Open the install page** (copies the link and opens it),
+  **Install it with smith** (the tools dialog, which asks how before it runs anything, then returns here),
+  **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
+  (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
 
 ### Undo, report, why and derived files
 

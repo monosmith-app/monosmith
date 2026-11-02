@@ -75,6 +75,7 @@ Python package). Paths in output are shortened.
 | [`smith dev`](dev.md) | Start several projects together. |
 | [`smith derive`](derive.md) | Write the files that follow from facts and the project graph (tsconfig references, Jest display name), keep their owner in `smith.lock`, and report hand edits. |
 | [`smith undo`](undo.md) | Revert the last operation smith committed (`add`, `remove`, `upgrade`, `derive`, `sync`), with `git revert`. |
+| [`smith commit`](commit.md) | Commit the changes of the work tree as one operation that `smith undo` can revert, after the fact. |
 | [`smith eject`](eject.md) | Copy smith's default configuration of a tool (ruff, mypy, pytest, golangci-lint, rustfmt, phpstan) into the repository, to own it. |
 | [`smith install`](install.md), [`smith uninstall`](uninstall.md) | Add or remove packages in a project, or install the whole workspace. |
 | [`smith up`](up.md) | Show dependencies with newer releases and update the ones you pick. |

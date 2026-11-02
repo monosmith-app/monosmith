@@ -453,6 +453,22 @@ Usage: `smith undo [flags]`
 
 <!-- smith:end undo -->
 
+### smith commit
+
+[Manual page](../manual/commit.md)
+
+<!-- smith:begin commit -->
+Commit the changes in the work tree as one operation that smith undo can revert
+
+Usage: `smith commit [operation words] [flags]`
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--dry-run` | list the files that would be committed and change nothing | off |
+| `-y, --yes` | do not ask for confirmation | off |
+
+<!-- smith:end commit -->
+
 ### smith eject
 
 [Manual page](../manual/eject.md)

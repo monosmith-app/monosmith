@@ -52,6 +52,8 @@ type capturedMsg struct {
 // openedMsg says whether the system opened the report.
 type openedMsg struct {
 	path string
+	// link is true when path is an address the failure dialog opened, not the report.
+	link bool
 	err  error
 }
 
@@ -423,6 +425,14 @@ func (s *Shell) reportWritten(argv []string) tea.Cmd {
 
 // opened tells the person where the report is.
 func (s *Shell) opened(msg openedMsg) {
+	if msg.link {
+		if msg.err != nil {
+			s.notify("Could not open the page. The link is copied: paste it in a browser.", toast.Warning)
+			return
+		}
+		s.notify("Opened "+msg.path+" in your browser. The link is copied too.", toast.Success)
+		return
+	}
 	if msg.err != nil {
 		s.notify(fmt.Sprintf("Report written to %s, but the browser did not open (%v). Open that file yourself.", msg.path, msg.err), toast.Warning)
 		return

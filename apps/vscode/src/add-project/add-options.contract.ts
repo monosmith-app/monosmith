@@ -70,8 +70,26 @@ export interface AddRequest {
  */
 export type PlanAnswer = 'add' | 'add-commit' | 'fresh' | 'fresh-commit' | 'cancel'
 
-/** How adding a project ended. */
+/** A tool that stopped the first check of a new project (`smith add` made the project and kept it). */
+export interface MissingTool {
+  /** What the person calls it: "the .NET SDK". */
+  title:  string
+  /** The page that tells how to get it; absent when smith printed none. */
+  url?:   string
+  /** Where the project is; absent when smith printed none. */
+  dir?:   string
+  /** How many files smith wrote; 0 when unknown. */
+  files:  number
+  /** The smith arguments that run the first check again; absent when smith printed none. */
+  check?: string[]
+}
+
+/**
+ * How adding a project ended. `unchecked` is a success that could not be
+ * checked: the project is on disk, a tool it needs is missing.
+ */
 export type AddOutcome =
-  | { kind: 'added', name: string, lines: string[], committed: boolean } |
+  | { kind: 'added', name: string, role: string, operation: string, lines: string[], committed: boolean } |
+  { kind: 'unchecked', name: string, tool: MissingTool, lines: string[] } |
   { kind: 'refused', message: string } |
   { kind: 'cancelled' }

@@ -237,22 +237,44 @@ export async function confirmAddPlan (request: AddRequest, plan: string, follows
   }
 }
 
+/** What the notices of an add can do beyond showing text: the editor carries these out. */
+export interface AddFollowUp {
+  /** Commits the changes of the add as one operation, after its own confirmation. */
+  commit:     (operation: string) => Promise<void>
+  /** Runs the first check of the new project again, in a terminal. */
+  checkAgain: (args: string[]) => void
+}
+
 /**
- * Says how adding ended, and offers Undo after a success. It does not wait for the person to read it.
+ * Says how adding ended, and offers what comes next: Undo after a commit, a
+ * button that commits an add that was not committed, and the ways on when a
+ * tool is missing. It does not wait for the person to read it.
  * @param outcome - what `addProject` returned
  * @param onOutput - gets every line smith printed, for the output channel
+ * @param next - carries out the buttons that need the editor
  */
-export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) => void): void {
+export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) => void, next?: AddFollowUp): void {
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
       const undo = 'Undo'
+      const commit = 'Commit these changes now'
+      const use = 'Use it from an app…'
+      const library = outcome.role === 'lib'
       void vscode.window.showInformationMessage(
-        `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status.'}`,
-        ...(outcome.committed ? [undo] : []),
+        `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status, or commit it now (one commit that Undo can revert).'}${library ? ' Use it from an app: pick the app, then this library.' : ''}`,
+        ...(outcome.committed ? [undo] : (next === undefined ? [] : [commit])),
+        ...(library ? [use] : []),
       ).then(async (choice) => {
         if (choice === undo) await vscode.commands.executeCommand('monosmith.undo')
+        if (choice === commit) await next?.commit(outcome.operation)
+        if (choice === use) await vscode.commands.executeCommand('monosmith.addDependency')
       })
+      break
+    }
+    case 'unchecked': {
+      for (const line of outcome.lines) onOutput(line)
+      void tellUnchecked(outcome, next)
       break
     }
     case 'refused': {
@@ -262,5 +284,34 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
     case 'cancelled': {
       break
     }
+  }
+}
+
+/** Says the project was made but could not be checked, and offers the ways on. Nothing is lost: the project stays on disk. */
+async function tellUnchecked (outcome: Extract<AddOutcome, { kind: 'unchecked' }>, next?: AddFollowUp): Promise<void> {
+  const open = 'Open the install page'
+  const install = 'Install it with smith'
+  const again = 'Check again'
+  const skip = 'Continue without checking'
+  const where = outcome.tool.dir === undefined ? '' : ` in ${outcome.tool.dir}`
+  const files = outcome.tool.files > 0 ? ` (${outcome.tool.files} files)` : ''
+  const check = outcome.tool.check
+  for (;;) {
+    const choice = await vscode.window.showWarningMessage(
+      `MonoSmith: ${outcome.name} was created${where}${files}, and could not be checked yet: ${outcome.tool.title} is not installed. Nothing is lost: your project stays on disk.`,
+      ...(outcome.tool.url === undefined ? [] : [open]),
+      install,
+      ...(check === undefined || next === undefined ? [] : [again]),
+      skip,
+    )
+    if (choice === open && outcome.tool.url !== undefined) {
+      await vscode.env.openExternal(vscode.Uri.parse(outcome.tool.url))
+      continue
+    }
+    if (choice === install) await vscode.commands.executeCommand('monosmith.installTools')
+    if (choice === again && check !== undefined) next?.checkAgain(check)
+    if (choice === skip) void vscode.window.showInformationMessage(`MonoSmith: not checked. ${outcome.tool.title} is missing; the health view keeps reminding you.`)
+
+    return
   }
 }

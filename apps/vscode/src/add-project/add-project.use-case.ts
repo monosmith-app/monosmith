@@ -1,6 +1,7 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import { addArguments, followsSiblings } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
+import { parseMissingTool } from './add-missing-tool.mapper.ts'
 import { parseChoices, parseKinds, parseStacks } from './add-options.mapper.ts'
 
 /** What adding a project needs from the editor. */
@@ -50,5 +51,9 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   const committed = answer.endsWith('-commit')
   const done = await deps.apply(addArguments(request, 'apply', answer.startsWith('fresh') || request.fresh, committed))
 
-  return done.code === 0 ? { kind: 'added', name: request.name, lines: done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), committed } : { kind: 'refused', message: describeFailure(done) }
+  const lines = done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  if (done.code === 0) return { kind: 'added', name: request.name, role: request.role, operation: `add ${request.role} ${request.name}`, lines, committed }
+  const tool = parseMissingTool(`${done.stdout}\n${done.stderr}`)
+
+  return tool === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'unchecked', name: request.name, tool, lines }
 }

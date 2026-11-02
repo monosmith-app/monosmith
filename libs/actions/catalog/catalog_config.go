@@ -45,6 +45,7 @@ var catalog = []Action{
 	{Command: []string{"kind"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
 	{Command: []string{"derive"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}, {When: []string{"--explain"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"undo"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"commit"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"eject"}, Plan: "--dry-run", Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri", "add"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},

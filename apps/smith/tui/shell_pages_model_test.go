@@ -80,7 +80,7 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 	l.next = failingRun()
 	l.keys("b")
 	footer = footerOf(l)
-	for _, key := range []string{"r again", "R failed", "Y copy log", "f follow", "task"} {
+	for _, key := range []string{"r run again", "R failed", "Y copy log", "f follow", "task"} {
 		if !strings.Contains(footer, key) {
 			t.Fatalf("a failed run offers %q: %q", key, footer)
 		}
@@ -138,7 +138,7 @@ func TestTheDepsFooterOffersOnlyWhatWorksHere(t *testing.T) {
 	sh.sources.Deps = func() depsview.Result { return depsview.Result{} }
 	l.m = sh
 	l.keys("r")
-	if footer := footerOf(l); strings.Contains(footer, "u update") || strings.Contains(footer, "v align") || !strings.Contains(footer, "r reload") {
+	if footer := footerOf(l); strings.Contains(footer, "u update") || strings.Contains(footer, "v align") || !strings.Contains(footer, "r reload view") {
 		t.Fatalf("with nothing to update: %q", footer)
 	}
 	l.keys("u")
