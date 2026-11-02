@@ -30,7 +30,7 @@ func TestAFailedInstallPutsTheManifestAndLockBack(t *testing.T) {
 	if !errors.Is(err, failure) {
 		t.Fatalf("the failure must stay the cause: %v", err)
 	}
-	if !strings.Contains(err.Error(), "put pyproject.toml, uv.lock back as it was") {
+	if !strings.Contains(err.Error(), "put pyproject.toml, uv.lock back as they were") {
 		t.Errorf("the message must say what came back: %v", err)
 	}
 	if got := read(t, manifest); got != "[project]\ndependencies = []\n" {

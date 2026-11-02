@@ -107,6 +107,7 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		if ev.Status == Failed && t.Reason == "" {
 			t.Reason = "failed"
 		}
+		t.logReason()
 	case Stopped:
 		t := r.task(ev.Task)
 		t.Log = appendCapped(t.Log, "stopped", maxTaskLines)
@@ -119,6 +120,7 @@ func (r *Run) Feed(line string, now time.Time) Event {
 		if t.Reason == "" || t.Reason == "failed" {
 			t.Reason = ev.Text
 		}
+		t.logReason()
 	case Warned:
 		t := r.task(ev.Task)
 		t.Log = appendCapped(t.Log, "! "+ev.Text, maxTaskLines)
@@ -237,4 +239,12 @@ func appendCapped(lines []string, line string, limit int) []string {
 		lines = append([]string(nil), lines[len(lines)-limit:]...)
 	}
 	return lines
+}
+
+// logReason puts the reason a task failed into its empty log, so the pane that
+// shows the log is not blank while the reason sits in the detail beside it.
+func (t *Task) logReason() {
+	if t.Status == Failed && len(t.Log) == 0 && t.Reason != "" && t.Reason != "failed" {
+		t.Log = []string{t.Reason}
+	}
 }

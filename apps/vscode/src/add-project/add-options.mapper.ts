@@ -69,6 +69,17 @@ export function roleOf (kind: string, language: string): string {
 }
 
 /**
+ * The names of the choices a language offers (react, vue, fastapi), to show
+ * under the language and to find it when the list is filtered by one of them.
+ * @param choices - every choice smith lists
+ * @param language - the language of the new project
+ * @returns the names, without repeats, in the order smith lists them
+ */
+export function choiceNames (choices: readonly ChoiceOption[], language: string): string[] {
+  return [...new Set(choicesByAxis(choices, language).flatMap((axis) => axis.choices.map((choice) => choice.name)))]
+}
+
+/**
  * The choices a project of a language can be built from, grouped by axis.
  * @param choices - every choice smith lists
  * @param language - the language of the new project

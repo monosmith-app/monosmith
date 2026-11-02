@@ -71,6 +71,11 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 			}
 		}
 	}
+	for i := range steps {
+		if steps[i].Key == "lang" {
+			steps[i].Options = withChoiceNames(steps[i].Options, offers)
+		}
+	}
 	base.Steps = slices.Clone(steps)
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
@@ -111,6 +116,21 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 			argv = append(argv, "--like", first(a, "like"))
 		}
 		return argv
+	}
+	return out
+}
+
+// withChoiceNames gives each language option the names of the choices its
+// language offers, so filtering the list by "react" or "fastapi" finds the
+// language that offers it.
+func withChoiceNames(options []Option, offers []ChoiceOffer) []Option {
+	out := slices.Clone(options)
+	for i := range out {
+		for _, o := range offersOf(offers, out[i].Value) {
+			if !slices.Contains(out[i].Also, o.Name) {
+				out[i].Also = append(slices.Clone(out[i].Also), o.Name)
+			}
+		}
 	}
 	return out
 }

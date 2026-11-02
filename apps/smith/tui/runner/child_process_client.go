@@ -70,7 +70,7 @@ func Start(parent context.Context, spec Spec) (*Process, error) {
 	cmd := exec.CommandContext(ctx, program, spec.Argv...)
 	cmd.Dir = spec.Dir
 	// The child is not a terminal: it prints plain lines, one per event.
-	cmd.Env = append(os.Environ(), "NO_COLOR=1")
+	cmd.Env = append(os.Environ(), "NO_COLOR=1", "SMITH_INTERFACE=tui")
 	cmd.Stdin = nil
 	// Ask the child to stop the way a terminal would (Ctrl+C), so it can clean
 	// up its own task processes; where that is not possible, kill it.

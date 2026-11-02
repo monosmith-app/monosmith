@@ -26,7 +26,7 @@ func guarded(dirs []string, change func() error) error {
 		return nil
 	}
 	if restored := before.restore(); len(restored) > 0 {
-		return fmt.Errorf("%w\nNothing was kept: smith put %s back as it was. Check the package name, then try again", err, strings.Join(restored, ", "))
+		return fmt.Errorf("%w\nNothing was kept: smith put %s back as they were. You can:\n  1. Try again with the exact package name of the public registry (the default).\n  2. Cancel: your project is as it was before.\n  A library of this workspace is not on the registry, so its name cannot be installed this way", err, strings.Join(restored, ", "))
 	}
 	return err
 }
