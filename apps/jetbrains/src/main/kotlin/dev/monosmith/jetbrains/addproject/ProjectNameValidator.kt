@@ -1,4 +1,4 @@
-package dev.monosmith.jetbrains.smithaction
+package dev.monosmith.jetbrains.addproject
 
 /** The name of a new project, as far as the IDE can tell: smith has the last word. */
 object ProjectNameValidator {
