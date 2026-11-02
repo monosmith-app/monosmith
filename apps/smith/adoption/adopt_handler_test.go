@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -84,7 +85,7 @@ func TestInitOnAnAdoptedWorkspaceSaysWhyNotThatSomethingBlocks(t *testing.T) {
 		{Message: "this is already a smith workspace", Step: "nothing to adopt: smith doctor checks it", Blocks: BlocksAdoption},
 		{Message: "web has no release tag", Blocks: BlocksRelease},
 	}}
-	err := Init(r, "1.0.0", false, false, false, &bytes.Buffer{})
+	err := Init(r, "1.0.0", false, false, false, adoptdecision.Choices{CI: []string{"github"}, Gitattributes: adoptdecision.GitattributesSkip, Agent: adoptdecision.AgentSkip}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "already a smith workspace") || !strings.Contains(err.Error(), "nothing to adopt") {
 		t.Fatalf("err = %v", err)
 	}

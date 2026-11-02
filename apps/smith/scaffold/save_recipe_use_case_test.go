@@ -60,7 +60,7 @@ func TestNoLanguageNoRecipe(t *testing.T) {
 }
 
 func TestSavingARecipeAtTheEndWritesItInTheFirstCommit(t *testing.T) {
-	dir, out, err := runNew(t, true, "\nnode\n2\n\n\n\nyes\nteam\n")
+	dir, out, err := runNew(t, true, "\nnode\n2\n\n\n\n\nyes\nteam\n")
 	if err != nil {
 		t.Fatal(err)
 	}

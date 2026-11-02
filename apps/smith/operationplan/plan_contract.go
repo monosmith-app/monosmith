@@ -22,6 +22,9 @@ type Line struct {
 	Note string
 	// Owner is "smith" or "you" when smith.lock records the path, else empty.
 	Owner string
+	// Diff is the unified diff of a file that exists and may be hand-edited.
+	// It may be empty; Render shows at most MaxDiffLines of it.
+	Diff string
 }
 
 // Group is the lines that one feature adds, under one heading.

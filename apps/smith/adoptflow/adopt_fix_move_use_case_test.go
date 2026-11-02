@@ -15,10 +15,10 @@ func TestAdoptFixPassesTheAnswerAboutTheRootProject(t *testing.T) {
 		want   string
 		desc   string
 	}{
-		{false, "apps/web", "adopt --init --move apps/web", "Move the project into apps/web"},
-		{true, "apps/web", "adopt --init --move apps/web --commit", "the move is a commit of its own"},
-		{false, "none", "adopt --init --move none", "leaving the project at the root"},
-		{false, "", "adopt --init", "Make this repository a smith workspace"},
+		{false, "apps/web", "adopt --init --yes --move apps/web", "Move the project into apps/web"},
+		{true, "apps/web", "adopt --init --yes --move apps/web --commit", "the move is a commit of its own"},
+		{false, "none", "adopt --init --yes --move none", "leaving the project at the root"},
+		{false, "", "adopt --init --yes", "Make this repository a smith workspace"},
 	}
 	for _, c := range cases {
 		fix := s.AdoptFix(c.commit, c.move)

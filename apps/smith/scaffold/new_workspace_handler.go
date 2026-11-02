@@ -3,6 +3,7 @@ package scaffold
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,6 +27,9 @@ type newFlags struct {
 	language, architecture, branch, remote string
 	githubReleases                         bool
 	agent, noAgent                         bool
+	devcontainer, noDevcontainer           bool
+	noCommit, includeSecrets               bool
+	firstCommit                            string
 	cacheMaxMB                             int
 }
 
@@ -99,6 +103,21 @@ nothing is asked.`,
 					fmt.Fprintln(out)
 				}
 			}
+			if !asked {
+				describeDefaults(cmd, answers, opts, out)
+			}
+			opts.ModulePrefix = ChooseModulePrefix(PrefixRequest{
+				Given: opts.ModulePrefix, Name: opts.Name, Dir: dirOf(opts), Language: opts.Language,
+				Interactive: asked, In: in, Out: out,
+			})
+			decision, err := ChooseFirstCommit(CommitRequest{
+				Dir: dirOf(opts), Mode: f.firstCommit, NoCommit: f.noCommit, IncludeSecrets: f.includeSecrets,
+				Yes: f.yes, Interactive: asked, In: in, Out: out,
+			})
+			if err != nil {
+				return err
+			}
+			opts.FirstCommit, opts.IncludeSecrets = decision.Mode, decision.IncludeSecrets
 			dir, err := NewWorkspace(opts)
 			if err != nil {
 				return err
@@ -128,6 +147,11 @@ nothing is asked.`,
 	flags.StringVar(&f.remote, "release-remote", "", "the git remote that receives release tags (default origin)")
 	flags.BoolVar(&f.agent, "agent", true, "add the MonoSmith agent: .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)")
 	flags.BoolVar(&f.noAgent, "no-agent", false, "leave the MonoSmith agent out; smith agent install adds it later")
+	flags.BoolVar(&f.devcontainer, "devcontainer", true, "add .devcontainer/devcontainer.json (default)")
+	flags.BoolVar(&f.noDevcontainer, "no-devcontainer", false, "leave the dev container out; sets [ci] devcontainer = false")
+	flags.BoolVar(&f.noCommit, "no-commit", false, "write the files and commit nothing")
+	flags.StringVar(&f.firstCommit, "first-commit", "", "what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted)")
+	flags.BoolVar(&f.includeSecrets, "include-secrets", false, "let --first-commit all commit files whose names look like secrets (.env, keys)")
 	flags.BoolVar(&f.githubReleases, "github-releases", false, "create a GitHub Release for every release tag")
 	flags.StringVar(&opts.CacheDir, "cache-dir", "", "the task cache folder inside the workspace (default .smith/cache)")
 	flags.IntVar(&f.cacheMaxMB, "cache-max-mb", 0, "the largest the task cache may grow, in MB; 0 for no limit (default 2048)")
@@ -171,6 +195,12 @@ func answersFromFlags(cmd *cobra.Command, opts *NewOptions, f newFlags) (map[str
 		}
 		answers[AnswerAgent] = map[bool]string{true: "yes", false: "no"}[f.agent && !f.noAgent]
 	}
+	if changed("devcontainer") || changed("no-devcontainer") {
+		if changed("devcontainer") && changed("no-devcontainer") && f.devcontainer == f.noDevcontainer {
+			return nil, fmt.Errorf("--devcontainer and --no-devcontainer say opposite things; use one")
+		}
+		answers[AnswerDevcontainer] = map[bool]string{true: "yes", false: "no"}[f.devcontainer && !f.noDevcontainer]
+	}
 	if changed("github-releases") {
 		answers[AnswerGitHubReleases] = map[bool]string{true: "yes", false: "no"}[f.githubReleases]
 	}
@@ -188,4 +218,41 @@ func answersFromFlags(cmd *cobra.Command, opts *NewOptions, f newFlags) (map[str
 		}
 	}
 	return answers, nil
+}
+
+// dirOf is the folder smith new fills: --dir, or ./<name>.
+func dirOf(opts NewOptions) string {
+	dir := opts.Dir
+	if dir == "" {
+		dir = opts.Name
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	return abs
+}
+
+// describeDefaults says, when nothing was asked (--yes or no terminal), what
+// smith chose for the questions the person did not answer with a flag, and the
+// flag that changes each. Nothing is written in silence.
+func describeDefaults(cmd *cobra.Command, answers map[string]string, opts NewOptions, out io.Writer) {
+	var lines []string
+	if _, given := answers[AnswerAgent]; !given && !opts.NoAgent {
+		lines = append(lines, "agent files (.claude/agents/smith.md, .mcp.json, .vscode/mcp.json): written; --no-agent leaves them out")
+	}
+	if _, given := answers[AnswerDevcontainer]; !given && !opts.NoDevcontainer {
+		lines = append(lines, ".devcontainer/devcontainer.json: written; --no-devcontainer leaves it out")
+	}
+	if _, given := answers[AnswerCI]; !given {
+		lines = append(lines, "CI: "+strings.Join(opts.Providers, ", ")+"; --ci github,azure,gitlab,circleci,bitbucket changes it")
+	}
+	if len(lines) == 0 {
+		return
+	}
+	fmt.Fprintln(out, "Chosen for you:")
+	for _, l := range lines {
+		fmt.Fprintln(out, "  "+l)
+	}
+	fmt.Fprintln(out)
 }

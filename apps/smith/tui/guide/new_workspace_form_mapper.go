@@ -64,6 +64,8 @@ func NewWorkspaceArgv(a map[string][]string) []string {
 			argv = append(argv, "--"+q.Flag, "node="+value)
 		case scaffold.AnswerAgent:
 			argv = append(argv, "--no-agent")
+		case scaffold.AnswerDevcontainer:
+			argv = append(argv, "--no-devcontainer")
 		case scaffold.AnswerGitHubReleases:
 			argv = append(argv, "--"+q.Flag)
 		default:

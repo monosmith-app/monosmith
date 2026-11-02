@@ -40,6 +40,7 @@ func WithAnswers(opts NewOptions, answers map[string]string) (NewOptions, error)
 	}
 	opts.Architecture = get(AnswerArchitecture)
 	opts.NoAgent = get(AnswerAgent) == "no"
+	opts.NoDevcontainer = get(AnswerDevcontainer) == "no"
 	opts.ReleaseBranch = get(AnswerReleaseBranch)
 	opts.ReleaseRemote = get(AnswerReleaseRemote)
 	opts.GitHubReleases = get(AnswerGitHubReleases) == "yes"

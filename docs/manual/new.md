@@ -45,12 +45,17 @@ Usage: `smith new <name> [flags]`
 | `--cache-max-mb <cache-max-mb>` | string | `2048` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) |
 | `--ci <ci>` | string, repeatable: `github`, `azure`, `gitlab` | `github` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) |
 | `--default-stack <default-stack>` | string, repeatable | `node=node-jest` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts |
+| `--devcontainer` | boolean | off | add .devcontainer/devcontainer.json (default) |
 | `--dir <dir>` | string | `./<name>` | directory to create the workspace in (default ./<name>) |
+| `--first-commit <first-commit>` | string |  | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
 | `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
+| `--include-secrets` | boolean | off | let --first-commit all commit files whose names look like secrets (.env, keys) |
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
+| `--no-commit` | boolean | off | write the files and commit nothing |
+| `--no-devcontainer` | boolean | off | leave the dev container out; sets [ci] devcontainer = false |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
 | `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
@@ -80,6 +85,30 @@ Notes on the flags:
 In a terminal (standard input and output are terminals and `CI` is unset), a missing
 `<name>` is asked for: `Name of the workspace:`, up to three tries. Elsewhere it is the
 error listed below.
+
+## What smith chooses for you
+
+With `--yes`, or without a terminal, smith prints a "Chosen for you" block: the agent files, the dev
+container and the CI, each with the flag that changes it (`--no-agent`, `--no-devcontainer`,
+`--ci`). In a terminal the agent files and the dev container are questions.
+
+The Go module prefix comes from the origin remote. With no remote, a terminal asks (a suggestion from
+your git user name, `example.com/<name>`, or one you type); otherwise smith uses `example.com/<name>`
+and says so. `--module-prefix <prefix>` sets it.
+
+## The first commit
+
+In a new folder smith makes the first commit of its own files. `--no-commit` writes the files and
+commits nothing. In a folder that holds files and is not a git repository, smith runs `git init`,
+lists the files and asks what the first commit holds:
+
+1. Only smith's files (the default). Your files stay uncommitted.
+2. Nothing.
+3. Everything shown. Files whose names look like secrets (`.env*`, keys, credentials, `.npmrc`) need a
+   second yes, or `--include-secrets`.
+
+Without a terminal smith refuses and names `--first-commit smith|all|none` and `--no-commit`. With
+`--yes` it takes answer 1 and says so.
 
 ## The questions
 

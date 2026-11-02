@@ -189,7 +189,10 @@ func (s *Session) AgentFix() (doctorfix.Planned, bool) {
 // project at its root. A step that runs without a terminal never asks, so a
 // repository with a root project always gets --move.
 func (s *Session) AdoptFix(commit bool, move string) doctorfix.Planned {
-	argv := []string{convert.SmithCommand(), "adopt", "--init"}
+	// --yes: this step runs without a terminal. Each open choice of --init takes its
+	// safe default (no .gitattributes, no agent files, the CI the repository uses) and the
+	// output says which; the wizard offers the agent files in its own step.
+	argv := []string{convert.SmithCommand(), "adopt", "--init", "--yes"}
 	what := "Make this repository a smith workspace: write smith.toml and the pipelines"
 	step := "adopt the repository (smith.toml, the CI pipelines)"
 	switch move {

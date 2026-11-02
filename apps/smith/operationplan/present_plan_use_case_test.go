@@ -59,15 +59,38 @@ func TestShouldAskOnlyForAPersonAtATerminal(t *testing.T) {
 	}
 }
 
-func TestPresentNeverBlocksWithoutATerminal(t *testing.T) {
+func TestPresentRefusesWithoutATerminalAndNeverBlocks(t *testing.T) {
+	for _, env := range []Environment{{CI: true}, {}, {Terminal: true, CI: true}} {
+		var out bytes.Buffer
+		// An input that would block forever proves the question is not read.
+		ok, err := Present(&out, blockingReader{}, samplePlan(), Options{Ask: true, Env: env})
+		if err == nil || ok {
+			t.Fatalf("%+v: got %v, %v; want a refusal", env, ok, err)
+		}
+		if !strings.Contains(err.Error(), "--yes") || !strings.Contains(err.Error(), "--dry-run") {
+			t.Fatalf("the refusal must name both flags: %v", err)
+		}
+		if strings.Contains(out.String(), "Go ahead?") {
+			t.Fatal("asked without a terminal")
+		}
+	}
+}
+
+func TestPresentYesAppliesWithoutATerminal(t *testing.T) {
 	var out bytes.Buffer
-	// An input that would block forever proves the question is not read.
-	ok, err := Present(&out, blockingReader{}, samplePlan(), Options{Ask: true, Env: Environment{CI: true}})
+	ok, err := Present(&out, blockingReader{}, samplePlan(), Options{Ask: true, Yes: true})
 	if err != nil || !ok {
 		t.Fatalf("got %v, %v", ok, err)
 	}
-	if strings.Contains(out.String(), "Go ahead?") {
-		t.Fatal("asked in CI")
+}
+
+func TestRenderShowsADiffCapped(t *testing.T) {
+	var p Plan
+	p.Add("g", Line{Action: Change, Path: "a.json", Diff: strings.Repeat("+x\n", MaxDiffLines+5)})
+	var b bytes.Buffer
+	Render(&b, p)
+	if !strings.Contains(b.String(), "+x") || !strings.Contains(b.String(), "5 more line(s)") {
+		t.Fatalf("%s", b.String())
 	}
 }
 

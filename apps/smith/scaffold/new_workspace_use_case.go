@@ -39,6 +39,21 @@ type NewOptions struct {
 	// NoCommit leaves the files uncommitted (smith adopt commits once, after
 	// generating the pipelines for the projects it found).
 	NoCommit bool
+	// FirstCommit is what the first commit holds: CommitNone, CommitSmith,
+	// CommitAll, or "" for the usual rule (see ChooseFirstCommit). With "" in a
+	// folder that holds files and no repository, only smith's files are committed.
+	FirstCommit string
+	// IncludeSecrets lets CommitAll take files with secret names.
+	IncludeSecrets bool
+	// NoGitattributes leaves .gitattributes out: the repository keeps its line endings.
+	NoGitattributes bool
+	// SkipAgent writes no agent files this time and records no "never":
+	// smith agent install adds them later.
+	SkipAgent bool
+	// NoCI writes no pipeline: [ci] providers is empty.
+	NoCI bool
+	// NoDevcontainer leaves .devcontainer out and sets [ci] devcontainer = false.
+	NoDevcontainer bool
 
 	// The answers of the questions smith new asks (NewQuestions); a zero value
 	// is the default and leaves the commented line in smith.toml.
@@ -92,6 +107,12 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		return "", err
 	}
 	git := gitclient.New(dir)
+	var before FolderContent
+	if !git.IsRepository() {
+		if before, err = InspectFolder(dir); err != nil {
+			return "", err
+		}
+	}
 	// A repository smith creates is the workspace's alone, so its first commit
 	// takes everything in it. In someone else's repository smith commits only
 	// the files it wrote, and below the top of one (a folder of a bigger
@@ -114,7 +135,7 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	if opts.ModulePrefix == "" {
 		opts.ModulePrefix = modulePrefixFromRemote(git, opts.Name)
 	}
-	if len(opts.Providers) == 0 {
+	if len(opts.Providers) == 0 && !opts.NoCI {
 		opts.Providers = []string{"github"}
 	}
 	quoted := make([]string, len(opts.Providers))
@@ -137,6 +158,9 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		".gitignore":       gitignore,
 		".gitattributes":   gitattributes,
 		"README.md":        fmt.Sprintf(readme, opts.Name),
+	}
+	if opts.NoGitattributes {
+		delete(files, ".gitattributes")
 	}
 	var written []string
 	for name, body := range files {
@@ -175,7 +199,7 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		fmt.Fprintf(opts.Out, "  wrote %s\n", f)
 	}
 	written = append(written, pipelines...)
-	if !opts.NoAgent {
+	if !opts.NoAgent && !opts.SkipAgent {
 		agent, err := agentfiles.Plan(agentfiles.Options{Root: dir, Claude: true, VSCode: true, Agent: true})
 		if err != nil {
 			return "", err
@@ -192,6 +216,10 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	if opts.NoCommit {
 		return dir, nil
 	}
+	if opts.FirstCommit == CommitNone {
+		fmt.Fprintln(opts.Out, "  not committed (--no-commit)")
+		return dir, nil
+	}
 	if nested {
 		top, _ := git.TopLevel()
 		fmt.Fprintf(opts.Out, "  not committed: %s is inside the git repository at %s; commit the workspace there when ready\n", dir, filepath.FromSlash(top))
@@ -199,7 +227,11 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	}
 	message := "chore: create the " + opts.Name + " workspace with smith"
 	commit := func() error { return git.CommitPaths(message, written) }
-	if created {
+	switch {
+	case created && opts.FirstCommit == CommitAll:
+		commit = func() error { return git.CommitPaths(message, commitAllPaths(before, written, opts.IncludeSecrets)) }
+	case created && opts.FirstCommit == "" && len(before.Files) == 0:
+		// A folder smith made, or an empty one: everything in it is smith's.
 		commit = func() error { return git.CommitAll(message) }
 	}
 	if err := commit(); err != nil {
@@ -266,4 +298,21 @@ func remoteModulePrefix(git *gitclient.Git) string {
 func firstLine(s string) string {
 	line, _, _ := strings.Cut(s, "\n")
 	return line
+}
+
+// commitAllPaths is every file the first commit takes when the person chose
+// "everything": the files the folder held and the ones smith wrote, without the
+// ones that look like secrets unless includeSecrets is set. A node_modules
+// folder is never taken.
+func commitAllPaths(before FolderContent, written []string, includeSecrets bool) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, f := range append(append([]string{}, before.Files...), written...) {
+		if seen[f] || strings.HasSuffix(f, "/") || !includeSecrets && IsSecretName(f) {
+			continue
+		}
+		seen[f] = true
+		out = append(out, f)
+	}
+	return out
 }

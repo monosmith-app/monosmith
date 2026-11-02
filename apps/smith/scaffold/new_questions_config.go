@@ -31,6 +31,7 @@ const (
 	AnswerNodeStack      = "node-stack"
 	AnswerArchitecture   = "architecture"
 	AnswerAgent          = "agent"
+	AnswerDevcontainer   = "devcontainer"
 	AnswerMore           = "more"
 	AnswerReleaseBranch  = "release-branch"
 	AnswerReleaseRemote  = "release-remote"
@@ -126,6 +127,10 @@ func NewQuestions() []NewQuestion {
 		{Key: AnswerAgent, Prompt: "Add the MonoSmith agent, so Claude Code and VS Code can work in this workspace through smith?", Default: "yes", Flag: "agent", Options: []NewOption{
 			{Label: "Yes", Value: "yes", Hint: "writes .claude/agents/smith.md, .mcp.json and .vscode/mcp.json (default)"},
 			{Label: "No", Value: "no", Hint: "you can add it later with smith agent install"},
+		}},
+		{Key: AnswerDevcontainer, Prompt: "Add a dev container, so VS Code and Codespaces open this workspace with its toolchains installed?", Default: "yes", Flag: "devcontainer", Options: []NewOption{
+			{Label: "Yes", Value: "yes", Hint: "writes .devcontainer/devcontainer.json (default)"},
+			{Label: "No", Value: "no", Hint: "sets [ci] devcontainer = false in smith.toml"},
 		}},
 		{Key: AnswerMore, Prompt: "Change anything else? Release branch and remote, GitHub Releases, the cache.", Default: "no", Flag: "", Options: []NewOption{
 			{Label: "Keep the defaults", Value: "no", Hint: "you can change any of it later in smith.toml"},

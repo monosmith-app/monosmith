@@ -67,12 +67,17 @@ Usage: `smith new <name> [flags]`
 | `--cache-max-mb <cache-max-mb>` | the largest the task cache may grow, in MB; 0 for no limit (default 2048) | `2048` |
 | `--ci <ci>` | pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github) (repeatable) | `github` |
 | `--default-stack <default-stack>` | the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts (repeatable) | `node=node-jest` |
+| `--devcontainer` | add .devcontainer/devcontainer.json (default) | off |
 | `--dir <dir>` | directory to create the workspace in (default ./<name>) | `./<name>` |
+| `--first-commit <first-commit>` | what the first commit holds in a folder that has files and no git repository: smith (only smith's files), all (everything), none (asked when omitted) |  |
 | `--github-releases` | create a GitHub Release for every release tag | off |
 | `--here` | create the workspace in the current folder, which must be empty; the name defaults to the folder's | off |
+| `--include-secrets` | let --first-commit all commit files whose names look like secrets (.env, keys) | off |
 | `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
+| `--no-commit` | write the files and commit nothing | off |
+| `--no-devcontainer` | leave the dev container out; sets [ci] devcontainer = false | off |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
 | `--recipe-file <recipe-file>` | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |  |
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |
@@ -94,16 +99,20 @@ Usage: `smith adopt [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--agent <agent>` | with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false) |  |
+| `--ci <ci>` | with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none (repeatable) |  |
+| `--ci-existing <ci-existing>` | with --init, replace a pipeline of yours (kept as <file>.pre-smith) or keep it and write none for that provider |  |
 | `--commit` | with --init, commit the change as one operation, so smith undo can revert it | off |
 | `--dry-run` | only report (this is the default; the flag makes it explicit) | off |
 | `--eslint` | with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies | off |
+| `--gitattributes <gitattributes>` | with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it) |  |
 | `--init` | write smith.toml and the pipelines (nothing is committed unless --commit) | off |
 | `--install` | with --init, also run npm install for the Node projects | off |
 | `--json` | print the report as JSON | off |
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
-| `--yes` | do not ask: a project at the root moves only when --move says where | off |
+| `--yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
 
 <!-- smith:end adopt -->
 
@@ -131,7 +140,7 @@ Usage: `smith convert [flags]`
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
 | `--verbose` | name every project a finding applies to, not just a few | off |
-| `--yes` | apply without asking, and install an Nx workspace's packages first (a terminal asks before changing anything) | off |
+| `--yes` | apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
@@ -171,9 +180,11 @@ Usage: `smith remove <project> [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--delete` | delete the folder for good, including files git cannot bring back | off |
 | `--dry-run` | show what would change; change nothing | off |
 | `--force` | remove a project other projects still import | off |
 | `--json` | print what changed as JSON | off |
+| `--keep-copy` | move the project folder to .smith/removed/<name>-<time>/ instead of deleting it | off |
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end remove -->
