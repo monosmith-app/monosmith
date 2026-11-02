@@ -89,7 +89,12 @@ object AddRowsAlgorithm {
             } else {
                 // First, so Enter on the list picks nothing: a framework is the person's pick.
                 listOf(
-                    ChoiceRowContract(LATER, "Decide in the next question", "(default)", "You can still pick a framework, a shell or a tool there."),
+                    ChoiceRowContract(
+                        LATER,
+                        "Decide in the next question",
+                        "(default)",
+                        "You can still pick a framework, a shell or a tool there.",
+                    ),
                 )
             }
         ) + items.map { ChoiceRowContract(it.name, it.title, it.name, it.description, search = it.aliases.joinToString(" ")) }

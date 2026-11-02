@@ -75,6 +75,17 @@ describe('addProject', () => {
     expect(f.shown[0]?.plan).toContain('Plan: add app web')
   })
 
+  it('leaves the closing "Dry run" line out of the plan the person reads', async () => {
+    const f = fake({})
+    await addProject(f.deps)
+    expect(f.shown[0]?.plan).not.toContain('Dry run')
+  })
+
+  it('does not say it can be undone when smith printed "Not committed" for a commit that was asked', async () => {
+    const f = fake({ answer: 'add-commit', apply: OK('Done: app web is ready.\nNot committed. Your work tree had other changes.\n') })
+    expect(await addProject(f.deps)).toMatchObject({ kind: 'added', committed: false })
+  })
+
   it('tells the confirmation what was chosen, in words', async () => {
     const f = fake({})
     await addProject(f.deps)

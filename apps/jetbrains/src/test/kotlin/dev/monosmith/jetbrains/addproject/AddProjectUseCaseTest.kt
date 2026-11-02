@@ -93,6 +93,31 @@ class AddProjectUseCaseTest {
     }
 
     @Test
+    fun thePlanTheDialogShowsDoesNotEndWithTheDryRunLine() {
+        assertEquals(
+            "Plan: add app web",
+            AddProjectUseCase.withoutDryRunLine("Plan: add app web\nDry run: nothing was changed.\n"),
+        )
+    }
+
+    @Test
+    fun aCommitThatSmithSaysItDidNotMakeIsNotOfferedAnUndo() {
+        answerEveryQuestion(commit = true)
+        val environments = "--environments lcl,prd --default-environment prd --environment-output workspace --env-files commit"
+        fake.answers["add app web --lang node --with react,jest $environments --yes --commit"] =
+            fake.ok("Done: app web is ready.\nNot committed. Your work tree had other changes.\n")
+        AddProjectUseCase.run(fake.ports, emptyList(), follow) {}
+        assertTrue(fake.infos.single().contains("Not committed"))
+        assertEquals(
+            "Commit now",
+            fake.buttons
+                .single()
+                .first()
+                .label,
+        )
+    }
+
+    @Test
     fun theCommitNowButtonStartsTheCommitOfThisOperation() {
         answerEveryQuestion(commit = false)
         AddProjectUseCase.run(fake.ports, emptyList(), follow) {}

@@ -56,11 +56,15 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   const plan = await deps.run(addArguments(request, 'plan'))
   if (plan.code !== 0) return { kind: 'refused', message: describeFailure(plan) }
 
-  const answer = await deps.confirm(request, plan.stdout.trim(), followsSiblings(plan.stdout), choicesInWords(request, options))
+  // The dialog already says that nothing was changed: the closing "Dry run" line is left out.
+  const planText = plan.stdout.split(/\r?\n/).filter((line) => line.trim() !== 'Dry run: nothing was changed.').join('\n').trim()
+  const answer = await deps.confirm(request, planText, followsSiblings(plan.stdout), choicesInWords(request, options))
   if (answer === 'cancel') return { kind: 'cancelled' }
 
-  const committed = answer.endsWith('-commit')
-  const done = await deps.apply(addArguments(request, 'apply', answer.startsWith('fresh') || request.fresh, committed))
+  const asked = answer.endsWith('-commit')
+  const done = await deps.apply(addArguments(request, 'apply', answer.startsWith('fresh') || request.fresh, asked))
+  // smith prints "Not committed" when it could not (other changes in the work tree): nothing is there to undo.
+  const committed = asked && !/^Not committed/m.test(done.stdout)
 
   const lines = done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   if (done.code === 0) return { kind: 'added', name: request.name, role: request.role, operation: `add ${request.role} ${request.name}`, lines, committed }

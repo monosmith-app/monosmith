@@ -95,7 +95,7 @@ object AddProjectUseCase {
             ports.prompt.plan(
                 TITLE,
                 header,
-                plan.stdout.trim(),
+                withoutDryRunLine(plan.stdout),
                 "Add project",
                 offerCommit = true,
                 checks =
@@ -114,8 +114,23 @@ object AddProjectUseCase {
                 show = true,
             )
         ports.changed()
-        return tell(ports, follow, request, answered.commit, done)
+        // smith prints "Not committed" when it could not commit (other changes in the work tree): nothing to undo.
+        val committed = answered.commit && done.stdout.lines().none { it.startsWith("Not committed") }
+        return tell(ports, follow, request, committed, done)
     }
+
+    /**
+     * The plan without its closing "Dry run" line: the dialog already says that nothing was changed.
+     *
+     * @param text what `smith add --dry-run` printed
+     * @return the plan, trimmed
+     */
+    internal fun withoutDryRunLine(text: String): String =
+        text
+            .lines()
+            .filterNot { it.trim() == "Dry run: nothing was changed." }
+            .joinToString("\n")
+            .trim()
 
     private fun readOptions(ports: FlowPortsContract): AddOptionsContract? {
         val kinds = ports.smith.run(listOf("kinds", "--json"))
