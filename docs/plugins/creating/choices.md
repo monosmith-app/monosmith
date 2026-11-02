@@ -51,10 +51,14 @@ dependencies = ["bootstrap"]
 | Member | Meaning |
 |---|---|
 | `axis`, `name`, `description` | What it answers, how a person names it, one line for `smith choices`. Lowercase letters, digits and dashes. The name is unique among all loaded plugins. |
+| `title` | The name shown to a person (`title = "Electron"`). Without it, the name is shown. |
+| `aliases` | Words that find the choice in `smith compose` and in the first question of `smith add`: `aliases = ["desktop", "windows"]`. |
+| `layer` | Where the choice sits in the stack, for display and grouping: `framework`, `shell` (a desktop shell), `host` (where cloud code runs), `test`, `lint`, `style`, or a layer of your own. Without it, the layer is the axis. The axis still decides conflicts. |
 | `language` | The language plugin it applies to. |
 | `roles` | `scaffold`, `toolchain`, both, or none. See below. |
 | `needs` | Axes the selection must have a choice on: `needs = ["lint", "test"]`. |
 | `default` | `true` when this is the choice added for a needed axis the person left out. One per axis. |
+| `suggested` | `true` when an asker (the composer, the first question of `add`) pre-selects this choice on its axis. The solver never adds it by itself: an axis that is needed and has no `default` is asked ([ADR 0072](../../architecture/decisions/0072-smith-presents-every-decision-that-changes-something.md)). |
 | `many` | `true` when it may share its axis with other choices that are `many` too. |
 | `requires`, `conflicts` | Names of other choices. |
 | `dependencies` | Packages for the project's `package.json`. Names only. |
