@@ -131,6 +131,8 @@ func TestSearchingThePluginMarketplaceInstallsTheOnePicked(t *testing.T) {
 	l.drive(cmd)
 	l.has("Which plugin?", "deployer", "v0.2.0", "Deploys to the moon", "widget")
 	l.keys("enter")
+	l.has("Do you trust this plugin?", "Install it only (default)")
+	l.keys("enter")
 	l.has("Install a plugin", "smith plugin install deployer")
 	l.keys("enter")
 	if got := l.lastStarted(); got != "plugin install deployer" {
