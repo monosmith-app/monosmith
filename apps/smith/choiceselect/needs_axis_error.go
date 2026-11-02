@@ -11,6 +11,8 @@ import (
 type NeedsAxisError struct {
 	// Choice is the choice that needs the axis.
 	Choice string
+	// About is the description of that choice: what it writes.
+	About string
 	// Axis is the axis that has no choice yet.
 	Axis string
 	// Options are the choices of the axis that fit the selection, by name.

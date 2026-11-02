@@ -1,0 +1,7 @@
+axis = "runtime"
+name = "node22"
+description = "Node.js 22, the previous LTS; all three hosts support it until April 2027"
+language = "node"
+
+[slots]
+"node.major" = ["22"]

@@ -1,0 +1,122 @@
+axis = "framework"
+name = "gcp-functions"
+description = "a Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app"
+language = "node"
+roles = ["scaffold"]
+needs = ["trigger", "runtime", "lint", "test"]
+conflicts = ["jest"]
+dependencies = ["@google-cloud/functions-framework"]
+
+[slots]
+main = ["dist/index.js"]
+"package.mode" = ["zip"]
+
+[files]
+# The Functions Framework loads the module that package.json names as main.
+"src/index.ts" = '''
+import './functions/index.ts'
+'''
+
+"scripts/start.mjs" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+// Builds, then runs the function locally with the Functions Framework that the project
+// depends on, from the build folder.
+import { execFileSync, spawnSync } from 'node:child_process'
+
+const shell = process.platform === 'win32'
+execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
+const args = ['functions-framework', '--target=[[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]processObject[[end]]'[[if ne $t "http"]], '--signature-type=cloudevent'[[end]]]
+const result = spawnSync('npx', args, { cwd: '[[.Build]]', stdio: 'inherit', shell })
+process.exitCode = result.status ?? 1
+'''
+
+"src/functions/greeting.handler.ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+[[if eq $t "http"]]import { http, type Request, type Response } from '@google-cloud/functions-framework'
+[[else]]import { cloudEvent, type CloudEvent } from '@google-cloud/functions-framework'
+[[end]]import { greet } from '../greeting/index.ts'
+[[if eq $t "http"]]
+/**
+ * Answers GET /?name=Ada with a greeting.
+ * @param request - the HTTP request
+ * @param response - the HTTP response
+ */
+export function hello (request: Request, response: Response): void {
+  response.json(greet(typeof request.query.name === 'string' ? request.query.name : 'world'))
+}
+
+http('hello', hello)
+[[else if eq $t "queue"]]
+/** The data of a Pub/Sub event: the message text is base64. */
+interface PubSubData {
+  message?: { data?: string }
+}
+
+/**
+ * Greets the text of a Pub/Sub message.
+ * @param event - the CloudEvent that Pub/Sub sends
+ * @returns the greeting
+ */
+export function processMessage (event: CloudEvent<PubSubData>): string {
+  const text = Buffer.from(event.data?.message?.data ?? '', 'base64').toString('utf8')
+  const message = greet(text === '' ? 'world' : text).message
+  console.log(message)
+
+  return message
+}
+
+cloudEvent('processMessage', processMessage)
+[[else]]
+/** The data of a Cloud Storage event: the object that changed. */
+interface StorageData {
+  name?: string
+}
+
+/**
+ * Greets the name of a new Cloud Storage object.
+ * @param event - the CloudEvent that Cloud Storage sends
+ * @returns the greeting
+ */
+export function processObject (event: CloudEvent<StorageData>): string {
+  const message = greet(event.data?.name ?? 'object').message
+  console.log(message)
+
+  return message
+}
+
+cloudEvent('processObject', processObject)
+[[end]]'''
+
+"src/functions/index.ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+export { [[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]processObject[[end]] } from './greeting.handler.ts'
+'''
+
+"src/functions/greeting.handler.[[.TestSuffix]].ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+import { describe, expect, it } from 'vitest'
+[[if eq $t "http"]]import type { Request, Response } from '@google-cloud/functions-framework'
+[[else]]import type { CloudEvent } from '@google-cloud/functions-framework'
+[[end]]import { [[if eq $t "http"]]hello[[else if eq $t "queue"]]processMessage[[else]]processObject[[end]] } from './greeting.handler.ts'
+
+describe('the function', () => {
+[[if eq $t "http"]]  it('greets the name in the query', () => {
+    let body: unknown
+    hello({ query: { name: 'Ada' } } as unknown as Request, { json: (value: unknown) => { body = value } } as unknown as Response)
+    expect(body).toEqual({ message: 'Hello, Ada!' })
+  })
+
+  it('greets the world without a name', () => {
+    let body: unknown
+    hello({ query: {} } as unknown as Request, { json: (value: unknown) => { body = value } } as unknown as Response)
+    expect(body).toEqual({ message: 'Hello, world!' })
+  })
+[[else if eq $t "queue"]]  it('greets the text of the message', () => {
+    const data = { message: { data: Buffer.from('Ada').toString('base64') } }
+    expect(processMessage({ data } as unknown as CloudEvent<never>)).toBe('Hello, Ada!')
+  })
+[[else]]  it('greets the name of the object', () => {
+    expect(processObject({ data: { name: 'report.csv' } } as unknown as CloudEvent<never>)).toBe('Hello, report.csv!')
+  })
+[[end]]})
+'''

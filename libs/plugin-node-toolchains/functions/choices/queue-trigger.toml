@@ -1,0 +1,7 @@
+axis = "trigger"
+name = "queue-trigger"
+description = "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)"
+language = "node"
+
+[slots]
+trigger = ["queue"]

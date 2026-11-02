@@ -64,6 +64,9 @@ const maxAxisTries = 3
 //
 // It returns an error when the input ends or after maxAxisTries bad answers.
 func askAxis(in *bufio.Reader, out io.Writer, need *choiceselect.NeedsAxisError) (string, error) {
+	if need.About != "" {
+		fmt.Fprintf(out, "\n%s: %s\n", need.Choice, need.About)
+	}
 	fmt.Fprintf(out, "\n%s needs an answer on the %s axis. smith does not choose it for you:\n", need.Choice, need.Axis)
 	suggested, hasSuggested := need.Suggested()
 	for i, o := range need.Options {

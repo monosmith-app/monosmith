@@ -1,0 +1,7 @@
+axis = "trigger"
+name = "blob-trigger"
+description = "answers a new file in storage (Azure: a blob, AWS: an S3 event, Google: a Cloud Storage event)"
+language = "node"
+
+[slots]
+trigger = ["blob"]

@@ -83,6 +83,8 @@ func printRows(out io.Writer, rows []row) {
 		mark := ""
 		if r.Default {
 			mark = "  (default)"
+		} else if r.Suggested {
+			mark = "  (suggested)"
 		}
 		fmt.Fprintf(out, "  %-12s %s  [%s]%s\n", r.Name, r.Description, r.Plugin, mark)
 		if len(r.Requires) > 0 {

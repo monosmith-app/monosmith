@@ -13,10 +13,10 @@ type File struct {
 	Roles []string `toml:"roles"`
 	// Needs, Default, Many, Requires and Conflicts are the selection rules the
 	// host applies (protocol.Choice).
-	Needs     []string `toml:"needs"`
-	Default   bool     `toml:"default"`
+	Needs   []string `toml:"needs"`
+	Default bool     `toml:"default"`
 	// Suggested is the choice an asker pre-selects (protocol.Choice).
-	Suggested bool `toml:"suggested"`
+	Suggested bool     `toml:"suggested"`
 	Many      bool     `toml:"many"`
 	Requires  []string `toml:"requires"`
 	Conflicts []string `toml:"conflicts"`

@@ -82,7 +82,7 @@ func solve(offers []Offer, names []string, existing bool) (Selection, error) {
 				if len(fits) == 0 {
 					return Selection{}, fmt.Errorf("%s needs a choice on the %s axis, and none fits the rest of the selection: drop %s", chosen[i].Name, axis, chosen[i].Name)
 				}
-				return Selection{}, &NeedsAxisError{Choice: chosen[i].Name, Axis: axis, Options: fits}
+				return Selection{}, &NeedsAxisError{Choice: chosen[i].Name, About: chosen[i].Description, Axis: axis, Options: fits}
 			}
 			chosen = append(chosen, fill)
 			added = append(added, fill.Name)
