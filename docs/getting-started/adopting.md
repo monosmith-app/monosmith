@@ -1,13 +1,14 @@
 # Adopting an existing repository
 
 A repository with npm workspaces, Go modules or Python projects but no `smith.toml`
-can be brought under smith without moving a file. `smith adopt` reads the repository,
-tells you what smith would see and what stands in the way, and with `--init` writes
-the workspace files and commits them. Nothing about your build or lint setup changes
-unless you ask for it.
+can be brought under smith. `smith adopt` reads the repository, tells you what smith
+would see and what stands in the way, and with `--init` writes the workspace files.
+Nothing about your build or lint setup changes unless you ask for it. smith commits
+nothing unless you add `--commit`. If the only project of the repository sits at its
+root, smith asks where to move it (see [A project at the root](#a-project-at-the-root)).
 
 An Nx, Turborepo or mnci workspace is for [`smith convert`](converting.md); `adopt`
-recognises them, says so and stops.
+recognises them and hands them over, so `smith adopt` is the one way in for any repository.
 
 ## 1. Ask what adopting involves
 
@@ -74,13 +75,23 @@ smith adopt --tags --init
   wrote .mcp.json
   wrote .vscode/mcp.json
   wrote go.work: ./services/api
-  committed: chore: adopt smith
 ✔ adopted. smith doctor still reports 2 thing(s) for you:
   ✖ node_modules is missing at the workspace root
     → run `npm install` at the workspace root
   ...
   next: follow the steps above, then run smith doctor
 ```
+
+In a terminal, `--init` first asks a few questions, each with its consequence and a safe
+default: the CI provider, whether to add the agent files, what to do with a pipeline of
+yours, and whether to set line endings. It prints the plan, with a diff of every file of
+yours it edits, and asks `Go ahead? [y/N]`. Without a terminal it refuses and names the
+flags that answer (`--ci`, `--agent`, `--ci-existing`, `--gitattributes`); `--yes` takes
+each default.
+
+`--init` leaves the new files in the work tree, so you can review them with `git status`.
+Add `--commit` to commit them as one commit, `chore: adopt smith`, that `smith undo` can
+revert. If you forgot, [`smith commit`](../manual/commit.md) does it afterwards.
 
 `--init` takes the workspace name from the directory, the npm scope from the root
 `package.json` and the CI providers from the ones the repository already uses. It
@@ -97,6 +108,16 @@ differently from the way smith names them (`<project>@<version>`, for example
 scratch. `--tags` creates the missing tags locally, on the same commits; pushing them is
 yours. Both `--tags` and `--init` need a clean git tree.
 
+### A project at the root
+
+smith keeps one folder for each project (`apps/<name>`, `libs/<name>`, `packages/<name>`).
+If the only project of the repository has its `package.json`, `go.mod`, `pyproject.toml`
+or `Cargo.toml` at the root, `--init` asks where to move it. It never picks for you.
+Without a terminal it moves nothing unless `--move <folder>` says where (`--move none`
+keeps the project in place). The move is `git mv`; with `--commit` it is a commit of its
+own, before the adoption's. `smith adopt --dry-run` lists the `git mv` commands. The
+[manual](../manual/adopt.md#a-project-at-the-repository-root) has the details.
+
 ## 3. Choose how far to go
 
 `--level conservative` is the default: smith keeps the repository's own build and lint
@@ -112,6 +133,8 @@ adopt wizard, which does the same in screens and also covers conversion. See
 
 ## Next
 
-Run `smith doctor` and follow what it reports, then `smith build`. The full list of
+Run `smith doctor` and follow what it reports, then `smith build`. If a program the
+workspace needs is missing, `smith tools` lists it and `smith tools install` offers to
+install it. The full list of
 options is in [`smith adopt`](../manual/adopt.md); the tour of a workspace continues in
 [Your first workspace](first-workspace.md#3-add-projects).
