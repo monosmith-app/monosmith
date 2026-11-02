@@ -150,7 +150,8 @@ Usage: `smith ci assets [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `--tag <tag>` | string |  | run again for an existing release tag (project@version): build the current checkout and replace the files of its GitHub Release |
+| `--source <source>` | string |  | with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one |
+| `--tag <tag>` | string |  | run again for an existing release tag (project@version) and replace the files of its GitHub Release |
 
 <!-- smith:end ci assets -->
 

@@ -27,11 +27,23 @@ type Request struct {
 	// Project limits the run to one project. Default: every project that has
 	// a build command and was released at HEAD.
 	Project string
-	// Tag, when set (project@version), builds that project's files from the
-	// current checkout and uploads them to the GitHub Release of that existing
-	// tag, replacing files of the same name. Default: the tags that point at HEAD.
+	// Tag, when set (project@version), builds that project's files and uploads
+	// them to the GitHub Release of that existing tag, replacing files of the
+	// same name. Default: the tags that point at HEAD.
 	Tag string
-	Out io.Writer
+	// Source says which code a Tag that is not at HEAD builds: SourceCurrent
+	// (the checkout, named with the tag's version) or SourceTag (the tag's own
+	// commit, in a temporary worktree). Empty asks a terminal and refuses
+	// without one. It needs Tag.
+	Source string
+	// Terminal says a person can answer a question on In.
+	Terminal bool
+	// In is where the answer to the source question is read from.
+	In io.Reader
+	// Prepare, when set, runs in the tag's worktree before the build (smith ci
+	// assets passes the install there). It is not used for SourceCurrent.
+	Prepare func(ctx context.Context, s *session.Session) error
+	Out     io.Writer
 }
 
 // Result is what Run did.
@@ -47,8 +59,8 @@ const nothingReleased = "nothing released, skipping: no project with release fil
 
 // Run builds, for the platform, every project released at HEAD whose release
 // has a build command, and uploads its files to the project's GitHub Release.
-// With req.Tag it does the same for that one existing tag, from the current
-// checkout. A run that finds no release exits without error, with Skipped set.
+// With req.Tag it does the same for that one existing tag, from the code that
+// req.Source names. A run that finds no release exits without error, with Skipped set.
 func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 	platform := req.Platform
 	if platform == "" {
@@ -60,6 +72,15 @@ func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 	}
 	for _, w := range buildoutputs.OverlapWarnings(s.Graph.Projects, s.Config.Workspace.SharedOutputs...) {
 		fmt.Fprintln(req.Out, w)
+	}
+	if req.Source == SourceUndecided {
+		req.Source = ""
+	}
+	if err := checkSource(req.Source); err != nil {
+		return Result{}, err
+	}
+	if req.Source != "" && req.Tag == "" {
+		return Result{}, problem.New("--source needs --tag", "add --tag project@version, or leave --source out")
 	}
 	head, err := s.Git.RevParse("HEAD")
 	if err != nil {
@@ -82,6 +103,16 @@ func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 			return Result{}, problem.New(fmt.Sprintf("the tag %q is not in this checkout", req.Tag), "git fetch --tags, then run it again")
 		}
 		if commit != head {
+			source, err := chooseSource(req.Source, req.Tag, version, req.Terminal, req.In, req.Out)
+			if err != nil {
+				return Result{}, err
+			}
+			if source == SourceTag {
+				if err := runFromTag(ctx, s, req, p.Name, platform, req.Tag, commit); err != nil {
+					return Result{}, err
+				}
+				return Result{Built: []string{p.Name}}, nil
+			}
 			fmt.Fprintf(req.Out, "%s is not at HEAD: building the current checkout, with the version %s\n", req.Tag, version)
 		}
 		targets = append(targets, target{p, req.Tag, version})

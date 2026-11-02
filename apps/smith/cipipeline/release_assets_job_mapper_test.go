@@ -19,7 +19,7 @@ func TestGitHubBuildsReleaseFilesOnARunnerPerPlatformAndUploadsThemWithoutArtifa
 		"- platform: windows-x64\n            os: windows-latest",
 		"- platform: macos-arm64\n            os: macos-latest",
 		"- platform: linux-arm64\n            os: ubuntu-24.04-arm",
-		"run: smith ci assets --tag \"$ASSETS_TAG\"\n        env:\n          ASSETS_TAG: ${{ inputs.assets_tag }}\n          SMITH_PLATFORM: ${{ matrix.platform }}",
+		"run: smith ci assets --tag \"$ASSETS_TAG\" --source \"$ASSETS_SOURCE\"\n        env:\n          ASSETS_TAG: ${{ inputs.assets_tag }}\n          ASSETS_SOURCE: ${{ inputs.assets_source }}\n          SMITH_PLATFORM: ${{ matrix.platform }}",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("workflow lacks %q:\n%s", want, out)
@@ -40,6 +40,18 @@ func TestAssetsJobSetsUpWithTheAssetsFlagAndTheCiJobDoesNot(t *testing.T) {
 	}
 	if i := strings.Index(out, "  assets:"); !strings.Contains(out[i:], "smith ci setup --assets") || strings.Contains(out[:i], "--assets") {
 		t.Errorf("--assets belongs to the assets job:\n%s", out)
+	}
+}
+
+func TestTheManualRunAsksWhichCodeToBuild(t *testing.T) {
+	out := RenderGitHub(NewModel(Contributions{AssetPlatforms: []string{"linux-x64"}}, "dev", "main"))
+	for _, want := range []string{"      assets_source:\n", "        type: choice\n        required: true\n", "          - current\n          - tag\n", "the tag's own commit, the exact code that was released"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("workflow lacks %q:\n%s", want, out)
+		}
+	}
+	if plain := RenderGitHub(NewModel(Contributions{}, "dev", "main")); strings.Contains(plain, "assets_source") {
+		t.Error("a workflow without an assets job has no assets_source")
 	}
 }
 

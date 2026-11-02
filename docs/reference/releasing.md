@@ -164,9 +164,17 @@ as a platform without that file. See
 [ADR 0069](../architecture/decisions/0069-the-assets-phase-can-run-again-for-a-tag.md).
 
 To run the assets again for a release that exists, use `smith ci assets --tag
-<project@version>` or the `assets_tag` input of the workflow's manual run. It builds
-the current checkout (not the commit of the tag), stamps the tag's version and
-replaces files of the same name in the tag's GitHub Release. A push that releases
+<project@version>` or the `assets_tag` input of the workflow's manual run. When the
+tag is not at HEAD, you choose the code with `--source current|tag` (the
+`assets_source` input of the workflow). `current` builds the code as it is now,
+named with the tag's version: a fix reaches the files, but they carry newer code
+under an old number. `tag` builds the tag's own commit in a temporary git
+worktree, with the smith.toml of that commit: the exact code that was released.
+Without `--source`, a terminal is asked and any other run is refused, naming both
+flags. If the tag's commit has no assets config for the project (the config did
+not exist yet), smith says so with the commit and tells you to use
+`--source current`. The files replace files of the same name in the tag's GitHub
+Release. A push that releases
 nothing starts no assets job; if it did start, the job prints `nothing released,
 skipping` and exits 0.
 

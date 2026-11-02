@@ -18,7 +18,7 @@ these files. See [Releasing](../reference/releasing.md) for the `release` table.
 ## Synopsis
 
 ```sh
-smith release assets [--platform <platform>] [--project <app>] [--tag <project@version>]
+smith release assets [--platform <platform>] [--project <app>] [--tag <project@version>] [--source current|tag]
 ```
 
 ## Arguments and flags
@@ -32,7 +32,8 @@ Usage: `smith release assets [flags]`
 |---|---|---|---|
 | `--platform <platform>` | string |  detected | the platform of this machine: windows-x64, macos-arm64, macos-x64, linux-x64 or linux-arm64 (default: detected) |
 | `--project <project>` | string |  | build only this project |
-| `--tag <tag>` | string |  | build for an existing release tag (project@version) from the current checkout, replacing its files |
+| `--source <source>` | string |  | with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one |
+| `--tag <tag>` | string |  | build for an existing release tag (project@version), replacing its files |
 
 <!-- smith:end release assets -->
 
@@ -59,14 +60,26 @@ smith keeps what is in the folder. Without it, the assets run, `smith ci generat
 
 ## Run it again for a tag
 
-`--tag <project@version>` builds that project's files from the **current checkout** and uploads
-them to the existing GitHub Release of the tag, replacing files of the same name. It builds
-the checkout, not the commit of the tag, because the usual reason to run again is a fix to
-`smith.toml`, the build command or the workflow, and the commit of the tag still has the fault.
-The version of the tag is stamped into the files. smith says so when HEAD is not the tag's
-commit. The tag must be in the checkout (`git fetch --tags`) and its Release must exist. In
-the generated GitHub workflow, run it from the Actions tab with the `assets_tag` input
-(`mvd@0.11.1`): only the assets job runs.
+`--tag <project@version>` builds that project's files and uploads them to the existing GitHub
+Release of the tag, replacing files of the same name. The version of the tag is stamped into the
+files. The tag must be in the checkout (`git fetch --tags`) and its Release must exist.
+
+When the tag is not at HEAD, you choose which code to build with `--source`:
+
+| `--source` | What it builds | Consequence |
+|---|---|---|
+| `current` | the code as it is now, named with the tag's version | a fix to `smith.toml`, the build command or the workflow reaches the files, but they carry newer code under an old number |
+| `tag` | the tag's own commit, in a temporary `git worktree add --detach` that smith removes afterwards | the exact code that was released, with the `smith.toml` of that commit; the setup phase installs its dependencies first |
+
+Without `--source`, a terminal is asked, with these consequences. Any other run (a script, CI) is
+refused, and the message names both flags. If the tag's commit has no assets config for the
+project (the config did not exist yet), smith says so with the commit and tells you to use
+`--source current`.
+
+In the generated GitHub workflow, run it from the Actions tab with the `assets_tag` input
+(`mvd@0.11.1`) and the `assets_source` input (`choose`, `current` or `tag`; `choose` stops the run
+and names the flags): only the assets job runs. See
+[ADR 0075](../architecture/decisions/0075-an-assets-rerun-for-a-tag-asks-which-code-to-build.md).
 
 ## Exit codes
 

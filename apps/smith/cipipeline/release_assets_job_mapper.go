@@ -28,6 +28,15 @@ func githubAssetsDispatch(m Model) string {
         description: "Run only the assets job again for this release tag (project@version), from this branch"
         required: false
         default: ""
+      assets_source:
+        description: "With assets_tag: the code to build. current = the code of this branch as it is now, named with the tag's version (a fix reaches the files, but they carry newer code under an old number). tag = the tag's own commit, the exact code that was released. choose = stop and ask me"
+        type: choice
+        required: true
+        default: choose
+        options:
+          - choose
+          - current
+          - tag
 `
 }
 
@@ -97,9 +106,10 @@ func githubAssetsJob(m Model) string {
 	b.WriteString("      - name: Setup\n        run: smith ci setup --assets\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Build and upload the release files
-        run: smith ci assets --tag "$ASSETS_TAG"
+        run: smith ci assets --tag "$ASSETS_TAG" --source "$ASSETS_SOURCE"
         env:
           ASSETS_TAG: ${{ inputs.assets_tag }}
+          ASSETS_SOURCE: ${{ inputs.assets_source }}
           SMITH_PLATFORM: ${{ matrix.platform }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 `)

@@ -28,6 +28,17 @@ import (
 // VerifyTasks are what a pull request must pass.
 var VerifyTasks = []string{"lint", "typecheck", "test", "build"}
 
+// AssetsRun is what the assets phase needs to run again for an existing tag.
+type AssetsRun struct {
+	// Tag is the release tag (project@version); empty means the tags at HEAD.
+	Tag string
+	// Source is current or tag: the code to build when Tag is not at HEAD.
+	Source string
+	// Terminal says a person can answer the question for the source on In.
+	Terminal bool
+	In       io.Reader
+}
+
 // PackTask is the task that builds what a project deploys into dist/drop.
 const PackTask = "package"
 
@@ -39,20 +50,20 @@ var Phases = []string{"setup", "audit", "verify", "pack", "native", "assets", "r
 
 // RunPhase runs one CI phase.
 func RunPhase(ctx context.Context, s *session.Session, phase string, out io.Writer) error {
-	return RunPhaseFor(ctx, s, phase, false, "", out)
+	return RunPhaseFor(ctx, s, phase, false, AssetsRun{}, out)
 }
 
 // RunPhaseFor runs one CI phase. With assets set, the setup phase installs
 // only what the assets job needs: it leaves out the projects whose [release]
 // install is false (smith ci setup --assets). A tag (project@version) makes the
 // assets phase build for that existing release instead of the ones at HEAD.
-func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, tag string, out io.Writer) error {
+func RunPhaseFor(ctx context.Context, s *session.Session, phase string, assets bool, run AssetsRun, out io.Writer) error {
 	begin := time.Now()
 	log := newPhaseLog(out, phase)
 	if !announces(phase) {
 		log.fold()
 	}
-	err := runPhase(ctx, s, phase, assets, tag, log)
+	err := runPhase(ctx, s, phase, assets, run, log)
 	log.close()
 	took := time.Since(begin)
 	if err != nil {
@@ -109,7 +120,7 @@ func announces(phase string) bool {
 	return false
 }
 
-func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, tag string, log *phaseLog) error {
+func runPhase(ctx context.Context, s *session.Session, phase string, assets bool, run AssetsRun, log *phaseLog) error {
 	out := log.out
 	switch phase {
 	case "setup", "audit":
@@ -267,7 +278,13 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 	case "native":
 		return nativebuild.Run(ctx, s, out)
 	case "assets":
-		res, err := releaseassets.Run(ctx, s, releaseassets.Request{Platform: os.Getenv("SMITH_PLATFORM"), Tag: tag, Out: out})
+		res, err := releaseassets.Run(ctx, s, releaseassets.Request{
+			Platform: os.Getenv("SMITH_PLATFORM"), Tag: run.Tag, Source: run.Source, Terminal: run.Terminal, In: run.In, Out: out,
+			// A tag's own commit is a fresh checkout without the installed dependencies.
+			Prepare: func(ctx context.Context, ws *session.Session) error {
+				return RunPhaseFor(ctx, ws, "setup", true, AssetsRun{}, out)
+			},
+		})
 		if err == nil && res.Skipped != "" {
 			// The job summary says it too, so a run that did nothing does not read as a success.
 			log.conclusion = res.Skipped
