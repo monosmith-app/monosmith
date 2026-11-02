@@ -10,19 +10,22 @@ const TITLE = 'MonoSmith: add a dependency'
  * the registry. The first lists only the libraries smith would accept, with kind and language, so nothing is typed.
  * @param nodes - every project of the workspace
  * @param preselected - the project to add to, when the command came from a project
+ * @param only - skips the first question: only a library of this workspace, or only a registry package
  * @returns the request, or undefined when the person pressed Escape
  */
-export async function askInstallRequest (nodes: readonly LinkNode[], preselected?: string): Promise<InstallRequest | undefined> {
+export async function askInstallRequest (nodes: readonly LinkNode[], preselected?: string, only?: 'workspace' | 'registry'): Promise<InstallRequest | undefined> {
   const pickedProject = preselected === undefined ? await vscode.window.showQuickPick(nodes.map((node) => ({ label: node.name, description: `${node.kind} · ${node.language}` })), { title: `${TITLE} (1/3): which project?` }) : undefined
   const project = preselected ?? pickedProject?.label
   if (project === undefined) return undefined
-  const source = await vscode.window.showQuickPick(
-    [
-      { label: 'A library of this workspace', description: 'linked, nothing is downloaded', detail: `${project} uses the code of another project here, always its current copy.`, value: 'workspace' as const },
-      { label: 'A package from the registry', description: '(default)', detail: 'Downloaded from the language registry (npm, PyPI, crates.io…), a copy outside this workspace.', value: 'registry' as const },
-    ],
-    { title: `${TITLE} (2/3): what do you add to ${project}?` },
-  )
+  const source = only === undefined
+    ? await vscode.window.showQuickPick(
+        [
+          { label: 'A library of this workspace', description: 'linked, nothing is downloaded', detail: `${project} uses the code of another project here, always its current copy.`, value: 'workspace' as const },
+          { label: 'A package from the registry', description: '(default)', detail: 'Downloaded from the language registry (npm, PyPI, crates.io…), a copy outside this workspace.', value: 'registry' as const },
+        ],
+        { title: `${TITLE} (2/3): what do you add to ${project}?` },
+      )
+    : { value: only }
   if (source === undefined) return undefined
   if (source.value === 'registry') {
     const typed = await vscode.window.showInputBox({ title: `${TITLE} (3/3): packages`, prompt: 'Package names, separated by spaces', placeHolder: 'zod  react@19', validateInput: (value) => parsePackages(value).length === 0 ? 'Type at least one package.' : undefined })

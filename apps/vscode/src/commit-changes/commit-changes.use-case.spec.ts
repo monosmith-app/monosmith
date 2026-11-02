@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { SmithRun } from '../smith-run/index.ts'
-import { commitChanges } from './commit-changes.use-case.ts'
+import { commitChanges, readCommitPlan, type CommitPlan, type CommitScope } from './commit-changes.use-case.ts'
 
-const PLAN: SmithRun = { code: 0, stdout: 'Plan: commit add app web\n  create apps/web/package.json\n', stderr: '' }
+const PLAN: SmithRun = { code: 0, stdout: 'Plan: commit add app web\n  Goes into one commit (chore: add app web)\n    create  apps/web/package.json\nDry run: nothing was changed.\n', stderr: '' }
+const WITH_EXTRAS: SmithRun = {
+  code:   0,
+  stdout: 'Plan: commit add app web\n    create  apps/web/package.json\nThe last operation changed 1 file(s). Git shows 2 more that it did not change:\n  mine.txt\n  notes/todo.md\n--only-operation commits the first set, --all both. Dry run: nothing was changed.\n',
+  stderr: '',
+}
 
-function fake (runs: SmithRun[], answer: boolean) {
+function fake (runs: SmithRun[], answer: CommitScope | undefined) {
   const calls: string[][] = []
-  const asked: string[] = []
+  const asked: CommitPlan[] = []
 
   return {
     calls,
@@ -17,7 +22,7 @@ function fake (runs: SmithRun[], answer: boolean) {
 
         return runs.shift() ?? { code: 0, stdout: 'Committed 1a2b3c4d: chore: add app web (smith undo reverts it)\n', stderr: '' }
       },
-      confirm: async (plan: string) => {
+      choose: async (plan: CommitPlan) => {
         asked.push(plan)
 
         return answer
@@ -26,29 +31,40 @@ function fake (runs: SmithRun[], answer: boolean) {
   }
 }
 
+describe('readCommitPlan', () => {
+  it('lists the files git shows that the operation did not change', () => {
+    expect(readCommitPlan(WITH_EXTRAS.stdout).extras).toEqual(['mine.txt', 'notes/todo.md'])
+  })
+
+  it('has no extras when the operation changed everything', () => {
+    expect(readCommitPlan(PLAN.stdout).extras).toEqual([])
+  })
+})
+
 describe('commitChanges', () => {
-  it('shows the files, asks, then commits with --yes under the name of the operation', async () => {
-    const f = fake([PLAN], true)
-    expect(await commitChanges(f.deps, 'add app web', 'operation')).toEqual({ kind: 'committed', lines: ['Committed 1a2b3c4d: chore: add app web (smith undo reverts it)'] })
-    expect(f.calls).toEqual([['commit', 'add', 'app', 'web', '--only-operation', '--dry-run'], ['commit', 'add', 'app', 'web', '--only-operation', '--yes']])
-    expect(f.asked[0]).toContain('apps/web/package.json')
+  it('shows the plan first, then commits only the files of the operation with --yes', async () => {
+    const f = fake([PLAN], 'operation')
+    expect(await commitChanges(f.deps, 'add app web')).toEqual({ kind: 'committed', lines: ['Committed 1a2b3c4d: chore: add app web (smith undo reverts it)'] })
+    expect(f.calls).toEqual([['commit', 'add', 'app', 'web', '--dry-run'], ['commit', 'add', 'app', 'web', '--only-operation', '--yes']])
+    expect(f.asked[0]?.text).toContain('apps/web/package.json')
   })
 
-  it('passes --all only when the person chose everything', async () => {
-    const f = fake([PLAN], true)
-    await commitChanges(f.deps, 'add app web', 'all')
-    expect(f.calls[0]).toEqual(['commit', 'add', 'app', 'web', '--all', '--dry-run'])
+  it('works for the last operation when no words are given, and passes the extras to the question', async () => {
+    const f = fake([WITH_EXTRAS], 'all')
+    await commitChanges(f.deps)
+    expect(f.calls).toEqual([['commit', '--dry-run'], ['commit', '--all', '--yes']])
+    expect(f.asked[0]?.extras).toEqual(['mine.txt', 'notes/todo.md'])
   })
 
-  it('commits nothing when the person says no', async () => {
-    const f = fake([PLAN], false)
-    expect(await commitChanges(f.deps, 'add app web', 'operation')).toEqual({ kind: 'declined' })
+  it('commits nothing when the person cancels', async () => {
+    const f = fake([PLAN], undefined)
+    expect(await commitChanges(f.deps, 'add app web')).toEqual({ kind: 'declined' })
     expect(f.calls).toHaveLength(1)
   })
 
   it('returns smith words when it refuses', async () => {
-    const f = fake([{ code: 1, stdout: '', stderr: '✖ this workspace is not in a git work tree\n  → run git init, then commit again\n' }], true)
-    expect(await commitChanges(f.deps, 'add app web', 'operation')).toMatchObject({ kind: 'refused' })
+    const f = fake([{ code: 1, stdout: '', stderr: '✖ this workspace is not in a git work tree\n  → run git init, then commit again\n' }], 'operation')
+    expect(await commitChanges(f.deps, 'add app web')).toMatchObject({ kind: 'refused' })
     expect(f.asked).toEqual([])
   })
 })

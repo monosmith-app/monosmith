@@ -4,12 +4,12 @@ import { parseKinds } from './add-options.mapper.ts'
 import { fitOutcomes, outcomeRows, parseOutcomes } from './add-outcomes.mapper.ts'
 
 /** Real output of `smith compose --json` and `smith kinds --json` (2.0.0-beta.23), not invented JSON. */
-const compose = readFileSync(new URL('./fixtures/compose-report.fixture.json', import.meta.url), 'utf8')
-const kinds = readFileSync(new URL('./fixtures/kinds.fixture.json', import.meta.url), 'utf8')
+const compose = readFileSync(new URL('fixtures/compose-report.fixture.json', import.meta.url), 'utf8')
+const kinds = readFileSync(new URL('fixtures/kinds.fixture.json', import.meta.url), 'utf8')
 
 describe('the first question of Add, read from the real output of smith', () => {
   const fitted = fitOutcomes(parseOutcomes(compose).outcomes, parseKinds(kinds))
-  const found = (query: string): string[] => outcomeRows(fitted, query).flatMap((row) => row.kind === 'outcome' ? [row.outcome.id] : [])
+  const found = (query: string): string[] => outcomeRows(fitted, query).flatMap((row) => row.kind === 'outcome' ? row.outcome.id : [])
 
   it('offers all six outcomes, the website and the desktop app included', () => {
     expect(fitted.map((outcome) => outcome.id)).toEqual(['web', 'api', 'function', 'desktop', 'library', 'package'])

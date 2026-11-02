@@ -9,7 +9,8 @@ import {
 import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
 import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
 import { addProject, askAddRequest, confirmAddPlan, outcomeWords, parseChoices, tellAddOutcome } from './add-project/index.ts'
-import { askCommitScope, commitChanges, confirmCommit, tellCommitOutcome } from './commit-changes/index.ts'
+import { chooseCommitScope, commitChanges, tellCommitOutcome } from './commit-changes/index.ts'
+import { askKind, askLinkedLibrary, askRemoveChoice, confirmKind, confirmUnlink, kindArguments, kindPlanArguments, pickProjectFor, planThenApply, removeArguments, removePlanArguments, tellActionOutcome, unlinkArguments } from './project-actions/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
   type DeriveAction, type DeriveReport,
@@ -166,6 +167,13 @@ function stopFolder (root: string): void {
   const state = folders.get(root)
   state?.session?.stop()
   if (state !== undefined) state.session = undefined
+}
+
+/** The project a command was started on, when the person used the menu of a project row. */
+function projectGiven (argument: unknown): string | undefined {
+  const node = typeof argument === 'object' && argument !== null && 'kind' in argument ? argument as TreeNode : undefined
+
+  return node?.kind === 'project' ? node.project : undefined
 }
 
 /**
@@ -903,11 +911,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (['added', 'unchecked', 'failing'].includes(outcome.kind)) await refreshFolder(state.root, 'full', false)
   }
 
-  /** Commits the changes of an operation after the fact: asks which files, shows the plan, and commits on a yes. */
+  /** Commits the changes of an operation after the fact: shows the files, asks which ones go in, and commits on a yes. */
   const commitAfterTheFact = (state: FolderState) => async (operation: string): Promise<void> => {
-    const scope = await askCommitScope(operation)
-    if (scope === undefined) return
-    const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation, scope)
+    const done = await commitChanges({ run: smithIn(state), choose: chooseCommitScope }, operation)
     note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
     tellCommitOutcome(done)
   }
@@ -936,8 +942,61 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'added' || outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Commits the changes of the last operation: shows the files, asks which ones go in, and commits on a yes. */
+  const commitHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('committing')) return
+    output.show(true)
+    await commitAfterTheFact(state)('')
+  }
+
+  /**
+   * Runs an action on a project from its menu or the palette: the project is the row or a pick,
+   * smith shows a plan, and the change runs only on a yes.
+   */
+  const projectAction = async (argument: unknown, action: 'remove' | 'kind' | 'unlink'): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('changing a project')) return
+    const projects = state.snapshot?.projects ?? []
+    const title = { remove: 'remove a project', kind: 'make a project another kind', unlink: 'unlink a library' }[action]
+    const name = projectGiven(argument) ?? await pickProjectFor(projects, title)
+    const project = projects.find((item) => item.name === name)
+    if (project === undefined) return
+    output.show(true)
+    const run = smithIn(state)
+    const apply = async (args: string[]): ReturnType<typeof run> => await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `MonoSmith: ${title} in ${state.name}…` },
+      async () => await smithIn(state, true, 600_000)(args),
+    )
+    let outcome
+    let done: string
+    if (action === 'remove') {
+      outcome = await planThenApply({ run, apply, confirm: async (plan) => await askRemoveChoice(project.name, plan) }, removePlanArguments(project.name), (keep) => removeArguments(project.name, keep))
+      done = `${project.name} is removed`
+    } else if (action === 'kind') {
+      const kind = await askKind(project.name, project.kind)
+      if (kind === undefined) return
+      outcome = await planThenApply({ run, apply, confirm: async (plan) => await confirmKind(project.name, kind, plan) }, kindPlanArguments(project.name, kind), () => kindArguments(project.name, kind))
+      done = `${project.name} is now ${kind === 'app' ? 'an app' : `a ${kind}`}`
+    } else {
+      const linked = project.deps.filter((dep) => projects.some((item) => item.name === dep && item.kind !== 'app'))
+      if (linked.length === 0) {
+        void vscode.window.showInformationMessage(`MonoSmith: ${project.name} uses no library of this workspace, so there is nothing to unlink.`)
+
+        return
+      }
+      const library = await askLinkedLibrary(project.name, linked)
+      if (library === undefined) return
+      outcome = await planThenApply({ run, apply, confirm: async () => await confirmUnlink(project.name, library) }, undefined, () => unlinkArguments(project.name, library))
+      done = `${library} is unlinked from ${project.name}`
+    }
+    note(`MonoSmith: ${action} ${project.name} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellActionOutcome(outcome, done, note, state.root)
+    if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
+  }
+
   /** Asks library or registry first, then what to add, and runs `smith install`. */
-  const addDependencyHere = async (argument: unknown): Promise<void> => {
+  const addDependencyHere = async (argument: unknown, only?: 'workspace' | 'registry'): Promise<void> => {
     const state = await folderFor(argument)
     if (state?.location === undefined || !mayWrite('adding a dependency')) return
     const projects = state.snapshot?.projects ?? []
@@ -948,7 +1007,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     }
     output.show(true)
     const outcome = await installDependency({
-      ask:   async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps }))),
+      ask:   async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps })), projectGiven(argument), only),
       apply: async (args) => await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding a dependency in ${state.name}…` },
         async () => await smithIn(state, true, 600_000)(args),
@@ -1329,7 +1388,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.agentFile', writeAgentsFile),
     command<unknown>('monosmith.addProject', addProjectHere),
     command<unknown>('monosmith.composeStack', composeStackHere),
-    command<unknown>('monosmith.addDependency', addDependencyHere),
+    command<unknown>('monosmith.addDependency', async (argument) => { await addDependencyHere(argument) }),
+    command<unknown>('monosmith.addLibrary', async (argument) => { await addDependencyHere(argument, 'workspace') }),
+    command<unknown>('monosmith.installPackage', async (argument) => { await addDependencyHere(argument, 'registry') }),
+    command<unknown>('monosmith.commit', commitHere),
+    command<unknown>('monosmith.removeProject', async (argument) => { await projectAction(argument, 'remove') }),
+    command<unknown>('monosmith.changeKind', async (argument) => { await projectAction(argument, 'kind') }),
+    command<unknown>('monosmith.unlinkLibrary', async (argument) => { await projectAction(argument, 'unlink') }),
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.syncVersions', syncHere),
     command<unknown>('monosmith.swap', swapHere),
