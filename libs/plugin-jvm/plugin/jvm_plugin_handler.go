@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-jvm/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -30,6 +31,7 @@ func (j *JVM) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: j.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("java"),
 		Languages: []string{"jvm", "java"},
 		Manifests: []string{"pom.xml", "build.gradle.kts", "build.gradle"},
 		Stacks: []protocol.Stack{

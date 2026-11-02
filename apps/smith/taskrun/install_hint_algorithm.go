@@ -20,7 +20,7 @@ func MissingProgramMessage(program string) string {
 	base := strings.TrimSuffix(strings.ToLower(program), ".exe")
 	msg := program + " is not installed or not on PATH."
 	if url, ok := installHints[base]; ok {
-		msg += " Install it from " + url + ", then run the command again."
+		msg += " Install it from " + url + ", or run smith tools install to choose how, then run the command again."
 	}
 	return msg
 }

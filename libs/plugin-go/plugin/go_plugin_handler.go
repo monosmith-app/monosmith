@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-go/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Go is the Go language plugin.
@@ -28,6 +29,7 @@ func (g *Go) Describe(params protocol.InitializeParams) (protocol.InitializeResu
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "go", Version: g.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("go"),
 		Languages: []string{"go", "golang"},
 		Manifests: []string{"go.mod"},
 	}, nil

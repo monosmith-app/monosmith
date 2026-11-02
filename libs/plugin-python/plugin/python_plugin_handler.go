@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Python is the pip-native Python language plugin.
@@ -28,6 +29,7 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "python", Version: p.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("python", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"python", "py"},
 		Manifests: []string{"pyproject.toml"},
 		Choices:   functions.Choices(),

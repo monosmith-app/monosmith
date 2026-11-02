@@ -14,6 +14,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Node is the Node.js/TypeScript language plugin.
@@ -38,6 +39,7 @@ func (n *Node) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "node", Version: n.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("node", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"node", "javascript", "js"},
 		Manifests: []string{"package.json"},
 		// Concurrency lets the host ask the registry about many projects at

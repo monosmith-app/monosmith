@@ -2,9 +2,10 @@ package dependencies
 
 import (
 	"bufio"
-	"io"
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
+	"io"
 	"os"
 	"strings"
 
@@ -61,6 +62,7 @@ project, --registry for the package.`,
 			if !yes && interactive() {
 				link.Ask = internallink.NewTerminalAsker(cmd.InOrStdin(), cmd.OutOrStdout())
 			}
+			toolinstall.Notice(cmd.Context(), s, cmd.ErrOrStderr(), nil, nil)
 			return Install(s, targets, args, dev, cmd.OutOrStdout(), link)
 		},
 	}

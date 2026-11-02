@@ -3,6 +3,7 @@ package scaffold
 import (
 	"bufio"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"io"
 	"os"
 	"path/filepath"
@@ -127,6 +128,7 @@ nothing is asked.`,
 			if err != nil {
 				rel = dir
 			}
+			toolinstall.NoticeForLanguage(cmd.Context(), out, opts.Language)
 			fmt.Fprint(out, nextSteps(opts.Name, rel, opts.Language))
 			if opts.SaveRecipe != "" {
 				fmt.Fprint(out, recipeSavedText(dir, opts.SaveRecipe))

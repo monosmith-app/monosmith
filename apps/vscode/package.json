@@ -345,6 +345,12 @@
         "icon": "$(rocket)"
       },
       {
+        "command": "monosmith.installTools",
+        "title": "Install the Tools the Workspace Needs…",
+        "category": "MonoSmith",
+        "icon": "$(tools)"
+      },
+      {
         "command": "monosmith.openReport",
         "title": "Open Report",
         "category": "MonoSmith",
@@ -715,6 +721,10 @@
         },
         {
           "command": "monosmith.bootstrap",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.installTools",
           "when": "monosmith.state == ready"
         },
         {

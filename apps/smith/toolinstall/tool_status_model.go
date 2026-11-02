@@ -1,0 +1,44 @@
+package toolinstall
+
+import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+
+// Need is a tool the workspace needs and who needs it.
+type Need struct {
+	protocol.ToolNeed
+	// Dirs are the absolute folders where a pin file is looked up: the
+	// workspace root first, then the projects that use the tool.
+	Dirs []string `json:"-"`
+	// Projects are the projects that use the tool; empty for a tool that no
+	// project needs yet (named on the command line).
+	Projects []string `json:"projects,omitempty"`
+}
+
+// State is what detection found.
+type State string
+
+// The states of a tool.
+const (
+	// Found means the tool is on PATH and its version fits the workspace.
+	Found State = "ok"
+	// Outdated means the tool is on PATH and its version is older than the workspace wants.
+	Outdated State = "outdated"
+	// Missing means no program of the tool runs.
+	Missing State = "missing"
+)
+
+// Status is the result of detecting one tool.
+type Status struct {
+	Need
+	State State `json:"state"`
+	// Program is the program that answered; empty when missing.
+	Program string `json:"program,omitempty"`
+	// Version is the version the program printed; empty when missing or when it printed none.
+	Version string `json:"version,omitempty"`
+	// Wanted is the version range the workspace pins; the zero value means any version.
+	Wanted Requirement `json:"wanted"`
+	// WantedFrom names the file that gave Wanted.
+	WantedFrom string `json:"wantedFrom,omitempty"`
+}
+
+// Lacking reports whether the tool needs an install: it is missing or outdated.
+func (s Status) Lacking() bool { return s.State != Found }

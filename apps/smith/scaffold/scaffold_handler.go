@@ -2,6 +2,7 @@ package scaffold
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"os"
 	"strings"
 	"time"
@@ -119,6 +120,7 @@ commits them as one operation that smith undo can revert.`,
 				fmt.Fprintln(out, n)
 			}
 			project := s.Graph.Get(args[1])
+			toolinstall.Notice(cmd.Context(), s, out, []string{project.Language}, addOpts.With)
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
 				return err
 			}

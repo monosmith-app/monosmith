@@ -49,6 +49,14 @@ lists every check with its remedy.
   (`@emnapi/core`, `@emnapi/runtime`), set the override to `"$<name>"`, or npm stops with
   `Override ... conflicts with direct dependency`.
 
+## Tools the workspace needs
+
+A program that a language needs (Python, the .NET SDK, Go, Docker) and that is not installed is a
+warning, worded "<tool> is installed". Its fix is a question with the same options as
+[`smith tools install`](tools-install.md): install with a package manager, use the official
+page, install it yourself, or skip it. A command that needs administrator rights is shown first
+and is never run unless you pick "Let smith run it"; `--fix --yes` never picks it.
+
 ## Suggestions about the defaults
 
 Two warnings read the per-project task overrides in `smith.toml` ([ADR 0056](../architecture/decisions/0056-repeated-overrides-say-what-the-default-should-be.md)).

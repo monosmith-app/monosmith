@@ -823,6 +823,25 @@ No flags.
 
 <!-- smith:end cache -->
 
+### smith tools
+
+[Manual page](../manual/tools.md)
+
+<!-- smith:begin tools -->
+List the programs the workspace needs and which are installed
+
+Usage: `smith tools <command> [flags]`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith tools install` | Install the programs the workspace needs, asking how for each |
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--json` | print the tools and their state as JSON | off |
+
+<!-- smith:end tools -->
+
 ### smith doctor
 
 [Manual page](../manual/doctor.md)

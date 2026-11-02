@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -31,6 +32,7 @@ func (d *Dotnet) Describe(params protocol.InitializeParams) (protocol.Initialize
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: d.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("dotnet", "azure-functions-core-tools", "aws-sam-cli"),
 		Languages: []string{"dotnet", "csharp", "fsharp"},
 		Manifests: []string{"*.csproj", "*.fsproj"},
 		Choices:   functions.Choices(),

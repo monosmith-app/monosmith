@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -28,6 +29,7 @@ func (c *Cpp) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: c.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("cmake"),
 		Languages: []string{"cpp", "c++"},
 		Manifests: []string{"CMakeLists.txt"},
 	}, nil

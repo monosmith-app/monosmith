@@ -66,6 +66,10 @@ type InitializeResult struct {
 	// owns. The host lists them (smith choices) and checks a selection of them
 	// (smith add --with). Absent means the plugin owns none.
 	Choices []Choice `json:"choices,omitempty"`
+	// Tools are the programs the plugin needs on the person's machine. The
+	// host detects them and, when one is missing, presents the ways to get it
+	// (smith tools). Absent means the plugin declares none.
+	Tools []ToolNeed `json:"tools,omitempty"`
 }
 
 // Scaffolds says whether the plugin can scaffold a project of the kind.

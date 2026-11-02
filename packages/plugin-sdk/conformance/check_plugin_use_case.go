@@ -70,6 +70,7 @@ func Check(c *host.Client, opts Options) Report {
 
 	checkScheduling(c, &r)
 	checkChoices(c, &r)
+	checkTools(c, &r)
 	checkCapabilityPairs(c, &r)
 	checkDeclared(c, &r)
 	checkLink(c, &r)
