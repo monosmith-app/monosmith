@@ -24,6 +24,10 @@ type Step struct {
 	// Check says what is wrong with a typed answer ("" when it is fine); it
 	// runs as the person types and again on enter.
 	Check func(answers map[string][]string, value string) string
+	// Suggest, when set, offers a corrected answer for a typed one that Check
+	// refuses ("" when it has none). Tab takes it; typing on keeps the choice
+	// to write another.
+	Suggest func(answers map[string][]string, value string) string
 	// Skip, when set, leaves the question out when it says so, given the
 	// earlier answers; the key then has no answer.
 	Skip func(answers map[string][]string) bool
@@ -32,6 +36,9 @@ type Step struct {
 // Option is one answer.
 type Option struct {
 	Label, Value, Hint string
+	// Also are other names that find the option when a list is filtered: the
+	// frameworks, test runners and styles a language offers ("react" finds Node).
+	Also []string
 }
 
 // Action is a menu entry: its questions, then the command they build.
@@ -131,7 +138,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 					{Label: "A package", Value: "package", Hint: "code you publish for others to install (npm, PyPI, crates.io and so on)"},
 				}},
 				{Key: "lang", Prompt: "Which language is it written in?", Options: langs, Filter: true},
-				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web", PlaceholderFor: namePlaceholder, Check: checkProjectName},
+				{Key: "name", Prompt: "Name it (lowercase words joined by dashes)", Placeholder: "web", PlaceholderFor: namePlaceholder, Check: checkProjectName, Suggest: suggestName("")},
 			},
 			Argv: func(a map[string][]string) []string {
 				return []string{"add", first(a, "kind"), first(a, "name"), "--lang", first(a, "lang")}

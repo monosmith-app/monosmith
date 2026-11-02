@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { choicesByAxis, parseChoices, parseKinds, parseStacks, roleOf } from './add-options.mapper.ts'
+import { choiceNames, choicesByAxis, parseChoices, parseKinds, parseStacks, roleOf } from './add-options.mapper.ts'
 
 describe('parseKinds', () => {
   it('keeps the kinds with a name and a language', () => {
@@ -53,5 +53,19 @@ describe('choicesByAxis', () => {
 
   it('has no axis for a language without choices', () => {
     expect(choicesByAxis(choices.filter((choice) => choice.language !== undefined), 'rust')).toEqual([])
+  })
+})
+
+describe('choiceNames', () => {
+  const choices = parseChoices(JSON.stringify([
+    { axis: 'framework', name: 'react', language: 'node' },
+    { axis: 'style', name: 'react', language: 'node' },
+    { axis: 'framework', name: 'fastapi', language: 'python' },
+  ]))
+
+  it('lists each name of the language once', () => {
+    expect(choiceNames(choices, 'node')).toEqual(['react'])
+    expect(choiceNames(choices, 'python')).toEqual(['fastapi'])
+    expect(choiceNames(choices, 'rust')).toEqual([])
   })
 })

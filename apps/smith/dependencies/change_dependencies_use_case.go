@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,8 +34,12 @@ func Install(s *session.Session, targets, packages []string, dev bool, log io.Wr
 	}
 	for _, p := range projects {
 		var res protocol.DependencyResult
-		ok, err := s.Plugins.Call(p.Plugin, protocol.MethodInstall, protocol.InstallParams{Project: &p.Project, Packages: packages, Dev: dev}, &res, timeout)
-		if err := outcome(p, ok, err); err != nil {
+		dirs := []string{filepath.Join(s.Root, filepath.FromSlash(p.Root)), s.Root}
+		err := guarded(dirs, func() error {
+			ok, err := s.Plugins.Call(p.Plugin, protocol.MethodInstall, protocol.InstallParams{Project: &p.Project, Packages: packages, Dev: dev}, &res, timeout)
+			return outcome(p, ok, err)
+		})
+		if err != nil {
 			return err
 		}
 		what := "installed"

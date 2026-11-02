@@ -11,7 +11,7 @@ import (
 // form and the command ask the same. The first option of each is the default
 // and a text question left empty takes its default.
 func NewWorkspaceSteps() []Step {
-	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio"}}
+	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}}
 	for _, q := range scaffold.NewQuestions() {
 		step := Step{Key: q.Key, Prompt: q.Prompt}
 		if q.Advanced {
