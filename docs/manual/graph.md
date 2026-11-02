@@ -19,7 +19,7 @@ shared schema file (OpenAPI and the like) that `--blast-radius` follows across l
 ## Synopsis
 
 ```sh
-smith graph [--format text|json|dot|html|tui] [-o <file>] [--focus <projects>] [--affected [--base <branch>]]
+smith graph [--format text|json|dot|html|tui] [-o <file> [--force]] [--focus <projects>] [--affected [--base <branch>]]
 smith graph --blast-radius <project or file> [--format text|json]
 smith graph --diff <revision> [--format text|json]
 ```
@@ -38,6 +38,7 @@ Usage: `smith graph [flags]`
 | `--blast-radius <blast-radius>` | project or file path |  | list everything a change to a project or a file reaches, across languages and through shared schemas; text or json |
 | `--diff <diff>` | revision |  | show how the graph changed since a revision (a branch, tag or commit): projects and imports added and removed, kinds and stacks changed; text or json |
 | `--focus <focus>` | string, repeatable |  | keep these projects and everything connected to them (names, globs, tag:x) |
+| `--force` | boolean | off | replace the -o file when it exists with other content (the diff is printed) |
 | `--format <format>` | `text`, `json`, `dot`, `html` or `tui` | `text` | text, json, dot, html or tui |
 | `-o, --output <output>` | string |  | write to a file |
 

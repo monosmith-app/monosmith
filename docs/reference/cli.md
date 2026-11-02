@@ -217,9 +217,12 @@ Usage: `smith kind <project> <kind> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--allow-dirty` | go ahead although the work tree has uncommitted changes | off |
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | list every file edit and the move; change nothing | off |
 | `--force` | go ahead although other projects import it or it was already released | off |
 | `--json` | print the plan and what was done as JSON | off |
+| `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end kind -->
 
@@ -462,7 +465,8 @@ Usage: `smith eject [tool...] [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--all` | eject every default that applies | off |
-| `--force` | replace a file that exists already | off |
+| `--dry-run` | show what would be copied and what would be replaced; change nothing | off |
+| `--force` | replace a file that exists already (the diff of what is lost is printed first) | off |
 
 <!-- smith:end eject -->
 
@@ -534,9 +538,14 @@ Usage: `smith sync [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--check` | report only; fail when declarations disagree | off |
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--dry-run` | show the plan and change nothing | off |
 | `--json` | print the report as JSON | off |
+| `--major` | also rewrite declarations whose major version differs from the target | off |
 | `--no-install` | rewrite the manifests without installing | off |
-| `-y, --yes` | also rewrite declarations whose major version differs from the target | off |
+| `--prefer <prefer>` | which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |  the installed one, else the highest |
+| `--to <to>` | the version of one dependency, as <name>=<version> (repeatable) |  |
+| `-y, --yes` | write the plan without asking | off |
 
 <!-- smith:end sync -->
 
@@ -554,9 +563,13 @@ Usage: `smith up [packages...] [flags]`
 | `--align` | bring dependencies declared at different versions to one (the named ones, or all); with --check, fail when any differ | off |
 | `--check` | report only; never prompt, never write | off |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--dry-run` | with --align: show the plan and change nothing | off |
 | `--json` | print the updates and tools as JSON; never write | off |
+| `--major` | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version | off |
 | `--no-install` | rewrite the manifests without installing | off |
-| `-y, --yes` | take every update without prompting | off |
+| `--prefer <prefer>` | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |  the installed one, else the highest |
+| `--to <to>` | with --align: the version of one dependency, as <name>=<version> (repeatable) |  |
+| `-y, --yes` | take every patch and minor update without prompting; major updates stay out unless --major is given | off |
 
 <!-- smith:end up -->
 
@@ -593,7 +606,7 @@ Usage: `smith ci <command>`
 | `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
-| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff) |
 | `smith ci native` | Run the native phase |
 | `smith ci pack` | Run the pack phase |
 | `smith ci release` | Run the release phase |
@@ -654,9 +667,11 @@ Usage: `smith release <command> [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--bump <bump>` | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major (repeatable) |  |
 | `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
 | `--dry-run` | show what would be released; change nothing | off |
 | `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) | `text` |
+| `--hold <hold>` | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too (repeatable) |  |
 | `--json` | print the release report as JSON | off |
 | `--no-push` | create tags locally only | off |
 | `--notes` | also print each release's notes (what its GitHub Release says) | off |
@@ -700,6 +715,7 @@ Usage: `smith graph [flags]`
 | `--blast-radius <blast-radius>` | list everything a change to a project or a file reaches, across languages and through shared schemas; text or json |  |
 | `--diff <diff>` | show how the graph changed since a revision (a branch, tag or commit): projects and imports added and removed, kinds and stacks changed; text or json |  |
 | `--focus <focus>` | keep these projects and everything connected to them (names, globs, tag:x) (repeatable) |  |
+| `--force` | replace the -o file when it exists with other content (the diff is printed) | off |
 | `--format <format>` | text, json, dot, html or tui | `text` |
 | `-o, --output <output>` | write to a file |  |
 
@@ -782,6 +798,7 @@ Usage: `smith report [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--force` | replace the file when it exists with other content (the diff is printed) | off |
 | `-o, --output <output>` | write the page to a file |  |
 
 <!-- smith:end report -->
@@ -1065,6 +1082,7 @@ Usage: `smith bootstrap [flags]`
 |---|---|---|
 | `--check` | change nothing; fail when the launcher is missing or out of date | off |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--dry-run` | show what would be written, with a diff of a launcher that exists, and change nothing | off |
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end bootstrap -->

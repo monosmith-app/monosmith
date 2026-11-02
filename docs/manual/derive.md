@@ -48,6 +48,7 @@ Paths are relative to the workspace, with forward slashes. A flag can be repeate
 
 ```sh
 smith derive                                    # write what is missing or stale, record the rest
+smith derive --replace <file>                   # prints the diff of the hand edit it throws away, then overwrites
 smith derive --check                            # for CI: fail when anything is out of date
 smith derive --explain packages/web/tsconfig.lib.json
 smith derive --replace packages/web/tsconfig.lib.json   # the derived content wins

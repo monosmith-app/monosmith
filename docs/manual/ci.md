@@ -43,7 +43,7 @@ Usage: `smith ci <command>`
 | `smith ci assets` | Run the assets phase |
 | `smith ci audit` | Run the audit phase |
 | `smith ci check` | List what to set up by hand for the pipelines: secrets, and each private registry's permissions |
-| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift) |
+| `smith ci generate` | Rewrite the CI pipelines from the workspace's projects (--check only reports drift, --dry-run shows a diff) |
 | `smith ci native` | Run the native phase |
 | `smith ci pack` | Run the pack phase |
 | `smith ci release` | Run the release phase |
