@@ -111,3 +111,16 @@ func command(dir string, argv []string, extraEnv []string) (*exec.Cmd, error) {
 	cmd.Env = append(os.Environ(), extraEnv...)
 	return cmd, nil
 }
+
+// Probe executes argv in dir to learn whether a tool exists and what it
+// prints, for a check such as `cargo audit --version`. It returns stdout and
+// discards stderr: a missing tool is the check's finding to word, and the
+// tool's own "no such command" lines would reach the person before it.
+//
+// Parameters: dir is where the tool runs; argv is the program and arguments;
+// extraEnv adds environment entries.
+// Returns: stdout, and an error when the tool is absent or exits non-zero.
+func Probe(dir string, argv []string, extraEnv ...string) (string, error) {
+	out, _, err := Capture(dir, argv, extraEnv...)
+	return out, err
+}

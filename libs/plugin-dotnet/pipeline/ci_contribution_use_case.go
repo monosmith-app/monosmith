@@ -103,7 +103,7 @@ func hasCredential(list []protocol.Credential, env string) bool {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that the .NET SDK is installed.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {

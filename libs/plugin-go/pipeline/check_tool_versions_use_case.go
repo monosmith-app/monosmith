@@ -10,7 +10,7 @@ import (
 )
 
 // probe runs a tool for its version; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 var goVersion = regexp.MustCompile(`go(\d+)\.(\d+)`)
 

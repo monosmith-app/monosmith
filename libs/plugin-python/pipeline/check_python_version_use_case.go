@@ -10,7 +10,7 @@ import (
 )
 
 // probe runs a tool for its version; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // CheckPythonVersion compares the venv's Python with the version CI
 // installs. A newer one warns, an older one fails: the code may use what the
