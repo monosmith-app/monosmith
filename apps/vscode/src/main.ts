@@ -1078,7 +1078,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const bootstrapHere = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
     if (state?.location === undefined || !mayWrite('the smith launcher')) return
-    const outcome = await writeLauncher({ run: smithIn(state), confirm: async () => await confirmLauncher(state.name) })
+    const outcome = await writeLauncher({ run: smithIn(state), confirm: async (plan) => await confirmLauncher(state.name, plan) })
     note(`MonoSmith: launcher in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellLauncherOutcome(outcome)
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
