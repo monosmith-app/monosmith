@@ -254,6 +254,9 @@ func Validate(cfg *Config) error {
 		// project's plugins have had their say (a Tauri app's plugin supplies
 		// build, assets and platforms).
 	}
+	if err := validateConfirm(cfg); err != nil {
+		return err
+	}
 	if err := validateBareTags(cfg); err != nil {
 		return err
 	}
