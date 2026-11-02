@@ -120,3 +120,21 @@ func TestResumeKeepsTheAnswersAndShowsTheProblem(t *testing.T) {
 		t.Fatalf("the ci question must start on the earlier answer: cursor %d", m.cursor)
 	}
 }
+
+func TestARefusedNameOffersTheCorrectedOneAndTabTakesIt(t *testing.T) {
+	m, _ := NewModel([]Action{newWorkspaceAction(t)}).Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	m.input.SetValue("My Shop")
+	if view := m.View(); !strings.Contains(view, "tab    use my-shop") || !strings.Contains(view, "folder, a package name") {
+		t.Fatalf("the choices and the rule must show: %s", view)
+	}
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyTab})
+	if m.input.Value() != "my-shop" {
+		t.Fatalf("tab must take the suggestion: %q", m.input.Value())
+	}
+	if got := suggestName("workspace")(nil, "9 lives!"); got != "lives" {
+		t.Errorf("%q", got)
+	}
+	if got := suggestName("workspace")(nil, "###"); got != "" {
+		t.Errorf("%q", got)
+	}
+}

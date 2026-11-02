@@ -206,6 +206,23 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 	}
 	step := m.current()
 	text := step != nil && step.Options == nil
+	if key.Type == tea.KeyTab && step != nil {
+		if text && step.Suggest != nil {
+			if v := strings.TrimSpace(m.input.Value()); v != "" && m.problem(step, v) != "" {
+				if s := step.Suggest(m.answers, v); s != "" {
+					m.input.SetValue(s)
+					m.input.CursorEnd()
+				}
+			}
+			return m, nil
+		}
+		if step.Filter && step.Options != nil && m.filter != "" && len(m.options()) == 0 {
+			if near := Suggestions(step.Options, m.filter); len(near) > 0 {
+				m.filter, m.cursor = near[0], 0
+			}
+			return m, nil
+		}
+	}
 	if text && key.Type != tea.KeyEnter && key.Type != tea.KeyEsc && key.Type != tea.KeyCtrlC {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
@@ -419,7 +436,12 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))
 		} else if v != "" {
 			if problem := m.problem(step, v); problem != "" {
-				lines = append(lines, th.Failure(problem))
+				lines = append(lines, th.Failure(problem), th.Muted(nameRule))
+				if step.Suggest != nil {
+					if s := step.Suggest(m.answers, v); s != "" {
+						lines = append(lines, "", "You can:", "  tab    use "+th.Bold(s)+" (your name in the shape smith asks for)", "  type   another name instead")
+					}
+				}
 			} else if step.Check != nil {
 				lines = append(lines, th.Success(th.Icons.Passed+" that name works"))
 			}
@@ -454,6 +476,9 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		}
 		if step.Filter && len(m.options()) == 0 {
 			lines = append(lines, th.Muted("  "+NothingMatches(step.Options, m.filter)))
+			if near := Suggestions(step.Options, m.filter); len(near) > 0 {
+				lines = append(lines, "", "  You can:", "    tab        show "+th.Bold(near[0]), "    backspace  edit what you typed", "    esc        clear the filter and see every language")
+			}
 		}
 		help := "up/down choose · enter select · esc back"
 		if step.Filter {
@@ -470,10 +495,21 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 	if m.err != "" && !shown(lines, m.err) {
 		lines = append(lines, th.Failure(m.err))
 	}
-	for i := range lines {
-		lines[i] = pane.Fit(lines[i], w)
+	// A long question or hint wraps onto further lines; it is not cut at the edge.
+	// The option rows are wrapped already, so the row numbers of a click stay.
+	var wrapped []string
+	moved := map[int]int{}
+	for i, l := range lines {
+		if v, ok := optionAt[i]; ok {
+			moved[len(wrapped)] = v
+			wrapped = append(wrapped, pane.Fit(l, w))
+			continue
+		}
+		for _, part := range pane.Wrap(l, w, 2) {
+			wrapped = append(wrapped, pane.Fit(part, w))
+		}
 	}
-	return lines, optionAt
+	return wrapped, moved
 }
 
 // shown reports whether a line of the screen already says text, so the same

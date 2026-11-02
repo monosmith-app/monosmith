@@ -41,10 +41,9 @@ func MatchedVia(o Option, typed string) []string {
 	return via
 }
 
-// NothingMatches is the line shown when what was typed matches no option: it
-// says so and suggests the closest names the options know (labels and Also
-// names), or a few names to try when none is close.
-func NothingMatches(options []Option, typed string) string {
+// Suggestions are the closest names the options know (labels and Also names)
+// to what was typed, nearest first; none when nothing is close.
+func Suggestions(options []Option, typed string) []string {
 	var names []string
 	for _, o := range options {
 		names = append(names, strings.ToLower(o.Label))
@@ -54,8 +53,15 @@ func NothingMatches(options []Option, typed string) string {
 			}
 		}
 	}
+	return nearmatch.Closest(strings.TrimSpace(typed), names)
+}
+
+// NothingMatches is the line shown when what was typed matches no option: it
+// says so and suggests the closest names the options know (labels and Also
+// names), or a few names to try when none is close.
+func NothingMatches(options []Option, typed string) string {
 	line := "nothing matches \"" + typed + "\"."
-	if near := nearmatch.Closest(strings.TrimSpace(typed), names); len(near) > 0 {
+	if near := Suggestions(options, typed); len(near) > 0 {
 		return line + " Did you mean " + strings.Join(near, " or ") + "?"
 	}
 	var some []string
