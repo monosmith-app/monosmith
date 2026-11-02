@@ -36,6 +36,9 @@ on releases is held back with it. The last question says what cannot be undone: 
 that are created and pushed and the registries that receive the packages. Without a
 terminal smith refuses unless `--yes` is given. `--hold <project>` and
 `--bump <project>=minor` give the same answers as flags, in a terminal or in CI.
+A project that exists but is not in the plan has nothing to hold back: `--hold` prints one note
+saying so. `--bump` refuses it with "is not in this plan", and offers a "Did you mean" only for a
+name that is not a project.
 
 A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
 release channel decide their version themselves, so `--bump` refuses them and names why.

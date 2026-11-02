@@ -46,8 +46,10 @@ func resolveProgram(argv []string) []string {
 
 // writePlan prints, under a step that runs smith, what the command would do
 // (its plan flag), so the review shows the change and not only the command. It
-// writes nothing for a step without a plan.
-func writePlan(w io.Writer, root string, step protocol.FixStep) {
+// writes nothing for a step without a plan. root is the folder the plan runs in:
+// a copy that already holds the fix's files, or the workspace when the copy could
+// not be made (copyErr says why, and the plan then shows the files as they are now).
+func writePlan(w io.Writer, root string, copyErr error, step protocol.FixStep) {
 	plan, ok := smithfix.PlanArgv(step.Argv)
 	if !ok {
 		return
@@ -67,5 +69,8 @@ func writePlan(w io.Writer, root string, step protocol.FixStep) {
 	}
 	if err != nil {
 		fmt.Fprintf(w, "            (smith could not print the plan: %v)\n", err)
+	}
+	if copyErr != nil {
+		fmt.Fprintf(w, "            (this plan does not include the files above: %v)\n", copyErr)
 	}
 }
