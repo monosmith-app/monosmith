@@ -167,9 +167,12 @@ that existing tag instead; see [Release assets](release-assets.md#run-it-again-f
 <!-- smith:begin ci release -->
 Run the release phase
 
-Usage: `smith ci release`
+Usage: `smith ci release [flags]`
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--bump <bump>` | string, repeatable |  | release a package with this bump: <project>=patch\|minor\|major (a manual release from the CI provider's input) |
+| `--force` | boolean | off | with --bump: release a package although no commit releases it (the same code under a new version) |
 
 <!-- smith:end ci release -->
 
