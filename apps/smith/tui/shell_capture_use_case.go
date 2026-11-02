@@ -108,9 +108,25 @@ func (s *Shell) planRead(msg capturedMsg) tea.Cmd {
 		return nil
 	}
 	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
+}
+
+// dryRunLine ends the plan a command prints with --dry-run.
+const dryRunLine = "Dry run: nothing was changed."
+
+// withoutDryRunLine drops the closing "Dry run" line of a plan: the dialog
+// above it already says that nothing is written yet, and a first-time user
+// does not know the words "dry run".
+//
+// Parameters: lines are the lines of the plan.
+// Returns: the lines without the closing "Dry run" line.
+func withoutDryRunLine(lines []string) []string {
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == dryRunLine {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // tell shows a notice dialog: a title, a sentence and the lines of a text.
@@ -179,7 +195,7 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		return nil
 	}
 	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len(), s.offers), argv).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)),max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }

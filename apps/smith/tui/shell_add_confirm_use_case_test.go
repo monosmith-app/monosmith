@@ -55,6 +55,17 @@ func TestTheAddConfirmShowsTheCommandInTheRealShell(t *testing.T) {
 	}
 }
 
+// TestTheAddPlanDoesNotEndWithTheDryRunLine checks that the dialog leaves out
+// the words "dry run": it already says that nothing is written yet.
+func TestTheAddPlanDoesNotEndWithTheDryRunLine(t *testing.T) {
+	l := newLab(t, true, 110, 32)
+	sh := l.sh()
+	sh.addPlanRead(capturedMsg{argv: []string{"add", "app", "web", "--lang", "node", "--dry-run"}, res: sources.Captured{OK: true, Text: realAddPlan}})
+	l.m = sh
+	l.has("The command that will run:")
+	l.hasNot("Dry run")
+}
+
 // TestTheAddConfirmFollowsAResize keeps the command on screen when the window
 // shrinks while the dialog is open.
 func TestTheAddConfirmFollowsAResize(t *testing.T) {
