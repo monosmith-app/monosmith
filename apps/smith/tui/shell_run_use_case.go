@@ -30,6 +30,9 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		// What plugin, recipe and config list print is the Settings tab.
 		return s.showSettings(section)
 	}
+	if isToolsInstall(argv) {
+		return s.openTools(argv)
+	}
 	switch catalog.Classify(argv) {
 	case catalog.NeedsTerminal:
 		s.Argv, s.quit = argv, true

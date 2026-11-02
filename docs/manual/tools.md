@@ -53,6 +53,13 @@ Usage: `smith tools <command> [flags]`
 
 0; 1 outside a workspace.
 
+In the interactive shell, `tools install` opens a dialog instead of leaving for the terminal. It asks
+how to get each missing tool and shows the exact command of the option under the cursor. When the
+command needs administrator rights, it asks a second question: run it yourself, let smith run it,
+or skip. The output of the install streams in the dialog, and each tool ends with a result. A
+command that asks for a password (`sudo`) is handed over to the terminal, with your answer given.
+Esc cancels, and nothing is installed.
+
 ## Files and environment
 
 Reads the plugins' tool declarations, and the pin files named above at the workspace root and in

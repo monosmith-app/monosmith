@@ -83,6 +83,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.composeRead(msg)
 	case capComposePlan:
 		return s.composePlanRead(msg)
+	case capTools:
+		return s.toolsRead(msg)
 	case capSearch:
 		return s.searchRead(msg)
 	}
