@@ -154,6 +154,16 @@ func TestAnExistingUnrecordedFileIsRecordedWhenEqualAndHeldWhenDifferent(t *test
 	}
 }
 
+func TestAMissingKeysFileSaysOnlyTheOwnedKeysComeBack(t *testing.T) {
+	plan, err := PlanFor(t.TempDir(), derivelock.Record{}, []Proposal{{Plugin: "node", File: refs("../core")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := plan.Items[0].Detail; !strings.Contains(got, "only the keys smith owns") {
+		t.Errorf("detail = %q", got)
+	}
+}
+
 func TestADecisionOnAFileSmithDoesNotDeriveIsAnError(t *testing.T) {
 	rec := &derivelock.Record{}
 	if _, err := Apply(t.TempDir(), Plan{}, rec, Decision{Eject: []string{"nope.json"}}); err == nil {

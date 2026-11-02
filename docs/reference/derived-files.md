@@ -18,7 +18,7 @@ A renderer chooses the mode of each file. The mode says how much of the file smi
 |---|---|---|---|
 | `file` | the whole file. A generated header names the renderer when the format has comments | nothing | the whole file |
 | `region` | the lines between `smith:begin <renderer>` and `smith:end <renderer>`. The markers use the comment leader of the file (`//`, `#`) | yours | the lines between the markers |
-| `keys` | the listed top-level keys of a JSON file, or of one table of a TOML file | yours, in order, with its comments (TOML) | the owned keys in canonical form (sorted, compact) |
+| `keys` | the listed top-level keys of a JSON file, or of one table of a TOML file | yours, in order, with its comments (JSON and TOML) | the owned keys in canonical form (sorted, compact) |
 
 Line endings do not count in a hash. Smith keeps the line ending of the file when it writes.
 

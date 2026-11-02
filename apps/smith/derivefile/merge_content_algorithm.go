@@ -49,14 +49,16 @@ func Merge(f protocol.DerivedFile, disk []byte, exists bool) ([]byte, error) {
 		}
 		return []byte(src), nil
 	}
+	if exists {
+		edited, err := jsondoc.SetKeysInPlace([]byte(norm(string(disk))), f.Keys)
+		if err != nil {
+			return nil, fmt.Errorf("%s is not a JSON object smith can edit: %w", f.Path, err)
+		}
+		return []byte(lineendings.Match(string(disk), string(edited))), nil
+	}
 	doc, err := jsondoc.ParseDocument([]byte("{}"))
 	if err != nil {
 		return nil, err
-	}
-	if exists {
-		if doc, err = jsondoc.ParseDocument(disk); err != nil {
-			return nil, fmt.Errorf("%s is not a JSON object smith can edit (comments are not supported): %w", f.Path, err)
-		}
 	}
 	for _, k := range sortedKeys(f.Keys) {
 		if err := doc.SetJSON(k, f.Keys[k]); err != nil {
