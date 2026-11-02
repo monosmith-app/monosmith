@@ -51,6 +51,8 @@ var catalog = []Action{
 	{Command: []string{"tauri", "icon"}, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"install"}, Safety: Changes},
 	{Command: []string{"uninstall"}, Safety: Changes},
+	{Command: []string{"tools"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: "an editor reads the list through smith tools --json"},
+	{Command: []string{"tools", "install"}, Safety: NeedsTerminal, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: "installing on the machine is the person's step: the assistant reads smith tools and says what is missing", NotInServe: "an editor shows the choices from smith tools install --dry-run --json and runs the answer with --manager"},
 	{Command: []string{"sync"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--check"}, Safety: Reads}}},
 	{Command: []string{"deps"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},
 	{Command: []string{"deps", "up"}, Plan: "--check", Asks: true, Safety: Changes, NotInMCP: "no tool yet: smith_updates lists the candidates", NotInServe: noMethodYet},

@@ -68,6 +68,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriadd"
 	"github.com/monosmith-app/monosmith/apps/smith/tauriprepare"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"github.com/monosmith-app/monosmith/apps/smith/tui"
 	"github.com/monosmith-app/monosmith/apps/smith/upgrade"
 	"github.com/monosmith-app/monosmith/apps/smith/why"
@@ -126,7 +127,7 @@ already have), then build and doctor.`,
 	}
 	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), swapchoice.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
-	add("work", devservers.Command(version), derive.Command(version), operation.UndoCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
+	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
 	add("work", dependencies.Commands(version)...)
 	releaseCmd := release.Command(version)
@@ -232,7 +233,7 @@ func runCommand(version string, args []string) (int, string) {
 			return 1, "smith: " + message
 		case errors.As(err, &p):
 			return 1, p.Error()
-		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported):
+		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported) && !errors.Is(err, toolinstall.ErrMissing):
 			return 1, "smith: " + err.Error()
 		}
 		return 1, ""

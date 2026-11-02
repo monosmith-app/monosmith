@@ -103,6 +103,7 @@ Python package). Paths in output are shortened.
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
 | [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
+| [`smith tools`](tools.md), [`smith tools install`](tools-install.md) | The programs the workspace needs on this machine, and the presented choice to install what is missing. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |
 | [`smith kinds`](kinds.md), [`smith stacks`](stacks.md), [`smith choices`](choices.md) | What `smith add` accepts. |
 | [`smith plugin`](plugin.md) | Inspect plugins: [`list`](plugin-list.md), [`check`](plugin-check.md), [`enable`](plugin-enable.md), [`disable`](plugin-disable.md), [`set`](plugin-set.md), [`pack`](plugin-pack.md), [`draft`](plugin-draft.md), [`install`](plugin-install.md), [`search`](plugin-search.md), [`trust`](plugin-trust.md), [`untrust`](plugin-untrust.md). |

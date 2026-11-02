@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"context"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"maps"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
@@ -18,7 +20,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/plugintrust"
-	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/releaselineage"
@@ -116,6 +117,7 @@ func run(s *session.Session, askRegistries bool) Report {
 	add("smith", lockfilePlatformChecks(s)...)
 	findings = append(findings, trustFindings(s.Root, s.Config)...)
 	findings = append(findings, PluginChecks(s, nil)...)
+	findings = ToolFindings(context.Background(), s, findings)
 	report := Report{Findings: findings}
 	report.tally()
 	sort.SliceStable(report.Findings, func(i, j int) bool { return !report.Findings[i].OK && report.Findings[j].OK })
