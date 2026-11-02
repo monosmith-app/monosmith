@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-02
+- Amended by: [0083](0083-the-dist-tags-move-in-a-last-phase-after-every-project-has-published.md): the wait moves to a last phase after every project has published
 
 ## Context
 

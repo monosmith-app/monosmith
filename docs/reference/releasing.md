@@ -588,16 +588,27 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 ## npm, PyPI, NuGet and RubyGems
 
 A package whose `optionalDependencies` pin packages at the version being published (the platform
-packages of a binary launcher), and the npm packages of an app (`[projects.x.release] npm`), wait for
-npm before their dist-tag moves. smith publishes the platform packages first. It then waits until
-each one is fetchable the way a person fetches it: `npm view <pkg>@<version>` finds it, and a HEAD
-request of its tarball URL (`dist.tarball`) answers. Every package must pass on three probes in a
-row, 30 seconds apart, so that more than one npm edge has answered. A progress line names the
-packages still missing every 60 seconds. Only then are the wrapper packages (`monosmith`,
-`@monosmith/cli`) published under `next`, or `latest` for a stable version.
+packages of a binary launcher), and the npm packages of an app (`[projects.x.release] npm`), do not
+get their dist-tag until npm serves the platform packages. smith publishes the platform packages
+first. It reads each one back from the registry right after `npm publish` returned: a package that
+is still missing after six checks, 5 seconds apart, stops the release with an error that names it
+(run the release again; it publishes what is missing). It then probes once, without waiting. If
+every platform package is fetchable the way a person fetches it (`npm view <pkg>@<version>` finds
+it, and a HEAD request of its tarball URL answers), the wrapper packages (`monosmith`,
+`@monosmith/cli`) are published under `next`, or `latest` for a stable version. If not, they are
+published under the dist-tag `pending`, and the release goes on with the next project: a publish
+never waits, so a sign-in that expires in 15 minutes (Azure, PyPI or NuGet trusted publishing) is
+still valid for the projects after it.
 
-The wait is limited by `propagation_wait`, a duration, set for the workspace and, if needed, for one
-project:
+When every project has published, and after the GitHub Releases and their assets, smith runs a last
+phase: *move the dist-tags*. For each tag under `pending` it waits until each platform package is
+fetchable the way a person fetches it, on three probes in a row, 30 seconds apart, so that more than
+one npm edge has answered, with a progress line every 60 seconds naming the packages still missing.
+Then it runs `npm dist-tag add` and removes `pending`. See
+[ADR 0083](../architecture/decisions/0083-the-dist-tags-move-in-a-last-phase-after-every-project-has-published.md).
+
+The wait of that last phase is limited by `propagation_wait`, a duration, set for the workspace and,
+if needed, for one project:
 
 ```toml
 [release]
@@ -607,16 +618,25 @@ propagation_wait = "15m"        # the default; "0" does not wait: one probe, and
 propagation_wait = "30m"        # this project only
 ```
 
-If the limit passes first, smith moves no dist-tag. It publishes the packages under the dist-tag
-`pending`, tags and releases as usual, and the report names the exact command that moves the tag
+If the limit passes first, smith moves no dist-tag. The packages stay under the dist-tag `pending`,
+the tag and the release are complete, and the report names the exact command that moves the tag
 (`npm dist-tag add <name>@<version> next`). The step prints a warning annotation in GitHub Actions
 and Azure Pipelines, and `smith release` and `smith ci release` exit with code 2, never silently.
-Run the printed command when `npm view` shows the platform packages from another machine. Without
-the wait, a person who runs `npm i -g monosmith@next` in those minutes would get a launcher with no
-binary. The launcher also helps in that case: see
+Run the printed command when `npm view` shows the platform packages from another machine, or run
+the release again: a re-run finds the wrapper under `pending`, publishes only the packages the
+registry lacks, waits again and moves the tag. If a later project fails, the last phase does not
+run, and the re-run does it. Without the wait, a person who runs `npm i -g monosmith@next` in those
+minutes would get a launcher with no binary. The launcher also helps in that case: see
 [the troubleshooting guide](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed).
-`propagation_wait` costs at least one minute for each such release (three probes); set it to `"0"`
-to skip it.
+The last phase costs at least one minute for each such release (three probes); set
+`propagation_wait` to `"0"` to skip it. A Node package (not an app) with same-release
+`optionalDependencies` is moved the same way in the same run, but a re-run does not find its
+`pending` state: use the printed command.
+
+A plugin takes part in the last phase through the `publish` method. A publish returns
+`pendingMoves` (package, version, tag and the packages to await) instead of waiting; the host then
+calls `publish` again with `finalize` set to those moves and `propagationWait`. That call publishes
+nothing: it waits, moves the tags and returns `moved` and the moves still in `pendingMoves`.
 
 An app released with assets can also be published to npm, PyPI, NuGet and
 RubyGems from the same archives, so people install it with the package
