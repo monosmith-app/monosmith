@@ -40,6 +40,7 @@ support, CI contributions and limits, written from its code and from real runs.
 | [`eslint`](../plugins/using/catalogue/eslint.md) | toolchain, provides `lint` | Node projects lint with ESLint and `@monosmith/eslint-config` | — |
 | [`jest`](../plugins/using/catalogue/jest.md) | toolchain, provides `test`; publishes `node-jest` | Node projects test with Jest (`ts-jest`) | — |
 | [`functions`](../plugins/using/catalogue/functions.md) | scaffold; publishes the choices `azure-functions`, `aws-lambda`, `gcp-functions`, four triggers and two Node runtimes (`smith choices`) | scaffolds serverless function apps in TypeScript for Azure Functions, AWS Lambda and Google Cloud (Cloud Run) functions; the python and dotnet plugins publish the same choices for their languages | released by its tag |
+| [`electron`](../plugins/using/catalogue/node.md#electron-and-tauri) | scaffold; publishes the choice `electron` on the framework axis (`layer = "shell"`) | `smith add app desk --lang node --with electron` writes an Electron app in TypeScript (main process, sandboxed preload, one renderer page) and `package` with Electron Forge | — |
 | [`vitest`](../plugins/using/catalogue/vitest.md) | toolchain, provides `test`; publishes `node-vitest` | Node projects test with Vitest | — |
 | [`playwright`](../plugins/using/catalogue/playwright.md) | toolchain, provides `e2e`, and a convention (`[conventions.playwright]`); publishes `node-vitest-playwright` | the `e2e` task of every Node project with a Playwright suite, and an `e2e-browsers` task before it (see below) | — |
 | [`tauri`](../plugins/using/catalogue/tauri.md) | toolchain, provides `tauri-build`, and a convention (`[conventions.tauri]`); publishes `node-vitest-tauri` | a cached `tauri-build` task (cargo target in `dist/tauri/<project dir>`) and a `tauri-dev` task for every Node project with a `src-tauri`; `smith tauri add` makes an existing Node app one, `smith tauri icon` makes its icons (with `[projects.<p>.settings.tauri]` sidecars and resources, also `tauri-prepare` and `tauri-verify`); the rust plugin leaves that `src-tauri` out of its projects | — |
@@ -71,7 +72,7 @@ support, CI contributions and limits, written from its code and from real runs.
 Built-in plugins ship inside the `smith` binary but still run as separate
 processes (`smith plugin serve <name>`), speaking the same protocol an external
 plugin does. `smith plugin list` shows each one's levels (roles), the slots it
-fills and what it requires (`--json` adds its conflicts and capabilities), and
+fills, what it requires and whether it can describe `declared` projects, publish to `channels` and `link` a library (`--json` adds its conflicts and capabilities), and
 `smith stacks` the stacks they publish. `smith plugin enable`, `disable` and
 `set` change which built-in language plugins load (`[plugins] enabled` in `smith.toml`);
 see [`smith plugin`](../manual/plugin.md) and
@@ -256,7 +257,7 @@ internal sealed class Rust : IPlugin, IDiscoverer
 
 **The contract is a JSON Schema.** The Go types of the protocol are the source of truth, and
 `packages/plugin-sdk/schema/protocol.schema.json` is generated from them (draft 2020-12): one definition
-per message, `x-methods` (each of the 20 methods with its params, its result and the capability it
+per message, `x-methods` (each of the 23 methods with its params, its result and the capability it
 needs), `x-errorCodes`, `x-roles`, `x-protocolVersion` and `x-transport` (the framing). A member is
 required when its Go field has no `omitempty`. A Go test fails when the file is stale, and the SDKs of other
 languages generate their types from it, so a plugin in a language without an SDK can read it too.
@@ -273,17 +274,23 @@ Content-Length: 85\r\n
 
 | Method | Params → Result | Capability |
 |---|---|---|
-| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names, and `concurrency` (how many requests it can work on at once; absent is 1) | always |
-| `discover` | workspace-relative manifest paths the host found → projects | `discover` |
+| `initialize` | protocol versions, host, workspace root → chosen version, plugin identity, kind (`language`/`convention`), roles (its levels), the tasks it provides (its slots), what it requires and conflicts with, the stacks it publishes, capabilities, languages, manifest names, `concurrency` (how many requests it can work on at once; absent is 1), the project `kinds` it scaffolds, the shape keys it `follows`, the `choices` it owns (each with `title`, `aliases`, `layer`, `default` and `suggested`) and the `tools` it needs on the machine (`ToolNeed`) | always |
+| `discover` | workspace-relative manifest paths the host found, the projects `smith.toml` declares for the language (`declared`: folders with no manifest) and the plugin's `settings` by project name (the Go build tags) → projects | `discover` (`declared` for the declared projects) |
 | `generate` | kind, name, directory, workspace info, stack, `convention` when the plugin is asked as a workspace convention rather than as one of the stack's plugins, and `settings` (the plugin's own table from the recipe the project is created from) → files written, notes | `generate` |
 | `version/write` | project, version, new dependency versions, dry run → files changed | `version` |
-| `publish` | project, version, dry run → published / skipped with a reason | `publish` |
+| `publish` | project, version, dry run, the platform and the commit, the release channel's `tag` → published / skipped with a reason | `publish` (`channels` for a package of a release channel) |
 | `ci` | the plugin's projects → toolchains (with their GitHub and Azure setup steps, or an install command), setup and audit steps (an audit step may name `cacheFiles`, the files that decide its verdict: smith skips it while they are unchanged on the same day), `postRelease` steps (run at the end of `smith ci release` after every push to the release branch, released or not; a step that is not blocking only warns), credentials (`setup` marks one installs need too), GitHub permissions, and `authenticate`: provider-native steps that sign in to a private registry before setup | `ci` |
 | `doctor` | the plugin's projects → findings, each with a remedy and, when the plugin can write it, a fix (files' new contents, command steps and choices; marked safe when it only restores what the plugin owns) | `doctor` |
 | `remove` | a project whose directory the host deleted, dry run → the files the plugin cleaned (go.work, the lockfile), notes | `remove` |
 | `published` | a project → the newest version its registry has, or none, or that the registry could not be asked | `published` |
 | `dependencies/install` | a project, packages, dev → the files changed, notes; with no project, the projects it serves, to install them all | `dependencies` |
 | `dependencies/uninstall` | a project, packages → the files changed, notes | `dependencies` |
+| `dependencies/link` | a project, a library of the same workspace and language, `plan` (answer the manifest, the line and the range options without writing), `spec` (the range chosen) → files changed, notes ([ADR 0071](../architecture/decisions/0071-smith-install-links-a-library-of-the-workspace.md)) | `link` |
+| `dependencies/unlink` | a project, a library → the files changed, notes | `link` |
+| `project/kind` | a project, the kind it becomes, its new folder → the edits the change makes, or a refusal (`smith kind`) | `changeKind` |
+| `derive` | the plugin's projects, the dependency graph, the paths smith owns → the files it derives, and the files it left alone because they differ from their siblings (`smith derive`) | `derive` |
+| `sbom/components` | a project → its dependencies, read from a lockfile (`smith release` SBOM) | `components` |
+| `api/surface` | a project, a git revision → the names it exports (the release checks the bump against them) | `apiSurface` |
 | `dependencies/declared` | the plugin's projects → every dependency their manifests declare (spec, section, peer, rewritable), and the versions installed | `declarations` |
 | `dependencies/rewrite` | declarations and their new specs → the files changed | `declarations` |
 | `dependencies/latest` | names, tools → each name's newest stable release, the names the registry could not be asked about, and the pinned tools against their newest releases | `latest` |

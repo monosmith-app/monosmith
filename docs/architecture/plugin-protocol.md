@@ -161,6 +161,7 @@ which capability each method needs.
 | `ci` | `ci` | `CIContributor` | `cipipeline.Collect`, release preflight |
 | `doctor` | `doctor` | `DoctorContributor` | `smith doctor` |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | `DependencyManager` | `smith install`, `uninstall` |
+| `link` | `dependencies/link`, `dependencies/unlink` | `Linker` | `smith install -w <project> <library>`, `smith uninstall` (`internallink`); a plugin without it is refused with one sentence that names the manifest to edit by hand |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | `DeclarationEditor` | `smith sync`, `smith up --align` |
 | `latest` | `dependencies/latest` | `LatestReader` | `smith up` |
 | `cancel` | `cancel` (a notification) | `Cancellable` | the host, when a call's context ends or its time runs out |
@@ -191,7 +192,7 @@ All payload types live in `packages/plugin-sdk/protocol`.
 
 | Method | Request | Response | Contribution to the whole |
 |---|---|---|---|
-| `discover` | `DiscoverParams{manifests, declared}` (paths whose base name matches; the projects `smith.toml` declares for the plugin's language: a name, a root and a kind) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
+| `discover` | `DiscoverParams{manifests, declared, settings}` (paths whose base name matches; the projects `smith.toml` declares for the plugin's language: a name, a root and a kind, sent to a plugin with the `declared` capability; the plugin's own `[projects.<name>.settings.<plugin>]` tables by project name, such as the Go build tags) | `DiscoverResult{projects}` | one `Project` per manifest the plugin owns: name, root, language, kind, exports, imports, version, tasks, tags, stack, settings |
 | `contribute` | `ContributeParams{projects}` | `ContributeResult{projects: name -> Contribution}` | `Contribution{tasks, replace, dependsOn, release, facts}`: add tasks, replace tasks, append dependencies, default the project's release-from-a-command settings (`build`, `assets`, `platforms`, `assetName`, `checksums`) that its `[projects.<name>.release]` table leaves out, publish default [shared facts](#shared-facts) |
 | `generate` | `GenerateParams{kind, name, directory, workspace, stack, settings, facts}` | `GenerateResult{files, notes}` | writes a new project's files |
 | `remove` | `RemoveParams` | `RemoveResult` | cleans traces outside the project directory |
@@ -200,11 +201,12 @@ All payload types live in `packages/plugin-sdk/protocol`.
 | `sbom/components` | `ComponentsParams{project}` | `ComponentsResult{components, source, purl}` (`components` are `Component{name, version, purl}`) | the dependencies the project ships, read from its lockfile where the ecosystem has one and from its manifest otherwise, as package URLs; `purl` is the project's own, without a version. An empty list is an answer |
 | `api/surface` | `APISurfaceParams{project, ref}` | `APISurfaceResult{names, unreadable}` | the names the project exports at a git revision (empty `ref` = working tree), sorted; a name of a subpath entry is prefixed `./sub:`. `unreadable` says why no list exists, and the host then skips the project. The host compares two lists and reads no meaning from the names |
 | `version/write` | `VersionParams{project, version, dependencies, dryRun}` | `VersionResult{files}` | stamps the manifests; the release restores them. Asked of the project's language plugin and of every other plugin that serves the project and advertises `version` (a convention such as `tauri`, for the files it keeps a version in) |
-| `publish` | `PublishParams{project, version, dryRun, assets}` | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
+| `publish` | `PublishParams{project, version, dryRun, assets, platform, tagged, commit, branch, tag}` (`tag` is the release channel's name, sent only to a plugin with `channels`) | `PublishResult{published, skipped, registry, assets, assetPlatforms, binary, images}` | uploads; for an app builds release archives (`AssetSpec`); for a deploy plugin reports pushed images |
 | `published` | `PublishedParams{project}` | `PublishedResult{version, registry, unreachable, detail}` | what the registry already has |
 | `ci` | `CIParams{projects, audit}` | `CIResult{toolchains, authenticate, setup, audit, postRelease, credentials, permissions, stores}` | see [CI generation](ci-generation.md) |
 | `doctor` | `DoctorParams{projects}` | `DoctorResult{findings}` | `Finding{check, ok, detail, remedy, warning, fix}`; a `Fix` has `files`, `steps`, `choices`, `safe` |
 | `dependencies/install`, `uninstall` | `InstallParams`, `UninstallParams` | `DependencyResult` | adds or removes packages in one project |
+| `dependencies/link`, `unlink` | `LinkParams{project, library, quiet, plan, spec}`, `UnlinkParams{project, library}` | `LinkResult{files, notes, manifest, line, options}`, `DependencyResult` | makes a project depend on a library of the same workspace in the ecosystem's own form, and takes it out; `plan` writes nothing and answers what would be written, with the range `options` ([ADR 0071](decisions/0071-smith-install-links-a-library-of-the-workspace.md)) |
 | `dependencies/declared`, `rewrite` | `DeclaredParams`, `RewriteParams` | `DeclaredResult`, `DependencyResult` | reads and edits declared specs |
 | `dependencies/latest` | `LatestParams` | `LatestResult{latest, unreachable, tools}` (`tools` are `ToolPin`s) | newest releases and pinned tools |
 | `cancel` | `CancelParams{id}`, a notification | none | stops the in-flight request with that id |

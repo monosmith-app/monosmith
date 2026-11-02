@@ -53,7 +53,7 @@ project come from `derive.BuildPlan` (`sources/load_derived_files_use_case.go`),
 
 ## Exception: the shell's own files stay in the package root
 
-- **Path:** `apps/smith/tui/*.go` (24 production files, plus `doc.go`: `shell_*.go`,
+- **Path:** `apps/smith/tui/*.go` (31 production files, plus `doc.go`: `shell_*.go`,
   `tui_handler.go`, `page_contract.go`, `confirm_details_mapper.go`,
   `release_preview_mapper.go`, `no_workspace_hint_mapper.go`).
 - **Rule waived:** a subfeature holds at most 12 production files
