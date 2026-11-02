@@ -26,9 +26,26 @@ sealed interface ToolWindowRowContract {
     /** A project, with its tasks as children. */
     data class Project(
         val project: SmithProjectContract,
+        val affected: Boolean = false,
     ) : ToolWindowRowContract {
-        override val text: String get() = "${project.name} (${project.language} ${project.kind})"
+        override val text: String get() {
+            val mark = if (affected) "● " else ""
+            val tail = if (affected) " · affected" else ""
+            return "$mark${project.name} (${project.language} ${project.kind})$tail"
+        }
     }
+
+    /** A line with lines under it: a group of dependencies by risk, or a package of the release with its reason and commits. */
+    data class Group(
+        override val text: String,
+        val children: List<String> = emptyList(),
+    ) : ToolWindowRowContract
+
+    /** A row that starts a flow when it is double-clicked; [action] names the flow (`update`, `align`, `release`). */
+    data class Link(
+        override val text: String,
+        val action: String,
+    ) : ToolWindowRowContract
 
     /** A check of the doctor that did not pass, with its fix as a child when it has one. */
     data class Finding(

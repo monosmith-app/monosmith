@@ -4,20 +4,32 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.addchoices.ChoicesJsonMapper
 import dev.monosmith.jetbrains.commitchanges.CommitChangesUseCase
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.installdependency.InstallDependencyUseCase
 import dev.monosmith.jetbrains.installtools.InstallToolsUseCase
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
-import dev.monosmith.jetbrains.notice.NoticeClient
-import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
 import dev.monosmith.jetbrains.smithrun.SmithRunContract
 import dev.monosmith.jetbrains.undochange.UndoChangeUseCase
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
+
+/**
+ * What the buttons of the notices of an add can start. The IDE gives the real flows; a test gives fakes.
+ *
+ * @property commit commits the change of an operation, after its own question
+ */
+data class AddFollowUpsContract(
+    val undo: () -> Unit,
+    val commit: (operation: String) -> Unit,
+    val useInApp: () -> Unit,
+    val installTools: () -> Unit,
+    val openHealth: () -> Unit,
+    val openPage: (url: String) -> Unit,
+)
 
 /**
  * Adds a project: reads what smith can add (`kinds`, `choices`, `compose --json`), asks the person
@@ -39,18 +51,48 @@ object AddProjectUseCase {
         root: Path,
         onCompose: () -> Unit,
     ) = BackgroundFlowClient.start(ide, TITLE) {
-        val options = readOptions(ide, root) ?: return@start
         val siblings = ListProjectsUseCase.list(root).getOrDefault(emptyList()).map { AddQuestionsUseCase.Sibling(it.name, it.language) }
-        val answer = AddQuestionsUseCase.ask(ide, options, siblings) ?: return@start
-        if (answer is AddAnswerContract.Compose) return@start onCompose()
+        val follow =
+            AddFollowUpsContract(
+                undo = { UndoChangeUseCase.start(ide, root) },
+                commit = { CommitChangesUseCase.start(ide, root, it) },
+                useInApp = { InstallDependencyUseCase.start(ide, root, only = "workspace") },
+                installTools = { InstallToolsUseCase.start(ide, root) },
+                openHealth = { OutputConsoleStore.reveal(ide, "Health") },
+                openPage = { BrowserUtil.browse(it) },
+            )
+        run(IdePortsClient.of(ide, root), siblings, follow, onCompose)
+    }
+
+    /**
+     * Runs the whole flow with the given ports.
+     *
+     * @param siblings the projects the workspace has
+     * @param onCompose runs when the person picks "Compose a stack…" instead
+     * @return true when smith added the project
+     */
+    fun run(
+        ports: FlowPortsContract,
+        siblings: List<AddQuestionsUseCase.Sibling>,
+        follow: AddFollowUpsContract,
+        onCompose: () -> Unit,
+    ): Boolean {
+        val options = readOptions(ports) ?: return false
+        val answer = AddQuestionsUseCase.ask(ports.prompt, options, siblings) ?: return false
+        if (answer is AddAnswerContract.Compose) {
+            onCompose()
+            return false
+        }
         val (request, words) = answer as AddAnswerContract.Request
-        val plan = SmithRunClient.run(ide, root, AddArgumentsAlgorithm.arguments(request, apply = false))
-        if (!plan.ok) return@start NoticeClient.warn(ide, "Nothing was added. ${FailureTextMapper.describe(plan)}")
+        val plan = ports.smith.run(AddArgumentsAlgorithm.arguments(request, apply = false))
+        if (!plan.ok) {
+            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(plan)}")
+            return false
+        }
         val follows = AddArgumentsAlgorithm.followsSiblings(plan.stdout)
         val header = "$words Nothing was changed yet. By default smith leaves the files uncommitted: review them with the Commit window."
         val answered =
-            PromptClient.plan(
-                ide,
+            ports.prompt.plan(
                 TITLE,
                 header,
                 plan.stdout.trim(),
@@ -64,44 +106,39 @@ object AddProjectUseCase {
                     } else {
                         emptyList()
                     },
-            ) ?: return@start
+            ) ?: return false
         val fresh = request.fresh || answered.checks.firstOrNull() == true
         val done =
-            SmithRunClient.run(
-                ide,
-                root,
+            ports.smith.run(
                 AddArgumentsAlgorithm.arguments(request, apply = true, fresh = fresh, commit = answered.commit),
                 show = true,
             )
-        WorkspaceChangedStore.changed(ide)
-        tell(ide, root, request, answered.commit, done)
+        ports.changed()
+        return tell(ports, follow, request, answered.commit, done)
     }
 
-    private fun readOptions(
-        ide: Project,
-        root: Path,
-    ): AddOptionsContract? {
-        val kinds = SmithRunClient.run(ide, root, listOf("kinds", "--json"))
-        val choices = SmithRunClient.run(ide, root, listOf("choices", "--json"))
-        val catalogue = SmithRunClient.run(ide, root, listOf("compose", "--json"))
+    private fun readOptions(ports: FlowPortsContract): AddOptionsContract? {
+        val kinds = ports.smith.run(listOf("kinds", "--json"))
+        val choices = ports.smith.run(listOf("choices", "--json"))
+        val catalogue = ports.smith.run(listOf("compose", "--json"))
         val failed = listOf(kinds, choices, catalogue).firstOrNull { !it.ok }
         if (failed != null) {
-            NoticeClient.warn(ide, "Nothing was added. ${FailureTextMapper.describe(failed)}")
+            ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(failed)}")
             return null
         }
         return runCatching {
             val kindList = OutcomesJsonMapper.toKinds(kinds.stdout)
-            val (outcomes, languages, layers) = OutcomesJsonMapper.toCatalogue(catalogue.stdout)
+            val found = OutcomesJsonMapper.toCatalogue(catalogue.stdout)
             AddOptionsContract(
                 kindList,
                 ChoicesJsonMapper.toChoices(choices.stdout),
-                OutcomesJsonMapper.fitOutcomes(outcomes, kindList),
-                languages,
-                layers,
+                OutcomesJsonMapper.fitOutcomes(found.outcomes, kindList),
+                found.languages,
+                found.layers,
+                found.about,
             )
         }.getOrElse {
-            NoticeClient.warn(
-                ide,
+            ports.notice.warn(
                 "Nothing was added. smith printed its lists in a form this plugin does not read. Update the plugin, or run smith add in a terminal.",
             )
             null
@@ -109,80 +146,76 @@ object AddProjectUseCase {
     }
 
     private fun tell(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
+        follow: AddFollowUpsContract,
         request: AddRequestContract,
         committed: Boolean,
         done: SmithRunContract,
-    ) {
+    ): Boolean {
         val operation = "add ${request.role} ${request.name}"
         if (done.ok) {
-            val lib = request.role == "lib"
             val buttons =
                 listOfNotNull(
+                    if (committed) NoticeButtonContract("Undo", "Revert the commit of this add.") { follow.undo() } else null,
                     if (committed) {
+                        null
+                    } else {
                         NoticeButtonContract(
-                            "Undo",
-                            "Revert the commit of this add.",
-                        ) { UndoChangeUseCase.start(ide, root) }
-                    } else {
-                        null
-                    },
-                    if (committed) {
-                        null
-                    } else {
-                        NoticeButtonContract("Commit now", "Make one commit that Undo can revert; you choose the files first.") {
-                            CommitChangesUseCase.start(ide, root, operation)
+                            "Commit now",
+                            "Make one commit that Undo can revert; you choose the files first.",
+                        ) {
+                            follow.commit(operation)
                         }
                     },
-                    if (lib) {
-                        NoticeButtonContract(
-                            "Use in an app…",
-                            "Add this library to an app.",
-                        ) { InstallDependencyUseCase.start(ide, root, only = "workspace") }
+                    if (request.role ==
+                        "lib"
+                    ) {
+                        NoticeButtonContract("Use in an app…", "Add this library to an app.") { follow.useInApp() }
                     } else {
                         null
                     },
                 )
-            val commit = if (committed) COMMITTED else UNCOMMITTED
-            NoticeClient.info(ide, "${request.name} is added and the CI pipelines are regenerated. $commit", buttons)
-            return
+            ports.notice.info(
+                "${request.name} is added and the CI pipelines are regenerated. ${if (committed) COMMITTED else UNCOMMITTED}",
+                buttons,
+            )
+            return true
         }
         val everything = "${done.stdout}\n${done.stderr}"
         val failure = AddFailureMapper.doctorFailure(everything)
-        if (failure != null) return tellFailing(ide, root, operation, failure)
+        if (failure != null) {
+            tellFailing(ports, follow, operation, failure)
+            return false
+        }
         val tool = AddFailureMapper.missingTool(everything)
-        if (tool != null) return tellUnchecked(ide, root, request.name, tool)
-        NoticeClient.warn(ide, "Nothing was added. ${FailureTextMapper.describe(done)}")
+        if (tool != null) {
+            tellUnchecked(ports, follow, request.name, tool)
+            return false
+        }
+        ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(done)}")
+        return false
     }
 
     private fun tellFailing(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
+        follow: AddFollowUpsContract,
         operation: String,
         failure: DoctorFailureContract,
-    ) = NoticeClient.warn(
-        ide,
+    ) = ports.notice.warn(
         AddFailureMapper.describe(failure),
         listOf(
-            NoticeButtonContract(
-                "Install tools",
-                "Install the missing tools with smith tools install.",
-            ) { InstallToolsUseCase.start(ide, root) },
-            NoticeButtonContract(
-                "Open Health",
-                "Open the Health tab of the MonoSmith tool window.",
-            ) { OutputConsoleStore.reveal(ide, "Health") },
+            NoticeButtonContract("Install tools", "Install the missing tools with smith tools install.") { follow.installTools() },
+            NoticeButtonContract("Open Health", "Open the Health tab of the MonoSmith tool window.") { follow.openHealth() },
             NoticeButtonContract("Commit anyway", "Commit the project although it fails its checks; you choose the files first.") {
-                CommitChangesUseCase.start(ide, root, operation)
+                follow.commit(operation)
             },
             NoticeButtonContract("Keep uncommitted", "Leave the files in your work tree.") {},
         ),
     )
 
     private fun tellUnchecked(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
+        follow: AddFollowUpsContract,
         name: String,
         tool: MissingToolContract,
     ) {
@@ -192,23 +225,22 @@ object AddProjectUseCase {
         val buttons =
             listOfNotNull(
                 tool.url?.let { url ->
-                    NoticeButtonContract("Install page", "Open the page that tells how to get ${tool.title}.") { BrowserUtil.browse(url) }
+                    NoticeButtonContract("Install page", "Open the page that tells how to get ${tool.title}.") { follow.openPage(url) }
                 },
-                NoticeButtonContract(
-                    "Install tools",
-                    "Install the missing tools with smith tools install.",
-                ) { InstallToolsUseCase.start(ide, root) },
-                if (check == null) {
+                NoticeButtonContract("Install tools", "Install the missing tools with smith tools install.") { follow.installTools() },
+                if (check ==
+                    null
+                ) {
                     null
                 } else {
-                    NoticeButtonContract("Check again", "Run the first check of the new project again.") {
-                        BackgroundFlowClient.start(ide, "MonoSmith: check $name") { SmithRunClient.run(ide, root, check, show = true) }
-                    }
+                    NoticeButtonContract(
+                        "Check again",
+                        "Run the first check of the new project again.",
+                    ) { ports.smith.run(check, show = true) }
                 },
                 NoticeButtonContract("Skip the check", "Continue without the check. The Health tab keeps reminding you.") {},
             )
-        NoticeClient.warn(
-            ide,
+        ports.notice.warn(
             "$name was created$where$files, and could not be checked yet: ${tool.title} is not installed. Nothing is lost: your project stays on disk.",
             buttons,
         )

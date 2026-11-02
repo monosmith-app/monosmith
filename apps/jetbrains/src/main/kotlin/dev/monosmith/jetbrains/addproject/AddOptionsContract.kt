@@ -52,6 +52,17 @@ data class LanguageInfoContract(
     val description: String,
 )
 
+/**
+ * What `smith compose --json` says about the stack: the outcomes, the languages, and for each layer its
+ * title ("Desktop shell") and what it means, which the questions show as a one-line glossary.
+ */
+data class CatalogueContract(
+    val outcomes: List<OutcomeContract>,
+    val languages: List<LanguageInfoContract>,
+    val layers: Map<String, String>,
+    val about: Map<String, String>,
+)
+
 /** Everything the questions of Add project offer, all read from smith. */
 data class AddOptionsContract(
     val kinds: List<KindOptionContract>,
@@ -59,4 +70,5 @@ data class AddOptionsContract(
     val outcomes: List<OutcomeContract>,
     val languages: List<LanguageInfoContract>,
     val layers: Map<String, String>,
+    val layerAbout: Map<String, String> = emptyMap(),
 )

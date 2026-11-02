@@ -5,9 +5,9 @@ import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 /**
  * What the person decides about a new workspace: the questions of `smith new`, one field each.
  *
- * @property ci where the tests run on every push: `github`, `azure`, `gitlab`, `circleci` or `bitbucket`
+ * @property ci where the tests run on every push
  * @property language the main language, or `later`
- * @property nodeStack the tests and lint of Node projects (`node-jest`, `node-vitest`, `node-ts`); used only for `node`
+ * @property nodeStack the tests and lint of Node projects; used only for `node`
  * @property architecture the code layout smith checks, or `none`
  * @property agent write the MonoSmith agent files
  * @property devcontainer write the dev container
@@ -24,52 +24,26 @@ data class NewWorkspaceChoicesContract(
     val commit: Boolean = true,
 )
 
-/** The command line and the lists of `smith new`, as the CLI documents them (docs/reference/cli.md). */
+/** The command line of `smith new` and the summary of the choices. The lists of answers come from `smith new --questions --json`. */
 object NewWorkspaceArgumentsAlgorithm {
-    /** The CI systems `--ci` accepts. */
-    val ciRows =
-        listOf(
-            ChoiceRowContract("github", "GitHub Actions", "(default)", "Pipelines in .github/workflows.", picked = true),
-            ChoiceRowContract("azure", "Azure Pipelines", "", "azure-pipelines.yml"),
-            ChoiceRowContract("gitlab", "GitLab CI", "", ".gitlab-ci.yml"),
-            ChoiceRowContract("circleci", "CircleCI", "", ".circleci/config.yml"),
-            ChoiceRowContract("bitbucket", "Bitbucket Pipelines", "", "bitbucket-pipelines.yml"),
+    /** The defaults the questions say: what "Start with the defaults" chooses. */
+    fun defaults(
+        name: String,
+        questions: List<NewQuestionContract>,
+    ): NewWorkspaceChoicesContract {
+        fun of(key: String) = questions.firstOrNull { it.key == key }?.default
+        return NewWorkspaceChoicesContract(
+            name = name,
+            ci = of("ci")?.split(",")?.filter { it.isNotEmpty() } ?: listOf("github"),
+            language = of("language") ?: "later",
+            nodeStack = of("node-stack") ?: "node-jest",
+            architecture = of("architecture") ?: "vertical-slices",
+            agent = (of("agent") ?: "yes") == "yes",
+            devcontainer = (of("devcontainer") ?: "yes") == "yes",
         )
+    }
 
-    /** The main languages `--language` accepts. */
-    val languageRows =
-        listOf(
-            ChoiceRowContract("later", "Decide later", "(default)", "No language yet; you pick one for each project you add."),
-            ChoiceRowContract("node", "TypeScript / JavaScript", "", "node"),
-            ChoiceRowContract("python", "Python", "", "python"),
-            ChoiceRowContract("go", "Go", "", "go"),
-            ChoiceRowContract("dotnet", "C# / .NET", "", "dotnet"),
-            ChoiceRowContract("jvm", "Java / Kotlin", "", "jvm"),
-            ChoiceRowContract("rust", "Rust", "", "rust"),
-        )
-
-    /** The tests and lint stacks of Node projects. */
-    val nodeStackRows =
-        listOf(
-            ChoiceRowContract("node-jest", "Jest", "(default)", "node-jest"),
-            ChoiceRowContract("node-vitest", "Vitest", "", "node-vitest"),
-            ChoiceRowContract("node-ts", "TypeScript only", "", "node-ts"),
-        )
-
-    /** The code layouts `--architecture` accepts. */
-    val architectureRows =
-        listOf(
-            ChoiceRowContract("vertical-slices", "Vertical slices", "(default)", "One folder per outcome, files named by role."),
-            ChoiceRowContract("hexagonal", "Hexagonal", "", "Ports and adapters."),
-            ChoiceRowContract("clean", "Clean", "", "Clean architecture layers."),
-            ChoiceRowContract("ddd", "Domain-driven design", "", "Domain, application, infrastructure."),
-            ChoiceRowContract("modular-monolith", "Modular monolith", "", "One module per business area."),
-            ChoiceRowContract("mvc", "MVC", "", "Models, views, controllers."),
-            ChoiceRowContract("package-by-layer", "Package by layer", "", "One folder per technical layer."),
-            ChoiceRowContract("none", "No layout check", "", "smith checks nothing about the folders."),
-        )
-
-    /** The rows of a yes or no question; [yes] says what yes does, [no] what no does; yes is the default when [defaultYes]. */
+    /** The rows of a yes or no question for the first commit, which `smith new` has as a flag and not as a question; yes is first when [defaultYes]. */
     fun yesNoRows(
         yes: String,
         no: String,
@@ -103,34 +77,32 @@ object NewWorkspaceArgumentsAlgorithm {
             if (preview) add("--dry-run")
         }
 
-    private fun label(
-        rows: List<ChoiceRowContract>,
-        value: String,
-    ): String = rows.firstOrNull { it.name == value }?.label ?: value
-
     /** What the choices mean, one line each, for the summary shown before smith writes anything. */
     fun describe(
         choices: NewWorkspaceChoicesContract,
         folderName: String,
-    ): List<String> =
-        listOf(
+        questions: List<NewQuestionContract>,
+    ): List<String> {
+        fun q(key: String) = questions.firstOrNull { it.key == key }
+        return listOf(
             "Name: ${choices.name}${if (choices.name == folderName) " (the name of this folder)" else ""}",
-            "CI: ${choices.ci.joinToString(", ") { label(ciRows, it) }}",
-            "Main language: ${label(languageRows, choices.language)}",
+            "CI: ${choices.ci.joinToString(", ") { NewQuestionsMapper.labelOf(q("ci"), it) }}",
+            "Main language: ${NewQuestionsMapper.labelOf(q("language"), choices.language)}",
         ) +
             (
                 if (choices.language ==
                     "node"
                 ) {
-                    listOf("Tests and lint for Node projects: ${label(nodeStackRows, choices.nodeStack)}")
+                    listOf("Tests and lint for Node projects: ${NewQuestionsMapper.labelOf(q("node-stack"), choices.nodeStack)}")
                 } else {
                     emptyList()
                 }
             ) +
             listOf(
-                "Code layout smith checks: ${label(architectureRows, choices.architecture)}",
+                "Code layout smith checks: ${choices.architecture}",
                 "Agent files for Claude Code: ${if (choices.agent) "yes" else "no"}",
                 "Dev container: ${if (choices.devcontainer) "yes" else "no"}",
                 "First commit of smith's own files: ${if (choices.commit) "yes, smith makes it" else "no, the files stay uncommitted"}",
             )
+    }
 }

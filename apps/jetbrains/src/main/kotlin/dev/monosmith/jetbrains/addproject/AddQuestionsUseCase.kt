@@ -1,9 +1,9 @@
 package dev.monosmith.jetbrains.addproject
 
-import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.addchoices.ChoiceRowsAlgorithm
+import dev.monosmith.jetbrains.addchoices.GlossaryAlgorithm
 import dev.monosmith.jetbrains.addchoices.PickChoicesUseCase
-import dev.monosmith.jetbrains.prompt.PromptClient
+import dev.monosmith.jetbrains.flowports.PromptPort
 
 /**
  * The questions of Add project, outcome first: what is being built, the language only where several fit,
@@ -25,31 +25,39 @@ object AddQuestionsUseCase {
      * @return the answers, or null when the person cancelled
      */
     fun ask(
-        ide: Project,
+        prompt: PromptPort,
         options: AddOptionsContract,
         siblings: List<Sibling>,
     ): AddAnswerContract? {
         val first =
-            PromptClient.pickOne(
-                ide,
+            prompt.pickOne(
                 "$TITLE: what are you building?",
                 "Pick what you want. Type in the box to narrow the list: try react, azure function, electron, tauri, api.",
                 AddRowsAlgorithm.outcomeRows(options.outcomes),
             ) ?: return null
         if (first.name == AddRowsAlgorithm.COMPOSE) return AddAnswerContract.Compose
-        val found = if (first.name == AddRowsAlgorithm.EVERY) askEveryLanguage(ide, options) else askOutcome(ide, options, first.name)
+        val found = if (first.name == AddRowsAlgorithm.EVERY) askEveryLanguage(prompt, options) else askOutcome(prompt, options, first.name)
         found ?: return null
 
         val picked =
-            PickChoicesUseCase.pick(ide, options.choices, found.language, found.preset, found.outcomeId, options.layers) ?: return null
-        val like = askLike(ide, siblings.filter { it.language == found.language }.map { it.name }) ?: return null
+            PickChoicesUseCase.pick(
+                prompt,
+                options.choices,
+                found.language,
+                found.preset,
+                found.outcomeId,
+                options.layers,
+                options.layerAbout,
+            )
+                ?: return null
+        val like = askLike(prompt, siblings.filter { it.language == found.language }.map { it.name }) ?: return null
         val name =
-            PromptClient.text(ide, "$TITLE: name", "The name of the new ${found.role} (for example billing-api):") {
+            prompt.text("$TITLE: name", "The name of the new ${found.role} (for example billing-api):") {
                 ProjectNameValidator.problem(it, siblings.map { sibling -> sibling.name })
             } ?: return null
         val request = AddRequestContract(found.role, name, found.language, with = picked, like = like.ifEmpty { null })
         val environments =
-            if (EnvironmentsAlgorithm.isWebApp(request)) askEnvironments(ide, name) ?: return null else null
+            if (EnvironmentsAlgorithm.isWebApp(request)) askEnvironments(prompt, name) ?: return null else null
         return AddAnswerContract.Request(
             request.copy(environments = environments),
             ChoiceRowsAlgorithm.inWords(picked, null, found.language, options.choices, options.layers),
@@ -64,7 +72,7 @@ object AddQuestionsUseCase {
     )
 
     private fun askOutcome(
-        ide: Project,
+        prompt: PromptPort,
         options: AddOptionsContract,
         id: String,
     ): Found? {
@@ -73,42 +81,43 @@ object AddQuestionsUseCase {
             if (outcome.languages.size == 1) {
                 outcome.languages.first()
             } else {
-                askLanguage(ide, options, outcome.role, outcome.languages, outcome) ?: return null
+                askLanguage(prompt, options, outcome.role, outcome.languages, outcome) ?: return null
             }
         val items = outcome.items.filter { it.language == language }
         if (items.isEmpty()) return Found(outcome.role, language, emptyList(), outcome.id)
         val layer = options.layers[items.first().layer]?.lowercase()
         val answer =
-            PromptClient.pickOne(
-                ide,
+            prompt.pickOne(
                 "$TITLE: which ${layer ?: "one"}?",
-                "Your pick is kept: the next questions do not ask it again. The first answer is the default.",
+                GlossaryAlgorithm.withLine(
+                    "Your pick is kept: the next questions do not ask it again. The first answer is the default.",
+                    GlossaryAlgorithm.line(items.first().layer, options.layers, options.layerAbout),
+                ),
                 AddRowsAlgorithm.presetRows(items, outcome.id),
             ) ?: return null
         return Found(outcome.role, language, listOfNotNull(answer.name.ifEmpty { null }), outcome.id)
     }
 
     private fun askEveryLanguage(
-        ide: Project,
+        prompt: PromptPort,
         options: AddOptionsContract,
     ): Found? {
         val role =
-            PromptClient.pickOne(ide, "$TITLE: what kind?", "app, lib or package.", AddRowsAlgorithm.roleRows(options.kinds)) ?: return null
-        val language = askLanguage(ide, options, role.name, options.kinds.map { it.language }.distinct(), null) ?: return null
+            prompt.pickOne("$TITLE: what kind?", "app, lib or package.", AddRowsAlgorithm.roleRows(options.kinds)) ?: return null
+        val language = askLanguage(prompt, options, role.name, options.kinds.map { it.language }.distinct(), null) ?: return null
         return Found(role.name, language, emptyList(), null)
     }
 
     private fun askLanguage(
-        ide: Project,
+        prompt: PromptPort,
         options: AddOptionsContract,
         role: String,
         fitting: List<String>,
         outcome: OutcomeContract?,
     ): String? {
         val rows = AddRowsAlgorithm.languageRows(options.languages, options.kinds, role, fitting, outcome)
-        return PromptClient
+        return prompt
             .pickOne(
-                ide,
                 "$TITLE: which language?",
                 "Pick the language. What each one offers for this project is next to it.",
                 rows,
@@ -117,13 +126,12 @@ object AddQuestionsUseCase {
 
     /** Asks which project to copy; returns the name, an empty text for "what most do", or null on Cancel. */
     private fun askLike(
-        ide: Project,
+        prompt: PromptPort,
         siblings: List<String>,
     ): String? {
         if (siblings.size < 2) return ""
-        return PromptClient
+        return prompt
             .pickOne(
-                ide,
                 "$TITLE: follow which project?",
                 "The new project copies the build, test, layout and lint of one project (smith add --like).",
                 AddRowsAlgorithm.likeRows(siblings),
@@ -131,12 +139,11 @@ object AddQuestionsUseCase {
     }
 
     private fun askEnvironments(
-        ide: Project,
+        prompt: PromptPort,
         app: String,
     ): EnvironmentsContract? {
         val typed =
-            PromptClient.text(
-                ide,
+            prompt.text(
                 "$TITLE: environments of $app",
                 "Vite writes its VITE_ values into the bundle when it builds, so the app is built once per environment.\nEdit the names (lowercase words, separated by commas):",
                 EnvironmentsAlgorithm.defaults.joinToString(", "),
@@ -144,18 +151,17 @@ object AddQuestionsUseCase {
             ) ?: return null
         val names = EnvironmentsAlgorithm.parse(typed)
         val build =
-            PromptClient.pickOne(
-                ide,
+            prompt.pickOne(
                 "$TITLE: which environment is \"build\"?",
                 "CI and releases build this one; the others are build:<name>.",
                 AddRowsAlgorithm.environmentRows(names),
             )
                 ?: return null
         val output =
-            PromptClient.pickOne(ide, "$TITLE: where do the builds go?", "The first answer is the default.", AddRowsAlgorithm.outputRows)
+            prompt.pickOne("$TITLE: where do the builds go?", "The first answer is the default.", AddRowsAlgorithm.outputRows)
                 ?: return null
         val files =
-            PromptClient.pickOne(ide, "$TITLE: the .env files", "The first answer is the default.", AddRowsAlgorithm.envFileRows)
+            prompt.pickOne("$TITLE: the .env files", "The first answer is the default.", AddRowsAlgorithm.envFileRows)
                 ?: return null
         return EnvironmentsContract(names, build.name, output.name, files.name)
     }

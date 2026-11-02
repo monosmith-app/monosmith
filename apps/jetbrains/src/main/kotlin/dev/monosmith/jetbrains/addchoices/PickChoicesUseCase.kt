@@ -1,7 +1,6 @@
 package dev.monosmith.jetbrains.addchoices
 
-import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.prompt.PromptClient
+import dev.monosmith.jetbrains.flowports.PromptPort
 
 /**
  * Asks the choices of a new project, axis by axis. What the first questions settled is kept and not
@@ -19,12 +18,13 @@ object PickChoicesUseCase {
      * @return the names for `--with`, or null when the person cancelled
      */
     fun pick(
-        ide: Project,
+        prompt: PromptPort,
         choices: List<ChoiceOptionContract>,
         language: String,
         preset: List<String>,
         outcomeId: String?,
         ofLayers: Map<String, String>,
+        about: Map<String, String> = emptyMap(),
     ): List<String>? {
         val axes = ChoiceRowsAlgorithm.byAxis(choices, language)
         val picked = preset.toMutableList()
@@ -36,22 +36,29 @@ object PickChoicesUseCase {
             if (axis.axis in settled) continue
             val layer = (ofLayers[axis.axis] ?: axis.axis).lowercase()
             val title = "MonoSmith: Add project: $layer"
+            val gloss = GlossaryAlgorithm.line(axis.axis, ofLayers, about)
             if (axis.axis in asked) {
                 val needing = chosen().filter { axis.axis in it.needs }
                 if (needing.isEmpty()) continue
                 val header =
-                    "${needing.joinToString(", ") { it.label }} needs an answer on the $layer axis. smith never picks it. " +
-                        "The suggested answer is first."
+                    GlossaryAlgorithm.withLine(
+                        "${needing.joinToString(", ") { it.label }} needs an answer on the $layer axis. smith never picks it. " +
+                            "The suggested answer is first.",
+                        gloss,
+                    )
                 val rows = ChoiceRowsAlgorithm.askedRows(axis.choices, chosen())
-                picked.add((PromptClient.pickOne(ide, title, header, rows) ?: return null).name)
+                picked.add((prompt.pickOne(title, header, rows) ?: return null).name)
             } else if (axis.many) {
                 val rows = ChoiceRowsAlgorithm.manyChoiceRows(axis, chosen(), ofLayers)
                 picked.addAll(
-                    PromptClient.pickMany(ide, title, "Tick what the project uses. The defaults are ticked.", rows) ?: return null,
+                    prompt.pickMany(title, GlossaryAlgorithm.withLine("Tick what the project uses. The defaults are ticked.", gloss), rows)
+                        ?: return null,
                 )
             } else {
                 val rows = ChoiceRowsAlgorithm.singleChoiceRows(axis, chosen(), outcomeId, ofLayers)
-                val answer = PromptClient.pickOne(ide, title, "Pick one $layer. The first answer is the default.", rows) ?: return null
+                val answer =
+                    prompt.pickOne(title, GlossaryAlgorithm.withLine("Pick one $layer. The first answer is the default.", gloss), rows)
+                        ?: return null
                 if (answer.name.isNotEmpty()) picked.add(answer.name)
             }
         }

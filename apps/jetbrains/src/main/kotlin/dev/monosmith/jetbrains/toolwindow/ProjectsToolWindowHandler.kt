@@ -9,37 +9,52 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.ui.SearchTextField
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.content.ContentFactory
 import com.intellij.ui.treeStructure.Tree
 import dev.monosmith.jetbrains.addproject.AddProjectUseCase
 import dev.monosmith.jetbrains.composestack.ComposeStackUseCase
+import dev.monosmith.jetbrains.dependencies.UpdateDependenciesUseCase
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.health.HealthUseCase
 import dev.monosmith.jetbrains.installdependency.InstallDependencyUseCase
 import dev.monosmith.jetbrains.newworkspace.NewWorkspaceUseCase
 import dev.monosmith.jetbrains.projectactions.ProjectActionsUseCase
+import dev.monosmith.jetbrains.releaseflow.ReadReleasePreviewUseCase
+import dev.monosmith.jetbrains.releaseflow.ReleaseWorkspaceUseCase
 import dev.monosmith.jetbrains.smithrun.OutputConsoleStore
+import dev.monosmith.jetbrains.smithrun.SmithRunClient
 import dev.monosmith.jetbrains.smithversion.SmithPresenceUseCase
 import dev.monosmith.jetbrains.swapchoice.SwapChoiceUseCase
 import dev.monosmith.jetbrains.taskrun.RunTaskUseCase
+import dev.monosmith.jetbrains.workspace.AffectedJsonMapper
 import dev.monosmith.jetbrains.workspace.FindWorkspaceRootUseCase
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
+import dev.monosmith.jetbrains.workspace.SmithProjectContract
 import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import dev.monosmith.jetbrains.workspacetools.WorkspaceToolsUseCase
+import java.awt.BorderLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.JMenu
 import javax.swing.JMenuItem
+import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 /**
- * The MonoSmith tool window: a Projects view (the projects and their tasks, a row to add a project, a menu
- * on each project), a Health view (the doctor's findings with a Fix row that runs the structured fix with
- * its plan shown) and an Output tab for what smith prints.
+ * The MonoSmith tool window. Projects: the projects and their tasks with the affected ones marked, a filter
+ * box and an "Affected only" box, a row to add a project and a menu on each project. Dependencies: the
+ * updates grouped by risk, with the update and align flows. Release: the plan, why nothing releases, and
+ * the Release… flow. Health: the doctor's findings, each fixable one with a Fix row that shows its plan.
+ * Output: what smith prints.
  */
 class ProjectsToolWindowHandler :
     ToolWindowFactory,
@@ -51,27 +66,75 @@ class ProjectsToolWindowHandler :
         override fun toString() = task
     }
 
+    private class Views(
+        val projects: Tree = Tree(),
+        val deps: Tree = Tree(),
+        val release: Tree = Tree(),
+        val health: Tree = Tree(),
+        val filter: SearchTextField = SearchTextField(),
+        val affectedOnly: JBCheckBox = JBCheckBox("Affected only"),
+    ) {
+        var listed: Result<List<SmithProjectContract>>? = null
+        var affected: Set<String> = emptySet()
+    }
+
     override fun createToolWindowContent(
         project: Project,
         toolWindow: ToolWindow,
     ) {
         val base = project.basePath?.let(Path::of)
         val root = base?.let { FindWorkspaceRootUseCase.find(it, Files::exists) }
-        val projects = Tree()
-        val health = Tree()
+        val views = Views()
         val factory = ContentFactory.getInstance()
-        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(projects), "Projects", false))
-        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(health), "Health", false))
+        val top =
+            JPanel(BorderLayout()).apply {
+                add(views.filter, BorderLayout.CENTER)
+                add(views.affectedOnly, BorderLayout.EAST)
+            }
+        val projectsPanel =
+            JPanel(BorderLayout()).apply {
+                add(top, BorderLayout.NORTH)
+                add(JBScrollPane(views.projects), BorderLayout.CENTER)
+            }
+        toolWindow.contentManager.addContent(factory.createContent(projectsPanel, "Projects", false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.deps), "Dependencies", false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.release), "Release", false))
+        toolWindow.contentManager.addContent(factory.createContent(JBScrollPane(views.health), "Health", false))
         toolWindow.contentManager.addContent(
             factory.createContent(OutputConsoleStore.consoleFor(project).component, OutputConsoleStore.TAB_TITLE, false),
         )
 
-        projects.addMouseListener(clicks(projects, project, root, base))
-        health.addMouseListener(clicks(health, project, root, base))
-        val reload = { load(project, root, projects, health) }
+        listOf(views.projects, views.deps, views.release, views.health).forEach { it.addMouseListener(clicks(it, project, root, base)) }
+        val redraw = {
+            show(
+                views.projects,
+                ToolWindowRowsMapper.projectRows(
+                    root != null,
+                    views.listed,
+                    views.affected,
+                    views.filter.text.trim(),
+                    views.affectedOnly.isSelected,
+                ),
+            )
+        }
+        views.filter.textEditor.document.addDocumentListener(
+            object : DocumentListener {
+                override fun insertUpdate(event: DocumentEvent) = redraw()
+
+                override fun removeUpdate(event: DocumentEvent) = redraw()
+
+                override fun changedUpdate(event: DocumentEvent) = redraw()
+            },
+        )
+        views.affectedOnly.addActionListener { redraw() }
+        val reload = { load(project, root, views, redraw) }
         toolWindow.setTitleActions(
             listOf<AnAction>(
-                object : DumbAwareAction("Refresh", "Read the projects and the health of the workspace again", AllIcons.Actions.Refresh) {
+                object : DumbAwareAction(
+                    "Refresh",
+                    "Read the projects, the updates, the release plan and the health of the workspace again",
+                    AllIcons.Actions.Refresh,
+                ) {
                     override fun actionPerformed(event: AnActionEvent) = reload()
                 },
             ),
@@ -84,19 +147,40 @@ class ProjectsToolWindowHandler :
     private fun load(
         ide: Project,
         root: Path?,
-        projects: Tree,
-        health: Tree,
+        views: Views,
+        redraw: () -> Unit,
     ) {
-        show(projects, ToolWindowRowsMapper.projectRows(root != null, null))
-        show(health, ToolWindowRowsMapper.healthRows(root != null, null))
+        views.listed = null
+        redraw()
+        show(views.deps, ToolWindowRowsMapper.depsRows(null))
+        show(views.release, ToolWindowRowsMapper.releaseRows(null))
+        show(views.health, ToolWindowRowsMapper.healthRows(root != null, null))
         if (root == null) return
-        ApplicationManager.getApplication().executeOnPooledThread {
+        val pool = ApplicationManager.getApplication()
+        pool.executeOnPooledThread {
             val listed = ListProjectsUseCase.list(root)
-            ApplicationManager.getApplication().invokeLater { show(projects, ToolWindowRowsMapper.projectRows(true, listed)) }
+            val affected =
+                runCatching {
+                    val run = SmithRunClient.run(null, root, listOf("affected", "--json"))
+                    if (run.ok) AffectedJsonMapper.toAffected(run.stdout).projects else emptySet()
+                }.getOrDefault(emptySet())
+            pool.invokeLater {
+                views.listed = listed
+                views.affected = affected
+                redraw()
+            }
         }
-        ApplicationManager.getApplication().executeOnPooledThread {
+        pool.executeOnPooledThread {
+            val read = UpdateDependenciesUseCase.read(IdePortsClient.of(ide, root))
+            pool.invokeLater { show(views.deps, ToolWindowRowsMapper.depsRows(read)) }
+        }
+        pool.executeOnPooledThread {
+            val read = ReadReleasePreviewUseCase.read(root)
+            pool.invokeLater { show(views.release, ToolWindowRowsMapper.releaseRows(read)) }
+        }
+        pool.executeOnPooledThread {
             val read = HealthUseCase.read(root)
-            ApplicationManager.getApplication().invokeLater { show(health, ToolWindowRowsMapper.healthRows(true, read)) }
+            pool.invokeLater { show(views.health, ToolWindowRowsMapper.healthRows(true, read)) }
         }
     }
 
@@ -109,18 +193,15 @@ class ProjectsToolWindowHandler :
             val node = DefaultMutableTreeNode(row)
             when (row) {
                 is ToolWindowRowContract.Project -> {
-                    row.project.tasks.forEach {
-                        node.add(
-                            DefaultMutableTreeNode(TaskNode(row.project.name, it)),
-                        )
-                    }
+                    row.project.tasks.forEach { node.add(DefaultMutableTreeNode(TaskNode(row.project.name, it))) }
                 }
 
                 is ToolWindowRowContract.Finding -> {
-                    ToolWindowRowsMapper
-                        .findingChildren(
-                            row.finding,
-                        ).forEach { node.add(DefaultMutableTreeNode(it)) }
+                    ToolWindowRowsMapper.findingChildren(row.finding).forEach { node.add(DefaultMutableTreeNode(it)) }
+                }
+
+                is ToolWindowRowContract.Group -> {
+                    row.children.forEach { node.add(DefaultMutableTreeNode(it)) }
                 }
 
                 else -> {}
@@ -168,9 +249,23 @@ class ProjectsToolWindowHandler :
                     if (root != null) HealthUseCase.fix(ide, root, value.finding)
                 }
 
+                is ToolWindowRowContract.Link -> {
+                    if (root != null) link(ide, root, value.action)
+                }
+
                 else -> {}
             }
         }
+    }
+
+    private fun link(
+        ide: Project,
+        root: Path,
+        action: String,
+    ) = when (action) {
+        "update" -> UpdateDependenciesUseCase.start(ide, root)
+        "align" -> UpdateDependenciesUseCase.startAlign(ide, root)
+        else -> ReleaseWorkspaceUseCase.start(ide, root)
     }
 
     private fun projectMenu(

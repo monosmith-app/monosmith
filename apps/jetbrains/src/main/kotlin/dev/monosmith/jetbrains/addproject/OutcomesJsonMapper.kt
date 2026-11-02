@@ -25,7 +25,7 @@ object OutcomesJsonMapper {
             }.filter { it.kind.isNotEmpty() && it.language.isNotEmpty() }
 
     /** The outcomes, the languages and the title of each layer of `smith compose --json`. */
-    fun toCatalogue(json: String): Triple<List<OutcomeContract>, List<LanguageInfoContract>, Map<String, String>> {
+    fun toCatalogue(json: String): CatalogueContract {
         val root = JsonFieldsMapper.parseObject(json)
         val outcomes =
             JsonFieldsMapper
@@ -70,7 +70,12 @@ object OutcomesJsonMapper {
                 .records(root, "layers")
                 .filter { JsonFieldsMapper.text(it, "id").isNotEmpty() && JsonFieldsMapper.text(it, "title").isNotEmpty() }
                 .associate { JsonFieldsMapper.text(it, "id") to JsonFieldsMapper.text(it, "title") }
-        return Triple(outcomes, languages, layers)
+        val about =
+            JsonFieldsMapper
+                .records(root, "layers")
+                .filter { JsonFieldsMapper.text(it, "id").isNotEmpty() && JsonFieldsMapper.text(it, "about").isNotEmpty() }
+                .associate { JsonFieldsMapper.text(it, "id") to JsonFieldsMapper.text(it, "about") }
+        return CatalogueContract(outcomes, languages, layers, about)
     }
 
     /**

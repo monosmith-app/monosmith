@@ -16,7 +16,14 @@ object JsonFieldsMapper {
      * @throws IllegalStateException when the text is not a JSON object
      * @throws com.google.gson.JsonSyntaxException when the text is not JSON
      */
-    fun parseObject(json: String): JsonObject = JsonParser.parseString(json).asJsonObject
+    fun parseObject(json: String): JsonObject = JsonParser.parseString(fromFirstObject(json)).asJsonObject
+
+    /** Drops the lines a command printed before its JSON (`release --dry-run --json` prints what it would attach first). */
+    fun fromFirstObject(text: String): String {
+        if (text.trimStart().startsWith("{")) return text
+        val start = Regex("(?m)^\\{").find(text)?.range?.first ?: return text
+        return text.substring(start)
+    }
 
     /**
      * Parses [json] as a list.
