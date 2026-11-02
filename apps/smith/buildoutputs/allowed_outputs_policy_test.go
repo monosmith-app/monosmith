@@ -1,4 +1,4 @@
-package doctor
+package buildoutputs
 
 import "testing"
 
@@ -15,17 +15,6 @@ func TestInsideAnyMatchesThePathAndWhatIsUnderIt(t *testing.T) {
 		if got := InsideAny(p, allowed); got != want {
 			t.Errorf("%s: got %v, want %v", p, got, want)
 		}
-	}
-}
-
-func TestAnAllowedOutputOutsideDistIsNotReported(t *testing.T) {
-	stage := projectWithOutputs("mvd", "apps/mvd", map[string][]string{"stage-web": {"appwindow/web"}})
-	projects := []*projectgraph.Project{stage}
-	if got := OutsideBuildDir(projects); len(got) != 1 {
-		t.Fatalf("without the setting it is reported: %v", got)
-	}
-	if got := OutsideBuildDir(projects, "apps/mvd/appwindow/web"); len(got) != 0 {
-		t.Errorf("with the setting it is not: %v", got)
 	}
 }
 
