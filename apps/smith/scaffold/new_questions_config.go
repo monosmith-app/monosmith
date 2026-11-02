@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
+	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 )
 
@@ -46,7 +47,7 @@ const (
 const MoreYes = "yes"
 
 // NewOption is one answer to a question.
-type NewOption struct{ Label, Value, Hint string }
+type NewOption = choiceprompt.Option
 
 // NewQuestion is one question of smith new. With no Options it is free text
 // and an empty answer takes Default.

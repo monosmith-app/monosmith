@@ -10,12 +10,12 @@ import (
 	"os/signal"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/releasepreview"
 	"github.com/monosmith-app/monosmith/apps/smith/releaserehearsal"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 // Command is `smith release`.
@@ -23,6 +23,7 @@ func Command(version string) *cobra.Command {
 	var (
 		dryRun, yes, noPush, asJSON, comment, notes, status, verbose, rehearse bool
 		format                                                                 string
+		hold, bumpFlags                                                        []string
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
@@ -97,6 +98,19 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			if err != nil {
 				return err
 			}
+			bumps, err := ParseBumps(bumpFlags)
+			if err != nil {
+				return err
+			}
+			plan, adjusted, err := Adjust(plan, Adjustments{Hold: hold, Bump: bumps})
+			if err != nil {
+				return err
+			}
+			if !asJSON {
+				for _, n := range adjusted {
+					fmt.Fprintln(cmd.ErrOrStderr(), "note: "+n)
+				}
+			}
 			if dryRun {
 				// A real release refuses these in its preflight: the preview says so too.
 				if problems := ChannelRefusals(s, plan); len(problems) > 0 {
@@ -133,13 +147,23 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 				return nil
 			}
 			if !dryRun && !yes {
-				if !term.IsTerminal(int(os.Stdin.Fd())) {
-					return errors.New("refusing to release without a terminal; pass --yes (CI does)")
+				if !operationplan.ShouldAsk(operationplan.DetectEnvironment(), false) {
+					return errors.New("refusing to release without a terminal; pass --yes (CI does). Hold a package back with --hold <project>, change a bump with --bump <project>=patch|minor|major, or see the plan with --dry-run")
 				}
+				in := bufio.NewReader(os.Stdin)
+				var go_ bool
+				plan, go_, err = Review(in, out, plan, func(p Plan) { printPlan(cmd, p, false, verbose) }, Adjustments{})
+				if err != nil {
+					return err
+				}
+				if !go_ || len(plan.Items) == 0 {
+					return errors.New("release cancelled: nothing was tagged or published")
+				}
+				fmt.Fprintln(out, Consequences(plan, !noPush))
 				fmt.Fprint(out, "Release these packages? [y/N] ")
-				answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+				answer, _ := in.ReadString('\n')
 				if !strings.EqualFold(strings.TrimSpace(answer), "y") {
-					return errors.New("release cancelled")
+					return errors.New("release cancelled: nothing was tagged or published")
 				}
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
@@ -169,6 +193,8 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 	}
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be released; change nothing")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
+	cmd.Flags().StringSliceVar(&hold, "hold", nil, "do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too")
+	cmd.Flags().StringSliceVar(&bumpFlags, "bump", nil, "release a package with this bump instead of the one its commits ask for: <project>=patch|minor|major")
 	cmd.Flags().BoolVar(&noPush, "no-push", false, "create tags locally only")
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
 	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")
