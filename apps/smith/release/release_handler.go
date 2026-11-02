@@ -143,7 +143,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 					preview(Report{DryRun: true, Channel: plan.Channel, Unchanged: plan.Unchanged}.Markdown())
 				}
 				if asJSON {
-					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Channel: plan.Channel, Unchanged: plan.Unchanged, Results: []ReportResult{}})
+					return json.NewEncoder(out).Encode(Report{DryRun: dryRun, Channel: plan.Channel, Unchanged: plan.Unchanged, NeverReleased: plan.NeverReleased, Results: []ReportResult{}})
 				}
 				return nil
 			}

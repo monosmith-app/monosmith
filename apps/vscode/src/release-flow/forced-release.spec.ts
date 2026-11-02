@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SmithRun } from '../smith-run/index.ts'
-import { forcedConsequences, parseUnchangedPackages } from './forced-release.mapper.ts'
+import { firstVersionCommand, forcedConsequences, parseNeverReleasedPackages, parseUnchangedPackages } from './forced-release.mapper.ts'
 import { releaseArguments } from './release-arguments.mapper.ts'
 import { releaseWorkspace } from './release-workspace.use-case.ts'
 
@@ -44,6 +44,12 @@ describe('parseUnchangedPackages', () => {
     expect(parseUnchangedPackages(NOTHING)).toEqual(['mvd', 'core'])
     expect(parseUnchangedPackages('{"results":[]}')).toEqual([])
   })
+
+  it('reads the packages never released, and the commit that gives one its first version', () => {
+    expect(parseNeverReleasedPackages('{"unchanged":["a"],"neverReleased":["a"]}')).toEqual(['a'])
+    expect(parseNeverReleasedPackages(NOTHING)).toEqual([])
+    expect(firstVersionCommand('a')).toBe('git commit --allow-empty -m "version(a)[1.0.0]"')
+  })
 })
 
 describe('forcedConsequences', () => {
@@ -74,6 +80,19 @@ describe('releaseWorkspace without a releasing commit', () => {
     // The packages no commit releases go with the outcome, so the notice can offer the forced path.
     expect(await releaseWorkspace(f.deps)).toMatchObject({ kind: 'nothing', unchanged: ['mvd', 'core'] })
     expect(f.applied).toEqual([])
+  })
+
+  it('does not offer a package that was never released, and tells the picker which ones they are', async () => {
+    const f = fake({ forced: [] })
+    const asked: Array<{ unchanged: string[], never: string[] }> = []
+    f.deps.chooseForced = async (unchanged: string[], _nothing: boolean, never: string[] = []) => {
+      asked.push({ unchanged, never })
+
+      return []
+    }
+    f.deps.run = async (args: string[]) => ok(args.includes('--json') ? '{"dryRun":true,"results":[],"unchanged":["mvd","fresh"],"neverReleased":["fresh"]}' : 'plan\n')
+    await releaseWorkspace(f.deps)
+    expect(asked).toEqual([{ unchanged: ['mvd'], never: ['fresh'] }])
   })
 
   it('publishes nothing when the person cancels or says no', async () => {

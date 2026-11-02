@@ -10,7 +10,7 @@ import (
 )
 
 func TestForcedReleaseActionRunsBumpAndForce(t *testing.T) {
-	a := guide.ForcedReleaseAction([]string{"mvd", "core"})
+	a := guide.ForcedReleaseAction([]string{"mvd", "core"}, nil)
 	if len(a.Steps[0].Options) != 2 || a.Steps[0].Options[0].Value != "mvd" {
 		t.Fatalf("%+v", a.Steps[0].Options)
 	}
@@ -20,6 +20,16 @@ func TestForcedReleaseActionRunsBumpAndForce(t *testing.T) {
 	}
 	if !isForcedRelease(got) || isForcedRelease([]string{"release", "--yes"}) {
 		t.Fatal("isForcedRelease")
+	}
+}
+
+func TestForcedReleaseDoesNotOfferAPackageThatWasNeverReleased(t *testing.T) {
+	a := guide.ForcedReleaseAction([]string{"mvd", "fresh"}, []string{"fresh"})
+	if len(a.Steps[0].Options) != 1 || a.Steps[0].Options[0].Value != "mvd" {
+		t.Fatalf("a package smith refuses was offered: %+v", a.Steps[0].Options)
+	}
+	if note := a.Steps[0].Note; !strings.Contains(note, "fresh (never released)") || !strings.Contains(note, `version(fresh)[1.0.0]`) {
+		t.Fatalf("the form does not say why, or how to set the first version: %q", note)
 	}
 }
 

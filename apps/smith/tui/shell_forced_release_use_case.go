@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,7 +18,12 @@ func (s *Shell) openForcedRelease() tea.Cmd {
 		s.say("Every package in the plan has a releasing commit, or the plan is not read yet")
 		return nil
 	}
-	g := s.guide.WithAction(guide.ForcedReleaseAction(s.release.Plan.Unchanged))
+	plan := s.release.Plan
+	if forcible := slices.DeleteFunc(slices.Clone(plan.Unchanged), func(n string) bool { return slices.Contains(plan.NeverReleased, n) }); len(forcible) == 0 {
+		s.say(guide.NeverReleasedNote(plan.NeverReleased))
+		return nil
+	}
+	g := s.guide.WithAction(guide.ForcedReleaseAction(plan.Unchanged, plan.NeverReleased))
 	if g, ok := g.Pick(guide.ForcedReleaseTitle); ok {
 		s.guide = g
 	}
