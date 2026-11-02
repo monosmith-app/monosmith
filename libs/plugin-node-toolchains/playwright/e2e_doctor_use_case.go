@@ -65,6 +65,10 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		Warning: true,
 		Detail:  "smith ci verify leaves e2e out, and no e2e pipeline is committed",
 		Remedy:  "smith pipeline e2e",
+		Fix: &protocol.Fix{Description: "Write the e2e pipeline", Steps: []protocol.FixStep{{
+			Description: "smith pipeline e2e writes the pipeline that runs the e2e tasks",
+			Argv:        []string{"smith", "pipeline", "e2e"},
+		}}},
 	})
 	return protocol.DoctorResult{Findings: findings}
 }

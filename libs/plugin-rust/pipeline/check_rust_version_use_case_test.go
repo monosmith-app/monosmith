@@ -41,7 +41,7 @@ func TestCheckRustVersionWarnsOnANewerLocalRustAndMovesThePin(t *testing.T) {
 	if !ok || f.OK || !f.Warning {
 		t.Fatalf("%v %+v", ok, f)
 	}
-	if f.Fix == nil || len(f.Fix.Steps) != 0 || !strings.Contains(f.Fix.Files[0].Content, `channel = "1.95"`) {
+	if f.Fix == nil || len(f.Fix.Steps) != 1 || strings.Join(f.Fix.Steps[0].Argv, " ") != "smith ci generate --yes" || !strings.Contains(f.Fix.Files[0].Content, `channel = "1.95"`) {
 		t.Fatalf("%+v", f.Fix)
 	}
 }

@@ -146,6 +146,13 @@ func javaVersionFinding(output, ci string) (protocol.Finding, bool) {
 	f, ok := toolrun.CIPinFinding("JDK", major, ci)
 	if ok && !f.OK {
 		f.Remedy = "install JDK " + ci + " (https://adoptium.net), or set the release in .java-version and run `smith ci generate` to move CI and the dev container"
+		// Installing a JDK is the person's own step (no smith command does it), so
+		// the fix is the other way: follow this machine, then move CI to match.
+		f.Fix = &protocol.Fix{
+			Description: "pin JDK " + major + " in .java-version and move CI and the dev container to it",
+			Files:       []protocol.FileEdit{{Path: ".java-version", Content: major + "\n"}},
+			Steps:       []protocol.FixStep{{Description: "write CI and the dev container again so they follow the pin", Argv: []string{"smith", "ci", "generate", "--yes"}}},
+		}
 	}
 	return f, ok
 }
