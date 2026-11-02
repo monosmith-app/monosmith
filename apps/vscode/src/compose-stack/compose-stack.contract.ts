@@ -9,6 +9,10 @@ export interface ComposeItem {
   description: string
   aliases:     string[]
   layer:       string
+  /** The question a choice answers (`framework`); empty for a language or a plugin. */
+  axis?:       string
+  /** The axis takes several choices at once when both items are `many`; otherwise one. */
+  many?:       boolean
   language:    string
   suggested:   boolean
   isDefault:   boolean
