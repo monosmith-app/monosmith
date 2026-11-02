@@ -91,10 +91,8 @@ func (m Model) WithSearch(words string) Model {
 // Place centres the screen on a terminal of sw by sh cells.
 func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
-	// The screen covers the whole terminal: a smaller box would leave the
-	// letters of the tabs behind it showing at its edges.
-	w := max(sw, 40)
-	h := max(sh, 12)
+	w := min(max(sw-6, 40), 104)
+	h := min(max(sh-2, 12), 34)
 	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)

@@ -275,7 +275,7 @@ func TestTheListShowsTheLayersWithWhatSitsOnThem(t *testing.T) {
 	}
 }
 
-func TestThePlanWrapsToTheDialogAndTheScreenCoversTheTerminal(t *testing.T) {
+func TestThePlanWrapsToTheDialogAndEveryLineFillsTheRectangle(t *testing.T) {
 	long := "the Tauri system libraries (libwebkit2gtk-4.1-dev, libgtk-3-dev, librsvg2-dev, libayatana-appindicator3-dev)"
 	plan := compose.Plan{
 		Command: "smith add app shell --lang node --with electron,eslint,vitest,tailwind,react,vite,zod,something-long",
@@ -285,15 +285,14 @@ func TestThePlanWrapsToTheDialogAndTheScreenCoversTheTerminal(t *testing.T) {
 	}
 	for _, size := range [][2]int{{110, 32}, {80, 24}} {
 		m := New(catalogue()).Place(size[0], size[1]).WithPlan(plan, nil)
-		if r := m.Rect(); r.X != 0 || r.Y != 0 || r.W != size[0] || r.H != size[1] {
-			t.Fatalf("%v: the screen covers the terminal, got %+v", size, r)
-		}
+		r := m.Rect()
 		lines := m.Lines(theme.Default())
-		if len(lines) != size[1] {
-			t.Fatalf("%v: %d lines", size, len(lines))
+		if len(lines) != r.H || r.W > size[0] || r.H > size[1] {
+			t.Fatalf("%v: %d lines for %+v", size, len(lines), r)
 		}
 		for _, l := range lines {
-			if w := pane.Width(l); w != size[0] {
+			// Every line fills the rectangle, so nothing behind it shows through.
+			if w := pane.Width(l); w != r.W {
 				t.Fatalf("%v: a line is %d cells wide: %q", size, w, l)
 			}
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
@@ -44,6 +45,12 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		return nil
 	case catalog.Changes:
 		if !confirmed {
+			if resultdialog.ChoosesVersion(argv) {
+				// Which version wins is the person's choice: ask before the plan.
+				m := resultdialog.NewWhichVersion(argv).Place(s.w, s.h)
+				s.result = &m
+				return nil
+			}
 			if argv[0] == "release" && !s.release.Loaded && s.release.Err == nil && s.sources.Release != nil && !slices.Contains(argv, "--dry-run") {
 				// Publishing cannot be undone: read the plan first, then ask.
 				s.releaseWaiting = slices.Clone(argv)

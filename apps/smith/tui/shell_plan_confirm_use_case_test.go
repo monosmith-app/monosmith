@@ -28,7 +28,7 @@ func TestAChangingCommandShowsItsPlanBeforeItRuns(t *testing.T) {
 		{[]string{"upgrade"}, "upgrade --dry-run", "change  smith.toml (defaults vintage)", "upgrade --yes", []string{"change smith.toml"}},
 		{[]string{"ci", "generate"}, "ci generate --dry-run", "remove  .gitlab-ci.yml\n-stages: [build]", "ci generate --yes", []string{"remove .gitlab-ci.yml", "-stages: [build]"}},
 		{[]string{"bootstrap"}, "bootstrap --dry-run", "change  tools/smith/smith", "bootstrap --yes", []string{"tools/smith/smith"}},
-		{[]string{"sync"}, "sync --dry-run", "axios (node) will be ^1.6.0", "sync --yes", []string{"axios (node) will be ^1.6.0"}},
+		{[]string{"sync", "--prefer", "installed"}, "sync --prefer installed --dry-run", "axios (node) will be ^1.6.0", "sync --prefer installed --yes", []string{"axios (node) will be ^1.6.0"}},
 	} {
 		t.Run(strings.Join(tc.argv, " "), func(t *testing.T) {
 			l := newHomeLab(t, 140, 40)
@@ -67,5 +67,37 @@ func TestReleaseReadsItsPlanBeforeAsking(t *testing.T) {
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0")
 	if len(l.started) != 0 {
 		t.Fatalf("nothing may run before the answer: %v", l.started)
+	}
+}
+
+// A sync asks which version wins before it shows the plan, and each answer
+// goes on to the plan and the confirmation with --prefer; nothing runs before.
+func TestSyncAsksWhichVersionWinsThenShowsThePlan(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.answers(map[string]sources.Captured{"sync --prefer highest --dry-run": {OK: true, Text: "axios (node) will be ^1.9.0"}})
+	l.ask("sync")
+	l.has("Which version wins?", "The highest declared", "The lowest declared")
+	if len(l.started) != 0 {
+		t.Fatalf("nothing may run before the answer: %v", l.started)
+	}
+	l.keys("down", "enter")
+	l.has("axios (node) will be ^1.9.0", "smith sync --prefer highest --yes")
+	if len(l.started) != 0 {
+		t.Fatalf("the plan is shown first: %v", l.started)
+	}
+	l.keys("enter")
+	if got := l.lastStarted(); got != "sync --prefer highest --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+// Escape on the question changes nothing.
+func TestSyncWhichVersionCanBeCancelled(t *testing.T) {
+	l := newHomeLab(t, 140, 40)
+	l.ask("sync")
+	l.keys("esc")
+	l.hasNot("Which version wins?")
+	if len(l.started) != 0 {
+		t.Fatalf("cancelled: %v", l.started)
 	}
 }

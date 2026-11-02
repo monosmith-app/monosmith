@@ -119,3 +119,30 @@ func TestOperationTextStopsAtTheFirstFlag(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+func TestOnlyASyncWithoutAnAnswerAsksWhichVersionWins(t *testing.T) {
+	for argv, want := range map[string]bool{
+		"sync":                       true,
+		"deps up --align":            true,
+		"up --align":                 true,
+		"sync --prefer highest":      false,
+		"sync --to axios=^1.6.0":     false,
+		"sync --check":               false,
+		"sync --dry-run":             false,
+		"deps up zod":                false,
+		"install -w web zod":         false,
+		"sync --prefer=lowest --yes": false,
+	} {
+		if got := ChoosesVersion(strings.Fields(argv)); got != want {
+			t.Errorf("%q: got %v, want %v", argv, got, want)
+		}
+	}
+	m := NewWhichVersion([]string{"sync"})
+	if _, out := m.Key("down"); out.Check != nil {
+		t.Fatal("moving does not decide")
+	}
+	m, _ = m.Key("down")
+	if _, out := m.Key("enter"); !reflect.DeepEqual(out.Check, []string{"sync", "--prefer", "highest"}) {
+		t.Fatalf("the second answer is the highest: %v", out.Check)
+	}
+}
