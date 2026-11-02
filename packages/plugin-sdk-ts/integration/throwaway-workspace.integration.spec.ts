@@ -28,7 +28,7 @@ function run (...args: string[]): { status: number | null, out: string } {
 describe.skipIf(!smith)('a throwaway workspace using the TypeScript example plugins', () => {
   beforeAll(() => {
     root = mkdtempSync(join(tmpdir(), 'sdk-workspace-'))
-    expect(run('new', 'ws').status).toBe(0)
+    expect(run('new', 'ws', '--yes').status).toBe(0)
     workspace = join(root, 'ws')
     appendFileSync(join(workspace, 'smith.toml'), [
       '',
