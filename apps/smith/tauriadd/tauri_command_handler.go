@@ -54,7 +54,9 @@ func addCommand(version string) *cobra.Command {
 		Use:   "add <project>",
 		Short: "Make an existing Node app a Tauri desktop app",
 		Long: `Make a Node app that already exists (a Vite app, say) a Tauri desktop app, as
-if it had been made with the react-tauri stack. smith:
+if it had been made with the react-tauri stack. For a new app, smith compose lists
+Tauri and Electron with the other options (smith add app web --lang node --with react,tauri).
+smith:
 
   - writes src-tauri: Cargo.toml (with its own empty [workspace]), tauri.conf.json
     whose frontendDist is the folder smith builds the web app into, build.rs,

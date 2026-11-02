@@ -87,6 +87,7 @@ var catalog = []Action{
 	{Command: []string{"slices", "check"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"kinds"}, Safety: Reads, NotInTUI: referenceOut},
 	{Command: []string{"stacks"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
+	{Command: []string{"compose"}, Safety: NeedsTerminal, Variants: []Variant{{When: []string{"--json"}, Safety: Reads}}, NotInTUI: "the shell has its own Compose a stack screen (palette, or A on the project list), not a guided form", NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"choices"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"commands"}, Safety: Reads, NotInTUI: referenceOut, NotInServe: noMethodYet},
 	{Command: []string{"schema"}, Safety: Reads, NotInTUI: referenceOut, NotInMCP: noToolYet, NotInServe: noMethodYet},

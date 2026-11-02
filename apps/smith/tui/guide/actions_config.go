@@ -130,7 +130,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Add a project", Presents: "add", Hint: "app, lib or package", NeedsWorkspace: true,
+			Title: "Add a project", Presents: "add", Hint: "app, lib or package (to search frameworks, desktop shells and cloud hosts first, use Compose a stack)", NeedsWorkspace: true,
 			Steps: []Step{
 				{Key: "kind", Prompt: "What are you adding?", Options: []Option{
 					{Label: "An app", Value: "app", Hint: "something you run or deploy, like a website or an API (web, api)"},
