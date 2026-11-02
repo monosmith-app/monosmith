@@ -483,6 +483,13 @@ func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 	case p.focus == focusPackages:
 		p.input, _ = p.input.Update(msg)
 		p.err = ""
+	case p.focus == focusSource && !p.fromWorkspace && msg.Type == tea.KeyRunes && msg.String() != " ":
+		// Typing while the answer is the registry (the default) is a package
+		// name: go to the field instead of losing the keystrokes.
+		p.focus = focusPackages
+		p.input.Focus()
+		p.input, _ = p.input.Update(msg)
+		p.err = ""
 	case (p.focus == focusSource || p.focus == focusLibrary || p.focus == focusRange) && (msg.String() == "left" || msg.String() == "right" || msg.String() == " " || msg.String() == "space"):
 		dir := 1
 		if msg.String() == "left" {
