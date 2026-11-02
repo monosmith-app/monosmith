@@ -60,7 +60,6 @@ func isWebAnswer(a map[string][]string, offers []ChoiceOffer) bool {
 // costs. They are asked only for a web app.
 func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 	notWeb := func(a map[string][]string) bool { return !isWebAnswer(a, offers) }
-	notDefaultFour := func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) != envsDefault }
 	none := func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) == envsNone }
 	defaults := strings.Join(webenv.DefaultNames, ", ")
 	return []Step{
@@ -78,12 +77,7 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 				}
 				return ""
 			}},
-		{Key: envDefaultKey, Prompt: "Which environment is `smith run build`? CI and the release build this one", Skip: notDefaultFour, Options: []Option{
-			{Label: "prd", Value: "prd", Hint: "default"},
-			{Label: "uat", Value: "uat", Hint: "the others are build:<name>"},
-			{Label: "dev", Value: "dev", Hint: "the others are build:<name>"},
-			{Label: "lcl", Value: "lcl", Hint: "the others are build:<name>"},
-		}},
+		{Key: envDefaultKey, Prompt: "Which environment is `smith run build`? CI and the release build this one", Skip: none, OptionsFor: envDefaultOptions},
 		{Key: envOutputKey, Prompt: "Where do the builds go?", Skip: none, Options: []Option{
 			{Label: "In the workspace", Value: webenv.OutputWorkspace, Hint: "default: dist/apps/<app>/<name>, with every other build"},
 			{Label: "In the project", Value: webenv.OutputProject, Hint: "dist/<name> in the app's own folder; smith doctor then accepts it"},
@@ -93,6 +87,33 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 			{Label: "Only .env.example", Value: webenv.FilesExample, Hint: "each machine and CI job makes its own files; git ignores them"},
 		}},
 	}
+}
+
+// envNamesOf are the environment names the answers so far name: the default
+// four, or the ones typed.
+func envNamesOf(a map[string][]string) []string {
+	if first(a, envsKey) == envsCustom {
+		return webenv.ParseList(first(a, envNamesKey))
+	}
+	return webenv.DefaultNames
+}
+
+// envDefaultOptions lists the environments for the question of which one `smith
+// run build` builds: the one smith would take (prd, else the last) first and
+// marked, then the others.
+func envDefaultOptions(a map[string][]string) []Option {
+	names := envNamesOf(a)
+	fallback := webenv.Settings{Names: names}.Normalized().Default
+	out := []Option{}
+	if fallback != "" {
+		out = append(out, Option{Label: fallback, Value: fallback, Hint: "default"})
+	}
+	for _, n := range slices.Backward(names) {
+		if n != fallback {
+			out = append(out, Option{Label: n, Value: n, Hint: "the others are build:<name>"})
+		}
+	}
+	return out
 }
 
 // webEnvironmentArgs are the flags of smith add that carry the answers of the
@@ -106,7 +127,7 @@ func webEnvironmentArgs(a map[string][]string, offers []ChoiceOffer) []string {
 		return []string{"--environments", "none"}
 	case envsCustom:
 		names := strings.Join(webenv.ParseList(first(a, envNamesKey)), ",")
-		return []string{"--environments", names, "--environment-output", first(a, envOutputKey), "--env-files", first(a, envFilesKey)}
+		return []string{"--environments", names, "--default-environment", first(a, envDefaultKey), "--environment-output", first(a, envOutputKey), "--env-files", first(a, envFilesKey)}
 	}
 	return []string{"--environments", strings.Join(webenv.DefaultNames, ","), "--default-environment", first(a, envDefaultKey), "--environment-output", first(a, envOutputKey), "--env-files", first(a, envFilesKey)}
 }

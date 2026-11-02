@@ -223,7 +223,13 @@ func (m Model) current() *Step {
 	if m.action == nil || m.step >= len(m.action.Steps) {
 		return nil
 	}
-	return &m.action.Steps[m.step]
+	s := &m.action.Steps[m.step]
+	if s.OptionsFor != nil {
+		c := *s
+		c.Options = s.OptionsFor(m.answers)
+		return &c
+	}
+	return s
 }
 
 // options are the answers on offer: all of them, or for a Filter step those

@@ -49,8 +49,8 @@ func TestTheEnvironmentAnswersBecomeFlags(t *testing.T) {
 			[]string{"--environments", "lcl,dev,uat,prd", "--default-environment", "uat", "--environment-output", "project", "--env-files", "example"},
 		},
 		"names of my own": {
-			webAnswers(map[string][]string{envsKey: {envsCustom}, envNamesKey: {"qa, stage"}, envOutputKey: {"workspace"}, envFilesKey: {"commit"}}),
-			[]string{"--environments", "qa,stage", "--environment-output", "workspace", "--env-files", "commit"},
+			webAnswers(map[string][]string{envsKey: {envsCustom}, envNamesKey: {"qa, stage"}, envDefaultKey: {"qa"}, envOutputKey: {"workspace"}, envFilesKey: {"commit"}}),
+			[]string{"--environments", "qa,stage", "--default-environment", "qa", "--environment-output", "workspace", "--env-files", "commit"},
 		},
 		"one build only": {
 			webAnswers(map[string][]string{envsKey: {envsNone}}),
@@ -60,6 +60,25 @@ func TestTheEnvironmentAnswersBecomeFlags(t *testing.T) {
 		got := a.Argv(tc.answers)
 		if tail := got[len(got)-len(tc.want):]; !reflect.DeepEqual(tail, tc.want) {
 			t.Errorf("%s: got %v", name, got)
+		}
+	}
+}
+
+func TestOwnNamesAreAskedWhichOneIsTheDefaultBuildWithTheUsualOneFirst(t *testing.T) {
+	for name, tc := range map[string]struct {
+		names string
+		want  []string
+	}{
+		"prd wins when it is there": {"lcl, prd, qa", []string{"prd", "qa", "lcl"}},
+		"else the last name":        {"qa, stage", []string{"stage", "qa"}},
+	} {
+		opts := envDefaultOptions(map[string][]string{envsKey: {envsCustom}, envNamesKey: {tc.names}})
+		var got []string
+		for _, o := range opts {
+			got = append(got, o.Value)
+		}
+		if !reflect.DeepEqual(got, tc.want) || opts[0].Hint != "default" {
+			t.Errorf("%s: got %v (first hint %q), want %v", name, got, opts[0].Hint, tc.want)
 		}
 	}
 }

@@ -11,6 +11,9 @@ type Step struct {
 	Key     string
 	Prompt  string
 	Options []Option
+	// OptionsFor, when set, makes the options from the earlier answers (the names
+	// typed in a question before): it replaces Options.
+	OptionsFor func(answers map[string][]string) []Option
 	// Placeholder is shown in an empty text field.
 	Placeholder string
 	// Multi lets the user toggle several options (space) before confirming.
