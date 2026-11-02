@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -23,7 +25,7 @@ type report struct {
 // Command is `smith kind`.
 func Command(version string) *cobra.Command {
 	var opts Options
-	var asJSON bool
+	var asJSON, allowDirty bool
 	cmd := &cobra.Command{
 		Use:   "kind <project> <kind>",
 		Short: "Make a project an app, an internal lib or a published package",
@@ -44,7 +46,10 @@ not know how to rewrite (a Dockerfile, a script, a document) are listed after
 the change, for you to check.
 
 Use --dry-run first: it lists every file that would be edited and the move,
-and changes nothing.`,
+and changes nothing. Without it smith shows the same plan, with a diff of each
+file, and asks before it writes; without a terminal it needs --yes. The work
+tree must be clean (--allow-dirty overrides). Nothing is committed unless you
+pass --commit.`,
 		Example: "  smith kind core package --dry-run\n  smith kind core package\n  smith kind core lib",
 		Args: commandargs.Exactly(commandargs.Spec{
 			Names:   []string{"the project to change", "the kind it becomes: app, lib or package"},
@@ -70,6 +75,20 @@ and changes nothing.`,
 			}
 			rep := report{Plan: plan, DryRun: opts.DryRun}
 			if !opts.DryRun {
+				if !allowDirty {
+					if dirty := DirtyPaths(statusOf(s)); len(dirty) > 0 {
+						return problem.New("the work tree has uncommitted changes, and the move would mix with them ("+strings.Join(firstN(dirty, 3), ", ")+")",
+							"commit or stash them, then run this again", "--allow-dirty goes ahead anyway")
+					}
+				}
+				yes, _ := cmd.Flags().GetBool("yes")
+				shown := cmd.OutOrStdout()
+				if asJSON {
+					shown = cmd.ErrOrStderr()
+				}
+				if _, err := operationplan.Present(shown, cmd.InOrStdin(), OperationPlan(s.Root, plan), operationplan.Options{Yes: yes, Ask: true, Env: operationplan.DetectEnvironment()}); err != nil {
+					return err
+				}
 				if rep.Outcome, err = Apply(s, plan); err != nil {
 					return err
 				}
@@ -87,7 +106,24 @@ and changes nothing.`,
 	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", false, "list every file edit and the move; change nothing")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "go ahead although other projects import it or it was already released")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the plan and what was done as JSON")
-	return cmd
+	cmd.Flags().BoolVar(&allowDirty, "allow-dirty", false, "go ahead although the work tree has uncommitted changes")
+	return operation.Wrap(cmd, operation.Spec{AddYes: true, Describe: func(_ *cobra.Command, args []string) string {
+		return "make " + args[0] + " " + args[1]
+	}})
+}
+
+// statusOf is git status --porcelain of the workspace; "" when git cannot say.
+func statusOf(s *session.Session) string {
+	out, _ := s.Git.Run("status", "--porcelain")
+	return out
+}
+
+// firstN is at most n of the items.
+func firstN(items []string, n int) []string {
+	if len(items) > n {
+		return items[:n]
+	}
+	return items
 }
 
 func print(out io.Writer, r report) {
