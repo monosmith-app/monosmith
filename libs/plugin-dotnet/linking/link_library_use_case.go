@@ -14,14 +14,34 @@ import (
 )
 
 // ReferenceInclude is the path of the library's project file as seen from the
-// project's file, with the backslashes MSBuild files use
-// (..\..\libs\Core\Core.csproj).
+// project's file, with forward slashes (../../libs/Core/Core.csproj). MSBuild
+// accepts them on every system; backslashes would be wrong in a Linux checkout.
 func ReferenceInclude(projectFile, libraryFile string) string {
 	rel, err := filepath.Rel(filepath.FromSlash(path.Dir(projectFile)), filepath.FromSlash(libraryFile))
 	if err != nil {
 		rel = libraryFile
 	}
-	return strings.ReplaceAll(filepath.ToSlash(rel), "/", `\`)
+	return filepath.ToSlash(rel)
+}
+
+// slashReference rewrites the backslash form of the new reference, which
+// dotnet add reference writes whatever the system, to forward slashes.
+//
+// Parameters: workspaceRoot is the workspace root; projectFile and libraryFile
+// are workspace-relative project files.
+// Returns: the error from reading or writing the project file.
+func slashReference(workspaceRoot, projectFile, libraryFile string) error {
+	full := filepath.Join(workspaceRoot, filepath.FromSlash(projectFile))
+	raw, err := os.ReadFile(full)
+	if err != nil {
+		return err
+	}
+	slashed := ReferenceInclude(projectFile, libraryFile)
+	fixed := strings.ReplaceAll(string(raw), `Include="`+strings.ReplaceAll(slashed, "/", `\`)+`"`, `Include="`+slashed+`"`)
+	if fixed == string(raw) {
+		return nil
+	}
+	return os.WriteFile(full, []byte(fixed), 0o644)
 }
 
 // AddArgs is the dotnet command that adds a ProjectReference to the library
@@ -87,6 +107,9 @@ func Link(workspaceRoot string, params protocol.LinkParams) (protocol.LinkResult
 		return res, nil
 	}
 	if err := dependencies.Dotnet(workspaceRoot, AddArgs(pf, lf)); err != nil {
+		return protocol.LinkResult{}, err
+	}
+	if err := slashReference(workspaceRoot, pf, lf); err != nil {
 		return protocol.LinkResult{}, err
 	}
 	res.Files = []string{pf}

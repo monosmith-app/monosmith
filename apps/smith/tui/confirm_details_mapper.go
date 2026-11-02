@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
@@ -21,7 +22,7 @@ func (s Shell) confirmDetails(argv []string) []string {
 	case isForcedRelease(argv):
 		lines = forcedReleaseDetails(argv)
 	case argv[0] == "release":
-		lines = s.releaseDetails()
+		lines = s.releaseDetails(argv)
 	case argv[0] == "doctor" && slices.Contains(argv, "--fix"):
 		only := ""
 		if i := slices.Index(argv, "--only"); i >= 0 && i+1 < len(argv) {
@@ -33,7 +34,7 @@ func (s Shell) confirmDetails(argv []string) []string {
 }
 
 // releaseDetails lists the packages and the versions the release publishes.
-func (s Shell) releaseDetails() []string {
+func (s Shell) releaseDetails(argv []string) []string {
 	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
 		return []string{"The plan is not loaded: open the Release view first (" + commands.ShortcutOf("view.release") + ") to see the packages and versions."}
 	}
@@ -41,13 +42,26 @@ func (s Shell) releaseDetails() []string {
 	if s.release.Plan.Channel != "" {
 		lines = append(lines, release.ChannelNotice(s.release.Plan.Channel), "")
 	}
+	plan := s.release.Plan
+	var held []string
+	if adjusted, _, err := release.Adjust(plan, adjustmentsIn(argv)); err == nil {
+		for _, item := range plan.Items {
+			if !slices.ContainsFunc(adjusted.Items, func(a release.Item) bool { return a.Project == item.Project }) {
+				held = append(held, item.Project)
+			}
+		}
+		plan = adjusted
+	}
 	lines = append(lines, "Packages and versions to publish:")
-	for _, item := range s.release.Plan.Items {
+	for _, item := range plan.Items {
 		from := item.Current
 		if from == "" {
 			from = "new"
 		}
 		lines = append(lines, fmt.Sprintf("  %s  %s → %s", item.Project, from, item.Next))
+	}
+	if len(held) > 0 {
+		lines = append(lines, "", "Held back, not released: "+strings.Join(held, ", "))
 	}
 	return lines
 }
@@ -88,4 +102,20 @@ func capLines(lines []string, n int) []string {
 	}
 	out := append([]string(nil), lines[:n-1]...)
 	return append(out, fmt.Sprintf("  … and %d more", len(lines)-(n-1)))
+}
+
+// adjustmentsIn reads the --hold and --bump flags of a release command line.
+func adjustmentsIn(argv []string) release.Adjustments {
+	var a release.Adjustments
+	var bumps []string
+	for i := 0; i+1 < len(argv); i++ {
+		switch argv[i] {
+		case "--hold":
+			a.Hold = append(a.Hold, strings.Split(argv[i+1], ",")...)
+		case "--bump":
+			bumps = append(bumps, argv[i+1])
+		}
+	}
+	a.Bump, _ = release.ParseBumps(bumps)
+	return a
 }

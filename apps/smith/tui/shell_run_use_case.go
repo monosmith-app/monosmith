@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
@@ -58,14 +59,18 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 				load := s.sources.Release
 				return func() tea.Msg { return load() }
 			}
+			if argv[0] == "release" && s.offersAdjustments(argv) {
+				// Which packages go out, and with which bump, is the person's choice: ask before the confirmation.
+				m := releasepick.New(s.release.Plan).Within(s.dialogMargins()).Place(s.w, s.h)
+				s.relpick = &m
+				return nil
+			}
 			if flag, ok := catalog.PlanFlag(argv); ok && s.sources.Capture != nil {
 				// The dialog shows what the command will do, not a sentence about it.
 				s.say("Planning: nothing is changed yet…")
 				return s.capture(capPlan, append(slices.Clone(argv), flag))
 			}
-			title, why := commands.Describe(argv)
-			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Place(s.w, s.h)
-			s.confirm = &c
+			s.askConfirm(argv)
 			return nil
 		}
 		argv = catalog.WithConfirmation(argv)
@@ -85,6 +90,26 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		return nil
 	}
 	return s.start(argv)
+}
+
+// askConfirm shows the confirmation of a command that changes the workspace or
+// publishes: the sentence, what it touches and the line that will run.
+func (s *Shell) askConfirm(argv []string) {
+	title, why := commands.Describe(argv)
+	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Within(s.dialogMargins()).Place(s.w, s.h)
+	s.confirm = &c
+}
+
+// offersAdjustments is true for a plain release whose plan is loaded and has a
+// package: the question about holds and bumps comes before the confirmation. A
+// line that already has --hold, --bump or --dry-run is the person's own.
+func (s Shell) offersAdjustments(argv []string) bool {
+	if !s.release.Loaded || len(s.release.Plan.Items) == 0 {
+		return false
+	}
+	return !slices.ContainsFunc(argv, func(a string) bool {
+		return a == "--dry-run" || a == "--hold" || a == "--bump" || strings.HasPrefix(a, "--hold=") || strings.HasPrefix(a, "--bump=")
+	})
 }
 
 // start begins the process; the first output arrives as messages.

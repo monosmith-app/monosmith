@@ -144,7 +144,7 @@ each title (`Build orders`, `Build all 23`).
 | Release | `Enter` | Show the commits behind the selected bump. |
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
 | Release | `n` | Print the release notes (`smith release --dry-run --notes`). |
-| Release | `x` | Release… (`smith release`, after a confirmation). |
+| Release | `x` | Release… (`smith release`: first hold back or bump packages, then a confirmation that says it cannot be undone). |
 | Settings | `Up` `Down` | Move in the list of sections, or in its rows. |
 | Settings | `Tab`, `Left` `Right` | Switch between the list of sections and its rows. |
 | Settings | `Space`, `Enter` | Change the selected plugin or setting. |
@@ -183,7 +183,10 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons. A plan too long for the dialog scrolls
 with `Up`, `Down`, `PgUp` and `PgDn` under a line that says how many lines are hidden; the
-commit box, the command that will run and the buttons stay on screen.
+commit box, the command that will run and the buttons stay on screen. The dialog is placed again when
+the window changes size, and it stays between the tab bar and the status bar. On the Release view `x`
+first asks which packages to hold back and which bump to change (see [`smith release`](release.md)),
+then shows this confirmation with the `--hold` and `--bump` it built.
 
 ### What a word means
 

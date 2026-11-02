@@ -64,6 +64,8 @@ func TestAPlanSmithRefusesIsShownAndNothingRuns(t *testing.T) {
 func TestReleaseReadsItsPlanBeforeAsking(t *testing.T) {
 	l := newLab(t, true, 120, 34)
 	l.ask("release")
+	l.has("Release: hold back or bump", "web", "1.0.0 → 1.1.0")
+	l.keys("enter")
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0")
 	if len(l.started) != 0 {
 		t.Fatalf("nothing may run before the answer: %v", l.started)
@@ -99,5 +101,33 @@ func TestSyncWhichVersionCanBeCancelled(t *testing.T) {
 	l.hasNot("Which version wins?")
 	if len(l.started) != 0 {
 		t.Fatalf("cancelled: %v", l.started)
+	}
+}
+
+// The release question lets the person hold packages back and change a bump;
+// the confirmation that follows states the line and that it cannot be undone.
+func TestReleaseOffersHoldAndBumpBeforeTheConfirmation(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.keys("6", "x")
+	l.has("Release: hold back or bump", "web", "kit")
+	l.keys("b", "b", "b", "down", " ") // web=major, hold kit
+	l.has("$ smith release --hold kit --bump web=major")
+	l.keys("enter")
+	l.has("It cannot be undone", "$ smith release --hold kit --bump web=major --yes", "web 1.0.0 → 2.0.0", "Held back, not released: kit")
+	if len(l.started) != 0 {
+		t.Fatalf("nothing runs before the last answer: %v", l.started)
+	}
+	l.keys("enter")
+	if got := l.lastStarted(); got != "release --hold kit --bump web=major --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestEscInTheReleaseQuestionCancelsWithoutRunning(t *testing.T) {
+	l := newLab(t, true, 120, 34)
+	l.keys("6", "x", "esc")
+	l.hasNot("Release: hold back or bump", "The command that will run:")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v", l.started)
 	}
 }

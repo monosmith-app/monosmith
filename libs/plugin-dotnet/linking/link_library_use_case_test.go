@@ -11,8 +11,19 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-func TestReferenceIncludeIsRelativeWithBackslashes(t *testing.T) {
-	if got := ReferenceInclude("apps/Web/Web.csproj", "libs/Core/Core.csproj"); got != `..\..\libs\Core\Core.csproj` {
+func TestSlashReferenceRewritesWhatDotnetWrote(t *testing.T) {
+	root := lab(t, "<Project>\n<ItemGroup><ProjectReference Include=\"..\\..\\libs\\Core\\Core.csproj\" /></ItemGroup>\n</Project>")
+	if err := slashReference(root, "apps/Web/Web.csproj", "libs/Core/Core.csproj"); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, "apps", "Web", "Web.csproj"))
+	if !strings.Contains(string(raw), `Include="../../libs/Core/Core.csproj"`) || strings.Contains(string(raw), `\`) {
+		t.Fatalf("got %s", raw)
+	}
+}
+
+func TestReferenceIncludeIsRelativeWithForwardSlashes(t *testing.T) {
+	if got := ReferenceInclude("apps/Web/Web.csproj", "libs/Core/Core.csproj"); got != `../../libs/Core/Core.csproj` {
 		t.Fatalf("got %q", got)
 	}
 	want := []string{"add", "apps/Web/Web.csproj", "reference", "libs/Core/Core.csproj"}

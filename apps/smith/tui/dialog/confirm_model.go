@@ -38,6 +38,8 @@ type Confirm struct {
 	// out of the dialog.
 	scroll           int
 	screenW, screenH int
+	// top and bottom are the rows of the screen the dialog stays clear of.
+	top, bottom int
 }
 
 // NewConfirm builds the dialog for a command line (smith's arguments).
@@ -76,9 +78,18 @@ func (c Confirm) WithDetails(lines []string) Confirm {
 	return c
 }
 
-// Place centres the dialog on a screen of the given size.
+// Within keeps the dialog off the top rows (the header and the tab bar) and the
+// bottom rows (the status bar) of the screen: Place centres it in what is left.
+func (c Confirm) Within(top, bottom int) Confirm {
+	c.top, c.bottom = max(top, 0), max(bottom, 0)
+	return c
+}
+
+// Place centres the dialog on a screen of the given size, between the margins
+// Within set.
 func (c Confirm) Place(sw, sh int) Confirm {
 	c.screenW, c.screenH = sw, sh
+	avail := max(sh-c.top-c.bottom, 3)
 	c.Command = commands.Line(c.Final())
 	w := min(max(ansi.StringWidth(c.Command)+8, minWidth), max(sw-2, 10))
 	if c.Offer {
@@ -95,8 +106,8 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	}
 	body := c.bodyLines(inner)
 	h := len(body) + 4 // borders, blank line, buttons
-	h = min(h, max(sh, 3))
-	c.rect = Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	h = min(h, avail)
+	c.rect = Rect{X: max((sw-w)/2, 0), Y: c.top + max((avail-h)/2, 0), W: w, H: h}
 	return c
 }
 

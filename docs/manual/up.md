@@ -57,6 +57,7 @@ Usage: `smith up [packages...] [flags]`
 
 Behaviour:
 
+- A run that changes no file (a report such as `smith up` with no package named and `--check`, or with nothing to update) never prints the "Not committed" line or advice about `--commit`: there is nothing to commit. Changes that were already in the work tree before the run are not counted as its own.
 - With names, those packages are updated without a prompt. `--yes` takes every update.
 - Without a terminal, or with `--check`, `up` only reports; `--json` also never writes.
 - With `--align` nothing is updated: the named packages (or, with none, every one) that

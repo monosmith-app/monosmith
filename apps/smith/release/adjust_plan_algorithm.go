@@ -49,7 +49,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 		case item.Forced:
 			return plan, nil, fmt.Errorf("--bump %s: a version(%s)[...] commit already sets the version", name, name)
 		case item.Current == "":
-			return plan, nil, fmt.Errorf("--bump %s: %s was never released, so there is no version to bump; set it with a version(%s)[x.y.z] commit", name, name, name)
+			return plan, nil, fmt.Errorf("--bump %s: %s was never released, so there is no version to bump.\n  → To choose its first version, make a commit whose subject is version(%s)[x.y.z]: the project name, then the version in square brackets. A commit anywhere in the repository counts. For example:\n      git commit --allow-empty -m \"version(%s)[1.0.0]\"", name, name, name, name)
 		}
 		current, err := ParseVersion(item.Current)
 		if err != nil {
@@ -104,6 +104,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 		if !slices.Contains(a.Hold, item.Project) {
 			why = "held back because a package it depends on is held back"
 		}
+		out.Held = append(slices.Clone(out.Held), item.Project)
 		notes = append(notes, fmt.Sprintf("%s: %s (it stays at %s)", item.Project, why, orUnreleased(item.Current)))
 	}
 	out.Items = kept

@@ -92,11 +92,22 @@ newest tag is named) unless `--force`, because its published versions would neve
 be updated; `smith release --dry-run` shows the project in the plan once it is a
 package and out of it once it is not.
 
-To force a version, commit a directive anywhere in the repository:
+To force a version, commit a directive anywhere in the repository. The subject is
+`version(<project>)[x.y.z]`: the project name in parentheses, then the version in square brackets,
+and any text after a colon is free. A package that was never released has no version to bump, so
+`--bump` on it refuses and points here; the directive is how its first version is chosen:
 
 ```
 version(sdk)[1.0.0]: first stable release
 ```
+
+```sh
+git commit --allow-empty -m "version(sdk)[1.0.0]"
+```
+
+Apps and internal libraries are never released: `smith release` in a workspace with only those says
+so and suggests `smith add package <name>` or `smith kind <name> package`. With `--hold` that holds
+back every package that would release, it names the held packages and does not suggest a commit.
 
 ## Apps
 
