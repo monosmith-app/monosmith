@@ -13,14 +13,15 @@ var overlayCases = map[string]struct {
 	tab  string
 	open func(l *lab)
 }{
-	"palette":       {commands.TabProjects, func(l *lab) { l.keys("ctrl+p") }},
-	"palette typed": {commands.TabProjects, func(l *lab) { l.keys("ctrl+p").typeText("e") }},
-	"palette home":  {commands.TabHome, func(l *lab) { l.keys("ctrl+p") }},
-	"help":          {commands.TabProjects, func(l *lab) { l.keys("f1") }},
-	"package form":  {commands.TabProjects, func(l *lab) { l.keys("+") }},
-	"confirmation":  {commands.TabRelease, func(l *lab) { l.keys("x") }},
-	"toast":         {commands.TabProjects, func(l *lab) { l.toast("Passed in 734ms", toast.Success) }},
-	"long toast":    {commands.TabRun, func(l *lab) { l.toast(strings.Repeat("a very long message ", 12), toast.Error) }},
+	"palette":        {commands.TabProjects, func(l *lab) { l.keys("ctrl+p") }},
+	"palette typed":  {commands.TabProjects, func(l *lab) { l.keys("ctrl+p").typeText("e") }},
+	"palette home":   {commands.TabHome, func(l *lab) { l.keys("ctrl+p") }},
+	"help":           {commands.TabProjects, func(l *lab) { l.keys("f1") }},
+	"package form":   {commands.TabProjects, func(l *lab) { l.keys("+") }},
+	"release choice": {commands.TabRelease, func(l *lab) { l.keys("x") }},
+	"confirmation":   {commands.TabRelease, func(l *lab) { l.keys("x", "enter") }},
+	"toast":          {commands.TabProjects, func(l *lab) { l.toast("Passed in 734ms", toast.Success) }},
+	"long toast":     {commands.TabRun, func(l *lab) { l.toast(strings.Repeat("a very long message ", 12), toast.Error) }},
 }
 
 // toast raises a toast the way a finished run does.

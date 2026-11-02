@@ -37,6 +37,9 @@ type Plan struct {
 	Channel string `json:"channel,omitempty"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
+	// Held lists the packages the person held back with --hold (and the ones that
+	// release only because a held one does): they would have released.
+	Held []string `json:"held,omitempty"`
 }
 
 // TagPrefix is the release tag prefix of a project.

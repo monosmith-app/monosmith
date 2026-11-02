@@ -356,7 +356,7 @@ func TestTheDoctorTabShowsThePassedChecksOnRequest(t *testing.T) {
 
 func TestTheReleaseDialogListsThePackagesItPublishes(t *testing.T) {
 	l := newLab(t, true, 120, 34)
-	l.keys("6", "x")
+	l.keys("6", "x", "enter")
 	l.has("Packages and versions to publish:", "web 1.0.0 → 1.1.0", "kit 0.2.0 → 0.2.1", "registry", "It cannot")
 }
 
@@ -383,6 +383,8 @@ func TestReleasePreviewNeedsNoConfirmationButReleaseDoes(t *testing.T) {
 	l.hasNot("The command that will run:")
 	l = newLab(t, true, 120, 30)
 	l.keys("6", "x")
+	l.has("Release: hold back or bump", "Continue  Enter")
+	l.keys("enter")
 	l.has("Release", "$ smith release --yes", "Run  Enter", "Cancel  Esc")
 	if len(l.started) != 0 {
 		t.Fatal("release must wait for the dialog")
@@ -401,7 +403,7 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 		"install": {func(l *lab) { l.keys("i") }},
 		"ci":      fromPalette("Regenerate CI"),
 		"upgrade": fromPalette("Upgrade workspace"),
-		"release": {func(l *lab) { l.keys("6", "x") }},
+		"release": {func(l *lab) { l.keys("6", "x", "enter") }},
 	} {
 		l := newLab(t, true, 120, 30)
 		for _, step := range steps {

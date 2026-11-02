@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 )
 
@@ -54,6 +55,10 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		p, out := s.pkg.Key(msg)
 		s.pkg = &p
 		return s.afterPackages(p, out)
+	case s.relpick != nil:
+		m, out := s.relpick.Key(name)
+		s.relpick = &m
+		return s.afterReleasePick(m, out)
 	case s.confirm != nil:
 		c, out := s.confirm.Key(name)
 		s.confirm = &c
@@ -150,6 +155,21 @@ func (s *Shell) afterPackages(p packageprompt.Prompt, out dialog.Outcome) tea.Cm
 	if out.Confirmed {
 		return s.execute(p.Argv(), true)
 	}
+	return nil
+}
+
+// afterReleasePick acts on the outcome of the hold and bump question: the
+// confirmation of the release, with the line that now holds and bumps, comes next.
+func (s *Shell) afterReleasePick(m releasepick.Model, out dialog.Outcome) tea.Cmd {
+	if !out.Done {
+		return nil
+	}
+	s.relpick = nil
+	if out.Confirmed {
+		s.askConfirm(m.Argv())
+		return nil
+	}
+	s.say("Cancelled: nothing was released")
 	return nil
 }
 

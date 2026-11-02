@@ -192,14 +192,14 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x")
+	l.keys("6", "x", "enter")
 	x, y := l.find("[ Cancel")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("cancel must not run")
 	}
 	l.hasNot("The command that will run:")
-	l.keys("x")
+	l.keys("x", "enter")
 	x, y = l.find("[ Run")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "release --yes" {
@@ -209,7 +209,7 @@ func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 
 func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x")
+	l.keys("6", "x", "enter")
 	l.send(click(2, 30))
 	l.hasNot("The command that will run:")
 	if len(l.started) != 0 {
@@ -219,7 +219,7 @@ func TestClickingOutsideTheDialogCancelsIt(t *testing.T) {
 
 func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("6", "x")
+	l.keys("6", "x", "enter")
 	before := l.sh().View()
 	x, y := l.find("[ Cancel")
 	l.send(motion(x+2, y))

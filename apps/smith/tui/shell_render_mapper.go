@@ -147,7 +147,7 @@ func (s Shell) toastRows(innerH int) int {
 
 // modalOpen is true while a box that takes the keyboard is drawn over the screen.
 func (s Shell) modalOpen() bool {
-	return s.palOpen || s.help != nil || s.pkg != nil || s.confirm != nil || s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
+	return s.palOpen || s.help != nil || s.pkg != nil || s.relpick != nil || s.confirm != nil || s.fix != nil || s.adopt != nil || s.compose != nil || s.tools != nil || s.result != nil
 }
 
 // overlays composes the palette, dialogs and toast over the rendered
@@ -172,6 +172,10 @@ func (s Shell) overlays(rows []string) []string {
 	if s.pkg != nil {
 		r := s.pkg.Rect()
 		rows = pane.Overlay(rows, s.pkg.Lines(s.th), r.X, r.Y)
+	}
+	if s.relpick != nil {
+		r := s.relpick.Rect()
+		rows = pane.Overlay(rows, s.relpick.Lines(s.th), r.X, r.Y)
 	}
 	if s.confirm != nil {
 		r := s.confirm.Rect()

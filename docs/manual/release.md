@@ -41,7 +41,17 @@ saying so. `--bump` refuses it with "is not in this plan", and offers a "Did you
 name that is not a project.
 
 A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
-release channel decide their version themselves, so `--bump` refuses them and names why.
+release channel decide their version themselves, so `--bump` refuses them and names why. For a
+package that was never released the message explains the commit that sets its first version: the
+subject is `version(<project>)[x.y.z]` (the project name, then the version in square brackets), a
+commit anywhere in the repository counts, for example
+`git commit --allow-empty -m "version(sdk)[1.0.0]"`. smith never makes that commit.
+
+In the terminal UI, `x` on the Release view first asks which packages to hold back (any number:
+Space) and which bump to change (pick the package, then B or Left and Right to choose patch, minor,
+major or "as the commits ask"). The line it builds, with `--hold` and `--bump`, is shown as it
+changes. Enter goes on to the confirmation, which lists the packages and versions that go out and
+the ones held back, and says that the release cannot be undone.
 
 ## Synopsis
 
@@ -212,7 +222,18 @@ smith release --dry-run --format markdown
 | tools | new → **0.1.0** | 1 releasing commit(s) | planned |
 ```
 
-When no commit releases anything:
+A workspace with no package (only apps and internal libraries, which are never released) says so,
+and names the two ways to get one, without suggesting an empty commit:
+
+```text
+Nothing to release: this workspace has no package. Apps and internal libraries are never released.
+  → Add a package with smith add package <name> --lang <language>.
+  → Or turn a project that other projects import into a package with smith kind <name> package. It is then published to a registry.
+```
+
+When every package that would release is held back with `--hold`, it says that and names them:
+`Nothing to release: you held back sdk, and no other package has a feat: or fix: commit.` It does not
+suggest a commit. Only a workspace that has a package, none of them releasing, prints this:
 
 ```text
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).
