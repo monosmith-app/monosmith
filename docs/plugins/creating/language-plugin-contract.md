@@ -60,7 +60,7 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
    `uv`, `fnm`, `rustup`), the official page (`download`), and the page the entries were checked
    against with the date (`source`, `checked`). The plugin writes facts only. The host builds the
    exact command, presents the choice and runs nothing until the person picks
-   ([ADR 0076](../../architecture/decisions/0076-smith-offers-to-install-the-tools-a-stack-needs.md)).
+   ([ADR 0077](../../architecture/decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)).
    The Go plugins take their entries from `packages/plugin-sdk/toolcatalog`; a plugin in another
    language writes the same fields.
 

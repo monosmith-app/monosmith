@@ -4384,7 +4384,7 @@ public sealed record ToolInstall : IProtocolValue<ToolInstall>
     }
 }
 
-/// <summary>ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it (ADR 0076): it never installs in silence. The plugin writes facts only (what the tool is, how to detect it, how each system gets it); the host decides how to ask.</summary>
+/// <summary>ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is, how to detect it, how each system gets it); the host decides how to ask.</summary>
 public sealed record ToolNeed : IProtocolValue<ToolNeed>
 {
     /// <summary>Name identifies the tool across plugins and in commands (smith tools install python). Two plugins that need the same tool use the same Name.</summary>

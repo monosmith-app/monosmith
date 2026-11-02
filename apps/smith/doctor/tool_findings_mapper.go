@@ -23,7 +23,7 @@ func checkName(check string) string {
 // ToolFindings adds the missing tools the workspace needs to the findings. A
 // plugin that already reports the same tool keeps its finding and gains the
 // fix; otherwise a warning is added. The fix is a choice with the same options
-// as smith tools install: nothing runs until the person picks (ADR 0076).
+// as smith tools install: nothing runs until the person picks (ADR 0077).
 //
 // Parameters: s is the open session; findings are the findings so far.
 // Returns: the findings with the tool checks.

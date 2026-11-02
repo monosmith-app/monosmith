@@ -1436,7 +1436,7 @@ export interface ToolInstall {
  * ToolNeed is a program on the person's machine that a plugin needs to build, test or run its
  * projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in
  * InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to
- * get it (ADR 0076): it never installs in silence. The plugin writes facts only (what the tool is,
+ * get it (ADR 0077): it never installs in silence. The plugin writes facts only (what the tool is,
  * how to detect it, how each system gets it); the host decides how to ask.
  */
 export interface ToolNeed {

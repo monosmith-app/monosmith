@@ -1,4 +1,4 @@
-# ADR 0076: smith offers to install the tools a stack needs
+# ADR 0077: smith offers to install the tools a stack needs
 
 - Status: accepted
 - Date: 2026-11-02

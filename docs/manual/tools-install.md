@@ -3,7 +3,7 @@
 `smith tools install` offers the ways to get each tool that is missing or too old, and carries
 out the one you pick. It never installs in silence: every answer is a presented choice
 ([ADR 0072](../architecture/decisions/0072-smith-presents-every-decision-that-changes-something.md),
-[ADR 0076](../architecture/decisions/0076-smith-offers-to-install-the-tools-a-stack-needs.md)).
+[ADR 0077](../architecture/decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)).
 
 For each tool smith shows what it is for and the options, with the marked default:
 
