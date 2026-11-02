@@ -23,10 +23,12 @@ copy what the `node`, `python` and `dotnet` plugins already do (the venv, `packa
 the csproj, discovery). The `vite` plugin works because it calls the node scaffolding; a
 cross-language plugin would call three.
 
-Chosen: each language plugin publishes three choices (ADR 0045) on the `framework` axis:
-`azure-functions`, `aws-lambda` and `gcp-functions`, with the role `scaffold`. The stack that
-`smith add --with` saves names the language plugin as its scaffold, so the host calls the
-language plugin's `generate` with `choices`. The `framework` axis gives the conflicts for free:
+Chosen: the plugin that writes the project for a language publishes three choices (ADR 0045) on
+the `framework` axis: `azure-functions`, `aws-lambda` and `gcp-functions`, with the role
+`scaffold`. For Python and C# that is the language plugin. For Node it is a new toolchain plugin,
+`functions`, beside `vite`: the `node` plugin writes plain JavaScript and the TypeScript
+starters already live in toolchain plugins. The stack that `smith add --with` saves names that
+plugin as its scaffold, so the host calls its `generate` with `choices`. The `framework` axis gives the conflicts for free:
 `azure-functions` with `react` or with `aws-lambda` stops with "both on the framework axis: keep
 one", before any write. Node declares `needs = ["lint", "test"]` like `react`: eslint and Vitest
 join.
@@ -78,8 +80,12 @@ are data; a new version is a data change.
 ### Tasks, tools, pipelines
 
 Tasks follow the language contract: `build`, `test`, `lint`, `start`, `package`. `start` is
-`func start`, `sam local start-api` or the functions-framework; `package` writes a zip or a
-publish folder under the workspace `dist/`. Each template unit-tests the handler without any cloud
+`func start`, `sam local start-api` (or `sam local invoke` for a trigger that is not HTTP) or the
+functions-framework; `package` writes a zip (Node, Python) or the publish folder (C#) under the
+workspace `dist/`. The build goes to the workspace's `dist/` like every build (`smith doctor`
+refuses a build inside the source tree). A host wants the code and its manifest side by side, so
+Node copies `package.json` and `host.json` next to the compiled code and runs the host there; Python
+stages the deployed files in `dist/apps/<name>/app` (`build`) and zips them (`package`). Each template unit-tests the handler without any cloud
 tool. `smith doctor` warns (never fails) when the host's local tool (`func`, `sam`, the
 functions-framework) is missing and says how to get it; the install-the-tools offer (#887) will
 hook there.
@@ -87,13 +93,27 @@ hook there.
 AWS and Google get templates only: no CI and no deploy pipeline in v2. Azure keeps
 `smith pipeline deploy-azure-function`, unchanged; the Azure docs and next-step text name it.
 
+### No new flags
+
+The brief named `--trigger` and `--runtime`. They are not added: the trigger and the runtime are
+axes, so the answer is part of `--with` (`--with azure-functions,http-trigger,node24`), the
+refusal names exactly those words, and a future axis (a region, a plan) needs no new flag.
+
+### Shared words
+
+The tool of each host and the doctor finding are in `packages/plugin-sdk/functionhost`, so the
+three languages say the same thing.
+
 ## Consequences
 
 - No new plugin, no new release unit. Each language plugin grows one `functions` slice.
 - Small core change: language-keyed names, `suggested`, a typed "needs an axis" error, the
   terminal asker. Protocol stays at version 1 (the new member is optional).
-- The C# templates cannot be built on a machine without the .NET SDK; tests check the file
-  list, the content and that every project file is valid XML.
+- Every template was scaffolded and run through `smith run lint typecheck test build package` with
+  the real toolchains (Node 24, Python 3.12, .NET 10). The cloud tools (`func`, `sam`) were not
+  installed, so `start` was checked by import and by serving the function with the Functions
+  Framework, not with `func` or `sam`. `package.mjs` installs production dependencies with `npm
+  install` in a staging folder, which fails for a dependency that is a library of the workspace.
 
 ## Sources
 

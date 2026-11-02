@@ -131,6 +131,18 @@ Wrote 6 file(s):
 
 `fsharp` is accepted as a `--lang` value, but the templates are C#: a project made with `--lang fsharp` is a C# project. Existing `.fsproj` projects are discovered and built, but the plugin does not generate F#. No F# project was run here.
 
+## Function apps
+
+`smith add app api --lang dotnet --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the isolated worker for Azure (`Program.cs`, `host.json`, the Worker packages), a class library with `Amazon.Lambda.Core` and the serializer attribute plus `template.yaml` for AWS, a Functions Framework class (`Google.Cloud.Functions.Hosting`) for Google. Runtimes `dotnet10` (suggested) and `dotnet8` (not with Google, which retires it on 2026-11-10). `package` is `dotnet publish` into `dist/dotnet/publish/<project>/release`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0072](../../../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 | Where | Key | Effect | Read in |

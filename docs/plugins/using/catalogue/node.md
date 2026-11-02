@@ -187,6 +187,18 @@ The plain-JavaScript starter in detail:
 
 The "Try: smith test -p util" hint is printed for plain JavaScript too, although that starter has no `test` script.
 
+## Function apps
+
+`smith add app api --lang node --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: TypeScript with the Azure Functions v4 model (`src/functions`, `host.json`), a `handler` export with `template.yaml` for AWS, the Functions Framework for Google. Runtimes `node24` (suggested) and `node22`. The files come from the [functions](functions.md) plugin, which publishes the choices for Node, as [vite](vite.md) does for browser apps. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0072](../../../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.node]` table. All configuration is in `package.json`, in the workspace files, and in `smith.toml`.

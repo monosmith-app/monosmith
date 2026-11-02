@@ -101,6 +101,68 @@ selection leaves out takes its default. The result is saved in `smith.toml` as a
 `choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
 [Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 
+## Function apps
+
+A serverless function app is a choice on the `framework` axis, so `--with` builds one in Node, Python
+and C#. There are nine templates:
+
+| Host (`--with`) | Local tool | What `smith add` writes besides the code | Deploy |
+|---|---|---|---|
+| `azure-functions` | Azure Functions Core Tools (`func`) | `host.json`, `local.settings.sample.json` (`local.settings.json` is git-ignored), the v4 model in Node (`src/functions`), the v2 model in Python (`function_app.py`, `requirements.txt`), the isolated worker in C# (`Program.cs`) | [`smith pipeline deploy-azure-function`](pipeline.md) |
+| `aws-lambda` | AWS SAM CLI (`sam`), and Docker for `sam local` | `template.yaml`, a sample event, the handler (`handler` in Node, `lambda_handler` in Python, `Amazon.Lambda.Core` with the serializer in C#) | none: template only |
+| `gcp-functions` | the Functions Framework, a dependency of the app | the entry point (`src/index.ts`, `main.py`, a `Google.Cloud.Functions.Hosting` class) | none: template only |
+
+AWS and Google get templates only: they run, test and package locally, and smith writes no CI or
+deploy pipeline for them. Azure keeps the pipeline it has.
+
+smith never picks the trigger or the runtime for you. At a terminal it says which files the host
+writes, lists the options with the suggested one marked, and asks:
+
+```sh
+smith add app api --lang node --with azure-functions
+```
+
+```text
+azure-functions: a serverless Azure Functions app (Node v4 model): host.json, ...
+azure-functions needs an answer on the trigger axis. smith does not choose it for you:
+  1) blob-trigger: answers a new file in storage (...)
+  2) http-trigger (suggested): answers an HTTP request (...)
+  ...
+trigger [http-trigger]:
+```
+
+Without a terminal, smith refuses before it writes anything, and names the answers. The answer is
+part of `--with`:
+
+```text
+smith: azure-functions needs a choice on the trigger axis, and none is the default: add one of blob-trigger, http-trigger (suggested), queue-trigger, timer-trigger to --with
+```
+
+```sh
+smith add app api --lang python --with azure-functions,http-trigger,python313
+```
+
+| Axis | Choices | Suggested |
+|---|---|---|
+| trigger | `http-trigger`, `timer-trigger`, `queue-trigger`, `blob-trigger` (an Azure Storage queue or blob, AWS SQS or S3, Google Pub/Sub or Cloud Storage) | `http-trigger` |
+| runtime, Node | `node24`, `node22` | `node24`, the Active LTS |
+| runtime, Python | `python313`, `python312`, `python314` | `python313` |
+| runtime, C# | `dotnet10`, `dotnet8` | `dotnet10`, the current LTS |
+
+A combination a host cannot do is a clear error before any write: `timer-trigger` with
+`gcp-functions` (on Google a schedule is a Cloud Scheduler job that calls an HTTP or Pub/Sub
+function), `dotnet8` with `gcp-functions` (Google retires it on 2026-11-10), two hosts, or a host with
+`react`: `azure-functions and react are both on the framework axis: keep one`. The tables are the
+runtimes the three platforms support on 2026-11-02; [ADR 0072](../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md)
+lists the sources.
+
+Every app has the tasks `build`, `test`, `lint`, `start` and `package`. The build goes to the
+workspace's `dist/` like every build; `start` builds and runs the function locally; `package` writes a
+zip (Node, Python) or the publish folder (C#) under `dist/`. The tests call the handler directly and
+need no cloud tool. `smith doctor` warns, never fails, when `func` or `sam` is missing and says how
+to get it. The Node apps are linted and tested with the defaults (`eslint`, `vitest`); `jest` is
+refused with a function host.
+
 ## Following the siblings
 
 A workspace has habits: its libs build with esbuild, its packages test with
