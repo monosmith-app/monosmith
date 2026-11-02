@@ -336,6 +336,10 @@ func (m Model) confirm() Model {
 			m.err = "toggle at least one with space"
 			return m
 		}
+		if problem := m.problem(step, strings.Join(picked, ",")); problem != "" {
+			m.err = problem
+			return m
+		}
 		m.answers[step.Key] = picked
 	default:
 		opts := m.options()
@@ -346,7 +350,12 @@ func (m Model) confirm() Model {
 		if step.Filter {
 			m.searched = m.filter
 		}
-		m.answers[step.Key] = []string{opts[min(m.cursor, len(opts)-1)].Value}
+		picked := opts[min(m.cursor, len(opts)-1)].Value
+		if problem := m.problem(step, picked); problem != "" {
+			m.err = problem
+			return m
+		}
+		m.answers[step.Key] = []string{picked}
 	}
 	m.step++
 	m.cursor, m.marked, m.err, m.filter = 0, map[int]bool{}, "", ""

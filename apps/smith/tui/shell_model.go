@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
@@ -151,6 +152,10 @@ type Shell struct {
 	formPending string
 	addBase     *guide.Action
 	swapBase    *guide.Action
+	// recipeLevels are the plugins each level of a recipe can take, read once;
+	// recipeBase is the plain Write a recipe form they are added to.
+	recipeLevels *recipewizard.LevelCatalog
+	recipeBase   *guide.Action
 	// removeBase is the plain Remove form, which the project list turns into a pick list.
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.

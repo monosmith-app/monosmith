@@ -28,6 +28,10 @@ type Options struct {
 	Fixed                        []string
 	// Force replaces an existing file without asking.
 	Force bool
+	// ListLevels prints the levels and the plugins of each instead of writing
+	// a recipe; AsJSON prints them as JSON (the forms of the interface and
+	// the editors read that).
+	ListLevels, AsJSON bool
 	// Interactive says a person is there to answer.
 	Interactive bool
 	In          io.Reader
@@ -61,7 +65,10 @@ Without a terminal, --from-answers reads the same answers from a file, so a
 script or a test gets the same recipe the questions would. A recipe whose
 plugins are all fixed needs no file either: --name and --fixed role=plugin
 (as often as needed) write it, which is what the interface's form runs. A
-choice the recipe's users make still needs the questions or an answers file.`,
+choice the recipe's users make still needs the questions or an answers file.
+
+--list-levels writes nothing: it lists the levels and the plugins each can
+take (--json for programs, such as the forms of the interface and the editors).`,
 		Example: `  smith recipe new
   smith recipe new recipes/team/team.recipe.toml
   smith recipe new --from-answers answers.toml
@@ -82,6 +89,8 @@ choice the recipe's users make still needs the questions or an answers file.`,
 	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
 	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
+	cmd.Flags().BoolVar(&opts.ListLevels, "list-levels", false, "list the levels and the plugins each can take, and write nothing")
+	cmd.Flags().BoolVar(&opts.AsJSON, "json", false, "with --list-levels, print the list as JSON")
 	return cmd
 }
 
@@ -97,6 +106,22 @@ func Run(o Options) error {
 	lookup := o.Lookup
 	if lookup == nil {
 		lookup = recipe.Catalog{Root: root, Version: o.Version, External: external}.Lookup
+	}
+	if o.AsJSON && !o.ListLevels {
+		return errors.New("--json goes with --list-levels")
+	}
+	if o.ListLevels {
+		names := o.Names
+		if names == nil {
+			names = PluginNames(root, external)
+		}
+		candidates, skipped := NewCandidates(names, lookup)
+		if !o.AsJSON {
+			for _, s := range skipped {
+				fmt.Fprintf(o.Out, "not offered, %s\n", s)
+			}
+		}
+		return WriteCatalog(o.Out, candidates.Catalog(), o.AsJSON)
 	}
 	loader := &recipe.Loader{Root: root}
 	in := bufio.NewReader(o.In)
