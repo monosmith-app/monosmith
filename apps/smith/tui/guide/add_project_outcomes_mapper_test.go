@@ -103,7 +103,7 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 }
 
 func TestDecidingInTheNextQuestionTicksNothingInTheChoices(t *testing.T) {
-	m := press(outcomeForm(t), "enter")       // A website
+	m := press(outcomeForm(t), "enter") // A website
 	if !strings.Contains(m.View(), "› Decide in the next question") {
 		t.Fatalf("Enter on the first screen must pick nothing:\n%s", m.View())
 	}

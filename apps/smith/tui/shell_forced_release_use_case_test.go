@@ -44,6 +44,17 @@ func TestForcedReleaseWithOnlyNeverReleasedPackagesShowsTheCommitInANotice(t *te
 	l.has("No package to release without a commit", "never released: fresh", `git commit --allow-empty -m "version(fresh)[1.0.0]"`)
 }
 
+func TestTheReleaseFooterOffersTheCommitsOnlyWhenSomethingReleases(t *testing.T) {
+	l := newLab(t, true, 140, 40)
+	l.keys("6")
+	l.has("Enter commits")
+	sh := l.sh()
+	sh.release.Plan.Items = nil
+	l.m = sh
+	l.keys("down") // draws it again
+	l.hasNot("Enter commits")
+}
+
 func TestForcedReleaseConfirmationSaysWhatHappens(t *testing.T) {
 	title, why := commands.Describe([]string{"release", "--bump", "mvd=patch", "--force"})
 	if title != guide.ForcedReleaseTitle || !strings.Contains(why, "tag points at HEAD") || !strings.Contains(why, "cannot be undone") {

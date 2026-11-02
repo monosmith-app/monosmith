@@ -161,6 +161,7 @@ var all = []Command{
 	{ID: "proj.graph", Group: GroupProjects, Title: "Project graph", Hint: "smith graph", Kind: Execute, Argv: []string{"graph"}, NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.plugins", Group: GroupProjects, Title: "Manage plugins…", Hint: "choose which built-in plugins are on; press 7 to search for more", Kind: Guided, Guide: "Manage plugins", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.upgrade", Group: GroupProjects, Title: "Upgrade workspace…", Hint: "smith upgrade: migrate smith.toml, regenerate what smith owns", Kind: Execute, Argv: []string{"upgrade"}, Confirm: true, NeedsWorkspace: true, NeedsIdle: true},
+	{ID: "proj.plugin-search", Group: GroupProjects, Title: "Find a plugin in the marketplace…", Hint: "smith plugin search: look for a plugin to install", Kind: Guided, Guide: "Find a plugin in the marketplace", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.swap", Group: GroupProjects, Title: "Swap a choice…", Hint: "smith swap <project> <axis> <choice>: change a test runner, a linter or a style; the plan comes first", Kind: Guided, Guide: "Swap a choice", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "proj.remove", Group: GroupProjects, Title: "Remove project…", Hint: "smith remove: its directory, its traces in the workspace, its CI", Kind: Guided, Guide: "Remove a project", NeedsWorkspace: true, NeedsIdle: true},
 

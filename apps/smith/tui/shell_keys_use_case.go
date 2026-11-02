@@ -494,6 +494,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
 			}
+			if len(argv) >= 2 && argv[0] == "plugin" && argv[1] == "search" {
+				// The hits come back as a form that installs the one picked.
+				return s.openPluginSearch(strings.Join(argv[2:], " "))
+			}
 			if len(argv) > 0 && argv[0] == "swap" && s.inWorkspace {
 				// The plan comes first: what leaves, what joins, what is left by hand.
 				return s.swapPreview(argv)

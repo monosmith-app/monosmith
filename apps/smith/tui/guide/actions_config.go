@@ -297,5 +297,12 @@ func Actions(languages, plugins, enabled []string) []Action {
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},
+		{
+			Title: PluginSearchTitle, Hint: "smith plugin search: look in the marketplace for a plugin to install", NeedsWorkspace: true,
+			Steps: []Step{{Key: "term", Prompt: "What do you look for? (a word, such as terraform; leave it empty to list them all)", Optional: true, Placeholder: "terraform"}},
+			Argv: func(a map[string][]string) []string {
+				return append([]string{"plugin", "search"}, strings.Fields(first(a, "term"))...)
+			},
+		},
 	}, parityForms()...)
 }

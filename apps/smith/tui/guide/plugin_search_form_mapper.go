@@ -43,6 +43,9 @@ func PluginTrustStep() Step {
 	}}
 }
 
+// PluginSearchTitle is the title of the form that asks what plugin to look for.
+const PluginSearchTitle = "Find a plugin in the marketplace"
+
 // PluginInstallTitle is the title of the form that picks a found plugin.
 const PluginInstallTitle = "Install a plugin from the marketplace"
 

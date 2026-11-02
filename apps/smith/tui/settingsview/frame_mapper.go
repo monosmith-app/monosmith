@@ -1,6 +1,7 @@
 package settingsview
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -138,6 +139,10 @@ func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 		}
 		for i := 0; i < detailH && i < len(detail); i++ {
 			rows[2+listH+i] = " " + detail[i]
+		}
+		if hidden := len(detail) - detailH; hidden > 0 && detailH >= 2 {
+			// Say that the detail goes on instead of cutting it in the middle.
+			rows[1+listH+detailH] = " " + th.Muted(fmt.Sprintf("… %d more lines: make the window taller", hidden+1))
 		}
 	}
 	if noteRow > 0 {

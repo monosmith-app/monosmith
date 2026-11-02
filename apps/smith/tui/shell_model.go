@@ -358,6 +358,7 @@ func (s Shell) viewReasons() map[string]string {
 		if !s.release.CanRelease() {
 			r["rel.notes"] = "there is no release to show the notes of"
 			r["rel.release"] = "there is nothing to release"
+			r["release.open"] = "there is no bump to show the commits of"
 		}
 	case commands.TabSettings:
 		for id, why := range s.settings.Reasons() {

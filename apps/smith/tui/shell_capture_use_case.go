@@ -195,7 +195,7 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		return nil
 	}
 	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len(), s.offers), argv).
-		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)),max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }

@@ -64,7 +64,7 @@ func recipeChosenSteps(levelKey, level string, plugins []recipewizard.PluginOffe
 			Key: recipeChosenKey(levelKey, chosenQuestion), Skip: skip,
 			Prompt:  "What question do the users read for the " + level + "?",
 			Initial: func(map[string][]string) string { return "Which " + level + " do you want?" },
-			Note: "They see it when they make a project from the recipe. Do not use a colon.",
+			Note:    "They see it when they make a project from the recipe. Do not use a colon.",
 			Check: func(_ map[string][]string, v string) string {
 				if strings.ContainsAny(v, ":\n") {
 					return "write the question without a colon"
@@ -144,7 +144,7 @@ func recipeAdditiveSteps(fixed Step, level recipewizard.LevelOffer, plugins []re
 		Key: recipeChosenKey(levelKey, chosenQuestion), Skip: notChosen,
 		Prompt:  "What question do the users read for the " + level.Level + "?",
 		Initial: func(map[string][]string) string { return "Which " + level.Level + " do you want?" },
-		Note: "They see it when they make a project from the recipe. Do not use a colon.",
+		Note:    "They see it when they make a project from the recipe. Do not use a colon.",
 		Check: func(_ map[string][]string, v string) string {
 			if strings.ContainsAny(v, ":\n") {
 				return "write the question without a colon"

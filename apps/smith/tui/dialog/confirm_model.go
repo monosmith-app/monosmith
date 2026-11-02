@@ -67,6 +67,8 @@ func NewNotice(title, why string, details []string) Confirm {
 const (
 	minWidth   = 44
 	noticeWide = 60
+	// detailWide is the least width of a dialog that lists what a command touches.
+	detailWide = 84
 	buttonRun  = "[ Run  Enter ]"
 	buttonStop = "[ Cancel  Esc ]"
 	buttonOK   = "[ OK  Enter ]"
@@ -95,6 +97,11 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	if c.Offer {
 		// Wide enough for the box line, which is not cut.
 		w = min(max(w, ansi.StringWidth(CommitLabel)+14), max(sw-2, 10))
+	}
+	if len(c.Details) > 0 {
+		// Lines of paths need room: a short command must not make a narrow dialog
+		// that breaks a path in the middle of a word.
+		w = max(w, min(detailWide, max(sw-2, 10)))
 	}
 	if c.Info {
 		w = min(noticeWide, max(sw-2, 10))
