@@ -11,8 +11,11 @@ import (
 // homeContent is the Home page: the headline, the next action (a click on it
 // does it) and the facts behind them.
 func (s Shell) homeContent(w int) content {
-	lines, row, id := dashboard.Lines(s.th, s.dashboardFacts(), w)
+	lines, row, id, buttons := dashboard.Page(s.th, s.dashboardFacts(), w)
 	c := content{lines: lines, hits: map[int]hit{}}
+	for line, command := range buttons {
+		c.hits[line] = hit{kind: "action", id: command}
+	}
 	if id == "" {
 		return c
 	}
