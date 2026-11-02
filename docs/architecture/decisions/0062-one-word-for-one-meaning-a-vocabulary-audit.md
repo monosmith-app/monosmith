@@ -1,5 +1,7 @@
 # ADR 0062: One word for one meaning, a vocabulary audit
 
+> Update: the term "task group" in the table below is now "group", and `[[task_groups]]` is `[[groups]]` ([ADR 0067](0067-groups-replace-task-groups-and-also-set-tags-and-release.md)). The text below keeps the old name.
+
 - Status: accepted (one rename done, the five-noun model rejected)
 - Date: 2026-11-01
 

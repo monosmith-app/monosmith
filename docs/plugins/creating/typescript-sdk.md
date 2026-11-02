@@ -254,6 +254,7 @@ Promise<result>`. The names follow the Go interfaces.
 | `apiSurface` | `api/surface` | `apiSurface` | `APISurfaceReader` |
 | `contribute` | `contribute` | `contribute` | `Contributor` |
 | `install` and `uninstall` | `dependencies/install`, `dependencies/uninstall` | `dependencies` | `DependencyManager` |
+| `link` and `unlink` | `dependencies/link`, `dependencies/unlink` | `link` | `Linker` |
 | `declared` and `rewrite` | `dependencies/declared`, `dependencies/rewrite` | `declarations` | `DeclarationEditor` |
 | `latest` | `dependencies/latest` | `latest` | `LatestReader` |
 
@@ -275,7 +276,7 @@ Everything is exported from `@monosmith/plugin-sdk`. The messages (`Project`, `T
 | `serveStreams(plugin, { input, output, log? })` | the same loop on streams you give it; resolves at `shutdown` or the end of the input |
 | `capabilitiesOf(plugin)` | the `Capabilities` the plugin would advertise |
 | `implementsMethod(plugin, method)` | whether the plugin has the members a protocol method needs |
-| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
+| `Plugin`, `SmithPlugin`, `Discoverer`, `Generator`, `Versioner`, `Publisher`, `RegistryReader`, `CIContributor`, `DoctorContributor`, `Remover`, `KindChanger`, `Contributor`, `DependencyManager`, `Linker`, `DeclarationEditor`, `LatestReader`, `Cancellable`, `PluginDescription`, `Awaitable` | the types of the plugin object |
 
 ### Testing a plugin
 
@@ -373,7 +374,7 @@ For a tool that speaks the protocol itself: `encodeParams`, `encodeResult`, `dec
 |---|---|
 | `malformed header "..."` in smith | output on standard output outside the SDK, for example a child process with `stdio: 'inherit'`: give it `stdio: ['ignore', process.stderr, process.stderr]` |
 | `ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING` | Node.js does not strip types in a file below `node_modules`: the SDK is published as JavaScript, so this is your own package; build it, or keep the plugin outside `node_modules` |
-| `method not supported: x` for a method you wrote | a pair needs both members (`install` and `uninstall`; `declared` and `rewrite`), and the member names are the ones in the table above (`writeVersion`, not `version`) |
+| `method not supported: x` for a method you wrote | a pair needs both members (`install` and `uninstall`; `link` and `unlink`; `declared` and `rewrite`), and the member names are the ones in the table above (`writeVersion`, not `version`) |
 | `-32603` with `result.x is required` | a required member of the result is missing: the type says which |
 | `plugin stopped answering: EOF` in a test | the plugin process died: its standard error is on yours, unless you passed `stderr: 'ignore'` |
 | a test hangs | a plugin that never answers is killed after the call's timeout (two minutes); pass `{ timeoutMs }` to fail sooner |

@@ -52,13 +52,17 @@ flowchart TD
 
 | Package | Responsibility |
 |---|---|
-| `tui` (root, 21 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/tui/README.md`, temporary) |
+| `tui` (root, 31 production files) | the `Shell` model: keys, mouse, runs, render, detail panel. One type's methods cannot be split across Go packages, which is the written reason the root exceeds the slice size limit (`apps/smith/tui/README.md`, temporary) |
 | `tui/commands` | the keymap and everything computed from it: availability, footer hints, help rows, key labels, parsing a run request |
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
 | `tui/dialog`, `palette`, `guide` | confirmation and help dialogs, the command palette, guided forms |
 | `tui/dashboard`, `projectlist`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
 | `tui/fixwizard`, `tui/adoptwizard` | the doctor fix dialog and the adopt dialog |
+| `tui/composer` | the screen of `smith compose` and of the first question of `add` ("What are you building?"), over the catalogue of the `compose` slice ([ADR 0076](decisions/0076-one-composer-for-the-stack-of-a-project.md), [ADR 0078](decisions/0078-the-first-run-is-a-set-of-choices-not-a-manual.md)) |
+| `tui/resultdialog` | the dialog that closes a run that changed the workspace: what happened and the next steps as choices, the first being the one that does nothing (leave uncommitted, install a missing tool, check again) |
+| `tui/toolsdialog` | the "Install the missing tools" dialog: one question per tool with the exact command and the marked default, then the administrator question, the streamed output and a result per tool ([ADR 0077](decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)) |
+| `tui/packageprompt`, `tui/languagenames` | which packages to install on or remove from a project; language and kind ids said the way people say them |
 | `tui/runner` | starting and stopping child smith processes |
 | `tui/sources` | loading what the views show (replaceable in tests) |
 | `tui/screenreader`, `clipboard`, `pointer`, `progress` | plain mode, OSC 52 copy, double-click detection, progress bars |

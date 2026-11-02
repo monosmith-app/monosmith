@@ -1,5 +1,7 @@
 # ADR 0047: Mutating commands show a plan, make one commit and can be undone
 
+> Update: the commit is opt-in. `add`, `remove`, `upgrade` and the other mutating commands (adopt included) commit only with `--commit` or `commit_operations = true`; `smith commit` commits after the fact ([ADR 0078](0078-the-first-run-is-a-set-of-choices-not-a-manual.md)). The text below keeps the original wording.
+
 - Status: accepted
 - Date: 2026-10-31
 

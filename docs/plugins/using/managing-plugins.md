@@ -30,24 +30,28 @@ smith plugin list
 ```
 
 ```text
-PLUGIN           ROLES                        SLOTS                REQUIRES
-bicep            language,toolchain,scaffold  -                    -
-cpp              language,toolchain,scaffold  -                    -
+PLUGIN           ROLES                        SLOTS                DECLARED  CHANNELS  LINK   REQUIRES
+bicep            language,toolchain,scaffold  -                    no        yes       no     -
+cpp              language,toolchain,scaffold  -                    no        yes       no     -
 ...
-rust             language,toolchain,scaffold  -                    -
-angular          scaffold,toolchain           build,typecheck      language plugin node
-astro            scaffold,toolchain           build                language plugin node
-docker           deploy                       -                    -
-eslint           toolchain                    lint                 language plugin node
-go-smith-plugin  scaffold                     -                    language plugin go
-jest             toolchain                    test                 language plugin node
-playwright       toolchain                    e2e                  language plugin node
-tauri            toolchain                    tauri-build          language plugin node
-typescript       scaffold,toolchain           build,typecheck      language plugin node
-vertical-slices  structure                    -                    -
-vite             scaffold,toolchain           build,typecheck      language plugin node
-vitest           toolchain                    test                 language plugin node
-vscode           scaffold,toolchain,deploy    build,typecheck      language plugin node
+go               language,toolchain,scaffold  -                    yes       no        yes    -
+...
+rust             language,toolchain,scaffold  -                    yes       yes       yes    -
+angular          scaffold,toolchain           build,typecheck      -         -         -      language plugin node
+astro            scaffold,toolchain           build                -         -         -      language plugin node
+docker           deploy                       -                    -         -         -      -
+electron         scaffold                     -                    -         -         -      language plugin node
+eslint           toolchain                    lint                 -         -         -      language plugin node
+functions        scaffold                     -                    -         -         -      language plugin node
+go-smith-plugin  scaffold                     -                    -         -         -      language plugin go
+jest             toolchain                    test                 -         -         -      language plugin node
+playwright       toolchain                    e2e                  -         -         -      language plugin node
+tauri            toolchain                    tauri-build          -         -         -      language plugin node
+typescript       scaffold,toolchain           build,typecheck      -         -         -      language plugin node
+vertical-slices  structure                    -                    -         -         -      -
+vite             scaffold,toolchain           build,typecheck      -         -         -      language plugin node
+vitest           toolchain                    test                 -         -         -      language plugin node
+vscode           scaffold,toolchain,deploy    build,typecheck      -         -         -      language plugin node
 
 External plugins this workspace uses (smith starts them only when trusted):
   PLUGIN         FROM               TRUSTED  PINNED  MAY SEE BEYOND THE BASELINE
@@ -62,6 +66,9 @@ Installed (search path: ~/work/inst/.smith/plugins, ~/.smith/plugins):
 | `PLUGIN` | the plugin's name, as it is written in `smith.toml` and in stacks |
 | `ROLES` | the roles it can be chosen for. A language plugin that declares none shows the default: language, toolchain and scaffold |
 | `SLOTS` | the tasks a toolchain owns; two plugins of one project may not share a slot |
+| `DECLARED` | `yes` when a language plugin can describe a project that `smith.toml` declares with `[projects.<name>]` and no manifest. `-` for an add-on |
+| `CHANNELS` | `yes` when a language plugin can publish a package of a `[[release.channels]]` branch |
+| `LINK` | `yes` when a language plugin can link a library of the workspace (`smith install -w <project> <library>`) |
 | `REQUIRES` | plugins that must be in the same project (`language plugin node`); `not <ref>` marks a conflict |
 
 The external plugins section lists the plugins `smith.toml` declares under `[plugins.external]`,
