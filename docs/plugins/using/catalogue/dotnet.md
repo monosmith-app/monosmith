@@ -11,7 +11,7 @@ The dotnet plugin makes every `.csproj` and `.fsproj` below the workspace root a
 | `--lang` values | `dotnet`, `csharp`, `fsharp` (see the note in [Creating a project](#creating-a-project)) |
 | Manifests that make a directory a project | `*.csproj`, `*.fsproj` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`. Not advertised: `remove`. |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `link`. Not advertised: `remove`. |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`dotnet-app`, `dotnet-lib`, `dotnet-package`) |
 
@@ -211,6 +211,10 @@ Real output of `smith ci generate` (GitHub):
 | Credentials, sign-in | `NUGET_API_KEY` (required; only when a package publishes to nuget.org). Azure Artifacts feed: `NuGetAuthenticate@1`, no secret. GitHub Packages: `GITHUB_TOKEN` and `packages: read` (`write` when publishing there). `token` feed: the variable named in `token_env`. |
 
 Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] registry = "libs"`: the Azure pipeline got `- task: NuGetAuthenticate@1` before the cache step, and `smith ci check` asked for the Feed Publisher role on the project's build service.
+
+## Linking an internal library
+
+`smith install -w <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

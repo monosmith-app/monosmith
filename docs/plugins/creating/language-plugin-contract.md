@@ -29,16 +29,38 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
 5. **The same words for the same failure.** A problem names the file or folder, says what is wrong
    and says the fix.
 
+6. **A project can depend on a library of the same workspace.** `smith install -w <project>
+   <library>` links it ([ADR 0071](../../architecture/decisions/0071-smith-install-links-a-library-of-the-workspace.md)).
+   A plugin that can write the dependency in its ecosystem's own form has the `link` capability:
+   `dependencies/link` and `dependencies/unlink`, with a plan form (`plan: true`) that writes
+   nothing and answers the manifest, the line and the real choices of the range, each with its
+   meaning. The host has checked, before it calls the plugin, that the library is not the project,
+   not an app, of the same language, and makes no cycle. The plugin refuses a project whose
+   manifest is not there, naming the file, and never invents one. A plugin without `link` is
+   refused by the host with one sentence: "the X plugin does not link an internal library yet: add
+   the dependency in <manifest> by hand". The graph shows the link as soon as the manifest has it,
+   so a plugin reports the dependencies its manifest declares among the project's `imports`.
+
+   | Language | `link` | What it writes |
+   |---|---|---|
+   | Node | yes | the package name in `dependencies` (a range the workspace follows, or `*` / `^x.y.z` by choice), then `npm install` |
+   | Python | yes | the distribution name in `[project] dependencies`; the library goes into the shared venv first |
+   | Go | yes | `require <module> v0.0.0` in `go.mod`, the library in `go.work` (a `replace` without one) |
+   | Rust | yes | a path dependency, by `cargo add --path` |
+   | .NET | yes | a `ProjectReference`, by `dotnet add reference` |
+   | JVM, Dart, Ruby, PHP, Swift, Lua, C++ and the others | no | the user edits the manifest by hand |
+
 ## How to check
 
 `smith plugin check <plugin>` runs the conformance suite. For the rules above it checks that:
 
 - a plugin with `declared` refuses a declared folder that does not exist and invents no project for
   it, and a plugin without it ignores a declaration;
-- a plugin with `channels` also has `publish`, and one with `declared` also has `discover`.
+- a plugin with `channels` also has `publish`, and one with `declared` or `link` also has `discover`;
+- a plugin with `link` refuses a link in a folder that does not exist, with an error.
 
 `smith plugin list` shows, for each language plugin, whether it describes declared projects
-(`DECLARED`) and publishes channels (`CHANNELS`).
+(`DECLARED`), publishes channels (`CHANNELS`) and links an internal library (`LINK`).
 
 The built-in plugins declare these through the Go SDK. The TypeScript, Python and C# SDKs carry
 the capabilities in their generated types, and have no way yet for a plugin to declare them.
