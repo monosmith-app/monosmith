@@ -152,10 +152,11 @@ func TestRenderingNeverPanicsAfterAnyTransition(t *testing.T) {
 
 func TestClickingEveryCellInEveryStateNeverPanics(t *testing.T) {
 	prepare := map[string]func(*lab){
-		"idle":    func(*lab) {},
-		"palette": func(l *lab) { l.keys("ctrl+p") },
-		"help":    func(l *lab) { l.keys("f1") },
-		"confirm": func(l *lab) { l.keys("6", "x") },
+		"idle":           func(*lab) {},
+		"palette":        func(l *lab) { l.keys("ctrl+p") },
+		"help":           func(l *lab) { l.keys("f1") },
+		"confirm":        func(l *lab) { l.keys("6", "x", "enter") },
+		"release choice": func(l *lab) { l.keys("6", "x") },
 		"run": func(l *lab) {
 			l.next = &scripted{lines: []string{"kit:build ▶ x", "kit:build ✓ 1s", "x:y │ z"}}
 			l.keys("b")

@@ -243,7 +243,7 @@ func printPlan(cmd *cobra.Command, plan Plan, dryRun, verbose bool) {
 		fmt.Fprintln(out, ChannelNotice(plan.Channel))
 	}
 	if len(plan.Items) == 0 {
-		fmt.Fprintln(out, NothingToRelease())
+		fmt.Fprintln(out, NothingToRelease(plan))
 	}
 	for _, item := range plan.Items {
 		from := item.Current

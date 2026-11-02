@@ -24,6 +24,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pointer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/projectlist"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
@@ -163,6 +164,8 @@ type Shell struct {
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
 	pkg  *packageprompt.Prompt
+	// relpick asks which packages of the release to hold back or bump, before the confirmation.
+	relpick *releasepick.Model
 	help *dialog.Help
 	// fix is the doctor fix wizard while it is open; fixing is the fix being
 	// applied in the background.
@@ -550,6 +553,10 @@ func (s Shell) dialogMargins() (top, bottom int) {
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
+	if s.relpick != nil {
+		placed := s.relpick.Within(s.dialogMargins()).Place(w, h)
+		s.relpick = &placed
+	}
 	if s.confirm != nil {
 		// The dialog was placed for the old size: place it again, so a window
 		// that settles after the dialog opened still shows the whole command.
