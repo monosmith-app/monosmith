@@ -168,6 +168,18 @@ twine==7.0.0
 
 The plugin publishes no stack. `--stack` accepts a stack declared with `language = "python"` in `smith.toml`.
 
+## Function apps
+
+`smith add app api --lang python --with azure-functions` (or `aws-lambda`, `gcp-functions`) scaffolds a
+serverless function app: the Python v2 model for Azure (`function_app.py`, `host.json`, `requirements.txt`), a `lambda_handler` with `template.yaml` for AWS, a Functions Framework entry point (`main.py`) for Google. Runtimes `python313` (suggested), `python312`, `python314`. The plugin publishes the choices itself, and finds a function app again by its files, so its `start`, `build` and `package` tasks run `start.py` and `package.py`. smith asks the trigger (`http-trigger`, `timer-trigger`,
+`queue-trigger`, `blob-trigger`) and the runtime version and never chooses them for you; without a
+terminal it refuses and names the answers to add to `--with`. The app has the tasks `build`, `test`,
+`lint`, `start` and `package`, and tests that call the handler with no cloud tool. `smith doctor`
+warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
+`smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
+[Function apps](../../../manual/add.md#function-apps) and
+[ADR 0072](../../../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.python]` keys. What it reads:

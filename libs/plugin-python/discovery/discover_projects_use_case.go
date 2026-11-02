@@ -8,9 +8,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-python/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/linting"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/testrunning"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/typechecking"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/pelletier/go-toml/v2"
@@ -68,11 +70,21 @@ func Discover(workspaceRoot string, manifests []string) (protocol.DiscoverResult
 			Imports:     dedupe(imports),
 			Version:     py.Project.Version,
 			Description: strings.TrimSpace(py.Project.Description),
-			Tasks:       Tasks(root, kind, importName, args),
+			Tasks:       tasksOf(dir, root, kind, importName, args),
 		})
 	}
 	result.SetToolchain(func() string { return pythonToolchain(workspaceRoot) })
 	return result, nil
+}
+
+// tasksOf are the tasks of a project: a function app (ADR 0072) runs, builds and
+// packs the way its host needs.
+func tasksOf(dir, root string, kind protocol.ProjectKind, importName string, args ToolArgs) map[string]protocol.Task {
+	tasks := Tasks(root, kind, importName, args)
+	if kind == protocol.ProjectApp && functions.DetectHost(dir) != "" {
+		functions.WithFunctionTasks(tasks, root, venv.Interpreter(), inputs)
+	}
+	return tasks
 }
 
 func dedupe(sorted []string) []string {

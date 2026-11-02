@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
-import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
-import { choiceNames, choicesByAxis, roleOf } from './add-options.mapper.ts'
+import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } from './add-options.contract.ts'
+import { askedAxes, choiceNames, choicesByAxis, hostTerms, roleOf } from './add-options.mapper.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -27,7 +27,7 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
 
   const languages = options.kinds.filter((kind) => roleOf(kind.kind, kind.language) === role.label)
   const language = await vscode.window.showQuickPick(
-    languages.map((kind) => ({ label: kind.language, description: kind.label, detail: choiceNames(options.choices, kind.language).join(', ') })),
+    languages.map((kind) => ({ label: kind.language, description: kind.label, detail: [...choiceNames(options.choices, kind.language), ...hostTerms(options.choices, kind.language)].join(', ') })),
     { title: `${TITLE} (2/4): which language?`, placeHolder: 'A language, or a framework such as react', matchOnDescription: true, matchOnDetail: true },
   )
   if (language === undefined) return undefined
@@ -80,7 +80,14 @@ async function askBuild (options: AddOptions, language: string): Promise<{ stack
   if (how.kind_ === 'stack') return { stack: how.stack, with: [] }
 
   const picked: string[] = []
+  const asked = askedAxes(options.choices, language)
   for (const axis of axes) {
+    if (asked.includes(axis.axis)) {
+      const answer = await askOneOf(axis, options.choices.filter((choice) => picked.includes(choice.name)))
+      if (answer === null) return undefined
+      if (answer !== undefined) picked.push(answer)
+      continue
+    }
     const defaults = axis.choices.filter((choice) => choice.isDefault).map((choice) => choice.name)
     const answer = await vscode.window.showQuickPick(
       axis.choices.map((choice) => ({
@@ -101,6 +108,27 @@ async function askBuild (options: AddOptions, language: string): Promise<{ stack
   }
 
   return { with: picked }
+}
+
+/**
+ * Asks for the choice of an axis that smith never picks (a trigger, a runtime):
+ * one answer, the suggested one first, left out when no picked choice needs the axis.
+ * @param axis - the axis and its choices
+ * @param picked - the choices picked so far
+ * @returns the name picked, undefined when no picked choice needs the axis, or null when the person pressed Escape
+ */
+async function askOneOf (axis: { axis: string, choices: ChoiceOption[] }, picked: readonly ChoiceOption[]): Promise<string | undefined | null> {
+  const needing = picked.filter((choice) => choice.needs.includes(axis.axis))
+  if (needing.length === 0) return undefined
+  const fits = axis.choices
+    .filter((choice) => picked.every((other) => !choice.conflicts.includes(other.name) && !other.conflicts.includes(choice.name)))
+    .sort((a, b) => Number(b.suggested) - Number(a.suggested))
+  const answer = await vscode.window.showQuickPick(
+    fits.map((choice) => ({ label: choice.name, description: choice.suggested ? '(suggested)' : '', detail: choice.description })),
+    { title: `${TITLE}: ${axis.axis} for ${needing.map((choice) => choice.name).join(', ')}`, placeHolder: `smith does not choose the ${axis.axis} for you: the first is suggested`, matchOnDetail: true },
+  )
+
+  return answer === undefined ? null : answer.label
 }
 
 /**

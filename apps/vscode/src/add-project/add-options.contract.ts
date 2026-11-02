@@ -20,6 +20,12 @@ export interface ChoiceOption {
   isDefault:   boolean
   /** The axis allows several choices at once. */
   many:        boolean
+  /** The axes it needs an answer on; an axis with no default is asked (a function host needs a trigger and a runtime). */
+  needs:       string[]
+  /** The answer a question pre-selects; smith never adds it by itself. */
+  suggested:   boolean
+  /** The choices it does not go with. */
+  conflicts:   string[]
 }
 
 /** One stack of `smith stacks --json`. */

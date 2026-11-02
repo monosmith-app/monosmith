@@ -1,0 +1,103 @@
+# What every choice of the functions plugin builds on: the package, the TypeScript
+# configuration, the greeting slice and the packaging script of a function app. A host
+# adds its entry point, its tasks and its local tool files; a trigger and a runtime set slots.
+#
+# Slots read here:
+#   trigger       the kind of event the function answers: http, timer, queue or blob (one item)
+#   node.major    the Node.js major version of the runtime (one item)
+#   main          the package.json "main" (a host sets it when its tool reads it)
+#   package.mode  zip | zip-with-dependencies: what the packaging script puts in the zip
+dev_dependencies = ["typescript", "@types/node", "@monosmith/tsconfig", "bestzip"]
+
+[tasks]
+build = "tsc -p tsconfig.build.json && node scripts/assemble.mjs"
+typecheck = "tsc -p tsconfig.json --noEmit"
+start = "node scripts/start.mjs"
+package = "node scripts/package.mjs"
+
+[files]
+"package.json" = '''
+{
+  "name": "[[.Package]]",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "smith": { "kind": "app"[[if .Stack]], "stack": "[[.Stack]]"[[end]] },[[if index .Slots "main"]]
+  "main": "[[index .Slots "main" 0]]",[[end]]
+  "engines": { "node": ">=[[index .Slots "node.major" 0]]" },
+  "scripts": {
+[[- range $i, $s := .Scripts]][[if $i]],[[end]]
+    "[[$s.Name]]": "[[$s.Value]]"[[end]]
+  }[[if .Dependencies]],
+  "dependencies": {
+[[- range $i, $d := .Dependencies]][[if $i]],[[end]]
+    "[[$d.Name]]": "[[$d.Value]]"[[end]]
+  }[[end]]
+}
+'''
+
+# The tests are compiled by the type check and left out of the build.
+"tsconfig.json" = '''
+{
+  "extends": "@monosmith/tsconfig/node.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "types": ["node"[[range index .Slots "tsconfig.types"]], "[[.]]"[[end]]]
+  },
+  "include": ["src"]
+}
+'''
+
+"tsconfig.build.json" = '''
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "[[.Build]]/dist" },
+  "exclude": ["src/**/*.[[.TestSuffix]].ts"]
+}
+'''
+
+# The build goes to the workspace's dist/ like every build. A function host wants the code
+# and the manifest side by side, so assemble.mjs copies package.json and host.json next to
+# the compiled code: that folder is what the host runs and what the zip holds.
+"scripts/assemble.mjs" = '''
+// Copies the manifest files next to the compiled code in the workspace's dist/.
+import { cpSync, existsSync, mkdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+const out = '[[.Build]]'
+mkdirSync(out, { recursive: true })
+for (const file of ['package.json', 'host.json']) {
+  if (existsSync(file)) cpSync(file, join(out, file))
+}
+'''
+
+"scripts/package.mjs" = '''
+// Builds, then packs the function app: the compiled code, the manifest and, when the host
+// does not install them itself, the production dependencies.
+import { execFileSync } from 'node:child_process'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import bestzip from 'bestzip'
+
+const shell = process.platform === 'win32'
+const withDependencies = '[[index .Slots "package.mode" 0]]' === 'zip-with-dependencies'
+const built = resolve('[[.Build]]')
+const stage = join(built, 'stage')
+const zip = join(built, '[[.Name]].zip')
+
+execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
+rmSync(stage, { recursive: true, force: true })
+rmSync(zip, { force: true })
+mkdirSync(stage, { recursive: true })
+for (const item of ['dist', 'package.json', 'host.json']) {
+  if (existsSync(join(built, item))) cpSync(join(built, item), join(stage, item), { recursive: true })
+}
+if (withDependencies && 'dependencies' in JSON.parse(readFileSync(join(stage, 'package.json'), 'utf8'))) {
+  execFileSync('npm', ['install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--workspaces=false'], {
+    cwd: stage, stdio: 'inherit', shell,
+  })
+}
+await bestzip({ cwd: stage, source: '*', destination: zip })
+rmSync(stage, { recursive: true, force: true })
+process.stdout.write(`${zip}\n`)
+'''

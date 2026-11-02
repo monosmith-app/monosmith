@@ -1,0 +1,8 @@
+axis = "runtime"
+name = "node24"
+description = "Node.js 24, the current LTS; all three hosts support it"
+language = "node"
+suggested = true
+
+[slots]
+"node.major" = ["24"]

@@ -44,7 +44,7 @@ needs and the selection leaves out takes its default, marked (default).`,
 			problems := choiceselect.Problems(offers, func(language string) bool { _, err := s.Plugins.ForLanguage(language); return err == nil })
 			rows := make([]row, len(offers))
 			for i, o := range offers {
-				rows[i] = row{Offer: o, Problem: problems[o.Name]}
+				rows[i] = row{Offer: o, Problem: problems[choiceselect.ProblemKey(o)]}
 			}
 			sort.SliceStable(rows, func(i, j int) bool {
 				if rows[i].Axis != rows[j].Axis {
@@ -83,6 +83,8 @@ func printRows(out io.Writer, rows []row) {
 		mark := ""
 		if r.Default {
 			mark = "  (default)"
+		} else if r.Suggested {
+			mark = "  (suggested)"
 		}
 		fmt.Fprintf(out, "  %-12s %s  [%s]%s\n", r.Name, r.Description, r.Plugin, mark)
 		if len(r.Requires) > 0 {

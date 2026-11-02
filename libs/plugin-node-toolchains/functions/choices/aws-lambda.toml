@@ -1,0 +1,224 @@
+axis = "framework"
+name = "aws-lambda"
+description = "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)"
+language = "node"
+roles = ["scaffold"]
+needs = ["trigger", "runtime", "lint", "test"]
+conflicts = ["jest"]
+dev_dependencies = ["@types/aws-lambda"]
+
+[slots]
+"package.mode" = ["zip"]
+"tsconfig.types" = ["aws-lambda"]
+
+[files]
+# sam local reads the code from the build folder: the compiled code and package.json (which
+# says the code is an ES module).
+"template.yaml" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: [[.Name]]
+
+Globals:
+  Function:
+    Runtime: nodejs[[index .Slots "node.major" 0]].x
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+  GreetingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: [[.Build]]
+      Handler: dist/functions/greeting.handler.handler
+      Events:
+[[- if eq $t "http"]]
+        Hello:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+[[- else if eq $t "timer"]]
+        Tick:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+[[- else if eq $t "queue"]]
+        Items:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ItemsQueue.Arn
+            BatchSize: 1
+[[- else]]
+        Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref UploadsBucket
+            Events: s3:ObjectCreated:*
+[[- end]]
+[[- if eq $t "queue"]]
+
+  ItemsQueue:
+    Type: AWS::SQS::Queue
+[[- else if eq $t "blob"]]
+
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+[[- end]]
+[[- if eq $t "http"]]
+
+Outputs:
+  HelloApi:
+    Description: The local and deployed URL of the function
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello
+[[- end]]
+'''
+
+# sam local invoke feeds the function the sample event; the http trigger uses sam local start-api.
+"events/greeting.json" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+[[if eq $t "http"]]{
+  "httpMethod": "GET",
+  "path": "/hello",
+  "queryStringParameters": { "name": "Ada" }
+}
+[[else if eq $t "timer"]]{
+  "source": "aws.events",
+  "detail-type": "Scheduled Event",
+  "detail": {}
+}
+[[else if eq $t "queue"]]{
+  "Records": [
+    { "messageId": "1", "body": "Ada" }
+  ]
+}
+[[else]]{
+  "Records": [
+    { "s3": { "bucket": { "name": "uploads" }, "object": { "key": "report.csv", "size": 3 } } }
+  ]
+}
+[[end]]'''
+
+"scripts/start.mjs" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+// Builds, then runs the function locally with the SAM CLI: an HTTP function as a local API,
+// any other trigger by invoking it once with the sample event in events/.
+import { execFileSync, spawnSync } from 'node:child_process'
+
+const shell = process.platform === 'win32'
+execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
+const args = [[if eq $t "http"]]['local', 'start-api'][[else]]['local', 'invoke', 'GreetingFunction', '--event', 'events/greeting.json'][[end]]
+const result = spawnSync('sam', args, { stdio: 'inherit', shell })
+process.exitCode = result.status ?? 1
+'''
+
+".gitignore" = '''
+.aws-sam/
+'''
+
+"src/functions/greeting.handler.ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+[[if eq $t "http"]]import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
+[[else if eq $t "timer"]]import type { ScheduledEvent } from 'aws-lambda'
+[[else if eq $t "queue"]]import type { SQSBatchResponse, SQSEvent } from 'aws-lambda'
+[[else]]import type { S3Event } from 'aws-lambda'
+[[end]]import { greet } from '../greeting/index.ts'
+[[if eq $t "http"]]
+/**
+ * Answers GET /hello?name=Ada with a greeting.
+ * @param event - the API Gateway request
+ * @returns the greeting as JSON
+ */
+export async function handler (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  const name = event.queryStringParameters?.name ?? 'world'
+
+  return { statusCode: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify(greet(name)) }
+}
+[[else if eq $t "timer"]]
+/**
+ * Runs on the schedule of template.yaml and logs a greeting.
+ * @param event - the EventBridge scheduled event
+ * @returns the greeting
+ */
+export async function handler (event: ScheduledEvent): Promise<string> {
+  const message = greet(event.source).message
+  console.log(message)
+
+  return message
+}
+[[else if eq $t "queue"]]
+/**
+ * Greets the body of each SQS message. A message that throws is reported back so that
+ * only it is retried.
+ * @param event - the SQS batch
+ * @returns the ids of the messages that failed
+ */
+export async function handler (event: SQSEvent): Promise<SQSBatchResponse> {
+  for (const record of event.Records) {
+    console.log(greet(record.body).message)
+  }
+
+  return { batchItemFailures: [] }
+}
+[[else]]
+/**
+ * Greets the key of each new S3 object.
+ * @param event - the S3 notification
+ * @returns the greetings
+ */
+export async function handler (event: S3Event): Promise<string[]> {
+  return event.Records.map((record) => greet(record.s3.object.key).message)
+}
+[[end]]'''
+
+"src/functions/index.ts" = '''
+export { handler } from './greeting.handler.ts'
+'''
+
+"src/functions/greeting.handler.[[.TestSuffix]].ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+import { describe, expect, it } from 'vitest'
+import { handler } from './greeting.handler.ts'
+[[if eq $t "http"]]import type { APIGatewayProxyEvent } from 'aws-lambda'
+[[else if eq $t "timer"]]import type { ScheduledEvent } from 'aws-lambda'
+[[else if eq $t "queue"]]import type { SQSEvent } from 'aws-lambda'
+[[else]]import type { S3Event } from 'aws-lambda'
+[[end]]
+describe('the handler', () => {
+[[if eq $t "http"]]  it('greets the name in the query', async () => {
+    const response = await handler({ queryStringParameters: { name: 'Ada' } } as unknown as APIGatewayProxyEvent)
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.body)).toEqual({ message: 'Hello, Ada!' })
+  })
+
+  it('greets the world without a name', async () => {
+    const response = await handler({ queryStringParameters: null } as unknown as APIGatewayProxyEvent)
+    expect(JSON.parse(response.body)).toEqual({ message: 'Hello, world!' })
+  })
+[[else if eq $t "timer"]]  it('greets the source of the event', async () => {
+    expect(await handler({ source: 'aws.events' } as unknown as ScheduledEvent)).toBe('Hello, aws.events!')
+  })
+[[else if eq $t "queue"]]  it('greets every message and reports no failure', async () => {
+    const event = { Records: [{ body: 'Ada' }, { body: 'Grace' }] } as unknown as SQSEvent
+    expect(await handler(event)).toEqual({ batchItemFailures: [] })
+  })
+[[else]]  it('greets the key of the object', async () => {
+    const event = { Records: [{ s3: { object: { key: 'report.csv' } } }] } as unknown as S3Event
+    expect(await handler(event)).toEqual(['Hello, report.csv!'])
+  })
+[[end]]})
+'''
+
+"README.md" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+# [[.Name]]
+
+An AWS Lambda app in TypeScript on Node.js [[index .Slots "node.major" 0]], made by smith. It answers [[if eq $t "http"]]an HTTP request[[else if eq $t "timer"]]a schedule[[else if eq $t "queue"]]a queue message[[else]]a new file in storage[[end]].
+
+- `smith test` runs the unit tests of the function: they need no cloud tool.
+- `smith run start` builds and runs it locally.
+- `smith run build` compiles into the workspace's dist/ and `smith run package` zips the result there.
+- template.yaml is the SAM template (Runtime nodejs[[index .Slots "node.major" 0]].x); events/greeting.json is the sample event.
+- Running it locally needs the SAM CLI (`sam`) and Docker; `smith doctor` checks the CLI.
+'''

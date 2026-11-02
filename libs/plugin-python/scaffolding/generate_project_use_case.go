@@ -1,10 +1,12 @@
 package scaffolding
 
 import (
+	"fmt"
 	"maps"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/venv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/templating"
@@ -12,18 +14,36 @@ import (
 
 type templateData struct {
 	Dir, Name, Distribution, Import, Kind, Stack string
+	// Dependencies is the dependencies list of pyproject.toml, as TOML.
+	Dependencies string
+	// Data is what a function app (ADR 0072) adds; zero for any other project.
+	functions.Data
 }
 
 // Generate scaffolds one Python project, creating the workspace venv and its
 // tooling the first time, and installs the project in editable mode.
 func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.GenerateResult, error) {
 	distribution := distributionName(params.Workspace.Name, params.Name)
-	data := templateData{Dir: params.Directory, Name: params.Name, Distribution: distribution, Import: discovery.ImportName(distribution), Kind: string(params.Kind), Stack: params.Stack}
+	data := templateData{Dir: params.Directory, Name: params.Name, Distribution: distribution, Import: discovery.ImportName(distribution), Kind: string(params.Kind), Stack: params.Stack, Dependencies: "[]"}
+	plan, isFunction := functions.PlanOf(params.Choices)
+	if isFunction {
+		if params.Kind != protocol.ProjectApp {
+			return protocol.GenerateResult{}, fmt.Errorf("a function app is an app: smith add app %s --lang python --with %s", params.Name, plan.Host)
+		}
+		if plan.PythonVersion == "" {
+			plan.PythonVersion = venv.PythonVersion
+		}
+		data.Data, data.Dependencies = functions.DataOf(plan, protocol.BuildDirFromProject(params.Directory)), functions.Dependencies(plan.Host)
+	}
 
 	templates := maps.Clone(projectTemplates)
 	switch params.Kind {
 	case protocol.ProjectApp:
-		maps.Copy(templates, appTemplates)
+		if isFunction {
+			maps.Copy(templates, functions.Templates(plan.Host))
+		} else {
+			maps.Copy(templates, appTemplates)
+		}
 	case protocol.ProjectPackage:
 		maps.Copy(templates, packageTemplates)
 	}
@@ -48,6 +68,9 @@ func Generate(workspaceRoot string, params protocol.GenerateParams) (protocol.Ge
 	}
 	if len(shared) > 0 {
 		notes = append(notes, "Created at the workspace root, shared by every Python project: "+strings.Join(shared, ", ")+" and .venv/ (the environment, ignored by git).")
+	}
+	if isFunction {
+		notes = append(notes, functionNotes(plan.Host)...)
 	}
 	return protocol.GenerateResult{Files: files, Notes: notes}, nil
 }

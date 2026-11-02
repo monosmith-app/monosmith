@@ -3,6 +3,7 @@ package plugin
 import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/kindchange"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/pipeline"
@@ -29,6 +30,7 @@ func (p *Python) Describe(params protocol.InitializeParams) (protocol.Initialize
 		Kind:      protocol.KindLanguage,
 		Languages: []string{"python", "py"},
 		Manifests: []string{"pyproject.toml"},
+		Choices:   functions.Choices(),
 	}, nil
 }
 
@@ -73,7 +75,9 @@ func (p *Python) CI(params protocol.CIParams) (protocol.CIResult, error) {
 
 // Doctor implements serve.DoctorContributor.
 func (p *Python) Doctor(params protocol.DoctorParams) (protocol.DoctorResult, error) {
-	return pipeline.Doctor(p.root, params), nil
+	res := pipeline.Doctor(p.root, params)
+	res.Findings = append(res.Findings, functions.Findings(p.root, params.Projects)...)
+	return res, nil
 }
 
 // Remove implements serve.Remover.

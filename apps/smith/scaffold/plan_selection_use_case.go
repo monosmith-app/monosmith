@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/recipestack"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -40,23 +41,28 @@ func planSelection(s *session.Session, opts AddOptions) (*selectionPlan, error) 
 	if opts.Recipe != nil && len(opts.Recipe.Answers) > 0 {
 		return nil, fmt.Errorf("--with names the choices and --choice answers a recipe: use one or the other")
 	}
-	sel, err := choiceselect.Solve(s.Plugins.Offers(), opts.With)
+	language := ""
+	var asked *host.Client
+	if opts.Lang != "" {
+		var err error
+		if asked, err = s.Plugins.ForLanguage(opts.Lang); err != nil {
+			return nil, err
+		}
+		language = asked.Info.Plugin.Name
+	}
+	sel, err := choiceselect.SolveIn(s.Plugins.Offers(), language, opts.With)
 	if err != nil {
 		return nil, err
 	}
 	st := sel.Stack("", "A selection of choices: "+strings.Join(sel.Names(), ", "))
-	if opts.Lang != "" {
-		asked, err := s.Plugins.ForLanguage(opts.Lang)
-		if err != nil {
-			return nil, err
-		}
+	if asked != nil {
 		if asked != s.Plugins.Get(st.Language) {
 			return nil, fmt.Errorf("--lang %s, but the choices %s are for %s projects", opts.Lang, strings.Join(opts.With, ", "), st.Language)
 		}
 	}
 	plan := &selectionPlan{given: opts.With, selection: sel}
 	for _, known := range s.Stacks.All() {
-		if known.Problem == "" && sameChoices(known.Choices, st.Choices) {
+		if known.Problem == "" && known.Language == st.Language && sameChoices(known.Choices, st.Choices) {
 			plan.stack, plan.reuse = known.Stack, true
 			return plan, nil
 		}
@@ -110,8 +116,8 @@ func (p *selectionPlan) declare(s *session.Session) (func(), error) {
 	for i, c := range p.stack.Choices {
 		quoted[i] = configedit.Quote(c)
 	}
-	text += fmt.Sprintf("\n# Written by smith from smith add --with %s.\n[stacks.%s]\ndescription = %s\nchoices = [%s]\n",
-		strings.Join(p.given, ","), p.stack.Name, configedit.Quote(p.stack.Description), strings.Join(quoted, ", "))
+	text += fmt.Sprintf("\n# Written by smith from smith add --with %s.\n[stacks.%s]\ndescription = %s\nlanguage = %s\nchoices = [%s]\n",
+		strings.Join(p.given, ","), p.stack.Name, configedit.Quote(p.stack.Description), configedit.Quote(p.stack.Language), strings.Join(quoted, ", "))
 	if _, err := workspace.Parse([]byte(text)); err != nil {
 		return nil, fmt.Errorf("the stack for --with %s would break smith.toml: %w", strings.Join(p.given, ","), err)
 	}

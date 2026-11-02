@@ -1,0 +1,8 @@
+axis = "trigger"
+name = "http-trigger"
+description = "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)"
+language = "node"
+suggested = true
+
+[slots]
+trigger = ["http"]

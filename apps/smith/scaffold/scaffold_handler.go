@@ -95,6 +95,9 @@ commits them as one operation that smith undo can revert.`,
 				Kind: kind, Name: args[1], Lang: lang, Stack: stack, Out: cmd.OutOrStdout(), Fresh: fresh, With: with, Like: like,
 				Recipe: &RecipeUse{Answers: answers, In: cmd.InOrStdin(), Interactive: interactive},
 			}
+			if addOpts.With, err = CompleteWith(s, addOpts, cmd.InOrStdin(), cmd.OutOrStdout(), interactive); err != nil {
+				return err
+			}
 			if err := CheckAdd(s, addOpts); err != nil {
 				return err
 			}

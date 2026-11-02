@@ -11,13 +11,17 @@ import (
 // ChoiceOffer is one choice of a project as `smith choices --json` lists it:
 // a framework, a test runner or a style that a plugin publishes.
 type ChoiceOffer struct {
-	Axis        string   `json:"axis"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Language    string   `json:"language"`
-	Default     bool     `json:"default"`
-	Requires    []string `json:"requires"`
-	Conflicts   []string `json:"conflicts"`
+	Axis        string `json:"axis"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Language    string `json:"language"`
+	Default     bool   `json:"default"`
+	// Suggested marks the answer a question pre-selects; Needs are the axes the
+	// choice needs an answer on (a function host needs a trigger and a runtime).
+	Suggested bool     `json:"suggested"`
+	Needs     []string `json:"needs"`
+	Requires  []string `json:"requires"`
+	Conflicts []string `json:"conflicts"`
 	// Problem says why the choice cannot be used here; empty when it can.
 	Problem string `json:"problem"`
 }
@@ -79,6 +83,7 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 	base.Steps = slices.Clone(steps)
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
+		steps = append(steps, axisSteps(lang, offersOf(offers, lang))...)
 	}
 	if len(existing) >= siblingsMin {
 		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?", Options: []Option{
@@ -105,6 +110,9 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 		var picked []string
 		for _, lang := range offerLanguages(offers) {
 			picked = append(picked, a[withKeyPrefix+lang]...)
+			for _, axis := range askedAxes(offersOf(offers, lang)) {
+				picked = append(picked, a[axisKey(lang, axis)]...)
+			}
 		}
 		if len(picked) > 0 {
 			argv = append(argv, "--with", strings.Join(picked, ","))
@@ -126,9 +134,16 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 func withChoiceNames(options []Option, offers []ChoiceOffer) []Option {
 	out := slices.Clone(options)
 	for i := range out {
-		for _, o := range offersOf(offers, out[i].Value) {
+		own := offersOf(offers, out[i].Value)
+		asked := askedAxes(own)
+		for _, o := range own {
 			if !slices.Contains(out[i].Also, o.Name) {
 				out[i].Also = append(slices.Clone(out[i].Also), o.Name)
+			}
+			// A choice that needs an answer (a function host) is found by what it
+			// is called in words too: "serverless", "google", "cloud run".
+			if needsAsked(o, asked) {
+				out[i].Also = append(slices.Clone(out[i].Also), o.Description)
 			}
 		}
 	}
@@ -167,7 +182,11 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
 	}
+	asked := askedAxes(offers)
 	for _, o := range offers {
+		if slices.Contains(asked, o.Axis) {
+			continue // asked in its own question, once a choice that needs it is ticked
+		}
 		hint := o.Description
 		if len(o.Requires) > 0 {
 			hint += " (needs " + strings.Join(o.Requires, ", ") + ")"

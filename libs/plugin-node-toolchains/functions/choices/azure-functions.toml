@@ -1,0 +1,185 @@
+axis = "framework"
+name = "azure-functions"
+description = "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"
+language = "node"
+roles = ["scaffold"]
+needs = ["trigger", "runtime", "lint", "test"]
+conflicts = ["jest"]
+dependencies = ["@azure/functions"]
+
+[slots]
+main = ["dist/functions/*.js"]
+"package.mode" = ["zip-with-dependencies"]
+
+[files]
+"host.json" = '''
+{
+  "version": "2.0",
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  }
+}
+'''
+
+# The sample is committed; local.settings.json (with real connection strings) is not.
+"local.settings.sample.json" = '''
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node"
+  }
+}
+'''
+
+# Core Tools runs the app from the build folder; it reads the settings from there.
+"scripts/start.mjs" = '''
+// Builds, copies the local settings next to the build and starts the Functions host
+// (Azure Functions Core Tools: func) in the build folder.
+import { execFileSync, spawnSync } from 'node:child_process'
+import { copyFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
+
+const shell = process.platform === 'win32'
+execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell })
+if (existsSync('local.settings.json')) copyFileSync('local.settings.json', join('[[.Build]]', 'local.settings.json'))
+const result = spawnSync('func', ['start'], { cwd: '[[.Build]]', stdio: 'inherit', shell })
+process.exitCode = result.status ?? 1
+'''
+
+".gitignore" = '''
+local.settings.json
+'''
+
+".funcignore" = '''
+.git*
+local.settings.json
+local.settings.sample.json
+*.map
+'''
+
+"src/functions/greeting.handler.ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+[[if eq $t "http"]]import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions'
+[[else if eq $t "timer"]]import { app, type InvocationContext, type Timer } from '@azure/functions'
+[[else]]import { app, type InvocationContext } from '@azure/functions'
+[[end]]import { greet } from '../greeting/index.ts'
+[[if eq $t "http"]]
+/**
+ * Answers GET /api/hello?name=Ada with a greeting.
+ * @param request - the HTTP request
+ * @param context - the invocation, for logging
+ * @returns the greeting as JSON
+ */
+export async function hello (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  context.log(`HTTP trigger for ${request.url}`)
+
+  return { jsonBody: greet(request.query.get('name') ?? 'world') }
+}
+
+app.http('hello', { methods: ['GET'], authLevel: 'function', handler: hello })
+[[else if eq $t "timer"]]
+/**
+ * Runs every five minutes (the NCRONTAB in app.timer) and logs a greeting.
+ * @param timer - the timer information
+ * @param context - the invocation, for logging
+ */
+export async function tick (timer: Timer, context: InvocationContext): Promise<void> {
+  context.log(greet(timer.isPastDue ? 'late timer' : 'timer').message)
+}
+
+app.timer('tick', { schedule: '0 */5 * * * *', handler: tick })
+[[else if eq $t "queue"]]
+/**
+ * Greets the text of a message from the Storage queue "items".
+ * @param message - the message body
+ * @param context - the invocation, for logging
+ */
+export async function processMessage (message: unknown, context: InvocationContext): Promise<void> {
+  context.log(greet(String(message)).message)
+}
+
+app.storageQueue('processMessage', { queueName: 'items', connection: 'AzureWebJobsStorage', handler: processMessage })
+[[else]]
+/**
+ * Greets the name of a new blob in the container "uploads".
+ * @param blob - the content of the blob
+ * @param context - the invocation, for logging; the blob name is in its trigger metadata
+ */
+export async function processBlob (blob: unknown, context: InvocationContext): Promise<void> {
+  const name = String(context.triggerMetadata?.name ?? 'blob')
+  context.log(`${greet(name).message} (${Buffer.byteLength(blob as Buffer)} bytes)`)
+}
+
+app.storageBlob('processBlob', { path: 'uploads/{name}', connection: 'AzureWebJobsStorage', handler: processBlob })
+[[end]]'''
+
+"src/functions/index.ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+export { [[if eq $t "http"]]hello[[else if eq $t "timer"]]tick[[else if eq $t "queue"]]processMessage[[else]]processBlob[[end]] } from './greeting.handler.ts'
+'''
+
+"src/functions/greeting.handler.[[.TestSuffix]].ts" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+import { InvocationContext[[if eq $t "http"]], HttpRequest[[else if eq $t "timer"]], type Timer[[end]] } from '@azure/functions'
+import { describe, expect, it } from 'vitest'
+import { [[if eq $t "http"]]hello[[else if eq $t "timer"]]tick[[else if eq $t "queue"]]processMessage[[else]]processBlob[[end]] } from './greeting.handler.ts'
+
+function recordingContext ([[if eq $t "blob"]]triggerMetadata: Record<string, string>[[end]]): { context: InvocationContext, logs: string[] } {
+  const logs: string[] = []
+  const logHandler = (_level: unknown, ...args: unknown[]): void => { logs.push(args.join(' ')) }
+  const context = new InvocationContext({ functionName: 'test', logHandler[[if eq $t "blob"]], triggerMetadata[[end]] })
+
+  return { context, logs }
+}
+
+describe('the function', () => {
+[[if eq $t "http"]]  it('greets the name in the query', async () => {
+    const request = new HttpRequest({ method: 'GET', url: 'http://localhost/api/hello?name=Ada' })
+    const response = await hello(request, recordingContext().context)
+    expect(response.jsonBody).toEqual({ message: 'Hello, Ada!' })
+  })
+
+  it('greets the world without a name', async () => {
+    const request = new HttpRequest({ method: 'GET', url: 'http://localhost/api/hello' })
+    const response = await hello(request, recordingContext().context)
+    expect(response.jsonBody).toEqual({ message: 'Hello, world!' })
+  })
+[[else if eq $t "timer"]]  it('logs a greeting', async () => {
+    const { context, logs } = recordingContext()
+    await tick({ isPastDue: false } as Timer, context)
+    expect(logs).toContain('Hello, timer!')
+  })
+
+  it('says when the timer is late', async () => {
+    const { context, logs } = recordingContext()
+    await tick({ isPastDue: true } as Timer, context)
+    expect(logs).toContain('Hello, late timer!')
+  })
+[[else if eq $t "queue"]]  it('greets the message', async () => {
+    const { context, logs } = recordingContext()
+    await processMessage('Ada', context)
+    expect(logs).toContain('Hello, Ada!')
+  })
+[[else]]  it('greets the blob name', async () => {
+    const { context, logs } = recordingContext({ name: 'report.csv' })
+    await processBlob(Buffer.from('abc'), context)
+    expect(logs).toContain('Hello, report.csv! (3 bytes)')
+  })
+[[end]]})
+'''
+
+"README.md" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+# [[.Name]]
+
+An Azure Functions app in TypeScript on Node.js [[index .Slots "node.major" 0]], made by smith. It answers [[if eq $t "http"]]an HTTP request[[else if eq $t "timer"]]a schedule[[else if eq $t "queue"]]a queue message[[else]]a new file in storage[[end]].
+
+- `smith test` runs the unit tests of the function: they need no cloud tool.
+- `smith run start` builds and runs it locally.
+- `smith run build` compiles into the workspace's dist/ and `smith run package` zips the result there.
+- `smith pipeline deploy-azure-function` adds a pipeline that deploys the app to an Azure Function App.
+- Copy local.settings.sample.json to local.settings.json (git ignores it) for the settings of your machine.
+- Running it locally needs Azure Functions Core Tools (`func`); `smith doctor` checks it.
+'''

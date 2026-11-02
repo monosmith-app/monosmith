@@ -49,6 +49,7 @@ configure.
 | `playwright` | toolchain | `e2e` | [playwright](playwright.md) |
 | `tauri` | toolchain | `tauri-build` | [tauri](tauri.md) |
 | `vite` | scaffold, toolchain | `build`, `typecheck` | [vite](vite.md) |
+| `functions` | scaffold | none | [functions](functions.md) |
 | `angular` | scaffold, toolchain | `build`, `typecheck` | [angular](angular.md) |
 | `astro` | scaffold, toolchain | `build` | [astro](astro.md) |
 | `vscode` | scaffold, toolchain, deploy | `build`, `typecheck` | [vscode](vscode.md) |
