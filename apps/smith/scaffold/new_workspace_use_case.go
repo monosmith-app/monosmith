@@ -45,6 +45,13 @@ type NewOptions struct {
 	FirstCommit string
 	// IncludeSecrets lets CommitAll take files with secret names.
 	IncludeSecrets bool
+	// NoGitattributes leaves .gitattributes out: the repository keeps its line endings.
+	NoGitattributes bool
+	// SkipAgent writes no agent files this time and records no "never":
+	// smith agent install adds them later.
+	SkipAgent bool
+	// NoCI writes no pipeline: [ci] providers is empty.
+	NoCI bool
 	// NoDevcontainer leaves .devcontainer out and sets [ci] devcontainer = false.
 	NoDevcontainer bool
 
@@ -128,7 +135,7 @@ func NewWorkspace(opts NewOptions) (string, error) {
 	if opts.ModulePrefix == "" {
 		opts.ModulePrefix = modulePrefixFromRemote(git, opts.Name)
 	}
-	if len(opts.Providers) == 0 {
+	if len(opts.Providers) == 0 && !opts.NoCI {
 		opts.Providers = []string{"github"}
 	}
 	quoted := make([]string, len(opts.Providers))
@@ -151,6 +158,9 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		".gitignore":       gitignore,
 		".gitattributes":   gitattributes,
 		"README.md":        fmt.Sprintf(readme, opts.Name),
+	}
+	if opts.NoGitattributes {
+		delete(files, ".gitattributes")
 	}
 	var written []string
 	for name, body := range files {
@@ -189,7 +199,7 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		fmt.Fprintf(opts.Out, "  wrote %s\n", f)
 	}
 	written = append(written, pipelines...)
-	if !opts.NoAgent {
+	if !opts.NoAgent && !opts.SkipAgent {
 		agent, err := agentfiles.Plan(agentfiles.Options{Root: dir, Claude: true, VSCode: true, Agent: true})
 		if err != nil {
 			return "", err
@@ -203,7 +213,10 @@ func NewWorkspace(opts NewOptions) (string, error) {
 		}
 		written = append(written, agentWritten...)
 	}
-	if opts.NoCommit || opts.FirstCommit == CommitNone {
+	if opts.NoCommit {
+		return dir, nil
+	}
+	if opts.FirstCommit == CommitNone {
 		fmt.Fprintln(opts.Out, "  not committed (--no-commit)")
 		return dir, nil
 	}

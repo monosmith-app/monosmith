@@ -175,3 +175,16 @@ func newBanner(name string, icons theme.Icons) string {
 	}
 	return rule + "\nA few questions. Enter takes the default shown; smith new --yes skips them."
 }
+
+// AskChoice asks one question with numbered answers on out and reads the
+// choice from in. Enter takes def. A closed input takes def as well, so a
+// pipe never blocks. Other packages use it so every smith question looks and
+// answers the same way.
+//
+// Parameters: prompt is the question; options are the answers, each with a
+// Value, a Label and a Hint; def is the Value Enter takes.
+// Returns: the Value of the answer.
+func AskChoice(prompt string, options []NewOption, def string, in *bufio.Reader, out io.Writer) string {
+	answer, _ := askNewQuestion(NewQuestion{Prompt: prompt, Options: options, Default: def}, in, out)
+	return answer
+}

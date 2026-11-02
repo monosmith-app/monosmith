@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
@@ -64,11 +65,13 @@ func adoptionBlocked(r Report) error {
 // path smith owns is kept beside it as .pre-smith, smith.toml and the root files
 // smith needs are written (theirs kept), the steps doctor would ask for (go.work,
 // npm workspaces, and with install npm install) are taken, the pipelines are
-// generated for the projects found. Nothing is committed unless commit is true
+// generated for the projects found. The choices c (line endings, agent files,
+// CI providers, what happens to a pipeline of yours) are settled before, by
+// adoptdecision.Resolve, and shown in the plan. Nothing is committed unless commit is true
 // (smith adopt --commit) or the workspace sets commit_operations: the changes
 // stay in the work tree, where git can take them back. It ends by saying what
 // smith doctor still reports.
-func Init(r Report, version string, install, eslint, commit bool, out io.Writer) error {
+func Init(r Report, version string, install, eslint, commit bool, c adoptdecision.Choices, out io.Writer) error {
 	if !r.Adoptable() {
 		return adoptionBlocked(r)
 	}
@@ -76,7 +79,16 @@ func Init(r Report, version string, install, eslint, commit bool, out io.Writer)
 		return ErrDirty
 	}
 	git := gitclient.New(r.Root)
-	for _, path := range []string{cipipeline.GitHubPath, cipipeline.AzurePath, cipipeline.DevcontainerPath} {
+	own := OwnPipelines(r.Root)
+	providers := adoptdecision.WithoutKept(c, own)
+	moved := []string{cipipeline.DevcontainerPath}
+	for _, p := range providers {
+		moved = append(moved, ProviderPaths[p])
+	}
+	if len(providers) == 0 {
+		moved = nil
+	}
+	for _, path := range moved {
 		full := filepath.Join(r.Root, filepath.FromSlash(path))
 		body, err := os.ReadFile(full)
 		if err != nil || strings.Contains(string(body), GeneratedMarker) {
@@ -87,7 +99,9 @@ func Init(r Report, version string, install, eslint, commit bool, out io.Writer)
 		}
 		fmt.Fprintf(out, "  kept your %s as %s.pre-smith\n", path, path)
 	}
-	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: r.Providers, Version: version, Out: out, NoCommit: true}); err != nil {
+	if _, err := scaffold.NewWorkspace(scaffold.NewOptions{Name: r.Name, Dir: r.Root, Scope: r.Scope, Providers: providers, NoCI: len(providers) == 0, NoDevcontainer: len(providers) == 0,
+		NoGitattributes: c.Gitattributes != adoptdecision.GitattributesAdd, SkipAgent: c.Agent == adoptdecision.AgentSkip, NoAgent: c.Agent == adoptdecision.AgentNever,
+		Version: version, Out: out, NoCommit: true}); err != nil {
 		return err
 	}
 	if len(r.Declared) > 0 {
