@@ -560,6 +560,15 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 
 ## npm, PyPI, NuGet and RubyGems
 
+A package whose `optionalDependencies` pin packages at the version being published (the platform
+packages of a binary launcher) is checked before its dist-tag moves: after the platform packages
+are published, smith reads each back with `npm view` for up to 60 seconds. If one is still not
+visible, smith publishes the package under the dist-tag `pending` instead of the channel's tag
+(`next`), and the release report says so and names the command that moves the tag later
+(`npm dist-tag add <name>@<version> next`). Without it, a person who runs `npm i -g` in those
+minutes would get a launcher with no binary. The launcher itself, when a platform package is
+missing, adds that a new release may still be propagating on npm and to try again in a few minutes.
+
 An app released with assets can also be published to npm, PyPI, NuGet and
 RubyGems from the same archives, so people install it with the package
 manager of their language, and nothing is downloaded after install:

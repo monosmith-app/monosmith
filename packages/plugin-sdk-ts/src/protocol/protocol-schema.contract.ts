@@ -2068,6 +2068,13 @@ export const protocolSchema: SchemaDocument = {
         "registry": {
           "type": "string"
         },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them."
+        },
         "assets": {
           "type": "array",
           "items": {

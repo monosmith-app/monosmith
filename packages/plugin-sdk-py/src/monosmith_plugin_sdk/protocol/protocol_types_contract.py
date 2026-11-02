@@ -1499,6 +1499,11 @@ class PublishResult(_PublishResultRequired, total=False):
 
     skipped: str
     registry: str
+    notes: list[str]
+    """
+    Notes are things the person must know about a publish that succeeded, such as a dist-tag that
+    was not moved; the host prints them and the report keeps them.
+    """
     assets: list[str]
     """
     Assets are the workspace-relative files built for the release, in upload order; in a dry run,

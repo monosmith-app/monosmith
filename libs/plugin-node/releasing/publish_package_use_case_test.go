@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -113,5 +114,37 @@ func TestAReleaseChannelPublishesUnderItsDistTagAndLooksUpWithoutIt(t *testing.T
 	want := []string{"npm view @acme/sdk@2.0.0-beta.1 version", "npm publish --access public --tag beta"}
 	if got := (*calls)[len(*calls)-2:]; strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Errorf("calls:\n%s", strings.Join(*calls, "\n"))
+	}
+}
+
+func TestPublishKeepsTheChannelTagWhenPlatformPackagesAreNotVisible(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "packages", "cli")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"@acme/cli","optionalDependencies":{"@acme/cli-linux":"2.0.0-beta.1"}}`), 0o644)
+	real := platformVisibility
+	defer func() { platformVisibility = real }()
+	for _, c := range []struct {
+		name    string
+		visible bool
+		wantTag string
+		note    bool
+	}{{"visible", true, "--tag next", false}, {"late", false, "--tag pending", true}} {
+		t.Run(c.name, func(t *testing.T) {
+			calls := fakeNpm(t, "")
+			platformVisibility = func(string, []string) Visibility {
+				return Visibility{Visible: func(string, string) bool { return c.visible }, Wait: time.Second, Every: time.Second, Sleep: func(time.Duration) {}}
+			}
+			res, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Root: "packages/cli", Exports: []string{"@acme/cli"}}, Version: "2.0.0-beta.1", Tag: "next"})
+			if err != nil || !res.Published {
+				t.Fatalf("res %+v err %v", res, err)
+			}
+			if last := (*calls)[len(*calls)-1]; !strings.Contains(last, c.wantTag) {
+				t.Errorf("last call %q, want %q", last, c.wantTag)
+			}
+			if got := len(res.Notes) == 1 && strings.Contains(res.Notes[0], "npm dist-tag add @acme/cli@2.0.0-beta.1 next"); got != c.note {
+				t.Errorf("notes %v", res.Notes)
+			}
+		})
 	}
 }
