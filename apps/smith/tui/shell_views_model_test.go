@@ -46,7 +46,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 		t.Fatalf("started %v before the confirmation", l.started)
 	}
 	l.keys("y")
-	if got := l.lastStarted(); got != "deps up axios react" {
+	if got := l.lastStarted(); got != "deps up axios react --major --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -54,7 +54,7 @@ func TestTheDepsViewUpdatesTheMarkedSelectionWithDepsUp(t *testing.T) {
 func TestTheDepsViewUpdatesTheRowUnderTheCursorWhenNothingIsMarked(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "down", "enter", "y")
-	if got := l.lastStarted(); got != "deps up zod" {
+	if got := l.lastStarted(); got != "deps up zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -66,7 +66,7 @@ func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l.keys("a")
 	l.has("0 marked")
 	l.keys("v", "y")
-	if got := l.lastStarted(); got != "deps up --align" {
+	if got := l.lastStarted(); got != "deps up --align --yes" {
 		t.Fatalf("started %q", got)
 	}
 }

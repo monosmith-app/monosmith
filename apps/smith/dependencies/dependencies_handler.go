@@ -181,7 +181,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 				if len(unknown) > 0 {
 					return fmt.Errorf("no update for %s", strings.Join(unknown, ", "))
 				}
-			case yes:
+			case yes && !check:
 			case check || !interactive():
 				fmt.Fprintln(out, "\nReport only: pick with smith up in a terminal, name packages, or pass --yes.")
 				return nil
@@ -194,6 +194,16 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 					fmt.Fprintln(out, "Nothing updated.")
 					return nil
 				}
+			}
+			if check {
+				if len(names) > 0 {
+					fmt.Fprintln(out, "\nWould update:")
+					for _, u := range chosen {
+						fmt.Fprintf(out, "  %s %s -> %s (%s)\n", u.Name, u.Current, u.Latest, u.Level)
+					}
+				}
+				fmt.Fprintln(out, "Report only: nothing was changed.")
+				return nil
 			}
 			if majors := Majors(chosen); len(majors) > 0 && !major {
 				// A major update can break the project, so it is a choice of its own.
