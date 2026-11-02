@@ -1485,6 +1485,12 @@ class PublishParams(_PublishParamsRequired, total=False):
     ignores it when its registry has no such pointer. Only sent to a plugin with the channels
     capability.
     """
+    propagationWait: str
+    """
+    PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the
+    packages of the release to be fetchable from the registry: a duration such as "15m", "0" to
+    not wait. Empty means the default. Only npm has such a wait.
+    """
 
 
 class _PublishResultRequired(TypedDict):
@@ -1503,6 +1509,12 @@ class PublishResult(_PublishResultRequired, total=False):
     """
     Notes are things the person must know about a publish that succeeded, such as a dist-tag that
     was not moved; the host prints them and the report keeps them.
+    """
+    pendingTags: list[str]
+    """
+    PendingTags are the exact commands that move the dist-tags the publish did not move, because
+    the packages the release needs were not fetchable yet. The release then ends with a warning,
+    never silently.
     """
     assets: list[str]
     """

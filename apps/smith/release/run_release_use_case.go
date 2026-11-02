@@ -27,6 +27,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/taskrun"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -95,6 +96,9 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 	if len(failures) > 0 {
 		report.Error = strings.Join(failures, "; ")
 		return report, errors.New(report.Error)
+	}
+	if len(report.PendingTags()) > 0 {
+		return report, ErrPropagationPending
 	}
 	return report, nil
 }
@@ -175,6 +179,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		say("note: %s", note)
 		res.Publish = strings.TrimSpace(res.Publish + " " + note)
 	}
+	res.PendingTags = append(res.PendingTags, pr.PendingTags...)
 	if BuildsAssetsFromCommand(p) {
 		say("%s are made by `%s` on a runner each (smith ci assets, or smith release assets on this machine) and uploaded to the GitHub Release: %s",
 			strings.Join(p.Release.Platforms, ", "), p.Release.Build, strings.Join(p.Release.Assets, ", "))
@@ -348,7 +353,7 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 	if spec == nil && p.PublishTo == "none" {
 		return protocol.PublishResult{Skipped: "published by its tag (the manifest says it is never published)"}, nil
 	}
-	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec}
+	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec, PropagationWait: PropagationWait(s.Config, p)}
 	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
 		params.Tag = ch.Tag
 	}
@@ -454,8 +459,18 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 		for _, a := range archives {
 			release.Archives = append(release.Archives, npmbinaries.Archive{Path: a.path, OS: a.os, Arch: a.arch})
 		}
+		wait, err := npmpropagation.ParseWait(PropagationWait(s.Config, p))
+		if err != nil {
+			return err
+		}
+		release.PropagationWait = wait
+		release.Progress = func(line string) { say("%s", line) }
 		result, err := npmbinaries.Publish(s.Root, release, dryRun)
 		report("npm", result.Published, result.Existing, result.Skipped)
+		for _, command := range result.PendingTags {
+			say("note: the dist-tag was not moved: npm did not serve every platform package in time. When it does, run: %s", command)
+			res.PendingTags = append(res.PendingTags, command)
+		}
 		if err != nil {
 			return fmt.Errorf("npm: %w", err)
 		}

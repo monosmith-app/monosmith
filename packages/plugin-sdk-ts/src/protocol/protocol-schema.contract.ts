@@ -2048,6 +2048,10 @@ export const protocolSchema: SchemaDocument = {
         "tag": {
           "type": "string",
           "description": "Tag is the name of the release channel the version belongs to (npm's dist-tag \"beta\"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability."
+        },
+        "propagationWait": {
+          "type": "string",
+          "description": "PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the packages of the release to be fetchable from the registry: a duration such as \"15m\", \"0\" to not wait. Empty means the default. Only npm has such a wait."
         }
       },
       "required": [
@@ -2074,6 +2078,13 @@ export const protocolSchema: SchemaDocument = {
             "type": "string"
           },
           "description": "Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them."
+        },
+        "pendingTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "PendingTags are the exact commands that move the dist-tags the publish did not move, because the packages the release needs were not fetchable yet. The release then ends with a warning, never silently."
         },
         "assets": {
           "type": "array",

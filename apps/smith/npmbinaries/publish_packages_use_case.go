@@ -5,12 +5,16 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
@@ -39,6 +43,11 @@ type Release struct {
 	Tag string
 	// OutDir is the workspace-relative directory the packages are written to.
 	OutDir string
+	// PropagationWait is the longest the wrappers wait for the platform
+	// packages to be fetchable from the registry; 0 probes once.
+	PropagationWait time.Duration
+	// Progress receives the progress lines of that wait; nil prints nothing.
+	Progress func(line string)
 }
 
 // Result says what happened to each package, in publishing order.
@@ -46,6 +55,10 @@ type Result struct {
 	Published, Existing []string
 	// Skipped are the archives no npm platform matches.
 	Skipped []string
+	// PendingTags are the exact commands that move the dist-tag of each
+	// wrapper that was published under "pending" because the platform
+	// packages were not fetchable in time.
+	PendingTags []string
 }
 
 // npm runs the npm CLI and returns what it printed; tests replace it.
@@ -96,12 +109,24 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 			return res, err
 		}
 	}
-	for _, b := range order {
+	// The wrappers are published only when every platform package can be
+	// fetched the way a person fetches it; else they take the dist-tag
+	// "pending", so no dist-tag points at a launcher with no binary.
+	tag := ""
+	for i, b := range order {
 		if dryRun {
 			res.Published = append(res.Published, b.name+"@"+r.Version)
 			continue
 		}
-		published, err := publishOne(b.dir, b.name, r)
+		if i == len(order)-len(r.Names) && slices.ContainsFunc(order[i:], func(w built) bool { return !registryHas(w.dir, w.name, r.Version) }) {
+			if out := awaitPlatforms(b.dir, r, platformNames(platforms)); !out.Ready {
+				tag = pendingTag
+			}
+		}
+		published, err := publishOne(b.dir, b.name, r, cmp.Or(tag, intendedTag(r)))
+		if published && tag == pendingTag {
+			res.PendingTags = append(res.PendingTags, fmt.Sprintf("npm dist-tag add %s@%s %s", b.name, r.Version, cmp.Or(intendedTag(r), "latest")))
+		}
 		if err != nil {
 			return res, err
 		}
@@ -182,13 +207,47 @@ func extract(archive, name, to string) error {
 	return fmt.Errorf("%s has no %s", filepath.Base(archive), name)
 }
 
+// pendingTag is the dist-tag the wrappers take while the platform packages are
+// not fetchable from the registry yet.
+const pendingTag = "pending"
+
+// intendedTag is the dist-tag the release moves: a prerelease's channel (npm
+// refuses a prerelease without a tag, so it never becomes latest), and none
+// for a stable version, which takes latest.
+func intendedTag(r Release) string {
+	if strings.Contains(r.Version, "-") {
+		return cmp.Or(r.Tag, "next")
+	}
+	return ""
+}
+
+// registryHas reports whether the registry has name@version. An unpublished
+// package is a 404, an unpublished version prints nothing.
+func registryHas(dir, name, version string) bool {
+	out, _, err := npm(dir, "view", name+"@"+version, "version")
+	return err == nil && strings.TrimSpace(out) == version
+}
+
+func platformNames(platforms map[string]string) []string {
+	return slices.Sorted(maps.Values(platforms))
+}
+
+// awaitPlatforms waits for the platform packages to be fetchable from the
+// registry (see npmpropagation.Await); tests replace it with a fake registry.
+var awaitPlatforms = func(dir string, r Release, names []string) npmpropagation.Outcome {
+	reg := npmpropagation.NPM{Dir: dir, Output: func(dir string, argv []string) (string, error) {
+		out, _, err := npm(dir, argv[1:]...)
+		return out, err
+	}}
+	return npmpropagation.Await(reg, npmpropagation.RealClock{}, npmpropagation.Config{Max: r.PropagationWait, Progress: r.Progress}, names, r.Version)
+}
+
 // publishOne publishes a package directory unless the registry has its
 // version. With NODE_AUTH_TOKEN set, the directory gets an .npmrc using it
 // (npm never packs an .npmrc); otherwise npm's own login is used. On GitHub
 // Actions with an OIDC token the package carries provenance.
-func publishOne(dir, name string, r Release) (bool, error) {
-	// An unpublished package is a 404, an unpublished version prints nothing.
-	if out, _, err := npm(dir, "view", name+"@"+r.Version, "version"); err == nil && strings.TrimSpace(out) == r.Version {
+func publishOne(dir, name string, r Release, tag string) (bool, error) {
+	if registryHas(dir, name, r.Version) {
 		return false, nil
 	}
 	if os.Getenv("NODE_AUTH_TOKEN") != "" {
@@ -197,9 +256,8 @@ func publishOne(dir, name string, r Release) (bool, error) {
 		}
 	}
 	args := []string{"publish", "--access", "public"}
-	if strings.Contains(r.Version, "-") {
-		// npm refuses a prerelease without a tag, so it never becomes latest.
-		args = append(args, "--tag", cmp.Or(r.Tag, "next"))
+	if tag != "" {
+		args = append(args, "--tag", tag)
 	}
 	if os.Getenv("ACTIONS_ID_TOKEN_REQUEST_URL") != "" && r.Repository != "" {
 		args = append(args, "--provenance")

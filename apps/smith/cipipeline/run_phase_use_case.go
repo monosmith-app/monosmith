@@ -346,6 +346,12 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 			}
 		}
 		report, err := release.Execute(ctx, s, plan, release.Options{Push: true, Out: out})
+		// A release whose dist-tag waits for npm is done: the steps after it
+		// still run, and the run ends with a warning and exit code 2.
+		pending := errors.Is(err, release.ErrPropagationPending)
+		if pending {
+			err = nil
+		}
 		markReleased(report)
 		var after []stepOutcome
 		if err == nil {
@@ -395,6 +401,13 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 				log.conclusion = releaseConclusion(report)
 				notice(out, releaseConclusion(report))
 			}
+		}
+		if err == nil && pending {
+			for _, command := range report.PendingTags() {
+				warn(out, "a dist-tag was not moved: npm did not serve every platform package in time. When it does, run: "+command)
+				log.say("%s", "→ when npm serves the packages, run: "+command)
+			}
+			return release.ErrPropagationPending
 		}
 		return err
 	}

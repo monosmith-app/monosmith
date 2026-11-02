@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 )
 
 func archive(t *testing.T, root, name, file string) string {
@@ -44,8 +46,22 @@ func fakeNPM(t *testing.T, f func(dir string, args ...string) (string, string, e
 	t.Cleanup(func() { npm = original })
 }
 
+// fakeAwait replaces the wait for the platform packages with a fixed answer.
+func fakeAwait(t *testing.T, ready bool, waitedFor *[]string) {
+	t.Helper()
+	original := awaitPlatforms
+	awaitPlatforms = func(_ string, _ Release, names []string) npmpropagation.Outcome {
+		if waitedFor != nil {
+			*waitedFor = names
+		}
+		return npmpropagation.Outcome{Ready: ready}
+	}
+	t.Cleanup(func() { awaitPlatforms = original })
+}
+
 func TestPublishSendsPlatformPackagesBeforeWrappersAndSkipsWhatTheRegistryHas(t *testing.T) {
 	root := t.TempDir()
+	fakeAwait(t, true, nil)
 	t.Setenv("NODE_AUTH_TOKEN", "secret")
 	t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "")
 	var published []string
@@ -93,6 +109,7 @@ func TestPublishSendsPlatformPackagesBeforeWrappersAndSkipsWhatTheRegistryHas(t 
 
 func TestPublishAddsProvenanceAndTagsPrereleases(t *testing.T) {
 	root := t.TempDir()
+	fakeAwait(t, true, nil)
 	t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://token")
 	var args []string
 	fakeNPM(t, func(_ string, a ...string) (string, string, error) {
@@ -127,5 +144,67 @@ func TestDryRunNamesThePackagesWithoutWriting(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "out")); !os.IsNotExist(err) {
 		t.Error("a dry run wrote packages")
+	}
+}
+
+func TestWrappersTakeThePendingTagWhenThePlatformPackagesAreNotFetchable(t *testing.T) {
+	for _, c := range []struct{ version, tag, moveTo string }{
+		{"5.0.0-rc.1", "next", "next"}, {"5.0.0", "", "latest"},
+	} {
+		t.Run(c.version, func(t *testing.T) {
+			root := t.TempDir()
+			t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "")
+			var waitedFor []string
+			fakeAwait(t, false, &waitedFor)
+			var tags []string
+			fakeNPM(t, func(dir string, a ...string) (string, string, error) {
+				if a[0] == "publish" {
+					tags = append(tags, filepath.Base(dir)+" "+strings.Join(a, " "))
+				}
+				return "", "", nil
+			})
+			r := release(t, root)
+			r.Version = c.version
+			res, err := Publish(root, r, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(waitedFor, []string{"@acme/cli-linux-x64", "@acme/cli-win32-x64"}) {
+				t.Errorf("waited for %v", waitedFor)
+			}
+			wantPlatform := "publish --access public"
+			if c.tag != "" {
+				wantPlatform += " --tag next"
+			}
+			want := []string{"acme-cli-linux-x64 " + wantPlatform, "acme-cli-win32-x64 " + wantPlatform, "acme-cli publish --access public --tag pending", "acme publish --access public --tag pending"}
+			if !slices.Equal(tags, want) {
+				t.Errorf("publishes %v, want %v", tags, want)
+			}
+			wantTags := []string{"npm dist-tag add @acme/cli@" + c.version + " " + c.moveTo, "npm dist-tag add acme@" + c.version + " " + c.moveTo}
+			if !slices.Equal(res.PendingTags, wantTags) {
+				t.Errorf("pending tags %v, want %v", res.PendingTags, wantTags)
+			}
+		})
+	}
+}
+
+func TestNoWaitWhenEveryWrapperIsAlreadyPublished(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "")
+	original := awaitPlatforms
+	awaitPlatforms = func(string, Release, []string) npmpropagation.Outcome {
+		t.Error("waited although nothing is left to publish")
+		return npmpropagation.Outcome{}
+	}
+	t.Cleanup(func() { awaitPlatforms = original })
+	fakeNPM(t, func(_ string, a ...string) (string, string, error) {
+		if a[0] == "view" {
+			return "5.0.0\n", "", nil
+		}
+		t.Error("published")
+		return "", "", nil
+	})
+	if _, err := Publish(root, release(t, root), false); err != nil {
+		t.Fatal(err)
 	}
 }
