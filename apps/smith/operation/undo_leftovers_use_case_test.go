@@ -49,3 +49,16 @@ func TestUndoNamesTheGeneratedFoldersItLeftAndRemovesThemOnRequest(t *testing.T)
 		t.Error("the person's file was touched")
 	}
 }
+
+func TestLeftoverLineHasNoStrayComma(t *testing.T) {
+	cases := map[string]Leftover{
+		"  apps/web/  (node_modules/)":        {Dir: "apps/web", Entries: []string{"", "node_modules/"}},
+		"  apps/web/  (dist/, node_modules/)": {Dir: "apps/web", Entries: []string{"dist/", "node_modules/"}},
+		"  apps/web/":                         {Dir: "apps/web", Entries: []string{""}},
+	}
+	for want, l := range cases {
+		if got := leftoverLine(l); got != want {
+			t.Errorf("got %q want %q", got, want)
+		}
+	}
+}

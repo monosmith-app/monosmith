@@ -50,7 +50,8 @@ refuses, with the reason and the next step, when:
 
 `git revert` cannot remove files that git ignores. When the undone project left generated folders behind
 (`node_modules`, `dist`, a venv), `smith undo` lists them under "Left behind". In a terminal it asks whether to
-delete them; `--clean` deletes them without asking; with neither it only says what is left and names `--clean`.
+delete them; `--clean` deletes them without asking; with neither it only says what is left and names `--clean`. Each folder is listed with its ignored
+entries in parentheses, as `apps/web/  (dist/, node_modules/)`; a folder with no entry to name is listed alone.
 A folder that holds a tracked file, or a file of yours that git does not ignore, is never listed or deleted.
 
 Operations undo one at a time, newest first. See [ADR 0047](../architecture/decisions/0047-mutating-commands-show-a-plan-and-can-be-undone.md).

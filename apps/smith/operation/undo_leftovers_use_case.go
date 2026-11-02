@@ -70,7 +70,9 @@ func FindLeftovers(root string, removed []string) []Leftover {
 		}
 		var entries []string
 		for _, e := range strings.Split(ignored, "\n") {
-			entries = append(entries, strings.TrimPrefix(e, dir+"/"))
+			if entry := strings.TrimPrefix(e, dir+"/"); entry != "" {
+				entries = append(entries, entry)
+			}
 		}
 		out = append(out, Leftover{Dir: dir, Entries: entries})
 	}
@@ -92,7 +94,7 @@ func settleLeftovers(cmd *cobra.Command, root string, left []Leftover, clean, ye
 	out := cmd.OutOrStdout()
 	fmt.Fprintln(out, "Left behind: git ignores these generated files, so the revert could not remove them.")
 	for _, l := range left {
-		fmt.Fprintf(out, "  %s/  (%s)\n", l.Dir, strings.Join(l.Entries, ", "))
+		fmt.Fprintln(out, leftoverLine(l))
 	}
 	remove := clean
 	if !clean && operationplan.ShouldAsk(operationplan.DetectEnvironment(), yes) {
@@ -109,6 +111,21 @@ func settleLeftovers(cmd *cobra.Command, root string, left []Leftover, clean, ye
 	}
 	fmt.Fprintln(out, "Deleted them.")
 	return nil
+}
+
+// leftoverLine is one line of the report: the folder and, when known, the
+// ignored entries in it, without an empty entry or a stray comma.
+func leftoverLine(l Leftover) string {
+	var kept []string
+	for _, e := range l.Entries {
+		if e != "" {
+			kept = append(kept, e)
+		}
+	}
+	if len(kept) == 0 {
+		return fmt.Sprintf("  %s/", l.Dir)
+	}
+	return fmt.Sprintf("  %s/  (%s)", l.Dir, strings.Join(kept, ", "))
 }
 
 // RemoveLeftovers deletes the folders FindLeftovers listed. They hold only
