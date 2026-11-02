@@ -18,11 +18,34 @@ export interface NewWorkspaceChoices {
   commit:       boolean
 }
 
-/** One answer of a question, in the words a person knows. */
-export interface ChoiceLabel {
-  value:       string
-  label:       string
-  description: string
+/** One answer of a question, as `smith new --questions --json` prints it. */
+export interface NewAnswer {
+  value: string
+  label: string
+  /** What the answer means, or empty. */
+  hint:  string
+}
+
+/**
+ * One question of `smith new`, as `smith new --questions --json` prints it: the data the CLI and the
+ * TUI ask from.
+ */
+export interface NewQuestion {
+  key:      string
+  prompt:   string
+  default:  string
+  /** The flag that answers it; empty for a question that only opens more questions. */
+  flag:     string
+  /** The answer may name several options. */
+  many:     boolean
+  /** Asked only after "more options": the extension does not ask it. */
+  advanced: boolean
+  /** Asked after the summary: the extension does not ask it. */
+  atEnd:    boolean
+  /** The answers (key to value) that make this question apply. */
+  when:     Record<string, string>
+  /** The answers on offer; none means free text. */
+  answers:  NewAnswer[]
 }
 
 /** How creating a workspace ended. `terminal` means the person asked for smith's own questions in a terminal. */

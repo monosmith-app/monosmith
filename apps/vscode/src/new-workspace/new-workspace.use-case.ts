@@ -1,5 +1,6 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
+import { parseNewQuestions } from './new-questions.mapper.ts'
+import type { NewQuestion, NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
 
 /** How the person wants to set the workspace up. */
@@ -18,7 +19,7 @@ export interface NewWorkspaceDeps {
   /** Asks the name, saying that the folder's name is used unless another is typed. Resolves undefined when the person cancels. */
   askName:    (folderName: string) => Promise<string | undefined>
   /** Asks each question of `smith new` with the defaults as the pre-selected answers. Resolves undefined when the person cancels. */
-  askCustom:  (start: NewWorkspaceChoices) => Promise<NewWorkspaceChoices | undefined>
+  askCustom:  (start: NewWorkspaceChoices, questions: readonly NewQuestion[]) => Promise<NewWorkspaceChoices | undefined>
   /** Shows what will be chosen and the files smith lists, and asks. */
   confirm:    (summary: readonly string[], plan: string) => Promise<boolean>
 }
@@ -28,12 +29,21 @@ export interface NewWorkspaceDeps {
  * "Start with the defaults" lists what it chooses and asks only the name;
  * "Customise" asks every question. Before anything is written it shows the
  * choices and the files `smith new --dry-run` lists, and asks. The name of the
- * folder is used only after the prompt says so.
+ * folder is used only after the prompt says so. The questions and the label of each answer come
+ * from `smith new --questions --json`, which reads and writes nothing.
  * @param deps - how to run smith and ask the person
  * @returns how it ended; it never throws
  */
 export async function createWorkspace (deps: NewWorkspaceDeps): Promise<NewWorkspaceOutcome> {
-  const defaultLines = describeChoices({ name: deps.folderName, ...DEFAULT_CHOICES }, deps.folderName).slice(1)
+  const asked = await deps.run(['new', '--questions', '--json'])
+  if (asked.code !== 0) return { kind: 'refused', message: describeFailure(asked) }
+  let questions: NewQuestion[]
+  try {
+    questions = parseNewQuestions(asked.stdout)
+  } catch {
+    return { kind: 'refused', message: 'smith did not list the questions of `smith new`. Update smith and try again.' }
+  }
+  const defaultLines = describeChoices({ name: deps.folderName, ...DEFAULT_CHOICES }, deps.folderName, questions).slice(1)
   const way = await deps.askWay(defaultLines)
   if (way === undefined) return { kind: 'cancelled' }
   if (way === 'terminal') return { kind: 'terminal' }
@@ -41,12 +51,12 @@ export async function createWorkspace (deps: NewWorkspaceDeps): Promise<NewWorks
   const name = await deps.askName(deps.folderName)
   if (name === undefined) return { kind: 'cancelled' }
   const start: NewWorkspaceChoices = { name, ...DEFAULT_CHOICES }
-  const choices = way === 'customise' ? await deps.askCustom(start) : start
+  const choices = way === 'customise' ? await deps.askCustom(start, questions) : start
   if (choices === undefined) return { kind: 'cancelled' }
 
   const preview = await deps.run(toCreateArguments(choices, true))
   if (preview.code !== 0) return { kind: 'refused', message: describeFailure(preview) }
-  if (!await deps.confirm(describeChoices(choices, deps.folderName), preview.stdout.trim())) return { kind: 'cancelled' }
+  if (!await deps.confirm(describeChoices(choices, deps.folderName, questions), preview.stdout.trim())) return { kind: 'cancelled' }
 
   const done = await deps.apply(toCreateArguments(choices))
 
