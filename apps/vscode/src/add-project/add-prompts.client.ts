@@ -29,7 +29,7 @@ const TITLE = 'MonoSmith: Add project'
  * @param projects - the workspace's projects, to offer one to copy the shape of (`--like`)
  * @returns the request, `compose` when the person chose to compose a stack, or undefined when they pressed Escape at any question
  */
-export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | 'compose' | undefined> {
+export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = [], workspaceEnvironments: readonly string[] = []): Promise<AddRequest | 'compose' | undefined> {
   const found = await askOutcome(options, projects)
   if (found === undefined || found === 'compose') return found
 
@@ -52,7 +52,7 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
   const request: AddRequest = { role, name, language, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
   if (!isWebApp(request)) return request
   // A web app is built once per environment: smith refuses to add one that names none.
-  const environments = await askWebEnvironments(name)
+  const environments = await askWebEnvironments(name, workspaceEnvironments)
 
   return environments === undefined ? undefined : { ...request, environments }
 }

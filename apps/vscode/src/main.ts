@@ -20,7 +20,7 @@ import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap
 import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
-import { askGuidedStep, confirmGuided, GUIDED_COMMANDS, runGuidedCommand, tellGuidedOutcome, type GuidedCommand } from './guided-commands/index.ts'
+import { askGuidedStep, confirmGuided, GUIDED_COMMANDS, parseWebApps, parseWorkspaceEnvironments, runGuidedCommand, tellGuidedOutcome, type GuidedCommand } from './guided-commands/index.ts'
 import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { chooseSyncRule, confirmSync, syncVersions, tellSyncOutcome } from './sync-versions/index.ts'
@@ -58,7 +58,7 @@ import {
 } from './task-run/index.ts'
 import { readAffected, readWorkspace, type FolderWorkspace, type WorkspaceSnapshot } from './workspace/index.ts'
 import { findSmithRoots, folderOfFile, listFolders, onFoldersChanged, onManifestChanged, onTopLevelChanged, toFolderPath } from './workspace-folders/index.ts'
-import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter } from './workspace-view/index.ts'
+import { askFilterText, createWorkspaceTree, type TaskFacts, type TreeNode, type ViewFilter, type WebAppEnvironments } from './workspace-view/index.ts'
 import { isWorkspaceTrusted, onTrustGranted } from './workspace-trust/index.ts'
 
 const INSTALL_COMMAND = 'npm i -D monosmith'
@@ -72,6 +72,18 @@ const agentFiles = new Map<string, AgentFilesState>()
 /** Folders without a smith.toml that look like a repository smith can bring in. */
 let offers: RepositoryOffer[] = []
 /** Folders without a smith.toml and without a tool smith recognises: empty ones and ones with files. */
+/**
+ * What a button on an Environments row already answers: the web app, and for the minus button of one
+ * environment, that environment. The questions about them are not asked again.
+ */
+function environmentAnswers (id: string, argument: unknown): Record<string, string | string[]> {
+  const node = argument as Partial<TreeNode> | undefined
+  if (node?.project === undefined || (node.kind !== 'environments' && node.kind !== 'environment')) return {}
+  if (id === 'environmentsAdd') return { project: node.project }
+
+  return id === 'environmentsRemove' ? { project: node.project, ...(node.kind === 'environment' && node.label !== undefined && { names: [node.label] }) } : {}
+}
+
 let blanks: BlankFolder[] = []
 
 /** What the folders without a smith.toml hold, for the state of the view. */
@@ -266,6 +278,8 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     void setContextKey('monosmith.repoKind', viewState === 'adoptable' ? offers[0]?.kind ?? '' : '')
   }
 
+  const webApps = new Map<string, WebAppEnvironments[]>()
+
   const sync = (): void => {
     tree.show(states().map((state) => ({
       root:     state.root,
@@ -273,6 +287,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       snapshot: state.phase === 'ready' ? state.snapshot : undefined,
       note:     describeFolderNote(state),
       ...(agentFiles.get(state.root) === 'missing' && { agentMissing: true }),
+      ...(webApps.has(state.root) && { webApps: webApps.get(state.root) }),
     })))
     paint()
   }
@@ -308,6 +323,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         const snapshot = await readWorkspace(session.connection)
         if (stale()) return
         state.snapshot = snapshot
+        webApps.set(root, await readWebApps(state))
       } else {
         const affected = await readAffected(session.connection)
         if (stale()) return
@@ -904,7 +920,11 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding to ${state.name}… smith installs and tests the new project.` },
         async () => await smithIn(state, true, 600_000)(args),
       ),
-      ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? []),
+      ask: async (options) => {
+        const configured = await smithIn(state)(['config', 'get', 'workspace.environments'])
+
+        return await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? [], configured.code === 0 ? parseWorkspaceEnvironments(configured.stdout) : [])
+      },
       confirm: confirmAddPlan,
     })
     note(`MonoSmith: add in ${state.name}: ${outcomeWords(outcome)}`)
@@ -1200,6 +1220,17 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
   }
 
+  /** The web apps of a folder and their environments, for the Projects view; none when smith lists none. */
+  const readWebApps = async (state: FolderState): Promise<WebAppEnvironments[]> => {
+    try {
+      const listed = await smithIn(state)(['environments', 'list', '--json'])
+
+      return listed.code === 0 ? parseWebApps(listed.stdout) : []
+    } catch {
+      return []
+    }
+  }
+
   /** Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes. */
   const guidedHere = async (spec: GuidedCommand, argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
@@ -1210,7 +1241,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ask:     askGuidedStep,
       show:    async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
       confirm: confirmGuided,
-    })
+    }, environmentAnswers(spec.id, argument))
     note(`MonoSmith: ${spec.title} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellGuidedOutcome(spec.title, outcome, note)
     if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
