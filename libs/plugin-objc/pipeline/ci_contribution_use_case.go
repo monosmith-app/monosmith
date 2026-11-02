@@ -35,8 +35,12 @@ func Doctor(_ string, params protocol.DoctorParams) protocol.DoctorResult {
 	}
 	_, podErr := lookPath("pod")
 	_, xcodeErr := lookPath("xcodebuild")
+	xcode := protocol.Finding{Check: "Xcode is installed", OK: xcodeErr == nil, Warning: true, Detail: "xcodebuild is not on PATH: Objective-C projects build on macOS only", Remedy: "build on a Mac with Xcode; in CI set [ci] native_runners = [\"macos-latest\"] in smith.toml"}
+	if xcodeErr != nil {
+		xcode.Fix = macRunnerFix()
+	}
 	return protocol.DoctorResult{Findings: []protocol.Finding{
 		{Check: "CocoaPods is installed", OK: podErr == nil, Warning: true, Detail: "pod is not on PATH", Remedy: "run gem install cocoapods (or brew install cocoapods) on a Mac"},
-		{Check: "Xcode is installed", OK: xcodeErr == nil, Warning: true, Detail: "xcodebuild is not on PATH: Objective-C projects build on macOS only", Remedy: "build on a Mac with Xcode; in CI set [ci] native_runners = [\"macos-latest\"] in smith.toml"},
+		xcode,
 	}}
 }

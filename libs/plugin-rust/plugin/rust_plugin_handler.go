@@ -31,7 +31,7 @@ func (r *Rust) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: r.Version},
 		Kind:      protocol.KindLanguage,
-		Tools:     toolcatalog.For("rust"),
+		Tools:     toolcatalog.For("rust", "cargo-audit"),
 		Languages: []string{"rust"},
 		Manifests: []string{"Cargo.toml"},
 	}, nil
