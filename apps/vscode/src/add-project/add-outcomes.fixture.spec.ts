@@ -15,6 +15,13 @@ describe('the first question of Add, read from the real output of smith', () => 
     expect(fitted.map((outcome) => outcome.id)).toEqual(['web', 'api', 'function', 'desktop', 'library', 'package'])
   })
 
+  it('names a desktop shell and a cloud host with the title of the catalogue, the one name of every step', () => {
+    const { layers } = parseOutcomes(compose)
+
+    expect(layers.shell).toBe('Desktop shell')
+    expect(layers.host).toBe('Cloud host')
+  })
+
   it('finds the website for react and the desktop app for electron', () => {
     expect(found('react')[0]).toBe('web')
     expect(found('electron')[0]).toBe('desktop')
