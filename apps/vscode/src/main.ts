@@ -21,6 +21,7 @@ import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-
 import { describeFailure } from './smith-run/index.ts'
 import { askRecipeBasics, confirmRecipe, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
+import { chooseSyncRule, confirmSync, syncVersions, tellSyncOutcome } from './sync-versions/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
 import { reportFile, writeReport } from './workspace-report/index.ts'
 import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
@@ -1114,6 +1115,16 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'undone') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Asks which version wins, shows smith's sync plan, and writes it on a yes. */
+  const syncHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('syncing dependency versions')) return
+    const outcome = await syncVersions({ run: smithIn(state), choose: chooseSyncRule, confirm: confirmSync })
+    note(`MonoSmith: sync in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellSyncOutcome(outcome)
+    if (outcome.kind === 'synced') await refreshFolder(state.root, 'full', false)
+  }
+
   /** Writes the HTML report of the workspace to a temp file and opens it in the browser. */
   const openReport = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
@@ -1280,6 +1291,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.composeStack', composeStackHere),
     command<unknown>('monosmith.addDependency', addDependencyHere),
     command<unknown>('monosmith.undo', undoHere),
+    command<unknown>('monosmith.syncVersions', syncHere),
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.newRecipe', newRecipeHere),
     command<unknown>('monosmith.divergences', showDivergences),
