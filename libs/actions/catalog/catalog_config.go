@@ -82,7 +82,7 @@ var catalog = []Action{
 	{Command: []string{"report"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache"}, Safety: Reads, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache", "status"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
-	{Command: []string{"cache", "prune"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"cache", "prune"}, Plan: "--dry-run", Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache", "clear"}, Safety: Changes, Asks: true, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"cache", "verify"}, Safety: Reads, Variants: []Variant{{When: []string{"--fix"}, Safety: Changes}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"boundaries"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},

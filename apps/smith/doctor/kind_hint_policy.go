@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -27,6 +28,9 @@ func UnusedLibHint(name string, dependents, otherProjects int, added, now time.T
 		Warning: true,
 		Detail:  fmt.Sprintf("no project imports %s, and it has been in the repository for %d days. A lib is shared inside the repository; nothing shares it yet", name, days),
 		Remedy:  "if it is a program, `smith kind " + name + " app`; if you publish it, `smith kind " + name + " package` (add --dry-run to see what changes first); if nothing needs it, `smith remove " + name + "`. Leave it if something outside the graph uses it",
+		Fix: smithfix.Choice("Say what the lib "+name+" is", "What is "+name+"? You see what changes before anything is written.",
+			smithfix.Option("A program (app): it is run, not imported", "kind", name, "app"),
+			smithfix.Option("A package: it is published", "kind", name, "package")),
 	}, true
 }
 
@@ -43,5 +47,6 @@ func UnpublishedPackageHint(name string, neverUploaded bool) (protocol.Finding, 
 		Warning: true,
 		Detail:  name + " is a package, but nothing publishes it: its own settings say registry is none, or its manifest says it is never published, so a release only tags it",
 		Remedy:  "if it only serves other projects of this repository, `smith kind " + name + " lib` says what changes (add --dry-run to see first); if you publish it another way, leave it",
+		Fix:     smithfix.Fix("Make the package "+name+" a lib", smithfix.Step("Make "+name+" a lib: it is shared inside the repository and no longer published", "kind", name, "lib")),
 	}, true
 }

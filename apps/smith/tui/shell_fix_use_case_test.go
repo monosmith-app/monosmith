@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -163,6 +164,38 @@ func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l.send(click(0, 0))
 	if l.sh().fix != nil {
 		t.Fatal("a click outside kept the wizard open")
+	}
+}
+
+func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	loads := 0
+	sh := l.sh()
+	sh.sources.Doctor = func() doctorview.Result {
+		loads++
+		return doctorview.Result{Report: doctor.Report{Warnings: 1, Findings: []doctor.Finding{{Finding: protocol.Finding{
+			Check: "the workspace uses the latest defaults", Warning: true, Detail: "this workspace uses the defaults of 2000.01",
+			Remedy: "`smith upgrade --defaults` shows the plan and moves the workspace",
+			Fix: smithfix.Fix("Move the workspace to the latest defaults",
+				smithfix.Step("Move the workspace; the plan lists each change", "upgrade", "--defaults")),
+		}}}}}
+	}
+	l.m = sh
+	l.keys("4", "r")
+	first := loads
+	l.has("Fix: Move the workspace to the latest defaults")
+	l.keys("f")
+	l.has("Fix · review", "$ smith upgrade --defaults --yes", "[ Apply  Enter ]")
+	if len(l.appliedFixes()) != 0 {
+		t.Fatal("applied before the person agreed")
+	}
+	l.keys("enter")
+	applied := l.appliedFixes()
+	if len(applied) != 1 || strings.Join(applied[0].Steps[0].Argv, " ") != "smith upgrade --defaults --yes" {
+		t.Fatalf("applied %+v", applied)
+	}
+	if loads <= first {
+		t.Fatal("doctor did not check again after the fix")
 	}
 }
 

@@ -49,6 +49,7 @@ func ShowFix(w io.Writer, root string, p Planned) error {
 		} else {
 			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, displayCommand(s.Argv))
 		}
+		writePlan(w, root, s)
 	}
 	for _, c := range p.Choices {
 		fmt.Fprintf(w, "  asks: %s\n", c.Question)
