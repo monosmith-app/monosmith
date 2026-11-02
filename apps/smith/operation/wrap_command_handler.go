@@ -1,8 +1,11 @@
 package operation
 
 import (
+	"bufio"
 	"fmt"
+	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
@@ -40,25 +43,32 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		var pending *Pending
 		var before map[string]bool
+		requested, dirty := false, false
 		if !readsOnly(c) {
 			if root, err := workspace.FindRoot("."); err == nil {
 				before = changedSet(root)
 				var note string
 				begin := Begin
 				if f := c.Flags().Lookup("commit"); f != nil && f.Value.String() == "true" {
-					begin = BeginRequested
+					begin, requested = BeginRequested, true
 				}
 				if pending, note = begin(root); note != "" {
 					fmt.Fprintln(c.ErrOrStderr(), "smith: "+note)
+					dirty = strings.HasSuffix(note, "uncommitted changes")
 				}
 			}
 		}
 		err := run(c, args)
 		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
 			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
-				fmt.Fprintf(c.OutOrStdout(), "Not committed. Review it with git status; %s next time to commit it as one operation that smith undo can revert.\n", CommitNextTime("add --commit"))
+				command := spec.Describe(c, args)
+				files := newSince(before, changedSet(root))
+				fmt.Fprintln(c.OutOrStdout(), notCommittedText(requested, command, "add --commit"))
 				// Remember which files this operation changed, so smith commit can leave the others out.
-				_ = WritePending(root, Uncommitted{Command: spec.Describe(c, args), Files: newSince(before, changedSet(root))})
+				_ = WritePending(root, Uncommitted{Command: command, Files: files})
+				if requested && dirty && len(files) > 0 && offersChoice(c) {
+					offerOperationCommit(c, root, command, files)
+				}
 			}
 		}
 		if err != nil || pending == nil {
@@ -75,6 +85,35 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 		return nil
 	}
 	return cmd
+}
+
+// offersChoice is true when a person can answer: a terminal, no CI, and no --yes.
+func offersChoice(c *cobra.Command) bool {
+	if f := c.Flags().Lookup("yes"); f != nil && f.Value.String() == "true" {
+		return false
+	}
+	env := operationplan.DetectEnvironment()
+	return env.Terminal && !env.CI
+}
+
+// offerOperationCommit lets the person commit only the files the operation
+// changed after --commit met a work tree with changes of its own.
+func offerOperationCommit(c *cobra.Command, root, command string, files []string) {
+	out := c.OutOrStdout()
+	switch askDirtyChoice(bufio.NewReader(c.InOrStdin()), out, files) {
+	case chooseOperationFiles:
+		hash, err := Always(root).FinishOnly(command, files)
+		switch {
+		case err != nil:
+			fmt.Fprintf(c.ErrOrStderr(), "smith: the changes are in the work tree, not committed: %v\n", err)
+		case hash != "":
+			fmt.Fprintf(out, "Committed %s: chore: %s (smith undo reverts it)\n", short(hash), command)
+		}
+	case chooseLeave:
+		fmt.Fprintln(out, "Left uncommitted. smith commit --only-operation commits the files of this operation later.")
+	default:
+		fmt.Fprintln(out, "Cancelled: nothing was committed.")
+	}
 }
 
 // readsOnly is true for a run that writes nothing: --dry-run or --check.

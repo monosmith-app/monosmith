@@ -70,7 +70,10 @@ func TestWithConfirmationAddsYesToCommandsThatWouldAskOnATerminal(t *testing.T) 
 		{[]string{"doctor", "--fix"}, []string{"doctor", "--fix", "--yes"}},
 		{[]string{"doctor", "--fix", "--only", "go.work exists"}, []string{"doctor", "--fix", "--only", "go.work exists", "--yes"}},
 		{[]string{"release", "--yes"}, []string{"release", "--yes"}},
-		{[]string{"install"}, []string{"install"}},
+		{[]string{"install"}, []string{"install", "--yes"}},
+		{[]string{"add", "app", "web", "--lang", "node"}, []string{"add", "app", "web", "--lang", "node", "--yes"}},
+		{[]string{"undo"}, []string{"undo", "--yes"}},
+		{[]string{"add", "app", "web", "--dry-run"}, []string{"add", "app", "web", "--dry-run"}},
 	}
 	for _, c := range cases {
 		if got := WithConfirmation(c.in); !reflect.DeepEqual(got, c.want) {

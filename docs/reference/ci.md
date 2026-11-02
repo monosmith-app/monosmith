@@ -223,7 +223,7 @@ can run locally.
 | `smith release --dry-run --comment` | on a pull request: the release preview, in the job summary and as a comment on the pull request |
 | `smith ci pack` | on a push to the release branch: every project's `package` task into `dist/drop`, kept as the run's `drop` artifact |
 | `smith ci native` | in a job per OS, after the ci job: lint, test, build and package the projects tagged native |
-| `smith ci assets` | in a job per platform, after the ci job (GitHub Actions only): run an app's `[release]` build command and upload its files to the GitHub Release ([Releasing](releasing.md#release-files-from-a-command)) |
+| `smith ci assets` | in a job per platform, after the ci job (GitHub Actions only): run an app's `[release]` build command and upload its files to the GitHub Release; `--tag <project>@<version>` runs it again for an existing release, and `--source current\|tag` chooses the code when the tag is not at HEAD ([Releasing](releasing.md#release-files-from-a-command)) |
 | `smith ci release` | on a push to the release branch: version, publish and tag; then the post-release steps plugins declare, whether or not anything was released (the docker plugin's `smith docker description`, when an app has a `description_from` file or a short description for a `docker.io` registry), each only a warning when it fails |
 
 On GitHub Actions and Azure Pipelines output is grouped, failures are annotated,

@@ -87,7 +87,7 @@ Core slices in `apps/smith`:
 | `why`, `report`, `agentdoc`, `agentfiles` | `smith why`, `smith report`, `smith agent file` and `smith agent install` |
 | `pluginmarket`, `plugininstall`, `pluginpack`, `pluginarchive`, `plugintrust`, `pluginadmit`, `pluginenv` | external plugins: marketplace search, install, pack, trust and environment |
 | `releaserehearsal`, `releaseassets` | `smith release --rehearse` and `smith release assets` |
-| `kindchange`, `lockfilesync`, `taskfolding`, `languageserver`, `tauriadd`, `tauriprepare`, `updatenotice` | `smith kind`; the lockfile step of adopt and convert; folding task overrides into `[[task_groups]]`; `smith lsp`; `smith tauri`; the update notice |
+| `kindchange`, `lockfilesync`, `taskfolding`, `languageserver`, `tauriadd`, `tauriprepare`, `updatenotice` | `smith kind`; the lockfile step of adopt and convert; folding task overrides into `[[groups]]`; `smith lsp`; `smith tauri`; the update notice |
 | `clicontract` | `smith commands`, `smith kinds`, `smith info`: the --json contracts editors read |
 | `mcpserver` | `smith mcp` |
 | `tui` | the interactive shell a bare `smith` opens |

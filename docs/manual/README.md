@@ -4,7 +4,7 @@ One page for every `smith` command and subcommand, for the terminal interface an
 VS Code extension. Each command page says what the command is for, when to use it and when
 not to, its synopsis, every argument and flag (type, default, effect, how flags interact),
 exit codes, the files it reads and writes, the environment variables it uses, worked
-examples whose output was captured from a real run of smith 1.62.0, the common errors with
+examples whose output was captured from a real run of smith, the common errors with
 their remedies, and related commands.
 
 The flag tables are generated from `smith commands --json` by
@@ -35,6 +35,13 @@ Python package). Paths in output are shortened.
   makes a command exit 1.
 - **Errors.** Two shapes: `smith: <message>` for a plain error, and a block that starts with
   `✖` followed by one or more `→` lines naming the remedy.
+- **smith asks, and never commits unasked.** A command that changes files prints a plan and, in a
+  terminal, asks `Go ahead? [y/N]`; `--yes` answers it and `--dry-run` stops at the plan. A decision
+  smith must not make for you (where to move a project, which files to commit, how to install a tool) is
+  a choice in a terminal. Without a terminal smith refuses and names the flag that answers. The files a
+  command wrote stay uncommitted unless you pass `--commit` (or set `commit_operations = true` under
+  `[workspace]`); [`smith commit`](commit.md) commits them afterwards and [`smith undo`](undo.md) reverts
+  a committed operation.
 - **`--json`.** Commands that report something print a stable JSON document with `--json`, for
   editors and scripts.
 - **Missing arguments.** `smith new` and `smith add` ask for a missing argument in a terminal

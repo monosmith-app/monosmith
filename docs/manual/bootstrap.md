@@ -65,4 +65,5 @@ On Windows, git does not keep the executable bit of the sh launcher: after `git 
   ([ADR 0055](../architecture/decisions/0055-a-committed-launcher-runs-the-pinned-smith.md)); the
   launcher is for laptops and scripts.
 - A pin must be an exact version. smith has no range syntax for it.
-- With `commit_operations = true` under `[workspace]` the files are one commit.
+- smith leaves the files uncommitted. With `--commit` (or `commit_operations = true` under
+  `[workspace]`) they are one commit.

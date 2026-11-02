@@ -54,6 +54,11 @@ New here? Read [Getting started](getting-started/README.md). Stuck on a word? Se
 | write the config that repeats in every project from one place | [Derived files](guides/derived-files.md), [`smith derive`](manual/derive.md) |
 | see who owns a file, or attach a report of the workspace to a pull request | [`smith why`](manual/why.md), [`smith report`](manual/report.md) |
 | brief a coding agent on the rules of the workspace | [`smith agent file`](manual/agent-file.md), [The MonoSmith agent](guides/agent.md) |
+| start a project from what I am building (a website, an API, a function app, a desktop app) | [`smith add`](manual/add.md), [`smith compose`](manual/compose.md), [your first workspace](getting-started/first-workspace.md#start-from-what-you-are-building) |
+| let one project use an internal library | [`smith install`](manual/install.md), [your first workspace](getting-started/first-workspace.md#use-one-project-from-another) |
+| install the programs a workspace needs | [`smith tools`](manual/tools.md), [`smith tools install`](manual/tools-install.md) |
+| change one decision of a project (its test runner, its linter), or try a change first | [`smith swap`](manual/swap.md), [`smith try`](manual/try.md) |
+| see where the workspace differs from smith's defaults | [`smith divergences`](manual/divergences.md), [`smith copies`](manual/copies.md) |
 | revert the last `smith add`, `remove`, `upgrade`, `derive` or `sync` | [`smith undo`](manual/undo.md) |
 | commit a change you did not commit while it ran, as one undoable commit | [`smith commit`](manual/commit.md) |
 | release prerelease versions from a branch such as `next` | [Release channels](reference/releasing.md#release-channels) |

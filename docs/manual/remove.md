@@ -46,8 +46,9 @@ Usage: `smith remove <project> [flags]`
 - `--yes` skips the confirmation. smith prints a plan first (the directory, then the workspace
   files that change, with their owner where `smith.lock` records one). In a terminal it asks
   `Go ahead? [y/N]`; without a terminal it refuses, so pass `--yes` in scripts.
-- With `commit_operations = true` under `[workspace]` and a clean git work tree, the removal is one
-  commit (`chore: remove core`); [`smith undo`](undo.md) reverts it.
+- smith leaves the removal uncommitted. With `--commit` (or `commit_operations = true` under
+  `[workspace]`) and a clean git work tree, the removal is one commit (`chore: remove core`);
+  [`smith undo`](undo.md) reverts it. [`smith commit`](commit.md) does it afterwards.
 - `--force` removes a project other projects still import; their imports are left
   broken.
 - `--json` prints what changed: `project`, `root`, `files`, `notes` and `mentions`.

@@ -35,6 +35,42 @@ published. A `lib` is imported by other projects and never published itself; it
 ships inside the packages that use it. A `package` is published to its
 registry. See the [glossary](../reference/glossary.md#kind).
 
+### Does smith commit my changes?
+
+No, unless you ask. `smith add`, `remove`, `upgrade`, `derive`, `sync`, `adopt`
+and `convert` leave their files in your work tree. Add `--commit` to a command,
+or set `commit_operations = true` under `[workspace]`, and smith commits the
+change as one operation. If you forgot, `smith commit` commits the files of the
+last operation afterwards. `smith undo` reverts a change that was committed this
+way. The one exception is the first commit of `smith new`; `--no-commit` skips
+it. See [`smith commit`](../manual/commit.md) and [`smith undo`](../manual/undo.md).
+
+### Why does smith ask so many questions, and how do I skip them?
+
+smith shows a decision as a choice, with the consequence and the default marked,
+instead of picking for you. `--yes` takes the default of each question. Without a
+terminal (a script, CI) smith never guesses: it stops and names the flag that
+answers. A few answers are never taken by `--yes`, such as a command that needs
+administrator rights.
+
+### How do I start a project for a website, an API, a function app or a desktop app?
+
+Run `smith add` in a terminal. The first question is "What are you building?".
+`smith compose` shows everything a project can be built from on one screen and
+ends with the exact `smith add` line to run. See [`smith add`](../manual/add.md) and
+[`smith compose`](../manual/compose.md).
+
+### How do I let one project use a library of my workspace?
+
+`smith install -w web workspace:ui`. The project depends on the library in the
+form of its language and nothing is downloaded. See [`smith install`](../manual/install.md).
+
+### How do I install the programs a workspace needs?
+
+`smith tools` lists them and whether each is installed. `smith tools install`
+shows the ways to get a missing one and asks which you want. See
+[`smith tools`](../manual/tools.md).
+
 ### What is a stack?
 
 The set of plugins one project is built with: its language plus a test runner,
@@ -192,7 +228,19 @@ shows the plan.
 
 ### Can I try a release without publishing?
 
-`smith release --dry-run`. It changes nothing.
+`smith release --dry-run`. It changes nothing. `smith release --rehearse` also
+asks each registry, with read-only requests, whether your credential is accepted.
+
+### Can I hold a package back, or force a version?
+
+Yes. `smith release --hold sdk` skips a package this time. `smith release --bump sdk=minor`
+releases it with the bump you name instead of the one its commits ask for.
+
+### Can a branch release prerelease versions?
+
+Yes. Declare the branch as a `[[release.channels]]` table in `smith.toml`.
+It releases its own line (`2.0.0-beta.1`, `beta.2`, ...). See
+[release channels](../reference/releasing.md#release-channels).
 
 ### What if a release fails half way?
 

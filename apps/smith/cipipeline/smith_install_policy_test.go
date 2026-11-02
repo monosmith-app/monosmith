@@ -95,8 +95,40 @@ func TestARegistryInstallWritesNoScriptAndPrunesAGeneratedOne(t *testing.T) {
 	if _, err := os.Stat(script); !os.IsNotExist(err) {
 		t.Fatalf("the generated script should be removed: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(root, "tools")); !os.IsNotExist(err) {
+		t.Fatalf("the empty tools/smith and tools folders should go with the script: %v", err)
+	}
 	if drift := Drift(root, cfg, node); len(drift) != 0 {
 		t.Fatalf("drift %v", drift)
+	}
+}
+
+func TestAFolderWithOtherFilesStaysWhenTheScriptGoes(t *testing.T) {
+	root := t.TempDir()
+	cfg := workspace.Config{CI: workspace.CISection{Providers: []string{"github"}}}
+	if _, _, err := Write(root, cfg, scriptModel()); err != nil {
+		t.Fatal(err)
+	}
+	other := filepath.Join(root, "tools", "other.txt")
+	if err := os.WriteFile(other, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Write(root, cfg, model()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(other); err != nil {
+		t.Fatalf("a folder that holds another file stays: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "tools", "smith")); !os.IsNotExist(err) {
+		t.Fatalf("the empty tools/smith folder should go: %v", err)
+	}
+}
+
+func TestPackageManagerInstallsSmith(t *testing.T) {
+	for language, want := range map[string]bool{"node": true, "python": true, "dotnet": true, "go": false, "rust": false} {
+		if got := PackageManagerInstallsSmith(language); got != want {
+			t.Errorf("%s: got %v, want %v", language, got, want)
+		}
 	}
 }
 

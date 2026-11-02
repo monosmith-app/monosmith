@@ -106,6 +106,8 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `api/surface` | `apiSurface` | `APISurfaceReader` | `APISurfaceParams` → `APISurfaceResult` | `smith release` (the API version check) | 1 min |
 | `dependencies/install` | `dependencies` | `DependencyManager.Install` | `InstallParams` → `DependencyResult` | `smith install`, `smith sync` | 20 min |
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
+| `dependencies/link` | `link` | `Linker.Link` | `LinkParams` → `LinkResult` | `smith install -w <project> <library>`, the Install dialog | 20 min |
+| `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -w <project> <library>` | 20 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |
@@ -136,10 +138,11 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `components` | `sbom/components` | language |
 | `derive` | `derive` | language |
 | `apiSurface` | `api/surface` | language |
-| `channels` | (changes `publish`) | language; only the Go SDK can declare it for now |
-| `declared` | (changes `discover`) | language; only the Go SDK can declare it for now |
+| `channels` | (changes `publish`: `PublishParams.tag`) | language; only the Go SDK can declare it for now (`PublishesChannels`) |
+| `declared` | (changes `discover`: `DiscoverParams.declared`) | language; only the Go SDK can declare it for now (`DescribesDeclared`) |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
+| `link` | `dependencies/link`, `dependencies/unlink` | language |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | language |
 | `latest` | `dependencies/latest` | language |
 | `cancel` | the `cancel` notification: the plugin stops the work of a request when the host cancels it | any plugin with a method that can run for long |
@@ -195,6 +198,7 @@ InitializeResult tells the host who the plugin is and what it can do.
 | `kinds` | `[]ProjectKind` | no | Kinds are the project kinds the plugin can scaffold with generate. Absent or empty means all three (app, lib and package): what every plugin that says nothing does. A plugin that scaffolds only some, such as an app, lists them, so the host offers and the conformance suite asks for just those. |
 | `follows` | `[]string` | no | Follows are the shape keys (see Project.Shape) the plugin applies when it generates a project with GenerateParams.Shape. Where siblings split on a key, the host asks the person only for a key that a plugin of the stack follows. Absent means the plugin follows none. |
 | `choices` | `[]Choice` | no | Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none. |
+| `tools` | `[]ToolNeed` | no | Tools are the programs the plugin needs on the person's machine. The host detects them and, when one is missing, presents the ways to get it (smith tools). Absent means the plugin declares none. |
 
 **What `languages` means for a convention plugin.** It is the list of project languages the plugin
 applies to, and the only place that says so. The host asks the plugin (`contribute`, `doctor`,
@@ -228,12 +232,14 @@ Capabilities are the optional methods a plugin implements.
 | `changeKind` | `bool` | no | ChangeKind answers what changing a project's kind edits (smith kind). |
 | `published` | `bool` | no | Published reports what a registry has of a project. |
 | `dependencies` | `bool` | no | Dependencies installs and uninstalls packages in its projects. |
+| `link` | `bool` | no | Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand. |
 | `declarations` | `bool` | no | Declarations lists and rewrites declared dependency specs (sync, up). |
 | `latest` | `bool` | no | Latest reports the newest releases of dependencies and pinned tools. |
 | `cancel` | `bool` | no | Cancel says the plugin stops the work of a request when the host sends a cancel notification with its id, then answers that request with its result (if the work was already done) or the request-cancelled error. A host never sends the notification to a plugin without it. |
 | `components` | `bool` | no | Components lists a project's dependencies for its SBOM. |
 | `derive` | `bool` | no | Derive says which files the plugin derives from facts and the project graph (smith derive). |
 | `apiSurface` | `bool` | no | APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs. |
+| `declared` | `bool` | no | Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so. |
 | `channels` | `bool` | no | Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it. |
 
 ### CancelParams
@@ -285,6 +291,7 @@ Choice is one option on an axis of a project's make-up: a framework, a test runn
 | `roles` | `[]Role` | no | Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes the project) and/or toolchain (it joins the toolchain). Empty means it only adds to what a plugin of the selection already writes, as a style does. |
 | `needs` | `[]string` | no | Needs are axes that the selection must have a choice on. An axis the person leaves out is filled with the default of the axis. |
 | `default` | `bool` | no | Default marks the choice the host adds when a selection needs its axis and has no choice on it. |
+| `suggested` | `bool` | no | Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by itself: an axis that a choice needs and that has no Default is asked, and the person answers ([ADR 0072](../../architecture/decisions/0072-smith-presents-every-decision-that-changes-something.md)). |
 | `many` | `bool` | no | Many allows the choice next to other choices of its axis that are Many too. By default a selection has one choice per axis. |
 | `requires` | `[]string` | no | Requires are choices that must be in the selection. |
 | `conflicts` | `[]string` | no | Conflicts are choices that must not be in the selection. |
@@ -296,6 +303,18 @@ DiscoverParams asks a plugin to describe the projects behind manifests the host 
 | JSON field | Type | Required | Meaning |
 |---|---|---|---|
 | `manifests` | `[]string` | yes |  |
+| `declared` | `[]DeclaredProject` | no | Declared are the projects smith.toml declares for this plugin's language (`[projects.<name>]` with a root and a language): folders with no manifest of their own, such as a program that is a package of the Go module above it. The plugin describes each one in its result, or answers with an error saying why it cannot. |
+| `settings` | `map[string]map[string]any` | no | Settings are this plugin's settings for projects, by project name, from smith.toml `[projects.<project>.settings.<plugin>]`. They reach the plugin here because the tasks it describes may depend on them (the Go plugin's build tags). A project with no settings is absent. |
+
+### DeclaredProject
+
+DeclaredProject is a project smith.toml declares: a folder with no manifest.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | `string` | yes | Name is the project's name, the key of its `[projects.<name>]` table. |
+| `root` | `string` | yes | Root is the workspace-relative folder. |
+| `kind` | `ProjectKind` | no | Kind is "app", "lib" or "package", or empty for the plugin's choice. |
 
 ### DiscoverResult
 
@@ -895,6 +914,91 @@ DependencyResult lists the workspace-relative files the plugin changed and notes
 |---|---|---|---|
 | `files` | `[]string` | no |  |
 | `notes` | `[]string` | no |  |
+
+### LinkParams
+
+LinkParams asks a plugin to make Project depend on Library, a project of the same workspace and language, in the ecosystem's own form, and to install or lock as that needs. The host has checked that both exist, that the languages match, that Library is not an app and that the link makes no cycle. The plugin answers with an error that names the file when it cannot write the dependency.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `project` | `Project` | yes | Project is the project that gains the dependency. |
+| `library` | `Project` | yes | Library is the project it depends on. |
+| `quiet` | `bool` | no | Quiet keeps the package manager's output unless it fails. |
+| `plan` | `bool` | no | Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line it would write and the choices the user has. |
+| `spec` | `string` | no | Spec is the version range the user chose from LinkResult.Options; empty means the plugin's default, or the form the workspace already uses. |
+
+### LinkResult
+
+LinkResult is what a link wrote, or with LinkParams.Plan would write.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `files` | `[]string` | no | Files are the workspace-relative files changed (or to be changed). |
+| `notes` | `[]string` | no | Notes are for the user. |
+| `manifest` | `string` | no | Manifest is the file the dependency goes into, workspace-relative. |
+| `line` | `string` | no | Line is the dependency as it is written there, for the plan shown before anything is written. |
+| `options` | `[]LinkOption` | no | Options are the real choices of the range written, with the default first. Empty when the ecosystem has none, or the workspace already follows a convention (then Line shows it). |
+
+### LinkOption
+
+LinkOption is one way to write the dependency, with its consequence in words a person who read no manual can follow.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `spec` | `string` | yes | Spec is the value passed back in LinkParams.Spec. |
+| `label` | `string` | yes | Label is the option in a few words. |
+| `meaning` | `string` | yes | Meaning says what happens with this option. |
+
+### UnlinkParams
+
+UnlinkParams asks a plugin to remove the dependency of Project on Library. The notes of the result say so when the manifest held no such dependency.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `project` | `Project` | yes |  |
+| `library` | `Project` | yes |  |
+
+### ToolNeed
+
+ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it ([ADR 0077](../../architecture/decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)): it never installs in silence. The plugin writes facts only; the host decides how to ask.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `name` | `string` | yes | Name identifies the tool across plugins and in commands (smith tools install python). Two plugins that need the same tool use the same Name. |
+| `title` | `string` | yes | Title is what the tool is called in text: "Python", "the .NET SDK". |
+| `why` | `string` | yes | Why says in plain words what smith needs the tool for. |
+| `consequence` | `string` | yes | Consequence says what stops working while the tool is missing, as the end of a sentence that starts "If you skip it, ". |
+| `program` | `string` | yes | Program is the program that carries the tool on PATH ("python3"). |
+| `alternatives` | `[]string` | no | Alternatives are other programs that also count ("python", "py"). |
+| `versionArgs` | `[]string` | no | VersionArgs are the arguments that make Program print its version. Absent means --version. |
+| `pins` | `[]ToolVersionPin` | no | Pins are the files where a workspace pins the version it wants. The first pin the host finds gives the version range. Absent means any version counts. |
+| `choice` | `string` | no | Choice limits the tool to stacks that have this choice ("azure-functions"). Absent means every project of the plugin needs it. |
+| `systems` | `[]string` | no | Systems limits the tool to these systems, named as Go names them ("windows", "darwin", "linux"). Absent means every system. |
+| `suggested` | `string` | no | Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and {major.minor} in the install entries. |
+| `optional` | `bool` | no | Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure. |
+| `install` | `[]ToolInstall` | no | Install are the ways to get the tool, per package manager and system. |
+| `download` | `string` | yes | Download is the official page of the tool, for the person who installs it by hand or has no package manager. |
+| `source` | `string` | yes | Source is the address of the page the Install entries were checked against. |
+| `checked` | `string` | yes | Checked is the date (YYYY-MM-DD) the entries were last checked. |
+
+### ToolVersionPin
+
+ToolVersionPin names a file that pins the version of a tool and how to read it.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `file` | `string` | yes | File is the base name of the file, looked up at the workspace root and in the folders of the projects that use the tool. |
+| `format` | `string` | yes | Format is one of: "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod", "pyproject" (requires-python), "global-json" (sdk.version) and "rust-toolchain" (the channel). |
+
+### ToolInstall
+
+ToolInstall is one way to get a tool with a package manager. The host builds the exact command from the manager and the package. The language's own installers (uv, fnm, rustup) are offered only when they are already on the machine.
+
+| JSON field | Type | Required | Meaning |
+|---|---|---|---|
+| `manager` | `string` | yes | Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". |
+| `package` | `string` | yes | Package may hold {major} and {major.minor}, which the pinned or suggested version fills. |
+| `note` | `string` | no | Note adds a sentence the person needs before choosing ("a new terminal is needed"). |
 
 ### DeclaredParams
 

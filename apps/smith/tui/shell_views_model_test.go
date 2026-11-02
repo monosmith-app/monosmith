@@ -384,7 +384,7 @@ func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testi
 	l.has("Install packages", "Project: ‹ orders ›", "Packages, separated by spaces", "development dependency")
 	// Typing while the "Add" answer is the registry goes straight to the packages field.
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders --registry zod" {
+	if got := l.lastStarted(); got != "install -w orders --registry zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
