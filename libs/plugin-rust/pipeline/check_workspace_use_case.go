@@ -26,7 +26,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	var findings []protocol.Finding
 	_, err := probe(workspaceRoot, []string{"cargo", "--version"})
 	findings = append(findings, protocol.Finding{
-		Check: "cargo is installed", OK: err == nil,
+		Check: "Rust (cargo) is installed", OK: err == nil,
 		Detail: "cargo is not on PATH", Remedy: "install Rust " + Version(workspaceRoot) + " with rustup (https://rustup.rs)",
 	})
 	if err == nil {

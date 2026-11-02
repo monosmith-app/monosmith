@@ -19,7 +19,7 @@ var rustcVersion = regexp.MustCompile(`rustc (\d+\.\d+(?:\.\d+)?)`)
 // container install. A newer local Rust warns, an older one fails: a crate
 // can need a newer Cargo than the machine has, and the error then reads like
 // a dependency problem ("feature edition2024 is required"). A machine
-// without rustc gives no finding; "cargo is installed" already says so.
+// without rustc gives no finding; "Rust (cargo) is installed" already says so.
 //
 // The fix pins Rust in rust-toolchain.toml, which the generated CI, the dev
 // container and rustup all follow: an older local installs the pinned

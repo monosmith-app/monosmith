@@ -83,7 +83,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	findings := []protocol.Finding{
 		{Check: "CMake is installed", OK: has("cmake", "--version"), Detail: "cmake is not on PATH", Remedy: "install CMake 3.25+ (https://cmake.org/download)"},
 		{Check: "Ninja is installed", OK: has("ninja", "--version"), Detail: "ninja is not on PATH", Remedy: "install Ninja (https://ninja-build.org)"},
-		{Check: "a C++ compiler is installed", OK: compiler, Detail: "none of c++, g++, clang++ or cl is on PATH", Remedy: "install GCC, Clang or MSVC (from a developer prompt)"},
+		{Check: "a C and C++ compiler is installed", OK: compiler, Detail: "none of c++, g++, clang++ or cl is on PATH", Remedy: "install GCC, Clang or MSVC (from a developer prompt)"},
 		{Check: "cppcheck is installed", OK: has("cppcheck", "--version"), Detail: "cppcheck is not on PATH", Remedy: "install cppcheck (https://cppcheck.sourceforge.io)"},
 	}
 	for _, p := range params.Projects {

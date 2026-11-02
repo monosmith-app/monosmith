@@ -259,7 +259,7 @@ Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the work
 
 | Check | Fails when |
 |---|---|
-| `cargo is installed` | `cargo --version` fails; remedy: install Rust with rustup |
+| `Rust (cargo) is installed` | `cargo --version` fails; remedy: install Rust with rustup |
 | `cargo-audit is installed` | a warning when `cargo audit --version` fails; remedy: `cargo install --locked cargo-audit` |
 | `Rust is <version>, as in CI` | `rustc --version`, as rustup resolves it in the workspace (so a `rust-toolchain.toml` counts), is older than the version CI and the dev container install (`1.90`, or the `channel` of `rust-toolchain.toml`); a newer local Rust is a warning. Nothing is reported when `rustc` is absent (the `cargo` check says so) or the channel is `stable` or `nightly`. Fix: write `rust-toolchain.toml` (never over an existing one) and `rustup toolchain install` the pinned version; for a newer local Rust, pin what the machine runs |
 | `the root Cargo.toml is a workspace` | there is no root `Cargo.toml` |

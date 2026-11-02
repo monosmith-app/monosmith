@@ -4459,7 +4459,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     }
 }
 
-/// <summary>ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". The host builds the exact command from the manager and Package; Package may hold {major} and {major.minor}, which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup) are offered only when they are already on the machine.</summary>
+/// <summary>ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup" and "cargo". The host builds the exact command from the manager and Package; Package may hold {major} and {major.minor}, which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup, cargo) are offered only when they are already on the machine.</summary>
 public sealed record ToolInstall : IProtocolValue<ToolInstall>
 {
     /// <summary>The <c>manager</c> member of <c>ToolInstall</c>.</summary>

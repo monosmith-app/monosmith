@@ -60,7 +60,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings,
 		protocol.Finding{
-			Check:  "the Rust toolchain is installed",
+			Check:  "Rust (cargo) is installed",
 			OK:     rustc == nil && cargo == nil,
 			Detail: "rustc or cargo is not on PATH, so tauri-build cannot compile src-tauri",
 			Remedy: "install Rust from https://rustup.rs",

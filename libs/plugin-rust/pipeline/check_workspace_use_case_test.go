@@ -24,7 +24,7 @@ func TestDoctor(t *testing.T) {
 		got[f.Check] = f.OK
 	}
 	want := map[string]bool{
-		"cargo is installed": false, "workspace member apps/cli exists": true, "workspace member libs/gone exists": false,
+		"Rust (cargo) is installed": false, "workspace member apps/cli exists": true, "workspace member libs/gone exists": false,
 		"the Cargo workspace lists apps/cli": true, "the Cargo workspace lists crates/x": true, "the Cargo workspace lists libs/new": false,
 	}
 	for k, v := range want {
