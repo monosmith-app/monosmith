@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseChoices, parseKinds } from './add-options.mapper.ts'
-import { outcomesOf } from './add-outcomes.mapper.ts'
+import { outcomesOf, whatIs } from './add-outcomes.mapper.ts'
 
 const kinds = parseKinds(JSON.stringify([
   { kind: 'node-app', language: 'node', label: 'Node app' }, { kind: 'node-lib', language: 'node', label: 'Node lib' },
@@ -14,6 +14,14 @@ const choices = parseChoices(JSON.stringify([
   { axis: 'framework', name: 'azure-functions', title: 'Azure Functions', layer: 'host', language: 'python', needs: ['trigger'] },
   { axis: 'trigger', name: 'http-trigger', layer: 'host', language: 'node' },
 ]))
+
+describe('whatIs', () => {
+  it('says in one line what a layer means, and nothing for another word', () => {
+    expect(whatIs('shell')).toBe('shell = what wraps the app as a program you install on a computer.')
+    expect(whatIs('host')).toContain('where the code runs in the cloud')
+    expect(whatIs('klingon')).toBe('')
+  })
+})
 
 describe('outcomesOf', () => {
   const outcomes = outcomesOf({ kinds, choices, stacks: [] })

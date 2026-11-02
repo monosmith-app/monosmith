@@ -125,7 +125,7 @@ func outcomePickStep(o compose.Outcome, language string) (Step, bool) {
 	}
 	return Step{
 		Key: pickKey, Prompt: prompt, Options: options,
-		Note: "Your pick starts ticked in the choices question after the name: you can change it there.",
+		Note: WhatIs(o.Layer) + "\nYour pick starts ticked in the choices question after the name: you can change it there.",
 		Skip: func(a map[string][]string) bool { return first(a, outcomeKey) != o.ID || first(a, "lang") != language },
 		Preselect: func(typed string, opts []Option) string {
 			for _, opt := range opts {

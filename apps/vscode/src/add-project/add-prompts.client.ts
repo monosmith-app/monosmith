@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } from './add-options.contract.ts'
-import { outcomesOf, type OutcomeOption } from './add-outcomes.mapper.ts'
+import { outcomesOf, whatIs, type OutcomeOption } from './add-outcomes.mapper.ts'
 import { askedAxes, choiceNames, choicesByAxis, hostTerms, roleOf } from './add-options.mapper.ts'
 
 const ROLES: Record<string, string> = {
@@ -111,7 +111,7 @@ async function askPreset (outcome: OutcomeOption, language: string): Promise<str
   const question = { framework: 'Which framework?', shell: 'Which desktop shell?', host: 'Which cloud?' }[outcome.items[0]?.layer ?? ''] ?? 'Which one?'
   const picked = await vscode.window.showQuickPick(
     [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])],
-    { title: `${TITLE}: ${question}`, placeHolder: 'Your pick starts selected in the choices that follow', matchOnDescription: true },
+    { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick starts selected in the choices that follow`.trim(), matchOnDescription: true },
   )
   if (picked === undefined) return undefined
 
@@ -166,7 +166,7 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
         detail:      choice.description,
         picked:      choice.isDefault || preset.includes(choice.name),
       })),
-      { title: `${TITLE}: ${axis.axis}`, placeHolder: defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : `Choose ${axis.axis}, or Escape to cancel`, canPickMany: true },
+      { title: `${TITLE}: ${axis.axis}`, placeHolder: `${whatIs(axis.axis)} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : `Choose ${axis.axis}, or Escape to cancel`}`.trim(), canPickMany: true },
     )
     if (answer === undefined) return undefined
     if (!axis.many && answer.length > 1) {

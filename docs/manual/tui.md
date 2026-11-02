@@ -92,7 +92,7 @@ that does nothing. Esc never quits.
 | `Ctrl+C` | Stop the run in progress; pressed again, quit. |
 | `m` | Turn the mouse on or off. Off lets the terminal select text; Shift+drag selects with it on. |
 | `y` | Copy the focused item (remedy, command, project path or package) to the clipboard, through the terminal (OSC 52), so it also works over SSH and in tmux panes that allow it. Works in Projects, Run, Doctor, Deps. |
-| `r` | Read the view again (Home, Doctor, Release, Deps). |
+| `r` | Reload this view: read the files and the checks again, run nothing (Home, Doctor, Release, Deps). The footer says `r reload view`. On the Run view `r` is `run again`: it runs the last command line again. |
 
 ### Run tasks (in a workspace)
 
@@ -182,6 +182,13 @@ Commands that change the workspace or publish (`smith ci generate`, `smith insta
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
 `Left`, `Right` and `Shift+Tab` move between the buttons.
+
+### What a word means
+
+A form that uses a word of smith says what it means on the same screen, in one line, from the
+[glossary](../reference/glossary.md) and from the layers of the composer: the choices question explains
+`stack`, `framework`, `shell` and `host`, Manage plugins explains `plugin`, Write a recipe explains
+`recipe`, and the code layout question explains a `slice` (`vertical-slices`).
 
 ### After a change: the result dialog
 

@@ -458,7 +458,13 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 	case step == nil:
 		lines = append(lines, th.Muted("Done: "+m.action.Title))
 	case step.Options == nil:
-		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt, "", m.input.View(), "")
+		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
+		for _, note := range strings.Split(step.Note, "\n") {
+			if note != "" {
+				lines = append(lines, th.Muted(note))
+			}
+		}
+		lines = append(lines, "", m.input.View(), "")
 		if v := strings.TrimSpace(m.input.Value()); v == "" && m.input.Placeholder != "" && !step.Optional {
 			// The grey text is an example, not a default Enter would accept.
 			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))

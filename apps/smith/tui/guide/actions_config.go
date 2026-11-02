@@ -159,7 +159,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		},
 		{
 			Title: "Manage plugins", Presents: "plugin set", Hint: "choose which built-in plugins are on", NeedsWorkspace: true,
-			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Multi: true, Options: pluginOpts}},
+			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Note: WhatIs("plugin"), Multi: true, Options: pluginOpts}},
 			Argv: func(a map[string][]string) []string {
 				return append([]string{"plugin", "set"}, a["plugins"]...)
 			},

@@ -15,6 +15,9 @@ func NewWorkspaceSteps() []Step {
 	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}, setupStep()}
 	for _, q := range scaffold.NewQuestions() {
 		step := Step{Key: q.Key, Prompt: q.Prompt}
+		if q.Key == scaffold.AnswerArchitecture {
+			step.Note = WhatIs("slice")
+		}
 		if q.Advanced {
 			step.Prompt += " Enter keeps " + q.Default + "."
 		}

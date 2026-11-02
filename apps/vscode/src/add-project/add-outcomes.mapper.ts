@@ -1,6 +1,28 @@
 import type { AddOptions, ChoiceOption } from './add-options.contract.ts'
 import { roleOf } from './add-options.mapper.ts'
 
+/** What the words of a layer mean, the same sentences `smith compose` shows. */
+const LAYER_ABOUT: Record<string, string> = {
+  framework: 'how the app or library is written: a web framework, or a whole starter',
+  shell:     'what wraps the app as a program you install on a computer',
+  host:      'where the code runs in the cloud, with the trigger and the runtime it asks for',
+  test:      'the tool that runs the tests',
+  lint:      'the tool that checks and formats the code',
+  style:     'how the app looks: a CSS library',
+}
+
+/**
+ * One line that says what a layer or an axis of choices means, to show where the
+ * word first appears.
+ * @param layer - framework, shell, host, test, lint or style
+ * @returns "framework = how the app…", or '' for a word with no line
+ */
+export function whatIs (layer: string): string {
+  const about = LAYER_ABOUT[layer]
+
+  return about === undefined ? '' : `${layer} = ${about}.`
+}
+
 /** Something a person wants to build, in plain words: the first question of Add project. */
 export interface OutcomeOption {
   /** `web`, `api`, `function`, `desktop`, `library` or `package`. */

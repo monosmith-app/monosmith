@@ -190,6 +190,7 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 	step := Step{
 		Key:      withKeyPrefix + lang,
 		Prompt:   "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
+		Note:     choiceWords(offers),
 		Multi:    true,
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
