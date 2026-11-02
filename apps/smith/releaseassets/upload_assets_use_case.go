@@ -70,7 +70,7 @@ func Run(ctx context.Context, s *session.Session, req Request) (Result, error) {
 		return Result{}, problem.New(fmt.Sprintf("%q is not a platform smith builds release files for", platform),
 			"smith release assets --platform "+strings.Join(workspace.CommandPlatforms, " | "))
 	}
-	for _, w := range buildoutputs.OverlapWarnings(s.Graph.Projects, s.Config.Workspace.SharedOutputs...) {
+	for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
 		fmt.Fprintln(req.Out, w)
 	}
 	if req.Source == SourceUndecided {

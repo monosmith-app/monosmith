@@ -22,6 +22,6 @@ export interface ReleaseChoices {
 /** How the release flow ended: published (`lines` are what smith printed), nothing to release (`lines` say why), refused, or cancelled. */
 export type ReleaseOutcome =
   | { kind: 'released', lines: string[] } |
-  { kind: 'nothing', lines: string[] } |
+  { kind: 'nothing', lines: string[], unchanged: string[] } |
   { kind: 'refused', message: string } |
   { kind: 'cancelled' }

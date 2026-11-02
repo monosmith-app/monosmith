@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/cachemaintenance"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/corefixes"
@@ -232,12 +231,8 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 		Remedy: "build each project into " + protocol.BuildDir + "/<project dir>/: point the tool there (tsconfig outDir, --outdir, -o) and the task's outputs (smith.toml outputs = [...]); for a plugin's own task, update the plugin; or, for a folder a tool needs the output in (a go:embed folder), list it under [workspace] allowed_outputs",
 	})
 	out = append(out, buildWritesFinding(s))
-	shared := buildoutputs.SharedOutputs(s.Graph.Projects, s.Config.Workspace.SharedOutputs...)
-	out = append(out, protocol.Finding{
-		Check: "no two tasks write the same output directory", OK: len(shared) == 0, Warning: true,
-		Detail: "a cache restore replaces a task's output directories, deleting what the other task wrote there: " + strings.Join(shared, "; "),
-		Remedy: "give each task its own directory (dist/drop/<project dir>/ for a package task) in its command and in smith.toml outputs = [...]; or, when tasks fill one folder on purpose, list it under [workspace] shared_outputs",
-	})
+	out = append(out, outputOverlapFinding(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs, readConfigText(s.Root)))
+	out = append(out, webEnvironmentFindings(s.Root, s.Graph.Projects)...)
 	badServe := BadServe(s.Graph)
 	out = append(out, protocol.Finding{
 		Check: "every task that serves an app can start it", OK: len(badServe) == 0,

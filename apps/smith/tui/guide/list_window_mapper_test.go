@@ -25,8 +25,8 @@ func longList(t *testing.T) Model {
 	return m
 }
 
-func windowText(m Model, w, h, screen int) (string, map[int]int) {
-	lines, at := m.Window(theme.Default(), w, h, screen)
+func windowText(m Model, w, h int) (string, map[int]int) {
+	lines, at := m.Window(theme.Default(), w, h)
 	for i := range lines {
 		lines[i] = pane.Strip(lines[i])
 	}
@@ -36,23 +36,23 @@ func windowText(m Model, w, h, screen int) (string, map[int]int) {
 func optionRows(text string) int { return strings.Count(text, "framework: opt") }
 
 var screens = []struct {
-	name         string
-	w, h, screen int
+	name string
+	w, h int
 }{
-	{"110x32", 100, 22, 32},
-	{"80x24", 72, 14, 24},
+	{"110x32", 100, 22},
+	{"80x24", 72, 14},
 }
 
 func TestTheWheelScrollsTheListAndTheSelectionStays(t *testing.T) {
 	for _, sc := range screens {
 		t.Run(sc.name, func(t *testing.T) {
 			m := longList(t)
-			first, _ := windowText(m, sc.w, sc.h, sc.screen)
+			first, _ := windowText(m, sc.w, sc.h)
 			if !strings.Contains(first, "↓ ") || strings.Contains(first, "↑ ") {
 				t.Fatalf("at the top only rows below are hidden:\n%s", first)
 			}
 			m = m.Wheel(6)
-			text, _ := windowText(m, sc.w, sc.h, sc.screen)
+			text, _ := windowText(m, sc.w, sc.h)
 			if m.cursor != 0 {
 				t.Fatalf("the wheel moved the selection to %d", m.cursor)
 			}
@@ -67,27 +67,27 @@ func TestKeysMoveTheSelectionAndKeepItInView(t *testing.T) {
 	for _, sc := range screens {
 		t.Run(sc.name, func(t *testing.T) {
 			m := longList(t)
-			windowText(m, sc.w, sc.h, sc.screen)
+			windowText(m, sc.w, sc.h)
 			for range 12 {
 				m = press(m, "down")
-				windowText(m, sc.w, sc.h, sc.screen)
+				windowText(m, sc.w, sc.h)
 			}
-			text, _ := windowText(m, sc.w, sc.h, sc.screen)
+			text, _ := windowText(m, sc.w, sc.h)
 			if m.cursor != 12 || !strings.Contains(text, "opt12") {
 				t.Fatalf("cursor %d, row 12 not in view:\n%s", m.cursor, text)
 			}
 			m = press(m, "end")
-			text, _ = windowText(m, sc.w, sc.h, sc.screen)
+			text, _ = windowText(m, sc.w, sc.h)
 			if m.cursor != 24 || !strings.Contains(text, "opt24") || strings.Contains(text, "↓ ") {
 				t.Fatalf("End: cursor %d:\n%s", m.cursor, text)
 			}
 			m = press(m, "pgup")
-			text, _ = windowText(m, sc.w, sc.h, sc.screen)
+			text, _ = windowText(m, sc.w, sc.h)
 			if m.cursor >= 24 || m.cursor < 24-sc.h || !strings.Contains(text, fmt.Sprintf("opt%02d", m.cursor)) {
 				t.Fatalf("PgUp: cursor %d:\n%s", m.cursor, text)
 			}
 			m = press(m, "home")
-			text, _ = windowText(m, sc.w, sc.h, sc.screen)
+			text, _ = windowText(m, sc.w, sc.h)
 			if m.cursor != 0 || !strings.Contains(text, "opt00") || strings.Contains(text, "↑ ") {
 				t.Fatalf("Home: cursor %d:\n%s", m.cursor, text)
 			}
@@ -102,26 +102,26 @@ func TestKeysMoveTheSelectionAndKeepItInView(t *testing.T) {
 func TestTheListAlwaysKeepsEightRowsAndTheGlossaryFoldsOnAShortScreen(t *testing.T) {
 	for _, sc := range screens {
 		t.Run(sc.name, func(t *testing.T) {
-			text, _ := windowText(longList(t), sc.w, sc.h, sc.screen)
+			text, _ := windowText(longList(t), sc.w, sc.h)
 			if got := optionRows(text); got < 8 {
 				t.Fatalf("the list got %d rows:\n%s", got, text)
 			}
-			if sc.screen < 30 {
-				if !strings.Contains(text, wordsHint) || strings.Contains(text, "framework = ") {
-					t.Fatalf("a short screen folds the words to one line:\n%s", text)
-				}
+			// The pane decides: a short pane folds the words, a tall one keeps them.
+			folded := strings.Contains(text, wordsHint)
+			if (sc.h < 24) != folded || (folded && strings.Contains(text, "framework = ")) {
+				t.Fatalf("a pane of %d rows: folded %v:\n%s", sc.h, folded, text)
 			}
 		})
 	}
 	// A tall screen shows the words, and "?" folds them again.
 	m := longList(t)
-	text, _ := windowText(m, 100, 30, 40)
+	text, _ := windowText(m, 100, 30)
 	if !strings.Contains(text, "framework = how the app") || optionRows(text) < 8 {
 		t.Fatalf("a tall screen shows the words:\n%s", text)
 	}
 	// A short one opens them with ? and the list still keeps its rows.
 	m = press(longList(t), "?")
-	text, _ = windowText(m, 100, 22, 24)
+	text, _ = windowText(m, 100, 22)
 	if !strings.Contains(text, "framework = how the app") || optionRows(text) < 8 {
 		t.Fatalf("? opens the words:\n%s", text)
 	}
@@ -129,7 +129,7 @@ func TestTheListAlwaysKeepsEightRowsAndTheGlossaryFoldsOnAShortScreen(t *testing
 
 func TestAClickRowMapsToTheOptionUnderItAfterAScroll(t *testing.T) {
 	m := longList(t).Wheel(5)
-	text, at := windowText(m, 100, 22, 32)
+	text, at := windowText(m, 100, 22)
 	lines := strings.Split(text, "\n")
 	for row, opt := range at {
 		if !strings.Contains(lines[row], fmt.Sprintf("opt%02d", opt)) {

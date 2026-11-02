@@ -36,3 +36,17 @@ func TestAnAllowedOutputOutsideDistIsNotReported(t *testing.T) {
 		t.Errorf("with the setting it is not: %v", got)
 	}
 }
+
+func TestAWebAppThatKeepsItsBuildsInTheProjectIsNotReported(t *testing.T) {
+	web := &projectgraph.Project{Plugin: "node", Project: protocol.Project{Name: "web", Root: "apps/web", Tasks: map[string]protocol.Task{
+		"build":     {Outputs: []string{"dist/prd"}},
+		"build:uat": {Outputs: []string{"dist/uat"}},
+	}, Settings: map[string]map[string]any{"vite": {"output": "project"}}}}
+	if got := OutsideBuildDir([]*projectgraph.Project{web}); len(got) != 0 {
+		t.Errorf("the owner chose dist/<env> in the app: %v", got)
+	}
+	web.Settings = nil
+	if got := OutsideBuildDir([]*projectgraph.Project{web}); len(got) != 2 {
+		t.Errorf("without the choice both are reported: %v", got)
+	}
+}

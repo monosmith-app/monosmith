@@ -41,7 +41,7 @@ func TestSharedOutputsLeavesSeparateDirectoriesAlone(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 	// One task naming a directory twice is not a clash with itself.
-	c :=projectWithOutputs("c", "libs/c", map[string][]string{"build": {"dist", "dist/types"}})
+	c := projectWithOutputs("c", "libs/c", map[string][]string{"build": {"dist", "dist/types"}})
 	if got := SharedOutputs([]*projectgraph.Project{c}); len(got) != 0 {
 		t.Errorf("got %v", got)
 	}
@@ -62,5 +62,28 @@ func TestOverlapWarningsNameBothTasksAndTheFix(t *testing.T) {
 	}
 	if got := OverlapWarnings(projects, "dist/drop"); len(got) != 0 {
 		t.Errorf("a shared folder is not warned about: %v", got)
+	}
+}
+
+func TestLongRunningTasksAreNotCompared(t *testing.T) {
+	for name, want := range map[string]bool{"watch": true, "dev": true, "start": true, "serve": true, "build:watch": true, "serve-docs": true, "build": false, "build-dev": false, "build:uat": false, "package": false} {
+		if got := LongRunning(name); got != want {
+			t.Errorf("LongRunning(%q) = %v, want %v", name, got, want)
+		}
+	}
+	models := projectWithOutputs("models", "libs/models", map[string][]string{"build": {"dist"}, "watch": {"dist"}})
+	if got := SharedOutputs([]*projectgraph.Project{models}); len(got) != 0 {
+		t.Errorf("models:watch is not reported: %v", got)
+	}
+}
+
+func TestAlternativeTasksAreNotReported(t *testing.T) {
+	api := projectWithOutputs("api", "apps/api", map[string][]string{"build": {"dist"}, "build-dev": {"dist"}})
+	projects := []*projectgraph.Project{api}
+	if got := Overlaps(projects, nil, nil); len(got) != 1 || got[0].Line() != "api:build and api:build-dev both write apps/api/dist" {
+		t.Fatalf("got %v", got)
+	}
+	if got := Overlaps(projects, nil, [][]string{{"api:build-dev", "api:build"}}); len(got) != 0 {
+		t.Errorf("alternatives are not reported: %v", got)
 	}
 }

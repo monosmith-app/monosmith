@@ -71,7 +71,8 @@ describe('releaseWorkspace without a releasing commit', () => {
 
   it('says there is nothing to release when the person picks no package', async () => {
     const f = fake({ forced: [] })
-    expect(await releaseWorkspace(f.deps)).toMatchObject({ kind: 'nothing' })
+    // The packages no commit releases go with the outcome, so the notice can offer the forced path.
+    expect(await releaseWorkspace(f.deps)).toMatchObject({ kind: 'nothing', unchanged: ['mvd', 'core'] })
     expect(f.applied).toEqual([])
   })
 

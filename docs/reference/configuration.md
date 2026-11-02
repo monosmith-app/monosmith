@@ -50,6 +50,8 @@ module_prefix = "github.com/acme/acme"  # Go module path prefix
 exclude = ["examples/*"]              # directories whose manifests are not projects (below)
 allowed_outputs = ["apps/mvd/appwindow/web"]  # paths a task may write outside dist/ (below)
 shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (below)
+alternative_outputs = [["api:build", "api:build-dev"]]  # tasks that write one folder but never run together (below)
+environments = ["lcl", "dev", "uat", "prd"]  # the builds a new web app gets, one per environment (docs/manual/environments.md)
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 confirm = "risky"                     # which plans ask: "always" (default) or "risky": only a plan that deletes or edits files asks (ADR 0073)
@@ -96,6 +98,7 @@ rubygems_trusted_publishing = false   # publish gems with the workflow's OIDC to
 vsce_entra = false                    # publish VS Code extensions as a Microsoft Entra ID app, not with VSCE_PAT (GitHub only; docs/reference/releasing.md)
 registry = "libs"                     # where packages publish; default: [workspace] registry, then the public registries
 api_check = "warn"                    # warn when the commits' bump is smaller than the public API change needs; "error" stops the release, "off" skips (releasing.md, The bump against the public API)
+propagation_wait = "15m"              # the longest to wait for the platform packages of an npm release to be fetchable before a dist-tag moves; "0" does not wait (releasing.md, npm, PyPI, NuGet and RubyGems)
 
 # A branch that releases a line of prerelease versions of its own (releasing.md, Release channels):
 # [[release.channels]]
@@ -146,6 +149,7 @@ bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
+[projects.web.settings.vite]          # a web app's environments: environments, default_environment, output, env_files (manual/environments.md)
 [projects.mvd.settings.go]            # Go build tags: tags, tags_linux, tags_windows, tags_darwin (plugins/using/catalogue/go.md)
 tags = ["production"]
 tags_linux = ["gtk3"]
@@ -451,6 +455,17 @@ shared_outputs = ["dist/drop"]                # package tasks that fill one fold
 - `shared_outputs`: several tasks may write there. A cache restore replaces a
   task's output folders, so each task must write its own files. Giving each task
   a subfolder (`dist/drop/<project>/`) is the safer choice and needs no setting.
+  smith then never clears the folder, so old files stay.
+- `alternative_outputs`: groups of tasks that write one folder but never run
+  together (`api:build` and `api:build-dev`). smith doctor does not report the
+  overlap inside a group. smith still clears the folder before each task and a
+  cache restore still replaces it, so a run of two tasks of one group keeps only
+  the last one's files. Prefer giving each task its own folder; `smith doctor
+  --fix --only "no two tasks write the same output directory" --choose 2` writes
+  the group. A task that runs until it is stopped (`watch`, `serve`, `start`,
+  `dev`) is never compared with a build.
+- `environments`: the environments a new web app is built for, lowercase words.
+  See [environment builds](../manual/environments.md).
 
 ## Shared schemas
 

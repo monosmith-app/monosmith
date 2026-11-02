@@ -38,6 +38,13 @@ func (r Report) Text() string {
 			fmt.Fprintf(&b, "%s %s to %s\n", verb, res.Project, res.Mirror)
 		}
 	}
+	if pending := r.PendingTags(); len(pending) > 0 {
+		b.WriteString("\nWarning: npm did not serve every platform package in time, so a dist-tag was not moved.\nThe packages are published under the dist-tag \"pending\". When npm serves them, run:\n")
+		for _, command := range pending {
+			fmt.Fprintf(&b, "  %s\n", command)
+		}
+		b.WriteString("The release exits with code 2 so that CI shows a warning.\n")
+	}
 	if r.Error != "" && r.DryRun {
 		b.WriteString("\nThe real release would fail for:\n")
 		for _, res := range r.Results {

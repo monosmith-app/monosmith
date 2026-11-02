@@ -1,9 +1,14 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
-import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } from './add-options.contract.ts'
+import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
 import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
-import { askedAxes, choicesByAxis, roleOf } from './add-options.mapper.ts'
+import { choicesByAxis, roleOf } from './add-options.mapper.ts'
+import { typedItem } from './add-choice-rows.mapper.ts'
+import { pickChoices, type ChoicePrompts } from './pick-choices.use-case.ts'
+import { showNotice } from '../notice-buttons/index.ts'
+import { isWebApp } from './web-environments.mapper.ts'
+import { askWebEnvironments } from './web-environments-prompts.client.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -27,8 +32,8 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
   const found = await askOutcome(options)
   if (found === undefined || found === 'compose') return found
 
-  const { role, language, preset } = found
-  const build = await askBuild(options, language, preset)
+  const { role, language, preset, outcomeId } = found
+  const build = await askBuild(options, language, preset, outcomeId)
   if (build === undefined) return undefined
 
   const like = await askLike(projects.filter((project) => project.language === language))
@@ -41,7 +46,14 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
     validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
   })
 
-  return name === undefined ? undefined : { role, name, language, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
+  if (name === undefined) return undefined
+
+  const request: AddRequest = { role, name, language, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
+  if (!isWebApp(request)) return request
+  // A web app is built once per environment: smith refuses to add one that names none.
+  const environments = await askWebEnvironments(name)
+
+  return environments === undefined ? undefined : { ...request, environments }
 }
 
 const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
@@ -53,9 +65,10 @@ const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
  * @param options - what smith lists
  * @returns the kind, the language and the choice the outcome named; `compose` for the composer; undefined when the person pressed Escape
  */
-async function askOutcome (options: AddOptions): Promise<'compose' | { role: string, language: string, preset: string[] } | undefined> {
-  const picked = await pickOutcomeRow(options.outcomes)
-  if (picked === undefined) return undefined
+async function askOutcome (options: AddOptions): Promise<'compose' | { role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
+  const found = await pickOutcomeRow(options.outcomes)
+  if (found === undefined) return undefined
+  const { row: picked, typed } = found
   if (picked.kind === 'compose') return 'compose'
   if (picked.kind === 'every') return askEveryLanguage(options)
   if (picked.kind === 'none') return undefined
@@ -64,13 +77,13 @@ async function askOutcome (options: AddOptions): Promise<'compose' | { role: str
   const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages, outcome)
   if (language === undefined) return undefined
 
-  const preset = await askPreset(options, outcome, language)
+  const preset = await askPreset(options, outcome, language, typed)
 
-  return preset === undefined ? undefined : { role: outcome.role, language, preset }
+  return preset === undefined ? undefined : { role: outcome.role, language, preset, outcomeId: outcome.id }
 }
 
 /** The old way: the kind, then every language of that kind. */
-async function askEveryLanguage (options: AddOptions): Promise<{ role: string, language: string, preset: string[] } | undefined> {
+async function askEveryLanguage (options: AddOptions): Promise<{ role: string, language: string, preset: string[], outcomeId?: string } | undefined> {
   const roles = [...new Set(options.kinds.map((kind) => roleOf(kind.kind, kind.language)))]
   const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: `${TITLE}: what kind?`, placeHolder: 'app, lib or package' })
   if (role === undefined) return undefined
@@ -86,9 +99,9 @@ async function askEveryLanguage (options: AddOptions): Promise<{ role: string, l
  * website and "tauri" a desktop app. A search that finds nothing says so and names
  * the closest answers.
  * @param outcomes - what smith can add here
- * @returns the row picked; undefined when the person pressed Escape
+ * @returns the row picked and what was typed to find it; undefined when the person pressed Escape
  */
-async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<OutcomeRow | undefined> {
+async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<{ row: OutcomeRow, typed: string } | undefined> {
   const pick = vscode.window.createQuickPick<vscode.QuickPickItem & { row: OutcomeRow }>()
   pick.title = `${TITLE}: what are you building?`
   pick.ignoreFocusOut = true
@@ -104,7 +117,7 @@ async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<Outc
       const row = pick.selectedItems[0]?.row
       // The "no result" row only explains: it keeps the list open.
       if (row === undefined || row.kind === 'none') return
-      resolve(row)
+      resolve({ row, typed: pick.value })
       pick.hide()
     })
     pick.onDidHide(() => {
@@ -146,21 +159,54 @@ async function askLanguage (options: AddOptions, role: string, fitting: readonly
   return language?.language
 }
 
-/** Asks which framework, desktop shell or cloud the outcome uses; a website or a desktop app may decide later, a function app may not. */
-async function askPreset (options: AddOptions, outcome: OutcomeOption, language: string): Promise<string[] | undefined> {
+/**
+ * Asks which framework, desktop shell or cloud the outcome uses; a website or a desktop app may decide later, a function app may not.
+ * The list starts on the item the first question was searched for (`react` starts it on React), else on its first row.
+ */
+async function askPreset (options: AddOptions, outcome: OutcomeOption, language: string, typed: string): Promise<string[] | undefined> {
   const items = outcome.items.filter((item) => item.language === language)
   if (items.length === 0) return []
 
   const later = '$(clock) Decide in the next question'
   const layer = outcome.items[0]?.layer ?? ''
   const question = options.layers[layer] === undefined ? 'Which one?' : `Which ${options.layers[layer].toLowerCase()}?`
-  const picked = await vscode.window.showQuickPick(
-    [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])],
-    { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick starts selected in the choices that follow`.trim(), matchOnDescription: true },
-  )
+  const rows = [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])]
+  const start = typedItem(items, typed)
+  const picked = await pickOne(rows, { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick is kept: the next questions do not ask it again`.trim() }, rows.find((row) => row.description === start))
   if (picked === undefined) return undefined
 
   return picked.label === later ? [] : [picked.description]
+}
+
+/**
+ * Shows a list of one answer, with the cursor on a row the caller names (the
+ * plain quick pick always starts on the first row).
+ * @param rows - the lines of the list
+ * @param shown - the title and the hint of the list
+ * @param start - the row the cursor starts on; the first row when absent
+ * @returns the row picked; undefined when the person pressed Escape
+ */
+async function pickOne<T extends vscode.QuickPickItem> (rows: readonly T[], shown: { title: string, placeHolder: string }, start?: T): Promise<T | undefined> {
+  const pick = vscode.window.createQuickPick<T>()
+  pick.title = shown.title
+  pick.placeholder = shown.placeHolder
+  pick.matchOnDescription = true
+  pick.ignoreFocusOut = true
+  pick.items = rows
+  if (start !== undefined) pick.activeItems = [start]
+
+  return await new Promise((resolve) => {
+    let answer: T | undefined
+    pick.onDidAccept(() => {
+      answer = pick.selectedItems[0]
+      pick.hide()
+    })
+    pick.onDidHide(() => {
+      resolve(answer)
+      pick.dispose()
+    })
+    pick.show()
+  })
 }
 
 /**
@@ -181,7 +227,7 @@ async function askLike (siblings: ReadonlyArray<{ name: string, language: string
 }
 
 /** The third question: the default of the language, a stack, or choices. */
-async function askBuild (options: AddOptions, language: string, preset: readonly string[] = []): Promise<{ stack?: string, with: string[] } | undefined> {
+async function askBuild (options: AddOptions, language: string, preset: readonly string[] = [], outcomeId?: string): Promise<{ stack?: string, with: string[] } | undefined> {
   const stacks = options.stacks.filter((stack) => stack.language === language)
   const axes = choicesByAxis(options.choices, language)
   const items: Array<vscode.QuickPickItem & { kind_: 'default' | 'stack' | 'choices', stack?: string }> = [
@@ -194,62 +240,26 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
   if (how.kind_ === 'default') return { with: [] }
   if (how.kind_ === 'stack') return { stack: how.stack, with: [] }
 
-  const picked: string[] = []
-  const asked = askedAxes(options.choices, language)
-  for (const axis of axes) {
-    if (asked.includes(axis.axis)) {
-      const answer = await askOneOf(axis, options.choices.filter((choice) => picked.includes(choice.name)))
-      if (answer === null) return undefined
-      if (answer !== undefined) picked.push(answer)
-      continue
-    }
-    const defaults = axis.choices.filter((choice) => choice.isDefault).map((choice) => choice.name)
-    const entries = axis.choices.map((choice) => ({
-      name:        choice.name,
-      label:       choice.title ?? choice.name,
-      description: `${choice.isDefault ? '(default) ' : ''}${choice.layer === undefined ? '' : `${options.layers[choice.layer] ?? choice.layer} `}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
-      detail:      choice.description,
-      picked:      choice.isDefault || preset.includes(choice.name),
-    }))
-    const hint = whatIs(axis.axis)
-    if (axis.many) {
-      const answer = await vscode.window.showQuickPick(entries, { title: `${TITLE}: ${options.layers[axis.axis]?.toLowerCase() ?? axis.axis}`, placeHolder: `${hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true, ignoreFocusOut: true })
-      if (answer === undefined) return undefined
-      picked.push(...answer.map((item) => item.name))
-      continue
-    }
-    // A single-choice axis is a radio list: one answer, so two cannot be ticked.
-    const none = { name: '', label: '$(close) None', description: 'leave this out', detail: '' }
-    const answer = await vscode.window.showQuickPick(
-      [...entries.map(({ name, label, description, detail }) => ({ name, label, description, detail })), ...(defaults.length > 0 ? [] : [none])],
-      { title: `${TITLE}: ${options.layers[axis.axis]?.toLowerCase() ?? axis.axis} (one)`, placeHolder: `${hint} ${axis.axis} takes one choice.`.trim() },
-    )
-    if (answer === undefined) return undefined
-    if (answer !== none) picked.push(answer.name)
-  }
+  const picked = await pickChoices(options, language, preset, outcomeId, vscodeChoicePrompts)
 
-  return { with: picked }
+  return picked === undefined ? undefined : { with: picked }
 }
 
-/**
- * Asks for the choice of an axis that smith never picks (a trigger, a runtime):
- * one answer, the suggested one first, left out when no picked choice needs the axis.
- * @param axis - the axis and its choices
- * @param picked - the choices picked so far
- * @returns the name picked, undefined when no picked choice needs the axis, or null when the person pressed Escape
- */
-async function askOneOf (axis: { axis: string, choices: ChoiceOption[] }, picked: readonly ChoiceOption[]): Promise<string | undefined | null> {
-  const needing = picked.filter((choice) => choice.needs.includes(axis.axis))
-  if (needing.length === 0) return undefined
-  const fits = axis.choices
-    .filter((choice) => picked.every((other) => !choice.conflicts.includes(other.name) && !other.conflicts.includes(choice.name)))
-    .sort((a, b) => Number(b.suggested) - Number(a.suggested))
-  const answer = await vscode.window.showQuickPick(
-    fits.map((choice) => ({ label: choice.name, description: choice.suggested ? '(suggested)' : '', detail: choice.description })),
-    { title: `${TITLE}: ${axis.axis} for ${needing.map((choice) => choice.name).join(', ')}`, placeHolder: `smith does not choose the ${axis.axis} for you: the first is suggested`, matchOnDetail: true },
-  )
+/** The questions of the choices, as quick picks. */
+const vscodeChoicePrompts: ChoicePrompts = {
+  many: async (question, rows) => {
+    const defaults = rows.filter((row) => row.picked).map((row) => row.name)
+    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true, ignoreFocusOut: true })
 
-  return answer === undefined ? null : answer.label
+    return answer?.map((row) => row.name)
+  },
+  // A single-choice axis is a radio list: one answer. Enter takes the first row, which is the default, or "None".
+  one:   async (question, rows) => await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} Enter keeps ${rows[0]?.name === '' ? 'None (nothing extra)' : `${rows[0]?.label ?? 'the first line'} (the default)`}.`.trim(), matchOnDetail: true }),
+  asked: async (question, rows, needing) => {
+    const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.axis} for ${needing.join(', ')}`, placeHolder: `smith does not choose the ${question.axis} for you: the first is suggested`, matchOnDetail: true })
+
+    return answer?.name
+  },
 }
 
 /**
@@ -258,9 +268,10 @@ async function askOneOf (axis: { axis: string, choices: ChoiceOption[] }, picked
  * @param request - what the person asked for
  * @param plan - the text of the dry run
  * @param follows - whether the plan follows the siblings, so that `--fresh` would change it
+ * @param choices - what the person chose, in words, and which of it is the default (`choicesInWords`); shown above the plan
  * @returns `add`, `fresh` (add with `--fresh`) or `cancel`
  */
-export async function confirmAddPlan (request: AddRequest, plan: string, follows: boolean): Promise<PlanAnswer> {
+export async function confirmAddPlan (request: AddRequest, plan: string, follows: boolean, choices = ''): Promise<PlanAnswer> {
   const add = 'Add project'
   const commitAdd = 'Add and commit (so Undo works)'
   const fresh = 'Add with the stack defaults'
@@ -269,7 +280,7 @@ export async function confirmAddPlan (request: AddRequest, plan: string, follows
   for (;;) {
     const choice = await vscode.window.showInformationMessage(
       `MonoSmith: add the ${request.role} ${request.name} (${request.language})?`,
-      { modal: true, detail: `${plan}\n\nNothing was changed yet. By default smith leaves the files uncommitted: review them with git. The commit buttons make it one commit that Undo can revert.${follows ? '\n\n"Add with the stack defaults" skips the shape of the sibling projects (smith add --fresh).' : ''}` },
+      { modal: true, detail: `${choices === '' ? '' : `${choices}\n\n`}${plan}\n\nNothing was changed yet. By default smith leaves the files uncommitted: review them with git. The commit buttons make it one commit that Undo can revert.${follows ? '\n\n"Add with the stack defaults" skips the shape of the sibling projects (smith add --fresh).' : ''}` },
       add,
       commitAdd,
       ...(follows ? [fresh, commitFresh] : []),
@@ -309,8 +320,8 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
       const undo = 'Undo'
-      const commit = 'Commit these changes now'
-      const use = 'Use it from an app…'
+      const commit = 'Commit now'
+      const use = 'Use in an app…'
       const library = outcome.role === 'lib'
       void vscode.window.showInformationMessage(
         `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status, or commit it now (one commit that Undo can revert).'}${library ? ' Use it from an app: pick the app, then this library.' : ''}`,
@@ -345,20 +356,23 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
 
 /** Says the project was made but could not be checked, and offers the ways on. Nothing is lost: the project stays on disk. */
 async function tellUnchecked (outcome: Extract<AddOutcome, { kind: 'unchecked' }>, next?: AddFollowUp): Promise<void> {
-  const open = 'Open the install page'
-  const install = 'Install it with smith'
+  const open = 'Install page'
+  const install = 'Install tools'
   const again = 'Check again'
-  const skip = 'Continue without checking'
+  const skip = 'Skip the check'
   const where = outcome.tool.dir === undefined ? '' : ` in ${outcome.tool.dir}`
   const files = outcome.tool.files > 0 ? ` (${outcome.tool.files} files)` : ''
   const check = outcome.tool.check
   for (;;) {
-    const choice = await vscode.window.showWarningMessage(
+    const choice = await showNotice(
+      'warning',
       `MonoSmith: ${outcome.name} was created${where}${files}, and could not be checked yet: ${outcome.tool.title} is not installed. Nothing is lost: your project stays on disk.`,
-      ...(outcome.tool.url === undefined ? [] : [open]),
-      install,
-      ...(check === undefined || next === undefined ? [] : [again]),
-      skip,
+      [
+        ...(outcome.tool.url === undefined ? [] : [{ label: open, detail: `Open the page that tells how to get ${outcome.tool.title}.` }]),
+        { label: install, detail: 'Install the missing tools with smith tools install.' },
+        ...(check === undefined || next === undefined ? [] : [{ label: again, detail: 'Run the first check of the new project again, in a terminal.' }]),
+        { label: skip, detail: 'Continue without the check. The Health view keeps reminding you.' },
+      ],
     )
     if (choice === open && outcome.tool.url !== undefined) {
       await vscode.env.openExternal(vscode.Uri.parse(outcome.tool.url))

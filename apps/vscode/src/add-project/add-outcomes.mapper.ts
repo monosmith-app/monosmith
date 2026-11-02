@@ -137,7 +137,8 @@ export type OutcomeRow =
   { kind: 'every' } |
   { kind: 'compose' }
 
-function wordsOf (value: string): string[] {
+/** Splits a text into lowercase words, the way the search of the first question does. */
+export function wordsOf (value: string): string[] {
   return value.toLowerCase().split(/[^\p{L}\p{N}#+.]+/u).filter(Boolean)
 }
 

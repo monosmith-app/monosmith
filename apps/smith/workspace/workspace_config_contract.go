@@ -118,6 +118,15 @@ type WorkspaceSection struct {
 	// tasks fill on purpose, each with its own files; smith doctor does not
 	// report their overlap.
 	SharedOutputs []string `toml:"shared_outputs"`
+	// AlternativeOutputs are groups of tasks ("api:build", "api:build-dev")
+	// that write one folder but never run together; smith doctor does not
+	// report the overlap inside a group. smith still clears the folder before
+	// each task, so a run of two tasks of one group keeps the last one's files.
+	AlternativeOutputs [][]string `toml:"alternative_outputs"`
+	// Environments are the environments a new web app is built for, one build
+	// each (lcl, dev, uat, prd): the list the add question starts from. A web
+	// app keeps its own list in [projects.<name>.settings.vite].
+	Environments []string `toml:"environments"`
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`
@@ -268,6 +277,12 @@ type ReleaseSection struct {
 	// bump to use, "error" stops the release too, "off" does not look. Plugins
 	// that cannot list a public API are never checked. Default: "warn".
 	APICheck string `toml:"api_check"`
+	// PropagationWait is the longest a release waits, before it moves a
+	// dist-tag (next, latest), for the platform packages of an npm release to
+	// be fetchable the way a person fetches them. "0" does not wait. A project
+	// sets its own with [projects.<name>.release] propagation_wait.
+	// Default: "15m".
+	PropagationWait string `toml:"propagation_wait"`
 	// Channels let a long-lived branch release its own line of prerelease
 	// versions (see ReleaseChannel). Default: none.
 	Channels []ReleaseChannel `toml:"channels"`
@@ -627,6 +642,10 @@ type ProjectRelease struct {
 	// binary; the first also names the per-platform packages holding the
 	// binaries (<first>-<os>-<cpu>). Publishing needs NODE_AUTH_TOKEN.
 	NPM []string `toml:"npm"`
+	// PropagationWait overrides [release] propagation_wait for this project:
+	// the longest wait for its platform packages to be fetchable before a
+	// dist-tag moves. Empty takes the workspace's.
+	PropagationWait string `toml:"propagation_wait"`
 	// PyPI is the PyPI project the app is published as, one wheel per
 	// platform. Publishing needs PYPI_TOKEN.
 	PyPI string `toml:"pypi"`

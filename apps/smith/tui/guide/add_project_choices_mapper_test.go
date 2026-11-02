@@ -65,7 +65,9 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 		t.Fatalf("another language's or an unusable choice is offered:\n%s", view)
 	}
 	m = press(m, "down", "down", "down", "space", "enter") // react starts ticked: the framework pick
-	if got := strings.Join(m.Argv, " "); got != "add app web --lang node --with react,vitest" {
+	// A web app is built once per environment: the four questions take their defaults.
+	m = press(m, "enter", "enter", "enter", "enter")
+	if got := strings.Join(m.Argv, " "); got != "add app web --lang node --with react,vitest --environments lcl,dev,uat,prd --default-environment prd --environment-output workspace --env-files commit" {
 		t.Fatalf("argv %q", got)
 	}
 }

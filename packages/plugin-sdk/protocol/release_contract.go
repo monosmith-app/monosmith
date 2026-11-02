@@ -42,6 +42,11 @@ type PublishParams struct {
 	// registry's stable pointer where it is, or ignores it when its registry
 	// has no such pointer. Only sent to a plugin with the channels capability.
 	Tag string `json:"tag,omitempty"`
+	// PropagationWait is the longest time a plugin waits, before it moves a
+	// dist-tag, for the packages of the release to be fetchable from the
+	// registry: a duration such as "15m", "0" to not wait. Empty means the
+	// default. Only npm has such a wait.
+	PropagationWait string `json:"propagationWait,omitempty"`
 }
 
 // AssetSpec describes the release files of an app.
@@ -73,6 +78,10 @@ type PublishResult struct {
 	// such as a dist-tag that was not moved; the host prints them and the
 	// report keeps them.
 	Notes []string `json:"notes,omitempty"`
+	// PendingTags are the exact commands that move the dist-tags the publish
+	// did not move, because the packages the release needs were not fetchable
+	// yet. The release then ends with a warning, never silently.
+	PendingTags []string `json:"pendingTags,omitempty"`
 	// Assets are the workspace-relative files built for the release, in
 	// upload order; in a dry run, the files that would be built.
 	Assets []string `json:"assets,omitempty"`

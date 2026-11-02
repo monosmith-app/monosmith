@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -122,18 +123,21 @@ func TestPublishKeepsTheChannelTagWhenPlatformPackagesAreNotVisible(t *testing.T
 	dir := filepath.Join(ws, "packages", "cli")
 	_ = os.MkdirAll(dir, 0o755)
 	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"@acme/cli","optionalDependencies":{"@acme/cli-linux":"2.0.0-beta.1"}}`), 0o644)
-	real := platformVisibility
-	defer func() { platformVisibility = real }()
+	real := awaitPlatforms
+	defer func() { awaitPlatforms = real }()
 	for _, c := range []struct {
 		name    string
-		visible bool
+		ready   bool
 		wantTag string
 		note    bool
 	}{{"visible", true, "--tag next", false}, {"late", false, "--tag pending", true}} {
 		t.Run(c.name, func(t *testing.T) {
 			calls := fakeNpm(t, "")
-			platformVisibility = func(string, []string) Visibility {
-				return Visibility{Visible: func(string, string) bool { return c.visible }, Wait: time.Second, Every: time.Second, Sleep: func(time.Duration) {}}
+			awaitPlatforms = func(_ string, _ []string, _ time.Duration, _ []string, _ string) npmpropagation.Outcome {
+				if c.ready {
+					return npmpropagation.Outcome{Ready: true}
+				}
+				return npmpropagation.Outcome{Missing: []string{"@acme/cli-linux"}, Waited: time.Minute}
 			}
 			res, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Root: "packages/cli", Exports: []string{"@acme/cli"}}, Version: "2.0.0-beta.1", Tag: "next"})
 			if err != nil || !res.Published {
@@ -145,6 +149,37 @@ func TestPublishKeepsTheChannelTagWhenPlatformPackagesAreNotVisible(t *testing.T
 			if got := len(res.Notes) == 1 && strings.Contains(res.Notes[0], "npm dist-tag add @acme/cli@2.0.0-beta.1 next"); got != c.note {
 				t.Errorf("notes %v", res.Notes)
 			}
+			if got := len(res.PendingTags) == 1 && res.PendingTags[0] == "npm dist-tag add @acme/cli@2.0.0-beta.1 next"; got != c.note {
+				t.Errorf("pending tags %v: the host needs the exact command", res.PendingTags)
+			}
 		})
+	}
+}
+
+func TestAStableReleaseWaitsForItsPlatformPackagesToo(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "packages", "cli")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"@acme/cli","optionalDependencies":{"@acme/cli-linux":"2.0.0"}}`), 0o644)
+	real := awaitPlatforms
+	defer func() { awaitPlatforms = real }()
+	var waited time.Duration
+	awaitPlatforms = func(_ string, _ []string, wait time.Duration, _ []string, _ string) npmpropagation.Outcome {
+		waited = wait
+		return npmpropagation.Outcome{Missing: []string{"@acme/cli-linux"}}
+	}
+	calls := fakeNpm(t, "")
+	res, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Root: "packages/cli", Exports: []string{"@acme/cli"}}, Version: "2.0.0", PropagationWait: "90s"})
+	if err != nil || !res.Published {
+		t.Fatalf("res %+v err %v", res, err)
+	}
+	if last := (*calls)[len(*calls)-1]; !strings.Contains(last, "--tag pending") {
+		t.Errorf("last call %q: latest must not move", last)
+	}
+	if waited != 90*time.Second || res.PendingTags[0] != "npm dist-tag add @acme/cli@2.0.0 latest" {
+		t.Errorf("waited %v, pending %v", waited, res.PendingTags)
+	}
+	if _, err := Publish(ws, protocol.PublishParams{Project: protocol.Project{Root: "packages/cli", Exports: []string{"@acme/cli"}}, Version: "2.0.0", PropagationWait: "soon"}); err == nil {
+		t.Error("a wait that is no duration must be refused")
 	}
 }

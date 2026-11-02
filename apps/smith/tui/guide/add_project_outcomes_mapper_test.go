@@ -95,9 +95,46 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 	if !strings.Contains(m.View(), "[x] framework: vue") {
 		t.Fatalf("the pick starts ticked in the choices:\n%s", m.View())
 	}
-	m = press(m, "enter")
-	if got := strings.Join(m.Argv, " "); got != "add app site --lang node --with vue" {
+	m = press(m, "enter")                            // the choices
+	m = press(m, "enter", "enter", "enter", "enter") // the environments take their defaults
+	if got := strings.Join(m.Argv, " "); got != "add app site --lang node --with vue --environments lcl,dev,uat,prd --default-environment prd --environment-output workspace --env-files commit" {
 		t.Fatalf("argv %q", got)
+	}
+}
+
+func TestDecidingInTheNextQuestionTicksNothingInTheChoices(t *testing.T) {
+	m := press(outcomeForm(t), "enter")       // A website
+	m = press(m, "down", "down", "enter")     // Decide in the next question
+	m = press(m, "s", "i", "t", "e", "enter") // the name
+	if view := m.View(); strings.Contains(view, "[x]") || !strings.Contains(view, "[ ] framework: react") {
+		t.Fatalf("deciding later must leave the list empty:\n%s", view)
+	}
+}
+
+func TestDecidingLaterWithTheWholeFrameworkListTicksNothing(t *testing.T) {
+	offers, err := ParseChoices(`[
+ {"axis":"framework","name":"html","title":"Plain page","description":"a page","language":"node"},
+ {"axis":"framework","name":"react","title":"React","description":"a React app","language":"node"},
+ {"axis":"framework","name":"svelte","title":"Svelte","description":"a Svelte app","language":"node"},
+ {"axis":"framework","name":"vue","title":"Vue","description":"a Vue app","language":"node"},
+ {"axis":"test","name":"vitest","description":"tests","language":"node","default":true}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var add Action
+	for _, a := range Actions([]string{"node"}, nil, nil) {
+		if a.Title == "Add a project" {
+			add = a
+		}
+	}
+	m, _ := NewModel([]Action{AddProjectAction(add, offers, nil)}).Pick("Add a project")
+	m = press(m, "enter", "down", "down", "down", "down", "enter")
+	if got := m.Answers()[pickKey]; len(got) != 1 || got[0] != pickNone {
+		t.Fatalf("the answer is %v", got)
+	}
+	m = press(m, "s", "i", "t", "e", "enter")
+	if view := m.View(); strings.Contains(view, "[x] framework") {
+		t.Fatalf("deciding later must tick no framework:\n%s", view)
 	}
 }
 

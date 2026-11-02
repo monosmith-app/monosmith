@@ -33,7 +33,7 @@ export async function confirmInstall (preview: InstallPreview, scope: InstallSco
 export function tellInstallOutcome (outcome: InstallOutcome, scope: InstallScope, root: string): void {
   switch (outcome.kind) {
     case 'written': {
-      const open = 'Open .vscode/mcp.json'
+      const open = 'Open mcp.json'
       const agentsFile = 'Write AGENTS.md'
       void vscode.window.showInformationMessage(
         `MonoSmith: added ${what(scope)}. In VS Code, start the smith server from .vscode/mcp.json; it asks you to trust it once. AGENTS.md tells other agents the rules of the workspace.`,

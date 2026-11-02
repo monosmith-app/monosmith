@@ -184,6 +184,9 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 				} else {
 					fmt.Fprint(out, report.Text())
 				}
+				if errors.Is(err, ErrPropagationPending) {
+					return err
+				}
 				if err != nil {
 					// The report above says "Stopped: <why>": do not print it again.
 					return ErrReported

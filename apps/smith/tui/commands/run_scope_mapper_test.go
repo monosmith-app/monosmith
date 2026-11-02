@@ -49,6 +49,7 @@ func TestRunScopeLabel(t *testing.T) {
 		{[]string{"run", "build"}, 23, "Build · all 23 projects"},
 		{[]string{"run", "test", "-p", "web"}, 23, "Test · web"},
 		{[]string{"run", "lint", "--affected"}, 23, "Lint · affected projects"},
+		{[]string{"run", "build"}, 1, "Build · the only project"},
 		{[]string{"run", "build"}, 0, "Build · all projects"},
 		{[]string{"doctor"}, 23, ""},
 	} {

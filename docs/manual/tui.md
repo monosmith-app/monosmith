@@ -455,7 +455,11 @@ a list and never moves the selection, and a thin scrollbar on the right edge sho
 stack screen: the wheel scrolls and the selection stays; Up, Down, PgUp, PgDn, Home and End move the
 selection and keep it in view; a scrollbar and a line "↑ 3 more · ↓ 12 more" say what is hidden.
 The words list under the choices question folds to one line, "what do these words mean? press ?",
-when the terminal has fewer than 30 rows (`?` opens it); the list always keeps at least 8 rows. In Deps, click a row's box to
+whenever the pane would leave the list fewer than 16 lines (the height of the pane decides, not that of the
+terminal; `?` opens it); the list always keeps at least 8 rows. The confirmation of an add says the choices in
+words and marks the defaults: "React, ESLint (default), Vitest (default); no desktop shell, no style". With nothing
+ticked, the project takes the stack's defaults and the confirmation says so. While the confirmation is open the
+tab bar names the form ("Add a project"), not "Start"; "Decide in the next question" leaves the choices list empty. In Deps, click a row's box to
 mark it, Shift+click to mark the rows from the last one to it (Shift+Up and Shift+Down do the same from the keyboard),
 and click the box in the heading to mark all or none. Only
 cell-motion reports are used, so Shift+drag still selects text in most terminals, and `m`

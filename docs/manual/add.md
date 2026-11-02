@@ -47,7 +47,11 @@ Usage: `smith add <kind> <name> [flags]`
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--commit-anyway` | boolean | off | with --commit, commit even when the check of the new project fails (the files exist, a tool is missing) |
+| `--default-environment <default-environment>` | string |  prd, else the last | a web app: the environment the task build builds, which CI and releases use (default: prd, else the last) |
 | `--dry-run` | boolean | off | show the plan and change nothing |
+| `--env-files <env-files>` | string |  | a web app: commit the .env.<env> files (commit, default) or only an .env.example (example) |
+| `--environment-output <environment-output>` | string |  | a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app) |
+| `--environments <environments>` | string, repeatable |  | a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one |
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
 | `--like <like>` | string |  | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |
@@ -102,6 +106,23 @@ selection leaves out takes its default. The result is saved in `smith.toml` as a
 `choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
 [Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 
+## A web app is built once per environment
+
+A web app (React, Vue, Svelte or a plain page, built with Vite) reads its `VITE_` settings when it is
+built, so `smith add` asks which environments it is built for. Without a terminal (and with
+`--yes`) the flag is required, and the add stops and names it:
+
+```sh
+smith add app web --lang node --with react --environments lcl,dev,uat,prd --yes
+smith add app site --lang node --with html --environments none     # one build, as before
+```
+
+The names are lowercase words. smith writes `.env.<name>` for each, `vite.build.ts` with `build(mode)`, one
+build script per environment and the settings in `smith.toml`; the plan lists every file first. The
+other answers have flags too: `--default-environment` (the task `build`, default `prd`),
+`--environment-output workspace|project` (default `workspace`: `dist/apps/<app>/<name>`) and
+`--env-files commit|example` (default `commit`). See [Environments](environments.md).
+
 ## In the terminal interface and in VS Code
 
 The command takes the kind and the language as arguments, and that does not change. The
@@ -125,7 +146,7 @@ VS Code the result is a choice: open the install page, install it with smith, ch
 checking; nothing is lost.
 
 smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
-run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit these changes now".
+run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit now".
 
 ## Desktop apps and the composer
 

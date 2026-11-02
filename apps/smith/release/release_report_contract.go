@@ -40,6 +40,9 @@ type ReportResult struct {
 	// those the registries already had.
 	Packages         []string `json:"packages,omitempty"`
 	ExistingPackages []string `json:"existingPackages,omitempty"`
+	// PendingTags are the exact commands that move the dist-tags the release
+	// did not move, because npm did not serve every platform package in time.
+	PendingTags []string `json:"pendingTags,omitempty"`
 	// Images are the container images the release pushed, one per registry,
 	// with their tags and the manifest digest the registry holds: what a
 	// deploy step or a GitOps manifest refers to.
@@ -55,6 +58,16 @@ type ReportResult struct {
 	// TookMs is how long the package took to release, in milliseconds.
 	TookMs int64  `json:"tookMs,omitempty"`
 	Error  string `json:"error,omitempty"`
+}
+
+// PendingTags lists, over all results, the commands that move the dist-tags
+// the release did not move.
+func (r Report) PendingTags() []string {
+	var all []string
+	for _, res := range r.Results {
+		all = append(all, res.PendingTags...)
+	}
+	return all
 }
 
 // Markdown renders the report for a CI step summary or a PR comment.
@@ -106,6 +119,12 @@ func (r Report) Markdown() string {
 	}
 	if len(r.Unchanged) > 0 {
 		fmt.Fprintf(&b, "\nUnchanged: %s\n", strings.Join(r.Unchanged, ", "))
+	}
+	if pending := r.PendingTags(); len(pending) > 0 {
+		b.WriteString("\n**Warning:** npm did not serve every platform package in time, so a dist-tag was not moved. The packages are published under the dist-tag `pending`. When npm serves them, run:\n\n")
+		for _, command := range pending {
+			fmt.Fprintf(&b, "    %s\n", command)
+		}
 	}
 	if r.Error != "" && r.DryRun {
 		b.WriteString("\n**The real release would fail for:**\n\n")

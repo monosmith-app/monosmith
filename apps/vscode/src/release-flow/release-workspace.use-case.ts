@@ -53,7 +53,7 @@ export async function releaseWorkspace (deps: ReleaseDeps): Promise<ReleaseOutco
     if (asked === undefined) return { kind: 'cancelled' }
     forced = asked
   }
-  if (packages.length === 0 && forced.length === 0) return { kind: 'nothing', lines: text.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) }
+  if (packages.length === 0 && forced.length === 0) return { kind: 'nothing', lines: text.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), unchanged }
 
   const hold = packages.length === 0 ? [] : await deps.chooseHold(text.stdout.trim(), packages)
   if (hold === undefined) return { kind: 'cancelled' }

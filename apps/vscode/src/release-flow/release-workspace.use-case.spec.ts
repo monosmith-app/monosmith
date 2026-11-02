@@ -96,7 +96,7 @@ describe('releaseWorkspace', () => {
 
   it('says why when there is nothing to release, and asks nothing', async () => {
     const f = fake({}, '{"dryRun":true,"results":[]}')
-    expect(await releaseWorkspace(f.deps)).toMatchObject({ kind: 'nothing' })
+    expect(await releaseWorkspace(f.deps)).toMatchObject({ kind: 'nothing', unchanged: [] })
     expect(f.events).toEqual([])
   })
 })

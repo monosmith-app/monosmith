@@ -57,6 +57,7 @@ New here? Read [Getting started](getting-started/README.md). Stuck on a word? Se
 | start a project from what I am building (a website, an API, a function app, a desktop app) | [`smith add`](manual/add.md), [`smith compose`](manual/compose.md), [your first workspace](getting-started/first-workspace.md#start-from-what-you-are-building) |
 | let one project use an internal library | [`smith install`](manual/install.md), [your first workspace](getting-started/first-workspace.md#use-one-project-from-another) |
 | install the programs a workspace needs | [`smith tools`](manual/tools.md), [`smith tools install`](manual/tools-install.md) |
+| build a web app once per environment (lcl, dev, uat, prd), each with its own .env file | [`smith environments`](manual/environments.md) |
 | change one decision of a project (its test runner, its linter), or try a change first | [`smith swap`](manual/swap.md), [`smith try`](manual/try.md) |
 | see where the workspace differs from smith's defaults | [`smith divergences`](manual/divergences.md), [`smith copies`](manual/copies.md) |
 | revert the last `smith add`, `remove`, `upgrade`, `derive` or `sync` | [`smith undo`](manual/undo.md) |

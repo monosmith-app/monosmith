@@ -49,6 +49,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/dockerdescription"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/eject"
+	"github.com/monosmith-app/monosmith/apps/smith/environments"
 	"github.com/monosmith-app/monosmith/apps/smith/explain"
 	"github.com/monosmith-app/monosmith/apps/smith/graphview"
 	"github.com/monosmith-app/monosmith/apps/smith/kindchange"
@@ -126,7 +127,7 @@ already have), then build and doctor.`,
 			root.AddCommand(c)
 		}
 	}
-	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), swapchoice.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
+	add("start", scaffold.NewCommand(version), scaffold.AddCommand(version), scaffold.RemoveCommand(version), swapchoice.Command(version), environments.Command(version), convert.Command(version), configedit.Command(), architecture.Command(version), upgrade.Command(version), adoption.Command(version), bootstrap.Command(), sandbox.Command())
 	add("work", taskrun.Commands(version)...)
 	add("work", toolinstall.Command(version), devservers.Command(version), derive.Command(version), operation.UndoCommand(), operation.CommitCommand(), eject.Command(version), kindchange.Command(version), tauriadd.Command(version))
 	root.AddCommand(declarationspecifiers.Command(), npmpack.Command(), npmprune.Command(), tauriprepare.Command(version), lockfilesync.Command(), npmaudit.Command(), npmdepscheck.Command(), pydepscheck.Command(), godepscheck.Command(), npmpolicy.Command(), pypolicy.Command(), rustpolicy.Command())
@@ -230,6 +231,9 @@ func runCommand(version string, args []string) (int, string) {
 		var p *problem.Error
 		message, newer := newerSmithMessage(err, version, wantsVerbose(args))
 		switch {
+		case errors.Is(err, release.ErrPropagationPending):
+			// The report said what to run; code 2 is a warning, not a failure.
+			return 2, ""
 		case newer:
 			return 1, "smith: " + message
 		case errors.As(err, &p):

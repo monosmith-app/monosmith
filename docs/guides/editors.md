@@ -92,6 +92,14 @@ the command with `--yes`.
 the two. The `layers` list of `smith compose --json` gives one title for each layer
 (`shell` is "Desktop shell"): use it wherever a choice is named.
 
+An editor that asks the choices of an add follows these rules, so pressing Enter through the questions gives
+the safe result: a list of one answer starts on its `default` (for example the test runner) or, when its axis
+has no default (a desktop shell, a style), on "None", listed first. The answer of an earlier step is kept:
+the question of a framework, shell or cloud is not asked twice, and a website does not list cloud hosts
+(`layer` is `host`). The confirmation says the choices in words and marks the defaults ("React, ESLint
+(default), Vitest (default); no desktop shell, no style"). A notification shows at most three buttons with
+short verbs; the long text goes in the message, and more buttons go behind "More…".
+
 ## Starting in an empty folder
 
 An editor that opens a folder with no `smith.toml` can offer two commands. `smith new --here`
