@@ -321,6 +321,12 @@
         "icon": "$(package)"
       },
       {
+        "command": "monosmith.syncVersions",
+        "title": "Sync Dependency Versions…",
+        "category": "MonoSmith",
+        "icon": "$(sync)"
+      },
+      {
         "command": "monosmith.undo",
         "title": "Undo the Last Change…",
         "category": "MonoSmith",
@@ -728,6 +734,10 @@
         },
         {
           "command": "monosmith.addDependency",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.syncVersions",
           "when": "monosmith.state == ready"
         },
         {

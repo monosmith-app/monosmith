@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
@@ -44,6 +45,12 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		return nil
 	case catalog.Changes:
 		if !confirmed {
+			if resultdialog.ChoosesVersion(argv) {
+				// Which version wins is the person's choice: ask before the plan.
+				m := resultdialog.NewWhichVersion(argv).Place(s.w, s.h)
+				s.result = &m
+				return nil
+			}
 			if argv[0] == "release" && !s.release.Loaded && s.release.Err == nil && s.sources.Release != nil && !slices.Contains(argv, "--dry-run") {
 				// Publishing cannot be undone: read the plan first, then ask.
 				s.releaseWaiting = slices.Clone(argv)
@@ -64,8 +71,12 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		argv = catalog.WithConfirmation(argv)
 	}
 	if !s.inWorkspace {
-		// No workspace means no Run tab to show the output (smith new, adopt
-		// and convert start here): the terminal runs it after the shell quits.
+		if s.sources.Start != nil && runsOutside(argv) {
+			// There is no Run tab before a workspace: a dialog shows the output.
+			return s.startOutside(argv)
+		}
+		// Anything else that starts here (smith adopt) runs in the terminal
+		// after the shell quits.
 		s.Argv, s.quit = argv, true
 		return nil
 	}
@@ -107,6 +118,7 @@ func (s *Shell) started(msg startedMsg) tea.Cmd {
 		s.run.Feed("could not start: "+msg.err.Error(), s.now())
 		s.run.End(1, false, s.now())
 		s.notify("Could not start: "+msg.err.Error(), toast.Error)
+		s.showOutside()
 		return nil
 	}
 	s.proc = msg.proc
@@ -136,11 +148,13 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	s.keepLines(msg.lines)
 	if msg.exit == nil {
+		s.showOutside()
 		return waitCmd(msg.proc)
 	}
 	exit := *msg.exit
 	s.run.End(exit.Code, exit.Cancelled, now)
 	s.proc, s.stopping = nil, false
+	s.showOutside()
 	if s.runSel == "" {
 		s.runSel = s.firstFailed()
 	}

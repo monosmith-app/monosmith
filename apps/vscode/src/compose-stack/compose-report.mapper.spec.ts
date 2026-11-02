@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { composeArguments, describePlan, parseReport, pickLabels } from './compose-report.mapper.ts'
+import type { ComposeItem } from './compose-stack.contract.ts'
+import { composeArguments, describePlan, parseReport, pickLabels, settleRivals } from './compose-report.mapper.ts'
 
 const catalogue = JSON.stringify({
   layers: [{ id: 'shell', title: 'Desktop shell', about: 'a program you install' }],
@@ -66,5 +67,27 @@ describe('describePlan', () => {
     expect(text).toContain('create apps/desk/')
     expect(text).toContain('Node: install Node')
     expect(text).toContain('added by default')
+  })
+})
+
+const item = (name: string, axis: string, many = false): ComposeItem => ({ id: `node/${name}`, kind: 'choice', name, title: name, description: '', aliases: [], layer: axis, axis, many, language: 'node', suggested: false, isDefault: false, problem: '', route: '' })
+
+describe('settleRivals', () => {
+  const items = [item('react', 'framework'), item('electron', 'framework'), item('tauri', 'shell'), item('vitest', 'test', true), item('jest', 'test', true)]
+
+  it('lets the new pick take the place of the one before on a single-choice axis', () => {
+    const settled = settleRivals(items, ['node/react', 'node/tauri'], ['node/react', 'node/tauri', 'node/electron'])
+    expect(settled.ids).toEqual(['node/tauri', 'node/electron'])
+    expect(settled.note).toBe('electron replaces react: a project has one framework.')
+  })
+
+  it('keeps picks on other axes and on an axis that takes several', () => {
+    const settled = settleRivals(items, ['node/vitest'], ['node/vitest', 'node/jest', 'node/tauri'])
+    expect(settled.ids).toEqual(['node/vitest', 'node/jest', 'node/tauri'])
+    expect(settled.note).toBe('')
+  })
+
+  it('keeps the later one when two rivals are ticked in the same round', () => {
+    expect(settleRivals(items, [], ['node/react', 'node/electron']).ids).toEqual(['node/electron'])
   })
 })

@@ -269,34 +269,42 @@ func (m Model) planBody(th theme.Theme, inner int) []string {
 		return []string{th.Muted("Reading the plan…")}
 	}
 	p := m.plan
-	lines := []string{th.Bold("Run this:"), "  " + th.Accent(p.Command), ""}
+	// Every line is wrapped to the dialog, with a hanging indent, never cut.
+	var lines []string
+	add := func(l ...string) {
+		for _, one := range l {
+			lines = append(lines, pane.Wrap(one, inner, 4)...)
+		}
+	}
+	add(th.Bold("Run this:"), "  "+th.Accent(p.Command), "")
 	if len(p.Files) > 0 {
-		lines = append(lines, th.Bold("It writes:"))
+		add(th.Bold("It writes:"))
 		for _, f := range p.Files {
 			text := "  " + f.Action + " " + f.Path
 			if f.Note != "" {
 				text += th.Muted("  " + f.Note)
 			}
-			lines = append(lines, text)
+			add(text)
 		}
-		lines = append(lines, "")
+		add("")
 	}
 	if len(p.Tools) > 0 {
-		lines = append(lines, th.Bold("It needs these tools:"))
+		add(th.Bold("It needs these tools:"))
 		for _, t := range p.Tools {
 			text := "  " + t.Title + th.Muted(" ("+t.State+", for "+t.Choice+")")
 			if t.State != "installed" {
 				text += th.Muted(": " + t.Command)
 			}
-			lines = append(lines, text)
+			add(text)
 		}
-		lines = append(lines, "")
+		add("")
 	}
 	for _, n := range p.Notes {
-		lines = append(lines, pane.Wrap(th.Muted(n), inner, 2)...)
+		add(th.Muted(n))
 	}
 	if p.RecipeNote != "" {
-		lines = append(lines, pane.Wrap(th.Muted("s: "+p.RecipeNote), inner, 3)...)
+		add(th.Muted("s: " + p.RecipeNote))
 	}
-	return append(lines, "", th.Muted("r run it now · c copy the command · s save the plugins as a recipe · esc back"))
+	add("", th.Muted("r run it now · c copy the command · s save the plugins as a recipe · esc back"))
+	return lines
 }

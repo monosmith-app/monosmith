@@ -81,6 +81,8 @@ export function parseReport (json: string): ComposeReport {
       description: text(i.description),
       aliases:     words(i.aliases),
       layer:       text(i.layer),
+      axis:        text(i.axis),
+      many:        i.many === true,
       language:    text(i.language),
       suggested:   i.suggested === true,
       isDefault:   i.default === true,
@@ -147,4 +149,34 @@ export function pickLabels (item: ComposeItem): { label: string, description: st
     description: `${where}${item.layer}`,
     detail:      `${item.description}${problem}${route} ${item.aliases.join(' ')}`.trim(),
   }
+}
+
+/**
+ * Keeps one pick per single-choice axis, like radio buttons: a choice ticked in
+ * this round takes the place of a choice ticked before on the same axis and
+ * language, unless both allow several. The catalogue decides the axes; no name
+ * is known here.
+ * @param items - the catalogue
+ * @param previous - the ids ticked before this round
+ * @param chosen - the ids ticked now
+ * @returns the ids to keep, and a one-line note naming what was replaced (empty when nothing was)
+ */
+export function settleRivals (items: readonly ComposeItem[], previous: readonly string[], chosen: readonly string[]): { ids: string[], note: string } {
+  const byId = new Map(items.map((item) => [item.id, item]))
+  const fresh = chosen.filter((id) => !previous.includes(id))
+  const dropped = new Set<string>()
+  const notes: string[] = []
+  for (const id of fresh) {
+    const pick = byId.get(id)
+    if (pick?.kind !== 'choice' || (pick.axis ?? '') === '') continue
+    const rivals = chosen.filter((other) => {
+      const item = byId.get(other)
+
+      return other !== id && !dropped.has(other) && !fresh.slice(fresh.indexOf(id) + 1).includes(other) && item?.kind === 'choice' && item.axis === pick.axis && item.language === pick.language && !(item.many === true && pick.many === true)
+    })
+    for (const rival of rivals) dropped.add(rival)
+    if (rivals.length > 0) notes.push(`${pick.title} replaces ${rivals.map((other) => byId.get(other)?.title ?? other).join(' and ')}: a project has one ${pick.axis}.`)
+  }
+
+  return { ids: chosen.filter((id) => !dropped.has(id)), note: notes.join(' ') }
 }
