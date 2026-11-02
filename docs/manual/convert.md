@@ -64,11 +64,16 @@ Usage: `smith convert [flags]`
 Interactions:
 
 - Run it with `--dry-run` first. An Nx workspace's packages must be installed, because Nx
-  itself describes the projects: in a terminal smith asks "Install them now?" and does it
-  (about two minutes), `--yes` installs without asking, and elsewhere it stops and says so.
-  A pnpm or yarn workspace is installed with its own tool (`pnpm install`, `yarn install`),
-  because npm cannot read its `catalog:` and `workspace:` ranges: install it that way
-  first, or let `--yes` do it. The install can leave `.nx/` and `package-lock.json`
+  itself describes the projects. A dry run never installs and never asks, with or without
+  `--yes`: it stops and says "to read the dependency graph smith would run `yarn install
+  --immutable` (it runs no script of the repository)". A real run in a terminal asks "Install
+  them now?" with the same command in the question and does it (about two minutes), `--yes`
+  installs without asking, and elsewhere it stops and says so. The install never runs a
+  lifecycle script of the repository: npm, pnpm and Yarn Classic get `--ignore-scripts`, Yarn
+  Berry gets `YARN_ENABLE_SCRIPTS=false`, and the output names the exact command before it
+  runs. `smith adopt` installs with the same command. A pnpm or yarn workspace is installed
+  with its own tool (`pnpm install`, `yarn install`), because npm cannot read its `catalog:`
+  and `workspace:` ranges: install it that way first, or let `--yes` do it. The install can leave `.nx/` and `package-lock.json`
   untracked; the dirty-tree check ignores both.
   A Turborepo workspace is read from its files, so nothing needs to be installed.
 - A long read prints its stages (asking Nx to describe the projects, planning, checking

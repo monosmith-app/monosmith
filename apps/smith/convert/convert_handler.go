@@ -50,10 +50,13 @@ npm, then asks: apply, show the report and stop, or cancel.
 
 Run it with --dry-run first: the report lists what maps, what changes behaviour
 and what needs you. Nothing is dropped silently. An Nx workspace's packages must
-be installed, because Nx itself describes the projects: in a terminal convert
-asks and installs them (about two minutes), --yes installs without asking, and
-anywhere else it stops and says so. A pnpm or yarn workspace is installed with
-its own tool (pnpm install, yarn install): npm cannot read its catalog: and
+be installed, because Nx itself describes the projects. A dry run never installs
+and never asks: it says the exact command a real run would run. A real run in a
+terminal asks and installs them (about two minutes), --yes installs without
+asking, and anywhere else it stops and says so. The install runs no script of
+your repository (--ignore-scripts, or YARN_ENABLE_SCRIPTS=false for Yarn Berry),
+and the output names the command. A pnpm or yarn workspace is installed with its
+own tool (pnpm install, yarn install): npm cannot read its catalog: and
 workspace: ranges, so install it that way first, or let --yes do it. A
 Turborepo workspace is read from its files, so nothing needs to be installed.
 
@@ -147,8 +150,8 @@ git undoes everything.`,
 			if ctx == nil {
 				ctx = context.Background()
 			}
-			// A dry run is the read-only choice, so it never offers to install: --yes does.
-			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, Terminal: interactive() && !dryRun, In: os.Stdin, Out: told}); err != nil {
+			// A dry run is the read-only choice: it never installs and never asks, with or without --yes.
+			if err := EnsureInstalled(ctx, root, InstallChoice{Yes: yes, DryRun: dryRun, Terminal: interactive(), In: os.Stdin, Out: told}); err != nil {
 				return err
 			}
 			plan, err := readPlan(root, files, input, func(stage string) { fmt.Fprintln(told, stage) })
