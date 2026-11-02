@@ -159,7 +159,11 @@ Usage: `smith add <kind> <name> [flags]`
 | `--choice <choice>` | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal (repeatable) |  |
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--commit-anyway` | with --commit, commit even when the check of the new project fails (the files exist, a tool is missing) | off |
+| `--default-environment <default-environment>` | a web app: the environment the task build builds, which CI and releases use (default: prd, else the last) |  prd, else the last |
 | `--dry-run` | show the plan and change nothing | off |
+| `--env-files <env-files>` | a web app: commit the .env.<env> files (commit, default) or only an .env.example (example) |  |
+| `--environment-output <environment-output>` | a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app) |  |
+| `--environments <environments>` | a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one (repeatable) |  |
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
 | `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
 | `--like <like>` | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |  |
@@ -207,6 +211,25 @@ Usage: `smith swap <project> <axis> <choice> [flags]`
 | `-y, --yes` | do not ask for confirmation | off |
 
 <!-- smith:end swap -->
+
+### smith environments
+
+[Manual page](../manual/environments.md)
+
+<!-- smith:begin environments -->
+List, add or remove the environments a web app is built for
+
+Usage: `smith environments <command>`
+
+| Subcommand | Meaning |
+|---|---|
+| `smith environments add` | Add environments to a web app |
+| `smith environments list` | List the environments of the web apps and the task that builds each |
+| `smith environments remove` | Remove environments from a web app (its .env files stay) |
+
+No flags.
+
+<!-- smith:end environments -->
 
 ### smith kind
 
@@ -695,6 +718,7 @@ Usage: `smith release <command> [flags]`
 | `--bump <bump>` | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major (repeatable) |  |
 | `--comment` | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment | off |
 | `--dry-run` | show what would be released; change nothing | off |
+| `--force` | with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal | off |
 | `--format <format>` | how the result is printed: text, or markdown (what the CI job summary and --comment use) | `text` |
 | `--hold <hold>` | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too (repeatable) |  |
 | `--json` | print the release report as JSON | off |

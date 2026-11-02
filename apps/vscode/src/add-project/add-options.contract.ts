@@ -60,17 +60,30 @@ export interface AddOptions {
 /** What the person asked to add. */
 export interface AddRequest {
   /** `app`, `lib` or `package`. */
-  role:     string
-  name:     string
-  language: string
+  role:          string
+  name:          string
+  language:      string
   /** A stack from `smith stacks`; absent for the default of the language. */
-  stack?:   string
+  stack?:        string
   /** Choices to build the project from (`--with`). */
-  with:     string[]
+  with:          string[]
   /** Give the stack's defaults instead of following the sibling projects. */
-  fresh:    boolean
+  fresh:         boolean
   /** Copy this one project's shape instead of the majority's (`--like`). */
-  like?:    string
+  like?:         string
+  /** The environment builds of a web app (`--environments` and the flags with it); absent for a project that has one build. */
+  environments?: WebEnvironments
+}
+
+/** How a web app is built once per environment: what `smith add` asks and the flags answer. */
+export interface WebEnvironments {
+  names:    string[]
+  /** The environment the task `build` builds, which CI and releases use. */
+  default:  string
+  /** `workspace`: dist/apps/<app>/<env>; `project`: dist/<env> in the app. */
+  output:   'workspace' | 'project'
+  /** `commit`: git keeps .env.<env>; `example`: git keeps only .env.example. */
+  envFiles: 'commit' | 'example'
 }
 
 /**

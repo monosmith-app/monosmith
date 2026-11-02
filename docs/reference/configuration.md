@@ -148,6 +148,7 @@ bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
+[projects.web.settings.vite]          # a web app's environments: environments, default_environment, output, env_files (manual/environments.md)
 [projects.mvd.settings.go]            # Go build tags: tags, tags_linux, tags_windows, tags_darwin (plugins/using/catalogue/go.md)
 tags = ["production"]
 tags_linux = ["gtk3"]

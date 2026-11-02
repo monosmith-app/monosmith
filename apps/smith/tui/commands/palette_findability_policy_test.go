@@ -18,7 +18,7 @@ var notInPalette = map[string]string{
 	"recipe": "Settings tab", "recipe new": "the guided recipe form",
 	"run": "run keys", "build": "run keys", "test": "run keys", "lint": "run keys", "typecheck": "run keys",
 	"kind": "the Projects detail", "eject": "derived files flow", "derive": "palette: Update the derived files",
-	"tauri add": "Add project form", "tauri icon": "no screen yet",
+	"environments list": "no screen yet", "environments add": "no screen yet", "environments remove": "no screen yet", "tauri add": "Add project form", "tauri icon": "no screen yet",
 	"deps up": "Dependencies tab", "up": "Dependencies tab", "ci": "palette: Regenerate CI pipelines", "ci generate": "palette: Regenerate CI pipelines",
 	"pipeline": "no screen yet", "docker description": "no screen yet", "doctor": "palette: Doctor", "projects": "Projects tab", "affected": "palette: Affected",
 	"info": "palette: Info", "explain": "run scope", "why-miss": "no screen yet", "report": "palette: Open the report",

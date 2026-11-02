@@ -136,7 +136,7 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 		}
 		return argv
 	}
-	return out
+	return withWebEnvironments(out, offers)
 }
 
 // withChoiceNames gives each language option the names of the choices its
