@@ -77,8 +77,8 @@ project (the config did not exist yet), smith says so with the commit and tells 
 `--source current`.
 
 In the generated GitHub workflow, run it from the Actions tab with the `assets_tag` input
-(`mvd@0.11.1`) and the `assets_source` input (`choose`, `current` or `tag`; `choose` stops the run
-and names the flags): only the assets job runs. See
+(`mvd@0.11.1`) and the `assets_source` input (`current`, `tag` or `ask me (refuses)`; GitHub preselects the
+last one, which stops the run and names the flags, so nothing is built from code you did not pick): only the assets job runs. See
 [ADR 0075](../architecture/decisions/0075-an-assets-rerun-for-a-tag-asks-which-code-to-build.md).
 
 ## Exit codes

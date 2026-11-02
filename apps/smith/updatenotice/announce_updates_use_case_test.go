@@ -84,3 +84,61 @@ func TestDevelopmentBuildSaysNothing(t *testing.T) {
 		t.Errorf("lines = %v", lines)
 	}
 }
+
+func TestNextChannelHearsAboutNextOnly(t *testing.T) {
+	home := t.TempDir()
+	var asked string
+	o := opts(home, "2.0.0-beta.22", t0, "2.0.0-beta.23", nil)
+	o.Fetch = func(context.Context) (string, error) { asked = "called"; return "2.0.0-beta.23", nil }
+	lines := Start(o).Lines()
+	if asked == "" || len(lines) != 1 || !strings.Contains(lines[0], "smith 2.0.0-beta.23 is out on the next channel, you have 2.0.0-beta.22: update with npm i -g monosmith@next") {
+		t.Fatalf("lines = %v", lines)
+	}
+	if m := load(home); m.Channel != "next" {
+		t.Errorf("remembered channel %q", m.Channel)
+	}
+	// A stable smith must not use the answer read for the next channel.
+	if lines := Start(opts(home, "1.70.0", t0.Add(48*time.Hour), "", errors.New("offline"))).Lines(); len(lines) != 0 {
+		t.Errorf("a next answer reached a stable smith: %v", lines)
+	}
+}
+
+func TestNotChosenAnnouncesTheRequestAndAsksNothingForADay(t *testing.T) {
+	home := t.TempDir()
+	calls := 0
+	o := opts(home, "1.70.0", t0, "1.75.0", nil)
+	o.Announce = true
+	o.Fetch = func(context.Context) (string, error) { calls++; return "1.75.0", nil }
+	lines := Start(o).Lines()
+	if len(lines) != 1 || !strings.Contains(lines[0], "one request to registry.npmjs.org") || !strings.Contains(lines[0], `update_check = "on" or "off"`) || calls != 0 {
+		t.Fatalf("lines = %v, calls = %d", lines, calls)
+	}
+	o.Now = func() time.Time { return t0.Add(time.Hour) }
+	if lines := Start(o).Lines(); len(lines) != 0 || calls != 0 {
+		t.Fatalf("announced or asked again within a day: %v, calls = %d", lines, calls)
+	}
+	o.Now = func() time.Time { return t0.Add(25 * time.Hour) }
+	if lines := Start(o).Lines(); len(lines) != 1 || !strings.Contains(lines[0], "smith 1.75.0 is out") || calls != 1 {
+		t.Fatalf("not asked after a day: %v, calls = %d", lines, calls)
+	}
+}
+
+func TestAlwaysSaysANewerVersionEveryTime(t *testing.T) {
+	home := t.TempDir()
+	Start(opts(home, "1.70.0", t0, "1.75.0", nil)).Lines()
+	o := opts(home, "1.70.0", t0.Add(time.Hour), "1.75.0", nil)
+	o.Always = true
+	if lines := Start(o).Lines(); len(lines) != 1 {
+		t.Errorf("--version or doctor must repeat the line: %v", lines)
+	}
+}
+
+func TestSettingFromPrefersTheUser(t *testing.T) {
+	for _, c := range []struct{ env, file, want string }{
+		{"", "", ""}, {"on", "", "on"}, {"", `"off"`, "off"}, {"off", `"on"`, "off"}, {"maybe", `"on"`, "on"}, {"maybe", "", ""},
+	} {
+		if got := SettingFrom(c.env, c.file); got != c.want {
+			t.Errorf("SettingFrom(%q, %q) = %q, want %q", c.env, c.file, got, c.want)
+		}
+	}
+}

@@ -54,6 +54,9 @@ func TestCheckSource(t *testing.T) {
 		}
 	}
 	if err := checkSource("choose"); err == nil {
-		t.Error("choose is turned into no source by Run, not accepted by checkSource")
+		t.Error("choose is no source any more")
+	}
+	if err := checkSource(SourceUndecided); err == nil {
+		t.Error("the preselected value is turned into no source by Run, not accepted by checkSource")
 	}
 }

@@ -175,7 +175,8 @@ as a platform without that file. See
 To run the assets again for a release that exists, use `smith ci assets --tag
 <project@version>` or the `assets_tag` input of the workflow's manual run. When the
 tag is not at HEAD, you choose the code with `--source current|tag` (the
-`assets_source` input of the workflow). `current` builds the code as it is now,
+`assets_source` input of the workflow, a dropdown: `current`, `tag`, or the preselected `ask me (refuses)`,
+which stops the run). `current` builds the code as it is now,
 named with the tag's version: a fix reaches the files, but they carry newer code
 under an old number. `tag` builds the tag's own commit in a temporary git
 worktree, with the smith.toml of that commit: the exact code that was released.

@@ -175,7 +175,7 @@ A check is `✔` (passed), `✖` (failed, exit 1) or `!` (a warning, not counted
 Reads the workspace and runs the plugins' checks (they may call `go`, `node`, `python`,
 `git`). `--fix` rewrites generated files (pipelines, `go.work`, the dev container) and runs
 the commands it displays. Variables that change checks: `SMITH_CACHE_REMOTE` and
-`SMITH_CACHE_KEY` (the remote cache must be signed), `SMITH_NO_UPDATE_CHECK`, and the
+`SMITH_CACHE_KEY` (the remote cache must be signed), `SMITH_UPDATE_CHECK` (a newer smith is named at the end), and the
 release credentials ([`smith release`](release.md)).
 
 ## Examples

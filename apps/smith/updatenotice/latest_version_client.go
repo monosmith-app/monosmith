@@ -8,17 +8,24 @@ import (
 	"time"
 )
 
-// RegistryURL answers with the newest published smith.
-const RegistryURL = "https://registry.npmjs.org/monosmith/latest"
+// DistTagsURL is the one request smith makes for the update notice: the
+// dist-tags of the monosmith package on the npm registry (latest and next).
+// Nothing about the person or the workspace is sent.
+const DistTagsURL = "https://registry.npmjs.org/-/package/monosmith/dist-tags"
 
 // ReleasesURL is where the release notes are.
 const ReleasesURL = "https://github.com/monosmith-app/monosmith/releases"
 
-// FetchLatest asks the registry for the newest version, giving up after timeout.
-func FetchLatest(ctx context.Context, timeout time.Duration) (string, error) {
+// FetchLatest asks the registry for the newest version on a channel, giving up
+// after timeout.
+//
+// Parameters: channel is the dist-tag: "latest" or "next".
+// Returns: the version the tag points to; an error when the registry does not
+// answer in time, answers badly or has no such tag.
+func FetchLatest(ctx context.Context, timeout time.Duration, channel string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, RegistryURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, DistTagsURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -30,11 +37,12 @@ func FetchLatest(ctx context.Context, timeout time.Duration) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("registry answered %s", resp.Status)
 	}
-	var body struct {
-		Version string `json:"version"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+	var tags map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
 		return "", err
 	}
-	return body.Version, nil
+	if tags[channel] == "" {
+		return "", fmt.Errorf("the registry has no %q tag", channel)
+	}
+	return tags[channel], nil
 }
