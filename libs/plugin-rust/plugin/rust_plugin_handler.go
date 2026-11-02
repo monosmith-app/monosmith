@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -30,6 +31,7 @@ func (r *Rust) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: r.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("rust"),
 		Languages: []string{"rust"},
 		Manifests: []string{"Cargo.toml"},
 	}, nil

@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-ruby/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,6 +30,7 @@ func (r *Ruby) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: r.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("ruby"),
 		Languages: []string{"ruby"},
 		Manifests: []string{"*.gemspec"},
 	}, nil

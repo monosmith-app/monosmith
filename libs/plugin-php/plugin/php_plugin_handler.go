@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-php/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-php/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,6 +30,7 @@ func (p *PHP) Describe(params protocol.InitializeParams) (protocol.InitializeRes
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: p.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("php"),
 		Languages: []string{"php"},
 		Manifests: []string{"composer.json"},
 	}, nil

@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/sbom"
 	"github.com/monosmith-app/monosmith/libs/plugin-dart/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
 
 // Name is the plugin's name.
@@ -29,6 +30,7 @@ func (d *Dart) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: Name, Version: d.Version},
 		Kind:      protocol.KindLanguage,
+		Tools:     toolcatalog.For("dart"),
 		Languages: []string{"dart", "flutter"},
 		Manifests: []string{"pubspec.yaml"},
 		Stacks: []protocol.Stack{{

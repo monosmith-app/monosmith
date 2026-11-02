@@ -50,6 +50,20 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
    | .NET | yes | a `ProjectReference`, by `dotnet add reference` |
    | JVM, Dart, Ruby, PHP, Swift, Lua, C++ and the others | no | the user edits the manifest by hand |
 
+7. **A language plugin declares the tools it needs.** `InitializeResult.tools` lists each program a
+   project of the plugin needs on the machine (Python, the .NET SDK, Docker). Each entry (`ToolNeed`)
+   gives the name and the plain-words title, why smith needs it, what stops working without it
+   (`consequence`), how to detect it (`program`, `alternatives`, `versionArgs`), the files where a
+   workspace pins the version (`pins`: `.nvmrc`, `go.mod`, `pyproject.toml` `requires-python`,
+   `global.json`, `rust-toolchain.toml`), the ways to get it (`install`: a package manager and a
+   package, for `winget`, `brew`, `brew-cask`, `apt`, `dnf`, `pacman`, `npm` and the language's own
+   `uv`, `fnm`, `rustup`), the official page (`download`), and the page the entries were checked
+   against with the date (`source`, `checked`). The plugin writes facts only. The host builds the
+   exact command, presents the choice and runs nothing until the person picks
+   ([ADR 0076](../../architecture/decisions/0076-smith-offers-to-install-the-tools-a-stack-needs.md)).
+   The Go plugins take their entries from `packages/plugin-sdk/toolcatalog`; a plugin in another
+   language writes the same fields.
+
 ## How to check
 
 `smith plugin check <plugin>` runs the conformance suite. For the rules above it checks that:
@@ -57,7 +71,9 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
 - a plugin with `declared` refuses a declared folder that does not exist and invents no project for
   it, and a plugin without it ignores a declaration;
 - a plugin with `channels` also has `publish`, and one with `declared` or `link` also has `discover`;
-- a plugin with `link` refuses a link in a folder that does not exist, with an error.
+- a plugin with `link` refuses a link in a folder that does not exist, with an error;
+- every declared tool has a name, a title, a reason, a consequence, a program to detect, known package
+  managers, an official page, a source and a date, and no tool is declared twice.
 
 `smith plugin list` shows, for each language plugin, whether it describes declared projects
 (`DECLARED`), publishes channels (`CHANNELS`) and links an internal library (`LINK`).

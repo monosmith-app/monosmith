@@ -2392,6 +2392,9 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
     /// <summary>Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none.</summary>
     public IReadOnlyList<Choice> Choices { get; init; } = [];
 
+    /// <summary>Tools are the programs the plugin needs on the person's machine. The host detects them and, when one is missing, presents the ways to get it (smith tools). Absent means the plugin declares none.</summary>
+    public IReadOnlyList<ToolNeed> Tools { get; init; } = [];
+
     /// <inheritdoc />
     public static InitializeResult Read(JsonAny? value, string path)
     {
@@ -2413,6 +2416,7 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
             Kinds = ListOf(Member(map, "kinds"), Join(path, "kinds"), ProjectKind.Read),
             Follows = ListOf(Member(map, "follows"), Join(path, "follows"), StringValue),
             Choices = ListOf(Member(map, "choices"), Join(path, "choices"), Choice.Read),
+            Tools = ListOf(Member(map, "tools"), Join(path, "tools"), ToolNeed.Read),
         };
     }
 
@@ -2482,6 +2486,11 @@ public sealed record InitializeResult : IProtocolValue<InitializeResult>
         {
             writer.Property("choices");
             MessageWritingAlgorithm.List(writer, Choices, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Tools is { Count: > 0 })
+        {
+            writer.Property("tools");
+            MessageWritingAlgorithm.List(writer, Tools, (builder1, item1) => item1.Write(builder1));
         }
         writer.EndObject();
     }
@@ -4334,6 +4343,178 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     }
 }
 
+/// <summary>ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". The host builds the exact command from the manager and Package; Package may hold {major} and {major.minor}, which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup) are offered only when they are already on the machine.</summary>
+public sealed record ToolInstall : IProtocolValue<ToolInstall>
+{
+    /// <summary>The <c>manager</c> member of <c>ToolInstall</c>.</summary>
+    public required string Manager { get; init; }
+
+    /// <summary>The <c>package</c> member of <c>ToolInstall</c>.</summary>
+    public required string Package { get; init; }
+
+    /// <summary>Note adds a sentence the person needs before choosing ("a new terminal is needed").</summary>
+    public string Note { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static ToolInstall Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ToolInstall
+        {
+            Manager = StringValue(Member(map, "manager"), Join(path, "manager")),
+            Package = StringValue(Member(map, "package"), Join(path, "package")),
+            Note = StringValue(Member(map, "note"), Join(path, "note")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("manager");
+        writer.String(Manager);
+        writer.Property("package");
+        writer.String(Package);
+        if (Note.Length > 0)
+        {
+            writer.Property("note");
+            writer.String(Note);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>ToolNeed is a program on the person's machine that a plugin needs to build, test or run its projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to get it (ADR 0076): it never installs in silence. The plugin writes facts only (what the tool is, how to detect it, how each system gets it); the host decides how to ask.</summary>
+public sealed record ToolNeed : IProtocolValue<ToolNeed>
+{
+    /// <summary>Name identifies the tool across plugins and in commands (smith tools install python). Two plugins that need the same tool use the same Name.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Title is what the tool is called in text: "Python", "the .NET SDK". Doctor words the check "&lt;Title&gt; is installed".</summary>
+    public required string Title { get; init; }
+
+    /// <summary>Why says in plain words what smith needs the tool for.</summary>
+    public required string Why { get; init; }
+
+    /// <summary>Consequence says what stops working while the tool is missing, as the end of a sentence that starts "If you skip it, ": "smith test and smith build fail for the python projects".</summary>
+    public required string Consequence { get; init; }
+
+    /// <summary>Program is the program that carries the tool on PATH ("python3").</summary>
+    public required string Program { get; init; }
+
+    /// <summary>Alternatives are other programs that also count ("python", "py").</summary>
+    public IReadOnlyList<string> Alternatives { get; init; } = [];
+
+    /// <summary>VersionArgs are the arguments that make Program print its version. Absent means --version.</summary>
+    public IReadOnlyList<string> VersionArgs { get; init; } = [];
+
+    /// <summary>Pins are the files where a workspace pins the version it wants. The first pin the host finds gives the version range. Absent means any version counts.</summary>
+    public IReadOnlyList<ToolVersionPin> Pins { get; init; } = [];
+
+    /// <summary>Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not needed by a project built without it. Absent means every project of the plugin needs it.</summary>
+    public string Choice { get; init; } = string.Empty;
+
+    /// <summary>Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and {major.minor} in the install entries.</summary>
+    public string Suggested { get; init; } = string.Empty;
+
+    /// <summary>Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure.</summary>
+    public bool Optional { get; init; }
+
+    /// <summary>Install are the ways to get the tool, per package manager and system.</summary>
+    public IReadOnlyList<ToolInstall> Install { get; init; } = [];
+
+    /// <summary>Download is the official page of the tool, for the person who installs it by hand or has no package manager.</summary>
+    public required string Download { get; init; }
+
+    /// <summary>Source is the address of the page the Install entries were checked against.</summary>
+    public required string Source { get; init; }
+
+    /// <summary>Checked is the date (YYYY-MM-DD) the entries were last checked.</summary>
+    public required string Checked { get; init; }
+
+    /// <inheritdoc />
+    public static ToolNeed Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ToolNeed
+        {
+            Name = StringValue(Member(map, "name"), Join(path, "name")),
+            Title = StringValue(Member(map, "title"), Join(path, "title")),
+            Why = StringValue(Member(map, "why"), Join(path, "why")),
+            Consequence = StringValue(Member(map, "consequence"), Join(path, "consequence")),
+            Program = StringValue(Member(map, "program"), Join(path, "program")),
+            Alternatives = ListOf(Member(map, "alternatives"), Join(path, "alternatives"), StringValue),
+            VersionArgs = ListOf(Member(map, "versionArgs"), Join(path, "versionArgs"), StringValue),
+            Pins = ListOf(Member(map, "pins"), Join(path, "pins"), ToolVersionPin.Read),
+            Choice = StringValue(Member(map, "choice"), Join(path, "choice")),
+            Suggested = StringValue(Member(map, "suggested"), Join(path, "suggested")),
+            Optional = BooleanValue(Member(map, "optional"), Join(path, "optional")),
+            Install = ListOf(Member(map, "install"), Join(path, "install"), ToolInstall.Read),
+            Download = StringValue(Member(map, "download"), Join(path, "download")),
+            Source = StringValue(Member(map, "source"), Join(path, "source")),
+            Checked = StringValue(Member(map, "checked"), Join(path, "checked")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("name");
+        writer.String(Name);
+        writer.Property("title");
+        writer.String(Title);
+        writer.Property("why");
+        writer.String(Why);
+        writer.Property("consequence");
+        writer.String(Consequence);
+        writer.Property("program");
+        writer.String(Program);
+        if (Alternatives is { Count: > 0 })
+        {
+            writer.Property("alternatives");
+            MessageWritingAlgorithm.List(writer, Alternatives, (builder1, item1) => builder1.String(item1));
+        }
+        if (VersionArgs is { Count: > 0 })
+        {
+            writer.Property("versionArgs");
+            MessageWritingAlgorithm.List(writer, VersionArgs, (builder1, item1) => builder1.String(item1));
+        }
+        if (Pins is { Count: > 0 })
+        {
+            writer.Property("pins");
+            MessageWritingAlgorithm.List(writer, Pins, (builder1, item1) => item1.Write(builder1));
+        }
+        if (Choice.Length > 0)
+        {
+            writer.Property("choice");
+            writer.String(Choice);
+        }
+        if (Suggested.Length > 0)
+        {
+            writer.Property("suggested");
+            writer.String(Suggested);
+        }
+        if (Optional)
+        {
+            writer.Property("optional");
+            writer.Boolean(Optional);
+        }
+        if (Install is { Count: > 0 })
+        {
+            writer.Property("install");
+            MessageWritingAlgorithm.List(writer, Install, (builder1, item1) => item1.Write(builder1));
+        }
+        writer.Property("download");
+        writer.String(Download);
+        writer.Property("source");
+        writer.String(Source);
+        writer.Property("checked");
+        writer.String(Checked);
+        writer.EndObject();
+    }
+}
+
 /// <summary>ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv) against the newest release; informational.</summary>
 public sealed record ToolPin : IProtocolValue<ToolPin>
 {
@@ -4380,6 +4561,38 @@ public sealed record ToolPin : IProtocolValue<ToolPin>
             writer.Property("newer");
             writer.Boolean(Newer);
         }
+        writer.EndObject();
+    }
+}
+
+/// <summary>ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of: "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod" (the toolchain line, else the go line), "pyproject" (requires-python), "global-json" (sdk.version) and "rust-toolchain" (the channel).</summary>
+public sealed record ToolVersionPin : IProtocolValue<ToolVersionPin>
+{
+    /// <summary>File is the base name of the file, looked up at the workspace root and in the folders of the projects that use the tool.</summary>
+    public required string File { get; init; }
+
+    /// <summary>The <c>format</c> member of <c>ToolVersionPin</c>.</summary>
+    public required string Format { get; init; }
+
+    /// <inheritdoc />
+    public static ToolVersionPin Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new ToolVersionPin
+        {
+            File = StringValue(Member(map, "file"), Join(path, "file")),
+            Format = StringValue(Member(map, "format"), Join(path, "format")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("file");
+        writer.String(File);
+        writer.Property("format");
+        writer.String(Format);
         writer.EndObject();
     }
 }
@@ -4678,6 +4891,9 @@ public sealed record PluginDescription
     /// <summary>Choices are the options on an axis (framework, test, style) the plugin owns. The host lists them (smith choices) and checks a selection of them (smith add --with). Absent means the plugin owns none.</summary>
     public IReadOnlyList<Choice> Choices { get; init; } = [];
 
+    /// <summary>Tools are the programs the plugin needs on the person's machine. The host detects them and, when one is missing, presents the ways to get it (smith tools). Absent means the plugin declares none.</summary>
+    public IReadOnlyList<ToolNeed> Tools { get; init; } = [];
+
     /// <summary>The <c>initialize</c> result for this description.</summary>
     /// <param name="capabilities">The capabilities derived from the plugin.</param>
     /// <returns>The result the serve loop answers.</returns>
@@ -4699,5 +4915,6 @@ public sealed record PluginDescription
             Kinds = Kinds,
             Follows = Follows,
             Choices = Choices,
+            Tools = Tools,
         };
 }

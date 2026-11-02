@@ -838,6 +838,12 @@ export interface InitializeResult {
    * owns none.
    */
   choices?: Choice[]
+  /**
+   * Tools are the programs the plugin needs on the person's machine. The host detects them and,
+   * when one is missing, presents the ways to get it (smith tools). Absent means the plugin
+   * declares none.
+   */
+  tools?: ToolNeed[]
 }
 
 /**
@@ -1413,6 +1419,84 @@ export interface Task {
 }
 
 /**
+ * ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew",
+ * "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". The host builds the exact
+ * command from the manager and Package; Package may hold {major} and {major.minor}, which the
+ * pinned or suggested version fills. The language's own installers (uv, fnm, rustup) are offered
+ * only when they are already on the machine.
+ */
+export interface ToolInstall {
+  manager: string
+  package: string
+  /** Note adds a sentence the person needs before choosing ("a new terminal is needed"). */
+  note?: string
+}
+
+/**
+ * ToolNeed is a program on the person's machine that a plugin needs to build, test or run its
+ * projects (Python, the .NET SDK, Docker). A plugin publishes the tools it needs in
+ * InitializeResult.Tools. The host detects them, and when one is missing it presents the ways to
+ * get it (ADR 0076): it never installs in silence. The plugin writes facts only (what the tool is,
+ * how to detect it, how each system gets it); the host decides how to ask.
+ */
+export interface ToolNeed {
+  /**
+   * Name identifies the tool across plugins and in commands (smith tools install python). Two
+   * plugins that need the same tool use the same Name.
+   */
+  name: string
+  /**
+   * Title is what the tool is called in text: "Python", "the .NET SDK". Doctor words the check
+   * "<Title> is installed".
+   */
+  title: string
+  /** Why says in plain words what smith needs the tool for. */
+  why: string
+  /**
+   * Consequence says what stops working while the tool is missing, as the end of a sentence that
+   * starts "If you skip it, ": "smith test and smith build fail for the python projects".
+   */
+  consequence: string
+  /** Program is the program that carries the tool on PATH ("python3"). */
+  program: string
+  /** Alternatives are other programs that also count ("python", "py"). */
+  alternatives?: string[]
+  /** VersionArgs are the arguments that make Program print its version. Absent means --version. */
+  versionArgs?: string[]
+  /**
+   * Pins are the files where a workspace pins the version it wants. The first pin the host finds
+   * gives the version range. Absent means any version counts.
+   */
+  pins?: ToolVersionPin[]
+  /**
+   * Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
+   * needed by a project built without it. Absent means every project of the plugin needs it.
+   */
+  choice?: string
+  /**
+   * Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and
+   * {major.minor} in the install entries.
+   */
+  suggested?: string
+  /**
+   * Optional marks a tool whose absence only costs a feature (running a function app locally).
+   * Doctor reports it as a warning, not a failure.
+   */
+  optional?: boolean
+  /** Install are the ways to get the tool, per package manager and system. */
+  install?: ToolInstall[]
+  /**
+   * Download is the official page of the tool, for the person who installs it by hand or has no
+   * package manager.
+   */
+  download: string
+  /** Source is the address of the page the Install entries were checked against. */
+  source: string
+  /** Checked is the date (YYYY-MM-DD) the entries were last checked. */
+  checked: string
+}
+
+/**
  * ToolPin is a tool the plugin installs at a pinned version (in CI, the dev container, the venv)
  * against the newest release; informational.
  */
@@ -1423,6 +1507,21 @@ export interface ToolPin {
   latest?: string
   /** Newer is true when Latest is a release the pin does not cover. */
   newer?: boolean
+}
+
+/**
+ * ToolVersionPin names a file that pins the version of a tool and how to read it. Format is one of:
+ * "text" (the first word of the file, as in .nvmrc and .python-version), "go-mod" (the toolchain
+ * line, else the go line), "pyproject" (requires-python), "global-json" (sdk.version) and
+ * "rust-toolchain" (the channel).
+ */
+export interface ToolVersionPin {
+  /**
+   * File is the base name of the file, looked up at the workspace root and in the folders of the
+   * projects that use the tool.
+   */
+  file: string
+  format: string
 }
 
 /**

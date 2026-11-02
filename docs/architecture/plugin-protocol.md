@@ -131,6 +131,7 @@ and version, and the absolute workspace root. The plugin answers `InitializeResu
 | `stacks` | ready-made stacks the plugin publishes |
 | `kinds` | the project kinds `generate` can scaffold (`app`, `lib`, `package`); absent or empty means all three ([ADR 0039](decisions/0039-a-plugin-declares-the-project-kinds-it-scaffolds.md)) |
 | `choices` | the options on an axis (framework, test, style) the plugin owns; `Stack.choices` makes a stack a saved selection, and `generate` is given the full list as `choices` ([ADR 0045](decisions/0045-frameworks-tests-and-styles-are-choices-shipped-as-data.md)) |
+| `tools` | the programs the plugin needs on the machine, each with how to detect it and how each package manager gets it (`smith tools`, [ADR 0076](decisions/0076-smith-offers-to-install-the-tools-a-stack-needs.md)) |
 | `follows` | the project shape keys `generate` applies when it is given `shape`; `discover` reports `shape`, the dialect of each project ([ADR 0041](decisions/0041-smith-add-follows-the-dialect-of-sibling-projects.md)) |
 | `concurrency` | how many requests the plugin can work on at once: absent or `0` is 1, `N` is N, `-1` leaves the number to the host (which keeps 32 in flight) |
 
