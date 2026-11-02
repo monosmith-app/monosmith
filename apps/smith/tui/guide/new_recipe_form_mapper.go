@@ -40,11 +40,11 @@ func NewRecipeSteps() []Step {
 
 // planProblem says what is wrong with the recipe the answers so far describe,
 // or "" when nothing is.
-func planProblem(name, version string, fixed []string) string {
+func planProblem(name, version string, fixed []string, chosen ...string) string {
 	if name == "" {
 		name = "team"
 	}
-	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed, nil); err != nil {
+	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed, chosen); err != nil {
 		return err.Error()
 	}
 	return ""
@@ -63,6 +63,9 @@ func NewRecipeArgv(a map[string][]string) []string {
 	}
 	for _, f := range recipeFixed(a) {
 		argv = append(argv, "--fixed", f)
+	}
+	for _, c := range recipeChosenArgs(a) {
+		argv = append(argv, "--chosen", c)
 	}
 	return argv
 }

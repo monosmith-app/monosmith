@@ -125,3 +125,28 @@ func TestNoLevelsKeepsThePlainForm(t *testing.T) {
 		t.Fatal("an empty catalog must leave the plain form")
 	}
 }
+
+func TestRecipeFormLetsTheUsersChooseALevelAndWritesChosen(t *testing.T) {
+	// name, version, extends; language: the last answer, "chosen by the people who use it".
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter")
+	if view := m.View(); !strings.Contains(view, "question do the users read") {
+		t.Fatalf("the question the users read is asked next:\n%s", view)
+	}
+	// the question, the two plugins they can end up with, the answers (Enter keeps the plugin names).
+	m = keys(m, "Which language?", "enter", "space", "down", "space", "enter")
+	if view := m.View(); !strings.Contains(view, "node, python") {
+		t.Fatalf("the answers start on the plugin names, to edit:\n%s", view)
+	}
+	m = keys(m, "enter", "enter", "enter", "enter")
+	want := "recipe new --name team --chosen language=Which language?:node=node,python=python"
+	if got := argvOf(m); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestRecipeFormRefusesAChoiceWithOneAnswer(t *testing.T) {
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter", "Which language?", "enter", "space", "enter")
+	if !strings.Contains(m.View(), "at least two plugins") {
+		t.Fatalf("one plugin is a fixed plugin, not a choice:\n%s", m.View())
+	}
+}

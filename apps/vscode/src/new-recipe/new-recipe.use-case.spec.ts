@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { SmithRun } from '../smith-run/index.ts'
-import type { LevelQuestion } from './new-recipe.contract.ts'
+import type { LevelDecider, LevelQuestion, RecipeChoice } from './new-recipe.contract.ts'
 import { newRecipe, type NewRecipeDeps } from './new-recipe.use-case.ts'
-import { checkRecipeName, checkRecipeVersion, parseRecipeLevels, questionFor, recipeArguments } from './recipe-levels.mapper.ts'
+import { checkChoiceAnswer, checkChoiceQuestion, checkRecipeName, checkRecipeVersion, parseRecipeLevels, questionFor, recipeArguments } from './recipe-levels.mapper.ts'
 
 const plugin = (name: string): { name: string, description: string } => ({ name, description: `about ${name}` })
 const LEVELS: SmithRun = {
@@ -21,13 +21,13 @@ const LEVELS: SmithRun = {
   }),
 }
 
-interface Fake { asked: LevelQuestion[], applied: string[][], calls: string[][], shown: Array<{ command: string, file: string }>, deps: NewRecipeDeps }
+interface Fake { asked: LevelQuestion[], decided: string[], applied: string[][], calls: string[][], shown: Array<{ command: string, file: string }>, deps: NewRecipeDeps }
 
-/** A fake prompts client: `picks` answers the level questions in order, `yes` answers the confirmation. */
+/** A fake prompts client: `picks` answers the level questions in order, `yes` answers the confirmation; `deciders` and `choices` answer who decides a level and the question of a chosen one (fixed when none is queued). */
 const BASICS = { name: 'team', version: '0.1.0', extends: '' }
 
-function fake (picks: Array<string[] | undefined>, yes = true, basics: typeof BASICS | null = BASICS, run: SmithRun = LEVELS): Fake {
-  const f: Fake = { asked: [], applied: [], calls: [], shown: [], deps: undefined as never }
+function fake (picks: Array<string[] | undefined>, yes = true, basics: typeof BASICS | null = BASICS, run: SmithRun = LEVELS, deciders: LevelDecider[] = [], choices: Array<RecipeChoice | undefined> = []): Fake {
+  const f: Fake = { asked: [], decided: [], applied: [], calls: [], shown: [], deps: undefined as never }
   const queue = [...picks]
   f.deps = {
     run: async (args) => {
@@ -41,6 +41,12 @@ function fake (picks: Array<string[] | undefined>, yes = true, basics: typeof BA
       return { code: 0, stdout: 'Wrote team.recipe.toml (recipe team 0.1.0).\n', stderr: '' }
     },
     askBasics: async () => basics ?? undefined,
+    decide:    async (question) => {
+      f.decided.push(question.level)
+
+      return deciders.shift() ?? 'fixed'
+    },
+    askChoice: async () => choices.shift(),
     pick:      async (question) => {
       f.asked.push(question)
 
@@ -79,6 +85,14 @@ describe('recipeArguments and the live checks', () => {
     expect(recipeArguments({ name: 'team', version: '', extends: '', fixed: {} })).toEqual(['recipe', 'new', '--name', 'team'])
   })
 
+  it('refuses a question with a colon and an answer the command cannot read', () => {
+    expect(checkChoiceQuestion('Which: one?')).toContain('colon')
+    expect(checkChoiceQuestion('Which one?')).toBeUndefined()
+    expect(checkChoiceAnswer('a=b', [])).toContain('without')
+    expect(checkChoiceAnswer('Python', ['Python'])).toContain('Two answers')
+    expect(checkChoiceAnswer('Python', ['node'])).toBeUndefined()
+  })
+
   it('refuses the names and versions the command refuses', () => {
     expect(checkRecipeName('Bad Name')).toContain('lowercase')
     expect(checkRecipeName('team-node')).toBeUndefined()
@@ -98,6 +112,30 @@ describe('newRecipe', () => {
     expect(f.shown).toEqual([{ command: 'smith recipe new --name team --recipe-version 0.1.0 --fixed language=python --fixed lint=ruff', file: 'team.recipe.toml' }])
     expect(f.applied).toEqual([['recipe', 'new', '--name', 'team', '--recipe-version', '0.1.0', '--fixed', 'language=python', '--fixed', 'lint=ruff']])
     expect(outcome).toMatchObject({ kind: 'written', file: 'team.recipe.toml' })
+  })
+
+  it('lets the users choose a level: the question and the plugin of each answer become --chosen', async () => {
+    // language: chosen by the users; lint: fixed (all plugins are offered, as no language is fixed); structure: ticks.
+    const choice: RecipeChoice = { question: 'Which language?', answers: [{ answer: 'JavaScript', plugin: 'node' }, { answer: 'Python', plugin: 'python' }] }
+    const f = fake([[], []], true, BASICS, LEVELS, ['chosen'], [choice])
+    await newRecipe(f.deps)
+    expect(f.decided).toEqual(['language', 'lint'])
+    expect(f.asked.map((q) => q.level)).toEqual(['lint', 'structure'])
+    expect(f.asked[0].options.map((p) => p.name)).toEqual(['eslint', 'ruff'])
+    expect(f.shown[0].command).toContain('--chosen "language=Which language?:JavaScript=node,Python=python"')
+    expect(f.applied[0]).toEqual(['recipe', 'new', '--name', 'team', '--recipe-version', '0.1.0', '--chosen', 'language=Which language?:JavaScript=node,Python=python'])
+  })
+
+  it('asks nothing more when the person cancels the choice', async () => {
+    const f = fake([], true, BASICS, LEVELS, ['chosen'], [undefined])
+    expect(await newRecipe(f.deps)).toEqual({ kind: 'cancelled' })
+    expect(f.applied).toEqual([])
+  })
+
+  it('does not ask who decides a level that takes any number of plugins, or that has one plugin', async () => {
+    const f = fake([['node'], [], ['layers']])
+    await newRecipe(f.deps)
+    expect(f.decided).toEqual(['language'])
   })
 
   it('ticks several plugins of an additive level', async () => {

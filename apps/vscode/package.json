@@ -460,6 +460,102 @@
         "command": "monosmith.derive.eject",
         "title": "Eject Derived File (Own It)",
         "category": "MonoSmith"
+      },
+      {
+        "command": "monosmith.environmentsList",
+        "title": "Environments of the Web Apps",
+        "category": "MonoSmith",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "monosmith.environmentsAdd",
+        "title": "Add Environments to a Web App…",
+        "category": "MonoSmith",
+        "icon": "$(add)"
+      },
+      {
+        "command": "monosmith.environmentsRemove",
+        "title": "Remove Environments from a Web App…",
+        "category": "MonoSmith",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "monosmith.cacheStatus",
+        "title": "Cache: Status",
+        "category": "MonoSmith",
+        "icon": "$(database)"
+      },
+      {
+        "command": "monosmith.cacheVerify",
+        "title": "Cache: Check for Damage",
+        "category": "MonoSmith",
+        "icon": "$(search)"
+      },
+      {
+        "command": "monosmith.cacheRepair",
+        "title": "Cache: Remove What Is Broken…",
+        "category": "MonoSmith",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "monosmith.cachePrune",
+        "title": "Cache: Trim to Its Limit…",
+        "category": "MonoSmith",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "monosmith.cacheClear",
+        "title": "Cache: Delete It All…",
+        "category": "MonoSmith",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "monosmith.copies",
+        "title": "Copies Between Projects",
+        "category": "MonoSmith",
+        "icon": "$(files)"
+      },
+      {
+        "command": "monosmith.toolsList",
+        "title": "Tools the Workspace Needs",
+        "category": "MonoSmith",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "monosmith.whyMiss",
+        "title": "Why Would a Task Run Again?…",
+        "category": "MonoSmith",
+        "icon": "$(question)"
+      },
+      {
+        "command": "monosmith.pipeline",
+        "title": "Add a Ready-Made Pipeline…",
+        "category": "MonoSmith",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "monosmith.tauriIcon",
+        "title": "Make the Icons of a Tauri App…",
+        "category": "MonoSmith",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "monosmith.dockerDescriptionPreview",
+        "title": "Docker Hub Descriptions: Name the Repositories",
+        "category": "MonoSmith",
+        "icon": "$(package)"
+      },
+      {
+        "command": "monosmith.dockerDescription",
+        "title": "Set the Docker Hub Descriptions…",
+        "category": "MonoSmith",
+        "icon": "$(package)"
+      },
+      {
+        "command": "monosmith.mcpInstall",
+        "title": "Connect smith to a Coding Assistant…",
+        "category": "MonoSmith",
+        "icon": "$(plug)"
       }
     ],
     "menus": {
@@ -638,6 +734,86 @@
           "command": "monosmith.release.refresh",
           "when": "view == monosmith.release",
           "group": "navigation@1"
+        },
+        {
+          "command": "monosmith.environmentsList",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@1"
+        },
+        {
+          "command": "monosmith.environmentsAdd",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@2"
+        },
+        {
+          "command": "monosmith.environmentsRemove",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@3"
+        },
+        {
+          "command": "monosmith.cacheStatus",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@4"
+        },
+        {
+          "command": "monosmith.cacheVerify",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@5"
+        },
+        {
+          "command": "monosmith.cacheRepair",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@6"
+        },
+        {
+          "command": "monosmith.cachePrune",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@7"
+        },
+        {
+          "command": "monosmith.cacheClear",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@8"
+        },
+        {
+          "command": "monosmith.copies",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@9"
+        },
+        {
+          "command": "monosmith.toolsList",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@10"
+        },
+        {
+          "command": "monosmith.whyMiss",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@11"
+        },
+        {
+          "command": "monosmith.pipeline",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@12"
+        },
+        {
+          "command": "monosmith.tauriIcon",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@13"
+        },
+        {
+          "command": "monosmith.dockerDescriptionPreview",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@14"
+        },
+        {
+          "command": "monosmith.dockerDescription",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@15"
+        },
+        {
+          "command": "monosmith.mcpInstall",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@16"
         }
       ],
       "view/item/context": [
@@ -1028,6 +1204,70 @@
         },
         {
           "command": "monosmith.release.refresh",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.environmentsList",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.environmentsAdd",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.environmentsRemove",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheStatus",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheVerify",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheRepair",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cachePrune",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheClear",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.copies",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.toolsList",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.whyMiss",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.pipeline",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.tauriIcon",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.dockerDescriptionPreview",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.dockerDescription",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.mcpInstall",
           "when": "monosmith.state == ready"
         }
       ]

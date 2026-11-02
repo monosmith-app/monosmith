@@ -290,7 +290,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			Argv: SwapArgv,
 		},
 		{
-			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (to pick choices too, run smith recipe new outside this screen)",
+			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose levels are fixed by it or chosen by the people who use it",
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},

@@ -20,7 +20,8 @@ import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap
 import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
-import { askRecipeBasics, confirmRecipe, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
+import { askGuidedStep, confirmGuided, GUIDED_COMMANDS, runGuidedCommand, tellGuidedOutcome, type GuidedCommand } from './guided-commands/index.ts'
+import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { chooseSyncRule, confirmSync, syncVersions, tellSyncOutcome } from './sync-versions/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
@@ -1189,11 +1190,29 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       apply:     smithIn(state, true),
       askBasics: askRecipeBasics,
       pick:      pickLevel,
+      decide:    decideLevel,
+      askChoice,
       confirm:   confirmRecipe,
     })
     note(`MonoSmith: recipe in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellRecipeOutcome(outcome, state.root, note)
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes. */
+  const guidedHere = async (spec: GuidedCommand, argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    if (spec.mode === 'change' && !mayWrite(spec.title.replace(/…$/, '').toLowerCase())) return
+    const outcome = await runGuidedCommand(spec, {
+      run:     smithIn(state, true, 300_000),
+      ask:     askGuidedStep,
+      show:    async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
+      confirm: confirmGuided,
+    })
+    note(`MonoSmith: ${spec.title} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellGuidedOutcome(spec.title, outcome, note)
+    if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
   }
 
   /** Lists where the workspace chose differently from smith's defaults (`smith divergences`), with the reason and the way back. */
@@ -1435,6 +1454,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.newRecipe', newRecipeHere),
     command<unknown>('monosmith.divergences', showDivergences),
+    ...GUIDED_COMMANDS.map((spec) => command<unknown>(`monosmith.${spec.id}`, async (argument) => { await guidedHere(spec, argument) })),
     command<unknown>('monosmith.try', tryHere),
     command<unknown>('monosmith.bootstrap', bootstrapHere),
     command<unknown>('monosmith.installTools', installToolsHere),
