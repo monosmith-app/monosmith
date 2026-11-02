@@ -20,7 +20,11 @@ func (s *Shell) openForcedRelease() tea.Cmd {
 	}
 	plan := s.release.Plan
 	if forcible := slices.DeleteFunc(slices.Clone(plan.Unchanged), func(n string) bool { return slices.Contains(plan.NeverReleased, n) }); len(forcible) == 0 {
-		s.say(guide.NeverReleasedNote(plan.NeverReleased))
+		// One line of the status bar is too short for the commit to make: a notice
+		// shows all of it.
+		s.tell("No package to release without a commit",
+			"smith has no version to bump for a package that was never released: "+strings.Join(plan.NeverReleased, ", ")+".",
+			"To choose its first version, make this commit:\n  git commit --allow-empty -m \"version("+plan.NeverReleased[0]+")[1.0.0]\"")
 		return nil
 	}
 	g := s.guide.WithAction(guide.ForcedReleaseAction(plan.Unchanged, plan.NeverReleased))

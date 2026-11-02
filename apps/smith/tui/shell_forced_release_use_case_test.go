@@ -33,6 +33,17 @@ func TestForcedReleaseDoesNotOfferAPackageThatWasNeverReleased(t *testing.T) {
 	}
 }
 
+func TestForcedReleaseWithOnlyNeverReleasedPackagesShowsTheCommitInANotice(t *testing.T) {
+	l := newLab(t, true, 110, 32)
+	l.keys("6") // the plan is read
+	sh := l.sh()
+	sh.release.Plan.Unchanged = []string{"fresh"}
+	sh.release.Plan.NeverReleased = []string{"fresh"}
+	l.m = sh
+	l.keys("f")
+	l.has("No package to release without a commit", "never released: fresh", `git commit --allow-empty -m "version(fresh)[1.0.0]"`)
+}
+
 func TestForcedReleaseConfirmationSaysWhatHappens(t *testing.T) {
 	title, why := commands.Describe([]string{"release", "--bump", "mvd=patch", "--force"})
 	if title != guide.ForcedReleaseTitle || !strings.Contains(why, "tag points at HEAD") || !strings.Contains(why, "cannot be undone") {

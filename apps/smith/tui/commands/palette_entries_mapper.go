@@ -40,9 +40,9 @@ var paletteSections = map[string]string{
 	"file.add": SectionProjects, "proj.swap": SectionProjects, "proj.remove": SectionProjects, "proj.affected": SectionProjects, "proj.graph": SectionProjects,
 	"projects.install-package": SectionProjects, "projects.remove-package": SectionProjects,
 
-	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies,
+	"proj.install": SectionDependencies, "deps.update": SectionDependencies, "deps.align": SectionDependencies, "deps.one-version": SectionDependencies,
 
-	"rel.preview": SectionRelease, "rel.notes": SectionRelease, "rel.release": SectionRelease, "ws.ci": SectionRelease,
+	"rel.preview": SectionRelease, "rel.notes": SectionRelease, "rel.release": SectionRelease, "rel.forced": SectionRelease, "ws.ci": SectionRelease,
 
 	"ws.doctor": SectionHealth, "ws.fix": SectionHealth, "proj.upgrade": SectionHealth, "proj.plugins": SectionHealth, "ws.info": SectionHealth,
 	"ws.undo": SectionHealth, "ws.report": SectionHealth, "ws.derive-check": SectionHealth, "ws.derive": SectionHealth, "ws.derive-preview": SectionHealth, "ws.why": SectionHealth, "ws.divergences": SectionHealth, "ws.try": SectionHealth, "ws.bootstrap": SectionHealth, "ws.agent-file": SectionHealth,
