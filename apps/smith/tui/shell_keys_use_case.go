@@ -344,6 +344,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == removeProjectTitle {
 			return s.openRemoveProject()
 		}
+		if c.Guide == guide.EnvironmentsAddTitle || c.Guide == guide.EnvironmentsRemoveTitle {
+			return s.openEnvironments(c.Guide)
+		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
 		}

@@ -89,6 +89,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	inside := false
 	enabled := pluginhost.BuiltinNames()
 	problem, commitOps := "", false
+	var environments []string
 	if root, err := workspace.FindRoot("."); err == nil {
 		cfg, err := workspace.Load(root)
 		if err != nil {
@@ -98,6 +99,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		} else {
 			inside = true
 			commitOps = cfg.Workspace.CommitOperations
+			environments = cfg.Workspace.Environments
 			name = cfg.Workspace.Name
 			if len(cfg.Plugins.Enabled) > 0 {
 				enabled = cfg.Plugins.Enabled
@@ -142,7 +144,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	cfg := Config{
 		Clipboard: out,
 		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
-		Problem: problem, CommitOperations: commitOps, Resume: resume,
+		Problem: problem, CommitOperations: commitOps, Environments: environments, Resume: resume,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")

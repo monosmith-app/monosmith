@@ -436,6 +436,9 @@ func (m Model) advance() Model {
 		if step.PlaceholderFor != nil {
 			m.input.Placeholder = step.PlaceholderFor(m.answers)
 		}
+		if step.Initial != nil {
+			m.input.SetValue(step.Initial(m.answers))
+		}
 		m.input.Focus()
 	} else if want := m.defaults[step.Key]; want != "" {
 		for i, o := range step.Options {

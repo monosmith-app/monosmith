@@ -18,15 +18,14 @@ var notInPalette = map[string]string{
 	"recipe": "Settings tab", "recipe new": "the guided recipe form",
 	"run": "run keys", "build": "run keys", "test": "run keys", "lint": "run keys", "typecheck": "run keys",
 	"kind": "the Projects detail", "eject": "derived files flow", "derive": "palette: Update the derived files",
-	"environments list": "no screen yet", "environments add": "no screen yet", "environments remove": "no screen yet", "tauri add": "Add project form", "tauri icon": "no screen yet",
+	"tauri add": "Add project form",
 	"deps up": "Dependencies tab", "up": "Dependencies tab", "ci": "palette: Regenerate CI pipelines", "ci generate": "palette: Regenerate CI pipelines",
-	"pipeline": "no screen yet", "docker description": "no screen yet", "doctor": "palette: Doctor", "projects": "Projects tab", "affected": "palette: Affected",
-	"info": "palette: Info", "explain": "run scope", "why-miss": "no screen yet", "report": "palette: Open the report",
-	"cache status": "no screen yet", "cache prune": "no screen yet", "cache clear": "no screen yet", "cache verify": "no screen yet",
-	"boundaries": "Doctor", "slices check": "Doctor", "mcp install": "no screen yet", "agent file": "palette: Write the agent file",
+	"doctor": "palette: Doctor", "projects": "Projects tab", "affected": "palette: Affected",
+	"info": "palette: Info", "explain": "run scope", "report": "palette: Open the report",
+	"boundaries": "Doctor", "slices check": "Doctor", "agent file": "palette: Write the agent file",
 	"agent install": "Doctor fix", "divergences": "palette: Divergences", "try": "palette: Try a command", "bootstrap": "palette: Write the launcher",
-	"adopt": "palette: Bring into MonoSmith", "new": "palette: New workspace", "add": "palette: Add project", "convert": "no screen yet", "undo": "palette: Undo", "graph": "palette: Graph",
-	"dev": "own terminal", "tools": "palette: Install the missing tools", "copies": "command line only",
+	"adopt": "palette: Bring into MonoSmith", "new": "palette: New workspace", "add": "palette: Add project", "convert": "New workspace screen: the convert form", "undo": "palette: Undo", "graph": "palette: Graph",
+	"dev": "own terminal", "tools": "palette: Install the missing tools",
 }
 
 // TestEveryCatalogueActionIsFindableInThePalette keeps the rule that a person

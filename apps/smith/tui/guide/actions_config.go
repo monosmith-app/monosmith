@@ -31,6 +31,10 @@ type Step struct {
 	// Skip, when set, leaves the question out when it says so, given the
 	// earlier answers; the key then has no answer.
 	Skip func(answers map[string][]string) bool
+	// Initial, when set, fills a free-text step with a value the person edits
+	// (the names an app's environments start on). The grey placeholder is only
+	// an example; this is an answer that Enter takes.
+	Initial func(answers map[string][]string) string
 	// Auto, when set, answers the question itself when it returns a value (the
 	// answer is then the same as a pick of that option) and asks it when it
 	// returns "": a language that an outcome has only one of is not asked.
@@ -127,7 +131,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		}
 		pluginOpts = append(pluginOpts, Option{Label: p, Value: p, Hint: hint})
 	}
-	return []Action{
+	return append([]Action{
 		{
 			Title: "Create a workspace", Presents: "new", Hint: "smith new", OutsideOnly: true,
 			Steps: NewWorkspaceSteps(),
@@ -290,5 +294,5 @@ func Actions(languages, plugins, enabled []string) []Action {
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},
-	}
+	}, parityForms()...)
 }

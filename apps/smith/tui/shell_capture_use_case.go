@@ -305,7 +305,7 @@ func (s *Shell) showAddForm() tea.Cmd {
 		}
 	}
 	if s.addBase != nil {
-		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()))
+		g = g.WithAction(guide.WithWorkspaceEnvironments(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()), s.environments))
 	}
 	g = g.WithDefaultWhy("lang", s.mainLanguageWhy())
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
@@ -368,6 +368,36 @@ func (s Shell) projectNames() []string {
 		names = append(names, p.Name)
 	}
 	return names
+}
+
+// webApps are the projects an environment can be added to: the apps written
+// in Node. With none of them, every project is listed and smith refuses the
+// one that is not a web app, with its reason.
+func (s Shell) webApps() []string {
+	var names []string
+	for _, p := range s.list.Projects() {
+		if p.Kind == "app" && p.Language == "node" {
+			names = append(names, p.Name)
+		}
+	}
+	if len(names) == 0 {
+		return s.projectNames()
+	}
+	return names
+}
+
+// openEnvironments opens the form that adds environments to a web app or
+// removes them, with the web apps as a pick list that starts on the selected
+// project.
+func (s *Shell) openEnvironments(title string) tea.Cmd {
+	g := s.guide
+	if base, ok := g.ActionTitled(title); ok {
+		g = g.WithAction(guide.WithProjectPick(base, "project", s.webApps()))
+	}
+	if g, ok := g.WithDefault("project", s.selectedProject()).Pick(title); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
 }
 
 // refreshProjectForms puts the project names into the Remove form of the menu,

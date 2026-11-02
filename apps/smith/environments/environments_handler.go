@@ -1,6 +1,7 @@
 package environments
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -52,7 +53,8 @@ func openApp(cmd *cobra.Command, version, name string) (*session.Session, *proje
 }
 
 func listCommand(version string) *cobra.Command {
-	return &cobra.Command{
+	var asJSON bool
+	cmd := &cobra.Command{
 		Use:   "list [project]",
 		Short: "List the environments of the web apps and the task that builds each",
 		Args:  cobra.MaximumNArgs(1),
@@ -63,6 +65,20 @@ func listCommand(version string) *cobra.Command {
 			}
 			defer s.Close()
 			out := cmd.OutOrStdout()
+			if asJSON {
+				apps := []appJSON{}
+				for _, p := range s.Graph.Projects {
+					if len(args) == 1 && p.Name != args[0] {
+						continue
+					}
+					if settings, ok := webenv.FromMap(p.Settings[webenv.PluginName]); ok {
+						apps = append(apps, newAppJSON(p.Name, settings))
+					}
+				}
+				enc := json.NewEncoder(out)
+				enc.SetIndent("", "  ")
+				return enc.Encode(apps)
+			}
 			found := false
 			for _, p := range s.Graph.Projects {
 				if len(args) == 1 && p.Name != args[0] {
@@ -84,6 +100,33 @@ func listCommand(version string) *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "print the web apps and their environments as JSON")
+	return cmd
+}
+
+// appJSON is a web app as `environments list --json` prints it: the editors
+// read it to offer the apps and the names that can be removed.
+type appJSON struct {
+	Project      string        `json:"project"`
+	EnvFiles     string        `json:"envFiles"`
+	Output       string        `json:"output"`
+	Default      string        `json:"default"`
+	Environments []environJSON `json:"environments"`
+}
+
+// environJSON is one environment of a web app and the task that builds it.
+type environJSON struct {
+	Name string `json:"name"`
+	Task string `json:"task"`
+}
+
+// newAppJSON maps the settings of a web app to its JSON form.
+func newAppJSON(project string, s webenv.Settings) appJSON {
+	app := appJSON{Project: project, EnvFiles: string(s.EnvFiles), Output: string(s.Output), Default: s.Default, Environments: []environJSON{}}
+	for _, env := range s.Names {
+		app.Environments = append(app.Environments, environJSON{Name: env, Task: webenv.TaskName(s, env)})
+	}
+	return app
 }
 
 func defaultMark(s webenv.Settings, env string) string {

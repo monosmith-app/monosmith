@@ -69,7 +69,9 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 			{Label: "Names of my own", Value: envsCustom, Hint: "you type the names: lowercase words, such as qa, stage"},
 			{Label: "One build only", Value: envsNone, Hint: "smith add --environments none: a single vite build, as before"},
 		}},
-		{Key: envNamesKey, Prompt: "Environment names, separated by commas", Placeholder: defaults, Skip: func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) != envsCustom },
+		{Key: envNamesKey, Prompt: "Environment names, separated by commas", Placeholder: defaults,
+			Initial: func(map[string][]string) string { return strings.Join(webenv.DefaultNames, ", ") },
+			Skip:    func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) != envsCustom },
 			Check: func(_ map[string][]string, value string) string {
 				if err := webenv.ValidateNames(webenv.ParseList(value)); err != nil {
 					return err.Error()

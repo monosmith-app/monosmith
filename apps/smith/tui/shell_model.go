@@ -74,6 +74,9 @@ type Config struct {
 	// CommitOperations is true when smith.toml sets commit_operations, so every
 	// change smith makes is already a commit.
 	CommitOperations bool
+	// Environments are the environment names `[workspace] environments`
+	// declares; the Add form starts its "names of my own" question on them.
+	Environments []string
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -95,7 +98,9 @@ type Shell struct {
 	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
 	problem   string
 	commitOps bool
-	sources   sources.Sources
+	// environments are the names of `[workspace] environments`.
+	environments []string
+	sources      sources.Sources
 	tabs      []string
 	tab       string
 	// detailOpen is true while the detail of the selected project fills the
@@ -254,7 +259,7 @@ func NewShell(cfg Config) Shell {
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
-	sh.problem, sh.commitOps = cfg.Problem, cfg.CommitOperations
+	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}
