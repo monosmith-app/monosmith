@@ -17,6 +17,7 @@ import (
 	luap "github.com/monosmith-app/monosmith/libs/plugin-lua/plugin"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/angular"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/astro"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/electron"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/eslint"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/functions"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/jest"
@@ -70,6 +71,7 @@ var BuiltinAddons = map[string]func(version string) serve.Plugin{
 	slicesp.Name:    func(v string) serve.Plugin { return slicesp.New(v) },
 	eslint.Name:     func(v string) serve.Plugin { return eslint.New(v) },
 	jest.Name:       func(v string) serve.Plugin { return jest.New(v) },
+	electron.Name:   func(v string) serve.Plugin { return electron.New(v) },
 	functions.Name:  func(v string) serve.Plugin { return functions.New(v) },
 	vitest.Name:     func(v string) serve.Plugin { return vitest.New(v) },
 	playwright.Name: func(v string) serve.Plugin { return playwright.New(v) },

@@ -1,0 +1,9 @@
+# The version of every package a choice of the electron plugin names. A choice never
+# writes a version: to bump one, change one line here. Nothing installs "latest".
+# Checked on 2026-11-02 with `npm view`.
+[versions]
+typescript = "~6.0.3"
+"@types/node" = "^24.19.2"
+"@monosmith/tsconfig" = "^0.1.0"
+electron = "^45.2.1"
+"@electron-forge/cli" = "^8.0.1"
