@@ -52,7 +52,7 @@ func QuestionsJSON() ([]byte, error) {
 			Options: make([]optionJSON, 0, len(q.Options)),
 		}
 		for _, o := range q.Options {
-			item.Options = append(item.Options, optionJSON{o.Value, o.Label})
+			item.Options = append(item.Options, optionJSON(o))
 		}
 		if len(item.Options) > 0 {
 			item.Default = item.Options[0].Value
