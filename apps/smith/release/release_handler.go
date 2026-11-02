@@ -21,9 +21,9 @@ import (
 // Command is `smith release`.
 func Command(version string) *cobra.Command {
 	var (
-		dryRun, yes, noPush, asJSON, comment, notes, status, verbose, rehearse bool
-		format                                                                 string
-		hold, bumpFlags                                                        []string
+		dryRun, yes, noPush, asJSON, comment, notes, status, verbose, rehearse, force bool
+		format                                                                        string
+		hold, bumpFlags                                                               []string
 	)
 	cmd := &cobra.Command{
 		Use:   "release",
@@ -39,6 +39,10 @@ credential and the names, so a bad key stops the release before anything is
 published. What was published where is kept in dist/release/<project>/journal.json
 (smith release --status). smith release --rehearse runs registry checks for every
 package on their own, before a first release, and publishes nothing.
+
+--bump <project>=patch --force releases a package that has no releasing commit:
+the same code under a new version, a new tag at HEAD, a registry publish and a
+GitHub Release. The plan says it is a manual release.
 
 A branch other than the release branch can release a line of prerelease
 versions of its own (2.0.0-beta.1, beta.2, ...): declare it as a
@@ -103,10 +107,25 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			if err != nil {
 				return err
 			}
-			plan, adjusted, err := Adjust(plan, Adjustments{Hold: hold, Bump: bumps})
+			if force && len(bumps) == 0 {
+				return ErrForceWithoutBump
+			}
+			var adjusted []string
+			if force {
+				ch := ChannelOf(s.Config.Release, PlanBranch(s))
+				info, order, err := ForceFromSession(s.Git, s.Graph, ch)
+				if err != nil {
+					return err
+				}
+				if plan, bumps, adjusted, err = ForcePlan(plan, bumps, order, info, ch); err != nil {
+					return err
+				}
+			}
+			plan, more, err := Adjust(plan, Adjustments{Hold: hold, Bump: bumps})
 			if err != nil {
 				return err
 			}
+			adjusted = append(adjusted, more...)
 			if !asJSON {
 				for _, n := range adjusted {
 					fmt.Fprintln(cmd.ErrOrStderr(), "note: "+n)
@@ -196,6 +215,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask for confirmation")
 	cmd.Flags().StringSliceVar(&hold, "hold", nil, "do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too")
 	cmd.Flags().StringSliceVar(&bumpFlags, "bump", nil, "release a package with this bump instead of the one its commits ask for: <project>=patch|minor|major")
+	cmd.Flags().BoolVar(&force, "force", false, "with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal")
 	cmd.Flags().BoolVar(&noPush, "no-push", false, "create tags locally only")
 	cmd.Flags().BoolVar(&notes, "notes", false, "also print each release's notes (what its GitHub Release says)")
 	cmd.Flags().BoolVar(&status, "status", false, "show the release journal: what was published where (dist/release/<project>/journal.json)")

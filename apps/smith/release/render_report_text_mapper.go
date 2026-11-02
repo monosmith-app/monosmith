@@ -21,6 +21,9 @@ func (r Report) Text() string {
 		}
 	}
 	for _, res := range r.Results {
+		if res.Manual {
+			fmt.Fprintf(&b, "Manual release: no commit releases %s.\n", res.Project)
+		}
 		for _, image := range res.Images {
 			fmt.Fprintf(&b, "Image pushed for %s: %s\n", res.Project, ImageLine(image))
 		}
