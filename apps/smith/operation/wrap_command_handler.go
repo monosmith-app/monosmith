@@ -70,9 +70,15 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 			return err
 		}
 		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
-			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
+			root, rootErr := workspace.FindRoot(".")
+			var files []string
+			if rootErr == nil && hasChanges(root) {
+				files = newSince(before, changedSet(root))
+			}
+			// A command that changed no file (a report-only smith up) has nothing to commit:
+			// changes already in the work tree before it ran are not its own.
+			if len(files) > 0 {
 				command := spec.Describe(c, args)
-				files := newSince(before, changedSet(root))
 				fmt.Fprintln(c.OutOrStdout(), notCommittedText(requested, command, "add --commit"))
 				// Remember which files this operation changed, so smith commit can leave the others out.
 				_ = WritePending(root, Uncommitted{Command: command, Files: files})

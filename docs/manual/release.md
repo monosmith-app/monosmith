@@ -36,14 +36,35 @@ on releases is held back with it. The last question says what cannot be undone: 
 that are created and pushed and the registries that receive the packages. Without a
 terminal smith refuses unless `--yes` is given. `--hold <project>` and
 `--bump <project>=minor` give the same answers as flags, in a terminal or in CI.
+A project that exists but is not in the plan has nothing to hold back: `--hold` prints one note
+saying so. `--bump` refuses it with "is not in this plan", and offers a "Did you mean" only for a
+name that is not a project.
+
+A package that no commit releases is "not in this plan", and `--bump` offers a way out: add `--force`
+(`smith release --bump mvd=patch --force`) to release the same code under a new version. smith shows
+it as a manual release ("no commit since mvd@0.14.0 releases this"), and the last question says that
+a new tag at HEAD, a registry publish, a GitHub Release and the assets follow and cannot be undone.
+Without a terminal it needs `--yes` as well. `--force` alone is refused and prints the usage. The
+report and the tag message say the release was manual. The terminal UI (key `f` in the Release view) and the VS Code release command offer the same path as a choice, with the consequences shown. CI can start it with `[ci] manual_release`
+(see [CI](../reference/ci.md#a-release-started-by-hand)).
 
 A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
-release channel decide their version themselves, so `--bump` refuses them and names why.
+release channel decide their version themselves, so `--bump` refuses them and names why. For a
+package that was never released the message explains the commit that sets its first version: the
+subject is `version(<project>)[x.y.z]` (the project name, then the version in square brackets), a
+commit anywhere in the repository counts, for example
+`git commit --allow-empty -m "version(sdk)[1.0.0]"`. smith never makes that commit.
+
+In the terminal UI, `x` on the Release view first asks which packages to hold back (any number:
+Space) and which bump to change (pick the package, then B or Left and Right to choose patch, minor,
+major or "as the commits ask"). The line it builds, with `--hold` and `--bump`, is shown as it
+changes. Enter goes on to the confirmation, which lists the packages and versions that go out and
+the ones held back, and says that the release cannot be undone.
 
 ## Synopsis
 
 ```sh
-smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
+smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major [--force]]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
 smith release pub --project <app> --version <version>
 ```
 
@@ -64,6 +85,7 @@ Usage: `smith release <command> [flags]`
 | `--bump <bump>` | string, repeatable |  | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major |
 | `--comment` | boolean | off | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment |
 | `--dry-run` | boolean | off | show what would be released; change nothing |
+| `--force` | boolean | off | with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal |
 | `--format <format>` | `text` or `markdown` | `text` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |
 | `--hold <hold>` | string, repeatable |  | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too |
 | `--json` | boolean | off | print the release report as JSON |
@@ -209,7 +231,18 @@ smith release --dry-run --format markdown
 | tools | new → **0.1.0** | 1 releasing commit(s) | planned |
 ```
 
-When no commit releases anything:
+A workspace with no package (only apps and internal libraries, which are never released) says so,
+and names the two ways to get one, without suggesting an empty commit:
+
+```text
+Nothing to release: this workspace has no package. Apps and internal libraries are never released.
+  → Add a package with smith add package <name> --lang <language>.
+  → Or turn a project that other projects import into a package with smith kind <name> package. It is then published to a registry.
+```
+
+When every package that would release is held back with `--hold`, it says that and names them:
+`Nothing to release: you held back sdk, and no other package has a feat: or fix: commit.` It does not
+suggest a commit. Only a workspace that has a package, none of them releasing, prints this:
 
 ```text
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).

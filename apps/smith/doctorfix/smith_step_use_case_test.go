@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 // stub replaces the two functions that would start a process, so no test runs one.
@@ -42,6 +45,41 @@ func TestReviewShowsWhatASmithStepWouldDo(t *testing.T) {
 		if !strings.Contains(out.String(), s) {
 			t.Errorf("review lacks %q:\n%s", s, out.String())
 		}
+	}
+}
+
+// A fix that writes a file and then runs smith is planned in a copy that holds the
+// file, so its plan is not the plan of the old files; the real workspace is untouched.
+func TestReviewPlansAStepWithTheFixFilesWritten(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "smith.toml"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var seen string
+	stub(t, func([]string) (string, error) { return "", nil })
+	readPlan = func(_ context.Context, dir string, _ []string) (string, error) {
+		raw, err := os.ReadFile(filepath.Join(dir, "pin.toml"))
+		seen = dir + "|" + string(raw)
+		if err == nil {
+			_, err = os.ReadFile(filepath.Join(dir, "smith.toml"))
+		}
+		return "would rewrite .devcontainer/devcontainer.json\n", err
+	}
+	p := Planned{}
+	p.Files = []protocol.FileEdit{{Path: "pin.toml", Content: "channel = 1"}}
+	p.Steps = append(p.Steps, smithfix.Step("regenerate", "ci", "generate"))
+	var out bytes.Buffer
+	if err := ShowFix(&out, root, p); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(seen, "|channel = 1") || strings.HasPrefix(seen, root+"|") {
+		t.Fatalf("the plan ran in %q", seen)
+	}
+	if _, err := os.Stat(filepath.Join(root, "pin.toml")); err == nil {
+		t.Fatal("the review wrote into the workspace")
+	}
+	if !strings.Contains(out.String(), "would rewrite .devcontainer/devcontainer.json") {
+		t.Fatalf("the plan is missing:\n%s", out.String())
 	}
 }
 

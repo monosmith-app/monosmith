@@ -28,9 +28,9 @@ async function readOptions (run: AddDeps['run']): Promise<AddOptions | string> {
   try {
     const kindList = parseKinds(kinds.stdout)
     // The outcomes are smith's own list. A smith that cannot print it leaves the long way and the composer.
-    const listed = catalogue.code === 0 ? parseOutcomes(catalogue.stdout) : { outcomes: [], languages: [] }
+    const listed = catalogue.code === 0 ? parseOutcomes(catalogue.stdout) : { outcomes: [], languages: [], layers: {} }
 
-    return { kinds: kindList, choices: parseChoices(choices.stdout), stacks: parseStacks(stacks.stdout), outcomes: fitOutcomes(listed.outcomes, kindList), languages: listed.languages }
+    return { kinds: kindList, choices: parseChoices(choices.stdout), stacks: parseStacks(stacks.stdout), outcomes: fitOutcomes(listed.outcomes, kindList), languages: listed.languages, layers: listed.layers }
   } catch {
     return 'smith printed kinds, choices or stacks in a form this editor does not read. Update the extension, or run smith add in a terminal.'
   }

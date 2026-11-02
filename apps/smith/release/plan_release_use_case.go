@@ -22,6 +22,9 @@ type Item struct {
 	Reason  string   `json:"reason"`
 	Commits []string `json:"commits,omitempty"`
 	Forced  bool     `json:"forced,omitempty"`
+	// Manual is true for a release the person forced although no commit releases
+	// the package (smith release --bump p=level --force).
+	Manual bool `json:"manual,omitempty"`
 	// Changes are the releasing commits, for the release notes.
 	Changes []Change `json:"changes,omitempty"`
 	// APIWarnings say that the commits ask for a smaller bump than the change
@@ -37,6 +40,9 @@ type Plan struct {
 	Channel string `json:"channel,omitempty"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
+	// Held lists the packages the person held back with --hold (and the ones that
+	// release only because a held one does): they would have released.
+	Held []string `json:"held,omitempty"`
 }
 
 // TagPrefix is the release tag prefix of a project.

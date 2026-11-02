@@ -136,9 +136,13 @@ Interactions:
 - `--only` and `--choose` pick what to fix, so they need `--fix` (`--only and --choose pick
   what to fix, so they go with --fix`).
 - `--fix` alone shows the fixes as diffs and, in a terminal, asks. Without a terminal, or
-  without `--yes`, it first prints a summary (how many fixes, which `--yes` applies because they are safe,
-  which need your decision and the flags that apply them), then each fix with its diff or the command it
-  would run, then `Pass --yes to apply the N safe fix(es) above.`, and exits 1. A fix that asks (for
+  without `--yes`, it prints the summary first, before the checks (`3 fixes available: 2 applied by --yes,
+  1 needs a choice`, which fixes are safe, which need your decision and the flags that apply them). More
+  than eight passed lines are folded into one count (`--verbose` lists them). Then come the checks that
+  failed, each fix with its diff or the command it would run, `Pass --yes to apply the N safe fix(es)
+  above.`, and the count again as the last line. The exit code is 1. A fix that writes a file and then
+  runs smith (pin a toolchain, then `smith ci generate`) shows the plan of that command as if the file
+  were already written. A fix that asks (for
   example whether a Cargo crate belongs to the workspace) is never applied by `--yes` alone: it is listed
   with `--only "<name>" --yes --choose N`, one line per answer.
 - A tool doctor needs and cannot find (such as `cargo-audit`) is one finding that says it is skipped.

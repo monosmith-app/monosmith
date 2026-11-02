@@ -17,13 +17,21 @@ function words (value: unknown): string[] {
 
 /**
  * Reads `smith kinds --json`.
+ * The language of a kind is the id in front of its role (`node` of `node-app`), the id that
+ * `--lang` takes and that `smith compose --json` uses. The `language` field of smith is the
+ * name of the language (`typescript` for `node`), which no other list uses.
  * @param json - what smith printed
  * @returns the kinds that have a name and a language
  * @throws SyntaxError when the text is not JSON, TypeError when it is not a list
  */
 export function parseKinds (json: string): KindOption[] {
   return records(json)
-    .map((item) => ({ kind: text(item.kind), language: text(item.language), label: text(item.label), description: text(item.description) }))
+    .map((item) => {
+      const kind = text(item.kind)
+      const dash = kind.lastIndexOf('-')
+
+      return { kind, language: dash > 0 ? kind.slice(0, dash) : text(item.language), label: text(item.label), description: text(item.description) }
+    })
     .filter((item) => item.kind !== '' && item.language !== '')
 }
 

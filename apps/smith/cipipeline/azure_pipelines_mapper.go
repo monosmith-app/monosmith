@@ -23,6 +23,7 @@ pr:
     include: [%[1]s]
 
 `, strings.Join(m.TriggerBranches(), ", "))
+	b.WriteString(azureParameters(m))
 	b.WriteString(azureVariables(m))
 	steps := azureSteps(m)
 	if !m.Native {
@@ -87,16 +88,7 @@ func azureSteps(m Model) string {
 			return fmt.Sprintf("eq(variables['Build.SourceBranch'], 'refs/heads/%s')", branch)
 		},
 		func(c []string) string { return "or(" + strings.Join(c, ", ") + ")" }))
-	fmt.Fprintf(&b, `  - bash: smith ci release
-    displayName: Release
-    condition: %s
-`, onRelease)
-	if len(m.Credentials) > 0 {
-		b.WriteString("    env:\n")
-		for _, c := range m.Credentials {
-			fmt.Fprintf(&b, "      %s: $(%s)\n", c.Env, c.Env)
-		}
-	}
+	b.WriteString(azureReleaseStep(m, onRelease))
 	return b.String()
 }
 

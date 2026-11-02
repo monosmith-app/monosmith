@@ -46,7 +46,11 @@ func RenderBitbucket(m Model) string {
 	}
 	onRelease = `[ -z "$BITBUCKET_PR_ID" ] && ` + m.branchCondition(func(branch string) string { return fmt.Sprintf(`[ "$BITBUCKET_BRANCH" = "%s" ]`, branch) }, func(c []string) string { return "{ " + strings.Join(c, " || ") + "; }" })
 	b.WriteString("          # Releasing pushes tags: BITBUCKET_TOKEN needs repository write.\n")
-	b.WriteString("          - " + yamlValue("if "+onRelease+`; then git remote set-url origin "https://x-token-auth:${BITBUCKET_TOKEN}@bitbucket.org/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}.git"; smith ci release; fi`) + "\n")
+	release := "smith ci release"
+	if m.ManualRelease {
+		release = manualReleaseScript
+	}
+	b.WriteString("          - " + yamlValue("if "+onRelease+`; then git remote set-url origin "https://x-token-auth:${BITBUCKET_TOKEN}@bitbucket.org/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}.git"; `+release+`; fi`) + "\n")
 	if m.Pack {
 		b.WriteString("        artifacts:\n          - dist/drop/**\n")
 	}
@@ -62,6 +66,7 @@ func RenderBitbucket(m Model) string {
 	for _, branch := range m.ReleaseBranches() {
 		fmt.Fprintf(&b, "    %s:\n%s", yamlWord(branch), steps)
 	}
+	b.WriteString(bitbucketCustomPipeline(m, steps))
 	if len(m.Credentials) > 0 {
 		b.WriteString("\n# Secrets the release reads, as secured repository or workspace variables:\n")
 		for _, c := range m.Credentials {

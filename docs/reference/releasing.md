@@ -37,6 +37,22 @@ plan says so in a note. `--hold <project>` for a project that is not in the plan
 `note: <project> is not in this plan, so there is nothing to hold back`; for a name smith does not know it
 refuses, suggests the closest names and lists what the plan releases.
 
+### A release without a releasing commit
+
+Sometimes a package must be released again with no change in it: a registry problem, or a range
+that must move. `smith release --bump mvd=patch --force` adds `mvd` to the plan although no commit
+since its last tag releases it. The plan says "no commit since mvd@0.14.0 releases this: you are
+releasing the same code under a new version", the final question says that a new tag at HEAD, a
+registry publish, a GitHub Release and the assets follow and that none of it can be undone, and
+without a terminal the release needs `--yes` as well. `--force` without `--bump` is refused and
+prints the usage. For a package that already has a releasing commit, `--force` only applies the
+bump. On a release channel the version is the next number of the channel. `--dry-run --force`
+shows the plan. The report, the JSON (`manual: true`) and the tag message record that the release
+was manual. A package that depends on it is not released with it, because the code did not change.
+
+CI can start the same release by hand when the workspace opts in with `[ci] manual_release = true`
+(see [ci](ci.md#a-release-started-by-hand)).
+
 Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
 nuget.org, …), or to the private registry smith.toml names with `[release]
 registry` or `[projects.<name>] registry` (npm, Python, .NET and Maven, where
@@ -76,11 +92,22 @@ newest tag is named) unless `--force`, because its published versions would neve
 be updated; `smith release --dry-run` shows the project in the plan once it is a
 package and out of it once it is not.
 
-To force a version, commit a directive anywhere in the repository:
+To force a version, commit a directive anywhere in the repository. The subject is
+`version(<project>)[x.y.z]`: the project name in parentheses, then the version in square brackets,
+and any text after a colon is free. A package that was never released has no version to bump, so
+`--bump` on it refuses and points here; the directive is how its first version is chosen:
 
 ```
 version(sdk)[1.0.0]: first stable release
 ```
+
+```sh
+git commit --allow-empty -m "version(sdk)[1.0.0]"
+```
+
+Apps and internal libraries are never released: `smith release` in a workspace with only those says
+so and suggests `smith add package <name>` or `smith kind <name> package`. With `--hold` that holds
+back every package that would release, it names the held packages and does not suggest a commit.
 
 ## Apps
 

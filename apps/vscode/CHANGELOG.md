@@ -24,8 +24,16 @@ the first release everything below is under Unreleased.
 - Add project: "Compose a stack" opens the composer after the add ends, and the Output channel says nothing was added, not "cancelled".
 - Add project: the language question of a function app names each language ("C# / .NET") with its clouds, and lists every language smith can generate.
 
+- Add project: the website and the desktop app were missing from the first question. `smith kinds` names the language of `node-app` "typescript" and `smith compose` names it "node", so the extension dropped every outcome only node builds. The language of a kind is now the id before its role; a spec reads the real JSON of smith as a fixture.
+- Add project and Compose a stack: the multi-select keeps the cursor and the focus (the list no longer jumps to the first row, and a click outside does not close it).
+- Add project: a framework, a desktop shell and a cloud host carry one name in every step, the title of its layer in the catalogue ("Desktop shell"), not `framework: electron` in one step and "desktop shell" in the next.
+
 ### Added
 
+- **Commit the changes…** (`smith commit`): shows the files of `smith commit --dry-run`, then asks for only the files the last operation changed (the default), everything git shows as changed (the extra files are listed), or cancel. "Commit anyway" and the buttons of a failed doctor use it.
+- **Release…**: the `smith release --dry-run` plan in a modal, a multi-select of packages to hold back (`--hold`), a pick of package and level to change a bump (`--bump`), then the last question, which says that tags and registry publish cannot be undone, and `smith release --yes`.
+- The menu of a project: Add a Library, Install a Package, Unlink a Library, Swap a Choice, Make it an App, Library or Package (`smith kind`) and Remove (keep a copy, delete or cancel). Each shows smith's plan first and commits nothing.
+- The Release Preview shows the explanation of the CLI when nothing releases (which commits count, that apps and libraries never release). The Projects, Dependencies and Release Preview views share the height by weight, so none is squeezed off the screen.
 - New Recipe: input boxes for the name, version and parent, then a pick list or tick boxes for each level of `smith recipe new --list-levels --json`, and the exact command and file before it writes.
 - Swap a Choice of a Project: quick picks for the project, the decision and the answer, the plan of `smith swap --dry-run` first, then the swap with an optional commit.
 - Show Divergences from the Defaults lists what `smith divergences` finds.

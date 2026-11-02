@@ -64,6 +64,7 @@ package = "https://example.com/recipes/package.recipe.toml"
 providers = ["github"]                # "github", "azure", "gitlab", "circleci", or several
 secrets = []                         # repository secrets the pipelines hand to every step that runs smith, native and assets jobs included (ci.md, Secrets)
 attest = "on"                         # build provenance of a release's archives (GitHub): "optional" goes on when GitHub refuses (private repo of a free organisation), "off" leaves the step out
+manual_release = false                # true adds a way to start a release by hand of a package no commit releases (GitHub input, Azure parameter, GitLab/Bitbucket variable; CircleCI cannot); off by default because whoever can run the pipeline can publish (docs/reference/ci.md)
 devcontainer = true                   # write .devcontainer/devcontainer.json with CI's toolchains (docs/reference/ci.md)
 branches = ["main", "dev"]             # branches the GitHub and Azure pipelines run on, pushes and pull requests; the release branch is always one; default: the release branch (docs/reference/ci.md)
 # [[ci.sibling_repos]]: repo, ref, env, dir, pre_build, token_secret: other repositories the GitHub workflow checks out beside the workspace (docs/reference/ci.md)

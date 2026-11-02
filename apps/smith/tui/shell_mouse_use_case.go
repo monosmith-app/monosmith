@@ -55,6 +55,9 @@ func (s *Shell) hover(x, y int) {
 	case s.pkg != nil:
 		p := s.pkg.Hover(x, y)
 		s.pkg = &p
+	case s.relpick != nil:
+		m := s.relpick.Hover(x, y)
+		s.relpick = &m
 	case s.confirm != nil:
 		c := s.confirm.Hover(x, y)
 		s.confirm = &c
@@ -89,6 +92,10 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		p, out := s.pkg.Click(x, y)
 		s.pkg = &p
 		return s.afterPackages(p, out)
+	case s.relpick != nil:
+		m, out := s.relpick.Click(x, y)
+		s.relpick = &m
+		return s.afterReleasePick(m, out)
 	case s.confirm != nil:
 		c, out := s.confirm.Click(x, y)
 		s.confirm = &c
@@ -213,7 +220,11 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 
 func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 	switch {
-	case s.tools != nil, s.compose != nil, s.result != nil:
+	case s.compose != nil:
+		c := s.compose.Wheel(dir * wheelStep)
+		s.compose = &c
+		return nil
+	case s.tools != nil, s.result != nil:
 		return nil
 	case s.adopt != nil:
 		m := s.adopt.Wheel(dir * wheelStep)
@@ -223,7 +234,7 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		w := s.fix.Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
-	case s.pkg != nil, s.confirm != nil:
+	case s.pkg != nil, s.relpick != nil, s.confirm != nil:
 		return nil
 	case s.help != nil:
 		h := s.help.Wheel(dir*wheelStep, s.help.Total(s.th))
@@ -267,7 +278,10 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 				s.doctorScroll = &pane.Scroll{}
 			}
 			s.doctorScroll.By(dir * wheelStep)
-		case commands.TabGuide, commands.TabRelease:
+		case commands.TabGuide:
+			// The wheel scrolls the list of the question; the selection stays.
+			s.guide = s.guide.Wheel(dir * wheelStep)
+		case commands.TabRelease:
 			key := tea.KeyMsg{Type: tea.KeyDown}
 			if dir < 0 {
 				key = tea.KeyMsg{Type: tea.KeyUp}

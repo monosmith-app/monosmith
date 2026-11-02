@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 )
 
 // stage is the step the screen is on.
@@ -46,6 +47,9 @@ type Model struct {
 	cursor int
 	// cursorLine is the drawn line of the cursor row, so the list scrolls to it.
 	cursorLine int
+	// scroll is where the list's window starts; a pointer, so the wheel can move
+	// it between frames without moving the cursor (see pane.Scroll).
+	scroll *pane.Scroll
 
 	// lang is the language item ticked, if any; ticked are the choice items
 	// ticked, in the order they were ticked.
@@ -76,7 +80,7 @@ func New(cat compose.Catalogue) Model {
 	search.Focus()
 	name := textinput.New()
 	name.Placeholder = "web"
-	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name}
+	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name, scroll: &pane.Scroll{}}
 	return m.refresh()
 }
 
@@ -96,6 +100,12 @@ func (m Model) Place(sw, sh int) Model {
 	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
+	return m
+}
+
+// Wheel scrolls the list by delta lines; the cursor stays where it is.
+func (m Model) Wheel(delta int) Model {
+	m.scroll.By(delta)
 	return m
 }
 
@@ -269,6 +279,10 @@ func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
 		m.cursor = max(m.cursor-8, 0)
 	case "pgdown":
 		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
+	case "home":
+		m.cursor = 0
+	case "end":
+		m.cursor = max(m.length()-1, 0)
 	case "tab":
 		m.stack, m.cursor = !m.stack, 0
 	case "enter":

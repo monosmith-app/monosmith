@@ -53,6 +53,8 @@ export interface AddOptions {
   outcomes:  OutcomeOption[]
   /** The languages with the names a person knows them by. */
   languages: LanguageInfo[]
+  /** The title of each layer of the catalogue (`shell` is "Desktop shell"): the one name for a framework, a shell or a host. */
+  layers:    Record<string, string>
 }
 
 /** What the person asked to add. */

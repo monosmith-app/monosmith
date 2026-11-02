@@ -68,6 +68,27 @@ func TestAFailedCheckStillRecordsTheOperationAndSaysWhatHappenedToTheCommit(t *t
 	}
 }
 
+func TestACommandThatChangedNothingPrintsNoCommitHint(t *testing.T) {
+	scratch(t, false)
+	// The person's own change is in the work tree before the command runs.
+	put(t, ".", "notes.txt", "mine\n")
+	inner := &cobra.Command{Use: "up", RunE: func(c *cobra.Command, _ []string) error {
+		c.Println("report only")
+		return nil
+	}}
+	cmd := Wrap(inner, Spec{Describe: func(_ *cobra.Command, _ []string) string { return "up" }})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(nil)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "Not committed") {
+		t.Fatalf("a report must not suggest a commit:\n%s", out.String())
+	}
+}
+
 func TestAfterAFailedCheckSmithCommitUsesTheOperationName(t *testing.T) {
 	g := scratch(t, false)
 	if _, err := runFailingCheck(t, "", "core", "--commit"); err == nil {

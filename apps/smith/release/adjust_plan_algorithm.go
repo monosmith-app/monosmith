@@ -49,7 +49,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 		case item.Forced:
 			return plan, nil, fmt.Errorf("--bump %s: a version(%s)[...] commit already sets the version", name, name)
 		case item.Current == "":
-			return plan, nil, fmt.Errorf("--bump %s: %s was never released, so there is no version to bump; set it with a version(%s)[x.y.z] commit", name, name, name)
+			return plan, nil, fmt.Errorf("--bump %s: %s was never released, so there is no version to bump.\n  → To choose its first version, make a commit whose subject is version(%s)[x.y.z]: the project name, then the version in square brackets. A commit anywhere in the repository counts. For example:\n      git commit --allow-empty -m \"version(%s)[1.0.0]\"", name, name, name, name)
 		}
 		current, err := ParseVersion(item.Current)
 		if err != nil {
@@ -73,7 +73,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 	for _, name := range a.Hold {
 		if in(name) < 0 {
 			if slices.Contains(plan.Unchanged, name) {
-				notes = append(notes, fmt.Sprintf("note: %s is not in this plan, so there is nothing to hold back", name))
+				notes = append(notes, fmt.Sprintf("%s is not in this plan, so there is nothing to hold back", name))
 				continue
 			}
 			return plan, nil, unknownInPlan(plan, "--hold", name)
@@ -104,6 +104,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 		if !slices.Contains(a.Hold, item.Project) {
 			why = "held back because a package it depends on is held back"
 		}
+		out.Held = append(slices.Clone(out.Held), item.Project)
 		notes = append(notes, fmt.Sprintf("%s: %s (it stays at %s)", item.Project, why, orUnreleased(item.Current)))
 	}
 	out.Items = kept
@@ -125,6 +126,13 @@ func unknownInPlan(plan Plan, flag, name string) error {
 	releases := "The plan releases nothing."
 	if len(names) > 0 {
 		releases = "The plan releases: " + strings.Join(names, ", ") + "."
+	}
+	if slices.Contains(plan.Unchanged, name) {
+		more := ""
+		if flag == "--bump" {
+			more = " To release it anyway (the same code under a new version), add --force."
+		}
+		return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change. %s%s", flag, name, name, releases, more)
 	}
 	return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change.%s %s", flag, name, name,
 		nearmatch.Suggestion(name, append(slices.Clone(names), plan.Unchanged...)), releases)
@@ -172,6 +180,10 @@ func Consequences(plan Plan, push bool) string {
 	if !push {
 		where = "and keep them on this machine (--no-push)"
 	}
-	return fmt.Sprintf("This cannot be undone. smith will publish %d package(s) to their registries, create the tags %s %s.",
+	text := fmt.Sprintf("This cannot be undone. smith will publish %d package(s) to their registries, create the tags %s %s.",
 		len(plan.Items), strings.Join(tags, ", "), where)
+	if manual := ManualConsequences(plan); manual != "" {
+		text += " " + manual
+	}
+	return text
 }

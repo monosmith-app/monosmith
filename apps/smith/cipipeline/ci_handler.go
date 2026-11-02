@@ -66,6 +66,10 @@ func Command(version string) *cobra.Command {
 		if phase == "setup" {
 			phaseCmd.Flags().BoolVar(&assets, "assets", false, "install for the assets job: leave out the projects whose [release] install is false")
 		}
+		if phase == "release" {
+			phaseCmd.Flags().StringSliceVar(&run.Manual.Bumps, "bump", nil, "release a package with this bump: <project>=patch|minor|major (a manual release from the CI provider's input)")
+			phaseCmd.Flags().BoolVar(&run.Manual.Force, "force", false, "with --bump: release a package although no commit releases it (the same code under a new version)")
+		}
 		if phase == "assets" {
 			phaseCmd.Flags().StringVar(&run.Tag, "tag", "", "run again for an existing release tag (project@version) and replace the files of its GitHub Release")
 			phaseCmd.Flags().StringVar(&run.Source, "source", "", "with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one")

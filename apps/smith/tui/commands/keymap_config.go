@@ -75,6 +75,7 @@ var all = []Command{
 	{ID: "rel.preview", Group: GroupRelease, Title: "Preview next release", Hint: "smith release --dry-run: changes nothing", Keys: []string{"p"}, Kind: Execute, Argv: []string{"release", "--dry-run"}, Views: vRelease, NeedsWorkspace: true, NeedsIdle: true, Footer: "preview"},
 	{ID: "rel.notes", Group: GroupRelease, Title: "Print the release notes", Hint: "smith release --dry-run --notes", Keys: []string{"n"}, Kind: ViewAction, Action: "release-notes", Views: vRelease, NeedsWorkspace: true, NeedsIdle: true, Footer: "notes"},
 	{ID: "rel.release", Group: GroupRelease, Title: "Release…", Hint: "smith release: version, publish and tag", Keys: []string{"x"}, Kind: Execute, Argv: []string{"release"}, Confirm: true, Views: vRelease, NeedsWorkspace: true, NeedsIdle: true, Footer: "release"},
+	{ID: "rel.forced", Group: GroupRelease, Title: "Release a package without a releasing commit…", Hint: "smith release --bump p=level --force: the same code under a new version", Keys: []string{"f"}, Kind: Guided, Guide: "Release without a releasing commit", Views: vRelease, NeedsWorkspace: true, NeedsIdle: true},
 
 	{ID: "deps.mark", Group: GroupProjects, Title: "Mark or unmark a dependency", Keys: []string{" "}, Shortcut: "Space", Kind: PaneKey, Views: vDeps, Footer: "mark"},
 	{ID: "deps.mark-safe", Group: GroupProjects, Title: "Mark the patch and minor ones", Keys: []string{"s"}, Kind: PaneKey, Views: vDeps, Footer: "safe"},
