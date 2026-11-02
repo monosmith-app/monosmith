@@ -31,11 +31,13 @@ the default marked; smith never commits unasked; smith does the hard work so the
    - An add that could not be checked because a tool is missing says the project exists, why it could not be
      checked, and offers: open the install page, install it with smith (ADR 0077), check again, continue
      without checking.
-   - A change that was not committed offers "Leave them uncommitted" (the default) and "Commit these
-     changes now". The box in the confirmation stays unticked.
+   - A change that was not committed offers "Leave them uncommitted" (the default), "Commit only the
+     files this operation changed" and "Commit everything git shows as changed". The box in the confirmation stays unticked.
 3. **`smith commit <operation words>` commits after the fact.** It lists every changed file, asks, and
-   makes one commit named from the operation and recorded for `smith undo`. It takes everything that
-   `git status` shows, so the plan lists the files and the manual says to read them.
+   makes one commit named from the operation and recorded for `smith undo`. smith writes down the files of an
+   uncommitted operation (`.smith/uncommitted-operation.json`), so the commit takes only those by
+   default and never sweeps up the person's own work; taking everything is an explicit choice
+   (`--all`), and with no terminal the command refuses until a flag answers.
 4. **A new workspace asks how to set it up first.** "Start with the defaults" lists what is chosen (derived from
    the questions of `smith new`) and how to change each later; "Customise" asks the questions. The
    questions that carry risk (first commit, secrets) are asked either way.

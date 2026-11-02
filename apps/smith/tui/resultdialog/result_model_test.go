@@ -86,18 +86,18 @@ func TestWithoutAnAddressOrACheckLineThoseChoicesAreLeftOut(t *testing.T) {
 func TestACommittableChangeStartsOnLeavingItUncommitted(t *testing.T) {
 	argv := []string{"add", "lib", "core", "--lang", "go", "--yes"}
 	m := NewAfterChange(argv, []string{"Creating lib core in libs/core: go", "Wrote 4 file(s):"}).Place(100, 30)
-	if m.Cursor() != 0 || m.Labels()[0] != "Leave them uncommitted" || m.Labels()[1] != "Commit these changes now" {
+	if m.Cursor() != 0 || m.Labels()[0] != "Leave them uncommitted" || m.Labels()[1] != "Commit only the files this operation changed" || m.Labels()[2] != "Commit everything git shows as changed" {
 		t.Fatalf("smith never commits unasked: the default is to leave: %v at %d", m.Labels(), m.Cursor())
 	}
 	if _, out := m.Key("enter"); !out.Done || out.Commit != nil {
 		t.Fatalf("enter on the default commits nothing: %+v", out)
 	}
 	m, _ = m.Key("down")
-	if _, out := m.Key("enter"); !reflect.DeepEqual(out.Commit, []string{"commit", "add", "lib", "core"}) {
+	if _, out := m.Key("enter"); !reflect.DeepEqual(out.Commit, []string{"commit", "add", "lib", "core", "--only-operation"}) {
 		t.Fatalf("the commit is named from the operation: %+v", out)
 	}
 	view := pane.Strip(strings.Join(m.Lines(theme.Default()), "\n"))
-	for _, want := range []string{"Added lib core", "core was created in libs/core (4 files).", "Use it from an app: press + on the app and pick core", "smith install -w <app>", "chore: add lib core"} {
+	for _, want := range []string{"Added lib core", "core was created in libs/core (4 files).", "Use it from an app: press + on the app and pick core", "smith install -w <app>", "your own changes stay out"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the result lacks %q:\n%s", want, view)
 		}

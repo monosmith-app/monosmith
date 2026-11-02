@@ -48,7 +48,8 @@ func NewAfterChange(argv, lines []string) Model {
 	m.facts = append(m.facts, Fact{Info, "It is not committed: git shows these files as new changes."})
 	m.choices = []choice{
 		{"Leave them uncommitted", "review with git status and commit when you are ready (default)", Outcome{Done: true, Note: "Not committed: review with git status"}},
-		{"Commit these changes now", "one commit named chore: " + op + "; smith undo can revert it", Outcome{Commit: append([]string{"commit"}, strings.Fields(op)...)}},
+		{"Commit only the files this operation changed", "one commit named chore: " + op + "; your own changes stay out; smith undo can revert it", Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--only-operation")}},
+		{"Commit everything git shows as changed", "one commit with every changed file, your own work included; you see the list first", Outcome{Commit: append(append([]string{"commit"}, strings.Fields(op)...), "--all")}},
 	}
 	m.foot = "Nothing is committed unless you choose it. You see the list of files before it is."
 	return m

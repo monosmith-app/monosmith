@@ -9,7 +9,7 @@ import {
 import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
 import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
 import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
-import { commitChanges, confirmCommit, tellCommitOutcome } from './commit-changes/index.ts'
+import { askCommitScope, commitChanges, confirmCommit, tellCommitOutcome } from './commit-changes/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
   type DeriveAction, type DeriveReport,
@@ -861,7 +861,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellAddOutcome(outcome, note, {
       commit: async (operation) => {
-        const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation)
+        const scope = await askCommitScope(operation)
+        if (scope === undefined) return
+        const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation, scope)
         note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
         tellCommitOutcome(done)
       },

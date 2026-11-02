@@ -458,14 +458,16 @@ Usage: `smith undo [flags]`
 [Manual page](../manual/commit.md)
 
 <!-- smith:begin commit -->
-Commit the changes in the work tree as one operation that smith undo can revert
+Commit the changes of an operation as one commit that smith undo can revert
 
 Usage: `smith commit [operation words] [flags]`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--all` | commit everything git shows as changed, your own changes included | off |
 | `--dry-run` | list the files that would be committed and change nothing | off |
-| `-y, --yes` | do not ask for confirmation | off |
+| `--only-operation` | commit only the files the last operation changed; the other changes stay in the work tree | off |
+| `-y, --yes` | do not ask for the final confirmation (the choice of files still needs --only-operation or --all) | off |
 
 <!-- smith:end commit -->
 

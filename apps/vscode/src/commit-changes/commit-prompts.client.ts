@@ -1,5 +1,23 @@
 import * as vscode from 'vscode'
-import type { CommitChangesOutcome } from './commit-changes.use-case.ts'
+import type { CommitChangesOutcome, CommitScope } from './commit-changes.use-case.ts'
+
+/**
+ * Asks which files the commit holds. The default, first, leaves the person's own changes out.
+ * @param operation - the words that name the operation
+ * @returns the scope, or undefined when the person cancels
+ */
+export async function askCommitScope (operation: string): Promise<CommitScope | undefined> {
+  const only = 'Only the files this operation changed'
+  const everything = 'Everything git shows as changed'
+  const choice = await vscode.window.showInformationMessage(
+    `MonoSmith: which files go into the commit "${operation}"?`,
+    { modal: true, detail: 'The first choice leaves your own changes in the work tree. The second takes every changed file, your own work included. You see the list before anything is committed.' },
+    only,
+    everything,
+  )
+
+  return choice === only ? 'operation' : (choice === everything ? 'all' : undefined)
+}
 
 /**
  * Shows the files that would be committed and asks.

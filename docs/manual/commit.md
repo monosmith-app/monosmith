@@ -17,13 +17,13 @@ want the commit, this command makes it. The terminal interface and the VS Code e
 ## Synopsis
 
 ```sh
-smith commit [operation words] [--dry-run] [--yes]
+smith commit [operation words] [--only-operation | --all] [--dry-run] [--yes]
 ```
 
 ## Arguments and flags
 
 <!-- smith:begin commit -->
-Commit the changes in the work tree as one operation that smith undo can revert
+Commit the changes of an operation as one commit that smith undo can revert
 
 Usage: `smith commit [operation words] [flags]`
 
@@ -33,8 +33,10 @@ Usage: `smith commit [operation words] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--all` | boolean | off | commit everything git shows as changed, your own changes included |
 | `--dry-run` | boolean | off | list the files that would be committed and change nothing |
-| `-y, --yes` | boolean | off | do not ask for confirmation |
+| `--only-operation` | boolean | off | commit only the files the last operation changed; the other changes stay in the work tree |
+| `-y, --yes` | boolean | off | do not ask for the final confirmation (the choice of files still needs --only-operation or --all) |
 
 <!-- smith:end commit -->
 
@@ -42,16 +44,28 @@ Usage: `smith commit [operation words] [flags]`
 
 1. It lists every changed file of the work tree (smith's own `.smith` folder is left out), each as created,
    changed or removed.
-2. In a terminal it asks; with no terminal, or in CI, it refuses unless you pass `--yes`. `--dry-run` prints
+2. If your own changes are in the work tree, it asks which files (above). In a terminal it asks; with no terminal, or in CI, it refuses unless you pass `--yes`. `--dry-run` prints
    the list and commits nothing.
 3. It makes one commit, `chore: <operation words>`, and writes it in `.smith/operations.json`.
 
 The operation words name the commit: `smith commit add app web` makes `chore: add app web`. Without words the
 commit is named `chore: save the changes`.
 
-Check the list before you agree. The command takes everything that `git status` shows, so a change of your
-own in the same work tree goes into the commit with the files smith wrote. If the list holds more than the
-operation, commit your own work first, or commit the files with git.
+## Which files
+
+smith writes down which files an operation changed, at the time of the operation, in
+`.smith/uncommitted-operation.json` (the files that changed during it and not before it). That keeps your own
+work in progress out of the commit. When the work tree holds other changes too, `smith commit` asks:
+
+1. **only the N files this operation changed** (the default),
+2. **everything git shows changed (M files)**, with the extra files listed, or
+3. cancel.
+
+With no terminal, or in CI, it refuses and names the answers: `--only-operation` or `--all`. `--yes` skips only
+the final "Go ahead?" question, not this choice. With nothing else changed, or when smith has no record of the
+operation, there is nothing to choose: it commits what changed. `--dry-run` lists both sets and commits nothing.
+With `--only-operation`, a file you had already changed before the operation stays out, even if the operation
+touched it too; use `--all` for that.
 
 ## Exit codes
 
@@ -70,7 +84,7 @@ any commit; if git refuses the commit, the files stay in the work tree, unstaged
 ```sh
 smith add app web --lang node --yes
 smith commit add app web --dry-run
-smith commit add app web --yes
+smith commit add app web --only-operation --yes
 ```
 
 ## Common errors

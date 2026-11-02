@@ -39,8 +39,10 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 	run := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		var pending *Pending
+		var before map[string]bool
 		if !readsOnly(c) {
 			if root, err := workspace.FindRoot("."); err == nil {
+				before = changedSet(root)
 				var note string
 				begin := Begin
 				if f := c.Flags().Lookup("commit"); f != nil && f.Value.String() == "true" {
@@ -55,6 +57,8 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
 			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
 				fmt.Fprintf(c.OutOrStdout(), "Not committed. Review it with git status; %s next time to commit it as one operation that smith undo can revert.\n", CommitNextTime("add --commit"))
+				// Remember which files this operation changed, so smith commit can leave the others out.
+				_ = WritePending(root, Uncommitted{Command: spec.Describe(c, args), Files: newSince(before, changedSet(root))})
 			}
 		}
 		if err != nil || pending == nil {

@@ -126,7 +126,7 @@ func uncommittedAdd(t *testing.T, kind, name string) *lab {
 func TestAnUncommittedChangeOffersToCommitItAndStartsOnLeavingItAlone(t *testing.T) {
 	l := uncommittedAdd(t, "lib", "core")
 	l.has("Added lib core", "core was created in libs/core (4 files).", "Use it from an app: press + on the app", "smith install -w <app>",
-		"Leave them uncommitted", "Commit these changes now")
+		"Leave them uncommitted", "Commit only the files this operation changed", "Commit everything git shows as changed")
 	l.keys("enter")
 	l.hasNot("Commit these changes now")
 	l.has("Not committed: review with git status")
@@ -139,14 +139,14 @@ func TestAnUncommittedChangeOffersToCommitItAndStartsOnLeavingItAlone(t *testing
 
 func TestChoosingToCommitShowsTheFilesThenRunsOneCommitNamedFromTheOperation(t *testing.T) {
 	l := uncommittedAdd(t, "app", "web")
-	l.answers(map[string]sources.Captured{"commit add app web --dry-run": {OK: true, Text: "Plan: commit add app web\n  create  apps/web/package.json"}})
+	l.answers(map[string]sources.Captured{"commit add app web --only-operation --dry-run": {OK: true, Text: "Plan: commit add app web\n  create  apps/web/package.json"}})
 	l.keys("down", "enter")
 	if got := l.lastStarted(); strings.HasPrefix(got, "commit") {
 		t.Fatalf("it must ask first: %q", got)
 	}
-	l.has("Commit these changes", "apps/web/package.json", "smith commit add app web")
+	l.has("Commit these changes", "apps/web/package.json", "smith commit add app web --only-operation")
 	l.keys("enter")
-	if got := l.lastStarted(); got != "commit add app web --yes" {
+	if got := l.lastStarted(); got != "commit add app web --only-operation --yes" {
 		t.Fatalf("started %q", got)
 	}
 }

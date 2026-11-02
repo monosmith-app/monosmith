@@ -196,8 +196,9 @@ When a run ends, a dialog says what happened and offers the next steps as choice
 consequence. The first line is always the one that does nothing, because smith never commits or installs unasked.
 
 - **A change that is not committed** (`add`, `remove`, `upgrade`, `derive`, `swap`): "Added app web", what was
-  created and how many files, then **Leave them uncommitted** (the default) or **Commit these changes now**.
-  The second one reads the files first (`smith commit <operation> --dry-run`), shows them in the usual
+  created and how many files, then **Leave them uncommitted** (the default), **Commit only the files this operation changed** or
+  **Commit everything git shows as changed** (your own work included). A commit choice reads the files first
+  (`smith commit <operation> --only-operation --dry-run`, or `--all`), shows them in the usual
   confirmation, and then makes one commit named from the operation (`chore: add app web`) that `smith undo`
   can revert. The box in the confirmation before the change stays unticked. After a library, the dialog also
   says how an app uses it: press `+` on the app and pick it, or `smith install -w <app> <library>`.
