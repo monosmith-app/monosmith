@@ -1,9 +1,8 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from '../add-project/index.ts'
-import {
-  ARCHITECTURE_CHOICES, CI_CHOICES, LANGUAGE_CHOICES, NODE_STACK_CHOICES,
-} from './new-workspace-arguments.mapper.ts'
-import type { ChoiceLabel, NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
+import { askCustomAnswers } from './custom-answers.use-case.ts'
+import type { SmithQuestion } from '../smith-questions/index.ts'
+import type { NewWorkspaceChoices, NewWorkspaceOutcome } from './new-workspace.contract.ts'
 import type { SetupWay } from './new-workspace.use-case.ts'
 
 const TITLE = 'MonoSmith: New workspace'
@@ -42,13 +41,29 @@ export async function askWorkspaceName (folderName: string): Promise<string | un
   })
 }
 
-async function pickOne (choices: readonly ChoiceLabel[], current: string, title: string, hint: string): Promise<string | undefined> {
-  const picked = await vscode.window.showQuickPick(
-    choices.map((choice) => ({ label: choice.label, description: choice.value === current ? `${choice.description} (default)` : choice.description, value: choice.value })),
-    { title: `${TITLE}: ${title}`, placeHolder: hint, matchOnDescription: true },
-  )
+/**
+ * Shows one question of `smith new` or `smith convert` as a quick pick: the answers with smith's
+ * hints, the default marked, and a tick box when the question takes many.
+ * @param question - the question
+ * @param current - the values picked at first
+ * @returns the values picked, or undefined when the person pressed Escape or ticked nothing
+ */
+export async function pickQuestion (question: SmithQuestion, current: readonly string[]): Promise<string[] | undefined> {
+  const items = question.answers.map((answer) => {
+    const hint = answer.hint.replace(/\s*\(?default\)?$/, '').trim()
 
-  return picked?.value
+    return { label: answer.label, description: [hint, answer.value === question.default ? '(default)' : ''].filter(Boolean).join(' '), picked: current.includes(answer.value), value: answer.value }
+  })
+  const picked = await vscode.window.showQuickPick(items, { title: `${TITLE}: ${question.prompt}`, canPickMany: question.many, matchOnDescription: true })
+  if (picked === undefined) return undefined
+  const values = Array.isArray(picked) ? picked.map((item) => item.value) : [picked.value]
+  if (values.length === 0) {
+    void vscode.window.showWarningMessage('MonoSmith: pick at least one answer. The workspace was not created.')
+
+    return undefined
+  }
+
+  return values
 }
 
 async function pickYesNo (title: string, yes: string, no: string, current: boolean): Promise<boolean | undefined> {
@@ -62,33 +77,18 @@ async function pickYesNo (title: string, yes: string, no: string, current: boole
 
 /**
  * Asks the questions of `smith new`, one at a time, with the default first.
+ * The questions come from `smith new --questions --json`; the extension adds only the first commit,
+ * which is not a question of smith.
  * @param start - the choices to start from (the defaults and the name)
+ * @param questions - the questions of `smith new`
  * @returns the choices, or undefined when the person pressed Escape at any question
  */
-export async function askCustomChoices (start: NewWorkspaceChoices): Promise<NewWorkspaceChoices | undefined> {
-  const ciPicked = await vscode.window.showQuickPick(
-    CI_CHOICES.map((choice) => ({ label: choice.label, description: choice.description, picked: start.ci.includes(choice.value), value: choice.value })),
-    { title: `${TITLE}: which CI?`, placeHolder: 'CI is where your tests run on every push. Tick one or more.', canPickMany: true },
-  )
-  if (ciPicked === undefined) return undefined
-  if (ciPicked.length === 0) {
-    void vscode.window.showWarningMessage('MonoSmith: pick at least one CI. The workspace was not created.')
-
-    return undefined
-  }
-  const language = await pickOne(LANGUAGE_CHOICES, start.language, 'main language', 'Decide later is fine: each project you add picks its own')
-  if (language === undefined) return undefined
-  const nodeStack = language === 'node' ? await pickOne(NODE_STACK_CHOICES, start.nodeStack, 'tests and lint for Node projects', 'Used for every Node project you add') : start.nodeStack
-  if (nodeStack === undefined) return undefined
-  const architecture = await pickOne(ARCHITECTURE_CHOICES, start.architecture, 'code layout', 'The folder layout smith checks (smith architecture shows the rules)')
-  if (architecture === undefined) return undefined
-  const agent = await pickYesNo('add the MonoSmith agent?', 'files for Claude Code and VS Code to work here through smith', 'no agent files; smith agent install adds them later', start.agent)
-  if (agent === undefined) return undefined
-  const devcontainer = await pickYesNo('add a dev container?', 'writes .devcontainer/devcontainer.json', 'no dev container', start.devcontainer)
-  if (devcontainer === undefined) return undefined
+export async function askCustomChoices (start: NewWorkspaceChoices, questions: readonly SmithQuestion[]): Promise<NewWorkspaceChoices | undefined> {
+  const answered = await askCustomAnswers(questions, start, pickQuestion)
+  if (answered === undefined) return undefined
   const commit = await pickYesNo('make the first commit?', 'smith commits its own files as the first commit', 'smith writes the files and commits nothing', start.commit)
 
-  return commit === undefined ? undefined : { ...start, ci: ciPicked.map((choice) => choice.value), language, nodeStack, architecture, agent, devcontainer, commit }
+  return commit === undefined ? undefined : { ...answered, commit }
 }
 
 /**

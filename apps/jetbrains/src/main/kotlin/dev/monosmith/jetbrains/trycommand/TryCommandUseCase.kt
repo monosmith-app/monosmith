@@ -1,12 +1,10 @@
 package dev.monosmith.jetbrains.trycommand
 
 import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.notice.NoticeClient
-import dev.monosmith.jetbrains.prompt.PromptClient
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
 
 /**
@@ -19,24 +17,32 @@ object TryCommandUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: try a command") {
+    ) = BackgroundFlowClient.start(ide, "MonoSmith: try a command") { run(IdePortsClient.of(ide, root)) }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @return true when the command ran for real
+     */
+    fun run(ports: FlowPortsContract): Boolean {
         val typed =
-            PromptClient.text(
-                ide,
+            ports.prompt.text(
                 "MonoSmith: try a command in a copy",
                 "The smith command to try, the words after smith (for example add lib utils --lang node):",
             ) {
                 if (it.isEmpty()) "Type the command to try." else null
-            } ?: return@start
+            } ?: return false
         val command = typed.removePrefix("smith ").split(Regex("\\s+")).filter { it.isNotEmpty() }
-        val tried = SmithRunClient.run(ide, root, listOf("try") + command + "--json")
+        val tried = ports.smith.run(listOf("try") + command + "--json")
         val shown =
             runCatching {
                 TryResultMapper.toPage(tried.stdout)
-            }.getOrElse { return@start NoticeClient.warn(ide, "Nothing was tried. ${FailureTextMapper.describe(tried)}") }
+            }.getOrElse {
+                ports.notice.warn("Nothing was tried. ${FailureTextMapper.describe(tried)}")
+                return false
+            }
         val answer =
-            PromptClient.plan(
-                ide,
+            ports.prompt.plan(
                 "MonoSmith: try smith ${command.joinToString(" ")}",
                 if (shown.passed) {
                     "It passed in a copy. Run it for real? Nothing is committed."
@@ -47,16 +53,14 @@ object TryCommandUseCase {
                 if (shown.passed) "Run it for real" else "Close",
                 offerCommit = false,
             )
-        if (answer == null || !shown.passed) return@start
-        val done = SmithRunClient.run(ide, root, listOf("try") + command + "--yes", show = true)
-        WorkspaceChangedStore.changed(ide)
-        if (done.ok) {
-            NoticeClient.info(
-                ide,
-                "The command ran for real.",
-            )
-        } else {
-            NoticeClient.warn(ide, "Nothing was changed. ${FailureTextMapper.describe(done)}")
+        if (answer == null || !shown.passed) return false
+        val done = ports.smith.run(listOf("try") + command + "--yes", show = true)
+        ports.changed()
+        if (!done.ok) {
+            ports.notice.warn("Nothing was changed. ${FailureTextMapper.describe(done)}")
+            return false
         }
+        ports.notice.info("The command ran for real.")
+        return true
     }
 }

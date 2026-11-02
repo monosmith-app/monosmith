@@ -291,6 +291,11 @@
         "category": "MonoSmith"
       },
       {
+        "command": "monosmith.convert.choose",
+        "title": "Convert an Nx or Turborepo Workspace with Your Choices",
+        "category": "MonoSmith"
+      },
+      {
         "command": "monosmith.installAgent",
         "title": "Install the MCP server and agent",
         "category": "MonoSmith",
@@ -1241,6 +1246,10 @@
         {
           "command": "monosmith.adopt.preview",
           "when": "monosmith.state == adoptable || monosmith.state == unrecognised"
+        },
+        {
+          "command": "monosmith.convert.choose",
+          "when": "monosmith.state == adoptable"
         },
         {
           "command": "monosmith.runSelected",

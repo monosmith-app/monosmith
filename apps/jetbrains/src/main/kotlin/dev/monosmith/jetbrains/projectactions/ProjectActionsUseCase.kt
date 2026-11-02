@@ -1,33 +1,32 @@
 package dev.monosmith.jetbrains.projectactions
 
 import com.intellij.openapi.project.Project
+import dev.monosmith.jetbrains.commitchanges.CommitChangesUseCase
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.installdependency.InstallArgumentsAlgorithm
-import dev.monosmith.jetbrains.notice.NoticeClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
-import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
-import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
-import dev.monosmith.jetbrains.workspace.PickProjectUseCase
+import dev.monosmith.jetbrains.workspace.PortProjectsUseCase
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 import java.nio.file.Path
 
 /** The actions of the project menu that change one project: remove it, make it an app, a lib or a package, unlink a library. */
 object ProjectActionsUseCase {
     private fun target(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
         project: String?,
         title: String,
     ): SmithProjectContract? {
-        val listed = ListProjectsUseCase.list(root)
+        val listed = PortProjectsUseCase.list(ports)
         val nodes = listed.getOrNull()
         if (nodes == null) {
-            NoticeClient.warn(ide, "Nothing was changed. ${listed.exceptionOrNull()?.message}")
+            ports.notice.warn("Nothing was changed. ${listed.exceptionOrNull()?.message}")
             return null
         }
-        return if (project != null) nodes.firstOrNull { it.name == project } else PickProjectUseCase.pick(ide, nodes, title)
+        return if (project != null) nodes.firstOrNull { it.name == project } else PortProjectsUseCase.pick(ports, nodes, title)
     }
 
     /**
@@ -41,10 +40,23 @@ object ProjectActionsUseCase {
         root: Path,
         project: String?,
     ) = BackgroundFlowClient.start(ide, "MonoSmith: remove a project") {
-        val node = target(ide, root, project, "remove a project") ?: return@start
-        PlanThenApplyUseCase.run(
-            ide,
-            root,
+        runRemove(IdePortsClient.of(ide, root), { CommitChangesUseCase.start(ide, root, it) }, project)
+    }
+
+    /**
+     * Runs the removal with the given ports.
+     *
+     * @param commitLater starts the Commit action for an operation
+     * @return true when smith removed the project
+     */
+    fun runRemove(
+        ports: FlowPortsContract,
+        commitLater: (String) -> Unit,
+        project: String?,
+    ): Boolean {
+        val node = target(ports, project, "remove a project") ?: return false
+        return PlanThenApplyUseCase.run(
+            ports,
             PlanStepContract(
                 title = "MonoSmith: remove ${node.name}?",
                 planArgs = ProjectActionArgumentsAlgorithm.removePlan(node.name),
@@ -58,6 +70,7 @@ object ProjectActionsUseCase {
                 done = "${node.name} is removed",
                 operation = "remove ${node.name}",
             ),
+            commitLater,
         )
     }
 
@@ -71,18 +84,30 @@ object ProjectActionsUseCase {
         root: Path,
         project: String?,
     ) = BackgroundFlowClient.start(ide, "MonoSmith: change the kind of a project") {
-        val node = target(ide, root, project, "make it an app, a library or a package") ?: return@start
+        runChangeKind(IdePortsClient.of(ide, root), { CommitChangesUseCase.start(ide, root, it) }, project)
+    }
+
+    /**
+     * Runs the kind change with the given ports.
+     *
+     * @param commitLater starts the Commit action for an operation
+     * @return true when smith changed the kind
+     */
+    fun runChangeKind(
+        ports: FlowPortsContract,
+        commitLater: (String) -> Unit,
+        project: String?,
+    ): Boolean {
+        val node = target(ports, project, "make it an app, a library or a package") ?: return false
         val kind =
-            PromptClient
+            ports.prompt
                 .pickOne(
-                    ide,
                     "MonoSmith: make ${node.name} a ...",
                     "${node.name} is ${ProjectActionArgumentsAlgorithm.withArticle(node.kind)} now. What should it become?",
                     ProjectActionArgumentsAlgorithm.kindRows(node.kind),
-                )?.name ?: return@start
-        PlanThenApplyUseCase.run(
-            ide,
-            root,
+                )?.name ?: return false
+        return PlanThenApplyUseCase.run(
+            ports,
             PlanStepContract(
                 title = "MonoSmith: make ${node.name} ${ProjectActionArgumentsAlgorithm.withArticle(kind)}?",
                 planArgs = ProjectActionArgumentsAlgorithm.kindPlan(node.name, kind),
@@ -93,6 +118,7 @@ object ProjectActionsUseCase {
                 done = "${node.name} is now ${ProjectActionArgumentsAlgorithm.withArticle(kind)}",
                 operation = "kind ${node.name} $kind",
             ),
+            commitLater,
         )
     }
 
@@ -106,19 +132,32 @@ object ProjectActionsUseCase {
         root: Path,
         project: String?,
     ) = BackgroundFlowClient.start(ide, "MonoSmith: unlink a library") {
-        val node = target(ide, root, project, "unlink a library") ?: return@start
-        if (node.deps.isEmpty()) return@start NoticeClient.info(ide, "${node.name} depends on no library of this workspace.")
+        runUnlink(IdePortsClient.of(ide, root), project)
+    }
+
+    /**
+     * Runs the unlink with the given ports.
+     *
+     * @return true when smith unlinked the library
+     */
+    fun runUnlink(
+        ports: FlowPortsContract,
+        project: String?,
+    ): Boolean {
+        val node = target(ports, project, "unlink a library") ?: return false
+        if (node.deps.isEmpty()) {
+            ports.notice.info("${node.name} depends on no library of this workspace.")
+            return false
+        }
         val library =
-            PromptClient
+            ports.prompt
                 .pickOne(
-                    ide,
                     "MonoSmith: unlink a library from ${node.name}",
                     "Which library should the project stop using?",
                     node.deps.map { ChoiceRowContract(it, it) },
-                )?.name ?: return@start
-        PlanThenApplyUseCase.run(
-            ide,
-            root,
+                )?.name ?: return false
+        return PlanThenApplyUseCase.run(
+            ports,
             PlanStepContract(
                 title = "MonoSmith: unlink $library from ${node.name}?",
                 planArgs = null,
@@ -131,6 +170,6 @@ object ProjectActionsUseCase {
                 apply = { InstallArgumentsAlgorithm.unlink(node.name, library) },
                 done = "$library is unlinked from ${node.name}",
             ),
-        )
+        ) {}
     }
 }

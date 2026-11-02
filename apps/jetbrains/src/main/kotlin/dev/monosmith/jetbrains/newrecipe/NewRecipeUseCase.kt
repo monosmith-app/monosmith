@@ -1,14 +1,12 @@
 package dev.monosmith.jetbrains.newrecipe
 
 import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.notice.NoticeClient
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
-import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
 
 /**
@@ -25,37 +23,44 @@ object NewRecipeUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, TITLE) {
-        val listed = SmithRunClient.run(ide, root, listOf("recipe", "new", "--list-levels", "--json"))
-        if (!listed.ok) return@start NoticeClient.warn(ide, "No recipe was written. ${FailureTextMapper.describe(listed)}")
+    ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root)) }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @return true when smith wrote the recipe
+     */
+    fun run(ports: FlowPortsContract): Boolean {
+        val listed = ports.smith.run(listOf("recipe", "new", "--list-levels", "--json"))
+        if (!listed.ok) {
+            ports.notice.warn("No recipe was written. ${FailureTextMapper.describe(listed)}")
+            return false
+        }
         val levels =
             runCatching { RecipeLevelsMapper.toLevels(listed.stdout) }
                 .getOrElse {
-                    return@start NoticeClient.warn(
-                        ide,
+                    ports.notice.warn(
                         "smith printed its levels in a form this plugin does not read. Update the plugin, or run smith recipe new in a terminal.",
                     )
+                    return false
                 }
         if (levels.levels.isEmpty()) {
-            return@start NoticeClient.warn(
-                ide,
-                "smith knows no plugin a recipe can fix. Update smith, or run smith recipe new in a terminal.",
-            )
+            ports.notice.warn("smith knows no plugin a recipe can fix. Update smith, or run smith recipe new in a terminal.")
+            return false
         }
 
         val name =
-            PromptClient.text(ide, "$TITLE: name", "The name of the recipe (for example team):", problem = RecipeLevelsMapper::nameProblem)
-                ?: return@start
+            ports.prompt.text("$TITLE: name", "The name of the recipe (for example team):", problem = RecipeLevelsMapper::nameProblem)
+                ?: return false
         val version =
-            PromptClient.text(
-                ide,
+            ports.prompt.text(
                 "$TITLE: version",
                 "The first version of the recipe (empty takes 0.1.0):",
                 "0.1.0",
                 RecipeLevelsMapper::versionProblem,
             )
-                ?: return@start
-        val parent = PromptClient.text(ide, "$TITLE: parent", "The recipe this one extends (empty for none):") ?: return@start
+                ?: return false
+        val parent = ports.prompt.text("$TITLE: parent", "The recipe this one extends (empty for none):") ?: return false
         val fixed = linkedMapOf<String, List<String>>()
         var language = ""
         for (level in levels.levels) {
@@ -64,13 +69,12 @@ object NewRecipeUseCase {
             val rows = RecipeLevelsMapper.rows(options)
             val picked =
                 if (level.additive) {
-                    PromptClient.pickMany(
-                        ide,
+                    ports.prompt.pickMany(
                         "$TITLE: ${level.level}",
                         "Tick the plugins the recipe fixes at the ${level.level} level. Tick none to leave it to the users of the recipe.",
                         rows,
                     )
-                        ?: return@start
+                        ?: return false
                 } else {
                     val leave =
                         ChoiceRowContract(
@@ -80,13 +84,12 @@ object NewRecipeUseCase {
                             "The recipe fixes no plugin at the ${level.level} level.",
                         )
                     val answer =
-                        PromptClient.pickOne(
-                            ide,
+                        ports.prompt.pickOne(
                             "$TITLE: ${level.level}",
                             "Pick the plugin the recipe fixes at the ${level.level} level.",
                             listOf(leave) + rows,
                         )
-                            ?: return@start
+                            ?: return false
                     if (answer.name == LEAVE) emptyList() else listOf(answer.name)
                 }
             if (picked.isNotEmpty()) fixed[level.level] = picked
@@ -94,23 +97,20 @@ object NewRecipeUseCase {
         }
         val request = RecipeRequestContract(name, version, parent, fixed)
         val args = RecipeLevelsMapper.arguments(request)
-        PromptClient.plan(
-            ide,
+        ports.prompt.plan(
             "$TITLE: write ${RecipeLevelsMapper.file(request)}?",
             "smith runs this command and writes ${RecipeLevelsMapper.file(request)} in the workspace folder. Nothing is committed.",
             TaskCommandAlgorithm.display(listOf("smith") + args),
             "Write the recipe",
             offerCommit = false,
-        ) ?: return@start
-        val done = SmithRunClient.run(ide, root, args, show = true)
-        WorkspaceChangedStore.changed(ide)
-        if (done.ok) {
-            NoticeClient.info(
-                ide,
-                "${RecipeLevelsMapper.file(request)} is written.",
-            )
-        } else {
-            NoticeClient.warn(ide, "No recipe was written. ${FailureTextMapper.describe(done)}")
+        ) ?: return false
+        val done = ports.smith.run(args, show = true)
+        ports.changed()
+        if (!done.ok) {
+            ports.notice.warn("No recipe was written. ${FailureTextMapper.describe(done)}")
+            return false
         }
+        ports.notice.info("${RecipeLevelsMapper.file(request)} is written.")
+        return true
     }
 }
