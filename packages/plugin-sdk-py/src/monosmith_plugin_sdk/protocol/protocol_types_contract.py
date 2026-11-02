@@ -513,6 +513,12 @@ class Choice(_ChoiceRequired, total=False):
     Default marks the choice the host adds when a selection needs its axis and has no choice on
     it.
     """
+    suggested: bool
+    """
+    Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by
+    itself: an axis that a choice needs and that has no Default is asked, and the person answers
+    (ADR 0072).
+    """
     many: bool
     """
     Many allows the choice next to other choices of its axis that are Many too. By default a

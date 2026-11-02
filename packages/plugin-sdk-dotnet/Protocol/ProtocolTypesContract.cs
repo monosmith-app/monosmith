@@ -902,6 +902,9 @@ public sealed record Choice : IProtocolValue<Choice>
     /// <summary>Default marks the choice the host adds when a selection needs its axis and has no choice on it.</summary>
     public bool Default { get; init; }
 
+    /// <summary>Suggested marks the choice an asker pre-selects on its axis. The solver never adds it by itself: an axis that a choice needs and that has no Default is asked, and the person answers (ADR 0072).</summary>
+    public bool Suggested { get; init; }
+
     /// <summary>Many allows the choice next to other choices of its axis that are Many too. By default a selection has one choice per axis.</summary>
     public bool Many { get; init; }
 
@@ -924,6 +927,7 @@ public sealed record Choice : IProtocolValue<Choice>
             Roles = ListOf(Member(map, "roles"), Join(path, "roles"), Role.Read),
             Needs = ListOf(Member(map, "needs"), Join(path, "needs"), StringValue),
             Default = BooleanValue(Member(map, "default"), Join(path, "default")),
+            Suggested = BooleanValue(Member(map, "suggested"), Join(path, "suggested")),
             Many = BooleanValue(Member(map, "many"), Join(path, "many")),
             Requires = ListOf(Member(map, "requires"), Join(path, "requires"), StringValue),
             Conflicts = ListOf(Member(map, "conflicts"), Join(path, "conflicts"), StringValue),
@@ -959,6 +963,11 @@ public sealed record Choice : IProtocolValue<Choice>
         {
             writer.Property("default");
             writer.Boolean(Default);
+        }
+        if (Suggested)
+        {
+            writer.Property("suggested");
+            writer.Boolean(Suggested);
         }
         if (Many)
         {

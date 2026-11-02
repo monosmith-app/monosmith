@@ -7,6 +7,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -52,7 +53,31 @@ func (p *Functions) Generate(params protocol.GenerateParams) (protocol.GenerateR
 	if len(plan.Applied) == 0 {
 		return protocol.GenerateResult{}, fmt.Errorf("the functions plugin writes projects from the choices azure-functions, aws-lambda and gcp-functions, not the stack %q: smith add app <name> --lang node --with azure-functions", params.Stack)
 	}
-	return scaffolding.GenerateFrom(p.root, params, templateSet(plan))
+	res, err := scaffolding.GenerateFrom(p.root, params, templateSet(plan))
+	if err != nil {
+		return res, err
+	}
+	res.Notes = append(res.Notes, nextSteps(plan.Applied)...)
+	return res, nil
+}
+
+// nextSteps are printed after a function app is made: how to run it, what the
+// local tool is, and for Azure the deploy pipeline smith has.
+func nextSteps(applied []string) []string {
+	notes := []string{"Run it locally with `smith run start`. `smith test` needs no cloud tool."}
+	for _, name := range applied {
+		tool, ok := functionhost.ToolOf(name)
+		if !ok {
+			continue
+		}
+		if tool.Binary != "" {
+			notes = append(notes, "The local run needs "+tool.Name+" ("+tool.Binary+"); `smith doctor` checks it. To get it: "+tool.Install+".")
+		}
+		if name == functionhost.Azure {
+			notes = append(notes, "Copy local.settings.sample.json to local.settings.json (git ignores it) for your settings.")
+		}
+	}
+	return notes
 }
 
 // templateSet is the starter that a plan of choices describes: the greeting

@@ -27,9 +27,9 @@ func runtimeChoice(name, description string, suggested bool, conflicts ...string
 // (ADR 0072); .NET 8 is not offered for Google, which retires it on 2026-11-10.
 func Choices() []protocol.Choice {
 	return []protocol.Choice{
-		hostChoice("azure-functions", "an Azure Functions app (C# isolated worker): Program.cs, host.json, local.settings.sample.json and a csproj with the Worker packages; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"),
-		hostChoice("aws-lambda", "an AWS Lambda function (C# class library): template.yaml and Events/ for sam local, and a handler with the Lambda serializer; runs with the SAM CLI (sam)"),
-		hostChoice("gcp-functions", "a Google Cloud (Cloud Run) function (C#): a Functions Framework class and a csproj with Google.Cloud.Functions.Hosting; runs with dotnet run, no extra tool"),
+		hostChoice("azure-functions", "a serverless Azure Functions app (C# isolated worker): Program.cs, host.json, local.settings.sample.json and a csproj with the Worker packages; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"),
+		hostChoice("aws-lambda", "a serverless AWS Lambda function (C# class library): template.yaml and Events/ for sam local, and a handler with the Lambda serializer; runs with the SAM CLI (sam)"),
+		hostChoice("gcp-functions", "a serverless Google Cloud (Cloud Run) function (C#): a Functions Framework class and a csproj with Google.Cloud.Functions.Hosting; runs with dotnet run, no extra tool"),
 		triggerChoice("http-trigger", "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)", true),
 		triggerChoice("timer-trigger", "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls", false, "gcp-functions"),
 		triggerChoice("queue-trigger", "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)", false),

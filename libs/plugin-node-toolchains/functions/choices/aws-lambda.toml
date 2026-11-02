@@ -1,6 +1,6 @@
 axis = "framework"
 name = "aws-lambda"
-description = "an AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)"
+description = "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]
@@ -208,4 +208,17 @@ describe('the handler', () => {
     expect(await handler(event)).toEqual(['Hello, report.csv!'])
   })
 [[end]]})
+'''
+
+"README.md" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+# [[.Name]]
+
+An AWS Lambda app in TypeScript on Node.js [[index .Slots "node.major" 0]], made by smith. It answers [[if eq $t "http"]]an HTTP request[[else if eq $t "timer"]]a schedule[[else if eq $t "queue"]]a queue message[[else]]a new file in storage[[end]].
+
+- `smith test` runs the unit tests of the function: they need no cloud tool.
+- `smith run start` builds and runs it locally.
+- `smith run build` compiles into the workspace's dist/ and `smith run package` zips the result there.
+- template.yaml is the SAM template (Runtime nodejs[[index .Slots "node.major" 0]].x); events/greeting.json is the sample event.
+- Running it locally needs the SAM CLI (`sam`) and Docker; `smith doctor` checks the CLI.
 '''

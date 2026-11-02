@@ -1,6 +1,6 @@
 axis = "framework"
 name = "azure-functions"
-description = "an Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"
+description = "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]
@@ -168,4 +168,18 @@ describe('the function', () => {
     expect(logs).toContain('Hello, report.csv! (3 bytes)')
   })
 [[end]]})
+'''
+
+"README.md" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+# [[.Name]]
+
+An Azure Functions app in TypeScript on Node.js [[index .Slots "node.major" 0]], made by smith. It answers [[if eq $t "http"]]an HTTP request[[else if eq $t "timer"]]a schedule[[else if eq $t "queue"]]a queue message[[else]]a new file in storage[[end]].
+
+- `smith test` runs the unit tests of the function: they need no cloud tool.
+- `smith run start` builds and runs it locally.
+- `smith run build` compiles into the workspace's dist/ and `smith run package` zips the result there.
+- `smith pipeline deploy-azure-function` adds a pipeline that deploys the app to an Azure Function App.
+- Copy local.settings.sample.json to local.settings.json (git ignores it) for the settings of your machine.
+- Running it locally needs Azure Functions Core Tools (`func`); `smith doctor` checks it.
 '''

@@ -43,6 +43,9 @@ export function parseChoices (json: string): ChoiceOption[] {
       requires:    words(item.requires),
       isDefault:   item.default === true,
       many:        item.many === true,
+      needs:       words(item.needs),
+      suggested:   item.suggested === true,
+      conflicts:   words(item.conflicts),
     }))
     .filter((item) => item.axis !== '' && item.name !== '')
 }
@@ -77,6 +80,36 @@ export function roleOf (kind: string, language: string): string {
  */
 export function choiceNames (choices: readonly ChoiceOption[], language: string): string[] {
   return [...new Set(choicesByAxis(choices, language).flatMap((axis) => axis.choices.map((choice) => choice.name)))]
+}
+
+/**
+ * The axes of a language that a choice needs and that have no default: the
+ * trigger and the runtime of a function app. smith never picks them, so the
+ * wizard asks each once a choice that needs it is picked (ADR 0072).
+ * @param choices - every choice smith lists
+ * @param language - the language of the new project
+ * @returns the axis names, in the order smith lists them
+ */
+export function askedAxes (choices: readonly ChoiceOption[], language: string): string[] {
+  const axes = choicesByAxis(choices, language)
+  const defaulted = new Set(axes.filter((axis) => axis.choices.some((choice) => choice.isDefault)).map((axis) => axis.axis))
+  const listed = new Set(axes.map((axis) => axis.axis))
+
+  return [...new Set(axes.flatMap((axis) => axis.choices.flatMap((choice) => choice.needs)))].filter((name) => listed.has(name) && !defaulted.has(name))
+}
+
+/**
+ * What a language's function hosts are called in words ("a serverless Azure
+ * Functions app"), so that the language is found when the list is filtered by
+ * "serverless", "google" or "cloud run". A host is a choice that needs an asked axis.
+ * @param choices - every choice smith lists
+ * @param language - the language of the new project
+ * @returns the descriptions of the choices that need an asked axis
+ */
+export function hostTerms (choices: readonly ChoiceOption[], language: string): string[] {
+  const asked = new Set(askedAxes(choices, language))
+
+  return choicesByAxis(choices, language).flatMap((axis) => axis.choices.filter((choice) => choice.needs.some((need) => asked.has(need))).map((choice) => choice.description))
 }
 
 /**

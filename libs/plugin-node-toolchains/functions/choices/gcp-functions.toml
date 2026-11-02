@@ -1,6 +1,6 @@
 axis = "framework"
 name = "gcp-functions"
-description = "a Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app"
+description = "a serverless Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]
@@ -119,4 +119,17 @@ describe('the function', () => {
     expect(processObject({ data: { name: 'report.csv' } } as unknown as CloudEvent<never>)).toBe('Hello, report.csv!')
   })
 [[end]]})
+'''
+
+"README.md" = '''
+[[- $t := index .Slots "trigger" 0 -]]
+# [[.Name]]
+
+A Google Cloud (Cloud Run) functions app in TypeScript on Node.js [[index .Slots "node.major" 0]], made by smith. It answers [[if eq $t "http"]]an HTTP request[[else if eq $t "timer"]]a schedule[[else if eq $t "queue"]]a queue message[[else]]a new file in storage[[end]].
+
+- `smith test` runs the unit tests of the function: they need no cloud tool.
+- `smith run start` builds and runs it locally.
+- `smith run build` compiles into the workspace's dist/ and `smith run package` zips the result there.
+- The Functions Framework is a dependency of the app: no extra tool runs it locally.
+- Deploy the zip, or the source, with `gcloud run deploy` or `gcloud functions deploy` and the runtime nodejs[[index .Slots "node.major" 0]].
 '''
