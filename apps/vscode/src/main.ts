@@ -323,7 +323,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         const snapshot = await readWorkspace(session.connection)
         if (stale()) return
         state.snapshot = snapshot
-        webApps.set(root, await readWebApps(state))
+        // The environments come from a second smith process: the view shows the projects first and the
+        // Environments rows when they arrive.
+        void readWebApps(state).then((found) => {
+          if (stale()) return
+          webApps.set(root, found)
+          sync()
+        })
       } else {
         const affected = await readAffected(session.connection)
         if (stale()) return
