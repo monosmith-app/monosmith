@@ -73,7 +73,7 @@ func Adjust(plan Plan, a Adjustments) (Plan, []string, error) {
 	for _, name := range a.Hold {
 		if in(name) < 0 {
 			if slices.Contains(plan.Unchanged, name) {
-				notes = append(notes, fmt.Sprintf("note: %s is not in this plan, so there is nothing to hold back", name))
+				notes = append(notes, fmt.Sprintf("%s is not in this plan, so there is nothing to hold back", name))
 				continue
 			}
 			return plan, nil, unknownInPlan(plan, "--hold", name)
@@ -125,6 +125,9 @@ func unknownInPlan(plan Plan, flag, name string) error {
 	releases := "The plan releases nothing."
 	if len(names) > 0 {
 		releases = "The plan releases: " + strings.Join(names, ", ") + "."
+	}
+	if slices.Contains(plan.Unchanged, name) {
+		return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change. %s", flag, name, name, releases)
 	}
 	return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change.%s %s", flag, name, name,
 		nearmatch.Suggestion(name, append(slices.Clone(names), plan.Unchanged...)), releases)

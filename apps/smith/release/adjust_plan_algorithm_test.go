@@ -152,7 +152,7 @@ func TestReviewLetsThePersonHoldAndBump(t *testing.T) {
 
 func TestAdjustNotesWhatDiffersFromTheRequest(t *testing.T) {
 	_, notes, err := Adjust(samplePlan(), Adjustments{Hold: []string{"docs"}})
-	if err != nil || len(notes) != 1 || notes[0] != "note: docs is not in this plan, so there is nothing to hold back" {
+	if err != nil || len(notes) != 1 || notes[0] != "docs is not in this plan, so there is nothing to hold back" {
 		t.Fatalf("%v %v", notes, err)
 	}
 	plan := Plan{Items: []Item{{Project: "rc", Current: "1.2.3-rc.1", Next: "1.2.3", Level: "minor", Tag: "rc@1.2.3"}}}
@@ -161,6 +161,10 @@ func TestAdjustNotesWhatDiffersFromTheRequest(t *testing.T) {
 		t.Fatalf("%v %v", notes, err)
 	}
 	empty := Plan{Unchanged: []string{"docs"}}
+	_, _, err = Adjust(empty, Adjustments{Bump: map[string]string{"docs": "major"}})
+	if err == nil || strings.Contains(err.Error(), "Did you mean") || !strings.Contains(err.Error(), "docs is not in this plan") {
+		t.Fatalf("a known project must not be offered as its own near match: %v", err)
+	}
 	if _, _, err := Adjust(empty, Adjustments{Hold: []string{"p"}}); err == nil || !strings.Contains(err.Error(), "The plan releases nothing.") {
 		t.Fatalf("%v", err)
 	}
