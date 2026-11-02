@@ -1,6 +1,9 @@
 axis = "framework"
 name = "azure-functions"
 description = "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"
+title = "Azure Functions"
+aliases = ["serverless", "cloud", "functions", "faas", "microsoft", "azure"]
+layer = "host"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]

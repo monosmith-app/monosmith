@@ -1,6 +1,9 @@
 package functions
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 const language = "dotnet"
 
@@ -26,7 +29,7 @@ func runtimeChoice(name, description string, suggested bool, conflicts ...string
 // runtimes are the LTS versions of .NET that the hosts support on 2026-11-02
 // (ADR 0072); .NET 8 is not offered for Google, which retires it on 2026-11-10.
 func Choices() []protocol.Choice {
-	return []protocol.Choice{
+	out := []protocol.Choice{
 		hostChoice("azure-functions", "a serverless Azure Functions app (C# isolated worker): Program.cs, host.json, local.settings.sample.json and a csproj with the Worker packages; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"),
 		hostChoice("aws-lambda", "a serverless AWS Lambda function (C# class library): template.yaml and Events/ for sam local, and a handler with the Lambda serializer; runs with the SAM CLI (sam)"),
 		hostChoice("gcp-functions", "a serverless Google Cloud (Cloud Run) function (C#): a Functions Framework class and a csproj with Google.Cloud.Functions.Hosting; runs with dotnet run, no extra tool"),
@@ -37,4 +40,8 @@ func Choices() []protocol.Choice {
 		runtimeChoice("dotnet10", ".NET 10, the current LTS; all three hosts support it", true),
 		runtimeChoice("dotnet8", ".NET 8, the previous LTS; Azure and AWS support it until November 2026", false, "gcp-functions"),
 	}
+	for i := range out {
+		out[i] = functionhost.WithMeta(out[i])
+	}
+	return out
 }

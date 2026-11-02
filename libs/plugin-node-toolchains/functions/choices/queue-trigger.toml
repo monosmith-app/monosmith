@@ -1,6 +1,9 @@
 axis = "trigger"
 name = "queue-trigger"
 description = "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)"
+title = "Queue trigger"
+aliases = ["serverless", "message", "queue"]
+layer = "host"
 language = "node"
 
 [slots]

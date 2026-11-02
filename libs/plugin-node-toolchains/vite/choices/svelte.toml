@@ -1,6 +1,8 @@
 axis = "framework"
 name = "svelte"
 description = "a Svelte 5 app in TypeScript, built with Vite and checked by svelte-check"
+title = "Svelte"
+aliases = ["web", "frontend", "ui", "browser", "spa"]
 language = "node"
 roles = ["scaffold", "toolchain"]
 needs = ["lint", "test"]

@@ -1,6 +1,8 @@
 axis = "style"
 name = "chakra"
 description = "Chakra UI 3 components; the app is wrapped in its provider (React only)"
+title = "Chakra UI"
+aliases = ["css", "style", "components", "react", "web"]
 language = "node"
 requires = ["react"]
 dependencies = ["@chakra-ui/react", "@emotion/react"]

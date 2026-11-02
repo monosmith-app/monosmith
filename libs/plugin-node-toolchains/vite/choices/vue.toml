@@ -1,6 +1,8 @@
 axis = "framework"
 name = "vue"
 description = "a Vue 3 app in TypeScript, built with Vite and type-checked by vue-tsc"
+title = "Vue"
+aliases = ["web", "frontend", "ui", "browser", "spa"]
 language = "node"
 roles = ["scaffold", "toolchain"]
 needs = ["lint", "test"]
