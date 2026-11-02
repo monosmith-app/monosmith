@@ -23,10 +23,10 @@ func TestCheckRustVersionPassesOnTheCIVersion(t *testing.T) {
 	}
 }
 
-func TestCheckRustVersionFailsOnAnOlderLocalRustAndInstallsTheCIOne(t *testing.T) {
+func TestCheckRustVersionWarnsOnAnOlderLocalRustAndInstallsTheCIOne(t *testing.T) {
 	fakeRustc(t, "rustc 1.76.0 (07dca489a 2024-02-02)\n", nil)
 	f, ok := CheckRustVersion(t.TempDir())
-	if !ok || f.OK || f.Warning {
+	if !ok || f.OK || !f.Warning {
 		t.Fatalf("%v %+v", ok, f)
 	}
 	if f.Fix == nil || f.Fix.Safe || len(f.Fix.Files) != 1 || f.Fix.Files[0].Path != "rust-toolchain.toml" ||

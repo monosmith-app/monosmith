@@ -168,7 +168,7 @@ The pin label is `dotnet`, probed with `dotnet --version`. Real output with `[to
     → install dotnet 9 (`mise use dotnet@9`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] dotnet
 ```
 
-The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (older fails, newer warns).
+The SDK must be installed; smith does not install it. Generated projects target `net10.0`, so they need the .NET 10 SDK (the test machine also has 3.1 and 7.0 SDKs, which the generated projects do not use). The doctor checks only that `dotnet` runs; it also compares the SDK with CI's channel (another version, older or newer, is a warning).
 
 Output: all `bin/` and `obj/` go to `dist/dotnet` (set by the `Directory.Build.props` the plugin writes: `dist/dotnet/bin/<Project>/debug/...`); `pack` writes the `.nupkg` to `dist/<project dir>` (real: `dist/packages/kit/NetDemo.Kit.0.0.0.nupkg`).
 

@@ -15,8 +15,13 @@ says which projects it applies to.
 
 For Node, Python, Go, Rust, .NET and the JDK, doctor compares the tool on this machine with
 the version the generated CI workflow and dev container install, so no setting is needed
-(`Rust is 1.90, as in CI`). A newer local tool is a warning; an older one fails, because
-the build can then fail with an error that reads like a dependency problem. A tool that is
+(`Rust is 1.90, as in CI`). A local tool on another version, newer or older, is a warning, never a
+failure: a team may run it on purpose, and a fresh workspace on a common setup (Node.js 22 while CI
+installs 24) is not unhealthy. The warning says what differs and why it can matter (an older tool
+can refuse what CI builds, with an error that reads like a dependency problem). For Node.js the
+fix is a question: keep it (the first answer, nothing changes) or get the version CI installs with
+`smith tools install node`, which shows the commands and asks. No setting moves the version CI
+installs, so no answer edits one. A tool that is
 absent gives no version finding (the plugin's "installed" check already says so). Where smith
 can apply a fix it offers one: for Rust, a `rust-toolchain.toml` pinning the version plus
 `rustup toolchain install`, which also makes CI and the dev container follow the pin. A
