@@ -1,6 +1,7 @@
 package commandline
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -36,6 +37,32 @@ func TestEveryCommandIsAnActionAndEveryActionIsACommand(t *testing.T) {
 	for _, a := range catalog.All() {
 		if !exists[a.ID()] {
 			t.Errorf("action %q names a command that is not there: remove or rename it in libs/actions/catalog/catalog_config.go", a.ID())
+		}
+	}
+}
+
+// A command that can change the workspace and takes --yes asks without a
+// terminal, so the shell must append --yes after its own confirmation: that
+// needs Asks on the action, or every run the shell starts fails with "nobody can
+// confirm this change".
+func TestEveryCommandThatTakesYesAndChangesTheWorkspaceIsMarkedAsAsking(t *testing.T) {
+	root := Root("0.0.0")
+	for _, path := range visiblePaths(root, nil) {
+		cmd, _, err := root.Find(path)
+		if err != nil || cmd == nil || cmd.Flags().Lookup("yes") == nil {
+			continue
+		}
+		action, ok := catalog.Find(path)
+		if !ok || action.Asks {
+			continue
+		}
+		changes := action.Safety == catalog.Changes
+		for _, v := range action.Variants {
+			// A variant that already needs --yes is the confirmed form.
+			changes = changes || (v.Safety == catalog.Changes && !slices.Contains(v.When, "--yes"))
+		}
+		if changes {
+			t.Errorf("smith %s takes --yes and changes the workspace, but its action is not marked Asks: the shell would start it without --yes (libs/actions/catalog/catalog_config.go)", strings.Join(path, " "))
 		}
 	}
 }

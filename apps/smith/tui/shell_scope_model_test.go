@@ -80,7 +80,7 @@ func TestThePaletteInstallOpensTheGuidedFormOnTheProjectOnScreenAndOffersNoRawCo
 		t.Fatalf("started %v", l.started)
 	}
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders --registry zod" {
+	if got := l.lastStarted(); got != "install -w orders --registry zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
