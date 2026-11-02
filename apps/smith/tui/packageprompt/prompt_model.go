@@ -157,6 +157,7 @@ func (p Prompt) body(inner int) []string {
 	lines := []string{p.projectLine(), "", "Packages, separated by spaces:", " " + p.input.View(), ""}
 	if !p.remove {
 		lines = append(lines, p.devLine(), "")
+		lines = append(lines, "Names come from the language's public registry, not from this workspace.", "If one is wrong, smith keeps nothing: fix the name and try again.", "")
 	}
 	if p.err != "" {
 		lines = append(lines, p.err, "")

@@ -31,19 +31,35 @@ func Interactive() bool {
 
 // Choose runs the shell full screen, with the mouse, and returns the smith
 // arguments of a command that needs a terminal of its own (it asks questions),
-// or nil when the user quit; every other command already ran inside the shell.
-// catalog feeds the palette. A panic restores the terminal and comes back as
+// or none when the user quit; every other command already ran inside the shell.
+// catalog feeds the palette. resume, when set, opens that form first. A panic restores the terminal and comes back as
 // an error.
-func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription) ([]string, error) {
+func Choose(version string, out io.Writer, catalog []clicontract.CommandDescription, resume *Resume) (Chosen, error) {
 	var start []string
 	note := ""
 	for {
-		argv, reopen, err := chooseOnce(version, out, catalog, start, note)
+		chosen, reopen, err := chooseOnce(version, out, catalog, start, note, resume)
 		if err != nil || reopen == nil {
-			return argv, err
+			return chosen, err
 		}
-		start, note = reopen.Start, reopen.Note
+		start, note, resume = reopen.Start, reopen.Note, nil
 	}
+}
+
+// Chosen is what the shell hands back: the command to run in the terminal and
+// the form and answers that made it ("" and nil when no form did).
+type Chosen struct {
+	Argv    []string
+	Form    string
+	Answers map[string][]string
+}
+
+// Resume is a guided form to open again because its command failed: the form
+// keeps the answers and shows Problem, so one answer can be corrected.
+type Resume struct {
+	Form    string
+	Answers map[string][]string
+	Problem string
 }
 
 // reopening asks for the shell to start again, now inside the workspace the
@@ -56,10 +72,10 @@ type reopening struct {
 
 // chooseOnce is one run of the shell. reopen is set when the folder became a
 // workspace inside it (adoption), so the shell starts again to open it.
-func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string, note string) (argv []string, reopen *reopening, err error) {
+func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string, note string, resume *Resume) (chosen Chosen, reopen *reopening, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			argv, reopen, err = nil, nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
+			chosen, reopen, err = Chosen{}, nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
 		}
 	}()
 	name := "no workspace"
@@ -107,19 +123,19 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		}
 		argv, err := screenreader.Ask(os.Stdin, out, actions)
 		if err != nil {
-			return nil, nil, err
+			return Chosen{}, nil, err
 		}
 		if len(argv) > 0 {
 			fmt.Fprintf(out, "Running: %s\n\n", commands.Line(argv))
 		}
-		return argv, nil, nil
+		return Chosen{Argv: argv}, nil, nil
 	}
 	// What the person saved in the Settings tab; the environment still wins over it.
 	prefs, _ := userprefs.Load(pluginhost.Home())
 	cfg := Config{
 		Clipboard: out,
 		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
-		Problem: problem, CommitOperations: commitOps,
+		Problem: problem, CommitOperations: commitOps, Resume: resume,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
@@ -144,18 +160,18 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	lipgloss.SetHasDarkBackground(theme.DarkBackground(os.Getenv))
 	final, err := tea.NewProgram(NewShell(cfg), tea.WithOutput(out), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
 	if err != nil {
-		return nil, nil, err
+		return Chosen{}, nil, err
 	}
 	sh := final.(Shell)
 	if sh.reopen {
-		return nil, &reopening{Start: sh.reopenStart, Note: sh.reopenNote}, nil
+		return Chosen{}, &reopening{Start: sh.reopenStart, Note: sh.reopenNote}, nil
 	}
 	if line := sh.ExitSummary(); line != "" {
 		fmt.Fprintf(out, "%s\n", line)
 	}
-	argv = sh.Argv
+	argv := sh.Argv
 	if len(argv) > 0 {
 		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
 	}
-	return argv, nil, nil
+	return Chosen{Argv: argv, Form: sh.Form, Answers: sh.Answers}, nil, nil
 }

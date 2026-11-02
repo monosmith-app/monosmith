@@ -104,6 +104,12 @@ added 1 package in 2s
 
 (The `npm warn` lines in between come from npm and are cut.)
 
+A package manager looks the name up in the public registry of the project's
+language. A library of this workspace is not there, so `smith install -w api-py
+core-py` fails. When an install fails, smith puts the manifest and the lock
+files back as they were before the command. A wrong name does not stay in the
+manifest and does not break the next install.
+
 ## Common errors
 
 | Message | Cause and remedy |

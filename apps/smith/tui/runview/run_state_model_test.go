@@ -122,3 +122,15 @@ func TestTheLogsAreCapped(t *testing.T) {
 		t.Fatalf("%d lines", len(r.Task("a:build").Log))
 	}
 }
+
+func TestAFailedTaskWithNoOutputShowsItsReasonInTheLog(t *testing.T) {
+	r := NewRun([]string{"add"}, nil, t0)
+	feed(r, 0, "api-cs:add ▶ dotnet new", "api-cs:add ✖ the .NET SDK is missing: install it from https://dot.net/download")
+	if got := r.Task("api-cs:add").Log; len(got) != 1 || got[0] != "the .NET SDK is missing: install it from https://dot.net/download" {
+		t.Fatalf("log %v", got)
+	}
+	feed(r, 0, "web:test ▶ x", "web:test │ boom", "web:test ✖ exited with code 1")
+	if got := r.Task("web:test").Log; len(got) != 1 || got[0] != "boom" {
+		t.Fatalf("a task with output keeps only its output: %v", got)
+	}
+}

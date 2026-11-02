@@ -54,7 +54,7 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 		err := run(c, args)
 		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
 			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
-				fmt.Fprintln(c.OutOrStdout(), "Not committed. Review it with git status; add --commit next time to commit it as one operation that smith undo can revert.")
+				fmt.Fprintf(c.OutOrStdout(), "Not committed. Review it with git status; %s next time to commit it as one operation that smith undo can revert.\n", CommitNextTime("add --commit"))
 			}
 		}
 		if err != nil || pending == nil {

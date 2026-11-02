@@ -126,7 +126,7 @@ func TestALongEntryWrapsAndEveryLineOfItIsClickable(t *testing.T) {
 	if !strings.Contains(text, "builds") {
 		t.Fatalf("the end of the hint is missing:\n%s", strings.Join(lines, "\n"))
 	}
-	if optionAt[0] != 0 || optionAt[1] != 0 || optionAt[len(lines)-3] != 1 {
+	if optionAt[0] != 0 || optionAt[1] != 0 || optionAt[len(lines)-4] != 1 { // the help line below the options wraps onto two lines too
 		t.Errorf("rows do not map to their option: %v", optionAt)
 	}
 }

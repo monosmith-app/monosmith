@@ -118,7 +118,7 @@ func Init(r Report, version string, install, eslint, commit bool, out io.Writer)
 	}
 	doctor.ReportCommandBugs(s, "smith adopt", out)
 	if !commit && !s.Config.Workspace.CommitOperations {
-		fmt.Fprintln(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or run smith adopt --commit next time")
+		fmt.Fprintf(out, "  not committed: git status lists the changes and git can take them back; commit them when you are happy, or %s next time\n", operation.CommitNextTime("run smith adopt --commit"))
 		return DescribeOutcome(r.Root, version, out)
 	}
 	if pending := operation.Always(r.Root); pending == nil {
