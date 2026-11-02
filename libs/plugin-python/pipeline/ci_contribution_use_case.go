@@ -34,7 +34,9 @@ func CI(params protocol.CIParams) protocol.CIResult {
 	setup = append(setup, protocol.Step{Name: "Install the Python toolchain", Command: []string{py, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", venv.RequirementsFile}, Blocking: true})
 	// Project installs run without --quiet: it hides the resolver's report of
 	// what conflicts, the one thing a failed install needs to show.
-	for _, p := range params.Projects {
+	// A library comes before the project that depends on it, so pip finds it in
+	// the venv and never looks its name up on PyPI.
+	for _, p := range venv.DependencyOrder(params.Projects) {
 		setup = append(setup, protocol.Step{Name: "Install " + p.Name, Command: []string{py, "-m", "pip", "install", "--disable-pip-version-check", "-e", "./" + p.Root}, Blocking: true})
 	}
 	result := protocol.CIResult{

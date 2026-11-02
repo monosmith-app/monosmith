@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -17,7 +18,8 @@ import (
 // Commands are `smith install`, `smith uninstall`, `smith sync` and `smith up`.
 func Commands(version string) []*cobra.Command {
 	var targets []string
-	var dev, verbose bool
+	var dev, verbose, registry, yes bool
+	var linkRange string
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
@@ -26,11 +28,21 @@ func Commands(version string) []*cobra.Command {
 the project's pyproject.toml and the workspace venv, go get. Each project owns
 its dependencies, so a package needs a target: smith install -w <project>
 <package>. With no package, smith install installs everything a fresh clone
-needs, for every language in the workspace.`,
+needs, for every language in the workspace.
+
+A name that is a library of this workspace (its name, its directory, or the
+package name it exports) is linked: the project depends on the library in the
+language's own form, and nothing is downloaded. When the registry has a
+package of the same name, or cannot be asked, smith asks which you mean; with
+no terminal (or --yes) it refuses and names the fix: workspace:<name> for the
+project, --registry for the package.`,
 		Example: `  smith install                       # a fresh clone: npm install, the venv, go mod download
   smith install -w web zod
   smith install -w apps/api -D pytest-cov
-  smith install -w api github.com/pkg/errors@v0.9.1`,
+  smith install -w api github.com/pkg/errors@v0.9.1
+  smith install -w web core                # a library of this workspace: linked, not downloaded
+  smith install -w web workspace:core      # say it is the project
+  smith install -w web --registry core     # say it is the registry package`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if verbose {
 				// The plugins inherit it: the package manager's own warnings
@@ -42,14 +54,22 @@ needs, for every language in the workspace.`,
 				return err
 			}
 			defer s.Close()
-			return Install(s, targets, args, dev, cmd.OutOrStdout())
+			link := LinkOptions{Registry: registry, Range: linkRange}
+			if !yes && interactive() {
+				link.Ask = internallink.NewTerminalAsker(cmd.InOrStdin(), cmd.OutOrStdout())
+			}
+			return Install(s, targets, args, dev, cmd.OutOrStdout(), link)
 		},
 	}
+	install.Flags().BoolVar(&registry, "registry", false, "install the names from the registry, even when a name is also a project of this workspace")
+	install.Flags().StringVar(&linkRange, "range", "", "the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks")
+	install.Flags().BoolVarP(&yes, "yes", "y", false, "never ask: accept the defaults, and refuse a name that could be a project or a registry package")
 	install.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's own output and warnings (otherwise warnings fold into one line)")
 	install.Flags().StringArrayVarP(&targets, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")
 
 	var from []string
+	var fromRegistry bool
 	uninstall := &cobra.Command{
 		Use:     "uninstall <packages...>",
 		Aliases: []string{"un"},
@@ -65,9 +85,10 @@ uninstall -w <project> <package>.`,
 				return err
 			}
 			defer s.Close()
-			return Uninstall(s, from, args, cmd.OutOrStdout())
+			return Uninstall(s, from, args, cmd.OutOrStdout(), fromRegistry)
 		},
 	}
+	uninstall.Flags().BoolVar(&fromRegistry, "registry", false, "remove the names as registry packages, even when a name is also a project of this workspace")
 	uninstall.Flags().StringArrayVarP(&from, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version), depsCommand(version)}
 }

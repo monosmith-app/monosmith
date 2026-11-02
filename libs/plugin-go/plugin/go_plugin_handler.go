@@ -5,6 +5,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-go/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/sbom"
@@ -74,6 +75,16 @@ func (g *Go) Install(params protocol.InstallParams) (protocol.DependencyResult, 
 // Uninstall implements serve.DependencyManager.
 func (g *Go) Uninstall(params protocol.UninstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Uninstall(g.root, params)
+}
+
+// Link implements serve.Linker.
+func (g *Go) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(g.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (g *Go) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(g.root, params)
 }
 
 // Declared implements serve.DeclarationEditor.

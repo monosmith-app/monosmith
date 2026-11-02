@@ -8,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node/deriving"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-node/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/sbom"
@@ -115,6 +116,20 @@ func (n *Node) Uninstall(params protocol.UninstallParams) (protocol.DependencyRe
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	return dependencies.Uninstall(n.root, params)
+}
+
+// Link implements serve.Linker.
+func (n *Node) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Link(n.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (n *Node) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return linking.Unlink(n.root, params)
 }
 
 // Declared implements serve.DeclarationEditor.
