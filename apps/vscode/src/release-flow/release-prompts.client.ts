@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { showNotice } from '../notice-buttons/index.ts'
 import { forcedConsequences } from './forced-release.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
 
@@ -93,7 +94,7 @@ export function tellReleaseOutcome (outcome: ReleaseOutcome, onOutput: (line: st
     }
     case 'nothing': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage(`MonoSmith: ${outcome.lines.find((line) => line.startsWith('Nothing to release')) ?? 'there is nothing to release.'} The Release Preview view explains what counts.`)
+      void tellNothingToRelease(outcome.lines, outcome.unchanged)
       break
     }
     case 'refused': {
@@ -104,4 +105,30 @@ export function tellReleaseOutcome (outcome: ReleaseOutcome, onOutput: (line: st
       break
     }
   }
+}
+
+/**
+ * Says why `MonoSmith: Release…` has nothing to release, and offers the two ways on:
+ * the Release Preview, which explains what counts, and, when a package exists that no commit
+ * releases, the forced release of it (the same code under a new version).
+ * @param lines - what smith printed
+ * @param unchanged - the packages no commit releases
+ */
+async function tellNothingToRelease (lines: readonly string[], unchanged: readonly string[]): Promise<void> {
+  const preview = 'Open Preview'
+  const forced = 'Without a commit…'
+  const first = lines.find((line) => line.startsWith('Nothing to release')) ?? 'Nothing to release.'
+  const why = unchanged.length > 0
+    ? `No commit releases ${unchanged.join(', ')}. "Without a commit…" releases one anyway: the same code under a new version.`
+    : 'A package releases when a commit since its last tag asks for it.'
+  const choice = await showNotice(
+    'info',
+    `MonoSmith: ${first} ${why} "Open Preview" opens the Release Preview, which says why.`,
+    [
+      { label: preview, detail: 'Open the Release Preview view: it says why nothing releases and what to do.' },
+      ...(unchanged.length > 0 ? [{ label: forced, detail: 'Choose a package to release although no commit releases it. It creates a tag at HEAD, publishes, and cannot be undone.' }] : []),
+    ],
+  )
+  if (choice === preview) await vscode.commands.executeCommand('monosmith.release.focus')
+  if (choice === forced) await vscode.commands.executeCommand('monosmith.release')
 }

@@ -6,6 +6,7 @@ import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow 
 import { choicesByAxis, roleOf } from './add-options.mapper.ts'
 import { typedItem } from './add-choice-rows.mapper.ts'
 import { pickChoices, type ChoicePrompts } from './pick-choices.use-case.ts'
+import { showNotice } from '../notice-buttons/index.ts'
 import { isWebApp } from './web-environments.mapper.ts'
 import { askWebEnvironments } from './web-environments-prompts.client.ts'
 
@@ -319,8 +320,8 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
       const undo = 'Undo'
-      const commit = 'Commit these changes now'
-      const use = 'Use it from an app…'
+      const commit = 'Commit now'
+      const use = 'Use in an app…'
       const library = outcome.role === 'lib'
       void vscode.window.showInformationMessage(
         `MonoSmith: ${outcome.name} is added and the CI pipelines are regenerated. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status, or commit it now (one commit that Undo can revert).'}${library ? ' Use it from an app: pick the app, then this library.' : ''}`,
@@ -355,20 +356,23 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
 
 /** Says the project was made but could not be checked, and offers the ways on. Nothing is lost: the project stays on disk. */
 async function tellUnchecked (outcome: Extract<AddOutcome, { kind: 'unchecked' }>, next?: AddFollowUp): Promise<void> {
-  const open = 'Open the install page'
-  const install = 'Install it with smith'
+  const open = 'Install page'
+  const install = 'Install tools'
   const again = 'Check again'
-  const skip = 'Continue without checking'
+  const skip = 'Skip the check'
   const where = outcome.tool.dir === undefined ? '' : ` in ${outcome.tool.dir}`
   const files = outcome.tool.files > 0 ? ` (${outcome.tool.files} files)` : ''
   const check = outcome.tool.check
   for (;;) {
-    const choice = await vscode.window.showWarningMessage(
+    const choice = await showNotice(
+      'warning',
       `MonoSmith: ${outcome.name} was created${where}${files}, and could not be checked yet: ${outcome.tool.title} is not installed. Nothing is lost: your project stays on disk.`,
-      ...(outcome.tool.url === undefined ? [] : [open]),
-      install,
-      ...(check === undefined || next === undefined ? [] : [again]),
-      skip,
+      [
+        ...(outcome.tool.url === undefined ? [] : [{ label: open, detail: `Open the page that tells how to get ${outcome.tool.title}.` }]),
+        { label: install, detail: 'Install the missing tools with smith tools install.' },
+        ...(check === undefined || next === undefined ? [] : [{ label: again, detail: 'Run the first check of the new project again, in a terminal.' }]),
+        { label: skip, detail: 'Continue without the check. The Health view keeps reminding you.' },
+      ],
     )
     if (choice === open && outcome.tool.url !== undefined) {
       await vscode.env.openExternal(vscode.Uri.parse(outcome.tool.url))
