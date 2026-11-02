@@ -187,7 +187,15 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return nil
 	}
 	if out.Confirmed {
+		s.addForm = nil
 		return s.execute(c.Final(), true)
+	}
+	if s.addForm != nil && len(c.Argv) > 0 && c.Argv[0] == "add" {
+		// Esc on the plan of an add goes back one question, not out of the form.
+		back := s.addForm.Reopen()
+		s.addForm = nil
+		s.guide = back
+		return s.gotoTab(commands.TabGuide)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
 	return nil
@@ -490,6 +498,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		if g.Done() {
 			argv, wizard := g.Argv, g.Wizard
 			s.Form, s.Answers = g.Title(), g.Answers()
+			if len(argv) > 0 && argv[0] == "add" && s.inWorkspace {
+				kept := g
+				s.addForm = &kept
+			}
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
