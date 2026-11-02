@@ -473,8 +473,9 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		switch {
 		case s.detailFull():
 			return s.detailKey(name)
-		case name == "enter" && s.lay().HasDetail():
-			// Beside the detail Enter unfolds what the detail folded.
+		case name == "enter" && s.lay().HasDetail() && !s.doctor.OnPassedLine():
+			// Beside the detail Enter unfolds what the detail folded. On the line
+			// that hides the passed checks it shows them, as that line says.
 			s.detailAll = !s.detailAll
 		default:
 			s.doctor = s.doctor.Update(msg)
