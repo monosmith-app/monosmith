@@ -3,6 +3,7 @@ package npmbinaries
 import (
 	"archive/zip"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -439,5 +440,23 @@ func TestIncompleteSeesWhatARerunStillHasToDo(t *testing.T) {
 	delete(reg.tags["acme"], "pending")
 	if missing, moves := Incomplete(root, release(t, root), pairs); len(missing) != 0 || len(moves) != 0 {
 		t.Errorf("a finished release has nothing to do: %v %v", missing, moves)
+	}
+}
+
+func TestAProvenanceConflictSaysTheVersionIsLostAndHowToReleaseTheNext(t *testing.T) {
+	fakeNPM(t, func(dir string, args ...string) (string, string, error) {
+		if args[0] == "view" {
+			return "", "", errors.New("not found")
+		}
+		return "", "npm error code TLOG_CREATE_ENTRY_ERROR\nnpm error (409) an equivalent entry already exists in the transparency log", errors.New("exit status 1")
+	})
+	_, err := publishOne(t.TempDir(), "@acme/cli-linux-x64", Release{Version: "1.0.0"}, "")
+	if err == nil {
+		t.Fatal("a failed publish must be an error")
+	}
+	for _, want := range []string{"can no longer be published with provenance", `version(<project>)[<next version>]`, "TLOG_CREATE_ENTRY_ERROR"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the error lacks %q: %v", want, err)
+		}
 	}
 }
