@@ -135,9 +135,10 @@ Usage: `smith convert [flags]`
 | `--ci <ci>` | full level: the pipeline smith generates (smith) or keep the current one (keep) | `smith` |
 | `--commit` | commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it) | off |
 | `--dry-run` | report the plan without changing anything | off |
-| `--json` | print the plan as JSON | off |
+| `--json` | print the plan as JSON (with --questions, the questions) | off |
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
+| `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
 | `--skip-install` | do not run npm install afterwards | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
