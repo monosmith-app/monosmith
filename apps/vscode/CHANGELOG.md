@@ -7,6 +7,11 @@ the first release everything below is under Unreleased.
 
 ### Fixed
 
+- Compose a stack: the plan lists each tool with its state (`Node.js (installed, for node)`, `the Tauri system libraries (missing, for tauri): smith tools install tauri-linux-libs`) and offers "Install the tools first" when one is missing; the plan is read again after the tools flow.
+- Compose a stack: the picker keeps what you ticked visible when you change the search, names it in the title ("Selected: React, Electron"), and an axis that takes one choice behaves like a radio button. The axis comes from the catalogue, not from names.
+- Compose a stack: a layer that answers another question is labelled so (Electron: "shell (the framework choice)"), which agrees with the conflict message.
+- Compose a stack: the steps are numbered 1, 2, 3 (pick, name, plan); the name prompt names the stack and says why the name comes before the plan; the example name is `web`.
+
 - A project that smith wrote and then found failing `smith doctor` (a system library is missing) is no longer reported as "refused" and "cancelled". A notice gives the facts (created, N files, what could not be checked and why, whether the commit happened) and the next step as buttons: Install the tools, Open Health, Commit anyway, Leave it uncommitted. smith's full steps go to the Output channel. Compose a stack and Add project both do this.
 
 - Add project: the first question lists what smith lists (`outcomes` of `smith compose --json`), so "A website or web app" and "A desktop app" are there; the extension keeps no list of its own.

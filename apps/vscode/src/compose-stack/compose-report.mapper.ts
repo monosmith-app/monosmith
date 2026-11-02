@@ -1,4 +1,4 @@
-import type { ComposeCheck, ComposeItem, ComposeLayer, ComposePlan, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
+import type { ComposeCheck, ComposeItem, ComposeLayer, ComposePlan, ComposeQuestion, ComposeReport, ComposeTool } from './compose-stack.contract.ts'
 
 type Json = Record<string, unknown>
 
@@ -54,7 +54,7 @@ function readPlan (value: unknown): ComposePlan | undefined {
     command:    text(p.command),
     argv:       words(p.argv),
     files:      records(p.files).map((f) => ({ action: text(f.action), path: text(f.path), note: text(f.note) })),
-    tools:      records(p.tools).map((t) => ({ choice: text(t.choice), name: text(t.name), binary: text(t.binary), install: text(t.install) })),
+    tools:      records(p.tools).map((t) => ({ choice: text(t.choice), name: text(t.name), title: text(t.title) || text(t.name), binary: text(t.binary), state: text(t.state), command: text(t.command) })),
     notes:      words(p.notes),
     recipeArgv: words(p.recipeArgv),
     recipeNote: text(p.recipeNote),
@@ -81,6 +81,8 @@ export function parseReport (json: string): ComposeReport {
       description: text(i.description),
       aliases:     words(i.aliases),
       layer:       text(i.layer),
+      axis:        text(i.axis),
+      many:        i.many === true,
       language:    text(i.language),
       suggested:   i.suggested === true,
       isDefault:   i.default === true,
@@ -110,6 +112,28 @@ export function composeArguments (request: { language?: string, picks: readonly 
 }
 
 /**
+ * One line for a tool of the plan, as the TUI words it: the name, whether it is
+ * there and which pick needs it, and the command that installs it when it is not.
+ * @param tool - a tool of the plan
+ * @returns "Node.js (installed, for node)" or "the Tauri system libraries (missing, for tauri): smith tools install tauri-linux-libs"
+ */
+export function describeTool (tool: ComposeTool): string {
+  const state = tool.state === '' ? 'not checked' : tool.state
+  const line = `${tool.title} (${state}${tool.choice === '' ? '' : `, for ${tool.choice}`})`
+
+  return tool.state === 'missing' || tool.state === 'outdated' ? `${line}: ${tool.command}` : line
+}
+
+/**
+ * The tools of a plan that are not there or too old.
+ * @param plan - the plan smith printed
+ * @returns the missing and outdated tools, in the order of the plan
+ */
+export function toolsToInstall (plan: ComposePlan): ComposeTool[] {
+  return plan.tools.filter((tool) => tool.state === 'missing' || tool.state === 'outdated')
+}
+
+/**
  * Words the plan for the confirmation: the command, the files, the tools and the notes.
  * @param plan - the plan smith printed
  * @returns the text shown in the dialog
@@ -122,8 +146,8 @@ export function describePlan (plan: ComposePlan): string {
     lines.push('')
   }
   if (plan.tools.length > 0) {
-    lines.push('It needs these tools:')
-    for (const t of plan.tools) lines.push(`  ${t.name}: ${t.install}`)
+    lines.push('It needs these tools on this computer:')
+    for (const t of plan.tools) lines.push(`  ${describeTool(t)}`)
     lines.push('')
   }
   lines.push(...plan.notes)
@@ -138,13 +162,70 @@ export function describePlan (plan: ComposePlan): string {
  */
 export function pickLabels (item: ComposeItem): { label: string, description: string, detail: string } {
   const where = item.language === '' || item.kind === 'language' ? '' : `${item.language} · `
+  // Electron sits on the shell layer but answers the framework question; say so, so the conflict message reads the same.
+  const slot = item.kind === 'choice' && item.axis !== '' && item.axis !== item.layer && !item.many ? ` (the ${item.axis} choice)` : ''
   const mark = item.isDefault ? ' (default)' : (item.suggested ? ' (suggested)' : '')
   const problem = item.problem === '' ? '' : ` Cannot be used: ${item.problem}.`
   const route = item.route === '' ? '' : ` Not part of one project: turn it on with ${item.route}.`
 
   return {
     label:       `${item.title}${mark}`,
-    description: `${where}${item.layer}`,
+    description: `${where}${item.layer}${slot}`,
     detail:      `${item.description}${problem}${route} ${item.aliases.join(' ')}`.trim(),
   }
+}
+
+/** The group of items of which only one can be ticked, or undefined for an item that has no such group. Read from the catalogue's axis, never from names. */
+function exclusiveGroup (item: ComposeItem): string | undefined {
+  if (item.kind === 'language') return 'language'
+
+  return item.kind === 'choice' && item.axis !== '' && !item.many ? `${item.language}/${item.axis}` : undefined
+}
+
+/**
+ * Makes the single-choice axes behave like radio buttons: when a tick joins an
+ * axis that takes one choice, the older tick of that axis goes off.
+ * @param items - the catalogue
+ * @param before - the ids ticked before the change
+ * @param after - the ids ticked after it
+ * @returns the ids to keep ticked, in the order of `after`
+ */
+export function radioTicks (items: readonly ComposeItem[], before: readonly string[], after: readonly string[]): string[] {
+  const group = (id: string): string | undefined => {
+    const item = items.find((candidate) => candidate.id === id)
+
+    return item === undefined ? undefined : exclusiveGroup(item)
+  }
+  const added = after.filter((id) => !before.includes(id))
+
+  return after.filter((id) => {
+    const mine = group(id)
+
+    return mine === undefined || added.includes(id) || added.every((other) => other === id || group(other) !== mine)
+  })
+}
+
+/**
+ * The titles of the ticked items, in catalogue order, to show what is chosen
+ * when a search hides the rows.
+ * @param items - the catalogue
+ * @param ids - the ids ticked
+ * @returns "React, Electron", or '' when nothing is ticked
+ */
+export function tickedTitles (items: readonly ComposeItem[], ids: readonly string[]): string {
+  return items.filter((item) => ids.includes(item.id)).map((item) => item.title).join(', ')
+}
+
+/**
+ * The stack in words, to name it where a question about it is asked.
+ * @param items - the catalogue
+ * @param language - the language the picks fix
+ * @param picks - the names of the choices ticked
+ * @returns "React + Electron (node)"
+ */
+export function stackSummary (items: readonly ComposeItem[], language: string, picks: readonly string[]): string {
+  const titles = picks.map((name) => items.find((item) => item.kind === 'choice' && item.name === name && item.language === language)?.title ?? name)
+  const lang = items.find((item) => item.kind === 'language' && item.name === language)?.title ?? language
+
+  return `${titles.join(' + ')}${lang === '' ? '' : ` (${lang})`}`
 }

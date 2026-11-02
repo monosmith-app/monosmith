@@ -36,16 +36,20 @@ const PLAN = {
   recipeNote: '',
 }
 
-function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: ComposeAnswer }): { deps: ComposeDeps, applied: string[][], told: string[], messages: string[] } {
+function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: ComposeAnswer }): { deps: ComposeDeps, applied: string[][], told: string[], messages: string[], stacks: string[], installs: string[] } {
   const applied: string[][] = []
   const told: string[] = []
   const messages: string[] = []
+  const stacks: string[] = []
+  const installs: string[] = []
   const rounds = [...over.picks]
 
   return {
     applied,
     told,
     messages,
+    stacks,
+    installs,
     deps: {
       run:   smith({ 'electron': COMPLETE, 'react,electron': { language: 'node', complete: false, conflict: 'react and electron are both on the framework axis: keep one' } }),
       apply: async (args) => {
@@ -59,9 +63,14 @@ function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: Compose
         return rounds.shift()
       },
       answer:  async () => undefined,
-      askName: async () => 'desk',
-      tell:    (message) => { told.push(message) },
-      confirm: async () => over.reply ?? 'run',
+      askName: async (stack) => {
+        stacks.push(stack)
+
+        return 'desk'
+      },
+      installTools: async () => { installs.push('tools') },
+      tell:         (message) => { told.push(message) },
+      confirm:      async () => over.reply ?? 'run',
       ...over,
     },
   }
@@ -73,6 +82,33 @@ describe('composeStack', () => {
     const outcome = await composeStack(f.deps)
     expect(outcome).toMatchObject({ kind: 'added', name: 'desk', committed: false })
     expect(f.applied).toEqual([['add', 'app', 'desk', '--lang', 'node', '--with', 'electron,eslint,vitest', '--yes']])
+  })
+
+  it('asks the name before the plan and names the stack in the question', async () => {
+    const f = deps({ picks: [['node/electron']] })
+    await composeStack(f.deps)
+    expect(f.stacks).toEqual(['Electron (node)'])
+  })
+
+  it('offers the tools flow when a tool is missing, and shows the plan again with the states read after it', async () => {
+    const states = ['missing', 'installed']
+    const asked: boolean[] = []
+    const answers: ComposeAnswer[] = ['tools', 'run']
+    const f = deps({
+      picks: [['node/electron']],
+      run:   async (args) => {
+        return args.includes('--name') ? ok({ layers: [], items: ITEMS, plan: { ...PLAN, tools: [{ choice: 'tauri', name: 'tauri-linux-libs', title: 'the Tauri system libraries', binary: 'pkg-config', state: states.shift() ?? 'installed', command: 'smith tools install tauri-linux-libs' }] } }) : (await smith({ electron: COMPLETE })(args))
+      },
+      confirm: async (_text, _recipe, missing) => {
+        asked.push(missing)
+
+        return answers.shift() ?? 'cancel'
+      },
+    })
+    expect(await composeStack(f.deps)).toMatchObject({ kind: 'added' })
+    expect(asked).toEqual([true, false])
+    expect(f.installs).toEqual(['tools'])
+    expect(f.applied).toHaveLength(1)
   })
 
   it('adds --commit only for the commit answer', async () => {

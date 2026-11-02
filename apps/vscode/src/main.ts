@@ -921,11 +921,12 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: composing in ${state.name}… smith installs and tests the new project.` },
         async () => await smithIn(state, true, 600_000)(args),
       ),
-      pick:    pickItems,
-      answer:  answerQuestion,
-      askName: async () => await askProjectName(existing),
-      tell:    (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
-      confirm: confirmComposePlan,
+      pick:         pickItems,
+      answer:       answerQuestion,
+      askName:      async (stack) => await askProjectName(existing, stack),
+      tell:         (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
+      confirm:      confirmComposePlan,
+      installTools: async () => { await vscode.commands.executeCommand('monosmith.installTools', argument) },
     })
     note(`MonoSmith: compose in ${state.name}: ${outcomeWords(outcome)}`)
     tellComposeOutcome(outcome, note, { commit: commitAfterTheFact(state) })
