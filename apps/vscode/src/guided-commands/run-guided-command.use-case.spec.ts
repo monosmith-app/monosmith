@@ -180,6 +180,29 @@ describe('plugins and the architecture', () => {
   })
 })
 
+describe('installing a plugin from the marketplace', () => {
+  const found = JSON.stringify([{ name: 'deployer', newest: '0.2.0', description: 'Deploys to the moon', roles: ['deploy'] }])
+
+  it('lists what the search found, asks the trust question and installs, pinned only on that answer', async () => {
+    const f = fake(['deploy', 'deployer', 'pinned'], true, { 'plugin search': ok(found), 'plugin install': ok('installed deployer\n') })
+    await runGuidedCommand(command('pluginInstall'), f.deps)
+    expect(f.calls[0]).toEqual(['plugin', 'search', 'deploy', '--json'])
+    expect(f.asked[1].options).toEqual([{ label: 'deployer', value: 'deployer', description: 'v0.2.0 · Deploys to the moon [deploy]' }])
+    expect(f.confirmed[0]).toContain('does not sandbox it')
+    expect(f.calls.at(-1)).toEqual(['plugin', 'install', 'deployer', '--trust', '--pin'])
+    const plain = fake(['', 'deployer', 'ask'], true, { 'plugin search': ok(found) })
+    await runGuidedCommand(command('pluginInstall'), plain.deps)
+    expect(plain.calls.at(-1)).toEqual(['plugin', 'install', 'deployer'])
+  })
+
+  it('says so when the marketplace is empty or nothing matches', async () => {
+    const empty = fake([''], true, { 'plugin search': ok('[]') })
+    expect(await runGuidedCommand(command('pluginInstall'), empty.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('lists no plugins yet') })
+    const none = fake(['zzz'], true, { 'plugin search': ok('[]') })
+    expect(await runGuidedCommand(command('pluginInstall'), none.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('No plugin') })
+  })
+})
+
 describe('reading what smith prints', () => {
   it('reads web apps, workspace environments and pipelines, and falls back when the text is not what it expects', () => {
     expect(parseWebApps(APPS)[0].environments.map((e) => e.name)).toEqual(['dev', 'prd'])

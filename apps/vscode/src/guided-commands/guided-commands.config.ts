@@ -195,6 +195,27 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
     args: (a) => ['tauri', 'add', text(a, 'project'), ...(text(a, 'identifier') === '' ? [] : ['--identifier', text(a, 'identifier')])],
   },
   {
+    id:          'pluginInstall',
+    title:       'Install a Plugin from the Marketplace…',
+    mode:        'change',
+    verb:        'Install the plugin',
+    consequence: 'smith checks the archive against its SHA-256 and installs it in .smith/plugins. The plugin is never started by the install. A plugin runs with your privileges and smith does not sandbox it: read it before you trust it. Nothing is committed.',
+    steps:       [
+      { key: 'term', kind: 'text', title: 'MonoSmith: install a plugin (1/3): search the marketplace', prompt: 'Words of the name, description, roles or languages. Enter lists them all.', placeholder: 'deploy go', optional: true },
+      { key: 'plugin', kind: 'pick', title: 'MonoSmith: install a plugin (2/3): which one?', placeholder: 'The newest version is installed', from: 'marketplace' },
+      {
+        key:     'trust',
+        kind:    'pick',
+        title:   'MonoSmith: install a plugin (3/3): do you trust it?',
+        options: [
+          { label: 'Install it only (default)', value: 'ask', description: 'nothing runs now; smith asks the first time the plugin is used' },
+          { label: 'Install, trust and pin this version', value: 'pinned', description: 'it may run at once; smith writes the SHA-256 of its program to smith.toml, and CI refuses a changed file' },
+        ],
+      },
+    ],
+    args: (a) => ['plugin', 'install', text(a, 'plugin'), ...(text(a, 'trust') === 'pinned' ? ['--trust', '--pin'] : [])],
+  },
+  {
     id:    'info',
     title: 'Info: the Installed smith and the Settings',
     mode:  'read',

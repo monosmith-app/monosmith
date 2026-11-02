@@ -116,6 +116,28 @@ export function parseBuiltinPlugins (json: string): GuidedOption[] {
 }
 
 /**
+ * The plugins `smith plugin search --json` found: the newest version, what it does and its roles.
+ * @param json - what smith printed (a sentence when the marketplace lists nothing)
+ */
+export function parseMarketplace (json: string): GuidedOption[] {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(value)) return []
+  const records = value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+
+  return records.filter((record) => typeof record.name === 'string').map((record) => {
+    const roles = Array.isArray(record.roles) && record.roles.length > 0 ? ` [${record.roles.join(', ')}]` : ''
+    const newest = typeof record.newest === 'string' && record.newest !== '' ? `v${record.newest} · ` : ''
+
+    return { label: record.name as string, value: record.name as string, description: `${newest}${typeof record.description === 'string' ? record.description : ''}${roles}` }
+  })
+}
+
+/**
  * The architectures `smith architecture` lists: a name and what it means, the one in use marked.
  * @param text - what smith printed
  */

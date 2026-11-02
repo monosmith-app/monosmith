@@ -1,6 +1,6 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { GuidedAnswers, GuidedCommand, GuidedOutcome, GuidedStep, ResolvedStep } from './guided-command.contract.ts'
-import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, type Setting, type WebApp } from './guided-sources.mapper.ts'
+import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarketplace, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, type Setting, type WebApp } from './guided-sources.mapper.ts'
 
 /** What running a guided command needs from the editor. */
 export interface GuidedDeps {
@@ -137,6 +137,14 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parseBuiltinPlugins(listed.stdout)
       if (resolved.options.length === 0) return { refused: 'smith listed no built-in plugin.' }
+      break
+    }
+    case 'marketplace': {
+      const term = typeof answers.term === 'string' ? answers.term.split(/\s+/).filter(Boolean) : []
+      const listed = await deps.run(['plugin', 'search', ...term, '--json'])
+      if (listed.code !== 0) return { refused: describeFailure(listed) }
+      resolved.options = parseMarketplace(listed.stdout)
+      if (resolved.options.length === 0) return { refused: term.length > 0 ? 'No plugin in the marketplace matches. Search with fewer words, or leave the field empty to list them all.' : 'The marketplace lists no plugins yet, so there is nothing to install.' }
       break
     }
     case 'architectures': {

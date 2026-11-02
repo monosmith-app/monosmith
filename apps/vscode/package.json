@@ -622,6 +622,12 @@
         "title": "Make an App a Tauri Desktop App…",
         "category": "MonoSmith",
         "icon": "$(device-desktop)"
+      },
+      {
+        "command": "monosmith.pluginInstall",
+        "title": "Install a Plugin from the Marketplace…",
+        "category": "MonoSmith",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -935,6 +941,11 @@
           "command": "monosmith.tauriAdd",
           "when": "view == monosmith.projects && monosmith.state == ready",
           "group": "6_more@27"
+        },
+        {
+          "command": "monosmith.pluginInstall",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@28"
         }
       ],
       "view/item/context": [
@@ -1433,6 +1444,10 @@
         },
         {
           "command": "monosmith.tauriAdd",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.pluginInstall",
           "when": "monosmith.state == ready"
         }
       ]
