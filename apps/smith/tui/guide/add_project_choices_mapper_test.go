@@ -54,7 +54,7 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 		t.Fatalf("a website asks its framework:\n%s", m.View())
 	}
 	m = press(m, "down", "enter") // React: Decide in the next question is first
-	m = press(m, "w", "e", "b", "enter")
+	m = press(m, "w", "e", "b", "enter", "down", "enter")
 	view := m.View()
 	for _, want := range []string{"Build it from choices", "[x] framework: react", "styles (needs react)", "test: vitest"} {
 		if !strings.Contains(view, want) {
@@ -76,7 +76,7 @@ func TestAddProjectSkipsTheChoicesWhenNothingIsTicked(t *testing.T) {
 	offers, _ := ParseChoices(offersJSON)
 	m, _ := NewModel([]Action{AddProjectAction(plainAdd(), offers, nil)}).Pick("Add a project")
 	// An API (node leads the languages), then the name; the choices are left empty.
-	m = press(m, "down", "enter", "enter", "w", "e", "b", "enter", "enter")
+	m = press(m, "down", "enter", "enter", "w", "e", "b", "enter", "down", "enter", "enter")
 	if !m.Done() || strings.Join(m.Argv, " ") != "add app web --lang node" {
 		t.Fatalf("done=%v argv %q", m.Done(), m.Argv)
 	}
@@ -89,7 +89,7 @@ func TestAddProjectOffersFreshOnlyWhereThereAreSiblingsToFollow(t *testing.T) {
 	}
 	a := AddProjectAction(plainAdd(), nil, []string{"a", "b", "c"})
 	// The question about following comes with "which one?", asked only after "Follow one project".
-	if len(a.Steps) != len(plain.Steps)+2 || a.Steps[len(a.Steps)-2].Key != "follow" || a.Steps[len(a.Steps)-1].Key != "like" {
+	if len(a.Steps) != len(plain.Steps)+3 || a.Steps[len(a.Steps)-2].Key != "follow" || a.Steps[len(a.Steps)-1].Key != "like" {
 		t.Fatalf("three projects make a question about following them: %+v", a.Steps)
 	}
 	if got := a.Argv(map[string][]string{"kind": {"lib"}, "name": {"core"}, "lang": {"go"}, "follow": {"fresh"}}); !reflect.DeepEqual(got, []string{"add", "lib", "core", "--lang", "go", "--fresh"}) {

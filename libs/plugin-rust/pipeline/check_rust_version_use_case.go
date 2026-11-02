@@ -41,7 +41,7 @@ func CheckRustVersion(workspaceRoot string) (protocol.Finding, bool) {
 	}
 	_, statErr := os.Stat(filepath.Join(workspaceRoot, ToolchainFile))
 	pinned := statErr == nil
-	if f.Warning {
+	if order, _ := toolrun.PinOrder(m[1], ci); order > 0 {
 		local := majorMinor(m[1])
 		f.Remedy = "pin Rust once in " + ToolchainFile + " (channel = \"" + local + "\") and run `smith ci generate`, so CI and the dev container follow this machine"
 		if !pinned {

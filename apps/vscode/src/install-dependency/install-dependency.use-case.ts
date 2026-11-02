@@ -5,9 +5,11 @@ import type { InstallOutcome, InstallRequest } from './install-request.contract.
 /** What adding a dependency needs from the editor. */
 export interface InstallDeps {
   /** Asks the questions: library or registry first, then the library and range, or the packages. Resolves undefined when the person cancels. */
-  ask:   () => Promise<InstallRequest | undefined>
+  ask:        () => Promise<InstallRequest | undefined>
+  /** Asks the unticked commit box before smith runs. Resolves undefined when the person cancels. */
+  askCommit?: () => Promise<boolean | undefined>
   /** Runs smith in the workspace folder to its end; the package manager may take long. */
-  apply: (args: string[]) => Promise<SmithRun>
+  apply:      (args: string[]) => Promise<SmithRun>
 }
 
 /**
@@ -19,7 +21,9 @@ export interface InstallDeps {
 export async function installDependency (deps: InstallDeps): Promise<InstallOutcome> {
   const request = await deps.ask()
   if (request === undefined) return { kind: 'cancelled' }
-  const done = await deps.apply(installArguments(request))
+  const commit = deps.askCommit === undefined ? false : await deps.askCommit()
+  if (commit === undefined) return { kind: 'cancelled' }
+  const done = await deps.apply([...installArguments(request), ...(commit ? ['--commit'] : [])])
 
   return done.code === 0 ? { kind: 'added', lines: done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } : { kind: 'refused', message: describeFailure(done) }
 }

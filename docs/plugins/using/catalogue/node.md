@@ -257,7 +257,7 @@ The plugin has no `[projects.<p>.settings.node]` table. All configuration is in 
     → install node 22 (`mise use node@22`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] node
 ```
 
-- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: newer warns, older fails); it does not read `.nvmrc` or `engines.node`.
+- The Node version CI installs is a constant of the plugin, `24` (`scaffolding/toolchain_versions_config.go`). The plugin's doctor compares your Node *major* with it (`Node.js is 24, as in CI`: another major, newer or older, is a warning, with a fix that asks: keep it or run `smith tools install node`; Node missing from the PATH fails); it does not read `.nvmrc` or `engines.node`.
 - Output: `build` writes `dist/<project dir>` (set by each project's `outDir`, which doctor checks: `kit compiles into dist/packages/kit`); `package` writes `dist/drop/<name>-<version>.tgz` (a VS Code extension: `.vsix`); `prune` writes into `dist/<app dir>`; a release asset goes to `dist/release/<app>/`.
 
 ## Derived files

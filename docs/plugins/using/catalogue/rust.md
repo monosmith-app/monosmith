@@ -180,7 +180,7 @@ The pin label is `rustc`, probed with `rustc --version`. Real output with `[tool
     → install rustc 1.90 (`mise use rust@1.90`, asdf, or your installer; `smith doctor --fix` writes .tool-versions for mise and asdf), or change [toolchains] rustc
 ```
 
-smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): older fails, newer warns. A machine on 1.76.0 fails the check instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
+smith does not install Rust. The machine needs `cargo`, `rustc`, `clippy` and `rustfmt` (the CI toolchain installs `clippy, rustfmt`). The plugin's doctor checks that `cargo` exists and compares `rustc` with the version CI installs (`1.90`, or the `channel` of `rust-toolchain.toml`): another version is a warning, older or newer. A machine on 1.76.0 is warned (with the fix that installs the pinned toolchain) instead of failing later in `smith test` with `feature edition2024 is required`. To make local, CI and the dev container agree, pin the version once in `rust-toolchain.toml` (`channel = "1.99.1"`) and run `smith ci generate`.
 
 Output goes to `dist/cargo` (set by the `.cargo/config.toml` the plugin writes): `dist/cargo/debug/` for builds, `dist/cargo/package/` for `cargo package`.
 

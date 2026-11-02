@@ -77,14 +77,22 @@ object InstallDependencyUseCase {
                 InstallArgumentsAlgorithm.library(target.name, library.name, range.takeUnless { it == "follow" })
             }
         val shown = TaskCommandAlgorithm.display(listOf("smith") + args)
-        ports.prompt.plan(TITLE, "smith runs this command. Nothing is committed.", shown, "Add it", offerCommit = false) ?: return false
-        val done = ports.smith.run(args, show = true)
+        val answer =
+            ports.prompt.plan(TITLE, "smith runs this command. It commits only if you tick the box.", shown, "Add it", offerCommit = true)
+                ?: return false
+        val done = ports.smith.run(if (answer.commit) args + "--commit" else args, show = true)
         ports.changed()
         if (!done.ok) {
             ports.notice.warn("Nothing was added. ${FailureTextMapper.describe(done)}")
             return false
         }
-        ports.notice.info("The dependency is added. Not committed: review it with the Commit window.")
+        ports.notice.info(
+            if (answer.commit) {
+                "The dependency is added. Committed as one change: Undo reverts it."
+            } else {
+                "The dependency is added. Not committed: review it with the Commit window."
+            },
+        )
         return true
     }
 

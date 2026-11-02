@@ -1,8 +1,10 @@
 package dev.monosmith.jetbrains.pluginswitch
 
 import com.intellij.openapi.project.Project
+import dev.monosmith.jetbrains.commitchanges.CommitChangesUseCase
 import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
+import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import java.nio.file.Path
@@ -22,7 +24,7 @@ object SwitchPluginUseCase {
         ide: Project,
         root: Path,
         on: Boolean,
-    ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root), on) }
+    ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root), on) { CommitChangesUseCase.start(ide, root, it) } }
 
     /**
      * @param on true turns a plugin on, false turns one off
@@ -31,6 +33,7 @@ object SwitchPluginUseCase {
     fun run(
         ports: FlowPortsContract,
         on: Boolean,
+        commitLater: (String) -> Unit,
     ): Boolean {
         val listed = ports.smith.run(listOf("plugin", "list", "--json"))
         if (!listed.ok) {
@@ -51,19 +54,21 @@ object SwitchPluginUseCase {
             ports.prompt.pickOne("$TITLE: turn a plugin $word", "Pick a built-in plugin.", BuiltinPluginsMapper.rows(plugins))?.name
                 ?: return false
         val args = listOf("plugin", if (on) "enable" else "disable", name)
-        ports.prompt.plan(
-            "$TITLE: turn $name $word?",
-            if (on) {
-                "The projects $name finds appear in smith. Nothing is written until you answer."
-            } else {
-                "smith counts the projects $name finds first. If there are any, it stops and names them. Nothing is written until you answer."
-            },
-            "smith ${args.joinToString(" ")}",
-            "Turn it $word",
-            offerCommit = false,
-        ) ?: return false
-        val first = ports.smith.run(args, show = true)
-        if (first.ok) return done(ports, name, word)
+        val answer =
+            ports.prompt.plan(
+                "$TITLE: turn $name $word?",
+                if (on) {
+                    "The projects $name finds appear in smith. Nothing is written until you answer."
+                } else {
+                    "smith counts the projects $name finds first. If there are any, it stops and names them. Nothing is written until you answer."
+                },
+                "smith ${args.joinToString(" ")}",
+                "Turn it $word",
+                offerCommit = true,
+            ) ?: return false
+        val commit = if (answer.commit) listOf("--commit") else emptyList()
+        val first = ports.smith.run(args + commit, show = true)
+        if (first.ok) return done(ports, name, word, answer.commit, commitLater)
         if (on || !first.stderr.contains(HIDES_PROJECTS)) {
             ports.notice.warn("$name was not turned $word. ${FailureTextMapper.describe(first)}")
             return false
@@ -75,21 +80,31 @@ object SwitchPluginUseCase {
             "Turn it off anyway",
             offerCommit = false,
         ) ?: return false
-        val forced = ports.smith.run(args + "--force", show = true)
+        val forced = ports.smith.run(args + "--force" + commit, show = true)
         if (!forced.ok) {
             ports.notice.warn("$name was not turned off. ${FailureTextMapper.describe(forced)}")
             return false
         }
-        return done(ports, name, word)
+        return done(ports, name, word, answer.commit, commitLater)
     }
 
     private fun done(
         ports: FlowPortsContract,
         name: String,
         word: String,
+        committed: Boolean,
+        commitLater: (String) -> Unit,
     ): Boolean {
         ports.changed()
-        ports.notice.info("$name is $word. Nothing is committed.")
+        if (committed) {
+            ports.notice.info("$name is $word. Committed as one change: Undo reverts it.")
+        } else {
+            val button =
+                NoticeButtonContract("Commit changes…", "Make one commit that Undo can revert; you choose the files first.") {
+                    commitLater("turn $name $word")
+                }
+            ports.notice.info("$name is $word. Not committed: review it with the Commit window, or commit it now.", listOf(button))
+        }
         return true
     }
 }

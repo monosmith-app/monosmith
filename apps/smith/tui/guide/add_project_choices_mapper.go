@@ -92,16 +92,23 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 	}
 	steps = withOutcomes(steps, offers)
 	base.Steps = slices.Clone(steps)
+	if len(offerLanguages(offers)) > 0 || len(existing) >= siblingsMin {
+		steps = append(steps, addSetupStep())
+	}
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
 		steps = append(steps, axisSteps(lang, offersOf(offers, lang))...)
 	}
 	if len(existing) >= siblingsMin {
-		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?", Options: []Option{
-			{Label: "Yes, match the other projects", Value: "follow", Hint: "when most projects of this kind share a test runner or a build tool, so does this one"},
-			{Label: "Follow one project", Value: "like", Hint: "smith add --like <project>: take its choices, whatever the others do"},
-			{Label: "No, use the stack's own defaults", Value: "fresh", Hint: "smith add --fresh"},
-		}})
+		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?",
+			Take: func(a map[string][]string) ([]string, bool) {
+				return []string{"follow"}, first(a, addSetupKey) == setupDefaults
+			},
+			Options: []Option{
+				{Label: "Yes, match the other projects", Value: "follow", Hint: "when most projects of this kind share a test runner or a build tool, so does this one"},
+				{Label: "Follow one project", Value: "like", Hint: "smith add --like <project>: take its choices, whatever the others do"},
+				{Label: "No, use the stack's own defaults", Value: "fresh", Hint: "smith add --fresh"},
+			}})
 		like := Step{
 			Key: "like", Prompt: "Follow which project?", Filter: len(existing) > 10,
 			Skip: func(a map[string][]string) bool { return first(a, "follow") != "like" },
@@ -197,6 +204,16 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		Multi:    true,
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
+		// With the defaults, what the person picked above is ticked and nothing is asked.
+		Take: func(a map[string][]string) ([]string, bool) {
+			if first(a, addSetupKey) != setupDefaults || first(a, "lang") != lang {
+				return nil, false
+			}
+			if first(a, pickKey) == pickNone {
+				return nil, true
+			}
+			return a[pickKey], true
+		},
 		// What the outcome question picked (Tauri, React, Azure Functions) starts ticked.
 		Ticked: func(a map[string][]string) []string {
 			if first(a, pickKey) == pickNone {

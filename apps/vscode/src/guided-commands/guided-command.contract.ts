@@ -52,6 +52,8 @@ export interface GuidedCommand {
   verb?:        string
   /** What the change does and what it costs, said before the question when there is no plan. */
   consequence?: string
+  /** The command takes `--commit`: the unticked "Commit this change so it can be undone" box comes before the confirmation. */
+  commit?:      boolean
 }
 
 /** A step with its options and first value read, ready to be asked. */

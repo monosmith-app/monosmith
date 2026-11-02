@@ -80,12 +80,16 @@ func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 	}
 	defaults := strings.Join(webenv.DefaultNames, ", ")
 	return []Step{
-		{Key: envsKey, Prompt: "A web app is built once per environment. Which environments?", Note: "Vite writes its VITE_ values into the bundle when it builds, so each environment is its own build with its own .env file.", Skip: notWeb, Options: []Option{
-			{Label: EnvUseThese + ": " + defaults, Value: envsDefault, Hint: EnvUseTheseHint},
-			{Label: EnvChangeNames, Value: envsCustom, Hint: "you type the names (lowercase words, such as qa, stage), then say which one smith run build builds"},
-			{Label: EnvChangeDetails, Value: envsDetails, Hint: "which environment smith run build builds, where the builds go, and whether the .env files are kept in git"},
-			{Label: "One build only", Value: envsNone, Hint: "smith add --environments none: a single vite build, as before"},
-		}},
+		{Key: envsKey, Prompt: "A web app is built once per environment. Which environments?",
+			Take: func(a map[string][]string) ([]string, bool) {
+				return []string{envsDefault}, first(a, addSetupKey) == setupDefaults
+			},
+			Note: "Vite writes its VITE_ values into the bundle when it builds, so each environment is its own build with its own .env file.", Skip: notWeb, Options: []Option{
+				{Label: EnvUseThese + ": " + defaults, Value: envsDefault, Hint: EnvUseTheseHint},
+				{Label: EnvChangeNames, Value: envsCustom, Hint: "you type the names (lowercase words, such as qa, stage), then say which one smith run build builds"},
+				{Label: EnvChangeDetails, Value: envsDetails, Hint: "which environment smith run build builds, where the builds go, and whether the .env files are kept in git"},
+				{Label: "One build only", Value: envsNone, Hint: "smith add --environments none: a single vite build, as before"},
+			}},
 		{Key: envNamesKey, Prompt: "Environment names, separated by commas", Placeholder: defaults,
 			Initial: func(map[string][]string) string { return defaults },
 			Skip:    unless(envsCustom),

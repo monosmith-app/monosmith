@@ -93,7 +93,7 @@ class ProjectActionsUseCaseTest {
     fun unlinkOffersOnlyTheLibrariesTheProjectUsesAndNeverCommits() {
         fake.ones.add("utils")
         fake.plans.add(fake.yes())
-        assertTrue(ProjectActionsUseCase.runUnlink(fake.ports, "web"))
+        assertTrue(ProjectActionsUseCase.runUnlink(fake.ports, "web") {})
         assertEquals(listOf("utils"), fake.rowsSeen.single().map { it.name })
         assertEquals("smith uninstall -w web workspace:utils", fake.plansSeen.single())
         assertEquals(listOf("uninstall", "-w", "web", "workspace:utils", "--yes"), fake.calls.last())
@@ -102,7 +102,7 @@ class ProjectActionsUseCaseTest {
 
     @Test
     fun aProjectThatUsesNoLibraryHasNothingToUnlink() {
-        assertFalse(ProjectActionsUseCase.runUnlink(fake.ports, "utils"))
+        assertFalse(ProjectActionsUseCase.runUnlink(fake.ports, "utils") {})
         assertEquals("utils depends on no library of this workspace.", fake.infos.single())
         assertEquals(1, fake.calls.size)
     }

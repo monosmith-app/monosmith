@@ -31,9 +31,9 @@ func choicesStepOfAWebsite(t *testing.T) Model {
 	if !ok {
 		t.Fatal("no form")
 	}
-	m = press(m, "enter")                     // A website
-	m = press(m, "enter")                     // Decide in the next question
-	m = press(m, "s", "i", "t", "e", "enter") // the name
+	m = press(m, "enter")                                      // A website
+	m = press(m, "enter")                                      // Decide in the next question
+	m = press(m, "s", "i", "t", "e", "enter", "down", "enter") // the name
 	if !strings.Contains(m.View(), "Build it from choices?") {
 		t.Fatalf("not on the choices step:\n%s", m.View())
 	}

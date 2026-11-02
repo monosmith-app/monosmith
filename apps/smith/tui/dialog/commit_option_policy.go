@@ -6,8 +6,14 @@ import "slices"
 const CommitLabel = "Commit this change so it can be undone"
 
 // committing lists the commands that can end in a commit: the ones that change
-// the workspace and accept --commit.
-var committing = []string{"adopt", "new", "add", "remove", "convert", "upgrade", "swap", "derive"}
+// the workspace and accept --commit. A command of two words is written with
+// both ("config set").
+var committing = []string{
+	"adopt", "new", "add", "remove", "convert", "upgrade", "swap", "derive",
+	"install", "uninstall", "sync", "up", "kind", "bootstrap", "architecture",
+	"environments add", "environments remove", "tauri add",
+	"config set", "config unset", "plugin enable", "plugin disable",
+}
 
 // Committable is true for a command that accepts --commit, so its confirmation
 // offers the box. A command that already carries the flag is not offered it twice.
@@ -18,7 +24,11 @@ func Committable(argv []string) bool {
 // CanCommit is true for a command that accepts --commit, whether or not the
 // line carries it.
 func CanCommit(argv []string) bool {
-	return len(argv) > 0 && slices.Contains(committing, argv[0])
+	if len(argv) == 0 {
+		return false
+	}
+
+	return slices.Contains(committing, argv[0]) || (len(argv) > 1 && slices.Contains(committing, argv[0]+" "+argv[1]))
 }
 
 // WithCommit returns the command line with --commit added after the verb, or

@@ -490,6 +490,13 @@ func (m Model) advance() Model {
 			m.step++
 			continue
 		}
+		if s.Take != nil {
+			if v, ok := s.Take(m.answers); ok {
+				m.answers[s.Key] = v
+				m.step++
+				continue
+			}
+		}
 		if s.Auto != nil {
 			if v := s.Auto(m.answers); v != "" {
 				m.answers[s.Key] = []string{v}

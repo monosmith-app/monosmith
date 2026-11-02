@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/plugindraft"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginenv"
@@ -196,7 +197,7 @@ func Command(version string) *cobra.Command {
 	cmd.AddCommand(trustCommands()...)
 	for _, enable := range []bool{true, false} {
 		verb := map[bool]string{true: "enable", false: "disable"}[enable]
-		cmd.AddCommand(&cobra.Command{
+		switchCommand := &cobra.Command{
 			Use:   verb + " <name>...",
 			Short: strings.ToUpper(verb[:1]) + verb[1:] + " built-in plugins in smith.toml",
 			Args:  cobra.MinimumNArgs(1),
@@ -215,7 +216,10 @@ func Command(version string) *cobra.Command {
 				}
 				return nil
 			},
-		})
+		}
+		cmd.AddCommand(operation.Wrap(switchCommand, operation.Spec{Describe: func(_ *cobra.Command, args []string) string {
+			return "turn " + strings.Join(args, " ") + " " + map[bool]string{true: "on", false: "off"}[enable]
+		}}))
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "set <name>...",

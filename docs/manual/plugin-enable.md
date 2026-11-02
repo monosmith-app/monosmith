@@ -24,7 +24,9 @@ Usage: `smith plugin enable <name>...`
 |---|---|---|
 | `name...` | yes | built-in plugin names |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 
 <!-- smith:end plugin enable -->
 
