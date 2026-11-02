@@ -106,7 +106,7 @@ func TestKeysDoNotFireWhileATextFieldIsEditing(t *testing.T) {
 func TestKeysDoNotFireInsideAGuideForm(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a")
-	l.has("Add a project", "What are you adding?")
+	l.has("Add a project", "What are you building?")
 	l.keys("b", "t", "3")
 	if len(l.started) != 0 || l.sh().tab != "guide" {
 		t.Fatalf("a form option list ran %v in %q", l.started, l.sh().tab)
@@ -417,7 +417,7 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a") // Add project…
-	l.has("Add a project", "What are you adding?")
+	l.has("Add a project", "What are you building?")
 	// Enter on the language keeps the default: what most projects here use (Go).
 	l.keys("down", "down", "enter", "enter").typeText("toolkit").keys("enter")
 	// Four projects are enough to follow: the form asks, and Enter keeps the default (match them).

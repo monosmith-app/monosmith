@@ -16,10 +16,13 @@ type ChoiceOffer struct {
 	Description string `json:"description"`
 	// Title and Aliases are what smith compose searches: the display name and the
 	// words that find the choice ("desktop", "serverless").
-	Title    string   `json:"title"`
-	Aliases  []string `json:"aliases"`
-	Language string   `json:"language"`
-	Default  bool     `json:"default"`
+	Title   string   `json:"title"`
+	Aliases []string `json:"aliases"`
+	// Layer is where the choice sits in the stack (framework, shell, host); empty
+	// means the layer of its axis.
+	Layer    string `json:"layer"`
+	Language string `json:"language"`
+	Default  bool   `json:"default"`
 	// Suggested marks the answer a question pre-selects; Needs are the axes the
 	// choice needs an answer on (a function host needs a trigger and a runtime).
 	Suggested bool     `json:"suggested"`
@@ -84,6 +87,7 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 			steps[i].Options = withChoiceNames(steps[i].Options, offers)
 		}
 	}
+	steps = withOutcomes(steps, offers)
 	base.Steps = slices.Clone(steps)
 	for _, lang := range offerLanguages(offers) {
 		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
@@ -189,6 +193,13 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		Multi:    true,
 		Optional: true,
 		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
+		// What the outcome question picked (Tauri, React, Azure Functions) starts ticked.
+		Ticked: func(a map[string][]string) []string {
+			if first(a, pickKey) == pickNone {
+				return nil
+			}
+			return a[pickKey]
+		},
 	}
 	asked := askedAxes(offers)
 	for _, o := range offers {

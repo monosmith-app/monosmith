@@ -49,11 +49,14 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 	if !ok {
 		t.Fatal("no form")
 	}
-	m = press(m, "enter")                     // an app
-	m = press(m, "n", "o", "d", "e", "enter") // node
+	m = press(m, "enter") // a website: node is the only language that fits, so none is asked
+	if !strings.Contains(m.View(), "Which framework?") {
+		t.Fatalf("a website asks its framework:\n%s", m.View())
+	}
+	m = press(m, "enter") // React
 	m = press(m, "w", "e", "b", "enter")
 	view := m.View()
-	for _, want := range []string{"Build it from choices", "framework: react", "styles (needs react)", "test: vitest"} {
+	for _, want := range []string{"Build it from choices", "[x] framework: react", "styles (needs react)", "test: vitest"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the node choices lack %q:\n%s", want, view)
 		}
@@ -61,7 +64,7 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 	if strings.Contains(view, "gotest") || strings.Contains(view, "svelte") {
 		t.Fatalf("another language's or an unusable choice is offered:\n%s", view)
 	}
-	m = press(m, "space", "down", "down", "down", "space", "enter")
+	m = press(m, "down", "down", "down", "space", "enter") // react starts ticked: the framework pick
 	if got := strings.Join(m.Argv, " "); got != "add app web --lang node --with react,vitest" {
 		t.Fatalf("argv %q", got)
 	}
@@ -70,18 +73,19 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 func TestAddProjectSkipsTheChoicesWhenNothingIsTicked(t *testing.T) {
 	offers, _ := ParseChoices(offersJSON)
 	m, _ := NewModel([]Action{AddProjectAction(plainAdd(), offers, nil)}).Pick("Add a project")
-	m = press(m, "enter", "n", "o", "d", "e", "enter", "w", "e", "b", "enter", "enter")
+	// An API (node leads the languages), then the name; the choices are left empty.
+	m = press(m, "down", "enter", "enter", "w", "e", "b", "enter", "enter")
 	if !m.Done() || strings.Join(m.Argv, " ") != "add app web --lang node" {
 		t.Fatalf("done=%v argv %q", m.Done(), m.Argv)
 	}
 }
 
 func TestAddProjectOffersFreshOnlyWhereThereAreSiblingsToFollow(t *testing.T) {
-	plain := plainAdd()
-	if got := AddProjectAction(plain, nil, []string{"a", "b"}); len(got.Steps) != len(plain.Steps) {
+	plain := AddProjectAction(plainAdd(), nil, nil) // the form with the outcome question, as the shell shows it
+	if got := AddProjectAction(plainAdd(), nil, []string{"a", "b"}); len(got.Steps) != len(plain.Steps) {
 		t.Fatal("two projects follow nobody: no extra question")
 	}
-	a := AddProjectAction(plain, nil, []string{"a", "b", "c"})
+	a := AddProjectAction(plainAdd(), nil, []string{"a", "b", "c"})
 	// The question about following comes with "which one?", asked only after "Follow one project".
 	if len(a.Steps) != len(plain.Steps)+2 || a.Steps[len(a.Steps)-2].Key != "follow" || a.Steps[len(a.Steps)-1].Key != "like" {
 		t.Fatalf("three projects make a question about following them: %+v", a.Steps)
