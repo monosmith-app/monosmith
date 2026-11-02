@@ -24,13 +24,21 @@ A recipe whose plugins are all fixed needs neither questions nor a file: `--name
 `--fixed role=plugin` for each role write it. A structure, deploy or toolchain role takes
 plugins joined by commas (`--fixed structure=slices,layers`). A choice the recipe's users
 make still needs the questions or an answers file. The interface's **Write a recipe** form
-(the guided menu) asks for these values and shows this command line before it runs.
+(the guided menu) and the VS Code command **MonoSmith: New Recipe** ask for these values as pick
+lists and tick boxes, and show this command line and the file it writes before it runs.
+
+`--list-levels` writes nothing. It lists the levels and the plugins each can take; `--json`
+prints them for programs. The JSON has `levels` (each with `level`, `additive` and `plugins`,
+each plugin with `name` and `description`) and `fits`, which names, for each language plugin,
+the plugins of every other level that fit it. The forms of the interface and of the editors read
+this list, so none of them holds a list of plugin names.
 
 ## Synopsis
 
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
 smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] --fixed <role=plugin>...
+smith recipe new --list-levels [--json]
 ```
 
 ## Arguments and flags
@@ -50,6 +58,8 @@ Usage: `smith recipe new [path] [flags]`
 | `--fixed <fixed>` | string, repeatable |  | fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role |
 | `--force` | boolean | off | replace the file if it exists |
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
+| `--json` | boolean | off | with --list-levels, print the list as JSON |
+| `--list-levels` | boolean | off | list the levels and the plugins each can take, and write nothing |
 | `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |
 | `--recipe-version <recipe-version>` | string |  | the recipe's version (0.1.0 when not given) |
 

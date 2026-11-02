@@ -61,7 +61,7 @@ func NewRecipeArgv(a map[string][]string) []string {
 	if e := first(a, "extends"); e != "" {
 		argv = append(argv, "--extends", e)
 	}
-	for _, f := range strings.Fields(first(a, "fixed")) {
+	for _, f := range recipeFixed(a) {
 		argv = append(argv, "--fixed", f)
 	}
 	return argv

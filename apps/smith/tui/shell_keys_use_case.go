@@ -451,6 +451,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		}
 	case commands.TabGuide:
 		g, cmd := s.guide.Handle(msg)
+		if s.guide.Title() == "" && g.Title() == recipeTitle && s.recipeLevels == nil {
+			// The recipe form lists the plugins of each level: read them first.
+			return s.openRecipeForm()
+		}
 		s.guide = g
 		if g.Done() {
 			argv, wizard := g.Argv, g.Wizard

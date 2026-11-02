@@ -52,6 +52,12 @@ func Describe(argv []string) (title, why string) {
 		return "Replace a derived file", "This overwrites the file with what smith derives. Your edit is lost."
 	case verb == "derive":
 		return "Update the derived files", "This rewrites the files that follow from the project graph. A file you edited is never overwritten."
+	case verb == "recipe" && len(argv) > 1 && argv[1] == "new":
+		file := "<name>.recipe.toml"
+		if i := slices.Index(argv, "--name"); i >= 0 && i+1 < len(argv) {
+			file = argv[i+1] + ".recipe.toml"
+		}
+		return "Write a recipe", "This writes " + file + " in the current folder, after it checks that the recipe resolves. A file that exists is not replaced."
 	case verb == "plugin" && len(argv) > 1 && argv[1] == "install":
 		return "Install a plugin", "This puts the plugin on this machine after checking it. smith does not start it."
 	case verb == "plugin":

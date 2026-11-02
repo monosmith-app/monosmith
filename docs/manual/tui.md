@@ -314,8 +314,14 @@ one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a re
 that end as a smith command line. Every action in the action catalog has one: a command with
 no hand-written form gets a form built from its own arguments and options, subcommands
 included (`deps up`, `docker description`, `slices check`, `cache prune`). **Write a recipe**
-asks for the name, version, parent and the fixed plugins (`language=python lint=ruff`) and ends
-as `smith recipe new --name ... --fixed ...`. A recipe with a choice its users make is still
+asks for the name, version and parent, then one question for each level a plugin can fill. A
+level with one plugin (language, scaffold, lint, test) is a pick list that starts on "Leave
+unset". A level with any number (structure, deploy) is a list of tick boxes (space ticks, enter
+confirms; nothing ticked leaves the level unset). Each plugin shows a line about what it is, and
+after the language only the plugins that fit it are listed. The list of plugins comes from
+`smith recipe new --list-levels --json`. A pick is refused with its reason, and the
+confirmation shows the exact `smith recipe new --name ... --fixed ...` command and the file it
+writes. This form fixes plugins only: a level whose plugin the recipe's users choose is still
 written with `smith recipe new` on a terminal, which asks the questions.
 
 Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in

@@ -24,6 +24,8 @@ const (
 	capPlan    = "plan"
 	capChoices = "choices"
 	capSearch  = "plugin-search"
+
+	capRecipeLevels = "recipe-levels"
 )
 
 // The states of the choices the Add form offers.
@@ -81,6 +83,8 @@ func (s *Shell) captured(msg capturedMsg) tea.Cmd {
 		return s.planRead(msg)
 	case capChoices:
 		return s.choicesRead(msg)
+	case capRecipeLevels:
+		return s.recipeLevelsRead(msg)
 	case capCompose:
 		return s.composeRead(msg)
 	case capComposePlan:
@@ -305,6 +309,50 @@ func (s *Shell) showAddForm() tea.Cmd {
 	}
 	g = g.WithDefaultWhy("lang", s.mainLanguageWhy())
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
+}
+
+// recipeTitle is the title of the guided form that writes a recipe.
+const recipeTitle = "Write a recipe"
+
+// openRecipeForm opens the form that writes a recipe, with a pick list or tick
+// boxes for each level, read from `smith recipe new --list-levels --json` the
+// first time. When they cannot be read, the plain form opens and says why.
+func (s *Shell) openRecipeForm() tea.Cmd {
+	if s.sources.Capture == nil || s.recipeLevels != nil {
+		return s.showRecipeForm()
+	}
+	s.say("Reading the plugins a recipe can fix…")
+	return s.capture(capRecipeLevels, []string{"recipe", "new", "--list-levels", "--json"})
+}
+
+// recipeLevelsRead keeps the levels and opens the form that waited for them.
+func (s *Shell) recipeLevelsRead(msg capturedMsg) tea.Cmd {
+	if msg.res.OK {
+		if cat, err := guide.ParseRecipeLevels(msg.res.Text); err == nil {
+			s.recipeLevels = &cat
+		}
+	}
+	if s.recipeLevels == nil {
+		s.notify("Could not read the plugins, so the form asks for level=plugin text: "+firstLine(failureText(msg.res)), toast.Warning)
+	}
+	return s.showRecipeForm()
+}
+
+// showRecipeForm opens the Write a recipe form.
+func (s *Shell) showRecipeForm() tea.Cmd {
+	g := s.guide
+	if s.recipeBase == nil {
+		if base, ok := g.ActionTitled(recipeTitle); ok {
+			s.recipeBase = &base
+		}
+	}
+	if s.recipeBase != nil && s.recipeLevels != nil {
+		g = g.WithAction(guide.RecipeAction(*s.recipeBase, *s.recipeLevels))
+	}
+	if g, ok := g.Pick(recipeTitle); ok {
 		s.guide = g
 	}
 	return s.gotoTab(commands.TabGuide)
