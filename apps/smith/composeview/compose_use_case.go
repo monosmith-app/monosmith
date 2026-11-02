@@ -11,8 +11,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/pluginhost"
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -34,6 +34,10 @@ type Report struct {
 	// Items are the catalogue, or the items that matched Search, best first.
 	Items  []compose.Hit `json:"items"`
 	Search string        `json:"search,omitempty"`
+	// Outcomes are the answers to "what are you building?" (a website, a
+	// function app...), from the whole catalogue: the editors list them as the
+	// first question of Add, as the terminal screen does.
+	Outcomes []compose.Outcome `json:"outcomes"`
 	// Check and Plan are set when --with is given.
 	Check *compose.Check `json:"check,omitempty"`
 	Plan  *compose.Plan  `json:"plan,omitempty"`
@@ -97,7 +101,7 @@ func toolsOf(statuses []toolinstall.Status, language string) []compose.Tool {
 // Returns: the report. It returns an error for a --lang no plugin handles.
 func Run(s *session.Session, o Options) (Report, error) {
 	cat := compose.Build(Source(s))
-	rep := Report{Layers: cat.Layers, Items: compose.Search(cat.Items, o.Search), Search: o.Search}
+	rep := Report{Layers: cat.Layers, Items: compose.Search(cat.Items, o.Search), Search: o.Search, Outcomes: compose.Outcomes(cat.Items)}
 	language := ""
 	if o.Lang != "" {
 		client, err := s.Plugins.ForLanguage(o.Lang)

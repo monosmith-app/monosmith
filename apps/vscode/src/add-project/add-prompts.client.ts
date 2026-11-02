@@ -1,8 +1,9 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } from './add-options.contract.ts'
-import { outcomesOf, whatIs, type OutcomeOption } from './add-outcomes.mapper.ts'
-import { askedAxes, choiceNames, choicesByAxis, hostTerms, roleOf } from './add-options.mapper.ts'
+import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
+import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
+import { askedAxes, choicesByAxis, roleOf } from './add-options.mapper.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -20,11 +21,11 @@ const TITLE = 'MonoSmith: Add project'
  * @param options - what `smith kinds`, `smith choices` and `smith stacks` list
 * @param existing - the names the workspace has already: a new project cannot take one
  * @param projects - the workspace's projects, to offer one to copy the shape of (`--like`)
- * @returns the request, or undefined when the person pressed Escape at any question
+ * @returns the request, `compose` when the person chose to compose a stack, or undefined when they pressed Escape at any question
  */
-export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | undefined> {
+export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | 'compose' | undefined> {
   const found = await askOutcome(options)
-  if (found === undefined) return undefined
+  if (found === undefined || found === 'compose') return found
 
   const { role, language, preset } = found
   const build = await askBuild(options, language, preset)
@@ -50,29 +51,17 @@ const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
  * only where the outcome leaves more than one. The old way (kind, then every
  * language) stays as the last line, and so does the composer.
  * @param options - what smith lists
- * @returns the kind, the language and the choice the outcome named; undefined when the person pressed Escape or went to the composer
+ * @returns the kind, the language and the choice the outcome named; `compose` for the composer; undefined when the person pressed Escape
  */
-async function askOutcome (options: AddOptions): Promise<{ role: string, language: string, preset: string[] } | undefined> {
-  const compose = '$(search) Compose a stack…'
-  const outcomes = outcomesOf(options)
-  const picked = await vscode.window.showQuickPick(
-    [
-      ...outcomes.map((outcome) => ({ label: outcome.title, description: outcome.typical, detail: `${outcome.consequence}  (also found by: ${[...new Set(outcome.words)].slice(0, 8).join(', ')})`, outcome })),
-      { label: EVERY_LANGUAGE, description: 'the long way: kind first, then the language from the full list', detail: '', outcome: undefined },
-      { label: compose, description: 'search frameworks, desktop shells (Tauri, Electron) and cloud hosts in one place', detail: '', outcome: undefined },
-    ],
-    { title: `${TITLE}: what are you building?`, placeHolder: 'Type to narrow the list: try react, azure function, electron, tauri, api', matchOnDescription: true, matchOnDetail: true },
-  )
+async function askOutcome (options: AddOptions): Promise<'compose' | { role: string, language: string, preset: string[] } | undefined> {
+  const picked = await pickOutcomeRow(options.outcomes)
   if (picked === undefined) return undefined
-  if (picked.label === compose) {
-    await vscode.commands.executeCommand('monosmith.composeStack')
-
-    return undefined
-  }
-  if (picked.outcome === undefined) return askEveryLanguage(options)
+  if (picked.kind === 'compose') return 'compose'
+  if (picked.kind === 'every') return askEveryLanguage(options)
+  if (picked.kind === 'none') return undefined
 
   const { outcome } = picked
-  const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages)
+  const language = outcome.languages.length === 1 ? outcome.languages[0] : await askLanguage(options, outcome.role, outcome.languages, outcome)
   if (language === undefined) return undefined
 
   const preset = await askPreset(outcome, language)
@@ -91,15 +80,69 @@ async function askEveryLanguage (options: AddOptions): Promise<{ role: string, l
   return language === undefined ? undefined : { role: role.label, language, preset: [] }
 }
 
-/** Asks the language among those that fit; the choices of a language are found by their names. */
-async function askLanguage (options: AddOptions, role: string, fitting: readonly string[]): Promise<string | undefined> {
-  const languages = options.kinds.filter((kind) => roleOf(kind.kind, kind.language) === role && fitting.includes(kind.language))
+/**
+ * Shows the first question: what is being built. The list is smith's own; the search
+ * is done here, with the same rule as the terminal screen, so "react" finds a
+ * website and "tauri" a desktop app. A search that finds nothing says so and names
+ * the closest answers.
+ * @param outcomes - what smith can add here
+ * @returns the row picked; undefined when the person pressed Escape
+ */
+async function pickOutcomeRow (outcomes: readonly OutcomeOption[]): Promise<OutcomeRow | undefined> {
+  const pick = vscode.window.createQuickPick<vscode.QuickPickItem & { row: OutcomeRow }>()
+  pick.title = `${TITLE}: what are you building?`
+  pick.placeholder = 'Type to narrow the list: try react, azure function, electron, tauri, api'
+  const show = (): void => {
+    pick.items = outcomeRows(outcomes, pick.value).map((row) => ({ ...rowItem(row), row, alwaysShow: true }))
+  }
+  show()
+
+  return await new Promise((resolve) => {
+    pick.onDidChangeValue(show)
+    pick.onDidAccept(() => {
+      const row = pick.selectedItems[0]?.row
+      // The "no result" row only explains: it keeps the list open.
+      if (row === undefined || row.kind === 'none') return
+      resolve(row)
+      pick.hide()
+    })
+    pick.onDidHide(() => {
+      resolve(undefined)
+      pick.dispose()
+    })
+    pick.show()
+  })
+}
+
+function rowItem (row: OutcomeRow): vscode.QuickPickItem {
+  switch (row.kind) {
+    case 'outcome': {
+      return { label: row.outcome.title, description: row.outcome.typical, detail: row.outcome.consequence }
+    }
+    case 'none': {
+      return { label: `$(info) No result for "${row.query}"`, description: row.closest.length === 0 ? '' : `closest: ${row.closest.join(' · ')}`, detail: 'Change the words, or use one of the two lines below.' }
+    }
+    case 'every': {
+      return { label: EVERY_LANGUAGE, description: 'the long way: kind first, then the language from the full list' }
+    }
+    case 'compose': {
+      return { label: '$(search) Compose a stack…', description: 'search frameworks, desktop shells (Tauri, Electron) and cloud hosts in one place' }
+    }
+  }
+}
+
+/**
+ * Asks the language among those that fit, by the name a person knows, with
+ * what each offers for the thing being built (the clouds of a function app).
+ */
+async function askLanguage (options: AddOptions, role: string, fitting: readonly string[], outcome?: OutcomeOption): Promise<string | undefined> {
+  const rows = languageRows(options.languages, options.kinds, role, fitting, outcome)
   const language = await vscode.window.showQuickPick(
-    languages.map((kind) => ({ label: kind.language, description: kind.label, detail: [...choiceNames(options.choices, kind.language), ...hostTerms(options.choices, kind.language)].join(', ') })),
-    { title: `${TITLE}: which language?`, placeHolder: 'A language, or a framework such as react', matchOnDescription: true, matchOnDetail: true },
+    rows.map((row) => ({ label: row.label, description: row.description, detail: row.detail, language: row.language })),
+    { title: `${TITLE}: which language?`, placeHolder: outcome?.items[0]?.layer === 'host' ? 'The language of the function; the clouds it can run in are listed next to it' : 'Pick the language', matchOnDescription: true, matchOnDetail: true },
   )
 
-  return language?.label
+  return language?.language
 }
 
 /** Asks which framework, desktop shell or cloud the outcome uses; a website or a desktop app may decide later, a function app may not. */
@@ -282,10 +325,15 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
       void tellUnchecked(outcome, next)
       break
     }
+    case 'failing': {
+      tellDoctorFailure(outcome.failure, outcome.operation, outcome.lines, onOutput, next)
+      break
+    }
     case 'refused': {
       void vscode.window.showWarningMessage(`MonoSmith: nothing was added. ${outcome.message}`)
       break
     }
+    case 'composing':
     case 'cancelled': {
       break
     }

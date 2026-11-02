@@ -1,26 +1,28 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { composeArguments, describePlan, parseReport, settleRivals } from './compose-report.mapper.ts'
-import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
+import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
+import { composeArguments, describePlan, parseReport, settleRivals, stackSummary, toolsToInstall } from './compose-report.mapper.ts'
+import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposePlan, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
 
 /** What composing a stack needs from the editor. */
 export interface ComposeDeps {
   /** Runs smith in the workspace folder for a short answer (`compose --json`). */
-  run:     (args: string[]) => Promise<SmithRun>
+  run:          (args: string[]) => Promise<SmithRun>
   /** Runs smith to its end (`add`, `recipe new`); the add installs and tests. */
-  apply:   (args: string[]) => Promise<SmithRun>
+  apply:        (args: string[]) => Promise<SmithRun>
   /**
    * Shows the catalogue with the picks ticked and the last message (a conflict,
    * what is missing). Resolves the ids ticked, or undefined when the person cancels.
    */
-  pick:    (items: ComposeItem[], ticked: readonly string[], message: string) => Promise<string[] | undefined>
+  pick:         (items: ComposeItem[], ticked: readonly string[], message: string) => Promise<string[] | undefined>
   /** Asks the open question; the suggested answer is pre-selected, never taken. Resolves the answer or undefined. */
-  answer:  (question: ComposeQuestion) => Promise<ComposeOption | undefined>
-  /** Asks the project name. Resolves undefined when the person cancels. */
-  askName: () => Promise<string | undefined>
+  answer:       (question: ComposeQuestion) => Promise<ComposeOption | undefined>
+  /** Asks the project name, naming the stack ("React + Electron (node)"). Resolves undefined when the person cancels. */
+  askName:      (stack: string) => Promise<string | undefined>
   /** Tells a message that does not stop the flow (a plugin that cannot be ticked). */
-  tell:    (message: string) => void
-  /** Shows the plan and asks what to do with it. */
-  confirm: (planText: string, hasRecipe: boolean) => Promise<ComposeAnswer>
+  tell:         (message: string) => void
+  /** Shows the plan and asks what to do with it; `toolsMissing` adds the button that installs the tools. */
+  confirm:      (planText: string, hasRecipe: boolean, toolsMissing: boolean) => Promise<ComposeAnswer>
+  /** Runs the tools flow (what to install, how), which asks its own questions. */
+  installTools: () => Promise<void>
 }
 
 async function read (deps: ComposeDeps, args: string[]): Promise<ComposeReport | string> {
@@ -94,14 +96,22 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
     }
 
     if (settled.note !== '') deps.tell(settled.note)
-    const name = await deps.askName()
+    // The name comes before the plan because the files of the plan depend on it (apps/<name>/).
+    const name = await deps.askName(stackSummary(first.items, check.language, picks))
     if (name === undefined) return { kind: 'cancelled' }
-    const planned = await read(deps, composeArguments({ language: check.language, picks: check.selection, kind: 'app', name }))
-    if (typeof planned === 'string') return { kind: 'refused', message: planned }
-    const plan = planned.plan
-    if (plan === undefined || plan.argv.length < 2) return { kind: 'refused', message: 'smith made no plan for these picks.' }
+    let plan: ComposePlan | undefined
+    let answer: ComposeAnswer = 'tools'
+    while (answer === 'tools') {
+      const planned = await read(deps, composeArguments({ language: check.language, picks: check.selection, kind: 'app', name }))
+      if (typeof planned === 'string') return { kind: 'refused', message: planned }
+      plan = planned.plan
+      if (plan === undefined || plan.argv.length < 2) return { kind: 'refused', message: 'smith made no plan for these picks.' }
 
-    const answer = await deps.confirm(describePlan(plan), plan.recipeArgv.length > 1)
+      answer = await deps.confirm(describePlan(plan), plan.recipeArgv.length > 1, toolsToInstall(plan).length > 0)
+      // The tools flow asks its own questions; the plan is read again after it, so the states shown are current.
+      if (answer === 'tools') await deps.installTools()
+    }
+    if (plan === undefined) return { kind: 'cancelled' }
     switch (answer) {
       case 'cancel': {
         return { kind: 'cancelled' }
@@ -117,8 +127,13 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
       default: {
         const committed = answer === 'run-commit'
         const done = await deps.apply([...plan.argv.slice(1), ...(committed ? ['--commit'] : []), '--yes'])
+        if (done.code === 0) return { kind: 'added', name, lines: lines(done.stdout), committed }
 
-        return done.code === 0 ? { kind: 'added', name, lines: lines(done.stdout), committed } : { kind: 'refused', message: describeFailure(done) }
+        // The project is on disk and fails its checks: not a refusal, and not a cancel.
+        const everything = `${done.stdout}\n${done.stderr}`
+        const failure = parseDoctorFailure(everything)
+
+        return failure === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'written', name, operation: `add app ${name}`, failure, lines: lines(everything) }
       }
     }
   }

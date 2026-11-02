@@ -64,19 +64,27 @@
           "title": "MonoSmith",
           "icon": "media/monosmith.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "monosmithHealth",
+          "title": "MonoSmith Health",
+          "icon": "media/monosmith.svg"
+        }
       ]
     },
     "views": {
+      "monosmithHealth": [
+        {
+          "id": "monosmith.health",
+          "name": "Health",
+          "when": "monosmith.state == ready"
+        }
+      ],
       "monosmith": [
         {
           "id": "monosmith.projects",
           "name": "Projects"
-        },
-        {
-          "id": "monosmith.health",
-          "name": "Health",
-          "when": "monosmith.state == ready",
-          "visibility": "collapsed"
         },
         {
           "id": "monosmith.dependencies",
@@ -994,6 +1002,11 @@
       },
       {
         "view": "monosmith.projects",
+        "when": "monosmith.state == ready && monosmith.noProjects",
+        "contents": "This workspace has no projects yet.\n[Add your first project](command:monosmith.addProject)\nsmith asks what you are building, shows the plan, and writes nothing until you say yes."
+      },
+      {
+        "view": "monosmith.projects",
         "when": "monosmith.state == starting",
         "contents": "Starting smith…\n[Show log](command:monosmith.showOutput)"
       },
@@ -1015,7 +1028,7 @@
       {
         "view": "monosmith.projects",
         "when": "monosmith.state == empty",
-        "contents": "This folder is empty.\nMonoSmith can start a workspace here. smith asks its questions in a terminal and lists what it will create first.\n[Create a new MonoSmith workspace](command:monosmith.new)\n[Learn more](https://github.com/monosmith-app/monosmith)"
+        "contents": "This folder is empty.\nMonoSmith can start a workspace here. It asks how you want to set it up (the defaults, or customise), shows what smith will create, and writes nothing until you say yes.\n[Create a new MonoSmith workspace](command:monosmith.new)\n[Learn more](https://github.com/monosmith-app/monosmith)"
       },
       {
         "view": "monosmith.projects",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ComposeItem } from './compose-stack.contract.ts'
-import { composeArguments, describePlan, parseReport, pickLabels, settleRivals } from './compose-report.mapper.ts'
+import { composeArguments, describePlan, parseReport, pickLabels, settleRivals, stackSummary, tickedTitles, toolsToInstall } from './compose-report.mapper.ts'
 
 const catalogue = JSON.stringify({
   layers: [{ id: 'shell', title: 'Desktop shell', about: 'a program you install' }],
@@ -47,26 +47,67 @@ describe('pickLabels', () => {
   })
 
   it('says why an item cannot be used and which command turns a plugin on', () => {
-    const labels = pickLabels({ id: 'plugin/slices', kind: 'plugin', name: 'slices', title: 'slices', description: '', aliases: [], layer: 'architecture', language: '', suggested: false, isDefault: false, problem: '', route: 'smith plugin enable slices' })
+    const labels = pickLabels({ id: 'plugin/slices', kind: 'plugin', name: 'slices', title: 'slices', description: '', aliases: [], layer: 'architecture', axis: '', many: false, language: '', suggested: false, isDefault: false, problem: '', route: 'smith plugin enable slices' })
     expect(labels.detail).toContain('smith plugin enable slices')
+  })
+
+  it('says which question an item answers when its layer has another name, so the label and the conflict agree', () => {
+    const electron = pickLabels({ id: 'node/electron', kind: 'choice', name: 'electron', title: 'Electron', description: '', aliases: [], layer: 'shell', axis: 'framework', many: false, language: 'node', suggested: false, isDefault: false, problem: '', route: '' })
+    expect(electron.description).toBe('node · shell (the framework choice)')
+    const react = pickLabels({ id: 'node/react', kind: 'choice', name: 'react', title: 'React', description: '', aliases: [], layer: 'framework', axis: 'framework', many: false, language: 'node', suggested: false, isDefault: false, problem: '', route: '' })
+    expect(react.description).toBe('node · framework')
   })
 })
 
 describe('describePlan', () => {
   it('lists the command, the files, the tools and the notes', () => {
     const text = describePlan({
-      command:    'smith add app desk --lang node --with electron,eslint,vitest',
-      argv:       [],
-      files:      [{ action: 'create', path: 'apps/desk/', note: '' }],
-      tools:      [{ choice: 'electron', name: 'Node', binary: 'node', install: 'install Node' }],
+      command: 'smith add app desk --lang node --with electron,eslint,vitest',
+      argv:    [],
+      files:   [{ action: 'create', path: 'apps/desk/', note: '' }],
+      tools:   [
+        { choice: 'node', name: 'node', title: 'Node.js', binary: 'node', state: 'installed', command: 'smith tools install node' },
+        { choice: 'tauri', name: 'tauri-linux-libs', title: 'the Tauri system libraries', binary: 'pkg-config', state: 'missing', command: 'smith tools install tauri-linux-libs' },
+      ],
       notes:      ['eslint and vitest are added by default'],
       recipeArgv: [],
       recipeNote: '',
     })
     expect(text).toContain('Run: smith add app desk')
     expect(text).toContain('create apps/desk/')
-    expect(text).toContain('Node: install Node')
+    expect(text).toContain('Node.js (installed, for node)')
+    expect(text).toContain('the Tauri system libraries (missing, for tauri): smith tools install tauri-linux-libs')
     expect(text).toContain('added by default')
+  })
+})
+
+describe('parseReport plan tools', () => {
+  it('reads the title, the state and the install command that smith prints', () => {
+    const report = parseReport(JSON.stringify({ items: [], plan: { command: 'smith add app a', argv: ['smith', 'add'], tools: [{ choice: 'tauri', name: 'tauri-linux-libs', title: 'the Tauri system libraries', binary: 'pkg-config', state: 'missing', command: 'smith tools install tauri-linux-libs' }] } }))
+    expect(report.plan?.tools[0]).toMatchObject({ title: 'the Tauri system libraries', state: 'missing', command: 'smith tools install tauri-linux-libs' })
+    expect(report.plan !== undefined && toolsToInstall(report.plan).map((tool) => tool.name)).toEqual(['tauri-linux-libs'])
+  })
+})
+
+const row = (id: string, over: Partial<ComposeItem> = {}): ComposeItem => ({ id, kind: 'choice', name: id.split('/', 2)[1] ?? id, title: id, description: '', aliases: [], layer: 'framework', axis: 'framework', many: false, language: 'node', suggested: false, isDefault: false, problem: '', route: '', ...over })
+const catalogueItems = [
+  row('node/react', { title: 'React' }),
+  row('node/electron', { title: 'Electron', layer: 'shell' }),
+  row('node/vitest', { title: 'Vitest', layer: 'test', axis: 'test' }),
+  row('node/eslint', { title: 'ESLint', layer: 'lint', axis: 'lint', many: true }),
+  row('node/prettier', { title: 'Prettier', layer: 'lint', axis: 'lint', many: true }),
+  row('node', { kind: 'language', name: 'node', title: 'TypeScript / JavaScript', axis: '', language: '', layer: 'language' }),
+  row('python', { kind: 'language', name: 'python', title: 'Python', axis: '', language: '', layer: 'language' }),
+]
+
+describe('tickedTitles and stackSummary', () => {
+  it('names what is ticked, so a search that hides the rows hides nothing', () => {
+    expect(tickedTitles(catalogueItems, ['node/electron', 'node/react'])).toBe('React, Electron')
+    expect(tickedTitles(catalogueItems, [])).toBe('')
+  })
+
+  it('names the stack with its language', () => {
+    expect(stackSummary(catalogueItems, 'node', ['react', 'vitest'])).toBe('React + Vitest (TypeScript / JavaScript)')
   })
 })
 
@@ -85,6 +126,10 @@ describe('settleRivals', () => {
     const settled = settleRivals(items, ['node/vitest'], ['node/vitest', 'node/jest', 'node/tauri'])
     expect(settled.ids).toEqual(['node/vitest', 'node/jest', 'node/tauri'])
     expect(settled.note).toBe('')
+  })
+
+  it('lets one language be ticked at a time', () => {
+    expect(settleRivals(catalogueItems, ['node'], ['node', 'python']).ids).toEqual(['python'])
   })
 
   it('keeps the later one when two rivals are ticked in the same round', () => {
