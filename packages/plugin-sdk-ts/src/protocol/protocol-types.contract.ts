@@ -194,6 +194,13 @@ export interface Capabilities {
   published?: boolean
   /** Dependencies installs and uninstalls packages in its projects. */
   dependencies?: boolean
+  /**
+   * Link makes a project depend on a library of the same workspace in the ecosystem's own form (a
+   * workspace dependency, a path dependency, a project reference), and takes it out again. A plugin
+   * without it is refused by the host with one sentence that tells the user to add the dependency
+   * by hand.
+   */
+  link?: boolean
   /** Declarations lists and rewrites declared dependency specs (sync, up). */
   declarations?: boolean
   /** Latest reports the newest releases of dependencies and pinned tools. */
@@ -883,6 +890,65 @@ export interface LatestResult {
 }
 
 /**
+ * LinkOption is one way to write the dependency, with its consequence in words a person who read no
+ * manual can follow.
+ */
+export interface LinkOption {
+  /** Spec is the value passed back in LinkParams.Spec. */
+  spec: string
+  /** Label is the option in a few words. */
+  label: string
+  /** Meaning says what happens with this option. */
+  meaning: string
+}
+
+/**
+ * LinkParams asks a plugin to make Project depend on Library, a lib or package of the same
+ * workspace and language, in the ecosystem's own form, and to install or lock as that needs. The
+ * host has checked that both exist, that the languages match, that Library is not an app, and that
+ * the link makes no cycle; the plugin answers with an error that names the file when it cannot
+ * write the dependency.
+ */
+export interface LinkParams {
+  /** Project is the project that gains the dependency. */
+  project: Project
+  /** Library is the project it depends on. */
+  library: Project
+  /** Quiet keeps the package manager's output unless it fails. */
+  quiet?: boolean
+  /**
+   * Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line
+   * it would write and the choices the user has.
+   */
+  plan?: boolean
+  /**
+   * Spec is the version range the user chose from LinkResult.Options; empty means the plugin's
+   * default, or the form the workspace already uses.
+   */
+  spec?: string
+}
+
+/** LinkResult is what a link wrote, or with LinkParams.Plan would write. */
+export interface LinkResult {
+  /** Files are the workspace-relative files changed (or to be changed). */
+  files?: string[]
+  /** Notes are for the user. */
+  notes?: string[]
+  /** Manifest is the file the dependency goes into, workspace-relative. */
+  manifest?: string
+  /**
+   * Line is the dependency as it is written there, for the plan shown before anything is written
+   * ("@acme/core": "*").
+   */
+  line?: string
+  /**
+   * Options are the real choices of the range written, with the default first. Empty when the
+   * ecosystem has none, or the workspace already follows a convention (then Line shows it).
+   */
+  options?: LinkOption[]
+}
+
+/**
  * PackageStore is where a package manager keeps what it downloaded (npm's ~/.npm, Go's module
  * cache). A generated pipeline restores it before setup and saves it after a run, keyed on Files,
  * so `npm ci` or `go mod download` fetches only what changed. A pull request from a fork restores
@@ -1382,6 +1448,15 @@ export interface UninstallParams {
   packages: string[]
 }
 
+/**
+ * UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result
+ * say so when the manifest held no such dependency.
+ */
+export interface UnlinkParams {
+  project: Project
+  library: Project
+}
+
 /** VersionParams asks a plugin to record a new version in a project manifest. */
 export interface VersionParams {
   project: Project
@@ -1520,6 +1595,21 @@ export interface ProtocolMethods {
     params: UninstallParams
     result: DependencyResult
     capability: 'dependencies'
+  }
+  /**
+   * Makes a project depend on a library of the same workspace and language, in the ecosystem's own
+   * form, then installs or locks as that needs.
+   */
+  'dependencies/link': {
+    params: LinkParams
+    result: LinkResult
+    capability: 'link'
+  }
+  /** Removes the dependency of a project on a library of the same workspace. */
+  'dependencies/unlink': {
+    params: UnlinkParams
+    result: DependencyResult
+    capability: 'link'
   }
   /** Lists the dependencies the manifests of the plugin's projects declare. */
   'dependencies/declared': {

@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-python/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-python/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-python/sbom"
@@ -83,6 +84,16 @@ func (p *Python) Remove(params protocol.RemoveParams) (protocol.RemoveResult, er
 // Install implements serve.DependencyManager.
 func (p *Python) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Install(p.root, params)
+}
+
+// Link implements serve.Linker.
+func (p *Python) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(p.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (p *Python) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(p.root, params)
 }
 
 // Uninstall implements serve.DependencyManager.

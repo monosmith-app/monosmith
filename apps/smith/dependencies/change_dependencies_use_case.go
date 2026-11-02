@@ -3,6 +3,7 @@ package dependencies
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
 	"io"
 	"path/filepath"
@@ -19,9 +20,25 @@ const timeout = 20 * time.Minute
 // ErrNoTarget is adding packages without saying to which project.
 var ErrNoTarget = errors.New("adding a package needs a target project: smith install -w <project> <package>. A bare smith install (no package) installs the whole workspace")
 
+// LinkOptions say how a name that may be a library of the workspace is read.
+type LinkOptions struct {
+	// Registry sends every name to the registry (--registry).
+	Registry bool
+	// Range is the version range written for a library (--range).
+	Range string
+	// Ask puts a real choice to the user; nil when there is no terminal or the
+	// user passed --yes.
+	Ask internallink.Asker
+	// Lookup asks the registry whether a package has the name of a project;
+	// nil asks the language plugin.
+	Lookup internallink.Lookup
+}
+
 // Install adds packages to each target project, or, with no target and no
-// package, installs every project of every plugin that can.
-func Install(s *session.Session, targets, packages []string, dev bool, log io.Writer) error {
+// package, installs every project of every plugin that can. A name that is a
+// library of the workspace is linked instead of installed from the registry
+// (see internallink.Split).
+func Install(s *session.Session, targets, packages []string, dev bool, log io.Writer, link LinkOptions) error {
 	if len(targets) == 0 {
 		if len(packages) > 0 {
 			return ErrNoTarget
@@ -33,26 +50,63 @@ func Install(s *session.Session, targets, packages []string, dev bool, log io.Wr
 		return err
 	}
 	for _, p := range projects {
-		var res protocol.DependencyResult
-		dirs := []string{filepath.Join(s.Root, filepath.FromSlash(p.Root)), s.Root}
-		err := guarded(dirs, func() error {
-			ok, err := s.Plugins.Call(p.Plugin, protocol.MethodInstall, protocol.InstallParams{Project: &p.Project, Packages: packages, Dev: dev}, &res, timeout)
-			return outcome(p, ok, err)
-		})
-		if err != nil {
+		if len(packages) > 0 {
+			lookup := link.Lookup
+			if lookup == nil {
+				lookup = internallink.SessionLookup(s)
+			}
+			names, err := internallink.Split(s.Graph, p, packages, internallink.SplitOptions{Registry: link.Registry, Lookup: lookup, Ask: link.Ask, Log: log})
+			if err != nil {
+				return err
+			}
+			if len(names.Libraries) > 0 {
+				if dev {
+					return fmt.Errorf("-D does not apply to a library of the workspace: %s depends on it like on any other part of the code. Leave out -D", p.Name)
+				}
+				if err := internallink.Link(s, p, names.Libraries, internallink.LinkOptions{Spec: link.Range, Ask: link.Ask, Guard: guarded, Log: log}); err != nil {
+					return err
+				}
+			}
+			if len(names.Packages) == 0 {
+				continue
+			}
+			packages := names.Packages
+			if err := addPackages(s, p, packages, dev, log); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := addPackages(s, p, packages, dev, log); err != nil {
 			return err
 		}
-		what := "installed"
-		if len(packages) > 0 {
-			what = "added " + strings.Join(packages, ", ")
-		}
-		report(log, p.Name+": "+what, res)
 	}
 	return nil
 }
 
-// Uninstall removes packages from each target project.
-func Uninstall(s *session.Session, targets, packages []string, log io.Writer) error {
+// addPackages installs packages into one project (all its dependencies when
+// there are none), putting the manifest back if that fails.
+func addPackages(s *session.Session, p *projectgraph.Project, packages []string, dev bool, log io.Writer) error {
+	var res protocol.DependencyResult
+	dirs := []string{filepath.Join(s.Root, filepath.FromSlash(p.Root)), s.Root}
+	err := guarded(dirs, func() error {
+		ok, err := s.Plugins.Call(p.Plugin, protocol.MethodInstall, protocol.InstallParams{Project: &p.Project, Packages: packages, Dev: dev}, &res, timeout)
+		return outcome(p, ok, err)
+	})
+	if err != nil {
+		return err
+	}
+	what := "installed"
+	if len(packages) > 0 {
+		what = "added " + strings.Join(packages, ", ")
+	}
+	report(log, p.Name+": "+what, res)
+	return nil
+}
+
+// Uninstall removes packages from each target project. A name that is a
+// library of the workspace has its link removed; with registry, every name is
+// a registry package.
+func Uninstall(s *session.Session, targets, packages []string, log io.Writer, registry bool) error {
 	if len(targets) == 0 {
 		return errors.New("a dependency belongs to the project that uses it: smith uninstall -w <project> <package>")
 	}
@@ -61,6 +115,29 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer) er
 		return err
 	}
 	for _, p := range projects {
+		names := internallink.Names{Packages: packages}
+		if !registry {
+			var libs []*projectgraph.Project
+			var rest []string
+			for _, name := range packages {
+				bare, _ := internallink.StripPrefix(name)
+				if lib := internallink.Match(s.Graph, bare); lib != nil {
+					libs = append(libs, lib)
+				} else {
+					rest = append(rest, name)
+				}
+			}
+			names = internallink.Names{Libraries: libs, Packages: rest}
+		}
+		if len(names.Libraries) > 0 {
+			if _, err := internallink.Unlink(s, p, names.Libraries, internallink.LinkOptions{Guard: guarded, Log: log}); err != nil {
+				return err
+			}
+		}
+		if len(names.Packages) == 0 {
+			continue
+		}
+		packages := names.Packages
 		if c := s.Plugins.Get(p.Plugin); c != nil && c.Supports(protocol.MethodDeclared) {
 			var declared protocol.DeclaredResult
 			if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: []protocol.Project{p.Project}}, &declared, timeout); err == nil {

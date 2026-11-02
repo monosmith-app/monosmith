@@ -41,6 +41,9 @@ func discover(workspaceRoot string, manifests []string, settings map[string]map[
 		if err != nil {
 			return result, err
 		}
+		// A requirement in go.mod is a dependency before any file imports it
+		// (a library linked with smith install), so it is an edge too.
+		imports = declaredRequirements(imports, string(src))
 		name := path.Base(root)
 		kind := projectkind.Resolve(mod.Kind, root, fallbackKind(dir))
 		lint, err := linting.Command(workspaceRoot, root)

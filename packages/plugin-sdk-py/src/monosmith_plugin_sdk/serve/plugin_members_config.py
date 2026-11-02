@@ -29,7 +29,9 @@ PLUGIN_MEMBERS: dict[str, PluginMember] = {
     "published": PluginMember("published", ("published",)),
     "dependencies/install": PluginMember("install", ("install", "uninstall")),
     "dependencies/uninstall": PluginMember("uninstall", ("install", "uninstall")),
-    "dependencies/declared": PluginMember("declared", ("declared", "rewrite")),
+    "dependencies/link": PluginMember("link", ("link", "unlink")),
+    "dependencies/unlink": PluginMember("unlink", ("link", "unlink")),
+    "dependencies/declared":PluginMember("declared", ("declared", "rewrite")),
     "dependencies/rewrite": PluginMember("rewrite", ("declared", "rewrite")),
     "dependencies/latest": PluginMember("latest", ("latest",)),
 }

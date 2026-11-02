@@ -62,8 +62,8 @@ func TestSchemaDescribesEveryMethodAndResolvesEveryReference(t *testing.T) {
 	if s.Version != protocol.Version {
 		t.Errorf("x-protocolVersion = %d, the protocol speaks %d", s.Version, protocol.Version)
 	}
-	if len(s.Methods) != 21 {
-		t.Errorf("want the 21 methods of version 1, got %d", len(s.Methods))
+	if len(s.Methods) != 23 {
+		t.Errorf("want the 23 methods of version 1, got %d", len(s.Methods))
 	}
 	for name, row := range s.Methods {
 		var m struct {

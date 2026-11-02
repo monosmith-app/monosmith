@@ -6,6 +6,7 @@ import {
   confirmAgentFile, confirmInstall, explainNoClaudeCode, hasClaudeCode, installAgent, judgeAgentFiles, offerAgent, optOutOfAgent, runSmith, shouldOfferAgent, talkToAgent, tellAgentFileOutcome, tellInstallOutcome, writeAgentFile,
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
+import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
 import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
@@ -859,6 +860,29 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Asks library or registry first, then what to add, and runs `smith install`. */
+  const addDependencyHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('adding a dependency')) return
+    const projects = state.snapshot?.projects ?? []
+    if (projects.length === 0) {
+      void vscode.window.showInformationMessage('MonoSmith: this workspace has no project to add a dependency to.')
+
+      return
+    }
+    output.show(true)
+    const outcome = await installDependency({
+      ask:   async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps }))),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding a dependency in ${state.name}…` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+    })
+    note(`MonoSmith: add dependency in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellDependencyOutcome(outcome, note)
+    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
+  }
+
   /** The folder and file a derive or why command works on: a Health row, a file given by the explorer or the editor, or the open editor. */
   const fileTarget = (argument: unknown): { state: FolderState, file: string } | undefined => {
     const tagged = readFolderData((argument as ListNode | undefined)?.data)
@@ -1156,6 +1180,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
     command<unknown>('monosmith.agentFile', writeAgentsFile),
     command<unknown>('monosmith.addProject', addProjectHere),
+    command<unknown>('monosmith.addDependency', addDependencyHere),
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.divergences', showDivergences),

@@ -484,9 +484,12 @@ Alias: `smith i`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--range <range>` | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |  |
+| `--registry` | install the names from the registry, even when a name is also a project of this workspace | off |
 | `-D, --save-dev` | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) | off |
 | `--verbose` | show the package manager's own output and warnings (otherwise warnings fold into one line) | off |
 | `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
+| `-y, --yes` | never ask: accept the defaults, and refuse a name that could be a project or a registry package | off |
 
 <!-- smith:end install -->
 
@@ -503,6 +506,7 @@ Alias: `smith un`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--registry` | remove the names as registry packages, even when a name is also a project of this workspace | off |
 | `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
 
 <!-- smith:end uninstall -->

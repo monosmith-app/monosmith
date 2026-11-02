@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-rust/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-rust/sbom"
@@ -86,6 +87,16 @@ func (r *Rust) Remove(params protocol.RemoveParams) (protocol.RemoveResult, erro
 // Install implements serve.DependencyManager.
 func (r *Rust) Install(params protocol.InstallParams) (protocol.DependencyResult, error) {
 	return dependencies.Install(r.root, params)
+}
+
+// Link implements serve.Linker.
+func (r *Rust) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(r.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (r *Rust) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(r.root, params)
 }
 
 // Uninstall implements serve.DependencyManager.

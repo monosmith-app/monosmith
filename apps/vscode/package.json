@@ -309,6 +309,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "monosmith.addDependency",
+        "title": "Add Dependency…",
+        "category": "MonoSmith",
+        "icon": "$(package)"
+      },
+      {
         "command": "monosmith.undo",
         "title": "Undo the Last Change…",
         "category": "MonoSmith",
@@ -685,6 +691,10 @@
       "commandPalette": [
         {
           "command": "monosmith.addProject",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.addDependency",
           "when": "monosmith.state == ready"
         },
         {

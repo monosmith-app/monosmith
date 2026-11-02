@@ -93,6 +93,12 @@ public static class ProtocolMethods
     /// <summary>Removes packages from a project.</summary>
     public const string DependenciesUninstall = "dependencies/uninstall";
 
+    /// <summary>Makes a project depend on a library of the same workspace and language, in the ecosystem's own form, then installs or locks as that needs.</summary>
+    public const string DependenciesLink = "dependencies/link";
+
+    /// <summary>Removes the dependency of a project on a library of the same workspace.</summary>
+    public const string DependenciesUnlink = "dependencies/unlink";
+
     /// <summary>Lists the dependencies the manifests of the plugin's projects declare.</summary>
     public const string DependenciesDeclared = "dependencies/declared";
 
@@ -129,6 +135,8 @@ public static class ProtocolMethods
         [Published] = "published",
         [DependenciesInstall] = "dependencies",
         [DependenciesUninstall] = "dependencies",
+        [DependenciesLink] = "link",
+        [DependenciesUnlink] = "link",
         [DependenciesDeclared] = "declarations",
         [DependenciesRewrite] = "declarations",
         [DependenciesLatest] = "latest",
@@ -583,6 +591,9 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
     /// <summary>Dependencies installs and uninstalls packages in its projects.</summary>
     public bool Dependencies { get; init; }
 
+    /// <summary>Link makes a project depend on a library of the same workspace in the ecosystem's own form (a workspace dependency, a path dependency, a project reference), and takes it out again. A plugin without it is refused by the host with one sentence that tells the user to add the dependency by hand.</summary>
+    public bool Link { get; init; }
+
     /// <summary>Declarations lists and rewrites declared dependency specs (sync, up).</summary>
     public bool Declarations { get; init; }
 
@@ -624,6 +635,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             ChangeKind = BooleanValue(Member(map, "changeKind"), Join(path, "changeKind")),
             Published = BooleanValue(Member(map, "published"), Join(path, "published")),
             Dependencies = BooleanValue(Member(map, "dependencies"), Join(path, "dependencies")),
+            Link = BooleanValue(Member(map, "link"), Join(path, "link")),
             Declarations = BooleanValue(Member(map, "declarations"), Join(path, "declarations")),
             Latest = BooleanValue(Member(map, "latest"), Join(path, "latest")),
             Cancel = BooleanValue(Member(map, "cancel"), Join(path, "cancel")),
@@ -694,6 +706,11 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             writer.Property("dependencies");
             writer.Boolean(Dependencies);
         }
+        if (Link)
+        {
+            writer.Property("link");
+            writer.Boolean(Link);
+        }
         if (Declarations)
         {
             writer.Property("declarations");
@@ -754,6 +771,7 @@ public sealed record Capabilities : IProtocolValue<Capabilities>
             "changeKind" => ChangeKind,
             "published" => Published,
             "dependencies" => Dependencies,
+            "link" => Link,
             "declarations" => Declarations,
             "latest" => Latest,
             "cancel" => Cancel,
@@ -2642,6 +2660,168 @@ public sealed record LatestResult : IProtocolValue<LatestResult>
     }
 }
 
+/// <summary>LinkOption is one way to write the dependency, with its consequence in words a person who read no manual can follow.</summary>
+public sealed record LinkOption : IProtocolValue<LinkOption>
+{
+    /// <summary>Spec is the value passed back in LinkParams.Spec.</summary>
+    public required string Spec { get; init; }
+
+    /// <summary>Label is the option in a few words.</summary>
+    public required string Label { get; init; }
+
+    /// <summary>Meaning says what happens with this option.</summary>
+    public required string Meaning { get; init; }
+
+    /// <inheritdoc />
+    public static LinkOption Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new LinkOption
+        {
+            Spec = StringValue(Member(map, "spec"), Join(path, "spec")),
+            Label = StringValue(Member(map, "label"), Join(path, "label")),
+            Meaning = StringValue(Member(map, "meaning"), Join(path, "meaning")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("spec");
+        writer.String(Spec);
+        writer.Property("label");
+        writer.String(Label);
+        writer.Property("meaning");
+        writer.String(Meaning);
+        writer.EndObject();
+    }
+}
+
+/// <summary>LinkParams asks a plugin to make Project depend on Library, a lib or package of the same workspace and language, in the ecosystem's own form, and to install or lock as that needs. The host has checked that both exist, that the languages match, that Library is not an app, and that the link makes no cycle; the plugin answers with an error that names the file when it cannot write the dependency.</summary>
+public sealed record LinkParams : IProtocolValue<LinkParams>
+{
+    /// <summary>Project is the project that gains the dependency.</summary>
+    public required Project Project { get; init; }
+
+    /// <summary>Library is the project it depends on.</summary>
+    public required Project Library { get; init; }
+
+    /// <summary>Quiet keeps the package manager's output unless it fails.</summary>
+    public bool Quiet { get; init; }
+
+    /// <summary>Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the line it would write and the choices the user has.</summary>
+    public bool Plan { get; init; }
+
+    /// <summary>Spec is the version range the user chose from LinkResult.Options; empty means the plugin's default, or the form the workspace already uses.</summary>
+    public string Spec { get; init; } = string.Empty;
+
+    /// <inheritdoc />
+    public static LinkParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new LinkParams
+        {
+            Project = Project.Read(Member(map, "project"), Join(path, "project")),
+            Library = Project.Read(Member(map, "library"), Join(path, "library")),
+            Quiet = BooleanValue(Member(map, "quiet"), Join(path, "quiet")),
+            Plan = BooleanValue(Member(map, "plan"), Join(path, "plan")),
+            Spec = StringValue(Member(map, "spec"), Join(path, "spec")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        Project.Write(writer);
+        writer.Property("library");
+        Library.Write(writer);
+        if (Quiet)
+        {
+            writer.Property("quiet");
+            writer.Boolean(Quiet);
+        }
+        if (Plan)
+        {
+            writer.Property("plan");
+            writer.Boolean(Plan);
+        }
+        if (Spec.Length > 0)
+        {
+            writer.Property("spec");
+            writer.String(Spec);
+        }
+        writer.EndObject();
+    }
+}
+
+/// <summary>LinkResult is what a link wrote, or with LinkParams.Plan would write.</summary>
+public sealed record LinkResult : IProtocolValue<LinkResult>
+{
+    /// <summary>Files are the workspace-relative files changed (or to be changed).</summary>
+    public IReadOnlyList<string> Files { get; init; } = [];
+
+    /// <summary>Notes are for the user.</summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
+
+    /// <summary>Manifest is the file the dependency goes into, workspace-relative.</summary>
+    public string Manifest { get; init; } = string.Empty;
+
+    /// <summary>Line is the dependency as it is written there, for the plan shown before anything is written ("@acme/core": "*").</summary>
+    public string Line { get; init; } = string.Empty;
+
+    /// <summary>Options are the real choices of the range written, with the default first. Empty when the ecosystem has none, or the workspace already follows a convention (then Line shows it).</summary>
+    public IReadOnlyList<LinkOption> Options { get; init; } = [];
+
+    /// <inheritdoc />
+    public static LinkResult Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new LinkResult
+        {
+            Files = ListOf(Member(map, "files"), Join(path, "files"), StringValue),
+            Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
+            Manifest = StringValue(Member(map, "manifest"), Join(path, "manifest")),
+            Line = StringValue(Member(map, "line"), Join(path, "line")),
+            Options = ListOf(Member(map, "options"), Join(path, "options"), LinkOption.Read),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        if (Files is { Count: > 0 })
+        {
+            writer.Property("files");
+            MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => builder1.String(item1));
+        }
+        if (Notes is { Count: > 0 })
+        {
+            writer.Property("notes");
+            MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        if (Manifest.Length > 0)
+        {
+            writer.Property("manifest");
+            writer.String(Manifest);
+        }
+        if (Line.Length > 0)
+        {
+            writer.Property("line");
+            writer.String(Line);
+        }
+        if (Options is { Count: > 0 })
+        {
+            writer.Property("options");
+            MessageWritingAlgorithm.List(writer, Options, (builder1, item1) => item1.Write(builder1));
+        }
+        writer.EndObject();
+    }
+}
+
 /// <summary>PackageStore is where a package manager keeps what it downloaded (npm's ~/.npm, Go's module cache). A generated pipeline restores it before setup and saves it after a run, keyed on Files, so <c>npm ci</c> or <c>go mod download</c> fetches only what changed. A pull request from a fork restores it and never writes the base repository's cache.</summary>
 public sealed record PackageStore : IProtocolValue<PackageStore>
 {
@@ -4291,6 +4471,38 @@ public sealed record UninstallParams : IProtocolValue<UninstallParams>
         Project.Write(writer);
         writer.Property("packages");
         MessageWritingAlgorithm.List(writer, Packages, (builder1, item1) => builder1.String(item1));
+        writer.EndObject();
+    }
+}
+
+/// <summary>UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the result say so when the manifest held no such dependency.</summary>
+public sealed record UnlinkParams : IProtocolValue<UnlinkParams>
+{
+    /// <summary>The <c>project</c> member of <c>UnlinkParams</c>.</summary>
+    public required Project Project { get; init; }
+
+    /// <summary>The <c>library</c> member of <c>UnlinkParams</c>.</summary>
+    public required Project Library { get; init; }
+
+    /// <inheritdoc />
+    public static UnlinkParams Read(JsonAny? value, string path)
+    {
+        var map = ObjectOf(value, path);
+        return new UnlinkParams
+        {
+            Project = Project.Read(Member(map, "project"), Join(path, "project")),
+            Library = Project.Read(Member(map, "library"), Join(path, "library")),
+        };
+    }
+
+    /// <inheritdoc />
+    public void Write(JsonBuilder writer)
+    {
+        writer.BeginObject();
+        writer.Property("project");
+        Project.Write(writer);
+        writer.Property("library");
+        Library.Write(writer);
         writer.EndObject();
     }
 }

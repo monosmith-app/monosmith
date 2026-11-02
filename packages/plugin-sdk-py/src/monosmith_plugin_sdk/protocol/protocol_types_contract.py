@@ -71,6 +71,9 @@ __all__ = [
     "InstallParams",
     "LatestParams",
     "LatestResult",
+    "LinkOption",
+    "LinkParams",
+    "LinkResult",
     "PackageStore",
     "Peer",
     "PluginKind",
@@ -99,6 +102,7 @@ __all__ = [
     "ToolPin",
     "Toolchain",
     "UninstallParams",
+    "UnlinkParams",
     "VersionParams",
     "VersionResult",
     "WorkspaceInfo",
@@ -163,11 +167,11 @@ class ErrorCodes:
 ERROR_CODES = ErrorCodes()
 
 
-MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
+MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate", "version/write", "publish", "ci", "doctor", "contribute", "remove", "project/kind", "published", "dependencies/install", "dependencies/uninstall", "dependencies/link", "dependencies/unlink", "dependencies/declared", "dependencies/rewrite", "dependencies/latest", "sbom/components", "derive", "api/surface"]
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -187,6 +191,8 @@ METHOD_CAPABILITIES: Final[dict[str, str | None]] = {
     "published": "published",
     "dependencies/install": "dependencies",
     "dependencies/uninstall": "dependencies",
+    "dependencies/link": "link",
+    "dependencies/unlink": "link",
     "dependencies/declared": "declarations",
     "dependencies/rewrite": "declarations",
     "dependencies/latest": "latest",
@@ -373,6 +379,13 @@ class Capabilities(TypedDict, total=False):
     """Published reports what a registry has of a project."""
     dependencies: bool
     """Dependencies installs and uninstalls packages in its projects."""
+    link: bool
+    """
+    Link makes a project depend on a library of the same workspace in the ecosystem's own form (a
+    workspace dependency, a path dependency, a project reference), and takes it out again. A
+    plugin without it is refused by the host with one sentence that tells the user to add the
+    dependency by hand.
+    """
     declarations: bool
     """Declarations lists and rewrites declared dependency specs (sync, up)."""
     latest: bool
@@ -1179,6 +1192,71 @@ class LatestResult(TypedDict, total=False):
     tools: list[ToolPin]
 
 
+class LinkOption(TypedDict):
+    """
+    LinkOption is one way to write the dependency, with its consequence in words a person who
+    read no manual can follow.
+    """
+
+    spec: str
+    """Spec is the value passed back in LinkParams.Spec."""
+    label: str
+    """Label is the option in a few words."""
+    meaning: str
+    """Meaning says what happens with this option."""
+
+
+class _LinkParamsRequired(TypedDict):
+    project: Project
+    """Project is the project that gains the dependency."""
+    library: Project
+    """Library is the project it depends on."""
+
+
+class LinkParams(_LinkParamsRequired, total=False):
+    """
+    LinkParams asks a plugin to make Project depend on Library, a lib or package of the same
+    workspace and language, in the ecosystem's own form, and to install or lock as that needs.
+    The host has checked that both exist, that the languages match, that Library is not an app,
+    and that the link makes no cycle; the plugin answers with an error that names the file when
+    it cannot write the dependency.
+    """
+
+    quiet: bool
+    """Quiet keeps the package manager's output unless it fails."""
+    plan: bool
+    """
+    Plan asks for the plan only: the plugin writes nothing and answers with the manifest, the
+    line it would write and the choices the user has.
+    """
+    spec: str
+    """
+    Spec is the version range the user chose from LinkResult.Options; empty means the plugin's
+    default, or the form the workspace already uses.
+    """
+
+
+class LinkResult(TypedDict, total=False):
+    """LinkResult is what a link wrote, or with LinkParams.Plan would write."""
+
+    files: list[str]
+    """Files are the workspace-relative files changed (or to be changed)."""
+    notes: list[str]
+    """Notes are for the user."""
+    manifest: str
+    """Manifest is the file the dependency goes into, workspace-relative."""
+    line: str
+    """
+    Line is the dependency as it is written there, for the plan shown before anything is written
+    ("@acme/core": "*").
+    """
+    options: list[LinkOption]
+    """
+    Options are the real choices of the range written, with the default first. Empty when the
+    ecosystem has none, or the workspace already follows a convention (then Line shows it).
+    """
+
+
 class PackageStore(TypedDict):
     """
     PackageStore is where a package manager keeps what it downloaded (npm's ~/.npm, Go's module
@@ -1752,6 +1830,16 @@ class UninstallParams(TypedDict):
 
     project: Project
     packages: list[str]
+
+
+class UnlinkParams(TypedDict):
+    """
+    UnlinkParams asks a plugin to remove the dependency of Project on Library. Notes of the
+    result say so when the manifest held no such dependency.
+    """
+
+    project: Project
+    library: Project
 
 
 class _VersionParamsRequired(TypedDict):

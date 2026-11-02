@@ -11,7 +11,7 @@ The python plugin makes every `pyproject.toml` that has a `[project]` table a sm
 | `--lang` values | `python`, `py` |
 | Manifest that makes a directory a project | `pyproject.toml` with a `[project]` table that has a `name` |
 | Requires / conflicts / provides | none / none / no task slots |
-| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared` |
+| Capabilities advertised | `discover`, `generate`, `version`, `publish`, `ci`, `doctor`, `remove`, `published`, `dependencies`, `declarations`, `latest`, `changeKind`, `components`, `channels`, `declared`, `link` |
 | Stacks it publishes | none |
 | Project kinds it can create | `app`, `lib`, `package` (`python-app`, `python-lib`, `python-package`) |
 
@@ -271,6 +271,10 @@ smith ci audit passed
 ```
 
 With the `python` audit policy turned on, the generated `requirements-dev.txt` passes: the hash rule applies to each project's `requirements.txt`, while the index and URL rules still cover the toolchain file.
+
+## Linking an internal library
+
+`smith install -w <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 

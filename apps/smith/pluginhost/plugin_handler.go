@@ -144,7 +144,7 @@ func Command(version string) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(rows)
 			}
-			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", "PLUGIN", "ROLES", "SLOTS", "DECLARED", "CHANNELS", "REQUIRES")
+			fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %-6s %s\n", "PLUGIN", "ROLES", "SLOTS", "DECLARED", "CHANNELS", "LINK", "REQUIRES")
 			for _, r := range rows {
 				if r.Source != "built-in" {
 					continue
@@ -160,11 +160,11 @@ func Command(version string) *cobra.Command {
 				for _, ref := range r.Conflicts {
 					needs = append(needs, "not "+ref.String())
 				}
-				declared, channels := "-", "-"
+				declared, channels, link := "-", "-", "-"
 				if caps, ok := r.Capabilities.(protocol.Capabilities); ok && slices.Contains(r.Roles, protocol.RoleLanguage) {
-					declared, channels = yesNo(caps.Declared), yesNo(caps.Channels)
+					declared, channels, link = yesNo(caps.Declared), yesNo(caps.Channels), yesNo(caps.Link)
 				}
-				fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), declared, channels, orDash(strings.Join(needs, "; ")))
+				fmt.Fprintf(out, "%-16s %-28s %-20s %-9s %-9s %-6s %s\n", r.Name, strings.Join(roles, ","), orDash(strings.Join(r.Provides, ",")), declared, channels, link, orDash(strings.Join(needs, "; ")))
 			}
 			fmt.Fprintf(out, "\nExternal plugins this workspace uses (smith starts them only when trusted):\n")
 			if len(statuses) == 0 {

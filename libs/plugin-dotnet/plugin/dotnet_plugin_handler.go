@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/discovery"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/kindchange"
+	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/linking"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/pipeline"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/releasing"
 	"github.com/monosmith-app/monosmith/libs/plugin-dotnet/sbom"
@@ -87,6 +88,16 @@ func (d *Dotnet) Declared(params protocol.DeclaredParams) (protocol.DeclaredResu
 // Rewrite implements serve.DeclarationEditor.
 func (d *Dotnet) Rewrite(params protocol.RewriteParams) (protocol.DependencyResult, error) {
 	return dependencies.Rewrite(d.root, params)
+}
+
+// Link implements serve.Linker.
+func (d *Dotnet) Link(params protocol.LinkParams) (protocol.LinkResult, error) {
+	return linking.Link(d.root, params)
+}
+
+// Unlink implements serve.Linker.
+func (d *Dotnet) Unlink(params protocol.UnlinkParams) (protocol.DependencyResult, error) {
+	return linking.Unlink(d.root, params)
 }
 
 // Latest implements serve.LatestReader.

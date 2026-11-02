@@ -27,7 +27,7 @@ func Install(workspaceRoot string, params protocol.InstallParams) (protocol.Depe
 	}
 	res := protocol.DependencyResult{Files: created}
 	if params.Project == nil {
-		for _, p := range params.Projects {
+		for _, p := range venv.DependencyOrder(params.Projects) {
 			if err := venv.InstallEditable(workspaceRoot, p.Root); err != nil {
 				return res, err
 			}

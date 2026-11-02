@@ -1,6 +1,7 @@
 package packageprompt
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -37,6 +38,14 @@ type Prompt struct {
 	// err says why Install did not go ahead.
 	err  string
 	rect dialog.Rect
+	// libraries lists the libraries of the workspace a project may link; nil
+	// means the dialog does not offer the choice (and Remove never does).
+	libraries func(project string) []Library
+	// fromWorkspace is the first answer: a library of this workspace (true) or a
+	// package from the registry (false, the default).
+	fromWorkspace bool
+	// libAt and rangeAt are the library and the version range picked.
+	libAt, rangeAt int
 }
 
 const (
@@ -45,6 +54,9 @@ const (
 	focusInstall
 	focusCancel
 	focusProject
+	focusSource
+	focusLibrary
+	focusRange
 )
 
 // NewInstall asks for the packages to install on project, which can be
@@ -90,6 +102,7 @@ func (p Prompt) step(dir int) Prompt {
 		}
 	}
 	p.project = p.projects[(at+dir+len(p.projects))%len(p.projects)]
+	p.libAt, p.rangeAt = 0, 0
 	return p.examples()
 }
 
@@ -106,9 +119,73 @@ func (p Prompt) examples() Prompt {
 	return p
 }
 
+// WithLibraries lets the dialog first ask whether to add a library of this
+// workspace or a package from the registry; libraries returns the libraries
+// the project may link (not itself, not an app, same language, no cycle).
+func (p Prompt) WithLibraries(libraries func(project string) []Library) Prompt {
+	if !p.remove {
+		p.libraries = libraries
+		p.focus = focusSource
+		p.input.Blur()
+	}
+	return p
+}
+
+// offersLibraries is true when the dialog asks the first question.
+func (p Prompt) offersLibraries() bool { return !p.remove && p.libraries != nil }
+
+// linking is true when the answer is a library of this workspace.
+func (p Prompt) linking() bool { return p.offersLibraries() && p.fromWorkspace }
+
+// valid are the libraries the selected project may link.
+func (p Prompt) valid() []Library {
+	if !p.offersLibraries() {
+		return nil
+	}
+	return p.libraries(p.project)
+}
+
+// library is the library picked, and false when there is none to pick.
+func (p Prompt) library() (Library, bool) {
+	libs := p.valid()
+	if len(libs) == 0 {
+		return Library{}, false
+	}
+	return libs[min(p.libAt, len(libs)-1)], true
+}
+
+// rangeChoices are the version ranges for the library picked.
+func (p Prompt) rangeChoices() []RangeChoice {
+	lib, ok := p.library()
+	if !ok {
+		return nil
+	}
+	return RangeChoices(p.languages[p.project], lib)
+}
+
+// rangeChoice is the version range picked.
+func (p Prompt) rangeChoice() RangeChoice {
+	choices := p.rangeChoices()
+	if len(choices) == 0 {
+		return RangeChoice{}
+	}
+	return choices[min(p.rangeAt, len(choices)-1)]
+}
+
 // Argv is the command line, without the program name, for what is typed now;
-// nil while no package is typed.
+// nil while no package is typed (or no library is picked).
 func (p Prompt) Argv() []string {
+	if p.linking() {
+		lib, ok := p.library()
+		if !ok {
+			return nil
+		}
+		argv := []string{"install", "-w", p.project, "workspace:" + lib.Name}
+		if spec := p.rangeChoice().Spec; spec != "" {
+			argv = append(argv, "--range", spec)
+		}
+		return argv
+	}
 	names, err := ParsePackages(p.input.Value())
 	if err != nil {
 		return nil
@@ -119,6 +196,11 @@ func (p Prompt) Argv() []string {
 	argv := []string{"install", "-w", p.project}
 	if p.dev {
 		argv = append(argv, "-D")
+	}
+	if p.offersLibraries() {
+		// The first answer was the registry: a name that is also a project of
+		// the workspace is then not asked about again.
+		argv = append(argv, "--registry")
 	}
 	return append(argv, names...)
 }
@@ -154,16 +236,27 @@ func (p Prompt) Rect() dialog.Rect { return p.rect }
 
 // body is the dialog's lines between the borders, before the buttons.
 func (p Prompt) body(inner int) []string {
-	lines := []string{p.projectLine(), "", "Packages, separated by spaces:", " " + p.input.View(), ""}
-	if !p.remove {
-		lines = append(lines, p.devLine(), "")
-		lines = append(lines, "Names come from the language's public registry, not from this workspace.", "If one is wrong, smith keeps nothing: fix the name and try again.", "")
+	lines := []string{p.projectLine(), ""}
+	if p.offersLibraries() {
+		lines = append(lines, p.sourceLine(), "")
+	}
+	if p.linking() {
+		lines = append(lines, p.libraryLines(inner)...)
+	} else {
+		lines = append(lines, "Packages, separated by spaces:", " "+p.input.View(), "")
+		if !p.remove {
+			lines = append(lines, p.devLine(), "")
+			lines = append(lines, "Names come from the language's public registry, not from this workspace.", "If one is wrong, smith keeps nothing: fix the name and try again.", "")
+		}
 	}
 	if p.err != "" {
 		lines = append(lines, p.err, "")
 	}
 	lines = append(lines, "The command that will run:")
 	command := "(type a package first)"
+	if p.linking() {
+		command = "(no library to link)"
+	}
 	if argv := p.Argv(); argv != nil {
 		command = commands.Line(argv)
 	}
@@ -178,6 +271,42 @@ func (p Prompt) projectLine() string {
 		return "Project: ‹ " + p.project + " ›  (Left and Right change it)"
 	}
 	return "Project: " + p.project
+}
+
+// sourceLine is the first question: what is being added.
+func (p Prompt) sourceLine() string {
+	answer := "A package from the registry (default)"
+	if p.fromWorkspace {
+		answer = "A library of this workspace"
+	}
+	return "Add: ‹ " + answer + " ›  (Left, Right)"
+}
+
+// libraryLines are the library and range rows with what each choice means.
+func (p Prompt) libraryLines(inner int) []string {
+	lib, ok := p.library()
+	if !ok {
+		return append(wrap("No library of this workspace can be linked to "+p.project+": a library must be a lib or a package, in the same language, and must not already depend on "+p.project+".", inner), "")
+	}
+	libs := p.valid()
+	line := "Library: ‹ " + lib.Name + " · " + lib.Kind + " · " + lib.Language + " ›"
+	if len(libs) > 1 {
+		line += "  " + strconv.Itoa(min(p.libAt, len(libs)-1)+1) + "/" + strconv.Itoa(len(libs)) + " (Left, Right)"
+	}
+	lines := []string{line}
+	for _, l := range wrapWords(LibraryMeaning(p.project, lib), inner-2) {
+		lines = append(lines, "  "+l)
+	}
+	lines = append(lines, "")
+	if choices := p.rangeChoices(); len(choices) > 0 {
+		current := p.rangeChoice()
+		lines = append(lines, "Range: ‹ "+current.Label+" ›  (Left, Right)")
+		for _, l := range wrapWords(current.Meaning, inner-2) {
+			lines = append(lines, "  "+l)
+		}
+		lines = append(lines, "")
+	}
+	return lines
 }
 
 func (p Prompt) devLine() string {
@@ -217,6 +346,14 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			case p.focus == focusProject:
 				l = th.Selected(l)
 			case p.hover == focusProject:
+				l = th.Hover(l)
+			}
+		case strings.HasPrefix(l, "Add:"), strings.HasPrefix(l, "Library:"), strings.HasPrefix(l, "Range:"):
+			id := map[string]int{"Add:": focusSource, "Library:": focusLibrary, "Range:": focusRange}[l[:strings.Index(l, ":")+1]]
+			switch {
+			case p.focus == id:
+				l = th.Selected(l)
+			case p.hover == id:
 				l = th.Hover(l)
 			}
 		case p.err != "" && l == p.err:
@@ -274,7 +411,16 @@ func (p Prompt) controlAt(x, y int) int {
 	if y-r.Y-1 == 0 && p.choosable() && x > r.X && x < r.X+r.W-1 {
 		return focusProject
 	}
-	if !p.remove && y-r.Y-1 == p.rowOf("[", inner) && x > r.X && x < r.X+r.W-1 {
+	inside := x > r.X && x < r.X+r.W-1
+	for _, c := range []struct {
+		prefix string
+		id     int
+	}{{"Add:", focusSource}, {"Library:", focusLibrary}, {"Range:", focusRange}} {
+		if row := p.rowOf(c.prefix, inner); row >= 0 && y-r.Y-1 == row && inside {
+			return c.id
+		}
+	}
+	if !p.remove && !p.linking() && y-r.Y-1 == p.rowOf("[", inner) && inside {
 		return focusDev
 	}
 	return -1
@@ -293,6 +439,10 @@ func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
 	case focusDev:
 		p.dev, p.focus = !p.dev, focusDev
 		return p, dialog.Outcome{}
+	case focusSource, focusLibrary, focusRange:
+		id := p.controlAt(x, y)
+		p.focus = id
+		return p.cycle(id, 1), dialog.Outcome{}
 	case focusInstall:
 		return p.submit()
 	case focusCancel:
@@ -319,6 +469,8 @@ func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 			p.focus = focusPackages
 			p.input.Focus()
 			return p, dialog.Outcome{}
+		case focusSource:
+			return p.move(1), dialog.Outcome{}
 		case focusDev:
 			p.dev = !p.dev
 			return p, dialog.Outcome{}
@@ -331,6 +483,12 @@ func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
 	case p.focus == focusPackages:
 		p.input, _ = p.input.Update(msg)
 		p.err = ""
+	case (p.focus == focusSource || p.focus == focusLibrary || p.focus == focusRange) && (msg.String() == "left" || msg.String() == "right" || msg.String() == " " || msg.String() == "space"):
+		dir := 1
+		if msg.String() == "left" {
+			dir = -1
+		}
+		p = p.cycle(p.focus, dir)
 	case p.focus == focusProject && msg.String() == "left":
 		p = p.step(-1)
 	case p.focus == focusProject && (msg.String() == "right" || msg.String() == " " || msg.String() == "space"):
@@ -351,9 +509,22 @@ func (p Prompt) move(dir int) Prompt {
 	if p.choosable() {
 		order = append(order, focusProject)
 	}
-	order = append(order, focusPackages)
-	if !p.remove {
-		order = append(order, focusDev)
+	if p.offersLibraries() {
+		order = append(order, focusSource)
+	}
+	switch {
+	case p.linking():
+		if _, ok := p.library(); ok {
+			order = append(order, focusLibrary)
+			if len(p.rangeChoices()) > 0 {
+				order = append(order, focusRange)
+			}
+		}
+	default:
+		order = append(order, focusPackages)
+		if !p.remove {
+			order = append(order, focusDev)
+		}
 	}
 	order = append(order, focusInstall, focusCancel)
 	at := 0
@@ -371,8 +542,35 @@ func (p Prompt) move(dir int) Prompt {
 	return p
 }
 
-// submit goes ahead when the packages are good, and says why not otherwise.
+// cycle moves the answer of the source, library or range row by dir.
+func (p Prompt) cycle(id, dir int) Prompt {
+	wrapAt := func(at, n int) int { return (at + dir + n) % n }
+	switch id {
+	case focusSource:
+		p.fromWorkspace = !p.fromWorkspace
+		p.libAt, p.rangeAt = 0, 0
+	case focusLibrary:
+		if n := len(p.valid()); n > 0 {
+			p.libAt, p.rangeAt = wrapAt(p.libAt, n), 0
+		}
+	case focusRange:
+		if n := len(p.rangeChoices()); n > 0 {
+			p.rangeAt = wrapAt(p.rangeAt, n)
+		}
+	}
+	return p
+}
+
+// submit goes ahead when the packages (or the library) are good, and says why
+// not otherwise.
 func (p Prompt) submit() (Prompt, dialog.Outcome) {
+	if p.linking() {
+		if _, ok := p.library(); !ok {
+			p.err = "There is no library to link: choose a package from the registry, or press Esc."
+			return p, dialog.Outcome{}
+		}
+		return p, dialog.Outcome{Done: true, Confirmed: true}
+	}
 	if _, err := ParsePackages(p.input.Value()); err != nil {
 		p.err = err.Error()
 		p.focus = focusPackages
