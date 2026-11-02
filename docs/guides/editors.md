@@ -73,6 +73,25 @@ asks the person first, and passes `--yes` only after the person agreed. An edito
 A problem goes to standard error as `✖ what failed`, then a line `  → the fix` for each way out.
 Show both to the person.
 
+## Committing, releasing and changing a project from an editor
+
+smith commits and releases only when asked, and each of these has a plan flag that changes nothing.
+The VS Code extension follows one order for all of them: it shows the plan, then asks, then runs
+the command with `--yes`.
+
+| Function | Plan | Change |
+|---|---|---|
+| Commit the changes of the last operation | `smith commit --dry-run` (it lists the files of the operation, and the other changed files when there are any) | `smith commit --only-operation --yes` or `smith commit --all --yes`, by the choice of the person |
+| Release | `smith release --dry-run` (add `--json` to read the packages) | `smith release --yes [--hold a,b] [--bump pkg=minor]`. A release tags and publishes: it cannot be undone. |
+| Remove a project | `smith remove <project> --dry-run` | `smith remove <project> --keep-copy --yes` or `--delete --yes` |
+| Make a project an app, lib or package | `smith kind <project> <kind> --dry-run` | `smith kind <project> <kind> --yes` |
+| Unlink a library | none | `smith uninstall -w <project> workspace:<library> --yes` |
+
+`smith kinds --json` names the language of a kind by its name (`typescript` for `node-app`), and
+`smith compose --json` by its id (`node`). Take the id from the kind (`node` in `node-app`) to match
+the two. The `layers` list of `smith compose --json` gives one title for each layer
+(`shell` is "Desktop shell"): use it wherever a choice is named.
+
 ## Starting in an empty folder
 
 An editor that opens a folder with no `smith.toml` can offer two commands. `smith new --here`

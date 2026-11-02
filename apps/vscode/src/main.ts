@@ -35,7 +35,8 @@ import { pickArguments, readUpdates, toDependencyRows, updateArguments } from '.
 import { createListView, groupByFolder, readFolderData, tagWithFolder, type ListNode, type ListResult } from './list-view/index.ts'
 import { createInsightDocuments, readExplain, readGraph } from './project-insight/index.ts'
 import { pickProject, pickTask, pickTaskName, showStatusMenu } from './quick-pick/index.ts'
-import { readReleasePreview, toReleaseRows } from './release-preview/index.ts'
+import { chooseBump, chooseHold, confirmRelease, releaseWorkspace, tellReleaseOutcome } from './release-flow/index.ts'
+import { explanationLines, readReleasePreview, toReleaseRows } from './release-preview/index.ts'
 import { readSettings } from './settings/index.ts'
 import { openSmithTerminal } from './smith-terminal/index.ts'
 import { registerSmithTasks, type TaskFolder } from './task-provider/index.ts'
@@ -617,7 +618,13 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
   const release = createListView({
     id:    'monosmith.release',
     title: 'Release Preview',
-    load:  async () => await loadAcross('smith is not running, so there is no release to preview.', async (_state, connection) => toReleaseRows(await readReleasePreview(connection))),
+    load:  async () => await loadAcross('smith is not running, so there is no release to preview.', async (state, connection) => {
+      const preview = await readReleasePreview(connection)
+      if ((preview.results ?? []).length > 0 || preview.error !== undefined) return toReleaseRows(preview)
+      const said = await smithIn(state, false)(['release', '--dry-run'])
+
+      return toReleaseRows(preview, said.code === 0 ? explanationLines(said.stdout) : [])
+    }),
   })
 
   const fixHealth = async (): Promise<void> => {
@@ -993,6 +1000,26 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     note(`MonoSmith: ${action} ${project.name} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellActionOutcome(outcome, done, note, state.root)
     if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Releases the workspace: the plan, the packages to hold back, the bumps to change, then the last question. */
+  const releaseHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('releasing')) return
+    output.show(true)
+    const outcome = await releaseWorkspace({
+      run:   smithIn(state),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: releasing ${state.name}… smith tags and publishes.` },
+        async () => await smithIn(state, true, 1_800_000)(args),
+      ),
+      chooseHold,
+      chooseBump,
+      confirm: confirmRelease,
+    })
+    note(`MonoSmith: release in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellReleaseOutcome(outcome, note)
+    await release.reload()
   }
 
   /** Asks library or registry first, then what to add, and runs `smith install`. */
@@ -1392,6 +1419,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.addLibrary', async (argument) => { await addDependencyHere(argument, 'workspace') }),
     command<unknown>('monosmith.installPackage', async (argument) => { await addDependencyHere(argument, 'registry') }),
     command<unknown>('monosmith.commit', commitHere),
+    command<unknown>('monosmith.release', releaseHere),
     command<unknown>('monosmith.removeProject', async (argument) => { await projectAction(argument, 'remove') }),
     command<unknown>('monosmith.changeKind', async (argument) => { await projectAction(argument, 'kind') }),
     command<unknown>('monosmith.unlinkLibrary', async (argument) => { await projectAction(argument, 'unlink') }),

@@ -84,19 +84,22 @@
       "monosmith": [
         {
           "id": "monosmith.projects",
-          "name": "Projects"
+          "name": "Projects",
+          "initialSize": 3
         },
         {
           "id": "monosmith.dependencies",
           "name": "Dependencies",
           "when": "monosmith.state == ready",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "initialSize": 2
         },
         {
           "id": "monosmith.release",
           "name": "Release Preview",
           "when": "monosmith.state == ready",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "initialSize": 2
         }
       ]
     },
@@ -333,6 +336,12 @@
         "title": "Sync Dependency Versions…",
         "category": "MonoSmith",
         "icon": "$(sync)"
+      },
+      {
+        "command": "monosmith.release",
+        "title": "Release…",
+        "category": "MonoSmith",
+        "icon": "$(rocket)"
       },
       {
         "command": "monosmith.commit",
@@ -616,6 +625,11 @@
           "group": "navigation@2"
         },
         {
+          "command": "monosmith.release",
+          "when": "view == monosmith.release",
+          "group": "navigation@0"
+        },
+        {
           "command": "monosmith.release.refresh",
           "when": "view == monosmith.release",
           "group": "navigation@1"
@@ -841,6 +855,10 @@
         },
         {
           "command": "monosmith.unlinkLibrary",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.release",
           "when": "monosmith.state == ready"
         },
         {
