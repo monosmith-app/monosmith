@@ -1,30 +1,57 @@
 # MonoSmith for JetBrains IDEs
 
-A first slice of the JetBrains plugin of issue #303, after the VS Code extension.
+The JetBrains plugin of issue #303. It offers the same functions as the VS Code extension
+([feature parity](../../docs/reference/feature-parity.md), JetBrains column), in IntelliJ's own way.
 
 ## What it does
 
-- A **MonoSmith** tool window (right side) lists the projects of the workspace and their tasks.
-  The workspace is the nearest folder up from the IDE project that has a `smith.toml`.
-- **Double-click a task** to run `smith run <task> -p <project>` in a Run window. The first line
-  is the command line, so you see what is about to run.
-- The projects come from the documented `smith projects --json` contract, never from human output.
-- The **Tools > MonoSmith** menu runs, in a Run window that prints the command line first:
-  **Doctor** (`smith doctor`), **Doctor: Apply the Safe Fixes** (`smith doctor --fix`, after a question),
-  **Add Project** (a dialog for the kind, the name and an **unticked** "Commit this change so it can be
-  undone" box; it runs `smith add --yes`, with `--commit` only when ticked), **Undo the Last Change**
-  (`smith undo --yes`, after a question), **Release Preview** (`smith release --dry-run`) and
-  **Why Is This File Like This?** (`smith why <file>`, also in the editor and project view menus).
-- An unreadable `smith.toml` shows in the tool window as `smith failed: smith.toml:3:9 ... Try: ...`.
+- The **MonoSmith** tool window (right side) has three tabs.
+  - **Projects**: the projects of the workspace and their tasks. Double-click a task to run it. A row
+    **Add your first project** (or **New project…** after the projects, or **New workspace…** when there is
+    no `smith.toml`) starts the flow. Right-click a project for **Add library…**, **Install package…**,
+    **Unlink library…**, **Swap a choice…**, **Make app, library or package…**, **Remove…**, **Why…**,
+    **Explain** and **Run task**. The title bar has a Refresh button.
+  - **Health**: the findings of `smith doctor --json`, failed checks first. A finding with a structured fix
+    has a **Fix this check** row: smith's questions, then its review (the diffs and the plan of each command),
+    then Apply.
+  - **Output**: the command line and what smith prints, as it prints it.
+- **Tools > MonoSmith** holds the other functions: Add Project, Compose a Stack, Add a Library, Install a
+  Package, Create a New Workspace, New Recipe, Install the Tools the Workspace Needs, the Project group
+  (Remove, Make a project an app/library/package, Unlink, Swap a choice, Sync versions), Environments,
+  Derived Files, Commit the Changes, Undo, Release, Release Preview, Doctor, Doctor: Apply the Safe Fixes,
+  Divergences, Try a Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a
+  Project and Why. **Why** is also in the editor and project view menus.
+- The projects, kinds, choices, outcomes, tools, recipe levels and doctor fixes all come from smith's JSON
+  (`projects`, `kinds`, `choices`, `compose`, `tools install --dry-run`, `recipe new --list-levels`,
+  `doctor`, `release --dry-run`). The plugin holds no list of languages, frameworks or tools. The lists of
+  `smith new` (CI systems, languages, code layouts) are the one exception: smith has no JSON for them.
+
+## The rules of every flow
+
+- **Every question is a presented choice.** The default is the first row and says `(default)`. A list of one
+  answer is radio buttons, and an axis with no default starts on **None**. A list of many is check boxes.
+- **Every change shows its plan first** (the text of a `--dry-run`), and nothing is written before the person
+  answers. A flow ends with `--yes`, because the person already agreed; a command run with no terminal never
+  asks.
+- **smith never commits unasked.** The plan dialog has an **unticked** box "Commit this change so it can be
+  undone"; `--commit` goes on the command only when it is ticked. After a change that is not committed, a
+  **Commit changes…** button offers to commit it (only the files of the operation, everything git shows, or
+  cancel).
+- **A failure is a notice with at most three short buttons.** The rest are behind **More…**, which lists the
+  long sentence of each. A project that was written and then failed its checks says "created", not
+  "refused".
 - smith is the **installed** one ([ADR 0025](../../docs/architecture/decisions/0025-ide-plugins-run-the-installed-smith.md)):
-  `node_modules/.bin/smith`, then `.smith/bin/smith`, then `smith` on the `PATH`.
+  `node_modules/.bin/smith`, then `.smith/bin/smith`, then `smith` on the `PATH`. When it does not start, a
+  notice offers `npm i -g monosmith@latest` to copy.
 
-## Not built yet
+## Not built
 
-A `smith.path` setting, the protocol range check and install hints, `smith serve` for live results,
-affected projects, a doctor view in the tool window (the action runs the command), a refresh
-button for the tool window, add with `--like`, swap, derive, new project from a recipe, and the language
-server (`smith lsp`, not built in the engine either).
+Run All, Run Affected, affected marks, the filter, the dependency view, the report, plugin search and on/off,
+the settings editor, adopt and convert, `smith up`, the live `smith serve` connection and the language
+server (`smith lsp`, not built in the engine either), and the glossary line under each question.
+"Let smith run it" for a tool that needs administrator rights runs in the Output tab, where a `sudo`
+password cannot be typed. The dialogs, notifications and tool window have not been run in a real IDE:
+CI compiles them against the platform and tests every mapper and algorithm.
 
 ## Build and test
 
@@ -45,9 +72,14 @@ the workspace, so `smith release` does not release it.
 
 ## Layout
 
-Slices under `src/main/kotlin/dev/monosmith/jetbrains/`, named `<Name><Role>` as `smith slices check`
-requires for Kotlin: `workspace` (find the root, list the projects, the contract and its JSON
-mapper), `smithcommand` (which smith, the command lines), `taskrun` (run a task), `toolwindow`
-(the IDE entry point, a handler), `smithaction` (the menu actions, a handler each, and the add
-dialog). The pure parts have unit tests; the IDE parts are compiled
-against the platform but not tested in a running IDE.
+Slices under `src/main/kotlin/dev/monosmith/jetbrains/`, named `<Name><Role>` as `smith slices check --lang jvm`
+requires. The pure parts (mappers, algorithms, policies, contracts) have unit tests; the IDE parts are
+compiled against the platform.
+
+- Foundation: `jsonread` (read smith's JSON), `smithrun` (run smith, the Output console, background flows),
+  `notice` (balloons and the three-button split), `prompt` (the radio, check box and plan dialogs),
+  `planapply` (plan, ask, apply), `workspace` (find the root, list the projects), `smithcommand`, `taskrun`.
+- Features, one slice each: `addproject`, `addchoices`, `composestack`, `installdependency`, `projectactions`,
+  `swapchoice`, `syncversions`, `commitchanges`, `undochange`, `releaseflow`, `health`, `installtools`,
+  `derivefiles`, `newworkspace`, `newrecipe`, `trycommand`, `workspacetools`, `smithversion`.
+- Entry points: `toolwindow` (the tool window) and `smithaction` (one handler for each menu action).
