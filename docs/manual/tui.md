@@ -388,6 +388,12 @@ ask one question at a time: a choice (`Up` `Down`, `Enter`, `Esc` back one step)
 choices (`Space` toggles, `Enter` confirms) or free text with a placeholder. The answers
 build the command line, which the shell runs and shows.
 
+**Create a workspace** asks the name, then "How do you want to set it up?". **Start with the defaults** (the
+first line) shows what will be chosen (CI, language, code layout, agent files, dev container), says that CI is
+where your tests run on every push, and tells how to change each later; with it the name is the only answer.
+**Customise** asks the questions one at a time. Either way, smith asks what the first commit holds when the folder
+has files and no git repository, and about files that look like secrets.
+
 **Compose a stack** (palette, or `A` in the Projects view, or Home when the workspace has no project) is one screen to search languages, frameworks, desktop shells and cloud hosts, tick them, see each conflict explained, and end in the plan; see [`smith compose`](compose.md).
 
 **Add a project** starts with "What are you building?": a website or web app, an API or backend

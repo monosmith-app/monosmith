@@ -12,7 +12,7 @@ import (
 // form and the command ask the same. The first option of each is the default
 // and a text question left empty takes its default.
 func NewWorkspaceSteps() []Step {
-	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}}
+	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}, setupStep()}
 	for _, q := range scaffold.NewQuestions() {
 		step := Step{Key: q.Key, Prompt: q.Prompt}
 		if q.Advanced {
@@ -33,8 +33,9 @@ func NewWorkspaceSteps() []Step {
 				}
 			}
 		}
-		if applies := q.Applies; applies != nil {
-			step.Skip = func(a map[string][]string) bool { return !applies(singleAnswers(a)) }
+		applies := q.Applies
+		step.Skip = func(a map[string][]string) bool {
+			return first(a, answerSetup) == setupDefaults || (applies != nil && !applies(singleAnswers(a)))
 		}
 		steps = append(steps, step)
 	}

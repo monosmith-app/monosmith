@@ -480,8 +480,10 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 		if why := m.defaultWhy[step.Key]; why != "" && hasOption(step.Options, m.defaults[step.Key]) {
 			lines = append(lines, th.Muted(why))
 		}
-		if step.Note != "" {
-			lines = append(lines, th.Muted(step.Note))
+		for _, note := range strings.Split(step.Note, "\n") {
+			if note != "" {
+				lines = append(lines, th.Muted(note))
+			}
 		}
 		lines = append(lines, "")
 		if step.Filter {

@@ -444,9 +444,18 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 	l.keys("n")
 	l.has("Create a workspace", "What should the new workspace be called?")
 	l.typeText("acme").keys("enter")
+	// The first question: the defaults (Enter), or the questions (Customise).
+	l.has("How do you want to set it up?", "Start with the defaults", "CI = where your tests run on every push")
+	l.keys("down", "enter")
 	// The CI, the main language, the code layout, the agent, the dev container and "more options": Enter keeps each default.
 	l.has("Which CI should smith write pipelines for?")
 	l.keys("enter", "enter", "enter", "enter", "enter", "enter")
+	l.has("$ smith new acme --yes")
+}
+
+func TestStartingWithTheDefaultsNeedsOnlyTheName(t *testing.T) {
+	l := newLab(t, false, 120, 30)
+	l.keys("n").typeText("acme").keys("enter", "enter")
 	l.has("$ smith new acme --yes")
 }
 
