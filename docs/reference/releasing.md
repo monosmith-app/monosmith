@@ -588,13 +588,35 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 ## npm, PyPI, NuGet and RubyGems
 
 A package whose `optionalDependencies` pin packages at the version being published (the platform
-packages of a binary launcher) is checked before its dist-tag moves: after the platform packages
-are published, smith reads each back with `npm view` for up to 60 seconds. If one is still not
-visible, smith publishes the package under the dist-tag `pending` instead of the channel's tag
-(`next`), and the release report says so and names the command that moves the tag later
-(`npm dist-tag add <name>@<version> next`). Without it, a person who runs `npm i -g` in those
-minutes would get a launcher with no binary. The launcher itself, when a platform package is
-missing, adds that a new release may still be propagating on npm and to try again in a few minutes.
+packages of a binary launcher), and the npm packages of an app (`[projects.x.release] npm`), wait for
+npm before their dist-tag moves. smith publishes the platform packages first. It then waits until
+each one is fetchable the way a person fetches it: `npm view <pkg>@<version>` finds it, and a HEAD
+request of its tarball URL (`dist.tarball`) answers. Every package must pass on three probes in a
+row, 30 seconds apart, so that more than one npm edge has answered. A progress line names the
+packages still missing every 60 seconds. Only then are the wrapper packages (`monosmith`,
+`@monosmith/cli`) published under `next`, or `latest` for a stable version.
+
+The wait is limited by `propagation_wait`, a duration, set for the workspace and, if needed, for one
+project:
+
+```toml
+[release]
+propagation_wait = "15m"        # the default; "0" does not wait: one probe, and the tag moves only if it passes
+
+[projects.smith.release]
+propagation_wait = "30m"        # this project only
+```
+
+If the limit passes first, smith moves no dist-tag. It publishes the packages under the dist-tag
+`pending`, tags and releases as usual, and the report names the exact command that moves the tag
+(`npm dist-tag add <name>@<version> next`). The step prints a warning annotation in GitHub Actions
+and Azure Pipelines, and `smith release` and `smith ci release` exit with code 2, never silently.
+Run the printed command when `npm view` shows the platform packages from another machine. Without
+the wait, a person who runs `npm i -g monosmith@next` in those minutes would get a launcher with no
+binary. The launcher also helps in that case: see
+[the troubleshooting guide](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed).
+`propagation_wait` costs at least one minute for each such release (three probes); set it to `"0"`
+to skip it.
 
 An app released with assets can also be published to npm, PyPI, NuGet and
 RubyGems from the same archives, so people install it with the package

@@ -57,7 +57,7 @@ func TestWrapperManifestDependsOnEveryPlatformAtItsVersion(t *testing.T) {
 
 func TestShimResolvesThePlatformPackage(t *testing.T) {
 	shim := Shim("acme", map[string]string{"linux-x64": "@acme/cli-linux-x64"})
-	for _, want := range []string{"#!/usr/bin/env node", `"linux-x64": "@acme/cli-linux-x64"`, "'acme.exe' : 'acme'", "require.resolve(pkg + '/bin/' + file)", "may still be propagating on npm: try again in a few minutes"} {
+	for _, want := range []string{"#!/usr/bin/env node", `"linux-x64": "@acme/cli-linux-x64"`, "const NAME = 'acme'", "NAME + '.exe' : NAME", "require.resolve(pkg + '/bin/' + file)", "is not on the npm registry yet", "Install it now?", "SMITH_AUTO_FIX"} {
 		if !strings.Contains(shim, want) {
 			t.Errorf("shim lacks %q:\n%s", want, shim)
 		}

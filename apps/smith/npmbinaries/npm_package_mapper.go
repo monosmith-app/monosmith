@@ -1,6 +1,7 @@
 package npmbinaries
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -94,58 +95,18 @@ func WrapperManifest(r Release, name string, platforms map[string]string) string
 	})
 }
 
+// shimTemplate is the wrapper's bin, with __BINARY__ and __PLATFORMS__ to fill.
+//
+//go:embed shim_template.js
+var shimTemplate string
+
 // Shim is the wrapper's bin: it finds the platform package npm installed
-// and runs its binary with the same arguments, exit code and signal.
+// and runs its binary with the same arguments, exit code and signal. When the
+// package is missing it says which of three situations that is, and offers the
+// fix without applying it.
 func Shim(binary string, platforms map[string]string) string {
 	raw, _ := json.MarshalIndent(platforms, "", "  ")
-	return strings.NewReplacer("__BINARY__", binary, "__PLATFORMS__", string(raw)).Replace(`#!/usr/bin/env node
-'use strict'
-// Runs the __BINARY__ binary npm installed for this platform, from one of the
-// optional dependencies; nothing is downloaded after install.
-const { spawn } = require('node:child_process')
-const fs = require('node:fs')
-
-const platforms = __PLATFORMS__
-const key = process.platform + '-' + process.arch
-const pkg = platforms[key]
-if (!pkg) {
-  console.error('__BINARY__ has no build for ' + key)
-  process.exit(1)
-}
-const file = process.platform === 'win32' ? '__BINARY__.exe' : '__BINARY__'
-let binary
-try {
-  binary = require.resolve(pkg + '/bin/' + file)
-} catch {
-  console.error('__BINARY__: ' + pkg + ' is not installed; reinstall without --omit=optional or --no-optional')
-  console.error('__BINARY__: if you just installed a new release, it may still be propagating on npm: try again in a few minutes')
-  process.exit(1)
-}
-if (process.platform !== 'win32') {
-  try {
-    fs.accessSync(binary, fs.constants.X_OK)
-  } catch {
-    try { fs.chmodSync(binary, 0o755) } catch { /* a read-only install keeps its mode */ }
-  }
-}
-// A stop request must reach the binary: forward it, never orphan the child.
-const child = spawn(binary, process.argv.slice(2), { stdio: 'inherit' })
-for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-  process.on(sig, () => { child.kill(sig) })
-}
-child.on('error', (error) => {
-  console.error('__BINARY__: ' + error.message)
-  process.exit(1)
-})
-child.on('exit', (code, signal) => {
-  if (signal) {
-    process.removeAllListeners(signal)
-    process.kill(process.pid, signal)
-    return
-  }
-  process.exit(code ?? 1)
-})
-`)
+	return strings.NewReplacer("__BINARY__", binary, "__PLATFORMS__", string(raw)).Replace(shimTemplate)
 }
 
 // Readme is the wrapper's README.md, shown on its npm page.

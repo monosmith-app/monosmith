@@ -284,6 +284,30 @@ environment variables you name, and `smith ci check` lists what to create as
 secrets. The full format is in
 [configuration](../reference/configuration.md#private-registries).
 
+## smith says a platform package is not installed
+
+`smith` is an npm launcher. It runs the binary of the package for your system, for example
+`@monosmith/cli-win32-x64`, which npm installs as an optional dependency. If that package is missing,
+npm gives no error at install time, and the first run says "`<package>` is not installed". The
+launcher then asks npm, with a 5 second limit, whether that package exists at the same version, and
+tells you which of three situations you are in. It changes nothing without your yes.
+
+1. The package is on the registry now. The install missed it, for example an interrupted or
+   partial install. The launcher prints `npm install -g <package>@<version>` and, in a terminal, asks
+   "Install it now? [Y/n]". Enter installs it. Without a terminal it only prints the command. For a
+   CI job, set `SMITH_AUTO_FIX=1` and the launcher runs that install itself.
+2. The package is not on the registry yet. A release can take 5 to 10 minutes to spread over npm.
+   Try again in a few minutes. In a terminal the launcher offers to "Wait and retry every 30
+   seconds, for up to 10 minutes? [y/N]". The default is no. When the package appears it offers the
+   install of situation 1.
+3. npm could not be asked: npm is not in PATH, it did not answer in 5 seconds, or there is no
+   network. Run `npm install -g <package>@<version>` when you are online. Do not install with
+   `--omit=optional`, which leaves out all platform packages.
+
+For a CI job that installs `monosmith@next` right after a release, wait a few minutes or install the
+exact version. The release itself does not move `next` before every platform package can be fetched
+(`[release] propagation_wait`, see [releasing](../reference/releasing.md)).
+
 ## A release did not do what I expected
 
 ```sh

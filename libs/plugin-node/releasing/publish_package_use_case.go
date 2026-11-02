@@ -1,6 +1,7 @@
 package releasing
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/npmpropagation"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
@@ -90,20 +92,27 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	}
 	// A release channel publishes under its dist-tag, so latest stays put (npm
 	// refuses a prerelease without one).
-	if params.Tag != "" {
-		tag := params.Tag
-		if manifest, readErr := os.ReadFile(filepath.Join(staged, "package.json")); readErr == nil {
-			if platforms := SameReleaseOptionalDependencies(manifest, params.Version); len(platforms) > 0 {
-				if missing := platformVisibility(workspaceRoot, at).Await(platforms, params.Version); len(missing) > 0 {
-					// A launcher whose platform packages cannot be read yet would install
-					// and fail: keep the channel tag where it is, and say how to move it.
-					tag = pendingTag
-					result.Notes = append(result.Notes, fmt.Sprintf(
-						"the dist-tag %q was not moved: %s %s not visible on the registry yet. Published as %q; when npm shows them, run: npm dist-tag add %s@%s %s",
-						params.Tag, strings.Join(missing, ", "), plural(len(missing), "is", "are"), pendingTag, name, params.Version, params.Tag))
-				}
+	tag := params.Tag
+	if manifest, readErr := os.ReadFile(filepath.Join(staged, "package.json")); readErr == nil {
+		if platforms := SameReleaseOptionalDependencies(manifest, params.Version); len(platforms) > 0 {
+			wait, werr := npmpropagation.ParseWait(params.PropagationWait)
+			if werr != nil {
+				return result, werr
+			}
+			if out := awaitPlatforms(workspaceRoot, at, wait, platforms, params.Version); !out.Ready {
+				// A launcher whose platform packages cannot be fetched yet would install
+				// and fail: keep the dist-tag where it is, and say how to move it.
+				moved := cmp.Or(params.Tag, "latest")
+				tag = pendingTag
+				command := fmt.Sprintf("npm dist-tag add %s@%s %s", name, params.Version, moved)
+				result.PendingTags = append(result.PendingTags, command)
+				result.Notes = append(result.Notes, notFetchableNote(moved, out, len(platforms), command))
 			}
 		}
+	}
+	// A release channel publishes under its dist-tag; a package that must wait
+	// publishes under "pending". Either way latest stays put.
+	if tag != "" {
 		at = append(at, "--tag", tag)
 	}
 	if staged == dir {
@@ -122,21 +131,21 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 // wait for its platform packages to appear on the registry.
 const pendingTag = "pending"
 
-// platformVisibility reads packages back with `npm view`, for 60 seconds.
-// Tests replace it with a fake registry.
-var platformVisibility = func(workspaceRoot string, at []string) Visibility {
-	return Visibility{
-		Visible: func(name, version string) bool {
-			out, _ := npm.output(workspaceRoot, append([]string{"npm", "view", name + "@" + version, "version"}, at...))
-			return strings.TrimSpace(out) == version
-		},
-		Wait: 60 * time.Second, Every: 5 * time.Second,
-	}
+// awaitPlatforms waits, for up to wait, until every package is fetchable the
+// way a person fetches it (found by npm view and its tarball answers), on
+// three probes 30 s apart. Tests replace it with a fake registry.
+var awaitPlatforms = func(workspaceRoot string, at []string, wait time.Duration, names []string, version string) npmpropagation.Outcome {
+	reg := npmpropagation.NPM{Dir: workspaceRoot, Args: at, Output: npm.output}
+	cfg := npmpropagation.Config{Max: wait, Progress: func(line string) { fmt.Fprintln(os.Stderr, line) }}
+	return npmpropagation.Await(reg, npmpropagation.RealClock{}, cfg, names, version)
 }
 
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return one
+// notFetchableNote says why a dist-tag did not move and how to move it.
+func notFetchableNote(tag string, out npmpropagation.Outcome, total int, command string) string {
+	why := fmt.Sprintf("%d platform packages were not confirmed on the registry in time", total)
+	if len(out.Missing) > 0 {
+		why = strings.Join(out.Missing, ", ") + " could not be fetched from the registry in time"
 	}
-	return many
+	return fmt.Sprintf("the dist-tag %q was not moved: %s (waited %s). Published as %q; when npm serves them, run: %s",
+		tag, why, out.Waited.Round(time.Second), pendingTag, command)
 }

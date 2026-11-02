@@ -30,7 +30,9 @@ or `npx monosmith --version`.
 
 `@monosmith/cli` is the same npm package under the scope; `monosmith` is the
 short name. Both install the binary through per-platform packages
-(`@monosmith/cli-linux-x64`, …) that npm picks by `os` and `cpu`.
+(`@monosmith/cli-linux-x64`, …) that npm picks by `os` and `cpu`. If one is missing right
+after a release, the launcher says why and offers the fix
+([troubleshooting](../guides/troubleshooting.md#smith-says-a-platform-package-is-not-installed)).
 
 The pub.dev package is published by hand for now, so it can lag behind the
 others.

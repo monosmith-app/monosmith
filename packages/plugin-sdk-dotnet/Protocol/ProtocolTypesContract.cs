@@ -3314,6 +3314,9 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
     /// <summary>Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability.</summary>
     public string Tag { get; init; } = string.Empty;
 
+    /// <summary>PropagationWait is the longest time a plugin waits, before it moves a dist-tag, for the packages of the release to be fetchable from the registry: a duration such as "15m", "0" to not wait. Empty means the default. Only npm has such a wait.</summary>
+    public string PropagationWait { get; init; } = string.Empty;
+
     /// <inheritdoc />
     public static PublishParams Read(JsonAny? value, string path)
     {
@@ -3329,6 +3332,7 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
             Commit = StringValue(Member(map, "commit"), Join(path, "commit")),
             Branch = StringValue(Member(map, "branch"), Join(path, "branch")),
             Tag = StringValue(Member(map, "tag"), Join(path, "tag")),
+            PropagationWait = StringValue(Member(map, "propagationWait"), Join(path, "propagationWait")),
         };
     }
 
@@ -3375,6 +3379,11 @@ public sealed record PublishParams : IProtocolValue<PublishParams>
             writer.Property("tag");
             writer.String(Tag);
         }
+        if (PropagationWait.Length > 0)
+        {
+            writer.Property("propagationWait");
+            writer.String(PropagationWait);
+        }
         writer.EndObject();
     }
 }
@@ -3393,6 +3402,9 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
 
     /// <summary>Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them.</summary>
     public IReadOnlyList<string> Notes { get; init; } = [];
+
+    /// <summary>PendingTags are the exact commands that move the dist-tags the publish did not move, because the packages the release needs were not fetchable yet. The release then ends with a warning, never silently.</summary>
+    public IReadOnlyList<string> PendingTags { get; init; } = [];
 
     /// <summary>Assets are the workspace-relative files built for the release, in upload order; in a dry run, the files that would be built.</summary>
     public IReadOnlyList<string> Assets { get; init; } = [];
@@ -3416,6 +3428,7 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
             Skipped = StringValue(Member(map, "skipped"), Join(path, "skipped")),
             Registry = StringValue(Member(map, "registry"), Join(path, "registry")),
             Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
+            PendingTags = ListOf(Member(map, "pendingTags"), Join(path, "pendingTags"), StringValue),
             Assets = ListOf(Member(map, "assets"), Join(path, "assets"), StringValue),
             AssetPlatforms = MapOf(Member(map, "assetPlatforms"), Join(path, "assetPlatforms"), StringValue),
             Binary = StringValue(Member(map, "binary"), Join(path, "binary")),
@@ -3443,6 +3456,11 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
         {
             writer.Property("notes");
             MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
+        }
+        if (PendingTags is { Count: > 0 })
+        {
+            writer.Property("pendingTags");
+            MessageWritingAlgorithm.List(writer, PendingTags, (builder1, item1) => builder1.String(item1));
         }
         if (Assets is { Count: > 0 })
         {

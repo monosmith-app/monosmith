@@ -202,6 +202,9 @@ func Validate(cfg *Config) error {
 	if err := validateReleaseChannels(cfg.Release); err != nil {
 		return err
 	}
+	if err := validatePropagationWait(cfg); err != nil {
+		return err
+	}
 	switch cfg.Release.APICheck {
 	case "":
 		cfg.Release.APICheck = "warn"
