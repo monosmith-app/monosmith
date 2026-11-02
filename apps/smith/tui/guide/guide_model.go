@@ -21,6 +21,8 @@ type Model struct {
 	input   textinput.Model
 	answers map[string][]string
 	err     string
+	// notice is a muted line that says what the last tick did to the others.
+	notice string
 	// filter is what was typed to narrow a Filter step's options.
 	filter string
 	// searched is what was typed in the last Filter step that was answered; a
@@ -265,8 +267,7 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		m.cursor = min(m.cursor+1, max(m.optionCount()-1, 0))
 	case " ":
 		if step != nil && step.Multi {
-			m.marked = cloneMarks(m.marked)
-			m.marked[m.cursor] = !m.marked[m.cursor]
+			m.marked, m.notice = ToggleOption(m.marked, step.Options, m.cursor)
 		}
 	case "enter":
 		return m.confirm(), nil
@@ -280,19 +281,10 @@ func (m Model) SelectRow(i int) Model {
 	if i >= 0 && i < m.optionCount() {
 		m.cursor = i
 		if s := m.current(); s != nil && s.Multi {
-			m.marked = cloneMarks(m.marked)
-			m.marked[i] = !m.marked[i]
+			m.marked, m.notice = ToggleOption(m.marked, s.Options, i)
 		}
 	}
 	return m
-}
-
-func cloneMarks(in map[int]bool) map[int]bool {
-	out := make(map[int]bool, len(in)+1)
-	for k, v := range in {
-		out[k] = v
-	}
-	return out
 }
 
 func (m Model) confirm() Model {
@@ -358,7 +350,7 @@ func (m Model) confirm() Model {
 		m.answers[step.Key] = []string{picked}
 	}
 	m.step++
-	m.cursor, m.marked, m.err, m.filter = 0, map[int]bool{}, "", ""
+	m.cursor, m.marked, m.err, m.filter, m.notice = 0, map[int]bool{}, "", "", ""
 	return m.advance()
 }
 
@@ -541,6 +533,9 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 			if step.Optional {
 				help = "up/down move · space or click toggles · enter confirms (nothing ticked skips this) · esc back"
 			}
+		}
+		if m.notice != "" {
+			lines = append(lines, "", th.Accent(m.notice))
 		}
 		lines = append(lines, "", th.Muted(help))
 	}

@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -32,6 +33,7 @@ func catalogue() compose.Catalogue {
 			offer("functions", "node", protocol.Choice{Axis: "trigger", Name: "timer-trigger", Title: "Timer trigger", Layer: "host", Description: "runs on a schedule"}),
 			offer("eslint", "node", protocol.Choice{Axis: "lint", Name: "eslint", Title: "ESLint", Roles: tool, Default: true}),
 			offer("vitest", "node", protocol.Choice{Axis: "test", Name: "vitest", Title: "Vitest", Roles: tool, Default: true}),
+			offer("tw", "node", protocol.Choice{Axis: "style", Name: "tailwind", Title: "Tailwind", Conflicts: []string{"vitest"}}),
 			offer("py", "python", protocol.Choice{Axis: "framework", Name: "fastapi", Title: "FastAPI", Roles: scaffold}),
 		},
 	})
@@ -93,12 +95,12 @@ func TestTypingAnAliasFindsTheItemAndEnterTicksIt(t *testing.T) {
 }
 
 func TestAConflictIsShownAsSoonAsItIsTickedAndBlocksTheNextStep(t *testing.T) {
-	m := typed(screen(), "react")
+	m := typed(screen(), "tailwind")
 	m, _ = press(m, "enter")
 	m, _ = press(m, "esc")
-	m = typed(m, "electron")
+	m = typed(m, "react")
 	m, _ = press(m, "enter")
-	if !strings.Contains(m.Check().Conflict, "react") || !strings.Contains(m.Check().Conflict, "electron") {
+	if !strings.Contains(m.Check().Conflict, "vitest") || !strings.Contains(m.Check().Conflict, "tailwind") {
 		t.Fatalf("the conflict names both: %+v", m.Check())
 	}
 	if !strings.Contains(text(m), "Conflict:") {
@@ -108,9 +110,28 @@ func TestAConflictIsShownAsSoonAsItIsTickedAndBlocksTheNextStep(t *testing.T) {
 	if m.stage != stBrowse || out.Plan != nil || !strings.Contains(m.note, "Fix the conflict first") {
 		t.Fatalf("the next step is refused with the reason: stage %v note %q", m.stage, m.note)
 	}
+	m, _ = press(m, "esc")
+	m = typed(m, "tailwind")
 	m, _ = press(m, "enter")
 	if m.Check().Conflict != "" {
 		t.Fatalf("ticking it again removes it: %+v", m.Check())
+	}
+}
+
+func TestTickingASecondFrameworkTakesThePlaceOfTheFirstWithANote(t *testing.T) {
+	m := typed(screen(), "react")
+	m, _ = press(m, "enter")
+	m, _ = press(m, "esc")
+	m = typed(m, "electron")
+	m, _ = press(m, "enter")
+	if got := strings.Join(m.Ticked(), ","); got != "electron" {
+		t.Fatalf("one framework stays, like radio buttons: %q", got)
+	}
+	if m.Check().Conflict != "" {
+		t.Fatalf("no conflict is left to find at the end: %+v", m.Check())
+	}
+	if !strings.Contains(m.note, "Electron replaces React") || !strings.Contains(text(m), "Electron replaces React") {
+		t.Fatalf("a one-line note says so: %q", m.note)
 	}
 }
 
@@ -250,6 +271,37 @@ func TestTheListShowsTheLayersWithWhatSitsOnThem(t *testing.T) {
 	for _, want := range []string{"Compose a stack", "Language", "Framework", "Desktop shell", "Cloud host"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q:\n%s", want, body)
+		}
+	}
+}
+
+func TestThePlanWrapsToTheDialogAndTheScreenCoversTheTerminal(t *testing.T) {
+	long := "the Tauri system libraries (libwebkit2gtk-4.1-dev, libgtk-3-dev, librsvg2-dev, libayatana-appindicator3-dev)"
+	plan := compose.Plan{
+		Command: "smith add app shell --lang node --with electron,eslint,vitest,tailwind,react,vite,zod,something-long",
+		Argv:    []string{"smith", "add"},
+		Files:   []compose.PlanLine{{Action: "create", Path: "apps/shell/", Note: long}},
+		Tools:   []compose.Tool{{Choice: "tauri", Title: long, State: "missing", Command: "smith tools install tauri-system-libraries"}},
+	}
+	for _, size := range [][2]int{{110, 32}, {80, 24}} {
+		m := New(catalogue()).Place(size[0], size[1]).WithPlan(plan, nil)
+		if r := m.Rect(); r.X != 0 || r.Y != 0 || r.W != size[0] || r.H != size[1] {
+			t.Fatalf("%v: the screen covers the terminal, got %+v", size, r)
+		}
+		lines := m.Lines(theme.Default())
+		if len(lines) != size[1] {
+			t.Fatalf("%v: %d lines", size, len(lines))
+		}
+		for _, l := range lines {
+			if w := pane.Width(l); w != size[0] {
+				t.Fatalf("%v: a line is %d cells wide: %q", size, w, l)
+			}
+		}
+		flat := strings.Join(strings.Fields(strings.ReplaceAll(pane.Strip(strings.Join(lines, " ")), "│", " ")), " ")
+		for _, want := range []string{"libayatana-appindicator3-dev)", "smith tools install tauri-system-libraries", "something-long"} {
+			if !strings.Contains(flat, want) {
+				t.Fatalf("%v: %q was cut off:\n%s", size, want, strings.Join(lines, "\n"))
+			}
 		}
 	}
 }

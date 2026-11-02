@@ -91,8 +91,10 @@ func (m Model) WithSearch(words string) Model {
 // Place centres the screen on a terminal of sw by sh cells.
 func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
-	w := min(max(sw-6, 40), 104)
-	h := min(max(sh-2, 12), 34)
+	// The screen covers the whole terminal: a smaller box would leave the
+	// letters of the tabs behind it showing at its edges.
+	w := max(sw, 40)
+	h := max(sh, 12)
 	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
@@ -200,7 +202,20 @@ func (m Model) tick(it compose.Item) Model {
 		if i := slices.IndexFunc(m.ticked, func(t compose.Item) bool { return t.ID == it.ID }); i >= 0 {
 			m.ticked = slices.Delete(slices.Clone(m.ticked), i, i+1)
 		} else {
-			m.ticked = append(slices.Clone(m.ticked), it)
+			// A single-choice axis acts like radio buttons: the new pick takes
+			// the place of the one before, and the note says so.
+			rivals := compose.Rivals(m.ticked, it)
+			kept := slices.DeleteFunc(slices.Clone(m.ticked), func(t compose.Item) bool {
+				return slices.ContainsFunc(rivals, func(r compose.Item) bool { return r.ID == t.ID })
+			})
+			m.ticked = append(kept, it)
+			if len(rivals) > 0 {
+				names := make([]string, len(rivals))
+				for i, r := range rivals {
+					names[i] = r.Title
+				}
+				m.note = it.Title + " replaces " + strings.Join(names, " and ") + ": a project has one " + it.Axis + ". Untick " + it.Title + " to get " + names[0] + " back."
+			}
 		}
 	}
 	m = m.refresh()

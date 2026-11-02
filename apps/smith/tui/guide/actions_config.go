@@ -49,6 +49,12 @@ type Step struct {
 // Option is one answer.
 type Option struct {
 	Label, Value, Hint string
+	// Group names the single-choice axis the option sits on ("framework"); a
+	// multiple choice then ticks one option of a group at a time. Empty means
+	// the option can be ticked next to any other. Many lets the option share
+	// its group with other options that are Many too.
+	Group string
+	Many  bool
 	// Also are other names that find the option when a list is filtered: the
 	// frameworks, test runners and styles a language offers ("react" finds Node).
 	Also []string
