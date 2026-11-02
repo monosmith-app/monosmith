@@ -52,6 +52,8 @@ type Config struct {
 	Adopt adoptwizard.Opener
 	// Start is a command to run as soon as the shell opens in a workspace.
 	Start []string
+	// Resume opens a guided form again with the answers of a try that failed.
+	Resume *Resume
 	// Clipboard receives the OSC 52 sequence that copies text; nil disables copying.
 	Clipboard io.Writer
 	// Notice is a quiet line shown once as a toast: smith was updated, or a
@@ -201,7 +203,12 @@ type Shell struct {
 	// Argv is a command that needs a terminal of its own (it asks questions or
 	// takes over the screen): the shell leaves and smith runs it.
 	Argv []string
-	quit bool
+	// Form and Answers say which guided form made Argv and what was answered,
+	// so a command that fails after the shell left can open the form again
+	// with the answers kept.
+	Form    string
+	Answers map[string][]string
+	quit    bool
 }
 
 // NewShell builds the shell. Without sources (outside a workspace) it has
@@ -227,6 +234,9 @@ func NewShell(cfg Config) Shell {
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
+	}
+	if r := cfg.Resume; r != nil && cfg.Sources == nil {
+		sh.guide, _ = sh.guide.Resume(r.Form, r.Answers, r.Problem)
 	}
 	sh.tabs = sh.tabList()
 	sh.refreshPalette()

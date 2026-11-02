@@ -428,6 +428,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		s.guide = g
 		if g.Done() {
 			argv, wizard := g.Argv, g.Wizard
+			s.Form, s.Answers = g.Title(), g.Answers()
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()

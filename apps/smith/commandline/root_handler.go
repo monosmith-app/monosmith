@@ -29,6 +29,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/rustpolicy"
 	"golang.org/x/term"
 	"os"
+	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/bootstrap"
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
@@ -155,26 +156,50 @@ func Execute(version string, args []string) int {
 	// A bare smith at a terminal opens the interface. A command it hands back
 	// runs here, and when that command made a workspace the interface opens
 	// again inside it: nobody should have to cd and start smith a second time.
+	var resume *tui.Resume
 	for {
-		chosen, err := tui.Choose(version, os.Stdout, clicontract.DescribeCommands(Root(version)))
+		chosen, err := tui.Choose(version, os.Stdout, clicontract.DescribeCommands(Root(version)), resume)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
 			return 1
 		}
-		if len(chosen) == 0 {
+		resume = nil
+		argv := chosen.Argv
+		if len(argv) == 0 {
 			return 0
 		}
-		if code := run(version, chosen); code != 0 || len(chosen) < 2 || chosen[0] != "new" {
+		code, message := runCommand(version, argv)
+		if code != 0 && len(argv) > 1 && argv[0] == "new" && chosen.Answers != nil {
+			// A failed `new` does not end the session: the form opens again with
+			// the answers kept and the reason under the first question.
+			resume = &tui.Resume{Form: chosen.Form, Answers: chosen.Answers, Problem: strings.TrimPrefix(message, "smith: ")}
+			continue
+		}
+		if message != "" {
+			fmt.Fprintln(os.Stderr, message)
+		}
+		if code != 0 || len(argv) < 2 || argv[0] != "new" {
 			return code
 		}
-		if err := os.Chdir(chosen[1]); err != nil {
+		if err := os.Chdir(argv[1]); err != nil {
 			return 0
 		}
 	}
 }
 
-// run executes one smith command line and returns the exit code.
+// run executes one smith command line, prints what went wrong and returns the
+// exit code.
 func run(version string, args []string) int {
+	code, message := runCommand(version, args)
+	if message != "" {
+		fmt.Fprintln(os.Stderr, message)
+	}
+	return code
+}
+
+// runCommand executes one smith command line and returns the exit code and
+// the line that says why it failed ("" when nothing is left to say).
+func runCommand(version string, args []string) (int, string) {
 	root := Root(version)
 	root.SetArgs(args)
 	if canAsk(root, args) {
@@ -187,15 +212,15 @@ func run(version string, args []string) int {
 		message, newer := newerSmithMessage(err, version, wantsVerbose(args))
 		switch {
 		case newer:
-			fmt.Fprintln(os.Stderr, "smith: "+message)
+			return 1, "smith: " + message
 		case errors.As(err, &p):
-			fmt.Fprintln(os.Stderr, p.Error())
+			return 1, p.Error()
 		case !errors.Is(err, taskrun.ErrTasksFailed) && !errors.Is(err, doctor.ErrUnhealthy) && !errors.Is(err, adoption.ErrBlocked) && !errors.Is(err, recipe.ErrInvalid) && !errors.Is(err, release.ErrReported):
-			fmt.Fprintln(os.Stderr, "smith: "+err.Error())
+			return 1, "smith: " + err.Error()
 		}
-		return 1
+		return 1, ""
 	}
-	return 0
+	return 0, ""
 }
 
 // pluginCommand is `smith plugin` with the check that stops switching off a

@@ -31,6 +31,8 @@ type Model struct {
 	Argv []string
 	// Wizard names the wizard an action handed itself to (Action.Wizard).
 	Wizard string
+	// prefill are answers to start the steps on, by step key (see Resume).
+	prefill map[string][]string
 	// done is set when a command is chosen, or the user backed out of the top.
 	done bool
 }
@@ -119,6 +121,26 @@ func (m Model) WithDefaultWhy(key, why string) Model {
 func (m Model) Editing() bool {
 	s := m.current()
 	return s != nil && (s.Options == nil || s.Filter)
+}
+
+// Answers are the answers given so far, by step key.
+func (m Model) Answers() map[string][]string { return m.answers }
+
+// Resume starts the action with a title again with the answers of an earlier
+// try already filled in, and shows problem under the first question. It is
+// how a failed command lets the person correct one answer instead of
+// answering everything again; ok is false when there is no such action.
+func (m Model) Resume(title string, answers map[string][]string, problem string) (Model, bool) {
+	for i, a := range m.actions {
+		if a.Title == title {
+			r := m.Reset()
+			r.prefill, r.cursor = answers, i
+			r = r.confirm()
+			r.err = problem
+			return r, true
+		}
+	}
+	return m, false
 }
 
 // Pick starts the action with a title, as if chosen from the list; ok is
@@ -337,6 +359,18 @@ func (m Model) advance() Model {
 	} else if want := m.defaults[step.Key]; want != "" {
 		for i, o := range step.Options {
 			if o.Value == want {
+				m.cursor = i
+			}
+		}
+	}
+	if before, ok := m.prefill[step.Key]; ok && len(before) > 0 {
+		if step.Options == nil {
+			m.input.SetValue(before[0])
+		}
+		for i, o := range step.Options {
+			if step.Multi {
+				m.marked[i] = slices.Contains(before, o.Value)
+			} else if o.Value == before[0] {
 				m.cursor = i
 			}
 		}

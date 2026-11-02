@@ -2,6 +2,7 @@ package guide
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -78,5 +79,44 @@ func TestSavingARecipeFromTheFormUsesTheWorkspaceNameByDefault(t *testing.T) {
 	}
 	if got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "save-recipe": {"no"}}); len(got) != 3 {
 		t.Fatalf("no means no flag: %v", got)
+	}
+}
+
+func newWorkspaceAction(t *testing.T) Action {
+	t.Helper()
+	for _, a := range Actions(nil, nil, nil) {
+		if a.Presents == "new" {
+			return a
+		}
+	}
+	t.Fatal("no Create a workspace action")
+	return Action{}
+}
+
+func TestAWorkspaceNameThatSmithRefusesIsRefusedOnTheSpot(t *testing.T) {
+	m, _ := NewModel([]Action{newWorkspaceAction(t)}).Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	for _, bad := range []string{"my shop", "My-Shop", "-shop", "shop_1"} {
+		m.input.SetValue(bad)
+		m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter})
+		if m.current().Key != "name" || !strings.Contains(m.err, "lowercase words joined by dashes") {
+			t.Fatalf("%q: step %q, error %q", bad, m.current().Key, m.err)
+		}
+	}
+	m.input.SetValue("my-shop")
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	if m.current().Key == "name" {
+		t.Fatalf("a good name must move on")
+	}
+}
+
+func TestResumeKeepsTheAnswersAndShowsTheProblem(t *testing.T) {
+	answers := map[string][]string{"name": {"acme"}, "ci": {"azure"}, "language": {"go"}}
+	m, ok := NewModel([]Action{newWorkspaceAction(t)}).Resume("Create a workspace", answers, "acme already holds a smith workspace")
+	if !ok || m.err != "acme already holds a smith workspace" || m.input.Value() != "acme" {
+		t.Fatalf("ok %v, error %q, name %q", ok, m.err, m.input.Value())
+	}
+	m, _ = m.Handle(tea.KeyMsg{Type: tea.KeyEnter})
+	if step := m.current(); step.Key != "ci" || step.Options[m.cursor].Value != "azure" {
+		t.Fatalf("the ci question must start on the earlier answer: cursor %d", m.cursor)
 	}
 }
