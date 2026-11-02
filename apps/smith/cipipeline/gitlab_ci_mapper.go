@@ -23,7 +23,7 @@ func RenderGitLab(m Model) string {
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-%[1]s
+%[1]s%[6]s
 ci:
   image: %[2]s
   variables:
@@ -31,7 +31,7 @@ ci:
     SMITH_VERSION: %[3]s
 %[4]s%[5]s  before_script:
     - apt-get update -qq && apt-get install -y -qq curl git ca-certificates xz-utils >/dev/null
-`, gitlabPushRules(m), GitLabImage, yamlValue(m.SmithVersion), gitlabStoreVariables(m.Stores), gitlabStores(m.Stores))
+`, gitlabPushRules(m)+gitlabManualRule(m), GitLabImage, yamlValue(m.SmithVersion), gitlabStoreVariables(m.Stores), gitlabStores(m.Stores), gitlabVariables(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(gitlabSetup(t))
 	}
@@ -60,7 +60,7 @@ ci:
 	}
 	onRelease := fmt.Sprintf(`[ "$CI_PIPELINE_SOURCE" = "push" ] && %s`, m.branchCondition(func(branch string) string { return fmt.Sprintf(`[ "$CI_COMMIT_BRANCH" = "%s" ]`, branch) }, func(c []string) string { return "{ " + strings.Join(c, " || ") + "; }" }))
 	b.WriteString("    # Releasing pushes tags: GITLAB_TOKEN needs write_repository.\n")
-	b.WriteString("    - " + yamlValue("if "+onRelease+`; then git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"; smith ci release; fi`) + "\n")
+	b.WriteString(gitlabRelease(m, onRelease))
 	if m.Pack {
 		b.WriteString(`  artifacts:
     name: drop

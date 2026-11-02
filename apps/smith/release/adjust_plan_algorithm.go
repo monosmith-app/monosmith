@@ -128,7 +128,11 @@ func unknownInPlan(plan Plan, flag, name string) error {
 		releases = "The plan releases: " + strings.Join(names, ", ") + "."
 	}
 	if slices.Contains(plan.Unchanged, name) {
-		return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change. %s", flag, name, name, releases)
+		more := ""
+		if flag == "--bump" {
+			more = " To release it anyway (the same code under a new version), add --force."
+		}
+		return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change. %s%s", flag, name, name, releases, more)
 	}
 	return fmt.Errorf("%s %s: %s is not in this plan, so there is nothing to change.%s %s", flag, name, name,
 		nearmatch.Suggestion(name, append(slices.Clone(names), plan.Unchanged...)), releases)
@@ -176,6 +180,10 @@ func Consequences(plan Plan, push bool) string {
 	if !push {
 		where = "and keep them on this machine (--no-push)"
 	}
-	return fmt.Sprintf("This cannot be undone. smith will publish %d package(s) to their registries, create the tags %s %s.",
+	text := fmt.Sprintf("This cannot be undone. smith will publish %d package(s) to their registries, create the tags %s %s.",
 		len(plan.Items), strings.Join(tags, ", "), where)
+	if manual := ManualConsequences(plan); manual != "" {
+		text += " " + manual
+	}
+	return text
 }

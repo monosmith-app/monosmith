@@ -28,5 +28,5 @@ export function parsePlannedPackages (json: string): PlannedPackage[] {
  * @returns the arguments, without the program name
  */
 export function releaseArguments (choices: ReleaseChoices, mode: 'plan' | 'publish'): string[] {
-  return ['release', mode === 'plan' ? '--dry-run' : '--yes', ...(choices.hold.length === 0 ? [] : ['--hold', choices.hold.join(',')]), ...choices.bump.flatMap((bump) => ['--bump', bump])]
+  return ['release', mode === 'plan' ? '--dry-run' : '--yes', ...(choices.hold.length === 0 ? [] : ['--hold', choices.hold.join(',')]), ...choices.bump.flatMap((bump) => ['--bump', bump]), ...(choices.forced ?? []).flatMap((bump) => ['--bump', bump]), ...((choices.forced ?? []).length === 0 ? [] : ['--force'])]
 }

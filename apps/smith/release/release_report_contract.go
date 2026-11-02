@@ -81,6 +81,9 @@ func (r Report) Markdown() string {
 		}
 	}
 	for _, res := range r.Results {
+		if res.Manual {
+			fmt.Fprintf(&b, "\n**Manual release:** no commit releases %s.\n", res.Project)
+		}
 		for _, w := range res.APIWarnings {
 			fmt.Fprintf(&b, "\n**Warning, API check:** %s\n", w)
 		}

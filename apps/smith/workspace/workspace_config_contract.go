@@ -168,6 +168,11 @@ type CISection struct {
 	// toolchains CI installs, at the same versions. Default: false (smith new
 	// turns it on).
 	Devcontainer bool `toml:"devcontainer"`
+	// ManualRelease adds to the generated pipelines a way to start a release by
+	// hand: a package no commit releases (the same code under a new version),
+	// chosen with an input, parameter or variable of the provider. Off by
+	// default, because whoever can run the pipeline can then publish.
+	ManualRelease bool `toml:"manual_release"`
 	// NativeRunners are the machines the native job runs on, one per OS,
 	// as the provider names them. Default: ubuntu-latest, windows-latest,
 	// macos-latest.

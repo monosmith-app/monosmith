@@ -207,7 +207,7 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return mirror(s, p, item, opts, res, say)
 	}
 
-	if err := s.Git.CreateTag(item.Tag, fmt.Sprintf("%s %s", item.Project, item.Next)); err != nil {
+	if err := s.Git.CreateTag(item.Tag, TagMessage(item)); err != nil {
 		return err
 	}
 	res.Status = "released"

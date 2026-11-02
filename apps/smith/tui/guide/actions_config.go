@@ -234,6 +234,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 				return argv
 			},
 		},
+		ForcedReleaseAction(nil),
 		{
 			Title: "Remove a project", Presents: "remove", Hint: "smith remove: its directory, its traces in the workspace, its CI", NeedsWorkspace: true,
 			Steps: []Step{

@@ -256,6 +256,25 @@ projects are left to the native job. `verify = false` under
 `[projects.<name>.tasks.package]` turns it off for one app, or under
 `[tasks.package]` for all.
 
+## A release started by hand
+
+`[ci] manual_release = true` lets a person start a release of a package that no commit releases (the
+same code under a new version, ADR 0080). It is off by default, because whoever can run the pipeline
+can then publish to the registries and cannot undo it. Each provider gets one value to fill in, in the
+form `project=patch|minor|major` (several: separate them with commas). Empty means no manual release.
+
+| Provider | Where | Notes |
+|---|---|---|
+| GitHub | the `release_bump` input of "Run workflow" | the ci job, the native job and the assets jobs run for it as for a push; the step summary says it was a manual release, the value and who ran it (`github.actor`) |
+| Azure Pipelines | the `releaseBump` runtime parameter of "Run pipeline" | the Release step only; the pack step runs on pushes |
+| GitLab CI | the `RELEASE_BUMP` variable of the "Run pipeline" form | the Release step only; the pack step runs on pushes |
+| Bitbucket | the custom pipeline `release-by-hand`, which asks for `RELEASE_BUMP` | the Release step only; the pack step runs on pushes |
+| CircleCI | not supported | CircleCI has no form for a value. `smith ci generate` prints a note; run `smith release --bump p=patch --force` on a machine instead |
+
+The step runs `smith ci release --bump "$RELEASE_BUMP" --force`. The value reaches it through an
+environment variable, never inside the script text. The run must be on the release branch or a
+release channel's branch. `smith ci release --bump p=level --force` is also a command of its own.
+
 ## The release preview comment
 
 On a pull request the preview is posted as one comment, which later runs of

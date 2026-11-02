@@ -12,9 +12,11 @@ export interface PlannedPackage {
 /** What the person decided before the release: the packages to hold back and the bumps to override. */
 export interface ReleaseChoices {
   /** Packages that do not release this time. */
-  hold: string[]
+  hold:    string[]
   /** Overrides of the level, `<project>=patch|minor|major`. */
-  bump: string[]
+  bump:    string[]
+  /** Packages released although no commit releases them (the same code under a new version), `<project>=patch|minor|major`; they use `--force`. */
+  forced?: string[]
 }
 
 /** How the release flow ended: published (`lines` are what smith printed), nothing to release (`lines` say why), refused, or cancelled. */

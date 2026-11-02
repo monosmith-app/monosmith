@@ -22,6 +22,9 @@ type Item struct {
 	Reason  string   `json:"reason"`
 	Commits []string `json:"commits,omitempty"`
 	Forced  bool     `json:"forced,omitempty"`
+	// Manual is true for a release the person forced although no commit releases
+	// the package (smith release --bump p=level --force).
+	Manual bool `json:"manual,omitempty"`
 	// Changes are the releasing commits, for the release notes.
 	Changes []Change `json:"changes,omitempty"`
 	// APIWarnings say that the commits ask for a smaller bump than the change

@@ -9,6 +9,8 @@ func Describe(argv []string) (title, why string) {
 		return "Run a command", "This runs a smith command."
 	}
 	switch verb := argv[0]; {
+	case verb == "release" && slices.Contains(argv, "--force"):
+		return "Release without a releasing commit", "No commit releases this package. The new tag points at HEAD, and the same code is published under a new version, with a GitHub Release and the assets. It cannot be undone."
 	case verb == "release":
 		return "Release", "This versions every package with releasable commits, publishes it to the registry and pushes its tags. It cannot be undone."
 	case verb == "doctor" && slices.Contains(argv, "--fix") && slices.Contains(argv, "--only"):
