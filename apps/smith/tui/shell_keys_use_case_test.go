@@ -429,7 +429,7 @@ func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 		t.Fatalf("started before the answer: %v", l.started)
 	}
 	l.keys("y")
-	if l.lastStarted() != "add package toolkit --lang go" {
+	if l.lastStarted() != "add package toolkit --lang go --yes" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 }

@@ -75,7 +75,7 @@ func TestAddAsksForTheChoicesThenShowsThePlanBeforeWriting(t *testing.T) {
 		t.Fatalf("the plan must come before any write: %v", argv)
 	}
 	l.keys("enter")
-	if got := l.lastStarted(); got != "add app api --lang go --with react --fresh" {
+	if got := l.lastStarted(); got != "add app api --lang go --with react --fresh --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -102,7 +102,7 @@ func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 	l.typeText("api").keys("enter", "enter") // follow the siblings
 	l.has("[ ] Commit this change so it can be undone")
 	l.keys("c", "enter") // tick the box, then Run
-	if got := l.lastStarted(); !strings.HasSuffix(got, "--commit") {
+	if got := l.lastStarted(); !strings.Contains(got, " --commit") {
 		t.Fatalf("started %q without --commit", got)
 	}
 	l.has("can be undone", "Undo the last change")
