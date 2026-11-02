@@ -10,6 +10,7 @@ import { showNotice } from '../notice-buttons/index.ts'
 import { isWebApp } from './web-environments.mapper.ts'
 import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
 import { askWebEnvironments } from './web-environments-prompts.client.ts'
+import { canStartWithDefaults, defaultsRequest } from './defaults-request.mapper.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -34,18 +35,29 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
   if (found === undefined || found === 'compose') return found
 
   const { role, language, preset, outcomeId } = found
+  const askName = async (title: string): Promise<string | undefined> => await vscode.window.showInputBox({
+    title,
+    prompt:        `The name of the new ${role}`,
+    placeHolder:   'for example billing-api',
+    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
+  })
+  // The name comes first, then one question: the defaults (straight to the plan) or the questions one by one.
+  let name: string | undefined
+  if (canStartWithDefaults(found)) {
+    name = await askName(`${TITLE}: name`)
+    if (name === undefined) return undefined
+    const setup = await askSetup()
+    if (setup === undefined) return undefined
+    if (setup === 'defaults') return defaultsRequest(found, name, workspaceEnvironments)
+  }
+
   const build = await askBuild(options, language, preset, outcomeId)
   if (build === undefined) return undefined
 
   const like = await askLike(projects.filter((project) => project.language === language))
   if (like === null) return undefined
 
-  const name = await vscode.window.showInputBox({
-    title:         `${TITLE} (4/4): name`,
-    prompt:        `The name of the new ${role}`,
-    placeHolder:   'for example billing-api',
-    validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
-  })
+  name ??= await askName(`${TITLE} (4/4): name`)
 
   if (name === undefined) return undefined
 
@@ -55,6 +67,23 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
   const environments = await askWebEnvironments(name, workspaceEnvironments)
 
   return environments === undefined ? undefined : { ...request, environments }
+}
+
+/**
+ * The question after the name: take the defaults and go to the plan, or answer each question.
+ * The words are the ones of the terminal (docs/manual/tui.md).
+ * @returns the answer; undefined when the person pressed Escape
+ */
+async function askSetup (): Promise<'defaults' | 'custom' | undefined> {
+  const answer = await vscode.window.showQuickPick(
+    [
+      { label: 'Start with the defaults', description: 'default', detail: 'The answers the stack suggests: what you picked, the shape of the other projects, and for a website lcl, dev, uat and prd with prd as the build. The plan shows every default as a flag.', value: 'defaults' as const },
+      { label: 'Customise', detail: 'Answer the questions one at a time: choices, the shape of the other projects, the environments.', value: 'custom' as const },
+    ],
+    { title: `${TITLE}: how do you want to set it up?`, ignoreFocusOut: true },
+  )
+
+  return answer?.value
 }
 
 const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'
