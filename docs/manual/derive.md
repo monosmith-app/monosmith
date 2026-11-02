@@ -91,8 +91,8 @@ exits 0: there is nothing to check.
 
 Before step 3, derive prints the plan: the files it creates or rewrites, grouped by renderer, with
 their owner, and `smith.lock`. In a terminal, outside CI, it asks `Go ahead? [y/N]` unless you pass
-`--yes` or a decision (`--replace`, `--adopt`, `--eject`). With `commit_operations = true` under
-`[workspace]` and a clean git work tree, the run is one commit (`chore: derive files`) that
+`--yes` or a decision (`--replace`, `--adopt`, `--eject`). smith leaves the files uncommitted. With
+`--commit` (or `commit_operations = true` under `[workspace]`) and a clean git work tree, the run is one commit (`chore: derive files`) that
 [`smith undo`](undo.md) reverts.
 
 Besides what the project graph says, a plugin can derive a config file from the shape of the sibling

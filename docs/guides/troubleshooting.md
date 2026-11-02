@@ -152,7 +152,7 @@ lists them all. The checks, grouped by who owns them:
 | release tags are not behind the registry | a version is already published beyond the latest tag. See [releasing](../reference/releasing.md) |
 | `<project> can be verified` (a warning) | the project has no `lint` or no `test` task, so CI never checks it. Add the task, or declare it under `[projects.<name>.tasks]` |
 | `<project>:<task> keeps the dependencies its plugins add` (a warning) | a `depends_on` override in `smith.toml` replaces the plugin's list, dropping dependencies it did not repeat. Add them back, or leave them out on purpose (`smith explain <project>:<task>` shows where each field came from) |
-| `task settings shared by projects are written once` (a warning) | two or more projects repeat the same task override in `smith.toml`. `smith doctor --fix` writes them once as a `[[groups]]` entry and keeps your comments; see [task groups](../reference/configuration.md#task-groups) |
+| `task settings shared by projects are written once` (a warning) | two or more projects repeat the same task override in `smith.toml`. `smith doctor --fix` writes them once as a `[[groups]]` entry and keeps your comments; see [groups](../reference/configuration.md#groups) |
 | `smith.toml uses current key names` | `smith.toml` has a key smith renamed (`[[task_groups]]` is now `[[groups]]`), and every command but `smith doctor` stops. Run `smith doctor --fix`: it shows the rename as a diff and keeps your comments |
 | `every group names a project` (a warning) | a `[[groups]]` entry selects no project. Check its `select` against your project names, folders, kinds, languages and tags, or delete it |
 
@@ -200,6 +200,23 @@ beyond the safe ones, which doctor asks about:
 A check with no fix (a file a script runs that is gone, a build that writes
 outside `dist/`) needs a decision only you can make; its remedy says what.
 `smith doctor --json` prints every finding for tools.
+
+## Adding, installing and undoing
+
+Each row is a message you can see, what it means and what to do.
+
+| smith says | What it means and what to do |
+|---|---|
+| `nobody can confirm this change: there is no terminal and --yes was not given` | A command that changes files asks first. With no terminal nobody can answer. Add `--yes` to apply the plan, or `--dry-run` to read it. |
+| `azure-functions needs a choice on the trigger axis, and none is the default: add one of ... to --with` | A function app needs the trigger and the runtime, and smith never picks them. Add one of each to `--with`, for example `--with azure-functions,http-trigger,node24`. |
+| `<name> is a project of this workspace (...) and a package on the registry` | The name exists in both places. Run `smith install -w <app> workspace:<name>` for your project, or `smith install -w <app> --registry <name>` for the registry package. |
+| the add ended with `exits with 1` and a missing tool | The project exists. Install the tool (`smith tools install`), then run `smith run build test -p <project>`. |
+| `Not committed. Review it with git status` | Expected. smith commits only with `--commit`. Run `smith commit` to commit what the last command changed. |
+| `smith undo` prints `files changed since smith add ...` | `smith undo` reverts a change that smith committed, and only when nothing touched the same files since. Undo the later changes first, then run `smith undo --dry-run`. A change that was never committed is not undone this way: commit it with `smith commit`, or discard the files with git. |
+| `smith cannot choose which files to commit: your own changes are in the work tree too` | `smith commit` found changes that are not the operation's. Name `--only-operation` to commit only the operation's files, or `--all` to commit everything git shows. |
+| `smith remove` refuses to delete a folder | The folder holds files git cannot bring back. Pass `--keep-copy` (the folder moves to `.smith/removed/`) or `--delete`. |
+| `smith add` asks nothing and picks a build tool you did not choose | The project follows its sibling projects. It says why. `--fresh` gives the stack's default, `--like <project>` copies one project. |
+| `release --rehearse` says the registry refused the credential (401) | The token is missing or cannot publish this name. Create a token for the registry and set the variable the message names. |
 
 ## Windows
 
