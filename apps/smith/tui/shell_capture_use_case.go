@@ -168,7 +168,7 @@ func (s *Shell) undoRead(msg capturedMsg) tea.Cmd {
 	}
 	argv := []string{"undo", "--yes"}
 	c := dialog.NewConfirm("Undo the last change?", "smith reverts it with a new commit, so your history stays. This is what it would revert:", argv).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -226,7 +226,7 @@ func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
 		title = "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
 	}
 	c := dialog.NewConfirm(title, "This is the plan. smith moves what it can and lists what is left to do by hand.", append(slices.Clone(argv), "--yes")).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
