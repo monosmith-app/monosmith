@@ -102,7 +102,7 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	inner := w - 4
 	c.cmdLines = nil
 	if !c.Info {
-		c.cmdLines = wrap(c.Command, inner-2)
+		c.cmdLines = wrap(c.Command, inner-4) // room for the "  $ " in front
 	}
 	body := c.bodyLines(inner)
 	h := len(body) + 4 // borders, blank line, buttons
@@ -141,8 +141,13 @@ func (c Confirm) tailLines() []string {
 		tail = append(tail, "", box+CommitLabel+"  (C)")
 	}
 	tail = append(tail, "", "The command that will run:")
-	for _, l := range c.cmdLines {
-		tail = append(tail, "  $ "+l)
+	for i, l := range c.cmdLines {
+		// Only the first line has the prompt: a "$" on each would read as many commands.
+		prefix := "  $ "
+		if i > 0 {
+			prefix = "    "
+		}
+		tail = append(tail, prefix+l)
 	}
 	return tail
 }
