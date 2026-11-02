@@ -36,7 +36,7 @@ class AddProjectUseCaseTest {
     }
 
     private fun answerEveryQuestion(commit: Boolean) {
-        fake.ones.addAll(listOf("web", "react", "jest", "prd", "workspace", "commit"))
+        fake.ones.addAll(listOf("web", "react", "custom", "jest", "prd", "workspace", "commit"))
         fake.texts.addAll(listOf("web", "lcl, prd"))
         fake.plans.add(fake.yes(commit))
     }
@@ -90,6 +90,19 @@ class AddProjectUseCaseTest {
             .first { it.label == "Undo" }
             .action()
         assertEquals(1, undone)
+    }
+
+    @Test
+    fun startWithTheDefaultsGoesStraightToThePlanWithEveryDefaultAsAFlag() {
+        fake.ones.addAll(listOf("web", "react", "defaults"))
+        fake.texts.add("web")
+        fake.plans.add(fake.yes(false))
+        assertTrue(AddProjectUseCase.run(fake.ports, emptyList(), follow) {})
+        assertEquals(
+            "add app web --lang node --with react --environments lcl,dev,uat,prd --default-environment prd " +
+                "--environment-output workspace --env-files commit --dry-run",
+            addCalls().first().joinToString(" "),
+        )
     }
 
     @Test

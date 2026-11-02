@@ -71,6 +71,26 @@ object AddRowsAlgorithm {
             )
         }
 
+    /** The answer of "Start with the defaults". */
+    const val SETUP_DEFAULTS = "defaults"
+
+    /** The two answers after the name: the defaults, which go straight to the plan, or the questions one by one. */
+    val setupRows =
+        listOf(
+            ChoiceRowContract(
+                SETUP_DEFAULTS,
+                "Start with the defaults",
+                "(default)",
+                "What the stack suggests: your pick, the shape of the other projects, and for a website lcl, dev, uat, prd with prd as the build.",
+            ),
+            ChoiceRowContract(
+                "custom",
+                "Customise",
+                "",
+                "Answer the questions one at a time: choices, the project to follow, the environments.",
+            ),
+        )
+
     /** The kinds the long way offers: `app`, `lib`, `package` as smith lists them. */
     fun roleRows(kinds: List<KindOptionContract>): List<ChoiceRowContract> =
         kinds.map { it.role }.distinct().map { ChoiceRowContract(it, it, "", roleWords[it].orEmpty()) }

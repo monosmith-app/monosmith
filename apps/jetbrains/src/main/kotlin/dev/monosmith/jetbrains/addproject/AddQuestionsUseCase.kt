@@ -39,6 +39,38 @@ object AddQuestionsUseCase {
         val found = if (first.name == AddRowsAlgorithm.EVERY) askEveryLanguage(prompt, options) else askOutcome(prompt, options, first.name)
         found ?: return null
 
+        // The name comes first, then one question: the defaults (straight to the plan) or the questions one by one.
+        // A function app keeps its questions: smith does not choose its trigger.
+        var typedName: String? = null
+        if (found.outcomeId != "function") {
+            val chosen = askName(prompt, found.role, siblings) ?: return null
+            typedName = chosen
+            val setup =
+                prompt.pickOne(
+                    "$TITLE: how do you want to set it up?",
+                    "The defaults are the answers the stack suggests. The plan shows every default as a flag.",
+                    AddRowsAlgorithm.setupRows,
+                ) ?: return null
+            if (setup.name == AddRowsAlgorithm.SETUP_DEFAULTS) {
+                val request = AddRequestContract(found.role, chosen, found.language, with = found.preset)
+                val environments =
+                    if (EnvironmentsAlgorithm.isWebApp(request)) {
+                        EnvironmentsContract(
+                            EnvironmentsAlgorithm.defaults,
+                            EnvironmentsAlgorithm.defaultOf(EnvironmentsAlgorithm.defaults),
+                            "workspace",
+                            "commit",
+                        )
+                    } else {
+                        null
+                    }
+                return AddAnswerContract.Request(
+                    request.copy(environments = environments),
+                    ChoiceRowsAlgorithm.inWords(found.preset, null, found.language, options.choices, options.layers),
+                )
+            }
+        }
+
         val picked =
             PickChoicesUseCase.pick(
                 prompt,
@@ -51,10 +83,7 @@ object AddQuestionsUseCase {
             )
                 ?: return null
         val like = askLike(prompt, siblings.filter { it.language == found.language }.map { it.name }) ?: return null
-        val name =
-            prompt.text("$TITLE: name", "The name of the new ${found.role} (for example billing-api):") {
-                ProjectNameValidator.problem(it, siblings.map { sibling -> sibling.name })
-            } ?: return null
+        val name = typedName ?: askName(prompt, found.role, siblings) ?: return null
         val request = AddRequestContract(found.role, name, found.language, with = picked, like = like.ifEmpty { null })
         val environments =
             if (EnvironmentsAlgorithm.isWebApp(request)) askEnvironments(prompt, name) ?: return null else null
@@ -63,6 +92,15 @@ object AddQuestionsUseCase {
             ChoiceRowsAlgorithm.inWords(picked, null, found.language, options.choices, options.layers),
         )
     }
+
+    private fun askName(
+        prompt: PromptPort,
+        role: String,
+        siblings: List<Sibling>,
+    ): String? =
+        prompt.text("$TITLE: name", "The name of the new $role (for example billing-api):") {
+            ProjectNameValidator.problem(it, siblings.map { sibling -> sibling.name })
+        }
 
     private data class Found(
         val role: String,
