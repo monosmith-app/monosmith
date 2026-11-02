@@ -142,6 +142,15 @@ release. Each runner runs the build, then uploads its own files with
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
 
+A `build` that runs several smith tasks into one folder (a zip task and a
+`package-dmg` task that both write `dist/drop`) needs that folder in
+`[workspace] shared_outputs`. A task clears its output folders before it runs
+and when it restores them from the cache, so without the setting the second
+task deletes the files of the first. A folder listed there (or inside a listed
+folder) is kept as it is. Without the setting, `smith ci generate`, `smith
+doctor` and the assets run print a warning that names both tasks and the two
+fixes: list the folder, or give each task its own folder.
+
 A glob in `assets` may match nothing on a platform, as `dist/drop/app_*.dmg` does
 on Windows and Linux, as long as another glob of the list matches a file there:
 the runner prints `no file matches <glob> on <platform>: skipped` and uploads the

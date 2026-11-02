@@ -56,3 +56,15 @@ func SharedOutputs(projects []*projectgraph.Project, allowed ...string) []string
 	}
 	return out
 }
+
+// OverlapWarnings turns SharedOutputs into the sentences smith ci generate and
+// the assets run print: each names both tasks, says what goes wrong and gives
+// the two fixes. It returns nothing when no two tasks overlap.
+func OverlapWarnings(projects []*projectgraph.Project, allowed ...string) []string {
+	var out []string
+	for _, line := range SharedOutputs(projects, allowed...) {
+		out = append(out, "warning: "+line+". A task clears its output folder before it runs, so the later task deletes the files of the earlier one. "+
+			"Fix: list the folder under [workspace] shared_outputs in smith.toml, or give each task its own folder.")
+	}
+	return out
+}

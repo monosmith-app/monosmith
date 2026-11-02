@@ -41,7 +41,7 @@ func TestSharedOutputsLeavesSeparateDirectoriesAlone(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 	// One task naming a directory twice is not a clash with itself.
-	c := projectWithOutputs("c", "libs/c", map[string][]string{"build": {"dist", "dist/types"}})
+	c :=projectWithOutputs("c", "libs/c", map[string][]string{"build": {"dist", "dist/types"}})
 	if got := SharedOutputs([]*projectgraph.Project{c}); len(got) != 0 {
 		t.Errorf("got %v", got)
 	}

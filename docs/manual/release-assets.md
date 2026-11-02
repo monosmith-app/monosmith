@@ -43,6 +43,15 @@ A glob in `assets` may match nothing on a platform (a `.dmg` glob on Windows) wh
 of the list matches. The run prints `no file matches <glob> on <platform>: skipped` and uploads
 the rest. When no glob matches, it fails.
 
+## Several tasks into one folder
+
+When the build command runs several smith tasks that write the same folder (a zip
+task, then a `package-dmg` task, both into `dist/drop`), list that folder under
+`[workspace] shared_outputs` in `smith.toml`. A task clears its output folders before it
+runs, so without the setting the second task deletes the file the first one made. With it,
+smith keeps what is in the folder. Without it, the assets run, `smith ci generate` and
+`smith doctor` warn, name both tasks and say how to fix it.
+
 ## Run it again for a tag
 
 `--tag <project@version>` builds that project's files from the **current checkout** and uploads

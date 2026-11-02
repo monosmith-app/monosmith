@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -86,6 +87,9 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 				return err
 			}
 			defer s.Close()
+			for _, w := range buildoutputs.OverlapWarnings(s.Graph.Projects, s.Config.Workspace.SharedOutputs...) {
+				fmt.Fprintln(c.ErrOrStderr(), w)
+			}
 			if check {
 				contributions, err := Collect(s)
 				if err != nil {
