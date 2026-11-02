@@ -33,6 +33,11 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 	if isToolsInstall(argv) {
 		return s.openTools(argv)
 	}
+	if len(argv) == 1 && argv[0] == "up" && s.canShow(commands.TabDeps) {
+		// Bare `smith up` is a picker for a terminal; the Dependencies tab asks
+		// the same questions and runs the chosen update in place.
+		return s.gotoTab(commands.TabDeps)
+	}
 	switch catalog.Classify(argv) {
 	case catalog.NeedsTerminal:
 		s.Argv, s.quit = argv, true

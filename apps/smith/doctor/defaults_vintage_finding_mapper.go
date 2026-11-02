@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -28,6 +29,8 @@ func defaultsVintageFinding(recorded string) protocol.Finding {
 			f.Detail = "this workspace uses the defaults of " + recorded + "; the latest is " + latest
 		}
 		f.Remedy = "`smith upgrade --defaults` shows the plan and moves the workspace; until then smith keeps the defaults it has"
+		f.Fix = smithfix.Fix("Move the workspace to the "+latest+" defaults",
+			smithfix.Step("Move the workspace to the "+latest+" defaults; the plan above lists each change", "upgrade", "--defaults"))
 	}
 	return f
 }

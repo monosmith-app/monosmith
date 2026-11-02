@@ -327,9 +327,9 @@ func (s Shell) doctorPanel() detail.Panel {
 	}
 	planned, hasFix := s.doctor.FixFor(f)
 	if hasFix {
-		rows = append(rows, detail.Row{Label: "command", Value: "smith doctor --fix --only '" + f.Check + "'"})
+		rows = append(rows, detail.Row{Label: "or in a terminal", Value: "smith doctor --fix --only '" + f.Check + "'"})
 	} else if c := commandIn(f.Remedy); c != "" {
-		rows = append(rows, detail.Row{Label: "command", Value: c})
+		rows = append(rows, detail.Row{Label: "in a terminal", Value: c})
 	}
 	// What to do comes first, with the actions: the problem can be as long as
 	// a page and must never push them off the screen.

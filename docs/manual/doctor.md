@@ -100,6 +100,11 @@ say nothing when there is nothing to say:
 - After cloning, after a merge, after changing tools, and before a release.
 - In CI, as a gate: it exits 1 while any check fails.
 - With `--fix` to repair generated files.
+- A check whose remedy names a smith command (`smith upgrade --defaults`, `smith deps up --align`,
+  `smith derive`, `smith cache prune`, `smith kind`) carries a fix of that command. It is never
+  "safe": `smith doctor --fix --yes` skips it, and the interactive shell and the editors ask first,
+  show the plan the command prints, and run it in place with a Fix action. Name one with
+  `--only` and answer its questions with `--choose`.
 
 ## Synopsis
 

@@ -46,6 +46,7 @@ func CheckOneVersionPolicy(s *session.Session) []protocol.Finding {
 			Check: CheckOneVersion, OK: len(fragmented) == 0,
 			Detail: strings.Join(fragmented, "; "),
 			Remedy: "`smith deps up --align` brings each to one version; a dependency that may differ is listed in smith.toml [dependencies] allow = [...]",
+			Fix:    alignFix(len(fragmented) > 0),
 		},
 		{
 			Check: CheckDevAtRoot, OK: len(misplaced) == 0, Warning: true,

@@ -27,7 +27,7 @@ import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
-import { fixDoctor, readHealth, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
+import { confirmFix, fixDoctor, fixFinding, pickFixAnswer, readHealth, tellFixOutcome, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
 import { pickArguments, readUpdates, toDependencyRows, updateArguments } from './dependencies/index.ts'
 import { createListView, groupByFolder, readFolderData, tagWithFolder, type ListNode, type ListResult } from './list-view/index.ts'
 import { createInsightDocuments, readExplain, readGraph } from './project-insight/index.ts'
@@ -632,6 +632,34 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     }
     await health.reload()
     release.invalidate()
+  }
+
+  /** Fixes the check of a Health row: smith asks the fix's questions, shows what it changes, and applies it only on a yes. */
+  const fixFindingRow = async (argument: unknown): Promise<void> => {
+    const tagged = readFolderData((argument as ListNode | undefined)?.data)
+    const state = tagged === undefined ? undefined : folders.get(tagged.root)
+    if (tagged === undefined || state?.session === undefined) {
+      void vscode.window.showInformationMessage('MonoSmith: choose a check in the Health view first.')
+
+      return
+    }
+    if (!mayWrite('a fix')) return
+    const report = await runDoctor(state.session.connection)
+    const finding = (report.findings ?? []).find((item) => item.check === tagged.data)
+    if (finding === undefined) {
+      void vscode.window.showInformationMessage('MonoSmith: that check passes now. Refresh the Health view.')
+      await health.reload()
+
+      return
+    }
+    const outcome = await fixFinding({
+      run:     smithIn(state, true, 600_000),
+      pick:    pickFixAnswer,
+      confirm: async (review) => await confirmFix(review, finding.fix?.description ?? finding.check),
+    }, finding)
+    tellFixOutcome(outcome)
+    await health.reload()
+    await refreshFolder(state.root, 'full', true)
   }
 
   const folderOf = async (): Promise<FolderState | undefined> => {
@@ -1266,6 +1294,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.derive.eject', async (argument) => { await deriveFile(argument, 'eject') }),
     command('monosmith.health.refresh', async () => { await health.reload() }),
     command('monosmith.health.fix', fixHealth),
+    command<unknown>('monosmith.health.fixFinding', fixFindingRow),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
     command('monosmith.dependencies.up', runUp),
     command<ListNode>('monosmith.dependencies.update', updateDependency),
