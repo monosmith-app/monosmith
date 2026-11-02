@@ -43,6 +43,21 @@ func TestAssetsJobSetsUpWithTheAssetsFlagAndTheCiJobDoesNot(t *testing.T) {
 	}
 }
 
+func TestAssetsJobInstallsTheLinuxPackagesBeforeTheBuild(t *testing.T) {
+	m := NewModel(Contributions{AssetPlatforms: []string{"linux-x64", "macos-arm64"}, NativeLinuxPackages: []string{"libgtk-3-dev", "libwebkit2gtk-4.1-dev", "bad name"}}, "dev", "main")
+	job := githubAssetsJob(m)
+	step := "        if: runner.os == 'Linux'\n        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev 'bad name'\n"
+	if !strings.Contains(job, step) {
+		t.Errorf("the assets job installs the apt packages on Linux only:\n%s", job)
+	}
+	if strings.Index(job, "Install the Linux packages") >= strings.Index(job, "smith ci assets --tag") {
+		t.Errorf("the packages come before the build:\n%s", job)
+	}
+	if none := githubAssetsJob(NewModel(Contributions{AssetPlatforms: []string{"linux-x64"}}, "dev", "main")); strings.Contains(none, "apt-get") {
+		t.Errorf("no packages, no step:\n%s", none)
+	}
+}
+
 func TestTheAssetsSetupLeavesOutTheProjectsThatOptedOutOfInstall(t *testing.T) {
 	no, yes := false, true
 	project := func(name string, install *bool, build string) *projectgraph.Project {

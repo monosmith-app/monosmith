@@ -335,7 +335,7 @@ GitHub Release, so it happens on GitHub Actions only.
 ```toml
 [ci]
 native_runners = ["ubuntu-latest", "windows-latest", "macos-latest"]  # the default
-native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux
+native_linux_packages = ["libsqlite3-dev"]   # apt packages installed before building on Linux (the native job and the assets job)
 ```
 
 Every AppleScript project is native, because `osacompile` exists on macOS only: with only AppleScript projects native, set `native_runners = ["macos-latest"]`.

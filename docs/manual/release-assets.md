@@ -43,6 +43,11 @@ A glob in `assets` may match nothing on a platform (a `.dmg` glob on Windows) wh
 of the list matches. The run prints `no file matches <glob> on <platform>: skipped` and uploads
 the rest. When no glob matches, it fails.
 
+## System packages on Linux
+
+The generated assets job installs the apt packages of `[ci] native_linux_packages` on its
+Linux runners before it runs the build, so the build command does not need to.
+
 ## Several tasks into one folder
 
 When the build command runs several smith tasks that write the same folder (a zip

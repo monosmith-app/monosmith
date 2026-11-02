@@ -142,6 +142,10 @@ release. Each runner runs the build, then uploads its own files with
 `actions/upload-artifact` (no artifact storage is spent). Give the files names
 that differ by platform: two runners uploading the same name replace each other.
 
+On a Linux runner the assets job first installs the apt packages of `[ci]
+native_linux_packages` (the native job installs them too), so a Linux app that
+needs GTK or WebKit headers does not call `apt-get` in its own `build`.
+
 A `build` that runs several smith tasks into one folder (a zip task and a
 `package-dmg` task that both write `dist/drop`) needs that folder in
 `[workspace] shared_outputs`. A task clears its output folders before it runs

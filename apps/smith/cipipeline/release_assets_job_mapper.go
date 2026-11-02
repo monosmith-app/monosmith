@@ -40,6 +40,23 @@ func githubCIOnlyWithoutAssetsTag(m Model) string {
 	return "    if: ${{ inputs.assets_tag == '' }}\n"
 }
 
+// githubLinuxPackages is the step that installs [ci] native_linux_packages with
+// apt on the Linux runners of the assets job, as the native job does, so the
+// build command needs no apt call of its own. Empty when none are listed.
+func githubLinuxPackages(packages []string) string {
+	if len(packages) == 0 {
+		return ""
+	}
+	var quoted []string
+	for _, p := range packages {
+		if strings.Trim(p, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.+:_-") != "" {
+			p = "'" + strings.ReplaceAll(p, "'", `'\''`) + "'"
+		}
+		quoted = append(quoted, p)
+	}
+	return "      - name: Install the Linux packages\n        if: runner.os == 'Linux'\n        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends " + strings.Join(quoted, " ") + "\n"
+}
+
 // githubAssetsJob runs smith ci assets on a runner of each platform after the
 // ci job released: each runner builds and uploads its own files to the GitHub
 // Release with gh release upload, so no artifact storage is used. A dispatch
@@ -76,6 +93,7 @@ func githubAssetsJob(m Model) string {
 	}
 	b.WriteString(githubInstallSmith(m, true))
 	b.WriteString(githubSiblingPreBuilds(m))
+	b.WriteString(githubLinuxPackages(m.NativeLinuxPackages))
 	b.WriteString("      - name: Setup\n        run: smith ci setup --assets\n")
 	b.WriteString(githubEnv("        ", m.SetupCredentials()))
 	b.WriteString(`      - name: Build and upload the release files
