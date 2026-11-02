@@ -118,6 +118,68 @@ describe('the other commands', () => {
   })
 })
 
+const SETTINGS = JSON.stringify([
+  { path: 'ci.devcontainer', type: 'boolean', description: 'Write a dev container.', reason: 'it makes a laptop and CI agree', value: 'true', set: true },
+  { path: 'release.api_check', type: 'string', description: 'How the public API is checked.', enum: ['warn', 'fail', 'off'], value: '', set: false },
+  { path: 'workspace.scope', type: 'string', description: 'The npm scope.', value: '', set: false },
+])
+
+describe('the settings of smith.toml', () => {
+  it('picks a setting, then a boolean from true and false with the current one marked, and writes it without --yes', async () => {
+    const f = fake(['ci.devcontainer', 'false'], true, { 'config list': ok(SETTINGS), 'config set': ok('✔ ci.devcontainer = false\n') })
+    expect(await runGuidedCommand(command('configSet'), f.deps)).toMatchObject({ kind: 'done' })
+    expect(f.asked[1].kind).toBe('pick')
+    expect(f.asked[1].options.map((o) => o.label)).toEqual(['true (current)', 'false'])
+    expect(f.calls.at(-1)).toEqual(['config', 'set', 'ci.devcontainer', 'false'])
+  })
+
+  it('offers the values of an enumerated setting, and a text box with the current value for any other', async () => {
+    const enumerated = fake(['release.api_check', 'warn'], true, { 'config list': ok(SETTINGS) })
+    await runGuidedCommand(command('configSet'), enumerated.deps)
+    expect(enumerated.asked[1].options.map((o) => o.value)).toEqual(['warn', 'fail', 'off'])
+    const typed = fake(['workspace.scope', '@acme'], true, { 'config list': ok(SETTINGS) })
+    await runGuidedCommand(command('configSet'), typed.deps)
+    expect(typed.asked[1]).toMatchObject({ kind: 'text', value: '' })
+  })
+
+  it('resets only a setting that smith.toml writes', async () => {
+    const f = fake(['ci.devcontainer'], true, { 'config list': ok(SETTINGS) })
+    await runGuidedCommand(command('configUnset'), f.deps)
+    expect(f.asked[0].options.map((o) => o.value)).toEqual(['ci.devcontainer'])
+    expect(f.calls.at(-1)).toEqual(['config', 'unset', 'ci.devcontainer'])
+  })
+})
+
+describe('plugins and the architecture', () => {
+  it('turns a built-in plugin off, and carries the warning smith prints about the projects it leaves', async () => {
+    const plugins = JSON.stringify([{ name: 'node', source: 'built-in', provides: ['node'] }, { name: 'ext', source: '/x' }])
+    const f = fake(['node'], true, {
+      'plugin list':    ok(plugins),
+      'plugin disable': { code: 0, stdout: 'enabled plugins: python\n', stderr: 'warning: 3 projects disappear: web, api, sdk\n' },
+    })
+    const outcome = await runGuidedCommand(command('pluginDisable'), f.deps)
+    expect(f.asked[0].options.map((o) => o.value)).toEqual(['node'])
+    expect(f.confirmed[0]).toContain('disappear')
+    expect(outcome).toMatchObject({ kind: 'done', lines: ['enabled plugins: python', 'warning: 3 projects disappear: web, api, sdk'] })
+  })
+
+  it('lists the architectures with the one in use marked', async () => {
+    const f = fake(['none'], true, { architecture: ok('* vertical-slices  one folder per feature\n                   applies to: node\n  none             no checks\n') })
+    await runGuidedCommand(command('architecture'), f.deps)
+    expect(f.asked[0].options).toEqual([
+      { label: 'vertical-slices (in use)', value: 'vertical-slices', description: 'one folder per feature' },
+      { label: 'none', value: 'none', description: 'no checks' },
+    ])
+    expect(f.calls.at(-1)).toEqual(['architecture', 'none'])
+  })
+
+  it('regenerates the pipelines after showing the plan', async () => {
+    const f = fake([], true, { 'ci generate': ok('plan') })
+    await runGuidedCommand(command('ciGenerate'), f.deps)
+    expect(f.calls).toEqual([['ci', 'generate', '--dry-run'], ['ci', 'generate', '--yes']])
+  })
+})
+
 describe('reading what smith prints', () => {
   it('reads web apps, workspace environments and pipelines, and falls back when the text is not what it expects', () => {
     expect(parseWebApps(APPS)[0].environments.map((e) => e.name)).toEqual(['dev', 'prd'])

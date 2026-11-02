@@ -556,6 +556,66 @@
         "title": "Connect smith to a Coding Assistant…",
         "category": "MonoSmith",
         "icon": "$(plug)"
+      },
+      {
+        "command": "monosmith.info",
+        "title": "Info: the Installed smith and the Settings",
+        "category": "MonoSmith",
+        "icon": "$(info)"
+      },
+      {
+        "command": "monosmith.ciGenerate",
+        "title": "Regenerate the CI Pipelines…",
+        "category": "MonoSmith",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "monosmith.deriveCheck",
+        "title": "Derived Files: Check Them",
+        "category": "MonoSmith",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "monosmith.derivePreview",
+        "title": "Derived Files: Preview the Update",
+        "category": "MonoSmith",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "monosmith.deriveUpdate",
+        "title": "Derived Files: Update Them…",
+        "category": "MonoSmith",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "monosmith.configSet",
+        "title": "Change a Setting of smith.toml…",
+        "category": "MonoSmith",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "monosmith.configUnset",
+        "title": "Reset a Setting of smith.toml to Its Default…",
+        "category": "MonoSmith",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "monosmith.pluginEnable",
+        "title": "Turn a Plugin On…",
+        "category": "MonoSmith",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "monosmith.pluginDisable",
+        "title": "Turn a Plugin Off…",
+        "category": "MonoSmith",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "monosmith.architecture",
+        "title": "Choose the Architecture of the Workspace…",
+        "category": "MonoSmith",
+        "icon": "$(layers)"
       }
     ],
     "menus": {
@@ -814,6 +874,56 @@
           "command": "monosmith.mcpInstall",
           "when": "view == monosmith.projects && monosmith.state == ready",
           "group": "6_more@16"
+        },
+        {
+          "command": "monosmith.info",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@17"
+        },
+        {
+          "command": "monosmith.ciGenerate",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@18"
+        },
+        {
+          "command": "monosmith.deriveCheck",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@19"
+        },
+        {
+          "command": "monosmith.derivePreview",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@20"
+        },
+        {
+          "command": "monosmith.deriveUpdate",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@21"
+        },
+        {
+          "command": "monosmith.configSet",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@22"
+        },
+        {
+          "command": "monosmith.configUnset",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@23"
+        },
+        {
+          "command": "monosmith.pluginEnable",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@24"
+        },
+        {
+          "command": "monosmith.pluginDisable",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@25"
+        },
+        {
+          "command": "monosmith.architecture",
+          "when": "view == monosmith.projects && monosmith.state == ready",
+          "group": "6_more@26"
         }
       ],
       "view/item/context": [
@@ -1268,6 +1378,46 @@
         },
         {
           "command": "monosmith.mcpInstall",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.info",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.ciGenerate",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.deriveCheck",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.derivePreview",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.deriveUpdate",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.configSet",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.configUnset",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.pluginEnable",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.pluginDisable",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.architecture",
           "when": "monosmith.state == ready"
         }
       ]

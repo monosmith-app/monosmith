@@ -59,6 +59,77 @@ export function parseWorkspaceEnvironments (text: string): string[] {
   return names.length > 0 ? names : DEFAULT_ENVIRONMENTS
 }
 
+/** A setting of smith.toml, as `smith config list --json` prints it. */
+export interface Setting {
+  path:        string
+  type:        string
+  description: string
+  enum?:       string[]
+  reason?:     string
+  value:       string
+  set:         boolean
+}
+
+/**
+ * Reads `smith config list --json`.
+ * @param json - what smith printed
+ * @returns the settings that have a path; an unreadable text gives none
+ */
+export function parseSettings (json: string): Setting[] {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(value)) return []
+  const records = value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+
+  return records.filter((record) => typeof record.path === 'string').map((record) => ({
+    path:        record.path as string,
+    type:        typeof record.type === 'string' ? record.type : '',
+    description: typeof record.description === 'string' ? record.description : '',
+    enum:        Array.isArray(record.enum) ? record.enum.filter((item): item is string => typeof item === 'string') : undefined,
+    reason:      typeof record.reason === 'string' && record.reason !== '' ? record.reason : undefined,
+    value:       typeof record.value === 'string' ? record.value : '',
+    set:         record.set === true,
+  }))
+}
+
+/**
+ * The built-in plugins `smith plugin list --json` prints.
+ * @param json - what smith printed
+ */
+export function parseBuiltinPlugins (json: string): GuidedOption[] {
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(value)) return []
+  const records = value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+
+  return records
+    .filter((record) => typeof record.name === 'string' && record.source === 'built-in')
+    .map((record) => ({ label: record.name as string, value: record.name as string, description: Array.isArray(record.provides) ? record.provides.join(', ') : undefined }))
+}
+
+/**
+ * The architectures `smith architecture` lists: a name and what it means, the one in use marked.
+ * @param text - what smith printed
+ */
+export function parseArchitectures (text: string): GuidedOption[] {
+  const options: GuidedOption[] = []
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^([ *]) ([a-z][a-z0-9-]*)(?= )/.exec(line)
+    if (match === null) continue
+    options.push({ label: `${match[2]}${match[1] === '*' ? ' (in use)' : ''}`, value: match[2], description: line.slice(match[0].length).trim() })
+  }
+
+  return options
+}
+
 /**
  * The pipelines `smith pipeline` lists: the name, and what it does with the app it needs when it needs one.
  * @param text - the table smith printed: name, providers, description, in columns split by two spaces

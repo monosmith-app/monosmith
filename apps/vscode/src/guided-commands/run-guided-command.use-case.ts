@@ -1,6 +1,6 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
 import type { GuidedAnswers, GuidedCommand, GuidedOutcome, GuidedStep, ResolvedStep } from './guided-command.contract.ts'
-import { environmentsOfApp, parsePipelineTemplates, parseWebApps, parseWorkspaceEnvironments, type WebApp } from './guided-sources.mapper.ts'
+import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parsePipelineTemplates, parseSettings, parseWebApps, parseWorkspaceEnvironments, type Setting, type WebApp } from './guided-sources.mapper.ts'
 
 /** What running a guided command needs from the editor. */
 export interface GuidedDeps {
@@ -64,7 +64,17 @@ export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps
   if (!await deps.confirm(`MonoSmith: ${command.title}?`, detail.trim(), command.verb ?? 'Run it')) return { kind: 'cancelled' }
   const done = await deps.run(command.yes === true ? [...args, '--yes'] : args)
 
-  return done.code === 0 ? { kind: 'done', lines: done.stdout.split(/\r?\n/).map((text) => text.trim()).filter(Boolean) } : { kind: 'refused', message: describeFailure(done) }
+  // A warning smith prints on stderr (the projects a plugin leaves) is part of the answer.
+  const lines = `${done.stdout}\n${done.stderr}`.split(/\r?\n/).map((text) => text.trim()).filter(Boolean)
+
+  return done.code === 0 ? { kind: 'done', lines } : { kind: 'refused', message: describeFailure(done) }
+}
+
+/** Reads the settings once: `smith config list --json`. */
+async function readSettings (deps: GuidedDeps): Promise<Setting[] | string> {
+  const listed = await deps.run(['config', 'list', '--json'])
+
+  return listed.code === 0 ? parseSettings(listed.stdout) : describeFailure(listed)
 }
 
 /** Reads the options or the first value of a step from smith. */
@@ -94,6 +104,46 @@ async function resolve (step: GuidedStep, answers: GuidedAnswers, deps: GuidedDe
       if (listed.code !== 0) return { refused: describeFailure(listed) }
       resolved.options = parsePipelineTemplates(listed.stdout)
       if (resolved.options.length === 0) return { refused: 'smith listed no pipeline. Update smith, or run smith pipeline in a terminal.' }
+      break
+    }
+    case 'settings':
+    case 'settings-set': {
+      const settings = await readSettings(deps)
+      if (typeof settings === 'string') return { refused: settings }
+      resolved.options = settings
+        .filter((setting) => step.from === 'settings' || setting.set)
+        .map((setting) => ({ label: setting.path, value: setting.path, description: `${setting.set ? setting.value : '(default)'}: ${setting.description}` }))
+      if (resolved.options.length === 0) return { refused: 'No setting is written in smith.toml, so there is nothing to reset.' }
+      break
+    }
+    case 'setting-value': {
+      const settings = await readSettings(deps)
+      if (typeof settings === 'string') return { refused: settings }
+      const setting = settings.find((item) => item.path === answers.setting)
+      if (setting === undefined) return { refused: `smith has no setting ${String(answers.setting)}.` }
+      const marked = (value: string): string => value === setting.value && setting.set ? ' (current)' : ''
+      const choices = setting.type === 'boolean' ? ['true', 'false'] : (setting.enum ?? [])
+      if (choices.length > 0) {
+        resolved.kind = 'pick'
+        resolved.options = choices.map((value) => ({ label: `${value}${marked(value)}`, value, description: setting.reason ?? setting.description }))
+      } else {
+        resolved.value = setting.value
+        resolved.prompt = `${setting.description}${setting.reason === undefined ? '' : ` Why the default is what it is: ${setting.reason}`} A list is comma-separated.`
+      }
+      break
+    }
+    case 'builtin-plugins': {
+      const listed = await deps.run(['plugin', 'list', '--json'])
+      if (listed.code !== 0) return { refused: describeFailure(listed) }
+      resolved.options = parseBuiltinPlugins(listed.stdout)
+      if (resolved.options.length === 0) return { refused: 'smith listed no built-in plugin.' }
+      break
+    }
+    case 'architectures': {
+      const listed = await deps.run(['architecture'])
+      if (listed.code !== 0) return { refused: describeFailure(listed) }
+      resolved.options = parseArchitectures(listed.stdout)
+      if (resolved.options.length === 0) return { refused: 'smith listed no architecture.' }
       break
     }
     case undefined: {
