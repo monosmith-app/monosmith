@@ -71,6 +71,14 @@ option number. Steps run in the workspace root and stop at the first that fails.
 				enc.SetIndent("", "  ")
 				_ = enc.Encode(report)
 			} else {
+				// Without a terminal the reader is a script or an agent: the count of
+				// fixes comes first, and a long list of passed checks is folded.
+				scripted := fix && !term.IsTerminal(int(os.Stdin.Fd()))
+				if scripted {
+					if summary := doctorfix.Summary(Plan(Only(report, only))); summary != "" {
+						fmt.Fprint(out, summary+"\n")
+					}
+				}
 				var names []string
 				for _, p := range s.Graph.Projects {
 					names = append(names, p.Name, p.Root)
@@ -95,7 +103,11 @@ option number. Steps run in the workspace root and stop at the first that fails.
 					}
 				}
 				if !verbose {
-					for _, line := range CollapsePassed(report.Findings, names) {
+					passed := CollapsePassed(report.Findings, names)
+					if scripted {
+						passed = FoldPassed(passed)
+					}
+					for _, line := range passed {
 						fmt.Fprintf(out, "✔ %s\n", line.Text)
 					}
 				}
@@ -224,8 +236,10 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 		}
 	}
 	interactive := term.IsTerminal(int(os.Stdin.Fd()))
+	// Without a terminal the summary already opened the output (see Command);
+	// the short version closes it, after the commands that apply each fix.
 	if !interactive {
-		fmt.Fprint(out, "\n"+doctorfix.Summary(plan))
+		defer func() { fmt.Fprint(out, "\n"+doctorfix.Reminder(plan)) }()
 	}
 	var applied, pending int
 	var opened *session.Session // the session a replan opened; the caller closes the first
