@@ -55,6 +55,7 @@ New here? Read [Getting started](getting-started/README.md). Stuck on a word? Se
 | see who owns a file, or attach a report of the workspace to a pull request | [`smith why`](manual/why.md), [`smith report`](manual/report.md) |
 | brief a coding agent on the rules of the workspace | [`smith agent file`](manual/agent-file.md), [The MonoSmith agent](guides/agent.md) |
 | revert the last `smith add`, `remove`, `upgrade`, `derive` or `sync` | [`smith undo`](manual/undo.md) |
+| commit a change you did not commit while it ran, as one undoable commit | [`smith commit`](manual/commit.md) |
 | release prerelease versions from a branch such as `next` | [Release channels](reference/releasing.md#release-channels) |
 | generate and customise CI | [CI pipelines](reference/ci.md) |
 | release packages, binaries and container images | [Releasing](reference/releasing.md) |

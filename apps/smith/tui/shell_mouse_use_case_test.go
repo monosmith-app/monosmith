@@ -277,12 +277,12 @@ func TestClickingATaskInTheRunListShowsItsLog(t *testing.T) {
 func TestClickingAGuideOptionSelectsAndDoubleClickingChoosesIt(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("a")
-	l.has("What are you adding?")
+	l.has("What are you building?")
 	x, y := l.find("A package")
 	l.send(click(x+2, y))
 	l.has("› A package")
 	l.doubleClick(x+2, y)
-	l.hasNot("What are you adding?")
+	l.hasNot("What are you building?")
 }
 
 func TestClickingAPaletteRowRunsIt(t *testing.T) {

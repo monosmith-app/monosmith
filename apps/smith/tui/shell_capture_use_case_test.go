@@ -64,7 +64,7 @@ func TestAddAsksForTheChoicesThenShowsThePlanBeforeWriting(t *testing.T) {
 		"add app api --lang go --with react --fresh --dry-run": {OK: true, Text: "Plan: add app api\n  Project api\n    create  apps/api/  (follows web: same test runner)"},
 	})
 	l.keys("a")
-	l.keys("enter", "enter") // an app, in the workspace's main language (go)
+	l.typeText("backend").keys("enter", "enter") // an API, in the workspace's main language (go)
 	l.typeText("api").keys("enter")
 	l.has("Build it from choices", "framework: react", "test: vitest")
 	l.keys("space", "enter") // react
@@ -85,7 +85,7 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 	l.answers(map[string]sources.Captured{
 		"add app api --lang go --fresh --dry-run": {Text: "✖ svelte needs the node language\n  → pick a node project or another framework"},
 	})
-	l.keys("a", "enter", "enter")
+	l.keys("a").typeText("backend").keys("enter", "enter")
 	l.typeText("api").keys("enter") // no choices for go, then the sibling question
 	l.keys("down", "down", "enter")
 	l.has("Cannot add api like that", "svelte needs the node language", "pick a node project")
@@ -98,7 +98,7 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 
 func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("a", "enter", "enter")
+	l.keys("a").typeText("backend").keys("enter", "enter")
 	l.typeText("api").keys("enter", "enter") // follow the siblings
 	l.has("[ ] Commit this change so it can be undone")
 	l.keys("c", "enter") // tick the box, then Run
@@ -110,7 +110,7 @@ func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 
 func TestAnUncommittedAddSaysSo(t *testing.T) {
 	l := newLab(t, true, 140, 40)
-	l.keys("a", "enter", "enter")
+	l.keys("a").typeText("backend").keys("enter", "enter")
 	l.typeText("api").keys("enter", "enter")
 	l.keys("enter") // the plan, then Run with the box unticked
 	if got := l.lastStarted(); strings.Contains(got, "--commit") {

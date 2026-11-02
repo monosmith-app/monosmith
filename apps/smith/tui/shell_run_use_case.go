@@ -73,7 +73,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
-	s.run, s.runHome = runview.NewRun(argv, nil, s.now()), false
+	s.run, s.runHome, s.runLines, s.resultKept = runview.NewRun(argv, nil, s.now()), false, nil, nil
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {
@@ -129,6 +129,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	for _, l := range msg.lines {
 		s.run.Feed(l, now)
 	}
+	s.keepLines(msg.lines)
 	if msg.exit == nil {
 		return waitCmd(msg.proc)
 	}
@@ -139,6 +140,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 		s.runSel = s.firstFailed()
 	}
 	s.finished()
+	s.afterRun()
 	if name, ok := addedProject(s.run.Command); ok && s.run.OK() {
 		s.justAdded = name
 	}

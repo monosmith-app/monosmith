@@ -119,6 +119,9 @@ commits them as one operation that smith undo can revert.`,
 			for _, n := range res.Notes {
 				fmt.Fprintln(out, n)
 			}
+			if hint := libraryUseHint(kind, args[1]); hint != "" {
+				fmt.Fprintln(out, hint)
+			}
 			project := s.Graph.Get(args[1])
 			toolinstall.Notice(cmd.Context(), s, out, []string{project.Language}, addOpts.With)
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {

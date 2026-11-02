@@ -115,7 +115,7 @@ func NewQuestions() []NewQuestion {
 	hasLanguage := func(a map[string]string) bool { return a[AnswerLanguage] != "" && a[AnswerLanguage] != LanguageLater }
 	saving := func(a map[string]string) bool { return hasLanguage(a) && a[AnswerSaveRecipe] == "yes" }
 	return []NewQuestion{
-		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for?", Default: "github", Flag: "ci", Options: []NewOption{
+		{Key: AnswerCI, Prompt: "Which CI should smith write pipelines for? (CI = where your tests run on every push)", Default: "github", Flag: "ci", Options: []NewOption{
 			{Label: "GitHub Actions", Value: "github", Hint: "default"},
 			{Label: "Azure Pipelines", Value: "azure"},
 			{Label: "GitLab CI", Value: "gitlab"},

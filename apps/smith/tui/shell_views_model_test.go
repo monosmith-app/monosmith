@@ -185,7 +185,7 @@ func TestQuestionMarkOpensTheHelpOfEveryTab(t *testing.T) {
 		{"1", "Do the suggested next action"},
 		{"2", "Open the detail of the project"},
 		{"3", "Run the last command again"},
-		{"4", "Read the view again"},
+		{"4", "Reload this view: read the files again, run nothing"},
 		{"5", "Update the marked ones"},
 		{"6", "Print the release notes"},
 	}

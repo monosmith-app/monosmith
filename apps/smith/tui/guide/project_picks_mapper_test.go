@@ -36,9 +36,19 @@ func TestRemoveAProjectWithNoProjectKeepsTheTextForm(t *testing.T) {
 	}
 }
 
+// stepKeyed is the step of a form with a key.
+func stepKeyed(a Action, key string) Step {
+	for _, s := range a.Steps {
+		if s.Key == key {
+			return s
+		}
+	}
+	panic("no step " + key)
+}
+
 func TestAddProjectRefusesAnExistingName(t *testing.T) {
 	a := AddProjectAction(plainAdd(), nil, []string{"web", "api"})
-	check := a.Steps[2].Check
+	check := stepKeyed(a, "name").Check
 	if got := check(map[string][]string{"kind": {"app"}}, "web"); !strings.Contains(got, "exists already") {
 		t.Fatalf("a taken name is accepted: %q", got)
 	}

@@ -53,7 +53,7 @@ var all = []Command{
 	{ID: "projects.remove-package", Group: GroupProjects, Title: "Remove a package…", Hint: "smith uninstall -w <project> <package>: asks which project and package", Keys: []string{"-"}, Kind: OpenPackagePrompt, Action: "uninstall", NeedsWorkspace: true, NeedsIdle: true},
 	{ID: "projects.back", Group: GroupRun, Title: "Back to the list", Keys: []string{"esc"}, Kind: PaneKey, Views: vProjects, NeedsDetailOpen: true, Footer: "back"},
 
-	{ID: "run.again", Group: GroupRun, Title: "Run the last command again", Hint: "the last command line, as it was", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "again"},
+	{ID: "run.again", Group: GroupRun, Title: "Run the last command again (one that changes files asks first)", Hint: "runs the last command line again, as it was; a command that changes files asks first", Keys: []string{"r"}, Kind: ViewAction, Action: "rerun", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "run again"},
 	{ID: "run.again-failed", Group: GroupRun, Title: "Run the failed and skipped tasks again", Hint: "smith run on just the tasks that did not pass", Keys: []string{"R"}, Kind: ViewAction, Action: "rerun-failed", Views: vRun, NeedsWorkspace: true, NeedsIdle: true, Footer: "failed"},
 	{ID: "run.copy-log", Group: GroupRun, Title: "Copy the log shown", Hint: "the output of the selected task, or all of it, to the clipboard", Keys: []string{"Y"}, Kind: ViewAction, Action: "copy-log", Views: vRun, Footer: "copy log"},
 	{ID: "run.older", Group: GroupRun, Title: "Show the previous run", Hint: "the runs of this session are kept", Keys: []string{","}, Kind: ViewAction, Action: "run-older", Views: vRun, NeedsIdle: true, Footer: "runs", Glyph: ", ."},
@@ -94,7 +94,7 @@ var all = []Command{
 	{ID: "guide.choose", Group: GroupStart, Title: "Choose and go on", Keys: []string{"enter"}, Kind: PaneKey, Views: vGuide, Footer: "choose", Glyph: "Enter"},
 	{ID: "guide.back", Group: GroupStart, Title: "Back one step", Keys: []string{"esc"}, Kind: PaneKey, Views: vGuide, Footer: "back"},
 
-	{ID: "view.reload", Group: GroupViews, Title: "Read the view again", Keys: []string{"r"}, Kind: ViewAction, Action: "reload", Views: vReloadable, NeedsWorkspace: true, NeedsIdle: true, Footer: "reload"},
+	{ID: "view.reload", Group: GroupViews, Title: "Reload this view: read the files again, run nothing", Hint: "reads the files and checks again; it runs nothing", Keys: []string{"r"}, Kind: ViewAction, Action: "reload", Views: vReloadable, NeedsWorkspace: true, NeedsIdle: true, Footer: "reload view"},
 
 	// Moving: the keys every pane understands, handled by the pane itself.
 	{ID: "move.arrows", Group: GroupMoving, Title: "Move in a list", Keys: []string{"down", "up", "j", "k"}, Shortcut: "Up Down / j k", Kind: PaneKey},

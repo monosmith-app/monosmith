@@ -28,7 +28,7 @@ func TestTheScreenHasNoMenuBarAndTheFooterShowsTheKeysOfTheOpenView(t *testing.T
 	}
 	l.keys("4")
 	footer = l.lines()[len(l.lines())-2]
-	for _, want := range []string{"F fix all", "g group", "r reload", "q quit"} {
+	for _, want := range []string{"F fix all", "g group", "r reload view", "q quit"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the Doctor footer lacks %q: %q", want, footer)
 		}
@@ -106,7 +106,7 @@ func TestKeysDoNotFireWhileATextFieldIsEditing(t *testing.T) {
 func TestKeysDoNotFireInsideAGuideForm(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a")
-	l.has("Add a project", "What are you adding?")
+	l.has("Add a project", "What are you building?")
 	l.keys("b", "t", "3")
 	if len(l.started) != 0 || l.sh().tab != "guide" {
 		t.Fatalf("a form option list ran %v in %q", l.started, l.sh().tab)
@@ -339,7 +339,7 @@ func TestNumberedShortcutsSwitchTabs(t *testing.T) {
 func TestTheDoctorTabOpensARemedyAndShowsItsKeysInTheFooter(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("d")
-	l.has("✗ go.work lists every module", "F fix all", "r reload")
+	l.has("✗ go.work lists every module", "F fix all", "r reload view")
 	l.hasNot("[↻", "Re-check")
 	// The list is one line per check; the detail beside it tells the selected one in full.
 	l.has("2 failed", "Problem", "libs/x is missing", "How to fix", "go work use ./libs/x", "2 checks passed")
@@ -417,7 +417,7 @@ func TestEveryWorkspaceChangingCommandAsksFirst(t *testing.T) {
 func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a") // Add project…
-	l.has("Add a project", "What are you adding?")
+	l.has("Add a project", "What are you building?")
 	// Enter on the language keeps the default: what most projects here use (Go).
 	l.keys("down", "down", "enter", "enter").typeText("toolkit").keys("enter")
 	// Four projects are enough to follow: the form asks, and Enter keeps the default (match them).
@@ -444,9 +444,18 @@ func TestOutsideAWorkspaceNStartsANewWorkspaceAndCtrlNMeansNothing(t *testing.T)
 	l.keys("n")
 	l.has("Create a workspace", "What should the new workspace be called?")
 	l.typeText("acme").keys("enter")
+	// The first question: the defaults (Enter), or the questions (Customise).
+	l.has("How do you want to set it up?", "Start with the defaults", "CI = where your tests run on every push")
+	l.keys("down", "enter")
 	// The CI, the main language, the code layout, the agent, the dev container and "more options": Enter keeps each default.
 	l.has("Which CI should smith write pipelines for?")
 	l.keys("enter", "enter", "enter", "enter", "enter", "enter")
+	l.has("$ smith new acme --yes")
+}
+
+func TestStartingWithTheDefaultsNeedsOnlyTheName(t *testing.T) {
+	l := newLab(t, false, 120, 30)
+	l.keys("n").typeText("acme").keys("enter", "enter")
 	l.has("$ smith new acme --yes")
 }
 

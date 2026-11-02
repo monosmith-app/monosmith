@@ -40,10 +40,26 @@ function fake (options: { plan?: SmithRun, apply?: SmithRun, request?: AddReques
 describe('addProject', () => {
   it('plans with --dry-run, shows the plan, then adds with --yes', async () => {
     const f = fake({})
-    expect(await addProject(f.deps)).toEqual({ kind: 'added', name: 'web', lines: ['Done: app web is ready.'], committed: false })
+    expect(await addProject(f.deps)).toEqual({ kind: 'added', name: 'web', role: 'app', operation: 'add app web', lines: ['Done: app web is ready.'], committed: false })
     expect(f.ran.at(-1)).toEqual(['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--dry-run'])
     expect(f.applied).toEqual([['add', 'app', 'web', '--lang', 'node', '--with', 'vitest', '--yes']])
     expect(f.shown[0]?.plan).toContain('Plan: add app web')
+  })
+
+  it('says the project was made when its first check could not run for a missing tool', async () => {
+    const stdout = 'Creating app api-cs in apps/api-cs/: a console app\nWrote 12 file(s):\nVerifying: smith run build test -p api-cs\ndotnet is not installed or not on PATH. Install it from https://dot.net/download, or run smith tools install.\n'
+    const f = fake({ apply: { code: 1, stdout, stderr: 'api-cs was created and its files are kept, but a tool it needs is missing.\n' }, request: { ...REQUEST, name: 'api-cs', language: 'dotnet' } })
+    expect(await addProject(f.deps)).toEqual({
+      kind:  'unchecked',
+      name:  'api-cs',
+      lines: stdout.trim().split('\n'),
+      tool:  { title: 'the .NET SDK', files: 12, url: 'https://dot.net/download', dir: 'apps/api-cs', check: ['run', 'build', 'test', '-p', 'api-cs'] },
+    })
+  })
+
+  it('refuses, with smith words, a failure that is not a missing tool', async () => {
+    const f = fake({ apply: { code: 1, stdout: '', stderr: '✖ the new project web fails its first build\n' } })
+    expect(await addProject(f.deps)).toMatchObject({ kind: 'refused' })
   })
 
   it('tells the confirmation when the project follows its siblings, and adds with --fresh when asked', async () => {

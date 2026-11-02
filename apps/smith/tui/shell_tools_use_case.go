@@ -88,6 +88,7 @@ func (s *Shell) toolsKey(name string) tea.Cmd {
 		}
 	case out.Done:
 		s.tools = nil
+		s.reopenResult()
 		return s.refreshAfter([]string{"tools", "install"})
 	}
 	return nil

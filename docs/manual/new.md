@@ -119,9 +119,16 @@ in the same order. A question whose flag you gave is not asked, `--yes` takes th
 default of the rest, and with no terminal nothing is asked: the flags and the defaults
 are the whole answer.
 
+The form in the terminal interface asks one question before these: **How do you want to set it up?**
+**Start with the defaults** lists what it chooses (CI: GitHub Actions, language: decide later, code layout:
+vertical-slices, agent files: yes, dev container: yes) and how to change each one later, and asks nothing more
+than the name. **Customise** asks the questions below. The questions that carry risk are asked either way: what
+the first commit holds in a folder that has files and no git repository, and what to do with files whose names
+look like secrets. The command line has no such question: `smith new <name> --yes` is the defaults.
+
 | Question | Flag | Default | What it writes |
 |---|---|---|---|
-| Which CI should smith write pipelines for? | `--ci` | `github` | `[ci] providers` |
+| Which CI should smith write pipelines for? (CI = where your tests run on every push) | `--ci` | `github` | `[ci] providers` |
 | What is the main language? | `--language` | `later` | nothing in `smith.toml`; it decides whether the Node question is asked and the `--lang` of the next step |
 | Which tests and lint for Node projects? (asked for Node only) | `--default-stack node=<stack>` | `node-jest` (or `node-vitest`, `node-ts`) | `[default_stacks] node` |
 | Which code layout should smith check? | `--architecture` | `vertical-slices` | the `[conventions.<layout>]` table (none for `none`); see [`smith architecture`](architecture.md) |

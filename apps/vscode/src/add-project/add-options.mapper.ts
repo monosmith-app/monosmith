@@ -46,6 +46,9 @@ export function parseChoices (json: string): ChoiceOption[] {
       needs:       words(item.needs),
       suggested:   item.suggested === true,
       conflicts:   words(item.conflicts),
+      ...(text(item.title) !== '' && { title: text(item.title) }),
+      ...(text(item.layer) !== '' && { layer: text(item.layer) }),
+      ...(words(item.aliases).length > 0 && { aliases: words(item.aliases) }),
     }))
     .filter((item) => item.axis !== '' && item.name !== '')
 }

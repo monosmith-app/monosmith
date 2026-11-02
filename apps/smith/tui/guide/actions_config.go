@@ -31,6 +31,19 @@ type Step struct {
 	// Skip, when set, leaves the question out when it says so, given the
 	// earlier answers; the key then has no answer.
 	Skip func(answers map[string][]string) bool
+	// Auto, when set, answers the question itself when it returns a value (the
+	// answer is then the same as a pick of that option) and asks it when it
+	// returns "": a language that an outcome has only one of is not asked.
+	Auto func(answers map[string][]string) string
+	// Ticked, when set, names the options of a multiple choice that start
+	// ticked, given the earlier answers.
+	Ticked func(answers map[string][]string) []string
+	// Preselect, when set, picks the option the cursor starts on from the words
+	// typed in the last list that was filtered ("electron" starts on Electron).
+	Preselect func(typed string, options []Option) string
+	// Note is a muted line under the question; Try is the examples shown in the
+	// place of "Type to narrow the list" on a Filter step.
+	Note, Try string
 }
 
 // Option is one answer.
@@ -146,7 +159,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		},
 		{
 			Title: "Manage plugins", Presents: "plugin set", Hint: "choose which built-in plugins are on", NeedsWorkspace: true,
-			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Multi: true, Options: pluginOpts}},
+			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Note: WhatIs("plugin"), Multi: true, Options: pluginOpts}},
 			Argv: func(a map[string][]string) []string {
 				return append([]string{"plugin", "set"}, a["plugins"]...)
 			},

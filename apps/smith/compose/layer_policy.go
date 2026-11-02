@@ -18,6 +18,21 @@ var knownLayers = []Layer{
 	{ID: "ci", Title: "CI and deploy", About: "the pipelines that build, test and deploy the project"},
 }
 
+// AboutLayer says in plain words what sits on a layer ("what wraps the app as a
+// program you install on a computer"), for a screen that meets the word
+// "framework", "shell" or "host" before a person has read anything.
+//
+// Parameters: id is a layer id.
+// Returns: the sentence, or "" for a layer smith does not know.
+func AboutLayer(id string) string {
+	for _, l := range knownLayers {
+		if l.ID == id {
+			return l.About
+		}
+	}
+	return ""
+}
+
 // LayerOf is the layer of a choice: the layer its plugin names, else its axis.
 //
 // Parameters: layer is protocol.Choice.Layer; axis is protocol.Choice.Axis.
