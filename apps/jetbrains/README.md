@@ -6,11 +6,17 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
 ## What it does
 
 - The **MonoSmith** tool window (right side) has three tabs.
-  - **Projects**: the projects of the workspace and their tasks. Double-click a task to run it. A row
+  - **Projects**: the projects of the workspace and their tasks, the affected ones marked, a filter box and
+    an "Affected only" box. Double-click a task to run it. A row
     **Add your first project** (or **New project…** after the projects, or **New workspace…** when there is
     no `smith.toml`) starts the flow. Right-click a project for **Add library…**, **Install package…**,
     **Unlink library…**, **Swap a choice…**, **Make app, library or package…**, **Remove…**, **Why…**,
     **Explain** and **Run task**. The title bar has a Refresh button.
+  - **Dependencies**: the updates of `smith up --json` grouped by risk (major first) and the tools with a
+    newer version. **Update dependencies…** picks every patch and minor update or a list (a major update is
+    never ticked), shows the plan, then writes; **Align versions…** asks which version wins (`up --align`).
+  - **Release**: the plan of `smith release --dry-run --json` with the reason and commits of each package,
+    the channel, and why nothing releases; **Release…** starts the flow (hold, bump, force).
   - **Health**: the findings of `smith doctor --json`, failed checks first. A finding with a structured fix
     has a **Fix this check** row: smith's questions, then its review (the diffs and the plan of each command),
     then Apply.
@@ -19,12 +25,14 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
   Package, Create a New Workspace, New Recipe, Install the Tools the Workspace Needs, the Project group
   (Remove, Make a project an app/library/package, Unlink, Swap a choice, Sync versions), Environments,
   Derived Files, Commit the Changes, Undo, Release, Release Preview, Doctor, Doctor: Apply the Safe Fixes,
-  Divergences, Try a Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a
+  Divergences, Run Task in All Projects, Run Affected, Start Dev Servers, Update and Align Dependencies, Open the
+  Report, Search and Install a Plugin, Settings, Bring This Folder In (adopt), Convert This Workspace, Try a Command in a Copy, Write the smith Launcher, Install the MCP Server and Agent, Explain a
   Project and Why. **Why** is also in the editor and project view menus.
 - The projects, kinds, choices, outcomes, tools, recipe levels and doctor fixes all come from smith's JSON
-  (`projects`, `kinds`, `choices`, `compose`, `tools install --dry-run`, `recipe new --list-levels`,
-  `doctor`, `release --dry-run`). The plugin holds no list of languages, frameworks or tools. The lists of
-  `smith new` (CI systems, languages, code layouts) are the one exception: smith has no JSON for them.
+  (`projects`, `affected`, `kinds`, `choices`, `compose`, `tools install --dry-run`, `recipe new --list-levels`,
+  `doctor`, `release --dry-run`, `up`, `config list`, `plugin search`, `adopt --dry-run`, `new --questions`). The plugin holds no list of languages, frameworks or tools. The lists of
+  `smith new` come from `smith new --questions --json` too. The plugin holds no list of CI systems, languages or layouts.
+- Each question shows the one-line "what is this" of its layer from the catalogue (`about` in `smith compose --json`).
 
 ## The rules of every flow
 
@@ -46,12 +54,12 @@ The JetBrains plugin of issue #303. It offers the same functions as the VS Code 
 
 ## Not built
 
-Run All, Run Affected, affected marks, the filter, the dependency view, the report, plugin search and on/off,
-the settings editor, adopt and convert, `smith up`, the live `smith serve` connection and the language
-server (`smith lsp`, not built in the engine either), and the glossary line under each question.
-"Let smith run it" for a tool that needs administrator rights runs in the Output tab, where a `sudo`
-password cannot be typed. The dialogs, notifications and tool window have not been run in a real IDE:
-CI compiles them against the platform and tests every mapper and algorithm.
+Plugin on/off (`plugin enable`, `disable`), the `dependencies.one_version` toggle, the live `smith serve`
+connection, the language server (`smith lsp`, not built in the engine either) and the Go module prefix
+question of `smith new`. "Let smith run it" for a tool that needs administrator rights runs in the Output
+tab, where a `sudo` password cannot be typed. The four choices of `smith convert` are the answers its help
+lists (smith has no JSON for them). The dialogs, notifications and tool window have not been run in a real
+IDE: CI compiles them against the platform, and the flows are tested with a fake smith and a fake person.
 
 ## Build and test
 
@@ -76,10 +84,12 @@ Slices under `src/main/kotlin/dev/monosmith/jetbrains/`, named `<Name><Role>` as
 requires. The pure parts (mappers, algorithms, policies, contracts) have unit tests; the IDE parts are
 compiled against the platform.
 
-- Foundation: `jsonread` (read smith's JSON), `smithrun` (run smith, the Output console, background flows),
+- Foundation: `flowports` (the three ports a flow is written against: smith, the person, the notices),
+  `jsonread` (read smith's JSON), `smithrun` (run smith, the Output console, background flows),
   `notice` (balloons and the three-button split), `prompt` (the radio, check box and plan dialogs),
   `planapply` (plan, ask, apply), `workspace` (find the root, list the projects), `smithcommand`, `taskrun`.
 - Features, one slice each: `addproject`, `addchoices`, `composestack`, `installdependency`, `projectactions`,
   `swapchoice`, `syncversions`, `commitchanges`, `undochange`, `releaseflow`, `health`, `installtools`,
-  `derivefiles`, `newworkspace`, `newrecipe`, `trycommand`, `workspacetools`, `smithversion`.
+  `derivefiles`, `newworkspace`, `newrecipe`, `trycommand`, `workspacetools`, `smithversion`, `runacross`,
+  `dependencies`, `workspacereport`, `pluginmarket`, `settings`, `adoptfolder`, `convertfolder`, `devservers`.
 - Entry points: `toolwindow` (the tool window) and `smithaction` (one handler for each menu action).
