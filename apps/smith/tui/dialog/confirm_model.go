@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -31,7 +32,11 @@ type Confirm struct {
 	cmdLines     []string
 	// Offer shows the box "Commit this change so it can be undone"; Commit is
 	// true once it is ticked. It starts unticked: smith commits only when asked.
-	Offer, Commit    bool
+	Offer, Commit bool
+	// scroll is how many lines of the head (the sentence and the details) are
+	// scrolled off: a long plan never pushes the commit box and the command
+	// out of the dialog.
+	scroll           int
 	screenW, screenH int
 }
 
@@ -98,7 +103,8 @@ func (c Confirm) Place(sw, sh int) Confirm {
 // Rect is where the dialog sits after Place.
 func (c Confirm) Rect() Rect { return c.rect }
 
-func (c Confirm) bodyLines(inner int) []string {
+// headLines are the sentence and the details: the part that scrolls.
+func (c Confirm) headLines(inner int) []string {
 	body := append([]string(nil), wrap(c.Why, inner)...)
 	if len(c.Details) > 0 {
 		body = append(body, "")
@@ -106,21 +112,50 @@ func (c Confirm) bodyLines(inner int) []string {
 			body = append(body, wrap(d, inner)...)
 		}
 	}
+	return body
+}
+
+// tailLines are the commit box and the command that will run: they always
+// stay on screen. A notice has none.
+func (c Confirm) tailLines() []string {
 	if c.Info {
-		return body
+		return nil
 	}
+	var tail []string
 	if c.Offer {
 		box := "[ ] "
 		if c.Commit {
 			box = "[x] "
 		}
-		body = append(body, "", box+CommitLabel+"  (C)")
+		tail = append(tail, "", box+CommitLabel+"  (C)")
 	}
-	body = append(body, "", "The command that will run:")
+	tail = append(tail, "", "The command that will run:")
 	for _, l := range c.cmdLines {
-		body = append(body, "  $ "+l)
+		tail = append(tail, "  $ "+l)
 	}
-	return body
+	return tail
+}
+
+func (c Confirm) bodyLines(inner int) []string {
+	return append(c.headLines(inner), c.tailLines()...)
+}
+
+// headRoom is how many rows the head has on screen.
+func (c Confirm) headRoom() int { return max(c.rect.H-4-len(c.tailLines()), 0) }
+
+// shownHead is the part of the head on screen, and how many lines are hidden
+// below it: when the head does not fit, the last row says so.
+func (c Confirm) shownHead(inner int) (shown []string, hidden int) {
+	head, room := c.headLines(inner), c.headRoom()
+	if len(head) <= room {
+		return head, 0
+	}
+	if room < 2 {
+		return nil, len(head)
+	}
+	from := min(max(c.scroll, 0), len(head)-(room-1))
+	end := from + room - 1
+	return head[from:end], len(head) - end
 }
 
 // buttonsRow returns the row of buttons for the inner width and the columns
@@ -144,14 +179,21 @@ func (c Confirm) Lines(th theme.Theme) []string {
 		return nil
 	}
 	inner := r.W - 4
-	body := c.bodyLines(inner)
 	rows := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
-	for i, l := range body {
-		if len(rows) >= r.H-4 {
-			break
-		}
-		if i >= len(body)-len(c.cmdLines) {
+	shown, hidden := c.shownHead(inner)
+	for _, l := range shown {
+		rows = append(rows, row(l))
+	}
+	if hidden > 0 && c.headRoom() >= 2 {
+		rows = append(rows, row(th.Muted(fmt.Sprintf("… %d more lines (Up/Down/PgDn show them)", hidden))))
+	}
+	for len(rows) < c.headRoom() {
+		rows = append(rows, row(""))
+	}
+	tail := c.tailLines()
+	for i, l := range tail {
+		if i >= len(tail)-len(c.cmdLines) {
 			l = th.Bold(l)
 		}
 		rows = append(rows, row(l))
@@ -196,8 +238,7 @@ func (c Confirm) buttonAt(x, y int) int {
 
 // commitRow is the index, in the body, of the line with the box.
 func (c Confirm) commitRow() int {
-	inner := max(c.rect.W-4, 1)
-	return len(c.bodyLines(inner)) - len(c.cmdLines) - 3
+	return c.headRoom() + 1
 }
 
 // Hover highlights the button under the pointer.
@@ -243,6 +284,17 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		return c, Outcome{Done: true, Confirmed: c.focus == 0}
 	case "tab", "right", "left", "shift+tab":
 		c.focus = 1 - c.focus
+	case "up", "k":
+		c.scroll = max(c.scroll-1, 0)
+	case "down", "j":
+		c.scroll++
+	case "pgup":
+		c.scroll = max(c.scroll-max(c.headRoom()-1, 1), 0)
+	case "pgdown":
+		c.scroll += max(c.headRoom()-1, 1)
+	}
+	if head := len(c.headLines(max(c.rect.W-4, 1))); c.scroll > head {
+		c.scroll = head
 	}
 	return c, Outcome{}
 }
