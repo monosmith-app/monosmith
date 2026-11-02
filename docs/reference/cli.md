@@ -74,11 +74,13 @@ Usage: `smith new <name> [flags]`
 | `--github-releases` | create a GitHub Release for every release tag | off |
 | `--here` | create the workspace in the current folder, which must be empty; the name defaults to the folder's | off |
 | `--include-secrets` | let --first-commit all commit files whose names look like secrets (.env, keys) | off |
+| `--json` | with --questions: print them as JSON | off |
 | `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--no-commit` | write the files and commit nothing | off |
 | `--no-devcontainer` | leave the dev container out; sets [ci] devcontainer = false | off |
+| `--questions` | print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
 | `--recipe <recipe>` | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |  |
 | `--recipe-file <recipe-file>` | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |  |
 | `--release-branch <release-branch>` | the branch releases run from (default main) | `main` |

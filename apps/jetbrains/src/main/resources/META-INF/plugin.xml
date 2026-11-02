@@ -2,36 +2,110 @@
     <id>dev.monosmith.jetbrains</id>
     <name>MonoSmith</name>
     <vendor>MonoSmith</vendor>
-    <description>Lists the projects and tasks of a MonoSmith workspace and runs a task, showing the command line first. Adds doctor (with fix), add project, undo, why and the release preview to the Tools menu. Uses the smith installed in the workspace or on the PATH.</description>
+    <description>The same functions as the MonoSmith VS Code extension. A tool window lists the projects and tasks of a MonoSmith workspace, with a menu on each project and a Health view that fixes a check with its plan shown. Tools &gt; MonoSmith adds a project, composes a stack, installs a package or an internal library, commits, undoes, releases, syncs, removes, swaps a choice, creates a workspace or a recipe, installs tools and more. Every question is a presented choice with the default marked, every change shows its plan first, and smith commits only when you tick the box. Uses the smith installed in the workspace or on the PATH.</description>
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="MonoSmith" anchor="right" factoryClass="dev.monosmith.jetbrains.toolwindow.ProjectsToolWindowHandler"/>
+        <notificationGroup id="MonoSmith" displayType="BALLOON"/>
     </extensions>
 
     <actions>
         <group id="MonoSmith.Menu" text="MonoSmith" popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-            <action id="MonoSmith.Doctor"
-                    class="dev.monosmith.jetbrains.smithaction.DoctorActionHandler"
-                    text="Doctor"
-                    description="Check the workspace with smith doctor"/>
-            <action id="MonoSmith.DoctorFix"
-                    class="dev.monosmith.jetbrains.smithaction.DoctorFixActionHandler"
-                    text="Doctor: Apply the Safe Fixes..."
-                    description="Show the fixes smith doctor can make and apply the safe ones"/>
-            <action id="MonoSmith.AddProject"
-                    class="dev.monosmith.jetbrains.smithaction.AddProjectActionHandler"
-                    text="Add Project..."
-                    description="Add a project with smith add; the commit box is unticked"/>
-            <action id="MonoSmith.Undo"
-                    class="dev.monosmith.jetbrains.smithaction.UndoActionHandler"
-                    text="Undo the Last Change..."
-                    description="Revert the last change smith committed (smith undo)"/>
-            <action id="MonoSmith.ReleasePreview"
-                    class="dev.monosmith.jetbrains.smithaction.ReleasePreviewActionHandler"
-                    text="Release Preview"
-                    description="Show what a release would publish (smith release --dry-run)"/>
+
+            <action id="MonoSmith.AddProject" class="dev.monosmith.jetbrains.smithaction.AddProjectActionHandler"
+                    text="Add Project..." description="Add a project: outcome first, choices per axis, the plan, the unticked commit box"/>
+            <action id="MonoSmith.ComposeStack" class="dev.monosmith.jetbrains.smithaction.ComposeStackActionHandler"
+                    text="Compose a Stack..." description="Search every framework, shell and host, see conflicts, end in the plan"/>
+            <action id="MonoSmith.AddLibrary" class="dev.monosmith.jetbrains.smithaction.AddLibraryActionHandler"
+                    text="Add a Library to a Project..." description="Use a library of this workspace (workspace:)"/>
+            <action id="MonoSmith.InstallPackage" class="dev.monosmith.jetbrains.smithaction.InstallPackageActionHandler"
+                    text="Install a Package in a Project..." description="Install packages from the registry (--registry)"/>
+            <separator/>
+            <action id="MonoSmith.NewWorkspace" class="dev.monosmith.jetbrains.smithaction.NewWorkspaceActionHandler"
+                    text="Create a New MonoSmith Workspace..." description="Start with the defaults or customise, see the files, then create"/>
+            <action id="MonoSmith.NewRecipe" class="dev.monosmith.jetbrains.smithaction.NewRecipeActionHandler"
+                    text="New Recipe..." description="Write a recipe that fixes plugins, one question per level"/>
+            <action id="MonoSmith.InstallTools" class="dev.monosmith.jetbrains.smithaction.InstallToolsActionHandler"
+                    text="Install the Tools the Workspace Needs..." description="One choice per missing tool, with the command visible"/>
+            <action id="MonoSmith.AdoptFolder" class="dev.monosmith.jetbrains.smithaction.AdoptFolderActionHandler"
+                    text="Bring This Folder In (Adopt)..." description="The four questions of smith adopt --init, where to move a root project, the plan with diffs"/>
+            <action id="MonoSmith.ConvertFolder" class="dev.monosmith.jetbrains.smithaction.ConvertFolderActionHandler"
+                    text="Convert This Workspace..." description="smith convert: the level, the choices, the plan with the files it deletes"/>
+            <separator/>
+            <action id="MonoSmith.RunAll" class="dev.monosmith.jetbrains.smithaction.RunAllActionHandler"
+                    text="Run Task in All Projects..." description="Pick a task and run it in every project that has it"/>
+            <action id="MonoSmith.RunAffected" class="dev.monosmith.jetbrains.smithaction.RunAffectedActionHandler"
+                    text="Run Affected..." description="Pick a task and run it in the projects the changes affect"/>
+            <action id="MonoSmith.DevServers" class="dev.monosmith.jetbrains.smithaction.DevServersActionHandler"
+                    text="Start Dev Servers..." description="smith dev for the projects that have a start task; the Run window has Stop"/>
+            <separator/>
+            <group id="MonoSmith.Project" text="Project" popup="true">
+                <action id="MonoSmith.RemoveProject" class="dev.monosmith.jetbrains.smithaction.RemoveProjectActionHandler"
+                        text="Remove a Project..." description="The plan, then keep a copy or delete"/>
+                <action id="MonoSmith.ChangeKind" class="dev.monosmith.jetbrains.smithaction.ChangeKindActionHandler"
+                        text="Make a Project an App, Library or Package..." description="The plan of smith kind, then the change"/>
+                <action id="MonoSmith.UnlinkLibrary" class="dev.monosmith.jetbrains.smithaction.UnlinkLibraryActionHandler"
+                        text="Unlink a Library from a Project..." description="The project stops using the library; the library stays"/>
+                <action id="MonoSmith.SwapChoice" class="dev.monosmith.jetbrains.smithaction.SwapChoiceActionHandler"
+                        text="Swap a Choice of a Project..." description="Swap a test runner, a style or another choice; the plan first"/>
+                <action id="MonoSmith.UpdateDependencies" class="dev.monosmith.jetbrains.smithaction.UpdateDependenciesActionHandler"
+                        text="Update Dependencies..." description="smith up: grouped by risk, the plan, then the write"/>
+                <action id="MonoSmith.AlignDependencies" class="dev.monosmith.jetbrains.smithaction.AlignDependenciesActionHandler"
+                        text="Align Dependency Versions..." description="smith up --align: which version wins, the plan, then the write"/>
+                <action id="MonoSmith.SyncVersions" class="dev.monosmith.jetbrains.smithaction.SyncVersionsActionHandler"
+                        text="Sync Dependency Versions..." description="Which version wins, the plan, then the write"/>
+            </group>
+            <group id="MonoSmith.Environments" text="Environments" popup="true">
+                <action id="MonoSmith.EnvironmentsList" class="dev.monosmith.jetbrains.smithaction.EnvironmentsListActionHandler"
+                        text="List Environments" description="The environments of the web apps"/>
+                <action id="MonoSmith.EnvironmentsAdd" class="dev.monosmith.jetbrains.smithaction.EnvironmentsAddActionHandler"
+                        text="Add Environments..." description="Add environments to a web app, after the plan"/>
+                <action id="MonoSmith.EnvironmentsRemove" class="dev.monosmith.jetbrains.smithaction.EnvironmentsRemoveActionHandler"
+                        text="Remove Environments..." description="Remove environments from a web app; the .env files stay"/>
+            </group>
+            <group id="MonoSmith.Derive" text="Derived Files" popup="true">
+                <action id="MonoSmith.DeriveFiles" class="dev.monosmith.jetbrains.smithaction.DeriveFilesActionHandler"
+                        text="Act on a Derived File..." description="Explain, overwrite, keep my edit, eject or reclaim a derived file"/>
+                <action id="MonoSmith.DeriveCheck" class="dev.monosmith.jetbrains.smithaction.DeriveCheckActionHandler"
+                        text="Check the Derived Files" description="smith derive --check"/>
+                <action id="MonoSmith.DerivePreview" class="dev.monosmith.jetbrains.smithaction.DerivePreviewActionHandler"
+                        text="Preview the Derived Files" description="smith derive --dry-run"/>
+            </group>
+            <separator/>
+            <action id="MonoSmith.Commit" class="dev.monosmith.jetbrains.smithaction.CommitChangesActionHandler"
+                    text="Commit the Changes..." description="Only the files of the last operation, everything git shows, or cancel"/>
+            <action id="MonoSmith.Undo" class="dev.monosmith.jetbrains.smithaction.UndoActionHandler"
+                    text="Undo the Last Change..." description="Revert the last change smith committed (smith undo)"/>
+            <action id="MonoSmith.Release" class="dev.monosmith.jetbrains.smithaction.ReleaseActionHandler"
+                    text="Release..." description="The plan, hold packages back, change a bump, then the last question"/>
+            <action id="MonoSmith.ReleasePreview" class="dev.monosmith.jetbrains.smithaction.ReleasePreviewActionHandler"
+                    text="Release Preview" description="Show what a release would publish (smith release --dry-run)"/>
+            <separator/>
+            <action id="MonoSmith.Doctor" class="dev.monosmith.jetbrains.smithaction.DoctorActionHandler"
+                    text="Doctor" description="Check the workspace with smith doctor"/>
+            <action id="MonoSmith.DoctorFix" class="dev.monosmith.jetbrains.smithaction.DoctorFixActionHandler"
+                    text="Doctor: Apply the Safe Fixes..." description="Show the fixes smith doctor can make and apply the safe ones"/>
+            <action id="MonoSmith.Divergences" class="dev.monosmith.jetbrains.smithaction.DivergencesActionHandler"
+                    text="Show Divergences from the Defaults" description="Overrides, ejected files and drift, with the way back"/>
+            <separator/>
+            <action id="MonoSmith.OpenReport" class="dev.monosmith.jetbrains.smithaction.OpenReportActionHandler"
+                    text="Open the Report" description="smith report: the map of the projects, health, drift and choices, opened in the browser"/>
+            <action id="MonoSmith.InstallPlugin" class="dev.monosmith.jetbrains.smithaction.InstallPluginActionHandler"
+                    text="Search and Install a Plugin..." description="smith plugin search, then smith plugin install after the trust question"/>
+            <action id="MonoSmith.EditSettings" class="dev.monosmith.jetbrains.smithaction.EditSettingsActionHandler"
+                    text="Settings..." description="Edit a setting of smith.toml with its reason, after the plan"/>
+            <action id="MonoSmith.TryCommand" class="dev.monosmith.jetbrains.smithaction.TryCommandActionHandler"
+                    text="Try a Command in a Copy..." description="Run a smith command in a copy, then offer to run it for real"/>
+            <action id="MonoSmith.Bootstrap" class="dev.monosmith.jetbrains.smithaction.BootstrapLauncherActionHandler"
+                    text="Write the smith Launcher..." description="The launcher that makes a laptop and CI run the same smith"/>
+            <action id="MonoSmith.InstallAgent" class="dev.monosmith.jetbrains.smithaction.InstallAgentActionHandler"
+                    text="Install the MCP Server and Agent..." description="Write the agent files for Claude Code, after the diffs"/>
+            <action id="MonoSmith.ExplainProject" class="dev.monosmith.jetbrains.smithaction.ExplainProjectActionHandler"
+                    text="Explain a Project..." description="How the tasks of a project resolved"/>
+            <action id="MonoSmith.WhyAnything" class="dev.monosmith.jetbrains.smithaction.WhyAnythingActionHandler"
+                    text="Why Is This Here..." description="Explain a file, a project, a task or a setting"/>
             <action id="MonoSmith.Why"
                     class="dev.monosmith.jetbrains.smithaction.WhyActionHandler"
                     text="Why Is This File Like This?"

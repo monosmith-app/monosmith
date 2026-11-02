@@ -11,11 +11,15 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * The base of the MonoSmith menu actions. It finds the workspace of the IDE project (the nearest
- * folder up with a smith.toml) and says so when there is none, so each action only says what to run.
+ * The base of the MonoSmith menu actions. It finds the workspace of the IDE project (the nearest folder
+ * up with a smith.toml) and says so when there is none, so each action only says what to start. The
+ * action starts a flow that asks its questions and runs smith in a background task.
+ *
+ * @param start starts the flow for the workspace at the root; it runs on the UI thread and must not block
  */
-abstract class SmithActionHandler :
-    AnAction(),
+open class SmithActionHandler(
+    private val start: (ide: Project, root: Path) -> Unit = { _, _ -> },
+) : AnAction(),
     DumbAware {
     override fun getActionUpdateThread() = ActionUpdateThread.BGT
 
@@ -38,9 +42,9 @@ abstract class SmithActionHandler :
     }
 
     /** Does the action in the workspace at [root]. Runs on the UI thread. */
-    protected abstract fun perform(
+    protected open fun perform(
         event: AnActionEvent,
         ide: Project,
         root: Path,
-    )
+    ) = start(ide, root)
 }

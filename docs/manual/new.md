@@ -52,11 +52,13 @@ Usage: `smith new <name> [flags]`
 | `--github-releases` | boolean | off | create a GitHub Release for every release tag |
 | `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
 | `--include-secrets` | boolean | off | let --first-commit all commit files whose names look like secrets (.env, keys) |
+| `--json` | boolean | off | with --questions: print them as JSON |
 | `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
 | `--no-commit` | boolean | off | write the files and commit nothing |
 | `--no-devcontainer` | boolean | off | leave the dev container out; sets [ci] devcontainer = false |
+| `--questions` | boolean | off | print the questions smith new asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--recipe <recipe>` | string |  | the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md) |
 | `--recipe-file <recipe-file>` | string |  | a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked |
 | `--release-branch <release-branch>` | string | `main` | the branch releases run from (default main) |
@@ -99,6 +101,16 @@ without `--yes`, smith refuses and names every open flag in one message (`--ci`,
 The Go module prefix comes from the origin remote. With no remote, a terminal asks (a suggestion from
 your git user name, `example.com/<name>`, or one you type); otherwise smith uses `example.com/<name>`
 and says so. `--module-prefix <prefix>` sets it.
+
+## The questions as data
+
+`smith new --questions --json` prints the questions `smith new` asks and changes nothing, so an editor
+draws the same questions without a list of its own. Each entry has its `key`, `prompt`, `default`, the
+`flag` that answers it, `many` (the answer may name several options, joined by commas), `advanced` (asked
+only after "more options"), `atEnd` (asked after the summary), `when` (the answers that make it apply, for
+example `{"language": "node"}`) and `options`, each with a `value`, a `label` and a `hint`; the default
+is the first. A question with no options is free text, and an empty answer takes the `default`. It takes
+no name and writes nothing.
 
 ## The first commit
 
