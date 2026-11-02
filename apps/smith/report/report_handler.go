@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/term"
 
+	"github.com/monosmith-app/monosmith/apps/smith/guardedwrite"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,7 @@ import (
 // Command is `smith report`.
 func Command(version string) *cobra.Command {
 	var file string
+	var force bool
 	cmd := &cobra.Command{
 		Use:   "report",
 		Short: "Write one HTML page: the workspace map, health, derived-file drift, choices and release plan",
@@ -51,7 +53,7 @@ to smith-report.html.`,
 				fmt.Fprint(cmd.OutOrStdout(), out)
 				return nil
 			}
-			if err := os.WriteFile(file, []byte(out), 0o644); err != nil {
+			if err := guardedwrite.WriteFile(file, []byte(out), force, "--force", cmd.OutOrStdout()); err != nil {
 				return err
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "wrote "+file)
@@ -59,5 +61,6 @@ to smith-report.html.`,
 		},
 	}
 	cmd.Flags().StringVarP(&file, "output", "o", "", "write the page to a file")
+	cmd.Flags().BoolVar(&force, "force", false, "replace the file when it exists with other content (the diff is printed)")
 	return cmd
 }
