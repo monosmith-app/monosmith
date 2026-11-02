@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
 import { addArguments, followsSiblings } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
 import { parseMissingTool } from './add-missing-tool.mapper.ts'
@@ -63,7 +63,10 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
 
   const lines = done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   if (done.code === 0) return { kind: 'added', name: request.name, role: request.role, operation: `add ${request.role} ${request.name}`, lines, committed }
-  const tool = parseMissingTool(`${done.stdout}\n${done.stderr}`)
+  const everything = `${done.stdout}\n${done.stderr}`
+  const failure = parseDoctorFailure(everything)
+  if (failure !== undefined) return { kind: 'failing', name: request.name, operation: `add ${request.role} ${request.name}`, failure, lines: everything.split(/\r?\n/).map((line) => line.trimEnd()).filter(Boolean) }
+  const tool = parseMissingTool(everything)
 
   return tool === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'unchecked', name: request.name, tool, lines }
 }

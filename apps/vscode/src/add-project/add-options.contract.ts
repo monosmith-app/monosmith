@@ -1,4 +1,5 @@
 import type { LanguageInfo, OutcomeOption } from './add-outcomes.mapper.ts'
+import type { DoctorFailure } from '../smith-run/index.ts'
 
 /** One thing `smith add <kind>` accepts, as `smith kinds --json` lists it. */
 export interface KindOption {
@@ -92,11 +93,13 @@ export interface MissingTool {
 
 /**
  * How adding a project ended. `unchecked` is a success that could not be
- * checked: the project is on disk, a tool it needs is missing.
+ * checked: the project is on disk, a tool it needs is missing. `failing` is
+ * a project that is on disk and fails the checks of `smith doctor`.
  */
 export type AddOutcome =
   | { kind: 'added', name: string, role: string, operation: string, lines: string[], committed: boolean } |
   { kind: 'unchecked', name: string, tool: MissingTool, lines: string[] } |
+  { kind: 'failing', name: string, operation: string, failure: DoctorFailure, lines: string[] } |
   { kind: 'refused', message: string } |
   { kind: 'composing' } |
   { kind: 'cancelled' }

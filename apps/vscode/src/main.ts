@@ -8,7 +8,7 @@ import {
 } from './agent-install/index.ts'
 import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
 import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
-import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
+import { addProject, askAddRequest, confirmAddPlan, outcomeWords, parseChoices, tellAddOutcome } from './add-project/index.ts'
 import { askCommitScope, commitChanges, confirmCommit, tellCommitOutcome } from './commit-changes/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
@@ -887,23 +887,26 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? []),
       confirm: confirmAddPlan,
     })
-    note(`MonoSmith: add in ${state.name}: ${outcome.kind === 'composing' ? 'you chose Compose a stack; nothing was added here' : outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    note(`MonoSmith: add in ${state.name}: ${outcomeWords(outcome)}`)
     if (outcome.kind === 'composing') {
       await vscode.commands.executeCommand('monosmith.composeStack', argument)
 
       return
     }
     tellAddOutcome(outcome, note, {
-      commit: async (operation) => {
-        const scope = await askCommitScope(operation)
-        if (scope === undefined) return
-        const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation, scope)
-        note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
-        tellCommitOutcome(done)
-      },
+      commit:     commitAfterTheFact(state),
       checkAgain: (args) => { openSmithTerminal(state.location?.executable ?? 'smith', args, state.root) },
     })
-    if (outcome.kind === 'added' || outcome.kind === 'unchecked') await refreshFolder(state.root, 'full', false)
+    if (['added', 'unchecked', 'failing'].includes(outcome.kind)) await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Commits the changes of an operation after the fact: asks which files, shows the plan, and commits on a yes. */
+  const commitAfterTheFact = (state: FolderState) => async (operation: string): Promise<void> => {
+    const scope = await askCommitScope(operation)
+    if (scope === undefined) return
+    const done = await commitChanges({ run: smithIn(state), confirm: async (plan) => await confirmCommit(plan, operation) }, operation, scope)
+    note(`MonoSmith: commit in ${state.name}: ${done.kind}${done.kind === 'refused' ? ` (${done.message})` : ''}`)
+    tellCommitOutcome(done)
   }
 
   /** Searches the catalogue, composes the stack, shows the plan of `smith add`, and adds on a yes. */
@@ -924,9 +927,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       tell:    (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
       confirm: confirmComposePlan,
     })
-    note(`MonoSmith: compose in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
-    tellComposeOutcome(outcome, note)
-    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
+    note(`MonoSmith: compose in ${state.name}: ${outcomeWords(outcome)}`)
+    tellComposeOutcome(outcome, note, { commit: commitAfterTheFact(state) })
+    if (outcome.kind === 'added' || outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
   }
 
   /** Asks library or registry first, then what to add, and runs `smith install`. */

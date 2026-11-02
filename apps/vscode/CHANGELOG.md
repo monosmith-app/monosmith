@@ -7,6 +7,8 @@ the first release everything below is under Unreleased.
 
 ### Fixed
 
+- A project that smith wrote and then found failing `smith doctor` (a system library is missing) is no longer reported as "refused" and "cancelled". A notice gives the facts (created, N files, what could not be checked and why, whether the commit happened) and the next step as buttons: Install the tools, Open Health, Commit anyway, Leave it uncommitted. smith's full steps go to the Output channel. Compose a stack and Add project both do this.
+
 - Add project: the first question lists what smith lists (`outcomes` of `smith compose --json`), so "A website or web app" and "A desktop app" are there; the extension keeps no list of its own.
 - Add project: typing `react`, `tauri` or `electron` in that question finds the website or the desktop app, as in the TUI; a search with no match shows a "No result" row with the closest answers.
 - Add project: "Compose a stack" opens the composer after the add ends, and the Output channel says nothing was added, not "cancelled".

@@ -1,4 +1,4 @@
-import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
 import { composeArguments, describePlan, parseReport } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
 
@@ -114,8 +114,13 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
       default: {
         const committed = answer === 'run-commit'
         const done = await deps.apply([...plan.argv.slice(1), ...(committed ? ['--commit'] : []), '--yes'])
+        if (done.code === 0) return { kind: 'added', name, lines: lines(done.stdout), committed }
 
-        return done.code === 0 ? { kind: 'added', name, lines: lines(done.stdout), committed } : { kind: 'refused', message: describeFailure(done) }
+        // The project is on disk and fails its checks: not a refusal, and not a cancel.
+        const everything = `${done.stdout}\n${done.stderr}`
+        const failure = parseDoctorFailure(everything)
+
+        return failure === undefined ? { kind: 'refused', message: describeFailure(done) } : { kind: 'written', name, operation: `add app ${name}`, failure, lines: lines(everything) }
       }
     }
   }

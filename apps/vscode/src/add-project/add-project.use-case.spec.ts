@@ -86,6 +86,15 @@ describe('addProject', () => {
     })
   })
 
+  it('says a project that was written but fails its doctor was written, and keeps smith steps', async () => {
+    const stdout = 'Wrote 32 file(s)\nThe new project web fails smith doctor:\n  ✖ pkg-config does not find webkit2gtk-4.1\n'
+    const stderr = 'smith: the new project web was written but fails smith doctor; follow the steps above, then run smith doctor\n'
+    const f = fake({ apply: { code: 1, stdout, stderr }, answer: 'add-commit' })
+    const outcome = await addProject(f.deps)
+    expect(outcome).toMatchObject({ kind: 'failing', name: 'web', operation: 'add app web', failure: { files: 32, committed: false } })
+    expect(outcome.kind === 'failing' ? outcome.lines : []).toContain('The new project web fails smith doctor:')
+  })
+
   it('refuses, with smith words, a failure that is not a missing tool', async () => {
     const f = fake({ apply: { code: 1, stdout: '', stderr: '✖ the new project web fails its first build\n' } })
     expect(await addProject(f.deps)).toMatchObject({ kind: 'refused' })

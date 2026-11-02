@@ -1,3 +1,5 @@
+import type { DoctorFailure } from '../smith-run/index.ts'
+
 /** One thing the catalogue of `smith compose --json` lists. */
 export interface ComposeItem {
   /** Unique: language/name. */
@@ -84,5 +86,6 @@ export type ComposeOutcome =
   | { kind: 'cancelled' } |
   { kind: 'refused', message: string } |
   { kind: 'added', name: string, lines: string[], committed: boolean } |
+  { kind: 'written', name: string, operation: string, failure: DoctorFailure, lines: string[] } |
   { kind: 'copied', command: string } |
   { kind: 'recipe', lines: string[] }

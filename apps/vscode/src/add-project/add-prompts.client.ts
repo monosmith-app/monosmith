@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } from './add-options.contract.ts'
+import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
 import { askedAxes, choicesByAxis, roleOf } from './add-options.mapper.ts'
 
@@ -317,6 +318,10 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
     case 'unchecked': {
       for (const line of outcome.lines) onOutput(line)
       void tellUnchecked(outcome, next)
+      break
+    }
+    case 'failing': {
+      tellDoctorFailure(outcome.failure, outcome.operation, outcome.lines, onOutput, next)
       break
     }
     case 'refused': {

@@ -131,6 +131,24 @@ describe('composeStack', () => {
     expect(f.applied).toEqual([['recipe', 'new', '--name', 'x']])
   })
 
+  it('says a project that was written but fails its doctor was written, with the facts and smith steps', async () => {
+    const stdout = 'Creating app desk in apps/desk/: a Tauri app\nWrote 32 file(s)\nThe new project desk fails smith doctor:\n  ✖ pkg-config does not find webkit2gtk-4.1\n      → run: sudo apt-get install libwebkit2gtk-4.1-dev\n'
+    const stderr = 'smith: the new project desk was written but fails smith doctor; follow the steps above, then run smith doctor\n'
+    const f = deps({
+      picks: [['node/electron']],
+      reply: 'run-commit',
+      apply: async () => ({ code: 1, stdout, stderr }),
+    })
+    const outcome = await composeStack(f.deps)
+    expect(outcome).toMatchObject({ kind: 'written', name: 'desk', operation: 'add app desk', failure: { files: 32, committed: false, reasons: ['pkg-config does not find webkit2gtk-4.1'] } })
+    expect(outcome.kind === 'written' ? outcome.lines.join('\n') : '').toContain('sudo apt-get install libwebkit2gtk-4.1-dev')
+  })
+
+  it('never adds --commit-anyway by itself: the person decides after the facts', async () => {
+    const f = deps({ picks: [['node/electron']], reply: 'run-commit', apply: async (args) => ({ code: args.includes('--commit-anyway') ? 0 : 1, stdout: '', stderr: '✖ the build failed\n' }) })
+    expect(await composeStack(f.deps)).toMatchObject({ kind: 'refused' })
+  })
+
   it('cancels when the person closes the list, and refuses when smith fails', async () => {
     expect(await composeStack(deps({ picks: [] }).deps)).toEqual({ kind: 'cancelled' })
     const broken = deps({ picks: [['node/electron']], run: async () => ({ code: 1, stdout: '', stderr: 'no workspace' }) })

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { checkProjectName } from '../add-project/index.ts'
+import { checkProjectName, tellDoctorFailure, type DoctorFailureFollowUp } from '../add-project/index.ts'
 import { pickLabels } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion } from './compose-stack.contract.ts'
 
@@ -102,12 +102,17 @@ export async function confirmComposePlan (plan: string, hasRecipe: boolean): Pro
  * Says how composing ended. It does not wait for the person to read it.
  * @param outcome - what `composeStack` returned
  * @param onOutput - gets every line smith printed, for the output channel
+ * @param next - carries out the buttons that need the editor (the commit after the fact)
  */
-export function tellComposeOutcome (outcome: ComposeOutcome, onOutput: (line: string) => void): void {
+export function tellComposeOutcome (outcome: ComposeOutcome, onOutput: (line: string) => void, next?: DoctorFailureFollowUp): void {
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
       void vscode.window.showInformationMessage(`MonoSmith: ${outcome.name} is added. ${outcome.committed ? 'Committed as one change: Undo reverts it.' : 'Not committed: review with git status.'}`)
+      break
+    }
+    case 'written': {
+      tellDoctorFailure(outcome.failure, outcome.operation, outcome.lines, onOutput, next)
       break
     }
     case 'recipe': {
