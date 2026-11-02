@@ -37,6 +37,9 @@ const (
 	// OpenAdoptWizard opens the adopt wizard on the folder: what was found,
 	// the level, the plan, the conversion and the closing checks.
 	OpenAdoptWizard
+	// OpenCompose opens the "Compose a stack" screen: search everything smith
+	// can build a project from, tick it, and end in the plan.
+	OpenCompose
 	// OpenPackagePrompt opens the guided form that asks which project and which
 	// packages to install (Action "install") or remove (Action "uninstall").
 	OpenPackagePrompt

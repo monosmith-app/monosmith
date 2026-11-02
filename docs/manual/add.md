@@ -101,6 +101,17 @@ selection leaves out takes its default. The result is saved in `smith.toml` as a
 `choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
 [Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 
+## Desktop apps and the composer
+
+Two choices make a desktop app from a new Node project. `electron` writes a minimal Electron app on
+its own, so it is on the `framework` axis and cannot be combined with `react` (the error says
+`both on the framework axis: keep one`). `tauri` wraps a web app that another choice writes:
+`--with react,tauri`. Neither goes with a cloud function host, and the two do not go together.
+For an app that exists, [`smith tauri add`](tauri-add.md) stays.
+
+[`smith compose`](compose.md) searches all of this in one place (try "desktop" or "serverless"),
+explains each conflict as you tick, and ends in the `smith add` line.
+
 ## Function apps
 
 A serverless function app is a choice on the `framework` axis, so `--with` builds one in Node, Python

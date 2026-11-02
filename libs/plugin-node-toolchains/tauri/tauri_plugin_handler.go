@@ -35,6 +35,7 @@ func (p *Tauri) Describe(params protocol.InitializeParams) (protocol.InitializeR
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleToolchain},
 		Provides:  []string{TaskName},
+		Choices:   Choices(),
 		Stacks: []protocol.Stack{{
 			Name:        Stack,
 			Description: "TypeScript on Node, linted by eslint, unit-tested with Vitest, packaged as a desktop app with Tauri",

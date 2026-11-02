@@ -37,6 +37,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/cachecommand"
 	"github.com/monosmith-app/monosmith/apps/smith/choiceview"
+	"github.com/monosmith-app/monosmith/apps/smith/composeview"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
 	"github.com/monosmith-app/monosmith/apps/smith/configedit"
@@ -140,7 +141,7 @@ already have), then build and doctor.`,
 	agentCmd := agentfiles.Command()
 	agentCmd.AddCommand(agentdoc.FileCommand(version))
 	add("inspect", mcpCmd, agentCmd, engineserver.Command(version), languageserver.Command(version))
-	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), slicecheck.Command(), boundaries.Command(version))
+	add("inspect", divergences.Command(version), copymeasure.Command(version), doctor.Command(version), explain.Command(version), why.Command(version), whymiss.Command(version), report.Command(version), cachecommand.Command(), pluginCommand(version), withWizard(recipe.Command(version), version), stackview.Command(version), choiceview.Command(version), composeview.Command(version), slicecheck.Command(), boundaries.Command(version))
 	return root
 }
 

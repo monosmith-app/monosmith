@@ -1,6 +1,9 @@
 axis = "framework"
 name = "gcp-functions"
 description = "a serverless Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app"
+title = "Google Cloud Functions"
+aliases = ["serverless", "cloud", "functions", "faas", "google", "gcp", "cloud run"]
+layer = "host"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]

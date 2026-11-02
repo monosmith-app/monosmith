@@ -8,7 +8,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/clicontract"
+	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/depsview"
@@ -161,6 +163,10 @@ type Shell struct {
 	adopt    *adoptwizard.Model
 	adopting *fixRun
 	adopter  adoptwizard.Opener
+	// compose is the "Compose a stack" screen while it is open; composeCat is
+	// the catalogue it was read from, kept for the next time.
+	compose    *composer.Model
+	composeCat *compose.Catalogue
 	exitNote string
 	// reopen is true when the shell leaves only to start again inside the workspace it made.
 	reopen bool
@@ -514,6 +520,10 @@ func (s *Shell) resize(w, h int) {
 	if s.adopt != nil {
 		placed := s.adopt.Place(w, h)
 		s.adopt = &placed
+	}
+	if s.compose != nil {
+		placed := s.compose.Place(w, h)
+		s.compose = &placed
 	}
 	s.tabs = s.tabList()
 	if !s.canShow(s.tab) {

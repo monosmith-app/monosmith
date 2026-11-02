@@ -369,6 +369,8 @@ ask one question at a time: a choice (`Up` `Down`, `Enter`, `Esc` back one step)
 choices (`Space` toggles, `Enter` confirms) or free text with a placeholder. The answers
 build the command line, which the shell runs and shows.
 
+**Compose a stack** (palette, or `A` in the Projects view, or Home when the workspace has no project) is one screen to search languages, frameworks, desktop shells and cloud hosts, tick them, see each conflict explained, and end in the plan; see [`smith compose`](compose.md).
+
 **Add a project** asks the kind, the language and the name, then, from what the plugins
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The

@@ -147,7 +147,7 @@ func checkSet(chosen []Offer, index map[string]Offer) error {
 			if _, offered := index[need]; !offered {
 				return fmt.Errorf("%s requires %s, which no enabled plugin offers: drop %s, or enable the plugin that offers %s", a.Name, need, a.Name, need)
 			}
-			return fmt.Errorf("%s requires %s, which is not in the selection: add %s to --with, or drop %s", a.Name, need, need, a.Name)
+			return &IncompleteError{Message: fmt.Sprintf("%s requires %s, which is not in the selection: add %s to --with, or drop %s", a.Name, need, need, a.Name)}
 		}
 	}
 	return nil
@@ -168,7 +168,7 @@ func checkRoles(chosen, offers []Offer, existing bool) error {
 	}
 	switch {
 	case len(scaffolds) == 0 && !existing:
-		return fmt.Errorf("no choice in %s writes the project: add one of %s", strings.Join(namesOf(chosen), ", "), strings.Join(withRole(offers, protocol.RoleScaffold, chosen[0].Language), ", "))
+		return &IncompleteError{Message: fmt.Sprintf("no choice in %s writes the project: add one of %s", strings.Join(namesOf(chosen), ", "), strings.Join(withRole(offers, protocol.RoleScaffold, chosen[0].Language), ", "))}
 	case len(scaffolds) > 1:
 		return fmt.Errorf("%s and %s both write the project: keep one", scaffolds[0].Name, scaffolds[1].Name)
 	}
@@ -183,7 +183,7 @@ func checkRoles(chosen, offers []Offer, existing bool) error {
 			}
 		}
 		sort.Strings(users)
-		return fmt.Errorf("%s is provided by the %s plugin, which no other choice here uses: add one of %s to --with", o.Name, o.Plugin, strings.Join(users, ", "))
+		return &IncompleteError{Message: fmt.Sprintf("%s is provided by the %s plugin, which no other choice here uses: add one of %s to --with", o.Name, o.Plugin, strings.Join(users, ", "))}
 	}
 	return nil
 }

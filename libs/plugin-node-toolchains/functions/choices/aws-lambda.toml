@@ -1,6 +1,9 @@
 axis = "framework"
 name = "aws-lambda"
 description = "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)"
+title = "AWS Lambda"
+aliases = ["serverless", "cloud", "functions", "faas", "amazon", "aws"]
+layer = "host"
 language = "node"
 roles = ["scaffold"]
 needs = ["trigger", "runtime", "lint", "test"]

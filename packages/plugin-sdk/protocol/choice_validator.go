@@ -22,6 +22,9 @@ func ValidateChoice(c Choice) error {
 			return fmt.Errorf("choice %q: %s %q must be lowercase letters, digits and dashes", c.Name, field, value)
 		}
 	}
+	if c.Layer != "" && !choiceName.MatchString(c.Layer) {
+		return fmt.Errorf("choice %s: layer %q must be lowercase letters, digits and dashes", c.Name, c.Layer)
+	}
 	for _, role := range c.Roles {
 		if role != RoleScaffold && role != RoleToolchain {
 			return fmt.Errorf("choice %s: role %q must be scaffold or toolchain", c.Name, role)

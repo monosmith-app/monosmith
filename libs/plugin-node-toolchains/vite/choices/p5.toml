@@ -1,6 +1,8 @@
 axis = "library"
 name = "p5"
 description = "draw with p5: a bouncing-ball slice (pure motion, a p5 sketch, a lazy component)"
+title = "p5.js"
+aliases = ["creative", "drawing", "canvas", "art", "sketch", "graphics"]
 language = "node"
 many = true
 requires = ["react"]

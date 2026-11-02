@@ -299,6 +299,19 @@ export interface Choice {
    */
   name: string
   description?: string
+  /** Title is the name shown to a person ("Electron" for electron). Without it the name is shown. */
+  title?: string
+  /**
+   * Aliases are words that find the choice when a person searches the catalogue (smith compose):
+   * "desktop", "serverless", "web".
+   */
+  aliases?: string[]
+  /**
+   * Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop
+   * shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's own.
+   * Without it the layer is the axis. It is for display and grouping: the axis decides conflicts.
+   */
+  layer?: string
   /** Language is the language plugin the choice applies to ("node"). */
   language: string
   /**

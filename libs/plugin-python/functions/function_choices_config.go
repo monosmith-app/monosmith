@@ -1,6 +1,9 @@
 package functions
 
-import "github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+import (
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
 
 const language = "python"
 
@@ -26,7 +29,7 @@ func runtimeChoice(name, description string, suggested bool) protocol.Choice {
 // The runtimes are the Python versions that Azure Functions, AWS Lambda and
 // Cloud Run functions all support on 2026-11-02 (ADR 0072).
 func Choices() []protocol.Choice {
-	return []protocol.Choice{
+	out := []protocol.Choice{
 		hostChoice("azure-functions", "a serverless Azure Functions app (Python v2 model): function_app.py, host.json, requirements.txt and local.settings.sample.json; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function"),
 		hostChoice("aws-lambda", "a serverless AWS Lambda function: template.yaml and events/ for sam local, and a lambda_handler; runs with the SAM CLI (sam)"),
 		hostChoice("gcp-functions", "a serverless Google Cloud (Cloud Run) function: main.py and requirements.txt; runs with the Functions Framework, a dependency of the app"),
@@ -38,4 +41,8 @@ func Choices() []protocol.Choice {
 		runtimeChoice("python312", "Python 3.12, the oldest all three hosts support; the workspace venv and CI use it", false),
 		runtimeChoice("python314", "Python 3.14, the newest all three hosts support", false),
 	}
+	for i := range out {
+		out[i] = functionhost.WithMeta(out[i])
+	}
+	return out
 }

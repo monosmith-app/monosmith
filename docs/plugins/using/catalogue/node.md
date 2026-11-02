@@ -199,6 +199,30 @@ warns when `func` or `sam` is missing. AWS and Google get templates only; Azure 
 [Function apps](../../../manual/add.md#function-apps) and
 [ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
 
+## Electron and Tauri
+
+`smith add app desk --lang node --with electron` writes an Electron app in TypeScript: a main
+process (`src/main/app.handler.ts`), a preload script that uses `contextBridge`
+(`src/preload/bridge.handler.cts`, built to `.cjs` because a sandboxed preload cannot be a module),
+and one renderer page with a content security policy. The window has `contextIsolation` on,
+`nodeIntegration` off and `sandbox` on, and a unit test checks that. The page greets by asking the
+main process through the preload api, which uses the greeting slice. The tasks are `build`,
+`typecheck`, `lint`, `test`, `start` (builds, then opens the window from the build folder) and
+`package` (Electron Forge makes the app folder under `dist/apps/<name>/out`). There is no installer
+and no code signing in v2. The first install downloads the Electron binary, so it needs a network.
+Electron is on the framework axis with `layer = "shell"`, `needs = ["lint", "test"]`, and conflicts
+with `jest`, the function hosts and `tauri`. Packaging uses Electron Forge because the Electron
+documentation recommends it ([application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution),
+[Forge CLI](https://www.electronforge.io/cli), [process model](https://www.electronjs.org/docs/latest/tutorial/process-model),
+[context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)).
+Versions checked on 2026-11-02: Electron 45.2.1, Electron Forge 8.0.1.
+
+`--with react,tauri` makes a new web app that is also a Tauri app (the `tauri` plugin publishes the
+choice `tauri` on the `shell` axis); it writes `src-tauri` as the stack `react-tauri` does. Both
+choices are found with `smith compose` (search "desktop"). Checked in a scratch workspace: electron
+ran lint, typecheck, test, build and package; `react,tauri` scaffolded and built the web app (the
+Rust build was not run).
+
 ## Settings
 
 The plugin has no `[projects.<p>.settings.node]` table. All configuration is in `package.json`, in the workspace files, and in `smith.toml`.

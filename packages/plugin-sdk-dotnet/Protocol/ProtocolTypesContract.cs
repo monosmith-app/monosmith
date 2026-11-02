@@ -890,6 +890,15 @@ public sealed record Choice : IProtocolValue<Choice>
     /// <summary>The <c>description</c> member of <c>Choice</c>.</summary>
     public string Description { get; init; } = string.Empty;
 
+    /// <summary>Title is the name shown to a person ("Electron" for electron). Without it the name is shown.</summary>
+    public string Title { get; init; } = string.Empty;
+
+    /// <summary>Aliases are words that find the choice when a person searches the catalogue (smith compose): "desktop", "serverless", "web".</summary>
+    public IReadOnlyList<string> Aliases { get; init; } = [];
+
+    /// <summary>Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's own. Without it the layer is the axis. It is for display and grouping: the axis decides conflicts.</summary>
+    public string Layer { get; init; } = string.Empty;
+
     /// <summary>Language is the language plugin the choice applies to ("node").</summary>
     public required string Language { get; init; }
 
@@ -923,6 +932,9 @@ public sealed record Choice : IProtocolValue<Choice>
             Axis = StringValue(Member(map, "axis"), Join(path, "axis")),
             Name = StringValue(Member(map, "name"), Join(path, "name")),
             Description = StringValue(Member(map, "description"), Join(path, "description")),
+            Title = StringValue(Member(map, "title"), Join(path, "title")),
+            Aliases = ListOf(Member(map, "aliases"), Join(path, "aliases"), StringValue),
+            Layer = StringValue(Member(map, "layer"), Join(path, "layer")),
             Language = StringValue(Member(map, "language"), Join(path, "language")),
             Roles = ListOf(Member(map, "roles"), Join(path, "roles"), Role.Read),
             Needs = ListOf(Member(map, "needs"), Join(path, "needs"), StringValue),
@@ -946,6 +958,21 @@ public sealed record Choice : IProtocolValue<Choice>
         {
             writer.Property("description");
             writer.String(Description);
+        }
+        if (Title.Length > 0)
+        {
+            writer.Property("title");
+            writer.String(Title);
+        }
+        if (Aliases is { Count: > 0 })
+        {
+            writer.Property("aliases");
+            MessageWritingAlgorithm.List(writer, Aliases, (builder1, item1) => builder1.String(item1));
+        }
+        if (Layer.Length > 0)
+        {
+            writer.Property("layer");
+            writer.String(Layer);
         }
         writer.Property("language");
         writer.String(Language);

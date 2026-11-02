@@ -500,6 +500,22 @@ class Choice(_ChoiceRequired, total=False):
     """
 
     description: str
+    title: str
+    """
+    Title is the name shown to a person ("Electron" for electron). Without it the name is shown.
+    """
+    aliases: list[str]
+    """
+    Aliases are words that find the choice when a person searches the catalogue (smith compose):
+    "desktop", "serverless", "web".
+    """
+    layer: str
+    """
+    Layer is where the choice sits in the stack of a project: "framework", "shell" (a desktop
+    shell), "host" (where cloud code runs), "test", "lint", "style" or a layer of the plugin's
+    own. Without it the layer is the axis. It is for display and grouping: the axis decides
+    conflicts.
+    """
     roles: list[Role]
     """
     Roles are the roles the choice's plugin plays in a stack built from it: scaffold (it writes

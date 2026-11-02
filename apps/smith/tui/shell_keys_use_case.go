@@ -40,6 +40,8 @@ func (s Shell) formOpen() bool { return s.tab == commands.TabGuide && s.guide.Ti
 func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch {
+	case s.compose != nil:
+		return s.composeKey(msg)
 	case s.adopt != nil:
 		return s.adoptKey(name)
 	case s.fix != nil:
@@ -351,6 +353,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.openReport()
 	case commands.OpenDoctor:
 		return s.gotoTab(commands.TabDoctor)
+	case commands.OpenCompose:
+		return s.openCompose()
 	case commands.OpenAdoptWizard:
 		return s.openAdopt()
 	case commands.OpenFixWizard:

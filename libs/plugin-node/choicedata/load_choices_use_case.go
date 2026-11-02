@@ -171,7 +171,8 @@ func (s *Set) check() error {
 // protocol is the choice as the plugin publishes it.
 func (c choice) protocol() protocol.Choice {
 	return protocol.Choice{
-		Axis: c.Axis, Name: c.Name, Description: c.Description, Language: c.Language, Roles: c.roles,
+		Axis: c.Axis, Name: c.Name, Description: c.Description, Title: c.Title, Aliases: c.Aliases, Layer: c.Layer,
+		Language: c.Language, Roles: c.roles,
 		Needs: c.Needs, Default: c.Default, Suggested: c.Suggested, Many: c.Many, Requires: c.Requires, Conflicts: c.Conflicts,
 	}
 }

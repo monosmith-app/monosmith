@@ -14,8 +14,12 @@ type ChoiceOffer struct {
 	Axis        string `json:"axis"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	Language    string `json:"language"`
-	Default     bool   `json:"default"`
+	// Title and Aliases are what smith compose searches: the display name and the
+	// words that find the choice ("desktop", "serverless").
+	Title    string   `json:"title"`
+	Aliases  []string `json:"aliases"`
+	Language string   `json:"language"`
+	Default  bool     `json:"default"`
 	// Suggested marks the answer a question pre-selects; Needs are the axes the
 	// choice needs an answer on (a function host needs a trigger and a runtime).
 	Suggested bool     `json:"suggested"`
@@ -137,13 +141,17 @@ func withChoiceNames(options []Option, offers []ChoiceOffer) []Option {
 		own := offersOf(offers, out[i].Value)
 		asked := askedAxes(own)
 		for _, o := range own {
-			if !slices.Contains(out[i].Also, o.Name) {
-				out[i].Also = append(slices.Clone(out[i].Also), o.Name)
-			}
-			// A choice that needs an answer (a function host) is found by what it
-			// is called in words too: "serverless", "google", "cloud run".
+			// The language filter is a view of the catalogue (ADR 0076): a choice is
+			// found by its name, its title and its aliases, the words smith compose
+			// searches ("desktop", "serverless", "google", "cloud run").
+			words := append([]string{o.Name, o.Title}, o.Aliases...)
 			if needsAsked(o, asked) {
-				out[i].Also = append(slices.Clone(out[i].Also), o.Description)
+				words = append(words, o.Description)
+			}
+			for _, w := range words {
+				if w != "" && !slices.Contains(out[i].Also, w) {
+					out[i].Also = append(slices.Clone(out[i].Also), w)
+				}
 			}
 		}
 	}
