@@ -121,7 +121,8 @@ func outcomePickStep(o compose.Outcome, language string) (Step, bool) {
 		prompt = "Which one?"
 	}
 	if o.Layer != "host" {
-		options = append(options, Option{Label: "Decide in the next question", Value: pickNone, Hint: "you can still tick a framework, a shell or a tool there"})
+		// First, so a first-timer's Enter ticks nothing, and Down reads the list in order.
+		options = append([]Option{{Label: "Decide in the next question", Value: pickNone, Hint: "you can still tick a framework, a shell or a tool there"}}, options...)
 	}
 	return Step{
 		Key: pickKey, Prompt: prompt, Options: options,
@@ -133,13 +134,8 @@ func outcomePickStep(o compose.Outcome, language string) (Step, bool) {
 					return opt.Value
 				}
 			}
-			// Nothing was typed: the cursor starts on "Decide in the next question",
-			// so Enter ticks nothing. A pick is the person's, never a first answer.
-			for _, opt := range opts {
-				if opt.Value == pickNone {
-					return pickNone
-				}
-			}
+			// Nothing was typed: the cursor stays on the first row, "Decide in the
+			// next question", so Enter ticks nothing.
 			return ""
 		},
 	}, true

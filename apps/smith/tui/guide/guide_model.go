@@ -49,6 +49,38 @@ type Model struct {
 	// trail are the steps already answered, in order: Esc goes back to the last
 	// one. Steps that were skipped or answered by themselves are not in it.
 	trail []int
+	// replace is true while a text field holds an earlier value that the next
+	// letter replaces.
+	replace bool
+}
+
+// rederive makes the later questions follow an answer that was changed after
+// going back: the ticks the old answer had given (a framework picked before) are
+// replaced by the ticks the new answer gives, and the other answers stay.
+func (m Model) rederive(old []string) Model {
+	if m.prefill == nil {
+		return m
+	}
+	prefill := maps.Clone(m.prefill)
+	for i := range m.action.Steps {
+		s := &m.action.Steps[i]
+		if s.Ticked == nil {
+			continue
+		}
+		before, ok := prefill[s.Key]
+		if !ok {
+			continue
+		}
+		kept := slices.DeleteFunc(slices.Clone(before), func(v string) bool { return slices.Contains(old, v) })
+		for _, v := range s.Ticked(m.answers) {
+			if !slices.Contains(kept, v) {
+				kept = append(kept, v)
+			}
+		}
+		prefill[s.Key] = kept
+	}
+	m.prefill = prefill
+	return m
 }
 
 // Reopen takes a form that ended back to its last question, with every answer
@@ -300,6 +332,10 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		}
 	}
 	if text && key.Type != tea.KeyEnter && key.Type != tea.KeyEsc && key.Type != tea.KeyCtrlC {
+		if m.replace && (key.Type == tea.KeyRunes || key.Type == tea.KeySpace) {
+			m.input.SetValue("")
+		}
+		m.replace = false
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		return m, cmd
@@ -431,7 +467,11 @@ func (m Model) confirm() Model {
 			m.err = problem
 			return m
 		}
+		old := m.answers[step.Key]
 		m.answers[step.Key] = []string{picked}
+		if len(old) > 0 && !slices.Equal(old, m.answers[step.Key]) {
+			m = m.rederive(old)
+		}
 	}
 	m.trail = append(slices.Clone(m.trail), m.step)
 	m.step++
@@ -440,6 +480,7 @@ func (m Model) confirm() Model {
 }
 
 func (m Model) advance() Model {
+	m.replace = false
 	for m.action != nil {
 		s := m.current()
 		if s == nil {
@@ -472,6 +513,16 @@ func (m Model) advance() Model {
 				(step.Ticked != nil && slices.Contains(step.Ticked(m.answers), o.Value))
 		}
 	}
+	if step.Multi && step.Ticked != nil {
+		// The cursor starts on the first pick of an earlier question, so the list
+		// opens where the tick is, not above it on a short terminal.
+		for i, o := range step.Options {
+			if slices.Contains(step.Ticked(m.answers), o.Value) {
+				m.cursor = i
+				break
+			}
+		}
+	}
 	if step.Options == nil {
 		m.input.Placeholder = step.Placeholder
 		if step.PlaceholderFor != nil {
@@ -500,6 +551,9 @@ func (m Model) advance() Model {
 	if before, ok := m.prefill[step.Key]; ok && len(before) > 0 {
 		if step.Options == nil {
 			m.input.SetValue(before[0])
+			// The earlier value is shown selected: the next letter replaces it,
+			// Backspace edits it. Typing never appends to it silently.
+			m.replace = true
 		}
 		for i, o := range step.Options {
 			if step.Multi {
@@ -559,6 +613,9 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 			}
 		}
 		lines = append(lines, "", m.input.View(), "")
+		if m.replace {
+			lines = append(lines, th.Muted("This is what you typed before: type to replace it, Backspace to edit it."))
+		}
 		if v := strings.TrimSpace(m.input.Value()); v == "" && m.input.Placeholder != "" && !step.Optional {
 			// The grey text is an example, not a default Enter would accept.
 			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))
