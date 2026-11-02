@@ -119,11 +119,19 @@ describe('newRecipe', () => {
     const choice: RecipeChoice = { question: 'Which language?', answers: [{ answer: 'JavaScript', plugin: 'node' }, { answer: 'Python', plugin: 'python' }] }
     const f = fake([[], []], true, BASICS, LEVELS, ['chosen'], [choice])
     await newRecipe(f.deps)
-    expect(f.decided).toEqual(['language', 'lint'])
+    expect(f.decided).toEqual(['language', 'lint', 'structure'])
     expect(f.asked.map((q) => q.level)).toEqual(['lint', 'structure'])
     expect(f.asked[0].options.map((p) => p.name)).toEqual(['eslint', 'ruff'])
     expect(f.shown[0].command).toContain('--chosen "language=Which language?:JavaScript=node,Python=python"')
     expect(f.applied[0]).toEqual(['recipe', 'new', '--name', 'team', '--recipe-version', '0.1.0', '--chosen', 'language=Which language?:JavaScript=node,Python=python'])
+  })
+
+  it('lets the users choose a level that takes any number of plugins, an answer giving several joined by +', async () => {
+    const choice: RecipeChoice = { question: 'Which layout?', answers: [{ answer: 'simple', plugin: 'layers' }, { answer: 'both', plugin: 'layers+slices' }] }
+    const f = fake([['node'], []], true, BASICS, LEVELS, ['fixed', 'chosen'], [choice])
+    await newRecipe(f.deps)
+    expect(f.decided).toEqual(['language', 'structure'])
+    expect(f.applied[0]).toContain('structure=Which layout?:simple=layers,both=layers+slices')
   })
 
   it('asks nothing more when the person cancels the choice', async () => {
@@ -132,10 +140,10 @@ describe('newRecipe', () => {
     expect(f.applied).toEqual([])
   })
 
-  it('does not ask who decides a level that takes any number of plugins, or that has one plugin', async () => {
+  it('asks who decides a level of two plugins or more, and none for a level with one plugin', async () => {
     const f = fake([['node'], [], ['layers']])
     await newRecipe(f.deps)
-    expect(f.decided).toEqual(['language'])
+    expect(f.decided).toEqual(['language', 'structure'])
   })
 
   it('ticks several plugins of an additive level', async () => {

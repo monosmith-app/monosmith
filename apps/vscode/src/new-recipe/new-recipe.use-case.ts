@@ -49,7 +49,7 @@ export async function newRecipe (deps: NewRecipeDeps): Promise<RecipeOutcome> {
   for (const level of levels.levels) {
     const question = questionFor(levels, level, language)
     if (question === undefined) continue
-    if (!level.additive && question.options.length >= 2) {
+    if (question.options.length >= 2) {
       const who = await deps.decide(question)
       if (who === undefined) return { kind: 'cancelled' }
       if (who === 'chosen') {

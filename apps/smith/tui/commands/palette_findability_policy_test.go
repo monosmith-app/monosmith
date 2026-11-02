@@ -19,7 +19,7 @@ var notInPalette = map[string]string{
 	"run": "run keys", "build": "run keys", "test": "run keys", "lint": "run keys", "typecheck": "run keys",
 	"kind": "the Projects detail", "eject": "derived files flow", "derive": "palette: Update the derived files",
 	"tauri add": "Add project form",
-	"deps up": "Dependencies tab", "up": "Dependencies tab", "ci": "palette: Regenerate CI pipelines", "ci generate": "palette: Regenerate CI pipelines",
+	"deps up":   "Dependencies tab", "up": "Dependencies tab", "ci": "palette: Regenerate CI pipelines", "ci generate": "palette: Regenerate CI pipelines",
 	"doctor": "palette: Doctor", "projects": "Projects tab", "affected": "palette: Affected",
 	"info": "palette: Info", "explain": "run scope", "report": "palette: Open the report",
 	"boundaries": "Doctor", "slices check": "Doctor", "agent file": "palette: Write the agent file",

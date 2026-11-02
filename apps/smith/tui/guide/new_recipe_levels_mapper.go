@@ -141,8 +141,11 @@ func RecipeAction(base Action, cat recipewizard.LevelCatalog) Action {
 // people who use it". lang is the language plugin the recipe fixes.
 func recipeLevelSteps(level recipewizard.LevelOffer, lang string, plugins []recipewizard.PluginOffer) []Step {
 	step := recipeLevelStep(level, lang, plugins)
-	if level.Additive || len(plugins) < 2 {
+	if len(plugins) < 2 {
 		return []Step{step}
+	}
+	if level.Additive {
+		return recipeAdditiveSteps(step, level, plugins)
 	}
 	step.Options = append(step.Options, recipeChosenOption(level.Level))
 	return append([]Step{step}, recipeChosenSteps(step.Key, level.Level, plugins, step.Skip)...)

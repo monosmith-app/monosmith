@@ -257,7 +257,7 @@ In **Add project**, the question "names of my own" starts on the environment nam
 **Write a recipe** asks, for each level that takes one plugin, a pick list whose last answer is
 "Chosen by the people who use it". Then it asks the question the users read, which plugins they can
 end up with and the name of each answer, and writes a `--chosen` flag (see
-[`smith recipe new`](recipe-new.md)). A level that takes any number of plugins is fixed only.
+[`smith recipe new`](recipe-new.md)).
 
 **Release without a releasing commit** does not list a package that was never released: smith has
 no version to bump. A line names it and gives the commit that sets its first version, `git commit

@@ -89,6 +89,7 @@ runs the command with `--yes`. Nothing is committed.
 | Regenerate the CI Pipelines…; Derived Files: Check, Preview, Update | `smith ci generate`, `smith derive` | text and the plan |
 | Change a Setting of smith.toml…; Reset a Setting… | `smith config set\|unset` | `config list --json`: the type, the allowed values, the current value and the reason of the default |
 | Turn a Plugin On or Off…; Choose the Architecture… | `smith plugin enable\|disable`, `smith architecture <name>` | `plugin list --json`; `smith architecture` |
+| Install a Plugin from the Marketplace… | `smith plugin search <words> --json`, then `smith plugin install <name> [--trust --pin]` | the search result: name, newest version, description, roles; the trust question says the plugin runs unsandboxed with your privileges |
 | Connect smith to a Coding Assistant… | `smith mcp install --claude --vscode` | none |
 | New Recipe… | `smith recipe new --fixed …  --chosen …` | `recipe new --list-levels --json`; for each level that takes one plugin the extension asks who decides it: the recipe (default) or the people who use it |
 
@@ -96,9 +97,8 @@ The release picker does not list a package that was never released for a forced 
 on one line and offers the commit that sets its first version (`neverReleased` in
 `smith release --dry-run --json`).
 
-Not in the extension: `smith plugin draft` and `smith plugin search|install` (a plugin author, or a
-person who trusts a plugin, works in a terminal), and `smith serve`, `mcp`, `lsp`, `agent` and the dev servers, which
-own a terminal.
+Not in the extension: `smith plugin draft` (a plugin author works in a terminal on a sample project), and
+`smith serve`, `mcp`, `lsp`, `agent` and the dev servers, which own a terminal.
 
 ## Committing, releasing and changing a project from an editor
 

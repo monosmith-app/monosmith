@@ -103,6 +103,134 @@ func recipeChosenSteps(levelKey, level string, plugins []recipewizard.PluginOffe
 	}
 }
 
+// chosenGroups is the part of a choice that holds its answers, for a level that
+// takes any number of plugins: each answer gives one or more plugins.
+const chosenGroups = "groups"
+
+// recipeModeKey is the answer key of "who decides" for a level that takes any
+// number of plugins, from the key of the level's tick boxes.
+func recipeModeKey(levelKey string) string {
+	return "mode:" + strings.TrimPrefix(levelKey, recipeLevelPrefix)
+}
+
+// recipeAdditiveSteps are the questions of a level that takes any number of
+// plugins (structure, deploy, toolchain): who decides it, the tick boxes of
+// the plugins the recipe fixes, or the question the users read and the
+// answers, each of which gives one plugin or several joined by "+".
+func recipeAdditiveSteps(fixed Step, level recipewizard.LevelOffer, plugins []recipewizard.PluginOffer) []Step {
+	levelKey, skipLevel := fixed.Key, fixed.Skip
+	modeKey := recipeModeKey(levelKey)
+	notChosen := func(a map[string][]string) bool {
+		return (skipLevel != nil && skipLevel(a)) || first(a, modeKey) != recipeChosen
+	}
+	mode := Step{
+		Key: modeKey, Skip: skipLevel, Prompt: "Who decides the " + level.Level + "?",
+		Options: []Option{
+			{Label: "Fixed by the recipe (default)", Value: "fixed", Hint: "you tick the plugins; every project made from the recipe gets them"},
+			{Label: "Chosen by the people who use it", Value: recipeChosen, Hint: "they answer a question; each answer gives one plugin or several"},
+		},
+	}
+	fixed.Skip = func(a map[string][]string) bool {
+		return (skipLevel != nil && skipLevel(a)) || first(a, modeKey) == recipeChosen
+	}
+	var names []string
+	initial := make([]string, 0, len(plugins))
+	for _, p := range plugins {
+		names = append(names, p.Name)
+		initial = append(initial, p.Name+"="+p.Name)
+	}
+	question := Step{
+		Key: recipeChosenKey(levelKey, chosenQuestion), Skip: notChosen,
+		Prompt: "What question do the users read for the " + level.Level + "?", Placeholder: "Which " + level.Level + " do you want?",
+		Note: "They see it when they make a project from the recipe. Do not use a colon.",
+		Check: func(_ map[string][]string, v string) string {
+			if strings.ContainsAny(v, ":\n") {
+				return "write the question without a colon"
+			}
+			return ""
+		},
+	}
+	groups := Step{
+		Key: recipeChosenKey(levelKey, chosenGroups), Skip: notChosen,
+		Prompt: "Name the answers, each with its plugins: answer=plugin, answer=plugin+plugin",
+		Note:   "Each plugin starts as an answer of its own. Edit the names, or join plugins that go together with +. Plugins: " + strings.Join(names, ", "),
+		Initial: func(map[string][]string) string {
+			return strings.Join(initial, ", ")
+		},
+		Check: func(a map[string][]string, v string) string {
+			pairs, problem := parseGroups(v, names)
+			if problem != "" {
+				return problem
+			}
+			with := make(map[string][]string, len(a)+1)
+			for k, v := range a {
+				with[k] = v
+			}
+			with[recipeChosenKey(levelKey, chosenGroups)] = []string{strings.Join(pairs, ",")}
+			return planProblem(first(a, "name"), first(a, "version"), recipeFixed(with), recipeChosenArgs(with)...)
+		},
+	}
+	return []Step{mode, fixed, question, groups}
+}
+
+// parseGroups reads answer=plugin+plugin pairs separated by commas. It returns
+// the pairs without spaces, or what is wrong: fewer than two answers, a
+// repeated answer, a plugin the level does not offer.
+func parseGroups(text string, offered []string) (pairs []string, problem string) {
+	seen := map[string]bool{}
+	for _, part := range strings.Split(text, ",") {
+		answer, plugs, ok := strings.Cut(strings.TrimSpace(part), "=")
+		answer, plugs = strings.TrimSpace(answer), strings.TrimSpace(plugs)
+		if !ok || answer == "" || plugs == "" || strings.ContainsAny(answer, ":+") {
+			return nil, "write each answer as answer=plugin, or answer=plugin+plugin"
+		}
+		if seen[answer] {
+			return nil, fmt.Sprintf("two answers are named %q: each needs its own name", answer)
+		}
+		seen[answer] = true
+		var clean []string
+		for _, p := range strings.Split(plugs, "+") {
+			p = strings.TrimSpace(p)
+			if !slices.Contains(offered, p) {
+				return nil, fmt.Sprintf("%q is not a plugin of this level (%s)", p, strings.Join(offered, ", "))
+			}
+			clean = append(clean, p)
+		}
+		pairs = append(pairs, answer+"="+strings.Join(clean, "+"))
+	}
+	if len(pairs) < 2 {
+		return nil, "name at least two answers: a choice with one answer is a fixed plugin"
+	}
+	return pairs, ""
+}
+
+// recipeAdditiveChosenArgs are the --chosen values of the levels that take any
+// number of plugins and that the users choose.
+func recipeAdditiveChosenArgs(a map[string][]string) map[string]string {
+	out := map[string]string{}
+	for key := range a {
+		rest, ok := strings.CutPrefix(key, "mode:")
+		if !ok || first(a, key) != recipeChosen {
+			continue
+		}
+		level, lang, _ := strings.Cut(rest, ":")
+		if lang != recipeLanguage(a) {
+			continue
+		}
+		levelKey := recipeLevelPrefix + rest
+		var pairs []string
+		for _, part := range strings.Split(first(a, recipeChosenKey(levelKey, chosenGroups)), ",") {
+			if part = strings.ReplaceAll(strings.TrimSpace(part), " ", ""); part != "" {
+				pairs = append(pairs, part)
+			}
+		}
+		if len(pairs) > 0 {
+			out[level] = level + "=" + strings.TrimSpace(first(a, recipeChosenKey(levelKey, chosenQuestion))) + ":" + strings.Join(pairs, ",")
+		}
+	}
+	return out
+}
+
 // splitAnswers are the names typed for the answers of a choice.
 func splitAnswers(v string) []string {
 	var out []string
@@ -138,6 +266,10 @@ func recipeChosenArgs(a map[string][]string) []string {
 			pairs[i] = answers[i] + "=" + plugins[i]
 		}
 		byLevel[level] = level + "=" + strings.TrimSpace(first(a, recipeChosenKey(key, chosenQuestion))) + ":" + strings.Join(pairs, ",")
+		levels = append(levels, level)
+	}
+	for level, arg := range recipeAdditiveChosenArgs(a) {
+		byLevel[level] = arg
 		levels = append(levels, level)
 	}
 	var out []string

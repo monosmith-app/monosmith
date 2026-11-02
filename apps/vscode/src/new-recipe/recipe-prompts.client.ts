@@ -94,6 +94,7 @@ export async function askChoice (question: LevelQuestion): Promise<RecipeChoice 
     validateInput: checkChoiceQuestion,
   })
   if (text === undefined) return undefined
+  if (question.multi) return await askGroupedAnswers(question, text.trim())
   const plugins = await vscode.window.showQuickPick(question.options.map((option) => ({ label: option.name, description: option.description })), {
     title:              `${TITLE}: which ${question.level} plugins can they end up with?`,
     placeHolder:        'Tick at least two: a choice with one answer is a fixed plugin',
@@ -119,6 +120,37 @@ export async function askChoice (question: LevelQuestion): Promise<RecipeChoice 
   }
 
   return { question: text.trim(), answers }
+}
+
+/**
+ * Asks the answers of a level that takes any number of plugins: each answer has a name and the
+ * plugins it gives, ticked from the list (several plugins of one answer are joined by "+").
+ * The person ends the list with an empty name, once at least two answers exist.
+ * @param question - the level and the plugins that can fill it
+ * @param text - the question the users read
+ * @returns the choice, or undefined when the person pressed Escape
+ */
+async function askGroupedAnswers (question: LevelQuestion, text: string): Promise<RecipeChoice | undefined> {
+  const answers: Array<{ answer: string, plugin: string }> = []
+  for (;;) {
+    const enough = answers.length >= 2
+    const answer = await vscode.window.showInputBox({
+      title:         `${TITLE}: answer ${answers.length + 1} of the ${question.level}`,
+      prompt:        enough ? 'Name another answer, or leave it empty to finish.' : 'A word or two the user reads. A choice needs at least two answers.',
+      validateInput: (value) => enough && value.trim() === '' ? undefined : checkChoiceAnswer(value, answers.map((a) => a.answer)),
+    })
+    if (answer === undefined) return undefined
+    if (answer.trim() === '') return { question: text, answers }
+    const plugins = await vscode.window.showQuickPick(question.options.map((option) => ({ label: option.name, description: option.description })), {
+      title:              `${TITLE}: the plugins that "${answer.trim()}" gives`,
+      placeHolder:        'Tick one or more; several are installed together',
+      canPickMany:        true,
+      matchOnDescription: true,
+    })
+    if (plugins === undefined) return undefined
+    if (plugins.length === 0) continue
+    answers.push({ answer: answer.trim(), plugin: plugins.map((item) => item.label).join('+') })
+  }
 }
 
 /**

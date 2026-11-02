@@ -101,8 +101,8 @@ type Shell struct {
 	// environments are the names of `[workspace] environments`.
 	environments []string
 	sources      sources.Sources
-	tabs      []string
-	tab       string
+	tabs         []string
+	tab          string
 	// detailOpen is true while the detail of the selected project fills the
 	// pane, in the narrow layout (Enter opens it, Esc closes it).
 	detailOpen bool
@@ -168,10 +168,10 @@ type Shell struct {
 	// removeBase is the plain Remove form, which the project list turns into a pick list.
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
-	pkg  *packageprompt.Prompt
+	pkg *packageprompt.Prompt
 	// relpick asks which packages of the release to hold back or bump, before the confirmation.
 	relpick *releasepick.Model
-	help *dialog.Help
+	help    *dialog.Help
 	// fix is the doctor fix wizard while it is open; fixing is the fix being
 	// applied in the background.
 	fix    *fixwizard.Wizard
@@ -205,7 +205,7 @@ type Shell struct {
 	reopenNote string
 	// reopenDir is the folder the reopened shell opens in; empty is this one.
 	reopenDir string
-	toast      toast.Toast
+	toast     toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
