@@ -64,7 +64,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 				return s.capture(capPlan, append(slices.Clone(argv), flag))
 			}
 			title, why := commands.Describe(argv)
-			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Place(s.w, s.h)
+			c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).WithDetails(s.confirmDetails(argv)).Within(s.dialogMargins()).Place(s.w, s.h)
 			s.confirm = &c
 			return nil
 		}

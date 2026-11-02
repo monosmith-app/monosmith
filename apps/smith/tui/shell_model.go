@@ -540,9 +540,22 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
+// dialogMargins are the rows a confirmation keeps clear: the header and the tab
+// bar above the framed area, the status bar below it.
+func (s Shell) dialogMargins() (top, bottom int) {
+	l := s.lay()
+	return l.Main.Y, max(s.h-l.Footer.Y, 0)
+}
+
 // resize re-lays the screen out; it runs on every WindowSizeMsg.
 func (s *Shell) resize(w, h int) {
 	s.w, s.h = w, h
+	if s.confirm != nil {
+		// The dialog was placed for the old size: place it again, so a window
+		// that settles after the dialog opened still shows the whole command.
+		placed := s.confirm.Within(s.dialogMargins()).Place(w, h)
+		s.confirm = &placed
+	}
 	if s.fix != nil {
 		placed := s.fix.Place(w, h)
 		s.fix = &placed
