@@ -55,6 +55,8 @@ func TestAdjust(t *testing.T) {
 			}
 		}},
 		{name: "hold of an unknown package", a: Adjustments{Hold: []string{"nope"}}, wantErr: "--hold nope"},
+		{name: "hold of a near miss suggests the name", a: Adjustments{Hold: []string{"cor"}}, wantErr: "Did you mean core?"},
+		{name: "the error lists what the plan releases", a: Adjustments{Hold: []string{"zzzz"}}, wantErr: "The plan releases: core, api, web, fresh, pinned."},
 		{name: "bump major recomputes next and tag", a: Adjustments{Bump: map[string]string{"web": "major"}}, check: func(t *testing.T, p Plan) {
 			var web Item
 			for _, i := range p.Items {
@@ -62,8 +64,8 @@ func TestAdjust(t *testing.T) {
 					web = i
 				}
 			}
-			// Before 1.0 a major bump is a minor one.
-			if web.Next != "0.5.0" || web.Tag != "web@0.5.0" || web.Level != "major" || !strings.Contains(web.Reason, "you chose major") {
+			// The request wins over the "minor before 1.0" rule that applies to inferred bumps.
+			if web.Next != "1.0.0" || web.Tag != "web@1.0.0" || web.Level != "major" || !strings.Contains(web.Reason, "you chose major") {
 				t.Fatalf("%+v", web)
 			}
 		}},
@@ -145,5 +147,21 @@ func TestReviewLetsThePersonHoldAndBump(t *testing.T) {
 				t.Fatalf("ok=%v plan=%s\n%s", ok, names(got), out.String())
 			}
 		})
+	}
+}
+
+func TestAdjustNotesWhatDiffersFromTheRequest(t *testing.T) {
+	_, notes, err := Adjust(samplePlan(), Adjustments{Hold: []string{"docs"}})
+	if err != nil || len(notes) != 1 || notes[0] != "note: docs is not in this plan, so there is nothing to hold back" {
+		t.Fatalf("%v %v", notes, err)
+	}
+	plan := Plan{Items: []Item{{Project: "rc", Current: "1.2.3-rc.1", Next: "1.2.3", Level: "minor", Tag: "rc@1.2.3"}}}
+	_, notes, err = Adjust(plan, Adjustments{Bump: map[string]string{"rc": "patch"}})
+	if err != nil || len(notes) != 1 || !strings.Contains(notes[0], "you asked for patch") || !strings.Contains(notes[0], "leads to") {
+		t.Fatalf("%v %v", notes, err)
+	}
+	empty := Plan{Unchanged: []string{"docs"}}
+	if _, _, err := Adjust(empty, Adjustments{Hold: []string{"p"}}); err == nil || !strings.Contains(err.Error(), "The plan releases nothing.") {
+		t.Fatalf("%v", err)
 	}
 }

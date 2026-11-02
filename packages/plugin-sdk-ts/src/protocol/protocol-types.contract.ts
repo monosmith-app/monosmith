@@ -1168,6 +1168,11 @@ export interface PublishResult {
   skipped?: string
   registry?: string
   /**
+   * Notes are things the person must know about a publish that succeeded, such as a dist-tag that
+   * was not moved; the host prints them and the report keeps them.
+   */
+  notes?: string[]
+  /**
    * Assets are the workspace-relative files built for the release, in upload order; in a dry run,
    * the files that would be built.
    */

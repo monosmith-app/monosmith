@@ -45,7 +45,7 @@ func TestAssetsJobSetsUpWithTheAssetsFlagAndTheCiJobDoesNot(t *testing.T) {
 
 func TestTheManualRunAsksWhichCodeToBuild(t *testing.T) {
 	out := RenderGitHub(NewModel(Contributions{AssetPlatforms: []string{"linux-x64"}}, "dev", "main"))
-	for _, want := range []string{"      assets_source:\n", "        type: choice\n        required: true\n", "          - current\n          - tag\n", "the tag's own commit, the exact code that was released"} {
+	for _, want := range []string{"      assets_source:\n", "        type: choice\n        required: true\n", "          - current\n          - tag\n          - \"ask me (refuses)\"\n", "        default: \"ask me (refuses)\"\n", "the tag's own commit, the exact code that was released"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("workflow lacks %q:\n%s", want, out)
 		}

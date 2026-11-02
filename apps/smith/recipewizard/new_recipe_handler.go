@@ -23,9 +23,9 @@ type Options struct {
 	// FromAnswers is a Plan file; set, nothing is asked.
 	FromAnswers string
 	// Name, RecipeVersion, Extends and Fixed describe a recipe whose plugins
-	// are all fixed (see PlanFromFlags); with Name or Fixed set, nothing is asked.
+	// are all fixed (see PlanFromFlags); with Name, Fixed or Chosen set, nothing is asked.
 	Name, RecipeVersion, Extends string
-	Fixed                        []string
+	Fixed, Chosen                []string
 	// Force replaces an existing file without asking.
 	Force bool
 	// ListLevels prints the levels and the plugins of each instead of writing
@@ -88,6 +88,7 @@ take (--json for programs, such as the forms of the interface and the editors).`
 	cmd.Flags().StringVar(&opts.RecipeVersion, "recipe-version", "", "the recipe's version (0.1.0 when not given)")
 	cmd.Flags().StringVar(&opts.Extends, "extends", "", "the recipe this one extends: a path from the new file, or an https URL")
 	cmd.Flags().StringArrayVar(&opts.Fixed, "fixed", nil, "fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role")
+	cmd.Flags().StringArrayVar(&opts.Chosen, "chosen", nil, "a role the recipe's users choose, as role=question:answer=plugin,answer=plugin (language=Which language?:python=python,csharp=dotnet; + joins plugins of one answer); repeat for each role")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace the file if it exists")
 	cmd.Flags().BoolVar(&opts.ListLevels, "list-levels", false, "list the levels and the plugins each can take, and write nothing")
 	cmd.Flags().BoolVar(&opts.AsJSON, "json", false, "with --list-levels, print the list as JSON")
@@ -140,9 +141,9 @@ func Run(o Options) error {
 		if plan, err = ReadPlan(data, o.FromAnswers); err != nil {
 			return err
 		}
-	case o.Name != "" || len(o.Fixed) > 0:
+	case o.Name != "" || len(o.Fixed) > 0 || len(o.Chosen) > 0:
 		var err error
-		if plan, err = PlanFromFlags(o.Name, o.RecipeVersion, o.Extends, o.Fixed); err != nil {
+		if plan, err = PlanFromFlags(o.Name, o.RecipeVersion, o.Extends, o.Fixed, o.Chosen); err != nil {
 			return err
 		}
 	case o.Interactive:

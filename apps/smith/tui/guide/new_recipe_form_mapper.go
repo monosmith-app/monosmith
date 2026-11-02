@@ -44,7 +44,7 @@ func planProblem(name, version string, fixed []string) string {
 	if name == "" {
 		name = "team"
 	}
-	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed); err != nil {
+	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed, nil); err != nil {
 		return err.Error()
 	}
 	return ""

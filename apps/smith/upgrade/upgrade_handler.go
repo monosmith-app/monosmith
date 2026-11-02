@@ -44,7 +44,7 @@ nothing. --check does the same and fails when something would change, for CI.`,
 			check = check || dryRun
 			yes, _ := cmd.Flags().GetBool("yes")
 			if defaults {
-				return runAdoptDefaults(cmd, check, yes)
+				return runAdoptDefaults(cmd, check, dryRun, yes)
 			}
 			if !check {
 				// The plan comes from a dry run. A person confirms it; without a terminal
@@ -137,7 +137,7 @@ nothing. --check does the same and fails when something would change, for CI.`,
 
 // runAdoptDefaults is smith upgrade --defaults: plan, confirm, record the
 // latest vintage.
-func runAdoptDefaults(cmd *cobra.Command, check, yes bool) error {
+func runAdoptDefaults(cmd *cobra.Command, check, dryRun, yes bool) error {
 	root, err := workspace.FindRoot(".")
 	if err != nil {
 		return err
@@ -153,6 +153,10 @@ func runAdoptDefaults(cmd *cobra.Command, check, yes bool) error {
 	}
 	if check {
 		fmt.Fprintf(out, "would change: the defaults of %s to %s\n", orUnrecorded(change.From), change.To)
+		if dryRun {
+			fmt.Fprintln(out, "Dry run: nothing was changed.")
+			return nil
+		}
 		return errors.New("the workspace does not use the latest defaults: run smith upgrade --defaults")
 	}
 	{

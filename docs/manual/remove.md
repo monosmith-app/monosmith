@@ -3,7 +3,9 @@
 `smith remove` deletes a project: its directory, what its plugin owns outside it (the
 `go.work` entry, the npm lockfile, the Python venv), its tables in `smith.toml`, and its
 place in the regenerated CI pipelines. A project that other projects import is refused
-unless `--force`. Its release tags are kept.
+unless `--force`. Its releases stay: the release tags, the GitHub Releases and the registry packages are not
+touched. smith lists the tags it finds (`git tag --list '<name>@*'`) and asks no registry, so if the package is
+published, unpublish or deprecate it there yourself.
 
 ## When to use it
 

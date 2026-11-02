@@ -87,7 +87,7 @@ func Walk(ctx context.Context, plan []Planned, o Options) (Result, error) {
 		apply := o.Yes
 		if !apply {
 			if !o.Interactive {
-				fmt.Fprintln(o.Out, "\nPass --yes to apply these fixes.")
+				fmt.Fprintf(o.Out, "\nPass --yes to apply the %d safe fix(es) above.\n", len(safe))
 			} else {
 				apply = confirm(reader, o.Out, fmt.Sprintf("\nApply %d fix(es)?", len(safe)))
 				if !apply {

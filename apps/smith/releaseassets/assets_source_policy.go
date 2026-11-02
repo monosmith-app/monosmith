@@ -16,8 +16,9 @@ const (
 	// SourceTag builds the tag's own commit in a temporary git worktree.
 	SourceTag = "tag"
 	// SourceUndecided is the value the workflow input holds until someone picks
-	// one. It means no source was given.
-	SourceUndecided = "choose"
+	// one: GitHub always sends a value for a choice, and this one is the
+	// preselected default. It means no source was given, so the run refuses.
+	SourceUndecided = "ask me (refuses)"
 )
 
 // chooseSource decides which code a run for an old tag builds. A source given

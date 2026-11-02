@@ -29,14 +29,14 @@ func githubAssetsDispatch(m Model) string {
         required: false
         default: ""
       assets_source:
-        description: "With assets_tag: the code to build. current = the code of this branch as it is now, named with the tag's version (a fix reaches the files, but they carry newer code under an old number). tag = the tag's own commit, the exact code that was released. choose = stop and ask me"
+        description: "With assets_tag: the code to build. current = the code of this branch as it is now, named with the tag's version (a fix reaches the files, but they carry newer code under an old number). tag = the tag's own commit, the exact code that was released. ask me (refuses) = the run stops and names both choices; it is preselected so that nothing is built from code you did not pick"
         type: choice
         required: true
-        default: choose
+        default: "ask me (refuses)"
         options:
-          - choose
           - current
           - tag
+          - "ask me (refuses)"
 `
 }
 

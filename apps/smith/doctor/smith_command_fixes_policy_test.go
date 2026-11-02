@@ -29,7 +29,7 @@ func stepsOf(f *protocol.Fix) [][]string {
 }
 
 func TestEveryFindingWithASmithRemedyCarriesAFixThatRunsInTheInterface(t *testing.T) {
-	behind := defaultsVintageFinding("2000.01")
+	behind := defaultsVintageFinding("2000.01", "")
 	cache := localCacheFindings(cachemaintenance.Status{Exists: true, Bytes: 3 << 30, LimitBytes: 2 << 30, BrokenEntries: 4})
 	lib, _ := UnusedLibHint("core", 0, 3, time.Now().AddDate(0, -3, 0), time.Now())
 	pkg, _ := UnpublishedPackageHint("sdk", true)

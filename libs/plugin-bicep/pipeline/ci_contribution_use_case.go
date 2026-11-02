@@ -23,7 +23,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that the Azure CLI and its Bicep CLI are installed.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {

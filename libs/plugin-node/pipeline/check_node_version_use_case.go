@@ -8,7 +8,7 @@ import (
 )
 
 // probe runs a tool for its version; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // CheckNodeVersion compares the installed Node.js with the major CI
 // installs. A newer one warns, an older one fails: a dependency's engines

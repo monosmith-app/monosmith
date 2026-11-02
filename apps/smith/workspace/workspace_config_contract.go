@@ -131,6 +131,12 @@ type WorkspaceSection struct {
 	// files after printing it (ADR 0073). A flag always wins: --yes never
 	// asks, a terminal is never needed for a plan that is not risky.
 	Confirm string `toml:"confirm"`
+	// UpdateCheck is "on" or "off": whether smith may ask the npm registry,
+	// once a day, if a newer smith exists on the channel you installed (stable
+	// or next). Empty means the choice is not made yet: smith announces the
+	// request once and makes it only after a day. SMITH_UPDATE_CHECK, a user
+	// setting, wins over this; CI never asks.
+	UpdateCheck string `toml:"update_check"`
 	// CommitOperations makes every mutating command (smith add, remove,
 	// upgrade, derive, sync) commit what it changed as one commit, when the
 	// work tree is clean before it starts. smith undo reverts the last such

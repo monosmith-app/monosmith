@@ -92,7 +92,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that Dart (and Flutter, when a package uses it) is installed,
 // and that the SDK lives outside the workspace.

@@ -224,6 +224,9 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 		}
 	}
 	interactive := term.IsTerminal(int(os.Stdin.Fd()))
+	if !interactive {
+		fmt.Fprint(out, "\n"+doctorfix.Summary(plan))
+	}
 	var applied, pending int
 	var opened *session.Session // the session a replan opened; the caller closes the first
 	defer func() {

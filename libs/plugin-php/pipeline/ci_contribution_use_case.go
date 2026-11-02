@@ -65,7 +65,7 @@ const auditScript = "if composer --version >/dev/null 2>&1; then composer audit 
 	"else echo 'composer is not installed: install it (https://getcomposer.org/download) to check packages for known vulnerabilities' >&2; exit 1; fi"
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that PHP and Composer are installed.
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {

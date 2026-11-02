@@ -3391,6 +3391,9 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
     /// <summary>The <c>registry</c> member of <c>PublishResult</c>.</summary>
     public string Registry { get; init; } = string.Empty;
 
+    /// <summary>Notes are things the person must know about a publish that succeeded, such as a dist-tag that was not moved; the host prints them and the report keeps them.</summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
+
     /// <summary>Assets are the workspace-relative files built for the release, in upload order; in a dry run, the files that would be built.</summary>
     public IReadOnlyList<string> Assets { get; init; } = [];
 
@@ -3412,6 +3415,7 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
             Published = BooleanValue(Member(map, "published"), Join(path, "published")),
             Skipped = StringValue(Member(map, "skipped"), Join(path, "skipped")),
             Registry = StringValue(Member(map, "registry"), Join(path, "registry")),
+            Notes = ListOf(Member(map, "notes"), Join(path, "notes"), StringValue),
             Assets = ListOf(Member(map, "assets"), Join(path, "assets"), StringValue),
             AssetPlatforms = MapOf(Member(map, "assetPlatforms"), Join(path, "assetPlatforms"), StringValue),
             Binary = StringValue(Member(map, "binary"), Join(path, "binary")),
@@ -3434,6 +3438,11 @@ public sealed record PublishResult : IProtocolValue<PublishResult>
         {
             writer.Property("registry");
             writer.String(Registry);
+        }
+        if (Notes is { Count: > 0 })
+        {
+            writer.Property("notes");
+            MessageWritingAlgorithm.List(writer, Notes, (builder1, item1) => builder1.String(item1));
         }
         if (Assets is { Count: > 0 })
         {

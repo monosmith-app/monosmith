@@ -61,7 +61,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // compilers are the C++ compilers CMake finds on its own.
 var compilers = []string{"c++", "g++", "clang++", "cl"}
