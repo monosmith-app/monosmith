@@ -43,13 +43,15 @@ func ShowFix(w io.Writer, root string, p Planned) error {
 		}
 		fmt.Fprint(w, textdiff.UnifiedDiff(e.Path, string(before), after))
 	}
+	planRoot, cleanup, planErr := previewRoot(root, p.Fix)
+	defer cleanup()
 	for i, s := range p.Steps {
 		if s.Description != "" {
 			fmt.Fprintf(w, "  step %d: %s\n          $ %s\n", i+1, s.Description, displayCommand(s.Argv))
 		} else {
 			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, displayCommand(s.Argv))
 		}
-		writePlan(w, root, s)
+		writePlan(w, planRoot, planErr, s)
 	}
 	for _, c := range p.Choices {
 		fmt.Fprintf(w, "  asks: %s\n", c.Question)
