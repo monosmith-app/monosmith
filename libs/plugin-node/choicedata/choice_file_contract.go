@@ -15,6 +15,8 @@ type File struct {
 	// host applies (protocol.Choice).
 	Needs     []string `toml:"needs"`
 	Default   bool     `toml:"default"`
+	// Suggested is the choice an asker pre-selects (protocol.Choice).
+	Suggested bool `toml:"suggested"`
 	Many      bool     `toml:"many"`
 	Requires  []string `toml:"requires"`
 	Conflicts []string `toml:"conflicts"`

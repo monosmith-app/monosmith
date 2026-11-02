@@ -172,7 +172,7 @@ func (s *Set) check() error {
 func (c choice) protocol() protocol.Choice {
 	return protocol.Choice{
 		Axis: c.Axis, Name: c.Name, Description: c.Description, Language: c.Language, Roles: c.roles,
-		Needs: c.Needs, Default: c.Default, Many: c.Many, Requires: c.Requires, Conflicts: c.Conflicts,
+		Needs: c.Needs, Default: c.Default, Suggested: c.Suggested, Many: c.Many, Requires: c.Requires, Conflicts: c.Conflicts,
 	}
 }
 

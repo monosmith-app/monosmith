@@ -136,11 +136,11 @@ func TestProblemsNameWhyAChoiceIsUnusable(t *testing.T) {
 	}
 	got := Problems(offers, func(l string) bool { return l == "node" })
 	for name, want := range map[string]string{"chakra": "requires react", "svelte": "test axis", "flask": "python plugin is not enabled"} {
-		if !strings.Contains(got[name], want) {
-			t.Errorf("%s: %q lacks %q", name, got[name], want)
+		if !strings.Contains(got["node/"+name]+got["python/"+name], want) {
+			t.Errorf("%s: %q lacks %q", name, got["node/"+name]+got["python/"+name], want)
 		}
 	}
-	if _, bad := got["bootstrap"]; bad {
-		t.Errorf("bootstrap is usable: %q", got["bootstrap"])
+	if _, bad := got["node/bootstrap"]; bad {
+		t.Errorf("bootstrap is usable: %q", got["node/bootstrap"])
 	}
 }

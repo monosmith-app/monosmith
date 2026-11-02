@@ -20,7 +20,18 @@ import (
 // plugin's project has that plugin in the selection. The first problem is the
 // error, in one sentence that names the choices at fault and the fix.
 func Solve(offers []Offer, names []string) (Selection, error) {
-	return solve(offers, names, false)
+	return SolveIn(offers, "", names)
+}
+
+// SolveIn is Solve for a language. A choice name is unique per language
+// (ADR 0072): with a language, only its choices count; with none, a name that
+// several languages offer is an error that asks for --lang.
+func SolveIn(offers []Offer, language string, names []string) (Selection, error) {
+	scoped, err := scopeToLanguage(offers, language, names)
+	if err != nil {
+		return Selection{}, err
+	}
+	return solve(scoped, names, false)
 }
 
 // SolveForExisting is Solve for a project that already exists: its scaffold is
@@ -61,7 +72,17 @@ func solve(offers []Offer, names []string, existing bool) (Selection, error) {
 			}
 			fill, ok := defaultFor(offers, axis, chosen[i].Language)
 			if !ok {
-				return Selection{}, fmt.Errorf("%s needs a choice on the %s axis, and none is the default: add one of %s to --with", chosen[i].Name, axis, strings.Join(onAxis(offers, axis, chosen[i].Language), ", "))
+				var fits []Offer
+				for _, o := range offers {
+					if o.Axis == axis && o.Language == chosen[i].Language && !conflictsWithAny(o, chosen) {
+						fits = append(fits, o)
+					}
+				}
+				sort.Slice(fits, func(a, b int) bool { return fits[a].Name < fits[b].Name })
+				if len(fits) == 0 {
+					return Selection{}, fmt.Errorf("%s needs a choice on the %s axis, and none fits the rest of the selection: drop %s", chosen[i].Name, axis, chosen[i].Name)
+				}
+				return Selection{}, &NeedsAxisError{Choice: chosen[i].Name, Axis: axis, Options: fits}
 			}
 			chosen = append(chosen, fill)
 			added = append(added, fill.Name)
@@ -79,11 +100,16 @@ func solve(offers []Offer, names []string, existing bool) (Selection, error) {
 }
 
 // Index maps each choice name to its offer. Two plugins that offer the same
-// name are an error that names both.
+// name for one language are an error that names both. The same name for
+// different languages is allowed (ADR 0072); the index then holds the first, so
+// a caller filters with OfLanguage before it reads by name.
 func Index(offers []Offer) (map[string]Offer, error) {
 	index := map[string]Offer{}
 	for _, o := range offers {
 		if have, dup := index[o.Name]; dup {
+			if have.Language != o.Language {
+				continue
+			}
 			return nil, fmt.Errorf("the plugins %s and %s both offer a choice named %s: disable one of them", have.Plugin, o.Plugin, o.Name)
 		}
 		index[o.Name] = o
@@ -279,4 +305,15 @@ func distance(a, b string) int {
 		prev = cur
 	}
 	return prev[len(b)]
+}
+
+// conflictsWithAny reports whether the offer conflicts with a chosen choice,
+// either way round.
+func conflictsWithAny(o Offer, chosen []Offer) bool {
+	for _, c := range chosen {
+		if slices.Contains(o.Conflicts, c.Name) || slices.Contains(c.Conflicts, o.Name) {
+			return true
+		}
+	}
+	return false
 }

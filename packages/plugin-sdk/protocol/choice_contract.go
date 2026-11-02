@@ -29,6 +29,10 @@ type Choice struct {
 	// Default marks the choice the host adds when a selection needs its axis
 	// and has no choice on it.
 	Default bool `json:"default,omitempty"`
+	// Suggested marks the choice an asker pre-selects on its axis. The solver
+	// never adds it by itself: an axis that a choice needs and that has no
+	// Default is asked, and the person answers (ADR 0072).
+	Suggested bool `json:"suggested,omitempty"`
 	// Many allows the choice next to other choices of its axis that are Many
 	// too. By default a selection has one choice per axis.
 	Many bool `json:"many,omitempty"`
