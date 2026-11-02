@@ -309,6 +309,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "monosmith.composeStack",
+        "title": "Compose a Stack…",
+        "category": "MonoSmith",
+        "icon": "$(search)"
+      },
+      {
         "command": "monosmith.addDependency",
         "title": "Add Dependency…",
         "category": "MonoSmith",
@@ -691,6 +697,10 @@
       "commandPalette": [
         {
           "command": "monosmith.addProject",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.composeStack",
           "when": "monosmith.state == ready"
         },
         {

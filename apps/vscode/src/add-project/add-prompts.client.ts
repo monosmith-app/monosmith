@@ -22,8 +22,14 @@ const TITLE = 'MonoSmith: Add project'
  */
 export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = []): Promise<AddRequest | undefined> {
   const roles = [...new Set(options.kinds.map((kind) => roleOf(kind.kind, kind.language)))]
-  const role = await vscode.window.showQuickPick(roles.map((name) => ({ label: name, description: ROLES[name] ?? '' })), { title: `${TITLE} (1/4): what kind?`, placeHolder: 'app, lib or package' })
+  const compose = '$(search) Compose a stack…'
+  const role = await vscode.window.showQuickPick([{ label: compose, description: 'not sure? search frameworks, desktop shells (Tauri, Electron) and cloud hosts first' }, ...roles.map((name) => ({ label: name, description: ROLES[name] ?? '' }))], { title: `${TITLE} (1/4): what kind?`, placeHolder: 'app, lib or package' })
   if (role === undefined) return undefined
+  if (role.label === compose) {
+    await vscode.commands.executeCommand('monosmith.composeStack')
+
+    return undefined
+  }
 
   const languages = options.kinds.filter((kind) => roleOf(kind.kind, kind.language) === role.label)
   const language = await vscode.window.showQuickPick(

@@ -7,6 +7,7 @@ import {
   type AgentFilesState, type InstallScope,
 } from './agent-install/index.ts'
 import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
+import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
 import { addProject, askAddRequest, confirmAddPlan, parseChoices, tellAddOutcome } from './add-project/index.ts'
 import {
   addDeriveRows, applyActionFor, changeDerivedFile, confirmDeriveChange, createDeriveDiagnostics, explainDerivedFile, previewDerive, readDeriveStatus, toTextDocument, tellDeriveChange, toExplainDocument,
@@ -860,6 +861,29 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Searches the catalogue, composes the stack, shows the plan of `smith add`, and adds on a yes. */
+  const composeStackHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('composing a stack')) return
+    output.show(true)
+    const existing = state.snapshot?.projects.map((project) => project.name) ?? []
+    const outcome = await composeStack({
+      run:   smithIn(state),
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: composing in ${state.name}… smith installs and tests the new project.` },
+        async () => await smithIn(state, true, 600_000)(args),
+      ),
+      pick:    pickItems,
+      answer:  answerQuestion,
+      askName: async () => await askProjectName(existing),
+      tell:    (message) => { void vscode.window.showInformationMessage(`MonoSmith: ${message}`) },
+      confirm: confirmComposePlan,
+    })
+    note(`MonoSmith: compose in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellComposeOutcome(outcome, note)
+    if (outcome.kind === 'added') await refreshFolder(state.root, 'full', false)
+  }
+
   /** Asks library or registry first, then what to add, and runs `smith install`. */
   const addDependencyHere = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
@@ -1180,6 +1204,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.talkToAgent', talkToTheAgent),
     command<unknown>('monosmith.agentFile', writeAgentsFile),
     command<unknown>('monosmith.addProject', addProjectHere),
+    command<unknown>('monosmith.composeStack', composeStackHere),
     command<unknown>('monosmith.addDependency', addDependencyHere),
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.swap', swapHere),

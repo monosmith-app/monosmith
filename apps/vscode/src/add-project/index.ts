@@ -3,3 +3,4 @@ export { askAddRequest, confirmAddPlan, tellAddOutcome } from './add-prompts.cli
 export { choicesByAxis, parseChoices } from './add-options.mapper.ts'
 export type { ChoiceOption } from './add-options.contract.ts'
 export type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
+export { checkProjectName } from './add-arguments.mapper.ts'
