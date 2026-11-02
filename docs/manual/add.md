@@ -153,7 +153,7 @@ A combination a host cannot do is a clear error before any write: `timer-trigger
 `gcp-functions` (on Google a schedule is a Cloud Scheduler job that calls an HTTP or Pub/Sub
 function), `dotnet8` with `gcp-functions` (Google retires it on 2026-11-10), two hosts, or a host with
 `react`: `azure-functions and react are both on the framework axis: keep one`. The tables are the
-runtimes the three platforms support on 2026-11-02; [ADR 0072](../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md)
+runtimes the three platforms support on 2026-11-02; [ADR 0074](../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md)
 lists the sources.
 
 Every app has the tasks `build`, `test`, `lint`, `start` and `package`. The build goes to the

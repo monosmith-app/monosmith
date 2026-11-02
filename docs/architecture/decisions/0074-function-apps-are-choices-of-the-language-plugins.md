@@ -1,4 +1,4 @@
-# ADR 0072: Function apps are choices of the language plugins
+# ADR 0074: Function apps are choices of the language plugins
 
 - Status: accepted
 - Date: 2026-11-02

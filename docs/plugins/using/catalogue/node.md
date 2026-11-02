@@ -197,7 +197,7 @@ terminal it refuses and names the answers to add to `--with`. The app has the ta
 warns when `func` or `sam` is missing. AWS and Google get templates only; Azure deploys with
 `smith pipeline deploy-azure-function`. The choices, the runtimes and the reasons are in
 [Function apps](../../../manual/add.md#function-apps) and
-[ADR 0072](../../../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md).
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md).
 
 ## Settings
 

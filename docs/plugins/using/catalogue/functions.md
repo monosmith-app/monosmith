@@ -5,7 +5,7 @@ The `functions` plugin scaffolds a serverless function app in TypeScript for Azu
 `smith add app api --lang node --with azure-functions,http-trigger,node24`. The python and dotnet
 plugins publish the same choices for their languages; this page is the Node side. See
 [Function apps](../../../manual/add.md#function-apps) for what a person sees, and
-[ADR 0072](../../../architecture/decisions/0072-function-apps-are-choices-of-the-language-plugins.md)
+[ADR 0074](../../../architecture/decisions/0074-function-apps-are-choices-of-the-language-plugins.md)
 for why.
 
 ## At a glance
