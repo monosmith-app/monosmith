@@ -43,8 +43,9 @@ type PlanInput struct {
 	Check Check
 	// Files are the lines of the add plan, from scaffold.PlanAdd.
 	Files []PlanLine
-	// Tools finds the tools of a pick; nil means none.
-	Tools ToolSource
+	// Tools are the tools the selection needs, with their state; the caller
+	// reads them from the plugins' tool data.
+	Tools []Tool
 	// Plugins are the plugin names the selection builds with: the scaffold, then
 	// the toolchain. Language is the language plugin's name.
 	Language, Scaffold string
@@ -74,14 +75,10 @@ func BuildPlan(in PlanInput) Plan {
 		p.Notes = append(p.Notes, strings.Join(in.Check.Added, " and ")+" "+verb(len(in.Check.Added))+" added by default because a choice needs that kind of tool. Remove "+pronoun(len(in.Check.Added))+" from --with only if you pick another tool of that kind.")
 	}
 	seen := map[string]bool{}
-	if in.Tools != nil {
-		for _, c := range in.Check.Selection {
-			for _, t := range in.Tools(c, in.Check.Language) {
-				if key := t.Name + "/" + t.Binary; !seen[key] {
-					seen[key] = true
-					p.Tools = append(p.Tools, t)
-				}
-			}
+	for _, t := range in.Tools {
+		if !seen[t.Name] {
+			seen[t.Name] = true
+			p.Tools = append(p.Tools, t)
 		}
 	}
 	p.RecipeArgv, p.RecipeNote = recipeOf(in)

@@ -25,18 +25,16 @@ func TestThePlanShowsANamePlaceholderAndTheAppKindByDefault(t *testing.T) {
 }
 
 func TestThePlanListsTheToolsOfTheSelectionOnceEach(t *testing.T) {
-	source := func(choice, _ string) []Tool {
-		if choice == "react" || choice == "eslint" {
-			return []Tool{{Choice: choice, Name: "Node", Binary: "node", Install: "install Node"}}
-		}
-		return nil
+	tools := []Tool{
+		{Choice: "react", Name: "node", Binary: "node", State: "installed", Command: "smith tools install node"},
+		{Choice: "eslint", Name: "node", Binary: "node", State: "installed", Command: "smith tools install node"},
 	}
-	p := BuildPlan(PlanInput{Name: "web", Check: completeReact(), Tools: source})
+	p := BuildPlan(PlanInput{Name: "web", Check: completeReact(), Tools: tools})
 	if len(p.Tools) != 1 || p.Tools[0].Binary != "node" {
 		t.Fatalf("the same tool from two picks is listed once: %+v", p.Tools)
 	}
 	if none := BuildPlan(PlanInput{Name: "web", Check: completeReact()}); len(none.Tools) != 0 {
-		t.Fatalf("without a tool source there are no tools: %+v", none.Tools)
+		t.Fatalf("without tools there are no tools: %+v", none.Tools)
 	}
 }
 

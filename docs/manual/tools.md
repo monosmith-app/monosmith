@@ -59,7 +59,9 @@ Reads the plugins' tool declarations, and the pin files named above at the works
 the folders of the projects that use the tool. It runs only version commands (`python3 --version`).
 It changes nothing. Git is always listed; the GitHub CLI is listed when the workspace has a
 `.github` folder. The tools for running a function app locally (Azure Functions Core Tools, the AWS
-SAM CLI) are listed only when a project's stack has that choice.
+SAM CLI, and for a Tauri app Rust, the Xcode Command Line Tools, the Microsoft C++ Build Tools,
+WebView2 and the WebKitGTK libraries) are listed only when a project's stack has that choice. A tool
+that exists on one system only is listed on that system only.
 
 ## Examples
 

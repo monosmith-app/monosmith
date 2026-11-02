@@ -107,6 +107,7 @@ var entries = []protocol.ToolNeed{
 		Pins:        []protocol.ToolVersionPin{{File: "rust-toolchain.toml", Format: "rust-toolchain"}, {File: "rust-toolchain", Format: "rust-toolchain"}},
 		Install: []protocol.ToolInstall{
 			{Manager: "rustup", Package: "stable", Note: "rustup is already on this machine"},
+			{Manager: "winget", Package: "Rustlang.Rustup", Note: "rustup installs the Rust compiler; on Windows it also needs the Microsoft C++ Build Tools"},
 			{Manager: "brew", Package: "rust", Note: "Homebrew's own build; rustup (the official page) keeps several versions"},
 			{Manager: "apt", Package: "cargo", Note: "the distribution's own build; rustup (the official page) is newer"},
 			{Manager: "dnf", Package: "cargo", Note: "the distribution's own build; rustup (the official page) is newer"},

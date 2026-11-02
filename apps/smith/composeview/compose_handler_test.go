@@ -1,10 +1,13 @@
 package composeview
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 func TestTheRefusalNamesTheFlagsThatWorkWithoutATerminal(t *testing.T) {
@@ -25,14 +28,25 @@ func TestTheCommandHasTheFlagsTheScreensCall(t *testing.T) {
 	}
 }
 
-func TestFunctionHostsNeedTheirLocalToolAndOtherChoicesNeedNone(t *testing.T) {
-	if tools := functionTools("aws-lambda", "node"); len(tools) != 1 || tools[0].Binary != "sam" {
+func TestToolsOfSaysTheStateAndTheInstallLineOfEachTool(t *testing.T) {
+	sources := []toolinstall.Source{{Plugin: "node", Languages: []string{"node"}, Tools: []protocol.ToolNeed{
+		{Name: "node", Title: "Node.js", Program: "node"},
+		{Name: "aws-sam-cli", Title: "the AWS SAM CLI", Program: "sam", Choice: "aws-lambda"},
+	}}}
+	d := fakeProbe{"node": {Program: "node", Version: "22.0.0"}}
+	tools := toolsOf(toolinstall.SelectionStatuses(context.Background(), d, t.TempDir(), sources, "node", []string{"aws-lambda"}), "node")
+	if len(tools) != 2 || tools[0].State != "installed" || tools[0].Choice != "node" {
 		t.Fatalf("%+v", tools)
 	}
-	if tools := functionTools("react", "node"); tools != nil {
-		t.Fatalf("%+v", tools)
+	if tools[1].State != "missing" || tools[1].Choice != "aws-lambda" || tools[1].Command != "smith tools install aws-sam-cli" || tools[1].Binary != "sam" {
+		t.Fatalf("%+v", tools[1])
 	}
 }
+
+// fakeProbe answers from a table and never runs a program.
+type fakeProbe map[string]toolinstall.Probe
+
+func (f fakeProbe) Detect(_ context.Context, n toolinstall.Need) toolinstall.Probe { return f[n.Name] }
 
 func TestChoiceLinesSayWhatEachChoiceWritesInThePluginsWords(t *testing.T) {
 	cat := compose.Catalogue{Items: []compose.Item{{ID: "node/react", Name: "react", Title: "React", Description: "a React app"}}}

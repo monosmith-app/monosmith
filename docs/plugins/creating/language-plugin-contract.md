@@ -57,7 +57,7 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
    workspace pins the version (`pins`: `.nvmrc`, `go.mod`, `pyproject.toml` `requires-python`,
    `global.json`, `rust-toolchain.toml`), the ways to get it (`install`: a package manager and a
    package, for `winget`, `brew`, `brew-cask`, `apt`, `dnf`, `pacman`, `npm` and the language's own
-   `uv`, `fnm`, `rustup`), the official page (`download`), and the page the entries were checked
+   `uv`, `fnm`, `rustup`), the systems it exists on (`systems`, optional), the official page (`download`), and the page the entries were checked
    against with the date (`source`, `checked`). The plugin writes facts only. The host builds the
    exact command, presents the choice and runs nothing until the person picks
    ([ADR 0077](../../architecture/decisions/0077-smith-offers-to-install-the-tools-a-stack-needs.md)).

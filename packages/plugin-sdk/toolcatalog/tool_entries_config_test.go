@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
 var knownManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup"}
@@ -53,6 +55,19 @@ func TestEveryInstallEntryHasASourceAndADate(t *testing.T) {
 	for manager, page := range installCatalogues {
 		if !strings.HasPrefix(page, "https://") || !slices.Contains(knownManagers, manager) {
 			t.Errorf("catalogue %s: bad page %q", manager, page)
+		}
+	}
+}
+
+func TestEveryEntryPassesTheProtocolValidatorAndForChoiceLimitsThem(t *testing.T) {
+	for _, e := range entries {
+		if err := protocol.ValidateToolNeed(e); err != nil {
+			t.Errorf("%v", err)
+		}
+	}
+	for _, n := range ForChoice("tauri", "rust", "tauri-linux-libs") {
+		if n.Choice != "tauri" {
+			t.Errorf("%s: choice %q", n.Name, n.Choice)
 		}
 	}
 }

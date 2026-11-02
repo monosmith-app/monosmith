@@ -4441,6 +4441,9 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
     /// <summary>Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not needed by a project built without it. Absent means every project of the plugin needs it.</summary>
     public string Choice { get; init; } = string.Empty;
 
+    /// <summary>Systems limits the tool to these systems, named as Go names them ("windows", "darwin", "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.</summary>
+    public IReadOnlyList<string> Systems { get; init; } = [];
+
     /// <summary>Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and {major.minor} in the install entries.</summary>
     public string Suggested { get; init; } = string.Empty;
 
@@ -4474,6 +4477,7 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
             VersionArgs = ListOf(Member(map, "versionArgs"), Join(path, "versionArgs"), StringValue),
             Pins = ListOf(Member(map, "pins"), Join(path, "pins"), ToolVersionPin.Read),
             Choice = StringValue(Member(map, "choice"), Join(path, "choice")),
+            Systems = ListOf(Member(map, "systems"), Join(path, "systems"), StringValue),
             Suggested = StringValue(Member(map, "suggested"), Join(path, "suggested")),
             Optional = BooleanValue(Member(map, "optional"), Join(path, "optional")),
             Install = ListOf(Member(map, "install"), Join(path, "install"), ToolInstall.Read),
@@ -4516,6 +4520,11 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
         {
             writer.Property("choice");
             writer.String(Choice);
+        }
+        if (Systems is { Count: > 0 })
+        {
+            writer.Property("systems");
+            MessageWritingAlgorithm.List(writer, Systems, (builder1, item1) => builder1.String(item1));
         }
         if (Suggested.Length > 0)
         {

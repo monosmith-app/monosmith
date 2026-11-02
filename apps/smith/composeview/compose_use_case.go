@@ -1,6 +1,7 @@
 package composeview
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
-	"github.com/monosmith-app/monosmith/packages/plugin-sdk/functionhost"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -67,15 +68,26 @@ func languagesOf(languages []string) string {
 	return ", for " + strings.Join(languages, ", ")
 }
 
-// functionTools is the tool source of this change: the local tool of the three
-// function hosts, from the data the doctor already uses. The work on installing
-// missing tools replaces it with the tool requirements the plugins publish.
-func functionTools(choice, _ string) []compose.Tool {
-	t, ok := functionhost.ToolOf(choice)
-	if !ok {
-		return nil
+// toolsOf maps the detected tools of a selection to the plan's tools: the
+// state, and the line that offers the install. A tool that a choice limits
+// names that choice; the others name the language.
+func toolsOf(statuses []toolinstall.Status, language string) []compose.Tool {
+	out := make([]compose.Tool, 0, len(statuses))
+	for _, st := range statuses {
+		needed := st.Choice
+		if needed == "" {
+			needed = language
+		}
+		state := "installed"
+		switch st.State {
+		case toolinstall.Missing:
+			state = "missing"
+		case toolinstall.Outdated:
+			state = "outdated"
+		}
+		out = append(out, compose.Tool{Choice: needed, Name: st.Name, Title: st.Title, Binary: st.ToolNeed.Program, State: state, Command: "smith tools install " + st.Name})
 	}
-	return []compose.Tool{{Choice: choice, Name: t.Name, Binary: t.Binary, Install: t.Install}}
+	return out
 }
 
 // Run makes the report: the catalogue (searched), and, for --with, the check
@@ -101,8 +113,9 @@ func Run(s *session.Session, o Options) (Report, error) {
 	offers := s.Plugins.Offers()
 	check := compose.CheckPicks(offers, language, o.With)
 	rep.Check = &check
-	in := compose.PlanInput{Kind: o.Kind, Name: o.Name, Check: check, Tools: functionTools}
+	in := compose.PlanInput{Kind: o.Kind, Name: o.Name, Check: check}
 	if check.Complete {
+		in.Tools = toolsOf(toolinstall.SelectionStatuses(context.Background(), toolinstall.ExecDetector{}, s.Root, toolinstall.SessionSources(s), check.Language, check.Selection), check.Language)
 		sel, err := choiceselect.SolveIn(offers, check.Language, o.With)
 		if err != nil {
 			return Report{}, err
