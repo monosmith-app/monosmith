@@ -475,7 +475,7 @@ func (m Model) advance() Model {
 			}
 		}
 	}
-	if step.Preselect != nil && m.searched != "" && !step.Multi {
+	if step.Preselect != nil && !step.Multi {
 		if want := step.Preselect(m.searched, step.Options); want != "" {
 			for i, o := range step.Options {
 				if o.Value == want {

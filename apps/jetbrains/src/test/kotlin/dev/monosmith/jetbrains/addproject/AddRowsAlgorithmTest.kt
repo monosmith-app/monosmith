@@ -43,7 +43,7 @@ class AddRowsAlgorithmTest {
 
     @Test
     fun aWebsiteMayDecideLaterButAFunctionAppMayNot() {
-        assertEquals(listOf("react", AddRowsAlgorithm.LATER), AddRowsAlgorithm.presetRows(listOf(react), "web").map { it.name })
+        assertEquals(listOf(AddRowsAlgorithm.LATER, "react"), AddRowsAlgorithm.presetRows(listOf(react), "web").map { it.name })
         assertEquals(listOf("react"), AddRowsAlgorithm.presetRows(listOf(react), "function").map { it.name })
     }
 

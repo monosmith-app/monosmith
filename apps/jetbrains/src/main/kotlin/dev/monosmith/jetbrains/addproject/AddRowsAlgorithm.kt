@@ -83,14 +83,16 @@ object AddRowsAlgorithm {
         items: List<OutcomeItemContract>,
         outcomeId: String,
     ): List<ChoiceRowContract> =
-        items.map { ChoiceRowContract(it.name, it.title, it.name, it.description, search = it.aliases.joinToString(" ")) } +
+        (
             if (outcomeId == "function") {
                 emptyList()
             } else {
+                // First, so Enter on the list picks nothing: a framework is the person's pick.
                 listOf(
-                    ChoiceRowContract(LATER, "Decide in the next question", "", "You can still pick a framework, a shell or a tool there."),
+                    ChoiceRowContract(LATER, "Decide in the next question", "(default)", "You can still pick a framework, a shell or a tool there."),
                 )
             }
+        ) + items.map { ChoiceRowContract(it.name, it.title, it.name, it.description, search = it.aliases.joinToString(" ")) }
 
     /** The rows of "follow which project?": what most siblings do first, then each sibling. */
     fun likeRows(siblings: List<String>): List<ChoiceRowContract> =

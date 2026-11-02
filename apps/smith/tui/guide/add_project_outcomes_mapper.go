@@ -129,8 +129,15 @@ func outcomePickStep(o compose.Outcome, language string) (Step, bool) {
 		Skip: func(a map[string][]string) bool { return first(a, outcomeKey) != o.ID || first(a, "lang") != language },
 		Preselect: func(typed string, opts []Option) string {
 			for _, opt := range opts {
-				if opt.Value != pickNone && MatchesFilter(Option{Label: opt.Label, Value: opt.Value}, typed) {
+				if typed != "" && opt.Value != pickNone && MatchesFilter(Option{Label: opt.Label, Value: opt.Value}, typed) {
 					return opt.Value
+				}
+			}
+			// Nothing was typed: the cursor starts on "Decide in the next question",
+			// so Enter ticks nothing. A pick is the person's, never a first answer.
+			for _, opt := range opts {
+				if opt.Value == pickNone {
+					return pickNone
 				}
 			}
 			return ""

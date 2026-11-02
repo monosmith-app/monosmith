@@ -174,7 +174,9 @@ async function askPreset (options: AddOptions, outcome: OutcomeOption, language:
   const question = options.layers[layer] === undefined ? 'Which one?' : `Which ${options.layers[layer].toLowerCase()}?`
   const rows = [...items.map((item) => ({ label: item.title ?? item.name, description: item.name, detail: item.description })), ...(outcome.id === 'function' ? [] : [{ label: later, description: '', detail: 'you can still pick a framework, a shell or a tool there' }])]
   const start = typedItem(items, typed)
-  const picked = await pickOne(rows, { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick is kept: the next questions do not ask it again`.trim() }, rows.find((row) => row.description === start))
+  // Nothing typed: the cursor starts on "Decide in the next question", so Enter picks nothing.
+  const startRow = start === undefined ? rows.find((row) => row.label === later) : rows.find((row) => row.description === start)
+  const picked = await pickOne(rows, { title: `${TITLE}: ${question}`, placeHolder: `${whatIs(outcome.items[0]?.layer ?? '')} Your pick is kept: the next questions do not ask it again`.trim() }, startRow)
   if (picked === undefined) return undefined
 
   return picked.label === later ? [] : [picked.description]
