@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 )
 
@@ -228,6 +229,15 @@ func TestOutsideAWorkspaceACommandRunsInTheTerminalAfterTheShellQuits(t *testing
 	sh.execute([]string{"adopt"}, false)
 	if !sh.quit || len(sh.Argv) == 0 || sh.Argv[0] != "adopt" {
 		t.Fatalf("quit=%v argv=%v", sh.quit, sh.Argv)
+	}
+}
+
+func TestBareUpOpensTheDependenciesTabInsteadOfHandingOver(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	sh := l.sh()
+	sh.execute([]string{"up"}, false)
+	if sh.quit || len(sh.Argv) != 0 || sh.tab != commands.TabDeps {
+		t.Fatalf("quit=%v argv=%v tab=%q: smith up must open the Deps tab", sh.quit, sh.Argv, sh.tab)
 	}
 }
 
