@@ -75,13 +75,18 @@ Show both to the person.
 
 ## Starting in an empty folder
 
-An editor that opens a folder with no `smith.toml` can offer two commands, both of which ask
-their questions in a terminal and write nothing before the person agrees: `smith new --here`
-creates the workspace in the current folder (it takes no name, which then comes from the
-folder, and it refuses a folder that holds anything besides `.git`, `.vscode`, `.DS_Store`,
-`Thumbs.db` or `desktop.ini`), and `smith adopt` brings a folder with files into MonoSmith.
-The VS Code extension offers them as "Create a new MonoSmith workspace" and "Bring this folder
-into MonoSmith", in the Projects view and in the status bar menu.
+An editor that opens a folder with no `smith.toml` can offer two commands. `smith new --here`
+creates the workspace in the current folder (the name comes from the folder unless one is given,
+and it refuses a folder that holds anything besides `.git`, `.vscode`, `.DS_Store`, `Thumbs.db` or
+`desktop.ini`), and `smith adopt` brings a folder with files into MonoSmith. The VS Code extension
+offers them as "Create a new MonoSmith workspace" and "Bring this folder into MonoSmith", in the
+Projects view and in the status bar menu.
+
+An editor does not have to hand `smith new` a terminal. Every question of `smith new` has a flag, so
+the editor can ask the questions itself, as the TUI form does ("Start with the defaults", or
+"Customise"), say that the folder name is used, show `smith new <name> --here --yes <flags> --dry-run`
+(it lists the files and writes nothing) and run the same line without `--dry-run` when the person
+agrees. The VS Code extension does this and keeps "Answer in a terminal" as a third way.
 
 ## The language server (`smith lsp`)
 

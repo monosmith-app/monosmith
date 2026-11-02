@@ -7,6 +7,11 @@ the first release everything below is under Unreleased.
 
 ### Fixed
 
+- New workspace is a flow of its own, not a bare terminal: "How do you want to set it up?" (the defaults, which list what they choose; Customise, which asks CI, language, Node tests, code layout, agent files, dev container and the first commit; or answer in a terminal), the name with the folder name filled in and said to be the folder's, then a summary and the list of files before anything is written.
+- Terminals show `smith new --here`, not the full path of smith: the folder of smith goes first on the PATH of the terminal.
+- The Projects view of a workspace with no project shows "Add your first project".
+- Health has its own panel (MonoSmith Health), wide enough for its messages.
+
 - Compose a stack: the plan lists each tool with its state (`Node.js (installed, for node)`, `the Tauri system libraries (missing, for tauri): smith tools install tauri-linux-libs`) and offers "Install the tools first" when one is missing; the plan is read again after the tools flow.
 - Compose a stack: the picker keeps what you ticked visible when you change the search, names it in the title ("Selected: React, Electron"), and an axis that takes one choice behaves like a radio button. The axis comes from the catalogue, not from names.
 - Compose a stack: a layer that answers another question is labelled so (Electron: "shell (the framework choice)"), which agrees with the conflict message.

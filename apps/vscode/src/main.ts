@@ -25,6 +25,7 @@ import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/inde
 import { reportFile, writeReport } from './workspace-report/index.ts'
 import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
+import { askCustomChoices, askSetupWay, askWorkspaceName, confirmNewWorkspace, createWorkspace as makeWorkspace, tellNewWorkspaceOutcome } from './new-workspace/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
 import { confirmFix, fixDoctor, fixFinding, pickFixAnswer, readHealth, tellFixOutcome, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
@@ -249,6 +250,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       origin,
     })
     void setContextKey('monosmith.state', viewState)
+    void setContextKey('monosmith.noProjects', readyStates.length > 0 && readyStates.every((state) => state.snapshot !== undefined && state.snapshot.projects.length === 0))
     void setContextKey('monosmith.repoKind', viewState === 'adoptable' ? offers[0]?.kind ?? '' : '')
   }
 
@@ -1190,14 +1192,43 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     tellToolsOutcome(outcome)
   }
 
-  /** Opens `smith new --here` in a terminal on an empty folder. Nothing is written by this click: smith asks first and refuses a folder with files. */
+  /**
+   * Creates a workspace in an empty folder with the same two-way start as the TUI
+   * (the defaults, or customise). Nothing is written before the person has seen the
+   * choices and the list of files and said yes. "Answer in a terminal" keeps smith's own questions.
+   */
   const createWorkspace = async (): Promise<void> => {
     const chosen = await chooseFolder(blanks.filter((folder) => folder.kind === 'empty'))
     if (chosen === undefined) return
     const executable = await smithForTerminal(chosen.root)
     if (executable === undefined) return
-    note(`MonoSmith: creating a new workspace in ${chosen.name} (the folder is empty).`)
-    openSmithTerminal(executable, toNewArguments(), chosen.root)
+    output.show(true)
+    const inFolder = (timeoutMs: number) => async (args: string[]): Promise<Awaited<ReturnType<typeof runSmith>>> => {
+      note(`$ smith ${args.join(' ')} (${chosen.name})`)
+
+      return await runSmith(executable, args, chosen.root, timeoutMs)
+    }
+    const outcome = await makeWorkspace({
+      folderName: chosen.name,
+      run:        inFolder(60_000),
+      apply:      async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: creating the workspace in ${chosen.name}…` },
+        async () => await inFolder(600_000)(args),
+      ),
+      askWay:    askSetupWay,
+      askName:   askWorkspaceName,
+      askCustom: askCustomChoices,
+      confirm:   confirmNewWorkspace,
+    })
+    note(`MonoSmith: new workspace in ${chosen.name}: ${outcome.kind === 'refused' ? `stopped: ${outcome.message}` : (outcome.kind === 'terminal' ? 'you chose to answer in a terminal' : outcome.kind)}`)
+    if (outcome.kind === 'terminal') {
+      note(`MonoSmith: creating a new workspace in ${chosen.name} (the folder is empty).`)
+      openSmithTerminal(executable, toNewArguments(), chosen.root)
+
+      return
+    }
+    tellNewWorkspaceOutcome(outcome, note)
+    if (outcome.kind === 'created') await refresh()
   }
 
   const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
