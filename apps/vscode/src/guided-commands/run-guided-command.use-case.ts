@@ -5,13 +5,15 @@ import { environmentsOfApp, parseArchitectures, parseBuiltinPlugins, parseMarket
 /** What running a guided command needs from the editor. */
 export interface GuidedDeps {
   /** Runs smith in the workspace folder. */
-  run:     (args: string[]) => Promise<SmithRun>
+  run:        (args: string[]) => Promise<SmithRun>
   /** Asks one step. Resolves the answer (a list for `multi`), or undefined when the person cancels. */
-  ask:     (step: ResolvedStep) => Promise<string | string[] | undefined>
+  ask:        (step: ResolvedStep) => Promise<string | string[] | undefined>
   /** Shows the text of a `read` command. */
-  show:    (title: string, text: string) => Promise<void>
+  show:       (title: string, text: string) => Promise<void>
   /** Shows what will change and asks. Nothing is changed before a yes. */
-  confirm: (title: string, detail: string, verb: string) => Promise<boolean>
+  confirm:    (title: string, detail: string, verb: string) => Promise<boolean>
+  /** Asks the unticked commit box, for a command that takes `--commit`. Resolves undefined when the person cancels. */
+  askCommit?: () => Promise<boolean | undefined>
 }
 
 const quote = (arg: string): string => /\s/.test(arg) ? `"${arg}"` : arg
@@ -62,8 +64,10 @@ export async function runGuidedCommand (command: GuidedCommand, deps: GuidedDeps
     if (planned.code !== 0) return { kind: 'refused', message: describeFailure(planned) }
     detail = `${line}\n\n${planned.stdout.trim()}\n\nNothing was changed yet.${command.consequence === undefined ? '' : ` ${command.consequence}`}`
   }
-  if (!await deps.confirm(`MonoSmith: ${command.title}?`, detail.trim(), command.verb ?? 'Run it')) return { kind: 'cancelled' }
-  const done = await deps.run(command.yes === true ? [...args, '--yes'] : args)
+  // The box comes before the confirmation, unticked: smith commits only when it is ticked.
+  const commit = command.commit === true && deps.askCommit !== undefined ? await deps.askCommit() : false
+  if ((commit === undefined) || !await deps.confirm(`MonoSmith: ${command.title}?`, detail.trim(), command.verb ?? 'Run it')) return { kind: 'cancelled' }
+  const done = await deps.run([...(command.yes === true ? [...args, '--yes'] : args), ...(commit ? ['--commit'] : [])])
 
   // A warning smith prints on stderr (the projects a plugin leaves) is part of the answer.
   const lines = `${done.stdout}\n${done.stderr}`.split(/\r?\n/).map((text) => text.trim()).filter(Boolean)

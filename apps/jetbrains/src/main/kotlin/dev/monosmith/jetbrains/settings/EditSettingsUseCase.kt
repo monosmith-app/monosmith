@@ -91,9 +91,10 @@ object EditSettingsUseCase {
                 fixedPlan = "smith ${args.joinToString(" ")}",
                 header = "${if (words.isEmpty()) "" else "$words\n\n"}Nothing was changed yet. smith edits smith.toml.",
                 okText = if (action == RESET) "Reset it" else "Change it",
-                offerCommit = false,
+                offerCommit = true,
                 apply = { args },
                 done = "${setting.path} is ${if (action == RESET) "back to its default" else "changed"}",
+                operation = "${if (action == RESET) "unset" else "set"} ${setting.path}",
             ),
             commitLater,
         )

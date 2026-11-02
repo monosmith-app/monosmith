@@ -28,6 +28,7 @@ import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/inde
 import { reportFile, writeReport } from './workspace-report/index.ts'
 import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
+import { askCommitBox } from './commit-box/index.ts'
 import { askConvertCommit, confirmConvert, convertWorkspace, tellConvertOutcome } from './convert-workspace/index.ts'
 import { askCustomChoices, pickNewQuestion, askSetupWay, askWorkspaceName, confirmNewWorkspace, createWorkspace as makeWorkspace, tellNewWorkspaceOutcome } from './new-workspace/index.ts'
 import { setContextKey } from './context-keys/index.ts'
@@ -1022,7 +1023,19 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       }
       const library = await askLinkedLibrary(project.name, linked)
       if (library === undefined) return
-      outcome = await planThenApply({ run, apply, confirm: async () => await confirmUnlink(project.name, library) }, undefined, () => unlinkArguments(project.name, library))
+      outcome = await planThenApply(
+        {
+          run,
+          apply,
+          confirm: async () => {
+            const commit = await askCommitBox('unlink a library')
+
+            return commit !== undefined && await confirmUnlink(project.name, library) ? { commit } : undefined
+          },
+        },
+        undefined,
+        (answer) => [...unlinkArguments(project.name, library), ...(answer.commit ? ['--commit'] : [])],
+      )
       done = `${library} is unlinked from ${project.name}`
     }
     note(`MonoSmith: ${action} ${project.name} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
@@ -1069,8 +1082,9 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     }
     output.show(true)
     const outcome = await installDependency({
-      ask:   async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps })), projectGiven(argument), only),
-      apply: async (args) => await vscode.window.withProgress(
+      askCommit: async () => await askCommitBox('add a dependency'),
+      ask:       async () => await askInstallRequest(projects.map((project) => ({ name: project.name, kind: project.kind, language: project.language, deps: project.deps })), projectGiven(argument), only),
+      apply:     async (args) => await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `MonoSmith: adding a dependency in ${state.name}…` },
         async () => await smithIn(state, true, 600_000)(args),
       ),
@@ -1243,10 +1257,11 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (state?.location === undefined) return
     if (spec.mode === 'change' && !mayWrite(spec.title.replace(/…$/, '').toLowerCase())) return
     const outcome = await runGuidedCommand(spec, {
-      run:     smithIn(state, true, 300_000),
-      ask:     askGuidedStep,
-      show:    async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
-      confirm: confirmGuided,
+      run:       smithIn(state, true, 300_000),
+      ask:       askGuidedStep,
+      show:      async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
+      confirm:   confirmGuided,
+      askCommit: async () => await askCommitBox(spec.title),
     }, environmentAnswers(spec.id, argument))
     note(`MonoSmith: ${spec.title} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellGuidedOutcome(spec.title, outcome, note)

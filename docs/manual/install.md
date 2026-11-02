@@ -43,6 +43,7 @@ Alias: `smith i`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--range <range>` | string |  | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |
 | `--registry` | boolean | off | install the names from the registry, even when a name is also a project of this workspace |
 | `-D, --save-dev` | boolean | off | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) |

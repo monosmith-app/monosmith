@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
 
 // Command is `smith architecture`.
 func Command(version string) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "architecture [name]",
 		Short: "Show the architecture of the workspace, or choose another",
 		Long: `The architecture is how the workspace's code is laid out. Without a name this
@@ -61,6 +62,12 @@ applies the choice.`,
 			return nil
 		},
 	}
+	return operation.Wrap(cmd, operation.Spec{Describe: func(_ *cobra.Command, args []string) string {
+		if len(args) == 0 {
+			return "show the architecture"
+		}
+		return "use the " + args[0] + " architecture"
+	}})
 }
 
 // List writes the choices, the one in use marked, each with the languages it

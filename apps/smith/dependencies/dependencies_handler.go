@@ -76,6 +76,10 @@ project, --registry for the package.`,
 	install.Flags().StringArrayVarP(&targets, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")
 
+	operation.Wrap(install, operation.Spec{Describe: func(cmd *cobra.Command, args []string) string {
+		return describePackages("install", cmd, args)
+	}})
+
 	var from []string
 	var fromRegistry, uninstallYes bool
 	uninstall := &cobra.Command{
@@ -102,7 +106,24 @@ uninstall -w <project> <package>.`,
 	uninstall.Flags().BoolVarP(&uninstallYes, "yes", "y", false, "do not ask; without a terminal the packages are removed only with --yes")
 	uninstall.Flags().BoolVar(&fromRegistry, "registry", false, "remove the names as registry packages, even when a name is also a project of this workspace")
 	uninstall.Flags().StringArrayVarP(&from, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
+	operation.Wrap(uninstall, operation.Spec{Describe: func(cmd *cobra.Command, args []string) string {
+		return describePackages("uninstall", cmd, args)
+	}})
 	return []*cobra.Command{install, uninstall, syncCommand(version), upCommand(version), depsCommand(version)}
+}
+
+// describePackages words an install or an uninstall for the commit: "install zod in web". With no
+// package it is the install of everything the workspace declares.
+func describePackages(verb string, cmd *cobra.Command, args []string) string {
+	targets, _ := cmd.Flags().GetStringArray("workspace")
+	text := verb + " the packages of the workspace"
+	if len(args) > 0 {
+		text = verb + " " + strings.Join(args, " ")
+	}
+	if len(targets) > 0 {
+		text += " in " + strings.Join(targets, ", ")
+	}
+	return text
 }
 
 func upCommand(version string) *cobra.Command {

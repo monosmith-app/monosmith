@@ -299,9 +299,11 @@ No flags.
 <!-- smith:begin architecture -->
 Show the architecture of the workspace, or choose another
 
-Usage: `smith architecture [name]`
+Usage: `smith architecture [name] [flags]`
 
-No flags.
+| Flag | Meaning | Default |
+|---|---|---|
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 
 <!-- smith:end architecture -->
 
@@ -547,6 +549,7 @@ Alias: `smith i`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--range <range>` | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |  |
 | `--registry` | install the names from the registry, even when a name is also a project of this workspace | off |
 | `-D, --save-dev` | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) | off |
@@ -569,6 +572,7 @@ Alias: `smith un`
 
 | Flag | Meaning | Default |
 |---|---|---|
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--registry` | remove the names as registry packages, even when a name is also a project of this workspace | off |
 | `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
 | `-y, --yes` | do not ask; without a terminal the packages are removed only with --yes | off |

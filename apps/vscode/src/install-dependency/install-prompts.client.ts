@@ -62,7 +62,7 @@ export function tellDependencyOutcome (outcome: InstallOutcome, onOutput: (line:
   switch (outcome.kind) {
     case 'added': {
       for (const line of outcome.lines) onOutput(line)
-      void vscode.window.showInformationMessage('MonoSmith: the dependency is added. Not committed: review with git status.')
+      void vscode.window.showInformationMessage('MonoSmith: the dependency is added. Not committed unless you ticked the box: review with git status, or use Commit Changes.')
       break
     }
     case 'refused': {

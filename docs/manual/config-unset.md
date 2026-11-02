@@ -17,13 +17,15 @@ smith config unset <setting>
 <!-- smith:begin config unset -->
 Remove one setting, so it takes its default
 
-Usage: `smith config unset <setting>`
+Usage: `smith config unset <setting> [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
 | `setting` | yes | the setting to remove |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 
 <!-- smith:end config unset -->
 

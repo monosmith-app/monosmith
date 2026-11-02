@@ -18,14 +18,16 @@ smith config set <setting> <value>...
 <!-- smith:begin config set -->
 Change one setting (a list takes several values, or one comma-separated)
 
-Usage: `smith config set <setting> <value...>`
+Usage: `smith config set <setting> <value...> [flags]`
 
 | Argument | Required | Meaning |
 |---|---|---|
 | `setting` | yes | the setting, such as `ci.providers` |
 | `value...` | yes | the new value; a list setting takes several |
 
-No flags.
+| Flag | Type | Default | Effect |
+|---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 
 <!-- smith:end config set -->
 
