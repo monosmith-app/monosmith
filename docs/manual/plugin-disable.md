@@ -30,6 +30,7 @@ Usage: `smith plugin disable <name>...`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--force` | boolean | off | switch the plugin off even when projects use it |
 
 <!-- smith:end plugin disable -->

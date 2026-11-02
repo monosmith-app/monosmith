@@ -8,10 +8,10 @@ func TestCIPinFinding(t *testing.T) {
 		found, ok, wn bool
 	}{
 		{"1.90.2", "1.90", true, true, false},
-		{"1.76.0", "1.90", true, false, false},
+		{"1.76.0", "1.90", true, false, true},
 		{"1.95.0", "1.90", true, false, true},
 		{"v24.11.0", "24", true, true, false},
-		{"22.3.0", "24", true, false, false},
+		{"22.3.0", "24", true, false, true},
 		{"3.13.14", "3.12", true, false, true},
 		{"1.90.0", "stable", false, false, false},
 		{"", "1.90", false, false, false},

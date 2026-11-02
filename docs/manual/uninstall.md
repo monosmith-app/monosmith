@@ -38,6 +38,7 @@ Alias: `smith un`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--registry` | boolean | off | remove the names as registry packages, even when a name is also a project of this workspace |
 | `-w, --workspace <workspace>` | string, repeatable |  | target project, by name or directory; repeat it for several |
 | `-y, --yes` | boolean | off | do not ask; without a terminal the packages are removed only with --yes |

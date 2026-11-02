@@ -62,14 +62,14 @@ class EditSettingsTest {
         fake.ones.addAll(listOf("workspace.confirm", "risky"))
         fake.plans.add(fake.yes(commit = true))
         assertTrue(EditSettingsUseCase.run(fake.ports) {})
-        assertEquals(listOf("config", "set", "workspace.confirm", "risky"), fake.calls.last())
+        assertEquals(listOf("config", "set", "workspace.confirm", "risky", "--commit"), fake.calls.last())
         assertEquals("smith config set workspace.confirm risky", fake.plansSeen.single())
     }
 
     @Test
-    fun noCommitBoxBecauseConfigSetHasNoCommitFlag() {
+    fun theCommitBoxIsUntickedAndAddsCommitOnlyWhenTicked() {
         fake.ones.addAll(listOf("workspace.confirm", "risky"))
-        fake.plans.add(fake.yes(commit = true))
+        fake.plans.add(fake.yes())
         EditSettingsUseCase.run(fake.ports) {}
         assertFalse("--commit" in fake.calls.last())
     }

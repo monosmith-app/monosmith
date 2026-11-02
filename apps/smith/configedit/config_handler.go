@@ -6,6 +6,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"github.com/spf13/cobra"
 )
@@ -146,6 +147,8 @@ itself.`,
 			return nil
 		},
 	}
+	operation.Wrap(set, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "set " + args[0] }})
+	operation.Wrap(unset, operation.Spec{Describe: func(_ *cobra.Command, args []string) string { return "unset " + args[0] }})
 	cmd.AddCommand(list, get, set, unset)
 	return cmd
 }

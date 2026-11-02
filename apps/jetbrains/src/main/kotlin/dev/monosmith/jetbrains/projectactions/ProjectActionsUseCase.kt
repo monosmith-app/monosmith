@@ -132,17 +132,19 @@ object ProjectActionsUseCase {
         root: Path,
         project: String?,
     ) = BackgroundFlowClient.start(ide, "MonoSmith: unlink a library") {
-        runUnlink(IdePortsClient.of(ide, root), project)
+        runUnlink(IdePortsClient.of(ide, root), project) { CommitChangesUseCase.start(ide, root, it) }
     }
 
     /**
      * Runs the unlink with the given ports.
      *
+     * @param commitLater starts the Commit action for an operation
      * @return true when smith unlinked the library
      */
     fun runUnlink(
         ports: FlowPortsContract,
         project: String?,
+        commitLater: (String) -> Unit,
     ): Boolean {
         val node = target(ports, project, "unlink a library") ?: return false
         if (node.deps.isEmpty()) {
@@ -166,10 +168,12 @@ object ProjectActionsUseCase {
                     "${node.name} stops depending on $library. The library stays in this workspace, and other projects keep using it. " +
                         "smith edits the manifest of ${node.name} and runs the install.",
                 okText = "Unlink it",
-                offerCommit = false,
+                offerCommit = true,
                 apply = { InstallArgumentsAlgorithm.unlink(node.name, library) },
                 done = "$library is unlinked from ${node.name}",
+                operation = "uninstall $library from ${node.name}",
             ),
-        ) {}
+            commitLater,
+        )
     }
 }
