@@ -85,10 +85,9 @@ jobs:
 	}
 	fmt.Fprintf(&b, `      - name: Release
 %[2]s        if: github.event_name == 'push' && %[1]s
-        run: smith ci release
-`, githubOnReleaseBranches(m), releaseID)
-	if len(m.Credentials) > 0 || m.VSCEEntra {
-		b.WriteString("        env:\n")
+%[3]s`, githubOnReleaseBranches(m), releaseID, githubReleaseRun(m))
+	if len(m.Credentials) > 0 || m.VSCEEntra || m.ManualRelease {
+		b.WriteString("        env:\n" + githubReleaseBumpEnv(m))
 		for _, c := range m.Credentials {
 			fmt.Fprintf(&b, "          %s: ${{ secrets.%s }}\n", c.Env, c.Env)
 		}
@@ -114,6 +113,10 @@ jobs:
 		b.WriteString(githubNativeJob(m))
 	}
 	b.WriteString(githubAssetsJob(m))
+	if m.ManualRelease {
+		// A manual release runs the same steps as a push to a release branch.
+		return strings.ReplaceAll(b.String(), "if: github.event_name == 'push' &&", "if: "+githubReleaseEvent(m)+" &&")
+	}
 	return b.String()
 }
 
@@ -167,7 +170,7 @@ func githubNativeJob(m Model) string {
 	fmt.Fprintf(&b, `
   native:
     needs: ci
-    if: ${{ always() && (needs.ci.result == 'success' || (github.event_name == 'push' && needs.ci.outputs.released == 'true')) }}
+    if: ${{ always() && (needs.ci.result == 'success' || (%s && needs.ci.outputs.released == 'true')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -177,7 +180,7 @@ func githubNativeJob(m Model) string {
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-`, strings.Join(m.NativeRunners, ", "))
+`, githubReleaseEvent(m), strings.Join(m.NativeRunners, ", "))
 	b.WriteString(githubSiblingCheckouts(m))
 	for _, t := range m.Toolchains {
 		b.WriteString(githubSetup(t))

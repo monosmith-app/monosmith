@@ -99,6 +99,7 @@ merge dates.
 | [0076](0076-one-composer-for-the-stack-of-a-project.md) | One composer for the stack of a project | accepted | 2026-11-02 | One catalogue of choices, languages and plugins, layered; `smith compose` and one screen per surface |
 | [0077](0077-smith-offers-to-install-the-tools-a-stack-needs.md) | smith offers to install the tools a stack needs | accepted | 2026-11-02 | Plugins declare tools as data; the core presents the install choice; administrator rights are never taken in silence. |
 | [0078](0078-the-first-run-is-a-set-of-choices-not-a-manual.md) | The first run is a set of choices, not a manual | accepted | 2026-11-02 | The first question of `add` is what you are building; a run that ends with a decision ends in a dialog of choices; `smith commit` commits after the fact; smith never commits unasked |
+| [0080](0080-a-manual-release-is-a-presented-choice-and-ci-offers-it-only-on-request.md) | A manual release is a presented choice, and CI offers it only on request | accepted | 2026-11-02 | `--bump p=level --force` releases a package no commit releases, with its consequences shown; `[ci] manual_release` adds the input to the pipelines, off by default |
 
 Records 0004, 0005, 0008 and 0016 state their rationale as not recorded; so do parts of
 0002, 0009, 0011 to 0015 and 0032.

@@ -113,6 +113,7 @@ func Rendered(cfg workspace.Config, m Model) map[string]string {
 	m.Branches = cfg.CI.Branches
 	m.Attest = m.Attest && cfg.CI.Attest != "off"
 	m.AttestOptional = cfg.CI.Attest == "optional"
+	m.ManualRelease = cfg.CI.ManualRelease
 	m.ChannelBranches = nil
 	for _, c := range cfg.Release.Channels {
 		m.ChannelBranches = append(m.ChannelBranches, c.Branch)

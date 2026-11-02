@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/session"
 )
 
 // ForceInfo is what a forced release needs to know about one package: the
@@ -166,4 +167,34 @@ func TagMessage(item Item) string {
 		msg += " (manual release: no commit released it, the same code under a new version)"
 	}
 	return msg
+}
+
+// AdjustPlan applies --hold, --bump and --force to the plan of the session's
+// branch: a forced package joins the plan first, then Adjust applies the rest.
+//
+// Parameters: s is the session; plan is what the commits asked for; hold and
+// bumpFlags are the flag values; force is --force.
+// Returns: the adjusted plan and one note per change. An error for a bad flag
+// value, --force without --bump, or a name Adjust or ForcePlan refuses.
+func AdjustPlan(s *session.Session, plan Plan, hold, bumpFlags []string, force bool) (Plan, []string, error) {
+	bumps, err := ParseBumps(bumpFlags)
+	if err != nil {
+		return plan, nil, err
+	}
+	if force && len(bumps) == 0 {
+		return plan, nil, ErrForceWithoutBump
+	}
+	var notes []string
+	if force {
+		ch := ChannelOf(s.Config.Release, PlanBranch(s))
+		info, order, err := ForceFromSession(s.Git, s.Graph, ch)
+		if err != nil {
+			return plan, nil, err
+		}
+		if plan, bumps, notes, err = ForcePlan(plan, bumps, order, info, ch); err != nil {
+			return plan, nil, err
+		}
+	}
+	plan, more, err := Adjust(plan, Adjustments{Hold: hold, Bump: bumps})
+	return plan, append(notes, more...), err
 }

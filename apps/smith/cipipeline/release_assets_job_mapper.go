@@ -19,12 +19,19 @@ var githubAssetRunners = map[string]string{
 // job again for a release that exists: its assets_tag input is the tag
 // (project@version). Empty when the workflow has no assets job.
 func githubAssetsDispatch(m Model) string {
+	inputs := githubAssetsInputs(m) + githubReleaseBumpInput(m)
+	if inputs == "" {
+		return ""
+	}
+	return "  workflow_dispatch:\n    inputs:\n" + inputs
+}
+
+// githubAssetsInputs are the inputs that run the assets job again for a tag.
+func githubAssetsInputs(m Model) string {
 	if len(m.AssetPlatforms) == 0 {
 		return ""
 	}
-	return `  workflow_dispatch:
-    inputs:
-      assets_tag:
+	return `      assets_tag:
         description: "Run only the assets job again for this release tag (project@version), from this branch"
         required: false
         default: ""
@@ -78,12 +85,12 @@ func githubAssetsJob(m Model) string {
 	fmt.Fprintf(&b, `
   assets:
     needs: ci
-    if: ${{ always() && ((needs.ci.outputs.released == 'true' && github.event_name == 'push' && github.ref_name == '%s') || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}
+    if: ${{ always() && ((needs.ci.outputs.released == 'true' && %s && github.ref_name == '%s') || (github.event_name == 'workflow_dispatch' && inputs.assets_tag != '')) }}
     strategy:
       fail-fast: false
       matrix:
         include:
-`, m.ReleaseBranch)
+`, githubReleaseEvent(m), m.ReleaseBranch)
 	for _, p := range m.AssetPlatforms {
 		fmt.Fprintf(&b, "          - platform: %s\n            os: %s\n", p, githubAssetRunners[p])
 	}

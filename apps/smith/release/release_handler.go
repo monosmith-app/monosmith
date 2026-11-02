@@ -103,29 +103,10 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 			if err != nil {
 				return err
 			}
-			bumps, err := ParseBumps(bumpFlags)
+			plan, adjusted, err := AdjustPlan(s, plan, hold, bumpFlags, force)
 			if err != nil {
 				return err
 			}
-			if force && len(bumps) == 0 {
-				return ErrForceWithoutBump
-			}
-			var adjusted []string
-			if force {
-				ch := ChannelOf(s.Config.Release, PlanBranch(s))
-				info, order, err := ForceFromSession(s.Git, s.Graph, ch)
-				if err != nil {
-					return err
-				}
-				if plan, bumps, adjusted, err = ForcePlan(plan, bumps, order, info, ch); err != nil {
-					return err
-				}
-			}
-			plan, more, err := Adjust(plan, Adjustments{Hold: hold, Bump: bumps})
-			if err != nil {
-				return err
-			}
-			adjusted = append(adjusted, more...)
 			if !asJSON {
 				for _, n := range adjusted {
 					fmt.Fprintln(cmd.ErrOrStderr(), "note: "+n)

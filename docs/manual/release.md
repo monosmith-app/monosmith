@@ -40,13 +40,21 @@ A project that exists but is not in the plan has nothing to hold back: `--hold` 
 saying so. `--bump` refuses it with "is not in this plan", and offers a "Did you mean" only for a
 name that is not a project.
 
+A package that no commit releases is "not in this plan", and `--bump` offers a way out: add `--force`
+(`smith release --bump mvd=patch --force`) to release the same code under a new version. smith shows
+it as a manual release ("no commit since mvd@0.14.0 releases this"), and the last question says that
+a new tag at HEAD, a registry publish, a GitHub Release and the assets follow and cannot be undone.
+Without a terminal it needs `--yes` as well. `--force` alone is refused and prints the usage. The
+report and the tag message say the release was manual. CI can start it with `[ci] manual_release`
+(see [CI](../reference/ci.md#a-release-started-by-hand)).
+
 A first release (no tag yet), a version set by a `version(project)[x.y.z]` commit and a
 release channel decide their version themselves, so `--bump` refuses them and names why.
 
 ## Synopsis
 
 ```sh
-smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
+smith release [--dry-run [--comment]] [--hold <project>]... [--bump <project>=patch|minor|major [--force]]... [--notes] [--format text|markdown] [--json] [--verbose] [--no-push] [--status] [--rehearse] [-y]
 smith release pub --project <app> --version <version>
 ```
 
@@ -67,6 +75,7 @@ Usage: `smith release <command> [flags]`
 | `--bump <bump>` | string, repeatable |  | release a package with this bump instead of the one its commits ask for: <project>=patch\|minor\|major |
 | `--comment` | boolean | off | with --dry-run in a pull request build, post the preview on the pull request (GitHub, Azure Repos), updating smith's earlier comment |
 | `--dry-run` | boolean | off | show what would be released; change nothing |
+| `--force` | boolean | off | with --bump <project>=<level>: release a package although no commit releases it (the same code under a new version); needs --yes without a terminal |
 | `--format <format>` | `text` or `markdown` | `text` | how the result is printed: text, or markdown (what the CI job summary and --comment use) |
 | `--hold <hold>` | string, repeatable |  | do not release this package this time (repeat it, or separate names with commas); a package that releases only because of it is held back too |
 | `--json` | boolean | off | print the release report as JSON |

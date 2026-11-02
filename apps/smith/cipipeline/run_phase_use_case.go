@@ -37,6 +37,8 @@ type AssetsRun struct {
 	// Terminal says a person can answer the question for the source on In.
 	Terminal bool
 	In       io.Reader
+	// Manual is set when a person started the release by hand (the release phase).
+	Manual ManualRelease
 }
 
 // PackTask is the task that builds what a project deploys into dist/drop.
@@ -307,6 +309,17 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		if err != nil {
 			return err
 		}
+		manual := ""
+		if run.Manual.Active() {
+			var notes []string
+			if plan, notes, err = release.AdjustPlan(s, plan, nil, run.Manual.Bumps, run.Manual.Force); err != nil {
+				return err
+			}
+			for _, n := range notes {
+				fmt.Fprintln(out, "note: "+n)
+			}
+			manual = run.Manual.Sentence(Actor(os.Getenv))
+		}
 		if err := release.CheckAPI(ctx, s, &plan); err != nil {
 			return err
 		}
@@ -347,6 +360,10 @@ func runPhase(ctx context.Context, s *session.Session, phase string, assets bool
 		}
 		log.close()
 		log.markdown = strings.Split(strings.TrimSpace(strings.TrimPrefix(report.Markdown(), "### Release")), "\n")
+		if manual != "" {
+			log.say("%s", manual)
+			log.markdown = append([]string{"**" + manual + "**", ""}, log.markdown...)
+		}
 		if len(plan.Items) == 0 {
 			log.say("Nothing to release: none of the %s has a releasing commit since its last release.", plural(projects, "project"))
 			log.say("→ commit with a message like \"feat: add search\" or \"fix: handle empty input\"; docs, chore, test and ci commits do not release")

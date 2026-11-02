@@ -61,6 +61,9 @@ type Model struct {
 	// Pub is true when an app is published to pub.dev: on GitHub the release
 	// then starts the pub workflow (actions: write), which publishes it.
 	Pub bool
+	// ManualRelease is [ci] manual_release: the pipelines get a way to release
+	// by hand a package no commit releases (see manual_release_*_mapper.go).
+	ManualRelease bool
 	// AzurePool and AzureVariableGroups are [ci] azure_pool and
 	// azure_variable_groups, for the Azure Pipelines definition.
 	AzurePool           string
