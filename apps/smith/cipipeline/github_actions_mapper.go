@@ -116,10 +116,10 @@ jobs:
 	if m.ManualRelease {
 		// A manual release runs the same steps as a push to a release branch.
 		out := strings.ReplaceAll(b.String(), "if: github.event_name == 'push' &&", "if: "+githubReleaseEvent(m)+" &&")
-		// The run name shows a manual release in the Actions list; the other
-		// events keep what GitHub shows by default (the pull request title, or
-		// the commit message).
-		return strings.Replace(out, "name: ci\n", "name: ci\n\nrun-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || github.event.head_commit.message || 'ci' }}\n", 1)
+		// The run name shows a manual release in the Actions list; a pull request
+		// shows its title and a push the plain name (a commit message has a body
+		// and trailers, which make a long title).
+		return strings.Replace(out, "name: ci\n", "name: ci\n\nrun-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || 'ci' }}\n", 1)
 	}
 	return b.String()
 }

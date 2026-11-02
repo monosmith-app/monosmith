@@ -2,7 +2,7 @@
 # rewrite this file: put your own steps between the smith:slot markers, which are kept.
 name: ci
 
-run-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || github.event.head_commit.message || 'ci' }}
+run-name: ${{ inputs.release_bump != '' && format('ci · manual release {0}', inputs.release_bump) || github.event.pull_request.title || 'ci' }}
 
 on:
   push:

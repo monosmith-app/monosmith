@@ -136,7 +136,7 @@ func Publish(root string, r Release, dryRun bool) (Result, error) {
 		if err != nil {
 			return res, err
 		}
-		if wrapper && ((published && tag == pendingTag) || (!published && hasPendingTag(b.dir, b.name, r.Version))) {
+		if wrapper && ((published && tag == pendingTag) || (!published && hasPendingTag(b.dir, b.name, r.Version, cmp.Or(intendedTag(r), "latest")))) {
 			res.PendingMoves = append(res.PendingMoves, protocol.TagMove{Package: b.name, Version: r.Version, Tag: cmp.Or(intendedTag(r), "latest"), Awaits: awaits})
 		}
 		if published {
@@ -234,22 +234,24 @@ func Incomplete(root string, r Release, pairs [][2]string) (missing []string, mo
 		}
 	}
 	for _, name := range r.Names {
-		if hasPendingTag(root, name, r.Version) {
+		if hasPendingTag(root, name, r.Version, cmp.Or(intendedTag(r), "latest")) {
 			moves = append(moves, protocol.TagMove{Package: name, Version: r.Version, Tag: cmp.Or(intendedTag(r), "latest"), Awaits: awaits})
 		}
 	}
 	return missing, moves
 }
 
-// hasPendingTag reports whether the dist-tag "pending" of name is version: the
-// wrapper was published and its real dist-tag was never moved.
-func hasPendingTag(dir, name, version string) bool {
+// hasPendingTag reports whether the dist-tag "pending" of name is version and
+// the real dist-tag (tag) is not: the wrapper was published and its real
+// dist-tag was never moved. A "pending" left behind because the registry would
+// not remove it (npm answers E403 to some credentials) is not unfinished work.
+func hasPendingTag(dir, name, version, tag string) bool {
 	out, _, err := npm(dir, "view", name, "dist-tags", "--json", "--prefer-online")
 	if err != nil {
 		return false
 	}
 	var tags map[string]string
-	return json.Unmarshal([]byte(out), &tags) == nil && tags[pendingTag] == version
+	return json.Unmarshal([]byte(out), &tags) == nil && tags[pendingTag] == version && tags[tag] != version
 }
 
 // folder is a package's directory name: @acme/cli → acme-cli.
