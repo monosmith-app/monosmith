@@ -41,7 +41,7 @@ func argvOf(m tea.Model) string { return strings.Join(m.(Model).Argv, " ") }
 
 func TestRecipeFormFixesPluginsFromPickListsAndTickBoxes(t *testing.T) {
 	// name, version, extends; language python; lint ruff; structure layers + slices.
-	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "enter", "down", "enter", "space", "down", "space", "enter")
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "enter", "down", "enter", "enter", "space", "down", "space", "enter")
 	want := "recipe new --name team --fixed language=python --fixed lint=ruff --fixed structure=layers,slices"
 	if got := argvOf(m); got != want {
 		t.Fatalf("got %q", got)
@@ -54,7 +54,7 @@ func TestRecipeFormStartsOnLeaveUnsetAndTicksNothing(t *testing.T) {
 		t.Fatalf("the language question lists unset and the plugins with their description:\n%s", view)
 	}
 	// Enter on every question: nothing is fixed, and the command is the shortest.
-	m = keys(m, "enter", "enter", "enter")
+	m = keys(m, "enter", "enter", "enter", "enter")
 	if got := argvOf(m); got != "recipe new --name team" {
 		t.Fatalf("got %q", got)
 	}
@@ -69,7 +69,7 @@ func TestRecipeFormOffersOnlyPluginsThatFitTheLanguage(t *testing.T) {
 }
 
 func TestRecipeFormUntickingTakesAPluginBack(t *testing.T) {
-	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "enter", "enter", "space")
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "enter", "enter", "enter", "space")
 	if !strings.Contains(m.View(), "[x] layers") {
 		t.Fatalf("space ticks:\n%s", m.View())
 	}
@@ -123,5 +123,64 @@ func TestNoLevelsKeepsThePlainForm(t *testing.T) {
 	base := Action{Title: "Write a recipe", Steps: NewRecipeSteps()}
 	if got := RecipeAction(base, recipewizard.LevelCatalog{}); len(got.Steps) != len(base.Steps) {
 		t.Fatal("an empty catalog must leave the plain form")
+	}
+}
+
+func TestRecipeFormLetsTheUsersChooseALevelAndWritesChosen(t *testing.T) {
+	// name, version, extends; language: the last answer, "chosen by the people who use it".
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter")
+	if view := m.View(); !strings.Contains(view, "question do the users read") {
+		t.Fatalf("the question the users read is asked next:\n%s", view)
+	}
+	// the question starts filled in, to edit: Enter keeps it.
+	if view := m.View(); !strings.Contains(view, "Which language do you want?") {
+		t.Fatalf("the question starts as an answer, not as a grey example:\n%s", view)
+	}
+	// the question, the two plugins they can end up with, the answers (Enter keeps the plugin names).
+	m = keys(m, "enter", "space", "down", "space", "enter")
+	if view := m.View(); !strings.Contains(view, "node, python") {
+		t.Fatalf("the answers start on the plugin names, to edit:\n%s", view)
+	}
+	m = keys(m, "enter", "enter", "enter", "enter", "enter")
+	want := "recipe new --name team --chosen language=Which language do you want?:node=node,python=python"
+	if got := argvOf(m); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestRecipeFormLetsTheUsersChooseALevelThatTakesManyPlugins(t *testing.T) {
+	// language node, lint unset; structure: chosen, a question, then answers where one joins two plugins.
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "enter", "enter", "down", "enter", "enter")
+	if view := m.View(); !strings.Contains(view, "layers=layers, slices=slices") {
+		t.Fatalf("each plugin starts as an answer of its own, to edit:\n%s", view)
+	}
+	want := "recipe new --name team --fixed language=node --chosen structure=Which structure do you want?:layers=layers,slices=slices"
+	if got := argvOf(keys(m, "enter")); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestRecipeGroupsRefuseWhatTheCommandRefuses(t *testing.T) {
+	offered := []string{"layers", "slices"}
+	for text, want := range map[string]string{
+		"one=layers":          "at least two answers",
+		"a=layers, a=slices":  "two answers are named",
+		"a=layers, b=hexagon": "not a plugin of this level",
+		"a=layers, b":         "answer=plugin",
+	} {
+		if _, got := parseGroups(text, offered); !strings.Contains(got, want) {
+			t.Errorf("%q: got %q, want %q", text, got, want)
+		}
+	}
+	pairs, problem := parseGroups("simple=layers, both=layers+slices", offered)
+	if problem != "" || strings.Join(pairs, ",") != "simple=layers,both=layers+slices" {
+		t.Errorf("pairs=%v problem=%q", pairs, problem)
+	}
+}
+
+func TestRecipeFormRefusesAChoiceWithOneAnswer(t *testing.T) {
+	m := keys(recipeForm(), "team", "enter", "enter", "enter", "down", "down", "down", "enter", "enter", "space", "enter")
+	if !strings.Contains(m.View(), "at least two plugins") {
+		t.Fatalf("one plugin is a fixed plugin, not a choice:\n%s", m.View())
 	}
 }

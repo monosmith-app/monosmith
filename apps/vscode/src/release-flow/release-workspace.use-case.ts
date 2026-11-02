@@ -1,5 +1,5 @@
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
-import { parseUnchangedPackages } from './forced-release.mapper.ts'
+import { parseNeverReleasedPackages, parseUnchangedPackages } from './forced-release.mapper.ts'
 import { parsePlannedPackages, releaseArguments } from './release-arguments.mapper.ts'
 import type { PlannedPackage, ReleaseChoices, ReleaseOutcome } from './release-flow.contract.ts'
 
@@ -17,7 +17,7 @@ export interface ReleaseDeps {
    * Offers to release a package no commit releases (the same code under a new version), with its
    * consequences; undefined means the person cancelled. Without it the path is not offered.
    */
-  chooseForced?: (unchanged: string[], nothingPlanned: boolean) => Promise<string[] | undefined>
+  chooseForced?: (unchanged: string[], nothingPlanned: boolean, neverReleased: string[]) => Promise<string[] | undefined>
   /** Shows the final plan and states that a release cannot be undone; false means the person cancelled. */
   confirm:       (plan: string, choices: ReleaseChoices) => Promise<boolean>
 }
@@ -42,14 +42,19 @@ export async function releaseWorkspace (deps: ReleaseDeps): Promise<ReleaseOutco
     return { kind: 'refused', message: 'smith printed the release plan in a form this editor does not read. Update the extension, or run smith release in a terminal.' }
   }
   let unchanged: string[]
+  let never: string[]
   try {
     unchanged = parseUnchangedPackages(json.stdout)
+    never = parseNeverReleasedPackages(json.stdout)
   } catch {
     unchanged = []
+    never = []
   }
+  // smith refuses a forced bump for a package that was never released: it is told apart, not offered.
+  unchanged = unchanged.filter((name) => !never.includes(name))
   let forced: string[] = []
-  if (deps.chooseForced !== undefined && unchanged.length > 0) {
-    const asked = await deps.chooseForced(unchanged, packages.length === 0)
+  if (deps.chooseForced !== undefined && (unchanged.length > 0 || never.length > 0)) {
+    const asked = await deps.chooseForced(unchanged, packages.length === 0, never)
     if (asked === undefined) return { kind: 'cancelled' }
     forced = asked
   }

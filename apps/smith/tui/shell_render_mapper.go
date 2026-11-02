@@ -35,6 +35,12 @@ const (
 	minHeight = 9
 )
 
+// belowMinimum is true while the terminal is too small to draw the screens.
+// Its size is known (a size of zero is the start, before the first size).
+func (s Shell) belowMinimum() bool {
+	return s.w >= 1 && s.h >= 1 && (s.w < minWidth || s.h < minHeight)
+}
+
 // tooSmall is the one-line hint shown on a terminal below the minimum, cut to
 // the width when even the hint does not fit.
 func (s Shell) tooSmall() string {
@@ -201,7 +207,9 @@ func (s Shell) overlays(rows []string) []string {
 		r := s.result.Rect()
 		rows = pane.Overlay(rows, s.result.Lines(s.th), r.X, r.Y)
 	}
-	if lines := s.toast.Lines(s.th, s.w-4); lines != nil {
+	// The result dialog says the same in its own words: a toast over its bottom
+	// edge would cut the frame.
+	if lines := s.toast.Lines(s.th, s.w-4); lines != nil && s.result == nil {
 		// The frame's bottom edge is the row above the footer: the toast sits
 		// on the rows above it, one cell clear of the right edge.
 		y := max(l.Footer.Y-1-len(lines), l.Main.Y+1)

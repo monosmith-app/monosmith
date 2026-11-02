@@ -116,6 +116,15 @@ var entries = []protocol.ToolNeed{
 		Download: "https://rustup.rs", Source: "https://www.rust-lang.org/tools/install", Checked: checked,
 	},
 	{
+		Name: "cargo-audit", Title: "cargo-audit",
+		Why:         "smith ci audit checks the crates for known vulnerabilities with it",
+		Consequence: "smith ci audit cannot check the rust crates for known vulnerabilities",
+		Program:     "cargo", VersionArgs: []string{"audit", "--version"},
+		Optional: true,
+		Install:  []protocol.ToolInstall{{Manager: "cargo", Package: "cargo-audit", Note: "compiles it with cargo, which takes a few minutes"}},
+		Download: "https://crates.io/crates/cargo-audit", Source: "https://github.com/rustsec/rustsec/tree/main/cargo-audit", Checked: checked,
+	},
+	{
 		Name: "java", Title: "a JDK",
 		Why:         "the JVM projects compile and test with the Java Development Kit",
 		Consequence: "smith build and test fail for the java, kotlin and scala projects",

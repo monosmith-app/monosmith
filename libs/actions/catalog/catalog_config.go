@@ -32,7 +32,7 @@ var catalog = []Action{
 	{Command: []string{"environments", "remove"}, Plan: "--dry-run", Asks: true, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"bootstrap"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: "the person's step: the launcher is what starts smith, so an assistant already has it", NotInServe: noMethodYet},
 	{Command: []string{"divergences"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
-	{Command: []string{"copies"}, Safety: Reads, NotInTUI: "a measure for the command line and CI logs", NotInMCP: noToolYet, NotInServe: noMethodYet},
+	{Command: []string{"copies"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"try"}, Safety: Reads, NotInMCP: "an assistant calls the command itself and reads its plan", NotInServe: noMethodYet},
 	{Command: []string{"config"}, Safety: Reads, NotInMCP: "smith serve answers settings in process (config.list, config.get); no MCP tool"},
 	{Command: []string{"config", "set"}, Safety: Changes, NotInMCP: settingsEdit},

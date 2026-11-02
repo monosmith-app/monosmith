@@ -344,6 +344,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if c.Guide == removeProjectTitle {
 			return s.openRemoveProject()
 		}
+		if c.Guide == guide.EnvironmentsAddTitle || c.Guide == guide.EnvironmentsRemoveTitle {
+			return s.openEnvironments(c.Guide)
+		}
 		if c.Guide == guide.ForcedReleaseTitle {
 			return s.openForcedRelease()
 		}
@@ -470,8 +473,9 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		switch {
 		case s.detailFull():
 			return s.detailKey(name)
-		case name == "enter" && s.lay().HasDetail():
-			// Beside the detail Enter unfolds what the detail folded.
+		case name == "enter" && s.lay().HasDetail() && !s.doctor.OnPassedLine():
+			// Beside the detail Enter unfolds what the detail folded. On the line
+			// that hides the passed checks it shows them, as that line says.
 			s.detailAll = !s.detailAll
 		default:
 			s.doctor = s.doctor.Update(msg)
@@ -489,6 +493,10 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 			s.guide = g.Reset()
 			if wizard == guide.WizardAdopt {
 				return s.openAdopt()
+			}
+			if len(argv) >= 2 && argv[0] == "plugin" && argv[1] == "search" {
+				// The hits come back as a form that installs the one picked.
+				return s.openPluginSearch(strings.Join(argv[2:], " "))
 			}
 			if len(argv) > 0 && argv[0] == "swap" && s.inWorkspace {
 				// The plan comes first: what leaves, what joins, what is left by hand.

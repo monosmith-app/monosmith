@@ -24,6 +24,44 @@ var addPlan = []string{
 	"Dry run: nothing was changed.",
 }
 
+// TestAShortCommandWithLongPathsMakesAWideDialogThatNeverBreaksAPath keeps the
+// undo dialog readable: its command is short, its paths are not.
+func TestAShortCommandWithLongPathsMakesAWideDialogThatNeverBreaksAPath(t *testing.T) {
+	path := "libs/second/greeting/greet_use_case_test.go"
+	c := NewConfirm("Undo the last change?", "smith reverts it with a new commit.", []string{"undo", "--yes"}).
+		WithDetails([]string{"remove " + path}).Place(110, 32)
+	var lines []string
+	for _, l := range c.Lines(theme.Default()) {
+		lines = append(lines, ansi.Strip(l))
+	}
+	if !strings.Contains(strings.Join(lines, "\n"), path) {
+		t.Fatalf("the path is broken across lines:\n%s", strings.Join(lines, "\n"))
+	}
+}
+
+// TestALongCommandIsNeverCutAndHasOnePrompt checks that every word of a command
+// that wraps stays on screen, and that only its first line starts with "$".
+func TestALongCommandIsNeverCutAndHasOnePrompt(t *testing.T) {
+	argv := []string{"add", "app", "web", "--lang", "node", "--with", "react", "--environments", "lcl,dev,uat,prd",
+		"--default-environment", "prd", "--environment-output", "workspace", "--env-files", "commit"}
+	for _, size := range [][2]int{{110, 32}, {80, 24}, {72, 20}} {
+		c := NewConfirm("Add web?", "Nothing is written yet.", argv).WithDetails(addPlan).Place(size[0], size[1])
+		var lines []string
+		for _, l := range c.Lines(theme.Default()) {
+			lines = append(lines, strings.TrimSpace(strings.Trim(strings.TrimSpace(ansi.Strip(l)), "│")))
+		}
+		text := strings.Join(lines, "\n")
+		for _, word := range argv {
+			if !strings.Contains(text, word) {
+				t.Fatalf("%v: the word %q is cut from the command:\n%s", size, word, text)
+			}
+		}
+		if n := strings.Count(text, "$ "); n != 1 {
+			t.Fatalf("%v: %d lines start with a prompt, want 1:\n%s", size, n, text)
+		}
+	}
+}
+
 func TestTheAddConfirmKeepsTheCommandAndTheButtonsAndTheCommitBoxInFull(t *testing.T) {
 	why := "Nothing is written yet. It is built from your choices: react. Run makes the project and Esc leaves everything as it is. Tick the box to commit it, so it can be undone."
 	argv := []string{"add", "app", "web", "--lang", "node", "--with", "react,eslint,vitest,tailwind,zod,something-long"}

@@ -48,9 +48,10 @@ Usage: `smith convert [flags]`
 | `--ci <ci>` | `smith` or `keep` | `smith` | full level: the pipeline smith generates (smith) or keep the current one (keep) |
 | `--commit` | boolean | off | commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | report the plan without changing anything |
-| `--json` | boolean | off | print the plan as JSON |
+| `--json` | boolean | off | print the plan as JSON (with --questions, the questions) |
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) |
 | `--lint <lint>` | `smith` or `keep` | `smith` when the ESLint config imports a shared config smith replaces, else `keep` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) |
+| `--questions` | boolean | off | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) |
 | `--skip-install` | boolean | off | do not run npm install afterwards |
 | `--skip-verify` | boolean | off | full level: install, but do not build, test, lint and run doctor afterwards |
 | `--strict` | boolean | off | refuse to convert while anything needs manual work or is unsupported |
@@ -82,6 +83,12 @@ Interactions:
   the default for each (`lint: keep   tests: keep   build: smith   CI: smith`) and the
   output ends with the exact command that applies them. Giving any of them with
   the conservative level is an error (`--lint only apply with --level full, ...`).
+- `smith convert --questions --json` prints the questions convert asks and changes nothing, so an editor
+  draws the same choices without a list of its own. It has the shape of `smith new --questions --json`:
+  for each question its `key`, `prompt`, `default`, the `flag` that answers it, `when` (the four choices
+  apply only when `level` is `full`) and `options`, each with a `value` and a `label`; the default is the
+  first. It reads no folder, so each default is the one smith suggests when it knows nothing about the
+  workspace; the plan of `--level full --dry-run` shows what the workspace's own tooling suggests.
 - `--build smith` (the default) also moves every project that compiles with `tsc` to the
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
   passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own

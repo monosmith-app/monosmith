@@ -43,6 +43,21 @@ func TestALongProblemNeverPushesTheRemedyAndTheActionsOffTheScreen(t *testing.T)
 	}
 }
 
+// TestEnterOnThePassedLineShowsThePassedChecksBesideTheDetail keeps the promise
+// of the line "enter or p shows them" when the detail sits beside the list.
+func TestEnterOnThePassedLineShowsThePassedChecksBesideTheDetail(t *testing.T) {
+	l := newLab(t, true, 140, 30)
+	l.send(doctorview.Result{Report: doctor.Report{Passed: 2, Findings: []doctor.Finding{
+		{Finding: protocol.Finding{Check: "git is installed", OK: true}},
+		{Finding: protocol.Finding{Check: "smith.toml reads", OK: true}},
+	}}})
+	l.keys("4")
+	l.has("2 checks passed")
+	l.hasNot("git is installed")
+	l.keys("enter")
+	l.has("git is installed", "smith.toml reads")
+}
+
 func TestEnterAndEUnfoldTheProblemAndTheDetailScrolls(t *testing.T) {
 	for _, key := range []string{"enter", "e"} {
 		l := doctorLab(t, 140, 30)

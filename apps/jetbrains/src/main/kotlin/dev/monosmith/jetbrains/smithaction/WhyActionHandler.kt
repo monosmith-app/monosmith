@@ -4,8 +4,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import dev.monosmith.jetbrains.smithcommand.ActionCommandAlgorithm
-import dev.monosmith.jetbrains.taskrun.RunSmithCommandUseCase
+import dev.monosmith.jetbrains.workspacetools.WorkspaceToolsUseCase
 import java.nio.file.Path
 
 /** `smith why <file>`: explains the file selected in the editor or the project view. */
@@ -30,6 +29,6 @@ class WhyActionHandler : SmithActionHandler() {
             )
             return
         }
-        RunSmithCommandUseCase.run(ide, root, "smith why $relative") { ActionCommandAlgorithm.why(it, relative) }
+        WorkspaceToolsUseCase.why(ide, root, relative)
     }
 }

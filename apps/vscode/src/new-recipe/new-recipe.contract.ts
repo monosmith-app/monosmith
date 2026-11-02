@@ -38,9 +38,20 @@ export interface RecipeBasics {
   extends: string
 }
 
-/** What the person decided: the basics, and the plugins the recipe fixes for each level. */
+/** Who decides a level: the recipe (one plugin is fixed) or the people who use it (they answer a question). */
+export type LevelDecider = 'fixed' | 'chosen'
+
+/** A level the people who use the recipe choose: the question they read, and the plugin each answer gives. */
+export interface RecipeChoice {
+  question: string
+  answers:  Array<{ answer: string, plugin: string }>
+}
+
+/** What the person decided: the basics, the plugins the recipe fixes for each level, and the levels its users choose. */
 export interface RecipeRequest extends RecipeBasics {
-  fixed: Record<string, string[]>
+  fixed:   Record<string, string[]>
+  /** The levels its users choose, by level name (`smith recipe new --chosen`). */
+  chosen?: Record<string, RecipeChoice>
 }
 
 /** How writing a recipe ended: written (`file` is the path in the workspace), refused with smith's words, or cancelled by the person. */

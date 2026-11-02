@@ -74,6 +74,9 @@ type Config struct {
 	// CommitOperations is true when smith.toml sets commit_operations, so every
 	// change smith makes is already a commit.
 	CommitOperations bool
+	// Environments are the environment names `[workspace] environments`
+	// declares; the Add form starts its "names of my own" question on them.
+	Environments []string
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -95,9 +98,11 @@ type Shell struct {
 	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
 	problem   string
 	commitOps bool
-	sources   sources.Sources
-	tabs      []string
-	tab       string
+	// environments are the names of `[workspace] environments`.
+	environments []string
+	sources      sources.Sources
+	tabs         []string
+	tab          string
 	// detailOpen is true while the detail of the selected project fills the
 	// pane, in the narrow layout (Enter opens it, Esc closes it).
 	detailOpen bool
@@ -163,10 +168,10 @@ type Shell struct {
 	// removeBase is the plain Remove form, which the project list turns into a pick list.
 	removeBase *guide.Action
 	// pkg asks which packages to install on, or remove from, the selected project.
-	pkg  *packageprompt.Prompt
+	pkg *packageprompt.Prompt
 	// relpick asks which packages of the release to hold back or bump, before the confirmation.
 	relpick *releasepick.Model
-	help *dialog.Help
+	help    *dialog.Help
 	// fix is the doctor fix wizard while it is open; fixing is the fix being
 	// applied in the background.
 	fix    *fixwizard.Wizard
@@ -200,7 +205,7 @@ type Shell struct {
 	reopenNote string
 	// reopenDir is the folder the reopened shell opens in; empty is this one.
 	reopenDir string
-	toast      toast.Toast
+	toast     toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
 	hintTicks int
@@ -254,7 +259,7 @@ func NewShell(cfg Config) Shell {
 		guide: guide.NewModel(cfg.Actions), mouseX: -1, mouseY: -1, projScroll: &pane.Scroll{}, doctorScroll: &pane.Scroll{},
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
-	sh.problem, sh.commitOps = cfg.Problem, cfg.CommitOperations
+	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}
@@ -353,6 +358,7 @@ func (s Shell) viewReasons() map[string]string {
 		if !s.release.CanRelease() {
 			r["rel.notes"] = "there is no release to show the notes of"
 			r["rel.release"] = "there is nothing to release"
+			r["release.open"] = "there is no bump to show the commits of"
 		}
 	case commands.TabSettings:
 		for id, why := range s.settings.Reasons() {
@@ -471,8 +477,19 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 	case tea.WindowSizeMsg:
 		s.resize(msg.Width, msg.Height)
 	case tea.KeyMsg:
+		if s.belowMinimum() {
+			// Nothing is drawn but the hint: a key must not act on a screen the
+			// person cannot see (Enter could start a command). Ctrl+C still leaves.
+			if msg.String() == "ctrl+c" {
+				s.quit = true
+			}
+			return nil
+		}
 		return s.key(msg)
 	case tea.MouseMsg:
+		if s.belowMinimum() {
+			return nil
+		}
 		return s.mouse(msg)
 	case tickMsg:
 		s.tick++

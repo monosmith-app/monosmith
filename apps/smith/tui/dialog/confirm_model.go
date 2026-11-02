@@ -67,6 +67,8 @@ func NewNotice(title, why string, details []string) Confirm {
 const (
 	minWidth   = 44
 	noticeWide = 60
+	// detailWide is the least width of a dialog that lists what a command touches.
+	detailWide = 84
 	buttonRun  = "[ Run  Enter ]"
 	buttonStop = "[ Cancel  Esc ]"
 	buttonOK   = "[ OK  Enter ]"
@@ -96,13 +98,18 @@ func (c Confirm) Place(sw, sh int) Confirm {
 		// Wide enough for the box line, which is not cut.
 		w = min(max(w, ansi.StringWidth(CommitLabel)+14), max(sw-2, 10))
 	}
+	if len(c.Details) > 0 {
+		// Lines of paths need room: a short command must not make a narrow dialog
+		// that breaks a path in the middle of a word.
+		w = max(w, min(detailWide, max(sw-2, 10)))
+	}
 	if c.Info {
 		w = min(noticeWide, max(sw-2, 10))
 	}
 	inner := w - 4
 	c.cmdLines = nil
 	if !c.Info {
-		c.cmdLines = wrap(c.Command, inner-2)
+		c.cmdLines = wrap(c.Command, inner-4) // room for the "  $ " in front
 	}
 	body := c.bodyLines(inner)
 	h := len(body) + 4 // borders, blank line, buttons
@@ -141,8 +148,13 @@ func (c Confirm) tailLines() []string {
 		tail = append(tail, "", box+CommitLabel+"  (C)")
 	}
 	tail = append(tail, "", "The command that will run:")
-	for _, l := range c.cmdLines {
-		tail = append(tail, "  $ "+l)
+	for i, l := range c.cmdLines {
+		// Only the first line has the prompt: a "$" on each would read as many commands.
+		prefix := "  $ "
+		if i > 0 {
+			prefix = "    "
+		}
+		tail = append(tail, prefix+l)
 	}
 	return tail
 }

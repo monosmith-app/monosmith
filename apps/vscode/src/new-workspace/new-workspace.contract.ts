@@ -18,13 +18,6 @@ export interface NewWorkspaceChoices {
   commit:       boolean
 }
 
-/** One answer of a question, in the words a person knows. */
-export interface ChoiceLabel {
-  value:       string
-  label:       string
-  description: string
-}
-
 /** How creating a workspace ended. `terminal` means the person asked for smith's own questions in a terminal. */
 export type NewWorkspaceOutcome =
   | { kind: 'created', name: string, lines: string[], committed: boolean } |

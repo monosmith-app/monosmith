@@ -20,14 +20,16 @@ import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap
 import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
-import { askRecipeBasics, confirmRecipe, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
+import { askGuidedStep, confirmGuided, GUIDED_COMMANDS, runGuidedCommand, tellGuidedOutcome, type GuidedCommand } from './guided-commands/index.ts'
+import { askChoice, askRecipeBasics, confirmRecipe, decideLevel, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { chooseSyncRule, confirmSync, syncVersions, tellSyncOutcome } from './sync-versions/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
 import { reportFile, writeReport } from './workspace-report/index.ts'
 import { askWhereToMove, toAdoptArguments, toMoveArguments, findRepositoryOffers, type AdoptAction, type RepositoryOffer } from './adopt-offer/index.ts'
 import { findBlankFolders, toNewArguments, type BlankFolder } from './empty-folder/index.ts'
-import { askCustomChoices, askSetupWay, askWorkspaceName, confirmNewWorkspace, createWorkspace as makeWorkspace, tellNewWorkspaceOutcome } from './new-workspace/index.ts'
+import { askConvertCommit, confirmConvert, convertWorkspace, tellConvertOutcome } from './convert-workspace/index.ts'
+import { askCustomChoices, pickNewQuestion, askSetupWay, askWorkspaceName, confirmNewWorkspace, createWorkspace as makeWorkspace, tellNewWorkspaceOutcome } from './new-workspace/index.ts'
 import { setContextKey } from './context-keys/index.ts'
 import { connectFolder, describeFolderNote, judgeViewState, type FolderState, type FoldersWithoutSmith } from './folder-session/index.ts'
 import { confirmFix, fixDoctor, fixFinding, pickFixAnswer, readHealth, tellFixOutcome, runDoctor, sayDoctor, summarizeDoctor, toHealthRows, type HealthReading } from './health/index.ts'
@@ -1189,11 +1191,29 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       apply:     smithIn(state, true),
       askBasics: askRecipeBasics,
       pick:      pickLevel,
+      decide:    decideLevel,
+      askChoice,
       confirm:   confirmRecipe,
     })
     note(`MonoSmith: recipe in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
     tellRecipeOutcome(outcome, state.root, note)
     if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
+  }
+
+  /** Runs a command of smith that has a screen of its own (environments, cache, pipeline...): asks, shows the output or the plan, and changes nothing before a yes. */
+  const guidedHere = async (spec: GuidedCommand, argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined) return
+    if (spec.mode === 'change' && !mayWrite(spec.title.replace(/…$/, '').toLowerCase())) return
+    const outcome = await runGuidedCommand(spec, {
+      run:     smithIn(state, true, 300_000),
+      ask:     askGuidedStep,
+      show:    async (title, text) => { await insight.show(`${spec.id}.md`, toTextDocument(title, text)) },
+      confirm: confirmGuided,
+    })
+    note(`MonoSmith: ${spec.title} in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellGuidedOutcome(spec.title, outcome, note)
+    if (outcome.kind === 'done') await refreshFolder(state.root, 'full', false)
   }
 
   /** Lists where the workspace chose differently from smith's defaults (`smith divergences`), with the reason and the way back. */
@@ -1335,6 +1355,40 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'created') await refresh()
   }
 
+  /**
+   * Converts an Nx or Turborepo workspace with the questions of `smith convert --questions --json`:
+   * the level, and at the full level the four choices. Nothing is changed before the plan is shown
+   * and the person has said yes; smith commits only when the box is ticked.
+   */
+  const convertChoices = async (): Promise<void> => {
+    const chosen = await chooseFolder(offers.filter((offer) => offer.kind === 'nx' || offer.kind === 'turborepo'))
+    if (chosen === undefined) {
+      void vscode.window.showInformationMessage('MonoSmith: no Nx or Turborepo workspace is open here. "Convert This Folder to MonoSmith" brings in any other repository.')
+
+      return
+    }
+    const executable = await smithForTerminal(chosen.root)
+    if (executable === undefined) return
+    output.show(true)
+    const inFolder = async (args: string[]): Promise<Awaited<ReturnType<typeof runSmith>>> => {
+      note(`$ smith ${args.join(' ')} (${chosen.name})`)
+
+      return await runSmith(executable, args, chosen.root, 600_000)
+    }
+    const outcome = await convertWorkspace({
+      run:   inFolder,
+      apply: async (args) => await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: `MonoSmith: converting ${chosen.name}…` },
+        async () => await inFolder(args),
+      ),
+      pick:      pickNewQuestion,
+      askCommit: askConvertCommit,
+      confirm:   confirmConvert,
+    })
+    tellConvertOutcome(outcome, note)
+    if (outcome.kind === 'converted') await refresh()
+  }
+
   const command = <T = TreeNode>(id: string, action: (node?: T) => Promise<void>): vscode.Disposable => vscode.commands.registerCommand(id, async (node?: T) => {
     try {
       await action(node)
@@ -1414,6 +1468,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command('monosmith.openSettings', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', 'monosmith') }),
     command('monosmith.copyInstallCommand', copyInstallCommand),
     command('monosmith.new', createWorkspace),
+    command('monosmith.convert.choose', convertChoices),
     command('monosmith.adopt.start', async () => { await adopt('start') }),
     command('monosmith.adopt.preview', async () => { await adopt('preview') }),
     command<unknown>('monosmith.installAgent', async (argument) => { await installFiles('agent', argument) }),
@@ -1435,6 +1490,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.swap', swapHere),
     command<unknown>('monosmith.newRecipe', newRecipeHere),
     command<unknown>('monosmith.divergences', showDivergences),
+    ...GUIDED_COMMANDS.map((spec) => command<unknown>(`monosmith.${spec.id}`, async (argument) => { await guidedHere(spec, argument) })),
     command<unknown>('monosmith.try', tryHere),
     command<unknown>('monosmith.bootstrap', bootstrapHere),
     command<unknown>('monosmith.installTools', installToolsHere),

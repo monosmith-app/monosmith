@@ -26,6 +26,26 @@ func ParsePluginHits(text string) ([]PluginHit, error) {
 	return hits, nil
 }
 
+// The answers of the trust question of a plugin install.
+const (
+	pluginTrustAsk    = "ask"
+	pluginTrustPinned = "pinned"
+)
+
+// PluginTrustStep is the question that follows the choice of a plugin: install
+// only (the default), or install, trust and pin it. A plugin runs with your
+// privileges and smith does not sandbox it, so the second answer says what it
+// gives away. smith plugin install checks the archive's SHA-256 either way.
+func PluginTrustStep() Step {
+	return Step{Key: "trust", Prompt: "Do you trust this plugin? A plugin runs with your privileges and smith does not sandbox it", Options: []Option{
+		{Label: "Install it only (default)", Value: pluginTrustAsk, Hint: "nothing runs now; smith asks the first time the plugin is used"},
+		{Label: "Install, trust and pin this version", Value: pluginTrustPinned, Hint: "it may run at once; smith writes the SHA-256 of its program to smith.toml, and CI refuses a changed file (--trust --pin)"},
+	}}
+}
+
+// PluginSearchTitle is the title of the form that asks what plugin to look for.
+const PluginSearchTitle = "Find a plugin in the marketplace"
+
 // PluginInstallTitle is the title of the form that picks a found plugin.
 const PluginInstallTitle = "Install a plugin from the marketplace"
 
@@ -48,7 +68,13 @@ func PluginInstallAction(hits []PluginHit) Action {
 	}
 	return Action{
 		Title: PluginInstallTitle, Presents: "plugin install", Hint: "smith plugin install", NeedsWorkspace: true,
-		Steps: []Step{step},
-		Argv:  func(a map[string][]string) []string { return []string{"plugin", "install", first(a, "plugin")} },
+		Steps: []Step{step, PluginTrustStep()},
+		Argv: func(a map[string][]string) []string {
+			argv := []string{"plugin", "install", first(a, "plugin")}
+			if first(a, "trust") == pluginTrustPinned {
+				argv = append(argv, "--trust", "--pin")
+			}
+			return argv
+		},
 	}
 }

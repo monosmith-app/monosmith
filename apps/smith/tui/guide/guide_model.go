@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"maps"
 	"slices"
 	"strings"
 
@@ -45,6 +46,30 @@ type Model struct {
 	view *listView
 	// words opens the glossary of a step on a short screen.
 	words bool
+	// trail are the steps already answered, in order: Esc goes back to the last
+	// one. Steps that were skipped or answered by themselves are not in it.
+	trail []int
+}
+
+// back goes to the question before this one, with every answer still filled in.
+// On the first question it leaves the form for the list of actions.
+func (m Model) back() Model {
+	if len(m.trail) == 0 {
+		m.action, m.step, m.cursor, m.err, m.trail = nil, 0, 0, "", nil
+		return m.newView()
+	}
+	if s := m.current(); s != nil && s.Options == nil {
+		// What was typed and not entered yet is kept for the way forward.
+		if v := strings.TrimSpace(m.input.Value()); v != "" {
+			m.answers[s.Key] = []string{v}
+		}
+	}
+	m.step = m.trail[len(m.trail)-1]
+	m.trail = slices.Clone(m.trail[:len(m.trail)-1])
+	m.prefill = maps.Clone(m.answers)
+	m.cursor, m.marked, m.err, m.filter, m.notice = 0, map[int]bool{}, "", "", ""
+	m.input.SetValue("")
+	return m.newView().advance()
 }
 
 // listView is the window of the list on screen: where it starts, and how many
@@ -198,7 +223,13 @@ func (m Model) current() *Step {
 	if m.action == nil || m.step >= len(m.action.Steps) {
 		return nil
 	}
-	return &m.action.Steps[m.step]
+	s := &m.action.Steps[m.step]
+	if s.OptionsFor != nil {
+		c := *s
+		c.Options = s.OptionsFor(m.answers)
+		return &c
+	}
+	return s
 }
 
 // options are the answers on offer: all of them, or for a Filter step those
@@ -289,8 +320,10 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		m.done = true
 	case "esc", "q":
 		switch {
+		case m.action != nil && key.String() == "esc":
+			m = m.back()
 		case m.action != nil:
-			m.action, m.step, m.cursor, m.err = nil, 0, 0, ""
+			m.action, m.step, m.cursor, m.err, m.trail = nil, 0, 0, "", nil
 			m = m.newView()
 		case key.String() == "esc":
 			m.done = true
@@ -341,7 +374,7 @@ func (m Model) confirm() Model {
 			m.Wizard, m.done = a.Wizard, true
 			return m
 		}
-		m.action, m.step, m.answers, m.cursor, m.marked = &a, 0, map[string][]string{}, 0, map[int]bool{}
+		m.action, m.step, m.answers, m.cursor, m.marked, m.trail = &a, 0, map[string][]string{}, 0, map[int]bool{}, nil
 		return m.newView().advance()
 	}
 	step := m.current()
@@ -393,6 +426,7 @@ func (m Model) confirm() Model {
 		}
 		m.answers[step.Key] = []string{picked}
 	}
+	m.trail = append(slices.Clone(m.trail), m.step)
 	m.step++
 	m.cursor, m.marked, m.err, m.filter, m.notice = 0, map[int]bool{}, "", "", ""
 	return m.newView().advance()
@@ -436,6 +470,9 @@ func (m Model) advance() Model {
 		if step.PlaceholderFor != nil {
 			m.input.Placeholder = step.PlaceholderFor(m.answers)
 		}
+		if step.Initial != nil {
+			m.input.SetValue(step.Initial(m.answers))
+		}
 		m.input.Focus()
 	} else if want := m.defaults[step.Key]; want != "" {
 		for i, o := range step.Options {
@@ -444,7 +481,7 @@ func (m Model) advance() Model {
 			}
 		}
 	}
-	if step.Preselect != nil && m.searched != "" && !step.Multi {
+	if step.Preselect != nil && !step.Multi {
 		if want := step.Preselect(m.searched, step.Options); want != "" {
 			for i, o := range step.Options {
 				if o.Value == want {

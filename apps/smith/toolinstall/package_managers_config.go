@@ -29,6 +29,7 @@ var knownManagers = []Manager{
 	{Name: "uv", Binary: "uv", OS: []string{"windows", "darwin", "linux"}, Language: true},
 	{Name: "fnm", Binary: "fnm", OS: []string{"windows", "darwin", "linux"}, Language: true},
 	{Name: "rustup", Binary: "rustup", OS: []string{"windows", "darwin", "linux"}, Language: true},
+	{Name: "cargo", Binary: "cargo", OS: []string{"windows", "darwin", "linux"}, Language: true},
 	{Name: "npm", Binary: "npm", OS: []string{"windows", "darwin", "linux"}, Language: true},
 }
 
@@ -125,6 +126,8 @@ func BuildCommand(manager, pkg string, env Env) (cmd InstallCommand, ok bool) {
 		return InstallCommand{Argv: []string{"fnm", "install", pkg}}, true
 	case "rustup":
 		return InstallCommand{Argv: []string{"rustup", "default", pkg}}, true
+	case "cargo":
+		return InstallCommand{Argv: append([]string{"cargo", "install", "--locked"}, pkgs...)}, true
 	}
 	return InstallCommand{}, false
 }

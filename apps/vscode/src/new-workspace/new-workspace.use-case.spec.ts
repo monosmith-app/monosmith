@@ -5,6 +5,12 @@ import { createWorkspace, type NewWorkspaceDeps, type SetupWay } from './new-wor
 
 const OK = (stdout: string): SmithRun => ({ code: 0, stdout, stderr: '' })
 
+const QUESTIONS = JSON.stringify([
+  { key: 'ci', prompt: 'Which CI?', default: 'github', flag: 'ci', many: true, options: [{ value: 'github', label: 'GitHub Actions' }] },
+  { key: 'language', prompt: 'Which language?', default: 'later', flag: 'language', options: [{ value: 'later', label: 'Decide later' }, { value: 'node', label: 'TypeScript / JavaScript' }] },
+  { key: 'architecture', prompt: 'Which layout?', default: 'vertical-slices', flag: 'architecture', options: [{ value: 'vertical-slices', label: 'Vertical slices' }] },
+])
+
 function fake (over: Partial<NewWorkspaceDeps> & { way?: SetupWay | undefined, name?: string | undefined } = {}) {
   const ran: string[][] = []
   const applied: string[][] = []
@@ -14,6 +20,7 @@ function fake (over: Partial<NewWorkspaceDeps> & { way?: SetupWay | undefined, n
   const deps: NewWorkspaceDeps = {
     folderName: 'ws-j',
     run:        async (args) => {
+      if (args.includes('--questions')) return OK(QUESTIONS)
       ran.push(args)
 
       return OK('Plan: create smith.toml\n')
@@ -86,5 +93,40 @@ describe('createWorkspace', () => {
     const f = fake({ run: async () => ({ code: 1, stdout: '', stderr: '✖ this folder has files\n  → run smith adopt\n' }) })
     expect(await createWorkspace(f.deps)).toEqual({ kind: 'refused', message: 'this folder has files Try: run smith adopt' })
     expect(f.applied).toEqual([])
+  })
+
+  it('reads the questions of smith before the way is asked, and passes them to the custom questions', async () => {
+    const asked: string[][] = []
+    let seen: readonly string[] = []
+    const f = fake({
+      way: 'customise',
+      run: async (args) => {
+        asked.push(args)
+
+        return OK(args.includes('--questions') ? QUESTIONS : 'Plan\n')
+      },
+      askCustom: async (start, questions) => {
+        seen = questions.map((question) => question.key)
+
+        return start
+      },
+    })
+    await createWorkspace(f.deps)
+    expect(asked[0]).toEqual(['new', '--questions', '--json'])
+    expect(seen).toEqual(['ci', 'language', 'architecture'])
+  })
+
+  it('labels the summary with the words smith printed', async () => {
+    const f = fake()
+    await createWorkspace(f.deps)
+    expect(f.offered[0]).toContain('Main language: Decide later')
+  })
+
+  it('stops with a message when smith cannot list its questions', async () => {
+    const old = fake({ run: async () => ({ code: 2, stdout: '', stderr: 'unknown flag: --questions\n' }) })
+    expect(await createWorkspace(old.deps)).toMatchObject({ kind: 'refused' })
+    const odd = fake({ run: async () => OK('not json') })
+    expect(await createWorkspace(odd.deps)).toMatchObject({ kind: 'refused', message: expect.stringContaining('Update smith') })
+    expect(old.applied).toEqual([])
   })
 })

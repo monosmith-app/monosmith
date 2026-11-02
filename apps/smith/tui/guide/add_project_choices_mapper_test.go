@@ -53,7 +53,7 @@ func TestAddProjectAsksTheChoicesOfTheLanguagePickedOnly(t *testing.T) {
 	if !strings.Contains(m.View(), "Which framework?") {
 		t.Fatalf("a website asks its framework:\n%s", m.View())
 	}
-	m = press(m, "enter") // React
+	m = press(m, "home", "enter") // React: the cursor starts on "Decide in the next question"
 	m = press(m, "w", "e", "b", "enter")
 	view := m.View()
 	for _, want := range []string{"Build it from choices", "[x] framework: react", "styles (needs react)", "test: vitest"} {
@@ -134,8 +134,14 @@ func TestPluginSearchBecomesAFormThatInstallsThePluginPicked(t *testing.T) {
 		t.Fatalf("the hint says the version, the purpose and the roles:\n%s", view)
 	}
 	m = press(m, "down", "enter")
-	if got := strings.Join(m.Argv, " "); got != "plugin install widget" {
+	if view := m.View(); !strings.Contains(view, "Install it only (default)") || !strings.Contains(view, "does not sandbox it") {
+		t.Fatalf("the trust question comes next, with the default first:\n%s", view)
+	}
+	if got := strings.Join(press(m, "enter").Argv, " "); got != "plugin install widget" {
 		t.Fatalf("argv %q", got)
+	}
+	if got := strings.Join(press(m, "down", "enter").Argv, " "); got != "plugin install widget --trust --pin" {
+		t.Fatalf("trusting and pinning is a choice: argv %q", got)
 	}
 	if _, err := ParsePluginHits("No plugin matches"); err == nil {
 		t.Fatal("text is not a list")

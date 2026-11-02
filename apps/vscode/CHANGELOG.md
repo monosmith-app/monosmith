@@ -5,6 +5,20 @@ the first release everything below is under Unreleased.
 
 ## Unreleased
 
+### Added
+
+- Convert an Nx or Turborepo Workspace with Your Choices: asks the level and, at the full level, lint, tests, build and pipelines from `smith convert --questions --json`, shows the plan with the files it deletes, asks the unticked commit box, then converts.
+- New workspace: the Customise questions (CI, language, Node tests, code layout, agent files, dev container) come from `smith new --questions --json`, so a question that smith adds appears without a new version of the extension.
+- Environments of a web app: "Environments of the Web Apps", "Add Environments to a Web App…" (the names start on `[workspace] environments`, to edit; the plan lists the files) and "Remove Environments from a Web App…" (only the ones that can go; the `.env` file stays).
+- New Recipe: for each level that takes one plugin it asks who decides it, the recipe (default) or the people who use it. For the second it asks the question they read, the plugins they can end up with and a name for each answer, and writes `--chosen`.
+- One command each, with the plan or the cost shown first: Cache (status, check for damage, remove what is broken, trim to its limit, delete it all), Copies Between Projects, Tools the Workspace Needs, Info, Add a Ready-Made Pipeline, Make the Icons of a Tauri App, Make an App a Tauri Desktop App, Docker Hub descriptions, Why Would a Task Run Again, Connect smith to a Coding Assistant, Regenerate the CI Pipelines, and Derived Files (check, preview, update).
+- Change a Setting of smith.toml and Reset a Setting: a pick list of the settings with their value and the reason of the default; a boolean or an enum is a pick list, and any other starts on the current value.
+- Turn a Plugin On or Off (smith's warning about the projects it leaves comes with the answer) and Choose the Architecture of the Workspace.
+- Install a Plugin from the Marketplace: search, pick with the description, the trust question in plain words (install only, or trust and pin this version), then the confirmation. An empty marketplace says so.
+- New Recipe: a level that takes any number of plugins (structure, deploy, toolchain) asks who decides it as well; an answer of a choice gives one plugin or several joined by `+`.
+- Add project: the language question starts on the language most projects of the workspace use and says so.
+- Release without a releasing commit: a package that was never released is not offered, because smith has no version to bump. One line names it and offers to copy the commit that sets its first version.
+
 ### Fixed
 
 - Add project: pressing Enter through the steps gives the safe defaults. Every list of one answer starts on its default (Vitest for the test runner) or on "None" when the axis has none (desktop shell, style), listed first; it no longer starts on Tauri, Bootstrap or Jest. The confirmation says the choices in words and marks the defaults ("React, ESLint (default), Vitest (default); no desktop shell, no style").

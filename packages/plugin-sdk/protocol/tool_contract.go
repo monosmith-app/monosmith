@@ -70,9 +70,9 @@ type ToolVersionPin struct {
 
 // ToolInstall is one way to get a tool with a package manager. Manager is one
 // of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv",
-// "fnm" and "rustup". The host builds the exact command from the manager and
+// "fnm", "rustup" and "cargo". The host builds the exact command from the manager and
 // Package; Package may hold {major} and {major.minor}, which the pinned or
-// suggested version fills. The language's own installers (uv, fnm, rustup)
+// suggested version fills. The language's own installers (uv, fnm, rustup, cargo)
 // are offered only when they are already on the machine.
 type ToolInstall struct {
 	Manager string `json:"manager"`

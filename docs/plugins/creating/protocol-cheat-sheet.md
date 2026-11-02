@@ -992,11 +992,11 @@ ToolVersionPin names a file that pins the version of a tool and how to read it.
 
 ### ToolInstall
 
-ToolInstall is one way to get a tool with a package manager. The host builds the exact command from the manager and the package. The language's own installers (uv, fnm, rustup) are offered only when they are already on the machine.
+ToolInstall is one way to get a tool with a package manager. The host builds the exact command from the manager and the package. The language's own installers (uv, fnm, rustup, cargo) are offered only when they are already on the machine.
 
 | JSON field | Type | Required | Meaning |
 |---|---|---|---|
-| `manager` | `string` | yes | Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm" and "rustup". |
+| `manager` | `string` | yes | Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup" and "cargo". |
 | `package` | `string` | yes | Package may hold {major} and {major.minor}, which the pinned or suggested version fills. |
 | `note` | `string` | no | Note adds a sentence the person needs before choosing ("a new terminal is needed"). |
 

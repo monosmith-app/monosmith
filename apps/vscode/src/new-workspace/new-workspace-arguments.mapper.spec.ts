@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CHOICES, describeChoices, toCreateArguments } from './new-workspace-arguments.mapper.ts'
+import { parseQuestions } from '../smith-questions/index.ts'
 
 describe('toCreateArguments', () => {
   it('gives every question a flag, so smith asks nothing and decides nothing in silence', () => {
@@ -25,9 +26,16 @@ describe('toCreateArguments', () => {
   })
 })
 
+const QUESTIONS = parseQuestions(JSON.stringify([
+  { key: 'ci', flag: 'ci', options: [{ value: 'github', label: 'GitHub Actions' }] },
+  { key: 'language', flag: 'language', options: [{ value: 'later', label: 'Decide later' }, { value: 'node', label: 'TypeScript / JavaScript' }] },
+  { key: 'node-stack', flag: 'default-stack', options: [{ value: 'node-vitest', label: 'Vitest' }] },
+  { key: 'architecture', flag: 'architecture', options: [{ value: 'vertical-slices', label: 'Vertical slices' }] },
+]))
+
 describe('describeChoices', () => {
   it('says the name comes from the folder, and what the other choices mean', () => {
-    const lines = describeChoices({ name: 'ws-j', ...DEFAULT_CHOICES }, 'ws-j')
+    const lines = describeChoices({ name: 'ws-j', ...DEFAULT_CHOICES }, 'ws-j', QUESTIONS)
     expect(lines[0]).toBe('Name: ws-j (the name of this folder)')
     expect(lines).toContain('CI: GitHub Actions')
     expect(lines).toContain('Main language: Decide later')
@@ -35,7 +43,7 @@ describe('describeChoices', () => {
   })
 
   it('does not say the name is the folder\'s when the person typed another, and names the Node stack', () => {
-    const lines = describeChoices({ name: 'acme', ...DEFAULT_CHOICES, language: 'node', nodeStack: 'node-vitest', commit: false }, 'ws-j')
+    const lines = describeChoices({ name: 'acme', ...DEFAULT_CHOICES, language: 'node', nodeStack: 'node-vitest', commit: false }, 'ws-j', QUESTIONS)
     expect(lines[0]).toBe('Name: acme')
     expect(lines).toContain('Tests and lint for Node projects: Vitest')
     expect(lines.at(-1)).toContain('stay uncommitted')

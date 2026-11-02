@@ -72,13 +72,38 @@ func TestValidationAndBack(t *testing.T) {
 	if !strings.Contains(m.View(), "type a value") {
 		t.Fatalf("an empty name must be refused:\n%s", m.View())
 	}
+	// Esc goes back one question (docs/manual/tui.md), not out of the form.
 	m = keys(m, "esc")
+	if m.(Model).action == nil {
+		t.Fatal("esc left the whole form instead of going back one question")
+	}
+	for i := 0; i < 10 && m.(Model).action != nil; i++ {
+		m = keys(m, "esc")
+	}
 	if m.(Model).action != nil || len(m.(Model).Argv) != 0 {
-		t.Fatal("esc returns to the menu")
+		t.Fatal("esc on the first question returns to the menu")
 	}
 	m = keys(m, "q")
 	if len(m.(Model).Argv) != 0 {
 		t.Fatal("quitting runs nothing")
+	}
+}
+
+// TestEscGoesBackOneQuestionAndKeepsTheAnswers keeps what was typed.
+func TestEscGoesBackOneQuestionAndKeepsTheAnswers(t *testing.T) {
+	// Add a project, app, node, name "sdk"; Esc returns to the name with it filled in.
+	m := keys(menu(), "down", "enter", "enter", "enter", "s", "d", "k", "enter")
+	if !m.(Model).Done() {
+		t.Fatalf("the form should have ended:\n%s", m.View())
+	}
+	m = keys(menu(), "down", "enter", "enter", "enter", "s", "d", "k")
+	m = keys(m, "esc")
+	if v := m.View(); strings.Contains(v, "Name it") {
+		t.Fatalf("esc stayed on the name:\n%s", v)
+	}
+	m = keys(m, "enter")
+	if v := m.View(); !strings.Contains(v, "sdk") {
+		t.Fatalf("the name typed before is lost:\n%s", v)
 	}
 }
 

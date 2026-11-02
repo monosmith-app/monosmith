@@ -30,7 +30,7 @@ func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, target
 	for _, p := range projects {
 		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: p.Root + "/", Note: verb + " " + strings.Join(packages, ", ") + " in its dependencies"})
 	}
-	return operationplan.Gate(cmd.OutOrStdout(), cmd.InOrStdin(), verb+" "+strings.Join(packages, ", "), "Dependencies of", lines, yes, false)
+	return operationplan.Gate(cmd.OutOrStdout(), cmd.InOrStdin(), verb+" "+strings.Join(packages, ", "), "Declared dependencies", lines, yes, false)
 }
 
 // touchedProjects names the projects an install touches, for the tool warnings:

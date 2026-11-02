@@ -232,6 +232,37 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
 | **Swap a choice…** | Under Projects in the palette. Pick the project, the decision (test, lint, style) and the answer. smith shows the plan of `smith swap --dry-run` first, with the unticked box "Commit this change so it can be undone"; Run does the swap. |
 
+### Environments, cache, pipelines and the rest of the palette
+
+Every command of smith that is not a dev server, `serve`, `mcp`, `lsp` or `agent` has an entry in
+the palette (`:`). A command that changes files shows its plan first, as every other change does.
+
+| Palette entry | Section | What it does |
+|---|---|---|
+| **Environments of the web apps** | Projects | `smith environments list` in the Run view. |
+| **Add environments to a web app…** | Projects | Pick the web app (the selected project first), type the names. The plan of `smith environments add --dry-run` lists the files it writes. |
+| **Remove environments from a web app…** | Projects | Same form. The plan says that the `.env.<name>` file stays and that the default environment cannot go. |
+| **Make the icons of a Tauri app…** | Projects | Asks for the square PNG and, when more than one app has a `src-tauri`, which app. The plan lists the icons it overwrites. |
+| **Add a ready-made pipeline…** | Release | Pick e2e, package-zip, deploy-pages or deploy-azure-function; a deploy pipeline asks for its app. The plan lists the files. |
+| **Set the Docker Hub descriptions…** | Release | Asks to name the repositories only (the default, nothing is sent) or to set the descriptions. |
+| **Cache: status**, **check for damage** | Health | `smith cache status` and `smith cache verify` in the Run view. |
+| **Cache: remove what is broken…**, **trim to its limit…**, **delete it all…** | Health | `smith cache verify --fix`, `prune` (with its plan) and `clear`, each after a confirmation that says the next run is slower. |
+| **Copies between projects**, **Tools the workspace needs** | Health | `smith copies` and `smith tools` in the Run view. |
+| **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. |
+| **Connect smith to a coding assistant…** | Health | Tick Claude Code and VS Code; writes `.mcp.json` and `.vscode/mcp.json` after a confirmation. |
+
+In **Add project**, the question "names of my own" starts on the environment names of
+`[workspace] environments` (or the default four), so you edit a list and do not type one.
+
+**Write a recipe** asks, for each level that takes one plugin, a pick list whose last answer is
+"Chosen by the people who use it". Then it asks the question the users read, which plugins they can
+end up with and the name of each answer, and writes a `--chosen` flag (see
+[`smith recipe new`](recipe-new.md)).
+
+**Release without a releasing commit** does not list a package that was never released: smith has
+no version to bump. A line names it and gives the commit that sets its first version, `git commit
+--allow-empty -m "version(<name>)[1.0.0]"`.
+
 After an add, a convert or an adopt finishes, the toast says it can be undone and where.
 
 **Derived files on the Projects tab.** When the workspace turned derived files on

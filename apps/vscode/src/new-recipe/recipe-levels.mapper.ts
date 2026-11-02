@@ -78,8 +78,30 @@ export function recipeArguments (request: RecipeRequest): string[] {
   for (const [level, plugins] of Object.entries(request.fixed)) {
     if (plugins.length > 0) args.push('--fixed', `${level}=${plugins.join(',')}`)
   }
+  const chosen = Object.entries(request.chosen ?? {})
+  for (const [level, choice] of chosen) {
+    args.push('--chosen', `${level}=${choice.question}:${choice.answers.map((a) => `${a.answer}=${a.plugin}`).join(',')}`)
+  }
 
   return args
+}
+
+/** Says what is wrong with the question the users read, or undefined when it is fine. */
+export function checkChoiceQuestion (question: string): string | undefined {
+  if (question.trim() === '') return 'Write the question the people who use the recipe read.'
+
+  return /[:\n]/.test(question) ? 'Write the question without a colon.' : undefined
+}
+
+/**
+ * Says what is wrong with the name of an answer, or undefined when it is fine.
+ * @param answer - what the person typed
+ * @param taken - the answers already named for this choice
+ */
+export function checkChoiceAnswer (answer: string, taken: string[]): string | undefined {
+  if (answer.trim() === '' || /[:=+,]/.test(answer)) return 'An answer is a word or two, without : = + or a comma.'
+
+  return taken.includes(answer.trim()) ? `Two answers are named "${answer.trim()}": each needs its own name.` : undefined
 }
 
 /**

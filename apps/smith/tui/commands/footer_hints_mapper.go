@@ -19,6 +19,11 @@ func Hints(s State) (view, tail []Hint) {
 		if c.Footer == "" || c.Unavailable(s) != "" || (c.Kind != PaneKey && !c.Visible(s)) {
 			continue
 		}
+		if (s.Editing || s.Form) && !c.Tail && len(c.Keys) > 0 && plain(c.Keys[0]) {
+			// A plain key types into the form's field: "n new workspace" would be a
+			// false promise while a name is typed.
+			continue
+		}
 		if c.All && c.Kind == RunTask && s.RunProject() == "" && s.Projects > 0 && hasScopedSibling(c) {
 			// The scoped key is labelled "build all N" here too: one hint, not two.
 			continue

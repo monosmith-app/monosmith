@@ -108,9 +108,25 @@ func (s *Shell) planRead(msg capturedMsg) tea.Cmd {
 		return nil
 	}
 	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
+}
+
+// dryRunLine ends the plan a command prints with --dry-run.
+const dryRunLine = "Dry run: nothing was changed."
+
+// withoutDryRunLine drops the closing "Dry run" line of a plan: the dialog
+// above it already says that nothing is written yet, and a first-time user
+// does not know the words "dry run".
+//
+// Parameters: lines are the lines of the plan.
+// Returns: the lines without the closing "Dry run" line.
+func withoutDryRunLine(lines []string) []string {
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == dryRunLine {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // tell shows a notice dialog: a title, a sentence and the lines of a text.
@@ -152,7 +168,7 @@ func (s *Shell) undoRead(msg capturedMsg) tea.Cmd {
 	}
 	argv := []string{"undo", "--yes"}
 	c := dialog.NewConfirm("Undo the last change?", "smith reverts it with a new commit, so your history stays. This is what it would revert:", argv).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -179,7 +195,7 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		return nil
 	}
 	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len(), s.offers), argv).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -210,7 +226,7 @@ func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
 		title = "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
 	}
 	c := dialog.NewConfirm(title, "This is the plan. smith moves what it can and lists what is left to do by hand.", append(slices.Clone(argv), "--yes")).
-		WithDetails(capLines(textLines(msg.res.Text), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -305,7 +321,7 @@ func (s *Shell) showAddForm() tea.Cmd {
 		}
 	}
 	if s.addBase != nil {
-		g = g.WithAction(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()))
+		g = g.WithAction(guide.WithWorkspaceEnvironments(guide.AddProjectAction(*s.addBase, s.offers, s.projectNames()), s.environments))
 	}
 	g = g.WithDefaultWhy("lang", s.mainLanguageWhy())
 	if g, ok := g.WithDefault("lang", s.mainLanguage()).Pick(addProjectTitle); ok {
@@ -368,6 +384,36 @@ func (s Shell) projectNames() []string {
 		names = append(names, p.Name)
 	}
 	return names
+}
+
+// webApps are the projects an environment can be added to: the apps written
+// in Node. With none of them, every project is listed and smith refuses the
+// one that is not a web app, with its reason.
+func (s Shell) webApps() []string {
+	var names []string
+	for _, p := range s.list.Projects() {
+		if p.Kind == "app" && p.Language == "node" {
+			names = append(names, p.Name)
+		}
+	}
+	if len(names) == 0 {
+		return s.projectNames()
+	}
+	return names
+}
+
+// openEnvironments opens the form that adds environments to a web app or
+// removes them, with the web apps as a pick list that starts on the selected
+// project.
+func (s *Shell) openEnvironments(title string) tea.Cmd {
+	g := s.guide
+	if base, ok := g.ActionTitled(title); ok {
+		g = g.WithAction(guide.WithProjectPick(base, "project", s.webApps()))
+	}
+	if g, ok := g.WithDefault("project", s.selectedProject()).Pick(title); ok {
+		s.guide = g
+	}
+	return s.gotoTab(commands.TabGuide)
 }
 
 // refreshProjectForms puts the project names into the Remove form of the menu,
@@ -519,6 +565,16 @@ func undoHint() string {
 // notCommittedHint is the sentence a toast adds to a change that is not a commit.
 func notCommittedHint() string {
 	return "Not committed: review with git status"
+}
+
+// saidNotCommitted is true when a command asked to commit but printed that it
+// did not (for example because the work tree had other changes): there is then
+// nothing for smith undo to revert.
+//
+// Parameters: lines are the lines the command printed.
+// Returns: whether one of them starts with "Not committed".
+func saidNotCommitted(lines []string) bool {
+	return slices.ContainsFunc(lines, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), "Not committed") })
 }
 
 // changesFiles is true for the commands that write files and can commit them.

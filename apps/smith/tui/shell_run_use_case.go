@@ -229,7 +229,7 @@ func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
 		s.notify("Cancelled: "+s.run.CommandLine(), toast.Warning)
-	case s.run.OK() && undoable(s.run.Command, s.commitOps):
+	case s.run.OK() && undoable(s.run.Command, s.commitOps) && !saidNotCommitted(s.run.Lines):
 		s.notify(s.summary()+". "+undoHint(), toast.Success)
 	case s.run.OK() && changesFiles(s.run.Command):
 		s.notify(s.summary()+". "+notCommittedHint(), toast.Success)

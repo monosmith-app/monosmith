@@ -283,7 +283,7 @@ Azure output for cpp (generated from the same contribution, not run).
 |---|---|
 | `CMake is installed` | `cmake --version` fails |
 | `Ninja is installed` | `ninja --version` fails |
-| `a C++ compiler is installed` | none of `c++`, `g++`, `clang++`, `cl` is on `PATH` |
+| `a C and C++ compiler is installed` | none of `c++`, `g++`, `clang++`, `cl` is on `PATH` |
 | `cppcheck is installed` | `cppcheck --version` fails |
 | `<app> releases for <platform>` | a platform in `[projects.<app>.release]` is not windows, linux or darwin with amd64 or arm64; remedy: change `platforms` |
 | `<app> can build the <platform> archive here` | the platform is not this machine's and the app is not native; remedy: `set(SMITH_NATIVE ON)` in its `CMakeLists.txt` |

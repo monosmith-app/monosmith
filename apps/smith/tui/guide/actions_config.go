@@ -11,6 +11,9 @@ type Step struct {
 	Key     string
 	Prompt  string
 	Options []Option
+	// OptionsFor, when set, makes the options from the earlier answers (the names
+	// typed in a question before): it replaces Options.
+	OptionsFor func(answers map[string][]string) []Option
 	// Placeholder is shown in an empty text field.
 	Placeholder string
 	// Multi lets the user toggle several options (space) before confirming.
@@ -31,6 +34,10 @@ type Step struct {
 	// Skip, when set, leaves the question out when it says so, given the
 	// earlier answers; the key then has no answer.
 	Skip func(answers map[string][]string) bool
+	// Initial, when set, fills a free-text step with a value the person edits
+	// (the names an app's environments start on). The grey placeholder is only
+	// an example; this is an answer that Enter takes.
+	Initial func(answers map[string][]string) string
 	// Auto, when set, answers the question itself when it returns a value (the
 	// answer is then the same as a pick of that option) and asks it when it
 	// returns "": a language that an outcome has only one of is not asked.
@@ -127,7 +134,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		}
 		pluginOpts = append(pluginOpts, Option{Label: p, Value: p, Hint: hint})
 	}
-	return []Action{
+	return append([]Action{
 		{
 			Title: "Create a workspace", Presents: "new", Hint: "smith new", OutsideOnly: true,
 			Steps: NewWorkspaceSteps(),
@@ -167,7 +174,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 			},
 		},
 		{
-			Title: "Manage plugins", Presents: "plugin set", Hint: "choose which built-in plugins are on", NeedsWorkspace: true,
+			Title: "Manage plugins", Presents: "plugin set", Hint: "choose which built-in plugins are on; press 7 to search for more", NeedsWorkspace: true,
 			Steps: []Step{{Key: "plugins", Prompt: "Enabled plugins (space toggles, enter saves)", Note: WhatIs("plugin"), Multi: true, Options: pluginOpts}},
 			Argv: func(a map[string][]string) []string {
 				return append([]string{"plugin", "set"}, a["plugins"]...)
@@ -237,7 +244,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 				return argv
 			},
 		},
-		ForcedReleaseAction(nil),
+		ForcedReleaseAction(nil, nil),
 		{
 			Title: "Remove a project", Presents: "remove", Hint: "smith remove: its directory, its traces in the workspace, its CI", NeedsWorkspace: true,
 			Steps: []Step{
@@ -286,9 +293,16 @@ func Actions(languages, plugins, enabled []string) []Action {
 			Argv: SwapArgv,
 		},
 		{
-			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose plugins are fixed (to pick choices too, run smith recipe new outside this screen)",
+			Title: "Write a recipe", Presents: "recipe new", Hint: "smith recipe new: a recipe whose levels are fixed by it or chosen by the people who use it",
 			Steps: NewRecipeSteps(),
 			Argv:  NewRecipeArgv,
 		},
-	}
+		{
+			Title: PluginSearchTitle, Hint: "smith plugin search: look in the marketplace for a plugin to install", NeedsWorkspace: true,
+			Steps: []Step{{Key: "term", Prompt: "What do you look for? (a word, such as terraform; leave it empty to list them all)", Optional: true, Placeholder: "terraform"}},
+			Argv: func(a map[string][]string) []string {
+				return append([]string{"plugin", "search"}, strings.Fields(first(a, "term"))...)
+			},
+		},
+	}, parityForms()...)
 }

@@ -40,6 +40,10 @@ type Plan struct {
 	Channel string `json:"channel,omitempty"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
+	// NeverReleased lists the unchanged packages that have no release yet: smith
+	// refuses to force a bump for them, because there is no version to bump. A
+	// version(<name>)[x.y.z] commit sets the first one.
+	NeverReleased []string `json:"neverReleased,omitempty"`
 	// Held lists the packages the person held back with --hold (and the ones that
 	// release only because a held one does): they would have released.
 	Held []string `json:"held,omitempty"`
@@ -190,6 +194,9 @@ func MakeChannelPlan(git *gitclient.Git, graph *projectgraph.Graph, ch *Channel)
 			next, item.Forced, item.Reason, item.Level = v, true, "forced by version("+name+")["+forced+"]", "forced"
 		} else if level == None {
 			plan.Unchanged = append(plan.Unchanged, name)
+			if !released {
+				plan.NeverReleased = append(plan.NeverReleased, name)
+			}
 			continue
 		}
 		if released && !latest.Less(next) {

@@ -22,9 +22,13 @@ func Doctor(_ string, params protocol.DoctorParams) protocol.DoctorResult {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
 	_, err := lookPath("osacompile")
-	return protocol.DoctorResult{Findings: []protocol.Finding{{
+	finding := protocol.Finding{
 		Check: "osacompile is installed", OK: err == nil, Warning: true,
 		Detail: "osacompile is not on PATH: AppleScript projects build on macOS only",
 		Remedy: "build on a Mac; in CI set [ci] native_runners = [\"macos-latest\"] in smith.toml",
-	}}}
+	}
+	if err != nil {
+		finding.Fix = macRunnerFix()
+	}
+	return protocol.DoctorResult{Findings: []protocol.Finding{finding}}
 }

@@ -73,6 +73,33 @@ asks the person first, and passes `--yes` only after the person agreed. An edito
 A problem goes to standard error as `✖ what failed`, then a line `  → the fix` for each way out.
 Show both to the person.
 
+## More commands the VS Code extension offers
+
+Each is a command in the palette (`MonoSmith: …`) and in the "…" menu of the Projects view. A
+command that changes files shows smith's plan (`--dry-run`) or what it costs, asks, and only then
+runs the command with `--yes`. Nothing is committed.
+
+| Command | Runs | Reads from smith |
+|---|---|---|
+| Environments of the Web Apps; Add or Remove Environments… | `smith environments list\|add\|remove` | `environments list --json` for the web apps and their names; `config get workspace.environments` starts the names to add on the workspace's own |
+| Cache: Status, Check for Damage, Remove What Is Broken, Trim to Its Limit, Delete It All | `smith cache status\|verify\|verify --fix\|prune\|clear` | text |
+| Copies Between Projects; Tools the Workspace Needs; Info | `smith copies`, `smith tools`, `smith info` | text |
+| Add a Ready-Made Pipeline…; Make the Icons of a Tauri App…; Docker Hub Descriptions | `smith pipeline`, `smith tauri icon`, `smith docker description` | `smith pipeline` lists the templates |
+| Why Would a Task Run Again? | `smith why-miss <project>:<task>` | text |
+| Regenerate the CI Pipelines…; Derived Files: Check, Preview, Update | `smith ci generate`, `smith derive` | text and the plan |
+| Change a Setting of smith.toml…; Reset a Setting… | `smith config set\|unset` | `config list --json`: the type, the allowed values, the current value and the reason of the default |
+| Turn a Plugin On or Off…; Choose the Architecture… | `smith plugin enable\|disable`, `smith architecture <name>` | `plugin list --json`; `smith architecture` |
+| Install a Plugin from the Marketplace… | `smith plugin search <words> --json`, then `smith plugin install <name> [--trust --pin]` | the search result: name, newest version, description, roles; the trust question says the plugin runs unsandboxed with your privileges |
+| Connect smith to a Coding Assistant… | `smith mcp install --claude --vscode` | none |
+| New Recipe… | `smith recipe new --fixed …  --chosen …` | `recipe new --list-levels --json`; for each level that takes one plugin the extension asks who decides it: the recipe (default) or the people who use it |
+
+The release picker does not list a package that was never released for a forced bump: it lists it
+on one line and offers the commit that sets its first version (`neverReleased` in
+`smith release --dry-run --json`).
+
+Not in the extension: `smith plugin draft` (a plugin author works in a terminal on a sample project), and
+`smith serve`, `mcp`, `lsp`, `agent` and the dev servers, which own a terminal.
+
 ## Committing, releasing and changing a project from an editor
 
 smith commits and releases only when asked, and each of these has a plan flag that changes nothing.

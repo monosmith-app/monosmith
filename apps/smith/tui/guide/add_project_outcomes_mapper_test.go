@@ -90,7 +90,7 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 	if !strings.Contains(m.View(), "Which framework?") {
 		t.Fatalf("the framework is asked, not the language:\n%s", m.View())
 	}
-	m = press(m, "down", "enter") // Vue
+	m = press(m, "home", "down", "enter") // Vue (the cursor starts on "Decide in the next question")
 	m = press(m, "s", "i", "t", "e", "enter")
 	if !strings.Contains(m.View(), "[x] framework: vue") {
 		t.Fatalf("the pick starts ticked in the choices:\n%s", m.View())
@@ -103,8 +103,11 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 }
 
 func TestDecidingInTheNextQuestionTicksNothingInTheChoices(t *testing.T) {
-	m := press(outcomeForm(t), "enter")       // A website
-	m = press(m, "down", "down", "enter")     // Decide in the next question
+	m := press(outcomeForm(t), "enter") // A website
+	if !strings.Contains(m.View(), "› Decide in the next question") {
+		t.Fatalf("Enter on the first screen must pick nothing:\n%s", m.View())
+	}
+	m = press(m, "enter")                     // Decide in the next question: where the cursor starts
 	m = press(m, "s", "i", "t", "e", "enter") // the name
 	if view := m.View(); strings.Contains(view, "[x]") || !strings.Contains(view, "[ ] framework: react") {
 		t.Fatalf("deciding later must leave the list empty:\n%s", view)
@@ -128,7 +131,7 @@ func TestDecidingLaterWithTheWholeFrameworkListTicksNothing(t *testing.T) {
 		}
 	}
 	m, _ := NewModel([]Action{AddProjectAction(add, offers, nil)}).Pick("Add a project")
-	m = press(m, "enter", "down", "down", "down", "down", "enter")
+	m = press(m, "enter", "enter") // the cursor starts on "Decide in the next question"
 	if got := m.Answers()[pickKey]; len(got) != 1 || got[0] != pickNone {
 		t.Fatalf("the answer is %v", got)
 	}

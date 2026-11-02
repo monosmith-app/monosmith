@@ -15,4 +15,5 @@ var installCatalogues = map[string]string{
 	"uv":        "https://docs.astral.sh/uv/concepts/python-versions/",
 	"fnm":       "https://github.com/Schniz/fnm",
 	"rustup":    "https://rust-lang.github.io/rustup/",
+	"cargo":     "https://doc.rust-lang.org/cargo/commands/cargo-install.html",
 }

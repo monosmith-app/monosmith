@@ -188,7 +188,9 @@ func Finalize(root string, r Release, moves []protocol.TagMove) (Finalized, erro
 			return out, fmt.Errorf("npm dist-tag add %s@%s %s: %w\n%s", m.Package, m.Version, m.Tag, err, strings.TrimSpace(stderr))
 		}
 		// A leftover "pending" would make a re-run look for work.
-		_, _, _ = npm(dir, "dist-tag", "rm", m.Package, pendingTag)
+		if _, stderr, err := npm(dir, "dist-tag", "rm", m.Package, pendingTag); err != nil {
+			out.Notes = append(out.Notes, fmt.Sprintf("the dist-tag %q of %s could not be removed: %v %s. Remove it by hand: npm dist-tag rm %s %s", pendingTag, m.Package, err, strings.TrimSpace(stderr), m.Package, pendingTag))
+		}
 		out.Moved = append(out.Moved, m.Package+"@"+m.Version+" "+m.Tag)
 	}
 	return out, nil

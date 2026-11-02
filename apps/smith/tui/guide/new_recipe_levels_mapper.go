@@ -37,7 +37,7 @@ func recipeLevelKey(level, language string) string {
 
 // recipeLanguage is the language plugin the answers fix, or "" for none.
 func recipeLanguage(a map[string][]string) string {
-	if v := first(a, recipeLevelKey(recipewizard.LevelLanguage, "")); v != recipeUnset {
+	if v := first(a, recipeLevelKey(recipewizard.LevelLanguage, "")); v != recipeUnset && v != recipeChosen {
 		return v
 	}
 	return ""
@@ -55,7 +55,7 @@ func recipeFixed(a map[string][]string) []string {
 		}
 		level, _, _ := strings.Cut(rest, ":")
 		for _, v := range values {
-			if v != "" && v != recipeUnset {
+			if v != "" && v != recipeUnset && v != recipeChosen {
 				byLevel[level] = append(byLevel[level], v)
 			}
 		}
@@ -80,7 +80,7 @@ func recipeLevelCheck(key string) func(map[string][]string, string) string {
 			with[k] = v
 		}
 		with[key] = strings.Split(value, ",")
-		return planProblem(first(a, "name"), first(a, "version"), recipeFixed(with))
+		return planProblem(first(a, "name"), first(a, "version"), recipeFixed(with), recipeChosenArgs(with)...)
 	}
 }
 
@@ -92,9 +92,11 @@ func recipeLevelCheck(key string) func(map[string][]string, string) string {
 // After the language, only the plugins that fit it are offered.
 //
 // base is the plain form and cat the levels `smith recipe new --list-levels
-// --json` printed. A catalog with no level returns the plain form. A level the
-// recipe's users choose is not asked: the form fixes plugins, and the hint of
-// the action says to run smith recipe new in a terminal for the other kind.
+// --json` printed. A catalog with no level returns the plain form. A level that
+// takes one plugin ends its list with "Chosen by the people who use it": the
+// form then asks the question the users read, the plugins they can end up
+// with and the name of each answer, and writes one --chosen. A level that
+// takes any number of plugins (structure, deploy, toolchain) is fixed only.
 func RecipeAction(base Action, cat recipewizard.LevelCatalog) Action {
 	if len(cat.Levels) == 0 {
 		return base
@@ -116,22 +118,37 @@ func RecipeAction(base Action, cat recipewizard.LevelCatalog) Action {
 			descriptions[p.Name] = p.Description
 		}
 		if level.Level == recipewizard.LevelLanguage {
-			steps = append(steps, recipeLevelStep(level, "", level.Plugins))
+			steps = append(steps, recipeLevelSteps(level, "", level.Plugins)...)
 			continue
 		}
-		steps = append(steps, recipeLevelStep(level, "", level.Plugins))
+		steps = append(steps, recipeLevelSteps(level, "", level.Plugins)...)
 		for _, lang := range languages {
 			var offers []recipewizard.PluginOffer
 			for _, name := range cat.Fits[lang][level.Level] {
 				offers = append(offers, recipewizard.PluginOffer{Name: name, Description: descriptions[name]})
 			}
 			if len(offers) > 0 {
-				steps = append(steps, recipeLevelStep(level, lang, offers))
+				steps = append(steps, recipeLevelSteps(level, lang, offers)...)
 			}
 		}
 	}
 	base.Steps = steps
 	return base
+}
+
+// recipeLevelSteps are the questions for one level: the pick of the plugin,
+// and for a level that takes one plugin the three questions of "chosen by the
+// people who use it". lang is the language plugin the recipe fixes.
+func recipeLevelSteps(level recipewizard.LevelOffer, lang string, plugins []recipewizard.PluginOffer) []Step {
+	step := recipeLevelStep(level, lang, plugins)
+	if len(plugins) < 2 {
+		return []Step{step}
+	}
+	if level.Additive {
+		return recipeAdditiveSteps(step, level, plugins)
+	}
+	step.Options = append(step.Options, recipeChosenOption(level.Level))
+	return append([]Step{step}, recipeChosenSteps(step.Key, level.Level, plugins, step.Skip)...)
 }
 
 // recipeLevelStep is the question for one level: lang is the language plugin
@@ -143,7 +160,7 @@ func recipeLevelStep(level recipewizard.LevelOffer, lang string, plugins []recip
 	switch {
 	case level.Level == recipewizard.LevelLanguage:
 		s.Prompt = "Which language plugin does the recipe fix? Every other question follows this answer."
-		s.Note = unset + "\nTo let the recipe's users choose between plugins, run smith recipe new in a terminal."
+		s.Note = unset + "\nThe last answer lets the people who use the recipe choose between plugins."
 	case level.Additive:
 		s.Multi = true
 		s.Prompt = fmt.Sprintf("Which %s plugins does the recipe fix? Space ticks one, enter confirms.", level.Level)

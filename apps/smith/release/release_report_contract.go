@@ -19,6 +19,9 @@ type Report struct {
 	Results  []ReportResult `json:"results"`
 	// Unchanged lists packages with nothing to release.
 	Unchanged []string `json:"unchanged,omitempty"`
+	// NeverReleased lists the unchanged packages that were never released, as
+	// Plan.NeverReleased: a forced bump is refused for them.
+	NeverReleased []string `json:"neverReleased,omitempty"`
 	// Error is set when the release stopped early.
 	Error string `json:"error,omitempty"`
 }

@@ -1,14 +1,32 @@
 package guide
 
+import (
+	"slices"
+	"strings"
+)
+
 // ForcedReleaseTitle is the title of the guided form that releases a package
 // no commit releases: the same code under a new version.
 const ForcedReleaseTitle = "Release without a releasing commit"
 
+// NeverReleasedNote is the one line that says why a package that was never
+// released is not offered, and the commit that gives it its first version.
+// names are the packages; it returns "" for none.
+func NeverReleasedNote(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	return "Not offered, because smith has no version to bump: " + strings.Join(names, ", ") + " (never released). To choose the first version, commit: git commit --allow-empty -m \"version(" + names[0] + ")[1.0.0]\""
+}
+
 // ForcedReleaseAction is the form: which package, then which level. The
-// packages are those the plan lists as unchanged. The answers run
+// packages are those the plan lists as unchanged, except the ones never
+// released: smith refuses a bump for them, so a note names them and the commit
+// that sets their first version. The answers run
 // `smith release --bump <package>=<level> --force`, after the confirmation
 // that says what a release does and that it cannot be undone.
-func ForcedReleaseAction(unchanged []string) Action {
+func ForcedReleaseAction(unchanged, neverReleased []string) Action {
+	unchanged = slices.DeleteFunc(slices.Clone(unchanged), func(n string) bool { return slices.Contains(neverReleased, n) })
 	var packages []Option
 	if len(unchanged) == 0 {
 		packages = append(packages, Option{Label: "(read the plan in the Release view first)", Value: "", Hint: "the Release view lists the packages no commit releases"})
@@ -19,7 +37,7 @@ func ForcedReleaseAction(unchanged []string) Action {
 	return Action{
 		Title: ForcedReleaseTitle, Hint: "smith release --bump <package>=<level> --force: the same code under a new version", NeedsWorkspace: true,
 		Steps: []Step{
-			{Key: "package", Prompt: "Which package should release without a releasing commit?", Options: packages, Filter: true},
+			{Key: "package", Prompt: "Which package should release without a releasing commit?", Options: packages, Filter: true, Note: NeverReleasedNote(neverReleased)},
 			{Key: "level", Prompt: "Which level?", Options: []Option{
 				{Label: "patch", Value: "patch", Hint: "1.2.3 to 1.2.4 (default)"},
 				{Label: "minor", Value: "minor", Hint: "1.2.3 to 1.3.0"},
