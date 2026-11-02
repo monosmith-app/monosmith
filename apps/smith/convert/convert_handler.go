@@ -27,7 +27,7 @@ var ErrBlocked = errors.New("the conversion is blocked; see the report")
 
 // Command is `smith convert`.
 func Command(version string) *cobra.Command {
-	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify, commit bool
+	var dryRun, asJSON, strict, skipInstall, allowDirty, verbose, yes, skipVerify, commit, questions bool
 	choices := convertchoices.Choices{Level: convertchoices.LevelConservative}
 	cmd := &cobra.Command{
 		Use:   "convert",
@@ -85,6 +85,18 @@ git undoes everything.`,
 				}
 			}()
 			out := cmd.OutOrStdout()
+			if questions {
+				// Read-only and about no folder: an editor draws the choices the terminal asks.
+				if !asJSON {
+					return problem.New("--questions prints the questions as data", "add --json")
+				}
+				raw, err := convertchoices.QuestionsJSON()
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(out, string(raw))
+				return nil
+			}
 			given := convertchoices.Given{
 				Lint: cmd.Flags().Changed("lint"), Test: cmd.Flags().Changed("test"),
 				Build: cmd.Flags().Changed("build"), CI: cmd.Flags().Changed("ci"),
@@ -228,7 +240,8 @@ git undoes everything.`,
 	}
 	f := cmd.Flags()
 	f.BoolVar(&dryRun, "dry-run", false, "report the plan without changing anything")
-	f.BoolVar(&asJSON, "json", false, "print the plan as JSON")
+	f.BoolVar(&asJSON, "json", false, "print the plan as JSON (with --questions, the questions)")
+	f.BoolVar(&questions, "questions", false, "print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json)")
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
 	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")

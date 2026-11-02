@@ -1,13 +1,11 @@
 package dev.monosmith.jetbrains.installtools
 
-import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
-import dev.monosmith.jetbrains.notice.NoticeClient
-import dev.monosmith.jetbrains.prompt.PromptClient
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
-import dev.monosmith.jetbrains.smithrun.SmithRunClient
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
+import dev.monosmith.jetbrains.smithrun.SmithRunContract
 import java.nio.file.Path
 
 /**
@@ -20,38 +18,53 @@ object InstallToolsUseCase {
     fun start(
         ide: Project,
         root: Path,
-    ) = BackgroundFlowClient.start(ide, "MonoSmith: install the tools") {
-        val planned = SmithRunClient.run(ide, root, listOf("tools", "install", "--dry-run", "--json"))
-        if (!planned.ok) return@start NoticeClient.warn(ide, "Nothing was installed. ${FailureTextMapper.describe(planned)}")
+    ) = BackgroundFlowClient.start(ide, "MonoSmith: install the tools") { run(IdePortsClient.of(ide, root)) }
+
+    /**
+     * Runs the flow with the given ports.
+     *
+     * @return true when the person was asked about at least one tool
+     */
+    fun run(ports: FlowPortsContract): Boolean {
+        val planned = ports.smith.run(listOf("tools", "install", "--dry-run", "--json"))
+        if (!planned.ok) {
+            ports.notice.warn("Nothing was installed. ${FailureTextMapper.describe(planned)}")
+            return false
+        }
         val plans =
             runCatching { ToolPlansJsonMapper.toPlans(planned.stdout) }
-                .getOrElse { return@start NoticeClient.warn(ide, "smith tools install printed something that is not a plan.") }
-        if (plans.isEmpty()) return@start NoticeClient.info(ide, "Every tool the workspace needs is installed.")
+                .getOrElse {
+                    ports.notice.warn("smith tools install printed something that is not a plan.")
+                    return false
+                }
+        if (plans.isEmpty()) {
+            ports.notice.info("Every tool the workspace needs is installed.")
+            return false
+        }
         val told = mutableListOf<String>()
         for (plan in plans) {
             val header = "${plan.title} is ${plan.state}. ${plan.why} Without it: ${plan.consequence}. The first answer is the default."
-            val way = PromptClient.pickOne(ide, "MonoSmith: get ${plan.title}", header, ToolRowsAlgorithm.wayRows(plan), "Do it") ?: break
-            told.add(carryOut(ide, root, plan, plan.options.first { it.value == way.name }))
+            val way = ports.prompt.pickOne("MonoSmith: get ${plan.title}", header, ToolRowsAlgorithm.wayRows(plan), "Do it") ?: break
+            told.add(carryOut(ports, plan, plan.options.first { it.value == way.name }))
         }
-        WorkspaceChangedStore.changed(ide)
-        if (told.isNotEmpty()) NoticeClient.info(ide, told.joinToString("\n"))
+        ports.changed()
+        if (told.isNotEmpty()) ports.notice.info(told.joinToString("\n"))
+        return told.isNotEmpty()
     }
 
     private fun carryOut(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
         plan: ToolPlanContract,
         option: ToolOptionContract,
     ): String =
         when (option.kind) {
             "page" -> {
-                PromptClient.onUi { BrowserUtil.browse(plan.download) }
+                ports.openUrl(plan.download)
                 "Opened ${plan.download}. Install ${plan.title}, then restart the IDE terminal."
             }
 
             "myself" -> {
-                PromptClient.plan(
-                    ide,
+                ports.prompt.plan(
                     "MonoSmith: install ${plan.title} yourself",
                     "Run one of these, then restart the IDE terminal.",
                     ToolRowsAlgorithm.commands(plan).joinToString("\n"),
@@ -66,13 +79,12 @@ object InstallToolsUseCase {
             }
 
             else -> {
-                install(ide, root, plan, option)
+                install(ports, plan, option)
             }
         }
 
     private fun install(
-        ide: Project,
-        root: Path,
+        ports: FlowPortsContract,
         plan: ToolPlanContract,
         option: ToolOptionContract,
     ): String {
@@ -81,25 +93,24 @@ object InstallToolsUseCase {
         if (option.admin) {
             val header = "$command needs administrator rights. smith never runs it without this second question."
             val answer =
-                PromptClient.pickOne(
-                    ide,
+                ports.prompt.pickOne(
                     "MonoSmith: ${plan.title} needs administrator rights",
                     header,
                     ToolRowsAlgorithm.adminRows(plan, option),
                     "Do it",
                 )
             return when (answer?.name) {
-                ToolRowsAlgorithm.RUN_IT -> report(plan, SmithRunClient.run(ide, root, args + "--with-admin", show = true))
+                ToolRowsAlgorithm.RUN_IT -> report(plan, ports.smith.run(args + "--with-admin", show = true))
                 ToolRowsAlgorithm.MYSELF -> "Run this yourself, then restart the IDE terminal: $command"
                 else -> "Skipped ${plan.title}: ${plan.consequence}."
             }
         }
-        return report(plan, SmithRunClient.run(ide, root, args, show = true))
+        return report(plan, ports.smith.run(args, show = true))
     }
 
     private fun report(
         plan: ToolPlanContract,
-        run: dev.monosmith.jetbrains.smithrun.SmithRunContract,
+        run: SmithRunContract,
     ): String =
         if (run.ok) "${plan.title} is installed." else "The install of ${plan.title} did not finish. ${FailureTextMapper.describe(run)}"
 }

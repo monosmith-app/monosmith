@@ -28,11 +28,20 @@ object EditSettingsUseCase {
         root: Path,
     ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root)) { CommitChangesUseCase.start(ide, root, it) } }
 
+    /** Starts the flow for one setting, such as `dependencies.one_version`, without the list: the questions start at its value. */
+    fun startOne(
+        ide: Project,
+        root: Path,
+        path: String,
+    ) = BackgroundFlowClient.start(ide, TITLE) { run(IdePortsClient.of(ide, root), path) { CommitChangesUseCase.start(ide, root, it) } }
+
     /**
+     * @param only the path of the one setting to edit, or null to pick from the list
      * @return true when a setting was changed
      */
     fun run(
         ports: FlowPortsContract,
+        only: String? = null,
         commitLater: (String) -> Unit,
     ): Boolean {
         val listed = ports.smith.run(listOf("config", "list", "--json"))
@@ -45,10 +54,13 @@ object EditSettingsUseCase {
                 ports.notice.warn("smith printed its settings in a form this plugin does not read. Update the plugin.")
                 return false
             }
-        val path =
-            ports.prompt.pickOne(TITLE, "Pick a setting. Type in the box to narrow the list.", SettingsJsonMapper.rows(settings))?.name
-                ?: return false
-        val setting = settings.first { it.path == path }
+        val picked = only ?: askSetting(ports, settings) ?: return false
+        val path = picked
+        val setting = settings.firstOrNull { it.path == path }
+        if (setting == null) {
+            ports.notice.warn("No setting was changed. This smith has no setting $path. Update smith.")
+            return false
+        }
         val words = SettingsJsonMapper.words(setting)
         val action =
             if (setting.set) {
@@ -119,4 +131,9 @@ object EditSettingsUseCase {
                 ) { if (it.isEmpty()) "Type a value." else null }
             }
         }
+
+    private fun askSetting(
+        ports: FlowPortsContract,
+        settings: List<SettingContract>,
+    ): String? = ports.prompt.pickOne(TITLE, "Pick a setting. Type in the box to narrow the list.", SettingsJsonMapper.rows(settings))?.name
 }

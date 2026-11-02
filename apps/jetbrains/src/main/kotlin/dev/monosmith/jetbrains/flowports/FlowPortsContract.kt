@@ -72,10 +72,12 @@ interface NoticePort {
  * the IDE and in a unit test.
  *
  * @property changed tells the views that the workspace changed
+ * @property openUrl opens a web page in the browser of the person
  */
 data class FlowPortsContract(
     val smith: SmithPort,
     val prompt: PromptPort,
     val notice: NoticePort,
     val changed: () -> Unit = {},
+    val openUrl: (String) -> Unit = {},
 )

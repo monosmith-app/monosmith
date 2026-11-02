@@ -97,4 +97,24 @@ class EditSettingsTest {
         assertFalse(EditSettingsUseCase.run(fake.ports) {})
         assertEquals(0, fake.changedCount)
     }
+
+    @Test
+    fun theOneVersionSettingIsEditedDirectlyWithoutThePickFromTheList() {
+        fake.answers["config list --json"] =
+            fake.ok("""[{"path":"dependencies.one_version","type":"boolean","description":"One version.","value":"false","set":true}]""")
+        fake.ones.addAll(listOf("change", "true"))
+        fake.plans.add(fake.yes())
+        assertTrue(EditSettingsUseCase.run(fake.ports, "dependencies.one_version") {})
+        assertEquals(listOf("false", "true"), fake.rowsSeen.last().map { it.name })
+        assertEquals("smith config set dependencies.one_version true", fake.plansSeen.single())
+        assertEquals(listOf("config", "set", "dependencies.one_version", "true"), fake.calls.last())
+        assertEquals(2, fake.rowsSeen.size)
+    }
+
+    @Test
+    fun aSmithWithoutThatSettingIsAWarningAndChangesNothing() {
+        assertFalse(EditSettingsUseCase.run(fake.ports, "dependencies.one_version") {})
+        assertEquals("No setting was changed. This smith has no setting dependencies.one_version. Update smith.", fake.warnings.single())
+        assertEquals(0, fake.changedCount)
+    }
 }
