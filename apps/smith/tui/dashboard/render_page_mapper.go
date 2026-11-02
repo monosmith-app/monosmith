@@ -50,7 +50,7 @@ func headline(th theme.Theme, f Facts) string {
 	case f.CheckErr != "":
 		return th.Failure(th.Icons.Failed + " doctor could not run")
 	case !f.Checked:
-		return th.Muted(progress.Waiting("Running the health checks on every project…", f.Waited))
+		return th.Muted(progress.Waiting("Running the health checks on "+progress.OfProjects(f.Projects)+"…", f.Waited))
 	case f.Failed > 0:
 		return th.Failure(th.Icons.Failed+" "+count(f.Failed, "check fails", "checks fail")) + warnTail(th, f)
 	case f.Warnings > 0:

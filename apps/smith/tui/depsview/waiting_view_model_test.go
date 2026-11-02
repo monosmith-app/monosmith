@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+func TestWaitingForTheRegistriesSaysHowManyProjectsItAsksAbout(t *testing.T) {
+	got := strings.Join(render(Model{Projects: 23, Waited: 12 * time.Second}, 120, 20), "\n")
+	if !strings.Contains(got, "newer releases of every dependency of the 23 projects. 12s") {
+		t.Fatalf("no project count:\n%s", got)
+	}
+}
+
 func TestWaitingForTheRegistriesShowsHowLongItHasTaken(t *testing.T) {
 	got := strings.Join(render(Model{Waited: 12 * time.Second}, 100, 20), "\n")
 	if !strings.Contains(got, "newer releases of every dependency. 12s") {
