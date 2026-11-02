@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.commitchanges
 
-import dev.monosmith.jetbrains.flowports.FakePortsHarness
+import dev.monosmith.jetbrains.flowports.testing.FakePortsHarness
 import dev.monosmith.jetbrains.prompt.PlanAnswerContract
 import kotlin.test.Test
 import kotlin.test.assertEquals

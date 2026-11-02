@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.runacross
 
-import dev.monosmith.jetbrains.flowports.FakePortsHarness
+import dev.monosmith.jetbrains.flowports.testing.FakePortsHarness
 import dev.monosmith.jetbrains.workspace.AffectedJsonMapper
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
 import kotlin.test.Test

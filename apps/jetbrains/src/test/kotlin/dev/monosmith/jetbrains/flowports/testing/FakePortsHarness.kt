@@ -1,5 +1,9 @@
-package dev.monosmith.jetbrains.flowports
+package dev.monosmith.jetbrains.flowports.testing
 
+import dev.monosmith.jetbrains.flowports.FlowPortsContract
+import dev.monosmith.jetbrains.flowports.NoticePort
+import dev.monosmith.jetbrains.flowports.PromptPort
+import dev.monosmith.jetbrains.flowports.SmithPort
 import dev.monosmith.jetbrains.notice.NoticeButtonContract
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 import dev.monosmith.jetbrains.prompt.PlanAnswerContract

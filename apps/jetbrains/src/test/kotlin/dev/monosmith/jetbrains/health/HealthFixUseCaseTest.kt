@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.health
 
-import dev.monosmith.jetbrains.flowports.FakePortsHarness
+import dev.monosmith.jetbrains.flowports.testing.FakePortsHarness
 import dev.monosmith.jetbrains.smithrun.SmithRunContract
 import kotlin.test.Test
 import kotlin.test.assertEquals

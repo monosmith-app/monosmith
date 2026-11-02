@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.pipelinetemplate
 
-import dev.monosmith.jetbrains.flowports.FakePortsHarness
+import dev.monosmith.jetbrains.flowports.testing.FakePortsHarness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

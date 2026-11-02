@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.workspacereport
 
-import dev.monosmith.jetbrains.flowports.FakePortsHarness
+import dev.monosmith.jetbrains.flowports.testing.FakePortsHarness
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
