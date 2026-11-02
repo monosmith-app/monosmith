@@ -284,6 +284,26 @@ environment variables you name, and `smith ci check` lists what to create as
 secrets. The full format is in
 [configuration](../reference/configuration.md#private-registries).
 
+## A release stops with `TLOG_CREATE_ENTRY_ERROR`
+
+npm signs a package with a provenance attestation and writes it to a public transparency log
+before the registry stores the package. If a publish stops between the two steps (a killed job, a
+network error), the attestation exists and the package does not. A second publish of the same
+version fails with `TLOG_CREATE_ENTRY_ERROR` and "(409) an equivalent entry already exists in the
+transparency log", because the same attestation cannot be written twice. That version cannot be
+published with provenance any more.
+
+The way out is the next version of the project. Add an empty commit that names it and push it:
+
+```sh
+git commit --allow-empty -m "version(smith)[2.0.0-beta.27]"
+git push
+```
+
+Replace `smith` with the project and the version with the one after the stuck one. The release
+that follows publishes new packages with new attestations. smith prints this advice when it sees the
+error.
+
 ## smith says a platform package is not installed
 
 `smith` is an npm launcher. It runs the binary of the package for your system, for example

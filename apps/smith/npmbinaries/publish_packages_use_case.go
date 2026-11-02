@@ -405,6 +405,9 @@ func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	}
 	_, stderr, err := npm(dir, args...)
 	if err != nil {
+		if strings.Contains(stderr, "TLOG_CREATE_ENTRY_ERROR") {
+			return false, fmt.Errorf("npm publish %s: %s\n%s", name, tlogConflictAdvice, strings.TrimSpace(stderr))
+		}
 		return false, fmt.Errorf("npm publish %s: %w\n%s", name, err, strings.TrimSpace(stderr))
 	}
 	for i := 0; i < readBackChecks; i++ {
@@ -417,3 +420,9 @@ func publishOne(dir, name string, r Release, tag string) (bool, error) {
 	}
 	return true, nil
 }
+
+// tlogConflictAdvice explains the provenance conflict npm reports when an
+// earlier publish of the same package stopped after its attestation was
+// written to the transparency log and before the registry stored the package:
+// the attestation cannot be written twice, so this version is lost for good.
+const tlogConflictAdvice = "the transparency log already holds the provenance attestation of this exact package, but the registry never stored it (an earlier publish stopped between the two steps). This version can no longer be published with provenance. Release the next version of the project: git commit --allow-empty -m \"version(<project>)[<next version>]\" and push it"
