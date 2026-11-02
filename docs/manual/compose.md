@@ -102,6 +102,11 @@ smith: smith compose is a screen and needs a terminal. To read the catalogue wit
 }
 ```
 
+The output also has `outcomes`: the answers to "What are you building?" (`web`, `api`, `function`, `desktop`,
+`library`, `package`), from the whole catalogue whatever `--search` or `--lang` say. Each has `id`, `title`, `kind`
+(app, lib or package), `languages`, `words`, `typical` and the `items` of its layer. The TUI and the editors list them
+as the first question of an add.
+
 With `--with`, the output also has `check` and `plan`:
 
 | Member | Meaning |

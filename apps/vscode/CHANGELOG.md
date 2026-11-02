@@ -5,6 +5,13 @@ the first release everything below is under Unreleased.
 
 ## Unreleased
 
+### Fixed
+
+- Add project: the first question lists what smith lists (`outcomes` of `smith compose --json`), so "A website or web app" and "A desktop app" are there; the extension keeps no list of its own.
+- Add project: typing `react`, `tauri` or `electron` in that question finds the website or the desktop app, as in the TUI; a search with no match shows a "No result" row with the closest answers.
+- Add project: "Compose a stack" opens the composer after the add ends, and the Output channel says nothing was added, not "cancelled".
+- Add project: the language question of a function app names each language ("C# / .NET") with its clouds, and lists every language smith can generate.
+
 ### Added
 
 - New Recipe: input boxes for the name, version and parent, then a pick list or tick boxes for each level of `smith recipe new --list-levels --json`, and the exact command and file before it writes.

@@ -887,7 +887,12 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ask:     async (options) => await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? []),
       confirm: confirmAddPlan,
     })
-    note(`MonoSmith: add in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    note(`MonoSmith: add in ${state.name}: ${outcome.kind === 'composing' ? 'you chose Compose a stack; nothing was added here' : outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    if (outcome.kind === 'composing') {
+      await vscode.commands.executeCommand('monosmith.composeStack', argument)
+
+      return
+    }
     tellAddOutcome(outcome, note, {
       commit: async (operation) => {
         const scope = await askCommitScope(operation)

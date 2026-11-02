@@ -1,3 +1,5 @@
+import type { LanguageInfo, OutcomeOption } from './add-outcomes.mapper.ts'
+
 /** One thing `smith add <kind>` accepts, as `smith kinds --json` lists it. */
 export interface KindOption {
   /** The combined kind, such as `node-app` or `go-lib`. */
@@ -43,9 +45,13 @@ export interface StackOption {
 
 /** Everything the questions offer. */
 export interface AddOptions {
-  kinds:   KindOption[]
-  choices: ChoiceOption[]
-  stacks:  StackOption[]
+  kinds:     KindOption[]
+  choices:   ChoiceOption[]
+  stacks:    StackOption[]
+  /** What a person can build, as `smith compose --json` lists it (the list of the terminal screen). */
+  outcomes:  OutcomeOption[]
+  /** The languages with the names a person knows them by. */
+  languages: LanguageInfo[]
 }
 
 /** What the person asked to add. */
@@ -92,4 +98,5 @@ export type AddOutcome =
   | { kind: 'added', name: string, role: string, operation: string, lines: string[], committed: boolean } |
   { kind: 'unchecked', name: string, tool: MissingTool, lines: string[] } |
   { kind: 'refused', message: string } |
+  { kind: 'composing' } |
   { kind: 'cancelled' }
