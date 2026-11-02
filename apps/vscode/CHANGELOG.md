@@ -7,6 +7,7 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- New Recipe: input boxes for the name, version and parent, then a pick list or tick boxes for each level of `smith recipe new --list-levels --json`, and the exact command and file before it writes.
 - Swap a Choice of a Project: quick picks for the project, the decision and the answer, the plan of `smith swap --dry-run` first, then the swap with an optional commit.
 - Show Divergences from the Defaults lists what `smith divergences` finds.
 - Why asks about a setting of smith.toml (`smith why <setting>`): what it does, its value and the reason of its default.

@@ -333,6 +333,12 @@
         "icon": "$(arrow-swap)"
       },
       {
+        "command": "monosmith.newRecipe",
+        "title": "New Recipe…",
+        "category": "MonoSmith",
+        "icon": "$(book)"
+      },
+      {
         "command": "monosmith.divergences",
         "title": "Show Divergences from the Defaults",
         "category": "MonoSmith",
@@ -719,6 +725,10 @@
         },
         {
           "command": "monosmith.swap",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.newRecipe",
           "when": "monosmith.state == ready"
         },
         {

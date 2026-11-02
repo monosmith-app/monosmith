@@ -19,6 +19,7 @@ import { confirmLauncher, tellLauncherOutcome, writeLauncher } from './bootstrap
 import { chooseToolAdmin, chooseToolWay, installTools, openToolPage, showToolCommands, tellToolsOutcome } from './install-tools/index.ts'
 import { askTryCommand, offerTryApply, tellTryOutcome, tryCommand } from './try-command/index.ts'
 import { describeFailure } from './smith-run/index.ts'
+import { askRecipeBasics, confirmRecipe, newRecipe, pickLevel, tellRecipeOutcome } from './new-recipe/index.ts'
 import { askSwapRequest, confirmSwapPlan, swapChoice, tellSwapOutcome } from './swap-choice/index.ts'
 import { confirmUndo, tellUndoOutcome, undoLastChange } from './undo-change/index.ts'
 import { reportFile, writeReport } from './workspace-report/index.ts'
@@ -1045,6 +1046,23 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     if (outcome.kind === 'swapped') await refreshFolder(state.root, 'full', false)
   }
 
+  /** Asks the name, then a pick list or tick boxes for each level, shows the `smith recipe new` command and the file, and writes on a yes. */
+  const newRecipeHere = async (argument: unknown): Promise<void> => {
+    const state = await folderFor(argument)
+    if (state?.location === undefined || !mayWrite('writing a recipe')) return
+    output.show(true)
+    const outcome = await newRecipe({
+      run:       smithIn(state),
+      apply:     smithIn(state, true),
+      askBasics: askRecipeBasics,
+      pick:      pickLevel,
+      confirm:   confirmRecipe,
+    })
+    note(`MonoSmith: recipe in ${state.name}: ${outcome.kind}${outcome.kind === 'refused' ? ` (${outcome.message})` : ''}`)
+    tellRecipeOutcome(outcome, state.root, note)
+    if (outcome.kind === 'written') await refreshFolder(state.root, 'full', false)
+  }
+
   /** Lists where the workspace chose differently from smith's defaults (`smith divergences`), with the reason and the way back. */
   const showDivergences = async (argument: unknown): Promise<void> => {
     const state = await folderFor(argument)
@@ -1235,6 +1253,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.addDependency', addDependencyHere),
     command<unknown>('monosmith.undo', undoHere),
     command<unknown>('monosmith.swap', swapHere),
+    command<unknown>('monosmith.newRecipe', newRecipeHere),
     command<unknown>('monosmith.divergences', showDivergences),
     command<unknown>('monosmith.try', tryHere),
     command<unknown>('monosmith.bootstrap', bootstrapHere),
