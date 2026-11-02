@@ -30,12 +30,15 @@ var linuxLibs = []string{"webkit2gtk-4.1", "gtk+-3.0", "librsvg-2.0"}
 func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	findings := []protocol.Finding{}
 	var roots []string
-	cli, apps := exists(workspaceRoot, "node_modules/@tauri-apps/cli/package.json"), 0
+	cli, apps, firstApp := exists(workspaceRoot, "node_modules/@tauri-apps/cli/package.json"), 0, ""
 	for _, p := range params.Projects {
 		if !tauriapp.Detect(workspaceRoot, p.Root) {
 			continue
 		}
 		apps++
+		if firstApp == "" {
+			firstApp = p.Name
+		}
 		roots = append(roots, p.Root)
 		cli = cli || exists(workspaceRoot, p.Root+"/node_modules/@tauri-apps/cli/package.json")
 	}
@@ -48,6 +51,13 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	findings = append(findings, versionsync.Findings(workspaceRoot, params.Projects)...)
 	_, rustc := lookPath("rustc")
 	_, cargo := lookPath("cargo")
+	var cliFix *protocol.Fix
+	if !cli && firstApp != "" {
+		cliFix = &protocol.Fix{Description: "Add the tauri CLI to " + firstApp, Steps: []protocol.FixStep{{
+			Description: "smith install adds @tauri-apps/cli to the development dependencies of " + firstApp,
+			Argv:        []string{"smith", "install", "-w", firstApp, "-D", "@tauri-apps/cli", "--yes"},
+		}}}
+	}
 	findings = append(findings,
 		protocol.Finding{
 			Check:  "the Rust toolchain is installed",
@@ -60,6 +70,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			OK:     cli,
 			Detail: "node_modules has no @tauri-apps/cli",
 			Remedy: "smith install -D @tauri-apps/cli in the project, then npm ci",
+			Fix:    cliFix,
 		})
 	if platform == "linux" {
 		missing := linuxLibs

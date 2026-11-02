@@ -202,22 +202,27 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
       continue
     }
     const defaults = axis.choices.filter((choice) => choice.isDefault).map((choice) => choice.name)
+    const entries = axis.choices.map((choice) => ({
+      label:       choice.name,
+      description: `${choice.isDefault ? '(default) ' : ''}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
+      detail:      choice.description,
+      picked:      choice.isDefault || preset.includes(choice.name),
+    }))
+    const hint = whatIs(axis.axis)
+    if (axis.many) {
+      const answer = await vscode.window.showQuickPick(entries, { title: `${TITLE}: ${axis.axis}`, placeHolder: `${hint} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : 'Tick any, or Escape to cancel'}`.trim(), canPickMany: true })
+      if (answer === undefined) return undefined
+      picked.push(...answer.map((item) => item.label))
+      continue
+    }
+    // A single-choice axis is a radio list: one answer, so two cannot be ticked.
+    const none = { label: '$(close) None', description: 'leave this out', detail: '' }
     const answer = await vscode.window.showQuickPick(
-      axis.choices.map((choice) => ({
-        label:       choice.name,
-        description: `${choice.isDefault ? '(default) ' : ''}${choice.requires.length > 0 ? `needs ${choice.requires.join(', ')}` : ''}`.trim(),
-        detail:      choice.description,
-        picked:      choice.isDefault || preset.includes(choice.name),
-      })),
-      { title: `${TITLE}: ${axis.axis}`, placeHolder: `${whatIs(axis.axis)} ${defaults.length > 0 ? `Enter keeps the default (${defaults.join(', ')})` : `Choose ${axis.axis}, or Escape to cancel`}`.trim(), canPickMany: true },
+      [...entries.map(({ label, description, detail }) => ({ label, description, detail })), ...(defaults.length > 0 ? [] : [none])],
+      { title: `${TITLE}: ${axis.axis} (one)`, placeHolder: `${hint} ${axis.axis} takes one choice.`.trim() },
     )
     if (answer === undefined) return undefined
-    if (!axis.many && answer.length > 1) {
-      void vscode.window.showWarningMessage(`MonoSmith: ${axis.axis} takes one choice; smith will refuse more. Pick one and run Add project again.`)
-
-      return undefined
-    }
-    picked.push(...answer.map((item) => item.label))
+    if (answer !== none) picked.push(answer.label)
   }
 
   return { with: picked }

@@ -175,36 +175,6 @@ export function pickLabels (item: ComposeItem): { label: string, description: st
   }
 }
 
-/** The group of items of which only one can be ticked, or undefined for an item that has no such group. Read from the catalogue's axis, never from names. */
-function exclusiveGroup (item: ComposeItem): string | undefined {
-  if (item.kind === 'language') return 'language'
-
-  return item.kind === 'choice' && item.axis !== '' && !item.many ? `${item.language}/${item.axis}` : undefined
-}
-
-/**
- * Makes the single-choice axes behave like radio buttons: when a tick joins an
- * axis that takes one choice, the older tick of that axis goes off.
- * @param items - the catalogue
- * @param before - the ids ticked before the change
- * @param after - the ids ticked after it
- * @returns the ids to keep ticked, in the order of `after`
- */
-export function radioTicks (items: readonly ComposeItem[], before: readonly string[], after: readonly string[]): string[] {
-  const group = (id: string): string | undefined => {
-    const item = items.find((candidate) => candidate.id === id)
-
-    return item === undefined ? undefined : exclusiveGroup(item)
-  }
-  const added = after.filter((id) => !before.includes(id))
-
-  return after.filter((id) => {
-    const mine = group(id)
-
-    return mine === undefined || added.includes(id) || added.every((other) => other === id || group(other) !== mine)
-  })
-}
-
 /**
  * The titles of the ticked items, in catalogue order, to show what is chosen
  * when a search hides the rows.
@@ -228,4 +198,37 @@ export function stackSummary (items: readonly ComposeItem[], language: string, p
   const lang = items.find((item) => item.kind === 'language' && item.name === language)?.title ?? language
 
   return `${titles.join(' + ')}${lang === '' ? '' : ` (${lang})`}`
+}
+
+/**
+ * Keeps one pick per single-choice axis, like radio buttons: a choice ticked in
+ * this round takes the place of a choice ticked before on the same axis and
+ * language, unless both allow several. The catalogue decides the axes; no name
+ * is known here.
+ * @param items - the catalogue
+ * @param previous - the ids ticked before this round
+ * @param chosen - the ids ticked now
+ * @returns the ids to keep, and a one-line note naming what was replaced (empty when nothing was)
+ */
+export function settleRivals (items: readonly ComposeItem[], previous: readonly string[], chosen: readonly string[]): { ids: string[], note: string } {
+  const byId = new Map(items.map((item) => [item.id, item]))
+  const fresh = chosen.filter((id) => !previous.includes(id))
+  const dropped = new Set<string>()
+  const notes: string[] = []
+  for (const id of fresh) {
+    const pick = byId.get(id)
+    const isLanguage = pick?.kind === 'language'
+    if (pick === undefined || (!isLanguage && (pick.kind !== 'choice' || pick.axis === ''))) continue
+    const rivals = chosen.filter((other) => {
+      const item = byId.get(other)
+      const later = fresh.slice(fresh.indexOf(id) + 1).includes(other)
+      if (other === id || later || item === undefined || dropped.has(other)) return false
+
+      return isLanguage ? item.kind === 'language' : item.kind === 'choice' && item.axis === pick.axis && item.language === pick.language && !(item.many && pick.many)
+    })
+    for (const rival of rivals) dropped.add(rival)
+    if (rivals.length > 0) notes.push(`${pick.title} replaces ${rivals.map((other) => byId.get(other)?.title ?? other).join(' and ')}: a project has one ${isLanguage ? 'language' : pick.axis}.`)
+  }
+
+  return { ids: chosen.filter((id) => !dropped.has(id)), note: notes.join(' ') }
 }

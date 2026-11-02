@@ -51,6 +51,9 @@ type Config struct {
 	Commands []clicontract.CommandDescription
 	// Sources load the views; nil outside a workspace.
 	Sources *sources.Sources
+	// Outside lets a shell that is not in a workspace run smith new and smith
+	// convert in place (see sources.OutsideSources); nil runs them in the terminal.
+	Outside *sources.Sources
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// Adopt reads the folder for the adopt wizard; nil outside a folder to adopt.
@@ -192,6 +195,8 @@ type Shell struct {
 	reopenStart, startWith []string
 	// reopenNote is the toast the reopened shell starts with.
 	reopenNote string
+	// reopenDir is the folder the reopened shell opens in; empty is this one.
+	reopenDir string
 	toast      toast.Toast
 	// hint replaces the command in the status bar for hintTicks ticks.
 	hint      string
@@ -261,6 +266,9 @@ func NewShell(cfg Config) Shell {
 	} else {
 		sh.tab = commands.TabGuide
 		sh.emptyFolder = cfg.EmptyFolder
+		if cfg.Outside != nil {
+			sh.sources = *cfg.Outside
+		}
 	}
 	if r := cfg.Resume; r != nil && cfg.Sources == nil {
 		sh.guide, _ = sh.guide.Resume(r.Form, r.Answers, r.Problem)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ComposeItem } from './compose-stack.contract.ts'
-import { composeArguments, describePlan, parseReport, pickLabels, radioTicks, stackSummary, tickedTitles, toolsToInstall } from './compose-report.mapper.ts'
+import { composeArguments, describePlan, parseReport, pickLabels, settleRivals, stackSummary, tickedTitles, toolsToInstall } from './compose-report.mapper.ts'
 
 const catalogue = JSON.stringify({
   layers: [{ id: 'shell', title: 'Desktop shell', about: 'a program you install' }],
@@ -90,7 +90,7 @@ describe('parseReport plan tools', () => {
 })
 
 const row = (id: string, over: Partial<ComposeItem> = {}): ComposeItem => ({ id, kind: 'choice', name: id.split('/', 2)[1] ?? id, title: id, description: '', aliases: [], layer: 'framework', axis: 'framework', many: false, language: 'node', suggested: false, isDefault: false, problem: '', route: '', ...over })
-const items = [
+const catalogueItems = [
   row('node/react', { title: 'React' }),
   row('node/electron', { title: 'Electron', layer: 'shell' }),
   row('node/vitest', { title: 'Vitest', layer: 'test', axis: 'test' }),
@@ -100,32 +100,39 @@ const items = [
   row('python', { kind: 'language', name: 'python', title: 'Python', axis: '', language: '', layer: 'language' }),
 ]
 
-describe('radioTicks', () => {
-  it('unticks the older choice of an axis that takes one, by the axis of the catalogue and not by a name', () => {
-    expect(radioTicks(items, ['node/react'], ['node/react', 'node/electron'])).toEqual(['node/electron'])
-  })
-
-  it('keeps several choices on an axis that takes many', () => {
-    expect(radioTicks(items, ['node/eslint'], ['node/eslint', 'node/prettier'])).toEqual(['node/eslint', 'node/prettier'])
-  })
-
-  it('keeps choices of other axes, and unticking is not undone', () => {
-    expect(radioTicks(items, ['node/react', 'node/vitest'], ['node/react', 'node/vitest', 'node/electron'])).toEqual(['node/vitest', 'node/electron'])
-    expect(radioTicks(items, ['node/react', 'node/vitest'], ['node/vitest'])).toEqual(['node/vitest'])
-  })
-
-  it('lets one language be ticked at a time', () => {
-    expect(radioTicks(items, ['node'], ['node', 'python'])).toEqual(['python'])
-  })
-})
-
 describe('tickedTitles and stackSummary', () => {
   it('names what is ticked, so a search that hides the rows hides nothing', () => {
-    expect(tickedTitles(items, ['node/electron', 'node/react'])).toBe('React, Electron')
-    expect(tickedTitles(items, [])).toBe('')
+    expect(tickedTitles(catalogueItems, ['node/electron', 'node/react'])).toBe('React, Electron')
+    expect(tickedTitles(catalogueItems, [])).toBe('')
   })
 
   it('names the stack with its language', () => {
-    expect(stackSummary(items, 'node', ['react', 'vitest'])).toBe('React + Vitest (TypeScript / JavaScript)')
+    expect(stackSummary(catalogueItems, 'node', ['react', 'vitest'])).toBe('React + Vitest (TypeScript / JavaScript)')
+  })
+})
+
+const item = (name: string, axis: string, many = false): ComposeItem => ({ id: `node/${name}`, kind: 'choice', name, title: name, description: '', aliases: [], layer: axis, axis, many, language: 'node', suggested: false, isDefault: false, problem: '', route: '' })
+
+describe('settleRivals', () => {
+  const items = [item('react', 'framework'), item('electron', 'framework'), item('tauri', 'shell'), item('vitest', 'test', true), item('jest', 'test', true)]
+
+  it('lets the new pick take the place of the one before on a single-choice axis', () => {
+    const settled = settleRivals(items, ['node/react', 'node/tauri'], ['node/react', 'node/tauri', 'node/electron'])
+    expect(settled.ids).toEqual(['node/tauri', 'node/electron'])
+    expect(settled.note).toBe('electron replaces react: a project has one framework.')
+  })
+
+  it('keeps picks on other axes and on an axis that takes several', () => {
+    const settled = settleRivals(items, ['node/vitest'], ['node/vitest', 'node/jest', 'node/tauri'])
+    expect(settled.ids).toEqual(['node/vitest', 'node/jest', 'node/tauri'])
+    expect(settled.note).toBe('')
+  })
+
+  it('lets one language be ticked at a time', () => {
+    expect(settleRivals(catalogueItems, ['node'], ['node', 'python']).ids).toEqual(['python'])
+  })
+
+  it('keeps the later one when two rivals are ticked in the same round', () => {
+    expect(settleRivals(items, [], ['node/react', 'node/electron']).ids).toEqual(['node/electron'])
   })
 })

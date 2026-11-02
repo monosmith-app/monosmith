@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { checkProjectName, tellDoctorFailure, type DoctorFailureFollowUp } from '../add-project/index.ts'
-import { pickLabels, radioTicks, tickedTitles } from './compose-report.mapper.ts'
+import { pickLabels, settleRivals, tickedTitles } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion } from './compose-stack.contract.ts'
 
 const TITLE = 'MonoSmith: Compose a stack'
@@ -52,7 +52,7 @@ export async function pickItems (items: readonly ComposeItem[], ticked: readonly
     pick.onDidChangeSelection((selection) => {
       if (updating) return
       const wanted = selection.map((entry) => entry.id).filter((id): id is string => id !== undefined)
-      const next = radioTicks(items, current, wanted)
+      const next = settleRivals(items, current, wanted).ids
       const changed = next.length !== wanted.length
       current = next
       if (changed) {

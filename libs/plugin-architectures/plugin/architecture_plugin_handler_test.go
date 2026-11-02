@@ -80,6 +80,9 @@ func TestDoctorWarnsAboutAProjectWithNoLayerFolders(t *testing.T) {
 	if f.OK || !f.Warning || !strings.Contains(f.Detail, "tool") || strings.Contains(f.Detail, "app,") || f.Remedy == "" {
 		t.Fatalf("%+v", f)
 	}
+	if f.Fix == nil || f.Fix.Safe || len(f.Fix.Steps) != 1 || strings.Join(f.Fix.Steps[0].Argv, " ") != "smith architecture none" {
+		t.Fatalf("the remedy names smith architecture none, so the fix runs it: %+v", f.Fix)
+	}
 	res, _ = a.Doctor(protocol.DoctorParams{Projects: []protocol.Project{{Name: "app", Root: "app", Language: "go"}}})
 	if !res.Findings[0].OK {
 		t.Fatalf("%+v", res.Findings[0])

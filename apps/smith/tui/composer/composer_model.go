@@ -200,7 +200,20 @@ func (m Model) tick(it compose.Item) Model {
 		if i := slices.IndexFunc(m.ticked, func(t compose.Item) bool { return t.ID == it.ID }); i >= 0 {
 			m.ticked = slices.Delete(slices.Clone(m.ticked), i, i+1)
 		} else {
-			m.ticked = append(slices.Clone(m.ticked), it)
+			// A single-choice axis acts like radio buttons: the new pick takes
+			// the place of the one before, and the note says so.
+			rivals := compose.Rivals(m.ticked, it)
+			kept := slices.DeleteFunc(slices.Clone(m.ticked), func(t compose.Item) bool {
+				return slices.ContainsFunc(rivals, func(r compose.Item) bool { return r.ID == t.ID })
+			})
+			m.ticked = append(kept, it)
+			if len(rivals) > 0 {
+				names := make([]string, len(rivals))
+				for i, r := range rivals {
+					names[i] = r.Title
+				}
+				m.note = it.Title + " replaces " + strings.Join(names, " and ") + ": a project has one " + it.Axis + ". Untick " + it.Title + " to get " + names[0] + " back."
+			}
 		}
 	}
 	m = m.refresh()

@@ -125,6 +125,24 @@ describe('composeStack', () => {
     expect(f.applied).toHaveLength(1)
   })
 
+  it('swaps a second pick on a single-choice axis for the first one and says so, without a conflict', async () => {
+    const withAxis = ITEMS.map((item) => item.kind === 'choice' && (item.name === 'react' || item.name === 'electron') ? { ...item, axis: 'framework' } : item)
+    const base = smith({ electron: COMPLETE, react: { language: 'node', complete: false, missing: 'tick a shell' } })
+    const f = deps({
+      picks: [['node/react'], ['node/react', 'node/electron']],
+      run:   async (args) => {
+        const run = await base(args)
+
+        return run.stdout.includes('"items"') ? ok({ ...JSON.parse(run.stdout) as object, items: withAxis }) : run
+      },
+    })
+    const outcome = await composeStack(f.deps)
+    expect(f.told.join(' ')).toContain('Electron replaces React')
+    expect(f.messages.join(' ')).not.toContain('Conflict')
+    expect(outcome.kind).toBe('added')
+    expect(f.applied[0]).toContain('electron,eslint,vitest')
+  })
+
   it('asks an open question and ticks the answer the person gave, not the suggested one by itself', async () => {
     const question = { language: 'node', complete: false, question: { choice: 'azure-functions', axis: 'trigger', options: [{ name: 'http-trigger', suggested: true }] } }
     const f = deps({

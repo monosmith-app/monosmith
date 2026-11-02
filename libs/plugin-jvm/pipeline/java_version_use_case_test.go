@@ -20,3 +20,13 @@ func TestJavaVersionFinding(t *testing.T) {
 		}
 	}
 }
+
+func TestAJdkOlderThanCIHasASmithFixThatPinsAndRegenerates(t *testing.T) {
+	f, _ := javaVersionFinding("openjdk version \"17.0.9\" 2023-10-17\n", "21")
+	if f.Fix == nil || f.Fix.Safe || len(f.Fix.Files) != 1 || f.Fix.Files[0].Path != ".java-version" || f.Fix.Files[0].Content != "17\n" {
+		t.Fatalf("%+v", f.Fix)
+	}
+	if len(f.Fix.Steps) != 1 || f.Fix.Steps[0].Argv[0] != "smith" || f.Fix.Steps[0].Argv[1] != "ci" {
+		t.Fatalf("the step runs smith: %+v", f.Fix.Steps)
+	}
+}

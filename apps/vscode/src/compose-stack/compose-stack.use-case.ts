@@ -1,5 +1,5 @@
 import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run/index.ts'
-import { composeArguments, describePlan, parseReport, stackSummary, toolsToInstall } from './compose-report.mapper.ts'
+import { composeArguments, describePlan, parseReport, settleRivals, stackSummary, toolsToInstall } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposePlan, ComposeQuestion, ComposeReport } from './compose-stack.contract.ts'
 
 /** What composing a stack needs from the editor. */
@@ -64,12 +64,14 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
   for (;;) {
     const chosen = await deps.pick(first.items, ticked, message)
     if (chosen === undefined || chosen.length === 0) return { kind: 'cancelled' }
-    ticked = chosen
+    const settled = settleRivals(first.items, ticked, chosen)
+    ticked = settled.ids
+    const say = (text: string): string => [settled.note, text].filter((part) => part !== '').join(' ')
     const { picks, language, plugins } = split(first.items, ticked)
     for (const plugin of plugins) deps.tell(`${plugin.title} is not part of one project. Turn it on with: ${plugin.route}`)
     ticked = ticked.filter((id) => plugins.every((plugin) => plugin.id !== id))
     if (picks.length === 0) {
-      message = 'Tick the choice that writes the project too: a framework, a desktop shell or a cloud host.'
+      message = say('Tick the choice that writes the project too: a framework, a desktop shell or a cloud host.')
       continue
     }
 
@@ -78,21 +80,22 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
     const check = checked.check
     if (check === undefined) return { kind: 'refused', message: 'smith did not check the selection. Update smith, or run smith compose in a terminal.' }
     if (check.conflict !== '') {
-      message = `Conflict: ${check.conflict}`
+      message = say(`Conflict: ${check.conflict}`)
       continue
     }
     if (check.question !== undefined) {
       const option = await deps.answer(check.question)
       const asked = option === undefined ? undefined : first.items.find((item) => item.kind === 'choice' && item.name === option.name && item.language === check.language)
       if (asked !== undefined) ticked = [...ticked, asked.id]
-      message = asked === undefined ? `${check.question.choice} still needs a choice on the ${check.question.axis} axis.` : ''
+      message = say(asked === undefined ? `${check.question.choice} still needs a choice on the ${check.question.axis} axis.` : '')
       continue
     }
     if (!check.complete) {
-      message = check.missing
+      message = say(check.missing)
       continue
     }
 
+    if (settled.note !== '') deps.tell(settled.note)
     // The name comes before the plan because the files of the plan depend on it (apps/<name>/).
     const name = await deps.askName(stackSummary(first.items, check.language, picks))
     if (name === undefined) return { kind: 'cancelled' }

@@ -23,6 +23,9 @@ type ChoiceOffer struct {
 	Layer    string `json:"layer"`
 	Language string `json:"language"`
 	Default  bool   `json:"default"`
+	// Many lets the choice sit next to other choices of its axis that are Many
+	// too; any other axis takes one choice.
+	Many bool `json:"many"`
 	// Suggested marks the answer a question pre-selects; Needs are the axes the
 	// choice needs an answer on (a function host needs a trigger and a runtime).
 	Suggested bool     `json:"suggested"`
@@ -214,7 +217,7 @@ func choicesStep(lang string, offers []ChoiceOffer) Step {
 		if o.Default {
 			hint += " (default)"
 		}
-		step.Options = append(step.Options, Option{Label: o.Axis + ": " + o.Name, Value: o.Name, Hint: hint})
+		step.Options = append(step.Options, Option{Label: o.Axis + ": " + o.Name, Value: o.Name, Hint: hint, Group: o.Axis, Many: o.Many})
 	}
 	return step
 }
