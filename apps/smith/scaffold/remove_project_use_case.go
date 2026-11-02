@@ -3,6 +3,7 @@ package scaffold
 import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/nearmatch"
+	"github.com/monosmith-app/monosmith/apps/smith/release"
 	"os"
 	"path/filepath"
 	"sort"
@@ -51,6 +52,9 @@ type Removal struct {
 	Ignored int `json:"ignored,omitempty"`
 	// KeptAt is where the folder was moved (or would be) with KeepCopy.
 	KeptAt string `json:"keptAt,omitempty"`
+	// Releases are the release tags of the project (git tag --list '<name>@*'):
+	// smith remove leaves them, the GitHub Releases and the registry packages.
+	Releases []string `json:"releases,omitempty"`
 	// Mentions are tracked files that still name the project; smith does not change them.
 	Mentions []Mention `json:"mentions,omitempty"`
 	// MentionsRootOnly is true when the name is short and only the root path was searched.
@@ -69,6 +73,9 @@ func RemoveProject(s *session.Session, opts RemoveOptions) (Removal, error) {
 	r := Removal{Project: p.Name, Root: p.Root, Dependents: s.Graph.Dependents(p.Name)}
 	if len(r.Dependents) > 0 && !opts.Force {
 		return r, fmt.Errorf("%s is imported by %s: remove those imports first, or pass --force to remove it anyway", p.Name, strings.Join(r.Dependents, ", "))
+	}
+	if tags, err := s.Git.Tags(release.TagPrefix(p)); err == nil {
+		r.Releases = tags
 	}
 	unsaved := ListUnsavedFiles(s.Root, p.Root)
 	r.Unsaved, r.Ignored = unsaved.Files, unsaved.Ignored

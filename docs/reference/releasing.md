@@ -12,6 +12,8 @@ smith release --rehearse   # ask every registry whether the release would be acc
 
 ## What releases
 
+A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing.
+
 Every project of kind `package`, and every app with a release section (see
 [Apps](#apps)). For each, smith reads the commits since its last release tag that
 touched its directory, or the directory of an internal `lib` it imports (a lib
@@ -27,6 +29,13 @@ ships inside what uses it, so a fix there releases its users):
 The first release starts from the manifest's version (`0.0.0`), so a first
 `feat` gives `0.1.0`. A package whose dependency releases is released too (at
 least a patch), so its published dependency range stays correct.
+
+The minor-before-1.0 rule applies to the bump smith infers from commits. A bump you ask for with
+`--bump <project>=major` is a request and wins: on a 0.x package it gives 1.0.0. When the version smith
+reaches is not the level you asked for (a `patch` on a prerelease releases the version it leads to), the
+plan says so in a note. `--hold <project>` for a project that is not in the plan prints
+`note: <project> is not in this plan, so there is nothing to hold back`; for a name smith does not know it
+refuses, suggests the closest names and lists what the plan releases.
 
 Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
 nuget.org, …), or to the private registry smith.toml names with `[release]

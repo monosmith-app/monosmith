@@ -30,6 +30,7 @@ func Command(version string) *cobra.Command {
 		Short: "Version, publish and tag every package with releasable commits",
 		Long: `Release every publishable package from its conventional commits since its last tag:
 feat → minor, fix/perf → patch, a breaking change → major (minor before 1.0).
+--bump <project>=major is a request, not an inference: on a 0.x package it gives 1.0.0.
 Packages release in dependency order. Each is stamped, built, published and
 tagged; manifests are restored afterwards (the tag is the record). A re-run
 after a failure resumes where it stopped. Before the first publish every

@@ -114,6 +114,9 @@ hand-written workflow, an editor task, a doc). It does not change them.`,
 			for _, n := range r.Notes {
 				fmt.Fprintf(out, "  %s\n", n)
 			}
+			for _, line := range KeptReleasesLines(r) {
+				fmt.Fprintln(out, line)
+			}
 			WriteMentions(out, r)
 			if !opts.DryRun {
 				for _, line := range RecoveryLines(r) {

@@ -91,3 +91,21 @@ func (v Version) Bump(l Level) Version {
 	}
 	return v
 }
+
+// BumpAsked applies a level the person asked for with --bump. Unlike the level
+// the commits infer, an explicit major moves 0.x to 1.0.0: the request wins
+// over the "minor before 1.0" rule.
+//
+// Parameters: l is the level asked for.
+// Returns: the next version, and, when it is not the plain level bump, a
+// sentence that says why (a patch on a prerelease releases the version the
+// prerelease leads to); empty when the version is what was asked.
+func (v Version) BumpAsked(l Level) (Version, string) {
+	switch {
+	case l == Major:
+		return Version{Major: v.Major + 1}, ""
+	case l == Patch && v.Pre != "":
+		return v.Bump(l), "a patch on a prerelease releases the version it leads to"
+	}
+	return v.Bump(l), ""
+}
