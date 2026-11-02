@@ -22,7 +22,7 @@ reverts it with git revert: a new commit, history untouched.
 It refuses, and says why, when a later commit or an uncommitted change touches
 the same files, or when the commit is no longer in the history. --dry-run shows
 what it would revert. --yes skips the question; without a terminal, or in CI,
-smith undo never asks.`,
+smith undo refuses unless --yes is given.`,
 		Example: "  smith undo --dry-run\n  smith undo",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {

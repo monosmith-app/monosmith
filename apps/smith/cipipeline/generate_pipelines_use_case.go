@@ -212,6 +212,20 @@ func Stale(root string, rendered map[string]string) []string {
 	return out
 }
 
+// GeneratedFiles lists the pipeline and dev container files that exist in the
+// workspace and that smith generated, so smith may rewrite them. A file
+// without smith's header is the team's and is not listed.
+func GeneratedFiles(root string) []string {
+	var out []string
+	for _, path := range OwnedPaths {
+		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && generated(string(raw)) {
+			out = append(out, path)
+		}
+	}
+	return out
+}
+
 // IsGenerated reports whether a pipeline file's text is smith's own, so a
 // change to the workspace regenerates it instead of leaving it to the team.
 func IsGenerated(text string) bool { return generated(text) }
