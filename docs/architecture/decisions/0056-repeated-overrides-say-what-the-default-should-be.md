@@ -1,5 +1,7 @@
 # ADR 0056: Repeated overrides say what the default should be
 
+> Update: `[[task_groups]]` is now `[[groups]]` ([ADR 0067](0067-groups-replace-task-groups-and-also-set-tags-and-release.md)). The text below keeps the old name.
+
 - Status: accepted
 - Date: 2026-11-01
 
