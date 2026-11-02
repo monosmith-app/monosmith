@@ -32,6 +32,9 @@ type Step struct {
 // Option is one answer.
 type Option struct {
 	Label, Value, Hint string
+	// Also are other names that find the option when a list is filtered: the
+	// frameworks, test runners and styles a language offers ("react" finds Node).
+	Also []string
 }
 
 // Action is a menu entry: its questions, then the command they build.

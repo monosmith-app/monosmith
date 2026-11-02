@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
-import { choicesByAxis, roleOf } from './add-options.mapper.ts'
+import { choiceNames, choicesByAxis, roleOf } from './add-options.mapper.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -27,8 +27,8 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
 
   const languages = options.kinds.filter((kind) => roleOf(kind.kind, kind.language) === role.label)
   const language = await vscode.window.showQuickPick(
-    languages.map((kind) => ({ label: kind.language, description: kind.label })),
-    { title: `${TITLE} (2/4): which language?`, placeHolder: 'The language of the project', matchOnDescription: true },
+    languages.map((kind) => ({ label: kind.language, description: kind.label, detail: choiceNames(options.choices, kind.language).join(', ') })),
+    { title: `${TITLE} (2/4): which language?`, placeHolder: 'A language, or a framework such as react', matchOnDescription: true, matchOnDetail: true },
   )
   if (language === undefined) return undefined
 

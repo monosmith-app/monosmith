@@ -446,10 +446,14 @@ func (m Model) Body(th theme.Theme, w int) (lines []string, optionAt map[int]int
 					box = "[x] "
 				}
 			}
-			add(i, Row(th, i == m.cursor, box, o.Label, o.Hint))
+			hint := o.Hint
+			if via := MatchedVia(o, m.filter); len(via) > 0 {
+				hint = "has " + strings.Join(via, ", ") + " · " + hint
+			}
+			add(i, Row(th, i == m.cursor, box, o.Label, hint))
 		}
 		if step.Filter && len(m.options()) == 0 {
-			lines = append(lines, th.Muted("  nothing matches"))
+			lines = append(lines, th.Muted("  "+NothingMatches(step.Options, m.filter)))
 		}
 		help := "up/down choose · enter select · esc back"
 		if step.Filter {
