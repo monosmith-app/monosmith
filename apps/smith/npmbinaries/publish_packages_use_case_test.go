@@ -460,3 +460,15 @@ func TestAProvenanceConflictSaysTheVersionIsLostAndHowToReleaseTheNext(t *testin
 		}
 	}
 }
+
+func TestAPendingTagThatTheRegistryWillNotRemoveIsNotUnfinishedWork(t *testing.T) {
+	fakeNPM(t, func(dir string, args ...string) (string, string, error) {
+		return `{"next":"1.0.0","pending":"1.0.0"}`, "", nil
+	})
+	if hasPendingTag(t.TempDir(), "acme", "1.0.0", "next") {
+		t.Error("pending equal to next means the tag was moved")
+	}
+	if !hasPendingTag(t.TempDir(), "acme", "1.0.0", "latest") {
+		t.Error("pending without the real tag is unfinished")
+	}
+}

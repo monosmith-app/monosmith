@@ -20,7 +20,21 @@ const (
 const (
 	envsDefault = "default"
 	envsCustom  = "custom"
+	envsDetails = "details"
 	envsNone    = "none"
+)
+
+// The words of the one question about the environments of a web app. The
+// VS Code extension uses the same labels (docs/manual/tui.md).
+const (
+	// EnvUseThese is the label of the answer that takes the default four.
+	EnvUseThese = "Use these"
+	// EnvUseTheseHint says what taking them means, in one sentence.
+	EnvUseTheseHint = "smith run build builds prd, the builds go to dist/apps/<name>/<env>, and the .env files are written for you and kept in git (smith commits nothing)"
+	// EnvChangeNames is the label of the answer that types other names.
+	EnvChangeNames = "Change the names…"
+	// EnvChangeDetails is the label of the answer that opens the detailed questions.
+	EnvChangeDetails = "Change the build default, the output or the .env files…"
 )
 
 // webChoices are the choices that make a web app built with Vite.
@@ -54,36 +68,40 @@ func isWebAnswer(a map[string][]string, offers []ChoiceOffer) bool {
 }
 
 // webEnvironmentSteps are the questions about the environment builds of a web
-// app: the names (the default four, names of your own, or one build), the
-// environment that `smith run build` builds, where the builds go and whether
-// the .env files are committed. Each has its default first and says what it
-// costs. They are asked only for a web app.
+// app. One question comes first: use the default four (the common case, which
+// ends the questions), change the names, change the details, or build once.
+// The names, the environment that `smith run build` builds, where the builds
+// go and whether the .env files are committed are asked only on the answers
+// that change them. They are asked only for a web app.
 func webEnvironmentSteps(offers []ChoiceOffer) []Step {
 	notWeb := func(a map[string][]string) bool { return !isWebAnswer(a, offers) }
-	none := func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) == envsNone }
+	unless := func(answers ...string) func(map[string][]string) bool {
+		return func(a map[string][]string) bool { return notWeb(a) || !slices.Contains(answers, first(a, envsKey)) }
+	}
 	defaults := strings.Join(webenv.DefaultNames, ", ")
 	return []Step{
 		{Key: envsKey, Prompt: "A web app is built once per environment. Which environments?", Note: "Vite writes its VITE_ values into the bundle when it builds, so each environment is its own build with its own .env file.", Skip: notWeb, Options: []Option{
-			{Label: defaults, Value: envsDefault, Hint: "default: one build and one .env file for each; lcl is your machine"},
-			{Label: "Names of my own", Value: envsCustom, Hint: "you type the names: lowercase words, such as qa, stage"},
+			{Label: EnvUseThese + ": " + defaults, Value: envsDefault, Hint: EnvUseTheseHint},
+			{Label: EnvChangeNames, Value: envsCustom, Hint: "you type the names (lowercase words, such as qa, stage), then say which one smith run build builds"},
+			{Label: EnvChangeDetails, Value: envsDetails, Hint: "which environment smith run build builds, where the builds go, and whether the .env files are kept in git"},
 			{Label: "One build only", Value: envsNone, Hint: "smith add --environments none: a single vite build, as before"},
 		}},
 		{Key: envNamesKey, Prompt: "Environment names, separated by commas", Placeholder: defaults,
-			Initial: func(map[string][]string) string { return strings.Join(webenv.DefaultNames, ", ") },
-			Skip:    func(a map[string][]string) bool { return notWeb(a) || first(a, envsKey) != envsCustom },
+			Initial: func(map[string][]string) string { return defaults },
+			Skip:    unless(envsCustom),
 			Check: func(_ map[string][]string, value string) string {
 				if err := webenv.ValidateNames(webenv.ParseList(value)); err != nil {
 					return err.Error()
 				}
 				return ""
 			}},
-		{Key: envDefaultKey, Prompt: "Which environment is `smith run build`? CI and the release build this one", Skip: none, OptionsFor: envDefaultOptions},
-		{Key: envOutputKey, Prompt: "Where do the builds go?", Skip: none, Options: []Option{
+		{Key: envDefaultKey, Prompt: "Which environment is `smith run build`? CI and the release build this one", Skip: unless(envsCustom, envsDetails), OptionsFor: envDefaultOptions},
+		{Key: envOutputKey, Prompt: "Where do the builds go?", Skip: unless(envsDetails), Options: []Option{
 			{Label: "In the workspace", Value: webenv.OutputWorkspace, Hint: "default: dist/apps/<app>/<name>, with every other build"},
 			{Label: "In the project", Value: webenv.OutputProject, Hint: "dist/<name> in the app's own folder; smith doctor then accepts it"},
 		}},
-		{Key: envFilesKey, Prompt: "The .env files hold VITE_ values, which end up in the browser, so no secret. Commit them?", Skip: none, Options: []Option{
-			{Label: "Yes, commit the .env files", Value: webenv.FilesCommit, Hint: "default: CI builds with them"},
+		{Key: envFilesKey, Prompt: "The .env files hold VITE_ values, which end up in the browser, so no secret. Keep them in git?", Skip: unless(envsDetails), Options: []Option{
+			{Label: "Yes, keep the .env files in git", Value: webenv.FilesCommit, Hint: "default: CI builds with them"},
 			{Label: "Only .env.example", Value: webenv.FilesExample, Hint: "each machine and CI job makes its own files; git ignores them"},
 		}},
 	}
@@ -116,20 +134,31 @@ func envDefaultOptions(a map[string][]string) []Option {
 	return out
 }
 
+// orElse is the answer, or the default when the question was not asked.
+func orElse(answer, fallback string) string {
+	if answer == "" {
+		return fallback
+	}
+	return answer
+}
+
 // webEnvironmentArgs are the flags of smith add that carry the answers of the
-// environment questions; nothing for an app that is not a web app.
+// environment questions; nothing for an app that is not a web app. A question
+// that was not asked has its default, which the plan shows.
 func webEnvironmentArgs(a map[string][]string, offers []ChoiceOffer) []string {
 	if !isWebAnswer(a, offers) {
 		return nil
 	}
-	switch first(a, envsKey) {
-	case envsNone:
+	if first(a, envsKey) == envsNone {
 		return []string{"--environments", "none"}
-	case envsCustom:
-		names := strings.Join(webenv.ParseList(first(a, envNamesKey)), ",")
-		return []string{"--environments", names, "--default-environment", first(a, envDefaultKey), "--environment-output", first(a, envOutputKey), "--env-files", first(a, envFilesKey)}
 	}
-	return []string{"--environments", strings.Join(webenv.DefaultNames, ","), "--default-environment", first(a, envDefaultKey), "--environment-output", first(a, envOutputKey), "--env-files", first(a, envFilesKey)}
+	names := envNamesOf(a)
+	return []string{
+		"--environments", strings.Join(names, ","),
+		"--default-environment", orElse(first(a, envDefaultKey), webenv.Settings{Names: names}.Normalized().Default),
+		"--environment-output", orElse(first(a, envOutputKey), webenv.OutputWorkspace),
+		"--env-files", orElse(first(a, envFilesKey), webenv.FilesCommit),
+	}
 }
 
 // withWebEnvironments adds the environment questions after the others of the

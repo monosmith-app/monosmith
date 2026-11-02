@@ -51,6 +51,13 @@ type Model struct {
 	trail []int
 }
 
+// Reopen takes a form that ended back to its last question, with every answer
+// filled in: Esc on the plan of the command it made.
+func (m Model) Reopen() Model {
+	m.done, m.Argv = false, nil
+	return m.back()
+}
+
 // back goes to the question before this one, with every answer still filled in.
 // On the first question it leaves the form for the list of actions.
 func (m Model) back() Model {

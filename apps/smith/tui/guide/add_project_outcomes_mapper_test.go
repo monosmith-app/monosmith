@@ -102,6 +102,82 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 	}
 }
 
+// frameworkForm is the add form of a node workspace that offers the four web
+// frameworks.
+func frameworkForm(t *testing.T) Model {
+	t.Helper()
+	offers, err := ParseChoices(`[
+ {"axis":"framework","name":"html","title":"Plain page","description":"a page","language":"node"},
+ {"axis":"framework","name":"react","title":"React","description":"a React app","language":"node"},
+ {"axis":"framework","name":"svelte","title":"Svelte","description":"a Svelte app","language":"node"},
+ {"axis":"framework","name":"vue","title":"Vue","description":"a Vue app","language":"node"},
+ {"axis":"test","name":"vitest","description":"tests","language":"node","default":true}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var add Action
+	for _, a := range Actions([]string{"node"}, nil, nil) {
+		if a.Title == "Add a project" {
+			add = a
+		}
+	}
+	m, _ := NewModel([]Action{AddProjectAction(add, offers, nil)}).Pick("Add a project")
+	return m
+}
+
+// TestAFrameworkThePersonPickedIsTickedAndInTheCommand follows the exact keys
+// of a first-time user: a website, a framework from the list, a name, Enter
+// through the choices and the environments. The pick must be ticked and the
+// command must carry it (F-1 of the beta.27 review).
+func TestAFrameworkThePersonPickedIsTickedAndInTheCommand(t *testing.T) {
+	for name, tc := range map[string]struct {
+		downs int
+		with  string
+	}{"Plain page": {0, "html"}, "React": {1, "react"}, "Svelte": {2, "svelte"}, "Vue": {3, "vue"}} {
+		m := press(frameworkForm(t), "enter") // A website
+		m = press(m, "home")                  // the cursor starts on "Decide in the next question"
+		m = press(m, strings.Split(strings.Repeat("down ", tc.downs), " ")[:tc.downs]...)
+		m = press(m, "enter")                     // the framework
+		m = press(m, "s", "i", "t", "e", "enter") // the name
+		ticked := false
+		for i, o := range m.current().Options {
+			ticked = ticked || (m.marked[i] && o.Value == tc.with)
+		}
+		if !ticked {
+			t.Fatalf("%s: the pick is not ticked in the choices:\n%s", name, m.View())
+		}
+		m = press(m, "enter", "enter") // the choices, then "Use these" for the environments
+		if got := strings.Join(m.Argv, " "); !strings.Contains(got, "--with "+tc.with) {
+			t.Fatalf("%s: the command lacks the pick: %q", name, got)
+		}
+	}
+}
+
+// TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem keeps the one
+// question short: Use these ends it, with prd as the build and the files kept.
+func TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem(t *testing.T) {
+	m := press(frameworkForm(t), "enter", "home", "down", "enter", "s", "i", "t", "e", "enter", "enter")
+	if view := m.View(); !strings.Contains(view, "Use these: lcl, dev, uat, prd") || !strings.Contains(view, "Change the names…") || !strings.Contains(view, "Change the build default, the output or the .env files…") {
+		t.Fatalf("the question lacks its options:\n%s", view)
+	}
+	m = press(m, "enter")
+	want := "--environments lcl,dev,uat,prd --default-environment prd --environment-output workspace --env-files commit"
+	if got := strings.Join(m.Argv, " "); !strings.HasSuffix(got, want) {
+		t.Fatalf("argv %q", got)
+	}
+}
+
+// TestChangingTheDetailsAsksTheOutputAndTheFiles opens the detailed questions.
+func TestChangingTheDetailsAsksTheOutputAndTheFiles(t *testing.T) {
+	m := press(frameworkForm(t), "enter", "home", "down", "enter", "s", "i", "t", "e", "enter", "enter", "down", "down", "enter")
+	for _, want := range []string{"Which environment is", "Where do the builds go?", "Keep them in git?"} {
+		if !strings.Contains(m.View(), want) {
+			t.Fatalf("want %q on screen:\n%s", want, m.View())
+		}
+		m = press(m, "enter")
+	}
+}
+
 func TestDecidingInTheNextQuestionTicksNothingInTheChoices(t *testing.T) {
 	m := press(outcomeForm(t), "enter") // A website
 	if !strings.Contains(m.View(), "› Decide in the next question") {

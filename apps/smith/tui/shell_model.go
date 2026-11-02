@@ -118,6 +118,9 @@ type Shell struct {
 	projectsErr    error
 
 	guide   guide.Model
+	// addForm is the add form as it ended, kept while its plan is on screen: Esc
+	// on the plan goes back to its last question, with the answers filled in.
+	addForm *guide.Model
 	pal     palette.Palette
 	palOpen bool
 	doctor  doctorview.Model

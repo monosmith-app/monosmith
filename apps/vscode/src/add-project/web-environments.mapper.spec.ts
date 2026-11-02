@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addArguments } from './add-arguments.mapper.ts'
-import { checkEnvironmentNames, defaultEnvironment, environmentArguments, isWebApp, parseEnvironmentNames } from './web-environments.mapper.ts'
+import { checkEnvironmentNames, defaultEnvironment, defaultFirst, describeEnvironments, environmentArguments, isWebApp, parseEnvironmentNames, startingEnvironments } from './web-environments.mapper.ts'
 
 const web = { role: 'app', language: 'node', with: ['react'], stack: undefined }
 
@@ -48,5 +48,23 @@ describe('the flags of the environments', () => {
       'add', 'app', 'web', '--lang', 'node', '--with', 'react',
       '--environments', 'lcl,prd', '--default-environment', 'prd', '--environment-output', 'workspace', '--env-files', 'commit', '--yes',
     ])
+  })
+})
+
+describe('the single environments question', () => {
+  it('starts on prd, else the last name, never on lcl', () => {
+    expect(startingEnvironments([])).toEqual({ names: ['lcl', 'dev', 'uat', 'prd'], default: 'prd', output: 'workspace', envFiles: 'commit' })
+    expect(startingEnvironments(['lcl', 'qa']).default).toBe('qa')
+  })
+
+  it('lists the default first so Enter takes it', () => {
+    expect(defaultFirst(['lcl', 'dev', 'prd'], 'prd')).toEqual(['prd', 'lcl', 'dev'])
+  })
+
+  it('says every choice in one sentence', () => {
+    expect(describeEnvironments(startingEnvironments([]))).toBe(
+      'Environments: lcl, dev, uat, prd; smith run build builds prd; builds go to dist/apps/<name>/<env>; .env files are created and kept by git',
+    )
+    expect(describeEnvironments({ ...startingEnvironments([]), output: 'project', envFiles: 'example' })).toContain('dist/<env> inside the app; .env files are created and ignored by git')
   })
 })

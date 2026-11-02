@@ -15,6 +15,7 @@ function dotUri (node: TreeNode): vscode.Uri {
 /** Whether a row is open: groups and folders are, a project when the filter found something under it, a task has nothing under it. */
 function collapsibleState (node: TreeNode): vscode.TreeItemCollapsibleState {
   if (node.kind === 'task' || node.children.length === 0) return vscode.TreeItemCollapsibleState.None
+  if (node.kind === 'environments') return vscode.TreeItemCollapsibleState.Collapsed
   if (node.kind === 'project') return node.reveal === true ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed
 
   return vscode.TreeItemCollapsibleState.Expanded

@@ -251,8 +251,25 @@ the palette (`:`). A command that changes files shows its plan first, as every o
 | **Why would a task run again?…** | Health | Asks `project:task` and runs `smith why-miss`. |
 | **Connect smith to a coding assistant…** | Health | Tick Claude Code and VS Code; writes `.mcp.json` and `.vscode/mcp.json` after a confirmation. |
 
-In **Add project**, the question "names of my own" starts on the environment names of
-`[workspace] environments` (or the default four), so you edit a list and do not type one.
+In **Add project**, a web app gets ONE question about its environments, not four. The labels
+below are fixed so that the VS Code extension uses the same words:
+
+| Option | What it does |
+| --- | --- |
+| `Use these: lcl, dev, uat, prd` (default, first) | Ends the questions. The hint says: smith run build builds prd, the builds go to `dist/apps/<name>/<env>`, and the `.env` files are written for you and kept in git (smith commits nothing). |
+| `Change the names…` | Asks the names (pre-filled with the default four, edit the list), then which one `smith run build` builds (prd, else the last name, marked default). |
+| `Change the build default, the output or the .env files…` | Asks which environment `smith run build` builds, where the builds go, and whether the `.env` files are kept in git. |
+| `One build only` | `--environments none`: one Vite build. |
+
+The command always carries the answers (`--environments`, `--default-environment`,
+`--environment-output`, `--env-files`), so the plan shows the default that was taken. The CLI keeps
+its flags and its own defaults.
+
+A framework, shell or host picked in the question before the name is ticked in the choices
+question and is in the command (`--with react`). The cursor starts on "Decide in the next
+question" only when nothing was typed to search for: Enter then ticks nothing.
+
+`Esc` on the plan of an add goes back to the last question, with the answers filled in.
 
 **Write a recipe** asks, for each level that takes one plugin, a pick list whose last answer is
 "Chosen by the people who use it". Then it asks the question the users read, which plugins they can

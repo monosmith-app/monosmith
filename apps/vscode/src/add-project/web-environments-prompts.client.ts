@@ -1,31 +1,59 @@
 import * as vscode from 'vscode'
 import type { WebEnvironments } from './add-options.contract.ts'
-import { checkEnvironmentNames, DEFAULT_ENVIRONMENTS, defaultEnvironment, parseEnvironmentNames } from './web-environments.mapper.ts'
+import { checkEnvironmentNames, defaultEnvironment, defaultFirst, describeEnvironments, parseEnvironmentNames, startingEnvironments } from './web-environments.mapper.ts'
 
 const TITLE = 'MonoSmith: Add project'
 
 /**
- * Asks how a web app is built once per environment, each as a presented choice with the
- * default marked: the names (pre-filled, edit them), the environment `smith run build` builds,
- * where the builds go and whether the .env files are committed. The same questions as
- * `smith add` asks in a terminal.
+ * Asks how a web app is built once per environment as ONE question: the choices in a sentence (the
+ * names, the environment `smith run build` builds, where the builds go, the .env files) with
+ * "Use these" as the default, "Change the names…" and "Change the build default, the output or the
+ * commit…". The last two open the detailed questions, each a presented choice with the default first.
+ * The default environment is prd, else the last name: never lcl by accident.
  * @param app - the name of the new app
  * @param workspaceDefaults - `[workspace] environments`, when the workspace has them
  * @returns the answers, or undefined when the person pressed Escape at any question
  */
 export async function askWebEnvironments (app: string, workspaceDefaults: readonly string[] = []): Promise<WebEnvironments | undefined> {
+  let current = startingEnvironments(workspaceDefaults)
+  for (;;) {
+    const picked = await vscode.window.showQuickPick(
+      [
+        { label: 'Use these', description: 'default', detail: describeEnvironments(current), step: 'use' as const },
+        { label: 'Change the names…', detail: 'Vite writes its VITE_ values into the bundle when it builds, so the app is built once per environment, each with its own .env.<name> file.', step: 'names' as const },
+        { label: 'Change the build default, the output or the commit…', detail: 'Which environment `smith run build` builds, where the builds go and whether git keeps the .env files.', step: 'details' as const },
+      ],
+      { title: `${TITLE}: environments of ${app}`, placeHolder: 'Nothing is written until you have seen the plan' },
+    )
+    if (picked === undefined) return undefined
+    if (picked.step === 'use') return current
+    if (picked.step === 'names') {
+      const names = await askNames(app, current.names)
+      if (names === undefined) return undefined
+      current = { ...current, names, default: defaultEnvironment(names) }
+    } else {
+      const details = await askDetails(current)
+      if (details === undefined) return undefined
+      current = details
+    }
+  }
+}
+
+async function askNames (app: string, names: readonly string[]): Promise<string[] | undefined> {
   const typed = await vscode.window.showInputBox({
     title:         `${TITLE}: environments of ${app}`,
-    prompt:        'Vite writes its VITE_ values into the bundle when it builds, so the app is built once per environment, each with its own .env.<name> file. Edit the names (lowercase words, separated by commas).',
-    value:         (workspaceDefaults.length > 0 ? workspaceDefaults : DEFAULT_ENVIRONMENTS).join(', '),
+    prompt:        'Edit the names (lowercase words, separated by commas).',
+    value:         names.join(', '),
     validateInput: checkEnvironmentNames,
   })
-  if (typed === undefined) return undefined
-  const names = parseEnvironmentNames(typed)
 
-  const fallback = defaultEnvironment(names)
+  return typed === undefined ? undefined : parseEnvironmentNames(typed)
+}
+
+async function askDetails (current: WebEnvironments): Promise<WebEnvironments | undefined> {
+  const fallback = defaultEnvironment(current.names)
   const chosen = await vscode.window.showQuickPick(
-    names.map((name) => ({ label: name, description: name === fallback ? 'default' : '', detail: name === fallback ? 'built by `smith run build`: what CI and the release build' : `built by \`smith run build:${name}\`` })),
+    defaultFirst(current.names, current.names.includes(current.default) ? current.default : fallback).map((name) => ({ label: name, description: name === fallback ? 'default' : '', detail: name === fallback ? 'built by `smith run build`: what CI and the release build' : `built by \`smith run build:${name}\`` })),
     { title: `${TITLE}: which environment is "build"?`, placeHolder: 'CI and releases build this one; the others are build:<name>' },
   )
   if (chosen === undefined) return undefined
@@ -47,5 +75,5 @@ export async function askWebEnvironments (app: string, workspaceDefaults: readon
     { title: `${TITLE}: the .env files` },
   )
 
-  return files === undefined ? undefined : { names, default: chosen.label, output: output.value, envFiles: files.value }
+  return files === undefined ? undefined : { names: current.names, default: chosen.label, output: output.value, envFiles: files.value }
 }

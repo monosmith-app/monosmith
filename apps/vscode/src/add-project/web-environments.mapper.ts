@@ -50,6 +50,39 @@ export function defaultEnvironment (names: readonly string[]): string {
 }
 
 /**
+ * The names with the default first, so Enter in a pick list takes the default and never the first
+ * name by accident (lcl is the developer's machine, not what CI or a release should build).
+ * @param names - the environments
+ * @param fallback - the default environment
+ */
+export function defaultFirst (names: readonly string[], fallback: string): string[] {
+  return [fallback, ...names.filter((name) => name !== fallback)]
+}
+
+/**
+ * The environments a web app starts from: the workspace's own list when it has one, else the four.
+ * Every choice is the default of smith: prd (else the last name) is built, the builds go to the
+ * workspace, and the .env files are kept by git.
+ * @param workspaceNames - `[workspace] environments`, or empty
+ */
+export function startingEnvironments (workspaceNames: readonly string[]): WebEnvironments {
+  const names = workspaceNames.length > 0 ? [...workspaceNames] : [...DEFAULT_ENVIRONMENTS]
+
+  return { names, default: defaultEnvironment(names), output: 'workspace', envFiles: 'commit' }
+}
+
+/**
+ * One sentence that says every environment choice, as the single question shows it.
+ * @param environments - the choices
+ */
+export function describeEnvironments (environments: WebEnvironments): string {
+  const output = environments.output === 'workspace' ? 'dist/apps/<name>/<env>' : 'dist/<env> inside the app'
+  const files = environments.envFiles === 'commit' ? 'created and kept by git' : 'created and ignored by git, only .env.example is kept'
+
+  return `Environments: ${environments.names.join(', ')}; smith run build builds ${environments.default}; builds go to ${output}; .env files are ${files}`
+}
+
+/**
  * The flags of `smith add` for the environments of a web app.
  * @param environments - what the person decided
  */

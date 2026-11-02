@@ -32,12 +32,23 @@ func NxNeedsInstall(root string) bool {
 type PackageTool struct {
 	// Name is the program: npm, pnpm or yarn.
 	Name string
-	// Args are the arguments of a clean install with the lockfile.
+	// Args are the arguments of a clean install with the lockfile. Every one
+	// of them keeps the lifecycle scripts of the repository from running.
 	Args []string
+	// Env is what the install sets besides the environment of smith: Yarn
+	// Berry has no flag for scripts, so YARN_ENABLE_SCRIPTS=false says it.
+	Env []string
 }
 
-// Command is the install as a person types it: "pnpm install --frozen-lockfile".
-func (t PackageTool) Command() string { return t.Name + " " + strings.Join(t.Args, " ") }
+// Command is the install as a person types it: "pnpm install --frozen-lockfile --ignore-scripts".
+// An Env entry comes first, as a shell shows it.
+func (t PackageTool) Command() string {
+	return strings.TrimSpace(strings.Join(t.Env, " ") + " " + t.Name + " " + strings.Join(t.Args, " "))
+}
+
+// ReadsNoScripts is the sentence that goes with the command: the graph read
+// runs nothing the repository wrote.
+const ReadsNoScripts = "it runs no script of the repository"
 
 // RepositoryTool picks the package manager the repository's lockfile names:
 // pnpm for pnpm-lock.yaml, yarn for yarn.lock, npm otherwise (npm ci when
@@ -50,23 +61,26 @@ func RepositoryTool(root string) PackageTool {
 	}
 	switch {
 	case has("pnpm-lock.yaml") || has("pnpm-workspace.yaml"):
-		return PackageTool{Name: "pnpm", Args: []string{"install", "--frozen-lockfile"}}
+		return PackageTool{Name: "pnpm", Args: []string{"install", "--frozen-lockfile", "--ignore-scripts"}}
 	case has("yarn.lock") && has(".yarnrc.yml"):
-		return PackageTool{Name: "yarn", Args: []string{"install", "--immutable"}}
+		return PackageTool{Name: "yarn", Args: []string{"install", "--immutable"}, Env: []string{"YARN_ENABLE_SCRIPTS=false"}}
 	case has("yarn.lock"):
-		return PackageTool{Name: "yarn", Args: []string{"install", "--frozen-lockfile"}}
+		return PackageTool{Name: "yarn", Args: []string{"install", "--frozen-lockfile", "--ignore-scripts"}}
 	case has("package-lock.json"):
-		return PackageTool{Name: "npm", Args: []string{"ci", "--no-audit", "--no-fund"}}
+		return PackageTool{Name: "npm", Args: []string{"ci", "--no-audit", "--no-fund", "--ignore-scripts"}}
 	}
-	return PackageTool{Name: "npm", Args: []string{"install", "--no-audit", "--no-fund"}}
+	return PackageTool{Name: "npm", Args: []string{"install", "--no-audit", "--no-fund", "--ignore-scripts"}}
 }
 
 // InstallPackages installs the packages the repository lists with the
-// repository's own package manager (RepositoryTool). It writes nothing to out.
+// repository's own package manager (RepositoryTool), without running any
+// lifecycle script of the repository: the install only fetches what the
+// dependency graph needs. It writes nothing to out.
 func InstallPackages(ctx context.Context, root string) error {
 	tool := RepositoryTool(root)
 	cmd := exec.CommandContext(ctx, tool.Name, tool.Args...)
 	cmd.Dir = root
+	cmd.Env = append(os.Environ(), tool.Env...)
 	if raw, err := cmd.CombinedOutput(); err != nil {
 		tail := strings.TrimSpace(string(raw))
 		if len(tail) > 600 {
@@ -101,6 +115,9 @@ type InstallChoice struct {
 	// In and Out are where the question is asked and the progress is told.
 	In  io.Reader
 	Out io.Writer
+	// DryRun is true for a plan: it never installs and never asks, whatever
+	// Yes says, and stops with the command it would run.
+	DryRun bool
 	// Install does the install; InstallPackages when nil.
 	Install func(ctx context.Context, root string) error
 }
@@ -108,26 +125,26 @@ type InstallChoice struct {
 // EnsureInstalled installs an Nx workspace's packages when they are missing:
 // without asking under --yes, after a question in a terminal, and otherwise it
 // stops and says what to do. It does nothing for a workspace that is ready.
+// A plan (DryRun) never installs: it says the exact command a real run would
+// run, and that the command runs no script of the repository. Every message
+// names that command.
 func EnsureInstalled(ctx context.Context, root string, c InstallChoice) error {
 	if !NxNeedsInstall(root) {
 		return nil
 	}
 	tool := RepositoryTool(root)
+	if c.DryRun {
+		return problem.New("nothing was installed: to read the dependency graph smith would run `"+tool.Command()+"` ("+ReadsNoScripts+"), and a plan never installs",
+			"run smith convert without --dry-run: it asks before it installs",
+			"or run `"+tool.Command()+"` yourself, then run this again")
+	}
 	if !c.Yes {
 		if !c.Terminal {
-			if tool.Name != "npm" {
-				return problem.New("this is a "+tool.Name+" workspace: smith needs Nx's packages installed to read your projects, and only "+tool.Name+" can install them here",
-					tool.Name+" install, then run this again",
-					"or run this again with --yes: smith then installs them with "+tool.Name)
-			}
-			return problem.New("smith needs to read your projects before it can move them, and Nx describes them, so its packages must be installed first",
-				"run this again with --yes to install them first",
-				"or install them yourself ("+tool.Command()+"), then run this again")
+			return problem.New("smith needs to read your projects before it can move them, and Nx describes them, so its packages must be installed first: smith would run `"+tool.Command()+"` ("+ReadsNoScripts+")",
+				"run this again with --yes to let smith run it",
+				"or run `"+tool.Command()+"` yourself, then run this again")
 		}
-		question := InstallAsk
-		if tool.Name != "npm" {
-			question = strings.Replace(question, "Install them now?", "This is a "+tool.Name+" workspace, so smith installs them with "+tool.Name+". Install them now?", 1)
-		}
+		question := InstallAsk + " It runs `" + tool.Command() + "` (" + ReadsNoScripts + ")."
 		fmt.Fprintf(c.Out, "%s [Y/n] ", question)
 		answer, _ := bufio.NewReader(c.In).ReadString('\n')
 		switch strings.ToLower(strings.TrimSpace(answer)) {
@@ -140,7 +157,7 @@ func EnsureInstalled(ctx context.Context, root string, c InstallChoice) error {
 	if install == nil {
 		install = InstallPackages
 	}
-	fmt.Fprintf(c.Out, "Installing the packages with %s, so smith can read your projects…\n", tool.Name)
+	fmt.Fprintf(c.Out, "Running `%s` so smith can read your projects (%s)…\n", tool.Command(), ReadsNoScripts)
 	before := existingLeftovers(root)
 	start := time.Now()
 	if err := install(ctx, root); err != nil {

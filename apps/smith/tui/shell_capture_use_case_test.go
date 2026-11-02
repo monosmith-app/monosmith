@@ -80,6 +80,27 @@ func TestAddAsksForTheChoicesThenShowsThePlanBeforeWriting(t *testing.T) {
 	}
 }
 
+// TestEscOnThePlanOfAnAddGoesBackOneQuestion keeps the answers: the wizard is
+// not left (F-5 of the beta.27 review).
+func TestEscOnThePlanOfAnAddGoesBackOneQuestion(t *testing.T) {
+	l := newLab(t, true, 120, 40)
+	l.answers(map[string]sources.Captured{
+		"add app api --lang go --fresh --dry-run": {OK: true, Text: "Plan: add app api\n  Project api\n    create  apps/api/"},
+	})
+	l.keys("a").typeText("backend").keys("enter", "enter")
+	l.typeText("api").keys("enter")
+	l.keys("down", "down", "enter") // the sibling question: the stack defaults
+	l.has("Add api?", "Nothing is written yet")
+	l.keys("esc")
+	l.hasNot("Add api?")
+	l.has("Should it do what the other projects here do?")
+	if len(l.started) != 0 {
+		t.Fatalf("going back writes nothing: %v", l.started)
+	}
+	l.keys("esc") // one more step back: the name, still filled in
+	l.has("Name it", "api")
+}
+
 func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T) {
 	l := newLab(t, true, 120, 40)
 	l.answers(map[string]sources.Captured{
