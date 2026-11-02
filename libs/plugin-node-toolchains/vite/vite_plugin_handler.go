@@ -5,6 +5,7 @@ import (
 	"maps"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/typescript"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/choicedata"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -62,7 +63,13 @@ func (p *Vite) Generate(params protocol.GenerateParams) (protocol.GenerateResult
 		}
 		return protocol.GenerateResult{}, fmt.Errorf("the vite plugin writes projects from the choices %v, not the stack %q: smith add app <name> --with react", offered, params.Stack)
 	}
-	return scaffolding.GenerateFrom(p.root, params, templateSet(plan))
+	set := templateSet(plan)
+	if env, ok := webenv.FromMap(params.Settings); ok {
+		if set, err = withEnvironments(set, env, params.Directory); err != nil {
+			return protocol.GenerateResult{}, err
+		}
+	}
+	return scaffolding.GenerateFrom(p.root, params, set)
 }
 
 // templateSet is the starter that a plan of choices describes.

@@ -95,8 +95,9 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 	if !strings.Contains(m.View(), "[x] framework: vue") {
 		t.Fatalf("the pick starts ticked in the choices:\n%s", m.View())
 	}
-	m = press(m, "enter")
-	if got := strings.Join(m.Argv, " "); got != "add app site --lang node --with vue" {
+	m = press(m, "enter") // the choices
+	m = press(m, "enter", "enter", "enter", "enter") // the environments take their defaults
+	if got := strings.Join(m.Argv, " "); got != "add app site --lang node --with vue --environments lcl,dev,uat,prd --default-environment prd --environment-output workspace --env-files commit" {
 		t.Fatalf("argv %q", got)
 	}
 }

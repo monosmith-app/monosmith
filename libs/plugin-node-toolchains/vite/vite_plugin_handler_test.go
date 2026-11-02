@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/scaffolding"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -177,5 +178,65 @@ func TestReactPinsTheBabelPeerChainBesideTheWorkspacesOwnOverrides(t *testing.T)
 				t.Errorf("Babel override %q, want it %v:\n%s", got, wantOverride, raw)
 			}
 		})
+	}
+}
+
+// A web app with environments is built once per environment: one script, one
+// env file and one output folder each, and vite.config.ts reads build(mode).
+func TestGenerateWithEnvironments(t *testing.T) {
+	real := scaffolding.Installer
+	defer func() { scaffolding.Installer = real }()
+	scaffolding.Installer = func(string) error { return nil }
+	ws := t.TempDir()
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	settings := webenv.Settings{Names: webenv.DefaultNames}.ToMap()
+	if _, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react", Choices: []string{"react"}, Settings: settings, Workspace: protocol.WorkspaceInfo{Name: "acme", Scope: "@acme"}}); err != nil {
+		t.Fatal(err)
+	}
+	read := func(rel string) string {
+		raw, err := os.ReadFile(filepath.Join(ws, "apps", "web", filepath.FromSlash(rel)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(raw)
+	}
+	var manifest struct{ Scripts map[string]string }
+	if err := json.Unmarshal([]byte(read("package.json")), &manifest); err != nil {
+		t.Fatalf("package.json is JSON: %v\n%s", err, read("package.json"))
+	}
+	if manifest.Scripts["build"] != "vite build --mode prd --outDir ../../dist/apps/web/prd" || manifest.Scripts["build:uat"] != "vite build --mode uat --outDir ../../dist/apps/web/uat" || manifest.Scripts["start"] != "vite --mode lcl" {
+		t.Errorf("scripts %v", manifest.Scripts)
+	}
+	if _, ok := manifest.Scripts["build:prd"]; ok {
+		t.Error("the default environment is the task build, so no build:prd would write the same folder")
+	}
+	for _, env := range webenv.DefaultNames {
+		if !strings.Contains(read(".env."+env), "never put a secret here") {
+			t.Errorf(".env.%s has no warning", env)
+		}
+	}
+	config := read("vite.config.ts")
+	for _, want := range []string{"import { build } from './vite.build.ts'", "defineConfig(({ mode }) => ({", "plugins: [react()]", "build:   build(mode),"} {
+		if !strings.Contains(config, want) {
+			t.Errorf("vite.config.ts misses %q:\n%s", want, config)
+		}
+	}
+	if !strings.Contains(read("vite.build.ts"), "export function build (mode: string)") || !strings.Contains(read(".gitignore"), ".env.*.local") {
+		t.Error("vite.build.ts and .gitignore are written")
+	}
+}
+
+// Settings that are not valid stop the generation before any file is written.
+func TestGenerateRefusesBadEnvironments(t *testing.T) {
+	ws := t.TempDir()
+	p := New("1.0.0")
+	_, _ = p.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+	_, err := p.Generate(protocol.GenerateParams{Kind: protocol.ProjectApp, Name: "web", Directory: "apps/web", Stack: "react", Choices: []string{"react"}, Settings: map[string]any{"environments": []any{"Prod"}}})
+	if err == nil || !strings.Contains(err.Error(), "not an environment name") {
+		t.Errorf("got %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(ws, "apps")); statErr == nil {
+		t.Error("nothing is written")
 	}
 }

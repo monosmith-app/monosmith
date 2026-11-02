@@ -93,7 +93,7 @@ without a terminal it needs --yes. --dry-run shows the plan and writes nothing.`
 				return err
 			}
 			defer s.Close()
-			for _, w := range buildoutputs.OverlapWarnings(s.Graph.Projects, s.Config.Workspace.SharedOutputs...) {
+			for _, w := range buildoutputs.OverlapWarningsFor(s.Graph.Projects, s.Config.Workspace.SharedOutputs, s.Config.Workspace.AlternativeOutputs) {
 				fmt.Fprintln(c.ErrOrStderr(), w)
 			}
 			if check {

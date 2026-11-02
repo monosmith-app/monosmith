@@ -118,6 +118,15 @@ type WorkspaceSection struct {
 	// tasks fill on purpose, each with its own files; smith doctor does not
 	// report their overlap.
 	SharedOutputs []string `toml:"shared_outputs"`
+	// AlternativeOutputs are groups of tasks ("api:build", "api:build-dev")
+	// that write one folder but never run together; smith doctor does not
+	// report the overlap inside a group. smith still clears the folder before
+	// each task, so a run of two tasks of one group keeps the last one's files.
+	AlternativeOutputs [][]string `toml:"alternative_outputs"`
+	// Environments are the environments a new web app is built for, one build
+	// each (lcl, dev, uat, prd): the list the add question starts from. A web
+	// app keeps its own list in [projects.<name>.settings.vite].
+	Environments []string `toml:"environments"`
 	// Registry names the [registries] entry the workspace installs from;
 	// empty means the public registries.
 	Registry string `toml:"registry"`

@@ -40,6 +40,15 @@ func TaskFor(script, root string, scripts map[string]string) protocol.Task {
 		// Every build goes to the workspace's dist/<project dir>.
 		t.Outputs = []string{protocol.BuildDirFromProject(root)}
 	}
+	if dir, ok := environmentBuildDir(script, scripts[script]); ok {
+		// A web app built once per environment (ADR 0081): the script's
+		// --outDir is the folder of that environment, and each environment
+		// is cached like the build.
+		t = scriptTasks["build"]
+		known = true
+		t.Description = "Build the " + environmentOf(script) + " environment into " + dir
+		t.Outputs = []string{dir}
+	}
 	var deps []string
 	for _, d := range t.DependsOn {
 		if _, has := scripts[d]; has || strings.HasPrefix(d, "^") {

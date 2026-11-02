@@ -46,9 +46,9 @@ func BuildAssets(workspaceRoot string, params protocol.PublishParams) (protocol.
 	if params.DryRun {
 		return res, nil
 	}
-	build := filepath.Join(workspaceRoot, filepath.FromSlash(protocol.ProjectBuildDir(p.Root)))
+	build := filepath.Join(workspaceRoot, filepath.FromSlash(protocol.BuildOutputDir(p)))
 	if info, err := os.Stat(build); err != nil || !info.IsDir() {
-		return protocol.PublishResult{}, fmt.Errorf("%s: no build in %s to make the release asset from; build it first", p.Name, protocol.ProjectBuildDir(p.Root))
+		return protocol.PublishResult{}, fmt.Errorf("%s: no build in %s to make the release asset from; build it first", p.Name, protocol.BuildOutputDir(p))
 	}
 	out := filepath.Join(workspaceRoot, filepath.FromSlash(asset))
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {

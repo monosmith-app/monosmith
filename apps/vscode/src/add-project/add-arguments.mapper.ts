@@ -1,4 +1,5 @@
 import type { AddRequest } from './add-options.contract.ts'
+import { environmentArguments } from './web-environments.mapper.ts'
 
 /**
  * The arguments of `smith add` for a request.
@@ -14,6 +15,7 @@ export function addArguments (request: AddRequest, mode: 'plan' | 'apply', fresh
     ...(request.with.length === 0 ? [] : ['--with', request.with.join(',')]),
     ...(fresh ? ['--fresh'] : []),
     ...(fresh || request.like === undefined ? [] : ['--like', request.like]),
+    ...(request.environments === undefined ? [] : environmentArguments(request.environments)),
     mode === 'plan' ? '--dry-run' : '--yes',
     ...(mode === 'apply' && commit ? ['--commit'] : []),
   ]

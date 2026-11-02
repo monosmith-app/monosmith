@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/dialect"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/vite/webenv"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/host"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/projectkind"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -46,7 +48,10 @@ type AddOptions struct {
 	// project copies, instead of what most of its siblings share (smith add
 	// --like).
 	Like string
-	Out  io.Writer
+	// Environments are the environment builds of a web app (ADR 0081), settled
+	// by CompleteEnvironments; nil for a project that has a single build.
+	Environments *webenv.Settings
+	Out          io.Writer
 }
 
 // AddProject generates a project: its stack's scaffold (or the language
@@ -152,6 +157,16 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 	}}
 	params.Choices = st.Choices
 	params.Settings = settings[generator.Info.Plugin.Name]
+	if opts.Environments != nil {
+		if generator.Info.Plugin.Name != webenv.PluginName {
+			return nil, fmt.Errorf("environments are for a web app built with Vite, and %s is made by the %s plugin", opts.Name, generator.Info.Plugin.Name)
+		}
+		params.Settings = maps.Clone(params.Settings)
+		if params.Settings == nil {
+			params.Settings = map[string]any{}
+		}
+		maps.Copy(params.Settings, opts.Environments.ToMap())
+	}
 	if params.Facts, err = projectgraph.ConfigFacts(s.Config, opts.Name); err != nil {
 		return nil, err
 	}
@@ -167,6 +182,11 @@ func AddProject(s *session.Session, opts AddOptions) (result *protocol.GenerateR
 		return nil, err
 	}
 	pending := res.InstallPending
+	if opts.Environments != nil {
+		if err := recordEnvironments(s, opts.Name, *opts.Environments); err != nil {
+			return &res, err
+		}
+	}
 	if err := s.Refresh(); err != nil {
 		return &res, err
 	}

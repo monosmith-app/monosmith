@@ -17,6 +17,11 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project) (protocol.Finding, 
 	if _, builds := p.Tasks["build"]; !builds {
 		return protocol.Finding{}, false
 	}
+	if v, _ := p.Settings["vite"]["output"].(string); v == "project" {
+		// A web app built per environment that keeps its builds in its own
+		// dist/<env> (ADR 0081): the owner chose it when the app was added.
+		return protocol.Finding{}, false
+	}
 	config, outDir, ok := manifestfixes.LocateOutDir(filepath.Join(workspaceRoot, filepath.FromSlash(p.Root)))
 	if !ok {
 		return protocol.Finding{}, false

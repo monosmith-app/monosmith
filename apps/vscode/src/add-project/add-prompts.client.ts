@@ -4,6 +4,8 @@ import type { AddOptions, AddOutcome, AddRequest, ChoiceOption, PlanAnswer } fro
 import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
 import { askedAxes, choicesByAxis, roleOf } from './add-options.mapper.ts'
+import { isWebApp } from './web-environments.mapper.ts'
+import { askWebEnvironments } from './web-environments-prompts.client.ts'
 
 const ROLES: Record<string, string> = {
   app:     'something you run or deploy (a website, an API) → apps/<name>',
@@ -41,7 +43,14 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
     validateInput: (value) => checkProjectName(value) ?? (existing.includes(value) ? `${value} exists already: pick another name.` : undefined),
   })
 
-  return name === undefined ? undefined : { role, name, language, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
+  if (name === undefined) return undefined
+
+  const request: AddRequest = { role, name, language, with: build.with, fresh: false, ...(build.stack !== undefined && { stack: build.stack }), ...(like !== undefined && { like }) }
+  if (!isWebApp(request)) return request
+  // A web app is built once per environment: smith refuses to add one that names none.
+  const environments = await askWebEnvironments(name)
+
+  return environments === undefined ? undefined : { ...request, environments }
 }
 
 const EVERY_LANGUAGE = '$(list-flat) I know the language: show every language'

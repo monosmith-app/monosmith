@@ -65,6 +65,7 @@ Python package). Paths in output are shortened.
 | [`smith remove`](remove.md) | Remove a project: its directory, its traces in the workspace, its CI. |
 | [`smith kind`](kind.md) | Make a project an app, an internal lib or a published package: the manifest, the folder (with `git mv`), every reference to it, the CI. |
 | [`smith tauri`](tauri.md) | Tauri desktop apps: [`tauri add`](tauri-add.md) wraps an existing Node app, [`tauri icon`](tauri-icon.md) makes its icons. |
+| [`smith environments`](environments.md) | List, add and remove the environments a web app is built for: [`list`](environments-list.md), [`add`](environments-add.md), [`remove`](environments-remove.md). |
 | [`smith config`](config.md) | Read and change settings of `smith.toml`: [`list`](config-list.md), [`get`](config-get.md), [`set`](config-set.md), [`unset`](config-unset.md). |
 | [`smith architecture`](architecture.md) | Show how the workspace's code is laid out (`vertical-slices`, `hexagonal`, `clean`, `ddd`, `modular-monolith`, `mvc`, `package-by-layer` or `none`), or choose another. |
 | [`smith upgrade`](upgrade.md) | Bring the workspace up to this smith and its recipes. |
