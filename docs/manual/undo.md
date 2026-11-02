@@ -37,7 +37,7 @@ Usage: `smith undo [flags]`
 ## What it checks
 
 `smith undo` prints what it will revert (an added file is removed, a changed file is restored, a
-deleted file is created) and asks in a terminal. With no terminal, or in CI, it never asks. It
+deleted file is created) and asks in a terminal. With no terminal, or in CI, it refuses unless you pass `--yes`. It
 refuses, with the reason and the next step, when:
 
 - no operation is recorded (the setting was off, or everything was undone);

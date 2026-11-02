@@ -158,7 +158,7 @@ The name must be kebab-case.
 Before it writes, smith add prints a plan: the project directory, what each plugin of the stack
 adds, and the workspace files that change (with the owner, `smith` or `you`, where `smith.lock`
 records one). In a terminal, outside CI, it asks `Go ahead? [y/N]`; `--yes` skips the question,
-and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it never asks.
+and `--dry-run` prints the plan and writes nothing. Without a terminal, or in CI, it refuses and names `--yes` (apply) and `--dry-run` (see the plan). The plan lists the pipeline and dev container files that smith generated and may rewrite, by name.
 
 By default smith add leaves the files it wrote uncommitted (`smith new` commits what it wrote):
 review them with `git status`, then commit. With `commit_operations = true` under `[workspace]`

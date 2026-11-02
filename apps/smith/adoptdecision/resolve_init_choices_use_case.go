@@ -28,6 +28,9 @@ type Request struct {
 	Out         io.Writer
 }
 
+// asks says a person is asked: a terminal, no --yes, and not a dry run.
+func (r Request) asks() bool { return r.Interactive && !r.Yes && !r.Preview }
+
 // Resolve settles the choices of adopt --init. A flag settles its choice. In a
 // terminal each open choice is a question that says what every answer does,
 // with the safe one as the default. With --yes (or in a dry run) each open
@@ -73,7 +76,7 @@ func Resolve(r Request) (Choices, error) {
 		switch {
 		case r.Facts.GitattributesExists:
 			c.Gitattributes = GitattributesSkip
-		case r.Interactive && !r.Yes && !r.Preview:
+		case r.asks():
 			c.Gitattributes = scaffold.AskChoice("Line endings: should smith write a .gitattributes with `* text=auto eol=lf`? Git then converts every text file in the repository to LF.", []scaffold.NewOption{
 				{Label: "No, keep my line endings", Value: GitattributesSkip, Hint: "nothing is renormalised (default)"},
 				{Label: "Yes, write it", Value: GitattributesAdd, Hint: "text files become LF; on a CRLF repository this changes many files"},
@@ -90,7 +93,7 @@ func Resolve(r Request) (Choices, error) {
 			merge = "; your .mcp.json is merged, your servers stay"
 		}
 		switch {
-		case r.Interactive && !r.Yes && !r.Preview:
+		case r.asks():
 			c.Agent = scaffold.AskChoice("The MonoSmith agent lets Claude Code and VS Code run smith in this repository through an MCP server. Add its files?", []scaffold.NewOption{
 				{Label: "Not now", Value: AgentSkip, Hint: "nothing is written; smith agent install adds it later (default)"},
 				{Label: "Add them", Value: AgentAdd, Hint: ".claude/agents/smith.md, .mcp.json, .vscode/mcp.json" + merge},
@@ -116,7 +119,7 @@ func askCI(r Request, say func(string, ...any)) []string {
 	if len(detected) > 0 {
 		fallback = detected
 	}
-	if !(r.Interactive && !r.Yes && !r.Preview) {
+	if !r.asks() {
 		if len(detected) > 0 {
 			say("CI: %s, the provider the repository already uses (--ci <provider>|none changes it)", strings.Join(detected, ", "))
 		} else {
@@ -167,7 +170,7 @@ func settleExisting(r Request, c Choices, say func(string, ...any)) string {
 	if len(own) == 0 {
 		return ExistingReplace
 	}
-	if !(r.Interactive && !r.Yes && !r.Preview) {
+	if !r.asks() {
 		say("Your own pipeline %s: replaced by smith's, yours kept as <file>.pre-smith (--ci-existing keep leaves it alone)", strings.Join(own, ", "))
 		return ExistingReplace
 	}
