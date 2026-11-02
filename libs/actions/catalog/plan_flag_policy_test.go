@@ -13,6 +13,7 @@ func TestPlanFlag(t *testing.T) {
 		{[]string{"release"}, ""}, // the shell reads the release plan itself
 		{[]string{"deps", "up", "--yes"}, "--check"},
 		{[]string{"bootstrap"}, "--dry-run"},
+		{[]string{"remove", "web", "--keep-copy"}, "--dry-run"},
 		{[]string{"upgrade", "--dry-run"}, ""},  // already a plan
 		{[]string{"sync", "--check"}, ""},       // reads only
 		{[]string{"doctor"}, ""},                // reads only

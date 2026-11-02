@@ -1,6 +1,7 @@
 package adoptwizard
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"bytes"
 	"context"
 	"errors"
@@ -35,6 +36,8 @@ type fakeFlow struct {
 	declined []map[string]bool
 	// agent, when set, is the offer of the MonoSmith agent.
 	agent bool
+	// facts are what the repository holds, for the decisions of adopt --init.
+	facts adoptdecision.Facts
 }
 
 func (f *fakeFlow) note(s string) { f.calls = append(f.calls, s) }
@@ -129,7 +132,16 @@ func (f *fakeFlow) FinishFix(withLint bool) doctorfix.Planned {
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Install, then check", Steps: steps}}
 }
 
-func (f *fakeFlow) AdoptFix(commit bool, move string) doctorfix.Planned {
+
+func (f *fakeFlow) InitFacts() adoptdecision.Facts { return f.facts }
+
+func (f *fakeFlow) InitPlan(c adoptdecision.Choices) string {
+	f.note("init plan " + strings.Join(c.Argv(), " "))
+	return "Plan: adopt smith\n  create smith.toml\n"
+}
+
+func (f *fakeFlow) AdoptFixChosen(commit bool, move string, c adoptdecision.Choices) doctorfix.Planned {
+	f.note("adopt " + strings.Join(c.Argv(), " "))
 	argv := []string{"smith", "adopt", "--init"}
 	if move != "" {
 		argv = append(argv, "--move", move)
@@ -137,6 +149,7 @@ func (f *fakeFlow) AdoptFix(commit bool, move string) doctorfix.Planned {
 	if commit {
 		argv = append(argv, "--commit")
 	}
+	argv = append(argv, c.Argv()...)
 	return doctorfix.Planned{Fix: protocol.Fix{Description: "Make this repository a smith workspace", Steps: []protocol.FixStep{{Description: "adopt", Argv: argv}}}}
 }
 
@@ -242,6 +255,18 @@ func (w *walk) press(keys ...string) *walk {
 		w.m, o = w.m.Key(k)
 		w.last = o
 		w.runJob(o.Job)
+	}
+	return w
+}
+
+// init answers the decisions of adopt --init with the first, safe answer of each.
+func (w *walk) init() *walk {
+	w.t.Helper()
+	if w.m.Stage() != StageInit {
+		w.t.Fatalf("stage %v, want the decisions of adopt --init", w.m.Stage())
+	}
+	for i := 0; i < 6 && w.m.Stage() == StageInit; i++ {
+		w.press("enter")
 	}
 	return w
 }
@@ -409,8 +434,12 @@ func TestAPlainRepositoryAdoptsConservativelyAndSaysWhyThereIsNoFullLevel(t *tes
 	w := start(t, f)
 	w.want("Found a repository: solo", "The full level", "Tracked in")
 	w.press("enter")
+	if w.m.Stage() != StageInit {
+		t.Fatalf("a plain repository is asked the decisions of adopt --init, not a level question: stage %v", w.m.Stage())
+	}
+	w.init()
 	if w.m.Stage() != StageReview {
-		t.Fatalf("a plain repository goes straight to the review, not a level question: stage %v", w.m.Stage())
+		t.Fatalf("then it goes to the review: stage %v", w.m.Stage())
 	}
 	w.want("smith adopt --init", "your build and lint setup stay as they are", "[ Go ahead  Enter ]")
 	w.press("enter")

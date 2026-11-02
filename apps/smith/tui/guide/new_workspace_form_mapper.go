@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
@@ -37,7 +38,12 @@ func NewWorkspaceSteps() []Step {
 		}
 		steps = append(steps, step)
 	}
-	return steps
+	// The decisions come before the questions smith new asks at the end.
+	at := slices.IndexFunc(steps, func(st Step) bool { return st.Key == scaffold.AnswerSaveRecipe })
+	if at < 0 {
+		at = len(steps)
+	}
+	return slices.Insert(steps, at, decisionSteps()...)
 }
 
 // singleAnswers is the first answer of each question.
@@ -72,6 +78,7 @@ func NewWorkspaceArgv(a map[string][]string) []string {
 			argv = append(argv, "--"+q.Flag, value)
 		}
 	}
+	argv = append(argv, decisionFlags(a)...)
 	if first(a, scaffold.AnswerSaveRecipe) == "yes" {
 		name := strings.TrimSpace(first(a, scaffold.AnswerRecipeName))
 		if name == "" {

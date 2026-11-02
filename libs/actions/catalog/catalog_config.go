@@ -21,7 +21,7 @@ var catalog = []Action{
 	// Create
 	{Command: []string{"new"}, Safety: Changes, NotInMCP: "creates a workspace, and the server serves one that exists", NotInServe: "creates a workspace, and the engine serves one that exists"},
 	{Command: []string{"add"}, Safety: Changes, Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}},
-	{Command: []string{"remove"}, Safety: Changes, Asks: true},
+	{Command: []string{"remove"}, Plan: "--dry-run", Safety: Changes, Asks: true},
 	{Command: []string{"adopt"}, Safety: Reads, Variants: []Variant{{When: []string{"--tags", "--init"}, Safety: Changes}}, NotInMCP: "no tool yet: bringing a repository under smith is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"convert"}, Plan: "--dry-run", Safety: Changes, NotInMCP: "no tool yet: converting an Nx or Turborepo workspace is what the MonoSmith agent will need (#407)", NotInServe: noMethodYet},
 	{Command: []string{"upgrade"}, Plan: "--dry-run", Asks: true, Safety: Changes},

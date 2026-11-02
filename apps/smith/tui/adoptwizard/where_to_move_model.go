@@ -85,7 +85,7 @@ func (m Model) answeredMove(answers []int) (Model, Outcome) {
 	m.moveName = m.fw.Text()
 	if choice.Key == adoptmove.KeyNone {
 		m.moveTo, m.moveNote = adoptmove.Leave, ""
-		return m.showConservative(), Outcome{}
+		return m.afterMove(), Outcome{}
 	}
 	dir, err := adoptmove.Destination(choice.Key, m.moveName)
 	if err != nil {
@@ -97,5 +97,5 @@ func (m Model) answeredMove(answers []int) (Model, Outcome) {
 		return m.askMove(), Outcome{}
 	}
 	m.moveTo, m.moveNote = dir, ""
-	return m.showConservative(), Outcome{}
+	return m.afterMove(), Outcome{}
 }

@@ -183,13 +183,20 @@ func Actions(languages, plugins, enabled []string) []Action {
 					{Label: "Preview what would change", Value: "preview", Hint: "smith remove --dry-run: changes nothing"},
 					{Label: "Remove it", Value: "remove", Hint: "refused while other projects import it"},
 				}},
+				{Key: "folder", Prompt: "What happens to the project's folder? Files git cannot bring back (untracked, or changed and not committed) are lost for good if it is deleted. Esc cancels and removes nothing.", Options: []Option{
+					{Label: "Keep a copy", Value: "keep", Hint: "the folder moves to .smith/removed/<name>-<time>/ (default)"},
+					{Label: "Delete it for good", Value: "delete", Hint: "nothing is kept; git still has what was committed"},
+				}, Skip: func(a map[string][]string) bool { return first(a, "mode") != "remove" }},
 			},
 			Argv: func(a map[string][]string) []string {
 				argv := []string{"remove", first(a, "name")}
 				if first(a, "mode") != "remove" {
-					argv = append(argv, "--dry-run")
+					return append(argv, "--dry-run")
 				}
-				return argv
+				if first(a, "folder") == "delete" {
+					return append(argv, "--delete")
+				}
+				return append(argv, "--keep-copy")
 			},
 		},
 		{
