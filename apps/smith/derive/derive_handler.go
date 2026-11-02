@@ -114,6 +114,14 @@ func run(out io.Writer, in io.Reader, s *session.Session, check, yes, dryRun boo
 		return CheckPlan(out, plan)
 	}
 	writes := PlanWrites(s.Root, plan)
+	if len(d.Replace) > 0 {
+		// --replace throws a hand edit away: show what is lost before it goes.
+		fmt.Fprintln(out, "--replace overwrites these files with what smith derives; the lines marked - are lost:")
+		for _, p := range d.Replace {
+			PrintDiffs(out, itemsAt(plan, p))
+		}
+		fmt.Fprintln(out)
+	}
 	if len(d.Reclaim) > 0 {
 		changes, err := PlanReclaim(s.Root, plan, d.Reclaim)
 		if err != nil {

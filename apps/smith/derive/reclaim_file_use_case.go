@@ -10,9 +10,9 @@ import (
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/derivefile"
-	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 )
 
 // ReclaimChange is what taking one file back from its owner does to the file
@@ -56,7 +56,7 @@ func PlanReclaim(root string, plan Plan, paths []string) (map[string]ReclaimChan
 		change := ReclaimChange{Path: p, Before: disk, After: disk, Exists: exists, Owner: items[0].Owner}
 		for _, item := range items {
 			if item.Status == StatusBroken {
-				return nil, problem.New(p+" cannot be given back: "+item.Detail)
+				return nil, problem.New(p + " cannot be given back: " + item.Detail)
 			}
 			merged, err := derivefile.Merge(item.File, change.After, exists)
 			if err != nil {
@@ -75,11 +75,11 @@ func PrintReclaimDiffs(w io.Writer, paths []string, changes map[string]ReclaimCh
 		c := changes[p]
 		switch {
 		case !c.Exists:
-			fmt.Fprintf(w, "\n%s (owner %s) is gone; smith writes it:\n%s", p, c.Owner, doctorfix.UnifiedDiff(p, "", string(c.After)))
+			fmt.Fprintf(w, "\n%s (owner %s) is gone; smith writes it:\n%s", p, c.Owner, textdiff.UnifiedDiff(p, "", string(c.After)))
 		case !c.Changed():
 			fmt.Fprintf(w, "\n%s (owner %s) already holds what smith derives; only the record changes.\n", p, c.Owner)
 		default:
-			fmt.Fprintf(w, "\n%s (owner %s) will be overwritten:\n%s", p, c.Owner, doctorfix.UnifiedDiff(p, string(c.Before), string(c.After)))
+			fmt.Fprintf(w, "\n%s (owner %s) will be overwritten:\n%s", p, c.Owner, textdiff.UnifiedDiff(p, string(c.Before), string(c.After)))
 		}
 	}
 }

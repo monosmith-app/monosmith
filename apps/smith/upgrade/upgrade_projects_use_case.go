@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/recipedrift"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 )
 
@@ -31,7 +32,7 @@ func upgradeProjects(s *session.Session, check bool, r *Result) error {
 	}
 	addFile(r, workspace.FileName)
 	if check {
-		r.Diff = doctorfix.UnifiedDiff(workspace.FileName, plan.Before, plan.After)
+		r.Diff = textdiff.UnifiedDiff(workspace.FileName, plan.Before, plan.After)
 		return nil
 	}
 	if err := plan.Apply(s); err != nil {

@@ -8,8 +8,8 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/agentfiles"
 	"github.com/monosmith-app/monosmith/apps/smith/cipipeline"
-	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
+	"github.com/monosmith-app/monosmith/apps/smith/textdiff"
 )
 
 // ProviderPaths maps a CI provider to the file that holds its pipeline.
@@ -96,7 +96,7 @@ func PlanInit(r Report, c adoptdecision.Choices, install bool) operationplan.Pla
 					plan.Add("Files smith creates", operationplan.Line{Action: operationplan.Create, Path: f.Path, Note: "the MonoSmith agent"})
 					continue
 				}
-				plan.Add("Files of yours smith edits", operationplan.Line{Action: operationplan.Change, Path: f.Path, Note: "merged: what you have stays", Diff: doctorfix.UnifiedDiff(f.Path, f.Old, f.New)})
+				plan.Add("Files of yours smith edits", operationplan.Line{Action: operationplan.Change, Path: f.Path, Note: "merged: what you have stays", Diff: textdiff.UnifiedDiff(f.Path, f.Old, f.New)})
 			}
 		}
 	}
@@ -104,7 +104,7 @@ func PlanInit(r Report, c adoptdecision.Choices, install bool) operationplan.Pla
 		plan.Add("Files smith creates", operationplan.Line{Action: operationplan.Create, Path: "smith.toml", Note: "records [agent] enabled = false"})
 	}
 	edits := func(path, note, before, after string) {
-		plan.Add("Files of yours smith edits", operationplan.Line{Action: operationplan.Change, Path: path, Note: note, Diff: doctorfix.UnifiedDiff(path, before, after)})
+		plan.Add("Files of yours smith edits", operationplan.Line{Action: operationplan.Change, Path: path, Note: note, Diff: textdiff.UnifiedDiff(path, before, after)})
 	}
 	var nodeRoots, goRoots []string
 	for _, p := range r.Projects {

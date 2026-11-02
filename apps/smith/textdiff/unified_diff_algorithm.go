@@ -1,4 +1,4 @@
-package doctorfix
+package textdiff
 
 import (
 	"fmt"
