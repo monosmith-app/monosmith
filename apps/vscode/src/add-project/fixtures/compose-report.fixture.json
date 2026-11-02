@@ -1,0 +1,2062 @@
+{
+  "layers": [
+    {
+      "id": "language",
+      "title": "Language",
+      "about": "what the project is written in"
+    },
+    {
+      "id": "framework",
+      "title": "Framework",
+      "about": "how the app or library is written: a web framework, or a whole starter"
+    },
+    {
+      "id": "shell",
+      "title": "Desktop shell",
+      "about": "what wraps the app as a program you install on a computer"
+    },
+    {
+      "id": "host",
+      "title": "Cloud host",
+      "about": "where the code runs in the cloud, with the trigger and the runtime it asks for"
+    },
+    {
+      "id": "library",
+      "title": "Libraries",
+      "about": "extra libraries the app draws on"
+    },
+    {
+      "id": "style",
+      "title": "Style",
+      "about": "how the app looks: a CSS library"
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "about": "the tool that runs the tests"
+    },
+    {
+      "id": "lint",
+      "title": "Lint",
+      "about": "the tool that checks and formats the code"
+    },
+    {
+      "id": "architecture",
+      "title": "Architecture",
+      "about": "the rule for how the code is laid out in folders"
+    },
+    {
+      "id": "ci",
+      "title": "CI and deploy",
+      "about": "the pipelines that build, test and deploy the project"
+    }
+  ],
+  "items": [
+    {
+      "id": "language/recipe",
+      "kind": "language",
+      "name": "recipe",
+      "title": "A recipe (a ready-made set of projects)",
+      "description": "A ready-made set of projects that work together",
+      "layer": "language",
+      "language": "recipe",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/applescript",
+      "kind": "language",
+      "name": "applescript",
+      "title": "AppleScript",
+      "description": "scripts that automate macOS apps",
+      "layer": "language",
+      "language": "applescript",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/bicep",
+      "kind": "language",
+      "name": "bicep",
+      "title": "Azure Bicep",
+      "description": "Azure infrastructure as code",
+      "layer": "language",
+      "language": "bicep",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/bundle",
+      "kind": "language",
+      "name": "bundle",
+      "title": "Bundle",
+      "description": "apps assembled from other projects: app.json and flow.json",
+      "layer": "language",
+      "language": "bundle",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/cpp",
+      "kind": "language",
+      "name": "cpp",
+      "title": "C / C++",
+      "description": "native programs and libraries",
+      "layer": "language",
+      "language": "cpp",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/dotnet",
+      "kind": "language",
+      "name": "dotnet",
+      "title": "C# / .NET",
+      "description": ".NET apps and libraries",
+      "layer": "language",
+      "language": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/dart",
+      "kind": "language",
+      "name": "dart",
+      "title": "Dart / Flutter",
+      "description": "Flutter apps and Dart packages",
+      "layer": "language",
+      "language": "dart",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/go",
+      "kind": "language",
+      "name": "go",
+      "title": "Go",
+      "description": "services and command-line tools",
+      "layer": "language",
+      "language": "go",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/jvm",
+      "kind": "language",
+      "name": "jvm",
+      "title": "Java / Kotlin",
+      "description": "built with Gradle or Maven",
+      "layer": "language",
+      "language": "jvm",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/lua",
+      "kind": "language",
+      "name": "lua",
+      "title": "Lua",
+      "description": "scripts and LuaRocks libraries",
+      "layer": "language",
+      "language": "lua",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/objc",
+      "kind": "language",
+      "name": "objc",
+      "title": "Objective-C",
+      "description": "CocoaPods libraries",
+      "layer": "language",
+      "language": "objc",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/php",
+      "kind": "language",
+      "name": "php",
+      "title": "PHP",
+      "description": "web apps and Composer packages",
+      "layer": "language",
+      "language": "php",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/python",
+      "kind": "language",
+      "name": "python",
+      "title": "Python",
+      "description": "scripts, services and libraries",
+      "layer": "language",
+      "language": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/ruby",
+      "kind": "language",
+      "name": "ruby",
+      "title": "Ruby",
+      "description": "gems and web apps",
+      "layer": "language",
+      "language": "ruby",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/rust",
+      "kind": "language",
+      "name": "rust",
+      "title": "Rust",
+      "description": "fast, safe programs and libraries",
+      "layer": "language",
+      "language": "rust",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/swift",
+      "kind": "language",
+      "name": "swift",
+      "title": "Swift",
+      "description": "packages and command-line tools built with SwiftPM",
+      "layer": "language",
+      "language": "swift",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/node",
+      "kind": "language",
+      "name": "node",
+      "title": "TypeScript / JavaScript",
+      "description": "runs on Node, with tests and linting set up",
+      "layer": "language",
+      "language": "node",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "language/vba",
+      "kind": "language",
+      "name": "vba",
+      "title": "VBA",
+      "description": "Office macros kept in git as text",
+      "layer": "language",
+      "language": "vba",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/html",
+      "kind": "choice",
+      "name": "html",
+      "title": "Plain page",
+      "description": "a page in TypeScript with no framework, built with Vite",
+      "aliases": [
+        "web",
+        "static",
+        "vanilla",
+        "no framework",
+        "browser"
+      ],
+      "layer": "framework",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "lint",
+        "test"
+      ],
+      "roles": [
+        "scaffold",
+        "toolchain"
+      ],
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/react",
+      "kind": "choice",
+      "name": "react",
+      "title": "React",
+      "description": "a React 19 app in TypeScript, built with Vite",
+      "aliases": [
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa",
+        "jsx"
+      ],
+      "layer": "framework",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "lint",
+        "test"
+      ],
+      "roles": [
+        "scaffold",
+        "toolchain"
+      ],
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/svelte",
+      "kind": "choice",
+      "name": "svelte",
+      "title": "Svelte",
+      "description": "a Svelte 5 app in TypeScript, built with Vite and checked by svelte-check",
+      "aliases": [
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa"
+      ],
+      "layer": "framework",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "lint",
+        "test"
+      ],
+      "roles": [
+        "scaffold",
+        "toolchain"
+      ],
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/vue",
+      "kind": "choice",
+      "name": "vue",
+      "title": "Vue",
+      "description": "a Vue 3 app in TypeScript, built with Vite and type-checked by vue-tsc",
+      "aliases": [
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa"
+      ],
+      "layer": "framework",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "lint",
+        "test"
+      ],
+      "roles": [
+        "scaffold",
+        "toolchain"
+      ],
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/electron",
+      "kind": "choice",
+      "name": "electron",
+      "title": "Electron",
+      "description": "an Electron desktop app in TypeScript: a main process, a preload script that uses contextBridge, and one renderer page; start opens the window, package makes the app folder with Electron Forge",
+      "aliases": [
+        "desktop",
+        "windows",
+        "mac",
+        "linux",
+        "native",
+        "app",
+        "chromium"
+      ],
+      "layer": "shell",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "lint",
+        "test"
+      ],
+      "conflicts": [
+        "jest",
+        "azure-functions",
+        "aws-lambda",
+        "gcp-functions",
+        "tauri"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "electron",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/tauri",
+      "kind": "choice",
+      "name": "tauri",
+      "title": "Tauri",
+      "description": "wraps a web app in a small native desktop program (Rust and the system web view); adds src-tauri to the app. Needs Rust to build. For an app that exists, run smith tauri add",
+      "aliases": [
+        "desktop",
+        "windows",
+        "mac",
+        "linux",
+        "native",
+        "rust",
+        "app"
+      ],
+      "layer": "shell",
+      "axis": "shell",
+      "language": "node",
+      "conflicts": [
+        "electron",
+        "azure-functions",
+        "aws-lambda",
+        "gcp-functions"
+      ],
+      "roles": [
+        "toolchain"
+      ],
+      "plugin": "tauri",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/dotnet10",
+      "kind": "choice",
+      "name": "dotnet10",
+      "title": ".NET 10",
+      "description": ".NET 10, the current LTS; all three hosts support it",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version",
+        "csharp"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "dotnet",
+      "suggested": true,
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/dotnet8",
+      "kind": "choice",
+      "name": "dotnet8",
+      "title": ".NET 8",
+      "description": ".NET 8, the previous LTS; Azure and AWS support it until November 2026",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version",
+        "csharp"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "dotnet",
+      "conflicts": [
+        "gcp-functions"
+      ],
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/aws-lambda",
+      "kind": "choice",
+      "name": "aws-lambda",
+      "title": "AWS Lambda",
+      "description": "a serverless AWS Lambda function (C# class library): template.yaml and Events/ for sam local, and a handler with the Lambda serializer; runs with the SAM CLI (sam)",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "dotnet",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/aws-lambda",
+      "kind": "choice",
+      "name": "aws-lambda",
+      "title": "AWS Lambda",
+      "description": "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "trigger",
+        "runtime",
+        "lint",
+        "test"
+      ],
+      "conflicts": [
+        "jest"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/aws-lambda",
+      "kind": "choice",
+      "name": "aws-lambda",
+      "title": "AWS Lambda",
+      "description": "a serverless AWS Lambda function: template.yaml and events/ for sam local, and a lambda_handler; runs with the SAM CLI (sam)",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "python",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/azure-functions",
+      "kind": "choice",
+      "name": "azure-functions",
+      "title": "Azure Functions",
+      "description": "a serverless Azure Functions app (C# isolated worker): Program.cs, host.json, local.settings.sample.json and a csproj with the Worker packages; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "dotnet",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/azure-functions",
+      "kind": "choice",
+      "name": "azure-functions",
+      "title": "Azure Functions",
+      "description": "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "trigger",
+        "runtime",
+        "lint",
+        "test"
+      ],
+      "conflicts": [
+        "jest"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/azure-functions",
+      "kind": "choice",
+      "name": "azure-functions",
+      "title": "Azure Functions",
+      "description": "a serverless Azure Functions app (Python v2 model): function_app.py, host.json, requirements.txt and local.settings.sample.json; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "python",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/blob-trigger",
+      "kind": "choice",
+      "name": "blob-trigger",
+      "title": "Blob trigger",
+      "description": "answers a new file in storage (Azure: a blob, AWS: an S3 event, Google: a Cloud Storage event)",
+      "aliases": [
+        "serverless",
+        "storage",
+        "file",
+        "bucket"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "dotnet",
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/blob-trigger",
+      "kind": "choice",
+      "name": "blob-trigger",
+      "title": "Blob trigger",
+      "description": "answers a new file in storage (Azure: a blob, AWS: an S3 event, Google: a Cloud Storage event)",
+      "aliases": [
+        "serverless",
+        "storage",
+        "file",
+        "bucket"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "node",
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/blob-trigger",
+      "kind": "choice",
+      "name": "blob-trigger",
+      "title": "Blob trigger",
+      "description": "answers a new file in storage (Azure: a blob, AWS: an S3 event, Google: a Cloud Storage event)",
+      "aliases": [
+        "serverless",
+        "storage",
+        "file",
+        "bucket"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "python",
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/gcp-functions",
+      "kind": "choice",
+      "name": "gcp-functions",
+      "title": "Google Cloud Functions",
+      "description": "a serverless Google Cloud (Cloud Run) function (C#): a Functions Framework class and a csproj with Google.Cloud.Functions.Hosting; runs with dotnet run, no extra tool",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "dotnet",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/gcp-functions",
+      "kind": "choice",
+      "name": "gcp-functions",
+      "title": "Google Cloud Functions",
+      "description": "a serverless Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "node",
+      "needs": [
+        "trigger",
+        "runtime",
+        "lint",
+        "test"
+      ],
+      "conflicts": [
+        "jest"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/gcp-functions",
+      "kind": "choice",
+      "name": "gcp-functions",
+      "title": "Google Cloud Functions",
+      "description": "a serverless Google Cloud (Cloud Run) function: main.py and requirements.txt; runs with the Functions Framework, a dependency of the app",
+      "aliases": [
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run"
+      ],
+      "layer": "host",
+      "axis": "framework",
+      "language": "python",
+      "needs": [
+        "trigger",
+        "runtime"
+      ],
+      "roles": [
+        "scaffold"
+      ],
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/http-trigger",
+      "kind": "choice",
+      "name": "http-trigger",
+      "title": "HTTP trigger",
+      "description": "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)",
+      "aliases": [
+        "serverless",
+        "request",
+        "api",
+        "web"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "dotnet",
+      "suggested": true,
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/http-trigger",
+      "kind": "choice",
+      "name": "http-trigger",
+      "title": "HTTP trigger",
+      "description": "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)",
+      "aliases": [
+        "serverless",
+        "request",
+        "api",
+        "web"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "node",
+      "suggested": true,
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/http-trigger",
+      "kind": "choice",
+      "name": "http-trigger",
+      "title": "HTTP trigger",
+      "description": "answers an HTTP request (Azure: an HTTP trigger, AWS: API Gateway, Google: an HTTP function)",
+      "aliases": [
+        "serverless",
+        "request",
+        "api",
+        "web"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "python",
+      "suggested": true,
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/node22",
+      "kind": "choice",
+      "name": "node22",
+      "title": "Node.js 22",
+      "description": "Node.js 22, the previous LTS; all three hosts support it until April 2027",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "node",
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/node24",
+      "kind": "choice",
+      "name": "node24",
+      "title": "Node.js 24",
+      "description": "Node.js 24, the current LTS; all three hosts support it",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "node",
+      "suggested": true,
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/python312",
+      "kind": "choice",
+      "name": "python312",
+      "title": "Python 3.12",
+      "description": "Python 3.12, the oldest all three hosts support; the workspace venv and CI use it",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "python",
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/python313",
+      "kind": "choice",
+      "name": "python313",
+      "title": "Python 3.13",
+      "description": "Python 3.13; all three hosts support it",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "python",
+      "suggested": true,
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/python314",
+      "kind": "choice",
+      "name": "python314",
+      "title": "Python 3.14",
+      "description": "Python 3.14, the newest all three hosts support",
+      "aliases": [
+        "serverless",
+        "runtime",
+        "version"
+      ],
+      "layer": "host",
+      "axis": "runtime",
+      "language": "python",
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/queue-trigger",
+      "kind": "choice",
+      "name": "queue-trigger",
+      "title": "Queue trigger",
+      "description": "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)",
+      "aliases": [
+        "serverless",
+        "message",
+        "queue"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "dotnet",
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/queue-trigger",
+      "kind": "choice",
+      "name": "queue-trigger",
+      "title": "Queue trigger",
+      "description": "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)",
+      "aliases": [
+        "serverless",
+        "message",
+        "queue"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "node",
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/queue-trigger",
+      "kind": "choice",
+      "name": "queue-trigger",
+      "title": "Queue trigger",
+      "description": "answers a queue message (Azure: a Storage queue, AWS: SQS, Google: Pub/Sub)",
+      "aliases": [
+        "serverless",
+        "message",
+        "queue"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "python",
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "dotnet/timer-trigger",
+      "kind": "choice",
+      "name": "timer-trigger",
+      "title": "Timer trigger",
+      "description": "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls",
+      "aliases": [
+        "serverless",
+        "schedule",
+        "cron"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "dotnet",
+      "conflicts": [
+        "gcp-functions"
+      ],
+      "plugin": "dotnet",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/timer-trigger",
+      "kind": "choice",
+      "name": "timer-trigger",
+      "title": "Timer trigger",
+      "description": "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls",
+      "aliases": [
+        "serverless",
+        "schedule",
+        "cron"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "node",
+      "conflicts": [
+        "gcp-functions"
+      ],
+      "plugin": "functions",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "python/timer-trigger",
+      "kind": "choice",
+      "name": "timer-trigger",
+      "title": "Timer trigger",
+      "description": "runs on a schedule (Azure: a timer trigger, AWS: an EventBridge schedule); Google has none, use an HTTP function that Cloud Scheduler calls",
+      "aliases": [
+        "serverless",
+        "schedule",
+        "cron"
+      ],
+      "layer": "host",
+      "axis": "trigger",
+      "language": "python",
+      "conflicts": [
+        "gcp-functions"
+      ],
+      "plugin": "python",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/p5",
+      "kind": "choice",
+      "name": "p5",
+      "title": "p5.js",
+      "description": "draw with p5: a bouncing-ball slice (pure motion, a p5 sketch, a lazy component)",
+      "aliases": [
+        "creative",
+        "drawing",
+        "canvas",
+        "art",
+        "sketch",
+        "graphics"
+      ],
+      "layer": "library",
+      "axis": "library",
+      "language": "node",
+      "requires": [
+        "react"
+      ],
+      "many": true,
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/bootstrap",
+      "kind": "choice",
+      "name": "bootstrap",
+      "title": "Bootstrap",
+      "description": "Bootstrap 5 styles, imported by the entry file",
+      "aliases": [
+        "css",
+        "style",
+        "components",
+        "web"
+      ],
+      "layer": "style",
+      "axis": "style",
+      "language": "node",
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/chakra",
+      "kind": "choice",
+      "name": "chakra",
+      "title": "Chakra UI",
+      "description": "Chakra UI 3 components; the app is wrapped in its provider (React only)",
+      "aliases": [
+        "css",
+        "style",
+        "components",
+        "react",
+        "web"
+      ],
+      "layer": "style",
+      "axis": "style",
+      "language": "node",
+      "requires": [
+        "react"
+      ],
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/tailwind",
+      "kind": "choice",
+      "name": "tailwind",
+      "title": "Tailwind CSS",
+      "description": "Tailwind CSS 4 through its Vite plugin, imported by the entry file",
+      "aliases": [
+        "css",
+        "style",
+        "utility",
+        "web"
+      ],
+      "layer": "style",
+      "axis": "style",
+      "language": "node",
+      "plugin": "vite",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/jest",
+      "kind": "choice",
+      "name": "jest",
+      "title": "Jest",
+      "description": "test with Jest (ts-jest, or @swc/jest when the siblings use it)",
+      "aliases": [
+        "test",
+        "unit test",
+        "testing"
+      ],
+      "layer": "test",
+      "axis": "test",
+      "language": "node",
+      "roles": [
+        "toolchain"
+      ],
+      "plugin": "jest",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/vitest",
+      "kind": "choice",
+      "name": "vitest",
+      "title": "Vitest",
+      "description": "test with Vitest",
+      "aliases": [
+        "test",
+        "unit test",
+        "testing",
+        "vite"
+      ],
+      "layer": "test",
+      "axis": "test",
+      "language": "node",
+      "default": true,
+      "roles": [
+        "toolchain"
+      ],
+      "plugin": "vitest",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "node/eslint",
+      "kind": "choice",
+      "name": "eslint",
+      "title": "ESLint",
+      "description": "lint and format with @monosmith/eslint-config",
+      "aliases": [
+        "lint",
+        "format",
+        "style guide",
+        "static analysis"
+      ],
+      "layer": "lint",
+      "axis": "lint",
+      "language": "node",
+      "default": true,
+      "roles": [
+        "toolchain"
+      ],
+      "plugin": "eslint",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/clean",
+      "kind": "plugin",
+      "name": "clean",
+      "title": "clean",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable clean",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/ddd",
+      "kind": "plugin",
+      "name": "ddd",
+      "title": "ddd",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable ddd",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/hexagonal",
+      "kind": "plugin",
+      "name": "hexagonal",
+      "title": "hexagonal",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable hexagonal",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/modular-monolith",
+      "kind": "plugin",
+      "name": "modular-monolith",
+      "title": "modular-monolith",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable modular-monolith",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/mvc",
+      "kind": "plugin",
+      "name": "mvc",
+      "title": "mvc",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable mvc",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/package-by-layer",
+      "kind": "plugin",
+      "name": "package-by-layer",
+      "title": "package-by-layer",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, node, php, python, ruby, rust",
+      "layer": "architecture",
+      "route": "smith plugin enable package-by-layer",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/vertical-slices",
+      "kind": "plugin",
+      "name": "vertical-slices",
+      "title": "vertical-slices",
+      "description": "structure plugin, for cpp, dart, dotnet, go, jvm, php, python, ruby, rust, node, javascript, js",
+      "layer": "architecture",
+      "route": "smith plugin enable vertical-slices",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/docker",
+      "kind": "plugin",
+      "name": "docker",
+      "title": "docker",
+      "description": "deploy plugin, for node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm",
+      "layer": "ci",
+      "route": "smith plugin enable docker",
+      "score": 0,
+      "matchedBy": ""
+    },
+    {
+      "id": "plugin/vscode",
+      "kind": "plugin",
+      "name": "vscode",
+      "title": "vscode",
+      "description": "deploy plugin, for node",
+      "layer": "ci",
+      "route": "smith plugin enable vscode",
+      "score": 0,
+      "matchedBy": ""
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "web",
+      "title": "A website or web app",
+      "kind": "app",
+      "layer": "framework",
+      "typical": [
+        "Plain page",
+        "React",
+        "Svelte",
+        "Vue"
+      ],
+      "consequence": "People open it in a browser. smith adds a dev server, tests and a build.",
+      "languages": [
+        "node"
+      ],
+      "words": [
+        "website",
+        "web app",
+        "web",
+        "frontend",
+        "front end",
+        "page",
+        "browser",
+        "site",
+        "html",
+        "Plain page",
+        "web",
+        "static",
+        "vanilla",
+        "no framework",
+        "browser",
+        "react",
+        "React",
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa",
+        "jsx",
+        "svelte",
+        "Svelte",
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa",
+        "vue",
+        "Vue",
+        "web",
+        "frontend",
+        "ui",
+        "browser",
+        "spa"
+      ],
+      "items": [
+        {
+          "id": "node/html",
+          "kind": "choice",
+          "name": "html",
+          "title": "Plain page",
+          "description": "a page in TypeScript with no framework, built with Vite",
+          "aliases": [
+            "web",
+            "static",
+            "vanilla",
+            "no framework",
+            "browser"
+          ],
+          "layer": "framework",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "lint",
+            "test"
+          ],
+          "roles": [
+            "scaffold",
+            "toolchain"
+          ],
+          "plugin": "vite"
+        },
+        {
+          "id": "node/react",
+          "kind": "choice",
+          "name": "react",
+          "title": "React",
+          "description": "a React 19 app in TypeScript, built with Vite",
+          "aliases": [
+            "web",
+            "frontend",
+            "ui",
+            "browser",
+            "spa",
+            "jsx"
+          ],
+          "layer": "framework",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "lint",
+            "test"
+          ],
+          "roles": [
+            "scaffold",
+            "toolchain"
+          ],
+          "plugin": "vite"
+        },
+        {
+          "id": "node/svelte",
+          "kind": "choice",
+          "name": "svelte",
+          "title": "Svelte",
+          "description": "a Svelte 5 app in TypeScript, built with Vite and checked by svelte-check",
+          "aliases": [
+            "web",
+            "frontend",
+            "ui",
+            "browser",
+            "spa"
+          ],
+          "layer": "framework",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "lint",
+            "test"
+          ],
+          "roles": [
+            "scaffold",
+            "toolchain"
+          ],
+          "plugin": "vite"
+        },
+        {
+          "id": "node/vue",
+          "kind": "choice",
+          "name": "vue",
+          "title": "Vue",
+          "description": "a Vue 3 app in TypeScript, built with Vite and type-checked by vue-tsc",
+          "aliases": [
+            "web",
+            "frontend",
+            "ui",
+            "browser",
+            "spa"
+          ],
+          "layer": "framework",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "lint",
+            "test"
+          ],
+          "roles": [
+            "scaffold",
+            "toolchain"
+          ],
+          "plugin": "vite"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "title": "An API or backend service",
+      "kind": "app",
+      "typical": [
+        "TypeScript / JavaScript",
+        "Python",
+        "Go",
+        "C# / .NET",
+        "Java / Kotlin",
+        "Rust",
+        "PHP",
+        "Ruby"
+      ],
+      "consequence": "A program that answers requests on a server. You deploy it; it has no screen.",
+      "languages": [
+        "node",
+        "python",
+        "go",
+        "dotnet",
+        "jvm",
+        "rust",
+        "php",
+        "ruby"
+      ],
+      "words": [
+        "api",
+        "backend",
+        "back end",
+        "server",
+        "service",
+        "rest",
+        "microservice",
+        "http"
+      ]
+    },
+    {
+      "id": "function",
+      "title": "A function app (Azure, AWS, Google)",
+      "kind": "app",
+      "layer": "host",
+      "typical": [
+        "AWS Lambda",
+        "Azure Functions",
+        "Google Cloud Functions"
+      ],
+      "consequence": "Small code that the cloud runs when something happens, such as a request or a timer.",
+      "languages": [
+        "dotnet",
+        "node",
+        "python"
+      ],
+      "words": [
+        "function",
+        "functions",
+        "serverless",
+        "cloud",
+        "lambda",
+        "faas",
+        "trigger",
+        "aws-lambda",
+        "AWS Lambda",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws",
+        "aws-lambda",
+        "AWS Lambda",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws",
+        "aws-lambda",
+        "AWS Lambda",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "amazon",
+        "aws",
+        "azure-functions",
+        "Azure Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure",
+        "azure-functions",
+        "Azure Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure",
+        "azure-functions",
+        "Azure Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "microsoft",
+        "azure",
+        "gcp-functions",
+        "Google Cloud Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run",
+        "gcp-functions",
+        "Google Cloud Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run",
+        "gcp-functions",
+        "Google Cloud Functions",
+        "serverless",
+        "cloud",
+        "functions",
+        "faas",
+        "google",
+        "gcp",
+        "cloud run"
+      ],
+      "items": [
+        {
+          "id": "dotnet/aws-lambda",
+          "kind": "choice",
+          "name": "aws-lambda",
+          "title": "AWS Lambda",
+          "description": "a serverless AWS Lambda function (C# class library): template.yaml and Events/ for sam local, and a handler with the Lambda serializer; runs with the SAM CLI (sam)",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "amazon",
+            "aws"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "dotnet",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "dotnet"
+        },
+        {
+          "id": "node/aws-lambda",
+          "kind": "choice",
+          "name": "aws-lambda",
+          "title": "AWS Lambda",
+          "description": "a serverless AWS Lambda function: template.yaml and events/ for sam local, and src/functions; runs with the SAM CLI (sam)",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "amazon",
+            "aws"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "trigger",
+            "runtime",
+            "lint",
+            "test"
+          ],
+          "conflicts": [
+            "jest"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "functions"
+        },
+        {
+          "id": "python/aws-lambda",
+          "kind": "choice",
+          "name": "aws-lambda",
+          "title": "AWS Lambda",
+          "description": "a serverless AWS Lambda function: template.yaml and events/ for sam local, and a lambda_handler; runs with the SAM CLI (sam)",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "amazon",
+            "aws"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "python",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "python"
+        },
+        {
+          "id": "dotnet/azure-functions",
+          "kind": "choice",
+          "name": "azure-functions",
+          "title": "Azure Functions",
+          "description": "a serverless Azure Functions app (C# isolated worker): Program.cs, host.json, local.settings.sample.json and a csproj with the Worker packages; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "microsoft",
+            "azure"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "dotnet",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "dotnet"
+        },
+        {
+          "id": "node/azure-functions",
+          "kind": "choice",
+          "name": "azure-functions",
+          "title": "Azure Functions",
+          "description": "a serverless Azure Functions app (Node v4 model): host.json, local.settings.sample.json and src/functions; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "microsoft",
+            "azure"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "trigger",
+            "runtime",
+            "lint",
+            "test"
+          ],
+          "conflicts": [
+            "jest"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "functions"
+        },
+        {
+          "id": "python/azure-functions",
+          "kind": "choice",
+          "name": "azure-functions",
+          "title": "Azure Functions",
+          "description": "a serverless Azure Functions app (Python v2 model): function_app.py, host.json, requirements.txt and local.settings.sample.json; runs with Core Tools (func), deploys with smith pipeline deploy-azure-function",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "microsoft",
+            "azure"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "python",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "python"
+        },
+        {
+          "id": "dotnet/gcp-functions",
+          "kind": "choice",
+          "name": "gcp-functions",
+          "title": "Google Cloud Functions",
+          "description": "a serverless Google Cloud (Cloud Run) function (C#): a Functions Framework class and a csproj with Google.Cloud.Functions.Hosting; runs with dotnet run, no extra tool",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "google",
+            "gcp",
+            "cloud run"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "dotnet",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "dotnet"
+        },
+        {
+          "id": "node/gcp-functions",
+          "kind": "choice",
+          "name": "gcp-functions",
+          "title": "Google Cloud Functions",
+          "description": "a serverless Google Cloud (Cloud Run) function: src/index.ts and src/functions; runs with the Functions Framework, a dependency of the app",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "google",
+            "gcp",
+            "cloud run"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "trigger",
+            "runtime",
+            "lint",
+            "test"
+          ],
+          "conflicts": [
+            "jest"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "functions"
+        },
+        {
+          "id": "python/gcp-functions",
+          "kind": "choice",
+          "name": "gcp-functions",
+          "title": "Google Cloud Functions",
+          "description": "a serverless Google Cloud (Cloud Run) function: main.py and requirements.txt; runs with the Functions Framework, a dependency of the app",
+          "aliases": [
+            "serverless",
+            "cloud",
+            "functions",
+            "faas",
+            "google",
+            "gcp",
+            "cloud run"
+          ],
+          "layer": "host",
+          "axis": "framework",
+          "language": "python",
+          "needs": [
+            "trigger",
+            "runtime"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "python"
+        }
+      ]
+    },
+    {
+      "id": "desktop",
+      "title": "A desktop app (Tauri, Electron)",
+      "kind": "app",
+      "layer": "shell",
+      "typical": [
+        "Electron",
+        "Tauri"
+      ],
+      "consequence": "A program people install on a computer. smith adds the tasks that package it.",
+      "languages": [
+        "node"
+      ],
+      "words": [
+        "desktop",
+        "windows",
+        "mac",
+        "linux",
+        "native",
+        "installer",
+        "electron",
+        "Electron",
+        "desktop",
+        "windows",
+        "mac",
+        "linux",
+        "native",
+        "app",
+        "chromium",
+        "tauri",
+        "Tauri",
+        "desktop",
+        "windows",
+        "mac",
+        "linux",
+        "native",
+        "rust",
+        "app"
+      ],
+      "items": [
+        {
+          "id": "node/electron",
+          "kind": "choice",
+          "name": "electron",
+          "title": "Electron",
+          "description": "an Electron desktop app in TypeScript: a main process, a preload script that uses contextBridge, and one renderer page; start opens the window, package makes the app folder with Electron Forge",
+          "aliases": [
+            "desktop",
+            "windows",
+            "mac",
+            "linux",
+            "native",
+            "app",
+            "chromium"
+          ],
+          "layer": "shell",
+          "axis": "framework",
+          "language": "node",
+          "needs": [
+            "lint",
+            "test"
+          ],
+          "conflicts": [
+            "jest",
+            "azure-functions",
+            "aws-lambda",
+            "gcp-functions",
+            "tauri"
+          ],
+          "roles": [
+            "scaffold"
+          ],
+          "plugin": "electron"
+        },
+        {
+          "id": "node/tauri",
+          "kind": "choice",
+          "name": "tauri",
+          "title": "Tauri",
+          "description": "wraps a web app in a small native desktop program (Rust and the system web view); adds src-tauri to the app. Needs Rust to build. For an app that exists, run smith tauri add",
+          "aliases": [
+            "desktop",
+            "windows",
+            "mac",
+            "linux",
+            "native",
+            "rust",
+            "app"
+          ],
+          "layer": "shell",
+          "axis": "shell",
+          "language": "node",
+          "conflicts": [
+            "electron",
+            "azure-functions",
+            "aws-lambda",
+            "gcp-functions"
+          ],
+          "roles": [
+            "toolchain"
+          ],
+          "plugin": "tauri"
+        }
+      ]
+    },
+    {
+      "id": "library",
+      "title": "A library for my other projects",
+      "kind": "lib",
+      "typical": null,
+      "consequence": "Shared code that the projects of this workspace import. It stays here and is not published.",
+      "languages": [
+        "recipe",
+        "applescript",
+        "bicep",
+        "bundle",
+        "cpp",
+        "dotnet",
+        "dart",
+        "go",
+        "jvm",
+        "lua",
+        "objc",
+        "php",
+        "python",
+        "ruby",
+        "rust",
+        "swift",
+        "node",
+        "vba"
+      ],
+      "words": [
+        "library",
+        "lib",
+        "shared",
+        "internal",
+        "common",
+        "core",
+        "reuse"
+      ]
+    },
+    {
+      "id": "package",
+      "title": "A package I publish",
+      "kind": "package",
+      "typical": [
+        "npm",
+        "PyPI",
+        "NuGet",
+        "crates.io"
+      ],
+      "consequence": "Code that other people install from a registry. smith adds the publish steps.",
+      "languages": [
+        "recipe",
+        "applescript",
+        "bicep",
+        "bundle",
+        "cpp",
+        "dotnet",
+        "dart",
+        "go",
+        "jvm",
+        "lua",
+        "objc",
+        "php",
+        "python",
+        "ruby",
+        "rust",
+        "swift",
+        "node",
+        "vba"
+      ],
+      "words": [
+        "package",
+        "publish",
+        "npm",
+        "pypi",
+        "nuget",
+        "crates",
+        "registry",
+        "sdk"
+      ]
+    }
+  ]
+}
