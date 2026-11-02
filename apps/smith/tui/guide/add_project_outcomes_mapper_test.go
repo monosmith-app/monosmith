@@ -92,7 +92,7 @@ func TestAWebsiteHasOnlyNodeSoNoLanguageIsAskedAndTheFrameworkStartsTicked(t *te
 		t.Fatalf("the framework is asked, not the language:\n%s", m.View())
 	}
 	m = press(m, "down", "down", "enter") // Vue (the cursor starts on "Decide in the next question")
-	m = press(m, "s", "i", "t", "e", "enter")
+	m = press(m, "s", "i", "t", "e", "enter", "down", "enter")
 	if !strings.Contains(m.View(), "[x] framework: vue") {
 		t.Fatalf("the pick starts ticked in the choices:\n%s", m.View())
 	}
@@ -138,8 +138,8 @@ func TestAFrameworkThePersonPickedIsTickedAndInTheCommand(t *testing.T) {
 		m := press(frameworkForm(t), "enter") // A website
 		m = press(m, "down")                  // the first row is "Decide in the next question"
 		m = press(m, strings.Split(strings.Repeat("down ", tc.downs), " ")[:tc.downs]...)
-		m = press(m, "enter")                     // the framework
-		m = press(m, "s", "i", "t", "e", "enter") // the name
+		m = press(m, "enter")                                      // the framework
+		m = press(m, "s", "i", "t", "e", "enter", "down", "enter") // the name
 		ticked := false
 		for i, o := range m.current().Options {
 			ticked = ticked || (m.marked[i] && o.Value == tc.with)
@@ -151,6 +151,20 @@ func TestAFrameworkThePersonPickedIsTickedAndInTheCommand(t *testing.T) {
 		if got := strings.Join(m.Argv, " "); !strings.Contains(got, "--with "+tc.with) {
 			t.Fatalf("%s: the command lacks the pick: %q", name, got)
 		}
+	}
+}
+
+// TestStartWithTheDefaultsGoesStraightToThePlanWithEveryDefaultAsAFlag is the
+// first-timer path: a website, React, a name, Enter. Nothing else is asked.
+func TestStartWithTheDefaultsGoesStraightToThePlanWithEveryDefaultAsAFlag(t *testing.T) {
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter")
+	if !strings.Contains(m.View(), "How do you want to set it up?") || !strings.Contains(m.View(), "› Start with the defaults") {
+		t.Fatalf("the setup question starts on the defaults:\n%s", m.View())
+	}
+	m = press(m, "enter")
+	want := "add app site --lang node --with react --environments lcl,dev,uat,prd --default-environment prd --environment-output workspace --env-files commit"
+	if !m.Done() || strings.Join(m.Argv, " ") != want {
+		t.Fatalf("done %v, argv %q", m.Done(), strings.Join(m.Argv, " "))
 	}
 }
 
@@ -168,7 +182,7 @@ func tickedValues(m Model) []string {
 // TestTheChoicesListOpensOnTheTickedPickOnASmallScreen makes the tick visible
 // on a short terminal: the list starts at the framework that was picked.
 func TestTheChoicesListOpensOnTheTickedPickOnASmallScreen(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "down", "enter", "s", "i", "t", "e", "enter") // Plain page
+	m := press(frameworkForm(t), "enter", "down", "enter", "s", "i", "t", "e", "enter", "down", "enter") // Plain page
 	if got := tickedValues(m); len(got) != 1 || got[0] != "html" {
 		t.Fatalf("html is not ticked: %v", got)
 	}
@@ -180,15 +194,15 @@ func TestTheChoicesListOpensOnTheTickedPickOnASmallScreen(t *testing.T) {
 // TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere follows the keys
 // of G-1: React, name web, Enter to the plan, Esc back to the framework, Svelte.
 func TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere(t *testing.T) {
-	m := press(frameworkForm(t), "enter")         // A website
-	m = press(m, "down", "down", "enter")         // React (the first row is "Decide in the next question")
-	m = press(m, "w", "e", "b", "enter", "enter") // the name, the choices
-	m = press(m, "enter")                         // "Use these": the plan
+	m := press(frameworkForm(t), "enter")                          // A website
+	m = press(m, "down", "down", "enter")                          // React (the first row is "Decide in the next question")
+	m = press(m, "w", "e", "b", "enter", "down", "enter", "enter") // the name, the choices
+	m = press(m, "enter")                                          // "Use these": the plan
 	if !m.Done() || !strings.Contains(strings.Join(m.Argv, " "), "--with react") {
 		t.Fatalf("the first plan is not React: %v", m.Argv)
 	}
 	m = m.Reopen()
-	m = press(m, "esc", "esc", "esc") // the environments, the choices, the name: back at the framework
+	m = press(m, "esc", "esc", "esc", "esc") // the environments, the choices, the name: back at the framework
 	if !strings.Contains(m.View(), "› React") {
 		t.Fatalf("the framework question starts on the earlier answer:\n%s", m.View())
 	}
@@ -200,7 +214,7 @@ func TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere(t *testing.T) 
 	if v := m.View(); !strings.Contains(v, "> web") || strings.Contains(v, "webweb") {
 		t.Fatalf("typing appended to the earlier name:\n%s", v)
 	}
-	m = press(m, "enter")
+	m = press(m, "enter", "enter") // the name, the setup (Customise)
 	if got := tickedValues(m); len(got) != 1 || got[0] != "svelte" {
 		t.Fatalf("the choices still hold the old pick: %v", got)
 	}
@@ -212,7 +226,7 @@ func TestAnAnswerChangedAfterGoingBackReplacesTheOldOneEverywhere(t *testing.T) 
 
 // TestOtherTicksSurviveAChangedFramework keeps what the person ticked besides.
 func TestOtherTicksSurviveAChangedFramework(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter")
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "down", "enter")
 	// the choices: react is ticked; also tick vitest (listed after the frameworks)
 	for i, o := range m.current().Options {
 		if o.Value == "vitest" {
@@ -221,8 +235,8 @@ func TestOtherTicksSurviveAChangedFramework(t *testing.T) {
 	}
 	m = press(m, "enter", "enter") // the plan
 	m = m.Reopen()
-	m = press(m, "esc", "esc", "esc", "down", "enter") // Svelte, the name
-	m = press(m, "enter")                              // the choices
+	m = press(m, "esc", "esc", "esc", "esc", "down", "enter") // Svelte, the name
+	m = press(m, "enter", "enter")                            // the choices
 	got := tickedValues(m)
 	if !slices.Contains(got, "svelte") || slices.Contains(got, "react") {
 		t.Fatalf("the framework was not replaced: %v", got)
@@ -232,7 +246,7 @@ func TestOtherTicksSurviveAChangedFramework(t *testing.T) {
 // TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem keeps the one
 // question short: Use these ends it, with prd as the build and the files kept.
 func TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "enter")
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "down", "enter", "enter")
 	if view := m.View(); !strings.Contains(view, "Use these: lcl, dev, uat, prd") || !strings.Contains(view, "Change the names…") || !strings.Contains(view, "Change the build default, the output or the .env files…") {
 		t.Fatalf("the question lacks its options:\n%s", view)
 	}
@@ -245,7 +259,7 @@ func TestEnterOnTheEnvironmentsUsesTheDefaultsAndTheCommandSaysThem(t *testing.T
 
 // TestChangingTheDetailsAsksTheOutputAndTheFiles opens the detailed questions.
 func TestChangingTheDetailsAsksTheOutputAndTheFiles(t *testing.T) {
-	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "enter", "down", "down", "enter")
+	m := press(frameworkForm(t), "enter", "down", "down", "enter", "s", "i", "t", "e", "enter", "down", "enter", "enter", "down", "down", "enter")
 	for _, want := range []string{"Which environment is", "Where do the builds go?", "Keep them in git?"} {
 		if !strings.Contains(m.View(), want) {
 			t.Fatalf("want %q on screen:\n%s", want, m.View())
@@ -259,8 +273,8 @@ func TestDecidingInTheNextQuestionTicksNothingInTheChoices(t *testing.T) {
 	if !strings.Contains(m.View(), "› Decide in the next question") {
 		t.Fatalf("Enter on the first screen must pick nothing:\n%s", m.View())
 	}
-	m = press(m, "enter")                     // Decide in the next question: where the cursor starts
-	m = press(m, "s", "i", "t", "e", "enter") // the name
+	m = press(m, "enter")                                      // Decide in the next question: where the cursor starts
+	m = press(m, "s", "i", "t", "e", "enter", "down", "enter") // the name
 	if view := m.View(); strings.Contains(view, "[x]") || !strings.Contains(view, "[ ] framework: react") {
 		t.Fatalf("deciding later must leave the list empty:\n%s", view)
 	}
@@ -287,7 +301,7 @@ func TestDecidingLaterWithTheWholeFrameworkListTicksNothing(t *testing.T) {
 	if got := m.Answers()[pickKey]; len(got) != 1 || got[0] != pickNone {
 		t.Fatalf("the answer is %v", got)
 	}
-	m = press(m, "s", "i", "t", "e", "enter")
+	m = press(m, "s", "i", "t", "e", "enter", "down", "enter")
 	if view := m.View(); strings.Contains(view, "[x] framework") {
 		t.Fatalf("deciding later must tick no framework:\n%s", view)
 	}

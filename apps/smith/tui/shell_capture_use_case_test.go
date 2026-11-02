@@ -65,7 +65,7 @@ func TestAddAsksForTheChoicesThenShowsThePlanBeforeWriting(t *testing.T) {
 	})
 	l.keys("a")
 	l.typeText("backend").keys("enter", "enter") // an API, in the workspace's main language (go)
-	l.typeText("api").keys("enter")
+	l.typeText("api").keys("enter", "down", "enter")
 	l.has("Build it from choices", "framework: react", "test: vitest")
 	l.keys("space", "enter") // react
 	l.has("Should it do what the other projects here do?", "smith add --fresh")
@@ -88,7 +88,7 @@ func TestEscOnThePlanOfAnAddGoesBackOneQuestion(t *testing.T) {
 		"add app api --lang go --fresh --dry-run": {OK: true, Text: "Plan: add app api\n  Project api\n    create  apps/api/"},
 	})
 	l.keys("a").typeText("backend").keys("enter", "enter")
-	l.typeText("api").keys("enter")
+	l.typeText("api").keys("enter", "down", "enter")
 	l.keys("down", "down", "enter") // the sibling question: the stack defaults
 	l.has("Add api?", "Nothing is written yet")
 	l.keys("esc")
@@ -97,7 +97,9 @@ func TestEscOnThePlanOfAnAddGoesBackOneQuestion(t *testing.T) {
 	if len(l.started) != 0 {
 		t.Fatalf("going back writes nothing: %v", l.started)
 	}
-	l.keys("esc") // one more step back: the name, still filled in
+	l.keys("esc") // one more step back: the setup question
+	l.has("How do you want to set it up?")
+	l.keys("esc") // and the name, still filled in
 	l.has("Name it", "api")
 }
 
@@ -107,7 +109,7 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 		"add app api --lang go --fresh --dry-run": {Text: "✖ svelte needs the node language\n  → pick a node project or another framework"},
 	})
 	l.keys("a").typeText("backend").keys("enter", "enter")
-	l.typeText("api").keys("enter") // no choices for go, then the sibling question
+	l.typeText("api").keys("enter", "down", "enter") // no choices for go, then the sibling question
 	l.keys("down", "down", "enter")
 	l.has("Cannot add api like that", "svelte needs the node language", "pick a node project")
 	l.keys("enter")
@@ -120,7 +122,7 @@ func TestAddWithAWrongCombinationShowsTheCLIErrorInsteadOfCrashing(t *testing.T)
 func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("a").typeText("backend").keys("enter", "enter")
-	l.typeText("api").keys("enter", "enter") // follow the siblings
+	l.typeText("api").keys("enter", "down", "enter", "enter") // follow the siblings
 	l.has("[ ] Commit this change so it can be undone")
 	l.keys("c", "enter") // tick the box, then Run
 	if got := l.lastStarted(); !strings.Contains(got, " --commit") {
@@ -132,7 +134,7 @@ func TestAFinishedAddSaysItCanBeUndoneOnlyWhenCommitted(t *testing.T) {
 func TestAnUncommittedAddSaysSo(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("a").typeText("backend").keys("enter", "enter")
-	l.typeText("api").keys("enter", "enter")
+	l.typeText("api").keys("enter", "down", "enter", "enter")
 	l.keys("enter") // the plan, then Run with the box unticked
 	if got := l.lastStarted(); strings.Contains(got, "--commit") {
 		t.Fatalf("started %q with --commit", got)
@@ -289,8 +291,8 @@ func TestAddCanFollowOneNamedProject(t *testing.T) {
 		"add app api --lang go --like orders --dry-run": {OK: true, Text: "Plan: add app api\n  create  apps/api/  (follows web)"},
 	})
 	l.keys("a", "enter", "enter")
-	l.typeText("api").keys("enter") // no choices for go, then the question about the siblings
-	l.keys("down", "enter")         // Follow one project
+	l.typeText("api").keys("enter", "down", "enter") // no choices for go, then the question about the siblings
+	l.keys("down", "enter")                          // Follow one project
 	l.has("Follow which project?", "web", "orders")
 	l.keys("enter") // orders, the first
 	l.has("Add api?", "smith add app api --lang go --like orders")

@@ -422,6 +422,8 @@ func TestTheGuideAddsAProjectThroughTheConfirmationDialog(t *testing.T) {
 	l.has("Add a project", "What are you building?")
 	// Enter on the language keeps the default: what most projects here use (Go).
 	l.keys("down", "down", "enter", "enter").typeText("toolkit").keys("enter")
+	l.has("How do you want to set it up?", "Start with the defaults", "Customise")
+	l.keys("down", "enter") // Customise
 	// Four projects are enough to follow: the form asks, and Enter keeps the default (match them).
 	l.has("Should it do what the other projects here do?")
 	l.keys("enter")

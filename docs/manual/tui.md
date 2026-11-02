@@ -265,6 +265,12 @@ The command always carries the answers (`--environments`, `--default-environment
 `--environment-output`, `--env-files`), so the plan shows the default that was taken. The CLI keeps
 its flags and its own defaults.
 
+After the name, **Add project** asks one question, like a new workspace does: `Start with the
+defaults` (first, default) goes straight to the plan, with the pick of the first question ticked,
+the shape of the other projects followed, and for a web app the environments above; every default
+is a flag in the command. `Customise` asks the questions one at a time. A question that smith
+cannot answer for the person (the trigger of a function app) is asked either way.
+
 A framework, shell or host picked in the question before the name is ticked in the choices
 question and is in the command (`--with react`). The cursor starts on "Decide in the next
 question" only when nothing was typed to search for: Enter then ticks nothing.
