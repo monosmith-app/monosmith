@@ -10,7 +10,7 @@ import (
 )
 
 // probe runs a tool for its version; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 var goVersion = regexp.MustCompile(`go(\d+)\.(\d+)`)
 
@@ -41,6 +41,10 @@ func CheckToolVersions(workspaceRoot, required string, lints bool) []protocol.Fi
 		Check: "golangci-lint is " + pin + ", as in CI", OK: err == nil && strings.Contains(got, " "+pin+" "), Warning: true,
 		Detail: "found: " + firstLine(got, "golangci-lint is not on PATH"),
 		Remedy: "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion + " (smith ci setup does it)",
+		Fix: &protocol.Fix{Description: "Install the golangci-lint that CI pins", Steps: []protocol.FixStep{{
+			Description: "smith ci setup installs golangci-lint " + GolangciLintVersion + " (uses the network)",
+			Argv:        []string{"smith", "ci", "setup"},
+		}}},
 	})
 	return out
 }

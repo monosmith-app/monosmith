@@ -46,6 +46,7 @@ Usage: `smith add <kind> <name> [flags]`
 |---|---|---|---|
 | `--choice <choice>` | name=answer, repeatable |  | answer a choice of the workspace's recipe, name=answer (repeatable); the rest are asked in a terminal |
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--commit-anyway` | boolean | off | with --commit, commit even when the check of the new project fails (the files exist, a tool is missing) |
 | `--dry-run` | boolean | off | show the plan and change nothing |
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
 | `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
@@ -267,6 +268,12 @@ When you pass `--commit` and the work tree already holds changes of your own, sm
 does not suggest `--commit` again. In a terminal it asks: commit only the files this operation changed (the default),
 stop here and leave everything uncommitted, or cancel. Without a terminal, commit or stash your changes and run
 `smith commit add app web --only-operation` (see [`smith commit`](commit.md)), or review with `git status`.
+
+smith always remembers which files the operation changed, committed or not. If the new project exists but fails its
+check (a tool it needs is missing, such as the .NET SDK or the Tauri system libraries) and you passed `--commit`,
+smith says that the commit was held back. In a terminal it asks: leave it uncommitted (the default), commit anyway,
+or cancel. Without a terminal it refuses and names `--commit-anyway`, which commits the files although the check
+failed. Either way `smith commit --only-operation` commits the files later under the name "add app web".
 
 smith never deletes a file silently. When the new project makes the pipelines install smith with npm, pip or dotnet,
 the generated `tools/smith/install.sh` is not used any more: the plan lists it as `remove`, with the reason, and the

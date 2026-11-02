@@ -22,15 +22,29 @@ the same recipe the questions would.
 
 A recipe whose plugins are all fixed needs neither questions nor a file: `--name` and one
 `--fixed role=plugin` for each role write it. A structure, deploy or toolchain role takes
-plugins joined by commas (`--fixed structure=slices,layers`). A choice the recipe's users
-make still needs the questions or an answers file. The interface's **Write a recipe** form
-(the guided menu) asks for these values and shows this command line before it runs.
+plugins joined by commas (`--fixed structure=slices,layers`).
+
+A role the recipe's users choose is written with `--chosen role=question:answer=plugin,answer=plugin`,
+for example `--chosen "language=Which language?:python=python,csharp=dotnet"`. The choice takes the role's
+name, its options are the answers in the order given, and the first is the default. A structure, deploy or
+toolchain role joins the plugins of one answer with `+` (`--chosen "structure=Which layout?:small=slices,big=slices+layers"`).
+The question cannot contain a colon, and a role is either `--fixed` or `--chosen`. Choices that two roles
+share, or that a parent recipe holds, still need the questions or an answers file. The interface's **Write a recipe** form
+(the guided menu) and the VS Code command **MonoSmith: New Recipe** ask for these values as pick
+lists and tick boxes, and show this command line and the file it writes before it runs.
+
+`--list-levels` writes nothing. It lists the levels and the plugins each can take; `--json`
+prints them for programs. The JSON has `levels` (each with `level`, `additive` and `plugins`,
+each plugin with `name` and `description`) and `fits`, which names, for each language plugin,
+the plugins of every other level that fit it. The forms of the interface and of the editors read
+this list, so none of them holds a list of plugin names.
 
 ## Synopsis
 
 ```sh
 smith recipe new [path] [--force] [--from-answers <file>]
-smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] --fixed <role=plugin>...
+smith recipe new [path] --name <name> [--recipe-version <x.y.z>] [--extends <recipe>] [--fixed <role=plugin>...] [--chosen <role=question:answer=plugin,...>...]
+smith recipe new --list-levels [--json]
 ```
 
 ## Arguments and flags
@@ -46,10 +60,13 @@ Usage: `smith recipe new [path] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
+| `--chosen <chosen>` | string, repeatable |  | a role the recipe's users choose, as role=question:answer=plugin,answer=plugin (language=Which language?:python=python,csharp=dotnet; + joins plugins of one answer); repeat for each role |
 | `--extends <extends>` | string |  | the recipe this one extends: a path from the new file, or an https URL |
 | `--fixed <fixed>` | string, repeatable |  | fix a role's plugin, as role=plugin (language=python, structure=slices,layers); repeat for each role |
 | `--force` | boolean | off | replace the file if it exists |
 | `--from-answers <from-answers>` | string |  | read the answers from a TOML file instead of asking (see docs/reference/recipes.md) |
+| `--json` | boolean | off | with --list-levels, print the list as JSON |
+| `--list-levels` | boolean | off | list the levels and the plugins each can take, and write nothing |
 | `--name <name>` | string |  | the recipe's name; with --fixed, nothing is asked |
 | `--recipe-version <recipe-version>` | string |  | the recipe's version (0.1.0 when not given) |
 

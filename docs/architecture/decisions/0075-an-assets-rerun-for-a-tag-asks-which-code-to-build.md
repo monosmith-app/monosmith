@@ -52,3 +52,12 @@ problems.
 
 ADR 0069 keeps its other decisions. Only the sentence that the rerun builds the current checkout
 is replaced by this record.
+
+## Amendment
+
+GitHub preselects the first option of a choice input unless `default` names another. The
+option `choose` first in the list read as an instruction, not as "no answer yet". The options are
+now `current`, `tag` and `ask me (refuses)`, in that order, with `default: "ask me (refuses)"`. The
+preselected value is still the one that refuses, so nothing is built from code nobody picked. GitHub
+cannot leave a choice empty, so a value that means "no answer" has to exist. The value is
+`ask me (refuses)`, which `smith ci assets --source` treats as no source.

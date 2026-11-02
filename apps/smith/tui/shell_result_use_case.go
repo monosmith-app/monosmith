@@ -51,6 +51,9 @@ func (s *Shell) afterRun() {
 func (s *Shell) resultKey(name string) tea.Cmd {
 	m, out := s.result.Key(name)
 	s.result = &m
+	if cmd, handled := s.outsideOutcome(out); handled {
+		return cmd
+	}
 	switch {
 	case out.Commit != nil:
 		s.result, s.resultKept = nil, nil

@@ -668,12 +668,15 @@ smith release --dry-run
 *A preview that changes nothing. The table at the bottom is what the pull
 request comment shows (`smith release --dry-run --comment`); `--format markdown` prints it in your terminal.*
 
-Before any release, until there is a `feat` or `fix` commit for a package, the
-preview says so and tells you what to do:
+A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing.
+
+Before any release, until there is such a commit for a package, the preview says so and tells you
+what to do:
 
 ```text
 Dry run: nothing is published or tagged.
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).
+  → A project releases when a feat:, fix: or breaking commit touches its own folder (or a lib it imports). A chore: commit, or a change only under tools/ or in smith.toml, releases nothing.
   → Releases come from conventional commits: commit with a message like "feat: add search" or "fix: handle empty input" ...
 ```
 

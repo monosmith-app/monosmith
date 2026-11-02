@@ -20,6 +20,10 @@ A file that exists with other content is never replaced silently. Without `--for
 and names the file. With `--force` it prints a diff of what is lost, then replaces it. `--dry-run`
 prints the same diffs and copies nothing.
 
+## Asking first
+
+`smith eject <tool>` shows the file it copies. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. The listing (no tool named) asks nothing.
+
 ## Synopsis
 
 ```sh
@@ -42,6 +46,7 @@ Usage: `smith eject [tool...] [flags]`
 | `--all` | boolean | off | eject every default that applies |
 | `--dry-run` | boolean | off | show what would be copied and what would be replaced; change nothing |
 | `--force` | boolean | off | replace a file that exists already (the diff of what is lost is printed first) |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the files are copied only with --yes |
 
 <!-- smith:end eject -->
 

@@ -56,7 +56,7 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 		}
 		fmt.Fprintf(out, "… %s\n", stepName(step))
 		var captured bytes.Buffer
-		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: step.Argv, Dir: dir, Env: taskrun.Environment(nil), Out: &captured})
+		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(nil), Out: &captured})
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
 		}

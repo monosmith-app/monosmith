@@ -42,6 +42,11 @@ func Choose(version string, out io.Writer, catalog []clicontract.CommandDescript
 		if err != nil || reopen == nil {
 			return chosen, err
 		}
+		if reopen.Dir != "" {
+			if err := os.Chdir(reopen.Dir); err != nil {
+				return Chosen{}, err
+			}
+		}
 		start, note, resume = reopen.Start, reopen.Note, nil
 	}
 }
@@ -68,6 +73,8 @@ type reopening struct {
 	Start []string
 	// Note is a sentence for the first toast of the reopened shell.
 	Note string
+	// Dir is the folder to open it in, when a command made a workspace there.
+	Dir string
 }
 
 // chooseOnce is one run of the shell. reopen is set when the folder became a
@@ -149,6 +156,8 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		cfg.Start = start
 	} else if problem == "" {
 		cfg.Adopt = sources.AdoptionOpener(".", version)
+		outside := sources.OutsideSources(".")
+		cfg.Outside = &outside
 	}
 	// The alternate screen gives the shell the whole terminal and puts the
 	// user's screen back on exit. Cell-motion mouse reports (clicks, drags,
@@ -164,7 +173,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	}
 	sh := final.(Shell)
 	if sh.reopen {
-		return Chosen{}, &reopening{Start: sh.reopenStart, Note: sh.reopenNote}, nil
+		return Chosen{}, &reopening{Start: sh.reopenStart, Note: sh.reopenNote, Dir: sh.reopenDir}, nil
 	}
 	if line := sh.ExitSummary(); line != "" {
 		fmt.Fprintf(out, "%s\n", line)

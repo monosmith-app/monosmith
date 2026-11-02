@@ -44,7 +44,7 @@ func planProblem(name, version string, fixed []string) string {
 	if name == "" {
 		name = "team"
 	}
-	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed); err != nil {
+	if _, err := recipewizard.PlanFromFlags(name, version, "", fixed, nil); err != nil {
 		return err.Error()
 	}
 	return ""
@@ -61,7 +61,7 @@ func NewRecipeArgv(a map[string][]string) []string {
 	if e := first(a, "extends"); e != "" {
 		argv = append(argv, "--extends", e)
 	}
-	for _, f := range strings.Fields(first(a, "fixed")) {
+	for _, f := range recipeFixed(a) {
 		argv = append(argv, "--fixed", f)
 	}
 	return argv

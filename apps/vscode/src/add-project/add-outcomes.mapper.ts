@@ -1,4 +1,4 @@
-import type { AddOptions, ChoiceOption } from './add-options.contract.ts'
+import type { KindOption } from './add-options.contract.ts'
 import { roleOf } from './add-options.mapper.ts'
 
 /** What the words of a layer mean, the same sentences `smith compose` shows. */
@@ -23,6 +23,17 @@ export function whatIs (layer: string): string {
   return about === undefined ? '' : `${layer} = ${about}.`
 }
 
+/** A framework, a desktop shell or a cloud host that names an outcome. */
+export interface OutcomeItem {
+  name:        string
+  title:       string
+  description: string
+  language:    string
+  /** `framework`, `shell` or `host`. */
+  layer:       string
+  aliases:     string[]
+}
+
 /** Something a person wants to build, in plain words: the first question of Add project. */
 export interface OutcomeOption {
   /** `web`, `api`, `function`, `desktop`, `library` or `package`. */
@@ -39,56 +50,188 @@ export interface OutcomeOption {
   /** The words that find it besides its title. */
   words:       string[]
   /** The frameworks, shells or hosts of its layer, to pick one. */
-  items:       ChoiceOption[]
+  items:       OutcomeItem[]
 }
 
-interface Spec { id: string, title: string, role: string, layer?: string, host?: boolean, consequence: string, words: string[], typical?: string }
+/** A language smith can generate, with the words a person knows it by. */
+export interface LanguageInfo {
+  name:        string
+  /** "C# / .NET". */
+  title:       string
+  description: string
+}
 
-const BACKEND_LANGUAGES = ['node', 'python', 'go', 'dotnet', 'jvm', 'rust', 'php', 'ruby']
+type Json = Record<string, unknown>
 
-// The words of the product. What an outcome holds (languages, frameworks, hosts) comes from smith's choices, as in `smith compose`.
-const SPECS: Spec[] = [
-  { id: 'web', title: 'A website or web app', role: 'app', layer: 'framework', consequence: 'People open it in a browser. smith adds a dev server, tests and a build.', words: ['website', 'web app', 'web', 'frontend', 'page', 'browser', 'site'] },
-  { id: 'api', title: 'An API or backend service', role: 'app', consequence: 'A program that answers requests on a server. You deploy it; it has no screen.', words: ['api', 'backend', 'server', 'service', 'rest', 'microservice', 'http'] },
-  { id: 'function', title: 'A function app (Azure, AWS, Google)', role: 'app', layer: 'host', host: true, consequence: 'Small code that the cloud runs when something happens, such as a request or a timer.', words: ['function', 'functions', 'serverless', 'cloud', 'lambda', 'faas', 'trigger'] },
-  { id: 'desktop', title: 'A desktop app (Tauri, Electron)', role: 'app', layer: 'shell', consequence: 'A program people install on a computer. smith adds the tasks that package it.', words: ['desktop', 'windows', 'mac', 'linux', 'native', 'installer'] },
-  { id: 'library', title: 'A library for my other projects', role: 'lib', consequence: 'Shared code that the projects of this workspace import. It stays here and is not published.', words: ['library', 'lib', 'shared', 'internal', 'common', 'core', 'reuse'] },
-  { id: 'package', title: 'A package I publish', role: 'package', typical: 'npm, PyPI, NuGet, crates.io', consequence: 'Code that other people install from a registry. smith adds the publish steps.', words: ['package', 'publish', 'npm', 'pypi', 'nuget', 'crates', 'registry', 'sdk'] },
-]
+function text (value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function words (value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item !== '') : []
+}
+
+function records (value: unknown): Json[] {
+  return Array.isArray(value) ? value.filter((item): item is Json => typeof item === 'object' && item !== null && !Array.isArray(item)) : []
+}
 
 /**
- * What a person can build, from what smith lists: the languages of a website, a
- * function app or a desktop app are those with a choice on its layer, so a new
- * plugin changes the list with no change here (the same rule as `smith compose`).
- * @param options - what `smith kinds` and `smith choices` list
- * @returns the outcomes in the order of the list; one with no language or no item on its layer is left out
+ * Reads what the first question of Add offers from `smith compose --json`: the
+ * outcomes smith builds from its catalogue (the same list the terminal screen
+ * shows) and the languages with their names.
+ * @param json - what `smith compose --json` printed
+ * @returns the outcomes and the languages; both empty when smith is too old to list outcomes
+ * @throws SyntaxError when the text is not JSON, TypeError when it is not an object
  */
-export function outcomesOf (options: AddOptions): OutcomeOption[] {
-  const known = [...new Set(options.kinds.map((kind) => kind.language))]
-  const result: OutcomeOption[] = []
-  for (const spec of SPECS) {
-    const items = spec.layer === undefined ? [] : options.choices.filter((choice) => (choice.layer ?? choice.axis) === spec.layer && (spec.host !== true || choice.needs.length > 0) && choice.language !== undefined && known.includes(choice.language))
-    if (spec.layer !== undefined && items.length === 0) continue
+export function parseOutcomes (json: string): { outcomes: OutcomeOption[], languages: LanguageInfo[] } {
+  const value: unknown = JSON.parse(json)
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new TypeError('smith printed no catalogue')
+  const root = value as Json
+  const outcomes = records(root.outcomes).map((outcome): OutcomeOption => ({
+    id:          text(outcome.id),
+    title:       text(outcome.title),
+    role:        text(outcome.kind),
+    languages:   words(outcome.languages),
+    typical:     words(outcome.typical).join(', '),
+    consequence: text(outcome.consequence),
+    words:       words(outcome.words),
+    items:       records(outcome.items).map((item) => ({
+      name:        text(item.name),
+      title:       text(item.title) || text(item.name),
+      description: text(item.description),
+      language:    text(item.language),
+      layer:       text(item.layer),
+      aliases:     words(item.aliases),
+    })),
+  })).filter((outcome) => outcome.id !== '' && outcome.title !== '')
+  const languages = records(root.items)
+    .filter((item) => item.kind === 'language' && text(item.name) !== '')
+    .map((item) => ({ name: text(item.name), title: text(item.title) || text(item.name), description: text(item.description) }))
 
-    const languages = spec.layer === undefined
-      ? (spec.id === 'api' ? BACKEND_LANGUAGES.filter((language) => known.includes(language)) : known)
-      : [...new Set(items.map((item) => item.language).filter((language) => language !== undefined))]
-    const role = spec.role
-    const fitting = languages.filter((language) => options.kinds.some((kind) => kind.language === language && roleOf(kind.kind, kind.language) === role))
-    if (fitting.length === 0) continue
+  return { outcomes, languages }
+}
 
-    const typical = spec.typical ?? (spec.layer === undefined ? fitting.join(', ') : [...new Set(items.map((item) => item.title ?? item.name))].join(', '))
-    result.push({
-      id:          spec.id,
-      title:       spec.title,
-      role,
-      languages:   fitting,
-      typical,
-      consequence: spec.consequence,
-      items,
-      words:       [...spec.words, ...items.flatMap((item) => [item.name, item.title ?? '', ...(item.aliases ?? [])]).filter((word) => word !== '')],
-    })
+/**
+ * Keeps the languages of each outcome that have a kind of the outcome's role (a
+ * library needs a lib kind), and leaves out an outcome with no language left.
+ * @param outcomes - what smith lists
+ * @param kinds - what `smith kinds` lists
+ * @returns the outcomes smith can add here
+ */
+export function fitOutcomes (outcomes: readonly OutcomeOption[], kinds: readonly KindOption[]): OutcomeOption[] {
+  const fitted: OutcomeOption[] = []
+  for (const outcome of outcomes) {
+    const languages = outcome.languages.filter((language) => kinds.some((kind) => kind.language === language && roleOf(kind.kind, kind.language) === outcome.role))
+    if (languages.length > 0) fitted.push({ ...outcome, languages, items: outcome.items.filter((item) => languages.includes(item.language)) })
   }
 
-  return result
+  return fitted
+}
+
+/** One line of the first question. */
+export type OutcomeRow =
+  | { kind: 'outcome', outcome: OutcomeOption } |
+  { kind: 'none', query: string, closest: string[] } |
+  { kind: 'every' } |
+  { kind: 'compose' }
+
+function wordsOf (value: string): string[] {
+  return value.toLowerCase().split(/[^\p{L}\p{N}#+.]+/u).filter(Boolean)
+}
+
+/** The words that find an outcome, strongest first: its title, then its own words, then what it names. */
+function haystack (outcome: OutcomeOption): Array<{ words: string[], weight: number }> {
+  return [
+    { words: wordsOf(outcome.title), weight: 3 },
+    { words: outcome.words.flatMap((word) => wordsOf(word)), weight: 2 },
+    { words: [...outcome.items.flatMap((item) => [item.name, item.title, ...item.aliases]), outcome.typical].flatMap((word) => wordsOf(word)), weight: 2 },
+    { words: wordsOf(outcome.consequence), weight: 1 },
+  ]
+}
+
+function score (outcome: OutcomeOption, query: readonly string[]): number {
+  let total = 0
+  for (const word of query) {
+    const found = haystack(outcome).filter((part) => part.words.some((candidate) => candidate.startsWith(word))).map((part) => part.weight)
+    if (found.length === 0) return 0
+    total += Math.max(...found)
+  }
+
+  return total
+}
+
+function distance (a: string, b: string): number {
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index)
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i]
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min((previous[j] ?? 0) + 1, (row[j - 1] ?? 0) + 1, (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1))
+    previous = row
+  }
+
+  return previous[b.length] ?? 0
+}
+
+/**
+ * The outcomes that a search finds, the same way the terminal screen searches: every
+ * word of the search must start a word of the title, of the outcome's own words,
+ * or of the name, title or alias of a framework, shell or host it offers.
+ * When nothing matches, one row says so and names the closest outcomes. The
+ * rows that lead elsewhere (every language, compose) always stay.
+ * @param outcomes - what smith can add here
+ * @param query - what the person typed
+ * @returns the rows of the list, best match first
+ */
+export function outcomeRows (outcomes: readonly OutcomeOption[], query: string): OutcomeRow[] {
+  const typed = wordsOf(query)
+  const tail: OutcomeRow[] = [{ kind: 'every' }, { kind: 'compose' }]
+  if (typed.length === 0) return [...outcomes.map((outcome): OutcomeRow => ({ kind: 'outcome', outcome })), ...tail]
+
+  const found = outcomes
+    .map((outcome, index) => ({ outcome, index, points: score(outcome, typed) }))
+    .filter((entry) => entry.points > 0)
+    .sort((a, b) => b.points - a.points || a.index - b.index)
+  if (found.length > 0) return [...found.map((entry): OutcomeRow => ({ kind: 'outcome', outcome: entry.outcome })), ...tail]
+
+  const closest = outcomes
+    .map((outcome) => ({ outcome, far: Math.min(...typed.flatMap((word) => haystack(outcome).flatMap((part) => part.words.map((candidate) => distance(word, candidate))))) }))
+    .sort((a, b) => a.far - b.far)
+    .slice(0, 3)
+    .map((entry) => entry.outcome.title)
+
+  return [{ kind: 'none', query: query.trim(), closest }, ...tail]
+}
+
+/** One row of the language question. */
+export interface LanguageRow {
+  /** The name `--lang` takes. */
+  language:    string
+  /** "C# / .NET". */
+  label:       string
+  /** What the language is for here: the clouds of a function app, the shells of a desktop app. */
+  description: string
+  detail:      string
+}
+
+/**
+ * The rows of the language question in words a person knows: the language by
+ * its name, and next to it what it offers for the thing being built (the clouds
+ * of a function app, the shells of a desktop app), so no list of ids shows.
+ * @param languages - the languages smith lists, with their names
+ * @param kinds - what `smith kinds` lists
+ * @param role - `app`, `lib` or `package`
+ * @param fitting - the languages that fit what is being built
+ * @param outcome - what is being built, if the person chose one
+ * @returns one row per language, in the order of `fitting`
+ */
+export function languageRows (languages: readonly LanguageInfo[], kinds: readonly KindOption[], role: string, fitting: readonly string[], outcome?: OutcomeOption): LanguageRow[] {
+  const rows: LanguageRow[] = []
+  for (const name of fitting) {
+    const kind = kinds.find((candidate) => candidate.language === name && roleOf(candidate.kind, candidate.language) === role)
+    if (kind === undefined) continue
+    const info = languages.find((language) => language.name === name)
+    const offers = [...new Set((outcome?.items ?? []).filter((item) => item.language === name).map((item) => item.title))]
+    rows.push({ language: name, label: info?.title ?? name, description: offers.join(', '), detail: info?.description || kind.description || kind.label })
+  }
+
+  return rows
 }

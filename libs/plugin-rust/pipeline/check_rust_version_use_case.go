@@ -48,6 +48,9 @@ func CheckRustVersion(workspaceRoot string) (protocol.Finding, bool) {
 			f.Fix = &protocol.Fix{
 				Description: "pin Rust " + local + " in " + ToolchainFile,
 				Files:       []protocol.FileEdit{{Path: ToolchainFile, Content: toolchainFile(local)}},
+				// The pin is only half of the remedy: CI and the dev container follow it
+				// once smith writes them again.
+				Steps: []protocol.FixStep{{Description: "write CI and the dev container again so they follow the pin", Argv: []string{"smith", "ci", "generate", "--yes"}}},
 			}
 		}
 		return f, true

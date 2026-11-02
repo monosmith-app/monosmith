@@ -12,6 +12,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ var newIsInteractive = isInteractive
 // newFlags are the variables the flags of smith new write to, besides the
 // ones NewOptions holds.
 type newFlags struct {
-	yes, here                              bool
+	yes, here, dryRun                      bool
 	ci, defaultStacks                      []string
 	language, architecture, branch, remote string
 	githubReleases                         bool
@@ -96,6 +97,11 @@ nothing is asked.`,
 			if opts, err = WithAnswers(opts, answers); err != nil {
 				return err
 			}
+			if !asked && !f.yes && !f.dryRun {
+				if err := RefuseOpenNewChoices(answers, f.firstCommit, f.noCommit); err != nil {
+					return err
+				}
+			}
 			if asked {
 				describeChoices(opts, out)
 				fmt.Fprintln(out)
@@ -119,6 +125,19 @@ nothing is asked.`,
 				return err
 			}
 			opts.FirstCommit, opts.IncludeSecrets = decision.Mode, decision.IncludeSecrets
+			if f.dryRun {
+				plan, err := PlanNew(opts)
+				if err != nil {
+					return err
+				}
+				operationplan.Render(out, plan)
+				fmt.Fprintln(out, FirstCommitText(opts.Name, decision.Mode, f.noCommit))
+				fmt.Fprintln(out, "Dry run: nothing was changed.")
+				return nil
+			}
+			if !asked {
+				fmt.Fprintln(out, FirstCommitText(opts.Name, decision.Mode, f.noCommit))
+			}
 			dir, err := NewWorkspace(opts)
 			if err != nil {
 				return err
@@ -157,7 +176,8 @@ nothing is asked.`,
 	flags.BoolVar(&f.githubReleases, "github-releases", false, "create a GitHub Release for every release tag")
 	flags.StringVar(&opts.CacheDir, "cache-dir", "", "the task cache folder inside the workspace (default .smith/cache)")
 	flags.IntVar(&f.cacheMaxMB, "cache-max-mb", 0, "the largest the task cache may grow, in MB; 0 for no limit (default 2048)")
-	flags.BoolVarP(&f.yes, "yes", "y", false, "take the default for every question that has no flag")
+	flags.BoolVarP(&f.yes, "yes", "y", false, "take the default for every question that has no flag, and print each")
+	flags.BoolVar(&f.dryRun, "dry-run", false, "show the files smith would create and the first commit, and change nothing")
 	flags.StringVar(&opts.SaveRecipe, "save-recipe", "", "save the answers as recipes/<name>.recipe.toml in the workspace, to reuse on others (needs a main language)")
 	flags.StringVar(&opts.RecipeFile, "recipe-file", "", "a recipe file on this machine (one saved by another workspace): copied to recipes/ and used as the recipe; its answers are not asked")
 	flags.StringVar(&opts.Recipe, "recipe", "", "the recipe smith add creates projects from: a path relative to smith.toml or an https URL (docs/reference/recipes.md)")

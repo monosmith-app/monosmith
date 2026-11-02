@@ -88,3 +88,27 @@ func TestRemoveAndAnUnconfiguredDialogAskNoFirstQuestion(t *testing.T) {
 		t.Fatal("a dialog given no libraries asks nothing")
 	}
 }
+
+func TestTabAndTheArrowsWalkEveryControlInOrder(t *testing.T) {
+	p := withLibs("web")
+	if p.focus != focusSource {
+		t.Fatalf("focus starts on the question, got %d", p.focus)
+	}
+	var seen []int
+	for range 5 {
+		p = arrow(p, tea.KeyDown)
+		seen = append(seen, p.focus)
+	}
+	want := []int{focusPackages, focusDev, focusInstall, focusCancel, focusProject}
+	for i := range want {
+		if seen[i] != want[i] {
+			t.Fatalf("Down walked %v, want %v", seen, want)
+		}
+	}
+	if p = arrow(p, tea.KeyUp); p.focus != focusCancel {
+		t.Fatalf("Up goes back, got %d", p.focus)
+	}
+	if got := arrow(withLibs("web"), tea.KeyTab).focus; got != focusPackages {
+		t.Fatalf("Tab from the question goes to the packages, got %d", got)
+	}
+}

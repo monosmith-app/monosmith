@@ -110,16 +110,36 @@ non-zero while something blocks.`,
 					return err
 				}
 			}
+			var settled SettledInit
+			var moved bool
+			// One reader for the questions and the confirmation: two would each swallow the other's input.
+			in := bufio.NewReader(cmd.InOrStdin())
+			env := operationplan.DetectEnvironment()
+			// Every answer and the terminal check come before the first change, the move included.
 			if initialise && !dryRun && report.Adoptable() {
-				c, plan, err := ChooseMove(report, MoveOptions{Dir: move, Yes: yes, In: cmd.InOrStdin(), Out: out})
-				if err != nil {
+				decided.CIGiven = cmd.Flags().Changed("ci")
+				if settled, err = SettleInit(report, InitSettings{
+					Move: MoveOptions{Dir: move}, Flags: decided, Yes: yes, Install: install, Env: env, In: in, Out: out,
+				}); err != nil {
 					return err
 				}
-				if plan != nil {
-					if report, err = MoveRootProject(report, *c, *plan, commit, version, cmd.ErrOrStderr(), out); err != nil {
+				if settled.Move != nil {
+					if report, err = MoveRootProject(report, *settled.Candidate, *settled.Move, commit, version, cmd.ErrOrStderr(), out); err != nil {
 						return err
 					}
+					moved = true
 				}
+			}
+			// undoMove takes the move back when a later step stops, so the tree is as it was.
+			undoMove := func(cause error) error {
+				if !moved || cause == nil {
+					return cause
+				}
+				if rerr := adoptmove.Rollback(report.Root, commit); rerr != nil {
+					return fmt.Errorf("%w\nThe move into %s is still in place: run git reset --hard %s to put it back (%v)", cause, settled.Move.Dir, rollbackTarget(commit), rerr)
+				}
+				fmt.Fprintf(out, "  put the move into %s back: the tree is as it was\n", settled.Move.Dir)
+				return cause
 			}
 			if tags {
 				if _, err := CreateBaselines(report, out); err != nil {
@@ -127,26 +147,20 @@ non-zero while something blocks.`,
 				}
 			}
 			if initialise && !dryRun {
-				decided.CIGiven = cmd.Flags().Changed("ci")
-				env := operationplan.DetectEnvironment()
-				// One reader for the questions and the confirmation: two would each swallow the other's input.
-				in := bufio.NewReader(cmd.InOrStdin())
-				choices, err := adoptdecision.Resolve(adoptdecision.Request{
-					Flags: decided, Facts: InitFacts(report), Yes: yes,
-					Interactive: env.Terminal && !env.CI,
-					In:          in, Out: out,
-				})
-				if err != nil {
-					return err
-				}
 				fmt.Fprintln(out)
-				proceed, err := operationplan.Present(out, in, PlanInit(report, choices, install), operationplan.Options{
+				proceed, err := operationplan.Present(out, in, PlanInit(report, settled.Choices, install), operationplan.Options{
 					Yes: yes, Ask: true, Env: env,
 				})
 				if err != nil || !proceed {
+					return undoMove(err)
+				}
+				if err := Init(report, version, install, eslint, commit, settled.Choices, out); err != nil {
+					if moved {
+						err = fmt.Errorf("%w\nThe move into %s stays in place: git reset --hard %s puts the tree back as it was", err, settled.Move.Dir, rollbackTarget(commit))
+					}
 					return err
 				}
-				return Init(report, version, install, eslint, commit, choices, out)
+				return nil
 			}
 			if tags {
 				if report, err = Inspect(".", version, cmd.ErrOrStderr()); err != nil {

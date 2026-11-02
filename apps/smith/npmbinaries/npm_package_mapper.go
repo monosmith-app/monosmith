@@ -118,6 +118,7 @@ try {
   binary = require.resolve(pkg + '/bin/' + file)
 } catch {
   console.error('__BINARY__: ' + pkg + ' is not installed; reinstall without --omit=optional or --no-optional')
+  console.error('__BINARY__: if you just installed a new release, it may still be propagating on npm: try again in a few minutes')
   process.exit(1)
 }
 if (process.platform !== 'win32') {

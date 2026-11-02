@@ -12,6 +12,8 @@ smith release --rehearse   # ask every registry whether the release would be acc
 
 ## What releases
 
+A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing.
+
 Every project of kind `package`, and every app with a release section (see
 [Apps](#apps)). For each, smith reads the commits since its last release tag that
 touched its directory, or the directory of an internal `lib` it imports (a lib
@@ -27,6 +29,13 @@ ships inside what uses it, so a fix there releases its users):
 The first release starts from the manifest's version (`0.0.0`), so a first
 `feat` gives `0.1.0`. A package whose dependency releases is released too (at
 least a patch), so its published dependency range stays correct.
+
+The minor-before-1.0 rule applies to the bump smith infers from commits. A bump you ask for with
+`--bump <project>=major` is a request and wins: on a 0.x package it gives 1.0.0. When the version smith
+reaches is not the level you asked for (a `patch` on a prerelease releases the version it leads to), the
+plan says so in a note. `--hold <project>` for a project that is not in the plan prints
+`note: <project> is not in this plan, so there is nothing to hold back`; for a name smith does not know it
+refuses, suggests the closest names and lists what the plan releases.
 
 Packages publish to their ecosystem's public registry (npmjs.com, PyPI,
 nuget.org, …), or to the private registry smith.toml names with `[release]
@@ -166,7 +175,8 @@ as a platform without that file. See
 To run the assets again for a release that exists, use `smith ci assets --tag
 <project@version>` or the `assets_tag` input of the workflow's manual run. When the
 tag is not at HEAD, you choose the code with `--source current|tag` (the
-`assets_source` input of the workflow). `current` builds the code as it is now,
+`assets_source` input of the workflow, a dropdown: `current`, `tag`, or the preselected `ask me (refuses)`,
+which stops the run). `current` builds the code as it is now,
 named with the tag's version: a fix reaches the files, but they carry newer code
 under an old number. `tag` builds the tag's own commit in a temporary git
 worktree, with the smith.toml of that commit: the exact code that was released.
@@ -549,6 +559,15 @@ a resumed release attaches any the GitHub Release lacks. A prerelease
 `1.2.0`.
 
 ## npm, PyPI, NuGet and RubyGems
+
+A package whose `optionalDependencies` pin packages at the version being published (the platform
+packages of a binary launcher) is checked before its dist-tag moves: after the platform packages
+are published, smith reads each back with `npm view` for up to 60 seconds. If one is still not
+visible, smith publishes the package under the dist-tag `pending` instead of the channel's tag
+(`next`), and the release report says so and names the command that moves the tag later
+(`npm dist-tag add <name>@<version> next`). Without it, a person who runs `npm i -g` in those
+minutes would get a launcher with no binary. The launcher itself, when a platform package is
+missing, adds that a new release may still be propagating on npm and to try again in a few minutes.
 
 An app released with assets can also be published to npm, PyPI, NuGet and
 RubyGems from the same archives, so people install it with the package

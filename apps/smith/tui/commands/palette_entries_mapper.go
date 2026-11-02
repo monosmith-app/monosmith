@@ -30,7 +30,7 @@ type PaletteEntry struct {
 // section. A command that is not here (a key of a pane, a second way to the
 // same thing) has no line, so one intent has one entry.
 var paletteSections = map[string]string{
-	"file.new": SectionStart, "file.adopt": SectionStart,
+	"file.new": SectionStart, "file.adopt": SectionStart, "file.compose": SectionStart, "ws.commit": SectionHealth, "ws.tools": SectionHealth,
 
 	"run.build": SectionBuild, "run.build-all": SectionBuild,
 	"run.test": SectionBuild, "run.test-all": SectionBuild,

@@ -2,7 +2,7 @@
 
 `smith release` versions, publishes and tags every package that has releasable
 conventional commits since its last tag. The bump follows the commits: `feat` is a minor
-bump, `fix` and `perf` a patch, a breaking change a major (a minor before 1.0). Packages
+bump, `fix` and `perf` a patch, a breaking change a major (a minor before 1.0). A project releases when a `feat:`, `fix:`, `perf:` or breaking commit touches its own folder (or the folder of a lib it imports). A `chore:` commit, or a change only under `tools/` or in `smith.toml`, releases nothing. `--bump <project>=major` is a request, not an inference: it gives 1.0.0 on a 0.x package. Packages
 release in dependency order. Each is stamped with its new version, built, published and
 tagged; manifests are restored afterwards, because the tag is the record. A re-run after
 a failure resumes where it stopped.
@@ -213,7 +213,11 @@ When no commit releases anything:
 
 ```text
 Nothing to release: no package has a feat: or fix: commit since its last release (or since the start, if it was never released).
-  → Releases come from conventional commits: commit with a message like "feat: add search" or "fix: handle empty input" ...
+  → A project releases when a feat:, fix: or breaking commit touches its own folder (or a lib it imports). A chore: commit, or a change only under tools/ or in smith.toml, releases nothing.
+  → Only feat: (a minor version) and fix: (a patch) commits make a release. The commits smith makes itself, such as "chore: add app web", never do.
+  → Commit your own work with a message like "feat: add search" or "fix: handle empty input" ...
+  → For a first release of projects that were never released, this is the commit that counts (smith does not make it for you):
+      git commit --allow-empty -m "feat: first version"
 Unchanged: 1 packages (--verbose names them)
 ```
 

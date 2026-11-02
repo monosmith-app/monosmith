@@ -119,3 +119,63 @@ func TestOperationTextStopsAtTheFirstFlag(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+func TestOnlyASyncWithoutAnAnswerAsksWhichVersionWins(t *testing.T) {
+	for argv, want := range map[string]bool{
+		"sync":                       true,
+		"deps up --align":            true,
+		"up --align":                 true,
+		"sync --prefer highest":      false,
+		"sync --to axios=^1.6.0":     false,
+		"sync --check":               false,
+		"sync --dry-run":             false,
+		"deps up zod":                false,
+		"install -w web zod":         false,
+		"sync --prefer=lowest --yes": false,
+	} {
+		if got := ChoosesVersion(strings.Fields(argv)); got != want {
+			t.Errorf("%q: got %v, want %v", argv, got, want)
+		}
+	}
+	m := NewWhichVersion([]string{"sync"})
+	if _, out := m.Key("down"); out.Check != nil {
+		t.Fatal("moving does not decide")
+	}
+	m, _ = m.Key("down")
+	if _, out := m.Key("enter"); !reflect.DeepEqual(out.Check, []string{"sync", "--prefer", "highest"}) {
+		t.Fatalf("the second answer is the highest: %v", out.Check)
+	}
+}
+
+func TestTheOutputDialogOffersOnlyStopWhileRunningAndTheWorkspaceWhenDone(t *testing.T) {
+	running := NewRunOutput([]string{"new", "shop"}, []string{"one", "", "two"}, Running)
+	if got := running.Labels(); len(got) != 1 || got[0] != "Stop it" {
+		t.Fatalf("while it runs: %v", got)
+	}
+	if _, out := running.Key("enter"); !out.Stop {
+		t.Fatalf("enter stops it: %+v", out)
+	}
+	done := NewRunOutput([]string{"new", "shop"}, nil, Succeeded)
+	if _, out := done.Key("enter"); out.Enter != "shop" {
+		t.Fatalf("the first answer opens the workspace: %+v", out)
+	}
+	failed := NewRunOutput([]string{"convert"}, []string{"smith: the tree is not clean"}, Failed)
+	if got := failed.Labels(); len(got) != 1 || got[0] != "Back" {
+		t.Fatalf("a failure goes back: %v", got)
+	}
+}
+
+func TestOutsideDirIsWhereTheWorkspaceIs(t *testing.T) {
+	for argv, want := range map[string]string{
+		"new shop":                  "shop",
+		"new shop --ci github":      "shop",
+		"new --here":                ".",
+		"new shop --dir work/shop":  "work/shop",
+		"convert --level full":      ".",
+		"new shop --yes --no-start": "shop",
+	} {
+		if got := OutsideDir(strings.Fields(argv)); got != want {
+			t.Errorf("%q: got %q, want %q", argv, got, want)
+		}
+	}
+}

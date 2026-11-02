@@ -38,7 +38,7 @@ public sealed class ThrowawayWorkspaceTests : IClassFixture<ExampleSides>, IDisp
         }
 
         _prepared = true;
-        Assert.Equal(0, Smith("new", "ws").Status);
+        Assert.Equal(0, Smith("new", "ws", "--yes").Status);
         _directory = Path.Combine(_root, "ws");
         var widget = Examples.CSharp("language-widget-cs").CheckCommand;
         var layout = Examples.CSharp("structure-layout-cs").CheckCommand;

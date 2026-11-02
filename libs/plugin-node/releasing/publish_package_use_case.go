@@ -3,9 +3,11 @@ package releasing
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
@@ -89,7 +91,20 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	// A release channel publishes under its dist-tag, so latest stays put (npm
 	// refuses a prerelease without one).
 	if params.Tag != "" {
-		at = append(at, "--tag", params.Tag)
+		tag := params.Tag
+		if manifest, readErr := os.ReadFile(filepath.Join(staged, "package.json")); readErr == nil {
+			if platforms := SameReleaseOptionalDependencies(manifest, params.Version); len(platforms) > 0 {
+				if missing := platformVisibility(workspaceRoot, at).Await(platforms, params.Version); len(missing) > 0 {
+					// A launcher whose platform packages cannot be read yet would install
+					// and fail: keep the channel tag where it is, and say how to move it.
+					tag = pendingTag
+					result.Notes = append(result.Notes, fmt.Sprintf(
+						"the dist-tag %q was not moved: %s %s not visible on the registry yet. Published as %q; when npm shows them, run: npm dist-tag add %s@%s %s",
+						params.Tag, strings.Join(missing, ", "), plural(len(missing), "is", "are"), pendingTag, name, params.Version, params.Tag))
+				}
+			}
+		}
+		at = append(at, "--tag", tag)
 	}
 	if staged == dir {
 		err = npm.run(dir, append([]string{"npm", "publish", "--access", "public"}, at...))
@@ -101,4 +116,27 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	}
 	result.Published = true
 	return result, nil
+}
+
+// pendingTag is the dist-tag a package takes when the channel's own tag has to
+// wait for its platform packages to appear on the registry.
+const pendingTag = "pending"
+
+// platformVisibility reads packages back with `npm view`, for 60 seconds.
+// Tests replace it with a fake registry.
+var platformVisibility = func(workspaceRoot string, at []string) Visibility {
+	return Visibility{
+		Visible: func(name, version string) bool {
+			out, _ := npm.output(workspaceRoot, append([]string{"npm", "view", name + "@" + version, "version"}, at...))
+			return strings.TrimSpace(out) == version
+		},
+		Wait: 60 * time.Second, Every: 5 * time.Second,
+	}
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }

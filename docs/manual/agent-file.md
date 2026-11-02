@@ -23,6 +23,10 @@ The file states:
 - After you change the architecture, add a project or derive a new file. Run it again, or let CI
   run `smith agent file --check`.
 
+## Asking first
+
+`smith agent file` shows the files it writes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`; `--dry-run` shows the plan and writes nothing. `--check` writes nothing and asks nothing.
+
 ## Synopsis
 
 ```sh
@@ -39,7 +43,9 @@ Usage: `smith agent file [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--check` | boolean | off | write nothing; fail when a file is missing or out of date |
+| `--dry-run` | boolean | off | show the files that would be written and change nothing |
 | `--no-claude-md` | boolean | off | do not write CLAUDE.md |
+| `-y, --yes` | boolean | off | do not ask; without a terminal the files are written only with --yes |
 
 <!-- smith:end agent file -->
 

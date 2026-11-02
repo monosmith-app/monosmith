@@ -171,6 +171,10 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		return err
 	}
 	res.Published, res.Registry, res.Publish, res.Assets = pr.Published, pr.Registry, pr.Skipped, pr.Assets
+	for _, note := range pr.Notes {
+		say("note: %s", note)
+		res.Publish = strings.TrimSpace(res.Publish + " " + note)
+	}
 	if BuildsAssetsFromCommand(p) {
 		say("%s are made by `%s` on a runner each (smith ci assets, or smith release assets on this machine) and uploaded to the GitHub Release: %s",
 			strings.Join(p.Release.Platforms, ", "), p.Release.Build, strings.Join(p.Release.Assets, ", "))

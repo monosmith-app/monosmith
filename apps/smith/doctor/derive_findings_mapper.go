@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/derive"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/apps/smith/smithfix"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -31,12 +32,15 @@ func deriveFindings(plan derive.Plan) []protocol.Finding {
 			Check:  "derived file " + i.File.Path + " (" + i.File.Renderer + ") matches what smith derives",
 			Detail: fmt.Sprintf("%s: %s (owner: %s)", i.Status, i.Detail, i.Owner),
 			Remedy: "run smith derive",
+			Fix:    smithfix.Fix("Write the derived files that are out of date", smithfix.Step("Write every derived file that is out of date; the plan lists each", "derive")),
 		}
 		switch i.Status {
 		case derive.StatusDrift, derive.StatusDiverged:
 			f.Remedy = "see the diff with smith derive --explain " + i.File.Path + ", then choose smith derive --replace, --adopt or --eject " + i.File.Path
+			f.Fix = deriveChoice(i.File.Path)
 		case derive.StatusBroken:
 			f.Remedy = "fix the file, or give it to yourself with smith derive --eject " + i.File.Path
+			f.Fix = deriveChoice(i.File.Path)
 		}
 		out = append(out, f)
 	}

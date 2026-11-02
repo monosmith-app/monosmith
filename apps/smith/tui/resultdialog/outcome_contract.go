@@ -14,6 +14,11 @@ type Outcome struct {
 	Check []string
 	// Open is an address to open in the browser and to copy.
 	Open string
+	// Stop asks the host to stop the command that runs in the dialog.
+	Stop bool
+	// Enter is the folder to open the shell in, now that the command made a
+	// workspace there.
+	Enter string
 	// Note is a sentence for the status line, when the choice only closes the dialog.
 	Note string
 }

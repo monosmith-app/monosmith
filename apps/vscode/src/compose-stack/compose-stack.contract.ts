@@ -1,3 +1,5 @@
+import type { DoctorFailure } from '../smith-run/index.ts'
+
 /** One thing the catalogue of `smith compose --json` lists. */
 export interface ComposeItem {
   /** Unique: language/name. */
@@ -9,6 +11,10 @@ export interface ComposeItem {
   description: string
   aliases:     string[]
   layer:       string
+  /** The question a choice answers (`framework`); empty for a language or a plugin. It can differ from the layer: Electron sits on the `shell` layer and answers the `framework` question. */
+  axis:        string
+  /** The axis takes several choices at once; false means one answer, like a radio button. */
+  many:        boolean
   language:    string
   suggested:   boolean
   isDefault:   boolean
@@ -56,13 +62,28 @@ export interface ComposeCheck {
   added:     string[]
 }
 
+/** A program a selection needs on the computer, and whether it is there. */
+export interface ComposeTool {
+  /** The pick that needs it, or the language. */
+  choice:  string
+  /** The name `smith tools install` takes. */
+  name:    string
+  /** What a person calls it ("Node.js"). */
+  title:   string
+  binary:  string
+  /** `installed`, `outdated` or `missing`. */
+  state:   string
+  /** The line that offers the install: `smith tools install <name>`. */
+  command: string
+}
+
 /** The plan a complete selection ends in. */
 export interface ComposePlan {
   /** The exact `smith add` line. */
   command:    string
   argv:       string[]
   files:      Array<{ action: string, path: string, note: string }>
-  tools:      Array<{ choice: string, name: string, binary: string, install: string }>
+  tools:      ComposeTool[]
   notes:      string[]
   recipeArgv: string[]
   recipeNote: string
@@ -77,12 +98,13 @@ export interface ComposeReport {
 }
 
 /** What the person does with the plan. */
-export type ComposeAnswer = 'run' | 'run-commit' | 'copy' | 'recipe' | 'cancel'
+export type ComposeAnswer = 'run' | 'run-commit' | 'copy' | 'recipe' | 'tools' | 'cancel'
 
 /** How composing ended. */
 export type ComposeOutcome =
   | { kind: 'cancelled' } |
   { kind: 'refused', message: string } |
   { kind: 'added', name: string, lines: string[], committed: boolean } |
+  { kind: 'written', name: string, operation: string, failure: DoctorFailure, lines: string[] } |
   { kind: 'copied', command: string } |
   { kind: 'recipe', lines: string[] }

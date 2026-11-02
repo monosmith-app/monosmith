@@ -19,6 +19,9 @@ type Spec struct {
 	AddYes bool
 	// AddDryRun adds --dry-run when the command has no such flag.
 	AddDryRun bool
+	// ChecksResult says the command checks its own result after it wrote files
+	// and returns AfterWork(err) when that check fails. It adds --commit-anyway.
+	ChecksResult bool
 }
 
 // Wrap makes cmd commit its work as one operation when [workspace]
@@ -38,6 +41,9 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 	}
 	if cmd.Flags().Lookup("commit") == nil {
 		cmd.Flags().Bool("commit", false, "commit the change as one operation so smith undo can revert it (nothing is committed without it)")
+	}
+	if spec.ChecksResult && cmd.Flags().Lookup(commitAnywayFlag) == nil {
+		cmd.Flags().Bool(commitAnywayFlag, false, "with --commit, commit even when the check of the new project fails (the files exist, a tool is missing)")
 	}
 	run := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
@@ -59,6 +65,10 @@ func Wrap(cmd *cobra.Command, spec Spec) *cobra.Command {
 			}
 		}
 		err := run(c, args)
+		if err != nil && isVerifyFailure(err) && !readsOnly(c) {
+			settleAfterFailedCheck(c, before, requested, spec.Describe(c, args))
+			return err
+		}
 		if err == nil && pending == nil && !readsOnly(c) && !dryRunning(c) {
 			if root, rootErr := workspace.FindRoot("."); rootErr == nil && hasChanges(root) {
 				command := spec.Describe(c, args)

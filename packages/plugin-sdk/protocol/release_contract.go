@@ -69,6 +69,10 @@ type PublishResult struct {
 	Published bool   `json:"published"`
 	Skipped   string `json:"skipped,omitempty"`
 	Registry  string `json:"registry,omitempty"`
+	// Notes are things the person must know about a publish that succeeded,
+	// such as a dist-tag that was not moved; the host prints them and the
+	// report keeps them.
+	Notes []string `json:"notes,omitempty"`
 	// Assets are the workspace-relative files built for the release, in
 	// upload order; in a dry run, the files that would be built.
 	Assets []string `json:"assets,omitempty"`

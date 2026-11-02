@@ -1,6 +1,7 @@
 package resultdialog
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
@@ -83,6 +84,46 @@ func NewMissingTool(t MissingTool) Model {
 	}
 	m.choices = append(m.choices, choice{"Continue without checking", "Doctor keeps reminding you", Outcome{Done: true, Note: "Not checked: " + t.Title + " is missing. Doctor will keep reminding you."}})
 	m.foot = "Nothing is lost: your project stays on disk."
+	return m
+}
+
+// ChoosesVersion reports whether a command line is a sync (smith sync, or
+// smith deps up --align) that has not said which version wins yet: no --prefer,
+// no --to, and it is not a check or a dry run.
+//
+// Parameters: argv is the smith command line, without the leading "smith".
+// Returns: true when the person should be asked which version wins.
+func ChoosesVersion(argv []string) bool {
+	sync := len(argv) > 0 && argv[0] == "sync"
+	align := len(argv) > 1 && (argv[0] == "up" || (argv[0] == "deps" && argv[1] == "up")) && slices.Contains(argv, "--align")
+	if !sync && !align {
+		return false
+	}
+	for _, a := range argv {
+		if a == "--prefer" || a == "--to" || a == "--check" || a == "--dry-run" || strings.HasPrefix(a, "--prefer=") || strings.HasPrefix(a, "--to=") {
+			return false
+		}
+	}
+	return true
+}
+
+// NewWhichVersion builds the dialog that asks which version wins when projects
+// declare a dependency at different versions. Each choice goes on to the usual
+// plan and confirmation with the answer as --prefer; nothing is written here.
+//
+// Parameters: argv is the sync command line that has no --prefer yet.
+// Returns: the dialog, on the first choice.
+func NewWhichVersion(argv []string) Model {
+	m := Model{title: "Which version wins?"}
+	m.facts = []Fact{{Info, "Some projects declare the same dependency at different versions. You choose the one every project gets."}}
+	with := func(rule string) []string { return append(append([]string(nil), argv...), "--prefer", rule) }
+	m.choices = []choice{
+		{"The installed version (smith's pick)", "the version the package manager has installed (default)", Outcome{Check: with("installed")}},
+		{"The highest declared", "projects on an older version move up", Outcome{Check: with("highest")}},
+		{"The lowest declared", "projects on a newer version move down", Outcome{Check: with("lowest")}},
+		{"Cancel", "nothing is changed", Outcome{Done: true, Note: "Cancelled: no version was changed"}},
+	}
+	m.foot = "You see the plan before anything is written. One dependency at a time: smith sync --to <name>=<version>."
 	return m
 }
 

@@ -222,7 +222,7 @@ func CoreChecks(s *session.Session) []protocol.Finding {
 	if status, err := cachemaintenance.Inspect(s.LocalCacheDir(), session.CacheLimitBytes(s.Config)); err == nil {
 		out = append(out, localCacheFindings(status)...)
 	}
-	out = append(out, defaultsVintageFinding(s.Config.Workspace.Defaults))
+	out = append(out, defaultsVintageFinding(s.Config.Workspace.Defaults, readConfigText(s.Root)))
 	out = append(out, toolchainPinFindings(s)...)
 	out = append(out, jestHelperFilesFindings(s)...)
 	outside := OutsideBuildDir(s.Graph.Projects, s.Config.Workspace.AllowedOutputs...)
@@ -375,4 +375,13 @@ func sortedKeys(m map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// readConfigText is the text of smith.toml, or "" when it cannot be read.
+func readConfigText(root string) string {
+	raw, err := os.ReadFile(filepath.Join(root, workspace.FileName))
+	if err != nil {
+		return ""
+	}
+	return string(raw)
 }

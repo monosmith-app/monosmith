@@ -53,6 +53,7 @@ shared_outputs = ["dist/drop"]       # folders several tasks fill on purpose (be
 registry = "libs"                     # the [registries] entry installs come from (below); default: the public registries
 recipe = "recipes/team.recipe.toml"   # new projects are created from this recipe: a path or an https URL (docs/reference/recipes.md)
 confirm = "risky"                     # which plans ask: "always" (default) or "risky": only a plan that deletes or edits files asks (ADR 0073)
+update_check = "on"                   # ask npm once a day if a newer smith exists on your channel (stable or next); "off" never asks; unset: announced once (docs/getting-started/installing.md)
 commit_operations = true              # add, remove, upgrade, derive and sync commit their work as one commit; smith undo reverts it (default: false)
 defaults = "2026.11"                  # the defaults vintage the workspace follows; smith upgrade --defaults moves it (ADR 0054)
 
@@ -744,7 +745,8 @@ See [Releasing](releasing.md#apps).
 | `SMITH_HOME` | smith's own directory, `~/.smith` by default; installed plugins go in its `plugins/`, and the external plugins you trust are recorded in its `trust.json` |
 | `SMITH_VERBOSE` | stream the output of the toolchain commands plugins run quietly while `smith add` creates a project (anything but empty or `0`; `smith add --verbose` sets it) |
 | `SMITH_TASK`, `SMITH_TASK_KEY`, `SMITH_WORKSPACE_ROOT` | set by smith in the environment of every task it runs: the task id (`web:build`), its cache key and the workspace root |
-| `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release |
+| `SMITH_NO_UPDATE_CHECK` | stop `smith info` asking GitHub for the newest release, and the update notice asking npm |
+| `SMITH_UPDATE_CHECK` | `on` or `off`: whether smith asks the npm registry once a day for a newer smith on your channel; wins over `[workspace] update_check` |
 | `SMITH_NPM_ALREADY_AUTHENTICATED` | tell the release's pre-flight check that npm is already authenticated, so the check does not require `NODE_AUTH_TOKEN` or `NPM_TOKEN` (set it when npm is logged in some other way) |
 | `TWINE_REPOSITORY_URL` | upload Python packages and an app's wheels to another index |
 | `NUGET_PUSH_URL` | the NuGet v2 push endpoint for an app's .NET tool packages (default nuget.org) |

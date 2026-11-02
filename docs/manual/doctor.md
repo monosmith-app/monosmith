@@ -100,6 +100,11 @@ say nothing when there is nothing to say:
 - After cloning, after a merge, after changing tools, and before a release.
 - In CI, as a gate: it exits 1 while any check fails.
 - With `--fix` to repair generated files.
+- A check whose remedy names a smith command (`smith upgrade --defaults`, `smith deps up --align`,
+  `smith derive`, `smith cache prune`, `smith kind`) carries a fix of that command. It is never
+  "safe": `smith doctor --fix --yes` skips it, and the interactive shell and the editors ask first,
+  show the plan the command prints, and run it in place with a Fix action. Name one with
+  `--only` and answer its questions with `--choose`.
 
 ## Synopsis
 
@@ -131,7 +136,19 @@ Interactions:
 - `--only` and `--choose` pick what to fix, so they need `--fix` (`--only and --choose pick
   what to fix, so they go with --fix`).
 - `--fix` alone shows the fixes as diffs and, in a terminal, asks. Without a terminal, or
-  without `--yes`, it prints `Pass --yes to apply these fixes.` and exits 1.
+  without `--yes`, it first prints a summary (how many fixes, which `--yes` applies because they are safe,
+  which need your decision and the flags that apply them), then each fix with its diff or the command it
+  would run, then `Pass --yes to apply the N safe fix(es) above.`, and exits 1. A fix that asks (for
+  example whether a Cargo crate belongs to the workspace) is never applied by `--yes` alone: it is listed
+  with `--only "<name>" --yes --choose N`, one line per answer.
+- A tool doctor needs and cannot find (such as `cargo-audit`) is one finding that says it is skipped.
+  Doctor never prints the tool's own error lines.
+- A Rust crate that has its own `[workspace]` table is its own root, so doctor does not ask for it in
+  `members`. A crate it finds that is neither listed nor excluded is offered two answers: add it to
+  `members`, or "not part of this workspace" (adds it to `[workspace] exclude`).
+- A workspace that records no `[workspace] defaults` vintage is offered two answers: keep the current
+  defaults (writes `defaults = "<vintage>"` to `smith.toml` and changes nothing else), or move to the
+  latest (`smith upgrade --defaults`, which shows a plan).
 - `--only "<name>" --yes` applies one fix by the name doctor prints (the check's or the
   fix's). Doctor exits non-zero while a named fix is not applied.
 - `--choose 1,2` answers the fix's questions by option number, in order, for the fix `--only`
@@ -158,7 +175,7 @@ A check is `✔` (passed), `✖` (failed, exit 1) or `!` (a warning, not counted
 Reads the workspace and runs the plugins' checks (they may call `go`, `node`, `python`,
 `git`). `--fix` rewrites generated files (pipelines, `go.work`, the dev container) and runs
 the commands it displays. Variables that change checks: `SMITH_CACHE_REMOTE` and
-`SMITH_CACHE_KEY` (the remote cache must be signed), `SMITH_NO_UPDATE_CHECK`, and the
+`SMITH_CACHE_KEY` (the remote cache must be signed), `SMITH_UPDATE_CHECK` (a newer smith is named at the end), and the
 release credentials ([`smith release`](release.md)).
 
 ## Examples
@@ -201,7 +218,7 @@ smith doctor --fix
 -
 -# stale
 
-Pass --yes to apply these fixes.
+Pass --yes to apply the 1 safe fix(es) above.
 ```
 
 ```sh

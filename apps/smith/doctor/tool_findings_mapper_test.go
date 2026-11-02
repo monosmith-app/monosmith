@@ -5,8 +5,25 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolcatalog"
 )
+
+func TestAToolTwoProjectsAskForIsListedOnce(t *testing.T) {
+	core := func(project string) Finding {
+		return Finding{Source: "dotnet", Finding: protocol.Finding{Check: "Azure Functions Core Tools is installed", Detail: project + " needs func"}}
+	}
+	other := Finding{Source: "smith", Finding: protocol.Finding{Check: "go.work exists", OK: true}}
+	got := withoutRepeatedMachineChecks([]Finding{core("api-cs"), other, core("api-cs2")})
+	if len(got) != 2 || got[0].Detail != "api-cs needs func" || got[1].Check != "go.work exists" {
+		t.Fatalf("got %+v", got)
+	}
+	ok := core("x")
+	ok.OK = true
+	if got := withoutRepeatedMachineChecks([]Finding{core("a"), ok}); len(got) != 2 {
+		t.Errorf("a failed and a passed check of one tool are different findings: %+v", got)
+	}
+}
 
 func TestCheckNameIgnoresCaseAndArticles(t *testing.T) {
 	for _, pair := range [][2]string{{"a JDK is installed", "JDK is installed"}, {"The .NET SDK is installed", "the .net sdk is installed"}} {

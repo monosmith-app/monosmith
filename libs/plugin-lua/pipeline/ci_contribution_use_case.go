@@ -29,7 +29,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 }
 
 // probe runs a tool for its output; tests replace it.
-var probe = func(dir string, argv []string) (string, error) { return toolrun.Output(dir, argv) }
+var probe = func(dir string, argv []string) (string, error) { return toolrun.Probe(dir, argv) }
 
 // Doctor checks that LuaRocks and luacheck are installed, and warns when a
 // rockspec's file name does not say its package and version, which LuaRocks

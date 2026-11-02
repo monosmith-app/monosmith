@@ -65,8 +65,10 @@ func TestTheDepsViewMarksAllAndAlignsVersions(t *testing.T) {
 	l.has("[x] axios", "[x] zod", "[x] react", "3 marked")
 	l.keys("a")
 	l.has("0 marked")
-	l.keys("v", "y")
-	if got := l.lastStarted(); got != "deps up --align --yes" {
+	l.keys("v")
+	l.has("Which version wins?")
+	l.keys("enter", "y")
+	if got := l.lastStarted(); got != "deps up --align --prefer installed --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -402,7 +404,7 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l.clickText("Remove a package")
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
-	if got := l.lastStarted(); got != "uninstall -w orders left-pad" {
+	if got := l.lastStarted(); got != "uninstall -w orders left-pad --yes" {
 		t.Fatalf("started %q", got)
 	}
 }

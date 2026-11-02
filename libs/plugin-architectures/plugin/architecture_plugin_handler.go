@@ -109,6 +109,11 @@ func (a *Architecture) Doctor(params protocol.DoctorParams) (protocol.DoctorResu
 		f.Warning = true
 		f.Detail = "no folder is named for a part of the architecture (" + strings.Join(a.rules.FolderNames(), ", ") + ") in " + named(bare) + ", so its rules check nothing there"
 		f.Remedy = "move the code into folders with those names, or run smith architecture none to stop checking the layout"
+		// Moving the code is the person's own work; smith can only do the other way.
+		f.Fix = &protocol.Fix{Description: "Stop checking the layout", Steps: []protocol.FixStep{{
+			Description: "smith architecture none turns the layout check off in smith.toml",
+			Argv:        []string{"smith", "architecture", "none"},
+		}}}
 	}
 	return protocol.DoctorResult{Findings: []protocol.Finding{f}}, nil
 }

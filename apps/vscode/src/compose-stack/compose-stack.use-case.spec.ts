@@ -36,16 +36,20 @@ const PLAN = {
   recipeNote: '',
 }
 
-function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: ComposeAnswer }): { deps: ComposeDeps, applied: string[][], told: string[], messages: string[] } {
+function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: ComposeAnswer }): { deps: ComposeDeps, applied: string[][], told: string[], messages: string[], stacks: string[], installs: string[] } {
   const applied: string[][] = []
   const told: string[] = []
   const messages: string[] = []
+  const stacks: string[] = []
+  const installs: string[] = []
   const rounds = [...over.picks]
 
   return {
     applied,
     told,
     messages,
+    stacks,
+    installs,
     deps: {
       run:   smith({ 'electron': COMPLETE, 'react,electron': { language: 'node', complete: false, conflict: 'react and electron are both on the framework axis: keep one' } }),
       apply: async (args) => {
@@ -59,9 +63,14 @@ function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: Compose
         return rounds.shift()
       },
       answer:  async () => undefined,
-      askName: async () => 'desk',
-      tell:    (message) => { told.push(message) },
-      confirm: async () => over.reply ?? 'run',
+      askName: async (stack) => {
+        stacks.push(stack)
+
+        return 'desk'
+      },
+      installTools: async () => { installs.push('tools') },
+      tell:         (message) => { told.push(message) },
+      confirm:      async () => over.reply ?? 'run',
       ...over,
     },
   }
@@ -73,6 +82,33 @@ describe('composeStack', () => {
     const outcome = await composeStack(f.deps)
     expect(outcome).toMatchObject({ kind: 'added', name: 'desk', committed: false })
     expect(f.applied).toEqual([['add', 'app', 'desk', '--lang', 'node', '--with', 'electron,eslint,vitest', '--yes']])
+  })
+
+  it('asks the name before the plan and names the stack in the question', async () => {
+    const f = deps({ picks: [['node/electron']] })
+    await composeStack(f.deps)
+    expect(f.stacks).toEqual(['Electron (node)'])
+  })
+
+  it('offers the tools flow when a tool is missing, and shows the plan again with the states read after it', async () => {
+    const states = ['missing', 'installed']
+    const asked: boolean[] = []
+    const answers: ComposeAnswer[] = ['tools', 'run']
+    const f = deps({
+      picks: [['node/electron']],
+      run:   async (args) => {
+        return args.includes('--name') ? ok({ layers: [], items: ITEMS, plan: { ...PLAN, tools: [{ choice: 'tauri', name: 'tauri-linux-libs', title: 'the Tauri system libraries', binary: 'pkg-config', state: states.shift() ?? 'installed', command: 'smith tools install tauri-linux-libs' }] } }) : (await smith({ electron: COMPLETE })(args))
+      },
+      confirm: async (_text, _recipe, missing) => {
+        asked.push(missing)
+
+        return answers.shift() ?? 'cancel'
+      },
+    })
+    expect(await composeStack(f.deps)).toMatchObject({ kind: 'added' })
+    expect(asked).toEqual([true, false])
+    expect(f.installs).toEqual(['tools'])
+    expect(f.applied).toHaveLength(1)
   })
 
   it('adds --commit only for the commit answer', async () => {
@@ -87,6 +123,24 @@ describe('composeStack', () => {
     expect(f.messages[1]).toContain('Conflict: react and electron are both on the framework axis')
     expect(outcome.kind).toBe('added')
     expect(f.applied).toHaveLength(1)
+  })
+
+  it('swaps a second pick on a single-choice axis for the first one and says so, without a conflict', async () => {
+    const withAxis = ITEMS.map((item) => item.kind === 'choice' && (item.name === 'react' || item.name === 'electron') ? { ...item, axis: 'framework' } : item)
+    const base = smith({ electron: COMPLETE, react: { language: 'node', complete: false, missing: 'tick a shell' } })
+    const f = deps({
+      picks: [['node/react'], ['node/react', 'node/electron']],
+      run:   async (args) => {
+        const run = await base(args)
+
+        return run.stdout.includes('"items"') ? ok({ ...JSON.parse(run.stdout) as object, items: withAxis }) : run
+      },
+    })
+    const outcome = await composeStack(f.deps)
+    expect(f.told.join(' ')).toContain('Electron replaces React')
+    expect(f.messages.join(' ')).not.toContain('Conflict')
+    expect(outcome.kind).toBe('added')
+    expect(f.applied[0]).toContain('electron,eslint,vitest')
   })
 
   it('asks an open question and ticks the answer the person gave, not the suggested one by itself', async () => {
@@ -129,6 +183,24 @@ describe('composeStack', () => {
     const f = deps({ picks: [['node/electron']], reply: 'recipe' })
     expect(await composeStack(f.deps)).toMatchObject({ kind: 'recipe' })
     expect(f.applied).toEqual([['recipe', 'new', '--name', 'x']])
+  })
+
+  it('says a project that was written but fails its doctor was written, with the facts and smith steps', async () => {
+    const stdout = 'Creating app desk in apps/desk/: a Tauri app\nWrote 32 file(s)\nThe new project desk fails smith doctor:\n  ✖ pkg-config does not find webkit2gtk-4.1\n      → run: sudo apt-get install libwebkit2gtk-4.1-dev\n'
+    const stderr = 'smith: the new project desk was written but fails smith doctor; follow the steps above, then run smith doctor\n'
+    const f = deps({
+      picks: [['node/electron']],
+      reply: 'run-commit',
+      apply: async () => ({ code: 1, stdout, stderr }),
+    })
+    const outcome = await composeStack(f.deps)
+    expect(outcome).toMatchObject({ kind: 'written', name: 'desk', operation: 'add app desk', failure: { files: 32, committed: false, reasons: ['pkg-config does not find webkit2gtk-4.1'] } })
+    expect(outcome.kind === 'written' ? outcome.lines.join('\n') : '').toContain('sudo apt-get install libwebkit2gtk-4.1-dev')
+  })
+
+  it('never adds --commit-anyway by itself: the person decides after the facts', async () => {
+    const f = deps({ picks: [['node/electron']], reply: 'run-commit', apply: async (args) => ({ code: args.includes('--commit-anyway') ? 0 : 1, stdout: '', stderr: '✖ the build failed\n' }) })
+    expect(await composeStack(f.deps)).toMatchObject({ kind: 'refused' })
   })
 
   it('cancels when the person closes the list, and refuses when smith fails', async () => {

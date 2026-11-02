@@ -181,7 +181,9 @@ view is emptied so no text shows at its edges, and a toast sits inside the conte
 Commands that change the workspace or publish (`smith ci generate`, `smith install`,
 `smith upgrade`, `smith release`) first show their command line in a dialog. `y` confirms;
 `n`, `Esc`, `Ctrl+C` or `q` cancels; `Enter` or `Space` presses the focused button; `Tab`,
-`Left`, `Right` and `Shift+Tab` move between the buttons.
+`Left`, `Right` and `Shift+Tab` move between the buttons. A plan too long for the dialog scrolls
+with `Up`, `Down`, `PgUp` and `PgDn` under a line that says how many lines are hidden; the
+commit box, the command that will run and the buttons stay on screen.
 
 ### What a word means
 
@@ -314,8 +316,14 @@ one is not valid; [`smith recipe check <file>`](recipe-check.md) shows what a re
 that end as a smith command line. Every action in the action catalog has one: a command with
 no hand-written form gets a form built from its own arguments and options, subcommands
 included (`deps up`, `docker description`, `slices check`, `cache prune`). **Write a recipe**
-asks for the name, version, parent and the fixed plugins (`language=python lint=ruff`) and ends
-as `smith recipe new --name ... --fixed ...`. A recipe with a choice its users make is still
+asks for the name, version and parent, then one question for each level a plugin can fill. A
+level with one plugin (language, scaffold, lint, test) is a pick list that starts on "Leave
+unset". A level with any number (structure, deploy) is a list of tick boxes (space ticks, enter
+confirms; nothing ticked leaves the level unset). Each plugin shows a line about what it is, and
+after the language only the plugins that fit it are listed. The list of plugins comes from
+`smith recipe new --list-levels --json`. A pick is refused with its reason, and the
+confirmation shows the exact `smith recipe new --name ... --fixed ...` command and the file it
+writes. This form fixes plugins only: a level whose plugin the recipe's users choose is still
 written with `smith recipe new` on a terminal, which asks the questions.
 
 Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in
@@ -337,6 +345,11 @@ Opened by `f` or `F` in Doctor. It is the interactive form of
    scroll. In the adopt wizard the review of a conversion has the same unticked box, "Commit this
    change so it can be undone": `c` or a click ticks it.
 3. **Progress.** Step by step with a bar. `Esc` or `Ctrl+C` stops the step.
+   A fix can be a smith command (`smith upgrade --defaults`, `smith deps up --align`,
+   `smith derive --replace`, `smith kind`, `smith cache prune`). The review then shows the plan
+   the command prints with its plan flag, so you see what it changes before you agree, and
+   Doctor checks again after it ends. Nothing runs in a terminal: the listing in
+   [the terminal hand-over reference](../reference/tui-terminal-handover.md) says what is left.
 4. **Failure.** The failing step's output. `r` or `Enter` retries, `y` copies the failure
    text, `Esc`, `q`, `c` or `Ctrl+C` closes.
 

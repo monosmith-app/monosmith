@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -63,7 +64,27 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 			Fix:    &fix,
 		}})
 	}
-	return findings
+	return withoutRepeatedMachineChecks(findings)
+}
+
+// withoutRepeatedMachineChecks keeps one finding per tool. Each project of a
+// kind asks its plugin about the same program (two function apps both ask for
+// Azure Functions Core Tools), and the machine has one answer, so the list
+// shows it once.
+func withoutRepeatedMachineChecks(findings []Finding) []Finding {
+	seen := map[string]bool{}
+	out := findings[:0:0]
+	for _, f := range findings {
+		if IsMachineCheck(f) {
+			key := checkName(f.Check) + "|" + strconv.FormatBool(f.OK)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+		}
+		out = append(out, f)
+	}
+	return out
 }
 
 // ToolFix turns the plan of a tool into a fix with one choice. The marked
