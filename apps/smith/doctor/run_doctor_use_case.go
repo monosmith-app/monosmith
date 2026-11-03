@@ -110,6 +110,7 @@ func run(s *session.Session, askRegistries bool) Report {
 	add("smith", sourceConditionChecks(s)...)
 	add("smith", recipeChecks(s)...)
 	add("smith", recipeReleaseChecks(s)...)
+	add("smith", notStartedChecks(s)...)
 	add("smith", dependencies.CheckOneVersionPolicy(s)...)
 	add("smith", deriveChecks(s)...)
 	add("smith", lockfileChecks(s)...)
