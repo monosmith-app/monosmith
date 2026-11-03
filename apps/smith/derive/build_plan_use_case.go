@@ -32,7 +32,9 @@ func BuildPlan(s *session.Session) (Plan, derivelock.Record, error) {
 	if err != nil {
 		return Plan{}, rec, err
 	}
-	proposals, diverging, err := collect(s, rec.OwnedBySmith())
+	proposals, diverging, err := converge(s.Root, rec.OwnedBySmith(), func(owned []string) ([]Proposal, []Divergence, error) {
+		return collect(s, owned)
+	})
 	if err != nil {
 		return Plan{}, rec, err
 	}
@@ -44,7 +46,7 @@ func BuildPlan(s *session.Session) (Plan, derivelock.Record, error) {
 // PlanFor classifies proposals against the files under root and the record.
 func PlanFor(root string, rec derivelock.Record, proposals []Proposal) (Plan, error) {
 	var plan Plan
-	proposals = preferRecorded(rec, proposals)
+	proposals = oneOwnerPerFile(rec, preferRecorded(rec, proposals))
 	whole := map[string]protocol.DerivedFile{}
 	owner := map[string]string{}
 	for _, p := range proposals {

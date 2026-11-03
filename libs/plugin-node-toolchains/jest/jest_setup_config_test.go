@@ -110,6 +110,25 @@ func TestJestFollowsSiblingsThatKeepTheConfigInFiles(t *testing.T) {
 	}
 }
 
+// The roots of a generated jest.config.cts are a plain relative path, with
+// ts-jest and with @swc/jest. The package.json form keeps <rootDir>.
+func TestJestConfigFileWritesRootsAsAPlainRelativePath(t *testing.T) {
+	for _, shape := range []map[string]string{{"jest.config": "file"}, {"jest.config": "file", "test.runner": "@swc/jest"}} {
+		ws := t.TempDir()
+		write(t, ws, "package.json", `{"name": "acme"}`)
+		write(t, ws, "packages/dep/package.json", `{"name": "@acme/dep"}`)
+		c := New("1.0.0")
+		_, _ = c.Describe(protocol.InitializeParams{WorkspaceRoot: ws})
+		if _, err := c.Generate(protocol.GenerateParams{Name: "dep", Directory: "packages/dep", Shape: shape}); err != nil {
+			t.Fatal(err)
+		}
+		config := read(t, ws, "packages/dep/jest.config.cts")
+		if !strings.Contains(config, `"./src"`) || strings.Contains(config, `"<rootDir>/src"`) {
+			t.Errorf("shape %v: roots is not a plain relative path:\n%s", shape, config)
+		}
+	}
+}
+
 func TestJestFileConfigWithTsJestIsPlainExports(t *testing.T) {
 	ws := t.TempDir()
 	write(t, ws, "package.json", `{"name": "acme"}`)
