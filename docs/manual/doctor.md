@@ -46,6 +46,14 @@ lists every check with its remedy.
   registry`: every project's latest tag is found under its tag prefix, and no version is
   already published beyond it. When the registry cannot be asked, doctor says so and skips
   the comparison. See [Releasing](../reference/releasing.md).
+- `the latest CI run on the default branch started its jobs`: a warning, shown only when the
+  latest run of the default branch has a GitHub annotation saying a job was not started
+  because of billing (failed payments or a spending limit). Such a run has no steps and no
+  logs, so the annotation is the only clue. doctor prints it and names the remedy: check the
+  GitHub billing page and the spending limit. It only reads (it never changes anything) and
+  never fails the local checks. It says nothing without a GitHub remote, a GitHub login
+  (`GITHUB_TOKEN`, `GH_TOKEN` or `gh auth login`) or a network; `SMITH_NO_UPDATE_CHECK=1`
+  turns it off.
 - `the clone has full history`, `tracked files are not generated files`, `every build writes to
   dist/` and `projects depend only on what the boundaries allow`.
 - `package-lock.json holds the packages every platform needs`: a lockfile made on one OS that
