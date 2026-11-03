@@ -3,6 +3,7 @@ package tui
 import (
 	"slices"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
@@ -42,6 +43,14 @@ func (s *Shell) showOutside() {
 	}
 	m := resultdialog.NewRunOutput(s.run.Command, s.runLines, state).Place(s.w, s.h)
 	s.result = &m
+}
+
+// outsideElapsed is how long the command in the output dialog has run.
+func (s *Shell) outsideElapsed() time.Duration {
+	if s.run == nil || s.run.Finished {
+		return 0
+	}
+	return s.now().Sub(s.run.Started)
 }
 
 // outsideOutcome does what the output dialog asks for: stop the command, open

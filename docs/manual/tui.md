@@ -1,4 +1,4 @@
-# The smith terminal interface
+﻿# The smith terminal interface
 
 Typing `smith` with no arguments in a terminal opens an interactive shell: a full-screen
 view of the workspace with tabs for its health, projects, runs, dependencies, release and
@@ -285,6 +285,8 @@ end up with and the name of each answer, and writes a `--chosen` flag (see
 **Release without a releasing commit** does not list a package that was never released: smith has
 no version to bump. A line names it and gives the commit that sets its first version, `git commit
 --allow-empty -m "version(<name>)[1.0.0]"`.
+
+While smith convert or smith new runs from the form (before a workspace exists), the box is titled with what it does (Converting this workspace to smith…, Creating a new workspace…). A spinner line says what it is doing, with the time once it passes 2 seconds, above the last lines it printed.
 
 After an add, a convert or an adopt finishes, the toast says it can be undone and where.
 

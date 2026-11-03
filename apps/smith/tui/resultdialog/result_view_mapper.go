@@ -16,6 +16,9 @@ func (m Model) Lines(th theme.Theme) []string {
 	}
 	inner := r.W - 4
 	var body []string
+	if w := m.workingLine(th); w != "" {
+		body = append(body, pane.Wrap(w, inner, 2)...)
+	}
 	for _, f := range m.facts {
 		text := f.Text
 		switch f.Kind {

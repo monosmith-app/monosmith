@@ -3,6 +3,7 @@ package resultdialog
 import (
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 )
@@ -17,6 +18,10 @@ type Model struct {
 	// foot is the sentence under the list that tells what is safe.
 	foot string
 	rect dialog.Rect
+	// working, tick and elapsed draw the moving line of a command that runs.
+	working string
+	tick    int
+	elapsed time.Duration
 }
 
 // NewAfterChange builds the dialog for a change that finished and was not

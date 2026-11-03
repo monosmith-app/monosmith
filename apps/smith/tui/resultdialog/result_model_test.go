@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -177,5 +178,21 @@ func TestOutsideDirIsWhereTheWorkspaceIs(t *testing.T) {
 		if got := OutsideDir(strings.Fields(argv)); got != want {
 			t.Errorf("%q: got %q, want %q", argv, got, want)
 		}
+	}
+}
+
+func TestTheRunningDialogNamesWhatRunsAndShowsItMoving(t *testing.T) {
+	for argv, want := range map[string]string{"convert": "Converting this workspace to smith…", "new shop": "Creating a new workspace…"} {
+		m := NewRunOutput(strings.Fields(argv), nil, Running).Place(80, 24).Pulse(3, 12*time.Second)
+		if m.Title() != want {
+			t.Fatalf("%s: title %q", argv, m.Title())
+		}
+		if got := strings.Join(m.Lines(theme.Default()), "\n"); !strings.Contains(got, "… 12s") {
+			t.Fatalf("%s: no moving line with the time:\n%s", argv, got)
+		}
+	}
+	done := NewRunOutput([]string{"convert"}, nil, Succeeded).Place(80, 24).Pulse(3, 12*time.Second)
+	if strings.Contains(strings.Join(done.Lines(theme.Default()), "\n"), "12s") {
+		t.Fatal("a finished command shows no moving line")
 	}
 }

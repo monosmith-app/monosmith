@@ -3,6 +3,10 @@ package resultdialog
 import (
 	"slices"
 	"strings"
+	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
 // outputLines is how many lines of a running command the dialog shows.
@@ -34,7 +38,7 @@ func NewRunOutput(argv, lines []string, state RunState) Model {
 	m := Model{}
 	switch state {
 	case Running:
-		m.title = "Running: " + op
+		m.title, m.working = runningWords(argv, op)
 	case Succeeded:
 		m.title = "Done: " + op
 	default:
@@ -65,6 +69,38 @@ func NewRunOutput(argv, lines []string, state RunState) Model {
 		m.foot = "Fix what the lines say, then try again."
 	}
 	return m
+}
+
+// runningWords names what a command that runs in the dialog is doing: the
+// title, and the sentence next to the spinner.
+func runningWords(argv []string, op string) (title, working string) {
+	switch {
+	case len(argv) > 0 && argv[0] == "convert":
+		return "Converting this workspace to smith…", "Reading the workspace and writing the smith files"
+	case len(argv) > 0 && argv[0] == "new":
+		return "Creating a new workspace…", "Writing the files of the new workspace"
+	}
+	return "Running: " + op, "Running " + op
+}
+
+// Pulse shows that a running command is alive: a spinner frame and the time it
+// has run, in the line above its output. It changes nothing once the command
+// has ended.
+//
+// Parameters: tick is the animation frame; elapsed is how long the command ran.
+// Returns: the dialog with the moving line.
+func (m Model) Pulse(tick int, elapsed time.Duration) Model {
+	m.tick, m.elapsed = tick, elapsed
+	return m
+}
+
+// workingLine is the spinner line of a running command, or "" when the command
+// is not running.
+func (m Model) workingLine(th theme.Theme) string {
+	if m.working == "" {
+		return ""
+	}
+	return th.Accent(th.Spin(m.tick)) + " " + progress.Waiting(m.working+"…", m.elapsed)
 }
 
 // OutsideDir is the folder the shell opens after smith new or smith convert
