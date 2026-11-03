@@ -62,7 +62,7 @@ Vitest toolchain plugins follow them.
 ## Derived files
 
 Some config follows from what smith already holds: the `references` of a `tsconfig.lib.json` are the
-internal dependencies of the graph, and a Jest `displayName` is the package name. `smith derive`
+internal dependencies of the graph, and the `displayName` of a Jest config that has `smith:begin` markers is the package name. `smith derive`
 writes such files and records who owns them
 ([ADR 0046](decisions/0046-derived-files-have-an-owner-and-a-record.md)). It is opt-in:
 `[derive] enabled = true`. When it is on, `smith doctor` reports drift and `smith ci verify` runs

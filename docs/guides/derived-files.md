@@ -2,7 +2,7 @@
 
 Some config repeats in every project and follows from what smith already knows. A `tsconfig.lib.json`
 differs between packages only by its `references`, which are the project's internal dependencies. A
-Jest `displayName` is the package name. Smith can write these parts for you, keep a record of what it
+Jest `displayName` is the package name, in a config that has `smith:begin` markers. Smith can write these parts for you, keep a record of what it
 wrote, and report a hand edit instead of overwriting it.
 
 Derived files are opt-in. A workspace that does not turn them on sees no change.

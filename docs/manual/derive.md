@@ -1,7 +1,7 @@
 # smith derive
 
 `smith derive` writes the files that follow from facts and the project graph (a tsconfig's
-`references`, a Jest `displayName`) and keeps a record of what it wrote in `smith.lock`. A file that
+`references`, the `displayName` of a Jest config that has markers) and keeps a record of what it wrote in `smith.lock`. A file that
 smith owns is rewritten when its inputs change. A file that someone edited by hand is never
 overwritten: smith reports the drift with a diff and waits for your choice.
 
