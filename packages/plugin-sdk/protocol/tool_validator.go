@@ -40,6 +40,9 @@ func ValidateToolNeed(t ToolNeed) error {
 			return fmt.Errorf("tool %s: an install entry needs a known manager (%s) and a package", t.Name, strings.Join(ToolManagers, ", "))
 		}
 	}
+	if slices.Contains(t.Files, "") {
+		return fmt.Errorf("tool %s: a file name must not be empty", t.Name)
+	}
 	for _, pin := range t.Pins {
 		if pin.File == "" || !slices.Contains(ToolPinFormats, pin.Format) {
 			return fmt.Errorf("tool %s: a pin needs a file and a format (%s)", t.Name, strings.Join(ToolPinFormats, ", "))

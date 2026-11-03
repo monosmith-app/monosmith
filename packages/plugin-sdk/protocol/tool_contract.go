@@ -34,6 +34,11 @@ type ToolNeed struct {
 	// the tool is not needed by a project built without it. Absent means every
 	// project of the plugin needs it.
 	Choice string `json:"choice,omitempty"`
+	// Files limit the tool to projects that hold one of these files in their
+	// folder ("build.gradle.kts"): a Gradle build needs gradle, a Maven build
+	// does not. A tool that the tasks of a project run (gradle, mvn) is declared
+	// this way. Absent means every project of the plugin needs it.
+	Files []string `json:"files,omitempty"`
 	// Systems limits the tool to these systems, named as Go names them
 	// ("windows", "darwin", "linux"): the Xcode Command Line Tools exist only
 	// on "darwin". Absent means every system.

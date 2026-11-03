@@ -4530,6 +4530,9 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
     /// <summary>Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not needed by a project built without it. Absent means every project of the plugin needs it.</summary>
     public string Choice { get; init; } = string.Empty;
 
+    /// <summary>Files limit the tool to projects that hold one of these files in their folder ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the plugin needs it.</summary>
+    public IReadOnlyList<string> Files { get; init; } = [];
+
     /// <summary>Systems limits the tool to these systems, named as Go names them ("windows", "darwin", "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.</summary>
     public IReadOnlyList<string> Systems { get; init; } = [];
 
@@ -4566,6 +4569,7 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
             VersionArgs = ListOf(Member(map, "versionArgs"), Join(path, "versionArgs"), StringValue),
             Pins = ListOf(Member(map, "pins"), Join(path, "pins"), ToolVersionPin.Read),
             Choice = StringValue(Member(map, "choice"), Join(path, "choice")),
+            Files = ListOf(Member(map, "files"), Join(path, "files"), StringValue),
             Systems = ListOf(Member(map, "systems"), Join(path, "systems"), StringValue),
             Suggested = StringValue(Member(map, "suggested"), Join(path, "suggested")),
             Optional = BooleanValue(Member(map, "optional"), Join(path, "optional")),
@@ -4609,6 +4613,11 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
         {
             writer.Property("choice");
             writer.String(Choice);
+        }
+        if (Files is { Count: > 0 })
+        {
+            writer.Property("files");
+            MessageWritingAlgorithm.List(writer, Files, (builder1, item1) => builder1.String(item1));
         }
         if (Systems is { Count: > 0 })
         {

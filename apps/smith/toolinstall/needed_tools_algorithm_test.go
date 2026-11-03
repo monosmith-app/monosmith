@@ -1,6 +1,8 @@
 package toolinstall
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -47,6 +49,28 @@ func TestNeeded(t *testing.T) {
 				t.Errorf("%s: python projects %v, want %v", name, n.Projects, tc.project)
 			}
 		}
+	}
+}
+
+func TestNeededKeepsAToolTiedToFilesForTheProjectsThatHoldThem(t *testing.T) {
+	gradleDir, mavenDir := t.TempDir(), t.TempDir()
+	for dir, file := range map[string]string{gradleDir: "build.gradle.kts", mavenDir: "pom.xml"} {
+		if err := os.WriteFile(filepath.Join(dir, file), nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gradle := protocol.ToolNeed{Name: "gradle", Files: []string{"build.gradle.kts", "build.gradle"}}
+	jvm := Source{Plugin: "jvm", Languages: []string{"java"}, Tools: []protocol.ToolNeed{tool("java", ""), gradle}}
+	uses := []Use{{Project: "app", Language: "jvm", Root: gradleDir}, {Project: "lib", Language: "jvm", Root: mavenDir}}
+	got := Needed("/w", nil, []Source{jvm}, uses, nil, nil)
+	if want := []string{"java", "gradle"}; !reflect.DeepEqual(names(got), want) {
+		t.Fatalf("got %v, want %v", names(got), want)
+	}
+	if want := []string{"app"}; !reflect.DeepEqual(got[1].Projects, want) {
+		t.Errorf("gradle projects %v, want %v", got[1].Projects, want)
+	}
+	if got := Needed("/w", nil, []Source{jvm}, nil, []string{"java"}, nil); !reflect.DeepEqual(names(got), []string{"java"}) {
+		t.Errorf("a language named by flag brought %v, want only java", names(got))
 	}
 }
 

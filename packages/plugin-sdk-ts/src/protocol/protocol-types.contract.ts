@@ -1527,6 +1527,13 @@ export interface ToolNeed {
    */
   choice?: string
   /**
+   * Files limit the tool to projects that hold one of these files in their folder
+   * ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the
+   * tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the
+   * plugin needs it.
+   */
+  files?: string[]
+  /**
    * Systems limits the tool to these systems, named as Go names them ("windows", "darwin",
    * "linux"): the Xcode Command Line Tools exist only on "darwin". Absent means every system.
    */

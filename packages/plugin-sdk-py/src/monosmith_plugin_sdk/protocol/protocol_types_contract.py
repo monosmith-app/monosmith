@@ -1926,6 +1926,13 @@ class ToolNeed(_ToolNeedRequired, total=False):
     Choice limits the tool to stacks that have this choice ("azure-functions"): the tool is not
     needed by a project built without it. Absent means every project of the plugin needs it.
     """
+    files: list[str]
+    """
+    Files limit the tool to projects that hold one of these files in their folder
+    ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the
+    tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the
+    plugin needs it.
+    """
     systems: list[str]
     """
     Systems limits the tool to these systems, named as Go names them ("windows", "darwin",

@@ -137,6 +137,26 @@ var entries = []protocol.ToolNeed{
 		Download: "https://adoptium.net/temurin/releases/", Source: "https://adoptium.net/installation/", Checked: checked,
 	},
 	{
+		Name: "gradle", Title: "Gradle",
+		Why:         "the Gradle projects build, test and run with the gradle command",
+		Consequence: "smith build, test and start fail for the projects built with Gradle",
+		Program:     "gradle", Files: []string{"build.gradle.kts", "build.gradle"},
+		Install: []protocol.ToolInstall{
+			install("brew", "gradle"), install("dnf", "gradle"), install("pacman", "gradle"),
+		},
+		Download: "https://gradle.org/install/", Source: "https://gradle.org/install/", Checked: checked,
+	},
+	{
+		Name: "mvn", Title: "Apache Maven",
+		Why:         "the Maven projects build, test and release with the mvn command",
+		Consequence: "smith build, test and release fail for the projects built with Maven",
+		Program:     "mvn", Files: []string{"pom.xml"},
+		Install: []protocol.ToolInstall{
+			install("brew", "maven"), install("apt", "maven"), install("dnf", "maven"), install("pacman", "maven"),
+		},
+		Download: "https://maven.apache.org/download.cgi", Source: "https://maven.apache.org/install.html", Checked: checked,
+	},
+	{
 		Name: "dart", Title: "the Dart SDK",
 		Why:         "the dart projects get packages, analyze and test with the Dart SDK",
 		Consequence: "smith install, build and test fail for the dart projects",
