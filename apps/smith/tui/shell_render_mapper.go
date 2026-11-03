@@ -205,7 +205,7 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	if s.result != nil {
 		r := s.result.Rect()
-		rows = pane.Overlay(rows, s.result.Lines(s.th), r.X, r.Y)
+		rows = pane.Overlay(rows, s.result.Pulse(s.tick, s.outsideElapsed()).Lines(s.th), r.X, r.Y)
 	}
 	// The result dialog says the same in its own words: a toast over its bottom
 	// edge would cut the frame.
