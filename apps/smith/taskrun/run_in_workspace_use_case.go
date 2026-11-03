@@ -13,6 +13,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 )
 
 // Request is what to run in an open workspace.
@@ -137,6 +138,7 @@ func RunInWorkspace(ctx context.Context, s *session.Session, req Request) (Summa
 		Root: s.Root, Files: s.Files, Projects: s.Graph, Storage: meter,
 		Parallel: req.Parallel, Bail: req.Bail, NoCache: req.NoCache, Quiet: req.Quiet, Out: req.Out, ToolVersion: s.Version,
 		Events: stream, Command: req.Command(), SharedOutputs: s.Config.Workspace.SharedOutputs,
+		Installable: func(name string) bool { return toolinstall.Declares(s, name) },
 	})
 	pruneAfterRun(s, meter, os.Stderr)
 	return summary, nil

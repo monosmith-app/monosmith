@@ -53,6 +53,9 @@ type Options struct {
 	// shared_outputs) that several tasks fill on purpose. A task keeps what is
 	// already in them instead of clearing them before it runs or restoring them.
 	SharedOutputs []string
+	// Installable reports whether smith tools install knows a tool by name;
+	// see Spec.Installable.
+	Installable func(name string) bool
 }
 
 // Run executes a task graph and returns what happened to every task.
@@ -207,7 +210,7 @@ func (r *runner) runTask(ctx context.Context, t *taskgraph.Task) Result {
 			return Result{Task: t.ID, Status: Failed, Key: key, Duration: time.Since(began), Reason: err.Error()}
 		}
 	}
-	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out})
+	code, err := RunProcess(ctx, Spec{Argv: r.expand(t, t.Def.Command), Dir: r.cwd(t), Env: r.env(t, key), Out: out, Installable: r.opts.Installable})
 	out.Flush()
 	if app != nil {
 		app.stop()

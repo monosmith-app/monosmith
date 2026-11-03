@@ -52,7 +52,7 @@ func (r *runner) startServe(ctx context.Context, t *taskgraph.Task, key string) 
 	out := newPrefixWriter(st.ID+" │ ", r.opts.Out, &r.outMu)
 	r.say("%s ▶ %s (served for %s)\n", st.ID, strings.Join(st.Def.Command, " "), t.ID)
 	go func() {
-		code, err := RunProcess(sctx, Spec{Argv: r.expand(st, st.Def.Command), Dir: r.cwd(st), Env: r.env(st, key), Out: out})
+		code, err := RunProcess(sctx, Spec{Argv: r.expand(st, st.Def.Command), Dir: r.cwd(st), Env: r.env(st, key), Out: out, Installable: r.opts.Installable})
 		out.Flush()
 		app.exited <- servedExit{code, err}
 	}()
