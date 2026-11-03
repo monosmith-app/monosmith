@@ -71,6 +71,10 @@ func setup(workspaceRoot string, params protocol.GenerateParams) tooling.Setup {
 func configFiles(name string, options map[string]any, transform []any) map[string]string {
 	rest := maps.Clone(options)
 	rest["displayName"] = name
+	// Jest resolves "roots" against the directory of the config, so a plain
+	// relative path says the same as <rootDir>/src. (moduleNameMapper keeps
+	// <rootDir>: Jest does not resolve those values against the config.)
+	rest["roots"] = []string{"./src"}
 	if transform[0] != discovery.ShapeSwcJest {
 		body, _ := json.MarshalIndent(rest, "", "  ")
 		return map[string]string{"jest.config.cts": "module.exports = " + string(body) + "\n"}
