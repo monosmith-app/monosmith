@@ -27,8 +27,9 @@ Some config repeats in every project and follows from what smith knows. Two
 things are derived:
 
   - what the project graph says: a tsconfig's references are the project's
-    internal dependencies, and a Jest displayName (between smith:begin and
-    smith:end markers) is the project's name;
+    internal dependencies, and the displayName line of a jest.config.ts, .js,
+    .cjs or .mjs that has smith:begin and smith:end markers is the project's
+    name (a jest.config.cts has no such renderer: the next point covers it);
   - the shape of the sibling projects: when at least three projects of one kind,
     and two thirds of those that have the file, hold the same config file
     (tsconfig*.json, .swcrc, jest.config.*, and the like) after the project name

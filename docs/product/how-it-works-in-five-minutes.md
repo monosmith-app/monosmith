@@ -204,7 +204,7 @@ The commands in steps 1 to 10 were run on 1.62.0. These features are new on the 
 
 - **Derived files.** With `[derive] enabled = true`, `smith derive` writes the files that follow from the
   project graph and shared facts (for a Node workspace a `tsconfig.json`, the `references` of a
-  `tsconfig.lib.json`, a Jest `displayName`). `smith.lock` records who owns each file, so smith never
+  `tsconfig.lib.json`, the `displayName` of a Jest config that has markers). `smith.lock` records who owns each file, so smith never
   overwrites a hand edit: it shows a diff and asks you to replace, adopt or eject. `smith ci verify` runs
   `smith derive --check`.
 - **New projects follow their siblings.** `smith add` reads how the existing projects of the same kind and
