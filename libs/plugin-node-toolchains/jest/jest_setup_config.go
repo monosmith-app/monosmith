@@ -3,6 +3,7 @@ package jest
 import (
 	"encoding/json"
 	"maps"
+	"regexp"
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tooling"
 	"github.com/monosmith-app/monosmith/libs/plugin-node/discovery"
@@ -72,8 +73,9 @@ func configFiles(name string, options map[string]any, transform []any) map[strin
 	rest := maps.Clone(options)
 	rest["displayName"] = name
 	// Jest resolves "roots" against the directory of the config, so a plain
-	// relative path says the same as <rootDir>/src. (moduleNameMapper keeps
-	// <rootDir>: Jest does not resolve those values against the config.)
+	// relative path says the same as <rootDir>/src. A moduleNameMapper value
+	// needs an absolute path (a plain relative one finds no module), so the
+	// config says ${__dirname}, which it can as CommonJS.
 	rest["roots"] = []string{"./src"}
 	if transform[0] != discovery.ShapeSwcJest {
 		body, _ := json.MarshalIndent(rest, "", "  ")
@@ -93,11 +95,21 @@ const swcJestConfig = JSON.parse(readFileSync(` + "`${__dirname}/.spec.swcrc`" +
 // Disable .swcrc look-up by SWC core because we're passing in swcJestConfig ourselves
 swcJestConfig.swcrc = false
 
-module.exports = ` + string(body[:len(body)-2]) + `,
+module.exports = ` + dirnamePaths(string(body[:len(body)-2])) + `,
   "transform": { "^.+\\.ts$": ["@swc/jest", swcJestConfig] }
 }
 `,
 	}
+}
+
+// rootDirValue matches a JSON string that starts with <rootDir>, which
+// json.Marshal writes with the angle brackets escaped.
+var rootDirValue = regexp.MustCompile(`"(?:<|\x5cu003c)rootDir(?:>|\x5cu003e)([^"]*)"`)
+
+// dirnamePaths turns each "<rootDir>/x" string of a config body into the
+// template string `${__dirname}/x` of the CommonJS config file.
+func dirnamePaths(body string) string {
+	return rootDirValue.ReplaceAllString(body, "`$${__dirname}${1}`")
 }
 
 // tsJest is the default compiler of the tests: ts-jest.

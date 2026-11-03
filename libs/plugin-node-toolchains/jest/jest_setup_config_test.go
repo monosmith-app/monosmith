@@ -142,3 +142,14 @@ func TestJestFileConfigWithTsJestIsPlainExports(t *testing.T) {
 		t.Errorf("jest.config.cts:\n%s", config)
 	}
 }
+
+// A moduleNameMapper value of a generated jest.config.cts is a ${__dirname}
+// path: Jest finds no module for a plain relative one.
+func TestJestConfigFileWritesTheMapperWithDirname(t *testing.T) {
+	got := dirnamePaths(`{"roots": ["./src"], "m": {"^@app/(.*)$": "<rootDir>/src/$1", "^@app$": "<rootDir>/src"}}`)
+	for _, want := range []string{"`${__dirname}/src/$1`", "`${__dirname}/src`", `"./src"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("config lacks %s:\n%s", want, got)
+		}
+	}
+}
