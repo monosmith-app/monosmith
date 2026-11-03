@@ -21,6 +21,9 @@ type Spec struct {
 	Dir  string
 	Env  []string
 	Out  io.Writer
+	// Installable reports whether smith tools install knows a tool by name; it
+	// decides if the missing-program message offers that command. Nil means no.
+	Installable func(name string) bool
 }
 
 // RunProcess runs a command to completion and returns its exit code. When ctx
@@ -33,7 +36,7 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	if !strings.ContainsAny(program, `/\`) {
 		resolved, err := lookPath(program, spec.Env)
 		if err != nil {
-			return -1, errors.New(MissingProgramMessage(program))
+			return -1, errors.New(MissingProgramMessage(program, spec.Installable))
 		}
 		program = resolved
 	} else {

@@ -14,13 +14,25 @@ var installHints = map[string]string{
 	"docker": "https://docs.docker.com/get-docker", "cmake": "https://cmake.org/download",
 }
 
-// MissingProgramMessage says a program is not on PATH and, when smith knows
-// where to get it, adds the address to install it from.
-func MissingProgramMessage(program string) string {
+// MissingProgramMessage says a program is not on PATH and how to get it.
+//
+// Parameters: program is the missing program; installable reports whether
+// smith tools install knows a tool by that name (nil means it does not).
+// The message names smith tools install only when installable says yes. When
+// it says no, the message gives the install page and says smith cannot install
+// the program.
+func MissingProgramMessage(program string, installable func(name string) bool) string {
 	base := strings.TrimSuffix(strings.ToLower(program), ".exe")
 	msg := program + " is not installed or not on PATH."
-	if url, ok := installHints[base]; ok {
-		msg += " Install it from " + url + ", or run smith tools install to choose how, then run the command again."
+	url, hasPage := installHints[base]
+	known := installable != nil && installable(base)
+	switch {
+	case known && hasPage:
+		msg += " Install it from " + url + ", or run smith tools install " + base + " to choose how, then run the command again."
+	case known:
+		msg += " Run smith tools install " + base + " to choose how, then run the command again."
+	case hasPage:
+		msg += " smith cannot install it. Install it from " + url + ", then run the command again."
 	}
 	return msg
 }

@@ -61,6 +61,14 @@ func WorkspaceNeeds(s *session.Session, extraLanguages, extraChoices []string) [
 	return Needed(s.Root, coreTools(s.Root), sourcesOf(s), usesOf(s), extraLanguages, extraChoices)
 }
 
+// Declares reports whether smith tools install knows a tool by that name.
+//
+// Parameters: s is the open session; name is the tool's name.
+func Declares(s *session.Session, name string) bool {
+	_, unknown := NamedNeeds(s, []string{name})
+	return len(unknown) == 0
+}
+
 // NamedNeeds finds tools by name among everything the plugins declare.
 //
 // Returns: the tools in the order asked, and the names nothing declares.
