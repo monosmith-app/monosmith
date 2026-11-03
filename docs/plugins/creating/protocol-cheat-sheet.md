@@ -973,6 +973,7 @@ ToolNeed is a program on the person's machine that a plugin needs to build, test
 | `versionArgs` | `[]string` | no | VersionArgs are the arguments that make Program print its version. Absent means --version. |
 | `pins` | `[]ToolVersionPin` | no | Pins are the files where a workspace pins the version it wants. The first pin the host finds gives the version range. Absent means any version counts. |
 | `choice` | `string` | no | Choice limits the tool to stacks that have this choice ("azure-functions"). Absent means every project of the plugin needs it. |
+| `files` | `[]string` | no | Files limit the tool to projects that hold one of these files in their folder ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the plugin needs it. |
 | `systems` | `[]string` | no | Systems limits the tool to these systems, named as Go names them ("windows", "darwin", "linux"). Absent means every system. |
 | `suggested` | `string` | no | Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and {major.minor} in the install entries. |
 | `optional` | `bool` | no | Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure. |

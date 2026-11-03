@@ -17,6 +17,10 @@ the workspace pins a version, smith judges the installed one against it:
 | Rust | `rust-toolchain.toml`, `rust-toolchain` |
 | Ruby | `.ruby-version` |
 
+Gradle and Maven are listed only for a project that holds `build.gradle.kts`, `build.gradle` or
+`pom.xml`, because its tasks run `gradle` or `mvn`. Windows has no package for Gradle: smith offers
+the official page, and you put `gradle` on your PATH yourself.
+
 ## When to use it
 
 - After `smith adopt` or on a new machine, to see what the workspace needs before the first build.

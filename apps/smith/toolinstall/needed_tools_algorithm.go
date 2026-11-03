@@ -28,7 +28,9 @@ type Use struct {
 // plugins declare them. A tool of a language plugin is needed when a project of
 // the language exists, or the language is named in extraLanguages (smith add
 // --lang python). A tool tied to a choice (azure-functions) is needed when a
-// project's stack has the choice, or the choice is in extraChoices. The core
+// project's stack has the choice, or the choice is in extraChoices. A tool tied
+// to files (gradle) is needed only by a project whose folder holds one of them,
+// so a language named by flag does not bring it. The core
 // tools come first and are always needed.
 //
 // Parameters: workspace is the absolute workspace root; core are the tools smith
@@ -64,7 +66,7 @@ func Needed(workspace string, core []protocol.ToolNeed, sources []Source, uses [
 				if !sourceHasLanguage(src, u.Language) {
 					continue
 				}
-				if t.Choice == "" || slices.Contains(u.Choices, t.Choice) {
+				if (t.Choice == "" || slices.Contains(u.Choices, t.Choice)) && projectHasFile(u.Root, t.Files) {
 					add(t, u)
 					matched = true
 				}
@@ -74,7 +76,7 @@ func Needed(workspace string, core []protocol.ToolNeed, sources []Source, uses [
 			}
 			langExtra := slices.ContainsFunc(extraLanguages, func(l string) bool { return sourceHasLanguage(src, l) })
 			switch {
-			case t.Choice == "" && langExtra, t.Choice != "" && slices.Contains(extraChoices, t.Choice):
+			case t.Choice == "" && langExtra && len(t.Files) == 0, t.Choice != "" && slices.Contains(extraChoices, t.Choice):
 				add(t, nil)
 			}
 		}
