@@ -7,6 +7,9 @@ import "github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 // A smith.toml that cannot be read is told as it is, with its line and column,
 // and adoption is not offered: the folder already is a workspace.
 func (s Shell) noWorkspaceHint() string {
+	if s.problem != "" && s.repair != nil {
+		return " smith.toml cannot be read: " + s.problem + ". Press Enter to fix it."
+	}
 	if s.problem != "" {
 		return " smith.toml cannot be read: " + s.problem + ". Fix that line, then run smith again."
 	}

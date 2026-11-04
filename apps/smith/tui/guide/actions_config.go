@@ -97,6 +97,21 @@ type Action struct {
 // repository or an Nx or Turborepo workspace.
 const WizardAdopt = "adopt"
 
+// WizardFixConfig is the review of the rename that repairs a smith.toml that
+// uses a renamed key.
+const WizardFixConfig = "fix-config"
+
+// FixConfigFirst puts "Fix smith.toml" before the other entries, so the menu
+// starts on it. The entry shows the change first and writes nothing until the
+// user confirms.
+func FixConfigFirst(actions []Action) []Action {
+	fix := Action{
+		Title: "Fix smith.toml", Wizard: WizardFixConfig, Presents: "doctor",
+		Hint: "smith doctor --fix: renames the keys smith.toml still uses to their current names; it shows the change first and writes nothing until you confirm",
+	}
+	return append([]Action{fix}, actions...)
+}
+
 // AdoptionFirst moves the entries the adopt wizard answers to the top, for a
 // folder that holds something and is not a workspace yet: the first entry is
 // the one the menu starts on, so Enter begins the adoption.

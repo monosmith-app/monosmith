@@ -59,6 +59,9 @@ type Config struct {
 	EmptyFolder bool
 	// Adopt reads the folder for the adopt wizard; nil outside a folder to adopt.
 	Adopt adoptwizard.Opener
+	// Repair is the offer to fix a smith.toml that uses a renamed key; nil when
+	// there is none to offer.
+	Repair *sources.ConfigRepair
 	// Start is a command to run as soon as the shell opens in a workspace.
 	Start []string
 	// Resume opens a guided form again with the answers of a try that failed.
@@ -97,6 +100,9 @@ type Shell struct {
 	emptyFolder bool
 	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
 	problem   string
+	// repair is the fix offered for an unreadable smith.toml; the wizard that
+	// shows it is s.fix.
+	repair *sources.ConfigRepair
 	commitOps bool
 	// environments are the names of `[workspace] environments`.
 	environments []string
@@ -263,6 +269,10 @@ func NewShell(cfg Config) Shell {
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
+	if cfg.Repair != nil {
+		sh.repair = cfg.Repair
+		sh.sources.ShowFix, sh.sources.ApplyFix = cfg.Repair.Show, cfg.Repair.Apply
+	}
 	if sh.th.Icons.Spinner == nil {
 		sh.th = theme.Default()
 	}

@@ -123,6 +123,10 @@ func (s Shell) brokenConfigBanner(w int) []string {
 		return nil
 	}
 	lines := pane.Wrap(s.th.Warning("smith.toml cannot be read: ")+s.problem, w, 0)
+	if s.repair != nil {
+		lines = append(lines, pane.Wrap(s.th.Bold("Enter on Fix smith.toml shows the change")+s.th.Muted(": nothing is written until you confirm."), w, 0)...)
+		return append(lines, "")
+	}
 	lines = append(lines, pane.Wrap(s.th.Muted("Fix that line, then run smith again. Creating or adopting a workspace is not offered over this file."), w, 0)...)
 	return append(lines, "")
 }

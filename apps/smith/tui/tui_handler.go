@@ -139,12 +139,21 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		}
 		return Chosen{Argv: argv}, nil, nil
 	}
+	var repair *sources.ConfigRepair
+	if problem != "" {
+		// A renamed key is the one problem smith can fix: offer the change as
+		// the first entry. Any other problem keeps its message.
+		if r, ok := sources.ConfigRepairOf(".", version); ok {
+			repair = &r
+			actions = guide.FixConfigFirst(actions)
+		}
+	}
 	// What the person saved in the Settings tab; the environment still wins over it.
 	prefs, _ := userprefs.Load(pluginhost.Home())
 	cfg := Config{
 		Clipboard: out,
 		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
-		Problem: problem, CommitOperations: commitOps, Environments: environments, Resume: resume,
+		Problem: problem, Repair: repair, CommitOperations: commitOps, Environments: environments, Resume: resume,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
