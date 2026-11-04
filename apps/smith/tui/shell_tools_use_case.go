@@ -70,6 +70,11 @@ func (s *Shell) toolsRead(msg capturedMsg) tea.Cmd {
 func (s *Shell) toolsKey(name string) tea.Cmd {
 	m, out := s.tools.Key(name)
 	s.tools = &m
+	return s.afterTools(out)
+}
+
+// afterTools does what the tools dialog asked for.
+func (s *Shell) afterTools(out toolsdialog.Outcome) tea.Cmd {
 	switch {
 	case out.Handover != nil:
 		// A password needs a terminal of its own: the shell leaves and the

@@ -215,6 +215,12 @@ consequence. The first line is always the one that does nothing, because smith n
   **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
   (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
 
+The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): click an entry
+to put the cursor on it, double-click to select it like `Enter`. The last line of the dialog says so.
+The dialog covers the content of the Run tab, but the frame stays: the outer border and the divider
+between the panes. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
+stray line shows around the dialog.
+
 ### Undo, report, why and derived files
 
 These are in the palette (`:`), under Health. None has a key of its own.

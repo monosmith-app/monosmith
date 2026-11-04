@@ -164,7 +164,7 @@ func (s Shell) modalOpen() bool {
 func (s Shell) overlays(rows []string) []string {
 	l := s.lay()
 	if s.modalOpen() {
-		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y)
+		rows = pane.Blank(rows, l.Main.Y, l.Footer.Y, l.Main.X, l.Main.X+l.Main.W-1, l.Detail.X+l.Detail.W-1)
 	}
 	if s.palOpen {
 		box := s.paletteBox()

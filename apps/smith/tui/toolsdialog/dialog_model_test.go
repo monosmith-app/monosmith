@@ -165,3 +165,27 @@ func TestWithNoMissingToolTheDialogSaysSo(t *testing.T) {
 		t.Fatalf("%s", got)
 	}
 }
+
+func TestAClickPicksAnOptionAndADoubleClickConfirmsIt(t *testing.T) {
+	m := New([]toolinstall.ToolPlan{plan("go", install("brew", false, "brew", "install", "go"), install("apt", false, "apt-get", "install", "golang-go"))}).Place(100, 30)
+	th := theme.Default()
+	y := -1
+	for i, l := range m.Lines(th) {
+		if strings.Contains(l, "Install with apt") {
+			y = m.Rect().Y + i
+		}
+	}
+	if y < 0 {
+		t.Fatal("option not drawn")
+	}
+	m, out := m.Click(th, m.Rect().X+5, y, false)
+	if m.cursor != 1 || out.Run != nil {
+		t.Fatalf("a single click only moves the cursor: %d %+v", m.cursor, out)
+	}
+	if _, out = m.Click(th, m.Rect().X+5, y, true); !slices.Equal(out.Run, []string{"tools", "install", "go", "--manager", "apt"}) {
+		t.Fatalf("a double click confirms the option: %+v", out)
+	}
+	if !strings.Contains(text(m), "click an entry, double-click to select") {
+		t.Fatal("hint missing")
+	}
+}
