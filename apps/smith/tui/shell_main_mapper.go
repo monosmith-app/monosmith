@@ -91,7 +91,7 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, lines...)
 	case commands.TabSettings:
 		in := s.mainInner()
-		c.lines = s.settings.View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
+		c.lines = s.settings.Pulse(s.tick, s.settingsWaited()).View(s.th, w, h, s.mouseX-in.X, s.mouseY-in.Y)
 	case commands.TabGuide:
 		broken := s.brokenConfigBanner(w)
 		banner := append(broken, s.adoptBanner(w)...)

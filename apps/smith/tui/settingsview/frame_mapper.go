@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -71,6 +72,23 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 // right is the right pane in w by h cells: the heading, then an editor or the
 // rows and the detail of the selected one.
 func (m Model) right(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
+	rows, rowItem := m.rightRows(th, w, h, px, py)
+	if m.busy != "" && h >= 3 {
+		// A change is under way: the last row says so, with a spinner and the time after 2 s.
+		rows[h-1] = " " + th.Accent(th.Spin(m.tick)) + " " + progress.Waiting(capital(m.busy)+"…", m.waited)
+	}
+	return rows, rowItem
+}
+
+// capital puts the first letter of a sentence in capitals.
+func capital(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]int) {
 	rows := make([]string, h)
 	rowItem := map[int]int{}
 	rows[0] = " " + th.Title(m.section.Title()) + "  " + th.Muted(m.section.About())

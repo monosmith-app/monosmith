@@ -186,11 +186,16 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 	}
 	s.confirm = nil
 	if c.Info {
-		return nil
+		return s.leaveForm()
 	}
 	if c.Working() {
 		// Esc on a dialog that waits for its plan: stop the work, keep nothing.
+		note := s.waitNote()
 		s.cancelWaiting()
+		if note != "" {
+			s.say(note)
+			return s.leaveForm()
+		}
 	}
 	if out.Confirmed {
 		s.addForm = nil
@@ -204,7 +209,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		return s.gotoTab(commands.TabGuide)
 	}
 	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
-	return nil
+	return s.leaveForm()
 }
 
 func (s *Shell) afterPalette(res palette.Result) tea.Cmd {
@@ -438,6 +443,10 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		// A result toast belongs to the screen it was raised on.
 		s.toast = s.toast.Dismiss()
 	}
+	if id == commands.TabGuide && s.tab != commands.TabGuide && s.inWorkspace {
+		// A form opened from a tab gives the person back to it when it ends or is cancelled.
+		s.formOrigin = s.tab
+	}
 	s.tab, s.detailOpen, s.zoom = id, false, false
 	switch id {
 	case commands.TabDoctor:
@@ -462,6 +471,27 @@ func (s *Shell) gotoTab(id string) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// leaveForm brings the person back to the tab a guided form was opened from,
+// after the form or the confirmation it led to was cancelled. It does nothing
+// when no form is open from a tab, or when the person is somewhere else.
+func (s *Shell) leaveForm() tea.Cmd {
+	if s.tab != commands.TabGuide || s.formOrigin == "" || s.guide.Title() != "" {
+		return nil
+	}
+	return s.leaveFormTo(commands.TabHome)
+}
+
+// leaveFormTo shows the tab the open form came from, or fallback when it came
+// from none.
+func (s *Shell) leaveFormTo(fallback string) tea.Cmd {
+	to := fallback
+	if s.formOrigin != "" && s.canShow(s.formOrigin) && s.formOrigin != commands.TabGuide {
+		to = s.formOrigin
+	}
+	s.formOrigin = ""
+	return s.gotoTab(to)
 }
 
 // paneKey sends a key to the open view.
@@ -535,14 +565,14 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 				return s.execute(argv, false)
 			}
 			if s.inWorkspace {
-				return s.gotoTab(commands.TabHome)
+				return s.leaveFormTo(commands.TabHome)
 			}
 		}
 		if s.inWorkspace && g.Title() == "" {
 			// Inside a workspace the guide is only its forms: backing out of
 			// the first question leaves, there is no menu to land on.
 			s.guide = g.Reset()
-			return s.gotoTab(commands.TabHome)
+			return s.leaveFormTo(commands.TabHome)
 		}
 		return cmd
 	}

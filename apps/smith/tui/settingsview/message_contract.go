@@ -20,6 +20,8 @@ type (
 	}
 	// Reviewed carries the review of a plugin the person asked to trust.
 	Reviewed struct {
+		// Ticket is the number of the request: an answer to a stopped one is dropped.
+		Ticket int
 		Name   string
 		Review TrustReview
 		Err    error

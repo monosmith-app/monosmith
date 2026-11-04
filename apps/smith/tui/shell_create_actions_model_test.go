@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 )
 
 func TestHomeOffersAddAProjectAndComposeAStackWithKeysAndMouse(t *testing.T) {
@@ -19,8 +20,10 @@ func TestHomeOffersAddAProjectAndComposeAStackWithKeysAndMouse(t *testing.T) {
 
 func TestHomeComposeButtonStartsTheComposer(t *testing.T) {
 	l := newHomeLab(t, 140, 34)
+	// The catalogue takes a moment: the dialog that says so is on screen until it arrives.
+	l.slowRead(sources.Captured{OK: true, Text: "{}"})
 	l.clickText("[ Compose a stack")
-	l.has("Reading what your plugins offer")
+	l.has("Compose a stack", "Reading what your plugins offer")
 }
 
 func TestProjectsListStartsWithANewProjectButtonAndTheAKey(t *testing.T) {

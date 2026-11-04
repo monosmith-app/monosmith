@@ -309,8 +309,13 @@ func (s *Shell) openChoiceForm(form string) tea.Cmd {
 		return nil
 	}
 	s.choices, s.formPending = choicesAsked, form
-	s.say("Reading the choices your plugins offer…")
-	return s.capture(capChoices, []string{"choices", "--json"})
+	title := addProjectTitle
+	if form == formSwap {
+		title = swapTitle
+	}
+	argv := []string{"choices", "--json"}
+	// The form opens when the plugins have answered; until then a dialog says so.
+	return s.captureWorking(capChoices, title, "The form offers what your plugins can build, so smith asks them first.", argv, argv, "Reading the choices your plugins offer", "Cancelled: the form was not opened")
 }
 
 // choicesRead keeps the choices and opens the form that waited for them. When
@@ -368,8 +373,8 @@ func (s *Shell) openRecipeForm() tea.Cmd {
 	if s.sources.Capture == nil || s.recipeLevels != nil {
 		return s.showRecipeForm()
 	}
-	s.say("Reading the plugins a recipe can fix…")
-	return s.capture(capRecipeLevels, []string{"recipe", "new", "--list-levels", "--json"})
+	argv := []string{"recipe", "new", "--list-levels", "--json"}
+	return s.captureWorking(capRecipeLevels, recipeTitle, "The form lists the plugins that can fix each level, so smith asks them first.", argv, argv, "Reading the plugins a recipe can fix", "Cancelled: the form was not opened")
 }
 
 // recipeLevelsRead keeps the levels and opens the form that waited for them.
@@ -481,8 +486,8 @@ func (s *Shell) openPluginSearch(term string) tea.Cmd {
 	if term != "" {
 		argv = append(argv, strings.Fields(term)...)
 	}
-	s.say("Searching the plugin marketplace…")
-	return s.capture(capSearch, append(argv, "--json"))
+	argv = append(argv, "--json")
+	return s.captureWorking(capSearch, "Search the plugin marketplace", "smith asks the marketplace for the plugins that match.", argv, argv, "Searching the plugin marketplace", "Cancelled: the search was stopped")
 }
 
 // searchRead lists the plugins found as a form; the one picked is installed
