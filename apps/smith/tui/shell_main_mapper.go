@@ -17,7 +17,7 @@ import (
 
 // hit says what a click on a line of the main view means.
 type hit struct {
-	// kind is "project", "task", "finding", "release", "dep", "option" or "action".
+	// kind is "project", "task", "recent", "nav", "finding", "release", "dep", "option" or "action".
 	kind  string
 	id    string
 	index int
@@ -268,7 +268,8 @@ func (s Shell) statusIcon(st runview.Status) string {
 
 // runGeom is where the parts of the Run tab sit, in lines of its body.
 type runGeom struct {
-	cmdRow, progRow   int
+	navRow, cmdRow    int
+	progRow           int
 	listTop, listRows int
 	sepRow            int
 	logTop, logRows   int
@@ -276,7 +277,7 @@ type runGeom struct {
 
 func (s Shell) runGeom(w, h int) runGeom {
 	g := runGeom{}
-	g.cmdRow, g.progRow, g.listTop = 0, 1, 2
+	g.navRow, g.cmdRow, g.progRow, g.listTop = 0, 1, 2, 3
 	n := len(s.runIDs())
 	avail := max(h-g.listTop-2, 1)
 	g.listRows = min(n, max(min(avail, 2), avail*2/5))
@@ -322,7 +323,7 @@ func (s Shell) runContent(w, h int) content {
 		if s.run == nil {
 			c.lines = append(c.lines, "", s.th.Muted("Nothing has run yet."))
 		} else {
-			c.lines = append(c.lines, "", s.th.Muted("Last run: "+s.run.CommandLine()+" (Enter shows it)"))
+			c.lines = append(c.lines, "", s.th.Muted("Last run: "+s.lastRun().CommandLine()))
 		}
 		c.lines = append(c.lines, "")
 		// The scope of every key is spelled out; the buttons run on every project.
@@ -345,10 +346,12 @@ func (s Shell) runContent(w, h int) content {
 			c.lines = append(c.lines, "  "+s.th.Accent("[ "+b.label+" ]"))
 		}
 		c.lines = append(c.lines, "")
-		if len(s.history) > 0 {
-			c.lines = append(c.lines, s.th.Title("Command log"))
-			for i := len(s.history) - 1; i >= 0 && len(c.lines) < h; i-- {
-				c.lines = append(c.lines, "  "+s.history[i])
+		if len(s.runs) > 0 && h-len(c.lines) > 1 {
+			c.lines = append(c.lines, pane.Fit(s.th.Title("Recent runs")+"  "+s.th.Muted("Up Down choose, Enter or double-click opens"), w))
+			rows, first := s.recentRows(w, h-len(c.lines))
+			for i := range rows {
+				c.hits[len(c.lines)] = hit{kind: "recent", index: first + i}
+				c.lines = append(c.lines, rows[i])
 			}
 		}
 		return c
@@ -368,15 +371,13 @@ func (s Shell) runContent(w, h int) content {
 	case s.run.Finished:
 		state = s.th.Failure(s.th.Icons.Failed + " failed")
 	}
-	which := ""
-	if len(s.runs) > 1 {
-		which = "  " + s.th.Muted(fmt.Sprintf("run %d/%d", s.runAt+1, len(s.runs)))
-	}
+	c.hits[len(c.lines)] = hit{kind: "nav"}
+	c.lines = append(c.lines, s.navLine(w))
 	scope := ""
 	if label := commands.RunScopeLabel(s.run.Command, s.list.Len()); label != "" {
 		scope = s.th.Title(label) + "  "
 	}
-	c.lines = append(c.lines, pane.Fit(" "+scope+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took)+which, w))
+	c.lines = append(c.lines, pane.Fit(" "+scope+s.th.Faint("$")+" "+s.th.Bold(s.run.CommandLine())+"   "+state+"  "+s.th.Muted(took), w))
 	if counts.Total > 0 {
 		bar := progress.Draw(s.th, counts.Done, counts.Total, min(max(w/2, 20), 40), counts.Failed > 0)
 		c.lines = append(c.lines, pane.Fit(" "+bar+"  "+s.countsText(counts), w))
