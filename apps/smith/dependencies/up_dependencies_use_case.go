@@ -128,7 +128,7 @@ func PrintUp(w io.Writer, r UpReport) {
 				fmt.Fprintln(w, current)
 			}
 		}
-		fmt.Fprintf(w, "  %-28s %s → %s  %s\n", u.Name, u.Current, u.Latest, strings.Join(u.Projects(), ", "))
+		fmt.Fprintf(w, "  %-28s %s → %s  %-9s %s\n", u.Name, u.Current, u.Latest, strings.Join(u.Kinds, ", "), strings.Join(u.Projects(), ", "))
 	}
 	for plugin, names := range r.Unreachable {
 		for name, why := range names {

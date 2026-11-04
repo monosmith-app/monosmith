@@ -20,6 +20,9 @@ type Update struct {
 	Latest  string `json:"latest"`
 	// Level is patch, minor or major: how far Latest is from Current.
 	Level string `json:"level"`
+	// Kinds say how projects declare it: dev, prod, peer, optional, build or
+	// managed, sorted and distinct across every project that declares it.
+	Kinds []string `json:"kinds,omitempty"`
 	// Sites are the declarations up rewrites, each keeping its operator.
 	Sites []protocol.Declaration `json:"sites"`
 	// Preset is true for a package listed in [dependencies] presets: a team's
@@ -59,6 +62,10 @@ func (u Update) Projects() []string {
 // does not rewrite are left out.
 func FindUpdates(plugin string, declared protocol.DeclaredResult, latest map[string]string, local map[string]bool) []Update {
 	byName := map[string]*Update{}
+	byDecl := map[string][]protocol.Declaration{}
+	for _, d := range declared.Declarations {
+		byDecl[d.Name] = append(byDecl[d.Name], d)
+	}
 	for _, d := range declared.Declarations {
 		l, known := latest[d.Name]
 		if d.Peer || !d.Rewritable || local[d.Name] || !known {
@@ -81,6 +88,7 @@ func FindUpdates(plugin string, declared protocol.DeclaredResult, latest map[str
 	var out []Update
 	for _, u := range byName {
 		u.Level = level(u.Current, u.Latest)
+		u.Kinds = KindsOf(byDecl[u.Name])
 		out = append(out, *u)
 	}
 	sort.Slice(out, func(i, j int) bool {
