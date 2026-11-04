@@ -404,7 +404,11 @@ Opened by `f` or `F` in Doctor, or by **Fix smith.toml** on the Start menu when 
    `Enter` or `y` applies; `n`, `Esc` or `q` leaves; `Up` `Down` `PgUp` `PgDn` `Home` `End`
    scroll. In the adopt wizard the review of a conversion has the same unticked box, "Commit this
    change so it can be undone": `c` or a click ticks it.
-3. **Progress.** Step by step with a bar. `Esc` or `Ctrl+C` stops the step.
+3. **Progress.** A spinner and the fix title, then "step n of m" with the step's name (for
+   **Fix with doctor**, the steps of all the fixes together). After 2 seconds the line adds the
+   time it has run. Under it, one line shows what smith writes ("Writing package.json") and then
+   the last line the running command printed. Other keys do nothing while it runs, so a second
+   fix cannot start. `Esc` or `Ctrl+C` stops the step.
    A fix can be a smith command (`smith upgrade --defaults`, `smith deps up --align`,
    `smith derive --replace`, `smith kind`, `smith cache prune`). The review then shows the plan
    the command prints with its plan flag, so you see what it changes before you agree, and

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
@@ -16,6 +17,25 @@ import (
 type fixRun struct {
 	ch     chan tea.Msg
 	cancel context.CancelFunc
+
+	mu   sync.Mutex
+	last string
+}
+
+// Note keeps the latest line of detail (a file being written, a line a command
+// printed). It is not a message: a command that prints fast must not crowd out
+// the step messages, and the next frame reads the latest line.
+func (r *fixRun) Note(line string) {
+	r.mu.Lock()
+	r.last = line
+	r.mu.Unlock()
+}
+
+// lastNote is the latest line of detail, or "".
+func (r *fixRun) lastNote() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.last
 }
 
 // Messages of a fix that is being applied.
@@ -41,6 +61,9 @@ type stepWriter struct {
 	run *fixRun
 	n   int
 }
+
+// Note passes a line of detail to the run.
+func (w *stepWriter) Note(line string) { w.run.Note(line) }
 
 func (w *stepWriter) Write(p []byte) (int, error) {
 	for _, line := range strings.Split(string(p), "\n") {

@@ -50,6 +50,8 @@ type Wizard struct {
 	stepName string
 	headline string
 	output   []string
+	// note is the latest line of detail while a step runs.
+	note string
 
 	sw, sh int
 	hover  int
@@ -143,10 +145,17 @@ func (w Wizard) Progress(n, total int, name string) Wizard {
 	return w
 }
 
+// Noted sets the latest line of detail of the running step, shown under the
+// spinner: a file being written, or the last line a command printed.
+func (w Wizard) Noted(line string) Wizard {
+	w.note = line
+	return w
+}
+
 // Begin switches to the applying phase, as Outcome.Apply asks the shell to run the fix.
 func (w Wizard) begin() Wizard {
 	w.phase, w.step, w.total, w.stepName, w.top = Applying, 0, len(w.resolved.Steps), "", 0
-	w.headline, w.output = "", nil
+	w.headline, w.output, w.note = "", nil, ""
 	w.started = time.Now()
 	return w
 }
