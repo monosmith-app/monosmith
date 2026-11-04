@@ -113,6 +113,12 @@ func Uninstall(s *session.Session, targets, packages []string, log io.Writer, re
 	if len(targets) == 0 {
 		return errors.New("a dependency belongs to the project that uses it: smith uninstall -w <project> <package>")
 	}
+	atRoot, targets := SplitRootTarget(targets)
+	if atRoot {
+		if err := uninstallAtRoot(s, packages, log); err != nil {
+			return err
+		}
+	}
 	projects, err := resolve(s.Graph, targets)
 	if err != nil {
 		return err

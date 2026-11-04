@@ -366,6 +366,9 @@ func (s Shell) viewReasons() map[string]string {
 		if s.deps.UpArgv() == nil {
 			r["deps.update"] = "no dependency to update"
 		}
+		if _, _, ok := s.deps.RemoveTargets(); !ok {
+			r["deps.remove"] = "no dependency is selected"
+		}
 		if len(s.deps.Policy) > 0 {
 			r["deps.one-version"] = "dependencies.one_version is already on"
 		}

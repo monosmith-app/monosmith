@@ -121,7 +121,7 @@ each title (`Build orders`, `Build all 23`).
 | Home, Projects, Doctor, Deps, Release | `r` | Reload this view: read the files and the checks again. It runs nothing. The footer says `reload view`; on the Run view the same key is `run again`. |
 | Projects | `a` | Add project (a guided form). |
 | any workspace view | `+` | Install a package: a form that asks which project (the one selected, `Left` `Right` change it), which packages and whether they are development dependencies, shows the `smith install -w <project> ...` line, then runs it in the Run view. The palette's and the detail's "Install a package…" open the same form. |
-| any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. |
+| any workspace view | `-` | Remove a package: the same form for `smith uninstall -w <project> ...`. After the form, a confirmation shows the exact command line and what it changes, because a removal edits the manifest and the lock file. |
 | any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
 | Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
@@ -141,6 +141,7 @@ each title (`Build orders`, `Build all 23`).
 | Deps | `s` | Mark the patch and minor ones. |
 | Deps | `a` | Mark all, or none. |
 | Deps | `u`, `Enter` | Update the marked ones (`smith deps up`). |
+| Deps | `x` | Remove the package under the cursor (`smith uninstall -w <project> <package>`). A package that one project declares goes straight to the confirmation with that project as `-w`; the workspace root, shown as `(root)`, is `-w .`. When several projects declare it, a multiple choice asks from which ones (space toggles); smith never picks for you. A development dependency is removed like any other. |
 | Deps | `v` | Bring drifting versions to one (`smith deps up --align`). |
 | Release | `Enter` | Show the commits behind the selected bump. |
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
