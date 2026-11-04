@@ -54,7 +54,7 @@ func planSelection(s *session.Session, opts AddOptions) (*selectionPlan, error) 
 	if err != nil {
 		return nil, err
 	}
-	st := sel.Stack("", "A selection of choices: "+strings.Join(sel.Names(), ", "))
+	st := withBaseScaffold(s, sel.Stack("", "A selection of choices: "+strings.Join(sel.Names(), ", ")))
 	if asked != nil {
 		if asked != s.Plugins.Get(st.Language) {
 			return nil, fmt.Errorf("--lang %s, but the choices %s are for %s projects", opts.Lang, strings.Join(opts.With, ", "), st.Language)
@@ -118,6 +118,10 @@ func (p *selectionPlan) declare(s *session.Session) (func(), error) {
 	}
 	text += fmt.Sprintf("\n# Written by smith from smith add --with %s.\n[stacks.%s]\ndescription = %s\nlanguage = %s\nchoices = [%s]\n",
 		strings.Join(p.given, ","), p.stack.Name, configedit.Quote(p.stack.Description), configedit.Quote(p.stack.Language), strings.Join(quoted, ", "))
+	if p.stack.Scaffold != "" && !slices.ContainsFunc(p.selection.Choices, func(o choiceselect.Offer) bool { return o.Plays(protocol.RoleScaffold) }) {
+		// No choice writes the project: the stack keeps the scaffold it was given.
+		text += fmt.Sprintf("scaffold = %s\ntoolchain = [%s]\n", configedit.Quote(p.stack.Scaffold), strings.Join(quotedAll(p.stack.Toolchain), ", "))
+	}
 	if _, err := workspace.Parse([]byte(text)); err != nil {
 		return nil, fmt.Errorf("the stack for --with %s would break smith.toml: %w", strings.Join(p.given, ","), err)
 	}
@@ -134,6 +138,39 @@ func (p *selectionPlan) declare(s *session.Session) (func(), error) {
 		return nil, fmt.Errorf("smith.toml with the new stack does not load: %w", err)
 	}
 	return rollback, nil
+}
+
+// quotedAll quotes each name for smith.toml.
+func quotedAll(names []string) []string {
+	out := make([]string, len(names))
+	for i, n := range names {
+		out[i] = configedit.Quote(n)
+	}
+	return out
+}
+
+// withBaseScaffold gives a stack that no choice writes (lint and test choices
+// only) the scaffold of the language's default stack, the one smith add uses
+// without --with, so the choices apply on top of the same project. That scaffold
+// also joins the toolchain when the default stack has it there. A language with
+// no default stack keeps none: its language plugin writes the project.
+func withBaseScaffold(s *session.Session, st protocol.Stack) protocol.Stack {
+	if st.Scaffold != "" {
+		return st
+	}
+	name := s.Config.DefaultStacks[st.Language]
+	if name == "" {
+		return st
+	}
+	base, err := s.Stacks.Get(name)
+	if err != nil || base.Scaffold == "" {
+		return st
+	}
+	st.Scaffold = base.Scaffold
+	if slices.Contains(base.Toolchain, base.Scaffold) && !slices.Contains(st.Toolchain, base.Scaffold) {
+		st.Toolchain = append([]string{base.Scaffold}, st.Toolchain...)
+	}
+	return st
 }
 
 // sameChoices reports whether two lists hold the same names, in any order.

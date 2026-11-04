@@ -34,6 +34,7 @@ func (p *Vite) Describe(params protocol.InitializeParams) (protocol.InitializeRe
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Provides:  []string{"build", "typecheck"},
 		Stacks:    webChoices.Stacks(),
 		Choices:   webChoices.Choices(),

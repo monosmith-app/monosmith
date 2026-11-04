@@ -78,7 +78,9 @@ and the fix when it cannot be used:
   to --with, or drop chakra`) or conflict with one.
 - A choice may need an axis (`react` needs `lint` and `test`). A selection that leaves the axis out
   takes its default (`eslint`, `vitest`), and smith says so.
-- Exactly one choice writes the project, and all choices are for one language.
+- Exactly one choice writes the project, and all choices are for one language. A selection of
+  only lint and test choices has none: the scaffold of the language's default stack writes the
+  project (the stack then names it as `scaffold`), and the choices apply on top.
 
 A stack is a saved selection. Give it `choices`; the language, the scaffold and the toolchain come
 from them, and `toolchain`, `structure` and `deploy` add plugins after those:
