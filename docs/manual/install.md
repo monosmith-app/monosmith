@@ -19,6 +19,19 @@ to make versions agree, [`smith sync`](sync.md).
 
 Naming a package (`smith install -w web zod`) shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. A plain `smith install` only restores what the workspace already declares and asks nothing.
 
+## The plan: --dry-run
+
+`smith install -w web zod --dry-run` prints, for each project, the package, whether it is a library of this
+workspace (linked, not downloaded), the section it goes into, and the latest release the registry reports for
+a name typed with no version. It changes nothing. The Deps tab (`i`) and the Projects tab show this plan in the
+confirmation. The registry description of a package is not shown: the plugins do not report it.
+
+## What install cannot do yet
+
+- **Global install** (a tool on the machine, not in a project): there is no command for it. `smith install` adds
+  to projects only.
+- **Peer and optional dependencies**: only production and `-D` development have a flag.
+
 ## Synopsis
 
 ```sh
@@ -44,6 +57,7 @@ Alias: `smith i`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `--dry-run` | boolean | off | show where each package goes and its latest release, and change nothing |
 | `--range <range>` | string |  | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |
 | `--registry` | boolean | off | install the names from the registry, even when a name is also a project of this workspace |
 | `-D, --save-dev` | boolean | off | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) |
