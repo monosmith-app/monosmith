@@ -12,6 +12,11 @@ var errUnavailable = errors.New("this smith cannot do that here")
 
 // Key gives the tab a key press.
 func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
+	if m.busy != "" {
+		if res, handled := m.busyKey(msg); handled {
+			return res.model, res.Result
+		}
+	}
 	if m.ed != nil {
 		return m.editorKey(msg)
 	}
@@ -41,6 +46,32 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
 		return m.resetSetting()
 	}
 	return m, Result{}
+}
+
+// busyAnswer is the tab and the result of a key pressed while work runs.
+type busyAnswer struct {
+	model Model
+	Result
+}
+
+// busyKey handles a key while a change runs: moving still works, Esc stops a
+// review, and any other key says why it waits. handled is false for a key the
+// tab treats as usual.
+func (m Model) busyKey(msg tea.KeyMsg) (busyAnswer, bool) {
+	name := msg.String()
+	switch name {
+	case "esc":
+		if m.stoppable {
+			m.busy, m.ticket = "", m.ticket+1
+			return busyAnswer{m, Result{Note: "Cancelled: nothing was changed"}}, true
+		}
+		return busyAnswer{m, Result{Note: "That change is being saved and cannot be stopped: it ends in a moment"}}, true
+	case "up", "down", "pgup", "pgdown", "home", "end", "tab", "shift+tab", "left", "right":
+		if m.ed == nil {
+			return busyAnswer{}, false
+		}
+	}
+	return busyAnswer{m, Result{Note: "Wait for " + m.busy + " to end first"}}, true
 }
 
 // move moves the cursor of the rows, or the section while the keyboard is on the list of sections.
@@ -84,13 +115,14 @@ func (m Model) move(key string) Model {
 // activate does what Enter or Space does on the row under the cursor.
 func (m Model) activate() (Model, Result) {
 	it, ok := m.current()
-	if !ok {
+	if !ok || m.busy != "" {
 		return m, Result{}
 	}
 	m.note = ""
 	switch it.kind {
 	case kindPlugin:
 		p := m.snap.Plugins[it.idx]
+		m = m.begin(map[bool]string{true: "turning " + p.Name + " on", false: "turning " + p.Name + " off"}[!p.Enabled], false)
 		return m, Result{Cmd: m.setPlugin(p.Name, !p.Enabled)}
 	case kindExternal:
 		return m.askTrust()
@@ -107,10 +139,13 @@ func (m Model) activate() (Model, Result) {
 			return m, Result{}
 		}
 		m.confirm = ""
+		m = m.begin("choosing the "+it.key+" architecture", false)
 		return m, Result{Cmd: m.setArchitecture(it.key)}
 	case kindTheme:
+		m = m.begin("saving the style", false)
 		return m, Result{Cmd: m.saveStyle(normalise(it.key), m.savedIcons)}
 	case kindIcons:
+		m = m.begin("saving the style", false)
 		return m, Result{Cmd: m.saveStyle(m.savedTheme, normalise(it.key))}
 	case kindSetting:
 		return m.editSetting(m.snap.Settings[it.idx])
@@ -129,6 +164,7 @@ func (m Model) activate() (Model, Result) {
 func (m Model) editSetting(st Setting) (Model, Result) {
 	switch {
 	case st.Type == "boolean":
+		m = m.begin("saving "+st.Path, false)
 		return m, Result{Cmd: m.setSetting(st.Path, []string{fmt.Sprint(!boolValue(st))})}
 	case st.Type == "array" && len(st.Choices) > 0:
 		m.ed = newPicker(st)
@@ -156,9 +192,11 @@ func (m Model) askTrust() (Model, Result) {
 		return m, Result{Cmd: unavailable()}
 	}
 	name := m.snap.External[it.idx].Name
+	m = m.begin("reading what "+name+" does", true)
+	ticket := m.ticket
 	return m, Result{Cmd: func() tea.Msg {
 		r, err := review(name)
-		return Reviewed{Name: name, Review: r, Err: err}
+		return Reviewed{Ticket: ticket, Name: name, Review: r, Err: err}
 	}}
 }
 
@@ -167,6 +205,7 @@ func (m Model) forgetTrust() (Model, Result) {
 	if !ok || it.kind != kindExternal || !m.onItems || !m.snap.External[it.idx].Trusted {
 		return m, Result{}
 	}
+	m = m.begin("forgetting the trust of "+m.snap.External[it.idx].Name, false)
 	return m, Result{Cmd: m.untrust(m.snap.External[it.idx].Name)}
 }
 
@@ -180,6 +219,7 @@ func (m Model) resetSetting() (Model, Result) {
 		m.note = st.Path + " already has its default"
 		return m, Result{}
 	}
+	m = m.begin("resetting "+st.Path, false)
 	return m, Result{Cmd: m.unsetSetting(st.Path)}
 }
 

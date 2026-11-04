@@ -119,6 +119,7 @@ func (s Shell) offersAdjustments(argv []string) bool {
 // start begins the process; the first output arrives as messages.
 func (s *Shell) start(argv []string) tea.Cmd {
 	s.run, s.runHome, s.runLines, s.resultKept = runview.NewRun(argv, nil, s.now()), false, nil, nil
+	s.formOrigin = ""
 	s.remember(s.run)
 	s.proc, s.stopping, s.runSel, s.runTop, s.log, s.lastArg = nil, false, "", 0, logview.Log{}, argv
 	if s.history = append(s.history, s.run.CommandLine()); len(s.history) > maxHistory {

@@ -127,6 +127,11 @@ type Shell struct {
 	// addForm is the add form as it ended, kept while its plan is on screen: Esc
 	// on the plan goes back to its last question, with the answers filled in.
 	addForm *guide.Model
+	// formOrigin is the tab a guided form was opened from: cancelling the form,
+	// or the confirmation it led to, shows that tab again.
+	formOrigin string
+	// settingsSince is when the Settings tab started the change it waits for.
+	settingsSince time.Time
 	pal     palette.Palette
 	palOpen bool
 	doctor  doctorview.Model
@@ -493,7 +498,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil
+	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy()
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {

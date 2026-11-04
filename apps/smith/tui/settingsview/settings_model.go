@@ -2,6 +2,8 @@ package settingsview
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,6 +37,15 @@ type Model struct {
 	// savedTheme and savedIcons are the saved choice of the Style section.
 	savedTheme, savedIcons string
 	tipSeen                bool
+	// busy says what a change in the background is doing ("" when none); stoppable
+	// is true when Esc may drop its result; ticket tells the answer of the work
+	// that is wanted from one the person stopped.
+	busy      string
+	stoppable bool
+	ticket    int
+	// tick and waited move the spinner line (see Pulse).
+	tick   int
+	waited time.Duration
 }
 
 // New builds the tab on a backend; forms are the guided forms its last section opens.
@@ -87,6 +98,25 @@ func (m Model) Open() (Model, tea.Cmd) {
 // TipWanted is true until the person has opened the tab once: Home points at it.
 func (m Model) TipWanted() bool { return !m.tipSeen && m.b.Load != nil }
 
+// Busy is true while a change or a review runs in the background.
+func (m Model) Busy() bool { return m.busy != "" }
+
+// Pulse moves the spinner line of a tab that waits for a change.
+//
+// Parameters: tick is the animation frame; waited is how long the work lasts.
+// Returns: the tab with the moving line.
+func (m Model) Pulse(tick int, waited time.Duration) Model {
+	m.tick, m.waited = tick, waited
+	return m
+}
+
+// begin marks the start of background work: the tab says what it does at
+// once. stoppable is true for work that only reads, so Esc may drop it.
+func (m Model) begin(doing string, stoppable bool) Model {
+	m.busy, m.stoppable, m.ticket = doing, stoppable, m.ticket+1
+	return m
+}
+
 // Modal is true while an editor has the keyboard: plain keys are its own.
 func (m Model) Modal() bool { return m.ed != nil }
 
@@ -111,15 +141,21 @@ func (m Model) Handle(msg Msg) (Model, Result) {
 		m.snap, m.loaded, m.loading = msg.Snapshot, true, false
 		m = m.clampCursors()
 	case Applied:
+		m.busy = ""
 		return m.applied(msg)
 	case Reviewed:
-		m.loading = false
+		if msg.Ticket != m.ticket {
+			// The person stopped the review: its answer is not wanted.
+			return m, Result{}
+		}
+		m.busy = ""
 		if msg.Err != nil {
 			m.note, m.failed = msg.Err.Error(), true
 			return m, Result{Note: m.note, Failed: true}
 		}
 		m.ed = newReview(msg.Name, msg.Review)
 	case StyleSaved:
+		m.busy = ""
 		if msg.Err != nil {
 			m.note, m.failed = "Could not save the style: "+msg.Err.Error(), true
 			return m, Result{Note: m.note, Failed: true}

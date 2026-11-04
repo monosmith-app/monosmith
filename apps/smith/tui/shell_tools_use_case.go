@@ -48,8 +48,8 @@ func (s *Shell) openTools(argv []string) tea.Cmd {
 		return nil
 	}
 	s.toolsArgv = argv
-	s.say("Looking for the tools that are missing…")
-	return s.capture(capTools, append(slices.Clone(argv), "--dry-run", "--json"))
+	plan := append(slices.Clone(argv), "--dry-run", "--json")
+	return s.captureWorking(capTools, "Install the missing tools", "smith looks for the tools this workspace needs and for the way to install each one.", plan, plan, "Looking for the tools that are missing", "Cancelled: no tool was installed")
 }
 
 // toolsRead opens the dialog on the plans the command printed. When they

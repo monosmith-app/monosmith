@@ -201,6 +201,26 @@ seconds after the second one, and the command that will run. `[ Run ]` is faint 
 `Esc`, `n`, `q`, `Ctrl+C` or a click outside cancels the wait: smith stops the command that reads
 the plan, and a plan that arrives late opens nothing. When the plan is ready, it fills the dialog
 and the usual buttons work. The wait shows no steps or percentage, because the command reports none.
+`Esc` on the release confirmation ends the wait and drops its plan, but the read of the commits
+itself runs on: it is the load of the Release tab, which the tab shows when you open it, so
+stopping it would leave the tab empty.
+
+Every screen that reads before it opens waits the same way: the Add a project and Swap a choice
+forms (they read the choices of the plugins), the Write a recipe form, the plugin search, the
+Compose a stack screen and the check for missing tools. The dialog is titled with the screen, shows
+the spinner, the seconds after the second one and "The command that is running:", and `Esc` stops
+the command and leaves you on the tab you were on. Changes on the Settings tab (a plugin on or off,
+the architecture, a setting, the style, trust) show a spinner line at the bottom of the tab with the
+seconds after the second one. A change is a write in this process, so `Esc` says it cannot stop it;
+the review that opens before you trust a plugin only reads, so `Esc` stops it and drops its answer.
+
+### Where Esc leaves you
+
+A form that a tab opens (install or remove a package from Deps, add a project, swap a choice) gives
+you back to that tab. `Esc` on its first question, `Esc` on the confirmation it leads to, and the
+close of a notice about it all show the tab you came from, with its cursor and marks as you left
+them. The confirmations that a tab opens itself (update, one version, release, doctor fix) never
+leave the tab.
 
 ### What a word means
 

@@ -188,6 +188,7 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 				m.ed = nil
 				return m, Result{Run: argv}
 			}
+			m = m.begin("saving "+e.setting.Path, false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 		e.err = ""
@@ -204,19 +205,23 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		case "enter":
 			e.err = ""
 			m.ed = &e
+			m = m.begin("saving "+e.setting.Path, false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 	case editReview:
 		switch name {
 		case "y":
 			m.ed = &e
+			m = m.begin("trusting "+e.plugin, false)
 			return m, Result{Cmd: m.trust(e.plugin, false)}
 		case "p":
 			m.ed = &e
+			m = m.begin("trusting "+e.plugin+" at this version", false)
 			return m, Result{Cmd: m.trust(e.plugin, true)}
 		case "f", "u":
 			if e.trusted {
 				m.ed = &e
+				m = m.begin("forgetting the trust of "+e.plugin, false)
 				return m, Result{Cmd: m.untrust(e.plugin)}
 			}
 		case "up", "k":

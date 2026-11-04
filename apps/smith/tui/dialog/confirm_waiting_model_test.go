@@ -34,3 +34,12 @@ func TestAWaitingConfirmShowsProgressAndRefusesRun(t *testing.T) {
 		t.Fatalf("esc must cancel: %+v", out)
 	}
 }
+
+// A dialog that only reads says the command is running, not that it will run.
+func TestAReadingConfirmSaysTheCommandIsRunning(t *testing.T) {
+	c := NewWaiting("Add a project", "smith asks the plugins.", []string{"choices", "--json"}, "Reading the choices").Reading().Within(2, 1).Place(100, 30)
+	text := pane.Strip(strings.Join(c.Lines(theme.Default()), "\n"))
+	if !strings.Contains(text, "The command that is running:") || strings.Contains(text, "will run") {
+		t.Fatalf("the caption is wrong:\n%s", text)
+	}
+}

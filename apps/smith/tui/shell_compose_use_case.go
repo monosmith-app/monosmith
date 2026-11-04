@@ -28,8 +28,8 @@ func (s *Shell) openCompose() tea.Cmd {
 	if s.composeCat != nil {
 		return s.showCompose()
 	}
-	s.say("Reading what your plugins offer…")
-	return s.capture(capCompose, []string{"compose", "--json"})
+	argv := []string{"compose", "--json"}
+	return s.captureWorking(capCompose, "Compose a stack", "The screen lists what your plugins offer, so smith asks them first.", argv, argv, "Reading what your plugins offer", "Cancelled: the screen was not opened")
 }
 
 // composeRead keeps the catalogue and opens the screen; when it cannot be read

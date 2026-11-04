@@ -45,6 +45,9 @@ type Confirm struct {
 	// working is what smith is doing while the plan is read ("" once the plan
 	// is shown); tick and elapsed move its spinner line (see Pulse).
 	working string
+	// reading is true when the command only reads (it opens a screen, it
+	// changes nothing): the dialog then says the command is running.
+	reading bool
 	tick    int
 	elapsed time.Duration
 }
@@ -67,6 +70,15 @@ func NewWaiting(title, why string, argv []string, doing string) Confirm {
 	c := NewConfirm(title, why, argv)
 	c.Offer, c.working, c.focus = false, doing, 1
 	c.Details = []string{doing + "…"}
+	return c
+}
+
+// Reading marks the dialog of a command that only reads, so it says "is
+// running" and not "will run".
+//
+// Returns: the dialog, marked.
+func (c Confirm) Reading() Confirm {
+	c.reading = true
 	return c
 }
 
@@ -182,7 +194,11 @@ func (c Confirm) tailLines() []string {
 		}
 		tail = append(tail, "", box+CommitLabel+"  (C)")
 	}
-	tail = append(tail, "", "The command that will run:")
+	caption := "The command that will run:"
+	if c.reading {
+		caption = "The command that is running:"
+	}
+	tail = append(tail, "", caption)
 	for i, l := range c.cmdLines {
 		// Only the first line has the prompt: a "$" on each would read as many commands.
 		prefix := "  $ "
