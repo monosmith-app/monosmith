@@ -8,6 +8,13 @@ type InstallTarget struct {
 	Label, Value string
 }
 
+// RootInstallTarget is the target that stands for the workspace root: the value
+// smith install -w takes for the package.json at the top of the workspace.
+var RootInstallTarget = InstallTarget{
+	Label: "Workspace root: shared by every project, in the root package.json",
+	Value: ".",
+}
+
 // InstallPackageTitle is the title of the form that installs packages.
 const InstallPackageTitle = "Install a package"
 
@@ -47,12 +54,14 @@ func installNamesProblem(_ map[string][]string, value string) string {
 // or name@version, one or several), into which projects (several can be ticked;
 // preset ones start ticked and are never final: enter confirms), and as which
 // kind. smith install knows two kinds, production and development; peer and
-// optional dependencies have no flag, so they are not offered. A global install
-// has no command either, and the first question says so.
+// optional dependencies have no flag, so they are not offered. A machine-wide install
+// has no command, and the first question says so.
 //
 // Parameters: targets are every project, with its language in the label so a
 // project with several parts (a Tauri app has a Rust part and a web part) shows
-// which part receives the package; preset are the values ticked at the start.
+// which part receives the package; the caller puts RootInstallTarget first only
+// when the workspace root can take packages; preset are the values ticked at the
+// start.
 func InstallPackageAction(targets []InstallTarget, preset []string) Action {
 	projects := Step{Key: "projects", Prompt: "Install into which projects? (space ticks, enter confirms). Each project uses its own package manager, so tick projects of one language when the name is the same in every registry.", Multi: true,
 		Ticked: func(map[string][]string) []string { return preset }}
@@ -63,7 +72,7 @@ func InstallPackageAction(targets []InstallTarget, preset []string) Action {
 		Title: InstallPackageTitle, Hint: "smith install -w <project> <package>", NeedsWorkspace: true, Presents: "install",
 		Steps: []Step{
 			{Key: "names", Prompt: "Which packages? Type a name or name@version; separate several with spaces.", Placeholder: "zod  react@19",
-				Note:  "Installs into projects only. A tool installed on the machine (global) has no smith command yet.",
+				Note:  "Installs into projects, or the workspace root where it is offered. A tool installed on the machine (npm -g) has no smith command yet.",
 				Check: installNamesProblem},
 			projects,
 			{Key: "kind", Prompt: "As which kind of dependency?", Options: []Option{

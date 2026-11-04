@@ -45,6 +45,15 @@ func Install(s *session.Session, targets, packages []string, dev bool, log io.Wr
 		}
 		return installAll(s, log)
 	}
+	atRoot, targets := SplitRootTarget(targets)
+	if atRoot {
+		if len(packages) == 0 {
+			return errors.New("the workspace root needs a package: smith install -w . <package>")
+		}
+		if err := installAtRoot(s, packages, dev, log); err != nil {
+			return err
+		}
+	}
 	projects, err := resolve(s.Graph, targets)
 	if err != nil {
 		return err

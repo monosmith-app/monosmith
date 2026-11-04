@@ -16,9 +16,10 @@ import (
 // resolve (the command then reports that itself).
 //
 // Parameters: cmd is the command; s the session; verb is "add" or "remove";
-// targets are the -w projects; packages the names; yes is --yes.
+// targets are the -w projects; packages the names; dev is -D (add only);
+// yes is --yes.
 // Returns: whether to go on, and the refusal or ErrDeclined as the error.
-func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, targets, packages []string, yes bool) (bool, error) {
+func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, targets, packages []string, dev, yes bool) (bool, error) {
 	if len(packages) == 0 {
 		return true, nil
 	}
@@ -29,7 +30,14 @@ func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, target
 	}
 	var lines []operationplan.Line
 	if atRoot {
-		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: "package.json", Note: verb + " " + strings.Join(packages, ", ") + " in its dependencies"})
+		note := verb + " " + strings.Join(packages, ", ") + " in its dependencies"
+		if verb == "add" {
+			if dev {
+				note = verb + " " + strings.Join(packages, ", ") + " in its development dependencies"
+			}
+			note += ", shared by every project. Command: " + RootInstallCommand(packages, dev)
+		}
+		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: "package.json", Note: note})
 	}
 	for _, p := range projects {
 		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: p.Root + "/", Note: verb + " " + strings.Join(packages, ", ") + " in its dependencies"})
@@ -44,6 +52,7 @@ func touchedProjects(s *session.Session, targets, packages []string) []string {
 	if len(packages) == 0 {
 		return nil
 	}
+	_, targets = SplitRootTarget(targets)
 	projects, err := resolve(s.Graph, targets)
 	if err != nil {
 		return nil

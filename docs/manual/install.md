@@ -26,10 +26,21 @@ workspace (linked, not downloaded), the section it goes into, and the latest rel
 a name typed with no version. It changes nothing. The Deps tab (`i`) and the Projects tab show this plan in the
 confirmation. The registry description of a package is not shown: the plugins do not report it.
 
+## The workspace root
+
+`smith install -w . [-D] <package>` adds the package to the `package.json` at the top of the workspace, shared by
+every project. It runs `npm install <package> [--save-dev]` with no `--workspace`, so only the root manifest and
+the lock file change. `.` can be combined with projects (`-w . -w web`). `smith uninstall -w .` is the reverse.
+The root takes registry packages only (a library of the workspace is linked into a project, not the root).
+In a workspace with no Node project, `-w .` is refused and names the fix. The plan (`--dry-run`) and the
+confirmation list the root with the exact command.
+
 ## What install cannot do yet
 
-- **Global install** (a tool on the machine, not in a project): there is no command for it. `smith install` adds
-  to projects only.
+- **Machine-wide install** (`npm -g`, a tool on the machine): there is no command for it. `smith install` adds
+  to projects and to the workspace root only.
+- **The workspace root in other languages**: only the Node root `package.json` takes packages. A Cargo workspace
+  root, a Go module root, a Gradle root and a root `pyproject.toml` are not offered yet.
 - **Peer and optional dependencies**: only production and `-D` development have a flag.
 
 ## Synopsis
@@ -37,6 +48,7 @@ confirmation. The registry description of a package is not shown: the plugins do
 ```sh
 smith install
 smith install -w <project> [-D] <package>...
+smith install -w . [-D] <package>...        # the workspace root, shared by every project
 smith install -w <project> <library of this workspace>... [--range <range>]
 smith install -w <project> --registry <name>...
 ```

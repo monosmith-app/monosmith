@@ -31,7 +31,8 @@ func Commands(version string) []*cobra.Command {
 		Long: `Add packages to one project with its own toolchain: npm install --workspace,
 the project's pyproject.toml and the workspace venv, go get. Each project owns
 its dependencies, so a package needs a target: smith install -w <project>
-<package>. With no package, smith install installs everything a fresh clone
+<package>. -w . names the workspace root: the package.json shared by every
+project (Node workspaces only). With no package, smith install installs everything a fresh clone
 needs, for every language in the workspace.
 
 A name that is a library of this workspace (its name, its directory, or the
@@ -42,6 +43,7 @@ no terminal (or --yes) it refuses and names the fix: workspace:<name> for the
 project, --registry for the package.`,
 		Example: `  smith install                       # a fresh clone: npm install, the venv, go mod download
   smith install -w web zod
+  smith install -w . -D vitest             # the workspace root: shared by every project
   smith install -w apps/api -D pytest-cov
   smith install -w api github.com/pkg/errors@v0.9.1
   smith install -w web core                # a library of this workspace: linked, not downloaded
@@ -61,7 +63,7 @@ project, --registry for the package.`,
 			if dryRun {
 				return PlanInstall(s, targets, args, dev, registry, cmd.OutOrStdout())
 			}
-			if goOn, err := confirmPackages(cmd, s, "add",targets, args, yes); err != nil || !goOn {
+			if goOn, err := confirmPackages(cmd, s, "add", targets, args, dev, yes); err != nil || !goOn {
 				return err
 			}
 			link := LinkOptions{Registry: registry, Range: linkRange}
@@ -104,7 +106,7 @@ A development dependency is removed like any other.`,
 				return err
 			}
 			defer s.Close()
-			if goOn, err := confirmPackages(cmd, s, "remove", from, args, uninstallYes); err != nil || !goOn {
+			if goOn, err := confirmPackages(cmd, s, "remove", from, args, false, uninstallYes); err != nil || !goOn {
 				return err
 			}
 			return Uninstall(s, from, args, cmd.OutOrStdout(), fromRegistry)
