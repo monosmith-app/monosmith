@@ -102,7 +102,17 @@ smith add app admin --with vue,jest,tailwind
 smith checks the selection first (one choice per axis, what each requires, what conflicts) and
 gives one message that names the choices and the fix, for example `chakra requires react, which is
 not in the selection: add react to --with, or drop chakra`. An axis that a choice needs and the
-selection leaves out takes its default. The result is saved in `smith.toml` as a stack with
+selection leaves out takes its default. A selection of only lint and test choices needs no choice
+that writes the project: the stack's own scaffold, the one `smith add` uses without `--with`,
+writes it and the choices apply on top.
+
+```sh
+smith add package tester --with eslint,jest
+```
+
+A framework, a cloud host, a style or a library still needs the choice that writes the project,
+and `smith add` says which to add. A choice that makes only some kinds (a framework makes apps,
+not packages) is refused for the others, with the kind it makes. The result is saved in `smith.toml` as a stack with
 `choices`, and the project records it. `--with` cannot be used with `--stack` or `--choice`. See
 [Stacks](../reference/stacks.md#choices-a-stack-as-a-saved-selection).
 

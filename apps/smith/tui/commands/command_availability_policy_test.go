@@ -211,7 +211,7 @@ func TestEachViewHasItsOwnHintsAndEveryViewEndsWithTheSameTail(t *testing.T) {
 			t.Errorf("%s footer ends %q", view, got)
 		}
 	}
-	if got := line(TabRun); !strings.HasPrefix(got, "r run again · R failed · Y copy log · , . runs · f follow") {
+	if got := line(TabRun); !strings.HasPrefix(got, ", older · . newer · Esc start screen · Enter open · ↑↓ task · r run again · R failed · Y copy log · f follow") {
 		t.Errorf("Run footer %q", got)
 	}
 }

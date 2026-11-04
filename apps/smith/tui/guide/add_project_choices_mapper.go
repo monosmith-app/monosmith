@@ -6,6 +6,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/compose"
 )
 
 // ChoiceOffer is one choice of a project as `smith choices --json` lists it:
@@ -34,6 +36,12 @@ type ChoiceOffer struct {
 	Conflicts []string `json:"conflicts"`
 	// Problem says why the choice cannot be used here; empty when it can.
 	Problem string `json:"problem"`
+	// Plugin and Roles are what the solver needs to check a ticked set in the
+	// form; Kinds are the project kinds the choice is for (app, lib, package), and
+	// none means every kind.
+	Plugin string   `json:"plugin"`
+	Roles  []string `json:"roles"`
+	Kinds  []string `json:"kinds"`
 }
 
 // ParseChoices reads the output of `smith choices --json`.
@@ -95,9 +103,20 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 	if len(offerLanguages(offers)) > 0 || len(existing) >= siblingsMin {
 		steps = append(steps, addSetupStep())
 	}
+	var needs map[string]string
+	if i := slices.IndexFunc(base.Steps, func(s Step) bool { return s.Key == "lang" }); i >= 0 {
+		needs = layerNeeds(compose.Outcomes(catalogueItems(base.Steps[i].Options, offers)))
+	}
 	for _, lang := range offerLanguages(offers) {
-		steps = append(steps, choicesStep(lang, offersOf(offers, lang)))
-		steps = append(steps, axisSteps(lang, offersOf(offers, lang))...)
+		own := offersOf(offers, lang)
+		// One list per kind, so a package is not offered a framework that cannot
+		// write one; the last list, for a form with no kind, holds them all.
+		for _, kind := range append(slices.Clone(projectKinds), "") {
+			if listed := fitting(own, kind); len(listed) > 0 {
+				steps = append(steps, choicesStep(lang, kind, listed, picksCheck(lang, own, needs)))
+			}
+		}
+		steps = append(steps, axisSteps(lang, own)...)
 	}
 	if len(existing) >= siblingsMin {
 		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?",
@@ -196,14 +215,15 @@ func RemoveProjectAction(base Action, names []string) Action {
 
 // choicesStep asks for the choices of one language, and is left out for any
 // other language.
-func choicesStep(lang string, offers []ChoiceOffer) Step {
+func choicesStep(lang, kind string, offers []ChoiceOffer, check func(map[string][]string, string) string) Step {
 	step := Step{
 		Key:      withKeyPrefix + lang,
 		Prompt:   "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
 		Glossary: true,
 		Multi:    true,
 		Optional: true,
-		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang },
+		Skip:     func(a map[string][]string) bool { return first(a, "lang") != lang || kindOfAnswers(a) != kind },
+		Check:    check,
 		// With the defaults, what the person picked above is ticked and nothing is asked.
 		Take: func(a map[string][]string) ([]string, bool) {
 			if first(a, addSetupKey) != setupDefaults || first(a, "lang") != lang {

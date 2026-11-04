@@ -79,6 +79,10 @@ the choice that fills an axis a selection needs and leaves out. `requires` and `
 choice that has them, and a choice that cannot be used shows `✖ cannot be used:` and the reason.
 `--json` prints the same as data.
 
+With `--json`, each choice also lists `kinds`: the project kinds it is for (`app`, `lib`,
+`package`). A choice with no `kinds` fits all of them, as a lint tool or a test runner does. The
+Add form of the terminal screen and of the editors lists only the choices that fit the kind picked.
+
 ## Common errors
 
 `there is no smith workspace here`: run it inside a workspace.

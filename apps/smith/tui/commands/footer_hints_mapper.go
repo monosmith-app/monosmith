@@ -44,6 +44,9 @@ func Hints(s State) (view, tail []Hint) {
 
 func hintOf(c Command, s State) Hint {
 	h := Hint{Glyph: c.Glyph, Label: scopedLabel(c, s)}
+	if s.StartScreen && c.StartFooter != "" {
+		h.Label = c.StartFooter
+	}
 	// A glyph that is no key name ("1-9", "↑↓") stands for several keys.
 	if h.Glyph == "" || h.Glyph == KeyLabel(c.Keys[0]) {
 		h.Glyph, h.Key = KeyLabel(c.Keys[0]), c.Keys[0]

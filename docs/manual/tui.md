@@ -129,7 +129,9 @@ each title (`Build orders`, `Build all 23`).
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
-| Run | `Esc` | Show all output. |
+| Run | `Esc` | Show all output; once nothing runs, press it again to open the start screen. |
+| Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The header of the run view, `‹ Start · run 2 of 5 · ‹ older  newer ›`, has the same three actions as clickable parts: `‹ Start` opens the start screen, `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
+| Run, start screen | `Up` `Down`, `Enter` | The start screen has the five run buttons and, under them, **Recent runs**: one row for each kept run, newest first, with its command, how it ended (passed, failed, stopped), how long it took and how long ago it ended. `Up` and `Down` choose a row, `Enter` or a double click opens that run, and a single click only chooses it. |
 | Doctor | `Enter` | Expand the check (narrow terminals), or unfold the detail (wide). |
 | Doctor | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
 | Doctor | `F` | Fix with doctor: the wizard on all the fixes that need no decision. |
@@ -225,6 +227,12 @@ consequence. The first line is always the one that does nothing, because smith n
   **Install it with smith** (the tools dialog, which asks how before it runs anything, then returns here),
   **Check again** (runs the first check of the project again, not the add) and **Continue without checking**
   (Doctor keeps reminding you). Esc closes the dialog and changes nothing.
+
+The mouse works in the result dialog and in the tools dialog ("Install the missing tools"): click an entry
+to put the cursor on it, double-click to select it like `Enter`. The last line of the dialog says so.
+The dialog covers the content of the Run tab, but the frame stays: the outer border and the divider
+between the panes. Glyphs the log drew itself (a rule, a scrollbar thumb) are cleared with the rest, so no
+stray line shows around the dialog.
 
 ### Undo, report, why and derived files
 
@@ -508,7 +516,11 @@ the kind, then the full list of languages. After the outcome and the language, t
 the name, then, from what the plugins
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
-choices become `--with a,b`. A workspace with three or more projects is also asked whether the
+list shows only the choices that fit the kind: a package is offered lint and test choices, not
+a framework or a desktop shell. `Enter` checks the ticked set before the form goes on, and says
+in plain words what is missing (a website needs a framework, a style needs the framework it
+goes with) instead of failing at the end. Lint and test choices alone are enough for a package:
+the stack's own scaffold writes it. The choices become `--with a,b`. A workspace with three or more projects is also asked whether the
 new one should do what the others do (the default), follow one project you pick from a list
 (`--like <project>`) or take the stack's own defaults (`--fresh`). Then the shell runs `smith add ... --dry-run` and shows its plan in a dialog:
 the files it would write and, when it applies, which sibling project it follows

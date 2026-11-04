@@ -45,13 +45,13 @@ func TestEveryRunOfTheSessionIsKeptAndCanBeShownAgain(t *testing.T) {
 	l.keys("b")
 	l.next = &scripted{lines: []string{"kit:test ▶ go test", "kit:test │ PASS", "kit:test ✔ 12ms"}}
 	l.keys("t")
-	l.has("$ smith run test", "run 2/2", "kit:test")
+	l.has("$ smith run test", "run 2 of 2", "kit:test")
 	l.keys(",")
-	l.has("$ smith run build", "run 1/2", "orders:build")
+	l.has("$ smith run build", "run 1 of 2", "orders:build")
 	// The earlier run opens on its first failure.
 	l.has("Log: orders:build", "undefined: Foo")
 	l.keys(".")
-	l.has("run 2/2", "kit:test")
+	l.has("run 2 of 2", "kit:test")
 	l.keys(".")
 	l.has("unavailable: this is the latest run")
 	if len(l.sh().runs) != 2 {

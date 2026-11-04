@@ -72,7 +72,7 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 	l := newLab(t, true, 160, 30)
 	l.keys("3")
 	footer := footerOf(l)
-	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "runs"} {
+	for _, key := range []string{"follow", "task", "again", "failed", "copy log", "older"} {
 		if strings.Contains(footer, key) {
 			t.Fatalf("nothing has run, and the footer offers %q: %q", key, footer)
 		}
@@ -85,13 +85,13 @@ func TestTheRunFooterOffersOnlyTheKeysThatWork(t *testing.T) {
 			t.Fatalf("a failed run offers %q: %q", key, footer)
 		}
 	}
-	if strings.Contains(footer, "runs") {
+	if strings.Contains(footer, "older") {
 		t.Fatalf("there is one run, so there is no other to show: %q", footer)
 	}
 	l.keys("r")
 	l.next = &scripted{lines: []string{"kit:build ✓ 1ms"}}
 	l.keys("r")
-	if footer = footerOf(l); strings.Contains(footer, "R failed") || !strings.Contains(footer, "runs") {
+	if footer = footerOf(l); strings.Contains(footer, "R failed") || !strings.Contains(footer, "older") {
 		t.Fatalf("a run that passed has no failed tasks, and three runs can be browsed: %q", footer)
 	}
 }

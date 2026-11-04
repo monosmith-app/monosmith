@@ -28,6 +28,7 @@ func (p *Angular) Describe(params protocol.InitializeParams) (protocol.Initializ
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold, protocol.RoleToolchain},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Provides:  []string{"build", "typecheck"},
 		Stacks: []protocol.Stack{{
 			Name:        Name,

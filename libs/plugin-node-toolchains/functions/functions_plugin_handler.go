@@ -33,6 +33,7 @@ func (p *Functions) Describe(params protocol.InitializeParams) (protocol.Initial
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Choices:   functionChoices.Choices(),
 	}, nil
 }

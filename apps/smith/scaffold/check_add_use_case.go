@@ -74,5 +74,5 @@ func checkScaffolds(generator *host.Client, kind protocol.ProjectKind) error {
 	for _, k := range generator.Info.ScaffoldKinds() {
 		can = append(can, string(k))
 	}
-	return fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s", generator.Info.Plugin.Name, kind, strings.Join(can, " and "))
+	return fmt.Errorf("%s cannot scaffold a %s; it scaffolds %s. Add this project as %s, or pick other choices (smith choices lists them)", generator.Info.Plugin.Name, kind, strings.Join(can, " and "), strings.Join(can, " or "))
 }

@@ -157,6 +157,9 @@ type Shell struct {
 	// runs are the runs of the session, oldest first; runAt is the one shown (run).
 	runs  []*runview.Run
 	runAt int
+	// recentAt is the row chosen in the list of recent runs on the start screen
+	// (0 is the newest run).
+	recentAt int
 
 	confirm *dialog.Confirm
 	// releaseWaiting is a release command line that waits for the plan to be
@@ -311,7 +314,7 @@ func NewShell(cfg Config) Shell {
 func (s Shell) state() commands.State {
 	return commands.State{
 		View: s.tab, Editing: s.editing(), Form: s.formOpen(), Narrow: s.lay().Mode == layout.Narrow, DetailOpen: s.detailFull(),
-		InWorkspace: s.inWorkspace, Running: s.running(), EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
+		InWorkspace: s.inWorkspace, Running: s.running(), StartScreen: s.tab == commands.TabRun && s.runHome, EmptyFolder: s.emptyFolder, BrokenConfig: s.problem != "", Reasons: s.viewReasons(),
 		Project: s.selectedProject(), Projects: s.list.Len(), TaskProjects: s.taskProjects(), OtherTasks: s.otherTasks(),
 	}
 }

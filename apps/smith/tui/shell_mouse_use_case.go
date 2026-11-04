@@ -78,8 +78,14 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		s.lastClick = pointer.Click{}
 	}
 	switch {
-	case s.tools != nil, s.compose != nil, s.result != nil:
+	case s.compose != nil:
 		return nil
+	case s.tools != nil:
+		m, out := s.tools.Click(s.th, x, y, double)
+		s.tools = &m
+		return s.afterTools(out)
+	case s.result != nil:
+		return s.resultClick(x, y, double)
 	case s.adopt != nil:
 		m, out := s.adopt.Click(x, y)
 		s.adopt = &m
@@ -184,6 +190,20 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	case "task":
 		s.runSel = h.id
 		s.keepRunVisible()
+	case "recent":
+		s.recentAt = h.index
+		if double {
+			s.openRecent()
+		}
+	case "nav":
+		switch s.navAction(rx) {
+		case "start":
+			s.openStart()
+		case "older":
+			s.stepRun(-1)
+		case "newer":
+			s.stepRun(1)
+		}
 	case "finding":
 		s.doctor = s.doctor.SelectRow(h.index)
 	case "release":

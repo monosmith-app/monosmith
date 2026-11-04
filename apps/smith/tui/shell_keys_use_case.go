@@ -602,8 +602,13 @@ func (s *Shell) runKey(name string) tea.Cmd {
 		return nil
 	}
 	if s.runHome {
-		if name == "enter" {
-			s.runHome = false
+		switch name {
+		case "enter":
+			s.openRecent()
+		case "up":
+			s.recentAt = max(s.recentAt-1, 0)
+		case "down":
+			s.recentAt = max(min(s.recentAt+1, len(s.runs)-1), 0)
 		}
 		return nil
 	}
@@ -622,7 +627,7 @@ func (s *Shell) runKey(name string) tea.Cmd {
 	case "esc":
 		// The first Esc shows all output; the next, once nothing runs, the start screen.
 		if s.runSel == "" && !s.running() {
-			s.runHome = true
+			s.openStart()
 		}
 		s.runSel = ""
 	case "pgup":
