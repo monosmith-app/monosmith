@@ -153,4 +153,15 @@ class ComposeStackUseCaseTest {
         assertTrue(fake.warnings.single().contains("apps/web exists"))
         assertTrue(fake.warnings.single().contains("The command was: smith add app web"))
     }
+
+    @Test
+    fun aLanguageTickedAloneDoesNotSayThatAChoiceThatWritesTheProjectIsNeeded() {
+        picks.add(listOf("node"))
+        assertFalse(compose())
+        assertEquals(
+            listOf("", "Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project."),
+            messages,
+        )
+        assertTrue(messages.none { "writes the project" in it })
+    }
 }

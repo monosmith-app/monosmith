@@ -28,6 +28,7 @@ object ChoicesJsonMapper {
                     conflicts = JsonFieldsMapper.words(it, "conflicts"),
                     title = JsonFieldsMapper.text(it, "title"),
                     layer = JsonFieldsMapper.text(it, "layer"),
+                    kinds = JsonFieldsMapper.words(it, "kinds"),
                 )
             }.filter { it.axis.isNotEmpty() && it.name.isNotEmpty() }
 }

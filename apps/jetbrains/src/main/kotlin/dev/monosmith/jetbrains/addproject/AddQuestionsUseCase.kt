@@ -22,12 +22,14 @@ object AddQuestionsUseCase {
     /**
      * @param options what smith offers
      * @param siblings the projects the workspace has; their names are taken, and those of the language can be followed
+     * @param check checks the picks with smith before the choices are left; what is wrong in plain words, or an empty text
      * @return the answers, or null when the person cancelled
      */
     fun ask(
         prompt: PromptPort,
         options: AddOptionsContract,
         siblings: List<Sibling>,
+        check: (PicksAskedContract) -> String = { "" },
     ): AddAnswerContract? {
         val first =
             prompt.pickOne(
@@ -80,7 +82,10 @@ object AddQuestionsUseCase {
                 found.outcomeId,
                 options.layers,
                 options.layerAbout,
-            )
+                found.role,
+            ) { names ->
+                check(PicksAskedContract(found.language, names, found.outcomeId, found.role))
+            }
                 ?: return null
         val like = askLike(prompt, siblings.filter { it.language == found.language }.map { it.name }) ?: return null
         val name = typedName ?: askName(prompt, found.role, siblings) ?: return null

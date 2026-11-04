@@ -1,5 +1,6 @@
 export { addProject, type AddDeps } from './add-project.use-case.ts'
 export { askAddRequest, confirmAddPlan, tellAddOutcome, type AddFollowUp } from './add-prompts.client.ts'
+export { checkPicks } from './check-picks.use-case.ts'
 export { choicesByAxis, parseChoices } from './add-options.mapper.ts'
 export type { ChoiceOption } from './add-options.contract.ts'
 export type { AddOptions, AddOutcome, AddRequest, PlanAnswer, WebEnvironments } from './add-options.contract.ts'

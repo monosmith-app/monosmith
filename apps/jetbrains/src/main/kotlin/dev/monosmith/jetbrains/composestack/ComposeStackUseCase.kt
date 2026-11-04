@@ -110,7 +110,7 @@ object ComposeStackUseCase {
             ticked = ticked.filter { id -> plugins.none { it.id == id } }
             val picks = ticks.filter { it.kind == "choice" }.map { it.name }
             if (picks.isEmpty()) {
-                message = say("Tick the choice that writes the project too: a framework, a desktop shell or a cloud host.")
+                message = say("Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project.")
                 continue
             }
             val checked = read(ports, ComposeStackAlgorithm.arguments(language, picks)) ?: return false

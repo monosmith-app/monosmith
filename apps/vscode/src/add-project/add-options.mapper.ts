@@ -57,6 +57,7 @@ export function parseChoices (json: string): ChoiceOption[] {
       ...(text(item.title) !== '' && { title: text(item.title) }),
       ...(text(item.layer) !== '' && { layer: text(item.layer) }),
       ...(words(item.aliases).length > 0 && { aliases: words(item.aliases) }),
+      ...(words(item.kinds).length > 0 && { kinds: words(item.kinds) }),
     }))
     .filter((item) => item.axis !== '' && item.name !== '')
 }
@@ -124,15 +125,28 @@ export function hostTerms (choices: readonly ChoiceOption[], language: string): 
 }
 
 /**
+ * Whether a choice can be used for a kind of project: a choice that names no
+ * kinds fits all of them, and so does no role.
+ * @param choice - the choice
+ * @param role - `app`, `lib` or `package`; undefined fits all
+ * @returns false only when the choice lists kinds and the role is not one of them
+ */
+export function fitsKind (choice: ChoiceOption, role: string | undefined): boolean {
+  return role === undefined || choice.kinds === undefined || choice.kinds.includes(role)
+}
+
+/**
  * The choices a project of a language can be built from, grouped by axis.
  * @param choices - every choice smith lists
  * @param language - the language of the new project
+ * @param role - the kind of project (`app`, `lib`, `package`): a choice that does not fit it is left out, so a package is not offered aws-lambda; undefined lists all
  * @returns the axes in the order smith lists them, each with its choices
  */
-export function choicesByAxis (choices: readonly ChoiceOption[], language: string): Array<{ axis: string, many: boolean, choices: ChoiceOption[] }> {
+export function choicesByAxis (choices: readonly ChoiceOption[], language: string, role?: string): Array<{ axis: string, many: boolean, choices: ChoiceOption[] }> {
   const axes = new Map<string, { axis: string, many: boolean, choices: ChoiceOption[] }>()
   for (const choice of choices) {
     if (choice.language !== undefined && choice.language !== language) continue
+    if (!fitsKind(choice, role)) continue
     const axis = axes.get(choice.axis) ?? { axis: choice.axis, many: false, choices: [] }
     axis.choices.push(choice)
     axis.many ||= choice.many

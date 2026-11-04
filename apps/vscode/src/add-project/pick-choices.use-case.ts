@@ -21,7 +21,12 @@ export interface ChoicePrompts {
   one:   (question: AxisQuestion, rows: readonly ChoiceRow[]) => Promise<ChoiceRow | undefined>
   /** One answer on an axis smith never picks (a trigger, a runtime). Resolves the name, or undefined on Escape. */
   asked: (question: AxisQuestion, rows: readonly ChoiceRow[], needing: readonly string[]) => Promise<string | undefined>
+  /** Says what is wrong with the picks and asks whether to pick again. Resolves true to ask again, false to cancel. */
+  again: (problem: string) => Promise<boolean>
 }
+
+/** Checks the picks with smith; resolves what is wrong or missing in plain words, or '' when they are fine. */
+export type PicksCheck = (picked: readonly string[]) => Promise<string>
 
 /**
  * Asks the choices of a new project, axis by axis. What the first questions
@@ -33,10 +38,22 @@ export interface ChoicePrompts {
  * @param preset - the choices the first questions named (a framework, a desktop shell, a cloud)
  * @param outcomeId - what is being built; undefined on the long way
  * @param prompts - how to ask
+ * @param role - the kind of project (`app`, `lib`, `package`): the lists show only the choices that fit it
+ * @param check - checks the picks with smith before the list is left; a problem is said and the questions start again
  * @returns the names to give `--with`; undefined when the person pressed Escape
  */
-export async function pickChoices (options: AddOptions, language: string, preset: readonly string[], outcomeId: string | undefined, prompts: ChoicePrompts): Promise<string[] | undefined> {
-  const axes = choicesByAxis(options.choices, language)
+export async function pickChoices (options: AddOptions, language: string, preset: readonly string[], outcomeId: string | undefined, prompts: ChoicePrompts, role?: string, check?: PicksCheck): Promise<string[] | undefined> {
+  for (;;) {
+    const picked = await askAxes(options, language, preset, outcomeId, prompts, role)
+    if (picked === undefined || check === undefined) return picked
+    const problem = await check(picked)
+    if (problem === '') return picked
+    if (!await prompts.again(problem)) return undefined
+  }
+}
+
+async function askAxes (options: AddOptions, language: string, preset: readonly string[], outcomeId: string | undefined, prompts: ChoicePrompts, role: string | undefined): Promise<string[] | undefined> {
+  const axes = choicesByAxis(options.choices, language, role)
   const picked: string[] = [...preset]
   const settled = new Set(axes.filter((axis) => axis.choices.some((choice) => preset.includes(choice.name))).map((axis) => axis.axis))
   const asked = askedAxes(options.choices, language)

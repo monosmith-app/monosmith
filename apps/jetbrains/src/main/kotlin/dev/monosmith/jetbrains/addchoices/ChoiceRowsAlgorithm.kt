@@ -7,14 +7,18 @@ object ChoiceRowsAlgorithm {
     /**
      * The choices a project of [language] can be built from, grouped by axis.
      *
+     * @param role the kind of project (`app`, `lib`, `package`): a choice that does not fit it is left out, so a package
+     *   is not offered aws-lambda; null lists all
      * @return the axes in the order smith lists them, each with its choices
      */
     fun byAxis(
         choices: List<ChoiceOptionContract>,
         language: String,
+        role: String? = null,
     ): List<AxisGroupContract> =
         choices
             .filter { it.language.isEmpty() || it.language == language }
+            .filter { it.fitsKind(role) }
             .groupBy { it.axis }
             .map { (axis, list) -> AxisGroupContract(axis, list.any { it.many }, list) }
 

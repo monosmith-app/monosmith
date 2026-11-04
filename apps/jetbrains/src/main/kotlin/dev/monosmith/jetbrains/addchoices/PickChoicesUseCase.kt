@@ -1,6 +1,7 @@
 package dev.monosmith.jetbrains.addchoices
 
 import dev.monosmith.jetbrains.flowports.PromptPort
+import dev.monosmith.jetbrains.prompt.ChoiceRowContract
 
 /**
  * Asks the choices of a new project, axis by axis. What the first questions settled is kept and not
@@ -15,6 +16,9 @@ object PickChoicesUseCase {
      * @param preset the choices the first questions named (a framework, a desktop shell, a cloud)
      * @param outcomeId what is being built; null on the long way
      * @param ofLayers the title of each layer
+     * @param role the kind of project (`app`, `lib`, `package`): the lists show only the choices that fit it
+     * @param check checks the picks with smith before the lists are left: what is wrong in plain words, or an empty text;
+     *   a problem is said and the questions start again
      * @return the names for `--with`, or null when the person cancelled
      */
     fun pick(
@@ -25,8 +29,42 @@ object PickChoicesUseCase {
         outcomeId: String?,
         ofLayers: Map<String, String>,
         about: Map<String, String> = emptyMap(),
+        role: String? = null,
+        check: (List<String>) -> String = { "" },
     ): List<String>? {
-        val axes = ChoiceRowsAlgorithm.byAxis(choices, language)
+        while (true) {
+            val picked = askAxes(prompt, choices, language, preset, outcomeId, ofLayers, about, role) ?: return null
+            val problem = check(picked)
+            if (problem.isEmpty()) return picked
+            val again =
+                prompt.pickOne(
+                    "MonoSmith: Add project: check",
+                    problem,
+                    listOf(
+                        ChoiceRowContract(AGAIN, "Pick again", "", "Go back to the questions."),
+                        ChoiceRowContract(CANCEL, "Cancel", "", "Add nothing."),
+                    ),
+                    "Choose",
+                )
+            if (again?.name != AGAIN) return null
+        }
+    }
+
+    private const val AGAIN = "again"
+    private const val CANCEL = "cancel"
+
+    @Suppress("LongParameterList")
+    private fun askAxes(
+        prompt: PromptPort,
+        choices: List<ChoiceOptionContract>,
+        language: String,
+        preset: List<String>,
+        outcomeId: String?,
+        ofLayers: Map<String, String>,
+        about: Map<String, String>,
+        role: String?,
+    ): List<String>? {
+        val axes = ChoiceRowsAlgorithm.byAxis(choices, language, role)
         val picked = preset.toMutableList()
         val settled = axes.filter { axis -> axis.choices.any { it.name in preset } }.map { it.axis }.toSet()
         val asked = ChoiceRowsAlgorithm.askedAxes(choices, language)

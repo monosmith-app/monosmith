@@ -21,6 +21,7 @@ the first release everything below is under Unreleased.
 
 ### Fixed
 
+- Add project: the choices lists show only the choices that fit the kind you picked (`kinds` of `smith choices --json`), so a package is not offered aws-lambda, electron or tauri. Before the lists are left, smith checks the picks (`smith compose --json --with`): a conflict or a missing piece is said in plain words, and a website, desktop or function app without its framework, shell or host is told "this kind of project needs a framework: tick one of html, react, svelte, vue, or untick everything" and can pick again. Lint and test choices alone are fine. Compose a stack no longer says that a choice that writes the project is needed.
 - Add project: pressing Enter through the steps gives the safe defaults. Every list of one answer starts on its default (Vitest for the test runner) or on "None" when the axis has none (desktop shell, style), listed first; it no longer starts on Tauri, Bootstrap or Jest. The confirmation says the choices in words and marks the defaults ("React, ESLint (default), Vitest (default); no desktop shell, no style").
 - Add project: the framework is asked once. The answer of "Which framework?" is kept, a website no longer lists AWS Lambda or Electron, and the framework list starts on what you typed in the first question (`react`).
 - Notifications show at most three buttons with short verbs (Install tools, Open Health, More…); the long explanation is in the message and the other buttons are behind "More…".

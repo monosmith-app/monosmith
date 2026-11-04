@@ -14,6 +14,7 @@ package dev.monosmith.jetbrains.addchoices
  * @property conflicts the choices it does not go with
  * @property title what a person calls it ("Electron"); empty when the name is enough
  * @property layer where it sits in the stack (`framework`, `shell`, `host`); empty means the layer of its axis
+ * @property kinds the kinds of project it fits (`app`, `lib`, `package`); empty means every kind, as for a lint tool or a test runner
  */
 data class ChoiceOptionContract(
     val axis: String,
@@ -28,9 +29,18 @@ data class ChoiceOptionContract(
     val conflicts: List<String>,
     val title: String,
     val layer: String,
+    val kinds: List<String> = emptyList(),
 ) {
     /** What a person reads: the title, else the name. */
     val label: String get() = title.ifEmpty { name }
+
+    /**
+     * Whether the choice can be used for a kind of project.
+     *
+     * @param role `app`, `lib` or `package`; null fits all
+     * @return false only when the choice lists kinds and [role] is not one of them
+     */
+    fun fitsKind(role: String?): Boolean = role == null || kinds.isEmpty() || role in kinds
 }
 
 /**
