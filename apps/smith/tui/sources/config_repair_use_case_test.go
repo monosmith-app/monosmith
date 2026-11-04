@@ -8,6 +8,7 @@ import (
 )
 
 func TestConfigRepairOfPlansTheRenameAndWritesNothing(t *testing.T) {
+	t.Setenv("SMITH_WORKSPACE_ROOT", "") // smith sets it for its own tasks (CI); it would point FindRoot at the real workspace
 	dir := t.TempDir()
 	file := filepath.Join(dir, "smith.toml")
 	text := "[workspace]\nname = \"x\"\n\n[[task_groups]]\nname = \"a\"\n"
@@ -33,6 +34,7 @@ func TestConfigRepairOfPlansTheRenameAndWritesNothing(t *testing.T) {
 }
 
 func TestConfigRepairOfRefusesAFileDoctorCannotFix(t *testing.T) {
+	t.Setenv("SMITH_WORKSPACE_ROOT", "") // smith sets it for its own tasks (CI); it would point FindRoot at the real workspace
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "smith.toml"), []byte("[workspace\n"), 0o644); err != nil {
 		t.Fatal(err)
