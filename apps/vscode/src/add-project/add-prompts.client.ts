@@ -5,7 +5,8 @@ import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
 import { choicesByAxis, roleOf } from './add-options.mapper.ts'
 import { typedItem } from './add-choice-rows.mapper.ts'
-import { pickChoices, type ChoicePrompts } from './pick-choices.use-case.ts'
+import { pickChoices, type ChoicePrompts, type PicksCheck } from './pick-choices.use-case.ts'
+import type { PicksAsked } from './check-picks.use-case.ts'
 import { showNotice } from '../notice-buttons/index.ts'
 import { isWebApp } from './web-environments.mapper.ts'
 import { mainLanguage, startOnMainLanguage } from './main-language.mapper.ts'
@@ -30,7 +31,7 @@ const TITLE = 'MonoSmith: Add project'
  * @param projects - the workspace's projects, to offer one to copy the shape of (`--like`)
  * @returns the request, `compose` when the person chose to compose a stack, or undefined when they pressed Escape at any question
  */
-export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = [], workspaceEnvironments: readonly string[] = []): Promise<AddRequest | 'compose' | undefined> {
+export async function askAddRequest (options: AddOptions, existing: readonly string[] = [], projects: ReadonlyArray<{ name: string, language: string }> = [], workspaceEnvironments: readonly string[] = [], check?: (asked: PicksAsked) => Promise<string>): Promise<AddRequest | 'compose' | undefined> {
   const found = await askOutcome(options, projects)
   if (found === undefined || found === 'compose') return found
 
@@ -51,7 +52,7 @@ export async function askAddRequest (options: AddOptions, existing: readonly str
     if (setup === 'defaults') return defaultsRequest(found, name, workspaceEnvironments)
   }
 
-  const build = await askBuild(options, language, preset, outcomeId)
+  const build = await askBuild(options, language, preset, outcomeId, role, check)
   if (build === undefined) return undefined
 
   const like = await askLike(projects.filter((project) => project.language === language))
@@ -262,9 +263,9 @@ async function askLike (siblings: ReadonlyArray<{ name: string, language: string
 }
 
 /** The third question: the default of the language, a stack, or choices. */
-async function askBuild (options: AddOptions, language: string, preset: readonly string[] = [], outcomeId?: string): Promise<{ stack?: string, with: string[] } | undefined> {
+async function askBuild (options: AddOptions, language: string, preset: readonly string[] = [], outcomeId?: string, role?: string, check?: (asked: PicksAsked) => Promise<string>): Promise<{ stack?: string, with: string[] } | undefined> {
   const stacks = options.stacks.filter((stack) => stack.language === language)
-  const axes = choicesByAxis(options.choices, language)
+  const axes = choicesByAxis(options.choices, language, role)
   const items: Array<vscode.QuickPickItem & { kind_: 'default' | 'stack' | 'choices', stack?: string }> = [
     { label: '$(star) The default', description: `the stack the workspace uses for ${language}`, kind_: 'default' },
     ...stacks.map((stack) => ({ label: stack.name, description: stack.description, kind_: 'stack' as const, stack: stack.name })),
@@ -275,7 +276,8 @@ async function askBuild (options: AddOptions, language: string, preset: readonly
   if (how.kind_ === 'default') return { with: [] }
   if (how.kind_ === 'stack') return { stack: how.stack, with: [] }
 
-  const picked = await pickChoices(options, language, preset, outcomeId, vscodeChoicePrompts)
+  const picksCheck: PicksCheck | undefined = check === undefined ? undefined : async (names) => await check({ language, picks: names, ...(role !== undefined && { role }), ...(outcomeId !== undefined && { outcomeId }) })
+  const picked = await pickChoices(options, language, preset, outcomeId, vscodeChoicePrompts, role, picksCheck)
 
   return picked === undefined ? undefined : { with: picked }
 }
@@ -290,6 +292,7 @@ const vscodeChoicePrompts: ChoicePrompts = {
   },
   // A single-choice axis is a radio list: one answer. Enter takes the first row, which is the default, or "None".
   one:   async (question, rows) => await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.name}`, placeHolder: `${question.hint} Enter keeps ${rows[0]?.name === '' ? 'None (nothing extra)' : `${rows[0]?.label ?? 'the first line'} (the default)`}.`.trim(), matchOnDetail: true }),
+  again: async (problem) => await vscode.window.showWarningMessage(`MonoSmith: ${problem}`, { modal: true }, 'Pick again') === 'Pick again',
   asked: async (question, rows, needing) => {
     const answer = await vscode.window.showQuickPick(rows, { title: `${TITLE}: ${question.axis} for ${needing.join(', ')}`, placeHolder: `smith does not choose the ${question.axis} for you: the first is suggested`, matchOnDetail: true })
 

@@ -37,10 +37,48 @@ function enterThrough (): { prompts: ChoicePrompts, asked: string[][] } {
 
       return rows[0]?.name
     },
+    again: async () => false,
   }
 
   return { prompts, asked }
 }
+
+describe('the choices of a kind of project', () => {
+  const kinded: AddOptions = {
+    ...options,
+    choices: [
+      { axis: 'framework', name: 'aws-lambda', description: 'x', language: 'node', requires: [], isDefault: false, many: false, needs: [], suggested: false, conflicts: [], kinds: ['app'] },
+      { axis: 'framework', name: 'esm', description: 'x', language: 'node', requires: [], isDefault: false, many: false, needs: [], suggested: false, conflicts: [], kinds: ['package'] },
+      { axis: 'lint', name: 'eslint', description: 'x', language: 'node', requires: [], isDefault: true, many: false, needs: [], suggested: false, conflicts: [] },
+    ],
+  }
+
+  it('does not list aws-lambda for a package', async () => {
+    const { prompts, asked } = enterThrough()
+    await pickChoices(kinded, 'node', [], undefined, prompts, 'package')
+    expect(asked.find(([axis]) => axis === 'framework')?.slice(1)).toEqual(['', 'esm'])
+  })
+
+  it('says what is wrong and starts the questions again when the person agrees', async () => {
+    const { prompts, asked } = enterThrough()
+    const problems: string[] = []
+    const again = async (problem: string): Promise<boolean> => {
+      problems.push(problem)
+
+      return true
+    }
+    const checks = ['this kind of project needs a framework: tick one of esm, or untick everything', '']
+    const picked = await pickChoices(kinded, 'node', [], undefined, { ...prompts, again }, 'package', async () => checks.shift() ?? '')
+    expect(problems).toEqual(['this kind of project needs a framework: tick one of esm, or untick everything'])
+    expect(asked.filter(([axis]) => axis === 'framework')).toHaveLength(2)
+    expect(picked).toBeDefined()
+  })
+
+  it('cancels when the person does not want to pick again', async () => {
+    const { prompts } = enterThrough()
+    expect(await pickChoices(kinded, 'node', [], undefined, prompts, 'package', async () => 'a problem')).toBeUndefined()
+  })
+})
 
 describe('pressing Enter through the choices of a website', () => {
   it('gives the defaults and nothing extra: no desktop shell, no style, Vitest', async () => {

@@ -29,4 +29,12 @@ class ChoicesJsonMapperTest {
     fun dropsAnEntryWithNoAxisOrNoName() {
         assertEquals(emptyList(), ChoicesJsonMapper.toChoices("""[{"name":"x"},{"axis":"a"},"text"]"""))
     }
+
+    @Test
+    fun readsTheKindsAChoiceFitsAndNoneMeansEveryKind() {
+        val json = """[{"axis":"framework","name":"aws-lambda","kinds":["app"]},{"axis":"test","name":"jest"}]"""
+        val (lambda, jest) = ChoicesJsonMapper.toChoices(json)
+        assertEquals(listOf("app"), lambda.kinds)
+        assertEquals(emptyList(), jest.kinds)
+    }
 }

@@ -8,6 +8,8 @@ const ITEMS = [
   { id: 'node/electron', kind: 'choice', name: 'electron', title: 'Electron', language: 'node', layer: 'shell' },
   { id: 'node/azure-functions', kind: 'choice', name: 'azure-functions', title: 'Azure Functions', language: 'node', layer: 'host' },
   { id: 'node/http-trigger', kind: 'choice', name: 'http-trigger', title: 'HTTP trigger', language: 'node', layer: 'host' },
+  { id: 'node/eslint', kind: 'choice', name: 'eslint', title: 'ESLint', language: 'node', layer: 'lint' },
+  { id: 'node/jest', kind: 'choice', name: 'jest', title: 'Jest', language: 'node', layer: 'test' },
   { id: 'plugin/slices', kind: 'plugin', name: 'slices', title: 'slices', language: '', layer: 'architecture', route: 'smith plugin enable slices' },
 ]
 
@@ -77,6 +79,28 @@ function deps (over: Partial<ComposeDeps> & { picks: string[][], reply?: Compose
 }
 
 describe('composeStack', () => {
+  it('sends lint and test choices alone to smith to check: no choice that writes the project is asked for', async () => {
+    const checked: string[] = []
+    const f = deps({
+      picks: [['node/eslint', 'node/jest']],
+      run:   async (args) => {
+        if (args.includes('--with') && !args.includes('--name')) checked.push(args[args.indexOf('--with') + 1] ?? '')
+
+        return await smith({ 'eslint,jest': { ...COMPLETE, selection: ['eslint', 'jest'] } })(args)
+      },
+    })
+    await composeStack(f.deps)
+    expect(checked).toEqual(['eslint,jest'])
+    expect(f.messages).toEqual([''])
+  })
+
+  it('does not say a choice that writes the project is needed when only a plugin is ticked', async () => {
+    const f = deps({ picks: [['plugin/slices']] })
+    await composeStack(f.deps)
+    expect(f.messages[1]).toBe('Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project.')
+    expect(f.messages[1]).not.toContain('writes the project')
+  })
+
   it('runs the exact add line the plan names, with --yes, and never commits unless asked', async () => {
     const f = deps({ picks: [['node/electron']] })
     const outcome = await composeStack(f.deps)

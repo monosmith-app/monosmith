@@ -120,4 +120,19 @@ class ChoiceRowsAlgorithmTest {
         )
         assertEquals("Built from the stack web.", ChoiceRowsAlgorithm.inWords(listOf("react"), "web", "node", catalogue))
     }
+
+    @Test
+    fun aPackageIsNotOfferedTheChoicesThatOnlyFitAnApp() {
+        val choices =
+            listOf(
+                choice("aws-lambda", "framework").copy(kinds = listOf("app")),
+                choice("esm", "framework").copy(kinds = listOf("package", "lib")),
+                choice("eslint", "lint"),
+            )
+
+        fun names(role: String?) = ChoiceRowsAlgorithm.byAxis(choices, "node", role).flatMap { axis -> axis.choices.map { it.name } }
+        assertEquals(listOf("esm", "eslint"), names("package"))
+        assertEquals(listOf("aws-lambda", "eslint"), names("app"))
+        assertEquals(listOf("aws-lambda", "esm", "eslint"), names(null))
+    }
 }

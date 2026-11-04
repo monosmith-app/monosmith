@@ -71,7 +71,7 @@ export async function composeStack (deps: ComposeDeps): Promise<ComposeOutcome> 
     for (const plugin of plugins) deps.tell(`${plugin.title} is not part of one project. Turn it on with: ${plugin.route}`)
     ticked = ticked.filter((id) => plugins.every((plugin) => plugin.id !== id))
     if (picks.length === 0) {
-      message = say('Tick the choice that writes the project too: a framework, a desktop shell or a cloud host.')
+      message = say('Tick at least one choice. To start from the defaults of the stack, pick the defaults in Add project.')
       continue
     }
 

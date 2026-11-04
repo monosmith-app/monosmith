@@ -35,6 +35,8 @@ export interface ChoiceOption {
   layer?:      string
   /** Words that find it ("desktop", "serverless"). */
   aliases?:    string[]
+  /** The kinds of project it fits (`app`, `lib`, `package`); absent means every kind, as for a lint tool or a test runner. */
+  kinds?:      string[]
 }
 
 /** One stack of `smith stacks --json`. */

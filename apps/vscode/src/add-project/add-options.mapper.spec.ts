@@ -25,6 +25,27 @@ describe('parseChoices', () => {
   })
 })
 
+describe('the kinds a choice fits', () => {
+  it('reads kinds and leaves them out when smith lists none', () => {
+    const json = JSON.stringify([{ axis: 'framework', name: 'aws-lambda', description: 'x', kinds: ['app'] }, { axis: 'test', name: 'jest', description: 'x' }])
+    const [lambda, jest] = parseChoices(json)
+    expect(lambda?.kinds).toEqual(['app'])
+    expect(jest).not.toHaveProperty('kinds')
+  })
+
+  it('lists for a package only the choices that fit a package, and everything when no kind is given', () => {
+    const choices = parseChoices(JSON.stringify([
+      { axis: 'framework', name: 'aws-lambda', description: 'x', kinds: ['app'] },
+      { axis: 'framework', name: 'esm', description: 'x', kinds: ['package', 'lib'] },
+      { axis: 'lint', name: 'eslint', description: 'x' },
+    ]))
+    const names = (role?: string): string[] => choicesByAxis(choices, 'node', role).flatMap((axis) => axis.choices.map((choice) => choice.name))
+    expect(names('package')).toEqual(['esm', 'eslint'])
+    expect(names('app')).toEqual(['aws-lambda', 'eslint'])
+    expect(names()).toEqual(['aws-lambda', 'esm', 'eslint'])
+  })
+})
+
 describe('parseStacks', () => {
   it('reads the name, the description and the language', () => {
     expect(parseStacks(JSON.stringify([{ name: 'node-vitest', description: 'd', language: 'node', source: 'x' }]))).toEqual([{ name: 'node-vitest', description: 'd', language: 'node' }])

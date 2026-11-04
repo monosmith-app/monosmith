@@ -78,7 +78,9 @@ object AddProjectUseCase {
         onCompose: () -> Unit,
     ): Boolean {
         val options = readOptions(ports) ?: return false
-        val answer = AddQuestionsUseCase.ask(ports.prompt, options, siblings) ?: return false
+        val answer =
+            AddQuestionsUseCase.ask(ports.prompt, options, siblings) { CheckPicksUseCase.check(ports.smith, options, it) }
+                ?: return false
         if (answer is AddAnswerContract.Compose) {
             onCompose()
             return false

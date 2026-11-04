@@ -8,7 +8,7 @@ import {
 } from './agent-install/index.ts'
 import { askInstallRequest, installDependency, tellDependencyOutcome } from './install-dependency/index.ts'
 import { answerQuestion, askProjectName, composeStack, confirmComposePlan, pickItems, tellComposeOutcome } from './compose-stack/index.ts'
-import { addProject, askAddRequest, confirmAddPlan, outcomeWords, parseChoices, tellAddOutcome } from './add-project/index.ts'
+import { addProject, askAddRequest, checkPicks, confirmAddPlan, outcomeWords, parseChoices, tellAddOutcome } from './add-project/index.ts'
 import { chooseCommitScope, commitChanges, tellCommitOutcome } from './commit-changes/index.ts'
 import { askKind, askLinkedLibrary, askRemoveChoice, confirmKind, confirmUnlink, kindArguments, kindPlanArguments, pickProjectFor, planThenApply, removeArguments, removePlanArguments, tellActionOutcome, unlinkArguments } from './project-actions/index.ts'
 import {
@@ -930,7 +930,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
       ask: async (options) => {
         const configured = await smithIn(state)(['config', 'get', 'workspace.environments'])
 
-        return await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? [], configured.code === 0 ? parseWorkspaceEnvironments(configured.stdout) : [])
+        return await askAddRequest(options, state.snapshot?.projects.map((project) => project.name) ?? [], state.snapshot?.projects ?? [], configured.code === 0 ? parseWorkspaceEnvironments(configured.stdout) : [], async (asked) => await checkPicks(smithIn(state), options, asked))
       },
       confirm: confirmAddPlan,
     })

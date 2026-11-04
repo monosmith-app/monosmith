@@ -62,7 +62,7 @@ VS Code 1.140 or newer. An older editor keeps the version it has and does not of
 - **Add a project.** **MonoSmith: Add Project…** (the `+` button of the Projects
   view) asks the kind (app, lib or package), the language, how it is built
   (the default of the language, a stack, or choices such as a framework, a test
-  runner and a style) and the name. It then shows the plan of
+  runner and a style; only the choices that fit the kind are listed, and smith checks the set before you leave the list) and the name. It then shows the plan of
   `smith add --dry-run` and adds only after you agree. When the new project
   would follow its sibling projects, the question also offers **Add with the
   stack defaults** (`--fresh`). The output channel keeps what smith printed, and
