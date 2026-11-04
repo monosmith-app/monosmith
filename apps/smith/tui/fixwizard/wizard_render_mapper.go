@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -198,21 +199,22 @@ func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
 	}
 	rows := pane.Wrap(th.Bold(headline), inner, 0)
 	rows = append(rows, "")
+	spin := th.Accent(th.Spin(tick)) + " "
+	waited := w.elapsed()
 	switch {
 	case w.total == 0 && w.step == 0:
-		rows = append(rows, th.Accent(th.Spin(tick))+" "+w.style.working()+"…")
+		rows = append(rows, spin+progress.Waiting(w.style.working()+"…", waited))
 	case w.step == 0:
-		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" %s, then %d step(s)…", w.style.working(), w.total))
+		rows = append(rows, spin+progress.Waiting(fmt.Sprintf("%s, then %d step(s)…", w.style.working(), w.total), waited))
 	case w.total == 0:
 		// A job that does not know how many steps it has: the name alone.
-		rows = append(rows, th.Accent(th.Spin(tick))+" "+capitalFirst(w.stepName)+"…")
+		rows = append(rows, spin+progress.Waiting(capitalFirst(w.stepName)+"…", waited))
 	default:
-		rows = append(rows, th.Accent(th.Spin(tick))+fmt.Sprintf(" step %d of %d: %s", w.step, max(w.total, w.step), w.stepName))
+		rows = append(rows, spin+progress.Waiting(fmt.Sprintf("step %d of %d: %s", w.step, max(w.total, w.step), w.stepName), waited))
 	}
+	// The detail row is always there, so the dialog keeps its height.
+	rows = append(rows, th.Muted("  "+ansi.Truncate(w.note, max(inner-2, 1), "…")))
 	rows = append(rows, stepListRows(th, w.resolved.Steps, w.step, inner)...)
-	if e := elapsedText(w.elapsed()); e != "" {
-		rows = append(rows, "", th.Muted(e))
-	}
 	return append(rows, "", th.Muted(applyingHint))
 }
 

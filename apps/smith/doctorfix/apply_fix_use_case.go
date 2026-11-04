@@ -33,12 +33,44 @@ func (e *StepError) Error() string {
 
 func (e *StepError) Unwrap() error { return e.Err }
 
+// Noter is an output that also wants the live detail of a fix: what it is
+// writing and each line a command prints. The terminal interface shows the last
+// one under its spinner. Apply and RunSteps tell it only when out is a Noter, so
+// the command line keeps its short "… step" and "✔ step" lines.
+type Noter interface {
+	// Note receives one line of detail, without its line end.
+	Note(line string)
+}
+
+// noteWriter splits what a command prints into lines for a Noter.
+type noteWriter struct {
+	to  Noter
+	buf []byte
+}
+
+func (w *noteWriter) Write(p []byte) (int, error) {
+	w.buf = append(w.buf, p...)
+	for {
+		i := bytes.IndexByte(w.buf, '\n')
+		if i < 0 {
+			return len(p), nil
+		}
+		if line := strings.TrimSpace(string(w.buf[:i])); line != "" {
+			w.to.Note(line)
+		}
+		w.buf = w.buf[i+1:]
+	}
+}
+
 // Apply writes a fix's files, then runs its steps in order and stops at the
 // first that fails. A fix that still has Choices must be resolved first.
 // Progress goes to out; a failed step's output is in the returned StepError.
 func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) error {
 	if len(fix.Choices) > 0 {
 		return fmt.Errorf("%q has questions to answer first", fix.Description)
+	}
+	if n, ok := out.(Noter); ok && len(fix.Files) > 0 {
+		n.Note(filesNote(fix.Files))
 	}
 	if err := ApplyFiles(root, fix); err != nil {
 		return err
@@ -49,6 +81,7 @@ func Apply(ctx context.Context, root string, fix protocol.Fix, out io.Writer) er
 // RunSteps runs commands from the workspace root (or the step's own Dir),
 // capturing what each prints, and stops at the first failure.
 func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io.Writer) error {
+	noter, _ := out.(Noter)
 	for i, step := range steps {
 		dir, err := inside(root, orRoot(step.Dir))
 		if err != nil {
@@ -56,7 +89,11 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 		}
 		fmt.Fprintf(out, "… %s\n", stepName(step))
 		var captured bytes.Buffer
-		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(nil), Out: &captured})
+		var sink io.Writer = &captured
+		if noter != nil {
+			sink = io.MultiWriter(&captured, &noteWriter{to: noter})
+		}
+		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(nil), Out: sink})
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
 		}
@@ -89,6 +126,14 @@ func tail(text string, lines int) string {
 		all = append([]string{"…"}, all[len(all)-lines:]...)
 	}
 	return strings.Join(all, "\n")
+}
+
+// filesNote says which files a fix is writing, for a Noter.
+func filesNote(files []protocol.FileEdit) string {
+	if len(files) == 1 {
+		return "Writing " + files[0].Path
+	}
+	return fmt.Sprintf("Writing %d files, from %s", len(files), files[0].Path)
 }
 
 // ApplyFiles writes a fix's files, not its steps.

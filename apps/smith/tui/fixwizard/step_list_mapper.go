@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -47,15 +46,6 @@ func capitalFirst(s string) string {
 		return s
 	}
 	return strings.ToUpper(string(r[0])) + string(r[1:])
-}
-
-// elapsedText says how long the step has been running, once it is long enough
-// to matter: nothing under three seconds.
-func elapsedText(d time.Duration) string {
-	if d < 3*time.Second {
-		return ""
-	}
-	return "Running for " + progress.Elapsed(d)
 }
 
 // elapsed is how long the applying phase has lasted.

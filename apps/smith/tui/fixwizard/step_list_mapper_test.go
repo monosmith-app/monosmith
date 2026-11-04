@@ -25,10 +25,18 @@ func TestTheStepListNamesDoneAndComingSteps(t *testing.T) {
 	}
 }
 
-func TestElapsedShowsOnlyOnceItMatters(t *testing.T) {
-	for d, want := range map[time.Duration]string{time.Second: "", 12 * time.Second: "Running for 12s", 75 * time.Second: "Running for 1m 15s"} {
-		if got := elapsedText(d); got != want {
-			t.Fatalf("%v: %q, want %q", d, got, want)
+func TestApplyingShowsTheLastLineOfOutputAndElapsedAfterTwoSeconds(t *testing.T) {
+	w := New(question(), show).Place(100, 30)
+	w, _ = press(t, w, "1", "1", "enter")
+	w.started = time.Now().Add(-1 * time.Second)
+	if got := text(w); strings.Contains(got, "1s") {
+		t.Fatalf("under two seconds shows no time: %s", got)
+	}
+	w.started = time.Now().Add(-75 * time.Second)
+	got := text(w.Noted("added 12 packages"))
+	for _, want := range []string{"1m 15s", "added 12 packages"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("lacks %q: %s", want, got)
 		}
 	}
 }
@@ -38,7 +46,7 @@ func TestApplyingTellsWhatKeysDoAndHowLongItRuns(t *testing.T) {
 	w, _ = press(t, w, "1", "1", "enter")
 	w.started = time.Now().Add(-20 * time.Second)
 	got := text(w)
-	for _, want := range []string{"Running for 20s", "Other keys do nothing until it is done"} {
+	for _, want := range []string{"20s", "Other keys do nothing until it is done"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("lacks %q:\n%s", want, got)
 		}
