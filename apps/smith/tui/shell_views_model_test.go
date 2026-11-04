@@ -404,8 +404,51 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l.clickText("Remove a package")
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
+	// Removing asks once more, with the command line and what it touches.
+	l.has("uninstall -w orders left-pad", "Removes left-pad")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before the confirmation", l.started)
+	}
+	l.keys("y")
 	if got := l.lastStarted(); got != "uninstall -w orders left-pad --yes" {
 		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewRemovesAPackageOfOneProjectWithThatProjectAsTarget(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("5", "down", "x") // zod, declared in web only
+	l.has("uninstall -w web zod")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before the confirmation", l.started)
+	}
+	l.keys("y")
+	if got := l.lastStarted(); got != "uninstall -w web zod --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewTargetsTheWorkspaceRootForARootPackage(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	sh := l.sh()
+	sh.sources.Deps = func() depsview.Result {
+		return depsview.Result{Rows: []depsview.Row{{Name: "@swc/core", Plugin: "node", Current: "1.0.0", Latest: "1.1.0", Level: "minor", Projects: []string{"(root)"}}}}
+	}
+	l.m = sh
+	l.keys("5", "x")
+	l.has("uninstall -w . @swc/core", "the workspace root")
+	l.keys("y")
+	if got := l.lastStarted(); got != "uninstall -w . @swc/core --yes" {
+		t.Fatalf("started %q", got)
+	}
+}
+
+func TestTheDepsViewAsksWhichProjectsWhenSeveralDeclareThePackage(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.keys("5", "x") // axios, declared in web and api
+	l.has("declared in more than one project", "web", "api")
+	if len(l.started) != 0 {
+		t.Fatalf("started %v before anything was picked", l.started)
 	}
 }
 

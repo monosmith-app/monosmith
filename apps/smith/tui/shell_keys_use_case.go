@@ -157,7 +157,9 @@ func (s *Shell) afterPackages(p packageprompt.Prompt, out dialog.Outcome) tea.Cm
 	}
 	s.pkg = nil
 	if out.Confirmed {
-		return s.execute(p.Argv(), true)
+		// Removing is not undone by a click: the confirmation shows the command
+		// and what it touches. An install was already asked for in the prompt.
+		return s.execute(p.Argv(), !p.Removes())
 	}
 	return nil
 }
@@ -299,6 +301,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute(argv, false)
 		}
 		s.say("No dependency to update")
+	case "deps-remove":
+		return s.removeDependency()
 	case "deps-align":
 		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)

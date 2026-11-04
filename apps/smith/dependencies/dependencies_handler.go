@@ -88,8 +88,11 @@ project, --registry for the package.`,
 		Short:   "Remove packages from a project (the opposite of install)",
 		Long: `Remove packages from one project, the counterpart of smith install. A
 dependency belongs to the project that uses it, so it needs a target: smith
-uninstall -w <project> <package>.`,
-		Example: `  smith uninstall -w web zod`,
+uninstall -w <project> <package>. The package.json at the top of the workspace
+is not a project: name it with -w . (smith deps up lists it as "(root)").
+A development dependency is removed like any other.`,
+		Example: `  smith uninstall -w web zod
+  smith uninstall -w . @swc/core`,
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})

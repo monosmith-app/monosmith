@@ -4,6 +4,10 @@
 [`smith install`](install.md). A dependency belongs to the project that uses it, so it needs
 a target: `smith uninstall -w <project> <package>`.
 
+The `package.json` at the top of the workspace is not a project: name it with `-w .`
+(`smith deps up` lists its packages as `(root)`). A development dependency is removed like any
+other: `smith uninstall -w . @swc/core`.
+
 A name that is a library of the workspace (a project, its folder, or the package it
 exports) has its link removed: `smith uninstall -w web @acme/core`. When the project did not
 depend on it, smith says so and changes nothing. `workspace:<name>` names the library
