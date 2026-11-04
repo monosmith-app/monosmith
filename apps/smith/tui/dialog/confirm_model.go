@@ -3,10 +3,12 @@ package dialog
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -40,11 +42,44 @@ type Confirm struct {
 	screenW, screenH int
 	// top and bottom are the rows of the screen the dialog stays clear of.
 	top, bottom int
+	// working is what smith is doing while the plan is read ("" once the plan
+	// is shown); tick and elapsed move its spinner line (see Pulse).
+	working string
+	tick    int
+	elapsed time.Duration
 }
 
 // NewConfirm builds the dialog for a command line (smith's arguments).
 func NewConfirm(title, why string, argv []string) Confirm {
 	return Confirm{Title: title, Why: why, Command: commands.Line(argv), Argv: argv, hover: -1, Offer: Committable(argv)}
+}
+
+// NewWaiting builds the dialog of a command whose plan is still being read. It
+// opens at once, so the key press shows an answer: a sentence, a spinner line
+// and the command that will run. Run cannot be used until the plan replaces it;
+// Esc cancels the wait.
+//
+// Parameters: title and why are the words of the finished dialog; argv is the
+// command line that will run; doing says what smith is doing now, without the
+// closing dots ("Working out what will change").
+// Returns: the dialog in its working state.
+func NewWaiting(title, why string, argv []string, doing string) Confirm {
+	c := NewConfirm(title, why, argv)
+	c.Offer, c.working, c.focus = false, doing, 1
+	c.Details = []string{doing + "…"}
+	return c
+}
+
+// Working is true while the plan is still being read: Run is not available.
+func (c Confirm) Working() bool { return c.working != "" }
+
+// Pulse moves the spinner line of a dialog that waits for its plan.
+//
+// Parameters: tick is the animation frame; elapsed is how long the wait lasts.
+// Returns: the dialog with the moving line, or c as it is when it is not waiting.
+func (c Confirm) Pulse(tick int, elapsed time.Duration) Confirm {
+	c.tick, c.elapsed = tick, elapsed
+	return c
 }
 
 // Final is the command line that runs on confirmation: Argv, with --commit
@@ -205,6 +240,9 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	rows := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
 	shown, hidden := c.shownHead(inner)
+	if c.Working() && hidden == 0 && len(shown) > 0 {
+		shown = append(append([]string(nil), shown[:len(shown)-1]...), th.Accent(th.Spin(c.tick))+" "+progress.Waiting(c.working+"…", c.elapsed))
+	}
 	for _, l := range shown {
 		rows = append(rows, row(l))
 	}
@@ -230,10 +268,13 @@ func (c Confirm) Lines(th theme.Theme) []string {
 	}
 	for i, label := range labels {
 		text := th.Muted(label)
-		switch i {
-		case c.focus:
+		switch {
+		case c.Working() && i == 0:
+			// Run waits for the plan: it is drawn faint and does nothing.
+			text = th.Faint(label)
+		case i == c.focus:
 			text = th.Selected(label)
-		case c.hover:
+		case i == c.hover:
 			text = th.Hover(label)
 		}
 		line += text
@@ -275,6 +316,9 @@ func (c Confirm) Click(x, y int) (Confirm, Outcome) {
 	}
 	switch c.buttonAt(x, y) {
 	case 0:
+		if c.Working() {
+			return c, Outcome{}
+		}
 		return c, Outcome{Done: true, Confirmed: !c.Info}
 	case 1:
 		return c, Outcome{Done: true}
@@ -290,6 +334,15 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 	if c.Info {
 		switch name {
 		case "enter", " ", "esc", "q", "y", "n", "ctrl+c":
+			return c, Outcome{Done: true}
+		}
+		return c, Outcome{}
+	}
+	if c.Working() {
+		// The plan is not ready: only the way out works, so a hurried Enter
+		// cannot run what the person has not seen.
+		switch name {
+		case "n", "N", "esc", "ctrl+c", "q":
 			return c, Outcome{Done: true}
 		}
 		return c, Outcome{}

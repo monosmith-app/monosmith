@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,6 +50,8 @@ type capturedMsg struct {
 	purpose string
 	argv    []string
 	res     sources.Captured
+	// ticket ties the end of a capture to the working dialog that waits for it.
+	ticket int
 }
 
 // openedMsg says whether the system opened the report.
@@ -67,11 +70,15 @@ func (s *Shell) capture(purpose string, argv []string) tea.Cmd {
 		s.notify("This smith cannot read that here: run "+commands.Line(argv)+" in a terminal", toast.Warning)
 		return nil
 	}
-	return func() tea.Msg { return capturedMsg{purpose: purpose, argv: argv, res: run(argv)} }
+	return func() tea.Msg { return capturedMsg{purpose: purpose, argv: argv, res: run(context.Background(), argv)} }
 }
 
 // captured does what a finished capture was for.
 func (s *Shell) captured(msg capturedMsg) tea.Cmd {
+	if waitsForTicket(msg.purpose) && !s.keepsPlan(msg) {
+		// The person cancelled the dialog that waited for this plan.
+		return nil
+	}
 	switch msg.purpose {
 	case capUndo:
 		return s.undoRead(msg)
@@ -155,9 +162,17 @@ func failureText(res sources.Captured) string {
 
 // openUndo reads what the last change did, before anything is reverted.
 func (s *Shell) openUndo() tea.Cmd {
-	s.say("Reading what the last change did…")
-	return s.capture(capUndo, []string{"undo", "--dry-run"})
+	return s.captureInDialog(capUndo, undoTitle, undoWhy, undoArgv, []string{"undo", "--dry-run"}, "Reading what the last change did")
 }
+
+// The words of the undo confirmation, shown while it waits and when it is read.
+const (
+	undoTitle = "Undo the last change?"
+	undoWhy   = "smith reverts it with a new commit, so your history stays. This is what it would revert:"
+)
+
+// undoArgv is the command line that reverts the last change.
+var undoArgv = []string{"undo", "--yes"}
 
 // undoRead shows what smith undo would revert and asks; when there is nothing
 // to revert, the reason smith gave is the notice.
@@ -166,8 +181,7 @@ func (s *Shell) undoRead(msg capturedMsg) tea.Cmd {
 		s.tell("Nothing to undo", "smith said:", failureText(msg.res))
 		return nil
 	}
-	argv := []string{"undo", "--yes"}
-	c := dialog.NewConfirm("Undo the last change?", "smith reverts it with a new commit, so your history stays. This is what it would revert:", argv).
+	c := dialog.NewConfirm(undoTitle, undoWhy, slices.Clone(undoArgv)).
 		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
@@ -178,23 +192,31 @@ func (s *Shell) addPreview(argv []string) tea.Cmd {
 	if s.sources.Capture == nil {
 		return s.execute(argv, false)
 	}
-	s.say("Planning the new project: nothing is written yet…")
-	return s.capture(capAdd, append(append([]string(nil), argv...), "--dry-run"))
+	return s.captureInDialog(capAdd, addPlanTitle(argv), addPlanWhy(argv, s.list.Len(), s.offers), argv, append(slices.Clone(argv), "--dry-run"), "Planning the new project: nothing is written yet")
+}
+
+// addPlanTitle is the question of the add confirmation.
+func addPlanTitle(argv []string) string {
+	name := "the project"
+	if len(argv) > 2 {
+		name = argv[2]
+	}
+	return "Add " + name + "?"
 }
 
 // addPlanRead shows the plan of an add, with the sibling it follows, and asks
 // before the real add runs. The error of a wrong combination is shown as it is.
 func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 	argv := msg.argv[:len(msg.argv)-1]
-	name := "the project"
-	if len(argv) > 2 {
-		name = argv[2]
-	}
 	if !msg.res.OK {
+		name := "the project"
+		if len(argv) > 2 {
+			name = argv[2]
+		}
 		s.tell("Cannot add "+name+" like that", "smith said:", failureText(msg.res))
 		return nil
 	}
-	c := dialog.NewConfirm("Add "+name+"?", addPlanWhy(argv, s.list.Len(), s.offers), argv).
+	c := dialog.NewConfirm(addPlanTitle(argv), addPlanWhy(argv, s.list.Len(), s.offers), argv).
 		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
@@ -208,8 +230,18 @@ func (s *Shell) swapPreview(argv []string) tea.Cmd {
 	if s.sources.Capture == nil {
 		return s.execute(append(slices.Clone(argv), "--yes"), false)
 	}
-	s.say("Planning the swap: nothing is changed yet…")
-	return s.capture(capSwap, append(slices.Clone(argv), "--dry-run"))
+	return s.captureInDialog(capSwap, swapPlanTitle(argv), swapPlanWhy, append(slices.Clone(argv), "--yes"), append(slices.Clone(argv), "--dry-run"), "Planning the swap: nothing is changed yet")
+}
+
+// swapPlanWhy is the sentence of the swap confirmation.
+const swapPlanWhy = "This is the plan. smith moves what it can and lists what is left to do by hand."
+
+// swapPlanTitle is the question of the swap confirmation.
+func swapPlanTitle(argv []string) string {
+	if len(argv) > 3 {
+		return "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
+	}
+	return "Swap the choice?"
 }
 
 // swapPlanRead shows the plan of a swap, with what it moves and what is left
@@ -221,11 +253,7 @@ func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
 		s.tell("Cannot swap that", "smith said:", failureText(msg.res))
 		return nil
 	}
-	title := "Swap the choice?"
-	if len(argv) > 3 {
-		title = "Swap " + argv[2] + " of " + argv[1] + " to " + argv[3] + "?"
-	}
-	c := dialog.NewConfirm(title, "This is the plan. smith moves what it can and lists what is left to do by hand.", append(slices.Clone(argv), "--yes")).
+	c := dialog.NewConfirm(swapPlanTitle(argv), swapPlanWhy, append(slices.Clone(argv), "--yes")).
 		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil

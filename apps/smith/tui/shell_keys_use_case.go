@@ -188,6 +188,10 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 	if c.Info {
 		return nil
 	}
+	if c.Working() {
+		// Esc on a dialog that waits for its plan: stop the work, keep nothing.
+		s.cancelWaiting()
+	}
 	if out.Confirmed {
 		s.addForm = nil
 		return s.execute(c.Final(), true)

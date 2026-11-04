@@ -162,6 +162,11 @@ type Shell struct {
 	// releaseWaiting is a release command line that waits for the plan to be
 	// read, so its confirmation can list the packages and versions.
 	releaseWaiting []string
+	// planWait is the plan a dialog that opened at once still waits for (see
+	// openWaiting); nil when no dialog waits.
+	planWait *planWait
+	// planTicket counts the waits, so a late plan of a cancelled one is ignored.
+	planTicket int
 	// choices says whether the choices of the plugins are read; offers are
 	// those that can be used, formPending names the form (add or swap) that waits
 	// for them, and addBase and swapBase are the plain forms they are added to.
@@ -485,7 +490,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0
+	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {
@@ -552,6 +557,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		if argv := s.releaseWaiting; argv != nil {
 			// The release was asked before the plan was read: ask now, with the plan.
 			s.releaseWaiting = nil
+			s.closeWaiting()
 			return s.execute(argv, false)
 		}
 	case toolsStartedMsg:

@@ -55,7 +55,11 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 			if argv[0] == "release" && !s.release.Loaded && s.release.Err == nil && s.sources.Release != nil && !slices.Contains(argv, "--dry-run") {
 				// Publishing cannot be undone: read the plan first, then ask.
 				s.releaseWaiting = slices.Clone(argv)
-				s.say("Reading the release plan…")
+				// The dialog opens at once and fills in when the plan is read. The
+				// load is the tab's own, so Esc ignores its result and lets it end.
+				title, why := commands.Describe(argv)
+				s.planTicket++
+				s.openWaiting(title, why, catalog.WithConfirmation(argv), "Reading the commits to work out each version", nil)
 				load := s.sources.Release
 				return func() tea.Msg { return load() }
 			}
@@ -67,8 +71,8 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 			}
 			if flag, ok := catalog.PlanFlag(argv); ok && s.sources.Capture != nil {
 				// The dialog shows what the command will do, not a sentence about it.
-				s.say("Planning: nothing is changed yet…")
-				return s.capture(capPlan, append(slices.Clone(argv), flag))
+				title, why := commands.Describe(argv)
+				return s.captureInDialog(capPlan, title, why, catalog.WithConfirmation(argv), append(slices.Clone(argv), flag), "Working out what will change")
 			}
 			s.askConfirm(argv)
 			return nil

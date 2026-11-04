@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ func outsideLab(t *testing.T, process *scripted) *lab {
 	l := newLab(t, false, 120, 36)
 	sh := l.sh()
 	sh.sources = sources.Sources{
-		Capture: func(argv []string) sources.Captured {
+		Capture: func(_ context.Context, argv []string) sources.Captured {
 			l.captured = append(l.captured, argv)
 			return sources.Captured{OK: true, Text: "convert plan: 3 projects map, nothing needs you"}
 		},

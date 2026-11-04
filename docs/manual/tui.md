@@ -59,7 +59,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
-| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major, and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
+| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 
@@ -189,6 +189,15 @@ commit box, the command that will run and the buttons stay on screen. The dialog
 the window changes size, and it stays between the tab bar and the status bar. On the Release view `x`
 first asks which packages to hold back and which bump to change (see [`smith release`](release.md)),
 then shows this confirmation with the `--hold` and `--bump` it built.
+
+The dialog opens at once, also when smith must work out the plan first (the packages and versions
+of `u` in Deps, the files of a swap, an add or an undo, the packages of a release). While it
+waits, the dialog shows a spinner and a plain sentence ("Working out what will change…"), the
+seconds after the second one, and the command that will run. `[ Run ]` is faint and does nothing:
+`Enter`, `Space`, `y` and a click on it are ignored, so you cannot run a plan you have not seen.
+`Esc`, `n`, `q`, `Ctrl+C` or a click outside cancels the wait: smith stops the command that reads
+the plan, and a plan that arrives late opens nothing. When the plan is ready, it fills the dialog
+and the usual buttons work. The wait shows no steps or percentage, because the command reports none.
 
 ### What a word means
 

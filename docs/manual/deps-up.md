@@ -47,6 +47,16 @@ Usage: `smith deps up [packages...] [flags]`
 
 <!-- smith:end deps up -->
 
+## The Kind column
+
+Each row of the report, and of the Deps tab in the terminal UI, says how the projects declare the
+package, taken from the manifest section: `prod` (dependencies, `require`, a package reference),
+`dev` (devDependencies, `dev_dependencies`, `dev-dependencies`, `require-dev`), `peer`, `optional`,
+`build` (Cargo build-dependencies) or `managed` (a version table that only pins a version, such as
+`workspace.dependencies` or `dependencyManagement`). A package declared in several projects with
+different kinds lists each one, for example `dev, prod`. In `--json`, every update has a `kinds`
+array with the same words (added; nothing else changed).
+
 ## Example
 
 ```sh
