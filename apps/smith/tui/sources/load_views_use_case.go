@@ -51,8 +51,9 @@ type Sources struct {
 	// binary itself) in the workspace.
 	Start func(argv []string) (runner.Handle, error)
 	// Capture runs a smith command line to its end and returns what it
-	// printed, for the plans and errors the shell shows in a dialog.
-	Capture func(argv []string) Captured
+	// printed, for the plans and errors the shell shows in a dialog. Cancelling
+	// ctx stops the command.
+	Capture func(ctx context.Context, argv []string) Captured
 	// Open opens a file with the program the system chooses (the report).
 	Open func(path string) error
 }
@@ -71,7 +72,7 @@ func WorkspaceSources(dir, version string) Sources {
 		return session.Open(session.Options{Dir: dir, Version: version, Log: io.Discard})
 	}
 	return Sources{
-		Capture: func(argv []string) Captured { return CaptureCommand(dir, argv) },
+		Capture: func(ctx context.Context, argv []string) Captured { return CaptureCommand(ctx, dir, argv) },
 		Open:    OpenPath,
 		Start: func(argv []string) (runner.Handle, error) {
 			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})

@@ -189,6 +189,15 @@ the window changes size, and it stays between the tab bar and the status bar. On
 first asks which packages to hold back and which bump to change (see [`smith release`](release.md)),
 then shows this confirmation with the `--hold` and `--bump` it built.
 
+The dialog opens at once, also when smith must work out the plan first (the packages and versions
+of `u` in Deps, the files of a swap, an add or an undo, the packages of a release). While it
+waits, the dialog shows a spinner and a plain sentence ("Working out what will change…"), the
+seconds after the second one, and the command that will run. `[ Run ]` is faint and does nothing:
+`Enter`, `Space`, `y` and a click on it are ignored, so you cannot run a plan you have not seen.
+`Esc`, `n`, `q`, `Ctrl+C` or a click outside cancels the wait: smith stops the command that reads
+the plan, and a plan that arrives late opens nothing. When the plan is ready, it fills the dialog
+and the usual buttons work. The wait shows no steps or percentage, because the command reports none.
+
 ### What a word means
 
 A form that uses a word of smith says what it means on the same screen, in one line, from the

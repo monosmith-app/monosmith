@@ -199,7 +199,7 @@ func newLab(t *testing.T, inWorkspace bool, w, h int) *lab {
 			Plan: func(argv []string) []string {
 				return []string{"kit:build", "orders:build", "web:build", "sdk:test"}
 			},
-			Capture: func(argv []string) sources.Captured {
+			Capture: func(_ context.Context, argv []string) sources.Captured {
 				l.captured = append(l.captured, argv)
 				if l.capture != nil {
 					return l.capture(argv)

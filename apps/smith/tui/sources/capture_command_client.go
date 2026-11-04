@@ -19,10 +19,11 @@ const captureTimeout = 5 * time.Minute
 // `smith add --dry-run` or the choices of `smith choices --json` without
 // leaving the interface.
 //
-// argv is smith's arguments without the program name. It never panics: a
-// command that cannot start comes back as Captured with Err set.
-func CaptureCommand(dir string, argv []string) Captured {
-	ctx, cancel := context.WithTimeout(context.Background(), captureTimeout)
+// ctx stops the command: cancelling it interrupts the child process, which
+// ends at once. argv is smith's arguments without the program name. It never
+// panics: a command that cannot start comes back as Captured with Err set.
+func CaptureCommand(ctx context.Context, dir string, argv []string) Captured {
+	ctx, cancel := context.WithTimeout(ctx, captureTimeout)
 	defer cancel()
 	p, err := runner.Start(ctx, runner.Spec{Argv: argv, Dir: dir})
 	if err != nil {
