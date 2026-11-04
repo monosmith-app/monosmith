@@ -28,6 +28,7 @@ func PlanInstall(s *session.Session, targets, packages []string, dev, registry b
 	if len(targets) == 0 {
 		return ErrNoTarget
 	}
+	atRoot, targets := SplitRootTarget(targets)
 	projects, err := resolve(s.Graph, targets)
 	if err != nil {
 		return err
@@ -35,6 +36,16 @@ func PlanInstall(s *session.Session, targets, packages []string, dev, registry b
 	section := "its dependencies"
 	if dev {
 		section = "its development dependencies"
+	}
+	if atRoot {
+		if err := checkRootInstall(s); err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "The workspace root gets, shared by every project:\n")
+		for _, name := range packages {
+			fmt.Fprintf(out, "  %s\n", name)
+		}
+		fmt.Fprintf(out, "  written to the root package.json, %s\n  command: %s\n", section, RootInstallCommand(packages, dev))
 	}
 	for _, p := range projects {
 		fmt.Fprintf(out, "%s (%s) gets:\n", p.Name, p.Plugin)

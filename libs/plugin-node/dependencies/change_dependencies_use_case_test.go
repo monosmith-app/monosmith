@@ -42,3 +42,23 @@ func TestNpmCommands(t *testing.T) {
 		t.Fatalf("files %v", res.Files)
 	}
 }
+
+func TestInstallAtTheWorkspaceRoot(t *testing.T) {
+	var ran []string
+	realFolded := FoldedNpmRunner
+	defer func() { FoldedNpmRunner = realFolded }()
+	FoldedNpmRunner = func(_ string, argv []string) ([]string, error) {
+		ran = append(ran, strings.Join(argv, " "))
+		return nil, nil
+	}
+	res, err := Install("/ws", protocol.InstallParams{Project: &protocol.Project{Root: "."}, Packages: []string{"vitest"}, Dev: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(ran, ";"); got != "npm install vitest --save-dev --no-audit --no-fund" {
+		t.Fatalf("the root takes no --workspace: %s", got)
+	}
+	if strings.Join(res.Files, ",") != "package.json,package-lock.json" {
+		t.Fatalf("the root's own manifest is the one changed: %v", res.Files)
+	}
+}
