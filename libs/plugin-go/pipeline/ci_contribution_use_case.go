@@ -68,7 +68,7 @@ func CI(workspaceRoot string, params protocol.CIParams) protocol.CIResult {
 	}
 	for _, p := range params.Projects {
 		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {
-			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: []string{"go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion}, Blocking: true})
+			result.Setup = append(result.Setup, protocol.Step{Name: "Install golangci-lint", Command: LintInstallCommand(), Blocking: true})
 			break
 		}
 	}

@@ -80,7 +80,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	_, venvErr := os.Stat(venv.Path(workspaceRoot))
 	_, reqErr := os.Stat(filepath.Join(workspaceRoot, venv.RequirementsFile))
 	findings := []protocol.Finding{
-		{Check: "Python venv exists", OK: venvErr == nil, Detail: ".venv is missing at the workspace root", Remedy: "run `smith ci setup` (or `python -m venv .venv` and install requirements-dev.txt)", Fix: setupFix(venvErr != nil)},
+		{Check: "Python venv exists", OK: venvErr == nil, Detail: ".venv is missing at the workspace root", Remedy: "run `smith ci setup` (or `python -m venv .venv` and install requirements-dev.txt)", Fix: setupFix(venvErr != nil, workspaceRoot)},
 		{Check: "requirements-dev.txt exists", OK: reqErr == nil, Detail: "the Python toolchain file is missing", Remedy: "run `smith add` for a Python project, or restore requirements-dev.txt"},
 	}
 	if venvErr == nil {

@@ -47,6 +47,9 @@ func (w Wizard) buttons() []button {
 		}
 		out = append(out, button{spell("Cancel", "Esc"), "esc"})
 	case Applying:
+		if w.logOpen {
+			out = append(out, button{spell("Close log", "l"), "l"})
+		}
 		out = append(out, button{spell("Stop", "Ctrl+C"), "ctrl+c"})
 	case Failed:
 		if !w.style.NoRetry {
@@ -100,8 +103,11 @@ func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
 // Rect is where the dialog sits.
 func (w Wizard) Rect() dialog.Rect {
 	width := w.width()
-	rows, _ := w.rows(theme.Default(), 0)
-	h := min(len(rows)+4, max(w.sh-2, 5))
+	h := max(w.sh-2, 5)
+	if !w.LogOpen() {
+		rows, _ := w.rows(theme.Default(), 0)
+		h = min(len(rows)+4, h)
+	}
 	return dialog.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
 }
 
@@ -122,6 +128,9 @@ func (w Wizard) title() string {
 	case Reviewing:
 		return w.style.name() + " · " + w.style.review()
 	case Applying:
+		if w.logOpen {
+			return w.style.verb() + " · full log"
+		}
 		return w.style.verb()
 	}
 	return w.style.name() + " failed"
@@ -137,6 +146,9 @@ func (w Wizard) rows(th theme.Theme, tick int) (rows []string, optionRow []int) 
 	case Reviewing:
 		return reviewLines(th, strings.Join(w.reviewShown(), "\n"), inner), nil
 	case Applying:
+		if w.logOpen {
+			return w.logRows(th, inner), nil
+		}
 		return w.applyingRows(th, tick, inner), nil
 	}
 	rows = pane.Wrap(th.Failure(w.headline), inner, 2)
@@ -212,15 +224,48 @@ func (w Wizard) applyingRows(th theme.Theme, tick, inner int) []string {
 	default:
 		rows = append(rows, spin+progress.Waiting(fmt.Sprintf("step %d of %d: %s", w.step, max(w.total, w.step), w.stepName), waited))
 	}
-	// The detail row is always there, so the dialog keeps its height.
-	rows = append(rows, th.Muted("  "+ansi.Truncate(w.note, max(inner-2, 1), "…")))
+	// The detail rows are always there, so the dialog keeps its height.
+	for i := 0; i < NoteRows; i++ {
+		line := ""
+		if i < len(w.note) {
+			line = w.note[i]
+		}
+		rows = append(rows, th.Muted("  "+ansi.Truncate(line, max(inner-2, 1), "…")))
+	}
 	rows = append(rows, stepListRows(th, w.resolved.Steps, w.step, inner)...)
 	return append(rows, "", th.Muted(applyingHint))
 }
 
+// logRows is the full log, a line to a row; a long line is cut, not wrapped, so
+// a row of the view is a line of the log.
+func (w Wizard) logRows(th theme.Theme, inner int) []string {
+	if len(w.log) == 0 {
+		return []string{th.Muted("Nothing printed yet.")}
+	}
+	rows := make([]string, len(w.log))
+	for i, l := range w.log {
+		rows[i] = ansi.Truncate(l, inner, "…")
+	}
+	return rows
+}
+
+// onLogHint is true when the point is on the words "l full log" of the hint row.
+func (w Wizard) onLogHint(x, y int) bool {
+	r := w.Rect()
+	rows := w.bodyRows()
+	if len(rows) > w.visible() || y != r.Y+len(rows) {
+		return false
+	}
+	from := r.X + 2 + ansi.StringWidth(applyingHint) - ansi.StringWidth(logHint)
+	return x >= from && x < from+ansi.StringWidth(logHint)
+}
+
 // applyingHint tells what the keys do while a step runs, so a key that waits
 // is not mistaken for a key that was lost.
-const applyingHint = "Ctrl+C or Esc stops the step that is running. Other keys do nothing until it is done."
+const applyingHint = "Ctrl+C or Esc stops the step · other keys wait · " + logHint
+
+// logHint is the end of the applying hint: the key that opens the full log.
+const logHint = "l full log"
 
 // follow scrolls the question so the option under the cursor shows, clear of
 // the "more" markers.

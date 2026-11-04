@@ -18,24 +18,46 @@ type fixRun struct {
 	ch     chan tea.Msg
 	cancel context.CancelFunc
 
-	mu   sync.Mutex
-	last string
+	mu    sync.Mutex
+	lines []string
 }
 
-// Note keeps the latest line of detail (a file being written, a line a command
+// maxLogLines is how many lines of a step's output the full log keeps; older
+// lines drop out.
+const maxLogLines = 2000
+
+// Note keeps a line of detail (a file being written, a line a command
 // printed). It is not a message: a command that prints fast must not crowd out
-// the step messages, and the next frame reads the latest line.
+// the step messages, and the next frame reads the latest lines.
 func (r *fixRun) Note(line string) {
 	r.mu.Lock()
-	r.last = line
+	r.lines = append(r.lines, line)
+	if len(r.lines) > maxLogLines+maxLogLines/4 {
+		r.lines = append([]string(nil), r.lines[len(r.lines)-maxLogLines:]...)
+	}
 	r.mu.Unlock()
 }
 
-// lastNote is the latest line of detail, or "".
-func (r *fixRun) lastNote() string {
+// snapshot is the lines kept so far. Note only appends or replaces the slice,
+// so the returned lines never change under the reader.
+func (r *fixRun) snapshot() []string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.last
+	return r.lines[:len(r.lines):len(r.lines)]
+}
+
+// synced is the wizard with the running step's latest lines, and its whole log
+// while the full log view is open.
+func (s Shell) synced(w fixwizard.Wizard) fixwizard.Wizard {
+	if s.fixing == nil {
+		return w
+	}
+	lines := s.fixing.snapshot()
+	w = w.Noted(lines)
+	if w.LogOpen() {
+		w = w.Logged(lines)
+	}
+	return w
 }
 
 // Messages of a fix that is being applied.
@@ -94,7 +116,7 @@ func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 
 // fixKey sends a key to the wizard and does what it asks.
 func (s *Shell) fixKey(name string) tea.Cmd {
-	w, out := s.fix.Key(name)
+	w, out := s.synced(*s.fix).Key(name)
 	s.fix = &w
 	return s.afterFix(out)
 }

@@ -50,8 +50,13 @@ type Wizard struct {
 	stepName string
 	headline string
 	output   []string
-	// note is the latest line of detail while a step runs.
-	note string
+	// note is the last lines a step printed (at most NoteRows), oldest first.
+	note []string
+	// log is everything the step printed so far; logOpen says the full log
+	// view shows it, and tailing that the view stays on the newest line.
+	log     []string
+	logOpen bool
+	tailing bool
 
 	sw, sh int
 	hover  int
@@ -145,17 +150,44 @@ func (w Wizard) Progress(n, total int, name string) Wizard {
 	return w
 }
 
-// Noted sets the latest line of detail of the running step, shown under the
-// spinner: a file being written, or the last line a command printed.
-func (w Wizard) Noted(line string) Wizard {
-	w.note = line
+// NoteRows is how many of the last lines a running step printed the dialog
+// shows under the spinner. The rows are always there, so the dialog keeps its
+// height.
+const NoteRows = 6
+
+// Noted sets the last lines of detail of the running step, shown under the
+// spinner: a file being written, or what a command printed. Only the last
+// NoteRows lines are kept.
+func (w Wizard) Noted(lines []string) Wizard {
+	if len(lines) > NoteRows {
+		lines = lines[len(lines)-NoteRows:]
+	}
+	w.note = lines
 	return w
 }
+
+// Logged sets the whole log of the running step. The shell gives it before a
+// key, a click or a frame while LogOpen is true. A view that follows the
+// output stays on the newest line.
+func (w Wizard) Logged(lines []string) Wizard {
+	w.log = lines
+	if w.tailing {
+		w.top = w.bottom()
+	}
+	return w
+}
+
+// LogOpen is true while the full log of the running step shows.
+func (w Wizard) LogOpen() bool { return w.phase == Applying && w.logOpen }
+
+// bottom is the first line of the log view that shows the newest line.
+func (w Wizard) bottom() int { return detail.ClampTop(1<<30, len(w.log), w.visible()) }
 
 // Begin switches to the applying phase, as Outcome.Apply asks the shell to run the fix.
 func (w Wizard) begin() Wizard {
 	w.phase, w.step, w.total, w.stepName, w.top = Applying, 0, len(w.resolved.Steps), "", 0
-	w.headline, w.output, w.note = "", nil, ""
+	w.headline, w.output, w.note = "", nil, nil
+	w.log, w.logOpen, w.tailing = nil, false, false
 	w.started = time.Now()
 	return w
 }
@@ -180,11 +212,29 @@ func (w Wizard) Key(name string) (Wizard, Outcome) {
 	case Reviewing:
 		return w.reviewKey(name)
 	case Applying:
-		if name == "ctrl+c" || name == "esc" {
-			return w, Outcome{Stop: true}
-		}
+		return w.applyingKey(name)
 	case Failed:
 		return w.failedKey(name)
+	}
+	return w, Outcome{}
+}
+
+// applyingKey handles a key while a step runs. Ctrl+C stops it. Esc closes the
+// full log when it is open, and stops the step when it is not. The key l opens
+// and closes the log; the arrows and Page keys scroll it. The step keeps running.
+func (w Wizard) applyingKey(name string) (Wizard, Outcome) {
+	switch {
+	case name == "ctrl+c":
+		return w, Outcome{Stop: true}
+	case !w.logOpen && name == "esc":
+		return w, Outcome{Stop: true}
+	case !w.logOpen && name == "l":
+		w.logOpen, w.tailing = true, true
+		w.top = w.bottom()
+	case w.logOpen && (name == "esc" || name == "l" || name == "q"):
+		w.logOpen, w.top = false, 0
+	case w.logOpen:
+		w = w.scrollKey(name)
 	}
 	return w, Outcome{}
 }
@@ -338,13 +388,20 @@ func (w Wizard) scrollKey(name string) Wizard {
 
 // scroll moves the body by delta lines, never past its ends.
 func (w Wizard) scroll(delta int) Wizard {
-	w.top = detail.ClampTop(w.top+delta, len(w.bodyRows()), w.visible())
+	total := len(w.bodyRows())
+	if w.LogOpen() {
+		total = len(w.log)
+	}
+	w.top = detail.ClampTop(w.top+delta, total, w.visible())
+	if w.LogOpen() {
+		w.tailing = w.top >= w.bottom()
+	}
 	return w
 }
 
 // Wheel scrolls the body (the review, a failure's output).
 func (w Wizard) Wheel(delta int) Wizard {
-	if w.phase == Reviewing || w.phase == Failed {
+	if w.phase == Reviewing || w.phase == Failed || w.LogOpen() {
 		return w.scroll(delta)
 	}
 	return w
@@ -371,6 +428,9 @@ func (w Wizard) Click(x, y int) (Wizard, Outcome) {
 	}
 	if i := w.buttonAt(x, y); i >= 0 {
 		return w.Key(w.buttons()[i].key)
+	}
+	if w.phase == Applying && !w.logOpen && w.onLogHint(x, y) {
+		return w.Key("l")
 	}
 	if w.phase == Asking {
 		if i, ok := w.optionAt(y); ok {
