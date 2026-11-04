@@ -69,3 +69,13 @@ func TestColumnsStayInsideTheirWidth(t *testing.T) {
 		render(sample(), w, 24) // panics on an overlong line
 	}
 }
+
+func TestKindColumnFitsEightyColumns(t *testing.T) {
+	m := FromResult(Result{Rows: []Row{{Name: "zod", Current: "3.22.0", Latest: "3.24.1", Level: "minor", Kinds: []string{"dev", "prod"}, Projects: []string{"web", "api"}}}})
+	text := strings.Join(render(m, 80, 30), "\n")
+	for _, want := range []string{"Kind", "dev, prod"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q:\n%s", want, text)
+		}
+	}
+}

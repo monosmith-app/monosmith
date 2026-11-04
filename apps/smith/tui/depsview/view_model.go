@@ -387,14 +387,14 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			nameW = max(nameW, pane.Width(r.Name))
 		}
 		nameW = min(nameW+1, max(w/3, 8))
-		const verW, levelW = 11, 8
-		usedW := max(w-6-nameW-2*verW-levelW, 8)
-		cols := func(name, now, latest, level, projects string) string {
-			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(projects, usedW)
+		const verW, levelW, kindW = 11, 8, 12
+		usedW := max(w-6-nameW-2*verW-levelW-kindW, 8)
+		cols := func(name, now, latest, level, kind, projects string) string {
+			return pane.MiddleCell(name, nameW) + pane.Cell(now, verW) + pane.Cell(latest, verW) + pane.Cell(level, levelW) + pane.Cell(kind, kindW) + pane.Cell(projects, usedW)
 		}
 		headBox := [3]string{"[ ]", "[-]", "[x]"}[v.MarkState()]
 		rowOf[len(lines)] = HeadingRow
-		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Projects"), w)))
+		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Kind", "Projects"), w)))
 		// Two group headings may sit among the rows: they take room too.
 		avail := max(h-len(lines)-len(tail)-2, 3)
 		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
@@ -421,9 +421,10 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			case "patch":
 				level = th.Success(r.Level)
 			}
+			kind := strings.Join(r.Kinds, ", ")
 			projects := strings.Join(r.Projects, ", ")
-			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, projects)
-			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, projects)
+			plain := "  " + box + cols(r.Name, r.Current, r.Latest, r.Level, kind, projects)
+			line := "  " + box + cols(r.Name, r.Current, r.Latest, level, kind, projects)
 			if i == v.Cursor {
 				line = th.Selected(pane.Fit(plain, w))
 			}

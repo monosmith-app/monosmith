@@ -59,7 +59,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
-| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major, and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
+| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 

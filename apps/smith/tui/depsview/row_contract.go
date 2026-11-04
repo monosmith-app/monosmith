@@ -7,6 +7,9 @@ type Row struct {
 	Current  string
 	Latest   string
 	Level    string
+	// Kinds say how projects declare the package: dev, prod, peer, optional,
+	// build or managed.
+	Kinds    []string
 	Projects []string
 }
 
