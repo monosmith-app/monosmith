@@ -31,7 +31,7 @@ Usage: `smith release assets [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--platform <platform>` | string |  detected | the platform of this machine: windows-x64, macos-arm64, macos-x64, linux-x64 or linux-arm64 (default: detected) |
-| `--project <project>` | string |  | build only this project |
+| `-p, --project <project>` | string |  | build only this project (also -w, --workspace, --projects) |
 | `--source <source>` | string |  | with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one |
 | `--tag <tag>` | string |  | build for an existing release tag (project@version), replacing its files |
 

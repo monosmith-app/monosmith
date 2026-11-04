@@ -14,7 +14,7 @@ behaves the same ([ADR 0053](0053-every-language-plugin-follows-one-contract.md)
 
 ## Decision
 
-`smith install -w <project> <name>...` reads each name. A name is a library of the workspace
+`smith install -p <project> <name>...` reads each name. A name is a library of the workspace
 when it is the name of a project, its folder, or an identifier the project exports (an npm
 package name, a Python distribution name, a module path). Any other name goes to the registry, as
 before.
@@ -36,7 +36,7 @@ before.
   cycle (the cycle is named), and a name that is no project (with near names). A plugin without
   `link` is refused with one sentence that names the manifest to edit by hand.
 - A failed link puts the manifest and lock files back, with the guard of a failed install.
-- `smith uninstall -w <project> <library>` removes the link, and says when nothing was linked.
+- `smith uninstall -p <project> <library>` removes the link, and says when nothing was linked.
 - A dependency a manifest declares is a graph edge before any file imports it: the Go plugin now
   reports the modules `go.mod` requires among the project's imports (Node, Python, Rust and .NET
   already did).

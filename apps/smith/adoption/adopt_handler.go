@@ -10,6 +10,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/adoptmove"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/spf13/cobra"
@@ -204,7 +205,7 @@ non-zero while something blocks.`,
 	cmd.Flags().BoolVar(&eslint, "eslint", false, "with --init, write the two-line root eslint.config.mjs and add @monosmith/eslint-config to the root devDependencies")
 	cmd.Flags().BoolVar(&initialise, "init", false, "write smith.toml and the pipelines (nothing is committed unless --commit)")
 	cmd.Flags().StringVar(&move, "move", "", "with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is")
-	cmd.Flags().BoolVar(&yes, "yes", false, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
+	commandflags.AddYesFlag(cmd, &yes, "do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it")
 	cmd.Flags().StringVar(&decided.Gitattributes, "gitattributes", "", "with --init, add or skip the .gitattributes that sets `* text=auto eol=lf` (a repository that has one keeps it)")
 	cmd.Flags().StringVar(&decided.Agent, "agent", "", "with --init, add the MonoSmith agent files (and merge .mcp.json), skip them for now, or never (records [agent] enabled = false)")
 	cmd.Flags().StringSliceVar(&decided.CI, "ci", nil, "with --init, the CI providers to write pipelines for (github, azure, gitlab, circleci, bitbucket), or none")

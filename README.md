@@ -40,7 +40,7 @@ smith add app web --lang node        # deployed, never published
 smith add lib core --lang go         # internal, never published
 smith add package sdk --lang python  # published on release
 smith add app site --lang node --with react,vitest   # built from choices: a framework and a test runner
-smith install -w web workspace:ui    # let one project use an internal library
+smith install -p web workspace:ui    # let one project use an internal library
 smith compose                        # search everything a project can be built from
 smith tools                          # the programs the workspace needs, and which are installed
 smith commit                         # commit what the last command changed, so smith undo can revert it
@@ -93,7 +93,7 @@ and Turborepo workspaces and those made by mnci.
 | **Three kinds** | `app` (deployed), `lib` (internal), `package` (published). The kind decides what release does with a project. |
 | **Sixteen languages** | Node (JavaScript and TypeScript), Python, Go, Rust, .NET (C#, F#), Ruby, PHP, C and C++ (CMake), Dart and Flutter, the JVM (Java with Maven, Kotlin with Gradle, Android), Bicep, Lua, AppleScript, VBA, Swift and Objective-C, each through a built-in plugin. |
 | **Stacks and choices** | A project records the plugins it is built with: React, Vue, Svelte, Angular, an Astro docs site, a VS Code extension, a function app (Azure Functions, AWS Lambda, Google Cloud Functions for Node, Python and C#) or a desktop app (Electron, Tauri). `smith compose` searches all of it and ends in the `smith add` line. |
-| **Internal libraries** | `smith install -w web workspace:ui` links a library of the workspace in the form of the language. Nothing is downloaded. |
+| **Internal libraries** | `smith install -p web workspace:ui` links a library of the workspace in the form of the language. Nothing is downloaded. |
 | **Release channels** | A branch such as `next` releases its own line of prerelease versions; `--hold` and `--bump` change a plan. |
 | **No configuration to write** | Projects, tasks and dependencies come from the manifests (`package.json`, `go.mod`, `Cargo.toml`, `*.csproj`, …) and from what the sources import. `smith.toml` names the workspace; everything else has a default. |
 | **Cache** | A task whose inputs did not change replays its output and log from a content-addressed cache, locally or from a shared remote (HTTP, S3, Azure Blob). |

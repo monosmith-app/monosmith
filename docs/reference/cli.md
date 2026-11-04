@@ -16,6 +16,9 @@ environment variables, worked examples and errors, follow the link to its page i
 > node docs/reference/cli-generate.mjs --check   # fail if a page is out of date
 > ```
 >
+> **One concept, one flag.** The flags that several commands share (`-p, --project`, `--lang`, `--output`, `--yes`,
+> `--no-install`) and the other spellings each accepts are listed in [the flag vocabulary](flag-vocabulary.md).
+>
 > The script names the binary with `SMITH` (default: `smith` on the PATH) and fails when a
 > command has no block, here or in the manual, so a new command cannot be forgotten.
 > `smith <command> --help` always has the last word.
@@ -75,7 +78,7 @@ Usage: `smith new <name> [flags]`
 | `--here` | create the workspace in the current folder, which must be empty; the name defaults to the folder's | off |
 | `--include-secrets` | let --first-commit all commit files whose names look like secrets (.env, keys) | off |
 | `--json` | with --questions: print them as JSON | off |
-| `--language <language>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) | `later` |
+| `-l, --lang <lang>` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) | later |
 | `--module-prefix <module-prefix>` | Go module prefix (default from the origin remote, else example.com/<name>) | from the `origin` remote, else `example.com/<name>` |
 | `--no-agent` | leave the MonoSmith agent out; smith agent install adds it later | off |
 | `--no-commit` | write the files and commit nothing | off |
@@ -115,7 +118,7 @@ Usage: `smith adopt [flags]`
 | `--level <level>` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) | `conservative` |
 | `--move <move>` | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |  |
 | `--tags` | create the baseline release tags the report asks for, locally | off |
-| `--yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
+| `-y, --yes` | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it | off |
 
 <!-- smith:end adopt -->
 
@@ -138,13 +141,13 @@ Usage: `smith convert [flags]`
 | `--json` | print the plan as JSON (with --questions, the questions) | off |
 | `--level <level>` | how far to go: conservative (keep what works, list the rest) or full (make smith the only tool, deleting the old tooling after asking) | `conservative` |
 | `--lint <lint>` | full level: lint with smith's ESLint config (smith) or keep the current setup (keep) | `smith` when the ESLint config imports a shared config smith replaces, else `keep` |
+| `--no-install` | do not run npm install afterwards (also --skip-install) | off |
 | `--questions` | print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json) | off |
-| `--skip-install` | do not run npm install afterwards | off |
 | `--skip-verify` | full level: install, but do not build, test, lint and run doctor afterwards | off |
 | `--strict` | refuse to convert while anything needs manual work or is unsupported | off |
 | `--test <test>` | full level: the test runner to keep, jest or vitest (the other's configs and packages go), or keep | the runner the workspace uses, else `keep` |
 | `--verbose` | name every project a finding applies to, not just a few | off |
-| `--yes` | apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything) | off |
+| `-y, --yes` | apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything) | off |
 
 <!-- smith:end convert -->
 
@@ -168,7 +171,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `--environment-output <environment-output>` | a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app) |  |
 | `--environments <environments>` | a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one (repeatable) |  |
 | `--fresh` | give the project the built-in default of its stack, without following the sibling projects | off |
-| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) | the stack's, or the workspace's only language |
+| `-l, --lang <lang>` | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) | the stack's, or the workspace's only language |
 | `--like <like>` | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |  |
 | `-s, --stack <stack>` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) | the recipe, else `[default_stacks]` in `smith.toml` |
 | `--verbose` | show the package manager's output as it runs (it is shown only if it fails otherwise) | off |
@@ -347,8 +350,8 @@ Usage: `smith run <task>... [flags]`
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
-| `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
-| `--verbose` | smith build: show the log of every project, not only the ones that fail | off |
+| `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end run -->
 
@@ -370,8 +373,8 @@ Usage: `smith build [project]... [flags]`
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
-| `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
-| `--verbose` | smith build: show the log of every project, not only the ones that fail | off |
+| `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end build -->
 
@@ -393,8 +396,8 @@ Usage: `smith test [project]... [flags]`
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
-| `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
-| `--verbose` | smith build: show the log of every project, not only the ones that fail | off |
+| `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end test -->
 
@@ -416,8 +419,8 @@ Usage: `smith lint [project]... [flags]`
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
-| `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
-| `--verbose` | smith build: show the log of every project, not only the ones that fail | off |
+| `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end lint -->
 
@@ -439,8 +442,8 @@ Usage: `smith typecheck [project]... [flags]`
 | `--json-events` | print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else | off |
 | `--no-cache` | run every task even if a cached result exists | off |
 | `--parallel <parallel>` | tasks to run at once (default: CPU count) | the number of CPUs |
-| `-p, --projects <projects>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (repeatable) |  |
-| `--verbose` | smith build: show the log of every project, not only the ones that fail | off |
+| `-p, --project <project>` | projects to run: names, globs, kind:app, lang:go, tag:x, !exclude (also -w, --workspace, --projects) (repeatable) |  |
+| `--verbose` | show the log of every project, not only the ones that fail | off |
 
 <!-- smith:end typecheck -->
 
@@ -541,7 +544,7 @@ Usage: `smith dev [projects...] [flags]`
 [Manual page](../manual/install.md)
 
 <!-- smith:begin install -->
-Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)
+Add a package to a project (-p), or with none install everything the workspace declares (up updates, sync aligns versions)
 
 Usage: `smith install [packages...] [flags]`
 
@@ -550,11 +553,12 @@ Alias: `smith i`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `--dry-run` | show where each package goes and its latest release, and change nothing | off |
+| `-p, --project <project>` | target project, by name or directory; repeat it or separate them with commas (also -w, --workspace, --projects) (repeatable) |  |
 | `--range <range>` | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |  |
 | `--registry` | install the names from the registry, even when a name is also a project of this workspace | off |
 | `-D, --save-dev` | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) | off |
 | `--verbose` | show the package manager's own output and warnings (otherwise warnings fold into one line) | off |
-| `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
 | `-y, --yes` | never ask: accept the defaults, and refuse a name that could be a project or a registry package | off |
 
 <!-- smith:end install -->
@@ -573,8 +577,8 @@ Alias: `smith un`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
+| `-p, --project <project>` | target project, by name or directory; repeat it or separate them with commas (also -w, --workspace, --projects) (repeatable) |  |
 | `--registry` | remove the names as registry packages, even when a name is also a project of this workspace | off |
-| `-w, --workspace <workspace>` | target project, by name or directory; repeat it for several (repeatable) |  |
 | `-y, --yes` | do not ask; without a terminal the packages are removed only with --yes | off |
 
 <!-- smith:end uninstall -->
@@ -595,7 +599,7 @@ Usage: `smith sync [flags]`
 | `--dry-run` | show the plan and change nothing | off |
 | `--json` | print the report as JSON | off |
 | `--major` | also rewrite declarations whose major version differs from the target | off |
-| `--no-install` | rewrite the manifests without installing | off |
+| `--no-install` | rewrite the manifests without installing (also --skip-install) | off |
 | `--prefer <prefer>` | which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |  the installed one, else the highest |
 | `--to <to>` | the version of one dependency, as <name>=<version> (repeatable) |  |
 | `-y, --yes` | write the plan without asking | off |
@@ -619,7 +623,7 @@ Usage: `smith up [packages...] [flags]`
 | `--dry-run` | with --align: show the plan and change nothing | off |
 | `--json` | print the updates and tools as JSON; never write | off |
 | `--major` | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version | off |
-| `--no-install` | rewrite the manifests without installing | off |
+| `--no-install` | rewrite the manifests without installing (also --skip-install) | off |
 | `--prefer <prefer>` | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |  the installed one, else the highest |
 | `--to <to>` | with --align: the version of one dependency, as <name>=<version> (repeatable) |  |
 | `-y, --yes` | take every patch and minor update without prompting; major updates stay out unless --major is given | off |
@@ -684,7 +688,7 @@ Usage: `smith pipeline [template] [flags]`
 | `--ci <ci>` | github, azure or both (default: the workspace's providers) | the workspace's providers |
 | `--dry-run` | show the files that would be written and change nothing | off |
 | `--force` | replace a pipeline file that exists | off |
-| `--project <project>` | the app a deploy template builds |  |
+| `-p, --project <project>` | the app a deploy template builds (also -w, --workspace, --projects) |  |
 | `-y, --yes` | do not ask; without a terminal the files are written only with --yes | off |
 
 <!-- smith:end pipeline -->
@@ -773,7 +777,7 @@ Usage: `smith graph [flags]`
 | `--focus <focus>` | keep these projects and everything connected to them (names, globs, tag:x) (repeatable) |  |
 | `--force` | replace the -o file when it exists with other content (the diff is printed) | off |
 | `--format <format>` | text, json, dot, html or tui | `text` |
-| `-o, --output <output>` | write to a file |  |
+| `-o, --output <output>` | write to a file (also --out) |  |
 
 <!-- smith:end graph -->
 
@@ -855,7 +859,7 @@ Usage: `smith report [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--force` | replace the file when it exists with other content (the diff is printed) | off |
-| `-o, --output <output>` | write the page to a file |  |
+| `-o, --output <output>` | write the page to a file (also --out) |  |
 
 <!-- smith:end report -->
 
@@ -991,7 +995,7 @@ Usage: `smith compose [flags]`
 |---|---|---|
 | `--json` | print JSON: the catalogue, and with --with the check and the plan | off |
 | `--kind <kind>` | the kind of project the plan is for: app, lib or package |  |
-| `-l, --lang <lang>` | show only this language's items, and check --with for it |  |
+| `-l, --lang <lang>` | show only this language's items, and check --with for it (also --language) |  |
 | `--name <name>` | the project name the plan uses (<name> when not given) |  |
 | `--search <search>` | find items by words: name, title, alias (desktop, serverless, web) or description |  |
 | `--with <with>` | check this selection and print its plan, comma separated (react,vitest) (repeatable) |  |

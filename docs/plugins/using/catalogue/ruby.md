@@ -34,7 +34,7 @@ Capabilities are from `smith plugin list --json`.
 | Specs | whether a `spec/` directory exists; it decides the `test` task |
 | Toolchain | `ruby <version>` from `ruby --version` |
 
-Real output after `smith install -w cli rb_demo_core`:
+Real output after `smith install -p cli rb_demo_core`:
 
 ```
 $ smith graph
@@ -230,10 +230,10 @@ Dependencies (`dependencies/`): the plugin edits the gemspec, then runs `bundle 
 | Command | What it does |
 |---|---|
 | `smith install` | `bundle install` for the workspace |
-| `smith install -w <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
-| `smith uninstall -w <gem> <name>...` | removes those lines, then `bundle install` |
+| `smith install -p <gem> <name>...` | adds `spec.add_dependency '<name>'` before the gemspec's closing `end` (`add_development_dependency` with `-D`; a gem already declared is left as is), then `bundle install`. No version constraint is written. |
+| `smith uninstall -p <gem> <name>...` | removes those lines, then `bundle install` |
 
-Real: `smith install -w cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -w cli thor` removed it again.
+Real: `smith install -p cli thor` printed `✔ cli: added thor (apps/cli/rb_demo_cli.gemspec, Gemfile.lock)`; `smith uninstall -p cli thor` removed it again.
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the gems with a version constraint that each gemspec declares (`add_dependency`, `add_runtime_dependency`, `add_development_dependency`) and the workspace `Gemfile` declares (`gem 'rake', '~> 13.0'`; gems inside a `development` or `test` group count as development dependencies), so `smith sync`, `smith up` and the one-version check in `smith doctor` cover Ruby.
 
@@ -259,7 +259,7 @@ smith refuses, naming the folder: a folder that does not exist, one with a gemsp
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, ruby 3.4.11 (x64-mingw-ucrt), gem 3.6.9, Bundler 2.6.9; gems installed by the run: rubocop 1.92.1, rspec ~> 3.13, rake ~> 13.0. Throw-away workspace `rb-demo` from `smith new rb-demo`. Run: `smith add lib|app|package ... --lang ruby`, `smith projects`, `smith graph`, `smith explain`, `smith run build` (refusal), `test`, `lint`, `start`, `smith doctor` (clean, and with a wrong `[toolchains] ruby` pin), `smith ci generate` (and with `rubygems_trusted_publishing`), `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` / `smith uninstall -w`, `smith up --check`, `smith remove core --dry-run --force`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, ruby 3.4.11 (x64-mingw-ucrt), gem 3.6.9, Bundler 2.6.9; gems installed by the run: rubocop 1.92.1, rspec ~> 3.13, rake ~> 13.0. Throw-away workspace `rb-demo` from `smith new rb-demo`. Run: `smith add lib|app|package ... --lang ruby`, `smith projects`, `smith graph`, `smith explain`, `smith run build` (refusal), `test`, `lint`, `start`, `smith doctor` (clean, and with a wrong `[toolchains] ruby` pin), `smith ci generate` (and with `rubygems_trusted_publishing`), `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` / `smith uninstall -p`, `smith up --check`, `smith remove core --dry-run --force`.
 
 Not verified:
 

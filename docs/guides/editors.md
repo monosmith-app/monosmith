@@ -112,7 +112,7 @@ the command with `--yes`.
 | Release | `smith release --dry-run` (add `--json` to read the packages) | `smith release --yes [--hold a,b] [--bump pkg=minor]`. A release tags and publishes: it cannot be undone. |
 | Remove a project | `smith remove <project> --dry-run` | `smith remove <project> --keep-copy --yes` or `--delete --yes` |
 | Make a project an app, lib or package | `smith kind <project> <kind> --dry-run` | `smith kind <project> <kind> --yes` |
-| Unlink a library | none | `smith uninstall -w <project> workspace:<library> --yes` |
+| Unlink a library | none | `smith uninstall -p <project> workspace:<library> --yes` |
 
 `smith kinds --json` names the language of a kind by its name (`typescript` for `node-app`), and
 `smith compose --json` by its id (`node`). Take the id from the kind (`node` in `node-app`) to match
@@ -198,7 +198,7 @@ workspace or run a plugin: `smith_run`, `smith_add_project`,
 `smith_pipeline`, `smith_doctor_fix`, `smith_upgrade`, `smith_recipe_new`,
 `smith_change_kind` and
 `smith_plugin_check`. Each tool runs the smith command it stands for
-and returns its output headed by that command line (`$ smith install -w web
+and returns its output headed by that command line (`$ smith install -p web
 zod`), so you can see and repeat exactly what was done. Values become single
 arguments, and one that looks like an option is refused.
 

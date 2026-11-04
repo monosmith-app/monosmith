@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { describeFailure, type SmithRun } from '../smith-run/index.ts'
+import { flag } from '../smith-flags/index.ts'
 
 /** How writing the report ended: the file it is in, or smith's words and fix. */
 export type ReportOutcome = { ok: true, file: string } | { ok: false, message: string }
@@ -22,7 +23,7 @@ export function reportFile (tempDir: string, folderName: string): string {
  * @returns the file, or what smith said
  */
 export async function writeReport (run: (args: string[]) => Promise<SmithRun>, file: string): Promise<ReportOutcome> {
-  const result = await run(['report', '-o', file])
+  const result = await run(['report', flag.output, file])
 
   return result.code === 0 ? { ok: true, file } : { ok: false, message: describeFailure(result) }
 }

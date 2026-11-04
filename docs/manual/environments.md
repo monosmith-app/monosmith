@@ -44,7 +44,7 @@ and the plan shows them.
 | Commit the `.env.<name>` files? | `--env-files commit` or `example` | `commit`: they hold no secret | `example` commits only `.env.example` and git ignores `.env.<name>`; each machine and CI job then makes its own files. |
 
 `terser` is not the minifier. It needs the extra dependency `terser`, and `minify: true` uses the
-minifier Vite ships with. To use terser, run `smith install -w web -D terser` and set
+minifier Vite ships with. To use terser, run `smith install -p web -D terser` and set
 `minify: 'terser'` in `vite.build.ts`.
 
 ## Build

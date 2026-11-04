@@ -226,7 +226,7 @@ Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] re
 
 ## Linking an internal library
 
-`smith install -w <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
+`smith install -p <project> Acme.Core` runs `dotnet add <project file> reference <library file>`, which writes a `ProjectReference` and restores the project. `smith uninstall` runs `dotnet remove ... reference`. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 
@@ -257,7 +257,7 @@ Dependencies: the plugin lists the `PackageReference` of every project and of it
 - A reference without a version takes the central one and declares nothing of its own; `VersionOverride` is left alone. Ranges (`[3.0,4.0)`), floating versions (`1.*`) and MSBuild properties (`$(SerilogVersion)`) are reported and never rewritten.
 - `smith sync` brings every declaration of a package (a project, its tests project, the central file) to the highest version declared, changing only the version text: the attribute (`Version="1.0"`) or the child element (`<Version>1.0</Version>`), whichever the file uses. Package ids are compared without regard to case.
 - `smith up` asks nuget.org for the newest stable release of each package, rewrites to it and runs `dotnet restore` in each project. A package nuget.org does not have (a private feed's) is skipped; one it cannot be asked about is reported.
-- `smith install -w kit Newtonsoft.Json[@13.0.1]` runs `dotnet add <project> package`, `smith uninstall -w kit Newtonsoft.Json` runs `dotnet remove <project> package`, and a bare `smith install` runs `dotnet restore`.
+- `smith install -p kit Newtonsoft.Json[@13.0.1]` runs `dotnet add <project> package`, `smith uninstall -p kit Newtonsoft.Json` runs `dotnet remove <project> package`, and a bare `smith install` runs `dotnet restore`.
 
 Removal: the plugin cleans nothing outside the project directory. Real dry run: `Would remove core (libs/core)`, `the pipelines would be regenerated`.
 
@@ -277,7 +277,7 @@ Removal: the plugin cleans nothing outside the project directory. Real dry run: 
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, .NET SDK 10.0.401 (the machine also has SDKs 3.1.426 and 7.0.306; no `global.json` was used, so 10.0.401 ran). Throw-away workspace `net-demo` from `smith new net-demo`. Run: `smith add lib|app|package ... --lang dotnet`, `smith projects`, `smith graph` (with a `ProjectReference`), `smith explain`, `smith run build|test|lint|pack|start`, `smith doctor` (clean; wrong `[toolchains] dotnet` pin; a private feed with a stale `nuget.config`), `smith doctor --fix --yes`, `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` (refusal), `smith remove core --dry-run --force`, `smith plugin list --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, .NET SDK 10.0.401 (the machine also has SDKs 3.1.426 and 7.0.306; no `global.json` was used, so 10.0.401 ran). Throw-away workspace `net-demo` from `smith new net-demo`. Run: `smith add lib|app|package ... --lang dotnet`, `smith projects`, `smith graph` (with a `ProjectReference`), `smith explain`, `smith run build|test|lint|pack|start`, `smith doctor` (clean; wrong `[toolchains] dotnet` pin; a private feed with a stale `nuget.config`), `smith doctor --fix --yes`, `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` (refusal), `smith remove core --dry-run --force`, `smith plugin list --json`.
 
 Not verified:
 

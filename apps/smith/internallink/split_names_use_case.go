@@ -30,7 +30,7 @@ type Names struct {
 	Packages []string
 }
 
-// Split decides, for each name given to smith install -w <from>, whether it is
+// Split decides, for each name given to smith install -p <from>, whether it is
 // a library of this workspace or a package of the registry.
 //
 // A name that begins with workspace: is always the project. With
@@ -92,7 +92,7 @@ func settle(from *projectgraph.Project, name string, project *projectgraph.Proje
 		because = "maybe a package on the registry (smith could not ask it)"
 	}
 	if o.Ask == nil {
-		return false, fmt.Errorf("%s is a project of this workspace (%s) and %s. Say which one you mean: smith install -w %s workspace:%s (the project), or smith install -w %s --registry %s (the registry package)", name, project.Root, because, from.Name, name, from.Name, name)
+		return false, fmt.Errorf("%s is a project of this workspace (%s) and %s. Say which one you mean: smith install -p %s workspace:%s (the project), or smith install -p %s --registry %s (the registry package)", name, project.Root, because, from.Name, name, from.Name, name)
 	}
 	question := fmt.Sprintf("`%s` is a project of this workspace and %s. Link the project or install the package?", name, because)
 	pick, err := o.Ask.Choose(question, []Option{

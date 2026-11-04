@@ -5,6 +5,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -69,7 +70,7 @@ template, lists them.`,
 			return err
 		},
 	}
-	cmd.Flags().StringVar(&opts.Project, "project", "", "the app a deploy template builds")
+	commandflags.AddOneProjectFlag(cmd, &opts.Project, "the app a deploy template builds")
 	cmd.Flags().StringVar(&ci, "ci", "", "github, azure or both (default: the workspace's providers)")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "replace a pipeline file that exists")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the files are written only with --yes")

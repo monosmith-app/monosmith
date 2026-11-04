@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
@@ -18,7 +19,7 @@ func (s *Shell) removeDependency() tea.Cmd {
 		return nil
 	}
 	if len(targets) == 1 {
-		return s.execute([]string{"uninstall", "-w", targets[0].Value, name}, false)
+		return s.execute([]string{"uninstall", flagvocabulary.Arg("project"), targets[0].Value, name}, false)
 	}
 	var offered []guide.RemoveTarget
 	for _, t := range targets {

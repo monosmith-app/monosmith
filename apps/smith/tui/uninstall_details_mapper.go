@@ -1,6 +1,9 @@
 package tui
 
-import "strings"
+import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
+	"strings"
+)
 
 // uninstallDetails is the plan the confirmation of smith uninstall shows: the
 // packages, and the manifest of each project they leave. The workspace root
@@ -11,7 +14,7 @@ func uninstallDetails(argv []string) []string {
 	var targets, packages []string
 	for i := 1; i < len(argv); i++ {
 		switch a := argv[i]; {
-		case a == "-w" || a == "--workspace":
+		case flagvocabulary.Is("project", a):
 			if i+1 < len(argv) {
 				i++
 				targets = append(targets, argv[i])

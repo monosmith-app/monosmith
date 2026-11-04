@@ -286,7 +286,7 @@ With the `python` audit policy turned on, the generated `requirements-dev.txt` p
 
 ## Linking an internal library
 
-`smith install -w <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
+`smith install -p <project> shop-core-py` writes the library's distribution name (the `[project] name` of its `pyproject.toml`, not its import name) in `[project] dependencies`. The library is installed editable in the shared `.venv` before the project, so pip finds the requirement there and never asks PyPI; `smith install` and `smith ci` install projects in dependency order for the same reason. `smith uninstall` removes the line and leaves the library in the venv. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 
@@ -306,17 +306,17 @@ Dependencies:
 | Command | What it does |
 |---|---|
 | `smith install` | makes `.venv` and `requirements-dev.txt` if missing, installs the tools, installs every project editable |
-| `smith install -w <project> <req>...` | adds the requirement(s) to `[project] dependencies` in that project's `pyproject.toml` (a TOML edit that keeps the rest of the file), then `pip install -e ./<dir>` |
-| `smith install -w <project> -D <req>` | adds to `[project.optional-dependencies] dev`, then `pip install <req>` by name |
-| `smith uninstall -w <project> <name>` | removes the requirement from the runtime list and the `dev` list. The package stays installed in the shared `.venv`; the note says to recreate it. Fails with `<project> does not require <name>` if neither list has it. |
+| `smith install -p <project> <req>...` | adds the requirement(s) to `[project] dependencies` in that project's `pyproject.toml` (a TOML edit that keeps the rest of the file), then `pip install -e ./<dir>` |
+| `smith install -p <project> -D <req>` | adds to `[project.optional-dependencies] dev`, then `pip install <req>` by name |
+| `smith uninstall -p <project> <name>` | removes the requirement from the runtime list and the `dev` list. The package stays installed in the shared `.venv`; the note says to recreate it. Fails with `<project> does not require <name>` if neither list has it. |
 | `smith up`, `smith sync` | the plugin lists `[project] dependencies` and the `dev` extra (`declarations`) and rewrites a plain constraint (`==`, `>=`, `~=`, `<=`, `<`, `>` with a version); compound ranges, `!=`, markers, URLs are reported and left alone. Newest versions come from the simple index (`PIP_INDEX_URL`, default PyPI); `smith up` also compares the pinned Python with the newest series (from `endoflife.date`). |
 
 Real output:
 
 ```
-$ smith install -w sdk "requests>=2.0"
+$ smith install -p sdk "requests>=2.0"
 ✔ sdk: added requests>=2.0 (packages/sdk/pyproject.toml)
-$ smith install -w sdk -D pytest-cov
+$ smith install -p sdk -D pytest-cov
 ✔ sdk: added pytest-cov (packages/sdk/pyproject.toml)
 $ smith up --check
 minor
@@ -324,7 +324,7 @@ minor
 
 Tools smith pins (informational):
   Python           3.12 → 3.15 available
-$ smith uninstall -w sdk requests
+$ smith uninstall -p sdk requests
 ✔ sdk: removed requests (packages/sdk/pyproject.toml)
   left installed in .venv, which every project shares; recreate it to drop requests
 ```
@@ -346,7 +346,7 @@ A folder with no `pyproject.toml` of its own, under a `pyproject.toml` with a `[
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, Python 3.12.0 (`py -3`; `.venv` created with it; the `python` on PATH is 3.13.14, which the plugin does not use), pip-installed tools as pinned above (ruff, pytest, mypy, build, twine, pip-audit, setuptools). Throw-away workspace `py-demo` from `smith new py-demo`. Run: `smith add lib|app|package ... --lang python`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|package|start`, `smith doctor` (clean, and with a wrong `[toolchains] python` pin), `smith ci generate` (GitHub; then GitHub and Azure with an Azure Artifacts registry), `smith ci setup`, `smith ci audit` (with and without the `python` audit policy), `smith ci check`, `smith release --dry-run [--json]`, `smith install -w` (runtime and `-D`), `smith uninstall -w`, `smith up --check`, `smith remove web --dry-run`, `smith plugin check python` (11 checks ok).
+Windows 11 Pro 10.0.26300, smith 1.62.0, Python 3.12.0 (`py -3`; `.venv` created with it; the `python` on PATH is 3.13.14, which the plugin does not use), pip-installed tools as pinned above (ruff, pytest, mypy, build, twine, pip-audit, setuptools). Throw-away workspace `py-demo` from `smith new py-demo`. Run: `smith add lib|app|package ... --lang python`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|package|start`, `smith doctor` (clean, and with a wrong `[toolchains] python` pin), `smith ci generate` (GitHub; then GitHub and Azure with an Azure Artifacts registry), `smith ci setup`, `smith ci audit` (with and without the `python` audit policy), `smith ci check`, `smith release --dry-run [--json]`, `smith install -p` (runtime and `-D`), `smith uninstall -p`, `smith up --check`, `smith remove web --dry-run`, `smith plugin check python` (11 checks ok).
 
 Not verified:
 

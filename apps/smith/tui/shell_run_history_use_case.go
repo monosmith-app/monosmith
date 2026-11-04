@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 	"time"
 
@@ -120,7 +121,7 @@ func (s Shell) failedArgv() []string {
 	if len(tasks) == 0 {
 		return nil
 	}
-	return append(append([]string{"run"}, tasks...), "-p", strings.Join(projects, ","))
+	return append(append([]string{"run"}, tasks...), flagvocabulary.Arg("project"), strings.Join(projects, ","))
 }
 
 // copyLog puts the log shown on the clipboard: one task's output, or all of it.

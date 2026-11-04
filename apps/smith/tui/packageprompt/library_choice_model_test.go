@@ -27,7 +27,7 @@ func TestTheFirstQuestionIsLibraryOrRegistryAndTheRegistryIsTheDefault(t *testin
 		t.Fatalf("the first control is the question:\n%s", screen(p))
 	}
 	p = typeText(arrow(p, tea.KeyDown), "core")
-	if got := strings.Join(p.Argv(), " "); got != "install -w web --registry core" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web --registry core" {
 		t.Fatalf("the registry answer must not be asked again: %q", got)
 	}
 }
@@ -41,12 +41,12 @@ func TestALibraryIsPickedFromTheListWithItsKindAndLanguage(t *testing.T) {
 			t.Fatalf("missing %q:\n%s", want, s)
 		}
 	}
-	if got := strings.Join(p.Argv(), " "); got != "install -w web workspace:core" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web workspace:core" {
 		t.Fatalf("argv %q", got)
 	}
 	p = arrow(p, tea.KeyDown) // to the library
 	p = arrow(p, tea.KeyRight)
-	if got := strings.Join(p.Argv(), " "); got != "install -w web workspace:ui" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web workspace:ui" {
 		t.Fatalf("argv %q", got)
 	}
 	_, out := key(p, tea.KeyEnter)
@@ -59,11 +59,11 @@ func TestTheRangeIsAChoiceWithAMeaningForNode(t *testing.T) {
 	p := arrow(withLibs("web"), tea.KeyRight)
 	p = arrow(arrow(p, tea.KeyDown), tea.KeyDown) // library, then range
 	p = arrow(p, tea.KeyRight)
-	if got := strings.Join(p.Argv(), " "); got != "install -w web workspace:core --range *" || !strings.Contains(screen(p), "whatever its") {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web workspace:core --range *" || !strings.Contains(screen(p), "whatever its") {
 		t.Fatalf("argv %q\n%s", got, screen(p))
 	}
 	p = arrow(p, tea.KeyRight)
-	if got := strings.Join(p.Argv(), " "); got != "install -w web workspace:core --range ^1.2.0" {
+	if got := strings.Join(p.Argv(), " "); got != "install -p web workspace:core --range ^1.2.0" {
 		t.Fatalf("argv %q", got)
 	}
 }

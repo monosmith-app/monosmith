@@ -356,12 +356,12 @@ All passed.
 | Command | Runs |
 |---|---|
 | `smith install` | `dart pub get` (`flutter pub get` when a member is Flutter) at the root. Printed `✔ dart: installed 4 project(s)` |
-| `smith install -w core path` | `dart pub add path` in the member (`flutter pub add` for a Flutter project) |
-| `smith install -w core -D mockito` | `dart pub add dev:mockito` |
-| `smith uninstall -w core path mockito` | `dart pub remove path mockito` |
+| `smith install -p core path` | `dart pub add path` in the member (`flutter pub add` for a Flutter project) |
+| `smith install -p core -D mockito` | `dart pub add dev:mockito` |
+| `smith uninstall -p core path mockito` | `dart pub remove path mockito` |
 
 All four were run; each reported the member's `pubspec.yaml` and `pubspec.lock`
-as changed. `smith install -w sdk dart_demo_core` added the dependency on a
+as changed. `smith install -p sdk dart_demo_core` added the dependency on a
 workspace sibling and made it a graph edge (above).
 
 **Versions: `smith sync` and `smith up`.** The plugin lists the `dependencies` and
@@ -429,7 +429,7 @@ and Flutter projects, `smith run start -p tool`, `smith doctor` (plain, and with
 a `[toolchains] dart` mismatch), `smith ci generate` for GitHub and Azure
 (a workspace with a Flutter app), with `.flutter-version`, and with
 `publish_to` set to a URL and to `none`, `smith ci check`, `smith release
---dry-run` and `--json`, `smith install` (all forms), `smith uninstall -w`,
+--dry-run` and `--json`, `smith install` (all forms), `smith uninstall -p`,
 `smith sync --check`, `smith up --json`, `smith remove`.
 
 Not verified: a real publish to pub.dev or a private repository; the pub

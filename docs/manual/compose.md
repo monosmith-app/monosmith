@@ -72,7 +72,7 @@ Usage: `smith compose [flags]`
 |---|---|---|---|
 | `--json` | boolean | off | print JSON: the catalogue, and with --with the check and the plan |
 | `--kind <kind>` | string |  | the kind of project the plan is for: app, lib or package |
-| `-l, --lang <lang>` | string |  | show only this language's items, and check --with for it |
+| `-l, --lang <lang>` | string |  | show only this language's items, and check --with for it (also --language) |
 | `--name <name>` | string |  | the project name the plan uses (<name> when not given) |
 | `--search <search>` | string |  | find items by words: name, title, alias (desktop, serverless, web) or description |
 | `--with <with>` | string, repeatable |  | check this selection and print its plan, comma separated (react,vitest) |

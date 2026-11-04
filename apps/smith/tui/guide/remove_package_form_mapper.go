@@ -1,7 +1,9 @@
 package guide
 
+import "github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
+
 // RemoveTarget is a project a package can be removed from: the label the form
-// shows and the value smith uninstall -w takes.
+// shows and the value smith uninstall -p takes.
 type RemoveTarget struct {
 	Label, Value string
 }
@@ -9,13 +11,13 @@ type RemoveTarget struct {
 // RemovePackageTitle is the title of the form that removes one package.
 func RemovePackageTitle(name string) string { return "Remove " + name }
 
-// RemovePackageArgv turns the projects picked into `smith uninstall -w <project>
+// RemovePackageArgv turns the projects picked into `smith uninstall -p <project>
 // ... <package>`. It returns nil while no project is picked, so nothing runs.
 func RemovePackageArgv(name string, answers map[string][]string) []string {
 	argv := []string{"uninstall"}
 	for _, v := range answers["projects"] {
 		if v != "" {
-			argv = append(argv, "-w", v)
+			argv = append(argv, flagvocabulary.Arg("project"), v)
 		}
 	}
 	if len(argv) == 1 {
@@ -35,7 +37,7 @@ func RemovePackageAction(name string, targets []RemoveTarget) Action {
 		step.Options = append(step.Options, Option{Label: t.Label, Value: t.Value})
 	}
 	return Action{
-		Title: RemovePackageTitle(name), Hint: "smith uninstall -w <project> " + name, NeedsWorkspace: true, Presents: "uninstall",
+		Title: RemovePackageTitle(name), Hint: "smith uninstall -p <project> " + name, NeedsWorkspace: true, Presents: "uninstall",
 		Steps: []Step{step},
 		Argv:  func(answers map[string][]string) []string { return RemovePackageArgv(name, answers) },
 	}

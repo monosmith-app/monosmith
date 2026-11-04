@@ -8,6 +8,7 @@ import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import java.nio.file.Path
+import dev.monosmith.jetbrains.smithcommand.SmithFlags
 
 /**
  * Two steps for a Tauri desktop app: make the icons from one square PNG (`smith tauri icon`), and make a
@@ -43,7 +44,7 @@ object TauriAppUseCase {
         val app =
             ports.prompt.text("$TITLE: the icons", "The app, only when more than one project has a src-tauri (empty leaves it out):")
                 ?: return false
-        val args = listOf("tauri", "icon", logo) + if (app.isEmpty()) emptyList() else listOf("-p", app)
+        val args = listOf("tauri", "icon", logo) + if (app.isEmpty()) emptyList() else listOf(SmithFlags.PROJECT, app)
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(

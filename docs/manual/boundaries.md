@@ -63,7 +63,7 @@ reason = "the shared login page, until it moves into a lib"
 tags = ["ui"]                      # tags for the rules, besides the ones the plugin reports
 ```
 
-A project is named the way `--projects` names it: a name, a glob (`libs/*`, `lib-*`),
+A project is named the way `--project` names it: a name, a glob (`libs/*`, `lib-*`),
 `kind:app`, `kind:lib`, `kind:package`, `lang:go` or `tag:ui`. `deny` and `allow` can be
 used together; a dependency that matches `deny`, or that matches nothing in a non-empty
 `allow`, breaks the rule. An exception needs a `reason`.

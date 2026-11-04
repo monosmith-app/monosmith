@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/spf13/cobra"
 )
@@ -100,13 +101,13 @@ func command(version, use, short string, fixed []string) *cobra.Command {
 		cmd.Use = use + " [project]..."
 	}
 	f := cmd.Flags()
-	f.StringSliceVarP(&req.Projects, "projects", "p", nil, "projects to run: names, globs, kind:app, lang:go, tag:x, !exclude")
+	commandflags.AddProjectFlag(cmd, &req.Projects, "projects to run: names, globs, kind:app, lang:go, tag:x, !exclude")
 	f.BoolVar(&req.Affected, "affected", false, "only projects affected by changes since --base")
 	f.StringVar(&req.Base, "base", "", "base branch for --affected (default: the PR target, else the release branch)")
 	f.IntVar(&req.Parallel, "parallel", 0, "tasks to run at once (default: CPU count)")
 	f.BoolVar(&req.Bail, "bail", false, "stop starting tasks after the first failure")
 	f.BoolVar(&req.NoCache, "no-cache", false, "run every task even if a cached result exists")
-	f.BoolVar(&verbose, "verbose", false, "smith build: show the log of every project, not only the ones that fail")
+	f.BoolVar(&verbose, "verbose", false, "show the log of every project, not only the ones that fail")
 	f.BoolVar(&asJSON, "json", false, "print the summary as JSON")
 	f.BoolVar(&jsonEvents, "json-events", false, "print the run as JSON lines, one event each (see docs/reference/serve.md), and nothing else")
 	cmd.MarkFlagsMutuallyExclusive("json", "json-events")

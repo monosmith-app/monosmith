@@ -209,7 +209,7 @@ Each row is a message you can see, what it means and what to do.
 |---|---|
 | `nobody can confirm this change: there is no terminal and --yes was not given` | A command that changes files asks first. With no terminal nobody can answer. Add `--yes` to apply the plan, or `--dry-run` to read it. |
 | `azure-functions needs a choice on the trigger axis, and none is the default: add one of ... to --with` | A function app needs the trigger and the runtime, and smith never picks them. Add one of each to `--with`, for example `--with azure-functions,http-trigger,node24`. |
-| `<name> is a project of this workspace (...) and a package on the registry` | The name exists in both places. Run `smith install -w <app> workspace:<name>` for your project, or `smith install -w <app> --registry <name>` for the registry package. |
+| `<name> is a project of this workspace (...) and a package on the registry` | The name exists in both places. Run `smith install -p <app> workspace:<name>` for your project, or `smith install -p <app> --registry <name>` for the registry package. |
 | the add ended with `exits with 1` and a missing tool | The project exists. Install the tool (`smith tools install`), then run `smith run build test -p <project>`. |
 | `Not committed. Review it with git status` | Expected. smith commits only with `--commit`. Run `smith commit` to commit what the last command changed. |
 | `smith undo` prints `files changed since smith add ...` | `smith undo` reverts a change that smith committed, and only when nothing touched the same files since. Undo the later changes first, then run `smith undo --dry-run`. A change that was never committed is not undone this way: commit it with `smith commit`, or discard the files with git. |

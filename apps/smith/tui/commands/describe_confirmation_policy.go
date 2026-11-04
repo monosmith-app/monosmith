@@ -1,6 +1,9 @@
 package commands
 
-import "slices"
+import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
+	"slices"
+)
 
 // Describe says, for the confirmation dialog, what a command that changes the
 // workspace does: a title and one sentence. The dialog adds the exact command line.
@@ -17,7 +20,7 @@ func Describe(argv []string) (title, why string) {
 		return "Apply one doctor fix", "This applies the safe fix of the chosen check and rewrites the files listed below."
 	case verb == "doctor" && slices.Contains(argv, "--fix"):
 		return "Fix with doctor", "This applies the safe fixes doctor found and rewrites files."
-	case verb == "install" && slices.Contains(argv, "-w"):
+	case verb == "install" && slices.ContainsFunc(argv, func(a string) bool { return flagvocabulary.Is("project", a) }):
 		return "Install packages", "This adds the packages to the projects below with each project's own package manager, and updates its lock file."
 	case verb == "install":
 		return "Install everything", "This installs what every project already declares, with its own toolchain (as after a fresh clone). To add one package, use Install a package instead."

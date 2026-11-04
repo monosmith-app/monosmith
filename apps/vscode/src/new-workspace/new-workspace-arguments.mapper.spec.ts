@@ -5,7 +5,7 @@ import { parseQuestions } from '../smith-questions/index.ts'
 describe('toCreateArguments', () => {
   it('gives every question a flag, so smith asks nothing and decides nothing in silence', () => {
     expect(toCreateArguments({ name: 'ws-j', ...DEFAULT_CHOICES })).toEqual([
-      'new', 'ws-j', '--here', '--yes', '--ci', 'github', '--language', 'later', '--architecture', 'vertical-slices', '--agent', '--devcontainer',
+      'new', 'ws-j', '--here', '--yes', '--ci', 'github', '--lang', 'later', '--architecture', 'vertical-slices', '--agent', '--devcontainer',
     ])
   })
 

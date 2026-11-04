@@ -54,7 +54,7 @@ func TestNoCommitBoxForCommandsThatCannotCommit(t *testing.T) {
 func TestCommittableCommands(t *testing.T) {
 	for argv, want := range map[string]bool{
 		"adopt": true, "new app": true, "add x": true, "remove x": true, "convert": true, "upgrade": true,
-		"install -w web zod": true, "uninstall -w web zod": true, "config set ci.devcontainer true": true, "plugin disable go": true,
+		"install -p web zod": true, "uninstall -p web zod": true, "config set ci.devcontainer true": true, "plugin disable go": true,
 		"environments add web qa": true, "kind web lib": true, "architecture none": true,
 		"config get ci.devcontainer": false, "plugin list": false, "environments list": false,
 		"release": false, "undo --yes": false, "add x --commit": false, "": false,

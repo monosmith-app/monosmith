@@ -95,7 +95,7 @@ func TestNotSavingIsTheDefaultAndNeedsALanguage(t *testing.T) {
 }
 
 func TestANewWorkspaceFromASavedRecipeSkipsWhatItAnswers(t *testing.T) {
-	first, _, err := runNew(t, false, "", "--language", "node", "--default-stack", "node=node-vitest", "--architecture", "hexagonal", "--save-recipe", "team",
+	first, _, err := runNew(t, false, "", "--lang", "node", "--default-stack", "node=node-vitest", "--architecture", "hexagonal", "--save-recipe", "team",
 		"--ci", "github", "--agent", "--devcontainer", "--first-commit", "smith")
 	if err != nil {
 		t.Fatal(err)

@@ -17,7 +17,7 @@ scaffold. `smith plugin enable`, `disable` and `set` switch these on and off.
 The last three columns are the columns of the same names in `smith plugin list`. **Declared**: the
 plugin can describe a project that `smith.toml` declares with `[projects.<name>]` and no manifest. **Channels**: a
 package of a `[[release.channels]]` branch can be published with it, a prerelease never replacing the stable version.
-**Link**: `smith install -w <project> <library>` can make a project depend on a library of the workspace.
+**Link**: `smith install -p <project> <library>` can make a project depend on a library of the workspace.
 The values were read from `smith plugin list` of the smith 2.0 release candidate.
 
 | Plugin | Projects it finds | Declared | Channels | Link | Page |

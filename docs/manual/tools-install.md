@@ -69,9 +69,9 @@ Usage: `smith tools install [tool...] [flags]`
 |---|---|---|---|
 | `--dry-run` | boolean | off | print the plan and install nothing |
 | `--json` | boolean | off | with --dry-run, print the plan as JSON |
-| `--manager <manager>` | string |  | install every tool with this package manager (winget, brew, apt, dnf, pacman, uv, fnm, rustup, cargo, npm) |
+| `--manager <manager>` | string |  | install every tool with this package manager (winget, brew, apt, dnf, pacman, uv, fnm, rustup, npm) |
 | `--with-admin` | boolean | off | let smith run commands that need administrator rights (the system still asks for its own permission) |
-| `--yes` | boolean | off | take the marked default of each choice (never for commands that need administrator rights) |
+| `-y, --yes` | boolean | off | take the marked default of each choice (never for commands that need administrator rights) |
 
 <!-- smith:end tools install -->
 

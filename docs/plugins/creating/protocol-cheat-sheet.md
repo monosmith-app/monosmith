@@ -106,8 +106,8 @@ The host never calls a method the plugin did not advertise in `capabilities`. `i
 | `api/surface` | `apiSurface` | `APISurfaceReader` | `APISurfaceParams` → `APISurfaceResult` | `smith release` (the API version check) | 1 min |
 | `dependencies/install` | `dependencies` | `DependencyManager.Install` | `InstallParams` → `DependencyResult` | `smith install`, `smith sync` | 20 min |
 | `dependencies/uninstall` | `dependencies` | `DependencyManager.Uninstall` | `UninstallParams` → `DependencyResult` | `smith uninstall` | 20 min |
-| `dependencies/link` | `link` | `Linker.Link` | `LinkParams` → `LinkResult` | `smith install -w <project> <library>`, the Install dialog | 20 min |
-| `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -w <project> <library>` | 20 min |
+| `dependencies/link` | `link` | `Linker.Link` | `LinkParams` → `LinkResult` | `smith install -p <project> <library>`, the Install dialog | 20 min |
+| `dependencies/unlink` | `link` | `Linker.Unlink` | `UnlinkParams` → `DependencyResult` | `smith uninstall -p <project> <library>` | 20 min |
 | `dependencies/declared` | `declarations` | `DeclarationEditor.Declared` | `DeclaredParams` → `DeclaredResult` | `smith sync`, `smith up`, doctor | 20 min |
 | `dependencies/rewrite` | `declarations` | `DeclarationEditor.Rewrite` | `RewriteParams` → `DependencyResult` | `smith sync`, `smith up` | 20 min |
 | `dependencies/latest` | `latest` | `LatestReader` | `LatestParams` → `LatestResult` | `smith up` | 20 min |

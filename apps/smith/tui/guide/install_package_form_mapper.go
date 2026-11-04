@@ -1,15 +1,18 @@
 package guide
 
-import "strings"
+import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
+	"strings"
+)
 
 // InstallTarget is a project a package can be installed into: the label the form
-// shows and the value smith install -w takes.
+// shows and the value smith install -p takes.
 type InstallTarget struct {
 	Label, Value string
 }
 
 // RootInstallTarget is the target that stands for the workspace root: the value
-// smith install -w takes for the package.json at the top of the workspace.
+// smith install -p takes for the package.json at the top of the workspace.
 var RootInstallTarget = InstallTarget{
 	Label: "Workspace root: shared by every project, in the root package.json",
 	Value: ".",
@@ -18,7 +21,7 @@ var RootInstallTarget = InstallTarget{
 // InstallPackageTitle is the title of the form that installs packages.
 const InstallPackageTitle = "Install a package"
 
-// InstallPackageArgv turns the answers into `smith install -w <project> ... [-D]
+// InstallPackageArgv turns the answers into `smith install -p <project> ... [-D]
 // <package> ...`. It returns nil while no package or no project is given, so
 // nothing runs.
 //
@@ -28,7 +31,7 @@ func InstallPackageArgv(answers map[string][]string) []string {
 	argv := []string{"install"}
 	for _, v := range answers["projects"] {
 		if v != "" {
-			argv = append(argv, "-w", v)
+			argv = append(argv, flagvocabulary.Arg("project"), v)
 		}
 	}
 	if len(names) == 0 || len(argv) == 1 {
@@ -69,7 +72,7 @@ func InstallPackageAction(targets []InstallTarget, preset []string) Action {
 		projects.Options = append(projects.Options, Option{Label: t.Label, Value: t.Value})
 	}
 	return Action{
-		Title: InstallPackageTitle, Hint: "smith install -w <project> <package>", NeedsWorkspace: true, Presents: "install",
+		Title: InstallPackageTitle, Hint: "smith install -p <project> <package>", NeedsWorkspace: true, Presents: "install",
 		Steps: []Step{
 			{Key: "names", Prompt: "Which packages? Type a name or name@version; separate several with spaces.", Placeholder: "zod  react@19",
 				Note:  "Installs into projects, or the workspace root where it is offered. A tool installed on the machine (npm -g) has no smith command yet.",

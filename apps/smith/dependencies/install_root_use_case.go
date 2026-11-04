@@ -18,7 +18,7 @@ func checkRootInstall(s *session.Session) error {
 	if c := s.Plugins.Get(RootPlugin); c != nil && c.Supports(protocol.MethodInstall) {
 		return nil
 	}
-	return errors.New("this workspace has no root manifest smith can add packages to. Only the Node root package.json is supported. Use smith install -w <project> <package>")
+	return errors.New("this workspace has no root manifest smith can add packages to. Only the Node root package.json is supported. Use smith install -p <project> <package>")
 }
 
 // installAtRoot adds packages to the manifest at the workspace root, shared by

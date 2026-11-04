@@ -98,7 +98,7 @@ func TestACommittableChangeStartsOnLeavingItUncommitted(t *testing.T) {
 		t.Fatalf("the commit is named from the operation: %+v", out)
 	}
 	view := pane.Strip(strings.Join(m.Lines(theme.Default()), "\n"))
-	for _, want := range []string{"Added lib core", "core was created in libs/core (4 files).", "Use it from an app: press + on the app and pick core", "smith install -w <app>", "your own changes stay out"} {
+	for _, want := range []string{"Added lib core", "core was created in libs/core (4 files).", "Use it from an app: press + on the app and pick core", "smith install -p <app>", "your own changes stay out"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the result lacks %q:\n%s", want, view)
 		}
@@ -131,7 +131,7 @@ func TestOnlyASyncWithoutAnAnswerAsksWhichVersionWins(t *testing.T) {
 		"sync --check":               false,
 		"sync --dry-run":             false,
 		"deps up zod":                false,
-		"install -w web zod":         false,
+		"install -p web zod":         false,
 		"sync --prefer=lowest --yes": false,
 	} {
 		if got := ChoosesVersion(strings.Fields(argv)); got != want {

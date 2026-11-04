@@ -29,7 +29,7 @@ same words. This page is the contract; `smith plugin check` tests the parts a te
 5. **The same words for the same failure.** A problem names the file or folder, says what is wrong
    and says the fix.
 
-6. **A project can depend on a library of the same workspace.** `smith install -w <project>
+6. **A project can depend on a library of the same workspace.** `smith install -p <project>
    <library>` links it ([ADR 0071](../../architecture/decisions/0071-smith-install-links-a-library-of-the-workspace.md)).
    A plugin that can write the dependency in its ecosystem's own form has the `link` capability:
    `dependencies/link` and `dependencies/unlink`, with a plan form (`plan: true`) that writes

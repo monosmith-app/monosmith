@@ -1,4 +1,5 @@
 import type { InstallRequest } from './install-request.contract.ts'
+import { flag } from '../smith-flags/index.ts'
 
 /**
  * The `smith install` arguments for a request. A library is named with `workspace:`, so smith never asks which
@@ -8,10 +9,10 @@ import type { InstallRequest } from './install-request.contract.ts'
  */
 export function installArguments (request: InstallRequest): string[] {
   if (request.source === 'workspace') {
-    return ['install', '-w', request.project, `workspace:${request.library ?? ''}`, ...(request.range === undefined ? [] : ['--range', request.range])]
+    return ['install', flag.project, request.project, `workspace:${request.library ?? ''}`, ...(request.range === undefined ? [] : ['--range', request.range])]
   }
 
-  return ['install', '-w', request.project, ...(request.dev ? ['-D'] : []), '--registry', ...request.packages]
+  return ['install', flag.project, request.project, ...(request.dev ? ['-D'] : []), '--registry', ...request.packages]
 }
 
 /**

@@ -40,7 +40,7 @@ Usage: `smith deps up [packages...] [flags]`
 | `--dry-run` | boolean | off | with --align: show the plan and change nothing |
 | `--json` | boolean | off | print the updates and tools as JSON; never write |
 | `--major` | boolean | off | also take major updates (with --yes or named packages), and with --align let a declaration move to another major version |
-| `--no-install` | boolean | off | rewrite the manifests without installing |
+| `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |
 | `--prefer <prefer>` | string |  the installed one, else the highest | with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
 | `--to <to>` | string, repeatable |  | with --align: the version of one dependency, as <name>=<version> |
 | `-y, --yes` | boolean | off | take every patch and minor update without prompting; major updates stay out unless --major is given |

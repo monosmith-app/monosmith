@@ -66,7 +66,7 @@ describe('planThenApply', () => {
     const f = fake(plan, true)
     await planThenApply(f.deps, undefined, () => unlinkArguments('web', 'core'))
     expect(f.calls).toEqual([])
-    expect(f.applied).toEqual([['uninstall', '-w', 'web', 'workspace:core', '--yes']])
+    expect(f.applied).toEqual([['uninstall', '-p', 'web', 'workspace:core', '--yes']])
   })
 })
 

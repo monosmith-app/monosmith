@@ -291,7 +291,7 @@
           "bare_tags": { "type": "boolean", "description": "Tag releases with the bare version (0.1.0) instead of <name>@0.1.0, for a registry that uses the tag name as the version (JitPack). Only one project can; it excludes tag_prefix." },
               "tag_prefix": { "type": "string", "description": "Replaces the release tag prefix (<name>@ by default)." },
           "stack": { "type": "string", "description": "Replaces the stack the project's manifest records." },
-          "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Tags added to the ones the project's plugin reports, for [boundaries] rules and --projects tag:<tag>." },
+          "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "Tags added to the ones the project's plugin reports, for [boundaries] rules and --project tag:<tag>." },
           "schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of shared schema files (OpenAPI, AsyncAPI, Protocol Buffers, GraphQL) the project owns, besides those inside its directory." },
           "consumes_schemas": { "type": "array", "items": { "type": "string" }, "description": "Workspace-relative globs of schema files the project consumes: it depends on their owner, so a schema change affects it." },
           "generate": {

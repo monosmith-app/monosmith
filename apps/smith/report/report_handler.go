@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 
 	"golang.org/x/term"
@@ -60,7 +61,7 @@ to smith-report.html.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&file, "output", "o", "", "write the page to a file")
+	commandflags.AddOutputFlag(cmd, &file, "", "write the page to a file")
 	cmd.Flags().BoolVar(&force, "force", false, "replace the file when it exists with other content (the diff is printed)")
 	return cmd
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func TestTheUninstallPlanNamesThePackageAndTheRoot(t *testing.T) {
-	got := strings.Join(uninstallDetails([]string{"uninstall", "-w", ".", "-w", "web", "@swc/core", "--yes"}), "\n")
+	got := strings.Join(uninstallDetails([]string{"uninstall", "-p", ".", "-p", "web", "@swc/core", "--yes"}), "\n")
 	for _, want := range []string{"Removes @swc/core", "the workspace root", "  web"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q in:\n%s", want, got)

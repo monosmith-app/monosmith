@@ -24,7 +24,7 @@ func TestParityFormsBuildTheCommandOfTheirAnswers(t *testing.T) {
 	}{
 		{EnvironmentsAddTitle, map[string][]string{"project": {"web"}, "names": {"qa, stage"}}, []string{"environments", "add", "web", "qa", "stage"}},
 		{EnvironmentsRemoveTitle, map[string][]string{"project": {"web"}, "names": {"dev"}}, []string{"environments", "remove", "web", "dev"}},
-		{"Add a ready-made pipeline", map[string][]string{"template": {"deploy-pages"}, "project": {"web"}}, []string{"pipeline", "deploy-pages", "--project", "web"}},
+		{"Add a ready-made pipeline", map[string][]string{"template": {"deploy-pages"}, "project": {"web"}}, []string{"pipeline", "deploy-pages", "-p", "web"}},
 		{"Add a ready-made pipeline", map[string][]string{"template": {"e2e"}}, []string{"pipeline", "e2e"}},
 		{"Make the icons of a Tauri app", map[string][]string{"logo": {"logo.png"}}, []string{"tauri", "icon", "logo.png"}},
 		{"Make the icons of a Tauri app", map[string][]string{"logo": {"logo.png"}, "project": {"desktop"}}, []string{"tauri", "icon", "logo.png", "-p", "desktop"}},

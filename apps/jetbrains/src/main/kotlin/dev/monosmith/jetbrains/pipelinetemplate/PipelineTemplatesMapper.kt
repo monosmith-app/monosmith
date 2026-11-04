@@ -1,6 +1,7 @@
 package dev.monosmith.jetbrains.pipelinetemplate
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.smithcommand.SmithFlags
 
 /**
  * One ready-made pipeline of `smith pipeline`.
@@ -31,7 +32,7 @@ object PipelineTemplatesMapper {
             val cells = line.trim().split(gap)
             val first = cells.firstOrNull().orEmpty()
             val found = name.find(first)?.value ?: return@mapNotNull null
-            PipelineTemplateContract(found, cells.getOrElse(1) { "" }, cells.drop(2).joinToString(" "), first.contains("--project"))
+            PipelineTemplateContract(found, cells.getOrElse(1) { "" }, cells.drop(2).joinToString(" "), first.contains(SmithFlags.PROJECT_LONG))
         }
 
     /** One row for each template: the CI systems, then what it does, and a note when it asks for an app. */
@@ -49,5 +50,5 @@ object PipelineTemplatesMapper {
     fun arguments(
         template: PipelineTemplateContract,
         app: String?,
-    ): List<String> = listOf("pipeline", template.name) + if (app.isNullOrEmpty()) emptyList() else listOf("--project", app)
+    ): List<String> = listOf("pipeline", template.name) + if (app.isNullOrEmpty()) emptyList() else listOf(SmithFlags.PROJECT_LONG, app)
 }

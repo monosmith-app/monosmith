@@ -7,7 +7,7 @@ import (
 
 func TestOnlyALibraryTellsHowAnAppUsesIt(t *testing.T) {
 	got := libraryUseHint("lib", "core")
-	for _, want := range []string{"smith install -w <app> core", "press + on the app"} {
+	for _, want := range []string{"smith install -p <app> core", "press + on the app"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the hint lacks %q: %q", want, got)
 		}

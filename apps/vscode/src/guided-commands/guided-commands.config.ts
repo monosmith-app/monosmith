@@ -1,4 +1,5 @@
 import type { GuidedAnswers, GuidedCommand } from './guided-command.contract.ts'
+import { flag, longFlag } from '../smith-flags/index.ts'
 
 const text = (answers: GuidedAnswers, key: string): string => {
   const value = answers[key]
@@ -131,7 +132,7 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
       { key: 'template', kind: 'pick', title: 'MonoSmith: add a pipeline (1/2): which one?', from: 'pipeline-templates' },
       { key: 'project', kind: 'text', title: 'MonoSmith: add a pipeline (2/2): which app does it build?', prompt: 'Only a deploy pipeline builds an app. Enter leaves it out.', placeholder: 'web', optional: true },
     ],
-    args: (a) => ['pipeline', text(a, 'template'), ...(text(a, 'project') === '' ? [] : ['--project', text(a, 'project')])],
+    args: (a) => ['pipeline', text(a, 'template'), ...(text(a, 'project') === '' ? [] : [longFlag.project, text(a, 'project')])],
   },
   {
     id:          'tauriIcon',
@@ -145,7 +146,7 @@ export const GUIDED_COMMANDS: readonly GuidedCommand[] = [
       { key: 'logo', kind: 'file', title: 'MonoSmith: the square PNG the icons are made from' },
       { key: 'project', kind: 'text', title: 'MonoSmith: which app?', prompt: 'Only when more than one project has a src-tauri. Enter leaves it out.', placeholder: 'desktop', optional: true },
     ],
-    args: (a) => ['tauri', 'icon', text(a, 'logo'), ...(text(a, 'project') === '' ? [] : ['-p', text(a, 'project')])],
+    args: (a) => ['tauri', 'icon', text(a, 'logo'), ...(text(a, 'project') === '' ? [] : [flag.project, text(a, 'project')])],
   },
   {
     id:    'dockerDescriptionPreview',

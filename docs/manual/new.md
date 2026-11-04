@@ -53,7 +53,7 @@ Usage: `smith new <name> [flags]`
 | `--here` | boolean | off | create the workspace in the current folder, which must be empty; the name defaults to the folder's |
 | `--include-secrets` | boolean | off | let --first-commit all commit files whose names look like secrets (.env, keys) |
 | `--json` | boolean | off | with --questions: print them as JSON |
-| `--language <language>` | string | `later` | the main language: node, python, go, jvm, dotnet, rust, or later (default later) |
+| `-l, --lang <lang>` | string | later | the main language: node, python, go, jvm, dotnet, rust, or later (default later) (also --language) |
 | `--module-prefix <module-prefix>` | string | from the `origin` remote, else `example.com/<name>` | Go module prefix (default from the origin remote, else example.com/<name>) |
 | `--no-agent` | boolean | off | leave the MonoSmith agent out; smith agent install adds it later |
 | `--no-commit` | boolean | off | write the files and commit nothing |

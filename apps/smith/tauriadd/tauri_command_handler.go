@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
@@ -204,7 +205,7 @@ or the one named with -p.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "the app, when more than one project has a src-tauri")
+	commandflags.AddOneProjectFlag(cmd, &project, "the app, when more than one project has a src-tauri")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "do not ask; without a terminal the icons are made only with --yes")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show what would be overwritten and change nothing")
 	return cmd

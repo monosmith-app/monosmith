@@ -375,8 +375,8 @@ build to stderr; the check only looks at the exit status.
 | Command | What the plugin runs |
 |---|---|
 | `smith install` (no package) | `composer install --no-interaction --no-progress` at the root; the file it reports is `composer.lock` |
-| `smith install -w util monolog/monolog` | `composer require monolog/monolog --no-update --no-interaction` in the package's directory (`--dev` for `-D`), then `composer update` at the root |
-| `smith uninstall -w util monolog/monolog` | `composer remove ... --no-update` in the package, then `composer update` at the root |
+| `smith install -p util monolog/monolog` | `composer require monolog/monolog --no-update --no-interaction` in the package's directory (`--dev` for `-D`), then `composer update` at the root |
+| `smith uninstall -p util monolog/monolog` | `composer remove ... --no-update` in the package, then `composer update` at the root |
 
 Real run of the last two: both changed only `libs/util/composer.json` and
 `composer.lock`, and printed
@@ -433,7 +433,7 @@ Run: `smith new`, `smith add lib|app|package --lang php`, `smith projects`,
 `smith graph`, `smith explain` (project and task), `smith run lint`,
 `smith run test`, `smith run start -p cli`, `smith doctor` (with and without a
 mismatching pin), `smith ci generate` for GitHub, Azure and GitLab,
-`smith ci setup`, `smith ci audit`, `smith install -w`, `smith uninstall -w`,
+`smith ci setup`, `smith ci audit`, `smith install -p`, `smith uninstall -p`,
 `smith sync --check`, `smith up --json`, `smith remove`,
 `smith release --dry-run` and `--json`, with and without `split_repo`.
 

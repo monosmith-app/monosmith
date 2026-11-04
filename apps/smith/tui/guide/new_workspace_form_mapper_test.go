@@ -50,7 +50,7 @@ func TestAnswersBecomeFlags(t *testing.T) {
 		"architecture": {"none"}, "more": {"yes"}, "release-branch": {"trunk"}, "release-remote": {""},
 		"github-releases": {"yes"}, "cache-dir": {""}, "cache-max-mb": {"0"},
 	})
-	want := []string{"new", "acme", "--yes", "--ci", "azure", "--language", "node", "--default-stack", "node=node-vitest",
+	want := []string{"new", "acme", "--yes", "--ci", "azure", "--lang", "node", "--default-stack", "node=node-vitest",
 		"--architecture", "none", "--release-branch", "trunk", "--github-releases", "--cache-max-mb", "0"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
@@ -137,7 +137,7 @@ func TestTheRiskQuestionsAreStillAskedWithTheDefaults(t *testing.T) {
 
 func TestSavingARecipeFromTheFormUsesTheWorkspaceNameByDefault(t *testing.T) {
 	got := NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "module-prefix": {"github.com/me/acme"}, "save-recipe": {"yes"}, "recipe-name": {""}})
-	if want := []string{"new", "acme", "--yes", "--language", "go", "--module-prefix", "github.com/me/acme", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"new", "acme", "--yes", "--lang", "go", "--module-prefix", "github.com/me/acme", "--save-recipe", "acme"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
 	}
 	got = NewWorkspaceArgv(map[string][]string{"name": {"acme"}, "language": {"go"}, "save-recipe": {"yes"}, "recipe-name": {"team"}})

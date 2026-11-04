@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/convertchoices"
 	"github.com/monosmith-app/monosmith/apps/smith/convertplan"
 	"github.com/monosmith-app/monosmith/apps/smith/gitclient"
@@ -246,9 +247,9 @@ git undoes everything.`,
 	f.BoolVar(&asJSON, "json", false, "print the plan as JSON (with --questions, the questions)")
 	f.BoolVar(&questions, "questions", false, "print the questions smith convert asks, with their answers, defaults and flags, and change nothing (needs --json)")
 	f.BoolVar(&strict, "strict", false, "refuse to convert while anything needs manual work or is unsupported")
-	f.BoolVar(&skipInstall, "skip-install", false, "do not run npm install afterwards")
+	commandflags.AddNoInstallFlag(cmd, &skipInstall, "do not run npm install afterwards")
 	f.BoolVar(&verbose, "verbose", false, "name every project a finding applies to, not just a few")
-	f.BoolVar(&yes, "yes", false, "apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything)")
+	commandflags.AddYesFlag(cmd, &yes, "apply without asking (required without a terminal), and install an Nx workspace's packages first (a terminal asks before changing anything)")
 	f.BoolVar(&commit, "commit", false, "commit the conversion as one operation when it is done, so smith undo can revert it (nothing is committed without it)")
 	f.BoolVar(&allowDirty, "allow-dirty", false, "convert even with uncommitted changes (not with --level full)")
 	level := (*string)(&choices.Level)

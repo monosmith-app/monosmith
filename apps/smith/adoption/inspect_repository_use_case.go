@@ -129,7 +129,7 @@ func Inspect(dir, version string, log io.Writer) (Report, error) {
 	}
 	r.Warnings = append(r.Warnings, ExistingWorkflows(files, read, r.Providers)...)
 	if deps := rootRuntimeDependencies(root); len(deps) > 0 && hasNodeProjects(r.Projects) {
-		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -w <project> <package> for each project that imports it, then drop it from the root"})
+		r.Warnings = append(r.Warnings, Item{Message: "the root package.json has runtime dependencies (" + strings.Join(deps, ", ") + "): in smith each project declares what it uses", Step: "smith install -p <project> <package> for each project that imports it, then drop it from the root"})
 	}
 	return r, nil
 }

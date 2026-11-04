@@ -1,6 +1,7 @@
 package packageprompt
 
 import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strconv"
 	"strings"
 
@@ -14,8 +15,8 @@ import (
 )
 
 // Prompt asks which project and which packages to install on, or remove from,
-// and ends as the command line that does it: `smith install -w <project> [-D]
-// <packages>` or `smith uninstall -w <project> <packages>`. It shows that
+// and ends as the command line that does it: `smith install -p <project> [-D]
+// <packages>` or `smith uninstall -p <project> <packages>`. It shows that
 // line as it will run, as the confirmation dialog does.
 //
 // Keys: typing fills the packages; Left and Right on the project choose
@@ -180,7 +181,7 @@ func (p Prompt) Argv() []string {
 		if !ok {
 			return nil
 		}
-		argv := []string{"install", "-w", p.project, "workspace:" + lib.Name}
+		argv := []string{"install", flagvocabulary.Arg("project"), p.project, "workspace:" + lib.Name}
 		if spec := p.rangeChoice().Spec; spec != "" {
 			argv = append(argv, "--range", spec)
 		}
@@ -191,9 +192,9 @@ func (p Prompt) Argv() []string {
 		return nil
 	}
 	if p.remove {
-		return append([]string{"uninstall", "-w", p.project}, names...)
+		return append([]string{"uninstall", flagvocabulary.Arg("project"), p.project}, names...)
 	}
-	argv := []string{"install", "-w", p.project}
+	argv := []string{"install", flagvocabulary.Arg("project"), p.project}
 	if p.dev {
 		argv = append(argv, "-D")
 	}

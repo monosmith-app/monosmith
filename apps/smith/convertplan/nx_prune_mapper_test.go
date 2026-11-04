@@ -34,7 +34,7 @@ func TestNxPruneBecomesTheNodePluginsPruneIntoTheBuildsDirectory(t *testing.T) {
 		mapNxPrune(plan, p, pp, name)
 	}
 	task := plan.Override("azure-host").Tasks[pruneTask]
-	if got := strings.Join(task.Command, " "); got != "{smith} npm-prune apps/azure-host --out apps/azure-host/dist" {
+	if got := strings.Join(task.Command, " "); got != "{smith} npm-prune apps/azure-host --output apps/azure-host/dist" {
 		t.Errorf("prune = %q", got)
 	}
 	if len(plan.Findings) != 3 || plan.Findings[0].Severity != Mapped || !strings.Contains(plan.Findings[0].Message, "into apps/azure-host/dist") {

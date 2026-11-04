@@ -5,7 +5,7 @@ a fresh clone needs, for every language in the workspace: `npm install` for the 
 projects, the Python venv and its requirements, `go mod download`. With packages it adds
 them to one project with that project's own toolchain: `npm install --workspace`, the
 project's `pyproject.toml` and the venv, `go get`. Each project owns its dependencies, so a
-package needs a target: `smith install -w <project> <package>`.
+package needs a target: `smith install -p <project> <package>`.
 
 ## When to use it
 
@@ -17,22 +17,22 @@ to make versions agree, [`smith sync`](sync.md).
 
 ## Asking first
 
-Naming a package (`smith install -w web zod`) shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. A plain `smith install` only restores what the workspace already declares and asks nothing.
+Naming a package (`smith install -p web zod`) shows the project manifests it changes. A terminal asks `Go ahead? [y/N]`; without a terminal, smith refuses and names `--yes`. A plain `smith install` only restores what the workspace already declares and asks nothing.
 
 ## The plan: --dry-run
 
-`smith install -w web zod --dry-run` prints, for each project, the package, whether it is a library of this
+`smith install -p web zod --dry-run` prints, for each project, the package, whether it is a library of this
 workspace (linked, not downloaded), the section it goes into, and the latest release the registry reports for
 a name typed with no version. It changes nothing. The Deps tab (`i`) and the Projects tab show this plan in the
 confirmation. The registry description of a package is not shown: the plugins do not report it.
 
 ## The workspace root
 
-`smith install -w . [-D] <package>` adds the package to the `package.json` at the top of the workspace, shared by
+`smith install -p . [-D] <package>` adds the package to the `package.json` at the top of the workspace, shared by
 every project. It runs `npm install <package> [--save-dev]` with no `--workspace`, so only the root manifest and
-the lock file change. `.` can be combined with projects (`-w . -w web`). `smith uninstall -w .` is the reverse.
+the lock file change. `.` can be combined with projects (`-p . -p web`). `smith uninstall -p .` is the reverse.
 The root takes registry packages only (a library of the workspace is linked into a project, not the root).
-In a workspace with no Node project, `-w .` is refused and names the fix. The plan (`--dry-run`) and the
+In a workspace with no Node project, `-p .` is refused and names the fix. The plan (`--dry-run`) and the
 confirmation list the root with the exact command.
 
 ## What install cannot do yet
@@ -47,16 +47,16 @@ confirmation list the root with the exact command.
 
 ```sh
 smith install
-smith install -w <project> [-D] <package>...
-smith install -w . [-D] <package>...        # the workspace root, shared by every project
-smith install -w <project> <library of this workspace>... [--range <range>]
-smith install -w <project> --registry <name>...
+smith install -p <project> [-D] <package>...
+smith install -p . [-D] <package>...        # the workspace root, shared by every project
+smith install -p <project> <library of this workspace>... [--range <range>]
+smith install -p <project> --registry <name>...
 ```
 
 ## Arguments and flags
 
 <!-- smith:begin install -->
-Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)
+Add a package to a project (-p), or with none install everything the workspace declares (up updates, sync aligns versions)
 
 Usage: `smith install [packages...] [flags]`
 
@@ -70,16 +70,16 @@ Alias: `smith i`
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--dry-run` | boolean | off | show where each package goes and its latest release, and change nothing |
+| `-p, --project <project>` | string, repeatable |  | target project, by name or directory; repeat it or separate them with commas (also -w, --workspace, --projects) |
 | `--range <range>` | string |  | the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks |
 | `--registry` | boolean | off | install the names from the registry, even when a name is also a project of this workspace |
 | `-D, --save-dev` | boolean | off | add as a development dependency (npm devDependencies, the Python dev extra, a Go tool) |
 | `--verbose` | boolean | off | show the package manager's own output and warnings (otherwise warnings fold into one line) |
-| `-w, --workspace <workspace>` | string, repeatable |  | target project, by name or directory; repeat it for several |
 | `-y, --yes` | boolean | off | never ask: accept the defaults, and refuse a name that could be a project or a registry package |
 
 <!-- smith:end install -->
 
-- `-w` names the target project by name or directory, and may be repeated to add the same
+- `-p` names the target project by name or directory, and may be repeated to add the same
   package to several.
 - `-D`/`--save-dev` adds a development dependency: npm `devDependencies`, the Python `dev`
   extra, a Go tool.
@@ -91,7 +91,7 @@ Alias: `smith i`
 | Code | Meaning |
 |---|---|
 | 0 | Installed. |
-| 1 | A package was named without `-w`, the target does not exist, or the package manager failed. |
+| 1 | A package was named without `-p`, the target does not exist, or the package manager failed. |
 
 ## Files and environment
 
@@ -119,7 +119,7 @@ up to date in 1s
 Add a dependency to one project, and a dev dependency:
 
 ```sh
-smith install -w web zod
+smith install -p web zod
 ```
 
 ```text
@@ -129,7 +129,7 @@ up to date in 2s
 ```
 
 ```sh
-smith install -w web -D left-pad
+smith install -p web -D left-pad
 ```
 
 ```text
@@ -147,12 +147,12 @@ manifest and does not break the next install.
 ## An internal library
 
 A project can depend on a lib or a package of the same workspace. Give its name to
-`smith install -w <project>` like any package:
+`smith install -p <project>` like any package:
 
 ```sh
-smith install -w web @acme/core        # Node: "@acme/core" goes into package.json
-smith install -w api shop-core-py      # Python: the distribution name goes into pyproject.toml
-smith install -w svc core-go           # Go: a require of the module path, go.work finds the folder
+smith install -p web @acme/core        # Node: "@acme/core" goes into package.json
+smith install -p api shop-core-py      # Python: the distribution name goes into pyproject.toml
+smith install -p svc core-go           # Go: a require of the module path, go.work finds the folder
 ```
 
 smith links the library when the name is the name of a project of the workspace, its folder,
@@ -209,9 +209,9 @@ other languages have no range to choose.
 | a cycle | the cycle, such as `core → ui → core` |
 | a name that is no project (`workspace:cor`) | the near names: `Did you mean core?` |
 
-Remove the link with `smith uninstall -w <project> <library>`. If the project did not
+Remove the link with `smith uninstall -p <project> <library>`. If the project did not
 depend on it, smith says so and changes nothing. A registry package with the name of a
-project is removed with `smith uninstall -w <project> --registry <name>`.
+project is removed with `smith uninstall -p <project> --registry <name>`.
 
 The TUI and the VS Code extension ask first: "A library of this workspace" or "A package
 from the registry". The first lists only the libraries that are valid for the project, with
@@ -221,7 +221,7 @@ their kind and language, so nothing is typed.
 
 | Message | Cause and remedy |
 |---|---|
-| `adding a package needs a target project: smith install -w <project> <package>. A bare smith install (no package) installs the whole workspace` | Add `-w <project>`. |
+| `adding a package needs a target project: smith install -p <project> <package>. A bare smith install (no package) installs the whole workspace` | Add `-p <project>`. |
 | `no project "nope": name it by its name or its directory (projects: api, tools, ui, web, web2)` | Check the name with `smith projects`. |
 | `core is a project of this workspace (libs/core) and a package on the registry. Say which one you mean: ...` | Use `workspace:core` for the project or `--registry core` for the package. |
 | `web is an app (apps/web), and an app cannot be depended upon.` | Link a lib or a package instead. |

@@ -57,7 +57,7 @@ Usage: `smith slices check <project directory>... [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--architecture <architecture>` | string |  | check this architecture's import rules instead: hexagonal, clean, ddd, modular-monolith, mvc, package-by-layer |
-| `--lang <lang>` | language name | `go` | language of the projects: cpp, dart, dotnet, go, jvm, php, python, ruby, rust; with --architecture also node |
+| `-l, --lang <lang>` | language name | `go` | language of the projects: cpp, dart, dotnet, go, jvm, php, python, ruby, rust; with --architecture also node (also --language) |
 
 <!-- smith:end slices check -->
 

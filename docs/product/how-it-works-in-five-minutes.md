@@ -64,7 +64,7 @@ and build, and adding it regenerates the CI pipeline.
 
 In a terminal, `smith add` starts from "What are you building?" (a website, an API, a function
 app, a desktop app, a library or a package) instead of from settings.
-To use one library from another project, run `smith install -w web workspace:core`: smith writes
+To use one library from another project, run `smith install -p web workspace:core`: smith writes
 the dependency in the form of the language and downloads nothing.
 smith reads the dependencies and the imports to learn the graph (`smith graph`, or
 `smith graph --format tui` to browse it). Ask the graph what a change reaches with

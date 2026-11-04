@@ -10,5 +10,5 @@ func libraryUseHint(kind, name string) string {
 	if kind != "lib" {
 		return ""
 	}
-	return "Use it from an app: smith install -w <app> " + name + " (in the terminal interface, press + on the app and pick it)."
+	return "Use it from an app: smith install -p <app> " + name + " (in the terminal interface, press + on the app and pick it)."
 }

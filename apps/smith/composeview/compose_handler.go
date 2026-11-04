@@ -3,6 +3,7 @@ package composeview
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"os/exec"
 	"strings"
@@ -64,7 +65,7 @@ Nothing is written.`,
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON: the catalogue, and with --with the check and the plan")
 	cmd.Flags().StringVar(&o.Search, "search", "", "find items by words: name, title, alias (desktop, serverless, web) or description")
-	cmd.Flags().StringVarP(&o.Lang, "lang", "l", "", "show only this language's items, and check --with for it")
+	commandflags.AddLangFlag(cmd, &o.Lang, "", "show only this language's items, and check --with for it")
 	cmd.Flags().StringSliceVar(&o.With, "with", nil, "check this selection and print its plan, comma separated (react,vitest)")
 	cmd.Flags().StringVar(&o.Kind, "kind", "app", "the kind of project the plan is for: app, lib or package")
 	cmd.Flags().StringVar(&o.Name, "name", "", "the project name the plan uses (<name> when not given)")

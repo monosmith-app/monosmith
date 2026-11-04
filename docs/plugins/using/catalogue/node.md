@@ -33,7 +33,7 @@ Toolchain add-ons that sit on top of this plugin: [typescript](typescript.md), [
 | Imports (graph edges) | the bare package names imported by every `.ts .tsx .mts .cts .js .jsx .mjs .cjs` file under the project (`import ... from`, `import()`, `require()`; comments and string contents are ignored; `.d.ts`, relative paths, `node:` built-ins, `#` subpath imports, and `node_modules`, `dist`, `coverage`, `build` and hidden folders are skipped), plus every name declared in `dependencies`, `devDependencies`, `peerDependencies` and `optionalDependencies`. A graph edge is made where a name equals another project's export. |
 | Toolchain | `node <version>` from `node --version` |
 
-Real output after `smith install -w web @ts-demo/kit`:
+Real output after `smith install -p web @ts-demo/kit`:
 
 ```
 $ smith graph
@@ -337,7 +337,7 @@ registry=https://pkgs.dev.azure.com/acme/_packaging/libs/npm/registry/
 
 ## Linking an internal library
 
-`smith install -w <project> @acme/core` writes the library's package name in `dependencies` of the project's `package.json` and runs `npm install`, which links the workspace copy. The range follows what the workspace's libraries already use; with no habit yet, smith asks between `*` (any version, nothing to edit later) and the library's current `^x.y.z`, and `--range` decides in advance. `smith uninstall -w <project> @acme/core` removes it from every dependency section. The plugin declares the `link` capability.
+`smith install -p <project> @acme/core` writes the library's package name in `dependencies` of the project's `package.json` and runs `npm install`, which links the workspace copy. The range follows what the workspace's libraries already use; with no habit yet, smith asks between `*` (any version, nothing to edit later) and the library's current `^x.y.z`, and `--range` decides in advance. `smith uninstall -p <project> @acme/core` removes it from every dependency section. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 
@@ -370,11 +370,11 @@ Dependencies:
 | Command | What it does |
 |---|---|
 | `smith install` | `npm install --no-audit --no-fund` at the root (every workspace) |
-| `smith install -w <project> <pkg>...` | `npm install <pkg>... --workspace <dir> --no-audit --no-fund` (`-D` adds `--save-dev`) |
-| `smith uninstall -w <project> <pkg>...` | `npm uninstall <pkg>... --workspace <dir>` |
+| `smith install -p <project> <pkg>...` | `npm install <pkg>... --workspace <dir> --no-audit --no-fund` (`-D` adds `--save-dev`) |
+| `smith uninstall -p <project> <pkg>...` | `npm uninstall <pkg>... --workspace <dir>` |
 | `smith up`, `smith sync` | the plugin lists every declaration of the root and each project (`dependencies`, `devDependencies`, `optionalDependencies`, `peerDependencies`), with installed versions from `node_modules`, and rewrites plain ranges (`^1.2.3`, `~1`, `>=2`); tags, URLs, git refs, `file:`, `workspace:`, `npm:` aliases and compound ranges are reported and left alone; peers are never rewritten. Latest versions come from `npm view`, so `.npmrc` applies; it also compares Node with the newest LTS. |
 
-Real: `smith install -w web @ts-demo/kit` printed `✔ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
+Real: `smith install -p web @ts-demo/kit` printed `✔ web: added @ts-demo/kit (apps/web/package.json, package-lock.json)`. `smith up --check`:
 
 ```
 patch
@@ -406,7 +406,7 @@ A folder cannot be built by `npm run` alone: scripts, dependencies and tool conf
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, node v24.12.0, npm 11.6.2. Two throw-away workspaces: `js-demo` (`--stack none`, plain JavaScript) and `ts-demo` (default stack `node-jest`: TypeScript ~6.0.3, ESLint 10.12.0 with `@monosmith/eslint-config`, Jest 30). Run: `smith add app|lib|package ... --lang node` (both stacks), `smith projects`, `smith graph`, `smith explain`, `smith run build|typecheck|lint|test|deps-check|prune|package|start`, `smith ci pack`, `smith doctor` (clean; missing lint tasks; a wrong `[toolchains] node`; an undeclared import; a registry in `.npmrc`), `smith doctor --fix --yes` (`.npmrc`), `smith ci generate`, `smith ci setup`, `smith ci audit` (with and without the `node` policy), `smith ci check`, `smith release --dry-run [--json]` (including a Node app with release assets), `smith install -w`, `smith up --check`, `smith remove util --dry-run --force`, `smith plugin list --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, node v24.12.0, npm 11.6.2. Two throw-away workspaces: `js-demo` (`--stack none`, plain JavaScript) and `ts-demo` (default stack `node-jest`: TypeScript ~6.0.3, ESLint 10.12.0 with `@monosmith/eslint-config`, Jest 30). Run: `smith add app|lib|package ... --lang node` (both stacks), `smith projects`, `smith graph`, `smith explain`, `smith run build|typecheck|lint|test|deps-check|prune|package|start`, `smith ci pack`, `smith doctor` (clean; missing lint tasks; a wrong `[toolchains] node`; an undeclared import; a registry in `.npmrc`), `smith doctor --fix --yes` (`.npmrc`), `smith ci generate`, `smith ci setup`, `smith ci audit` (with and without the `node` policy), `smith ci check`, `smith release --dry-run [--json]` (including a Node app with release assets), `smith install -p`, `smith up --check`, `smith remove util --dry-run --force`, `smith plugin list --json`.
 
 `smith run package` creates `dist/drop` before it runs, so an app without a `build` script packs on a fresh checkout as `smith ci pack` does.
 

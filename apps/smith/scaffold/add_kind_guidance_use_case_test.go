@@ -6,7 +6,7 @@ import (
 )
 
 func TestAddingAPackageNameAsAKindPointsToInstall(t *testing.T) {
-	const hint = "smith install -w <project> <package>"
+	const hint = "smith install -p <project> <package>"
 	// The kind is checked before anything of the workspace is read.
 	if _, err := AddProject(nil, AddOptions{Kind: "zod", Name: "web"}); err == nil || !strings.Contains(err.Error(), hint) {
 		t.Fatalf("add with a package as the kind: %v", err)

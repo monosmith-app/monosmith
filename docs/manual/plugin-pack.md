@@ -35,7 +35,7 @@ Usage: `smith plugin pack [dir] [flags]`
 
 | Flag | Type | Default | Effect |
 |---|---|---|---|
-| `-o, --out <out>` | string | the current directory | directory to write the archive to |
+| `-o, --output <output>` | string |  | directory to write the archive to (also --out) |
 
 <!-- smith:end plugin pack -->
 

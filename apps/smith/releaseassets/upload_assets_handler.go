@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ asked and anything else is refused. Files of the same name are replaced.`,
 		},
 	}
 	cmd.Flags().StringVar(&req.Platform, "platform", "", "the platform of this machine: windows-x64, macos-arm64, macos-x64, linux-x64 or linux-arm64 (default: detected)")
-	cmd.Flags().StringVar(&req.Project, "project", "", "build only this project")
+	commandflags.AddOneProjectFlag(cmd, &req.Project, "build only this project")
 	cmd.Flags().StringVar(&req.Tag, "tag", "", "build for an existing release tag (project@version), replacing its files")
 	cmd.Flags().StringVar(&req.Source, "source", "", "with --tag, the code to build when the tag is not at HEAD: current (the code as it is now, named with the tag's version) or tag (the tag's own commit); default: ask in a terminal, refuse without one")
 	return cmd
