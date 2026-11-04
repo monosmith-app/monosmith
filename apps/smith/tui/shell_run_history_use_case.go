@@ -142,7 +142,7 @@ func (s Shell) runReasons() map[string]string {
 	r := map[string]string{}
 	if s.run == nil {
 		const none = "nothing has run yet"
-		for _, id := range []string{"run.follow", "run.scroll", "run.again-failed", "run.copy-log", "run.older", "run.newer"} {
+		for _, id := range []string{"run.follow", "run.scroll", "run.again-failed", "run.copy-log", "run.older", "run.newer", "run.open-recent", "run.all-output"} {
 			r[id] = none
 		}
 		if s.lastArg == nil {
@@ -164,6 +164,16 @@ func (s Shell) runReasons() map[string]string {
 	}
 	if len(s.logLines()) == 0 {
 		r["run.copy-log"] = "the log is empty"
+	}
+	if s.runHome {
+		// The start screen lists the runs: the keys of a run's own view wait.
+		const home = "this is the start screen"
+		for _, id := range []string{"run.follow", "run.again-failed", "run.copy-log", "run.older", "run.newer", "run.all-output"} {
+			r[id] = home
+		}
+	} else {
+		const view = "only the start screen lists the runs"
+		r["run.open-recent"] = view
 	}
 	return r
 }

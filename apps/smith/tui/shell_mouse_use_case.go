@@ -184,6 +184,20 @@ func (s *Shell) contentClick(rx, ry int, double bool) tea.Cmd {
 	case "task":
 		s.runSel = h.id
 		s.keepRunVisible()
+	case "recent":
+		s.recentAt = h.index
+		if double {
+			s.openRecent()
+		}
+	case "nav":
+		switch s.navAction(rx) {
+		case "start":
+			s.openStart()
+		case "older":
+			s.stepRun(-1)
+		case "newer":
+			s.stepRun(1)
+		}
 	case "finding":
 		s.doctor = s.doctor.SelectRow(h.index)
 	case "release":

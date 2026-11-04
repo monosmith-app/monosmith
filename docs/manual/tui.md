@@ -129,7 +129,9 @@ each title (`Build orders`, `Build all 23`).
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |
 | Run | `Up` `Down` `PgUp` `PgDn` | Pick a task, scroll its log. |
-| Run | `Esc` | Show all output. |
+| Run | `Esc` | Show all output; once nothing runs, press it again to open the start screen. |
+| Run | `,` `.` | Show the older or the newer run of this session (smith keeps the last 20). The header of the run view, `‹ Start · run 2 of 5 · ‹ older  newer ›`, has the same three actions as clickable parts: `‹ Start` opens the start screen, `‹ older` and `newer ›` step through the runs. A part that cannot be used now (no older run, a run in progress) is faint, and a click on it says why. |
+| Run, start screen | `Up` `Down`, `Enter` | The start screen has the five run buttons and, under them, **Recent runs**: one row for each kept run, newest first, with its command, how it ended (passed, failed, stopped), how long it took and how long ago it ended. `Up` and `Down` choose a row, `Enter` or a double click opens that run, and a single click only chooses it. |
 | Doctor | `Enter` | Expand the check (narrow terminals), or unfold the detail (wide). |
 | Doctor | `f` | Fix this check: the wizard asks, shows what changes, then applies. |
 | Doctor | `F` | Fix with doctor: the wizard on all the fixes that need no decision. |

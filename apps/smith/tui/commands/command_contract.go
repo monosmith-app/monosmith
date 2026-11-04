@@ -86,6 +86,8 @@ type Command struct {
 	// out of the footer. ShowIn are the views whose footer shows it (Views when
 	// empty); Tail puts it at the end of every footer.
 	Footer string
+	// StartFooter replaces Footer while the Run tab shows its start screen.
+	StartFooter string
 	// ScopeInFooter puts the project a run acts on in the footer label
 	// ("build web"), so the scope is known before the key is pressed.
 	ScopeInFooter bool
@@ -137,6 +139,8 @@ type State struct {
 	Narrow, DetailOpen bool
 	// Running is true while a command is running in the run view.
 	Running bool
+	// StartScreen is true while the Run tab shows its start screen, the list of recent runs.
+	StartScreen bool
 	// EmptyFolder is true outside a workspace when the folder holds nothing yet.
 	EmptyFolder bool
 	// BrokenConfig is true when smith.toml exists but cannot be read: the
