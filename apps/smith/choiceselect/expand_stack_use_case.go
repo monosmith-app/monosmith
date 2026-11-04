@@ -35,8 +35,14 @@ func ExpandStack(st protocol.Stack, offers []Offer) (protocol.Stack, error) {
 	if st.Language != "" && st.Language != derived.Language {
 		return st, fmt.Errorf("its choices are for %s projects, but the stack names the language %s", derived.Language, st.Language)
 	}
-	if st.Scaffold != "" && st.Scaffold != derived.Scaffold {
+	if st.Scaffold != "" && derived.Scaffold != "" && st.Scaffold != derived.Scaffold {
 		return st, fmt.Errorf("its choices are written by %s, but the stack names the scaffold %s", derived.Scaffold, st.Scaffold)
+	}
+	if derived.Scaffold == "" && st.Scaffold != "" {
+		// No choice writes the project (lint and test only): the stack names the
+		// scaffold, and the toolchain the stack names comes first, as the scaffold's does.
+		derived.Scaffold = st.Scaffold
+		derived.Toolchain = append(slices.Clone(st.Toolchain), slices.DeleteFunc(derived.Toolchain, func(p string) bool { return slices.Contains(st.Toolchain, p) })...)
 	}
 	for _, extra := range st.Toolchain {
 		if !slices.Contains(derived.Toolchain, extra) {

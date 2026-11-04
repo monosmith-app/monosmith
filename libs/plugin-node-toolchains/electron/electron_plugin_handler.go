@@ -31,6 +31,7 @@ func (p *Electron) Describe(params protocol.InitializeParams) (protocol.Initiali
 		Languages: []string{"node"},
 		Requires:  []protocol.PluginRef{protocol.RequiresLanguage("node")},
 		Roles:     []protocol.Role{protocol.RoleScaffold},
+		Kinds:     []protocol.ProjectKind{protocol.ProjectApp},
 		Choices:   electronChoices.Choices(),
 	}, nil
 }

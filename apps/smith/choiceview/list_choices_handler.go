@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,9 @@ type row struct {
 	choiceselect.Offer
 	// Problem says why the choice cannot be used; empty when it can.
 	Problem string `json:"problem,omitempty"`
+	// Kinds are the project kinds the choice can be used for (app, lib,
+	// package); absent means every kind, as for a lint tool or a test runner.
+	Kinds []protocol.ProjectKind `json:"kinds,omitempty"`
 }
 
 // Command is `smith choices`.
@@ -42,9 +46,15 @@ needs and the selection leaves out takes its default, marked (default).`,
 			defer s.Close()
 			offers := s.Plugins.Offers()
 			problems := choiceselect.Problems(offers, func(language string) bool { _, err := s.Plugins.ForLanguage(language); return err == nil })
+			kinds := choiceselect.FitKinds(offers, func(plugin string) []protocol.ProjectKind {
+				if c := s.Plugins.Get(plugin); c != nil {
+					return c.Info.ScaffoldKinds()
+				}
+				return nil
+			})
 			rows := make([]row, len(offers))
 			for i, o := range offers {
-				rows[i] = row{Offer: o, Problem: problems[choiceselect.ProblemKey(o)]}
+				rows[i] = row{Offer: o, Problem: problems[choiceselect.ProblemKey(o)], Kinds: kinds[choiceselect.ProblemKey(o)]}
 			}
 			sort.SliceStable(rows, func(i, j int) bool {
 				if rows[i].Axis != rows[j].Axis {

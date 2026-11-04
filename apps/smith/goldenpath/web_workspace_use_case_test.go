@@ -25,7 +25,7 @@ func TestWebWorkspace(t *testing.T) {
 	for stack := range stacks {
 		w.smith(true, "add", "app", stack, "--stack", stack)
 	}
-	if out := w.smith(false, "add", "lib", "ui", "--stack", "react"); !strings.Contains(out, "is an app") {
+	if out := w.smith(false, "add", "lib", "ui", "--stack", "react"); !strings.Contains(out, "cannot scaffold a lib; it scaffolds app") {
 		t.Fatalf("a web stack scaffolds apps only:\n%s", out)
 	}
 

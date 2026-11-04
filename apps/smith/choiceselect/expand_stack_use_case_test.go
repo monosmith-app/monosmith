@@ -30,6 +30,17 @@ func TestExpandStackDerivesTheStackFromTheSelection(t *testing.T) {
 	}
 }
 
+func TestAStackOfLintAndTestKeepsTheScaffoldItNames(t *testing.T) {
+	st := protocol.Stack{Name: "mine", Choices: []string{"eslint", "jest"}, Scaffold: "typescript", Toolchain: []string{"typescript"}}
+	got, err := ExpandStack(st, webOffers())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Scaffold != "typescript" || !slices.Equal(got.Toolchain, []string{"typescript", "eslint", "jest"}) {
+		t.Errorf("the scaffold the stack names writes the project, and comes first: %+v", got)
+	}
+}
+
 func TestAStackThatNamesItsLanguageExpandsAnAmbiguousName(t *testing.T) {
 	st := protocol.Stack{Name: "api", Language: "python", Choices: []string{"azure-functions", "http-trigger", "python313"}}
 	got, err := ExpandStack(st, functionOffers())

@@ -513,7 +513,11 @@ the kind, then the full list of languages. After the outcome and the language, t
 the name, then, from what the plugins
 publish (`smith choices`), a list of choices for that language: a framework, a test runner, a
 style. Tick any with `Space`; `Enter` with nothing ticked uses the stack's defaults. The
-choices become `--with a,b`. A workspace with three or more projects is also asked whether the
+list shows only the choices that fit the kind: a package is offered lint and test choices, not
+a framework or a desktop shell. `Enter` checks the ticked set before the form goes on, and says
+in plain words what is missing (a website needs a framework, a style needs the framework it
+goes with) instead of failing at the end. Lint and test choices alone are enough for a package:
+the stack's own scaffold writes it. The choices become `--with a,b`. A workspace with three or more projects is also asked whether the
 new one should do what the others do (the default), follow one project you pick from a list
 (`--like <project>`) or take the stack's own defaults (`--fresh`). Then the shell runs `smith add ... --dry-run` and shows its plan in a dialog:
 the files it would write and, when it applies, which sibling project it follows

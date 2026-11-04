@@ -17,7 +17,9 @@ import (
 // A selection has one choice per axis, unless the choices on an axis all say
 // Many; every Requires is in it, no Conflicts is in it, all choices are for one
 // language, exactly one writes the project, and a choice that only adds to a
-// plugin's project has that plugin in the selection. The first problem is the
+// plugin's project has that plugin in the selection. A selection of only lint
+// and test choices (AppliesOnBase) has none that writes the project: the
+// stack's own scaffold writes it and they apply on top. The first problem is the
 // error, in one sentence that names the choices at fault and the fix.
 func Solve(offers []Offer, names []string) (Selection, error) {
 	return SolveIn(offers, "", names)
@@ -167,8 +169,8 @@ func checkRoles(chosen, offers []Offer, existing bool) error {
 		}
 	}
 	switch {
-	case len(scaffolds) == 0 && !existing:
-		return &IncompleteError{Message: fmt.Sprintf("no choice in %s writes the project: add one of %s", strings.Join(namesOf(chosen), ", "), strings.Join(withRole(offers, protocol.RoleScaffold, chosen[0].Language), ", "))}
+	case len(scaffolds) == 0 && !existing && !onBase(chosen):
+		return &IncompleteError{Message: fmt.Sprintf("no choice in %s writes the project: add one of %s to --with, or give no --with to start from the stack's own defaults", strings.Join(namesOf(chosen), ", "), strings.Join(withRole(offers, protocol.RoleScaffold, chosen[0].Language), ", "))}
 	case len(scaffolds) > 1:
 		return fmt.Errorf("%s and %s both write the project: keep one", scaffolds[0].Name, scaffolds[1].Name)
 	}
