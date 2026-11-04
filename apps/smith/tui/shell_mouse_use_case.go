@@ -78,8 +78,14 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		s.lastClick = pointer.Click{}
 	}
 	switch {
-	case s.tools != nil, s.compose != nil, s.result != nil:
+	case s.compose != nil:
 		return nil
+	case s.tools != nil:
+		m, out := s.tools.Click(s.th, x, y, double)
+		s.tools = &m
+		return s.afterTools(out)
+	case s.result != nil:
+		return s.resultClick(x, y, double)
 	case s.adopt != nil:
 		m, out := s.adopt.Click(x, y)
 		s.adopt = &m
