@@ -305,6 +305,8 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 			return s.execute(argv, false)
 		}
 		s.say("No dependency to update")
+	case "deps-install":
+		return s.installDependency()
 	case "deps-remove":
 		return s.removeDependency()
 	case "deps-align":

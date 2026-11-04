@@ -22,7 +22,7 @@ import (
 // Commands are `smith install`, `smith uninstall`, `smith sync` and `smith up`.
 func Commands(version string) []*cobra.Command {
 	var targets []string
-	var dev, verbose, registry, yes bool
+	var dev, verbose, registry, yes, dryRun bool
 	var linkRange string
 	install := &cobra.Command{
 		Use:     "install [packages...]",
@@ -58,7 +58,10 @@ project, --registry for the package.`,
 				return err
 			}
 			defer s.Close()
-			if goOn, err := confirmPackages(cmd, s, "add", targets, args, yes); err != nil || !goOn {
+			if dryRun {
+				return PlanInstall(s, targets, args, dev, registry, cmd.OutOrStdout())
+			}
+			if goOn, err := confirmPackages(cmd, s, "add",targets, args, yes); err != nil || !goOn {
 				return err
 			}
 			link := LinkOptions{Registry: registry, Range: linkRange}
@@ -72,6 +75,7 @@ project, --registry for the package.`,
 	install.Flags().BoolVar(&registry, "registry", false, "install the names from the registry, even when a name is also a project of this workspace")
 	install.Flags().StringVar(&linkRange, "range", "", "the version range written for a library of the workspace (for example '*' or '^1.2.0'); without it smith follows the workspace or asks")
 	install.Flags().BoolVarP(&yes, "yes", "y", false, "never ask: accept the defaults, and refuse a name that could be a project or a registry package")
+	install.Flags().BoolVar(&dryRun, "dry-run", false, "show where each package goes and its latest release, and change nothing")
 	install.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's own output and warnings (otherwise warnings fold into one line)")
 	install.Flags().StringArrayVarP(&targets, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")

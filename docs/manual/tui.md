@@ -143,6 +143,7 @@ each title (`Build orders`, `Build all 23`).
 | Deps | `s` | Mark the patch and minor ones. |
 | Deps | `a` | Mark all, or none. |
 | Deps | `u`, `Enter` | Update the marked ones (`smith deps up`). |
+| Deps | `i` | Install a package (`smith install -w <project> <package>`). It asks the names (a name or name@version, several with spaces), then the projects (space ticks; the projects that declare the package under the cursor start ticked, and nothing runs before you confirm), then the kind: production or development (`-D`). Each project is listed with its language and folder, so for a project with several parts, such as a Tauri app (a Rust part and a web part), you pick the part that gets the package. The confirmation opens at once and shows the plan: the latest release of each name and the section it goes into. Global installs, peer and optional dependencies are not offered: `smith install` has no way to do them. |
 | Deps | `x` | Remove the package under the cursor (`smith uninstall -w <project> <package>`). A package that one project declares goes straight to the confirmation with that project as `-w`; the workspace root, shown as `(root)`, is `-w .`. When several projects declare it, a multiple choice asks from which ones (space toggles); smith never picks for you. A development dependency is removed like any other. |
 | Deps | `v` | Bring drifting versions to one (`smith deps up --align`). |
 | Release | `Enter` | Show the commits behind the selected bump. |

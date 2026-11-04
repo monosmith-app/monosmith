@@ -54,7 +54,7 @@ var catalog = []Action{
 	{Command: []string{"tauri"}, Safety: Changes, NotInTUI: groupOnly, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri", "add"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
 	{Command: []string{"tauri", "icon"}, Plan: "--dry-run", Asks: true, Safety: Changes, NotInMCP: noToolYet, NotInServe: noMethodYet},
-	{Command: []string{"install"}, Asks: true, Safety: Changes},
+	{Command: []string{"install"}, Plan: "--dry-run", Asks: true, Safety: Changes},
 	{Command: []string{"uninstall"}, Asks: true, Safety: Changes},
 	{Command: []string{"tools"}, Safety: Reads, NotInMCP: noToolYet, NotInServe: "an editor reads the list through smith tools --json"},
 	{Command: []string{"tools", "install"}, Safety: NeedsTerminal, Terminal: "a package manager may ask for an administrator password; the shell shows the choices and runs the install in its own dialog, and leaves only for that password", Variants: []Variant{{When: []string{"--dry-run"}, Safety: Reads}}, NotInMCP: "installing on the machine is the person's step: the assistant reads smith tools and says what is missing", NotInServe: "an editor shows the choices from smith tools install --dry-run --json and runs the answer with --manager"},
