@@ -24,6 +24,7 @@ command.
 | Inside a workspace (a folder with `smith.toml`, or below one) | The **Home** view, with the seven views as tabs. |
 | In an empty folder | The **Start** menu: create a workspace (`smith new`): the name, then the same few questions the command asks (CI, main language, code layout, more options). |
 | In a folder that holds files but is not a workspace | The Start menu with **Bring this repository into MonoSmith** first, so Enter starts the wizard. |
+| In a folder whose `smith.toml` uses a renamed key (for example `[[task_groups]]`, now `[[groups]]`) | The Start menu with **Fix smith.toml** first. Enter shows the change as a diff and writes nothing until you confirm; then the shell opens the workspace. Any other problem in the file keeps its message, with its line and column. |
 
 When the shell cannot be drawn (standard output is not a terminal, `SMITH_SCREEN_READER` is
 set, or `SMITH_THEME=plain`), smith asks the same questions as plain numbered lines and runs
@@ -392,7 +393,7 @@ Home points at the tab (`New here? ...`) until you have opened it once; that is 
 
 ### The doctor fix wizard
 
-Opened by `f` or `F` in Doctor. It is the interactive form of
+Opened by `f` or `F` in Doctor, or by **Fix smith.toml** on the Start menu when `smith.toml` uses a renamed key (the same fix as `smith doctor --fix` makes; after it is applied the shell starts again inside the workspace). It is the interactive form of
 [`smith doctor --fix`](doctor.md) and asks the same questions.
 
 1. **Questions.** A fix may ask something (install the missing tool, or remove the script?).

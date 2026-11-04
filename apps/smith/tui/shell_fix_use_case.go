@@ -142,6 +142,13 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		return nil
 	}
 	s.fixing = nil
+	if s.repair != nil && msg.err == nil {
+		// smith.toml reads now: start again so the shell opens the workspace.
+		s.fix = nil
+		s.reopen, s.quit = true, true
+		s.reopenNote = "Fixed smith.toml. " + notCommittedHint()
+		return nil
+	}
 	refresh := s.refreshAfter([]string{"doctor", "--fix"})
 	if msg.err != nil {
 		w := s.fix.Fail(msg.err)
