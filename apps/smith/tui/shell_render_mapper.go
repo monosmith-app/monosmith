@@ -185,7 +185,7 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	if s.confirm != nil {
 		r := s.confirm.Rect()
-		rows = pane.Overlay(rows, s.confirm.Lines(s.th), r.X, r.Y)
+		rows = pane.Overlay(rows, s.confirm.Pulse(s.tick, s.waitedForPlan()).Lines(s.th), r.X, r.Y)
 	}
 	if s.fix != nil {
 		r := s.fix.Rect()
