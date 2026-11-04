@@ -205,6 +205,9 @@ func (p Prompt) Argv() []string {
 	return append(argv, names...)
 }
 
+// Removes reports whether the prompt removes packages instead of installing them.
+func (p Prompt) Removes() bool { return p.remove }
+
 // Dev reports whether the packages go to the development dependencies.
 func (p Prompt) Dev() bool { return p.dev }
 

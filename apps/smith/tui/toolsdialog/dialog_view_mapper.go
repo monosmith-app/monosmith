@@ -30,9 +30,9 @@ func (m Model) Lines(th theme.Theme) []string {
 	var body []string
 	switch m.ph {
 	case phasePick:
-		body = m.pickBody(th, inner)
+		body, _ = m.pickBody(th, inner)
 	case phaseAdmin:
-		body = m.adminBody(th, inner)
+		body, _ = m.adminBody(th, inner)
 	case phaseRun:
 		body = m.runBody(th, inner, height)
 	default:
@@ -60,11 +60,13 @@ func headLines(th theme.Theme, p toolinstall.ToolPlan, inner int) []string {
 }
 
 // pickBody is the first question: the options, the default marked, and the
-// exact command or address of the option under the cursor.
-func (m Model) pickBody(th theme.Theme, inner int) []string {
+// exact command or address of the option under the cursor. first is the line
+// of the first option, for a click.
+func (m Model) pickBody(th theme.Theme, inner int) (lines []string, first int) {
 	p := m.current()
-	lines := headLines(th, p, inner)
+	lines = headLines(th, p, inner)
 	lines = append(lines, "How do you want to get it?")
+	first = len(lines)
 	for i, o := range p.Options {
 		mark, label := "  ", o.Label
 		if o.Value == p.Default {
@@ -88,13 +90,15 @@ func (m Model) pickBody(th theme.Theme, inner int) []string {
 	if o.Note != "" {
 		lines = append(lines, pane.Wrap(th.Muted("Note: "+o.Note+"."), inner, 2)...)
 	}
-	return append(lines, "", th.Muted("up/down choose · enter confirm · esc cancel (nothing is installed)"))
+	lines = append(lines, "")
+	return append(lines, th.Muted("up/down choose · enter confirm · esc cancel (nothing is installed)"), th.Muted("click an entry, double-click to select")), first
 }
 
-// adminBody is the second question: who runs a command that needs administrator rights.
-func (m Model) adminBody(th theme.Theme, inner int) []string {
+// adminBody is the second question: who runs a command that needs
+// administrator rights. first is the line of the first answer, for a click.
+func (m Model) adminBody(th theme.Theme, inner int) (lines []string, first int) {
 	p := m.current()
-	lines := headLines(th, p, inner)
+	lines = headLines(th, p, inner)
 	lines = append(lines, "This command needs administrator rights:", "  "+th.Bold(strings.Join(m.opt.Command, " ")))
 	how := "The system asks for your permission itself."
 	if len(m.opt.Command) > 0 && m.opt.Command[0] == "sudo" {
@@ -102,6 +106,7 @@ func (m Model) adminBody(th theme.Theme, inner int) []string {
 	}
 	lines = append(lines, pane.Wrap(th.Muted(how), inner, 2)...)
 	lines = append(lines, "")
+	first = len(lines)
 	for i, a := range adminAnswers {
 		mark, label := "  ", a
 		if i == 0 {
@@ -112,7 +117,8 @@ func (m Model) adminBody(th theme.Theme, inner int) []string {
 		}
 		lines = append(lines, mark+label)
 	}
-	return append(lines, "", th.Muted("up/down choose · enter confirm · esc back"))
+	lines = append(lines, "")
+	return append(lines, th.Muted("up/down choose · enter confirm · esc back"), th.Muted("click an entry, double-click to select")), first
 }
 
 // runBody is the command and the end of its output, as it streams.
@@ -150,4 +156,39 @@ func (m Model) doneBody(th theme.Theme, inner int) []string {
 		}
 	}
 	return append(lines, "", th.Muted("smith tools shows what is still missing · enter closes"))
+}
+
+// Click handles a left press on the list of options or answers: one press moves
+// the cursor to the entry, a second press on the same cell (double is true)
+// answers like Enter. A press elsewhere, or while an install runs, changes
+// nothing.
+//
+// Parameters: th is the theme the dialog is drawn with; x and y are screen
+// cells; double says the press is the second of a double click.
+// Returns: the new dialog and what the host must do.
+func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
+	if !m.rect.Contains(x, y) {
+		return m, Outcome{}
+	}
+	inner := m.rect.W - 4
+	var first, n int
+	switch m.ph {
+	case phasePick:
+		_, first = m.pickBody(th, inner)
+		n = len(m.current().Options)
+	case phaseAdmin:
+		_, first = m.adminBody(th, inner)
+		n = len(adminAnswers)
+	default:
+		return m, Outcome{}
+	}
+	i := y - m.rect.Y - 1 - first
+	if i < 0 || i >= n || y-m.rect.Y-1 >= m.rect.H-2 {
+		return m, Outcome{}
+	}
+	m.cursor = i
+	if double {
+		return m.Key("enter")
+	}
+	return m, Outcome{}
 }

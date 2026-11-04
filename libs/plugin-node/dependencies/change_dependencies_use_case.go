@@ -32,12 +32,19 @@ func Install(workspaceRoot string, params protocol.InstallParams) (protocol.Depe
 	return protocol.DependencyResult{Files: files, Notes: notes}, nil
 }
 
-// Uninstall removes packages from one project's package.json.
+// Uninstall removes packages from one project's package.json, whatever section
+// declares them (dependencies or devDependencies). A project whose root is "."
+// is the workspace root: its package.json is edited without --workspace.
 func Uninstall(workspaceRoot string, params protocol.UninstallParams) (protocol.DependencyResult, error) {
-	argv := append(append([]string{"npm", "uninstall"}, params.Packages...), "--workspace", params.Project.Root)
+	argv := append([]string{"npm", "uninstall"}, params.Packages...)
+	manifest := "package.json"
+	if params.Project.Root != "." {
+		argv = append(argv, "--workspace", params.Project.Root)
+		manifest = params.Project.Root + "/package.json"
+	}
 	notes, err := FoldedNpmRunner(workspaceRoot, append(argv, quiet...))
 	if err != nil {
 		return protocol.DependencyResult{}, err
 	}
-	return protocol.DependencyResult{Files: []string{params.Project.Root + "/package.json", "package-lock.json"}, Notes: notes}, nil
+	return protocol.DependencyResult{Files: []string{manifest, "package-lock.json"}, Notes: notes}, nil
 }

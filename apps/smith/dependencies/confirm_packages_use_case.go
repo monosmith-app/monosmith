@@ -22,11 +22,15 @@ func confirmPackages(cmd *cobra.Command, s *session.Session, verb string, target
 	if len(packages) == 0 {
 		return true, nil
 	}
+	atRoot, targets := SplitRootTarget(targets)
 	projects, err := resolve(s.Graph, targets)
-	if err != nil || len(projects) == 0 {
+	if err != nil || len(projects) == 0 && !atRoot {
 		return true, nil
 	}
 	var lines []operationplan.Line
+	if atRoot {
+		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: "package.json", Note: verb + " " + strings.Join(packages, ", ") + " in its dependencies"})
+	}
 	for _, p := range projects {
 		lines = append(lines, operationplan.Line{Action: operationplan.Change, Path: p.Root + "/", Note: verb + " " + strings.Join(packages, ", ") + " in its dependencies"})
 	}

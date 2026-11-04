@@ -21,6 +21,8 @@ func (s Shell) confirmDetails(argv []string) []string {
 	switch {
 	case isForcedRelease(argv):
 		lines = forcedReleaseDetails(argv)
+	case argv[0] == "uninstall":
+		lines = uninstallDetails(argv)
 	case argv[0] == "release":
 		lines = s.releaseDetails(argv)
 	case argv[0] == "doctor" && slices.Contains(argv, "--fix"):

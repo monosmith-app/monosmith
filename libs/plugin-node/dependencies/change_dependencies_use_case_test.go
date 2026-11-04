@@ -19,10 +19,15 @@ func TestNpmCommands(t *testing.T) {
 	res, _ := Install("/ws", protocol.InstallParams{Project: &web, Packages: []string{"left-pad", "zod@^3"}, Dev: true})
 	_, _ = Install("/ws", protocol.InstallParams{})
 	gone, _ := Uninstall("/ws", protocol.UninstallParams{Project: web, Packages: []string{"left-pad"}})
+	rooted, _ := Uninstall("/ws", protocol.UninstallParams{Project: protocol.Project{Root: "."}, Packages: []string{"@swc/core"}})
+	if len(rooted.Files) != 2 || rooted.Files[0] != "package.json" {
+		t.Fatalf("the root's own manifest is the one changed: %v", rooted.Files)
+	}
 	want := []string{
 		"npm install left-pad zod@^3 --workspace apps/web --save-dev --no-audit --no-fund",
 		"npm install --no-audit --no-fund",
 		"npm uninstall left-pad --workspace apps/web --no-audit --no-fund",
+		"npm uninstall @swc/core --no-audit --no-fund",
 	}
 	if strings.Join(ran, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("ran:\n%s", strings.Join(ran, "\n"))
