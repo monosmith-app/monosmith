@@ -32,7 +32,7 @@ documentation, not the flags.
    names the synonyms: `(also -w, --workspace, --projects)`. Removing a synonym is one line in the JSON.
 4. **Clients take the names from the vocabulary.** The TUI, the guided forms, the MCP tools and the hints
    call `flagvocabulary.Arg("project")`. The VS Code extension and the JetBrains plugin use constants that
-   `go run ./flaggen` (in `libs/actions`) writes from the JSON: `flag.project` and `SmithFlags.PROJECT`.
+   `go run ./flaggen` (in `libs/actions`) writes from the JSON: `flag.project` and `SmithFlagsConfig.PROJECT`.
    Every command line smith prints or builds uses the canonical spelling (`-p`).
 5. **Tests guard it.** `TestEveryCommandUsesTheFlagVocabulary` builds the command tree in memory (no session, no
    plugin) and fails when a command defines a near-synonym of a shared concept in plain view, a shared flag

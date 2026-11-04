@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.composestack
 
-import dev.monosmith.jetbrains.smithcommand.SmithFlags
+import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 
 /** The pure steps of composing a stack: the arguments, the words of a plan, and the radio behaviour of the picks. */
 object ComposeStackAlgorithm {
@@ -17,7 +17,7 @@ object ComposeStackAlgorithm {
     ): List<String> =
         buildList {
             addAll(listOf("compose", "--json"))
-            if (!language.isNullOrEmpty()) addAll(listOf(SmithFlags.LANG_LONG, language))
+            if (!language.isNullOrEmpty()) addAll(listOf(SmithFlagsConfig.LANG_LONG, language))
             if (picks.isNotEmpty()) addAll(listOf("--with", picks.joinToString(",")))
             kind?.let { addAll(listOf("--kind", it)) }
             name?.let { addAll(listOf("--name", it)) }

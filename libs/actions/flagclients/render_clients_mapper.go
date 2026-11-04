@@ -20,24 +20,24 @@ func TypeScript(concepts []flagvocabulary.Concept) string {
 	b.WriteString("/** The spelling of each shared flag a smith command line should use: the shorthand when there is one. */\n")
 	b.WriteString("export const flag = {\n")
 	for _, c := range concepts {
-		fmt.Fprintf(&b, "  %s: '%s',\n", camel(c.ID), spelling(c))
+		fmt.Fprintf(&b, "  %-*s '%s',\n", keyWidth(concepts), camel(c.ID)+":", spelling(c))
 	}
 	b.WriteString("} as const\n\n")
 	b.WriteString("/** The long form of each shared flag. */\n")
 	b.WriteString("export const longFlag = {\n")
 	for _, c := range concepts {
-		fmt.Fprintf(&b, "  %s: '--%s',\n", camel(c.ID), c.Flag)
+		fmt.Fprintf(&b, "  %-*s '--%s',\n", keyWidth(concepts), camel(c.ID)+":", c.Flag)
 	}
 	b.WriteString("} as const\n")
 	return b.String()
 }
 
 // Kotlin renders the flag constants of the JetBrains plugin as the object
-// SmithFlags: PROJECT is "-p", PROJECT_LONG is "--project". The result is the
+// SmithFlagsConfig: PROJECT is "-p", PROJECT_LONG is "--project". The result is the
 // text of SmithFlagsConfig.kt in the smithcommand package.
 func Kotlin(concepts []flagvocabulary.Concept) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.smithcommand\n\n/**\n * %s\n */\nobject SmithFlags {\n", header)
+	fmt.Fprintf(&b, "package dev.monosmith.jetbrains.smithcommand\n\n/**\n * %s\n */\nobject SmithFlagsConfig {\n", header)
 	for _, c := range concepts {
 		name := strings.ToUpper(strings.ReplaceAll(c.ID, "-", "_"))
 		fmt.Fprintf(&b, "    /** %s. */\n    const val %s = \"%s\"\n\n", capitalise(c.Meaning), name, spelling(c))
@@ -84,6 +84,16 @@ func Markdown(concepts []flagvocabulary.Concept, exceptions []flagvocabulary.Exc
 		}
 	}
 	return b.String()
+}
+
+// keyWidth is the width of the longest key plus its colon, so the values of the
+// generated object line up as the repository's ESLint key-spacing rule asks.
+func keyWidth(concepts []flagvocabulary.Concept) int {
+	width := 0
+	for _, c := range concepts {
+		width = max(width, len(camel(c.ID))+1)
+	}
+	return width
 }
 
 func spelling(c flagvocabulary.Concept) string {

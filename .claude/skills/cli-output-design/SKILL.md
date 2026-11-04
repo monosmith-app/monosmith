@@ -125,5 +125,5 @@ uses the canonical flag of the concept: `-p, --project` for a project, `--lang`,
 `--no-install`. The vocabulary is `libs/actions/flagvocabulary/flag_vocabulary.json`
 ([ADR 0084](../../../docs/architecture/decisions/0084-one-concept-one-flag.md), generated table in
 `docs/reference/flag-vocabulary.md`). In Go take the spelling from `flagvocabulary.Arg("project")`, in
-VS Code from `flag.project`, in Kotlin from `SmithFlags.PROJECT`. A new command registers a shared flag through
+VS Code from `flag.project`, in Kotlin from `SmithFlagsConfig.PROJECT`. A new command registers a shared flag through
 `apps/smith/commandflags`; a new concept goes into the vocabulary first.

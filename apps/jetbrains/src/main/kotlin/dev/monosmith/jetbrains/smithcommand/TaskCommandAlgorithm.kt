@@ -6,7 +6,7 @@ object TaskCommandAlgorithm {
         smith: String,
         project: String,
         task: String,
-    ): List<String> = listOf(smith, "run", task, SmithFlags.PROJECT, project)
+    ): List<String> = listOf(smith, "run", task, SmithFlagsConfig.PROJECT, project)
 
     fun listProjects(smith: String): List<String> = listOf(smith, "projects", "--json")
 

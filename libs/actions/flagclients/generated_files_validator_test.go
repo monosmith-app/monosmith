@@ -69,7 +69,7 @@ func TestClientsDoNotHandTypeSharedFlags(t *testing.T) {
 			data, _ := os.ReadFile(path)
 			for i, line := range strings.Split(string(data), "\n") {
 				if m := pattern.FindString(line); m != "" {
-					t.Errorf("%s:%d types %s by hand: use the generated constant (flag/longFlag in smith-flags, SmithFlags in Kotlin)", rel, i+1, m)
+					t.Errorf("%s:%d types %s by hand: use the generated constant (flag/longFlag in smith-flags, SmithFlagsConfig in Kotlin)", rel, i+1, m)
 				}
 			}
 			return nil

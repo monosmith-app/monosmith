@@ -1,6 +1,6 @@
 package dev.monosmith.jetbrains.addproject
 
-import dev.monosmith.jetbrains.smithcommand.SmithFlags
+import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 
 /** The arguments of `smith add` for a request. */
 object AddArgumentsAlgorithm {
@@ -17,7 +17,7 @@ object AddArgumentsAlgorithm {
         commit: Boolean = false,
     ): List<String> =
         buildList {
-            addAll(listOf("add", request.role, request.name, SmithFlags.LANG_LONG, request.language))
+            addAll(listOf("add", request.role, request.name, SmithFlagsConfig.LANG_LONG, request.language))
             request.stack?.let { addAll(listOf("--stack", it)) }
             if (request.with.isNotEmpty()) addAll(listOf("--with", request.with.joinToString(",")))
             if (fresh) add("--fresh")

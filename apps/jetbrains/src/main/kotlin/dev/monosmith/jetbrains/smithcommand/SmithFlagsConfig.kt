@@ -3,7 +3,7 @@ package dev.monosmith.jetbrains.smithcommand
 /**
  * Generated from libs/actions/flagvocabulary/flag_vocabulary.json by `go run ./flaggen` in libs/actions. Do not edit: change the vocabulary and run it again.
  */
-object SmithFlags {
+object SmithFlagsConfig {
     /** The project or projects a command acts on; repeat it or separate names with commas (in smith the workspace is the whole repository, so -w is only a synonym). */
     const val PROJECT = "-p"
 
