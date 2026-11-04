@@ -6,6 +6,7 @@ import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
 import dev.monosmith.jetbrains.planapply.PlanStepContract
 import dev.monosmith.jetbrains.planapply.PlanThenApplyUseCase
+import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import java.nio.file.Path
 
@@ -43,7 +44,7 @@ object TauriAppUseCase {
         val app =
             ports.prompt.text("$TITLE: the icons", "The app, only when more than one project has a src-tauri (empty leaves it out):")
                 ?: return false
-        val args = listOf("tauri", "icon", logo) + if (app.isEmpty()) emptyList() else listOf("-p", app)
+        val args = listOf("tauri", "icon", logo) + if (app.isEmpty()) emptyList() else listOf(SmithFlagsConfig.PROJECT, app)
         return PlanThenApplyUseCase.run(
             ports,
             PlanStepContract(

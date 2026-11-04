@@ -163,7 +163,7 @@ object ProjectActionsUseCase {
             PlanStepContract(
                 title = "MonoSmith: unlink $library from ${node.name}?",
                 planArgs = null,
-                fixedPlan = "smith uninstall -w ${node.name} workspace:$library",
+                fixedPlan = "smith uninstall -p ${node.name} workspace:$library",
                 header =
                     "${node.name} stops depending on $library. The library stays in this workspace, and other projects keep using it. " +
                         "smith edits the manifest of ${node.name} and runs the install.",

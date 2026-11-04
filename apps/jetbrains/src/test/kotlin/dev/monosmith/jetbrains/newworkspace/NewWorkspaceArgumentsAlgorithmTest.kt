@@ -37,7 +37,7 @@ class NewWorkspaceArgumentsAlgorithmTest {
                 "--yes",
                 "--ci",
                 "github",
-                "--language",
+                "--lang",
                 "later",
                 "--architecture",
                 "vertical-slices",

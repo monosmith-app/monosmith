@@ -1,4 +1,5 @@
 import type { ComposeCheck, ComposeItem, ComposeLayer, ComposePlan, ComposeQuestion, ComposeReport, ComposeTool } from './compose-stack.contract.ts'
+import { longFlag } from '../smith-flags/index.ts'
 
 type Json = Record<string, unknown>
 
@@ -103,7 +104,7 @@ export function parseReport (json: string): ComposeReport {
  */
 export function composeArguments (request: { language?: string, picks: readonly string[], kind?: string, name?: string }): string[] {
   const args = ['compose', '--json']
-  if (request.language !== undefined && request.language !== '') args.push('--lang', request.language)
+  if (request.language !== undefined && request.language !== '') args.push(longFlag.lang, request.language)
   if (request.picks.length > 0) args.push('--with', request.picks.join(','))
   if (request.kind !== undefined) args.push('--kind', request.kind)
   if (request.name !== undefined) args.push('--name', request.name)

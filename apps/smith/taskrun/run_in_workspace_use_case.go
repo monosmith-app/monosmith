@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"fmt"
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"io"
 	"os"
 	"strings"
@@ -41,7 +42,7 @@ type Request struct {
 func (r Request) Command() string {
 	parts := append([]string{"smith", "run"}, r.Tasks...)
 	if len(r.Projects) > 0 {
-		parts = append(parts, "-p", strings.Join(r.Projects, ","))
+		parts = append(parts, flagvocabulary.Arg("project"), strings.Join(r.Projects, ","))
 	}
 	if r.Affected {
 		parts = append(parts, "--affected")

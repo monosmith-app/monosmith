@@ -95,8 +95,8 @@ class ProjectActionsUseCaseTest {
         fake.plans.add(fake.yes())
         assertTrue(ProjectActionsUseCase.runUnlink(fake.ports, "web") {})
         assertEquals(listOf("utils"), fake.rowsSeen.single().map { it.name })
-        assertEquals("smith uninstall -w web workspace:utils", fake.plansSeen.single())
-        assertEquals(listOf("uninstall", "-w", "web", "workspace:utils", "--yes"), fake.calls.last())
+        assertEquals("smith uninstall -p web workspace:utils", fake.plansSeen.single())
+        assertEquals(listOf("uninstall", "-p", "web", "workspace:utils", "--yes"), fake.calls.last())
         assertTrue(fake.infos.single().startsWith("utils is unlinked from web."))
     }
 

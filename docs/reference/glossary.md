@@ -148,7 +148,7 @@ published by itself. It lives in `libs/<name>`.
 ## library of the workspace
 
 A project of kind `lib` or `package` that another project of the same workspace and language depends
-on. `smith install -w <project> <library>` writes that dependency in the manifest, through the
+on. `smith install -p <project> <library>` writes that dependency in the manifest, through the
 plugin's `link` capability, instead of asking the registry. See [`smith install`](../manual/install.md).
 
 ## native project

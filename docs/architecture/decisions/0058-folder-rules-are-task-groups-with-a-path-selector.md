@@ -34,7 +34,7 @@ gap but a small one. If the owner wants it, extend `[[task_groups]]` (rename to 
 
 ## Done
 
-The manual says that a folder is a selector. `[boundaries]` and `--projects` already read the same
+The manual says that a folder is a selector. `[boundaries]` and `--project` already read the same
 selector words, so one syntax stays.
 
 ## Cost of the rejection

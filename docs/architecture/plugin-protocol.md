@@ -161,7 +161,7 @@ which capability each method needs.
 | `ci` | `ci` | `CIContributor` | `cipipeline.Collect`, release preflight |
 | `doctor` | `doctor` | `DoctorContributor` | `smith doctor` |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | `DependencyManager` | `smith install`, `uninstall` |
-| `link` | `dependencies/link`, `dependencies/unlink` | `Linker` | `smith install -w <project> <library>`, `smith uninstall` (`internallink`); a plugin without it is refused with one sentence that names the manifest to edit by hand |
+| `link` | `dependencies/link`, `dependencies/unlink` | `Linker` | `smith install -p <project> <library>`, `smith uninstall` (`internallink`); a plugin without it is refused with one sentence that names the manifest to edit by hand |
 | `declarations` | `dependencies/declared`, `dependencies/rewrite` | `DeclarationEditor` | `smith sync`, `smith up --align` |
 | `latest` | `dependencies/latest` | `LatestReader` | `smith up` |
 | `cancel` | `cancel` (a notification) | `Cancellable` | the host, when a call's context ends or its time runs out |

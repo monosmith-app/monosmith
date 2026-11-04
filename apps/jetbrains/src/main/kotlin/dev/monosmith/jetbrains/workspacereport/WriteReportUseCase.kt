@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import dev.monosmith.jetbrains.flowports.FlowPortsContract
 import dev.monosmith.jetbrains.flowports.IdePortsClient
+import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 import dev.monosmith.jetbrains.smithrun.BackgroundFlowClient
 import dev.monosmith.jetbrains.smithrun.FailureTextMapper
 import java.nio.file.Path
@@ -42,7 +43,7 @@ object WriteReportUseCase {
         file: Path,
         open: (Path) -> Unit,
     ): Boolean {
-        val done = ports.smith.run(listOf("report", "-o", file.toString()))
+        val done = ports.smith.run(listOf("report", SmithFlagsConfig.OUTPUT, file.toString()))
         if (!done.ok) {
             ports.notice.warn("The report was not written. ${FailureTextMapper.describe(done)}")
             return false

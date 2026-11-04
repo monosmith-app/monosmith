@@ -23,7 +23,7 @@ func UnknownNameHint(projects, packages []string) string {
 		}
 		if near := nearmatch.Closest(pkg, projects); len(near) > 0 {
 			lines = append(lines, pkg+" matches no project of this workspace and the registry does not have it. Closest projects: "+
-				strings.Join(near, ", ")+" (smith install -w <project> workspace:"+near[0]+" links one)")
+				strings.Join(near, ", ")+" (smith install -p <project> workspace:"+near[0]+" links one)")
 		}
 	}
 	return strings.Join(lines, "\n")

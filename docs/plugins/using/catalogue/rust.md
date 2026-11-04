@@ -251,7 +251,7 @@ Real output of `smith ci generate` (GitHub):
 
 ## Linking an internal library
 
-`smith install -w <project> shop-core` runs `cargo add --path <library>` in the project's `Cargo.toml`, so the dependency is a path dependency and `Cargo.lock` follows. `smith uninstall` runs `cargo remove`. The plugin declares the `link` capability.
+`smith install -p <project> shop-core` runs `cargo add --path <library>` in the project's `Cargo.toml`, so the dependency is a path dependency and `Cargo.lock` follows. `smith uninstall` runs `cargo remove`. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 
@@ -280,7 +280,7 @@ Dependencies: the plugin lists what every crate's `Cargo.toml` declares (`[depen
 - A dependency from a `path` or a repository URL, and one a crate inherits with `workspace = true`, declares no version of its own and is left alone. A renamed dependency (`package = "reqwest"`) counts under its crate name.
 - `smith sync` brings every declaration of a crate to the highest version declared, rewriting only the version string (features, comments and spacing stay). A requirement that is a range (`>=0.11, <0.13`) or a wildcard is reported and left alone. A version a crate declares for a dependency that the root `[workspace.dependencies]` also declares counts as a difference; moving the dependency to the workspace table and writing `workspace = true` in the crates ends it for good.
 - `smith up` asks crates.io for the newest stable release of each crate and rewrites to it, keeping each requirement's operator. It then runs `cargo fetch`, so `Cargo.lock` follows.
-- `smith install -w kit serde` runs `cargo add` in the crate (`-D` adds a dev-dependency) and `smith uninstall -w kit serde` runs `cargo remove`; a bare `smith install` runs `cargo fetch`.
+- `smith install -p kit serde` runs `cargo add` in the crate (`-D` adds a dev-dependency) and `smith uninstall -p kit serde` runs `cargo remove`; a bare `smith install` runs `cargo fetch`.
 
 Removal: `smith remove <project>` deletes the directory and takes its entry out of `members` in the root `Cargo.toml`. Real dry run: `Would remove core (libs/core)`, `changes Cargo.toml`, `the pipelines would be regenerated`.
 
@@ -300,7 +300,7 @@ smith refuses, naming the folder: a folder that does not exist, one with a `Carg
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, cargo 1.76.0, rustc 1.76.0, clippy 0.1.76, rustfmt 1.7.0-stable. Throw-away workspace `rs-demo` from `smith new rs-demo`. Run: `smith add lib|app|package ... --lang rust`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|format|package`, `smith doctor` (clean, and with a wrong `[toolchains] rustc` pin), `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]` (including the real `cargo publish --dry-run` against crates.io), `smith install -w`, `smith up --check`, `smith remove core --dry-run`, `smith rust-policy`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, cargo 1.76.0, rustc 1.76.0, clippy 0.1.76, rustfmt 1.7.0-stable. Throw-away workspace `rs-demo` from `smith new rs-demo`. Run: `smith add lib|app|package ... --lang rust`, `smith projects`, `smith graph`, `smith explain`, `smith run build|test|lint|typecheck|format|package`, `smith doctor` (clean, and with a wrong `[toolchains] rustc` pin), `smith ci generate`, `smith ci setup`, `smith ci audit`, `smith ci check`, `smith release --dry-run [--json]` (including the real `cargo publish --dry-run` against crates.io), `smith install -p`, `smith up --check`, `smith remove core --dry-run`, `smith rust-policy`.
 
 Not verified:
 

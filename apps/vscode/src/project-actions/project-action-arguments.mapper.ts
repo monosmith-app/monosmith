@@ -1,4 +1,5 @@
 import type { ProjectKind } from './project-action.contract.ts'
+import { flag } from '../smith-flags/index.ts'
 
 /**
  * The plan of removing a project: `smith remove <project> --dry-run`.
@@ -48,7 +49,7 @@ export function kindArguments (project: string, kind: ProjectKind): string[] {
  * @returns the arguments, without the program name
  */
 export function unlinkArguments (project: string, library: string): string[] {
-  return ['uninstall', '-w', project, `workspace:${library}`, '--yes']
+  return ['uninstall', flag.project, project, `workspace:${library}`, '--yes']
 }
 
 /**

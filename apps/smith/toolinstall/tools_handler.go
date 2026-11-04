@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
@@ -139,7 +140,7 @@ needed for the PATH to update.`,
 		},
 	}
 	cmd.Flags().StringVar(&manager, "manager", "", "install every tool with this package manager (winget, brew, apt, dnf, pacman, uv, fnm, rustup, npm)")
-	cmd.Flags().BoolVar(&yes, "yes", false, "take the marked default of each choice (never for commands that need administrator rights)")
+	commandflags.AddYesFlag(cmd, &yes, "take the marked default of each choice (never for commands that need administrator rights)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the plan and install nothing")
 	cmd.Flags().BoolVar(&withAdmin, "with-admin", false, "let smith run commands that need administrator rights (the system still asks for its own permission)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "with --dry-run, print the plan as JSON")

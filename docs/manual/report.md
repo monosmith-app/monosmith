@@ -45,7 +45,7 @@ Usage: `smith report [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--force` | boolean | off | replace the file when it exists with other content (the diff is printed) |
-| `-o, --output <output>` | string |  | write the page to a file |
+| `-o, --output <output>` | string |  | write the page to a file (also --out) |
 
 <!-- smith:end report -->
 

@@ -27,7 +27,7 @@ func runNew(t *testing.T, interactive bool, input string, args ...string) (strin
 }
 
 func TestFlagsAnswerEveryQuestionWithoutAsking(t *testing.T) {
-	dir, out, err := runNew(t, false, "", "--ci", "azure", "--language", "node", "--default-stack", "node=node-vitest",
+	dir, out, err := runNew(t, false, "", "--ci", "azure", "--lang", "node", "--default-stack", "node=node-vitest",
 		"--architecture", "none", "--release-branch", "trunk", "--cache-max-mb", "0",
 		"--agent", "--devcontainer", "--first-commit", "smith")
 	if err != nil {

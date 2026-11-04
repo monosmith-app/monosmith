@@ -46,7 +46,7 @@ func NewAfterChange(argv, lines []string) Model {
 		}
 		m.facts = append(m.facts, Fact{Good, created.Name + " was created" + where + count + "."})
 		if created.Kind == "lib" {
-			m.facts = append(m.facts, Fact{Info, "Use it from an app: press + on the app and pick " + created.Name + ", or run smith install -w <app> " + created.Name + "."})
+			m.facts = append(m.facts, Fact{Info, "Use it from an app: press + on the app and pick " + created.Name + ", or run smith install -p <app> " + created.Name + "."})
 		}
 	} else {
 		m.facts = append(m.facts, Fact{Good, "The change is written to your files."})

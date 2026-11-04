@@ -6,25 +6,25 @@ import kotlin.test.assertEquals
 class InstallArgumentsAlgorithmTest {
     @Test
     fun aLibraryIsNamedWithTheWorkspacePrefixSoSmithNeverAsks() {
-        assertEquals(listOf("install", "-w", "web", "workspace:ui"), InstallArgumentsAlgorithm.library("web", "ui", null))
-        assertEquals(listOf("install", "-w", "web", "workspace:ui", "--range", "*"), InstallArgumentsAlgorithm.library("web", "ui", "*"))
+        assertEquals(listOf("install", "-p", "web", "workspace:ui"), InstallArgumentsAlgorithm.library("web", "ui", null))
+        assertEquals(listOf("install", "-p", "web", "workspace:ui", "--range", "*"), InstallArgumentsAlgorithm.library("web", "ui", "*"))
     }
 
     @Test
     fun aRegistryPackageCarriesRegistry() {
         assertEquals(
-            listOf("install", "-w", "web", "--registry", "zod", "react@19"),
+            listOf("install", "-p", "web", "--registry", "zod", "react@19"),
             InstallArgumentsAlgorithm.registry("web", listOf("zod", "react@19"), dev = false),
         )
         assertEquals(
-            listOf("install", "-w", "web", "-D", "--registry", "vitest"),
+            listOf("install", "-p", "web", "-D", "--registry", "vitest"),
             InstallArgumentsAlgorithm.registry("web", listOf("vitest"), dev = true),
         )
     }
 
     @Test
     fun unlinkNamesTheLibraryAndAnswersYes() {
-        assertEquals(listOf("uninstall", "-w", "web", "workspace:ui", "--yes"), InstallArgumentsAlgorithm.unlink("web", "ui"))
+        assertEquals(listOf("uninstall", "-p", "web", "workspace:ui", "--yes"), InstallArgumentsAlgorithm.unlink("web", "ui"))
     }
 
     @Test

@@ -1,6 +1,7 @@
 package convertplan
 
 import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/nxworkspace"
@@ -34,7 +35,7 @@ func mapNxPrune(plan *Plan, p *nxworkspace.Project, pp *ProjectPlan, name string
 	reason := "the node plugin's prune task writes the same deploy output (smith run prune)"
 	if out != "" && out != "dist/"+p.Root {
 		if _, set := plan.Override(pp.Name).Tasks[pruneTask]; !set {
-			plan.SetTask(pp.Name, pruneTask, workspace.TaskOverride{Command: []string{"{smith}", "npm-prune", p.Root, "--out", out}})
+			plan.SetTask(pp.Name, pruneTask, workspace.TaskOverride{Command: []string{"{smith}", "npm-prune", p.Root, flagvocabulary.Long("output"), out}})
 		}
 		reason += ", into " + out + " where the build writes"
 	}

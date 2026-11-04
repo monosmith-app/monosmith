@@ -2,14 +2,14 @@
 
 `smith uninstall` (alias `smith un`) removes packages from one project, the counterpart of
 [`smith install`](install.md). A dependency belongs to the project that uses it, so it needs
-a target: `smith uninstall -w <project> <package>`.
+a target: `smith uninstall -p <project> <package>`.
 
-The `package.json` at the top of the workspace is not a project: name it with `-w .`
+The `package.json` at the top of the workspace is not a project: name it with `-p .`
 (`smith deps up` lists its packages as `(root)`). A development dependency is removed like any
-other: `smith uninstall -w . @swc/core`.
+other: `smith uninstall -p . @swc/core`.
 
 A name that is a library of the workspace (a project, its folder, or the package it
-exports) has its link removed: `smith uninstall -w web @acme/core`. When the project did not
+exports) has its link removed: `smith uninstall -p web @acme/core`. When the project did not
 depend on it, smith says so and changes nothing. `workspace:<name>` names the library
 explicitly, and `--registry` removes a registry package that has the name of a project.
 
@@ -24,7 +24,7 @@ explicitly, and `--registry` removes a registry package that has the name of a p
 ## Synopsis
 
 ```sh
-smith uninstall -w <project> <package>...
+smith uninstall -p <project> <package>...
 ```
 
 ## Arguments and flags
@@ -43,13 +43,13 @@ Alias: `smith un`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
+| `-p, --project <project>` | string, repeatable |  | target project, by name or directory; repeat it or separate them with commas (also -w, --workspace, --projects) |
 | `--registry` | boolean | off | remove the names as registry packages, even when a name is also a project of this workspace |
-| `-w, --workspace <workspace>` | string, repeatable |  | target project, by name or directory; repeat it for several |
 | `-y, --yes` | boolean | off | do not ask; without a terminal the packages are removed only with --yes |
 
 <!-- smith:end uninstall -->
 
-`-w` is repeatable. The packages must be declared by the project; the language's own tool
+`-p` is repeatable. The packages must be declared by the project; the language's own tool
 removes them and the lockfile is refreshed.
 
 ## Exit codes
@@ -66,7 +66,7 @@ Edits the project manifest and the lockfile. Same environment as `smith install`
 ## Examples
 
 ```sh
-smith uninstall -w web zod
+smith uninstall -p web zod
 ```
 
 ```text
@@ -79,7 +79,7 @@ up to date in 1s
 
 | Message | Cause and remedy |
 |---|---|
-| `a dependency belongs to the project that uses it: smith uninstall -w <project> <package>` | Add `-w`. |
+| `a dependency belongs to the project that uses it: smith uninstall -p <project> <package>` | Add `-p`. |
 
 ## Related
 

@@ -40,7 +40,7 @@ Usage: `smith graph [flags]`
 | `--focus <focus>` | string, repeatable |  | keep these projects and everything connected to them (names, globs, tag:x) |
 | `--force` | boolean | off | replace the -o file when it exists with other content (the diff is printed) |
 | `--format <format>` | `text`, `json`, `dot`, `html` or `tui` | `text` | text, json, dot, html or tui |
-| `-o, --output <output>` | string |  | write to a file |
+| `-o, --output <output>` | string |  | write to a file (also --out) |
 
 <!-- smith:end graph -->
 

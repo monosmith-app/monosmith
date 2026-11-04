@@ -50,7 +50,7 @@ Usage: `smith sync [flags]`
 | `--dry-run` | boolean | off | show the plan and change nothing |
 | `--json` | boolean | off | print the report as JSON |
 | `--major` | boolean | off | also rewrite declarations whose major version differs from the target |
-| `--no-install` | boolean | off | rewrite the manifests without installing |
+| `--no-install` | boolean | off | rewrite the manifests without installing (also --skip-install) |
 | `--prefer <prefer>` | string |  the installed one, else the highest | which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest) |
 | `--to <to>` | string, repeatable |  | the version of one dependency, as <name>=<version> |
 | `-y, --yes` | boolean | off | write the plan without asking |

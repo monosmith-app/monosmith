@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	archcheck "github.com/monosmith-app/monosmith/libs/plugin-architectures/check"
 	"github.com/monosmith-app/monosmith/libs/plugin-architectures/imports"
 	"github.com/monosmith-app/monosmith/libs/plugin-architectures/rules"
@@ -58,7 +59,7 @@ forbids. The convention of that architecture (for example
 			return nil
 		},
 	}
-	check.Flags().StringVar(&lang, "lang", "go", "language of the projects: "+strings.Join(languages.Names(), ", ")+"; with --architecture also node")
+	commandflags.AddLangFlag(check, &lang, "go", "language of the projects: "+strings.Join(languages.Names(), ", ")+"; with --architecture also node")
 	check.Flags().StringVar(&architecture, "architecture", "", "check this architecture's import rules instead: "+strings.Join(rules.Names(), ", "))
 	cmd.AddCommand(check)
 	return cmd

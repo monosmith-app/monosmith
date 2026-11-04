@@ -35,8 +35,8 @@ Usage: `smith plugin draft <sample-folder> <name> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--force` | boolean | off | replace the draft file when it exists with other content (the diff is printed) |
-| `--lang <lang>` | string |  | the language's name, lower case (required) |
-| `-o, --output <output>` | string | <lang>.plugin-draft.toml | the draft file (default <lang>.plugin-draft.toml) |
+| `-l, --lang <lang>` | string |  | the language's name, lower case (required) (also --language) |
+| `-o, --output <output>` | string | <lang>.plugin-draft.toml | the draft file (default <lang>.plugin-draft.toml) (also --out) |
 | `--stdout` | boolean | off | print the draft instead of writing a file |
 
 <!-- smith:end plugin draft -->

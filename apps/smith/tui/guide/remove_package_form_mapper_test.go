@@ -11,7 +11,7 @@ func TestRemovingAPackageNamesEveryProjectPicked(t *testing.T) {
 		t.Fatalf("one multiple choice of the two projects: %+v", a.Steps)
 	}
 	got := a.Argv(map[string][]string{"projects": {"web", "."}})
-	if want := []string{"uninstall", "-w", "web", "-w", ".", "zod"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"uninstall", "-p", "web", "-p", ".", "zod"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v", got)
 	}
 }

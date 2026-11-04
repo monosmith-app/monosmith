@@ -12,6 +12,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/architecture"
 	"github.com/monosmith-app/monosmith/apps/smith/commandargs"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/problem"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -175,7 +176,7 @@ nothing is asked.`,
 	flags.StringVar(&opts.Scope, "scope", "", "npm scope for packages (default @<name>)")
 	flags.StringVar(&opts.ModulePrefix, "module-prefix", "", "Go module prefix (default from the origin remote, else example.com/<name>)")
 	flags.StringSliceVar(&f.ci, "ci", nil, "pipelines to generate: github, azure, gitlab, circleci, bitbucket (default github)")
-	flags.StringVar(&f.language, "language", "", "the main language: node, python, go, jvm, dotnet, rust, or later (default later)")
+	commandflags.AddLangFlag(cmd, &f.language, "", "the main language: node, python, go, jvm, dotnet, rust, or later (default later)")
 	flags.StringSliceVar(&f.defaultStacks, "default-stack", nil, "the stack Node projects get, as node=<stack>: node-jest (default), node-vitest or node-ts")
 	flags.StringVar(&f.architecture, "architecture", "", "the code layout smith checks: "+strings.Join(architecture.Names(), ", ")+" (default vertical-slices)")
 	flags.StringVar(&f.branch, "release-branch", "", "the branch releases run from (default main)")
@@ -206,7 +207,7 @@ func answersFromFlags(cmd *cobra.Command, opts *NewOptions, f newFlags) (map[str
 	if changed("ci") {
 		answers[AnswerCI] = strings.Join(f.ci, ",")
 	}
-	if changed("language") {
+	if changed("lang") {
 		answers[AnswerLanguage] = f.language
 	}
 	for _, pair := range f.defaultStacks {

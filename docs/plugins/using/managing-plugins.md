@@ -68,7 +68,7 @@ Installed (search path: ~/work/inst/.smith/plugins, ~/.smith/plugins):
 | `SLOTS` | the tasks a toolchain owns; two plugins of one project may not share a slot |
 | `DECLARED` | `yes` when a language plugin can describe a project that `smith.toml` declares with `[projects.<name>]` and no manifest. `-` for an add-on |
 | `CHANNELS` | `yes` when a language plugin can publish a package of a `[[release.channels]]` branch |
-| `LINK` | `yes` when a language plugin can link a library of the workspace (`smith install -w <project> <library>`) |
+| `LINK` | `yes` when a language plugin can link a library of the workspace (`smith install -p <project> <library>`) |
 | `REQUIRES` | plugins that must be in the same project (`language plugin node`); `not <ref>` marks a conflict |
 
 The external plugins section lists the plugins `smith.toml` declares under `[plugins.external]`,

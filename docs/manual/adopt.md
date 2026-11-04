@@ -49,7 +49,7 @@ Usage: `smith adopt [flags]`
 | `--level <level>` | `conservative` or `full` | `conservative` | how far to go: conservative (keep the build and lint setup) or full (smith convert's, for Nx and Turborepo workspaces) |
 | `--move <move>` | string |  | with --init (or --dry-run), the folder to move the project at the repository root into (apps/web); none keeps it where it is |
 | `--tags` | boolean | off | create the baseline release tags the report asks for, locally |
-| `--yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
+| `-y, --yes` | boolean | off | do not ask: a project at the root moves only when --move says where, and every other open choice of --init takes its safe default and prints it |
 
 <!-- smith:end adopt -->
 

@@ -1,6 +1,7 @@
 package dev.monosmith.jetbrains.newworkspace
 
 import dev.monosmith.jetbrains.prompt.ChoiceRowContract
+import dev.monosmith.jetbrains.smithcommand.SmithFlagsConfig
 
 /**
  * What the person decides about a new workspace: the questions of `smith new`, one field each.
@@ -68,7 +69,18 @@ object NewWorkspaceArgumentsAlgorithm {
         preview: Boolean,
     ): List<String> =
         buildList {
-            addAll(listOf("new", choices.name, "--here", "--yes", "--ci", choices.ci.joinToString(","), "--language", choices.language))
+            addAll(
+                listOf(
+                    "new",
+                    choices.name,
+                    "--here",
+                    "--yes",
+                    "--ci",
+                    choices.ci.joinToString(","),
+                    SmithFlagsConfig.LANG_LONG,
+                    choices.language,
+                ),
+            )
             if (choices.language == "node") addAll(listOf("--default-stack", "node=${choices.nodeStack}"))
             addAll(listOf("--architecture", choices.architecture))
             add(if (choices.agent) "--agent" else "--no-agent")

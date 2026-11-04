@@ -650,7 +650,7 @@ tags = ["published"]
 platforms = ["linux/amd64", "darwin/arm64"]
 ```
 
-`select` lists selectors, written the way `--projects` and `[boundaries]` write
+`select` lists selectors, written the way `--project` and `[boundaries]` write
 them: a project name, a glob over names or folders (`libs/*`), `kind:app`,
 `kind:lib`, `kind:package`, `lang:<language>` or `tag:<tag>`. A project is in
 the group when it matches **every** selector (add a second group for "or").

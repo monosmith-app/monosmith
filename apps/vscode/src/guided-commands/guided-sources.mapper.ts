@@ -1,4 +1,5 @@
 import type { GuidedOption } from './guided-command.contract.ts'
+import { longFlag } from '../smith-flags/index.ts'
 
 /** A web app built once per environment, as `smith environments list --json` prints it. */
 export interface WebApp {
@@ -162,7 +163,7 @@ export function parsePipelineTemplates (text: string): GuidedOption[] {
     const [first = '', providers = '', ...rest] = line.trim().split(/\s{2,}/)
     const name = /^[a-z][a-z0-9-]*/.exec(first)?.[0]
     if (name === undefined) continue
-    const needsApp = first.includes('--project') ? ' (asks for the app)' : ''
+    const needsApp = first.includes(longFlag.project) ? ' (asks for the app)' : ''
     options.push({ label: name, value: name, description: `${rest.join(' ')}${needsApp}${providers === '' ? '' : ` [${providers}]`}`.trim() })
   }
 

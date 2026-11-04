@@ -22,7 +22,8 @@ object ActionCommandAlgorithm {
         name: String,
         language: String,
         commit: Boolean,
-    ): List<String> = listOf(smith, "add", role, name, "--lang", language, "--yes") + if (commit) listOf("--commit") else emptyList()
+    ): List<String> =
+        listOf(smith, "add", role, name, SmithFlagsConfig.LANG_LONG, language, "--yes") + if (commit) listOf("--commit") else emptyList()
 
     /** `smith undo --yes`: reverts the last operation smith committed. */
     fun undo(smith: String): List<String> = listOf(smith, "undo", "--yes")

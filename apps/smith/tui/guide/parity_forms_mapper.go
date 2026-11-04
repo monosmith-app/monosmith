@@ -1,6 +1,7 @@
 package guide
 
 import (
+	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"slices"
 	"strings"
 
@@ -112,7 +113,7 @@ func parityForms() []Action {
 			Argv: func(a map[string][]string) []string {
 				argv := []string{"pipeline", first(a, "template")}
 				if p := first(a, "project"); p != "" {
-					argv = append(argv, "--project", p)
+					argv = append(argv, flagvocabulary.Arg("project"), p)
 				}
 				return argv
 			},
@@ -126,7 +127,7 @@ func parityForms() []Action {
 			Argv: func(a map[string][]string) []string {
 				argv := []string{"tauri", "icon", first(a, "logo")}
 				if p := first(a, "project"); p != "" {
-					argv = append(argv, "-p", p)
+					argv = append(argv, flagvocabulary.Arg("project"), p)
 				}
 				return argv
 			},

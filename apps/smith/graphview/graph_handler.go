@@ -3,6 +3,7 @@ package graphview
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"os"
 	"sort"
 	"strings"
@@ -142,7 +143,7 @@ marks the ones that changed.`,
 		},
 	}
 	graph.Flags().StringVar(&format, "format", "text", "text, json, dot, html or tui")
-	graph.Flags().StringVarP(&file, "output", "o", "", "write to a file")
+	commandflags.AddOutputFlag(graph, &file, "", "write to a file")
 	graph.Flags().BoolVar(&force, "force", false, "replace the -o file when it exists with other content (the diff is printed)")
 	graph.Flags().StringSliceVar(&focus, "focus", nil, "keep these projects and everything connected to them (names, globs, tag:x)")
 	graph.Flags().BoolVar(&onlyAffected, "affected", false, "keep the projects affected by changes since --base; mark the changed ones")

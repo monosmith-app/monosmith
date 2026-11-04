@@ -353,7 +353,7 @@ type BoundariesSection struct {
 }
 
 // BoundaryRule is one rule of [boundaries]. A project is named the way
-// --projects names it: a name, a glob, kind:<kind>, lang:<language> or
+// --project names it: a name, a glob, kind:<kind>, lang:<language> or
 // tag:<tag>.
 type BoundaryRule struct {
 	// From is who the rule is about.
@@ -520,7 +520,7 @@ type ProjectOverride struct {
 	// Stack replaces the stack the project's manifest records.
 	Stack string `toml:"stack"`
 	// Tags are added to the tags the project's plugin reports, so a
-	// [boundaries] rule or --projects tag:<tag> can name the project.
+	// [boundaries] rule or --project tag:<tag> can name the project.
 	Tags []string `toml:"tags"`
 	// Release makes an app releasable: it is versioned by its tag and its
 	// assets are built and attached to the release.
@@ -679,7 +679,7 @@ type ProjectRelease struct {
 
 // Group is one [[groups]] entry: task overrides, tags and a release for every
 // project that all its selectors name. A selector is written the way
-// --projects writes one: a name, a glob (packages/*), kind:<kind>,
+// --project writes one: a name, a glob (packages/*), kind:<kind>,
 // lang:<language> or tag:<tag>. A group sets at least one of Tasks, Tags and
 // Release.
 type Group struct {

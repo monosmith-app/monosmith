@@ -1,5 +1,6 @@
 import type { SmithQuestion } from '../smith-questions/index.ts'
 import type { NewWorkspaceChoices } from './new-workspace.contract.ts'
+import { longFlag } from '../smith-flags/index.ts'
 
 /** What "Start with the defaults" chooses: the same defaults as `smith new --yes` and the TUI. */
 export const DEFAULT_CHOICES: Omit<NewWorkspaceChoices, 'name'> = {
@@ -28,7 +29,7 @@ export function toCreateArguments (choices: NewWorkspaceChoices, preview = false
   return [
     'new', choices.name, '--here', '--yes',
     '--ci', choices.ci.join(','),
-    '--language', choices.language,
+    longFlag.lang, choices.language,
     ...(choices.language === 'node' ? ['--default-stack', `node=${choices.nodeStack}`] : []),
     '--architecture', choices.architecture,
     choices.agent ? '--agent' : '--no-agent',

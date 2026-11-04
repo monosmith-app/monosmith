@@ -1,5 +1,6 @@
 import type { AddRequest } from './add-options.contract.ts'
 import { environmentArguments } from './web-environments.mapper.ts'
+import { longFlag } from '../smith-flags/index.ts'
 
 /**
  * The arguments of `smith add` for a request.
@@ -10,7 +11,7 @@ import { environmentArguments } from './web-environments.mapper.ts'
  */
 export function addArguments (request: AddRequest, mode: 'plan' | 'apply', fresh = request.fresh, commit = false): string[] {
   return [
-    'add', request.role, request.name, '--lang', request.language,
+    'add', request.role, request.name, longFlag.lang, request.language,
     ...(request.stack === undefined ? [] : ['--stack', request.stack]),
     ...(request.with.length === 0 ? [] : ['--with', request.with.join(',')]),
     ...(fresh ? ['--fresh'] : []),

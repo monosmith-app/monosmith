@@ -46,7 +46,7 @@ Usage: `smith pipeline [template] [flags]`
 | `--ci <ci>` | `github`, `azure` or `both` | the workspace's providers | github, azure or both (default: the workspace's providers) |
 | `--dry-run` | boolean | off | show the files that would be written and change nothing |
 | `--force` | boolean | off | replace a pipeline file that exists |
-| `--project <project>` | string |  | the app a deploy template builds |
+| `-p, --project <project>` | string |  | the app a deploy template builds (also -w, --workspace, --projects) |
 | `-y, --yes` | boolean | off | do not ask; without a terminal the files are written only with --yes |
 
 <!-- smith:end pipeline -->

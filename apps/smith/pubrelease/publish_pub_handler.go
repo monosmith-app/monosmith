@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ tag, which runs this: pub.dev's automated publishing accepts only such a run.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&req.Project, "project", "", "the released app")
+	commandflags.AddOneProjectFlag(cmd, &req.Project, "the released app")
 	cmd.Flags().StringVar(&req.Version, "version", "", "its released version")
 	return cmd
 }

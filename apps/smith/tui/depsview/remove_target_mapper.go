@@ -8,7 +8,7 @@ const rootLabel = "(root)"
 // rootTarget is the -w value that smith uninstall takes for the workspace root.
 const rootTarget = "."
 
-// Target is a project a dependency is declared in, as smith uninstall -w names it.
+// Target is a project a dependency is declared in, as smith uninstall -p names it.
 type Target struct {
 	// Label is what the view shows: the project name, or "(root)".
 	Label string

@@ -206,13 +206,13 @@ func TestGoldenPath(t *testing.T) {
 	if out := w.smith(false, "install", "acme-pyutil"); !strings.Contains(out, "needs a target project") {
 		t.Fatalf("install without -w:\n%s", out)
 	}
-	if out := w.smith(true, "install", "-w", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✔ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✔ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
+	if out := w.smith(true, "install", "-p", "apps/worker", "acme-pyutil"); !strings.Contains(out, "✔ worker: added acme-pyutil (.venv") && !strings.Contains(out, "✔ worker: added acme-pyutil (apps/worker/pyproject.toml)") {
 		t.Fatalf("install:\n%s", out)
 	}
 	if after, _ := os.ReadFile(filepath.Join(w.dir, "apps", "worker", "pyproject.toml")); !strings.Contains(string(after), `dependencies = ["acme-pyutil"]`) {
 		t.Fatalf("pyproject:\n%s", after)
 	}
-	w.smith(true, "uninstall", "-w", "worker", "acme-pyutil")
+	w.smith(true, "uninstall", "-p", "worker", "acme-pyutil")
 	if after, _ := os.ReadFile(filepath.Join(w.dir, "apps", "worker", "pyproject.toml")); string(after) != string(pyproject) {
 		t.Fatalf("uninstall did not restore pyproject.toml:\n%s", after)
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/guardedwrite"
 	"github.com/spf13/cobra"
 )
@@ -64,8 +65,8 @@ Then scaffold the plugin and run its conformance suite:
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&lang, "lang", "", "the language's name, lower case (required)")
-	cmd.Flags().StringVarP(&output, "output", "o", "", "the draft file (default <lang>.plugin-draft.toml)")
+	commandflags.AddLangFlag(cmd, &lang, "", "the language's name, lower case (required)")
+	commandflags.AddOutputFlag(cmd, &output, "", "the draft file (default <lang>.plugin-draft.toml)")
 	cmd.Flags().BoolVar(&force, "force", false, "replace the draft file when it exists with other content (the diff is printed)")
 	cmd.Flags().BoolVar(&stdout, "stdout", false, "print the draft instead of writing a file")
 	return cmd

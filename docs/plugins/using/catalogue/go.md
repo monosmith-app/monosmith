@@ -291,7 +291,7 @@ Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each mo
 
 ## Linking an internal library
 
-`smith install -w <project> core-go` requires the library's module path in the project's `go.mod` (`require example.com/shop/libs/core-go v0.0.0`) and adds the library to `go.work` with `go work use`, which is how Go finds the folder; nothing is fetched. A workspace with no `go.work` gets a `replace` line instead. A requirement in `go.mod` is also a graph edge before any file imports the module. `smith uninstall` removes the requirement and its `replace`, and leaves `go.work` alone. The plugin declares the `link` capability.
+`smith install -p <project> core-go` requires the library's module path in the project's `go.mod` (`require example.com/shop/libs/core-go v0.0.0`) and adds the library to `go.work` with `go work use`, which is how Go finds the folder; nothing is fetched. A workspace with no `go.work` gets a `replace` line instead. A requirement in `go.mod` is also a graph edge before any file imports the module. `smith uninstall` removes the requirement and its `replace`, and leaves `go.work` alone. The plugin declares the `link` capability.
 
 ## Doctor, dependencies and removal
 
@@ -324,12 +324,12 @@ Dependencies:
 | Command | What the plugin runs |
 |---|---|
 | `smith install` (no package) | `go mod download` in every module |
-| `smith install -w <project> <module>[@v]` | `go get <module>` in that module; with `-D`, `go get -tool` (a Go tool dependency) |
-| `smith uninstall -w <project> <module>` | `go get <module>@none` (`go get -tool ...@none` when `go.mod` has a `tool` directive for it) |
+| `smith install -p <project> <module>[@v]` | `go get <module>` in that module; with `-D`, `go get -tool` (a Go tool dependency) |
+| `smith uninstall -p <project> <module>` | `go get <module>@none` (`go get -tool ...@none` when `go.mod` has a `tool` directive for it) |
 | `smith up` | asks the module proxy (`proxy.golang.org`) for the newest release of each module a `go.mod` requires directly, then runs `go get <module>@v<version>` in each module that declares it, so `go.mod` and `go.sum` change together. It also compares the pinned tools: Go and golangci-lint. Indirect requirements, pseudo-versions (a commit between tags) and `replace`d modules are left alone. |
 | `smith sync` | brings the direct requirements of one module that several `go.mod` files declare to the highest version any of them has, with `go get`. A `go.work` already builds every module with the highest version required, so this does not change what ships; it keeps each module building the same on its own, and makes `smith doctor`'s one-version check meaningful for Go. |
 
-Real: `smith install -w api github.com/pkg/errors@v0.9.1` printed `added github.com/pkg/errors@v0.9.1 (apps/api/go.mod, apps/api/go.sum)` and the note `go mod tidy drops a requirement nothing imports yet: import it before tidying`; the `go.mod` line was marked `// indirect` until code imports it. `smith uninstall` removed it again. `smith up --check` ended with:
+Real: `smith install -p api github.com/pkg/errors@v0.9.1` printed `added github.com/pkg/errors@v0.9.1 (apps/api/go.mod, apps/api/go.sum)` and the note `go mod tidy drops a requirement nothing imports yet: import it before tidying`; the `go.mod` line was marked `// indirect` until code imports it. `smith uninstall` removed it again. `smith up --check` ended with:
 
 ```
 Tools smith pins (informational):
@@ -394,7 +394,7 @@ If you would rather have a module per project (each program or library its own r
 
 ## Verified
 
-Windows 11 Pro 10.0.26300, smith 1.62.0, go 1.27.0 windows/amd64 (the Go version `smith new` wrote into `go.work`), a throw-away workspace made with `smith new go-demo --ci github,azure`. Run: `smith add lib|app|package ... --lang go`, `smith projects`, `smith graph`, `smith explain` (project and tasks), `smith run build|test|lint|package|start|typecheck|format`, `smith doctor` (clean, with a missing `go.work` entry, and with `[toolchains] go = "1.23"`), `smith doctor --fix` (diff only), `smith ci generate`, `smith ci setup`, `smith ci audit` (network; govulncheck), `smith ci check`, `smith release --dry-run [--json] [--notes]`, `smith install -w` / `smith uninstall -w`, `smith up --check`, `smith remove util --dry-run`, `smith plugin check go` (all 11 checks ok), `smith stacks --json`.
+Windows 11 Pro 10.0.26300, smith 1.62.0, go 1.27.0 windows/amd64 (the Go version `smith new` wrote into `go.work`), a throw-away workspace made with `smith new go-demo --ci github,azure`. Run: `smith add lib|app|package ... --lang go`, `smith projects`, `smith graph`, `smith explain` (project and tasks), `smith run build|test|lint|package|start|typecheck|format`, `smith doctor` (clean, with a missing `go.work` entry, and with `[toolchains] go = "1.23"`), `smith doctor --fix` (diff only), `smith ci generate`, `smith ci setup`, `smith ci audit` (network; govulncheck), `smith ci check`, `smith release --dry-run [--json] [--notes]`, `smith install -p` / `smith uninstall -p`, `smith up --check`, `smith remove util --dry-run`, `smith plugin check go` (all 11 checks ok), `smith stacks --json`.
 
 Not verified by a run:
 

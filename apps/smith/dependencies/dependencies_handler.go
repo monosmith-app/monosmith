@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/commandflags"
 	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
@@ -27,11 +28,11 @@ func Commands(version string) []*cobra.Command {
 	install := &cobra.Command{
 		Use:     "install [packages...]",
 		Aliases: []string{"i"},
-		Short:   "Add a package to a project (-w), or with none install everything the workspace declares (up updates, sync aligns versions)",
+		Short:   "Add a package to a project (-p), or with none install everything the workspace declares (up updates, sync aligns versions)",
 		Long: `Add packages to one project with its own toolchain: npm install --workspace,
 the project's pyproject.toml and the workspace venv, go get. Each project owns
-its dependencies, so a package needs a target: smith install -w <project>
-<package>. -w . names the workspace root: the package.json shared by every
+its dependencies, so a package needs a target: smith install -p <project>
+<package>. -p . names the workspace root: the package.json shared by every
 project (Node workspaces only). With no package, smith install installs everything a fresh clone
 needs, for every language in the workspace.
 
@@ -42,13 +43,13 @@ package of the same name, or cannot be asked, smith asks which you mean; with
 no terminal (or --yes) it refuses and names the fix: workspace:<name> for the
 project, --registry for the package.`,
 		Example: `  smith install                       # a fresh clone: npm install, the venv, go mod download
-  smith install -w web zod
-  smith install -w . -D vitest             # the workspace root: shared by every project
-  smith install -w apps/api -D pytest-cov
-  smith install -w api github.com/pkg/errors@v0.9.1
-  smith install -w web core                # a library of this workspace: linked, not downloaded
-  smith install -w web workspace:core      # say it is the project
-  smith install -w web --registry core     # say it is the registry package`,
+  smith install -p web zod
+  smith install -p . -D vitest             # the workspace root: shared by every project
+  smith install -p apps/api -D pytest-cov
+  smith install -p api github.com/pkg/errors@v0.9.1
+  smith install -p web core                # a library of this workspace: linked, not downloaded
+  smith install -p web workspace:core      # say it is the project
+  smith install -p web --registry core     # say it is the registry package`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if verbose {
 				// The plugins inherit it: the package manager's own warnings
@@ -79,7 +80,7 @@ project, --registry for the package.`,
 	install.Flags().BoolVarP(&yes, "yes", "y", false, "never ask: accept the defaults, and refuse a name that could be a project or a registry package")
 	install.Flags().BoolVar(&dryRun, "dry-run", false, "show where each package goes and its latest release, and change nothing")
 	install.Flags().BoolVar(&verbose, "verbose", false, "show the package manager's own output and warnings (otherwise warnings fold into one line)")
-	install.Flags().StringArrayVarP(&targets, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
+	commandflags.AddProjectFlag(install, &targets, "target project, by name or directory; repeat it or separate them with commas")
 	install.Flags().BoolVarP(&dev, "save-dev", "D", false, "add as a development dependency (npm devDependencies, the Python dev extra, a Go tool)")
 
 	operation.Wrap(install, operation.Spec{Describe: func(cmd *cobra.Command, args []string) string {
@@ -94,12 +95,12 @@ project, --registry for the package.`,
 		Short:   "Remove packages from a project (the opposite of install)",
 		Long: `Remove packages from one project, the counterpart of smith install. A
 dependency belongs to the project that uses it, so it needs a target: smith
-uninstall -w <project> <package>. The package.json at the top of the workspace
-is not a project: name it with -w . (smith deps up lists it as "(root)").
+uninstall -p <project> <package>. The package.json at the top of the workspace
+is not a project: name it with -p . (smith deps up lists it as "(root)").
 A development dependency is removed like any other.`,
-		Example: `  smith uninstall -w web zod
-  smith uninstall -w . @swc/core`,
-		Args:    cobra.MinimumNArgs(1),
+		Example: `  smith uninstall -p web zod
+  smith uninstall -p . @swc/core`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := session.Open(session.Options{Dir: ".", Version: version, Log: cmd.ErrOrStderr()})
 			if err != nil {
@@ -114,7 +115,7 @@ A development dependency is removed like any other.`,
 	}
 	uninstall.Flags().BoolVarP(&uninstallYes, "yes", "y", false, "do not ask; without a terminal the packages are removed only with --yes")
 	uninstall.Flags().BoolVar(&fromRegistry, "registry", false, "remove the names as registry packages, even when a name is also a project of this workspace")
-	uninstall.Flags().StringArrayVarP(&from, "workspace", "w", nil, "target project, by name or directory; repeat it for several")
+	commandflags.AddProjectFlag(uninstall, &from, "target project, by name or directory; repeat it or separate them with commas")
 	operation.Wrap(uninstall, operation.Spec{Describe: func(cmd *cobra.Command, args []string) string {
 		return describePackages("uninstall", cmd, args)
 	}})
@@ -124,7 +125,7 @@ A development dependency is removed like any other.`,
 // describePackages words an install or an uninstall for the commit: "install zod in web". With no
 // package it is the install of everything the workspace declares.
 func describePackages(verb string, cmd *cobra.Command, args []string) string {
-	targets, _ := cmd.Flags().GetStringArray("workspace")
+	targets, _ := cmd.Flags().GetStringSlice("project")
 	text := verb + " the packages of the workspace"
 	if len(args) > 0 {
 		text = verb + " " + strings.Join(args, " ")
@@ -279,7 +280,7 @@ does, leaving the ones smith.toml [dependencies] allow lists.`,
 	cmd.Flags().StringVar(&prefer, "prefer", "", "with --align: which version wins when projects disagree: highest, lowest or installed (default: the installed one, else the highest)")
 	cmd.Flags().StringSliceVar(&to, "to", nil, "with --align: the version of one dependency, as <name>=<version>")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the updates and tools as JSON; never write")
-	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
+	commandflags.AddNoInstallFlag(cmd, &noInstall, "rewrite the manifests without installing")
 	return operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "align dependency versions" }})
 }
 
@@ -339,7 +340,7 @@ shows the plan and changes nothing.`,
 	}
 	cmd.Flags().BoolVar(&check, "check", false, "report only; fail when declarations disagree")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print the report as JSON")
-	cmd.Flags().BoolVar(&noInstall, "no-install", false, "rewrite the manifests without installing")
+	commandflags.AddNoInstallFlag(cmd, &noInstall, "rewrite the manifests without installing")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "write the plan without asking")
 	cmd.Flags().BoolVar(&major, "major", false, "also rewrite declarations whose major version differs from the target")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan and change nothing")

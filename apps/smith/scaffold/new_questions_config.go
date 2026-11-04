@@ -127,7 +127,7 @@ func NewQuestions() []NewQuestion {
 			{Label: "CircleCI", Value: "circleci"},
 			{Label: "Bitbucket Pipelines", Value: "bitbucket"},
 		}},
-		{Key: AnswerLanguage, Prompt: "What is the main language of this workspace?", Default: LanguageLater, Flag: "language", Options: languages},
+		{Key: AnswerLanguage, Prompt: "What is the main language of this workspace?", Default: LanguageLater, Flag: "lang", Options: languages},
 		{Key: AnswerNodeStack, Prompt: "Which tests and lint for Node projects?", Default: DefaultNodeStack, Flag: "default-stack", Options: NodeStacks(), Applies: isNode, When: map[string]string{AnswerLanguage: "node"}},
 		{Key: AnswerArchitecture, Prompt: "Which code layout should smith check?", Default: DefaultArchitecture, Flag: "architecture", Options: layouts},
 		{Key: AnswerAgent, Prompt: "Add the MonoSmith agent, so Claude Code and VS Code can work in this workspace through smith?", Default: "yes", Flag: "agent", Options: []NewOption{

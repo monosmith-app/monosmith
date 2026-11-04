@@ -62,7 +62,7 @@ ends with the exact `smith add` line to run. See [`smith add`](../manual/add.md)
 
 ### How do I let one project use a library of my workspace?
 
-`smith install -w web workspace:ui`. The project depends on the library in the
+`smith install -p web workspace:ui`. The project depends on the library in the
 form of its language and nothing is downloaded. See [`smith install`](../manual/install.md).
 
 ### How do I install the programs a workspace needs?

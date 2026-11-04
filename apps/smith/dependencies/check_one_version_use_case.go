@@ -51,7 +51,7 @@ func CheckOneVersionPolicy(s *session.Session) []protocol.Finding {
 		{
 			Check: CheckDevAtRoot, OK: len(misplaced) == 0, Warning: true,
 			Detail: strings.Join(misplaced, "; "),
-			Remedy: "declare the dev tool once, in the root manifest, and remove it from the projects (`smith uninstall -w <project> <package>`)",
+			Remedy: "declare the dev tool once, in the root manifest, and remove it from the projects (`smith uninstall -p <project> <package>`)",
 		},
 	}
 }

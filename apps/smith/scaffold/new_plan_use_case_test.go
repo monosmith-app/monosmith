@@ -12,7 +12,7 @@ func TestNewWithoutATerminalOrYesRefusesAndNamesEveryOpenChoice(t *testing.T) {
 	if err == nil {
 		t.Fatal("smith new applied without a terminal and without --yes")
 	}
-	for _, want := range []string{"--ci", "--language", "--architecture", "--agent", "--devcontainer", "--first-commit", "--yes", "--dry-run"} {
+	for _, want := range []string{"--ci", "--lang", "--architecture", "--agent", "--devcontainer", "--first-commit", "--yes", "--dry-run"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal lacks %s:\n%v", want, err)
 		}

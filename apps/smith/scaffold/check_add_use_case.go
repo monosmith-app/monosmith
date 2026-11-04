@@ -22,7 +22,7 @@ func CheckAdd(s *session.Session, opts AddOptions) error {
 	switch kind {
 	case protocol.ProjectApp, protocol.ProjectLib, protocol.ProjectPackage:
 	default:
-		return fmt.Errorf("kind %q is not app, lib or package. To add a package (a dependency) to a project, use: smith install -w <project> <package>", opts.Kind)
+		return fmt.Errorf("kind %q is not app, lib or package. To add a package (a dependency) to a project, use: smith install -p <project> <package>", opts.Kind)
 	}
 	if err := ValidateName(opts.Kind, opts.Name); err != nil {
 		return err

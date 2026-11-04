@@ -386,7 +386,7 @@ func TestAddingAPackageToTheSelectedProjectAsksWhichAndRunsSmithInstall(t *testi
 	l.has("Install packages", "Project: ‹ orders ›", "Packages, separated by spaces", "development dependency")
 	// Typing while the "Add" answer is the registry goes straight to the packages field.
 	l.typeText("zod").keys("enter")
-	if got := l.lastStarted(); got != "install -w orders --registry zod --yes" {
+	if got := l.lastStarted(); got != "install -p orders --registry zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -405,12 +405,12 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 	l.has("Remove packages")
 	l.typeText("left-pad").keys("enter")
 	// Removing asks once more, with the command line and what it touches.
-	l.has("uninstall -w orders left-pad", "Removes left-pad")
+	l.has("uninstall -p orders left-pad", "Removes left-pad")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v before the confirmation", l.started)
 	}
 	l.keys("y")
-	if got := l.lastStarted(); got != "uninstall -w orders left-pad --yes" {
+	if got := l.lastStarted(); got != "uninstall -p orders left-pad --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -418,12 +418,12 @@ func TestTheInstallActionOfTheProjectDetailOpensTheSamePrompt(t *testing.T) {
 func TestTheDepsViewRemovesAPackageOfOneProjectWithThatProjectAsTarget(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("5", "down", "x") // zod, declared in web only
-	l.has("uninstall -w web zod")
+	l.has("uninstall -p web zod")
 	if len(l.started) != 0 {
 		t.Fatalf("started %v before the confirmation", l.started)
 	}
 	l.keys("y")
-	if got := l.lastStarted(); got != "uninstall -w web zod --yes" {
+	if got := l.lastStarted(); got != "uninstall -p web zod --yes" {
 		t.Fatalf("started %q", got)
 	}
 }
@@ -436,9 +436,9 @@ func TestTheDepsViewTargetsTheWorkspaceRootForARootPackage(t *testing.T) {
 	}
 	l.m = sh
 	l.keys("5", "x")
-	l.has("uninstall -w . @swc/core", "the workspace root")
+	l.has("uninstall -p . @swc/core", "the workspace root")
 	l.keys("y")
-	if got := l.lastStarted(); got != "uninstall -w . @swc/core --yes" {
+	if got := l.lastStarted(); got != "uninstall -p . @swc/core --yes" {
 		t.Fatalf("started %q", got)
 	}
 }

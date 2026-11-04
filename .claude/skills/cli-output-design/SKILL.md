@@ -117,3 +117,13 @@ logger   2.0.1  › 2.0.2  patch  dependency core 1.5.0       ✓ registry.npmjs
 2. Run it with `NO_COLOR=1` and piped to a file: still readable? Run it once with `FORCE_COLOR=1` too.
 3. Put a real sample in the PR body, so the owner can judge the wording and the layout.
 4. A golden or test pins the lines that matter (the banner, the table header, the closing line).
+
+## Flags in the text you print
+
+A command line that smith prints or builds (a hint, a remedy, a pipeline template, a TUI or extension command)
+uses the canonical flag of the concept: `-p, --project` for a project, `--lang`, `--output`, `--yes`,
+`--no-install`. The vocabulary is `libs/actions/flagvocabulary/flag_vocabulary.json`
+([ADR 0084](../../../docs/architecture/decisions/0084-one-concept-one-flag.md), generated table in
+`docs/reference/flag-vocabulary.md`). In Go take the spelling from `flagvocabulary.Arg("project")`, in
+VS Code from `flag.project`, in Kotlin from `SmithFlagsConfig.PROJECT`. A new command registers a shared flag through
+`apps/smith/commandflags`; a new concept goes into the vocabulary first.

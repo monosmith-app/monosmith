@@ -11,9 +11,9 @@ func TestInstallPackageArgv(t *testing.T) {
 		answers map[string][]string
 		want    []string
 	}{
-		{"one project, prod", map[string][]string{"names": {"zod react@19"}, "projects": {"web"}, "kind": {"prod"}}, []string{"install", "-w", "web", "zod", "react@19"}},
-		{"two projects, dev", map[string][]string{"names": {"vitest"}, "projects": {"web", "api"}, "kind": {"dev"}}, []string{"install", "-w", "web", "-w", "api", "-D", "vitest"}},
-		{"root and a project, dev", map[string][]string{"names": {"vitest"}, "projects": {".", "web"}, "kind": {"dev"}}, []string{"install", "-w", ".", "-w", "web", "-D", "vitest"}},
+		{"one project, prod", map[string][]string{"names": {"zod react@19"}, "projects": {"web"}, "kind": {"prod"}}, []string{"install", "-p", "web", "zod", "react@19"}},
+		{"two projects, dev", map[string][]string{"names": {"vitest"}, "projects": {"web", "api"}, "kind": {"dev"}}, []string{"install", "-p", "web", "-p", "api", "-D", "vitest"}},
+		{"root and a project, dev", map[string][]string{"names": {"vitest"}, "projects": {".", "web"}, "kind": {"dev"}}, []string{"install", "-p", ".", "-p", "web", "-D", "vitest"}},
 		{"no project", map[string][]string{"names": {"zod"}, "kind": {"prod"}}, nil},
 		{"no name", map[string][]string{"projects": {"web"}}, nil},
 	}

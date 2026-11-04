@@ -53,7 +53,7 @@ Usage: `smith add <kind> <name> [flags]`
 | `--environment-output <environment-output>` | string |  | a web app: where the builds go, workspace (dist/apps/<app>/<env>, default) or project (dist/<env> in the app) |
 | `--environments <environments>` | string, repeatable |  | a web app: the environments it is built for, comma separated (lcl,dev,uat,prd), or none for one build; asked in a terminal, required without one |
 | `--fresh` | boolean | off | give the project the built-in default of its stack, without following the sibling projects |
-| `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) |
+| `-l, --lang <lang>` | string | the stack's, or the workspace's only language | language: node, go, python, rust, dotnet, ruby, php, cpp, dart, jvm, bicep, lua, applescript, vba, swift, objc, bundle, recipe (default: the stack's, or the workspace's only language) (also --language) |
 | `--like <like>` | string |  | copy the build, test, layout and lint of this project instead of what most siblings share; the plan and the output show what was taken |
 | `-s, --stack <stack>` | string | the recipe, else `[default_stacks]` in `smith.toml` | stack the project is built with, bypassing the workspace's recipe (default: the recipe, else [default_stacks] in smith.toml; smith stacks lists them; none: the language plugin alone) |
 | `--verbose` | boolean | off | show the package manager's output as it runs (it is shown only if it fails otherwise) |
@@ -145,7 +145,7 @@ before anything is written. "I know the language" keeps the order kind, then lan
 
 ## After the add
 
-When the project is a library, `smith add` ends with `Use it from an app: smith install -w <app> <library>`: a
+When the project is a library, `smith add` ends with `Use it from an app: smith install -p <app> <library>`: a
 library is not a dependency of any app until you say so (see [`smith install`](install.md)). In the terminal
 interface, press `+` on the app and pick the library.
 

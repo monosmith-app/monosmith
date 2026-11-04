@@ -18,6 +18,7 @@ settings and concepts mean.
 | [Releasing](releasing.md) | versions, registries, tags, binaries, container images and the Marketplace |
 | [Plugins](plugins.md) | the built-in plugins, roles, the protocol and the search path |
 | [Serve and the event stream](serve.md) | `smith serve`'s JSON-RPC methods and the run events |
+| [Flag vocabulary](flag-vocabulary.md) | the flags several commands share, with the other spellings each accepts (generated; [ADR 0084](../architecture/decisions/0084-one-concept-one-flag.md)) |
 | [CLI reference](cli.md) | every command with its flags in one generated table (the [manual](../manual/README.md) has a page per command) |
 
 How these pieces work inside is in the [architecture manual](../architecture/README.md).

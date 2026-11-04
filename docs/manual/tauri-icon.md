@@ -29,7 +29,7 @@ Usage: `smith tauri icon <logo.png> [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--dry-run` | boolean | off | show what would be overwritten and change nothing |
-| `-p, --project <project>` | string |  | the app, when more than one project has a src-tauri |
+| `-p, --project <project>` | string |  | the app, when more than one project has a src-tauri (also -w, --workspace, --projects) |
 | `-y, --yes` | boolean | off | do not ask; without a terminal the icons are made only with --yes |
 
 <!-- smith:end tauri icon -->

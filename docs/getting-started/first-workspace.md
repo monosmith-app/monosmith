@@ -233,7 +233,7 @@ Wrote 9 file(s):
   libs/core/greeting/greet_use_case_test.go
   libs/core/greeting/greeting_contract.go
 Import it from another Go project as example.com/acme/libs/core/<slice>.
-Use it from an app: smith install -w <app> core (in the terminal interface, press + on the app and pick it).
+Use it from an app: smith install -p <app> core (in the terminal interface, press + on the app and pick it).
 Verifying: smith run build test -p core
 Verified: build and test passed in 800ms
 Done: lib core is ready (9 files written, 1.1s).
@@ -351,8 +351,8 @@ the form of the language, so there is nothing to edit by hand. Make `web` use
 `ui`, and `api` use `core`:
 
 ```sh
-smith install -w web workspace:ui --yes
-smith install -w api workspace:core --yes
+smith install -p web workspace:ui --yes
+smith install -p api workspace:core --yes
 ```
 
 ```text
@@ -366,7 +366,7 @@ api will use core: smith adds require example.com/acme/libs/core v0.0.0 to apps/
 ```
 
 Nothing is downloaded. The `workspace:` prefix says "the project of this
-workspace". Without it (`smith install -w web ui`) smith links a library too,
+workspace". Without it (`smith install -p web ui`) smith links a library too,
 but when the registry has a package of the same name (`ui` and `core` both
 exist on npm) it has to ask which you mean. In a terminal it asks. Without a
 terminal it stops, and the message names the fix: `workspace:ui` for the
@@ -514,16 +514,16 @@ web	apps/web libs/ui
 Each project owns its dependencies, so you name the project:
 
 ```sh
-smith install -w web zod                    # npm install zod --workspace apps/web
-smith install -w sdk -D pytest-cov          # the Python dev extra, into .venv
-smith install -w api github.com/pkg/errors  # go get, in apps/api
-smith uninstall -w web zod
+smith install -p web zod                    # npm install zod --workspace apps/web
+smith install -p sdk -D pytest-cov          # the Python dev extra, into .venv
+smith install -p api github.com/pkg/errors  # go get, in apps/api
+smith uninstall -p web zod
 ```
 
 To let one project of your workspace use another, name the library instead of
-a package (`smith install -w web workspace:ui`, shown in
+a package (`smith install -p web workspace:ui`, shown in
 [step 3](#use-one-project-from-another)); nothing is downloaded.
-`-w` takes a project name or directory and can be repeated. `-D` adds a
+`-p` takes a project name or directory and can be repeated. `-D` adds a
 development dependency. A bare `smith install` installs everything a fresh clone
 needs. `smith install` and `smith uninstall` cover Node, Python, Rust, Go, .NET,
 Dart, PHP and Ruby; for the JVM edit the pom or build script.

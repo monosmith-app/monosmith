@@ -72,7 +72,7 @@ describe('createWorkspace', () => {
   it('asks every question when the person customises, and passes the answers as flags', async () => {
     const f = fake({ way: 'customise' })
     expect(await createWorkspace(f.deps)).toMatchObject({ kind: 'created', committed: false })
-    expect(f.applied[0]).toEqual(expect.arrayContaining(['--language', 'node', '--no-commit']))
+    expect(f.applied[0]).toEqual(expect.arrayContaining(['--lang', 'node', '--no-commit']))
   })
 
   it('hands over to smith in a terminal when the person asks for its own questions, and writes nothing', async () => {

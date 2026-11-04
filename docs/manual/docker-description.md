@@ -37,7 +37,7 @@ Usage: `smith docker description [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--dry-run` | boolean | off | name the repositories without calling Docker Hub |
-| `-p, --project <project>` | string, repeatable |  | only these apps |
+| `-p, --project <project>` | string, repeatable |  | only these apps (also -w, --workspace, --projects) |
 | `--strict` | boolean | off | exit non-zero when a description could not be set |
 
 <!-- smith:end docker description -->

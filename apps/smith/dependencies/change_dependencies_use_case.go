@@ -18,7 +18,7 @@ import (
 const timeout = 20 * time.Minute
 
 // ErrNoTarget is adding packages without saying to which project.
-var ErrNoTarget = errors.New("adding a package needs a target project: smith install -w <project> <package>. A bare smith install (no package) installs the whole workspace")
+var ErrNoTarget = errors.New("adding a package needs a target project: smith install -p <project> <package>. A bare smith install (no package) installs the whole workspace")
 
 // LinkOptions say how a name that may be a library of the workspace is read.
 type LinkOptions struct {
@@ -48,7 +48,7 @@ func Install(s *session.Session, targets, packages []string, dev bool, log io.Wr
 	atRoot, targets := SplitRootTarget(targets)
 	if atRoot {
 		if len(packages) == 0 {
-			return errors.New("the workspace root needs a package: smith install -w . <package>")
+			return errors.New("the workspace root needs a package: smith install -p . <package>")
 		}
 		if err := installAtRoot(s, packages, dev, log); err != nil {
 			return err
@@ -120,7 +120,7 @@ func addPackages(s *session.Session, p *projectgraph.Project, packages []string,
 // a registry package.
 func Uninstall(s *session.Session, targets, packages []string, log io.Writer, registry bool) error {
 	if len(targets) == 0 {
-		return errors.New("a dependency belongs to the project that uses it: smith uninstall -w <project> <package>")
+		return errors.New("a dependency belongs to the project that uses it: smith uninstall -p <project> <package>")
 	}
 	atRoot, targets := SplitRootTarget(targets)
 	if atRoot {

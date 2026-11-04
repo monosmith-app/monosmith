@@ -21,7 +21,7 @@ install.
 | Manifests that make a directory a candidate project | `pom.xml`, `build.gradle.kts`, `build.gradle` |
 | Requires, conflicts, provides (task slots) | none |
 | Capabilities advertised | `discover`, `generate`, `version`, `publish`, `remove`, `ci`, `doctor`, `published`, `declarations`, `latest`, `changeKind`, `components`, `channels` |
-| Not advertised | `link`: `smith install -w <project> <library>` says "the jvm plugin does not link an internal library yet: add the dependency in `pom.xml` or `build.gradle` by hand". `declared`: a declared project is refused (see Declared projects). `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
+| Not advertised | `link`: `smith install -p <project> <library>` says "the jvm plugin does not link an internal library yet: add the dependency in `pom.xml` or `build.gradle` by hand". `declared`: a declared project is refused (see Declared projects). `dependencies`: `smith install` and `smith uninstall` say the plugin cannot change a module's dependencies (Maven and Gradle have no built-in command to add one; the build tool's plugins would have to be installed first) |
 | Stacks it publishes | `kotlin` ("a Kotlin module built with Gradle, linted with ktlint"), `android` ("an Android app in Kotlin, built with Gradle (AGP), linted with ktlint and Android Lint") |
 | Project kinds `smith add` can create | `app`, `lib`, `package` (`smith kinds` lists `jvm-app`, `jvm-lib`, `jvm-package`); the `android` stack makes apps only |
 | Tasks | `build`, `test`, `lint`, `start` |
@@ -434,7 +434,7 @@ same with or without `mvn` or `gradle` on the machine.
   shipped after a newer line does not win). An artifact Maven Central does not
   have (an internal repository's) is skipped. Nothing is installed afterwards:
   Maven and Gradle resolve the new version on the next build.
-- Not offered: `smith install -w <module> <dependency>` and `smith uninstall`
+- Not offered: `smith install -p <module> <dependency>` and `smith uninstall`
   (edit the pom or build script), and a vulnerability audit (the usual tools,
   OWASP dependency-check for Maven and a Gradle plugin, have to be installed
   into the build first, so `smith ci audit` has nothing to run for JVM).
