@@ -91,7 +91,7 @@ func (s *Shell) click(x, y int) tea.Cmd {
 		s.adopt = &m
 		return s.afterAdopt(out)
 	case s.fix != nil:
-		w, out := s.fix.Click(x, y)
+		w, out := s.synced(*s.fix).Click(x, y)
 		s.fix = &w
 		return s.afterFix(out)
 	case s.pkg != nil:
@@ -251,7 +251,7 @@ func (s *Shell) wheel(x, y, dir int) tea.Cmd {
 		s.adopt = &m
 		return nil
 	case s.fix != nil:
-		w := s.fix.Wheel(dir * wheelStep)
+		w := s.synced(*s.fix).Wheel(dir * wheelStep)
 		s.fix = &w
 		return nil
 	case s.pkg != nil, s.relpick != nil, s.confirm != nil:

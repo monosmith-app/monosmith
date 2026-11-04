@@ -37,16 +37,23 @@ func CheckToolVersions(workspaceRoot, required string, lints bool) []protocol.Fi
 	}
 	pin := strings.TrimPrefix(GolangciLintVersion, "v")
 	got, err = probe(workspaceRoot, []string{"golangci-lint", "--version"})
+	install := LintInstallCommand()
 	out = append(out, protocol.Finding{
 		Check: "golangci-lint is " + pin + ", as in CI", OK: err == nil && strings.Contains(got, " "+pin+" "), Warning: true,
 		Detail: "found: " + firstLine(got, "golangci-lint is not on PATH"),
-		Remedy: "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion + " (smith ci setup does it)",
+		Remedy: strings.Join(install, " ") + " (smith ci setup does it too)",
 		Fix: &protocol.Fix{Description: "Install the golangci-lint that CI pins", Steps: []protocol.FixStep{{
-			Description: "smith ci setup installs golangci-lint " + GolangciLintVersion + " (uses the network)",
-			Argv:        []string{"smith", "ci", "setup"},
+			Description: strings.Join(install, " ") + " (uses the network)",
+			Argv:        install,
 		}}},
 	})
 	return out
+}
+
+// LintInstallCommand is the command that installs the golangci-lint version CI
+// pins: the one command the doctor fix runs, not the whole `smith ci setup`.
+func LintInstallCommand() []string {
+	return []string{"go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@" + GolangciLintVersion}
 }
 
 // older compares major.minor versions.

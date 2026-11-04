@@ -11,6 +11,14 @@ other fix, and any fix with a question, is asked about in a terminal. Without a 
 is shown with the command that applies it. The same fix on many projects is one fix that
 says which projects it applies to.
 
+A fix runs the narrow command it names and nothing more. The step text is the command: for a
+golangci-lint that differs from CI it is `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>`,
+and for a missing Python venv it is the two commands that create `.venv` and install
+`requirements-dev.txt`. A fix never runs `smith ci setup`, because that command also installs the
+dependencies of every other plugin (for example `npm ci`). In the TUI the fix dialog shows the
+last six lines the step printed, and `l` opens its full log (see
+[the fix wizard](tui.md#the-doctor-fix-wizard)).
+
 ## Local toolchain versus CI
 
 For Node, Python, Go, Rust, .NET and the JDK, doctor compares the tool on this machine with

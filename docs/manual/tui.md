@@ -425,9 +425,14 @@ Opened by `f` or `F` in Doctor, or by **Fix smith.toml** on the Start menu when 
    change so it can be undone": `c` or a click ticks it.
 3. **Progress.** A spinner and the fix title, then "step n of m" with the step's name (for
    **Fix with doctor**, the steps of all the fixes together). After 2 seconds the line adds the
-   time it has run. Under it, one line shows what smith writes ("Writing package.json") and then
-   the last line the running command printed. Other keys do nothing while it runs, so a second
-   fix cannot start. `Esc` or `Ctrl+C` stops the step.
+   time it has run. Under it, six rows (always there, so the dialog keeps its height) show what
+   smith writes ("Writing package.json") and then the last six lines the running command
+   printed. `l` (or a click on "l full log" in the hint line) opens the whole log of the step in
+   a scrollable view: the arrows, `PgUp`, `PgDn`, `Home` and `End` or the wheel scroll it, and it
+   follows the newest line until you scroll up. `Esc` or `l` closes the log; the step keeps
+   running. Other keys do nothing while it runs, so a second fix cannot start. `Esc` or `Ctrl+C`
+   stops the step; when the log is open, `Esc` closes the log first and `Ctrl+C` still stops.
+   The log keeps the last 2000 lines.
    A fix can be a smith command (`smith upgrade --defaults`, `smith deps up --align`,
    `smith derive --replace`, `smith kind`, `smith cache prune`). The review then shows the plan
    the command prints with its plan flag, so you see what it changes before you agree, and

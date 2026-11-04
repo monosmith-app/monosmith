@@ -33,7 +33,7 @@ func TestApplyingShowsTheLastLineOfOutputAndElapsedAfterTwoSeconds(t *testing.T)
 		t.Fatalf("under two seconds shows no time: %s", got)
 	}
 	w.started = time.Now().Add(-75 * time.Second)
-	got := text(w.Noted("added 12 packages"))
+	got := text(w.Noted([]string{"added 12 packages"}))
 	for _, want := range []string{"1m 15s", "added 12 packages"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("lacks %q: %s", want, got)
@@ -46,7 +46,7 @@ func TestApplyingTellsWhatKeysDoAndHowLongItRuns(t *testing.T) {
 	w, _ = press(t, w, "1", "1", "enter")
 	w.started = time.Now().Add(-20 * time.Second)
 	got := text(w)
-	for _, want := range []string{"20s", "Other keys do nothing until it is done"} {
+	for _, want := range []string{"20s", "other keys wait", "l full log"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("lacks %q:\n%s", want, got)
 		}

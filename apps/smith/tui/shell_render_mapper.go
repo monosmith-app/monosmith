@@ -189,10 +189,7 @@ func (s Shell) overlays(rows []string) []string {
 	}
 	if s.fix != nil {
 		r := s.fix.Rect()
-		fix := *s.fix
-		if s.fixing != nil {
-			fix = fix.Noted(s.fixing.lastNote())
-		}
+		fix := s.synced(*s.fix)
 		rows = pane.Overlay(rows, fix.Lines(s.th, s.tick), r.X, r.Y)
 	}
 	if s.adopt != nil {
