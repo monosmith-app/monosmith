@@ -875,6 +875,7 @@ Usage: `smith cache <command>`
 | Subcommand | Meaning |
 |---|---|
 | `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
 | `smith cache status` | Show the local cache: where it is, how big, how full, and the largest entries |
 | `smith cache verify` | Check the local cache for damage; --fix removes what is broken |
@@ -914,6 +915,7 @@ Usage: `smith doctor [flags]`
 | Flag | Meaning | Default |
 |---|---|---|
 | `--choose <choose>` | with --fix and --only, answer the fix's questions by option number, in order (1,2) |  |
+| `--commit` | commit the change as one operation so smith undo can revert it (nothing is committed without it) | off |
 | `--fix` | show the fixes doctor can make as diffs, and apply the safe ones | off |
 | `--json` | print the report as JSON | off |
 | `--only <only>` | with --fix, fix only the named check, as doctor prints it (repeatable) (repeatable) |  |

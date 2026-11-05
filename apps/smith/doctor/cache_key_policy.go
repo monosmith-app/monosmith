@@ -22,6 +22,6 @@ func cacheKeyFinding(remote string, getenv func(string) string) []protocol.Findi
 	return []protocol.Finding{{
 		Check: "the remote cache has its key", OK: ok, Warning: true,
 		Detail: "[cache] remote is " + remote + ", but SMITH_CACHE_KEY is not set: the remote cache is off on this machine, and tasks use the local cache only",
-		Remedy: "export SMITH_CACHE_KEY with the value the team shares (the pipeline keeps it as a secret; `smith ci check` lists what to create), plus the backend's credentials, or leave it unset to work with the local cache",
+		Remedy: "make a key with `smith cache key` (once, for the whole team; see docs/reference/tasks-and-cache.md#set-up-the-remote-cache), export it as SMITH_CACHE_KEY (the pipeline keeps it as a secret; `smith ci check` lists what to create), plus the backend's credentials, or leave it unset to work with the local cache",
 	}}
 }
