@@ -41,6 +41,8 @@
   "tui.compose.reading_what_your_plugins_offer": "Reading what your plugins offer",
   "tui.compose.cancelled_the_screen_was_not_opened": "Cancelled: the screen was not opened",
   "tui.compose.smith_did_not_print_a_plan": "smith did not print a plan",
+  "tui.registry.none_selected": "No dependency is selected",
+  "tui.registry.unknown": "No registry page is known for {name} (a private registry whose web address smith cannot work out)",
   "tui.copy.nothing_to_copy_here": "Nothing to copy here",
   "tui.copy.mouse_off_drag_selects_text_press": "Mouse off: drag selects text. Press m to turn it on",
   "tui.copy.mouse_on_shift_drag_selects_text": "Mouse on: shift+drag selects text",
