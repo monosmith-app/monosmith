@@ -41,13 +41,18 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		Remedy: remedy,
 	}
 	if !finding.OK {
+		broken := false
 		if declared := declaredBuildOutputs(p); declared != "" && !strings.Contains(", "+declared+",", ", "+resolved+",") {
 			finding.Detail += ". The build task caches " + declared + " instead, which that build never writes, so a cache hit restores nothing"
+			broken = true
 		}
 		fix, refusal := manifestfixes.MigrateBuildFix(workspaceRoot, p, config, outDir, dependents)
 		finding.Fix = fix
 		if refusal != "" {
 			finding.Remedy = "smith does not move this build for you, because " + refusal + ". To move it by hand: " + remedy
+			// A refused move leaves a build that works, so it is a warning;
+			// only a cache that restores nothing is a failure.
+			finding.Warning = !broken
 		}
 	}
 	return finding, true

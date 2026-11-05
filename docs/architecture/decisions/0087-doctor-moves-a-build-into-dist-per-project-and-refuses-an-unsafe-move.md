@@ -48,8 +48,7 @@ on a converted workspace showed two further facts:
 - A converted workspace gets a per-project path to the central `dist/`; the projects that cannot move stay
   red with a reason, not silently.
 - Moving the build of a package that others import needs the importers to read its sources: a later decision.
-- `smith convert --level full` still moves every tsc project without the importer check; it should use the same
-  refusal.
+- `smith convert --level full` still moved every tsc project without the importer check; [0088](0088-doctor-checks-and-moves-the-build-folder-of-every-language-it-can-read.md) gives it the same refusal and checks the other languages.
 
 ## Where to check
 

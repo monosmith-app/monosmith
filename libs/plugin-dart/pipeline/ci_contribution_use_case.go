@@ -96,7 +96,7 @@ var probe = func(dir string, argv []string) (string, error) { return toolrun.Pro
 
 // Doctor checks that Dart (and Flutter, when a package uses it) is installed,
 // and that the SDK lives outside the workspace.
-func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
@@ -117,4 +117,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings, protocol.Finding{Check: "the Dart and Flutter SDKs live outside the workspace", OK: true})
 	return protocol.DoctorResult{Findings: findings}
+}
+
+// Doctor runs the checks of the plugin and adds the build-location check: a
+// build task that writes outside the workspace's dist/.
+func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+	res := doctorChecks(workspaceRoot, params)
+	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	return res
 }

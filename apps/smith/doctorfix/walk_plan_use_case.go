@@ -151,6 +151,13 @@ func walkAsked(ctx context.Context, o Options, in *bufio.Reader, p Planned, res 
 			answers = append(answers, pick)
 			continue
 		}
+		// An answer that changes nothing ("leave it as it is") ends here: no
+		// empty review, no "Apply this fix?".
+		if len(p.Choices) > 0 && len(fix.Files) == 0 && len(fix.Steps) == 0 {
+			fmt.Fprintln(o.Out, "Left as it is.")
+			res.Skipped = append(res.Skipped, p.Description)
+			return nil
+		}
 		// Every question is answered: show what the answers add, then decide.
 		if len(p.Choices) > 0 {
 			chosen := Planned{Fix: fix, Checks: p.Checks}

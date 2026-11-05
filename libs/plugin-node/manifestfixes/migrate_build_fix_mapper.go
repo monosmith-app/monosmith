@@ -28,7 +28,7 @@ import (
 // Returns the fix (nil when there is nothing to edit or the move is refused)
 // and the refusal reason ("" unless refused).
 func MigrateBuildFix(workspaceRoot string, p protocol.Project, configName, oldOutDir string, dependents []string) (*protocol.Fix, string) {
-	if reason := buildMigrationRefusal(workspaceRoot, p, configName, oldOutDir, dependents); reason != "" {
+	if reason := MigrationRefusal(workspaceRoot, p, configName, oldOutDir, dependents); reason != "" {
 		return nil, reason
 	}
 	move := BuildIntoDistFix(workspaceRoot, p, configName, oldOutDir)
@@ -59,8 +59,10 @@ func MigrateBuildFix(workspaceRoot string, p protocol.Project, configName, oldOu
 	}, ""
 }
 
-// buildMigrationRefusal says why the build cannot be moved safely, or "".
-func buildMigrationRefusal(workspaceRoot string, p protocol.Project, configName, oldOutDir string, dependents []string) string {
+// MigrationRefusal says why the build cannot be moved safely, or "". It is the
+// refusal of doctor and of smith convert --level full: dependents are the
+// projects that import p by name.
+func MigrationRefusal(workspaceRoot string, p protocol.Project, configName, oldOutDir string, dependents []string) string {
 	old := cleanDir(oldOutDir)
 	if old == "." || old == "" || strings.HasPrefix(old, "..") {
 		return "its build writes into the project folder itself or outside it (" + oldOutDir + "), so there is no build folder to move"

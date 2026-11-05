@@ -255,6 +255,8 @@ Real output of `smith ci generate` (GitHub):
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `Rust builds into dist/cargo` reads `build.target-dir` of the nearest `.cargo/config.toml` (else the default `target/`; `CARGO_TARGET_DIR` wins). A workspace that builds into `target/` gets a fix that asks and writes `[build] target-dir = "dist/cargo"`, keeping the other lines; it is refused, with the reason, when a Dockerfile, script or pipeline names `target/` or the environment sets the folder. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 Doctor checks (`pipeline/check_workspace_use_case.go`), shown only when the workspace has Rust crates:
 
 | Check | Fails when |

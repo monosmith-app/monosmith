@@ -73,7 +73,7 @@ func CI(params protocol.CIParams) protocol.CIResult {
 
 // Doctor checks the venv and the requirements file exist, and that the venv's
 // Python is the one CI installs.
-func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
@@ -106,4 +106,12 @@ func dependencyFiles(projects []protocol.Project) []string {
 		files = append(files, path.Join(p.Root, "pyproject.toml"))
 	}
 	return files
+}
+
+// Doctor runs the checks of the plugin and adds the build-location check: a
+// build task that writes outside the workspace's dist/.
+func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+	res := doctorChecks(workspaceRoot, params)
+	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	return res
 }
