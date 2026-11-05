@@ -51,7 +51,7 @@ func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.has("Fix: install the dependencies", "asks: Which package manager?")
+	l.has("[ Fix  f ]", "install the dependencies", "asks: Which package manager?")
 	l.keys("f")
 	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
 	l.keys("down", "enter")
@@ -168,7 +168,7 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 
 func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.clickText("Fix: install the dependencies")
+	l.clickText("[ Fix  f ]")
 	l.has("Which package manager?")
 	l.clickText("2) pnpm")
 	l.has("Fix · review", "$ pnpm install")
@@ -200,7 +200,7 @@ func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t 
 	l.m = sh
 	l.keys("4", "r")
 	first := loads
-	l.has("Fix: Move the workspace to the latest defaults")
+	l.has("[ Fix  f ]", "Move the workspace to the latest defaults")
 	l.keys("f")
 	l.has("Fix · review", "$ smith upgrade --defaults --yes", "[ Apply  Enter ]")
 	if len(l.appliedFixes()) != 0 {

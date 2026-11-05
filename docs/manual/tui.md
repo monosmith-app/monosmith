@@ -58,7 +58,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Home | `1` | The health of the workspace in one headline, the facts behind it (checks, affected projects, the last run, outdated dependencies) and the one thing to do next, with its key. "Where to go" starts with two buttons, "Add a project" (`a`) and "Compose a stack" (`A`); click one or press its key. |
 | Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
-| Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with its problem and remedy; fixes open the fix wizard. |
+| Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Doctor detail](#the-doctor-detail)); fixes open the fix wizard. |
 | Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
@@ -427,6 +427,17 @@ written with `smith recipe new` on a terminal, which asks the questions.
 
 Home points at the tab (`New here? ...`) until you have opened it once; that is remembered in
 `tui.json`.
+
+## The Doctor detail
+
+The detail of the selected check has four parts, always in this order, and each fact appears once:
+
+1. **State**, under the check's name: the icon and the word only (`✗ failed`, `▲ warning`, `✓ passed`).
+2. **Actions**, as buttons: `[ Fix  f ]` (only when the check has a fix) and `[ Check again  r ]`. Each button shows its key and, under it, a plain line on what it does (for a fix, what it will change). Click a button or press its key.
+3. **What is wrong**: the problem the check found. A long problem shows its first three items; `e` shows all.
+4. **How to fix**: the remedy, then what the fix will do (the projects it covers, the files it writes, the commands it runs, the questions it asks), and last the same fix in a terminal (`or in a terminal: smith doctor --fix --only '<check>'`). A check without a fix has no Fix button; its remedy says what to do.
+
+`PgUp` and `PgDn` scroll the detail (`↑ more` and `↓ more` tell when there is more). Under 100 columns, `z` shows the detail alone.
 
 ## Wizards
 

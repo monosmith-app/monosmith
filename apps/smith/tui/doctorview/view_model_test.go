@@ -83,7 +83,7 @@ func TestTheSelectedFindingHasAPlannedFixOnlyWhenItCarriesOne(t *testing.T) {
 	if !ok || p.Description != "restore web's Dockerfile" || p.Ask {
 		t.Fatalf("web's fix: %+v ok=%v", p, ok)
 	}
-	if FixLabel(p) != "Fix: restore web's Dockerfile" {
+	if FixLabel(p) != "Fix" {
 		t.Fatalf("label %q", FixLabel(p))
 	}
 	m = m.Update(key("down")) // api's finding: its fix is not safe, so the wizard asks

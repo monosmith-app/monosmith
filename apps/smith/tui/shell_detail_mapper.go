@@ -321,43 +321,44 @@ func (s Shell) doctorPanel() detail.Panel {
 	case !f.OK:
 		state = s.th.Failure(s.th.Icons.Failed) + " failed"
 	}
-	rows := []detail.Row{{Label: "state", Value: state}}
-	if f.Source != "" {
-		rows = append(rows, detail.Row{Label: "from", Value: f.Source})
-	}
 	planned, hasFix := s.doctor.FixFor(f)
-	if hasFix {
-		rows = append(rows, detail.Row{Label: "or in a terminal", Value: "smith doctor --fix --only '" + f.Check + "'"})
-	} else if c := commandIn(f.Remedy); c != "" {
-		rows = append(rows, detail.Row{Label: "in a terminal", Value: c})
-	}
-	// What to do comes first, with the actions: the problem can be as long as
-	// a page and must never push them off the screen.
-	secs := []detail.Section{{Heading: f.Check, Rows: rows}}
-	if f.Remedy != "" {
-		secs = append(secs, detail.Section{Heading: "How to fix", Items: []string{f.Remedy}})
-	}
-	var after []detail.Section
-	if hasFix {
-		after = append(after, detail.Section{Heading: "Fix", Items: fixItems(planned), Collapse: 8})
-	}
-	if problems := doctorview.SplitProblem(f.Detail); len(problems) > 0 {
-		after = append(after, detail.Section{Heading: "Problem", Items: problems, Bullets: len(problems) > 1, Collapse: 5})
-	}
-	// A check without a fix shows no fix action: it is remedy-only, and the
-	// remedy above says what to do.
+	// Four contexts, in this order: the state, the actions, what is wrong,
+	// how to fix it. Each fact is said once. The problem folds, so it cannot
+	// push the remedy off the screen.
+	secs := []detail.Section{{Heading: f.Check, Items: []string{state}, OneLine: true}}
 	var actions []detail.Action
 	if hasFix {
-		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Shortcut: "f", Disabled: s.running()})
+		actions = append(actions, detail.Action{ID: "x:doctor-fix", Label: doctorview.FixLabel(planned), Shortcut: "f", Hint: planned.Description, Button: true, Disabled: s.running()})
 	}
-	actions = append(actions, detail.Action{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload")})
+	actions = append(actions, detail.Action{ID: "x:reload", Label: "Check again", Shortcut: commands.ShortcutOf("view.reload"), Hint: "run every check again; nothing changes", Button: true})
+	var after []detail.Section
+	if problems := doctorview.SplitProblem(f.Detail); len(problems) > 0 {
+		after = append(after, detail.Section{Heading: "What is wrong", Items: problems, Bullets: len(problems) > 1, Collapse: 3})
+	}
+	how := detail.Section{Heading: "How to fix"}
+	if f.Remedy != "" {
+		how.Items = append(how.Items, f.Remedy)
+	}
+	switch {
+	case hasFix:
+		// The fix title is on its button; the plan adds what the button does not say.
+		how.Items = append(how.Items, fixItems(planned)...)
+		how.Tail = []string{"or in a terminal: smith doctor --fix --only '" + f.Check + "'"}
+	case commandIn(f.Remedy) != "":
+		how.Tail = []string{"in a terminal: " + commandIn(f.Remedy)}
+	}
+	if len(how.Items)+len(how.Tail) > 0 {
+		how.Collapse = 8
+		after = append(after, how)
+	}
 	return detail.Panel{Sections: secs, After: after, Actions: actions}
 }
 
-// fixItems tell a fix in the detail: what it does, the projects it covers, the
-// files it writes, the commands it runs and the questions it asks first.
+// fixItems tell a fix in the detail beyond its title, which is on its button:
+// the projects it covers, the files it writes, the commands it runs and the
+// questions it asks first.
 func fixItems(p doctorfix.Planned) []string {
-	items := []string{p.Description}
+	var items []string
 	if scope := doctorfix.Scope(p.AppliesTo); scope != "" {
 		items = append(items, scope)
 	}
