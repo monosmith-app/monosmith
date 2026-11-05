@@ -44,6 +44,10 @@ type ReportResult struct {
 	// those the registries already had.
 	Packages         []string `json:"packages,omitempty"`
 	ExistingPackages []string `json:"existingPackages,omitempty"`
+	// SkippedPackages are the registries a pre-release was not published to
+	// because stable_only names them, each as "<registry> <name>: skipped:
+	// pre-release".
+	SkippedPackages []string `json:"skippedPackages,omitempty"`
 	// Packed are the package files attached to the GitHub Release of a package
 	// with registry = "github-release", with their SHA-256 digests.
 	Packed []releasepack.File `json:"packed,omitempty"`

@@ -101,6 +101,7 @@ func run(s *session.Session, askRegistries bool) Report {
 		add("smith", lineageChecks(s)...)
 	}
 	add("smith", githubReleaseChecks(s)...)
+	add("smith", stableOnlyChecks(s)...)
 	add("smith", conventionCoverageChecks(s)...)
 	add("smith", kindHintChecks(s)...)
 	add("smith", boundaryChecks(s)...)

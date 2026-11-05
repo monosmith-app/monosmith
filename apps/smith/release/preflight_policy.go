@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -74,7 +75,7 @@ func Preflight(s *session.Session, plan Plan) error {
 			}
 		}
 		if p := s.Graph.Get(item.Project); p != nil && !Native(p) && !PublishesToNoRegistry(p) {
-			for _, c := range DistributionCredentials(p.Release) {
+			for _, c := range DistributionCredentials(p.Release, item.Next) {
 				if os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 					problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))
 				}
@@ -180,8 +181,13 @@ func publishedByItsPlugin(p *projectgraph.Project) bool {
 }
 
 // DistributionCredentials are the secrets publishing an app's binaries to
-// npm, PyPI, NuGet and RubyGems needs.
-func DistributionCredentials(r *workspace.ProjectRelease) []protocol.Credential {
+// npm, PyPI, NuGet and RubyGems needs. A registry that stable_only keeps
+// stable versions in needs its secret only for a stable version: with a
+// pre-release version it is left out, and with no version (the generated
+// pipeline, which serves both) its description says so.
+//
+// version is the version about to be published, or empty for any version.
+func DistributionCredentials(r *workspace.ProjectRelease, version string) []protocol.Credential {
 	var creds []protocol.Credential
 	if r == nil {
 		return nil
@@ -189,14 +195,22 @@ func DistributionCredentials(r *workspace.ProjectRelease) []protocol.Credential 
 	if len(r.NPM) > 0 {
 		creds = append(creds, protocol.Credential{Env: "NODE_AUTH_TOKEN", Description: "npm token that can publish " + strings.Join(r.NPM, " and ") + " and their platform packages", Required: true})
 	}
-	if r.PyPI != "" {
+	if r.PyPI != "" && !r.SkipsPrerelease("pypi", version) {
 		creds = append(creds, protocol.Credential{Env: "PYPI_TOKEN", Description: "PyPI API token that can upload " + r.PyPI, Required: true})
 	}
-	if r.NuGet != "" {
+	if r.NuGet != "" && !r.SkipsPrerelease("nuget", version) {
 		creds = append(creds, protocol.Credential{Env: "NUGET_API_KEY", Description: "NuGet API key that can push " + r.NuGet + " and " + r.NuGet + ".*", Required: true})
 	}
-	if r.RubyGems != "" {
+	if r.RubyGems != "" && !r.SkipsPrerelease("rubygems", version) {
 		creds = append(creds, protocol.Credential{Env: "GEM_HOST_API_KEY", Description: "RubyGems API key that can push " + r.RubyGems, Required: true})
+	}
+	if version == "" {
+		for i, c := range creds {
+			key := map[string]string{"PYPI_TOKEN": "pypi", "NUGET_API_KEY": "nuget", "GEM_HOST_API_KEY": "rubygems"}[c.Env]
+			if key != "" && slices.Contains(r.StableOnly, key) {
+				creds[i].Description += " (stable releases only: pre-releases skip this registry)"
+			}
+		}
 	}
 	return creds
 }

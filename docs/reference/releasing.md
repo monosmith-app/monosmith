@@ -728,6 +728,34 @@ prerelease goes to npm's `next` tag, to NuGet as is, to PyPI as `1.0.0rc1`
 RubyGems as `1.0.0.pre.rc.1`. Native apps are not published
 this way.
 
+#### Stable versions only: `stable_only`
+
+PyPI, NuGet and RubyGems limit the total size of a project (PyPI: 10 GB by default), and every pre-release of
+an app uploads one package per platform. A workspace with a release channel fills the limit after a few dozen
+pre-releases, and the release then fails with `Project size too large`. `stable_only` names the registries that
+receive stable versions only:
+
+```toml
+[projects.cli.release]
+npm = ["@acme/cli", "acme"]
+pypi = "acme"
+stable_only = ["pypi"]        # pypi, nuget or rubygems; each must be set in this table
+```
+
+A pre-release (`2.0.0-beta.47`) is then not published to PyPI. It still goes to npm under the channel's tag, so
+the `next` tag moves as before. A stable version goes everywhere. `npm` cannot be named: a channel is installed
+from its npm tag. The default is the old behaviour: with no `stable_only`, every registry receives every version.
+
+The setting shows in every place that knows the registries:
+
+- `smith release --dry-run` and the release itself print `PyPI acme: skipped: pre-release 2.0.0-beta.47 (stable_only in smith.toml)`.
+- The registry check before a release does not ask a skipped registry, and `PYPI_TOKEN` is not required for a pre-release.
+- The generated workflow keeps the secret, because stable releases run in it, and says so in its description.
+- The journal has a `package` entry with the outcome `skipped`, and the report lists it under `skippedPackages`.
+- `smith doctor` warns about an app in a workspace with release channels that sends pre-releases to PyPI, NuGet or RubyGems without `stable_only`, and notes the apps that set it.
+
+Pre-releases that a registry already holds stay there: smith never deletes a published version.
+
 #### RubyGems without a key: trusted publishing
 
 A RubyGems account that asks for a one-time password on pushes (its MFA level
@@ -1132,8 +1160,8 @@ otherwise. No secret is printed or encoded.
 ## The release journal
 
 Each package's release appends what it did to `dist/release/<project>/journal.json`:
-the plugin's registry, each npm, PyPI, NuGet or RubyGems package (published, or
-already there), images, the tag, the push, the mirror and the GitHub Release,
+the plugin's registry, each npm, PyPI, NuGet or RubyGems package (published,
+already there, or skipped because `stable_only` keeps pre-releases out), images, the tag, the push, the mirror and the GitHub Release,
 and the step that failed. `smith release --status` prints it (`--json` too).
 The journal only grows and there is no rollback: registries do not let a
 published version be removed (npm unpublish is restricted, PyPI and crates.io

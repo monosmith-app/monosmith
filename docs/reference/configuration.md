@@ -730,6 +730,7 @@ npm = ["@acme/cli", "acme"]                           # npm packages; the first 
 pypi = "acme"                                         # PyPI wheels
 nuget = "acme"                                        # .NET tool packages (dotnet tool install -g acme)
 rubygems = "acme"                                     # platform gems
+stable_only = ["pypi"]                                # pypi, nuget, rubygems: a pre-release skips these registries (releasing.md, npm, PyPI, NuGet and RubyGems); default: none
 pub = "acme"                                          # pub.dev package, published by the pub workflow
 pub_tag = "{name}-v{version}"                         # the default: the tag pub.dev's automated publishing matches
 channels = true                                       # false keeps the project out of the release channels (releasing.md, Release channels)
