@@ -118,6 +118,20 @@ checks the workspace as usual.
 `the workspace uses the latest defaults` compares the `[workspace] defaults` vintage with the
 latest one this smith knows; `smith upgrade --defaults` moves it ([ADR 0054](../architecture/decisions/0054-defaults-have-vintages.md)).
 
+## The packages that attach to GitHub Releases
+
+A workspace that uses `registry = "github-release"` gets these checks:
+
+- `release: github_releases is on ...`: fails when `[release] github_releases` is off, because the package files
+  have no release to be attached to.
+- `release: <name> can be packed`: fails when the plugin of the package cannot pack it. The release refuses to
+  run, so nothing is published to a public registry.
+- `release: <name> has the credential its public registry asks for`: a warning for a package that would publish
+  to a public registry (npm, PyPI, NuGet, RubyGems, crates.io) whose credential variable is unset. The remedy
+  offers `registry = "github-release"` or `"none"` for it.
+- A package with `registry = "none"` or `"github-release"` is not asked about its registry by the lineage check
+  (`release tags are not behind the registry`): its tags and release assets are the record.
+
 ## Suggestions about a project's kind
 
 Two warnings point at [`smith kind`](kind.md). They are suggestions, never failures, and they

@@ -80,6 +80,10 @@ func (n *Node) Publish(params protocol.PublishParams) (protocol.PublishResult, e
 // channel's name to npm as the dist-tag.
 func (n *Node) PublishesChannels() {}
 
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the npm tarball and publishes nowhere.
+func (n *Node) PacksPackages() {}
+
 // Published implements serve.RegistryReader.
 func (n *Node) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(n.root, params)

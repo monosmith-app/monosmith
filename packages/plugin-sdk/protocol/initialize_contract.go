@@ -164,6 +164,11 @@ type Capabilities struct {
 	// (PyPI, NuGet) and needs no tag. A host does not publish a package of a
 	// release channel with a plugin that lacks it.
 	Channels bool `json:"channels,omitempty"`
+	// Packs says publish honours PublishParams.PackDir: it writes the
+	// package file and publishes nowhere (registry = "github-release"). A host
+	// never calls publish with the setting on a plugin that lacks it, since the
+	// plugin would publish to the public registry.
+	Packs bool `json:"packs,omitempty"`
 	// Declared says the plugin describes the projects smith.toml declares for
 	// its language (DiscoverParams.declared): folders with no manifest of their
 	// own. A plugin without it finds a project by its manifest only, and the host

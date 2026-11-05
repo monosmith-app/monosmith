@@ -10,10 +10,14 @@ import (
 // Passed checks show only with verbose.
 func RenderText(r Report, targets int, verbose bool) string {
 	var b strings.Builder
-	if targets == 0 {
+	if targets == 0 && len(r.Results) == 0 {
 		return "Release rehearsal: no package is published to a registry smith can ask (npm, PyPI, NuGet, crates.io), so there is nothing to check.\n"
 	}
-	fmt.Fprintf(&b, "Release rehearsal: asking %d registr%s with read-only requests; nothing is published.\n", targets, plural(targets))
+	if targets > 0 {
+		fmt.Fprintf(&b, "Release rehearsal: asking %d registr%s with read-only requests; nothing is published.\n", targets, plural(targets))
+	} else {
+		b.WriteString("Release rehearsal: no registry to ask; the packages attach to GitHub Releases. Read-only requests; nothing is created.\n")
+	}
 	for _, res := range r.Results {
 		if res.Status == Pass && !verbose {
 			continue

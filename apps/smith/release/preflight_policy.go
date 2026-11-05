@@ -10,6 +10,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/splitrepo"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -65,7 +66,14 @@ func Preflight(s *session.Session, plan Plan) error {
 				plugins[d] = true
 			}
 		}
-		if p := s.Graph.Get(item.Project); p != nil && !Native(p) {
+		if p := s.Graph.Get(item.Project); p != nil && PacksToRelease(p) {
+			if _, packs := releasepack.EcosystemOf(item.Plugin); packs {
+				if c := s.Plugins.Get(item.Plugin); c == nil || !c.Info.Capabilities.Packs {
+					problems = append(problems, fmt.Sprintf("%s: the %s plugin cannot pack its package for a GitHub Release (it lacks the packs capability); update the plugin, or the release would publish to the public registry", item.Project, item.Plugin))
+				}
+			}
+		}
+		if p := s.Graph.Get(item.Project); p != nil && !Native(p) && !PublishesToNoRegistry(p) {
 			for _, c := range DistributionCredentials(p.Release) {
 				if os.Getenv(c.Env) == "" && !alternative(c.Env) && !signedInByTheRun(s, c.Env) {
 					problems = append(problems, fmt.Sprintf("%s is not set: %s", c.Env, c.Description))

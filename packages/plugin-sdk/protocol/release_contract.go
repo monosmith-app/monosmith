@@ -47,6 +47,13 @@ type PublishParams struct {
 	// duration such as "15m", "0" to not wait. Empty means the default. Only
 	// npm has such a wait. A publish never waits.
 	PropagationWait string `json:"propagationWait,omitempty"`
+	// PackDir, when set, turns the call into a pack: the plugin writes the
+	// package file of the project's ecosystem (npm tarball, wheel and sdist,
+	// .nupkg, .gem, .crate) and returns the files in PublishResult.Assets, and
+	// publishes nothing anywhere. A workspace-relative folder. The host sends it
+	// only to a plugin with the packs capability. In a dry run the plugin lists
+	// the files it would write, writes none, and reads no registry.
+	PackDir string `json:"packDir,omitempty"`
 	// Finalize turns the call into the last phase of a release: nothing is
 	// published; for each move the plugin waits until its packages are
 	// fetchable, then moves the dist-tag. The host sends it after every

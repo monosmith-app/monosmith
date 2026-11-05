@@ -45,6 +45,10 @@ func (r *Ruby) DescribesDeclared() {}
 // WriteVersion and Publish spell it that way.
 func (r *Ruby) PublishesChannels() {}
 
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the .gem and publishes nowhere.
+func (r *Ruby) PacksPackages() {}
+
 // Discover implements serve.Discoverer.
 func (r *Ruby) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
 	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)

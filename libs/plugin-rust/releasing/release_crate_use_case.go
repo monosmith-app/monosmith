@@ -59,6 +59,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if len(params.Project.Exports) > 0 {
 		crate = params.Project.Exports[0]
 	}
+	if params.PackDir != "" {
+		return packCrate(workspaceRoot, params, crate)
+	}
 	// The manifests carry the release's versions while smith releases, and
 	// are restored after: cargo would refuse the dirty tree.
 	argv := []string{"cargo", "publish", "-p", crate, "--allow-dirty"}

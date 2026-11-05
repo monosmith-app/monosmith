@@ -229,6 +229,12 @@ export interface Capabilities {
    */
   channels?: boolean
   /**
+   * Packs says publish honours PublishParams.PackDir: it writes the package file and publishes
+   * nowhere (registry = "github-release"). A host never calls publish with the setting on a plugin
+   * that lacks it, since the plugin would publish to the public registry.
+   */
+  packs?: boolean
+  /**
    * Declared says the plugin describes the projects smith.toml declares for its language
    * (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a
    * project by its manifest only, and the host refuses a declaration for its language with a
@@ -1169,6 +1175,14 @@ export interface PublishParams {
    */
   propagationWait?: string
   /**
+   * PackDir, when set, turns the call into a pack: the plugin writes the package file of the
+   * project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the files
+   * in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder. The host
+   * sends it only to a plugin with the packs capability. In a dry run the plugin lists the files it
+   * would write, writes none, and reads no registry.
+   */
+  packDir?: string
+  /**
    * Finalize turns the call into the last phase of a release: nothing is published; for each move
    * the plugin waits until its packages are fetchable, then moves the dist-tag. The host sends it
    * after every project has published, so a wait never blocks another publish.
@@ -1266,6 +1280,13 @@ export interface Registries {
    * rest).
    */
   noPublish?: boolean
+  /**
+   * PackToRelease means smith.toml says registry = "github-release": the release packs the project
+   * into its ecosystem's package file and attaches it to the project's GitHub Release, publishing
+   * to no registry. The host sends PublishParams.PackDir to a plugin with the packs capability and
+   * never calls publish on one without it.
+   */
+  packToRelease?: boolean
 }
 
 /**

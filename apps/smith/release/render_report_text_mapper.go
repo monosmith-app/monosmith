@@ -27,6 +27,9 @@ func (r Report) Text() string {
 		for _, image := range res.Images {
 			fmt.Fprintf(&b, "Image pushed for %s: %s\n", res.Project, ImageLine(image))
 		}
+		for _, f := range res.Packed {
+			fmt.Fprintf(&b, "Attached to GitHub Release %s: %s (sha256 %s)\n", res.Tag, f.Name, f.SHA256[:12])
+		}
 		if res.PubDispatch != "" {
 			fmt.Fprintf(&b, "Dispatched pub.dev publish for %s.\n", res.PubDispatch)
 		}

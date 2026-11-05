@@ -139,6 +139,7 @@ The `capabilities` object of the `initialize` result: every key is optional and 
 | `derive` | `derive` | language |
 | `apiSurface` | `api/surface` | language |
 | `channels` | (changes `publish`: `PublishParams.tag`) | language; only the Go SDK can declare it for now (`PublishesChannels`) |
+| `packs` | (changes `publish`: `PublishParams.packDir`) | language; the Go SDK declares it (`PacksPackages`); `release` with `registry = "github-release"` |
 | `declared` | (changes `discover`: `DiscoverParams.declared`) | language; only the Go SDK can declare it for now (`DescribesDeclared`) |
 | `published` | `published` | language |
 | `dependencies` | `dependencies/install`, `dependencies/uninstall` | language |
@@ -241,6 +242,7 @@ Capabilities are the optional methods a plugin implements.
 | `apiSurface` | `bool` | no | APISurface lists the names a project exports, at a git revision, so a release can warn when the commits ask for a smaller bump than the API change needs. |
 | `declared` | `bool` | no | Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so. |
 | `channels` | `bool` | no | Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it. |
+| `packs` | `bool` | no | Packs says publish honours PublishParams.PackDir: it writes the package file and publishes nowhere (registry = "github-release"). A host never calls publish with the setting on a plugin that lacks it, since the plugin would publish to the public registry. |
 
 ### CancelParams
 
@@ -378,6 +380,7 @@ Registries are the registries a project uses, set by the host from smith.toml: I
 | `install` | `*Registry` | no |  |
 | `publish` | `*Registry` | no |  |
 | `noPublish` | `bool` | no | NoPublish means smith.toml says registry = "none": the release versions and tags the project and publishes it to no registry (a registry that builds from the tag, such as JitPack, does the rest). |
+| `packToRelease` | `bool` | no | PackToRelease means smith.toml says registry = "github-release": the release packs the project into its ecosystem's package file and attaches it to the project's GitHub Release, publishing to no registry. The host sends PublishParams.PackDir to a plugin with the packs capability and never calls publish on one without it. |
 
 ### Registry
 
@@ -505,6 +508,7 @@ PublishParams asks a plugin to publish one project at one version.
 | `commit` | `string` | no | Commit is the full hash of the commit being released, and Branch the release branch, for a plugin that tags what it publishes with them (a container image's sha-<short> and branch tags). |
 | `branch` | `string` | no |  |
 | `tag` | `string` | no | Tag is the name of the release channel the version belongs to (npm's dist-tag "beta"). When set, the plugin publishes under it and leaves the registry's stable pointer where it is, or ignores it when its registry has no such pointer. Only sent to a plugin with the channels capability. |
+| `packDir` | `string` | no | PackDir, when set, turns the call into a pack: the plugin writes the package file of the project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the files in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder. The host sends it only to a plugin with the packs capability. In a dry run the plugin lists the files it would write, writes none, and reads no registry. |
 
 ### AssetSpec
 

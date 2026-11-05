@@ -65,6 +65,10 @@ func (p *Python) Publish(params protocol.PublishParams) (protocol.PublishResult,
 // pip installs; Publish needs no tag.
 func (p *Python) PublishesChannels() {}
 
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the wheel and sdist and publishes nowhere.
+func (p *Python) PacksPackages() {}
+
 // Published implements serve.RegistryReader.
 func (p *Python) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(params)

@@ -22,6 +22,15 @@ repository is smith-managed; add it as a step of your own (the `before-setup`
 slot of a generated workflow keeps hand-written steps through
 `smith ci generate`).
 
+## Packages, not only apps
+
+A repository that must not publish its packages to npm, PyPI, NuGet, RubyGems or crates.io can set
+`registry = "github-release"` ([Releasing](../reference/releasing.md#attach-the-package-files-to-the-github-release)).
+Each package's file (`core-0.5.2.tgz`, a wheel, a `.nupkg`, a `.gem`, a `.crate`) is then attached to its release with
+a `<file>.sha256` file, and every release of the run carries `release-bundle.json` and `INSTALL.md`, which list the
+`gh release download` commands and the install command of the whole set. The token below and the download step are the
+same as for an app; the generated workflow of the private repository itself needs only its own `GITHUB_TOKEN`.
+
 ## The token
 
 1. In GitHub, go to Settings, Developer settings, Personal access tokens,

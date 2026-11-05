@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -100,12 +101,13 @@ func TestTheIntroSaysWhatWillHappenAndTheOnePlanLine(t *testing.T) {
 
 func TestThePublishedColumnSaysWhereEachPackageWent(t *testing.T) {
 	cases := map[string]release.ReportResult{
-		"1 image":               {Images: []protocol.PublishedImage{{Reference: "ghcr.io/o/api"}}},
-		"its tag":               {Publish: "published by its tag"},
-		"nothing (no registry)": {Publish: "no registry"},
-		"nothing to publish":    {},
-		"registry.npmjs.org":    {Published: true, Registry: "https://registry.npmjs.org/"},
-		"-":                     {Status: "failed"},
+		"1 image":                    {Images: []protocol.PublishedImage{{Reference: "ghcr.io/o/api"}}},
+		"its tag":                    {Publish: "published by its tag"},
+		"nothing (no registry)":      {Publish: "no registry"},
+		"nothing to publish":         {},
+		"registry.npmjs.org":         {Published: true, Registry: "https://registry.npmjs.org/"},
+		"-":                          {Status: "failed"},
+		"attached to GitHub Release": {GitHubRelease: "https://example/r", Packed: []releasepack.File{{Name: "core-1.0.0.tgz"}}},
 	}
 	for want, res := range cases {
 		if got := publishedTo(res); got != want {

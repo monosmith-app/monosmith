@@ -46,6 +46,10 @@ func (r *Rust) DescribesDeclared() {}
 // cargo takes the semver spelling as it is.
 func (r *Rust) PublishesChannels() {}
 
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the .crate and publishes nowhere.
+func (r *Rust) PacksPackages() {}
+
 // Discover implements serve.Discoverer.
 func (r *Rust) Discover(params protocol.DiscoverParams) (protocol.DiscoverResult, error) {
 	return discovery.DiscoverWithDeclared(r.root, params.Manifests, params.Declared)

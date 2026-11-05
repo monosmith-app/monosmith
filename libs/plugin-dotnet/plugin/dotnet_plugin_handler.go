@@ -64,6 +64,10 @@ func (d *Dotnet) Publish(params protocol.PublishParams) (protocol.PublishResult,
 // version a plain install picks; Publish needs no tag.
 func (d *Dotnet) PublishesChannels() {}
 
+// PacksPackages implements serve.PackPublisher: with PublishParams.PackDir set,
+// Publish writes the .nupkg and publishes nowhere.
+func (d *Dotnet) PacksPackages() {}
+
 // Published implements serve.RegistryReader.
 func (d *Dotnet) Published(params protocol.PublishedParams) (protocol.PublishedResult, error) {
 	return releasing.Published(params)

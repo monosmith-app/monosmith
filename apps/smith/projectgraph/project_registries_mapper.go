@@ -21,10 +21,11 @@ func ProjectRegistries(cfg workspace.Config, project string) *protocol.Registrie
 		publish = registry(cfg, publishName)
 	}
 	none := publishName == workspace.NoRegistry
-	if install == nil && publish == nil && !none {
+	pack := publishName == workspace.GitHubReleaseRegistry
+	if install == nil && publish == nil && !none && !pack {
 		return nil
 	}
-	return &protocol.Registries{Install: install, Publish: publish, NoPublish: none}
+	return &protocol.Registries{Install: install, Publish: publish, NoPublish: none, PackToRelease: pack}
 }
 
 func registry(cfg workspace.Config, name string) *protocol.Registry {

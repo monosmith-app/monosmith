@@ -125,7 +125,7 @@
         "propagation_wait": { "type": "string", "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h))+$|^0$", "x-reason": "npm needs minutes to serve a new package from every edge, and a launcher that installs before that fails on first use.", "description": "The longest a release waits, before it moves a dist-tag (next, latest), for the platform packages of an npm release to be fetchable (found by npm view and their tarball answers, on three probes 30 s apart). \"0\" does not wait. If the wait ends first, the packages are published under the dist-tag pending, the command that moves the tag is printed and the release exits with code 2. A project sets its own with [projects.<name>.release] propagation_wait. Default: \"15m\"." },
         "vsce_entra": { "type": "boolean", "description": "Publish VS Code extensions with Microsoft Entra ID instead of the VSCE_PAT secret: the GitHub workflow signs in to Azure with its OIDC token (workload identity federation) and vsce publishes as that identity. Needs the repository secrets AZURE_CLIENT_ID and AZURE_TENANT_ID, and the app registered as a member of the Marketplace publisher. GitHub Actions only. Default: false." },
         "rubygems_trusted_publishing": { "type": "boolean", "description": "Publish gems with the GitHub workflow's OIDC token (RubyGems trusted publishing) instead of the GEM_HOST_API_KEY secret. Each gem must be registered as a trusted publisher on rubygems.org first. GitHub Actions only. Default: false." },
-        "registry": { "type": "string", "description": "The [registries] entry packages are published to. Default: [workspace] registry, then the public registries." },
+        "registry": { "type": "string", "description": "The [registries] entry packages are published to, or \"none\" (tag only, for a registry that builds from the tag: no credential), or \"github-release\" (pack each package and attach its file to its GitHub Release instead of publishing; needs github_releases = true; no registry credential). Default: [workspace] registry, then the public registries." },
         "channels": {
           "type": "array",
           "description": "Branches that release a line of prerelease versions of their own, such as 2.0.0-beta.1, 2.0.0-beta.2 from a next branch, whatever versions [release] branch holds. Default: none.",
@@ -325,7 +325,7 @@
             }
           },
           "split_repo": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "description": "A GitHub repository (owner/repo) each release is mirrored to: the project's directory split out, pushed to its main branch and tagged vX.Y.Z, for a registry that reads a package at a repository root (Packagist). Needs SPLIT_REPO_TOKEN." },
-          "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry." },
+          "registry": { "type": "string", "description": "The [registries] entry this package is published to, instead of [release] registry; \"none\" releases it by its tag only; \"github-release\" packs it and attaches the package file to its GitHub Release instead of publishing (needs [release] github_releases = true)." },
           "facts": {
             "type": "object",
             "description": "Shared facts for this project, the narrowest scope: they win over [facts] and over the defaults plugins publish. Same keys as [facts].",

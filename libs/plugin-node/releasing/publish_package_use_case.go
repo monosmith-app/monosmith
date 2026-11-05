@@ -63,7 +63,13 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	name := params.Project.Exports[0]
 	dir := filepath.Join(workspaceRoot, filepath.FromSlash(params.Project.Root))
 	if _, ok := Extension(dir); ok {
+		if params.PackDir != "" {
+			return protocol.PublishResult{Skipped: "an extension is published to the Marketplace, never attached to a GitHub Release as a package"}, nil
+		}
 		return publishExtension(workspaceRoot, params)
+	}
+	if params.PackDir != "" {
+		return packPackage(workspaceRoot, params, name)
 	}
 	// npm refuses config and view inside a workspace package, so ask at the
 	// root. A private registry smith.toml names for publishing is passed

@@ -146,6 +146,9 @@ kind = "app"                          # default: an app when the folder holds a 
 registry = "none"                     # tag it and create its GitHub Release, publish it to no registry (a registry that builds from the tag, such as JitPack); no credentials are asked for
 bare_tags = true                      # tag releases 0.1.0 instead of java@0.1.0, because JitPack uses the tag name as the version; one project only, not with tag_prefix
 
+[projects.sdk]
+registry = "github-release"           # pack it and attach the package file (npm tarball, wheel and sdist, nupkg, gem, crate) to its GitHub Release instead of publishing; needs [release] github_releases = true; no registry credential is asked for (also valid under [release]: every package of a private repository)
+
 [projects.api.settings.docker]        # a plugin's settings for this project, by plugin name; only the plugin that owns them reads them (docker here)
 context = "services/api"
 
@@ -207,6 +210,12 @@ An external plugin also has to be trusted on the machine that runs it before smi
 `smith plugin trust <name>`. See [Plugin security](../plugins/using/plugin-security.md).
 
 ## Private registries
+
+A repository that must not publish to any registry sets `registry = "github-release"` (under `[release]`, or
+under one project): the release packs each package and attaches the file to its GitHub Release, with a
+`.sha256` file and a bundle that installs the set together. See
+[Releasing](releasing.md#attach-the-package-files-to-the-github-release). `smith doctor` checks the setting
+and warns about a package that would publish to a public registry whose credential is unset.
 
 `[registries.<name>]` names a private package registry: an Azure Artifacts
 feed, GitHub Packages, or any registry that takes a token. Give it the URL of
