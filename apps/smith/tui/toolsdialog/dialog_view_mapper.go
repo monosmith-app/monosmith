@@ -53,6 +53,9 @@ func headLines(th theme.Theme, p toolinstall.ToolPlan, inner int) []string {
 	state := "is missing"
 	if p.State == toolinstall.Outdated {
 		state = "is too old (" + strings.TrimSpace(p.Program+" "+p.Version) + ")"
+		if p.Exact {
+			state = p.Problem()
+		}
 	}
 	lines := []string{th.Bold(p.Title + " " + state)}
 	lines = append(lines, pane.Wrap(th.Muted(p.Why+". If you skip it, "+p.Consequence+"."), inner, 3)...)

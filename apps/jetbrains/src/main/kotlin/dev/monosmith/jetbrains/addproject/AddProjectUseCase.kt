@@ -196,6 +196,18 @@ object AddProjectUseCase {
                 "${request.name} is added and the CI pipelines are regenerated. ${if (committed) COMMITTED else UNCOMMITTED}",
                 buttons,
             )
+            NeededToolsMapper.parse(done.stdout)?.let { tools ->
+                ports.notice.warn(
+                    "${request.name} needs tools this machine lacks. ${tools.problems.joinToString(" ")} " +
+                        "Without them the first doctor run warns. Install tools asks how to get each one; nothing is installed before you choose.",
+                    listOf(
+                        NoticeButtonContract(
+                            "Install tools",
+                            "Choose how to get ${tools.names.joinToString(", ")} with smith tools install.",
+                        ) { follow.installTools() },
+                    ),
+                )
+            }
             return true
         }
         val everything = "${done.stdout}\n${done.stderr}"

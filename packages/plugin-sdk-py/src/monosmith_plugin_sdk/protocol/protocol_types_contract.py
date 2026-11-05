@@ -1005,6 +1005,11 @@ class FixStep(_FixStepRequired, total=False):
 
     dir: str
     """Dir is where it runs, workspace-relative; empty is the workspace root."""
+    env: list[str]
+    """
+    Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go
+    install write there). Absent adds none.
+    """
 
 
 class _GenerateParamsRequired(TypedDict):
@@ -1862,10 +1867,11 @@ class _ToolInstallRequired(TypedDict):
 class ToolInstall(_ToolInstallRequired, total=False):
     """
     ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget",
-    "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup" and "cargo". The
-    host builds the exact command from the manager and Package; Package may hold {major} and
-    {major.minor}, which the pinned or suggested version fills. The language's own installers
-    (uv, fnm, rustup, cargo) are offered only when they are already on the machine.
+    "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo" and "go"
+    (go install, for a tool published as a Go module). The host builds the exact command from the
+    manager and Package; Package may hold {major}, {major.minor} and {version} (the whole
+    version), which the pinned or suggested version fills. The language's own installers (uv,
+    fnm, rustup, cargo) are offered only when they are already on the machine.
     """
 
     note: str
@@ -1947,6 +1953,12 @@ class ToolNeed(_ToolNeedRequired, total=False):
     """
     Optional marks a tool whose absence only costs a feature (running a function app locally).
     Doctor reports it as a warning, not a failure.
+    """
+    exact: bool
+    """
+    Exact says Suggested is the one version the workspace wants, such as the version CI pins: an
+    installed version that differs, older or newer, is reported as different, and an install
+    fetches that version.
     """
     install: list[ToolInstall]
     """Install are the ways to get the tool, per package manager and system."""

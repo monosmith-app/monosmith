@@ -37,7 +37,9 @@ func ToolFindings(ctx context.Context, s *session.Session, findings []Finding) [
 	for _, st := range list {
 		check := st.Title + " is installed"
 		plan, lacking := plans[st.Name]
-		if !lacking {
+		if !lacking || st.Exact {
+			// A tool with one wanted version (golangci-lint) has its own check in the
+			// plugin, which says where it found the program and why a fix may not help.
 			continue
 		}
 		fix := ToolFix(plan)

@@ -20,8 +20,23 @@ type Runner interface {
 	Run(ctx context.Context, argv []string, out io.Writer) error
 }
 
+// EnvRunner is a Runner that can also run a command with more environment
+// entries (GOBIN=<folder>), for an install option that has Env.
+type EnvRunner interface {
+	Runner
+	RunEnv(ctx context.Context, argv, env []string, out io.Writer) error
+}
+
 // ExecRunner runs a command with the process's own terminal.
 type ExecRunner struct{}
+
+// RunEnv implements EnvRunner.
+func (ExecRunner) RunEnv(ctx context.Context, argv, env []string, out io.Writer) error {
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, out, out
+	cmd.Env = append(os.Environ(), env...)
+	return cmd.Run()
+}
 
 // Run implements Runner.
 func (ExecRunner) Run(ctx context.Context, argv []string, out io.Writer) error {
@@ -179,9 +194,19 @@ func (f Flow) install(ctx context.Context, plan ToolPlan, opt Option, o Outcome)
 			return o
 		}
 	}
-	fmt.Fprintf(f.Out, "Running: %s\n", command)
+	fmt.Fprintf(f.Out, "Running: %s\n", strings.TrimSpace(strings.Join(opt.Env, " ")+" "+command))
 	o.Ran = true
-	if err := f.Runner.Run(ctx, opt.Command, f.Out); err != nil {
+	run := func() error { return f.Runner.Run(ctx, opt.Command, f.Out) }
+	if len(opt.Env) > 0 {
+		er, ok := f.Runner.(EnvRunner)
+		if !ok {
+			fmt.Fprintf(f.Out, "This runner cannot add %s to the command, so nothing ran.\n", strings.Join(opt.Env, " "))
+			o.Ran = false
+			return o
+		}
+		run = func() error { return er.RunEnv(ctx, opt.Command, opt.Env, f.Out) }
+	}
+	if err := run(); err != nil {
 		fmt.Fprintf(f.Out, "The install did not finish: %v\nTry the official page, %s, or install it yourself.\n", err, plan.Download)
 		return o
 	}
@@ -190,6 +215,8 @@ func (f Flow) install(ctx context.Context, plan ToolPlan, opt Option, o Outcome)
 	switch after.State {
 	case Found:
 		fmt.Fprintf(f.Out, "%s is installed (%s).\n", plan.Title, strings.TrimSpace(after.Program+" "+after.Version))
+	case Outdated:
+		fmt.Fprintf(f.Out, "The install finished, but this terminal still finds %s %s first, not the version wanted. Another copy is earlier on PATH than the folder the install wrote to.\n  Run smith doctor: it names both folders. Then move the new folder earlier in PATH, or remove the old copy yourself. smith does not edit PATH or delete files.\n", plan.Title, after.Version)
 	default:
 		fmt.Fprintf(f.Out, "The install finished, but %s is not found in this terminal yet. Open a new terminal (the PATH updates there), then run: smith tools\n", plan.Title)
 	}

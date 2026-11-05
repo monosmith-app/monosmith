@@ -1,6 +1,8 @@
 package plugin
 
 import (
+	"strings"
+
 	"github.com/monosmith-app/monosmith/libs/plugin-go/apisurface"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/dependencies"
 	"github.com/monosmith-app/monosmith/libs/plugin-go/discovery"
@@ -29,10 +31,19 @@ func (g *Go) Describe(params protocol.InitializeParams) (protocol.InitializeResu
 	return protocol.InitializeResult{
 		Plugin:    protocol.Peer{Name: "go", Version: g.Version},
 		Kind:      protocol.KindLanguage,
-		Tools:     toolcatalog.For("go"),
+		Tools:     tools(),
 		Languages: []string{"go", "golang"},
 		Manifests: []string{"go.mod"},
 	}, nil
+}
+
+// tools are the tools the Go projects need: Go, and golangci-lint at the
+// version the CI template installs (the one `smith doctor` and `smith ci setup`
+// use), so smith tools install fetches that version.
+func tools() []protocol.ToolNeed {
+	out := toolcatalog.For("go", "golangci-lint")
+	out[1].Suggested = strings.TrimPrefix(pipeline.GolangciLintVersion, "v")
+	return out
 }
 
 // DescribesDeclared implements serve.DeclaredDescriber: Discover also describes

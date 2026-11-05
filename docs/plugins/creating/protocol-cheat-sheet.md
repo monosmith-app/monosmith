@@ -724,6 +724,7 @@ FixStep is a command to run in the workspace.
 | `description` | `string` | yes | Description says in words what the command does. |
 | `argv` | `[]string` | yes | Argv is the program and its arguments; no shell is involved. |
 | `dir` | `string` | no | Dir is where it runs, workspace-relative; empty is the workspace root. |
+| `env` | `[]string` | no | Env are KEY=VALUE entries added to the environment of the command (GOBIN=<folder> makes go install write there). Absent adds none. |
 
 ### FixChoice
 
@@ -976,6 +977,7 @@ ToolNeed is a program on the person's machine that a plugin needs to build, test
 | `files` | `[]string` | no | Files limit the tool to projects that hold one of these files in their folder ("build.gradle.kts"): a Gradle build needs gradle, a Maven build does not. A tool that the tasks of a project run (gradle, mvn) is declared this way. Absent means every project of the plugin needs it. |
 | `systems` | `[]string` | no | Systems limits the tool to these systems, named as Go names them ("windows", "darwin", "linux"). Absent means every system. |
 | `suggested` | `string` | no | Suggested is the version smith installs when no pin says one: "3.13". It fills {major} and {major.minor} in the install entries. |
+| `exact` | `bool` | no | Exact says Suggested is the one version the workspace wants, such as the version CI pins: an installed version that differs, older or newer, is reported as different, and an install fetches that version. |
 | `optional` | `bool` | no | Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure. |
 | `install` | `[]ToolInstall` | no | Install are the ways to get the tool, per package manager and system. |
 | `download` | `string` | yes | Download is the official page of the tool, for the person who installs it by hand or has no package manager. |
@@ -997,8 +999,8 @@ ToolInstall is one way to get a tool with a package manager. The host builds the
 
 | JSON field | Type | Required | Meaning |
 |---|---|---|---|
-| `manager` | `string` | yes | Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup" and "cargo". |
-| `package` | `string` | yes | Package may hold {major} and {major.minor}, which the pinned or suggested version fills. |
+| `manager` | `string` | yes | Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo" and "go" (go install, for a tool published as a Go module). |
+| `package` | `string` | yes | Package may hold {major}, {major.minor} and {version} (the whole version), which the pinned or suggested version fills. |
 | `note` | `string` | no | Note adds a sentence the person needs before choosing ("a new terminal is needed"). |
 
 ### DeclaredParams

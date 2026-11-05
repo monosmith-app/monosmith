@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -249,6 +250,7 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 		}
 	}()
 	done := map[string]bool{} // fixes declined or left pending: not offered again
+	var clears []string       // the checks the applied fixes say they clear, to verify them
 	for round := 0; round < fixRounds && len(plan) > 0; round++ {
 		fmt.Fprintln(out)
 		res, err := doctorfix.Walk(cmd.Context(), plan, doctorfix.Options{
@@ -268,6 +270,11 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 			done[d] = true
 		}
 		applied += len(res.Applied)
+		for _, p := range plan {
+			if slices.Contains(res.Applied, p.Description) {
+				clears = append(clears, p.Checks...)
+			}
+		}
 		if err != nil {
 			return report, err
 		}
@@ -307,6 +314,10 @@ func fixAll(cmd *cobra.Command, s *session.Session, report Report, yes bool, onl
 	defer fresh.Close()
 	after := Run(fresh)
 	fmt.Fprintf(out, "\nafter fixing: %d passed, %d failed, %d warning(s)\n", after.Passed, after.Failed, after.Warnings)
+	// Every fix verifies itself: what is still wrong is said, not left to the next run.
+	for _, f := range StillFailing(after, clears) {
+		fmt.Fprintln(out, StillFailingText(f))
+	}
 	if unresolved {
 		return after, ErrFixesPending
 	}

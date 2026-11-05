@@ -57,6 +57,14 @@ Usage: `smith tools <command> [flags]`
 
 0; 1 outside a workspace.
 
+`smith add`, `smith new` and `smith convert` offer the same choices for the tools of the new project, right
+after they make it (see [`smith add`](add.md#the-tools-the-project-needs)). Go projects declare golangci-lint at
+the version CI pins. For such a tool the first and recommended choice installs the pinned version into
+`.smith/bin` of the workspace (`GOBIN=.smith/bin go install ...@v<version>`): the lint task and doctor use it
+before PATH, and your other copy stays. The plain `go install` and "Keep mine" stay as choices. A tool with
+one wanted version is reported when yours is older or newer. `--manager go-managed` picks the first choice
+in a script.
+
 In the interactive shell, `tools install` opens a dialog instead of leaving for the terminal. It asks
 how to get each missing tool and shows the exact command of the option under the cursor. When the
 command needs administrator rights, it asks a second question: run it yourself, let smith run it,

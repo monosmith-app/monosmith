@@ -160,7 +160,7 @@ nothing is asked.`,
 			if err != nil {
 				rel = dir
 			}
-			toolinstall.NoticeForLanguage(cmd.Context(), out, opts.Language)
+			toolinstall.OfferForLanguage(cmd.Context(), toolinstall.OfferOptions{Out: out, In: in, Ask: asked}, opts.Language)
 			fmt.Fprint(out, nextSteps(opts.Name, rel, opts.Language))
 			if opts.SaveRecipe != "" {
 				fmt.Fprint(out, recipeSavedText(dir, opts.SaveRecipe))

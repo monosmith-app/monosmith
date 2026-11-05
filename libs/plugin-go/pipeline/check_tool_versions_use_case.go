@@ -35,19 +35,7 @@ func CheckToolVersions(workspaceRoot, required string, lints bool) []protocol.Fi
 	if !lints {
 		return out
 	}
-	pin := strings.TrimPrefix(GolangciLintVersion, "v")
-	got, err = probe(workspaceRoot, []string{"golangci-lint", "--version"})
-	install := LintInstallCommand()
-	out = append(out, protocol.Finding{
-		Check: "golangci-lint is " + pin + ", as in CI", OK: err == nil && strings.Contains(got, " "+pin+" "), Warning: true,
-		Detail: "found: " + firstLine(got, "golangci-lint is not on PATH"),
-		Remedy: strings.Join(install, " ") + " (smith ci setup does it too)",
-		Fix: &protocol.Fix{Description: "Install the golangci-lint that CI pins", Steps: []protocol.FixStep{{
-			Description: strings.Join(install, " ") + " (uses the network)",
-			Argv:        install,
-		}}},
-	})
-	return out
+	return append(out, lintFinding(workspaceRoot, strings.TrimPrefix(GolangciLintVersion, "v")))
 }
 
 // LintInstallCommand is the command that installs the golangci-lint version CI

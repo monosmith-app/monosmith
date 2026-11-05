@@ -235,6 +235,7 @@ git undoes everything.`,
 			fmt.Fprint(log, Summary(plan, res.LostSlots, staged))
 			if !skipInstall {
 				CheckConverted(root, version, log)
+				OfferConvertedTools(cmd.Context(), root, version, log, cmd.InOrStdin(), !yes && interactive())
 			}
 			if commit {
 				CommitConversion(root, log)

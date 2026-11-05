@@ -60,6 +60,9 @@ type FixStep struct {
 	Argv []string `json:"argv"`
 	// Dir is where it runs, workspace-relative; empty is the workspace root.
 	Dir string `json:"dir,omitempty"`
+	// Env are KEY=VALUE entries added to the environment of the command
+	// (GOBIN=<folder> makes go install write there). Absent adds none.
+	Env []string `json:"env,omitempty"`
 }
 
 // FixChoice is a question with options, one wizard step.

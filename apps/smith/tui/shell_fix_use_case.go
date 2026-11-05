@@ -7,7 +7,9 @@ import (
 	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 )
@@ -201,7 +203,30 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		return refresh
 	}
 	what := s.fix.Resolved().Description
+	s.verifying = s.fix.Fix.Checks
+	s.verifyingWhat = what
 	s.fix = nil
-	s.notify("Fixed: "+what, toast.Success)
+	s.notify("Ran: "+what+". Checking that it worked…", toast.Success)
 	return refresh
+}
+
+// verifyFix runs when doctor has checked again after a fix: every fix verifies
+// itself. The toast says "Fixed" only when the checks the fix clears now pass.
+// Otherwise it says what doctor found, which file and version for a tool, so
+// the person never has to guess why the warning is still there.
+func (s *Shell) verifyFix(res doctorview.Result) {
+	checks := s.verifying
+	s.verifying = nil
+	if len(checks) == 0 {
+		return
+	}
+	if res.Err != nil {
+		s.notify("The fix ran, but doctor could not check again: "+res.Err.Error(), toast.Warning)
+		return
+	}
+	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
+		s.notify(doctor.StillFailingText(still[0]), toast.Warning)
+		return
+	}
+	s.notify("Fixed: "+s.verifyingWhat, toast.Success)
 }

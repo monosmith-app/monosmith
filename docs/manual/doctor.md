@@ -14,7 +14,24 @@ says which projects it applies to.
 A fix runs the narrow command it names and nothing more. The step text is the command: for a
 golangci-lint that differs from CI it is `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>`,
 and for a missing Python venv it is the two commands that create `.venv` and install
-`requirements-dev.txt`. A fix never runs `smith ci setup`, because that command also installs the
+`requirements-dev.txt`. Every fix verifies itself: after the steps, doctor checks again and says
+`Still not fixed: <check>` with what it found, or `Fixed`. The golangci-lint check always names the file it
+found and the version line that file printed. When the pinned version is already in the folder `go install`
+writes to (`go env GOBIN`, else `GOPATH/bin`) but another copy comes first on PATH, or that folder is not on
+PATH, the remedy names both folders and says what to do, for example `PATH finds C:\old\golangci-lint.exe
+(1.64.8) before C:\Users\you\go\bin (2.14.0): move go\bin earlier in PATH, or remove the old copy`. smith never
+edits PATH or deletes a file.
+
+When the golangci-lint that runs is not the version CI pins (older, newer, or the pinned copy sits behind
+another one on PATH), the fix is a question. Nothing runs before you answer:
+
+1. Install the pinned version into smith's own folder, `.smith/bin` in the workspace (recommended). It runs
+   `GOBIN=<workspace>/.smith/bin go install ...@v<version>`. The lint task and this check use that copy first,
+   whatever PATH says. Your other copy and PATH stay as they are.
+2. Keep the one found. smith writes `golangci-lint = "<version>"` under `[toolchains]` in `smith.toml`, and
+   doctor stops warning; lint results may differ from CI, which uses the pinned version.
+
+Moving the CI pin to the version found is not offered: no setting moves the version CI installs. A fix never runs `smith ci setup`, because that command also installs the
 dependencies of every other plugin (for example `npm ci`). In the TUI the fix dialog shows the
 last six lines the step printed, and `l` opens its full log (see
 [the fix wizard](tui.md#the-doctor-fix-wizard)).

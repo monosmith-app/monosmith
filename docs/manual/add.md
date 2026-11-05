@@ -155,6 +155,24 @@ it, exits with 1, and says `smith tools install` chooses how to install it. In t
 VS Code the result is a choice: open the install page, install it with smith, check again, or continue without
 checking; nothing is lost.
 
+## The tools the project needs
+
+When the project is made, smith checks the tools its stack needs on this machine: the language, and the tools
+a task runs, such as golangci-lint at the version CI pins for a Go project, or Gradle and Maven for a JVM project.
+It prints what is missing or different in plain words (`! golangci-lint is 2.13.0, not the 2.14.0 that CI pins`),
+so the first `smith doctor` does not have to tell you.
+
+In a terminal, smith then asks how to get each one, with the choices of
+[`smith tools install`](tools-install.md): a package manager, the official page, "I will install it myself", and
+skip. For a tool that is installed in another version, skip reads "Keep mine": the pinned version is what CI
+uses, and yours may give other lint results. Nothing is installed before you choose, and a command that needs
+administrator rights is never run in silence. `smith new` and `smith convert` do the same for the tools of the
+language they set up.
+
+With `--yes` or without a terminal smith installs nothing. It prints the tools and the one command that fixes
+them, for example `smith tools install golangci-lint python`. VS Code and JetBrains run `smith add` without a
+terminal, so they show that notice with an Install tools button.
+
 smith leaves the files uncommitted. To commit them afterwards as one operation that `smith undo` can revert,
 run [`smith commit add app web`](commit.md); the terminal interface and VS Code offer it as "Commit now".
 

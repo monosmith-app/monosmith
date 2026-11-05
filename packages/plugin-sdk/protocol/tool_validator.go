@@ -7,7 +7,7 @@ import (
 )
 
 // ToolManagers are the package managers a ToolInstall may name.
-var ToolManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo"}
+var ToolManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo", "go"}
 
 // ToolSystems are the systems a ToolNeed may limit itself to.
 var ToolSystems = []string{"windows", "darwin", "linux"}

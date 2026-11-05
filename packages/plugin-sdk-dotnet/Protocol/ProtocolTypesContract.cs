@@ -2162,6 +2162,9 @@ public sealed record FixStep : IProtocolValue<FixStep>
     /// <summary>Dir is where it runs, workspace-relative; empty is the workspace root.</summary>
     public string Dir { get; init; } = string.Empty;
 
+    /// <summary>Env are KEY=VALUE entries added to the environment of the command (GOBIN=&lt;folder&gt; makes go install write there). Absent adds none.</summary>
+    public IReadOnlyList<string> Env { get; init; } = [];
+
     /// <inheritdoc />
     public static FixStep Read(JsonAny? value, string path)
     {
@@ -2171,6 +2174,7 @@ public sealed record FixStep : IProtocolValue<FixStep>
             Description = StringValue(Member(map, "description"), Join(path, "description")),
             Argv = ListOf(Member(map, "argv"), Join(path, "argv"), StringValue),
             Dir = StringValue(Member(map, "dir"), Join(path, "dir")),
+            Env = ListOf(Member(map, "env"), Join(path, "env"), StringValue),
         };
     }
 
@@ -2186,6 +2190,11 @@ public sealed record FixStep : IProtocolValue<FixStep>
         {
             writer.Property("dir");
             writer.String(Dir);
+        }
+        if (Env is { Count: > 0 })
+        {
+            writer.Property("env");
+            MessageWritingAlgorithm.List(writer, Env, (builder1, item1) => builder1.String(item1));
         }
         writer.EndObject();
     }
@@ -4459,7 +4468,7 @@ public sealed record ProjectTask : IProtocolValue<ProjectTask>
     }
 }
 
-/// <summary>ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup" and "cargo". The host builds the exact command from the manager and Package; Package may hold {major} and {major.minor}, which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup, cargo) are offered only when they are already on the machine.</summary>
+/// <summary>ToolInstall is one way to get a tool with a package manager. Manager is one of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo" and "go" (go install, for a tool published as a Go module). The host builds the exact command from the manager and Package; Package may hold {major}, {major.minor} and {version} (the whole version), which the pinned or suggested version fills. The language's own installers (uv, fnm, rustup, cargo) are offered only when they are already on the machine.</summary>
 public sealed record ToolInstall : IProtocolValue<ToolInstall>
 {
     /// <summary>The <c>manager</c> member of <c>ToolInstall</c>.</summary>
@@ -4542,6 +4551,9 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
     /// <summary>Optional marks a tool whose absence only costs a feature (running a function app locally). Doctor reports it as a warning, not a failure.</summary>
     public bool Optional { get; init; }
 
+    /// <summary>Exact says Suggested is the one version the workspace wants, such as the version CI pins: an installed version that differs, older or newer, is reported as different, and an install fetches that version.</summary>
+    public bool Exact { get; init; }
+
     /// <summary>Install are the ways to get the tool, per package manager and system.</summary>
     public IReadOnlyList<ToolInstall> Install { get; init; } = [];
 
@@ -4573,6 +4585,7 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
             Systems = ListOf(Member(map, "systems"), Join(path, "systems"), StringValue),
             Suggested = StringValue(Member(map, "suggested"), Join(path, "suggested")),
             Optional = BooleanValue(Member(map, "optional"), Join(path, "optional")),
+            Exact = BooleanValue(Member(map, "exact"), Join(path, "exact")),
             Install = ListOf(Member(map, "install"), Join(path, "install"), ToolInstall.Read),
             Download = StringValue(Member(map, "download"), Join(path, "download")),
             Source = StringValue(Member(map, "source"), Join(path, "source")),
@@ -4633,6 +4646,11 @@ public sealed record ToolNeed : IProtocolValue<ToolNeed>
         {
             writer.Property("optional");
             writer.Boolean(Optional);
+        }
+        if (Exact)
+        {
+            writer.Property("exact");
+            writer.Boolean(Exact);
         }
         if (Install is { Count: > 0 })
         {

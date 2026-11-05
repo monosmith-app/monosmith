@@ -108,13 +108,24 @@ export interface MissingTool {
   check?: string[]
 }
 
+/** The tools a new project needs that the machine lacks or has in another version, as `smith add` reports them. */
+export interface NeededTools {
+  /** The names `smith tools install` takes: `golangci-lint`, `python`. */
+  names:    string[]
+  /** What is wrong with each, in plain words ("golangci-lint is 2.13.0, not the 2.14.0 that CI pins: ..."). */
+  problems: string[]
+}
+
 /**
- * How adding a project ended. `unchecked` is a success that could not be
- * checked: the project is on disk, a tool it needs is missing. `failing` is
- * a project that is on disk and fails the checks of `smith doctor`.
+ * How adding a project ended. `added` carries `tools` when the project needs
+ * tools the machine lacks: smith installs nothing without a terminal, so the
+ * editor offers the choice (`smith tools install`). `unchecked` is a success
+ * that could not be checked: the project is on disk, a tool it needs is
+ * missing. `failing` is a project that is on disk and fails the checks of
+ * `smith doctor`.
  */
 export type AddOutcome =
-  | { kind: 'added', name: string, role: string, operation: string, lines: string[], committed: boolean } |
+  | { kind: 'added', name: string, role: string, operation: string, lines: string[], committed: boolean, tools?: NeededTools } |
   { kind: 'unchecked', name: string, tool: MissingTool, lines: string[] } |
   { kind: 'failing', name: string, operation: string, failure: DoctorFailure, lines: string[] } |
   { kind: 'refused', message: string } |
