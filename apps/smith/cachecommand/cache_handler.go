@@ -23,7 +23,7 @@ one.`,
   smith cache prune --dry-run
   smith cache verify --fix`,
 	}
-	cmd.AddCommand(statusCommand(), pruneCommand(), clearCommand(), verifyCommand())
+	cmd.AddCommand(statusCommand(), pruneCommand(), clearCommand(), verifyCommand(), keyCommand())
 	return cmd
 }
 

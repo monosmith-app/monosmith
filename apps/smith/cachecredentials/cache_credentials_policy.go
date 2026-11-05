@@ -20,7 +20,7 @@ func For(remote string) []protocol.Credential {
 	}
 	creds := []protocol.Credential{{
 		Env: Key, Tasks: true,
-		Description: "signs and verifies the remote cache's objects (any long random string the team shares); without it the remote cache is off",
+		Description: "signs and verifies the remote cache's objects (a random value the team shares: `smith cache key` makes one); without it the remote cache is off",
 	}}
 	switch {
 	case strings.HasPrefix(remote, "azblob://"):

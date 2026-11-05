@@ -104,7 +104,7 @@ func cacheSteps(cfg workspace.Config) []string {
 		return nil
 	}
 	steps := []string{
-		"remote cache " + remote + ": SMITH_CACHE_KEY is any long random string the whole team shares; every object is signed with it, and with no value (a pull request from a fork, which gets no secrets) the remote is off and the run uses the local cache",
+		"remote cache " + remote + ": SMITH_CACHE_KEY is a random value you make once with `smith cache key` and the whole team shares; every object is signed with it, and with no value (a pull request from a fork, which gets no secrets) the remote is off and the run uses the local cache",
 		"remote cache: pull requests and merge requests read the cache and never write it; only a push to " + cfg.Release.Branch + " stores results",
 	}
 	switch {

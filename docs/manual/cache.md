@@ -17,6 +17,7 @@ cache after a crash or a full disk.
 - To start over, for example before measuring a cold build: [`smith cache clear`](cache-clear.md).
 - After a crash, a full disk or a `smith doctor` warning about unusable entries:
   [`smith cache verify`](cache-verify.md).
+- To use a remote cache: [`smith cache key`](cache-key.md) makes the key it needs.
 
 ## Subcommands
 
@@ -28,6 +29,7 @@ Usage: `smith cache <command>`
 | Subcommand | Meaning |
 |---|---|
 | `smith cache clear` | Delete the local cache (the remote cache is not touched) |
+| `smith cache key` | Make a key (SMITH_CACHE_KEY) for the remote cache and copy it, unseen |
 | `smith cache prune` | Trim the local cache to its limit now, removing the least recently used entries |
 | `smith cache status` | Show the local cache: where it is, how big, how full, and the largest entries |
 | `smith cache verify` | Check the local cache for damage; --fix removes what is broken |
