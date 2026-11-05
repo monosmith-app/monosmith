@@ -157,6 +157,19 @@ var entries = []protocol.ToolNeed{
 		Download: "https://maven.apache.org/download.cgi", Source: "https://maven.apache.org/install.html", Checked: checked,
 	},
 	{
+		// The Go plugin sets Suggested to the version its CI template installs.
+		Name: "golangci-lint", Title: "golangci-lint",
+		Why:         "smith lint checks the go projects with golangci-lint, at the version CI pins",
+		Consequence: "smith lint of the go projects fails or gives other results than CI",
+		Program:     "golangci-lint", Files: []string{"go.mod"},
+		Exact: true, Optional: true, Suggested: "2.14.0",
+		Install: []protocol.ToolInstall{{
+			Manager: "go", Package: "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v{version}",
+			Note: "go install compiles it and puts it in the Go bin folder (go env GOBIN, else GOPATH/bin), which must come first on PATH",
+		}},
+		Download: "https://golangci-lint.run/welcome/install/", Source: "https://golangci-lint.run/welcome/install/", Checked: checked,
+	},
+	{
 		Name: "dart", Title: "the Dart SDK",
 		Why:         "the dart projects get packages, analyze and test with the Dart SDK",
 		Consequence: "smith install, build and test fail for the dart projects",

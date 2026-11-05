@@ -51,6 +51,9 @@ func DetectAll(parent context.Context, d Detector, needs []Need) []Status {
 // detectOne detects one tool and judges its version against the pin.
 func detectOne(ctx context.Context, d Detector, n Need) Status {
 	want, from := FindRequirement(n.Pins, n.Dirs)
+	if n.Exact && n.Suggested != "" {
+		want, from = Requirement{Prefix: n.Suggested, Min: n.Suggested}, "the version CI installs"
+	}
 	st := Status{Need: n, Wanted: want, WantedFrom: from}
 	probe := d.Detect(ctx, n)
 	switch {

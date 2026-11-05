@@ -27,9 +27,26 @@ func withInstallFix(l *lab) *lab {
 		{Finding: protocol.Finding{Check: "git hooks are set", Detail: "none", Remedy: "run the hook installer"}},
 	}}
 	sh := l.sh()
-	sh.sources.Doctor = func() doctorview.Result { return doctorview.Result{Report: report} }
+	// Once a fix was applied the check passes, as it does after a fix that works.
+	sh.sources.Doctor = func() doctorview.Result {
+		if len(l.appliedFixes()) > 0 && !l.fixStaysBroken {
+			fixed := report
+			fixed.Findings = append([]doctor.Finding{{Finding: protocol.Finding{Check: "dependencies are installed", OK: true}}}, report.Findings[1:]...)
+			return doctorview.Result{Report: fixed}
+		}
+		return doctorview.Result{Report: report}
+	}
 	l.m = sh
 	return l.keys("4", "r")
+}
+
+func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T) {
+	l := newLab(t, true, 140, 34)
+	l.fixStaysBroken = true
+	l = withInstallFix(l)
+	l.keys("f", "enter", "enter")
+	l.has("Still not fixed: dependencies are installed")
+	l.has("node_modules is missing")
 }
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {

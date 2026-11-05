@@ -131,6 +131,8 @@ type lab struct {
 	applied     []protocol.Fix
 	applyErr    error
 	applyHold   chan struct{}
+	// fixStaysBroken makes the fake doctor report the check as failing after a fix.
+	fixStaysBroken bool
 	applyCancel bool
 }
 

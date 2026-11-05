@@ -40,5 +40,21 @@ type Status struct {
 	WantedFrom string `json:"wantedFrom,omitempty"`
 }
 
+// Problem says in plain words what is wrong with the tool, to follow its title:
+// "is not installed", "is too old (1.2 is installed, 1.4 or newer is wanted)",
+// or, for a tool with one wanted version, "is 2.13.0, not the 2.14.0 that CI
+// pins". It is empty when the tool is found.
+func (s Status) Problem() string {
+	switch {
+	case s.State == Missing:
+		return "is not installed"
+	case s.State == Outdated && s.Exact:
+		return "is " + s.Version + ", not the " + s.Suggested + " that CI pins"
+	case s.State == Outdated:
+		return "is too old (" + s.Version + " is installed, " + s.Wanted.String() + " is wanted)"
+	}
+	return ""
+}
+
 // Lacking reports whether the tool needs an install: it is missing or outdated.
 func (s Status) Lacking() bool { return s.State != Found }

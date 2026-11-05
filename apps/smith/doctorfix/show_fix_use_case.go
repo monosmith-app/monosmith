@@ -47,9 +47,9 @@ func ShowFix(w io.Writer, root string, p Planned) error {
 	defer cleanup()
 	for i, s := range p.Steps {
 		if s.Description != "" {
-			fmt.Fprintf(w, "  step %d: %s\n          $ %s\n", i+1, s.Description, displayCommand(s.Argv))
+			fmt.Fprintf(w, "  step %d: %s\n          $ %s\n", i+1, s.Description, StepCommand(s))
 		} else {
-			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, displayCommand(s.Argv))
+			fmt.Fprintf(w, "  step %d: $ %s\n", i+1, StepCommand(s))
 		}
 		writePlan(w, planRoot, planErr, s)
 	}

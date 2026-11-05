@@ -129,7 +129,12 @@ commits them as one operation that smith undo can revert.`,
 				fmt.Fprintln(out, hint)
 			}
 			project := s.Graph.Get(args[1])
-			toolinstall.Notice(cmd.Context(), s, out, []string{project.Name}, []string{project.Language}, addOpts.With)
+			// The tools the new project needs are dealt with now, so the first smith
+			// doctor does not find them: a choice in a terminal, a command to run otherwise.
+			toolinstall.Offer(cmd.Context(), s, toolinstall.OfferOptions{
+				Out: out, In: cmd.InOrStdin(), Ask: interactive && !yes,
+				Projects: []string{project.Name}, ExtraLanguages: []string{project.Language}, ExtraChoices: addOpts.With,
+			})
 			if err := VerifyProject(cmd.Context(), s, project, out); err != nil {
 				return operation.AfterWork(err)
 			}

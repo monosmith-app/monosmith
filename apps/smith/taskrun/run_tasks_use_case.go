@@ -18,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/runevents"
 	"github.com/monosmith-app/monosmith/apps/smith/taskcache"
 	"github.com/monosmith-app/monosmith/apps/smith/taskgraph"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // packageTask is the task that builds what a project deploys, and dropDir is
@@ -289,6 +290,16 @@ func (r *runner) env(t *taskgraph.Task, key string) []string {
 	if bin := VenvBin(r.opts.Root); bin != "" {
 		extra["PATH"] = bin + string(os.PathListSeparator) + os.Getenv("PATH")
 		extra["VIRTUAL_ENV"] = filepath.Dir(bin)
+	}
+	// A tool version smith installed for this workspace (golangci-lint at the
+	// version CI pins) comes first of all, whatever else PATH holds: the lint
+	// task then runs the copy the doctor check probed.
+	if toolrun.ManagedBinExists(r.opts.Root) {
+		path := extra["PATH"]
+		if path == "" {
+			path = os.Getenv("PATH")
+		}
+		extra["PATH"] = toolrun.ManagedBinDir(r.opts.Root) + string(os.PathListSeparator) + path
 	}
 	if t.Def.ServeURL != "" {
 		extra["E2E_BASE_URL"] = t.Def.ServeURL

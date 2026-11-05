@@ -23,6 +23,8 @@ func (r Requirement) Any() bool { return r.Prefix == "" && r.Min == "" }
 // String words the requirement for a person: "22.x", "1.23.4 or newer".
 func (r Requirement) String() string {
 	switch {
+	case r.Prefix != "" && r.Prefix == r.Min:
+		return "exactly " + r.Min
 	case r.Prefix != "" && r.Min != "":
 		return r.Min + " or newer in " + r.Prefix + ".x"
 	case r.Prefix != "":
@@ -97,6 +99,7 @@ func Fill(pkg, version string) string {
 	if len(parts) > 1 {
 		minor = parts[1]
 	}
+	pkg = strings.ReplaceAll(pkg, "{version}", version)
 	pkg = strings.ReplaceAll(pkg, "{major.minor}", major+"."+minor)
 	return strings.ReplaceAll(pkg, "{major}", major)
 }

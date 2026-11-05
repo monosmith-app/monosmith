@@ -9,7 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-var knownManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo"}
+var knownManagers = []string{"winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv", "fnm", "rustup", "cargo", "go"}
 
 func TestEntriesAreComplete(t *testing.T) {
 	date := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)

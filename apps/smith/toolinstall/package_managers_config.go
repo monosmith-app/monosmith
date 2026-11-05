@@ -31,6 +31,7 @@ var knownManagers = []Manager{
 	{Name: "rustup", Binary: "rustup", OS: []string{"windows", "darwin", "linux"}, Language: true},
 	{Name: "cargo", Binary: "cargo", OS: []string{"windows", "darwin", "linux"}, Language: true},
 	{Name: "npm", Binary: "npm", OS: []string{"windows", "darwin", "linux"}, Language: true},
+	{Name: "go", Binary: "go", OS: []string{"windows", "darwin", "linux"}, Language: true},
 }
 
 // LookPath finds a program on PATH; exec.LookPath is the real one.
@@ -126,6 +127,8 @@ func BuildCommand(manager, pkg string, env Env) (cmd InstallCommand, ok bool) {
 		return InstallCommand{Argv: []string{"fnm", "install", pkg}}, true
 	case "rustup":
 		return InstallCommand{Argv: []string{"rustup", "default", pkg}}, true
+	case "go":
+		return InstallCommand{Argv: append([]string{"go", "install"}, pkgs...)}, true
 	case "cargo":
 		return InstallCommand{Argv: append([]string{"cargo", "install", "--locked"}, pkgs...)}, true
 	}

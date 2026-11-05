@@ -29,11 +29,7 @@ func NoticeText(list []Status) string {
 		if !st.Lacking() {
 			continue
 		}
-		what := "is not installed"
-		if st.State == Outdated {
-			what = "is too old (" + st.Version + " is installed, " + st.Wanted.String() + " is wanted)"
-		}
-		fmt.Fprintf(&b, "! %s %s: %s.\n  Run smith tools install %s to choose how to get it.\n", st.Title, what, st.Consequence, st.Name)
+		fmt.Fprintf(&b, "! %s %s: %s.\n  Run smith tools install %s to choose how to get it.\n", st.Title, st.Problem(), st.Consequence, st.Name)
 	}
 	return b.String()
 }
@@ -70,14 +66,15 @@ func OnlyProjects(needs []Need, projects []string) []Need {
 	return out
 }
 
-// NoticeForLanguage prints the warnings for the tools of a language by name,
-// without a session: `smith new` runs before the workspace can be opened.
-// Git is always checked. A language with no entry gives only the git check.
-func NoticeForLanguage(ctx context.Context, out io.Writer, language string) {
+// OfferForLanguage deals with the tools of a language by name, without a
+// session: `smith new` runs before the workspace can be opened. It offers as
+// Offer does. Git is always checked. A language with no entry gives only the
+// git check.
+func OfferForLanguage(ctx context.Context, o OfferOptions, language string) {
 	names := append([]string{"git"}, languageTools[strings.ToLower(language)]...)
 	var needs []Need
 	for _, t := range toolcatalog.For(names...) {
 		needs = append(needs, Need{ToolNeed: t})
 	}
-	fmt.Fprint(out, NoticeText(DetectAll(ctx, ExecDetector{}, needs)))
+	offerFor(ctx, DetectAll(ctx, ExecDetector{}, needs), o, ExecRunner{}, ExecDetector{})
 }

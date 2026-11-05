@@ -16,4 +16,5 @@ var installCatalogues = map[string]string{
 	"fnm":       "https://github.com/Schniz/fnm",
 	"rustup":    "https://rust-lang.github.io/rustup/",
 	"cargo":     "https://doc.rust-lang.org/cargo/commands/cargo-install.html",
+	"go":        "https://pkg.go.dev/cmd/go#hdr-Compile_and_install_packages_and_dependencies",
 }

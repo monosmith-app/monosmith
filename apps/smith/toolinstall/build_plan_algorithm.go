@@ -29,6 +29,8 @@ type Option struct {
 	Command []string `json:"command,omitempty"`
 	// Admin is true when the command needs administrator rights.
 	Admin bool `json:"admin,omitempty"`
+	// Env are KEY=VALUE entries the command runs with (GOBIN=<folder>).
+	Env []string `json:"env,omitempty"`
 	// Label and Hint say the option in plain words, with its consequence.
 	Label string `json:"label"`
 	Hint  string `json:"hint"`
@@ -82,6 +84,7 @@ func BuildPlan(st Status, managers []Manager, env Env) ToolPlan {
 			Command: cmd.Argv, Admin: cmd.Admin, Label: "Install with " + in.Manager, Hint: hint, Note: in.Note,
 		})
 	}
+	plan.Options = withManagedCopy(plan.Options, st, version)
 	plan.Default = "myself"
 	for _, o := range plan.Options {
 		if !o.Admin {
@@ -92,10 +95,14 @@ func BuildPlan(st Status, managers []Manager, env Env) ToolPlan {
 	if plan.Default == "myself" && len(plan.Options) > 0 {
 		plan.Default = plan.Options[0].Value
 	}
+	skip := Option{Kind: OptionSkip, Value: "skip", Label: "Skip it", Hint: "go on without it; " + st.Consequence}
+	if st.Exact && st.State == Outdated {
+		skip.Label, skip.Hint = "Keep mine", "go on with "+st.Title+" "+st.Version+"; lint results can differ from CI, and smith doctor keeps warning until you record the choice (smith doctor --fix)"
+	}
 	plan.Options = append(plan.Options,
 		Option{Kind: OptionPage, Value: "page", Label: "Use the official page", Hint: "go to " + st.Download + " and install it there"},
 		Option{Kind: OptionMyself, Value: "myself", Label: "I will install it myself", Hint: "smith shows the ways and goes on; run smith tools to check later"},
-		Option{Kind: OptionSkip, Value: "skip", Label: "Skip it", Hint: "go on without it; " + st.Consequence},
+		skip,
 	)
 	return plan
 }

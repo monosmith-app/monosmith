@@ -67,8 +67,9 @@ func TestCIInstallsGolangciLintOnlyWhenUsed(t *testing.T) {
 
 func TestCheckToolVersions(t *testing.T) {
 	answers := map[string]string{}
-	real := probe
-	defer func() { probe = real }()
+	real, realLook := probe, lookAll
+	defer func() { probe, lookAll = real, realLook }()
+	lookAll = func(string) []string { return nil }
 	probe = func(_ string, argv []string) (string, error) {
 		if v, ok := answers[argv[0]]; ok {
 			return v, nil
@@ -88,7 +89,7 @@ func TestCheckToolVersions(t *testing.T) {
 	if f := got["Go is at least 1.24 (go.work)"]; f.OK || f.Warning {
 		t.Fatalf("an older Go fails: %+v", f)
 	}
-	if f := got["golangci-lint is 2.14.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found: golangci-lint has version 2.13.0 built with go1.26" {
+	if f := got["golangci-lint is 2.14.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found golangci-lint (golangci-lint has version 2.13.0 built with go1.26); it is older than the 2.14.0 CI pins" {
 		t.Fatalf("another golangci-lint warns: %+v", f)
 	}
 	answers["go"] = "go1.26.0"

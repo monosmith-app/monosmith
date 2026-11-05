@@ -9,6 +9,12 @@ import (
 // wants it, which version.
 func RenderNeed(st Status) string {
 	var b strings.Builder
+	if st.Exact && st.State == Outdated {
+		fmt.Fprintf(&b, "\n%s %s.\n", st.Title, st.Problem())
+		fmt.Fprintf(&b, "  Why smith needs it: %s.\n", st.Why)
+		b.WriteString("  Keep yours if you prefer it: lint results can then differ from CI.\n")
+		return b.String()
+	}
 	switch st.State {
 	case Outdated:
 		fmt.Fprintf(&b, "\n%s is too old: %s is installed.\n", st.Title, st.Version)
@@ -73,6 +79,9 @@ func RenderList(list []Status) string {
 			}
 		case Outdated:
 			mark, detail = "!", st.Version+", wanted "+st.Wanted.String()
+			if st.Exact {
+				detail = st.Version + ", CI pins " + st.Suggested
+			}
 		}
 		if st.Lacking() {
 			missing = true

@@ -145,6 +145,11 @@ type Shell struct {
 	// justAdded is the project a finished `smith add` made, to be selected
 	// once the project list has been read again.
 	justAdded string
+	// verifying are the checks a finished fix says it clears: the next doctor
+	// result is read to see whether they pass now.
+	verifying []string
+	// verifyingWhat is what that fix did, in words, for the "Fixed" toast.
+	verifyingWhat string
 	// run is the command in the Run tab: running or the last one.
 	run  *runview.Run
 	proc runner.Handle
@@ -546,6 +551,7 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		}
 	case doctorview.Result:
 		s.doctor = s.doctor.Replace(msg)
+		s.verifyFix(msg)
 	case settingsview.Msg:
 		return s.settingsMsg(msg)
 	case fixProgressMsg:

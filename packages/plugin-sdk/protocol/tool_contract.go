@@ -49,6 +49,10 @@ type ToolNeed struct {
 	// Optional marks a tool whose absence only costs a feature (running a
 	// function app locally). Doctor reports it as a warning, not a failure.
 	Optional bool `json:"optional,omitempty"`
+	// Exact says Suggested is the one version the workspace wants, such as the
+	// version CI pins: an installed version that differs, older or newer, is
+	// reported as different, and an install fetches that version.
+	Exact bool `json:"exact,omitempty"`
 	// Install are the ways to get the tool, per package manager and system.
 	Install []ToolInstall `json:"install,omitempty"`
 	// Download is the official page of the tool, for the person who installs
@@ -75,8 +79,9 @@ type ToolVersionPin struct {
 
 // ToolInstall is one way to get a tool with a package manager. Manager is one
 // of: "winget", "brew", "brew-cask", "apt", "dnf", "pacman", "npm", "uv",
-// "fnm", "rustup" and "cargo". The host builds the exact command from the manager and
-// Package; Package may hold {major} and {major.minor}, which the pinned or
+// "fnm", "rustup", "cargo" and "go" (go install, for a tool published as a Go
+// module). The host builds the exact command from the manager and
+// Package; Package may hold {major}, {major.minor} and {version} (the whole version), which the pinned or
 // suggested version fills. The language's own installers (uv, fnm, rustup, cargo)
 // are offered only when they are already on the machine.
 type ToolInstall struct {

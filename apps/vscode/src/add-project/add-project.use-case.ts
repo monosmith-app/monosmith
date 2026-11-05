@@ -2,6 +2,7 @@ import { describeFailure, parseDoctorFailure, type SmithRun } from '../smith-run
 import { addArguments, followsSiblings } from './add-arguments.mapper.ts'
 import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
 import { parseMissingTool } from './add-missing-tool.mapper.ts'
+import { parseNeededTools } from './add-needed-tools.mapper.ts'
 import { parseChoices, parseKinds, parseStacks } from './add-options.mapper.ts'
 import { fitOutcomes, parseOutcomes } from './add-outcomes.mapper.ts'
 import { choicesInWords } from './add-choice-rows.mapper.ts'
@@ -67,7 +68,11 @@ export async function addProject (deps: AddDeps): Promise<AddOutcome> {
   const committed = asked && !/^Not committed/m.test(done.stdout)
 
   const lines = done.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
-  if (done.code === 0) return { kind: 'added', name: request.name, role: request.role, operation: `add ${request.role} ${request.name}`, lines, committed }
+  if (done.code === 0) {
+    const tools = parseNeededTools(lines)
+
+    return { kind: 'added', name: request.name, role: request.role, operation: `add ${request.role} ${request.name}`, lines, committed, ...(tools !== undefined && { tools }) }
+  }
   const everything = `${done.stdout}\n${done.stderr}`
   const failure = parseDoctorFailure(everything)
   if (failure !== undefined) return { kind: 'failing', name: request.name, operation: `add ${request.role} ${request.name}`, failure, lines: everything.split(/\r?\n/).map((line) => line.trimEnd()).filter(Boolean) }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { checkProjectName } from './add-arguments.mapper.ts'
-import type { AddOptions, AddOutcome, AddRequest, PlanAnswer } from './add-options.contract.ts'
+import type { AddOptions, AddOutcome, AddRequest, NeededTools, PlanAnswer } from './add-options.contract.ts'
 import { tellDoctorFailure } from './doctor-failure-prompts.client.ts'
 import { languageRows, outcomeRows, whatIs, type OutcomeOption, type OutcomeRow } from './add-outcomes.mapper.ts'
 import { choicesByAxis, roleOf } from './add-options.mapper.ts'
@@ -370,6 +370,7 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
         if (choice === commit) await next?.commit(outcome.operation)
         if (choice === use) await vscode.commands.executeCommand('monosmith.addDependency')
       })
+      if (outcome.tools !== undefined) tellNeededTools(outcome.name, outcome.tools)
       break
     }
     case 'unchecked': {
@@ -390,6 +391,26 @@ export function tellAddOutcome (outcome: AddOutcome, onOutput: (line: string) =>
       break
     }
   }
+}
+
+/**
+ * Says the new project needs tools the machine lacks, and offers the choice of
+ * how to get them: the same `smith tools install` the Health view offers.
+ * Nothing is installed before the person picks.
+ */
+function tellNeededTools (name: string, tools: NeededTools): void {
+  const install = 'Install tools'
+  const later = 'Not now'
+  void showNotice(
+    'warning',
+    `MonoSmith: ${name} needs tools this machine lacks. ${tools.problems.join(' ')} Without them the first doctor run warns. Install tools shows the ways to get each one and asks you; nothing is installed before you choose.`,
+    [
+      { label: install, detail: `Choose how to get ${tools.names.join(', ')} with smith tools install.` },
+      { label: later, detail: 'Go on. smith doctor and the Health view keep reminding you.' },
+    ],
+  ).then(async (choice) => {
+    if (choice === install) await vscode.commands.executeCommand('monosmith.installTools')
+  })
 }
 
 /** Says the project was made but could not be checked, and offers the ways on. Nothing is lost: the project stays on disk. */

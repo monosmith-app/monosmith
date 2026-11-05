@@ -28,7 +28,7 @@ type StepError struct {
 }
 
 func (e *StepError) Error() string {
-	return fmt.Sprintf("step %d of %d failed (%s): %v", e.Number, e.Total, displayCommand(e.Step.Argv), e.Err)
+	return fmt.Sprintf("step %d of %d failed (%s): %v", e.Number, e.Total, StepCommand(e.Step), e.Err)
 }
 
 func (e *StepError) Unwrap() error { return e.Err }
@@ -93,7 +93,7 @@ func RunSteps(ctx context.Context, root string, steps []protocol.FixStep, out io
 		if noter != nil {
 			sink = io.MultiWriter(&captured, &noteWriter{to: noter})
 		}
-		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(nil), Out: sink})
+		code, err := taskrun.RunProcess(ctx, taskrun.Spec{Argv: resolveProgram(step.Argv), Dir: dir, Env: taskrun.Environment(stepEnv(step)), Out: sink})
 		if err == nil && code != 0 {
 			err = fmt.Errorf("exited with code %d", code)
 		}

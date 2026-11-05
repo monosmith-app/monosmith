@@ -1,6 +1,23 @@
 package doctorfix
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+)
+
+func TestAStepShowsTheEnvironmentItAddsAndPassesItOn(t *testing.T) {
+	step := protocol.FixStep{Argv: []string{"go", "install", "x@v1"}, Env: []string{"GOBIN=/w/.smith/bin"}}
+	if got := StepCommand(step); got != "GOBIN=/w/.smith/bin go install x@v1" {
+		t.Fatalf("got %q", got)
+	}
+	if env := stepEnv(step); env["GOBIN"] != "/w/.smith/bin" || len(env) != 1 {
+		t.Fatalf("got %v", env)
+	}
+	if stepEnv(protocol.FixStep{Argv: []string{"npm"}}) != nil {
+		t.Fatal("a step without Env adds none")
+	}
+}
 
 func TestDisplayCommand(t *testing.T) {
 	for _, tc := range []struct {
