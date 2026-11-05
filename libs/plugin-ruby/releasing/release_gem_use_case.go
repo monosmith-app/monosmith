@@ -68,6 +68,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil
 	}
+	if params.PackDir != "" {
+		return packGem(workspaceRoot, params)
+	}
 	result := protocol.PublishResult{Registry: host()}
 	if params.DryRun {
 		result.Skipped = "dry run"

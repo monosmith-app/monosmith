@@ -67,6 +67,9 @@ func Publish(workspaceRoot string, params protocol.PublishParams) (protocol.Publ
 	if params.Project.Kind != protocol.ProjectPackage {
 		return protocol.PublishResult{Skipped: "released by its tag"}, nil
 	}
+	if params.PackDir != "" {
+		return packNupkg(workspaceRoot, params)
+	}
 	source := os.Getenv("NUGET_SOURCE")
 	if source == "" {
 		source = NuGetSource

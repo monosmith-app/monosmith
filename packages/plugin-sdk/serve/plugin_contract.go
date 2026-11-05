@@ -126,6 +126,15 @@ type ChannelPublisher interface {
 	PublishesChannels()
 }
 
+// PackPublisher is implemented by a plugin whose Publish honours
+// PublishParams.PackDir: it writes the package file and publishes nothing.
+// Serve advertises the packs capability for it.
+type PackPublisher interface {
+	Publisher
+	// PacksPackages is a marker; it does nothing.
+	PacksPackages()
+}
+
 // Linker is implemented by a plugin that makes a project depend on a library
 // of the same workspace, and takes the dependency out. Serve advertises the
 // link capability for it.

@@ -175,7 +175,7 @@ MethodName = Literal["initialize", "shutdown", "cancel", "discover", "generate",
 """Every method of the protocol, `initialize`, `shutdown` and the `cancel` notification too."""
 
 
-CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "declared"]
+CapabilityName = Literal["discover", "generate", "version", "publish", "ci", "doctor", "contribute", "remove", "changeKind", "published", "dependencies", "link", "declarations", "latest", "cancel", "components", "derive", "apiSurface", "channels", "packs", "declared"]
 """The names of the capability flags: the optional methods a plugin implements."""
 
 
@@ -418,6 +418,12 @@ class Capabilities(TypedDict, total=False):
     the registry's stable pointer (npm's latest), or its registry orders a prerelease below the
     release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release
     channel with a plugin that lacks it.
+    """
+    packs: bool
+    """
+    Packs says publish honours PublishParams.PackDir: it writes the package file and publishes
+    nowhere (registry = "github-release"). A host never calls publish with the setting on a
+    plugin that lacks it, since the plugin would publish to the public registry.
     """
     declared: bool
     """
@@ -1497,6 +1503,14 @@ class PublishParams(_PublishParamsRequired, total=False):
     the release to be fetchable from the registry: a duration such as "15m", "0" to not wait.
     Empty means the default. Only npm has such a wait. A publish never waits.
     """
+    packDir: str
+    """
+    PackDir, when set, turns the call into a pack: the plugin writes the package file of the
+    project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the
+    files in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder.
+    The host sends it only to a plugin with the packs capability. In a dry run the plugin lists
+    the files it would write, writes none, and reads no registry.
+    """
     finalize: list[TagMove]
     """
     Finalize turns the call into the last phase of a release: nothing is published; for each move
@@ -1605,6 +1619,13 @@ class Registries(TypedDict, total=False):
     NoPublish means smith.toml says registry = "none": the release versions and tags the project
     and publishes it to no registry (a registry that builds from the tag, such as JitPack, does
     the rest).
+    """
+    packToRelease: bool
+    """
+    PackToRelease means smith.toml says registry = "github-release": the release packs the
+    project into its ecosystem's package file and attaches it to the project's GitHub Release,
+    publishing to no registry. The host sends PublishParams.PackDir to a plugin with the packs
+    capability and never calls publish on one without it.
     """
 
 

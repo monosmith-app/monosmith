@@ -655,6 +655,10 @@ _SCHEMA_JSON = r'''{
           "type": "boolean",
           "description": "Channels says a prerelease version the plugin publishes never takes the place of the stable one: the plugin publishes under PublishParams.Tag, a release channel's name, without moving the registry's stable pointer (npm's latest), or its registry orders a prerelease below the release (PyPI, NuGet) and needs no tag. A host does not publish a package of a release channel with a plugin that lacks it."
         },
+        "packs": {
+          "type": "boolean",
+          "description": "Packs says publish honours PublishParams.PackDir: it writes the package file and publishes nowhere (registry = \"github-release\"). A host never calls publish with the setting on a plugin that lacks it, since the plugin would publish to the public registry."
+        },
         "declared": {
           "type": "boolean",
           "description": "Declared says the plugin describes the projects smith.toml declares for its language (DiscoverParams.declared): folders with no manifest of their own. A plugin without it finds a project by its manifest only, and the host refuses a declaration for its language with a message that says so."
@@ -2068,6 +2072,10 @@ _SCHEMA_JSON = r'''{
           "type": "string",
           "description": "PropagationWait is the longest time a plugin waits, in a Finalize call, for the packages of the release to be fetchable from the registry: a duration such as \"15m\", \"0\" to not wait. Empty means the default. Only npm has such a wait. A publish never waits."
         },
+        "packDir": {
+          "type": "string",
+          "description": "PackDir, when set, turns the call into a pack: the plugin writes the package file of the project's ecosystem (npm tarball, wheel and sdist, .nupkg, .gem, .crate) and returns the files in PublishResult.Assets, and publishes nothing anywhere. A workspace-relative folder. The host sends it only to a plugin with the packs capability. In a dry run the plugin lists the files it would write, writes none, and reads no registry."
+        },
         "finalize": {
           "type": "array",
           "items": {
@@ -2216,6 +2224,10 @@ _SCHEMA_JSON = r'''{
         "noPublish": {
           "type": "boolean",
           "description": "NoPublish means smith.toml says registry = \"none\": the release versions and tags the project and publishes it to no registry (a registry that builds from the tag, such as JitPack, does the rest)."
+        },
+        "packToRelease": {
+          "type": "boolean",
+          "description": "PackToRelease means smith.toml says registry = \"github-release\": the release packs the project into its ecosystem's package file and attaches it to the project's GitHub Release, publishing to no registry. The host sends PublishParams.PackDir to a plugin with the packs capability and never calls publish on one without it."
         }
       }
     },
