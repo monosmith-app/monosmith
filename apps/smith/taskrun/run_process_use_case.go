@@ -57,11 +57,15 @@ func RunProcess(ctx context.Context, spec Spec) (int, error) {
 	}
 	release, _ := track(cmd)
 	defer release()
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	var waitErr error
+	done := make(chan struct{})
+	go func() {
+		waitErr = cmd.Wait()
+		close(done)
+	}()
 	select {
-	case err := <-done:
-		return exitCode(err)
+	case <-done:
+		return exitCode(waitErr)
 	case <-ctx.Done():
 		killTree(cmd)
 		select {
