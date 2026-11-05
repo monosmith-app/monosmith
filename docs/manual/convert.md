@@ -98,6 +98,11 @@ Interactions:
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
   passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
   group (nothing is deleted, files are edited) and is skipped with `--build keep`.
+- Without `--level full`, convert keeps the build scripts as they are, so a package may still build
+  into its own `dist/`. `smith doctor` reports each such project (`kit compiles into
+  dist/packages/kit`) and offers the move per project, with a preview and a "leave it as it is"
+  answer; see [doctor](doctor.md#a-build-that-writes-outside-dist). `smith adopt` keeps scripts
+  the same way.
 - `--allow-dirty` converts with uncommitted changes. It is refused with
   `--level full`, which needs a clean git tree so that git can undo everything.
 - `--strict` turns any item that needs manual work or is unsupported into a failure.
@@ -239,7 +244,7 @@ smith: the conversion is blocked; see the report
 | `convert cancelled: nothing changed` | You answered anything but `y` to the confirmation prompt. |
 | `--test "mocha" is not one of jest, vitest, keep` | `--test` takes `jest`, `vitest` or `keep`. |
 | `smith: the full conversion stopped: ... step 4 of 7 failed (smith run build): exited with code 1` | A check after the conversion failed (in the trial, `tsc` was not installed in the demo workspace). The report ends with `Everything above is in the working tree and was clean before, so git undoes it: git restore --staged --worktree . && git clean -fd`. Fix the cause, or undo and retry. |
-| `the build writes to dist inside the package ...` (a finding, not an error) | Point the tool at the workspace's `dist/<project dir>` and set `outputs` to match, or `smith doctor` will fail the build. |
+| `the build writes to dist inside the package ...` (a finding, not an error) | Run `smith doctor --fix`: it offers to move each project's build into `dist/<project dir>` (scripts, tsconfig, `main`, `types`, `exports`, and the `outputs` in `smith.toml`) and shows every changed line first. Or do it by hand. |
 
 ## Related
 

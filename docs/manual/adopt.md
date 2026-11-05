@@ -70,6 +70,9 @@ Interactions:
 - `--install` and `--eslint` only mean something with `--init`. `--install` runs
   `npm install` for the Node projects. `--eslint` writes the two-line root
   `eslint.config.mjs` and adds `@monosmith/eslint-config` to the root devDependencies.
+- A project that keeps its own build output (its own `dist/`, `build/`) is reported by `smith doctor`,
+  which can move it into the workspace's `dist/<project dir>` after you confirm; see
+  [doctor](doctor.md#a-build-that-writes-outside-dist).
 - `--level conservative` (the default) keeps the repository's own build and lint
   setup. `--level full` makes smith the only tool; it exists for Nx and Turborepo
   workspaces, where it is `smith convert --level full`. For a plain repository

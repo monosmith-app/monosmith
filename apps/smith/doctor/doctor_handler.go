@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/operation"
 	"github.com/monosmith-app/monosmith/apps/smith/pluginadmit"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
@@ -136,7 +137,33 @@ option number. Steps run in the workspace root and stop at the first that fails.
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "with --fix, apply without asking")
 	cmd.Flags().IntSliceVar(&choose, "choose", nil, "with --fix and --only, answer the fix's questions by option number, in order (1,2)")
 	cmd.Flags().StringArrayVar(&only, "only", nil, "with --fix, fix only the named check, as doctor prints it (repeatable)")
-	return cmd
+	return commitableFixes(cmd)
+}
+
+// commitableFixes lets doctor --fix join the operation log (--commit, so smith
+// undo reverts the fixes). Doctor ends with ErrUnhealthy while a check still
+// fails, and a failed run is never committed, so the exit status is held back
+// until the operation has settled and returned after it.
+func commitableFixes(cmd *cobra.Command) *cobra.Command {
+	run := cmd.RunE
+	var unhealthy error
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		unhealthy = nil
+		err := run(c, args)
+		if errors.Is(err, ErrUnhealthy) {
+			unhealthy, err = err, nil
+		}
+		return err
+	}
+	wrapped := operation.Wrap(cmd, operation.Spec{Describe: func(*cobra.Command, []string) string { return "fix the workspace with doctor" }})
+	settle := wrapped.RunE
+	wrapped.RunE = func(c *cobra.Command, args []string) error {
+		if err := settle(c, args); err != nil {
+			return err
+		}
+		return unhealthy
+	}
+	return wrapped
 }
 
 // reportUntrusted prints the external plugins and which of them smith will not

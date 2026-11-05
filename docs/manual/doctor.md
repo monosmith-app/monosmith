@@ -89,6 +89,54 @@ lists every check with its remedy.
   (`@emnapi/core`, `@emnapi/runtime`), set the override to `"$<name>"`, or npm stops with
   `Override ... conflicts with direct dependency`.
 
+## A build that writes outside `dist/`
+
+smith builds every project into `dist/<project dir>` (`packages/kit` into `dist/packages/kit`).
+A workspace that smith did not create keeps its own scripts, so `smith convert` and `smith adopt`
+preserve them, and a package may build into its own `packages/kit/dist`. Doctor reports each such
+project on its own line, `kit compiles into dist/packages/kit`, with where it builds now and where
+it should.
+
+For a Node project, doctor reads the build script (`--outDir`, `--outdir`, `--out-dir`,
+`--outfile`, `--declarationDir`) and the tsconfig the script names (else `tsconfig.build.json`,
+then `tsconfig.json`: `outDir`, `declarationDir`, `tsBuildInfoFile`, `outFile`). It also compares
+the build task's cached outputs with the folder the script writes: a task that caches
+`dist/packages/kit` while the script writes `packages/kit/dist` restores nothing from the cache.
+
+Each project carries a fix that asks first. It never runs with `--yes` alone, and it never
+commits. The question has two answers: move the build, or leave the project as it is. After you
+choose "move", the review shows every changed line before anything is written:
+
+- the build script flags and the tsconfig options move to `dist/<project dir>`; where the tsconfig
+  `outDir` was the only place that named the folder, the script passes `--outDir` instead
+- `main`, `types`, `module`, `typings`, `browser`, `bin` and every `exports` target that pointed
+  into the old folder follow it; a `files` list that names only the old folder goes, because the
+  release publishes the whole build folder
+- every script that names the old folder as a path (`start`, `clean`, a test that loads the build)
+  follows it
+- when `smith.toml` gave the build task the old folder as `outputs`, a `smith config unset
+  projects.<name>.tasks.build.outputs` step removes it, so the plugin's own outputs apply again
+
+The old folder stays on disk, and ignore rules for it stay. Nothing is committed unless you pass
+`--commit` (or set `commit_operations = true`); a committed fix is undone with `smith undo`.
+
+Doctor refuses the move, and says why, when it cannot be made safe. The finding then stays and
+names the manual steps:
+
+- another project imports this one by name and its `main`, `types` or `exports` lead into the
+  build folder. Node and TypeScript resolve those through the link in `node_modules`, where a
+  path such as `../../dist/packages/kit` is not found, so the importers would stop compiling
+- a published package (kind `package`, not private) whose tarball needs a file outside the build
+  folder: a `files` entry such as `templates`, or a `bin` that is a source file. A release packs
+  only the staged build folder, so that file would be missing
+- the build writes a second folder that is not inside the first, or `smith.toml` gives the task an
+  output that is not the build folder
+
+Only Node projects are checked for this. For other languages smith itself passes the output folder
+to the tool, so the task builds into `dist/` whatever the project says; doctor does not read the
+tool's own settings (a `.cargo/config.toml` `target-dir`, `ArtifactsPath`, a Maven `<directory>`, a
+Gradle `buildDirectory`, a CMake `-B`).
+
 ## Tools the workspace needs
 
 A program that a language needs (Python, the .NET SDK, Go, Docker) and that is not installed is a
@@ -164,7 +212,7 @@ say nothing when there is nothing to say:
 
 ```sh
 smith doctor [--verbose] [--json]
-smith doctor --fix [--yes] [--only <check or fix>]... [--choose <n>,<n>]
+smith doctor --fix [--yes] [--commit] [--only <check or fix>]... [--choose <n>,<n>]
 ```
 
 ## Arguments and flags
@@ -177,6 +225,7 @@ Usage: `smith doctor [flags]`
 | Flag | Type | Default | Effect |
 |---|---|---|---|
 | `--choose <choose>` | integers, comma-separated |  | with --fix and --only, answer the fix's questions by option number, in order (1,2) |
+| `--commit` | boolean | off | commit the change as one operation so smith undo can revert it (nothing is committed without it) |
 | `--fix` | boolean | off | show the fixes doctor can make as diffs, and apply the safe ones |
 | `--json` | boolean | off | print the report as JSON |
 | `--only <only>` | string, repeatable |  | with --fix, fix only the named check, as doctor prints it (repeatable) |
