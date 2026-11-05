@@ -28,6 +28,10 @@ type Update struct {
 	// Preset is true for a package listed in [dependencies] presets: a team's
 	// shared preset, bumped as one change in every project (ADR 0060).
 	Preset bool `json:"preset,omitempty"`
+	// URL is the package's page on its registry (npmjs.com, pypi.org, an Azure
+	// Artifacts feed named in smith.toml...); empty when it cannot be known, for
+	// example a private registry whose web address cannot be derived.
+	URL string `json:"url,omitempty"`
 }
 
 // Group is the heading of the update in the up report: "preset" for a preset

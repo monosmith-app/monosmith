@@ -57,7 +57,7 @@ var sampleDoctorProjects = []doctorview.ProjectRef{{Name: "web", Root: "apps/web
 
 var sampleDeps = depsview.Result{
 	Rows: []depsview.Row{
-		{Name: "axios", Plugin: "node", Current: "1.6.0", Latest: "1.6.8", Level: "patch", Projects: []string{"web", "api"}},
+		{Name: "axios", Plugin: "node", Current: "1.6.0", Latest: "1.6.8", Level: "patch", Projects: []string{"web", "api"}, URL: "https://www.npmjs.com/package/axios"},
 		{Name: "zod", Plugin: "node", Current: "3.22.0", Latest: "3.23.0", Level: "minor", Projects: []string{"web"}},
 		{Name: "react", Plugin: "node", Current: "17.0.2", Latest: "18.3.0", Level: "major", Projects: []string{"web"}},
 	},

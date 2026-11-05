@@ -314,6 +314,14 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		return s.installDependency()
 	case "deps-remove":
 		return s.removeDependency()
+	case "deps-open-page":
+		return s.openRegistryPage()
+	case "deps-copy-page":
+		if r, ok := s.deps.Selected(); ok && r.URL != "" {
+			s.copyText(r.URL)
+		} else {
+			s.say("No registry page is known for this package")
+		}
 	case "deps-align":
 		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)

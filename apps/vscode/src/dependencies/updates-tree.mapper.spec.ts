@@ -31,6 +31,12 @@ describe('toDependencyRows', () => {
     expect(toDependencyRows(report).nodes[1]?.children?.[0]?.tooltip).toContain('package.json (devDependencies, ^10.12.0)')
   })
 
+  it('names the registry page in the tooltip when smith knows it', () => {
+    const withUrl = { updates: [{ plugin: 'node', name: 'zod', current: '3.22.0', latest: '3.23.1', level: 'minor', url: 'https://www.npmjs.com/package/zod' }] }
+    expect(toDependencyRows(withUrl).nodes[0]?.children?.[0]?.tooltip).toContain('Registry: https://www.npmjs.com/package/zod')
+    expect(toDependencyRows(report).nodes[1]?.children?.[0]?.tooltip).not.toContain('Registry:')
+  })
+
   it('lists only the tools that have a newer release', () => {
     expect(toDependencyRows(report).nodes[3]?.children?.map((tool) => tool.label)).toEqual(['Python'])
   })

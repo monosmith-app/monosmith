@@ -59,7 +59,7 @@ goes away by itself. A result toast belongs to the view it was raised on.
 | Projects | `2` | A "+ New project" button (key `a`, also with projects in the workspace) that opens the Add wizard, then every project, ordered by kind and then name, with its language; the detail pane shows its properties, its derived files (when the workspace derives files) and the actions that apply to it. |
 | Run | `3` | The tasks of the current or last run: queued, running, cached, passed, failed or skipped, with durations, a progress bar and each task's log. |
 | Doctor | `4` | The checks of [`smith doctor`](doctor.md), grouped by project or flat, each with a detail pane in four parts (see [The Doctor detail](#the-doctor-detail)); fixes open the fix wizard. |
-| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. |
+| Deps | `5` | Dependencies with newer releases, grouped patch, minor and major (columns Package, Now, Latest, Level, Kind, Projects), and the one-version policy's verdict, with the `smith deps up` command line for a selection. A line under the table gives the registry page of the selected package ([Registry link](#the-registry-link-in-the-deps-view)). |
 | Release | `6` | What the next release would do (the plan of [`smith release --dry-run`](release.md)), the commits behind each bump. On a release channel branch it says so first: ``Release channel `next`: prerelease versions…``, and the confirmation of the release repeats it. |
 | Settings | `7` | Plugins, style and the settings of `smith.toml`, changed in place; see [Settings](#settings). |
 
@@ -146,6 +146,8 @@ each title (`Build orders`, `Build all 23`).
 | Deps | `i` | Install a package (`smith install -p <project> <package>`). It asks the names (a name or name@version, several with spaces), then the projects (space ticks; the projects that declare the package under the cursor start ticked, and nothing runs before you confirm), then the kind: production or development (`-D`). Each project is listed with its language and folder, so for a project with several parts, such as a Tauri app (a Rust part and a web part), you pick the part that gets the package. The confirmation opens at once and shows the plan: the latest release of each name and the section it goes into. The first choice of the projects step is `Workspace root: shared by every project, in the root package.json` (`-p .`), shown only in a workspace with a Node project; it can be ticked together with projects, starts ticked when the cursor is on a `(root)` row, and the kind step applies to it. The plan and the confirmation list it with the exact `npm install` command. Machine-wide installs (`npm -g`), peer and optional dependencies are not offered: `smith install` has no way to do them. |
 | Deps | `x` | Remove the package under the cursor (`smith uninstall -p <project> <package>`). A package that one project declares goes straight to the confirmation with that project as `-p`; the workspace root, shown as `(root)`, is `-p .`. When several projects declare it, a multiple choice asks from which ones (space toggles); smith never picks for you. A development dependency is removed like any other. |
 | Deps | `v` | Bring drifting versions to one (`smith deps up --align`). |
+| Deps | `g` | Open the registry page of the package under the cursor in your browser, and copy the link. It does nothing when no page is known. |
+| Deps | `Y` | Copy the registry link of the package under the cursor. |
 | Release | `Enter` | Show the commits behind the selected bump. |
 | Release | `p` | Preview the next release (`smith release --dry-run`). |
 | Release | `n` | Print the release notes (`smith release --dry-run --notes`). |
@@ -565,6 +567,25 @@ combination (a choice for another language, one that needs a choice you left out
 smith said, with its fix, in a notice instead of the plan. A command that needs a terminal of
 its own (it asks questions) is handed back to smith to run after the shell closes; the shell
 prints `→ smith <command line>`.
+
+### The registry link in the Deps view
+
+Under the table, the Deps view shows the registry page of the selected package: `Registry:` and
+the address, then the keys `g` (open it in your browser, and copy the link) and `Y` (copy the link).
+The address is printed in full, so it can be read and copied; in a terminal that draws hyperlinks
+(Windows Terminal, iTerm2, WezTerm, kitty, VS Code, GNOME Terminal and other VTE 0.50 or newer, Konsole,
+foot, Alacritty, Ghostty) it is also a clickable OSC 8 link. Inside tmux or screen, and in a terminal
+smith does not know, only the plain address is printed; `FORCE_HYPERLINK=1` turns links on and `=0`
+turns them off. smith opens a browser only when you press `g`, never by itself.
+
+The page is on the registry of the package's language: npmjs.com, pypi.org, nuget.org, crates.io,
+Maven Central, pub.dev, rubygems.org, packagist.org or pkg.go.dev. A project that installs from a
+private registry named in `smith.toml` (`[registries.<name>]`) uses that registry: for Azure Artifacts the
+page of the feed (`https://dev.azure.com/<org>/<project>/_artifacts/feed/<feed>/Npm/<package>/overview`)
+is worked out from the feed address. For any other private registry, and when an `.npmrc`,
+`PIP_INDEX_URL` or `NuGet.Config` points the tools at one, smith cannot work out the web address, so the
+line says "no page known" and shows no link rather than a wrong one. The same address is the `url` field
+of each update in [`smith up --json`](up.md).
 
 ## The mouse
 
