@@ -10,7 +10,7 @@ describe('parseNeededTools', () => {
       '→ Run smith tools install golangci-lint python to choose how to get them.',
     ]
     expect(parseNeededTools(lines)).toEqual({
-      names: ['golangci-lint', 'python'],
+      names:    ['golangci-lint', 'python'],
       problems: ['golangci-lint is 2.13.0, not the 2.14.0 that CI pins: smith lint of the go projects fails or gives other results than CI.', 'Python is not installed: smith build fails.'],
     })
   })

@@ -11,7 +11,8 @@ import type { NeededTools } from './add-options.contract.ts'
  */
 export function parseNeededTools (lines: string[]): NeededTools | undefined {
   const command = lines.map((line) => /^→ Run smith tools install (.+?) to choose how to get (?:it|them)\.$/.exec(line)?.[1]).find((names) => names !== undefined)
-  if (command === undefined) return undefined
 
-  return { names: command.split(' '), problems: lines.filter((line) => line.startsWith('! ')).map((line) => line.slice(2)) }
+  return command === undefined
+    ? undefined
+    : { names: command.split(' '), problems: lines.filter((line) => line.startsWith('! ')).map((line) => line.slice(2)) }
 }
