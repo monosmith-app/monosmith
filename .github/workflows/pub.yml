@@ -37,7 +37,7 @@ jobs:
           export PATH="$HOME/gradle-9.8.1/bin:$PATH"
           if [ -n "$GITHUB_PATH" ]; then echo "$HOME/gradle-9.8.1/bin" >> "$GITHUB_PATH"; fi
           echo "##vso[task.prependpath]$HOME/gradle-9.8.1/bin"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
