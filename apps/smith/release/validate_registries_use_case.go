@@ -26,13 +26,13 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 		if len(r.NPM) > 0 {
 			add("npm", r.NPM...)
 		}
-		if r.PyPI != "" {
+		if r.PyPI != "" && !r.SkipsPrerelease("pypi", item.Next) {
 			add("PyPI", r.PyPI)
 		}
-		if r.NuGet != "" {
+		if r.NuGet != "" && !r.SkipsPrerelease("nuget", item.Next) {
 			add("NuGet", r.NuGet)
 		}
-		if r.RubyGems != "" {
+		if r.RubyGems != "" && !r.SkipsPrerelease("rubygems", item.Next) {
 			add("RubyGems", r.RubyGems)
 		}
 	}

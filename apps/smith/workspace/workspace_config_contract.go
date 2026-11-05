@@ -656,6 +656,12 @@ type ProjectRelease struct {
 	// RubyGems is the gem the app is published as, one platform gem per
 	// platform. Publishing needs GEM_HOST_API_KEY.
 	RubyGems string `toml:"rubygems"`
+	// StableOnly lists the registries (pypi, nuget, rubygems) that receive
+	// stable versions only: a pre-release is skipped there and goes to the
+	// others (npm, under the channel's tag). Use it for a registry with a size
+	// limit that every pre-release would fill. Default: none, every registry
+	// receives every version.
+	StableOnly []string `toml:"stable_only"`
 	// Pub is the pub.dev package the app is published as, holding every
 	// platform's binary. pub.dev accepts it only from a GitHub Actions run on
 	// a tag matching the package's tag pattern, so the release pushes PubTag

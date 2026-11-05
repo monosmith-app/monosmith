@@ -509,6 +509,16 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 			say("no %s package for %s", kind, strings.Join(skipped, ", "))
 		}
 	}
+	// skip says, and records, that stable_only leaves a pre-release out of a
+	// registry.
+	skip := func(kind, key, name string) bool {
+		if !r.SkipsPrerelease(key, item.Next) {
+			return false
+		}
+		res.SkippedPackages = append(res.SkippedPackages, kind+" "+name+": skipped: pre-release")
+		say("%s %s: skipped: pre-release %s (stable_only in smith.toml)", kind, name, item.Next)
+		return true
+	}
 	if len(r.NPM) > 0 {
 		release := npmbinaries.Release{Names: r.NPM, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/npm"}
 		if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
@@ -533,7 +543,7 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 			return fmt.Errorf("npm: %w", err)
 		}
 	}
-	if r.PyPI != "" {
+	if r.PyPI != "" && !skip("PyPI", "pypi", r.PyPI) {
 		release := pypiwheels.Release{Name: r.PyPI, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, OutDir: out + "/pypi"}
 		for _, a := range archives {
 			release.Archives = append(release.Archives, pypiwheels.Archive{Path: a.path, OS: a.os, Arch: a.arch})
@@ -544,7 +554,7 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 			return fmt.Errorf("PyPI: %w", err)
 		}
 	}
-	if r.NuGet != "" {
+	if r.NuGet != "" && !skip("NuGet", "nuget", r.NuGet) {
 		release := nugettool.Release{ID: r.NuGet, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/nuget"}
 		if repo, err := Repository(s); err == nil {
 			release.Authors = repo.Owner
@@ -558,7 +568,7 @@ func distribute(s *session.Session, p *projectgraph.Project, item Item, pr proto
 			return fmt.Errorf("NuGet: %w", err)
 		}
 	}
-	if r.RubyGems != "" {
+	if r.RubyGems != "" && !skip("RubyGems", "rubygems", r.RubyGems) {
 		release := rubygems.Release{Name: r.RubyGems, Binary: binary, Version: item.Next, Description: r.Description, License: r.License, Homepage: homepage, Repository: repository, OutDir: out + "/rubygems"}
 		for _, a := range archives {
 			release.Archives = append(release.Archives, rubygems.Archive{Path: a.path, OS: a.os, Arch: a.arch})

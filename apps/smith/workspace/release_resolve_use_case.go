@@ -41,6 +41,9 @@ func ResolveRelease(name string, po ProjectOverride, defaults *protocol.ReleaseD
 	if err := validateReleaseCommand(name, &r, po.Tags, githubReleases); err != nil {
 		return nil, err
 	}
+	if err := validateStableOnly(table, &r); err != nil {
+		return nil, err
+	}
 	if r.Build != "" {
 		return &r, nil
 	}

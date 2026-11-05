@@ -48,6 +48,8 @@ linux_packages = ["deb", "rpm"]
 # dotnet tool install -g monosmith, and gem install monosmith.
 npm = ["@monosmith/cli", "monosmith"]
 pypi = "monosmith"
+# PyPI limits a project's total size and every pre-release uploads a wheel per platform: it gets stable versions only (pre-releases go to npm under next).
+stable_only = ["pypi"]
 nuget = "monosmith"
 rubygems = "monosmith"
 # dart pub global activate monosmith: the release tags smith-v<version> and
