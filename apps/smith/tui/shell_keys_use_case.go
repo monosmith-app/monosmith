@@ -43,6 +43,8 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	switch {
 	case s.result != nil:
 		return s.resultKey(name)
+	case s.cache != nil:
+		return s.cacheKey(msg)
 	case s.tools != nil:
 		return s.toolsKey(name)
 	case s.compose != nil:
@@ -412,6 +414,8 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		return s.gotoTab(commands.TabDoctor)
 	case commands.OpenCompose:
 		return s.openCompose()
+	case commands.OpenCacheSetup:
+		return s.openCacheSetup()
 	case commands.OpenAdoptWizard:
 		return s.openAdopt()
 	case commands.OpenFixWizard:

@@ -225,6 +225,29 @@ func TestFindPrefersAnInstalledToolThenTheTerminal(t *testing.T) {
 	}
 }
 
+func TestAnActionGetsTheKeyOnlyAfterTheCommandIsShownAndConfirmed(t *testing.T) {
+	for name, tc := range map[string]struct {
+		answer rune
+		sent   bool
+	}{"yes": {'y', true}, "no": {'n', false}} {
+		t.Run(name, func(t *testing.T) {
+			sent, out := "", &bytes.Buffer{}
+			s := newSession(&fakeClipboard{readable: true}, keysOf('h', tc.answer, 'q'), out)
+			s.Actions = []KeyAction{{Key: 'h', Label: "send to GitHub", Run: func(secret string, confirm func(string) bool) {
+				if confirm("gh secret set SMITH_CACHE_KEY") {
+					sent = secret
+				}
+			}}}
+			if err := s.Run(); err != nil {
+				t.Fatal(err)
+			}
+			if (sent != "") != tc.sent || !strings.Contains(out.String(), "gh secret set SMITH_CACHE_KEY") || (sent != "" && strings.Contains(out.String(), sent)) {
+				t.Fatalf("sent %q\n%s", sent, out)
+			}
+		})
+	}
+}
+
 type noneError struct{}
 
 func (noneError) Error() string { return "not found" }

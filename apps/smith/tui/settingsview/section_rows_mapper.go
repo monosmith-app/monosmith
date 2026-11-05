@@ -206,6 +206,9 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 			now += th.Muted(" (the default)")
 		}
 		keys := "Enter changes it"
+		if st.Path == "cache.remote" {
+			keys = "Enter opens the remote cache setup: where it lives, the key, each CI provider's secrets"
+		}
 		if st.Set {
 			keys += ", u resets it to its default"
 		}

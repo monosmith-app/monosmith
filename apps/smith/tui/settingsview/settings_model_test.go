@@ -762,3 +762,13 @@ func TestASettingShowsWhyItsDefaultIsWhatItIs(t *testing.T) {
 		t.Fatalf("the reason is not next to the setting: %s", got)
 	}
 }
+
+func TestEnterOnTheRemoteCacheOpensTheSetupNotATextField(t *testing.T) {
+	f := sample()
+	f.snap.Settings = []Setting{{Path: "cache.remote", Type: "string", Explanation: "The remote cache.", Default: "off"}}
+	m := opened(t, f).Show(Workspace)
+	m, results := press(m, "enter")
+	if len(results) == 0 || !results[0].CacheSetup || m.Modal() {
+		t.Fatalf("modal=%v results %+v", m.Modal(), results)
+	}
+}

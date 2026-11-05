@@ -3,11 +3,15 @@ package sources
 import (
 	"context"
 	"io"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
+	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -56,6 +60,10 @@ type Sources struct {
 	Capture func(ctx context.Context, argv []string) Captured
 	// Open opens a file with the program the system chooses (the report).
 	Open func(path string) error
+	// CacheSetup reads what the remote cache setup needs of the workspace and
+	// connects it to the world (the cloud programs, the clock, smith.toml). The
+	// Dialogue is left empty: the shell's screens fill it. Nil outside a workspace.
+	CacheSetup func() (cachesetup.Facts, cachesetup.Ports, error)
 }
 
 // ProjectsLoaded is the workspace's projects, loaded in the background.
@@ -74,6 +82,24 @@ func WorkspaceSources(dir, version string) Sources {
 	return Sources{
 		Capture: func(ctx context.Context, argv []string) Captured { return CaptureCommand(ctx, dir, argv) },
 		Open:    OpenPath,
+		CacheSetup: func() (cachesetup.Facts, cachesetup.Ports, error) {
+			root, err := workspace.FindRoot(dir)
+			if err != nil {
+				return cachesetup.Facts{}, cachesetup.Ports{}, err
+			}
+			cfg, err := workspace.Load(root)
+			if err != nil {
+				return cachesetup.Facts{}, cachesetup.Ports{}, err
+			}
+			name := cfg.Workspace.Name
+			if name == "" {
+				name = filepath.Base(root)
+			}
+			return cachesetup.Facts{WorkspaceName: name, Remote: cfg.Cache.Remote, Providers: cfg.CI.Providers}, cachesetup.Ports{
+				Run: cachesetup.ExecRunner, LookPath: exec.LookPath, Now: time.Now,
+				WriteRemote: func(remote string, commit bool) (string, error) { return writeRemote(root, remote, commit) },
+			}, nil
+		},
 		Start: func(argv []string) (runner.Handle, error) {
 			p, err := runner.Start(context.Background(), runner.Spec{Argv: withEventStream(argv), Dir: dir})
 			if err != nil {

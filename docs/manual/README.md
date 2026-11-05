@@ -110,7 +110,7 @@ Python package). Paths in output are shortened.
 | [`smith why`](why.md) | Say who owns a file, what produced it and how to change it. |
 | [`smith report`](report.md) | Write one HTML page: the workspace map, health, derived-file drift, choices and release plan. |
 | [`smith why-miss`](why-miss.md) | Say why a task would run again instead of coming from the cache. |
-| [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md), [`key`](cache-key.md). |
+| [`smith cache`](cache.md) | Look after the local task cache: [`status`](cache-status.md), [`prune`](cache-prune.md), [`clear`](cache-clear.md), [`verify`](cache-verify.md), [`key`](cache-key.md), [`setup`](cache-setup.md). |
 | [`smith doctor`](doctor.md) | Check the workspace's health; every problem names its remedy. |
 | [`smith tools`](tools.md), [`smith tools install`](tools-install.md) | The programs the workspace needs on this machine, and the presented choice to install what is missing. |
 | [`smith info`](info.md) | The installed smith, the newest released one, and this workspace's settings. |

@@ -7,6 +7,7 @@ the first release everything below is under Unreleased.
 
 ### Added
 
+- Cache: Set Up the Remote Cache in a Terminal: runs `smith cache setup` in a MonoSmith terminal, where each cloud command is shown and confirmed before it runs and the key goes to the clipboard unseen.
 - Convert an Nx or Turborepo Workspace with Your Choices: asks the level and, at the full level, lint, tests, build and pipelines from `smith convert --questions --json`, shows the plan with the files it deletes, asks the unticked commit box, then converts.
 - New workspace: the Customise questions (CI, language, Node tests, code layout, agent files, dev container) come from `smith new --questions --json`, so a question that smith adds appears without a new version of the extension.
 - Environments of a web app: "Environments of the Web Apps", "Add Environments to a Web App…" (the names start on `[workspace] environments`, to edit; the plan lists the files) and "Remove Environments from a Web App…" (only the ones that can go; the `.env` file stays).

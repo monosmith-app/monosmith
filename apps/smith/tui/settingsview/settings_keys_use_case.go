@@ -148,6 +148,11 @@ func (m Model) activate() (Model, Result) {
 		m = m.begin("saving the style", false)
 		return m, Result{Cmd: m.saveStyle(m.savedTheme, normalise(it.key))}
 	case kindSetting:
+		if m.snap.Settings[it.idx].Path == "cache.remote" {
+			// The remote is chosen with the setup, which finds it, shows each
+			// command first, and writes the setting only after a yes.
+			return m, Result{CacheSetup: true}
+		}
 		return m.editSetting(m.snap.Settings[it.idx])
 	case kindForm:
 		return m, Result{Form: it.key}
