@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/cachewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
@@ -215,6 +216,12 @@ type Shell struct {
 	// tools is the "Install the missing tools" dialog while it is open;
 	// toolsProc is the install it streams and toolsArgv the command it came from.
 	tools *toolsdialog.Model
+	// cache is the remote cache setup while it is open; cacheRun is the engine
+	// behind it, which runs in the background.
+	cache    *cachewizard.Model
+	cacheRun *cachewizard.Bridge
+	// cacheSecrets is the clipboard and environment of its key screen; nil is this machine.
+	cacheSecrets func() cachewizard.Secrets
 	// result is the dialog that closes a run that changed files or could not be
 	// checked; resultKept is the failure one, shown again after the tools install;
 	// runLines is the output of the run that is going or ended last.
@@ -503,7 +510,7 @@ func tickCmd() tea.Cmd {
 
 // animating is true while something moves: a run, a toast, a hint.
 func (s Shell) animating() bool {
-	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy()
+	return s.running() || s.fixApplying() || s.adopting != nil || s.waitFor != "" || s.toast.Shown() || s.hintTicks > 0 || s.planWait != nil || s.settings.Busy() || s.cache != nil
 }
 
 func (s *Shell) handle(msg tea.Msg) tea.Cmd {
@@ -554,6 +561,8 @@ func (s *Shell) handle(msg tea.Msg) tea.Cmd {
 		s.verifyFix(msg)
 	case settingsview.Msg:
 		return s.settingsMsg(msg)
+	case cacheMsg:
+		return s.cacheEvent(msg)
 	case fixProgressMsg:
 		if s.adopting != nil && msg.run == s.adopting {
 			return s.adoptProgress(msg)
@@ -627,6 +636,10 @@ func (s *Shell) resize(w, h int) {
 	if s.tools != nil {
 		placed := s.tools.Place(w, h)
 		s.tools = &placed
+	}
+	if s.cache != nil {
+		placed := s.cache.Place(w, h)
+		s.cache = &placed
 	}
 	if s.compose != nil {
 		placed := s.compose.Place(w, h)

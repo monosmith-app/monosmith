@@ -1,15 +1,12 @@
 package cachesetup
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/cachekey"
-	"github.com/monosmith-app/monosmith/apps/smith/choiceprompt"
 )
 
 // Facts are what the setup knows of the workspace.
@@ -24,9 +21,8 @@ type Facts struct {
 
 // Ports are the setup's connections to the world; tests replace every one.
 type Ports struct {
-	// In and Out are the terminal.
-	In  *bufio.Reader
-	Out io.Writer
+	// Dialogue talks to the person: a terminal, or the screens of the shell.
+	Dialogue
 	// Run starts a program; LookPath finds one on PATH.
 	Run      Runner
 	LookPath func(string) (string, error)
@@ -34,9 +30,6 @@ type Ports struct {
 	Now func() time.Time
 	// WriteRemote writes `[cache] remote`; it is called only after a yes.
 	WriteRemote func(remote string) error
-	// Secret copies a secret and offers the choices after it (see
-	// cachekey.Session). produce is nil for a key made by smith.
-	Secret func(noun string, produce func() (string, error), actions []cachekey.KeyAction) error
 }
 
 const byHand = "__by_hand__"
@@ -46,16 +39,19 @@ type flow struct {
 	facts Facts
 }
 
-func (f flow) say(format string, args ...any) { fmt.Fprintf(f.Out, format+"\n", args...) }
+func (f flow) say(format string, args ...any) { f.Say(fmt.Sprintf(format, args...)) }
 
 func (f flow) yesNo(prompt, yes, yesHint, no, noHint string) bool {
-	return choiceprompt.Ask(prompt, []choiceprompt.Option{{Label: yes, Value: "yes", Hint: yesHint}, {Label: no, Value: "no", Hint: noHint}}, "yes", f.In, f.Out) == "yes"
+	return f.Confirm(Confirmation{Prompt: prompt, Yes: yes, YesHint: yesHint, No: no, NoHint: noHint})
 }
 
-func (f flow) text(prompt string) string {
-	fmt.Fprintf(f.Out, "\n%s: ", prompt)
-	line, _ := f.In.ReadString('\n')
-	return strings.TrimSpace(line)
+func (f flow) text(prompt string) string { return f.Text(prompt) }
+
+// run starts a program while the person sees that smith is working.
+func (f flow) run(what string, stdin string, argv ...string) (string, string, error) {
+	done := f.Working(what)
+	defer done()
+	return f.Run(stdin, argv...)
 }
 
 // list shows a read-only command, runs it when the person agrees, and returns
@@ -64,15 +60,14 @@ func (f flow) text(prompt string) string {
 func (f flow) list(l Listing) (items []Item, ok bool) {
 	program := l.Argv[0]
 	if _, err := f.LookPath(program); err != nil {
-		f.say("\n`%s` is not installed here, so smith cannot list this for you. You can type it by hand.", program)
+		f.say("`%s` is not installed here, so smith cannot list this for you. You can type it by hand.", program)
 		return nil, false
 	}
 	for attempt := 0; attempt < 2; attempt++ {
-		f.say("\nsmith will run this command. It only reads:\n  %s", l.Line())
-		if !f.yesNo("Run it?", "Run it", "list the choices from "+program, "Type it by hand", "run nothing") {
+		if !f.Confirm(Confirmation{Text: "smith will run this command. It only reads:", Shown: l.Line(), Prompt: "Run it?", Yes: "Run it", YesHint: "list the choices from " + program, No: "Type it by hand", NoHint: "run nothing"}) {
 			return nil, false
 		}
-		stdout, stderr, err := f.Run("", l.Argv...)
+		stdout, stderr, err := f.run("Listing with "+program, "", l.Argv...)
 		if err == nil {
 			items, perr := l.Parse(stdout)
 			if perr != nil {
@@ -86,11 +81,10 @@ func (f flow) list(l Listing) (items []Item, ok bool) {
 			f.say("`%s` failed: %s", program, strings.TrimSpace(stderr))
 			return nil, false
 		}
-		f.say("\nNobody is signed in to %s.", program)
-		if !f.yesNo("Sign in now?", "Sign in", "run `"+CommandLine(login)+"`, which opens your browser or asks you", "Type it by hand", "run nothing") {
+		if !f.Confirm(Confirmation{Text: "Nobody is signed in to " + program + ". Signing in opens your browser or asks you:", Shown: CommandLine(login), Prompt: "Sign in now?", Yes: "Sign in", YesHint: "run the command above", No: "Type it by hand", NoHint: "run nothing"}) {
 			return nil, false
 		}
-		if _, e, err := f.Run("", login...); err != nil {
+		if _, e, err := f.run("Signing in with "+program, "", login...); err != nil {
 			f.say("`%s` failed: %s", CommandLine(login), strings.TrimSpace(e))
 			return nil, false
 		}
@@ -100,12 +94,12 @@ func (f flow) list(l Listing) (items []Item, ok bool) {
 
 // choose asks for one item of a list, with typing by hand as the last choice.
 func (f flow) choose(prompt string, items []Item) string {
-	options := make([]choiceprompt.Option, 0, len(items)+1)
+	options := make([]Option, 0, len(items)+1)
 	for _, it := range items {
-		options = append(options, choiceprompt.Option{Label: it.Label, Value: it.Value, Hint: it.Hint})
+		options = append(options, Option{Label: it.Label, Value: it.Value, Hint: it.Hint})
 	}
-	options = append(options, choiceprompt.Option{Label: "Type it by hand", Value: byHand, Hint: "none of these"})
-	return choiceprompt.Ask(prompt, options, options[0].Value, f.In, f.Out)
+	options = append(options, Option{Label: "Type it by hand", Value: byHand, Hint: "none of these"})
+	return f.Choose(prompt, options, options[0].Value)
 }
 
 // pick lists with a command and asks which one; it falls back to typing.
@@ -134,12 +128,12 @@ func (f flow) baseFolder(folders func(prefix string) Listing) string {
 		if prefix != "" {
 			here = "Use " + prefix + " as the base folder"
 		}
-		options := []choiceprompt.Option{{Label: here, Value: "__use__", Hint: "the workspace's sub-folder is proposed next"}}
+		options := []Option{{Label: here, Value: "__use__", Hint: "the workspace's sub-folder is proposed next"}}
 		for _, it := range items {
-			options = append(options, choiceprompt.Option{Label: "Open " + it.Label + "/", Value: it.Value, Hint: "look inside it"})
+			options = append(options, Option{Label: "Open " + it.Label + "/", Value: it.Value, Hint: "look inside it"})
 		}
-		options = append(options, choiceprompt.Option{Label: "Name a new base folder", Value: "__new__", Hint: "it appears at the first write"})
-		switch v := choiceprompt.Ask("Which base folder?", options, "__use__", f.In, f.Out); v {
+		options = append(options, Option{Label: "Name a new base folder", Value: "__new__", Hint: "it appears at the first write"})
+		switch v := f.Choose("Which base folder?", options, "__use__"); v {
 		case "__use__":
 			return prefix
 		case "__new__":
@@ -153,15 +147,13 @@ func (f flow) baseFolder(folders func(prefix string) Listing) string {
 // workspaceFolder proposes a sub-folder named after the workspace.
 func (f flow) workspaceFolder(base string) string {
 	seg := JoinPrefix(base, WorkspaceSegment(f.facts.WorkspaceName))
-	f.say("\nThe cache key of a task does not include the workspace. A prefix for each workspace keeps")
-	f.say("workspaces apart and lets you delete one workspace's cache by deleting its prefix.")
-	f.say("Workspaces that share code can share one prefix.")
-	options := []choiceprompt.Option{
+	f.say("The cache key of a task does not include the workspace. A prefix for each workspace keeps workspaces apart and lets you delete one workspace's cache by deleting its prefix. Workspaces that share code can share one prefix.")
+	options := []Option{
 		{Label: "Use " + seg, Value: seg, Hint: "a folder for this workspace (recommended)"},
 		{Label: "Use " + orTop(base), Value: base, Hint: "shared with every workspace that uses it"},
 		{Label: "Type another", Value: byHand, Hint: "any prefix"},
 	}
-	v := choiceprompt.Ask("Which prefix for this workspace?", options, seg, f.In, f.Out)
+	v := f.Choose("Which prefix for this workspace?", options, seg)
 	if v == byHand {
 		return strings.Trim(f.text("Prefix"), "/")
 	}
@@ -186,18 +178,18 @@ func Run(facts Facts, ports Ports) (remote string, err error) {
 	if facts.Remote != "" {
 		f.say("[cache] remote is %s today.", facts.Remote)
 	}
-	kind := choiceprompt.Ask("What kind of remote storage? (Google Cloud Storage is not supported.)", []choiceprompt.Option{
+	kind := f.Choose("What kind of remote storage? (Google Cloud Storage is not supported.)", []Option{
 		{Label: "Azure Blob", Value: KindAzure, Hint: "a container in an Azure storage account"},
 		{Label: "S3", Value: KindS3, Hint: "a bucket in Amazon S3 or an S3-compatible store"},
 		{Label: "HTTPS server", Value: KindHTTPS, Hint: "any server that takes PUT, GET and HEAD"},
-	}, KindAzure, f.In, f.Out)
+	}, KindAzure)
 	var sas *sasTarget
 	switch kind {
 	case KindAzure:
 		sub := f.pick(AzureSubscriptions(), "Which Azure subscription?", "Subscription id or name (empty for the current one)")
 		account := f.pick(AzureAccounts(sub), "Which storage account?", "Storage account name")
 		container := f.pick(AzureContainers(sub, account), "Which container?", "Container name")
-		f.say("\nBlob storage has no real folders: a prefix appears at the first write. (An account with a hierarchical namespace has real ones.)")
+		f.say("Blob storage has no real folders: a prefix appears at the first write. (An account with a hierarchical namespace has real ones.)")
 		base := f.baseFolder(func(prefix string) Listing { return AzureFolders(sub, account, container, prefix) })
 		remote = AzureURL(account, container, f.workspaceFolder(base))
 		sas = &sasTarget{sub, account, container}
@@ -216,8 +208,7 @@ func Run(facts Facts, ports Ports) (remote string, err error) {
 		}
 	}
 
-	f.say("\nThis changes smith.toml:\n\n  [cache]\n  remote = %q\n", remote)
-	if f.yesNo("Write it?", "Yes, write it", "only the setting changes; comments stay", "No, change nothing", "set it yourself with `smith config set cache.remote "+remote+"`") {
+	if f.Confirm(Confirmation{Text: "This changes smith.toml:", Shown: fmt.Sprintf("[cache]\nremote = %q", remote), Prompt: "Write it?", Yes: "Yes, write it", YesHint: "only the setting changes; comments stay", No: "No, change nothing", NoHint: "set it yourself with `smith config set cache.remote " + remote + "`"}) {
 		if err := f.WriteRemote(remote); err != nil {
 			return remote, err
 		}
@@ -253,6 +244,7 @@ func (f flow) keyActions(providers []string, remote string) []cachekey.KeyAction
 				if !confirm(CommandLine(g.KeyCommand) + "   (the key goes in on standard input)") {
 					return
 				}
+				f.say("Sending the key to %s…", g.Title)
 				if _, stderr, err := f.Run(secret+"\n", g.KeyCommand...); err != nil {
 					f.say("`%s` failed: %s", g.KeyCommand[0], strings.TrimSpace(stderr))
 					return
@@ -267,24 +259,23 @@ type sasTarget struct{ subscription, account, container string }
 
 // sasToken offers to make the container's SAS token with az and copy it.
 func (f flow) sasToken(t sasTarget) {
-	f.say("\nAzure Blob also needs AZURE_STORAGE_SAS_TOKEN: a token that lets smith reach the container. Signing in through az directly is not supported by the backend today.")
+	f.say("Azure Blob also needs AZURE_STORAGE_SAS_TOKEN: a token that lets smith reach the container. Signing in through az directly is not supported by the backend today.")
 	if !f.yesNo("Make a SAS token now?", "Yes, make and copy one", "read, write, create and list permission, for this container only", "No, I will make one", "") {
 		return
 	}
-	var options []choiceprompt.Option
+	var options []Option
 	for _, c := range SASChoices() {
-		options = append(options, choiceprompt.Option{Label: c.Label, Value: c.Value, Hint: c.Hint})
+		options = append(options, Option{Label: c.Label, Value: c.Value, Hint: c.Hint})
 	}
-	way := choiceprompt.Ask("How should the token be signed?", options, "login", f.In, f.Out)
-	days := []choiceprompt.Option{{Label: "7 days", Value: "7"}, {Label: "30 days", Value: "30"}, {Label: "90 days", Value: "90"}, {Label: "365 days", Value: "365"}}
+	way := f.Choose("How should the token be signed?", options, "login")
+	days := []Option{{Label: "7 days", Value: "7"}, {Label: "30 days", Value: "30"}, {Label: "90 days", Value: "90"}, {Label: "365 days", Value: "365"}}
 	if way == "login" {
 		days = days[:1]
 	}
-	n := choiceprompt.Ask("How long should it last? You must renew it before it ends.", days, days[0].Value, f.In, f.Out)
+	n := f.Choose("How long should it last? You must renew it before it ends.", days, days[0].Value)
 	d, _ := strconv.Atoi(n)
 	argv := GenerateSAS(t.subscription, t.account, t.container, way, f.Now().AddDate(0, 0, d))
-	f.say("\nsmith will run this command. It makes a token and changes nothing in Azure:\n  %s", CommandLine(argv))
-	if !f.yesNo("Run it?", "Run it", "the token is copied, never shown", "Skip", "run nothing") {
+	if !f.Confirm(Confirmation{Text: "smith will run this command. It makes a token and changes nothing in Azure:", Shown: CommandLine(argv), Prompt: "Run it?", Yes: "Run it", YesHint: "the token is copied, never shown", No: "Skip", NoHint: "run nothing"}) {
 		return
 	}
 	produce := func() (string, error) {
@@ -299,28 +290,31 @@ func (f flow) sasToken(t sasTarget) {
 	}
 }
 
-// guides prints the steps of each CI provider in smith.toml.
+// guides shows the steps of each CI provider in smith.toml, one page each.
 func (f flow) guides(remote string) {
 	for _, g := range ProviderGuides(f.facts.Providers, remote) {
-		f.say("\n== %s ==", g.Title)
+		var lines []string
 		for i, s := range g.Steps {
-			f.say("%d. %s", i+1, s)
+			lines = append(lines, fmt.Sprintf("%d. %s", i+1, s))
 		}
 		for _, s := range g.Secrets {
-			f.say("   - %s", s)
+			lines = append(lines, "   - "+s)
 		}
 		if g.KeyCommand != nil {
-			f.say("From a terminal: %s   (the value goes in on standard input)", CommandLine(g.KeyCommand))
+			lines = append(lines, "From a terminal: "+CommandLine(g.KeyCommand)+"   (the value goes in on standard input)")
 		}
 		if g.ByHand != "" {
-			f.say("From a terminal: %s", g.ByHand)
+			lines = append(lines, "From a terminal: "+g.ByHand)
 		}
 		for _, n := range g.Notes {
-			f.say("Note: %s", n)
+			lines = append(lines, "Note: "+n)
 		}
+		f.Show(g.Title, lines)
 	}
+	var last []string
 	if len(f.facts.Providers) == 0 {
-		f.say("\nsmith.toml names no CI provider. Add one with `smith config set ci.providers github` to get its steps.")
+		last = append(last, "smith.toml names no CI provider. Add one with `smith config set ci.providers github` to get its steps.")
 	}
-	f.say("\nOn a developer machine, set SMITH_CACHE_KEY (and the credential) as environment variables, or keep them in a password manager. `smith doctor` checks them.")
+	last = append(last, "On a developer machine, set SMITH_CACHE_KEY (and the credential) as environment variables, or keep them in a password manager. `smith doctor` checks them.")
+	f.Show("Developer machines", last)
 }

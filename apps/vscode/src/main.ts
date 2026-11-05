@@ -719,6 +719,15 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     openSmithTerminal(state.location.executable, pickArguments(), state.root)
   }
 
+  // The remote cache setup asks questions and shows each cloud command before it runs
+  // (confirmed by the person), which a notice or a pick list cannot do for a command smith
+  // runs for them: it runs in a terminal of its own, as `smith cache setup`.
+  const setUpRemoteCache = async (): Promise<void> => {
+    const state = await folderOf()
+    if (state?.location === undefined) return
+    openSmithTerminal(state.location.executable, ['cache', 'setup'], state.root)
+  }
+
   const updateDependency = async (node: ListNode | undefined): Promise<void> => {
     const tagged = readFolderData(node?.data)
     const args = tagged === undefined ? undefined : updateArguments(tagged.data)
@@ -1557,6 +1566,7 @@ export function activate (context: vscode.ExtensionContext): ExtensionStateApi {
     command<unknown>('monosmith.health.fixFinding', fixFindingRow),
     command('monosmith.dependencies.refresh', async () => { await dependencies.reload() }),
     command('monosmith.dependencies.up', runUp),
+    command('monosmith.cacheSetup', setUpRemoteCache),
     command<ListNode>('monosmith.dependencies.update', updateDependency),
     command('monosmith.release.refresh', async () => { await release.reload() }),
     command('monosmith.explainProject', async (node) => { await showInsight(node, 'explain') }),

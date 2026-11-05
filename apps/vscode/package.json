@@ -485,6 +485,12 @@
         "icon": "$(remove)"
       },
       {
+        "command": "monosmith.cacheSetup",
+        "title": "Cache: Set Up the Remote Cache in a Terminal",
+        "category": "MonoSmith",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "monosmith.cacheStatus",
         "title": "Cache: Status",
         "category": "MonoSmith",
@@ -1367,6 +1373,10 @@
         },
         {
           "command": "monosmith.environmentsRemove",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheSetup",
           "when": "monosmith.state == ready"
         },
         {
