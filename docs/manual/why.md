@@ -17,6 +17,13 @@ with the setting in the schema (`x-reason`); `smith config list` shows it after 
 `smith config list --json` and `smith why <setting> --json` carry it for editors. A setting with no
 recorded reason says so. A name that is also an existing file is treated as the file.
 
+## In the interactive shell
+
+In the shell, "Why is this here?" asks for the file, folder or setting with a browsable list under the
+field: the folders and files of the folder you type in, the settings (`ci.devcontainer`) that match, `Tab`
+to complete a name, `Enter` to open a folder. A path typed in full works as well. See
+[The path finder](tui.md#the-path-finder).
+
 ## When to use it
 
 - Before you edit a file you did not write: is it yours, or does smith rewrite it?

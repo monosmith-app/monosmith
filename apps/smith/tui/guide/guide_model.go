@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -52,6 +53,17 @@ type Model struct {
 	// replace is true while a text field holds an earlier value that the next
 	// letter replaces.
 	replace bool
+	// path is the list of folders and files under a Path step's field; pathRoot
+	// is the folder it starts in ("" is the folder smith started in).
+	path     pathfinder.Model
+	pathRoot string
+}
+
+// WithPathRoot sets the folder the path finder of a Path step starts in; the
+// default is the folder smith started in.
+func (m Model) WithPathRoot(dir string) Model {
+	m.pathRoot = dir
+	return m
 }
 
 // rederive makes the later questions follow an answer that was changed after
@@ -190,6 +202,7 @@ func (m Model) Reset() Model {
 	r := NewModel(m.actions)
 	r.defaults = m.defaults
 	r.defaultWhy = m.defaultWhy
+	r.pathRoot = m.pathRoot
 	return r
 }
 
@@ -292,6 +305,9 @@ func (m Model) options() []Option {
 
 func (m Model) optionCount() int {
 	if s := m.current(); s != nil {
+		if s.Options == nil && s.Path {
+			return m.path.Count()
+		}
 		return len(m.options())
 	}
 	if m.action != nil {
@@ -331,6 +347,21 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 			return m, nil
 		}
 	}
+	if text && step.Path {
+		var out pathfinder.Outcome
+		if m.path, out = m.path.Handle(key); out.Handled {
+			m.cursor = m.path.Cursor()
+			if out.Set {
+				m.input.SetValue(out.Value)
+				m.input.CursorEnd()
+				m.replace, m.err = false, ""
+			}
+			if out.Confirm {
+				return m.confirm(), nil
+			}
+			return m, nil
+		}
+	}
 	if text && key.Type != tea.KeyEnter && key.Type != tea.KeyEsc && key.Type != tea.KeyCtrlC {
 		if m.replace && (key.Type == tea.KeyRunes || key.Type == tea.KeySpace) {
 			m.input.SetValue("")
@@ -338,6 +369,9 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 		m.replace = false
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
+		if step.Path {
+			m.path, m.cursor = m.path.Sync(m.input.Value()), 0
+		}
 		return m, cmd
 	}
 	if step != nil && step.Filter && step.Options != nil {
@@ -398,6 +432,11 @@ func (m Model) Handle(msg tea.Msg) (Model, tea.Cmd) {
 // SelectRow moves the cursor to option i (a mouse click); in a multiple
 // choice it also toggles the option.
 func (m Model) SelectRow(i int) Model {
+	if s := m.current(); s != nil && s.Options == nil && s.Path {
+		m.path = m.path.Select(i)
+		m.cursor = m.path.Cursor()
+		return m
+	}
 	if i >= 0 && i < m.optionCount() {
 		m.cursor = i
 		if s := m.current(); s != nil && s.Multi {
@@ -570,6 +609,13 @@ func (m Model) advance() Model {
 			}
 		}
 	}
+	if step.Options == nil && step.Path {
+		var settings []pathfinder.Setting
+		if step.PathSettings {
+			settings = settingEntries()
+		}
+		m.path, m.cursor = pathfinder.New(m.pathRoot, settings).Sync(m.input.Value()), 0
+	}
 	return m
 }
 
@@ -620,6 +666,15 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 			}
 		}
 		lines = append(lines, "", m.input.View(), "")
+		if step.Path {
+			for _, l := range m.path.Rows(th, w, pathfinder.DefaultRows) {
+				if l.Index >= 0 {
+					optionAt[len(lines)] = l.Index
+				}
+				lines = append(lines, l.Text)
+			}
+			lines = append(lines, "")
+		}
 		if m.replace {
 			lines = append(lines, th.Muted("This is what you typed before: type to replace it, Backspace to edit it."))
 		}
@@ -638,7 +693,11 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 				lines = append(lines, th.Success(th.Icons.Passed+" that name works"))
 			}
 		}
-		lines = append(lines, th.Muted("enter confirm · esc back"))
+		if step.Path {
+			lines = append(lines, th.Muted(pathfinder.Hint))
+		} else {
+			lines = append(lines, th.Muted("enter confirm · esc back"))
+		}
 	default:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
 		if why := m.defaultWhy[step.Key]; why != "" && hasOption(step.Options, m.defaults[step.Key]) {

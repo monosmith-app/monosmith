@@ -266,7 +266,7 @@ These are in the palette (`:`), under Health. None has a key of its own.
 | **Check the derived files** | `smith derive --check` in the Run view: writes nothing, fails when a derived file is out of date or was edited. |
 | **Update the derived files…** | `smith derive` after a confirmation: writes the files that follow from the project graph. A file you edited is never overwritten. |
 | **Preview the derived files** | `smith derive --dry-run` in the Run view: the plan of the update, nothing is written. |
-| **Why is this here?…** | A form that asks for a file, a folder or a setting and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. |
+| **Why is this here?…** | A form that asks for a file, a folder or a setting (with the [path finder](#the-path-finder) to browse them) and runs `smith why <it>`: who owns a file and how to change it, or why a setting has its value. |
 | **Divergences from the defaults** | `smith divergences` in the Run view: every override, ejected file and drift, each with the reason and how to go back. |
 | **Try a command in a copy…** | A form that asks for a smith command (`add package billing`) and runs `smith try` on it: the command runs in a temporary copy, doctor checks the result, and the Run view says what changed. Your files stay as they are. |
 | **Write the launcher…** | `smith bootstrap` after a confirmation: writes `tools/smith/smith` and `tools/smith/smith.cmd`, so a laptop and CI run the same smith. |
@@ -527,6 +527,36 @@ project, manage plugins, remove a project, and forms generated from the command 
 ask one question at a time: a choice (`Up` `Down`, `Enter`, `Esc` back one step), several
 choices (`Space` toggles, `Enter` confirms) or free text with a placeholder. The answers
 build the command line, which the shell runs and shows.
+
+### The path finder
+
+A question that asks for a path (a file, a folder, or for "Why is this here?" a setting such as
+`ci.devcontainer`) shows a list under the text field: the folders and files of the folder you are
+typing in, starting where you started smith. What you type is still the answer; the list only helps,
+so a path typed in full always works, even one that is not in the list.
+
+| Key | What it does |
+|---|---|
+| type | Narrows the list to the names that hold your text; the names that start with it come first. |
+| `Up` `Down` `PgUp` `PgDn` | Moves the highlight. |
+| `Tab` | Puts the highlighted name in the field; a folder ends with `/`, so the list goes inside it. |
+| `Enter` after `Up`/`Down` | Opens the highlighted folder, or chooses the highlighted file or setting. |
+| `Enter` without moving | Confirms the text as you typed it. |
+| `..` row, `Backspace` | Goes up one folder. |
+| click, double-click | Click highlights a row; a double-click does what `Enter` does on it. |
+
+A folder is shown with a closing `/`. Folders that git ignores (`dist`, `node_modules`, anything in
+`.gitignore`) are shown dimmed with "git-ignored". Names that start with a dot appear when you type a
+dot. Only the folder you are in is read, never the whole tree; a folder with many names shows the first
+rows and a line "N more: keep typing to narrow the list". The list fits 80 columns.
+
+The finder is one component (`apps/smith/tui/pathfinder`). It is used by: Why is this here? (files,
+folders and settings), the logo of Tauri icons, the recipe a new recipe extends, every argument or option of
+a generated form whose name says file, folder, directory, path or recipe (for example
+`recipe check <file-or-url>`, `plugin draft <sample-folder>`, `--dir`, `--cache-dir`, `--recipe-file`), and
+in the Settings tab the path settings (`cache.dir`, `workspace.recipe`) and the source of
+"Install a plugin". Choices from a fixed list, project names (`add --like` is a list of the projects) and
+names (a project, a workspace, a package) do not use it.
 
 **Create a workspace** asks the name, then "How do you want to set it up?". **Start with the defaults** (the
 first line) shows what will be chosen (CI, language, code layout, agent files, dev container), says that CI is

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
@@ -228,10 +229,11 @@ func (m Model) detail(th theme.Theme, it item, w int) []string {
 	return out
 }
 
-// editorLines draws the open editor in w by h cells.
-func (m Model) editorLines(th theme.Theme, w, h int) []string {
+// editorLines draws the open editor in w by h cells. rowOf maps each line of
+// the path finder's rows to its row, for a click.
+func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[int]int) {
 	e := m.ed
-	var lines []string
+	rowOf = map[int]int{}
 	add := func(s string) { lines = append(lines, pane.Wrap(" "+s, max(w, 4), 1)...) }
 	lines = append(lines, "")
 	add(th.Bold(e.title))
@@ -254,6 +256,15 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 		in.Width = max(w-6, 4)
 		lines = append(lines, "", " "+in.View())
 		keys = "Enter saves · Esc cancels"
+		if e.finder != nil {
+			for _, l := range e.finder.Rows(th, max(w-1, 4), max(min(pathfinder.DefaultRows, h-len(lines)-5), 2)) {
+				if l.Index >= 0 {
+					rowOf[len(lines)] = l.Index
+				}
+				lines = append(lines, " "+l.Text)
+			}
+			keys = "Tab completes · Up/Down choose · " + keys
+		}
 		if e.kind == editInstall {
 			argv, _ := installArgv(e.input.Value())
 			lines = append(lines, "", " "+th.Muted("smith "+strings.Join(argv, " ")))
@@ -300,7 +311,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) []string {
 		lines = append(lines, "")
 	}
 	lines = lines[:min(len(lines), max(h-1, 0))]
-	return append(lines, " "+th.Muted(fmt.Sprint(keys)))
+	return append(lines, " "+th.Muted(fmt.Sprint(keys))), rowOf
 }
 
 // shownValue is what a setting is now: the value written in smith.toml, or,

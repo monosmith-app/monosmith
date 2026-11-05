@@ -22,7 +22,7 @@ func FormFor(c clicontract.CommandDescription, path []string, id string) Action 
 	args := slices.Clone(c.Arguments)
 	slices.SortStableFunc(args, func(x, y clicontract.ArgumentDescription) int { return rank(y.Required) - rank(x.Required) })
 	for _, arg := range args {
-		step := Step{Key: "arg:" + arg.Name, Prompt: arg.Name, Placeholder: arg.Name, Optional: !arg.Required}
+		step := Step{Key: "arg:" + arg.Name, Prompt: arg.Name, Placeholder: arg.Name, Optional: !arg.Required, Path: asksForPath(arg.Name)}
 		if arg.Variadic {
 			step.Prompt += " (one or more, separated by spaces)"
 		}
@@ -54,7 +54,7 @@ func FormFor(c clicontract.CommandDescription, path []string, id string) Action 
 		if o.Description != "" {
 			prompt = "--" + o.Name + ": " + o.Description + " (optional)"
 		}
-		a.Steps = append(a.Steps, Step{Key: "flag:" + o.Name, Prompt: prompt, Optional: true})
+		a.Steps = append(a.Steps, Step{Key: "flag:" + o.Name, Prompt: prompt, Optional: true, Path: asksForPath(o.Name)})
 	}
 	a.Argv = func(answers map[string][]string) []string {
 		argv := slices.Clone(path)

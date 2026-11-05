@@ -57,6 +57,13 @@ type Step struct {
 	// Glossary marks a Note that explains the words of the list: on a short
 	// screen it folds to one line, and "?" opens it.
 	Glossary bool
+	// Path makes the free-text step ask for a path: the list of folders and
+	// files of the folder being typed shows under the field (package
+	// pathfinder). What is typed is still the answer; the list only helps.
+	Path bool
+	// PathSettings also offers the settings of smith.toml (ci.devcontainer) in
+	// that list, for a question that takes a path or a setting.
+	PathSettings bool
 }
 
 // Option is one answer.
@@ -289,7 +296,7 @@ func Actions(languages, plugins, enabled []string) []Action {
 		},
 		{
 			Title: "Why is this here?", Presents: "why", Hint: "smith why: who owns a file or a project folder, or why a setting has its value, and how to change it", NeedsWorkspace: true,
-			Steps: []Step{{Key: "path", Prompt: "Which file, folder or setting? (a path from where you started smith, or a setting such as ci.devcontainer)", Placeholder: "packages/web/tsconfig.json"}},
+			Steps: []Step{{Key: "path", Prompt: "Which file, folder or setting? (a path from where you started smith, or a setting such as ci.devcontainer)", Placeholder: "packages/web/tsconfig.json", Path: true, PathSettings: true}},
 			Argv: func(a map[string][]string) []string {
 				return []string{"why", first(a, "path")}
 			},

@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
 )
 
 type editorKind int
@@ -31,6 +32,9 @@ type editor struct {
 	about   string
 	setting Setting
 	input   textinput.Model
+	// finder, when set, lists the folders and files under the field: the value
+	// is a path (a setting such as cache.dir, or the source of a plugin).
+	finder *pathfinder.Model
 	// choices, marked and at are the picker's values, which are ticked and the cursor.
 	choices []string
 	marked  []bool
@@ -68,7 +72,35 @@ func newTextEditor(st Setting) *editor {
 	if placeholder == "" {
 		placeholder = "a " + st.Type
 	}
-	return &editor{kind: editText, title: st.Path, about: st.Explanation, setting: st, input: newInput(value, placeholder)}
+	e := &editor{kind: editText, title: st.Path, about: st.Explanation, setting: st, input: newInput(value, placeholder)}
+	if takesPath(st) {
+		e.withFinder()
+	}
+	return e
+}
+
+// withFinder puts the list of folders and files under the field.
+func (e *editor) withFinder() {
+	f := pathfinder.New("", nil).Sync(e.input.Value())
+	e.finder = &f
+}
+
+// takesPath reports whether a setting holds a path, by the name of its key:
+// cache.dir, workspace.recipe.
+func takesPath(st Setting) bool {
+	if st.Type != "string" {
+		return false
+	}
+	key := st.Path[strings.LastIndex(st.Path, ".")+1:]
+	if key == "recipe" {
+		return true
+	}
+	for _, suffix := range []string{"dir", "file", "path", "folder"} {
+		if strings.HasSuffix(key, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // newPicker edits a list of fixed choices: Space ticks, Enter saves. When the
@@ -90,12 +122,14 @@ func newReview(name string, r TrustReview) *editor {
 }
 
 func newInstall() *editor {
-	return &editor{
+	e := &editor{
 		kind:  editInstall,
 		title: "Install a plugin",
 		about: "A plugin directory or archive, an https URL or github:owner/repo@tag. An archive or URL also needs its sha256: type it after the source.",
 		input: newInput("", "source [sha256]"),
 	}
+	e.withFinder()
+	return e
 }
 
 func newSearch() *editor {
@@ -175,6 +209,22 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		}
 		e.input, _ = e.input.Update(msg)
 	case editText, editInstall:
+		if e.finder != nil {
+			f, out := e.finder.Handle(msg)
+			e.finder = &f
+			if out.Handled {
+				if out.Set {
+					e.input.SetValue(out.Value)
+					e.input.CursorEnd()
+					e.err = ""
+				}
+				if !out.Confirm {
+					m.ed = &e
+					return m, Result{}
+				}
+				name = "enter"
+			}
+		}
 		if name == "enter" {
 			e.err = ""
 			m.ed = &e
@@ -193,6 +243,10 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		}
 		e.err = ""
 		e.input, _ = e.input.Update(msg)
+		if e.finder != nil {
+			f := e.finder.Sync(e.input.Value())
+			e.finder = &f
+		}
 	case editMulti:
 		switch name {
 		case "up", "k":
