@@ -20,6 +20,10 @@ type Confirmation struct {
 	Prompt string
 	// Yes and No are the two answers, each with a hint that says what it does.
 	Yes, YesHint, No, NoHint string
+	// OfferCommit asks an interface to show the unticked box "Commit this change
+	// so it can be undone" with the question; the answer says whether it was
+	// ticked. The terminal has the --commit flag instead and never ticks it.
+	OfferCommit bool
 }
 
 // Dialogue is how the setup talks to the person. The terminal of `smith cache
@@ -33,8 +37,9 @@ type Dialogue interface {
 	Choose(prompt string, options []Option, def string) string
 	// Text asks for a typed line and returns it trimmed.
 	Text(prompt string) string
-	// Confirm asks a yes or no question; it returns true only for yes.
-	Confirm(c Confirmation) bool
+	// Confirm asks a yes or no question; yes is true only for yes, and commit
+	// says that the box offered by OfferCommit was ticked.
+	Confirm(c Confirmation) (yes, commit bool)
 	// Working says that slow work starts (text says what). The returned
 	// function says it ended.
 	Working(text string) (done func())

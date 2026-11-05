@@ -86,8 +86,12 @@ commands and the order are the ones above, because both read the same engine:
 - Esc closes the setup. Nothing is written before the "Write it?" answer, so closing before it
   changes nothing.
 
-The Settings tab and the palette write `[cache] remote` the way the Settings tab writes any
-setting: smith.toml changes, comments stay, and nothing is committed.
+The "Write it?" screen has the unticked box "Commit this change so it can be undone" (`c` ticks
+it, or click it). smith commits only when you tick it, or when `[workspace] commit_operations` is
+on and the work tree was clean, through the same operation log as `--commit`; `smith undo`
+reverts it. Without the tick, smith.toml changes, comments stay, and nothing is committed.
+Typing `cache.remote` by hand in the Settings tab (`smith config set`) shows no such box: no
+Settings change does.
 
 ## Needs a terminal
 

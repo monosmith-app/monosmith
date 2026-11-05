@@ -28,8 +28,10 @@ type Ports struct {
 	LookPath func(string) (string, error)
 	// Now is the clock.
 	Now func() time.Time
-	// WriteRemote writes `[cache] remote`; it is called only after a yes.
-	WriteRemote func(remote string) error
+	// WriteRemote writes `[cache] remote`; it is called only after a yes. commit
+	// is true when the person ticked the commit box. It returns a note to tell
+	// the person (why nothing was committed, or what was) and an error.
+	WriteRemote func(remote string, commit bool) (note string, err error)
 }
 
 const byHand = "__by_hand__"
@@ -42,7 +44,8 @@ type flow struct {
 func (f flow) say(format string, args ...any) { f.Say(fmt.Sprintf(format, args...)) }
 
 func (f flow) yesNo(prompt, yes, yesHint, no, noHint string) bool {
-	return f.Confirm(Confirmation{Prompt: prompt, Yes: yes, YesHint: yesHint, No: no, NoHint: noHint})
+	ok, _ := f.Confirm(Confirmation{Prompt: prompt, Yes: yes, YesHint: yesHint, No: no, NoHint: noHint})
+	return ok
 }
 
 func (f flow) text(prompt string) string { return f.Text(prompt) }
@@ -64,7 +67,7 @@ func (f flow) list(l Listing) (items []Item, ok bool) {
 		return nil, false
 	}
 	for attempt := 0; attempt < 2; attempt++ {
-		if !f.Confirm(Confirmation{Text: "smith will run this command. It only reads:", Shown: l.Line(), Prompt: "Run it?", Yes: "Run it", YesHint: "list the choices from " + program, No: "Type it by hand", NoHint: "run nothing"}) {
+		if ok, _ := f.Confirm(Confirmation{Text: "smith will run this command. It only reads:", Shown: l.Line(), Prompt: "Run it?", Yes: "Run it", YesHint: "list the choices from " + program, No: "Type it by hand", NoHint: "run nothing"}); !ok {
 			return nil, false
 		}
 		stdout, stderr, err := f.run("Listing with "+program, "", l.Argv...)
@@ -81,7 +84,7 @@ func (f flow) list(l Listing) (items []Item, ok bool) {
 			f.say("`%s` failed: %s", program, strings.TrimSpace(stderr))
 			return nil, false
 		}
-		if !f.Confirm(Confirmation{Text: "Nobody is signed in to " + program + ". Signing in opens your browser or asks you:", Shown: CommandLine(login), Prompt: "Sign in now?", Yes: "Sign in", YesHint: "run the command above", No: "Type it by hand", NoHint: "run nothing"}) {
+		if ok, _ := f.Confirm(Confirmation{Text: "Nobody is signed in to " + program + ". Signing in opens your browser or asks you:", Shown: CommandLine(login), Prompt: "Sign in now?", Yes: "Sign in", YesHint: "run the command above", No: "Type it by hand", NoHint: "run nothing"}); !ok {
 			return nil, false
 		}
 		if _, e, err := f.run("Signing in with "+program, "", login...); err != nil {
@@ -208,11 +211,15 @@ func Run(facts Facts, ports Ports) (remote string, err error) {
 		}
 	}
 
-	if f.Confirm(Confirmation{Text: "This changes smith.toml:", Shown: fmt.Sprintf("[cache]\nremote = %q", remote), Prompt: "Write it?", Yes: "Yes, write it", YesHint: "only the setting changes; comments stay", No: "No, change nothing", NoHint: "set it yourself with `smith config set cache.remote " + remote + "`"}) {
-		if err := f.WriteRemote(remote); err != nil {
+	if ok, commit := f.Confirm(Confirmation{Text: "This changes smith.toml:", Shown: fmt.Sprintf("[cache]\nremote = %q", remote), Prompt: "Write it?", Yes: "Yes, write it", YesHint: "only the setting changes; comments stay", No: "No, change nothing", NoHint: "set it yourself with `smith config set cache.remote " + remote + "`", OfferCommit: true}); ok {
+		note, err := f.WriteRemote(remote, commit)
+		if err != nil {
 			return remote, err
 		}
 		f.say("Written. Another workspace uses another prefix, so its cache stays apart.")
+		if note != "" {
+			f.say("%s", note)
+		}
 	}
 
 	if f.yesNo("\nMake the shared key (SMITH_CACHE_KEY) now?", "Yes, make and copy a key", "it goes to the clipboard and is never shown; the key is not stored anywhere", "No, I have one", "`smith cache key` makes one later") {
@@ -275,7 +282,7 @@ func (f flow) sasToken(t sasTarget) {
 	n := f.Choose("How long should it last? You must renew it before it ends.", days, days[0].Value)
 	d, _ := strconv.Atoi(n)
 	argv := GenerateSAS(t.subscription, t.account, t.container, way, f.Now().AddDate(0, 0, d))
-	if !f.Confirm(Confirmation{Text: "smith will run this command. It makes a token and changes nothing in Azure:", Shown: CommandLine(argv), Prompt: "Run it?", Yes: "Run it", YesHint: "the token is copied, never shown", No: "Skip", NoHint: "run nothing"}) {
+	if ok, _ := f.Confirm(Confirmation{Text: "smith will run this command. It makes a token and changes nothing in Azure:", Shown: CommandLine(argv), Prompt: "Run it?", Yes: "Run it", YesHint: "the token is copied, never shown", No: "Skip", NoHint: "run nothing"}); !ok {
 		return
 	}
 	produce := func() (string, error) {

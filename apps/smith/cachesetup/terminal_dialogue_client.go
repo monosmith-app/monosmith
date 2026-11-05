@@ -35,7 +35,7 @@ func (t Terminal) Text(prompt string) string {
 }
 
 // Confirm prints what will happen, the exact command or change, then asks.
-func (t Terminal) Confirm(c Confirmation) bool {
+func (t Terminal) Confirm(c Confirmation) (yes, commit bool) {
 	if c.Text != "" {
 		fmt.Fprintf(t.Out, "\n%s\n", c.Text)
 	}
@@ -44,7 +44,7 @@ func (t Terminal) Confirm(c Confirmation) bool {
 			fmt.Fprintf(t.Out, "  %s\n", l)
 		}
 	}
-	return choiceprompt.Ask(c.Prompt, []Option{{Label: c.Yes, Value: "yes", Hint: c.YesHint}, {Label: c.No, Value: "no", Hint: c.NoHint}}, "yes", t.In, t.Out) == "yes"
+	return choiceprompt.Ask(c.Prompt, []Option{{Label: c.Yes, Value: "yes", Hint: c.YesHint}, {Label: c.No, Value: "no", Hint: c.NoHint}}, "yes", t.In, t.Out) == "yes", false
 }
 
 // Working prints nothing: the command was shown before it ran.

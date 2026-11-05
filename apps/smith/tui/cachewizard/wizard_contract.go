@@ -76,6 +76,8 @@ type Reply struct {
 	Value string
 	// Yes is the answer of a Confirm screen.
 	Yes bool
+	// Commit is true when the commit box was ticked.
+	Commit bool
 }
 
 // Outcome is what the host must do after a key or a click.

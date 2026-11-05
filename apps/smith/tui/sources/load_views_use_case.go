@@ -13,7 +13,6 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/affected"
 	"github.com/monosmith-app/monosmith/apps/smith/cachesetup"
-	"github.com/monosmith-app/monosmith/apps/smith/configedit"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/projectgraph"
@@ -107,7 +106,7 @@ func WorkspaceSources(dir, version string) Sources {
 			}
 			return cachesetup.Facts{WorkspaceName: name, Remote: cfg.Cache.Remote, Providers: cfg.CI.Providers}, cachesetup.Ports{
 				Run: cachesetup.ExecRunner, LookPath: exec.LookPath, Now: time.Now,
-				WriteRemote: func(remote string) error { return configedit.Set(root, "cache.remote", []string{remote}) },
+				WriteRemote: func(remote string, commit bool) (string, error) { return writeRemote(root, remote, commit) },
 			}, nil
 		},
 		Start: func(argv []string) (runner.Handle, error) {

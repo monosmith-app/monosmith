@@ -37,9 +37,9 @@ func ports(input string, az *fakeAz, out *bytes.Buffer, written *[]string) Ports
 		Run:      az.run,
 		LookPath: func(string) (string, error) { return "x", nil },
 		Now:      func() time.Time { return time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC) },
-		WriteRemote: func(r string) error {
+		WriteRemote: func(r string, _ bool) (string, error) {
 			*written = append(*written, r)
-			return nil
+			return "", nil
 		},
 		Dialogue: Terminal{In: bufio.NewReader(strings.NewReader(input)), Out: out, SecretFn: func(string, func() (string, error), []cachekey.KeyAction) error {
 			return errors.New("no key was asked for")
