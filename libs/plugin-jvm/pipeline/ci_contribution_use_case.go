@@ -183,5 +183,8 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if used.android {
 		findings = append(findings, protocol.Finding{Check: "the Android SDK is installed", OK: androidSDKFound(workspaceRoot), Detail: "neither ANDROID_HOME nor local.properties' sdk.dir names an SDK", Remedy: "install the Android SDK command-line tools (https://developer.android.com/tools) and set ANDROID_HOME"})
 	}
+	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
+		findings = append(findings, found...)
+	}
 	return protocol.DoctorResult{Findings: findings}
 }

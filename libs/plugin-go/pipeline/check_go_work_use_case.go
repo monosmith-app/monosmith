@@ -9,7 +9,7 @@ import (
 
 // Doctor checks that go.work lists every Go project and that every entry it
 // lists still exists: a stale entry breaks every go command in the workspace.
-func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
 	if len(params.Projects) == 0 {
 		return protocol.DoctorResult{Findings: []protocol.Finding{}}
 	}
@@ -84,4 +84,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings, CheckToolVersions(workspaceRoot, required, lints)...)
 	return protocol.DoctorResult{Findings: findings}
+}
+
+// Doctor runs the checks of the plugin and adds the build-location check: a
+// build task that writes outside the workspace's dist/.
+func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorResult {
+	res := doctorChecks(workspaceRoot, params)
+	res.Findings = append(res.Findings, CheckBuildDirs(params.Projects)...)
+	return res
 }

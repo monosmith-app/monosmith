@@ -122,6 +122,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if f, ok := registries.CheckNuGetConfig(workspaceRoot, params.Projects); ok {
 		findings = append(findings, f)
 	}
+	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
+		findings = append(findings, found...)
+	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleaseRuntimes(p)...)
 	}

@@ -53,6 +53,14 @@ func TestAMisplacedBuildOffersAQuestionOrRefusesWithTheReason(t *testing.T) {
 	if f.Fix != nil || !strings.Contains(f.Remedy, "web import it by name") {
 		t.Fatalf("an imported package is refused with the reason: %+v", f)
 	}
+	if f.Warning {
+		t.Errorf("a cache that restores nothing is a failure, even when the move is refused: %+v", f)
+	}
+	p.Tasks = map[string]protocol.Task{"build": {Outputs: []string{"dist"}}}
+	f, _ = CheckBuildDir(ws, p, "web")
+	if f.OK || !f.Warning || f.Fix != nil || !strings.Contains(f.Remedy, "To move it by hand") {
+		t.Errorf("a refused move of a build that works is a warning with the reason and the manual step: %+v", f)
+	}
 	if got := dependentsOf([]protocol.Project{p, {Name: "web", Imports: []string{"@a/kit"}}, {Name: "other", Imports: []string{"x"}}}, p); len(got) != 1 || got[0] != "web" {
 		t.Errorf("dependents: %v", got)
 	}

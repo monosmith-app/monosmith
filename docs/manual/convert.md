@@ -98,6 +98,10 @@ Interactions:
   workspace's one `dist/<project dir>`: the `outDir` leaves its tsconfig, the `build` script
   passes `--outDir`, and `main`, `types` and the `start` script follow. It is asked as its own
   group (nothing is deleted, files are edited) and is skipped with `--build keep`.
+- `--level full` moves a tsc project only when doctor would: a package that another project imports by
+  name, whose `main`, `types` or `exports` lead into the old folder, stays where it is, and the plan
+  says why (a note of the review); so does a published package that needs a file outside the build
+  folder.
 - Without `--level full`, convert keeps the build scripts as they are, so a package may still build
   into its own `dist/`. `smith doctor` reports each such project (`kit compiles into
   dist/packages/kit`) and offers the move per project, with a preview and a "leave it as it is"

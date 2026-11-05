@@ -89,6 +89,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleasePlatforms(workspaceRoot, p)...)
 	}
+	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
+		findings = append(findings, found...)
+	}
 	if usesVcpkg(workspaceRoot, params.Projects) {
 		findings = append(findings, protocol.Finding{Check: "vcpkg is set up", OK: os.Getenv("VCPKG_ROOT") != "", Detail: "a project has a vcpkg.json, but VCPKG_ROOT is not set", Remedy: "clone and bootstrap vcpkg, then set VCPKG_ROOT (https://learn.microsoft.com/vcpkg/get_started)"})
 	}

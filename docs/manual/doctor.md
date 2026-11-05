@@ -120,8 +120,11 @@ choose "move", the review shows every changed line before anything is written:
 The old folder stays on disk, and ignore rules for it stay. Nothing is committed unless you pass
 `--commit` (or set `commit_operations = true`); a committed fix is undone with `smith undo`.
 
-Doctor refuses the move, and says why, when it cannot be made safe. The finding then stays and
-names the manual steps:
+Doctor refuses the move, and says why, when it cannot be made safe. The finding then becomes a
+warning, not a failure, because the build still works: it names the reason and the manual steps, and
+doctor stays green. It stays a failure only when something is broken now, for example a build task
+that caches a folder the build never writes. The answer "leave it as it is" ends at once with
+"Left as it is.": no review, no question.
 
 - another project imports this one by name and its `main`, `types` or `exports` lead into the
   build folder. Node and TypeScript resolve those through the link in `node_modules`, where a
@@ -132,10 +135,59 @@ names the manual steps:
 - the build writes a second folder that is not inside the first, or `smith.toml` gives the task an
   output that is not the build folder
 
-Only Node projects are checked for this. For other languages smith itself passes the output folder
-to the tool, so the task builds into `dist/` whatever the project says; doctor does not read the
-tool's own settings (a `.cargo/config.toml` `target-dir`, `ArtifactsPath`, a Maven `<directory>`, a
-Gradle `buildDirectory`, a CMake `-B`).
+### The other languages
+
+A project that smith made builds into the central `dist/` already: its Rust crates through
+`.cargo/config.toml`, its .NET projects through `Directory.Build.props`, its Maven and Gradle
+modules through the build directory of their scripts, its CMake projects through `-B`, and Go,
+Python and Dart through the output option of the build command. A project that was adopted,
+converted or written by hand can build into the folder its tool picks (`target/`, `bin/` and
+`obj/`, `build/`). Doctor reads the setting where it can be read reliably, names where the project
+builds now and where it should, and offers the same fix as for Node: a question (move, or leave it
+as it is), a review of every changed line, no change on `--yes` alone, `--commit` to commit it and
+`smith undo` to revert it. The old folder is never deleted. It stays on disk, unused and
+git-ignored.
+
+| Language | Where smith builds | What doctor reads | What the fix writes |
+|---|---|---|---|
+| Rust | `dist/cargo`, one target folder | `build.target-dir` of the nearest `.cargo/config.toml` (also `.cargo/config`), going up from the crate; else the default `target/`; `CARGO_TARGET_DIR` of the environment wins | `.cargo/config.toml`: sets `[build] target-dir = "dist/cargo"`, every other line stays (a new file when there is none). One finding for the workspace, one for a crate that is its own workspace |
+| .NET | `dist/dotnet` | `ArtifactsPath` of the nearest `Directory.Build.props` (MSBuild reads the first one it finds going up); else `bin/` and `obj/` of each project; `OutputPath`, `BaseOutputPath` of the project files | `Directory.Build.props`: adds a `PropertyGroup` with `UseArtifactsOutput` and `ArtifactsPath`, or updates the existing `ArtifactsPath`; the other content stays. A new file when there is none |
+| Maven | `dist/maven/<artifactId>` | `<build><directory>` of the module pom, else of the parent poms it names (default `../pom.xml` or its `relativePath`), else `target/` | the module `pom.xml`: sets `<build><directory>${project.basedir}/../../dist/maven/${project.artifactId}</directory>` |
+| Gradle (Kotlin and Groovy DSL) | `dist/gradle/<artifactId>` | `layout.buildDirectory` or `buildDir` in the module script, else `build/` | the module script only: adds or replaces `layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("dist/gradle/<id>"))` after the `plugins` block. `settings.gradle(.kts)` and `gradle/libs.versions.toml` are never touched |
+| CMake | `dist/<project dir>` | the `-B` of the configure task, and `binaryDir` of each configure preset in `CMakePresets.json` | `CMakePresets.json`: the `binaryDir` values (`${sourceDir}/../../dist/<project dir>`; with several presets `.../${presetName}`). A wrong `-B` in a task written by hand in `smith.toml` is reported with the manual step: smith does not rewrite a command line |
+| Go, Python, Dart | `go build -o`, `python -m build --outdir`, `dart compile -o` / `flutter build -o` into `dist/<project dir>` | the build task: a command that passes no output option, or one that names a folder outside `dist/` | nothing: the finding names the option to pass in `[projects.<name>.tasks.build]` of `smith.toml` |
+
+The move is refused, with the reason and the manual step, when it would break something:
+
+- a file names the old folder as a path: a `Dockerfile`, `Makefile`, script or compose file of the
+  project, a root script, a pipeline of `.github/workflows`, or `smith.toml` (`COPY target/release/app`,
+  `src/App/bin/Release`). Doctor names the file
+- another project reads a build of this one by its path: a .NET `HintPath` into `bin/` or `obj/`, a
+  Maven pom or Gradle script that names `../kit/build/...`, a CMake file that includes
+  `../engine/build/...`
+- the project file names the folder itself: a Maven pom with `target/` as a path, a Gradle script
+  with `file("build/...")`, a .NET project that sets `OutputPath` or `BaseOutputPath` (they win over
+  `ArtifactsPath`)
+- the Rust target folder is set by `CARGO_TARGET_DIR` in the environment (smith does not edit your
+  environment) or is outside the workspace
+- the file to edit is not valid, or is written in a form smith cannot edit without guessing
+
+A published package is not a reason to refuse for these languages: `mvn deploy`, `gradle publish`,
+`dotnet pack -o dist/<dir>`, `cargo package --target-dir` and the wheel build all write where smith
+says, whatever the project's own build folder is.
+
+What doctor does not check, and says nothing about: a `Cargo.toml` (cargo has no `target-dir` key
+there), a `[env]` table or an inline-table `build = { target-dir = ... }` of cargo's configuration;
+a `Directory.Build.props` that imports another file or builds `ArtifactsPath` from another
+property; a Maven directory that uses a property other than `${project.basedir}`, `${basedir}`,
+`${maven.multiModuleProjectDirectory}` and `${project.artifactId}`, or a parent with an unreadable
+`relativePath`; a Gradle build directory set for all modules by the root script or in a form that
+names no path; a CMake `binaryDir` that uses a variable other than `${sourceDir}`,
+`${sourceParentDir}`, `${presetName}`, `${hostSystemName}` and `${generator}`, an `include` of
+another preset file, `CMakeUserPresets.json`, and a `CMAKE_BINARY_DIR` set in `CMakeLists.txt`;
+the folders a Python build backend makes inside the project (`build/`, `*.egg-info`); the
+`build/` of `flutter run`; `.cargo`, `bin/` and `obj/` of a project that was never built. Nothing
+is guessed: where the setting cannot be read, doctor reports nothing.
 
 ## Tools the workspace needs
 

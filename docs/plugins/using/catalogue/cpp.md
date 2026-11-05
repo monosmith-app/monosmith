@@ -277,6 +277,8 @@ Azure output for cpp (generated from the same contribution, not run).
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `<project> builds into dist/<project dir>` reads the `-B` of the configure task and `binaryDir` of each preset in `CMakePresets.json`. The fix asks and rewrites the `binaryDir` values; a wrong `-B` in a task written by hand is reported with the manual step. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 **Doctor.** Run only when the workspace has C++ projects.
 
 | Check | Fails when |

@@ -393,6 +393,8 @@ Kotlin plus Android workspace:
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `<module> builds into dist/maven/<artifactId>` reads `<build><directory>` of the pom and its parents (else `target/`); `<module> builds into dist/gradle/<artifactId>` reads `layout.buildDirectory` or `buildDir` of the module script (Kotlin or Groovy DSL, else `build/`). The fix asks and edits only that pom or module script; `settings.gradle(.kts)` and `libs.versions.toml` are never touched. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 **Doctor.** Run only when the workspace has JVM projects.
 
 | Check | Fails when |

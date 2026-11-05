@@ -39,6 +39,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	if f, ok := CheckRustVersion(workspaceRoot); ok {
 		findings = append(findings, f)
 	}
+	if found, ok := CheckBuildDir(workspaceRoot, params.Projects); ok {
+		findings = append(findings, found...)
+	}
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "Cargo.toml"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: append(findings, protocol.Finding{

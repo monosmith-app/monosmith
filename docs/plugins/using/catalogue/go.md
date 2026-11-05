@@ -295,6 +295,8 @@ Real audit run: `smith ci audit` printed `No vulnerabilities found.` for each mo
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): a build task written by hand that runs `go build` without `-o` (or with a folder outside `dist/`) is reported, with the option to pass. `go build ./...` writes no binary and is not reported. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_case.go`):
 
 | Check | Fails when | Fix |

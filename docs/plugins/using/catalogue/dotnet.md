@@ -230,6 +230,8 @@ Real check with `[registries.libs] auth = "azure-artifacts"` and `[workspace] re
 
 ## Doctor, dependencies and removal
 
+Build folder (`pipeline/check_build_dir_use_case.go`): `.NET builds into dist/dotnet` reads `ArtifactsPath` of the nearest `Directory.Build.props`, else `bin/` and `obj/`. The fix asks and adds or updates the `ArtifactsPath` block, keeping the other content; it is refused when a project sets `OutputPath` or `BaseOutputPath`, a file names `bin/` or `obj/`, or a `HintPath` reads a built file. See [doctor](../../../manual/doctor.md#the-other-languages).
+
 Doctor checks (`pipeline/ci_contribution_use_case.go`, `registries/check_nuget_config_use_case.go`):
 
 | Check | Fails when |

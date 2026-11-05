@@ -97,6 +97,32 @@ func TestWalkInATerminalLetsTheUserSkipOrDecline(t *testing.T) {
 	}
 }
 
+func TestWalkAnAnswerThatChangesNothingEndsWithLeftAsItIs(t *testing.T) {
+	root := t.TempDir()
+	move := protocol.Fix{Description: "move the build", Choices: []protocol.FixChoice{{
+		Question: "move it?",
+		Options: []protocol.FixChoiceOption{
+			{Label: "move", Fix: protocol.Fix{Files: []protocol.FileEdit{{Path: "a.txt", Content: "x\n"}}}},
+			{Label: "leave it as it is"},
+		},
+	}}}
+	plan := Group([]Item{{Check: "kit builds in dist", Fix: &move}})
+	for name, o := range map[string]Options{
+		"typed":  {Root: root, In: strings.NewReader("2\n"), Interactive: true},
+		"chosen": {Root: root, Yes: true, Explicit: true, Choose: []int{2}},
+	} {
+		var out bytes.Buffer
+		o.Out = &out
+		res, err := Walk(context.Background(), plan, o)
+		if err != nil || len(res.Applied) != 0 || len(res.Skipped) != 1 {
+			t.Fatalf("%s: %+v %v", name, res, err)
+		}
+		if !strings.Contains(out.String(), "Left as it is.") || strings.Contains(out.String(), "Apply this fix?") || strings.Contains(out.String(), "your choices") {
+			t.Fatalf("%s: no empty review and no question:\n%s", name, out.String())
+		}
+	}
+}
+
 func TestWalkStopsAtAFailingStepAndNamesIt(t *testing.T) {
 	root := t.TempDir()
 	fix := protocol.Fix{Description: "install", Safe: true, Steps: []protocol.FixStep{helper(t, "the install", "fail")}}
