@@ -51,6 +51,26 @@ func (s *Shell) copyFocused() {
 	s.copyText(text)
 }
 
+// openRegistryPage opens the registry page of the selected dependency in the
+// browser, and copies the link, as the report does. It runs only on this key:
+// smith never opens a browser by itself.
+func (s *Shell) openRegistryPage() tea.Cmd {
+	r, ok := s.deps.Selected()
+	switch {
+	case !ok:
+		s.say("No dependency is selected")
+	case r.URL == "":
+		s.say("No registry page is known for " + r.Name + " (a private registry whose web address smith cannot work out)")
+	default:
+		s.copyText(r.URL)
+		if open := s.sources.Open; open != nil {
+			link := r.URL
+			return func() tea.Msg { return openedMsg{path: link, link: true, err: open(link)} }
+		}
+	}
+	return nil
+}
+
 // copyText puts text on the clipboard and says so in a toast.
 func (s *Shell) copyText(text string) {
 	if err := clipboard.Copy(s.clip, text); err != nil {

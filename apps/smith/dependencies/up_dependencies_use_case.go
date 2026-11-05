@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/registrypage"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
@@ -56,7 +57,12 @@ func FindAvailable(s *session.Session) (UpReport, error) {
 		if err := c.Call(protocol.MethodLatest, protocol.LatestParams{Names: names, Tools: true}, &latest, timeout); err != nil {
 			return report, fmt.Errorf("plugin %s: %w", name, err)
 		}
-		report.Updates = append(report.Updates, FindUpdates(name, declared, latest.Latest, local)...)
+		found := FindUpdates(name, declared, latest.Latest, local)
+		ambient := registrypage.AmbientPrivate(name, s.Root)
+		for i := range found {
+			found[i].URL = pageOf(found[i], projects, ambient)
+		}
+		report.Updates = append(report.Updates, found...)
 		if len(latest.Unreachable) > 0 {
 			report.Unreachable[name] = latest.Unreachable
 		}

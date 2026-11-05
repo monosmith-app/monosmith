@@ -80,6 +80,8 @@ type Config struct {
 	// Environments are the environment names `[workspace] environments`
 	// declares; the Add form starts its "names of my own" question on them.
 	Environments []string
+	// Hyperlinks is true when the terminal draws OSC 8 hyperlinks (see package hyperlink).
+	Hyperlinks bool
 }
 
 // Shell is the interface of a bare `smith` in a terminal: a header with the
@@ -266,6 +268,8 @@ type Shell struct {
 	mouseOff bool
 	// clip is where the OSC 52 sequence of `y` is written; nil copies nothing.
 	clip io.Writer
+	// hyperlinks is true when the terminal draws OSC 8 hyperlinks.
+	hyperlinks bool
 
 	// Argv is a command that needs a terminal of its own (it asks questions or
 	// takes over the screen): the shell leaves and smith runs it.
@@ -287,6 +291,7 @@ func NewShell(cfg Config) Shell {
 		list: projectlist.New(nil), clip: cfg.Clipboard, adopter: cfg.Adopt, startWith: cfg.Start,
 	}
 	sh.problem, sh.commitOps, sh.environments = cfg.Problem, cfg.CommitOperations, cfg.Environments
+	sh.hyperlinks = cfg.Hyperlinks
 	if cfg.Repair != nil {
 		sh.repair = cfg.Repair
 		sh.sources.ShowFix, sh.sources.ApplyFix = cfg.Repair.Show, cfg.Repair.Apply

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/hyperlink"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -21,6 +22,9 @@ type Model struct {
 	Waited time.Duration
 	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
 	Projects int
+	// Links is true when the terminal draws hyperlinks (see package hyperlink),
+	// set by the shell for drawing.
+	Links  bool
 	Rows   []Row
 	Policy []PolicyLine
 	Err    error
@@ -80,6 +84,30 @@ func (v Model) Update(key tea.KeyMsg, page int) Model {
 	v.Cursor = pane.MoveCursor(v.Cursor, len(v.Rows), key.String(), page)
 	v.Anchor = v.Cursor
 	return v
+}
+
+// Selected is the row under the cursor; ok is false when there is none.
+func (v Model) Selected() (row Row, ok bool) {
+	if v.Cursor < 0 || v.Cursor >= len(v.Rows) {
+		return Row{}, false
+	}
+	return v.Rows[v.Cursor], true
+}
+
+// registryLines say where the selected package is on its registry, as a
+// hyperlink where the terminal draws one, and which keys open and copy the
+// address. A package whose page cannot be known says so.
+func (v Model) registryLines(th theme.Theme, w int) []string {
+	r, ok := v.Selected()
+	if !ok {
+		return nil
+	}
+	const label = "  Registry: "
+	if r.URL == "" {
+		return []string{th.Muted(label + "no page known for " + r.Name + " (a private registry whose web address smith cannot work out)")}
+	}
+	text := pane.MiddleTruncate(r.URL, max(w-pane.Width(label), 10))
+	return []string{label + hyperlink.Link(r.URL, th.Info(text), v.Links), th.Muted("  g opens it in your browser · Y copies the link")}
 }
 
 // Wheel scrolls the list by delta rows; the cursor and the marks stay.
@@ -345,6 +373,10 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency"+inProjects(v.Projects)+".", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
 	}
 	var tail []string
+	if len(v.Rows) > 0 {
+		tail = append(tail, "")
+		tail = append(tail, v.registryLines(th, w)...)
+	}
 	tail = append(tail, "", th.Title("One version"))
 	if len(v.Policy) == 0 {
 		tail = append(tail, "  "+th.Muted("not required yet: press o to make every project use the same version of a shared dependency"))

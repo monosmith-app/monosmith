@@ -8,6 +8,15 @@ ones you pick, in every project that declares them. The full description, the ex
 examples are on [`smith up`](up.md); the two commands share one implementation and one set of
 flags.
 
+## Registry page of a package
+
+`smith deps up --json` gives each update a `url`: the package's page on its registry (npmjs.com,
+pypi.org, nuget.org, crates.io, Maven Central, pub.dev, rubygems.org, packagist.org, pkg.go.dev, or an
+Azure Artifacts feed named in `smith.toml`). It is left out when the registry is private and smith
+cannot work out its web address. In the interactive shell, the Deps view shows the address of the
+selected package; `g` opens it in the browser and `Y` copies it
+([details](tui.md#the-registry-link-in-the-deps-view)).
+
 ## Major updates are a choice of their own
 
 `--yes` takes patch and minor updates only. A major update can break the project, so smith

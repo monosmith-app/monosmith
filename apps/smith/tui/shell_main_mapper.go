@@ -83,7 +83,7 @@ func (s Shell) mainContent(w, h int) content {
 		c.lines = append(c.lines, s.previewLines(w, h-len(c.lines))...)
 	case commands.TabDeps:
 		deps := s.deps
-		deps.Waited, deps.Projects = s.waited(), len(s.list.Projects())
+		deps.Waited, deps.Projects, deps.Links = s.waited(), len(s.list.Projects()), s.hyperlinks
 		lines, rowOf := deps.View(s.th, w, max(h-len(c.lines), 1))
 		for row, i := range rowOf {
 			c.hits[len(c.lines)+row] = hit{kind: "dep", index: i}
