@@ -32,6 +32,9 @@ func packDistributions(workspaceRoot string, params protocol.PublishParams) (pro
 	}
 	if params.DryRun {
 		result.Skipped = "dry run"
+		if len(files) == 0 {
+			result.Notes = append(result.Notes, "the wheel and the sdist are made by the build task, so they are named once it has run; the release attaches both")
+		}
 		for _, f := range files {
 			result.Assets = append(result.Assets, path.Join(params.PackDir, filepath.Base(f)))
 		}

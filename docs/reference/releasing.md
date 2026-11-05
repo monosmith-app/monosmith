@@ -104,7 +104,9 @@ write`, which the generated workflow already has, and a local `smith release` ta
 | Go, PHP, JVM (JitPack), Dart | no package file: they keep their tag-based behaviour. A Dart package is not dispatched to pub.dev | the tag |
 
 An app (its archives, `[release]` section) is released as before. Its npm, PyPI, NuGet and RubyGems
-distributions are skipped when its registry is `"github-release"` or `"none"`.
+distributions are skipped when its registry is `"github-release"` or `"none"`. A container image is not a package of
+this mode: `[conventions.docker]` (`registries`, `push`) still decides whether and where an app's image is pushed, and
+its credentials (`DOCKERHUB_*`) stay in the workflow until you set `push = false` or remove the registries.
 
 Each file has a `<file>.sha256` file (`sha256sum -c` reads it), uploaded after all the package files: a
 release that has a package file without its checksum file is an attach that stopped. A re-run skips what
