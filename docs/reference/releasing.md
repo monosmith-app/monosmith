@@ -84,6 +84,61 @@ For JitPack, smith only tags: JitPack builds the artifact itself from a
 example through SDKMAN: `before_install: sdk install maven 3.9.11`).
 Consumers use the tag as the version.
 
+### Attach the package files to the GitHub Release
+
+A private repository must not publish to a public registry. `registry = "github-release"`, under `[release]`
+or `[projects.<name>]`, packs each package into its ecosystem's file and attaches it to the package's GitHub
+Release instead of publishing it. It needs `[release] github_releases = true` (without it smith.toml is
+refused). The version, the tag, the changelog and the journal are as for any release. No registry is asked
+and no registry credential is listed or required: the job needs `GITHUB_TOKEN` with `permissions: contents:
+write`, which the generated workflow already has, and a local `smith release` takes `GITHUB_TOKEN`,
+`GH_TOKEN` or the token of `gh auth login`. smith never prints the token.
+
+| Ecosystem | What is attached | Install |
+|---|---|---|
+| npm | the `npm pack` tarball of the package, as `npm publish` would pack it (`core-0.5.2.tgz`) | `npm i ./core-0.5.2.tgz ./cli-0.2.4.tgz` |
+| Python | the wheel and the sdist the build task wrote | `pip install ./x.whl` |
+| NuGet | the `.nupkg` | `dotnet add package <id> --version <v> --source .` |
+| RubyGems | the `.gem` | `gem install ./x.gem` |
+| crates | the `.crate` (`cargo package --no-verify`: a sibling of the same run is on no registry) | unpack it and depend on the folder by `path` |
+| Go, PHP, JVM (JitPack), Dart | no package file: they keep their tag-based behaviour. A Dart package is not dispatched to pub.dev | the tag |
+
+An app (its archives, `[release]` section) is released as before. Its npm, PyPI, NuGet and RubyGems
+distributions are skipped when its registry is `"github-release"` or `"none"`.
+
+Each file has a `<file>.sha256` file (`sha256sum -c` reads it), uploaded after all the package files: a
+release that has a package file without its checksum file is an attach that stopped. A re-run skips what
+is attached already, the way a registry's existing version is skipped: a release that holds every file and
+checksum is read back and not packed again, a file with the same bytes is kept, and a file that differs
+(a wheel built again) is replaced. A tag at HEAD whose release lacks files is packed again; with a newer
+HEAD the release refuses and says to check out the tag. With `--no-push` the files stay in
+`dist/release/<project>/packages/` until the tag is pushed and the release runs again.
+
+**The bundle.** Dependencies keep their normal ranges inside each file. So that a consumer installs the set
+together, every GitHub Release of the run gets the same two small assets once all its packages are
+attached: `release-bundle.json` (every package with its tag, files, SHA-256 digests, the `gh release
+download` command of each tag and one install command per ecosystem) and `INSTALL.md` (the same for a
+person). It is on the release of each package, not on one of them, so whichever release a consumer opens
+holds the whole set. A re-run merges with the bundle a release holds, so finishing some packages does not drop
+the others. A private repository needs a sign-in to download (`gh auth login`, or a token that reads the
+repository's contents; see [Release files of a private
+repository](../guides/private-release-assets.md)):
+
+```sh
+gh release download "core@0.5.2" --repo acme/app --pattern '*.tgz' --pattern '*.sha256' --dir .
+gh release download "cli@0.2.4" --repo acme/app --pattern '*.tgz' --pattern '*.sha256' --dir .
+sha256sum -c *.sha256
+npm i ./core-0.5.2.tgz ./cli-0.2.4.tgz
+```
+
+`smith release --dry-run` lists the files it would attach and the bundle. `smith release --rehearse` checks,
+with read-only requests, that the token may write to the repository (the permissions GitHub states for it);
+it lists no registry. The report says `attached to GitHub Release`, and the journal
+(`dist/release/<project>/journal.json`) has a `pack` entry with each file's name and SHA-256. The lineage
+check and `smith doctor` do not ask a registry for such a package: its tags and release assets are the
+record. `smith doctor` reports the packages that attach, and warns when another package would publish to a
+public registry with a credential that is not set.
+
 A project changes between internal `lib`, published `package` and `app` with
 [`smith kind`](../manual/kind.md): it records the kind, drops or restores the publish
 guard, moves the folder and updates what names it. `smith kind core package

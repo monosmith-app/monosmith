@@ -127,6 +127,10 @@ Interactions:
   and, in CI, which identity publishes. It sends read-only requests, never prints a secret,
   ignores the commit history and the other flags except `--json` and `--verbose`, and exits 1
   when a check fails. Each failure names the exact fix.
+- With `registry = "github-release"` (a private repository), `--dry-run` lists the package files and the
+  bundle it would attach, and `--rehearse` checks that the token may write to the repository; no registry
+  is asked and no registry credential is needed. See
+  [Releasing](../reference/releasing.md#attach-the-package-files-to-the-github-release).
 - `--no-push` creates the tags locally only.
 - Without a terminal a real release must be confirmed with `-y`/`--yes` (CI passes it).
 - `--verbose` names the unchanged packages.

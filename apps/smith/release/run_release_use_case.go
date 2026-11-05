@@ -97,6 +97,10 @@ func Execute(ctx context.Context, s *session.Session, plan Plan, opts Options) (
 		report.Error = strings.Join(failures, "; ")
 		return report, errors.New(report.Error)
 	}
+	if err := attachBundle(s, &report, opts); err != nil {
+		report.Error = err.Error()
+		return report, err
+	}
 	// The dist-tags move last, once every project has published: the wait for
 	// npm blocks no publish, and no short-lived credential of a later project
 	// (a federated sign-in, a trusted-publishing token) runs out meanwhile.
@@ -133,6 +137,9 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		if err := mirror(s, p, item, opts, res, say); err != nil {
 			return err
 		}
+		if PacksToRelease(p) {
+			return resumePack(ctx, s, p, item, versions, opts, res, say)
+		}
 		if err := publishGitHubRelease(ctx, s, p, item, res, say, nil); err != nil {
 			return err
 		}
@@ -147,15 +154,8 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 
 	// An app's assets are built by publishing; its own build is not needed.
 	if !opts.DryRun && p.Release == nil {
-		if _, has := p.Tasks["build"]; has {
-			say("building %s", item.Next)
-			summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: len(stamped) > 0})
-			if err != nil {
-				return err
-			}
-			if !summary.OK() {
-				return errors.New("build failed")
-			}
+		if err := buildProject(ctx, s, p, item, opts, len(stamped) > 0, say); err != nil {
+			return err
 		}
 	}
 
@@ -172,6 +172,11 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 		res.Publish = strings.TrimSpace(res.Publish + " " + note)
 	}
 	res.addPending(p.Plugin, pr.PendingMoves...)
+	if PacksToRelease(p) && len(pr.Assets) > 0 {
+		if err := sealPackage(s, &pr, opts.DryRun, res); err != nil {
+			return err
+		}
+	}
 	if BuildsAssetsFromCommand(p) {
 		say("%s are made by `%s` on a runner each (smith ci assets, or smith release assets on this machine) and uploaded to the GitHub Release: %s",
 			strings.Join(p.Release.Platforms, ", "), p.Release.Build, strings.Join(p.Release.Assets, ", "))
@@ -221,6 +226,24 @@ func releaseOne(ctx context.Context, s *session.Session, item Item, versions map
 			return err
 		}
 		return dispatchPub(s, p, item, res, say)
+	}
+	return nil
+}
+
+// buildProject runs the project's build task before it is published or packed.
+// noCache is set when the version was stamped into its files, which the cache
+// key does not see.
+func buildProject(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, opts Options, noCache bool, say func(string, ...any)) error {
+	if _, has := p.Tasks["build"]; !has {
+		return nil
+	}
+	say("building %s", item.Next)
+	summary, err := taskrun.RunInWorkspace(ctx, s, taskrun.Request{Tasks: []string{"build"}, Projects: []string{p.Name}, Out: opts.Out, NoCache: noCache})
+	if err != nil {
+		return err
+	}
+	if !summary.OK() {
+		return errors.New("build failed")
 	}
 	return nil
 }
@@ -381,6 +404,9 @@ func publish(ctx context.Context, s *session.Session, p *projectgraph.Project, i
 	if spec == nil && p.PublishTo == "none" {
 		return protocol.PublishResult{Skipped: "published by its tag (the manifest says it is never published)"}, nil
 	}
+	if spec == nil && PacksToRelease(p) {
+		return packToRelease(ctx, s, p, item, dryRun)
+	}
 	params := protocol.PublishParams{Project: p.Project, Version: item.Next, DryRun: dryRun, Assets: spec, PropagationWait: PropagationWait(s.Config, p)}
 	if ch := ChannelOf(s.Config.Release, s.Git.CurrentBranch()); ch != nil {
 		params.Tag = ch.Tag
@@ -438,6 +464,10 @@ func deploy(ctx context.Context, s *session.Session, p *projectgraph.Project, it
 func distribute(s *session.Session, p *projectgraph.Project, item Item, pr protocol.PublishResult, dryRun bool, res *ReportResult, say func(string, ...any)) error {
 	r := p.Release
 	if r == nil || (len(r.NPM) == 0 && r.PyPI == "" && r.NuGet == "" && r.RubyGems == "") {
+		return nil
+	}
+	if PublishesToNoRegistry(p) {
+		say("no npm, PyPI, NuGet or RubyGems packages for %s: smith.toml sends it to no registry", p.Name)
 		return nil
 	}
 	if Native(p) {
@@ -593,6 +623,9 @@ func pushTag(s *session.Session, item Item, opts Options, res *ReportResult) err
 func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgraph.Project, item Item, res *ReportResult, say func(string, ...any), assets []string) error {
 	if !res.Pushed {
 		say("not creating a GitHub Release: the tag was not pushed")
+		if PacksToRelease(p) {
+			say("the package files are in %s; push the tag and run the release again to attach them", PackDir(p.Name))
+		}
 		return nil
 	}
 	client, err := githubrelease.FromEnvironment()
@@ -643,13 +676,16 @@ func publishGitHubRelease(ctx context.Context, s *session.Session, p *projectgra
 	for i, a := range assets {
 		files[i] = filepath.Join(s.Root, filepath.FromSlash(a))
 	}
-	out, err := githubrelease.Ensure(client, repo, githubrelease.Request{Tag: item.Tag, Title: item.Project + " " + item.Next, Notes: RenderNotes(item), Prerelease: strings.Contains(item.Next, "-"), Assets: files})
+	out, err := githubrelease.Ensure(client, repo, githubrelease.Request{Tag: item.Tag, Title: item.Project + " " + item.Next, Notes: RenderNotes(item), Prerelease: strings.Contains(item.Next, "-"), Assets: files, Verify: PacksToRelease(p)})
 	if err != nil {
 		return fmt.Errorf("GitHub Release %s: %w (re-run the release to finish it)", item.Tag, err)
 	}
 	res.GitHubRelease = out.URL
 	if out.Created {
 		say("created GitHub Release %s", out.URL)
+	}
+	if len(out.Replaced) > 0 {
+		say("replaced %s: the attached file differed from the one packed now", strings.Join(out.Replaced, ", "))
 	}
 	if len(out.Uploaded) > 0 {
 		say("attached %s", strings.Join(out.Uploaded, ", "))

@@ -8,8 +8,10 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/githubrelease"
 	"github.com/monosmith-app/monosmith/apps/smith/operationplan"
 	"github.com/monosmith-app/monosmith/apps/smith/releasepreview"
 	"github.com/monosmith-app/monosmith/apps/smith/releaserehearsal"
@@ -216,6 +218,7 @@ of tables). docs/reference/releasing.md, Release channels, has an example.`,
 func rehearseRegistries(s *session.Session, out io.Writer, asJSON, verbose bool) error {
 	targets := releaserehearsal.ListTargets(s, os.Getenv)
 	report := releaserehearsal.Rehearse(targets, releaserehearsal.NewProbe(), os.Getenv)
+	rehearseGitHubReleases(s, &report)
 	if asJSON {
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
@@ -229,6 +232,32 @@ func rehearseRegistries(s *session.Session, out io.Writer, asJSON, verbose bool)
 		return fmt.Errorf("the rehearsal found %d registry problem(s): a real release would fail", report.Failed)
 	}
 	return nil
+}
+
+// rehearseGitHubReleases adds the rehearsal of the packages that attach to
+// GitHub Releases (registry = "github-release"): the token can write to the
+// repository. It asks no registry and creates nothing.
+func rehearseGitHubReleases(s *session.Session, report *releaserehearsal.Report) {
+	var projects []string
+	for _, p := range s.Graph.Projects {
+		if PacksToRelease(p) {
+			projects = append(projects, p.Name)
+		}
+	}
+	if len(projects) == 0 {
+		return
+	}
+	sort.Strings(projects)
+	repo, err := Repository(s)
+	if err != nil {
+		report.Add(releaserehearsal.Result{Project: strings.Join(projects, ", "), Registry: "github.com", Check: releaserehearsal.CheckAccess, Status: releaserehearsal.Fail, Message: err.Error(), Fix: "add the release remote, or set GITHUB_REPOSITORY"})
+		return
+	}
+	client, tokenErr := githubrelease.FromEnvironment()
+	if tokenErr != nil {
+		client = &githubrelease.Client{}
+	}
+	releaserehearsal.CheckGitHubRelease(report, projects, repo, client, tokenErr)
 }
 
 // printsTextPlan is whether the text plan comes before the result: not for JSON,

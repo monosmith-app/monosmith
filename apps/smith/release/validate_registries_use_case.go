@@ -16,7 +16,7 @@ func RegistryTargets(s *session.Session, plan Plan) []RegistryTarget {
 	var out []RegistryTarget
 	for _, item := range plan.Items {
 		p := s.Graph.Get(item.Project)
-		if p == nil || p.Release == nil || Native(p) || s.Git.TagCommit(item.Tag) != "" {
+		if p == nil || p.Release == nil || Native(p) || PublishesToNoRegistry(p) || s.Git.TagCommit(item.Tag) != "" {
 			continue // a tagged package is finished: only its GitHub Release resumes
 		}
 		r := p.Release

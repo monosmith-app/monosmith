@@ -18,6 +18,9 @@ func JournalEntries(res ReportResult, at time.Time) []JournalEntry {
 	for _, p := range res.ExistingPackages {
 		add("package", p, OutcomeExisting)
 	}
+	for _, f := range res.Packed {
+		add("pack", f.Name+" sha256:"+f.SHA256, OutcomeDone)
+	}
 	for _, image := range res.Images {
 		add("image", ImageLine(image), OutcomePublished)
 	}

@@ -40,6 +40,11 @@ func CheckLineage(s *session.Session, fetch bool) []releaselineage.Finding {
 	turn := make(chan struct{}, lookupsAtOnce)
 	for i, p := range releasing {
 		subjects[i] = releaselineage.Subject{Project: p.Name, Prefix: TagPrefix(p), Alternatives: alternatives(p), Explicit: p.TagPrefixSet, Tags: tags}
+		if PublishesToNoRegistry(p) {
+			// The git tags and the GitHub Release are the record of such a
+			// package: there is no registry to be behind or ahead of.
+			continue
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

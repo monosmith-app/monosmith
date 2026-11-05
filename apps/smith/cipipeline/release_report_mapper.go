@@ -128,7 +128,10 @@ func publishedTo(res release.ReportResult) string {
 	if n := len(res.Images); n > 0 {
 		where = append(where, plural(n, "image"))
 	}
-	if res.GitHubRelease != "" {
+	switch {
+	case len(res.Packed) > 0:
+		where = append(where, "attached to GitHub Release")
+	case res.GitHubRelease != "":
 		where = append(where, "GitHub Release")
 	}
 	if res.Mirror != "" {

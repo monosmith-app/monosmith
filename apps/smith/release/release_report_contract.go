@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/monosmith-app/monosmith/apps/smith/releasepack"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -43,6 +44,9 @@ type ReportResult struct {
 	// those the registries already had.
 	Packages         []string `json:"packages,omitempty"`
 	ExistingPackages []string `json:"existingPackages,omitempty"`
+	// Packed are the package files attached to the GitHub Release of a package
+	// with registry = "github-release", with their SHA-256 digests.
+	Packed []releasepack.File `json:"packed,omitempty"`
 	// PendingTags are the exact commands that move the dist-tags the release
 	// did not move, because npm did not serve every platform package in time.
 	PendingTags []string `json:"pendingTags,omitempty"`
@@ -109,6 +113,12 @@ func (r Report) Markdown() string {
 			fmt.Fprintf(&b, "\nImages pushed for %s:\n\n", res.Project)
 			for _, image := range res.Images {
 				fmt.Fprintf(&b, "- `%s`\n", ImageLine(image))
+			}
+		}
+		if len(res.Packed) > 0 {
+			fmt.Fprintf(&b, "\nAttached to the GitHub Release of %s:\n\n", res.Tag)
+			for _, f := range res.Packed {
+				fmt.Fprintf(&b, "- `%s` (sha256 `%s`)\n", f.Name, f.SHA256)
 			}
 		}
 		if res.PubDispatch != "" {

@@ -12,14 +12,14 @@ import (
 
 // ListTargets lists the registries the workspace's packages publish to: one
 // target per package project whose plugin publishes to npm, PyPI, NuGet or
-// crates.io. A project with `registry = "none"` has none. The URL is the
+// crates.io. A project with `registry = "none"` or `"github-release"` has none. The URL is the
 // registry smith.toml names, else what the publishing tool itself reads
 // (NPM_CONFIG_REGISTRY and .npmrc, TWINE_REPOSITORY_URL, NUGET_SOURCE), else
 // the public registry.
 func ListTargets(s *session.Session, env func(string) string) []Target {
 	var out []Target
 	for _, p := range s.Graph.Projects {
-		if p.Kind != protocol.ProjectPackage || (p.Registries != nil && p.Registries.NoPublish) {
+		if p.Kind != protocol.ProjectPackage || (p.Registries != nil && (p.Registries.NoPublish || p.Registries.PackToRelease)) {
 			continue
 		}
 		names := p.Exports

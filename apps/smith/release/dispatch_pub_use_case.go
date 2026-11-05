@@ -93,6 +93,10 @@ func dispatchPub(s *session.Session, p *projectgraph.Project, item Item, res *Re
 	if name == "" || Native(p) {
 		return nil
 	}
+	if PublishesToNoRegistry(p) {
+		say("not publishing %s to pub.dev: smith.toml sends %s to no registry", name, p.Name)
+		return nil
+	}
 	tag := PubTag(p, item.Next)
 	switch {
 	case os.Getenv("TF_BUILD") != "" || os.Getenv("GITLAB_CI") != "":
