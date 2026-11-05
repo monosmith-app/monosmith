@@ -33,13 +33,13 @@ func doctorLab(t *testing.T, w, h int) *lab {
 	return l
 }
 
-func TestALongProblemNeverPushesTheRemedyAndTheActionsOffTheScreen(t *testing.T) {
+func TestALongProblemFoldsSoTheRemedyAndTheActionsStayOnTheScreen(t *testing.T) {
 	l := doctorLab(t, 140, 30)
-	l.has("How to fix", "declare dist as the output", "Actions", "Check again", "Problem", "pkg01:build", "23, e shows all")
+	l.has("How to fix", "declare dist as the output", "Actions", "[ Check again  r ]", "What is wrong", "pkg01:build", "23, e shows all")
 	l.hasNot("pkg06:build")
 	v := l.view()
-	if strings.Index(v, "How to fix") > strings.Index(v, "Problem") || strings.Index(v, "Actions") > strings.Index(v, "Problem") {
-		t.Fatalf("the remedy and the actions come before the problem:\n%s", v)
+	if a, w, h := strings.Index(v, "Actions"), strings.Index(v, "What is wrong"), strings.Index(v, "How to fix"); a >= w || w >= h {
+		t.Fatalf("the order is state, actions, what is wrong, how to fix:\n%s", v)
 	}
 }
 
@@ -83,7 +83,7 @@ func TestPageKeysAndTheWheelScrollTheDetail(t *testing.T) {
 	l.has("↑ more")
 	l.keys("pgup")
 	l.hasNot("↑ more")
-	x, y := l.find("How to fix")
+	x, y := l.find("What is wrong")
 	l.send(wheel(x, y, 1))
 	l.has("↑ more")
 	l.send(wheel(x, y, -1))
@@ -131,7 +131,7 @@ func TestZoomShowsTheDetailAloneAndGivesTheListBack(t *testing.T) {
 	l.keys("e", "pgdown")
 	l.has("↑ more")
 	l.keys("z")
-	l.has("second check", "How to fix")
+	l.has("second check")
 }
 
 func TestOnANarrowScreenZoomSwitchesBetweenTheListAndTheDetail(t *testing.T) {

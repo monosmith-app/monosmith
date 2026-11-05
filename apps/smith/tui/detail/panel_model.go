@@ -46,6 +46,9 @@ type Section struct {
 	// Collapse is how many items show until the panel is Expanded; the rest
 	// is told as a count. Zero shows them all.
 	Collapse int
+	// Tail are plain lines drawn after the items and never folded, so the
+	// last line of a section (a terminal command) stays visible.
+	Tail []string
 }
 
 // Action is a clickable line.
@@ -56,6 +59,9 @@ type Action struct {
 	Disabled bool
 	// Hint says, under the label, what the action does or what it needs.
 	Hint string
+	// Button draws the action as `[ Label  key ]` instead of a line with
+	// the key at the right edge. The mouse clicks it the same way.
+	Button bool
 }
 
 // Panel is what the detail shows.
@@ -104,6 +110,28 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 		for _, a := range p.Actions {
 			// A long label wraps under itself, the shortcut stays on its first line,
 			// and every line of the action is clickable.
+			if a.Button {
+				text := "[ " + a.Label
+				if a.Shortcut != "" {
+					text += "  " + a.Shortcut
+				}
+				text = pane.Fit(" "+ansi.Truncate(text+" ]", max(w-1, 4), "…"), w)
+				switch {
+				case a.Disabled:
+					text = th.Muted(text)
+				case a.ID == hover:
+					text = th.Selected(text)
+				default:
+					text = th.Bold(text)
+				}
+				hits[len(lines)] = a.ID
+				lines = append(lines, text)
+				for _, part := range pane.Wrap(a.Hint, max(w-5, 4), 0) {
+					hits[len(lines)] = a.ID
+					lines = append(lines, pane.Fit("   "+th.Muted(part), w))
+				}
+				continue
+			}
 			room := max(w-2-pane.Width(a.Shortcut), 4)
 			if a.Shortcut != "" {
 				room = max(room-1, 4)
@@ -198,6 +226,11 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 			for _, part := range pane.Wrap("  "+it, w, 2) {
 				lines = append(lines, pane.Fit(part, w))
 			}
+		}
+	}
+	for _, it := range s.Tail {
+		for _, part := range pane.Wrap("  "+it, w, 2) {
+			lines = append(lines, pane.Fit(part, w))
 		}
 	}
 	switch {

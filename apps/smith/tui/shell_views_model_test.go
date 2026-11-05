@@ -111,7 +111,7 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	}
 	l.has("no fix")
 	l.keys("down")
-	l.has("f fix", "Fix: write web's registry", "writes apps/web/Dockerfile")
+	l.has("f fix", "[ Fix  f ]", "write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {

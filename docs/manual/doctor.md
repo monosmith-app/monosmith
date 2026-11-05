@@ -36,6 +36,8 @@ dependencies of every other plugin (for example `npm ci`). In the TUI the fix di
 last six lines the step printed, and `l` opens its full log (see
 [the fix wizard](tui.md#the-doctor-fix-wizard)).
 
+In the interactive shell, the detail of a check shows its state, its action buttons, what is wrong and how to fix it, in that order: see [the Doctor detail](tui.md#the-doctor-detail).
+
 ## Local toolchain versus CI
 
 For Node, Python, Go, Rust, .NET and the JDK, doctor compares the tool on this machine with
