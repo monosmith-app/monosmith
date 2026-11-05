@@ -237,6 +237,7 @@
   "vscode.command.cache-clear.title": "Cache: Delete It All…",
   "vscode.command.cache-prune.title": "Cache: Trim to Its Limit…",
   "vscode.command.cache-repair.title": "Cache: Remove What Is Broken…",
+  "vscode.command.cache-setup.title": "Cache: Set Up the Remote Cache in a Terminal",
   "vscode.command.cache-status.title": "Cache: Status",
   "vscode.command.cache-verify.title": "Cache: Check for Damage",
   "vscode.command.cancel-run.title": "Cancel Run",

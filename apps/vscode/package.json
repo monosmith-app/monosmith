@@ -491,6 +491,12 @@
         "icon": "$(remove)"
       },
       {
+        "command": "monosmith.cacheSetup",
+        "title": "%vscode.command.cache-setup.title%",
+        "category": "%vscode.package.display-name%",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "monosmith.cacheStatus",
         "title": "%vscode.command.cache-status.title%",
         "category": "%vscode.package.display-name%",
@@ -1373,6 +1379,10 @@
         },
         {
           "command": "monosmith.environmentsRemove",
+          "when": "monosmith.state == ready"
+        },
+        {
+          "command": "monosmith.cacheSetup",
           "when": "monosmith.state == ready"
         },
         {

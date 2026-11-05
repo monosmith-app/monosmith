@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/adoptwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/cachewizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/composer"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dashboard"
@@ -270,6 +271,12 @@ type Shell struct {
 	// tools is the "Install the missing tools" dialog while it is open;
 	// toolsProc is the install it streams and toolsArgv the command it came from.
 	tools *toolsdialog.Model
+	// cache is the remote cache setup while it is open; cacheRun is the engine
+	// behind it, which runs in the background.
+	cache    *cachewizard.Model
+	cacheRun *cachewizard.Bridge
+	// cacheSecrets is the clipboard and environment of its key screen; nil is this machine.
+	cacheSecrets func() cachewizard.Secrets
 	// result is the dialog that closes a run that changed files or could not be
 	// checked; resultKept is the failure one, shown again after the tools install;
 	// runLines is the output of the run that is going or ended last.
