@@ -67,7 +67,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams, nodeVersion stri
 		if f, ok := CheckScripts(workspaceRoot, p.Root, p.Name, p); ok {
 			findings = append(findings, f)
 		}
-		if f, ok := CheckBuildDir(workspaceRoot, p); ok {
+		if f, ok := CheckBuildDir(workspaceRoot, p, dependentsOf(params.Projects, p)...); ok {
 			findings = append(findings, f)
 		}
 		if p.Kind == protocol.ProjectPackage {

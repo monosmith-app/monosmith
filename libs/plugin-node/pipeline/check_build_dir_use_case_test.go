@@ -3,6 +3,7 @@ package pipeline
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -30,6 +31,30 @@ func TestCheckBuildDir(t *testing.T) {
 	}
 	if _, ok := CheckBuildDir(ws, protocol.Project{Name: "ui", Root: "libs/ui"}); ok {
 		t.Fatal("a project without a build has nothing to check")
+	}
+}
+
+func TestAMisplacedBuildOffersAQuestionOrRefusesWithTheReason(t *testing.T) {
+	ws := t.TempDir()
+	dir := filepath.Join(ws, "packages", "kit")
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"@a/kit","private":true,"main":"./dist/index.js","scripts":{"build":"esbuild src/index.ts --outdir=dist"}}`), 0o644)
+	p := protocol.Project{Name: "kit", Root: "packages/kit", Exports: []string{"@a/kit"}, Tasks: map[string]protocol.Task{"build": {Outputs: []string{"../../dist/packages/kit"}}}}
+
+	f, ok := CheckBuildDir(ws, p)
+	if !ok || f.OK || f.Fix == nil || len(f.Fix.Choices) != 1 || len(f.Fix.Files) != 0 {
+		t.Fatalf("a question, nothing written before the answer: %+v", f)
+	}
+	if !strings.Contains(f.Detail, "packages/kit/dist") || !strings.Contains(f.Detail, "caches dist/packages/kit instead") {
+		t.Errorf("the finding names where it builds and what the task caches: %s", f.Detail)
+	}
+
+	f, _ = CheckBuildDir(ws, p, "web")
+	if f.Fix != nil || !strings.Contains(f.Remedy, "web import it by name") {
+		t.Fatalf("an imported package is refused with the reason: %+v", f)
+	}
+	if got := dependentsOf([]protocol.Project{p, {Name: "web", Imports: []string{"@a/kit"}}, {Name: "other", Imports: []string{"x"}}}, p); len(got) != 1 || got[0] != "web" {
+		t.Errorf("dependents: %v", got)
 	}
 }
 

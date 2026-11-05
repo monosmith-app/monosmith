@@ -87,7 +87,8 @@ the reason and the way back. See [`smith divergences`](../manual/divergences.md)
 The one directory at the workspace root where every build writes, in a path
 that mirrors the project's (`apps/web` builds into `dist/apps/web`). Delete
 `dist/` to clean everything. `smith doctor` fails a task whose output goes
-anywhere else.
+anywhere else, and for a Node project it offers to
+[move the build](../manual/doctor.md#a-build-that-writes-outside-dist) there.
 
 ## framework
 

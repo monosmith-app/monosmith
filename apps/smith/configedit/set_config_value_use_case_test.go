@@ -127,6 +127,26 @@ func TestAListOfChoicesCanBeOneCommaSeparatedValue(t *testing.T) {
 	}
 }
 
+func TestUnsetHandsATasksOutputsBackToThePlugin(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, workspace.FileName)
+	src := "schema = 1\n\n[workspace]\nname = \"acme\"\n\n[projects.pub.tasks.build]\noutputs = [\"dist\"]\n\n[projects.pub.tasks.test]\ndepends_on = [\"build\"]\n\n[projects.web.tasks.build]\noutputs = [\"dist\"]\ncache = false\n"
+	_ = os.WriteFile(file, []byte(src), 0o644)
+	for _, path := range []string{"projects.pub.tasks.build.outputs", "projects.web.tasks.build.outputs"} {
+		if err := Unset(root, path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, _ := os.ReadFile(file)
+	want := "schema = 1\n\n[workspace]\nname = \"acme\"\n\n[projects.pub.tasks.test]\ndepends_on = [\"build\"]\n\n[projects.web.tasks.build]\ncache = false\n"
+	if string(got) != want {
+		t.Fatalf("an emptied table goes, the others keep their lines:\n%s", got)
+	}
+	if err := Unset(root, "projects.pub.tasks.build.outputs"); err == nil || !strings.Contains(err.Error(), "already has its default") {
+		t.Errorf("a second unset says so: %v", err)
+	}
+}
+
 func TestSetRecordsTheAgentOptOut(t *testing.T) {
 	root := t.TempDir()
 	file := filepath.Join(root, workspace.FileName)
