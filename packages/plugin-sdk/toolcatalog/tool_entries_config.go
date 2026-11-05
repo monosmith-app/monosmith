@@ -162,7 +162,7 @@ var entries = []protocol.ToolNeed{
 		Why:         "smith lint checks the go projects with golangci-lint, at the version CI pins",
 		Consequence: "smith lint of the go projects fails or gives other results than CI",
 		Program:     "golangci-lint", Files: []string{"go.mod"},
-		Exact: true, Optional: true, Suggested: "2.14.0",
+		Exact: true, Optional: true, Suggested: "2.15.0",
 		Install: []protocol.ToolInstall{{
 			Manager: "go", Package: "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v{version}",
 			Note: "go install compiles it and puts it in the Go bin folder (go env GOBIN, else GOPATH/bin), which must come first on PATH",

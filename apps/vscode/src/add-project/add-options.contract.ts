@@ -112,7 +112,7 @@ export interface MissingTool {
 export interface NeededTools {
   /** The names `smith tools install` takes: `golangci-lint`, `python`. */
   names:    string[]
-  /** What is wrong with each, in plain words ("golangci-lint is 2.13.0, not the 2.14.0 that CI pins: ..."). */
+  /** What is wrong with each, in plain words ("golangci-lint is 2.13.0, not the 2.15.0 that CI pins: ..."). */
   problems: string[]
 }
 

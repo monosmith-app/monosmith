@@ -19,7 +19,7 @@ and for a missing Python venv it is the two commands that create `.venv` and ins
 found and the version line that file printed. When the pinned version is already in the folder `go install`
 writes to (`go env GOBIN`, else `GOPATH/bin`) but another copy comes first on PATH, or that folder is not on
 PATH, the remedy names both folders and says what to do, for example `PATH finds C:\old\golangci-lint.exe
-(1.64.8) before C:\Users\you\go\bin (2.14.0): move go\bin earlier in PATH, or remove the old copy`. smith never
+(1.64.8) before C:\Users\you\go\bin (2.15.0): move go\bin earlier in PATH, or remove the old copy`. smith never
 edits PATH or deletes a file.
 
 When the golangci-lint that runs is not the version CI pins (older, newer, or the pinned copy sits behind

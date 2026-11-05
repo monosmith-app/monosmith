@@ -5,13 +5,13 @@ describe('parseNeededTools', () => {
   it('reads the tools and the problem of each from the lines smith add printed', () => {
     const lines = [
       'Wrote 12 file(s):',
-      '! golangci-lint is 2.13.0, not the 2.14.0 that CI pins: smith lint of the go projects fails or gives other results than CI.',
+      '! golangci-lint is 2.13.0, not the 2.15.0 that CI pins: smith lint of the go projects fails or gives other results than CI.',
       '! Python is not installed: smith build fails.',
       '→ Run smith tools install golangci-lint python to choose how to get them.',
     ]
     expect(parseNeededTools(lines)).toEqual({
       names:    ['golangci-lint', 'python'],
-      problems: ['golangci-lint is 2.13.0, not the 2.14.0 that CI pins: smith lint of the go projects fails or gives other results than CI.', 'Python is not installed: smith build fails.'],
+      problems: ['golangci-lint is 2.13.0, not the 2.15.0 that CI pins: smith lint of the go projects fails or gives other results than CI.', 'Python is not installed: smith build fails.'],
     })
   })
 

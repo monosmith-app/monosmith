@@ -159,7 +159,7 @@ checking; nothing is lost.
 
 When the project is made, smith checks the tools its stack needs on this machine: the language, and the tools
 a task runs, such as golangci-lint at the version CI pins for a Go project, or Gradle and Maven for a JVM project.
-It prints what is missing or different in plain words (`! golangci-lint is 2.13.0, not the 2.14.0 that CI pins`),
+It prints what is missing or different in plain words (`! golangci-lint is 2.13.0, not the 2.15.0 that CI pins`),
 so the first `smith doctor` does not have to tell you.
 
 In a terminal, smith then asks how to get each one, with the choices of
