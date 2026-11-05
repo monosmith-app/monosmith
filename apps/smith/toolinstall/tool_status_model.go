@@ -42,7 +42,7 @@ type Status struct {
 
 // Problem says in plain words what is wrong with the tool, to follow its title:
 // "is not installed", "is too old (1.2 is installed, 1.4 or newer is wanted)",
-// or, for a tool with one wanted version, "is 2.13.0, not the 2.14.0 that CI
+// or, for a tool with one wanted version, "is 2.13.0, not the 2.15.0 that CI
 // pins". It is empty when the tool is found.
 func (s Status) Problem() string {
 	switch {

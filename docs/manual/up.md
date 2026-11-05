@@ -96,7 +96,7 @@ major
 
 Tools smith pins (informational):
   Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.14.0 → 2.15.0 available
+  golangci-lint    2.15.0 ✔ (latest 2.15.0)
   Node.js (LTS)    24 ✔ (latest 24.22.1)
   Python           3.12 → 3.15 available
 

@@ -10,7 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
-const pinLine = "golangci-lint has version 2.14.0 built with go1.26 from abc on 2026-01-01"
+const pinLine = "golangci-lint has version 2.15.0 built with go1.26 from abc on 2026-01-01"
 
 // fakeMachine replaces the PATH search and the probe: onPath are the files the
 // PATH holds in order, says maps a file to what it prints, bin is the folder go
@@ -53,10 +53,10 @@ func putLint(t *testing.T, dir string) (string, string) {
 
 func TestLintVersionReadsEveryOutputFormat(t *testing.T) {
 	for output, want := range map[string]string{
-		pinLine: "2.14.0",
-		"golangci-lint has version v2.14.0 built with go1.26":       "2.14.0",
+		pinLine: "2.15.0",
+		"golangci-lint has version v2.15.0 built with go1.26":       "2.15.0",
 		"golangci-lint has version 1.64.8 built with go1.24 from x": "1.64.8",
-		"golangci-lint version 2.14.0 (commit abc)":                 "2.14.0",
+		"golangci-lint version 2.15.0 (commit abc)":                 "2.15.0",
 		"something else entirely":                                   "",
 	} {
 		if got := lintVersion(output); got != want {
@@ -67,24 +67,24 @@ func TestLintVersionReadsEveryOutputFormat(t *testing.T) {
 
 func TestLintFindingPassesWhenThePathFindsThePin(t *testing.T) {
 	fakeMachine(t, []string{"/usr/bin/golangci-lint"}, map[string]string{"/usr/bin/golangci-lint": pinLine}, "")
-	f := lintFinding(t.TempDir(), "2.14.0")
+	f := lintFinding(t.TempDir(), "2.15.0")
 	if !f.OK || f.Fix != nil || !strings.Contains(f.Detail, "found /usr/bin/golangci-lint ("+pinLine+")") {
 		t.Fatalf("equal: the detail names the file and the version line: %+v", f)
 	}
 }
 
 func TestLintFindingOffersTheWaysOnForANewerAndAnOlderVersion(t *testing.T) {
-	for version, word := range map[string]string{"2.15.0": "newer", "2.13.0": "older", "1.64.8": "older"} {
+	for version, word := range map[string]string{"2.16.0": "newer", "2.13.0": "older", "1.64.8": "older"} {
 		root := t.TempDir()
 		if err := os.WriteFile(filepath.Join(root, "smith.toml"), []byte("[workspace]\nname = \"w\"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		fakeMachine(t, []string{"/old/golangci-lint"}, map[string]string{"/old/golangci-lint": "golangci-lint has version " + version + " built with go1.27.2 from 25c5369"}, "")
-		f := lintFinding(root, "2.14.0")
+		f := lintFinding(root, "2.15.0")
 		if f.OK || f.Fix == nil || len(f.Fix.Choices) != 1 {
 			t.Fatalf("%s: a different version asks how to go on: %+v", version, f)
 		}
-		if !strings.Contains(f.Detail, "found /old/golangci-lint (golangci-lint has version "+version) || !strings.Contains(f.Detail, word+" than the 2.14.0") {
+		if !strings.Contains(f.Detail, "found /old/golangci-lint (golangci-lint has version "+version) || !strings.Contains(f.Detail, word+" than the 2.15.0") {
 			t.Errorf("%s: the detail names the file, the line and the order: %s", version, f.Detail)
 		}
 		options := f.Fix.Choices[0].Options
@@ -92,7 +92,7 @@ func TestLintFindingOffersTheWaysOnForANewerAndAnOlderVersion(t *testing.T) {
 			t.Fatalf("%s: install into smith's folder first, keep the one found second: %+v", version, options)
 		}
 		step := options[0].Fix.Steps[0]
-		if step.Env[0] != "GOBIN="+toolrun.ManagedBinDir(root) || step.Argv[0] != "go" || step.Argv[1] != "install" || !strings.HasSuffix(step.Argv[2], "@v2.14.0") {
+		if step.Env[0] != "GOBIN="+toolrun.ManagedBinDir(root) || step.Argv[0] != "go" || step.Argv[1] != "install" || !strings.HasSuffix(step.Argv[2], "@v2.15.0") {
 			t.Errorf("%s: go install of the pin into the managed folder: %+v", version, step)
 		}
 		if len(options[0].Fix.Files) != 0 || len(options[1].Fix.Steps) != 0 {
@@ -107,9 +107,9 @@ func TestLintFindingUsesTheManagedCopyBeforePath(t *testing.T) {
 	_, managed := putLint(t, toolrun.ManagedBinDir(root))
 	fakeMachine(t, []string{"/old/golangci-lint"}, map[string]string{
 		managed:              pinLine,
-		"/old/golangci-lint": "golangci-lint has version 2.15.0 built with go1.27.2",
+		"/old/golangci-lint": "golangci-lint has version 2.16.0 built with go1.27.2",
 	}, "")
-	f := lintFinding(root, "2.14.0")
+	f := lintFinding(root, "2.15.0")
 	if !f.OK || !strings.Contains(f.Detail, "found "+managed) || !strings.Contains(f.Detail, "also on PATH, after it: /old/golangci-lint") {
 		t.Fatalf("the copy smith installed wins over PATH: %+v", f)
 	}
@@ -124,11 +124,11 @@ func TestLintFindingExplainsACopyThatComesFirstOnPath(t *testing.T) {
 		old:  "golangci-lint has version 1.64.8 built with go1.24",
 		file: pinLine,
 	}, bin)
-	f := lintFinding(root, "2.14.0")
+	f := lintFinding(root, "2.15.0")
 	if f.OK || f.Fix == nil {
 		t.Fatalf("shadowed: still not fine, and the ways on are offered: %+v", f)
 	}
-	for _, want := range []string{old, "1.64.8", bin, "2.14.0", "move", "earlier in PATH", "does not edit PATH or delete files", "smith doctor --fix"} {
+	for _, want := range []string{old, "1.64.8", bin, "2.15.0", "move", "earlier in PATH", "does not edit PATH or delete files", "smith doctor --fix"} {
 		if !strings.Contains(f.Remedy+f.Detail, want) {
 			t.Errorf("the explanation lacks %q:\nDetail: %s\nRemedy: %s", want, f.Detail, f.Remedy)
 		}
@@ -137,9 +137,9 @@ func TestLintFindingExplainsACopyThatComesFirstOnPath(t *testing.T) {
 
 // (b) other output formats: a v prefix and a different distribution still pass.
 func TestLintFindingReadsAVersionPrefixAndAnotherDistribution(t *testing.T) {
-	for _, says := range []string{"golangci-lint has version v2.14.0 built with go1.26", "golangci-lint version 2.14.0 (nix)"} {
+	for _, says := range []string{"golangci-lint has version v2.15.0 built with go1.26", "golangci-lint version 2.15.0 (nix)"} {
 		fakeMachine(t, []string{"/x/golangci-lint"}, map[string]string{"/x/golangci-lint": says}, "")
-		if f := lintFinding(t.TempDir(), "2.14.0"); !f.OK {
+		if f := lintFinding(t.TempDir(), "2.15.0"); !f.OK {
 			t.Errorf("%q should pass: %+v", says, f)
 		}
 	}
@@ -149,8 +149,8 @@ func TestLintFindingReadsAVersionPrefixAndAnotherDistribution(t *testing.T) {
 func TestLintFindingSaysTheGoBinFolderIsNotOnPath(t *testing.T) {
 	bin, file := putLint(t, "")
 	fakeMachine(t, nil, map[string]string{file: pinLine}, bin)
-	f := lintFinding(t.TempDir(), "2.14.0")
-	if f.OK || !strings.HasPrefix(f.Detail, "golangci-lint is not on PATH; the pinned 2.14.0 is installed in "+bin) {
+	f := lintFinding(t.TempDir(), "2.15.0")
+	if f.OK || !strings.HasPrefix(f.Detail, "golangci-lint is not on PATH; the pinned 2.15.0 is installed in "+bin) {
 		t.Fatalf("not on PATH: %+v", f)
 	}
 	if !strings.Contains(f.Remedy, "add it to PATH") || !strings.Contains(f.Remedy, bin) {
@@ -160,7 +160,7 @@ func TestLintFindingSaysTheGoBinFolderIsNotOnPath(t *testing.T) {
 
 func TestLintFindingOffersTheInstallWhenNothingIsInstalled(t *testing.T) {
 	fakeMachine(t, nil, nil, t.TempDir())
-	f := lintFinding(t.TempDir(), "2.14.0")
+	f := lintFinding(t.TempDir(), "2.15.0")
 	if f.OK || f.Detail != "golangci-lint is not on PATH" || f.Fix == nil {
 		t.Fatalf("missing: %+v", f)
 	}
@@ -175,22 +175,22 @@ func TestKeepingTheVersionFoundIsRecordedInSmithTomlAndAcceptedAfterwards(t *tes
 	if err := os.WriteFile(filepath.Join(root, "smith.toml"), []byte("[workspace]\nname = \"w\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	fakeMachine(t, []string{"/old/golangci-lint"}, map[string]string{"/old/golangci-lint": "golangci-lint has version 2.15.0 built with go1.27.2"}, "")
-	f := lintFinding(root, "2.14.0")
+	fakeMachine(t, []string{"/old/golangci-lint"}, map[string]string{"/old/golangci-lint": "golangci-lint has version 2.16.0 built with go1.27.2"}, "")
+	f := lintFinding(root, "2.15.0")
 	keep := f.Fix.Choices[0].Options[1].Fix
-	if len(keep.Files) != 1 || keep.Files[0].Path != "smith.toml" || !strings.Contains(keep.Files[0].Content, "[toolchains]\ngolangci-lint = \"2.15.0\"") {
+	if len(keep.Files) != 1 || keep.Files[0].Path != "smith.toml" || !strings.Contains(keep.Files[0].Content, "[toolchains]\ngolangci-lint = \"2.16.0\"") {
 		t.Fatalf("the keep answer writes the accepted version: %+v", keep)
 	}
 	if err := os.WriteFile(filepath.Join(root, "smith.toml"), []byte(keep.Files[0].Content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	after := lintFinding(root, "2.14.0")
+	after := lintFinding(root, "2.15.0")
 	if !after.OK || !strings.Contains(after.Detail, "kept on purpose by [toolchains] in smith.toml") || !strings.Contains(after.Detail, "may differ from CI") {
 		t.Fatalf("after keeping, the check passes and says why: %+v", after)
 	}
 	// A different version than the accepted one still warns.
 	fakeMachine(t, []string{"/old/golangci-lint"}, map[string]string{"/old/golangci-lint": "golangci-lint has version 2.16.1 built with go1.27.2"}, "")
-	if again := lintFinding(root, "2.14.0"); again.OK {
+	if again := lintFinding(root, "2.15.0"); again.OK {
 		t.Fatalf("another version is not accepted: %+v", again)
 	}
 }

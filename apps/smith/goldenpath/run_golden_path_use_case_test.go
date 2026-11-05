@@ -392,7 +392,7 @@ func TestGoldenPath(t *testing.T) {
 	}
 	// The dev container installs what CI installs, at the same versions.
 	devcontainer, _ := os.ReadFile(filepath.Join(w.dir, ".devcontainer", "devcontainer.json"))
-	for _, want := range []string{"features/node:1", "features/go:1", "features/python:1", `"golangciLintVersion": "2.14.0"`, "&& ", "/.local/bin/smith", ` ci setup"`} {
+	for _, want := range []string{"features/node:1", "features/go:1", "features/python:1", `"golangciLintVersion": "2.15.0"`, "&& ", "/.local/bin/smith", ` ci setup"`} {
 		if !strings.Contains(string(devcontainer), want) {
 			t.Fatalf("devcontainer lacks %s:\n%s", want, devcontainer)
 		}

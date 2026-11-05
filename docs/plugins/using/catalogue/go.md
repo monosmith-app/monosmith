@@ -283,7 +283,7 @@ variables:
 |---|---|
 | Toolchain | Go at the `go.work` version (`1.24` when none): `actions/setup-go@v7` (with `cache: false`; the module cache is handled as a store), `GoTool@0` on Azure (a `major.minor` version gets `.0` appended), a `curl` of the release tarball for other providers, and the `go` dev container feature with `golangciLintVersion` set to the pinned version |
 | Package store | `~/go/pkg/mod` (`GOMODCACHE` on Azure), keyed on each module's `go.sum` |
-| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0` |
+| Setup (`smith ci setup`) | `go mod download`, blocking. Real: `▶ Download Go modules` then `smith ci setup passed in 100ms`. While any module's `lint` command starts with `golangci-lint` (the default), also `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0` |
 | Audit (`smith ci audit`) | `govulncheck` v1.9.0 (`go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`), once per module, non-blocking, cached on that module's `go.mod` and `go.sum`. With `[ci] audit_policies = ["go"]` also `go mod verify` per module, blocking unless `"go"` is in `audit_warn` |
 | Credentials, permissions | none; the plugin asks for no secret. The workflow-level `permissions` come from smith, not from this plugin. |
 
@@ -304,7 +304,7 @@ Doctor checks (`pipeline/check_go_work_use_case.go`, `check_tool_versions_use_ca
 | `go.work lists <dir>` | a Go project is not in `go.work` | `go work use ./<dir>`; `--fix` rewrites `go.work` |
 | `<dir> requires the modules it imports` | a package (`kind = package`) fails `deps-check`; no automatic fix, `go mod tidy` in the module | `go mod tidy` |
 | `Go is at least <v> (go.work)` | the installed Go is older than the `go.work` version (`go env GOVERSION`); also fails when `go` is not on PATH | install that Go |
-| `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.14.0) | `go install ...@v2.14.0` |
+| `golangci-lint is <v>, as in CI` | while a `lint` command starts with `golangci-lint` (the default); a warning, not a failure, when the installed version is not the pinned one (2.15.0) | `go install ...@v2.15.0` |
 
 Real output after `go work edit -dropuse=./libs/util`:
 
@@ -334,7 +334,7 @@ Real: `smith install -p api github.com/pkg/errors@v0.9.1` printed `added github.
 ```
 Tools smith pins (informational):
   Go               1.27 ✔ (latest 1.27.3)
-  golangci-lint    2.14.0 → 2.15.0 available
+  golangci-lint    2.15.0 ✔ (latest 2.15.0)
 ```
 
 (Those figures are read from `go.dev/dl` and `proxy.golang.org` at run time; the plugin tolerates a failed lookup by leaving "latest" empty.)
@@ -401,7 +401,7 @@ Not verified by a run:
 - The release asset build itself (`BuildAssets` cross-compiling, zipping, checksums): a real `smith release` would tag and push; only the dry run, which lists names, was run. The behaviour above is read from `releasing/build_assets_use_case.go`.
 - A `// smith:native` module and `smith ci native` (code and unit tests only).
 - The `lint` task as `go vet` was verified; the move to golangci-lint with smith's default config was verified only by `smith run lint` on this repository (golangci-lint 2.x installed) and the unit tests.
-- GitLab CI output and the devcontainer feature on a non-Windows machine. The dev container file written for the demo workspace contained `ghcr.io/devcontainers/features/go:1` with `version` `1.27.0` and `golangciLintVersion` `2.14.0`.
+- GitLab CI output and the devcontainer feature on a non-Windows machine. The dev container file written for the demo workspace contained `ghcr.io/devcontainers/features/go:1` with `version` `1.27.0` and `golangciLintVersion` `2.15.0`.
 
 ## See also
 

@@ -89,11 +89,11 @@ func TestCheckToolVersions(t *testing.T) {
 	if f := got["Go is at least 1.24 (go.work)"]; f.OK || f.Warning {
 		t.Fatalf("an older Go fails: %+v", f)
 	}
-	if f := got["golangci-lint is 2.14.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found golangci-lint (golangci-lint has version 2.13.0 built with go1.26); it is older than the 2.14.0 CI pins" {
+	if f := got["golangci-lint is 2.15.0, as in CI"]; f.OK || !f.Warning || f.Detail != "found golangci-lint (golangci-lint has version 2.13.0 built with go1.26); it is older than the 2.15.0 CI pins" {
 		t.Fatalf("another golangci-lint warns: %+v", f)
 	}
 	answers["go"] = "go1.26.0"
-	answers["golangci-lint"] = "golangci-lint has version 2.14.0 built with go1.26"
+	answers["golangci-lint"] = "golangci-lint has version 2.15.0 built with go1.26"
 	for check, f := range byCheck(CheckToolVersions(".", "1.24", true)) {
 		if !f.OK {
 			t.Errorf("%s: %+v", check, f)

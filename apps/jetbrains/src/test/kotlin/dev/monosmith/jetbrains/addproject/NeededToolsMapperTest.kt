@@ -10,7 +10,7 @@ class NeededToolsMapperTest {
         val output =
             """
             Wrote 12 file(s):
-            ! golangci-lint is 2.13.0, not the 2.14.0 that CI pins: smith lint of the go projects fails.
+            ! golangci-lint is 2.13.0, not the 2.15.0 that CI pins: smith lint of the go projects fails.
             ! Python is not installed: smith build fails.
             → Run smith tools install golangci-lint python to choose how to get them.
             """.trimIndent()
@@ -18,7 +18,7 @@ class NeededToolsMapperTest {
         assertEquals(listOf("golangci-lint", "python"), tools.names)
         assertEquals(
             listOf(
-                "golangci-lint is 2.13.0, not the 2.14.0 that CI pins: smith lint of the go projects fails.",
+                "golangci-lint is 2.13.0, not the 2.15.0 that CI pins: smith lint of the go projects fails.",
                 "Python is not installed: smith build fails.",
             ),
             tools.problems,

@@ -25,7 +25,7 @@ var (
 )
 
 // lintVersion reads the version a golangci-lint printed: "golangci-lint has
-// version 2.14.0 built with go1.26" and "golangci-lint version v1.64.8 (commit
+// version 2.15.0 built with go1.26" and "golangci-lint version v1.64.8 (commit
 // ...)" both work. It returns "" when no version is in the text.
 func lintVersion(output string) string {
 	if m := versionAfterWord.FindStringSubmatch(output); m != nil {

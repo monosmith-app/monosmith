@@ -14,7 +14,7 @@ const GovulncheckVersion = "v1.9.0"
 
 // GolangciLintVersion is installed when a project lints with golangci-lint;
 // bump it deliberately.
-const GolangciLintVersion = "v2.14.0"
+const GolangciLintVersion = "v2.15.0"
 
 // DefaultGoVersion is used when go.work does not say.
 const DefaultGoVersion = "1.24"
