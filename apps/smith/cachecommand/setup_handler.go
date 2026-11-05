@@ -86,7 +86,10 @@ stay in memory and go to the clipboard, never into a file.
 						return runSecretSession(s, out, keys)
 					}},
 					Run: cachesetup.ExecRunner, LookPath: exec.LookPath, Now: time.Now,
-					WriteRemote: func(remote string) error { return configedit.Set(root, "cache.remote", []string{remote}) },
+					// The command's own --commit flag, through operation.Wrap, commits the change.
+					WriteRemote: func(remote string, _ bool) (string, error) {
+						return "", configedit.Set(root, "cache.remote", []string{remote})
+					},
 				})
 			return err
 		},

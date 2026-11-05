@@ -26,6 +26,8 @@ type Model struct {
 	input []rune
 	// focus is the button of a Confirm screen: 0 yes, 1 no.
 	focus int
+	// ticked is the commit box of a Confirm screen that offers it.
+	ticked bool
 	// scroll is the first line of a Page.
 	scroll int
 	since  time.Time
@@ -67,7 +69,7 @@ func (m Model) Handle(ev Event, now time.Time) Model {
 		m.scr, m.since = Screen{Kind: Idle}, now
 	case AskEvent:
 		m.scr, m.since = ev.Screen, now
-		m.cursor, m.list, m.input, m.focus, m.scroll = 0, &pane.Scroll{}, nil, 0, 0
+		m.cursor, m.list, m.input, m.focus, m.scroll, m.ticked = 0, &pane.Scroll{}, nil, 0, 0, false
 		for i, o := range ev.Screen.Options {
 			if o.Value == ev.Screen.Default {
 				m.cursor = i
@@ -182,14 +184,16 @@ func (m Model) confirmKey(name string) (Model, Outcome) {
 	switch name {
 	case "esc", "ctrl+c":
 		return m, Outcome{Cancel: true}
+	case "c", "C":
+		m.ticked = m.ticked != m.scr.Confirmation.OfferCommit
 	case "y", "Y":
-		return m.answered(Reply{Yes: true})
+		return m.answered(Reply{Yes: true, Commit: m.ticked})
 	case "n", "N":
 		return m.answered(Reply{})
 	case "tab", "left", "right", "h", "l":
 		m.focus = 1 - m.focus
 	case "enter":
-		return m.answered(Reply{Yes: m.focus == 0})
+		return m.answered(Reply{Yes: m.focus == 0, Commit: m.ticked && m.focus == 0})
 	}
 	return m, Outcome{}
 }
@@ -246,7 +250,10 @@ func (m Model) Click(th theme.Theme, x, y int, double bool) (Model, Outcome) {
 			}
 			return m, Outcome{}
 		case h.yes != nil:
-			return m.answered(Reply{Yes: *h.yes})
+			return m.answered(Reply{Yes: *h.yes, Commit: m.ticked && *h.yes})
+		case h.toggle:
+			m.ticked = !m.ticked
+			return m, Outcome{}
 		case h.page:
 			return m.answered(Reply{})
 		default:

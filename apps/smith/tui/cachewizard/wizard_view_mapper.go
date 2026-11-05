@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -22,6 +23,8 @@ type hit struct {
 	option int
 	// yes is set for a button of a Confirm screen.
 	yes *bool
+	// toggle is true for the commit box.
+	toggle bool
 	// page is true for the button that goes on from a Page.
 	page bool
 	// press is the key a secret button sends.
@@ -115,6 +118,14 @@ func (m Model) body(th theme.Theme, tick int, now time.Time) ([]string, []hit) {
 			}
 		}
 		add("", th.Bold(strings.TrimSpace(c.Prompt)), "")
+		if c.OfferCommit {
+			box := "[ ] "
+			if m.ticked {
+				box = "[x] "
+			}
+			hits = append(hits, hit{row: len(lines), x0: 0, x1: ansi.StringWidth(box + dialog.CommitLabel + "  (C)"), option: -1, toggle: true})
+			add(box+dialog.CommitLabel+"  (C)", "")
+		}
 		yes, no := true, false
 		labels := []string{"[ " + c.Yes + "  y ]", "[ " + c.No + "  n ]"}
 		x := 0

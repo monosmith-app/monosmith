@@ -159,8 +159,9 @@ func (b *Bridge) Text(prompt string) string {
 }
 
 // Confirm implements cachesetup.Dialogue.
-func (b *Bridge) Confirm(c cachesetup.Confirmation) bool {
-	return b.ask(Screen{Kind: Confirm, Confirmation: c}).Yes
+func (b *Bridge) Confirm(c cachesetup.Confirmation) (bool, bool) {
+	r := b.ask(Screen{Kind: Confirm, Confirmation: c})
+	return r.Yes, r.Commit
 }
 
 // Working implements cachesetup.Dialogue: the screen shows a spinner and the

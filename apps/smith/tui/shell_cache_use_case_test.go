@@ -29,6 +29,7 @@ type cacheLab struct {
 	ran     []string
 	stdin   []string
 	written []string
+	commits []bool
 }
 
 func newCacheLab(t *testing.T) *cacheLab {
@@ -48,9 +49,12 @@ func newCacheLab(t *testing.T) *cacheLab {
 				}
 				return "", "", nil
 			},
-			LookPath:    func(string) (string, error) { return "x", nil },
-			Now:         func() time.Time { return time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC) },
-			WriteRemote: func(r string) error { c.written = append(c.written, r); return nil },
+			LookPath: func(string) (string, error) { return "x", nil },
+			Now:      func() time.Time { return time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC) },
+			WriteRemote: func(r string, commit bool) (string, error) {
+				c.written, c.commits = append(c.written, r), append(c.commits, commit)
+				return "", nil
+			},
 		}, nil
 	}
 	c.m = sh
@@ -213,5 +217,38 @@ func TestACacheSetupThatCannotStartClosesAndTellsWhy(t *testing.T) {
 	}
 	if !strings.Contains(c.sh().toast.Text, "no smith.toml here") {
 		t.Fatalf("toast %q", c.sh().toast.Text)
+	}
+}
+
+func TestTheWriteOffersAnUntickedCommitBoxAndTheTickReachesTheWrite(t *testing.T) {
+	for _, tick := range []bool{false, true} {
+		c := newCacheLab(t)
+		c.open()
+		c.press("3")
+		c.text("https://cache.acme.dev/smith")
+		c.press("enter")
+		c.has("[ ] Commit this change so it can be undone")
+		if tick {
+			c.press("c")
+			c.has("[x] Commit this change so it can be undone")
+		}
+		c.press("y")
+		if len(c.written) != 1 || c.commits[0] != tick {
+			t.Fatalf("tick %v: written %v commit %v", tick, c.written, c.commits)
+		}
+	}
+}
+
+func TestClickingTheCommitBoxTicksIt(t *testing.T) {
+	c := newCacheLab(t)
+	c.open()
+	c.press("3")
+	c.text("https://cache.acme.dev/smith")
+	c.press("enter")
+	c.clickText("[ ] Commit this change so it can be undone")
+	c.has("[x] Commit this change")
+	c.press("y")
+	if len(c.commits) != 1 || !c.commits[0] {
+		t.Fatalf("commit %v", c.commits)
 	}
 }
