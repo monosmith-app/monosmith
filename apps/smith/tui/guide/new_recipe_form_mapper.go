@@ -27,7 +27,7 @@ func NewRecipeSteps() []Step {
 				return planProblem(first(a, "name"), v, nil)
 			},
 		},
-		{Key: "extends", Prompt: "Recipe it extends (a path or an https URL; enter for none)", Placeholder: "base.recipe.toml", Optional: true},
+		{Key: "extends", Prompt: "Recipe it extends (a path or an https URL; enter for none)", Placeholder: "base.recipe.toml", Optional: true, Path: true},
 		{
 			Key: "fixed", Prompt: "Fixed plugins as level=plugin, separated by spaces (language=python lint=ruff structure=slices,layers)",
 			Placeholder: "language=python lint=ruff", Optional: true,

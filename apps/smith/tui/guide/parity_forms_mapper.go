@@ -121,7 +121,7 @@ func parityForms() []Action {
 		{
 			Title: "Make the icons of a Tauri app", Presents: "tauri icon", Hint: "smith tauri icon: every icon size from one square PNG; the plan lists the files it overwrites", NeedsWorkspace: true,
 			Steps: []Step{
-				{Key: "logo", Prompt: "Which square PNG? (a path from where you started smith)", Placeholder: "logo.png"},
+				{Key: "logo", Prompt: "Which square PNG? (a path from where you started smith)", Placeholder: "logo.png", Path: true},
 				{Key: "project", Prompt: "Which app? (only when more than one has a src-tauri; Enter leaves it out)", Optional: true, Placeholder: "desktop"},
 			},
 			Argv: func(a map[string][]string) []string {

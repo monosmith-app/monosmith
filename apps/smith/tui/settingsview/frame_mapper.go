@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -104,7 +105,11 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 		}
 	}
 	if m.ed != nil {
-		put(1, m.editorLines(th, w, body))
+		lines, rowOf := m.editorLines(th, w, body)
+		put(1, lines)
+		for line, i := range rowOf {
+			rowItem[1+line] = i
+		}
 		return rows, rowItem
 	}
 	if lines, blocked := m.unavailable(th, w); blocked {
@@ -236,11 +241,21 @@ func indent(lines []string) []string {
 // Click selects what is at (x, y) of the body: a section, or a row; a double
 // click does what Enter does on a row.
 func (m Model) Click(w, h, x, y int, double bool) (Model, Result) {
-	if m.ed != nil {
-		return m, Result{}
-	}
 	plain := theme.New(theme.Choice{Tokens: theme.Plain, Icons: theme.ASCII})
 	f := m.frame(plain, w, h, -1, -1)
+	if m.ed != nil {
+		// Only the rows of a path finder take a click while a value is edited.
+		if i, ok := f.rowItem[y]; ok && m.ed.finder != nil && x >= f.listW {
+			e := *m.ed
+			sel := e.finder.Select(i)
+			e.finder = &sel
+			m.ed = &e
+			if double {
+				return m.editorKey(tea.KeyMsg{Type: tea.KeyEnter})
+			}
+		}
+		return m, Result{}
+	}
 	if x < f.listW {
 		if s, ok := f.rowSection[y]; ok {
 			m.section, m.onItems = s, double
