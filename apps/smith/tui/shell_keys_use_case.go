@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"github.com/monosmith-app/monosmith/apps/smith/internallink"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/packageprompt"
 	"strings"
 
@@ -11,10 +10,12 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/helpdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
@@ -133,25 +134,8 @@ func (s *Shell) openPackages(remove bool) {
 	if remove {
 		p = packageprompt.NewRemove(project, names)
 	}
-	p = p.WithLanguages(languages).WithLibraries(s.linkableLibraries).Place(s.w, s.h)
+	p = p.WithLanguages(languages).WithLibraries(func(project string) []packageprompt.Library { return linkableLibraries(s.list.Projects(), project) }).Place(s.w, s.h)
 	s.pkg = &p
-}
-
-// linkableLibraries lists the libraries of the workspace the project may
-// depend on (not itself, not an app, the same language, no cycle).
-func (s *Shell) linkableLibraries(project string) []packageprompt.Library {
-	projects := s.list.Projects()
-	nodes := make([]internallink.Node, len(projects))
-	versions := map[string]string{}
-	for i, pr := range projects {
-		nodes[i] = internallink.Node{Name: pr.Name, Root: pr.Root, Kind: pr.Kind, Language: pr.Language, Deps: pr.Deps}
-		versions[pr.Name] = pr.Version
-	}
-	var out []packageprompt.Library
-	for _, n := range internallink.ValidLibraries(nodes, project) {
-		out = append(out, packageprompt.Library{Name: n.Name, Kind: n.Kind, Language: n.Language, Version: versions[n.Name]})
-	}
-	return out
 }
 
 // afterPackages acts on the package prompt's outcome: the command it shows runs.
@@ -430,11 +414,11 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 func (s *Shell) openHelp() {
 	// The keys of the open view come first, then the keys every view shares,
 	// all read from the keymap the keys themselves come from.
-	var rows []dialog.HelpRow
+	var rows []helpdialog.HelpRow
 	for _, r := range commands.HelpRows(s.state(), tabTitles()[s.tab]) {
-		rows = append(rows, dialog.HelpRow(r))
+		rows = append(rows, helpdialog.HelpRow(r))
 	}
-	h := dialog.NewHelp(rows, mouseHelp()).Place(s.w, s.h)
+	h := helpdialog.NewHelp(rows, mouseHelp()).Place(s.w, s.h)
 	s.help = &h
 }
 
@@ -503,7 +487,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 	name := msg.String()
 	switch s.tab {
 	case commands.TabHome:
-		if name == "enter" {
+		if commands.NavNamed(name) == commands.NavConfirm {
 			if id := s.nextAction().CommandID; id != "" {
 				return s.activate(id)
 			}
@@ -525,7 +509,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		switch {
 		case s.detailFull():
 			return s.detailKey(name)
-		case name == "enter" && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
+		case commands.NavNamed(name) == commands.NavConfirm && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
 			// Beside the detail Enter unfolds what the detail folded. On the line
 			// that hides the passed checks it shows them, as that line says.
 			s.detailAll = !s.detailAll
@@ -586,20 +570,20 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 // projectsKey moves in the list of projects. Enter opens the detail over the
 // list when it is not beside it.
 func (s *Shell) projectsKey(name string) tea.Cmd {
-	switch name {
-	case "up":
+	switch commands.NavNamed(name) {
+	case commands.NavUp:
 		s.list = s.list.Move(-1)
-	case "down":
+	case commands.NavDown:
 		s.list = s.list.Move(1)
-	case "pgup":
+	case commands.NavPageUp:
 		s.list = s.list.Page(-1, s.listPage())
-	case "pgdown":
+	case commands.NavPageDown:
 		s.list = s.list.Page(1, s.listPage())
-	case "home":
+	case commands.NavHome:
 		s.list = s.list.Home()
-	case "end":
+	case commands.NavEnd:
 		s.list = s.list.End()
-	case "enter":
+	case commands.NavConfirm:
 		if s.lay().Mode == layout.Narrow && s.list.Len() > 0 {
 			s.detailOpen, s.detailCursor = true, 0
 		}
@@ -611,18 +595,19 @@ func (s *Shell) projectsKey(name string) tea.Cmd {
 // the highlighted one, and goes back to the list.
 func (s *Shell) detailKey(name string) tea.Cmd {
 	actions := s.detailActions()
-	switch name {
-	case "esc", "left", "backspace":
+	act := commands.NavNamed(name)
+	switch {
+	case act == commands.NavCancel || name == "left" || name == "backspace":
 		s.detailOpen, s.zoom = false, false
-	case "pgup":
+	case act == commands.NavPageUp:
 		s.pageDetail(-1)
-	case "pgdown":
+	case act == commands.NavPageDown:
 		s.pageDetail(1)
-	case "up":
+	case act == commands.NavUp:
 		s.detailCursor = max(s.detailCursor-1, 0)
-	case "down":
+	case act == commands.NavDown:
 		s.detailCursor = min(s.detailCursor+1, max(len(actions)-1, 0))
-	case "enter":
+	case act == commands.NavConfirm:
 		if s.detailCursor < len(actions) && !actions[s.detailCursor].Disabled {
 			return s.activate(actions[s.detailCursor].ID)
 		}
@@ -636,41 +621,35 @@ func (s *Shell) runKey(name string) tea.Cmd {
 		return nil
 	}
 	if s.runHome {
-		switch name {
-		case "enter":
+		switch commands.NavNamed(name) {
+		case commands.NavConfirm:
 			s.openRecent()
-		case "up":
-			s.recentAt = max(s.recentAt-1, 0)
-		case "down":
-			s.recentAt = max(min(s.recentAt+1, len(s.runs)-1), 0)
+		case commands.NavUp:
+			s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), -1)
+		case commands.NavDown:
+			s.recentAt = runhistory.StepRecent(s.recentAt, len(s.runs), 1)
 		}
 		return nil
 	}
 	ids := s.runIDs()
-	at := 0
-	for i, id := range ids {
-		if id == s.runSel {
-			at = i
-		}
-	}
-	switch name {
-	case "up":
-		s.runSel = ids[max(at-1, 0)]
-	case "down":
-		s.runSel = ids[min(at+1, len(ids)-1)]
-	case "esc":
+	switch commands.NavNamed(name) {
+	case commands.NavUp:
+		s.runSel = runhistory.StepSelection(ids, s.runSel, -1)
+	case commands.NavDown:
+		s.runSel = runhistory.StepSelection(ids, s.runSel, 1)
+	case commands.NavCancel:
 		// The first Esc shows all output; the next, once nothing runs, the start screen.
 		if s.runSel == "" && !s.running() {
 			s.openStart()
 		}
 		s.runSel = ""
-	case "pgup":
+	case commands.NavPageUp:
 		s.log = s.log.Page(-1, s.logTotal(), s.logHeight())
-	case "pgdown":
+	case commands.NavPageDown:
 		s.log = s.log.Page(1, s.logTotal(), s.logHeight())
-	case "home":
+	case commands.NavHome:
 		s.log = s.log.Home()
-	case "end":
+	case commands.NavEnd:
 		s.log = s.log.End()
 	}
 	s.keepRunVisible()

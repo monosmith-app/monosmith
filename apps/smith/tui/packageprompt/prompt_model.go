@@ -1,16 +1,15 @@
 package packageprompt
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
@@ -39,7 +38,7 @@ type Prompt struct {
 	hover int
 	// err says why Install did not go ahead.
 	err  string
-	rect dialog.Rect
+	rect layout.Rect
 	// libraries lists the libraries of the workspace a project may link; nil
 	// means the dialog does not offer the choice (and Remove never does).
 	libraries func(project string) []Library
@@ -259,95 +258,12 @@ func (p Prompt) Place(sw, sh int) Prompt {
 	w := min(max(sw-8, minWidth), min(max(sw-2, 10), 76))
 	p.input.Width = max(w-8, 8)
 	h := min(len(p.body(w-4))+4, max(sh, 3))
-	p.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	p.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	return p
 }
 
 // Rect is where the dialog sits after Place.
-func (p Prompt) Rect() dialog.Rect { return p.rect }
-
-// body is the dialog's lines between the borders, before the buttons.
-func (p Prompt) body(inner int) []string {
-	lines := []string{p.projectLine(), ""}
-	if p.offersLibraries() {
-		lines = append(lines, p.sourceLine(), "")
-	}
-	if p.linking() {
-		lines = append(lines, p.libraryLines(inner)...)
-	} else {
-		lines = append(lines, words.Say("packageprompt.packages.label"), " "+p.input.View(), "")
-		if !p.remove {
-			lines = append(lines, p.devLine(), "")
-			lines = append(lines, words.Say("packageprompt.registry.names"), words.Say("packageprompt.registry.wrong"), "")
-		}
-	}
-	if p.err != "" {
-		lines = append(lines, p.err, "")
-	}
-	lines = append(lines, words.Say("packageprompt.command.label"))
-	command := words.Say("packageprompt.command.empty")
-	if p.linking() {
-		command = words.Say("packageprompt.command.nolibrary")
-	}
-	if argv := p.Argv(); argv != nil {
-		command = commands.Line(argv)
-	}
-	for _, l := range wrap(command, inner-4) {
-		lines = append(lines, "  $ "+l)
-	}
-	return lines
-}
-
-func (p Prompt) projectLine() string {
-	if p.choosable() {
-		return words.Say("packageprompt.project.choosable", "project", p.project)
-	}
-	return words.Say("packageprompt.project.fixed", "project", p.project)
-}
-
-// sourceLine is the first question: what is being added.
-func (p Prompt) sourceLine() string {
-	answer := words.Say("packageprompt.source.registry")
-	if p.fromWorkspace {
-		answer = words.Say("packageprompt.source.workspace")
-	}
-	return words.Say("packageprompt.source.line", "answer", answer)
-}
-
-// libraryLines are the library and range rows with what each choice means.
-func (p Prompt) libraryLines(inner int) []string {
-	lib, ok := p.library()
-	if !ok {
-		return append(wrap(words.Say("packageprompt.library.none", "project", p.project), inner), "")
-	}
-	libs := p.valid()
-	line := words.Say("packageprompt.library.line", "name", lib.Name, "kind", lib.Kind, "language", lib.Language)
-	if len(libs) > 1 {
-		line += words.Say("packageprompt.library.position", "at", min(p.libAt, len(libs)-1)+1, "total", len(libs))
-	}
-	lines := []string{line}
-	for _, l := range wrapWords(LibraryMeaning(p.project, lib), inner-2) {
-		lines = append(lines, "  "+l)
-	}
-	lines = append(lines, "")
-	if choices := p.rangeChoices(); len(choices) > 0 {
-		current := p.rangeChoice()
-		lines = append(lines, words.Say("packageprompt.range.line", "choice", current.Label))
-		for _, l := range wrapWords(current.Meaning, inner-2) {
-			lines = append(lines, "  "+l)
-		}
-		lines = append(lines, "")
-	}
-	return lines
-}
-
-func (p Prompt) devLine() string {
-	box := "[ ]"
-	if p.dev {
-		box = "[x]"
-	}
-	return words.Say("packageprompt.dev.line", "box", box)
-}
+func (p Prompt) Rect() layout.Rect { return p.rect }
 
 // rowOf finds the line of the body that starts with prefix, or -1.
 func (p Prompt) rowOf(prefix string, inner int) int {
@@ -359,76 +275,15 @@ func (p Prompt) rowOf(prefix string, inner int) int {
 	return -1
 }
 
-// Lines draws the dialog: Rect().H lines of Rect().W cells.
-func (p Prompt) Lines(th theme.Theme) []string {
-	r := p.rect
-	if r.W < 6 || r.H < 3 {
-		return nil
-	}
-	inner := r.W - 4
-	rows := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, inner) }
-	for _, l := range p.body(inner) {
-		if len(rows) >= r.H-4 {
-			break
-		}
-		switch {
-		case strings.HasPrefix(l, words.Say("packageprompt.label.project")):
-			switch {
-			case p.focus == focusProject:
-				l = th.Selected(l)
-			case p.hover == focusProject:
-				l = th.Hover(l)
-			}
-		case rowFocus(l) >= 0:
-			id := rowFocus(l)
-			switch {
-			case p.focus == id:
-				l = th.Selected(l)
-			case p.hover == id:
-				l = th.Hover(l)
-			}
-		case p.err != "" && l == p.err:
-			l = th.Failure(l)
-		case !p.remove && l == p.devLine():
-			switch {
-			case p.focus == focusDev:
-				l = th.Selected(l)
-			case p.hover == focusDev:
-				l = th.Hover(l)
-			}
-		case strings.HasPrefix(l, "  $ "):
-			l = th.Bold(l)
-		}
-		rows = append(rows, row(l))
-	}
-	rows = append(rows, row(""))
-	line := strings.Repeat(" ", p.buttonsIn(th, inner)[0][0]-2)
-	for i, label := range []string{p.goLabel(), buttonCancel()} {
-		state := button.Rest
-		switch id := focusInstall + i; {
-		case p.hover == id:
-			state = button.Hover
-		case p.focus == id:
-			state = button.Active
-		}
-		line += button.Render(th, label, buttonKeys[i], state)
-		if i == 0 {
-			line += " "
-		}
-	}
-	rows = append(rows, row(line))
-	return pane.Frame(th, p.Title(), rows, r.W, r.H, true)
+// buttonLabels are the labels and keys of the Install and Cancel buttons.
+func (p Prompt) buttonLabels() (labels, keys []string) {
+	return []string{p.goLabel(), buttonCancel()}, buttonKeys[:]
 }
 
 // buttonsRow is the span (from the dialog's left edge) of each button.
-func (p Prompt) buttonsRow(inner int) [2][2]int { return p.buttonsIn(theme.Default(), inner) }
-
-// buttonsIn is buttonsRow for the theme the dialog is drawn with.
-func (p Prompt) buttonsIn(th theme.Theme, inner int) [2][2]int {
-	run, stop := button.Width(th, p.goLabel(), buttonKeys[0]), button.Width(th, buttonCancel(), buttonKeys[1])
-	start := 2 + max((inner-(run+1+stop))/2, 0)
-	return [2][2]int{{start, start + run}, {start + run + 1, start + run + 1 + stop}}
+func (p Prompt) buttonsRow(inner int) [][2]int {
+	labels, keys := p.buttonLabels()
+	return button.RowSpans(theme.Default(), labels, keys, inner)
 }
 
 // controlAt is the control at a cell: the development box, a button, or -1.
@@ -436,10 +291,8 @@ func (p Prompt) controlAt(x, y int) int {
 	r := p.rect
 	inner := r.W - 4
 	if y == r.Y+r.H-2 {
-		for i, s := range p.buttonsRow(inner) {
-			if x-r.X >= s[0] && x-r.X < s[1] {
-				return focusInstall + i
-			}
+		if i := button.At(p.buttonsRow(inner), r, x, y); i >= 0 {
+			return focusInstall + i
 		}
 		return -1
 	}
@@ -488,14 +341,14 @@ func (p Prompt) Click(x, y int) (Prompt, dialog.Outcome) {
 
 // Key handles a key.
 func (p Prompt) Key(msg tea.KeyMsg) (Prompt, dialog.Outcome) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavCancel:
 		return p, dialog.Outcome{Done: true}
-	case "tab", "down":
+	case commands.NavNext, commands.NavDown:
 		return p.move(1), dialog.Outcome{}
-	case "shift+tab", "up":
+	case commands.NavPrev, commands.NavUp:
 		return p.move(-1), dialog.Outcome{}
-	case "enter":
+	case commands.NavConfirm:
 		switch p.focus {
 		case focusProject:
 			p.focus = focusPackages
@@ -617,17 +470,4 @@ func (p Prompt) submit() (Prompt, dialog.Outcome) {
 		return p, dialog.Outcome{}
 	}
 	return p, dialog.Outcome{Done: true, Confirmed: true}
-}
-
-// wrap breaks s into lines of at most w cells, cutting words that are longer.
-func wrap(s string, w int) []string {
-	if w < 1 || ansi.StringWidth(s) <= w {
-		return []string{s}
-	}
-	var out []string
-	for ansi.StringWidth(s) > w {
-		out = append(out, ansi.Truncate(s, w, ""))
-		s = ansi.TruncateLeft(s, w, "")
-	}
-	return append(out, s)
 }

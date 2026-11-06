@@ -1,6 +1,8 @@
-package dialog
+package helpdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -20,7 +22,7 @@ type Help struct {
 	rows  []HelpRow
 	extra []string
 	top   int
-	rect  Rect
+	rect  layout.Rect
 }
 
 // NewHelp builds the overlay from the shortcuts and some free-text lines
@@ -60,12 +62,12 @@ func (h Help) content(th theme.Theme, w int) []string {
 func (h Help) Place(sw, sh int) Help {
 	w := min(max(sw-6, 10), 92)
 	hh := min(max(sh-2, 3), 28)
-	h.rect = Rect{X: max((sw-w)/2, 0), Y: max((sh-hh)/2, 0), W: w, H: hh}
+	h.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-hh)/2, 0), W: w, H: hh}
 	return h
 }
 
 // Rect is where the overlay sits after Place.
-func (h Help) Rect() Rect { return h.rect }
+func (h Help) Rect() layout.Rect { return h.rect }
 
 func (h Help) maxTop(n int) int { return max(n-(h.rect.H-2), 0) }
 
@@ -90,21 +92,24 @@ func (h Help) Lines(th theme.Theme) []string {
 
 // Key handles a key name; the overlay ends on Esc, F1, ? or q.
 func (h Help) Key(name string, total int) (Help, Outcome) {
-	switch name {
-	case "esc", "f1", "?", "q", "enter", "ctrl+c":
-		return h, Outcome{Done: true}
-	case "up", "k":
+	switch commands.Nav(name) {
+	case commands.NavUp:
 		h.top--
-	case "down", "j":
+	case commands.NavDown:
 		h.top++
-	case "pgup":
+	case commands.NavPageUp:
 		h.top -= h.rect.H - 3
-	case "pgdown":
+	case commands.NavPageDown:
 		h.top += h.rect.H - 3
-	case "home":
+	case commands.NavHome:
 		h.top = 0
-	case "end":
+	case commands.NavEnd:
 		h.top = total
+	default:
+		switch name {
+		case "esc", "f1", "?", "q", "enter", "ctrl+c":
+			return h, Outcome{Done: true}
+		}
 	}
 	h.top = min(max(h.top, 0), h.maxTop(total))
 	return h, Outcome{}

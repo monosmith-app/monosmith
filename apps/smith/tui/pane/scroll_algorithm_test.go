@@ -1,4 +1,4 @@
-package detail
+package pane
 
 import (
 	"fmt"
@@ -17,28 +17,28 @@ func numbered(n int) []string {
 }
 
 func TestAPanelThatFitsIsNotWindowed(t *testing.T) {
-	out, _ := Window(theme.Default(), numbered(5), nil, 3, 10)
+	out, _ := WindowMarked(theme.Default(), numbered(5), nil, 3, 10)
 	if len(out) != 5 || strings.Contains(strings.Join(out, ""), "more") {
 		t.Fatalf("%v", out)
 	}
 }
 
 func TestTheTopOfALongPanelSaysThereIsMoreBelow(t *testing.T) {
-	out, _ := Window(theme.Default(), numbered(30), nil, 0, 10)
+	out, _ := WindowMarked(theme.Default(), numbered(30), nil, 0, 10)
 	if len(out) != 10 || out[0] != "line 0" || !strings.Contains(out[9], "↓ more") {
 		t.Fatalf("%v", out)
 	}
 }
 
 func TestTheMiddleSaysMoreOnBothSides(t *testing.T) {
-	out, _ := Window(theme.Default(), numbered(30), nil, 10, 10)
+	out, _ := WindowMarked(theme.Default(), numbered(30), nil, 10, 10)
 	if !strings.Contains(out[0], "↑ more") || !strings.Contains(out[9], "↓ more") || out[1] != "line 11" {
 		t.Fatalf("%v", out)
 	}
 }
 
 func TestTheEndShowsTheLastLineAndNoDownMarker(t *testing.T) {
-	out, _ := Window(theme.Default(), numbered(30), nil, 999, 10)
+	out, _ := WindowMarked(theme.Default(), numbered(30), nil, 999, 10)
 	if out[9] != "line 29" || !strings.Contains(out[0], "↑ more") {
 		t.Fatalf("%v", out)
 	}
@@ -62,7 +62,7 @@ func TestPagingNeverSkipsALine(t *testing.T) {
 }
 
 func TestHitsFollowTheWindow(t *testing.T) {
-	_, hits := Window(theme.Default(), numbered(30), map[int]string{15: "a", 2: "b", 19: "c"}, 10, 10)
+	_, hits := WindowMarked(theme.Default(), numbered(30), map[int]string{15: "a", 2: "b", 19: "c"}, 10, 10)
 	if hits[5] != "a" || len(hits) != 1 {
 		t.Fatalf("only the action in view, shifted, should remain (the one under the marker is dropped): %v", hits)
 	}
@@ -71,5 +71,14 @@ func TestHitsFollowTheWindow(t *testing.T) {
 func TestClampTop(t *testing.T) {
 	if ClampTop(-3, 30, 10) != 0 || ClampTop(50, 30, 10) != 20 || ClampTop(4, 5, 10) != 0 {
 		t.Fatal("clamp")
+	}
+}
+
+func TestClampKeepsAValueInRangeAndTheFloorWinsWhenThereIsNoRoom(t *testing.T) {
+	if Clamp(5, 0, 10) != 5 || Clamp(-1, 0, 10) != 0 || Clamp(11, 0, 10) != 10 {
+		t.Fatal("a value must stay between its bounds")
+	}
+	if Clamp(3, 2, 1) != 2 || Clamp(-4, 0, -2) != 0 {
+		t.Fatal("when hi is below lo, lo must win")
 	}
 }

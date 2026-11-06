@@ -2,13 +2,12 @@ package tui
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commandtext"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
@@ -111,53 +110,19 @@ func (s *Shell) planRead(msg capturedMsg) tea.Cmd {
 	argv := msg.argv[:len(msg.argv)-1]
 	title, why := commands.Describe(argv)
 	if !msg.res.OK {
-		s.tell(words.Say("tui.capture.cannot", "title", strings.ToLower(title)), words.Say("tui.capture.smith_said"), failureText(msg.res))
+		s.tell(words.Say("tui.capture.cannot", "title", strings.ToLower(title)), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil
 	}
 	c := dialog.NewConfirm(title, why, catalog.WithConfirmation(argv)).
-		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(commandtext.WithoutDryRunLine(commandtext.Lines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
 
-// dryRunLine ends the plan a command prints with --dry-run.
-func dryRunLine() string { return words.Say("tui.capture.dry_run") }
-
-// withoutDryRunLine drops the closing "Dry run" line of a plan: the dialog
-// above it already says that nothing is written yet, and a first-time user
-// does not know the words "dry run".
-//
-// Parameters: lines are the lines of the plan.
-// Returns: the lines without the closing "Dry run" line.
-func withoutDryRunLine(lines []string) []string {
-	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == dryRunLine() {
-		lines = lines[:len(lines)-1]
-	}
-	return lines
-}
-
 // tell shows a notice dialog: a title, a sentence and the lines of a text.
 func (s *Shell) tell(title, why, text string) {
-	n := dialog.NewNotice(title, why, capLines(textLines(text), max(s.h-12, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+	n := dialog.NewNotice(title, why, capLines(commandtext.Lines(text), max(s.h-12, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &n
-}
-
-// textLines splits a command's output into lines and drops the blank ones at
-// the ends.
-func textLines(text string) []string {
-	return strings.Split(strings.Trim(text, "\n"), "\n")
-}
-
-// failureText is what to show for a command that failed: its output, or why
-// it never ran.
-func failureText(res sources.Captured) string {
-	switch {
-	case strings.TrimSpace(res.Text) != "":
-		return res.Text
-	case res.Err != nil:
-		return res.Err.Error()
-	}
-	return words.Say("tui.capture.the_command_ended_with_an_error")
 }
 
 // openUndo reads what the last change did, before anything is reverted.
@@ -178,11 +143,11 @@ var undoArgv = []string{"undo", "--yes"}
 // to revert, the reason smith gave is the notice.
 func (s *Shell) undoRead(msg capturedMsg) tea.Cmd {
 	if !msg.res.OK {
-		s.tell(words.Say("tui.capture.nothing_to_undo"), words.Say("tui.capture.smith_said"), failureText(msg.res))
+		s.tell(words.Say("tui.capture.nothing_to_undo"), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil
 	}
 	c := dialog.NewConfirm(undoTitle(), undoWhy(), slices.Clone(undoArgv)).
-		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(commandtext.WithoutDryRunLine(commandtext.Lines(msg.res.Text)), max(s.h-16, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -213,11 +178,11 @@ func (s *Shell) addPlanRead(msg capturedMsg) tea.Cmd {
 		if len(argv) > 2 {
 			name = argv[2]
 		}
-		s.tell(words.Say("tui.capture.cannot_add_like_that", "name", name), words.Say("tui.capture.smith_said"), failureText(msg.res))
+		s.tell(words.Say("tui.capture.cannot_add_like_that", "name", name), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil
 	}
 	c := dialog.NewConfirm(addPlanTitle(argv), addPlanWhy(argv, s.list.Len(), s.offers), argv).
-		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(commandtext.WithoutDryRunLine(commandtext.Lines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -250,11 +215,11 @@ func swapPlanTitle(argv []string) string {
 func (s *Shell) swapPlanRead(msg capturedMsg) tea.Cmd {
 	argv := msg.argv[:len(msg.argv)-1]
 	if !msg.res.OK {
-		s.tell(words.Say("tui.capture.cannot_swap_that"), words.Say("tui.capture.smith_said"), failureText(msg.res))
+		s.tell(words.Say("tui.capture.cannot_swap_that"), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil
 	}
 	c := dialog.NewConfirm(swapPlanTitle(argv), swapPlanWhy(), append(slices.Clone(argv), "--yes")).
-		WithDetails(capLines(withoutDryRunLine(textLines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
+		WithDetails(capLines(commandtext.WithoutDryRunLine(commandtext.Lines(msg.res.Text)), max(s.h-18, 3))).Within(s.dialogMargins()).Place(s.w, s.h)
 	s.confirm = &c
 	return nil
 }
@@ -328,7 +293,7 @@ func (s *Shell) choicesRead(msg capturedMsg) tea.Cmd {
 		}
 	}
 	if s.choices != choicesKnown {
-		s.notify(words.Say("tui.capture.could_not_read_the_choices_so", "firstLine", firstLine(failureText(msg.res))), toast.Warning)
+		s.notify(words.Say("tui.capture.could_not_read_the_choices_so", "firstLine", commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err))), toast.Warning)
 	}
 	if form := s.formPending; form != "" {
 		s.formPending = ""
@@ -385,7 +350,7 @@ func (s *Shell) recipeLevelsRead(msg capturedMsg) tea.Cmd {
 		}
 	}
 	if s.recipeLevels == nil {
-		s.notify(words.Say("tui.capture.could_not_read_the_plugins_so", "firstLine", firstLine(failureText(msg.res))), toast.Warning)
+		s.notify(words.Say("tui.capture.could_not_read_the_plugins_so", "firstLine", commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err))), toast.Warning)
 	}
 	return s.showRecipeForm()
 }
@@ -494,7 +459,7 @@ func (s *Shell) openPluginSearch(term string) tea.Cmd {
 // after the usual confirmation.
 func (s *Shell) searchRead(msg capturedMsg) tea.Cmd {
 	if !msg.res.OK {
-		s.tell(words.Say("tui.capture.could_not_search_the_marketplace"), words.Say("tui.capture.smith_said"), failureText(msg.res))
+		s.tell(words.Say("tui.capture.could_not_search_the_marketplace"), words.Say("tui.capture.smith_said"), commandtext.Failure(msg.res.Text, msg.res.Err))
 		return nil
 	}
 	hits, err := guide.ParsePluginHits(msg.res.Text)
@@ -514,31 +479,16 @@ func (s *Shell) searchRead(msg capturedMsg) tea.Cmd {
 	return s.gotoTab(commands.TabGuide)
 }
 
-// reportPath is where the report of this workspace is written: a file in the
-// temporary folder, named after the workspace.
-func (s Shell) reportPath() string {
-	name := strings.Map(func(r rune) rune {
-		if r == '-' || r == '_' || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-			return r
-		}
-		return '-'
-	}, s.header)
-	if strings.Trim(name, "-") == "" {
-		name = "workspace"
-	}
-	return filepath.Join(os.TempDir(), "smith-report-"+name+".html")
-}
-
 // openReport writes the report to a temporary file; opening it follows when
 // the command ends (see reportWritten).
 func (s *Shell) openReport() tea.Cmd {
-	return s.execute([]string{"report", "-o", s.reportPath()}, false)
+	return s.execute([]string{"report", "-o", commandtext.ReportPath(s.header)}, false)
 }
 
 // reportWritten opens the report a finished `smith report -o` wrote, and says
 // where the file is so it can be opened again.
 func (s *Shell) reportWritten(argv []string) tea.Cmd {
-	path, ok := reportTarget(argv)
+	path, ok := commandtext.ReportTarget(argv)
 	if !ok {
 		return nil
 	}
@@ -567,29 +517,6 @@ func (s *Shell) opened(msg openedMsg) {
 	s.notify(words.Say("tui.capture.report_opened_in_your_browser_the", "path", msg.path), toast.Success)
 }
 
-// reportTarget is the file a `smith report -o <file>` command line writes.
-func reportTarget(argv []string) (string, bool) {
-	if len(argv) == 0 || argv[0] != "report" {
-		return "", false
-	}
-	for i, a := range argv {
-		if (a == "-o" || a == "--output") && i+1 < len(argv) {
-			return argv[i+1], true
-		}
-	}
-	return "", false
-}
-
-// firstLine is the first non-blank line of a text.
-func firstLine(text string) string {
-	for _, l := range strings.Split(text, "\n") {
-		if l = strings.TrimSpace(l); l != "" {
-			return l
-		}
-	}
-	return ""
-}
-
 // undoHint is the sentence a toast adds to a change that can be undone.
 func undoHint() string {
 	return words.Say("tui.capture.it_can_be_undone_open_the", "shortcutOf", commands.ShortcutOf("file.palette"))
@@ -598,16 +525,6 @@ func undoHint() string {
 // notCommittedHint is the sentence a toast adds to a change that is not a commit.
 func notCommittedHint() string {
 	return words.Say("tui.capture.not_committed_review_with_git_status")
-}
-
-// saidNotCommitted is true when a command asked to commit but printed that it
-// did not (for example because the work tree had other changes): there is then
-// nothing for smith undo to revert.
-//
-// Parameters: lines are the lines the command printed.
-// Returns: whether one of them starts with "Not committed".
-func saidNotCommitted(lines []string) bool {
-	return slices.ContainsFunc(lines, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), "Not committed") }) // words:literal
 }
 
 // changesFiles is true for the commands that write files and can commit them.

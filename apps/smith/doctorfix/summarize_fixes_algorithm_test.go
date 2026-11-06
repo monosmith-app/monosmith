@@ -44,7 +44,7 @@ func TestSummarySaysWhichFixesYesAppliesAndWhichNeedAChoice(t *testing.T) {
 		{Fix: protocol.Fix{Description: "regenerate go.work"}},
 		{Fix: protocol.Fix{Description: "tell the Cargo workspace about tools/x"}, Ask: true},
 	})
-	for _, want := range []string{"2 fixes available: 1 applied by --yes, 1 needs a choice","--yes applies the 1 safe fix(es)", `"regenerate go.work"`, "1 need(s) your decision", `"tell the Cargo workspace about tools/x"`, "--choose N"} {
+	for _, want := range []string{"2 fixes available: 1 applied by --yes, 1 needs a choice", "--yes applies the 1 safe fix(es)", `"regenerate go.work"`, "1 need(s) your decision", `"tell the Cargo workspace about tools/x"`, "--choose N"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)
 		}

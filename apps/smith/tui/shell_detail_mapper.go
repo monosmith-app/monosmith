@@ -57,7 +57,7 @@ func (s Shell) detailRect() layout.Rect {
 func (s Shell) detailContent(w, h int) content {
 	panel := s.detailPanel()
 	all, rows := panel.View(s.th, w, "")
-	_, hits := detail.Window(s.th, all, rows, s.detailTop, h)
+	_, hits := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
 	hover := ""
 	if r := s.detailRect(); s.detailFull() {
 		if a := panel.Actions; s.detailCursor < len(a) {
@@ -67,8 +67,8 @@ func (s Shell) detailContent(w, h int) content {
 		hover = hits[s.mouseY-r.Y]
 	}
 	all, _ = panel.View(s.th, w, hover)
-	lines, _ := detail.Window(s.th, all, rows, s.detailTop, h)
-	lines = pane.Scrollbar(s.th, lines, w, detail.ClampTop(s.detailTop, len(all), h), len(all))
+	lines, _ := pane.WindowMarked(s.th, all, rows, s.detailTop, h)
+	lines = pane.Scrollbar(s.th, lines, w, pane.ClampTop(s.detailTop, len(all), h), len(all))
 	c := content{lines: lines, hits: map[int]hit{}}
 	for row, id := range hits {
 		c.hits[row] = hit{kind: "action", id: id}
@@ -80,12 +80,12 @@ func (s Shell) detailContent(w, h int) content {
 func (s *Shell) scrollDetail(delta int) {
 	r := s.detailRect()
 	lines, _ := s.detailPanel().View(s.th, r.W, "")
-	s.detailTop = detail.ClampTop(s.detailTop+delta, len(lines), r.H)
+	s.detailTop = pane.ClampTop(s.detailTop+delta, len(lines), r.H)
 }
 
 // pageDetail scrolls the detail by a page up (dir -1) or down (dir 1).
 func (s *Shell) pageDetail(dir int) {
-	s.scrollDetail(dir * detail.PageStep(s.detailRect().H))
+	s.scrollDetail(dir * pane.PageStep(s.detailRect().H))
 }
 
 // detailIdentity changes when the selection the detail tells about changes,

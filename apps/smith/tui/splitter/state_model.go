@@ -1,6 +1,9 @@
 package splitter
 
-import "maps"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"maps"
+)
 
 // State is what the person did to the dividers: the sizes they set, the divider
 // the keys move and the one the pointer holds. It is a value; every method
@@ -29,7 +32,7 @@ func (s State) set(p Spot, size int) State {
 	if sizes == nil {
 		sizes = map[string]int{}
 	}
-	sizes[p.ID] = p.clamp(size)
+	sizes[p.ID] = pane.Clamp(size, p.Min, p.Max)
 	s.Sizes = sizes
 	return s
 }
@@ -42,6 +45,12 @@ func find(spots []Spot, id string) (Spot, bool) {
 		}
 	}
 	return Spot{}, false
+}
+
+// SelectedIn is true while the selected divider is one of spots.
+func (s State) SelectedIn(spots []Spot) bool {
+	_, ok := find(spots, s.Selected)
+	return ok
 }
 
 // Look is how the divider id is drawn: held, selected, or at rest.

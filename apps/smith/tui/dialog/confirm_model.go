@@ -1,14 +1,13 @@
 package dialog
 
 import (
-	"strings"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
@@ -31,7 +30,7 @@ type Confirm struct {
 	Info bool
 	// focus is 0 for Run, 1 for Cancel; hover is the button under the pointer or -1.
 	focus, hover int
-	rect         Rect
+	rect         layout.Rect
 	cmdLines     []string
 	// Offer shows the box "Commit this change so it can be undone"; Commit is
 	// true once it is ticked. It starts unticked: smith commits only when asked.
@@ -166,168 +165,32 @@ func (c Confirm) Place(sw, sh int) Confirm {
 	inner := w - 4
 	c.cmdLines = nil
 	if !c.Info {
-		c.cmdLines = wrap(c.Command, inner-4) // room for the "  $ " in front
+		c.cmdLines = pane.WrapWords(c.Command, inner-4) // room for the "  $ " in front
 	}
 	body := c.bodyLines(inner)
 	h := len(body) + 4 // borders, blank line, buttons
 	h = min(h, avail)
-	c.rect = Rect{X: max((sw-w)/2, 0), Y: c.top + max((avail-h)/2, 0), W: w, H: h}
+	c.rect = layout.Rect{X: max((sw-w)/2, 0), Y: c.top + max((avail-h)/2, 0), W: w, H: h}
 	return c
 }
 
 // Rect is where the dialog sits after Place.
-func (c Confirm) Rect() Rect { return c.rect }
+func (c Confirm) Rect() layout.Rect { return c.rect }
 
-// headLines are the sentence and the details: the part that scrolls.
-func (c Confirm) headLines(inner int) []string {
-	body := append([]string(nil), wrap(c.Why, inner)...)
-	if len(c.Details) > 0 {
-		body = append(body, "")
-		for _, d := range c.Details {
-			body = append(body, wrap(d, inner)...)
-		}
-	}
-	return body
-}
-
-// tailLines are the commit box and the command that will run: they always
-// stay on screen. A notice has none.
-func (c Confirm) tailLines() []string {
+// buttonLabels are the labels and keys of the buttons: Run and Stop, or only
+// OK for an info dialog.
+func (c Confirm) buttonLabels() (labels, keys []string) {
 	if c.Info {
-		return nil
+		return []string{buttonOK}, []string{keyEnter}
 	}
-	var tail []string
-	if c.Offer {
-		box := "[ ] "
-		if c.Commit {
-			box = "[x] " // words:literal
-		}
-		tail = append(tail, "", box+CommitLabel+words.Say("dialog.commit.key"))
-	}
-	caption := words.Say("dialog.command.will")
-	if c.reading {
-		caption = words.Say("dialog.command.running")
-	}
-	tail = append(tail, "", caption)
-	for i, l := range c.cmdLines {
-		// Only the first line has the prompt: a "$" on each would read as many commands.
-		prefix := "  $ "
-		if i > 0 {
-			prefix = "    "
-		}
-		tail = append(tail, prefix+l)
-	}
-	return tail
+	return []string{buttonRun, buttonStop}, []string{keyEnter, keyEsc}
 }
 
-func (c Confirm) bodyLines(inner int) []string {
-	return append(c.headLines(inner), c.tailLines()...)
-}
-
-// headRoom is how many rows the head has on screen.
-func (c Confirm) headRoom() int { return max(c.rect.H-4-len(c.tailLines()), 0) }
-
-// shownHead is the part of the head on screen, and how many lines are hidden
-// below it: when the head does not fit, the last row says so.
-func (c Confirm) shownHead(inner int) (shown []string, hidden int) {
-	head, room := c.headLines(inner), c.headRoom()
-	if len(head) <= room {
-		return head, 0
-	}
-	if room < 2 {
-		return nil, len(head)
-	}
-	from := min(max(c.scroll, 0), len(head)-(room-1))
-	end := from + room - 1
-	return head[from:end], len(head) - end
-}
-
-// buttonsRow returns the row of buttons for the inner width and the columns
-// (relative to the dialog's left edge) of each.
-func (c Confirm) buttonsRow(inner int) [2][2]int { return c.buttonsIn(theme.Default(), inner) }
-
-// buttonsIn is buttonsRow for the theme the dialog is drawn with.
-func (c Confirm) buttonsIn(th theme.Theme, inner int) (spans [2][2]int) {
-	run, stop := button.Width(th, buttonRun, keyEnter), button.Width(th, buttonStop, keyEsc)
-	if c.Info {
-		run, stop = button.Width(th, buttonOK, keyEnter), 0
-	}
-	total := run + 1 + stop
-	start := 2 + max((inner-total)/2, 0)
-	spans[0] = [2]int{start, start + run}
-	spans[1] = [2]int{start + run + 1, start + run + 1 + stop}
-	return spans
-}
-
-// Lines draws the dialog: Rect().H lines of Rect().W cells, in the same rounded border as a pane, in the accent colour.
-func (c Confirm) Lines(th theme.Theme) []string {
-	r := c.rect
-	if r.W < 6 || r.H < 3 {
-		return nil
-	}
-	inner := r.W - 4
-	rows := make([]string, 0, r.H-2)
-	row := func(content string) string { return " " + pane.Fit(content, r.W-4) }
-	shown, hidden := c.shownHead(inner)
-	if c.Working() && hidden == 0 && len(shown) > 0 {
-		shown = append(append([]string(nil), shown[:len(shown)-1]...), th.Accent(th.Spin(c.tick))+" "+progress.Waiting(c.working+"…", c.elapsed))
-	}
-	for _, l := range shown {
-		rows = append(rows, row(l))
-	}
-	if hidden > 0 && c.headRoom() >= 2 {
-		rows = append(rows, row(th.Muted(words.Say("dialog.more", "count", hidden))))
-	}
-	for len(rows) < c.headRoom() {
-		rows = append(rows, row(""))
-	}
-	tail := c.tailLines()
-	for i, l := range tail {
-		if i >= len(tail)-len(c.cmdLines) {
-			l = th.Bold(l)
-		}
-		rows = append(rows, row(l))
-	}
-	rows = append(rows, row(""))
-	spans := c.buttonsIn(th, inner)
-	line := strings.Repeat(" ", spans[0][0]-2)
-	type face struct{ label, key string }
-	faces := []face{{buttonRun, keyEnter}, {buttonStop, keyEsc}}
-	if c.Info {
-		faces = []face{{buttonOK, keyEnter}}
-	}
-	for i, f := range faces {
-		state := button.Rest
-		switch {
-		case c.Working() && i == 0:
-			// Run waits for the plan: it is drawn disabled and does nothing.
-			state = button.Disabled
-		case i == c.hover:
-			state = button.Hover
-		case i == c.focus:
-			state = button.Active
-		}
-		line += button.Render(th, f.label, f.key, state)
-		if i == 0 && len(faces) > 1 {
-			line += " "
-		}
-	}
-	rows = append(rows, row(line))
-	return pane.Frame(th, c.Title, rows, r.W, r.H, true)
-}
-
-func (c Confirm) buttonAt(x, y int) int {
-	r := c.rect
-	if y != r.Y+r.H-2 {
-		return -1
-	}
-	spans := c.buttonsRow(r.W - 4)
-	for i, s := range spans {
-		if x-r.X >= s[0] && x-r.X < s[1] {
-			return i
-		}
-	}
-	return -1
+// buttonsRow returns the columns (relative to the dialog's left edge) of each
+// button for the inner width.
+func (c Confirm) buttonsRow(inner int) [][2]int {
+	labels, keys := c.buttonLabels()
+	return button.RowSpans(theme.Default(), labels, keys, inner)
 }
 
 // commitRow is the index, in the body, of the line with the box.
@@ -336,7 +199,10 @@ func (c Confirm) commitRow() int {
 }
 
 // Hover highlights the button under the pointer.
-func (c Confirm) Hover(x, y int) Confirm { c.hover = c.buttonAt(x, y); return c }
+func (c Confirm) Hover(x, y int) Confirm {
+	c.hover = button.At(c.buttonsRow(c.rect.W-4), c.rect, x, y)
+	return c
+}
 
 // Click handles a left press: a button runs or cancels; a press outside the
 // dialog cancels; a press inside elsewhere does nothing.
@@ -344,7 +210,7 @@ func (c Confirm) Click(x, y int) (Confirm, Outcome) {
 	if c.Offer && c.rect.Contains(x, y) && y == c.rect.Y+1+c.commitRow() {
 		return c.toggleCommit(), Outcome{}
 	}
-	switch c.buttonAt(x, y) {
+	switch button.At(c.buttonsRow(c.rect.W-4), c.rect, x, y) {
 	case 0:
 		if c.Working() {
 			return c, Outcome{}
@@ -377,61 +243,33 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		}
 		return c, Outcome{}
 	}
-	switch name {
-	case "c", "C": // words:literal
-		if c.Offer {
-			return c.toggleCommit(), Outcome{}
-		}
-	case "y", "Y": // words:literal
-		return c, Outcome{Done: true, Confirmed: true}
-	case "n", "N", "esc", "ctrl+c", "q": // words:literal
-		return c, Outcome{Done: true}
-	case "enter", " ":
-		return c, Outcome{Done: true, Confirmed: c.focus == 0}
-	case "tab", "right", "left", "shift+tab":
-		c.focus = 1 - c.focus
-	case "up", "k":
+	switch commands.Nav(name) {
+	case commands.NavUp:
 		c.scroll = max(c.scroll-1, 0)
-	case "down", "j":
+	case commands.NavDown:
 		c.scroll++
-	case "pgup":
+	case commands.NavPageUp:
 		c.scroll = max(c.scroll-max(c.headRoom()-1, 1), 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		c.scroll += max(c.headRoom()-1, 1)
+	default:
+		switch name {
+		case "c", "C": // words:literal
+			if c.Offer {
+				return c.toggleCommit(), Outcome{}
+			}
+		case "y", "Y": // words:literal
+			return c, Outcome{Done: true, Confirmed: true}
+		case "n", "N", "esc", "ctrl+c", "q": // words:literal
+			return c, Outcome{Done: true}
+		case "enter", " ":
+			return c, Outcome{Done: true, Confirmed: c.focus == 0}
+		case "tab", "right", "left", "shift+tab":
+			c.focus = 1 - c.focus
+		}
 	}
 	if head := len(c.headLines(max(c.rect.W-4, 1))); c.scroll > head {
 		c.scroll = head
 	}
 	return c, Outcome{}
-}
-
-// wrap breaks s into lines of at most w cells at spaces, hard-cutting words
-// that are longer.
-func wrap(s string, w int) []string {
-	if w < 1 {
-		return []string{s}
-	}
-	var out []string
-	for _, para := range strings.Split(s, "\n") {
-		line := ""
-		for _, word := range strings.Fields(para) {
-			for ansi.StringWidth(word) > w {
-				if line != "" {
-					out, line = append(out, line), ""
-				}
-				out = append(out, ansi.Truncate(word, w, ""))
-				word = ansi.TruncateLeft(word, w, "")
-			}
-			switch {
-			case line == "":
-				line = word
-			case ansi.StringWidth(line)+1+ansi.StringWidth(word) <= w:
-				line += " " + word
-			default:
-				out, line = append(out, line), word
-			}
-		}
-		out = append(out, line)
-	}
-	return out
 }

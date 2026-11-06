@@ -1,6 +1,7 @@
 package adoptwizard
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strconv"
 	"strings"
 
@@ -133,11 +134,7 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 // commitBox is the tick box that asks for the change to be committed; a click
 // on its line, or the c key, flips it.
 func commitBox(commit bool) string {
-	box := "[ ]"
-	if commit {
-		box = "[x]"
-	}
-	return words.Say("adopt.commit.box", "box", box)
+	return words.Say("adopt.commit.box", "box", choicerow.Box(commit, false))
 }
 
 // reviewHeader goes above the full plan.

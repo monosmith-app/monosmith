@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/logview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/runhistory"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
@@ -99,29 +99,13 @@ func (s Shell) failedArgv() []string {
 	if s.run == nil || !s.run.Finished {
 		return nil
 	}
-	var tasks, projects []string
-	add := func(list []string, v string) []string {
-		for _, have := range list {
-			if have == v {
-				return list
-			}
-		}
-		return append(list, v)
-	}
+	var ids []string
 	for _, t := range s.run.Ordered() {
-		if t.Status != runview.Failed && t.Status != runview.Skipped {
-			continue
+		if t.Status == runview.Failed || t.Status == runview.Skipped {
+			ids = append(ids, t.ID)
 		}
-		project, task, ok := strings.Cut(t.ID, ":")
-		if !ok {
-			continue
-		}
-		projects, tasks = add(projects, project), add(tasks, task)
 	}
-	if len(tasks) == 0 {
-		return nil
-	}
-	return append(append([]string{"run"}, tasks...), flagvocabulary.Arg("project"), strings.Join(projects, ","))
+	return runhistory.RerunFailed(ids)
 }
 
 // copyLog puts the log shown on the clipboard: one task's output, or all of it.

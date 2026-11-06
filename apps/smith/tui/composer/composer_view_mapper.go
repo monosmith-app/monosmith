@@ -1,6 +1,7 @@
 package composer
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"slices"
 	"strings"
 
@@ -124,14 +125,7 @@ func (m *Model) listLines(th theme.Theme, inner int) []string {
 
 // row is one item: a box, the title, where it is for, and what it is.
 func (m Model) row(th theme.Theme, it compose.Item, selected, inStack bool) string {
-	box := "[ ]"
-	if m.isTicked(it) {
-		box = "[x]"
-	}
-	if it.Kind == compose.KindPlugin {
-		box = "[-]"
-	}
-	text := box + " " + it.Title
+	text := choicerow.Box(m.isTicked(it), it.Kind == compose.KindPlugin) + " " + it.Title
 	if it.Language != "" && it.Kind != compose.KindLanguage {
 		text += th.Muted(" (" + it.Language + ")")
 	}

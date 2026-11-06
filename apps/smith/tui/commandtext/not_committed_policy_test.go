@@ -1,4 +1,4 @@
-package tui
+package commandtext
 
 import "testing"
 
@@ -16,7 +16,7 @@ func TestSaidNotCommittedReadsTheLineSmithPrints(t *testing.T) {
 		"word in a path": {[]string{"wrote docs/Not committed.md"}, false},
 	}
 	for name, c := range cases {
-		if got := saidNotCommitted(c.lines); got != c.want {
+		if got := SaidNotCommitted(c.lines); got != c.want {
 			t.Errorf("%s: got %v, want %v", name, got, c.want)
 		}
 	}

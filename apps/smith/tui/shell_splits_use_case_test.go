@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 )
 
 func drag(x, y int) tea.MouseMsg {
@@ -57,7 +58,7 @@ func TestShiftArrowsSelectTheDividerAndBracketsMoveItUntilEscLetsGo(t *testing.T
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
 	l.has("┃", "Divider selected")
 	l.keys("]")
-	if got := l.sh().lay().Detail.W; got != before-splitStep {
+	if got := l.sh().lay().Detail.W; got != before-splitter.Step {
 		t.Fatalf("] moves the selected divider right: %d -> %d", before, got)
 	}
 	l.keys("esc")
@@ -80,7 +81,7 @@ func TestTheBracketsMoveTheOnlyDividerWithNoSelection(t *testing.T) {
 	l := doctorLab(t, 140, 30)
 	before := l.sh().lay().Detail.W
 	l.keys("[")
-	if got := l.sh().lay().Detail.W; got != before+splitStep {
+	if got := l.sh().lay().Detail.W; got != before+splitter.Step {
 		t.Fatalf("[ widens the detail: %d -> %d", before, got)
 	}
 }
@@ -125,8 +126,8 @@ func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
 	l.send(tea.KeyMsg{Type: tea.KeyShiftRight})
 	l.keys("]")
 	after := l.sh().settings.Geometry(in.W, in.H)
-	if after.ListW != before.ListW+splitStep {
-		t.Fatalf("the list of sections is %d wide, want %d", after.ListW, before.ListW+splitStep)
+	if after.ListW != before.ListW+splitter.Step {
+		t.Fatalf("the list of sections is %d wide, want %d", after.ListW, before.ListW+splitter.Step)
 	}
 	if after.SepRow < 0 {
 		t.Skip("the section has no detail to resize")
@@ -134,7 +135,7 @@ func TestTheSettingsDividersMoveWithTheKeys(t *testing.T) {
 	l.send(tea.KeyMsg{Type: tea.KeyShiftDown})
 	l.keys("]")
 	moved := l.sh().settings.Geometry(in.W, in.H)
-	if moved.DetailRows != after.DetailRows-splitStep && moved.DetailRows != moved.DetailMin {
+	if moved.DetailRows != after.DetailRows-splitter.Step && moved.DetailRows != moved.DetailMin {
 		t.Fatalf("moving the row divider down shrinks the detail: %d -> %d", after.DetailRows, moved.DetailRows)
 	}
 }

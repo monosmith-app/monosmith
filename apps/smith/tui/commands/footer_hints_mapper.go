@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
@@ -70,7 +71,7 @@ func scopedLabel(c Command, s State) string {
 	case c.All && s.Projects > 0:
 		return c.Footer + " " + strconv.Itoa(s.countFor(c.Task))
 	case !c.All && c.ScopeInFooter && s.RunProject() != "":
-		return c.Footer + " " + clip(s.RunProject(), maxScopeName)
+		return c.Footer + " " + ansi.Truncate(s.RunProject(), maxScopeName, "…")
 	case !c.All && c.ScopeInFooter && s.Projects > 0:
 		// Off the Projects view the key runs on the whole workspace.
 		return words.Say("commands.footer.all", "label", c.Footer, "count", s.countFor(c.Task))
@@ -87,13 +88,4 @@ func hasScopedSibling(c Command) bool {
 		}
 	}
 	return false
-}
-
-// clip shortens a name to n cells with an ellipsis.
-func clip(name string, n int) string {
-	r := []rune(name)
-	if len(r) <= n {
-		return name
-	}
-	return string(r[:n-1]) + "…"
 }

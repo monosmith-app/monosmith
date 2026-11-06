@@ -27,8 +27,6 @@ func (m Model) View(th theme.Theme, w, h, px, py int) []string {
 	return m.frame(th, w, h, px, py).lines
 }
 
-func clamp(v, lo, hi int) int { return min(max(v, lo), max(lo, hi)) }
-
 func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 	f := frame{rowItem: map[int]int{}, rowSection: map[int]Section{}}
 	if w < 1 || h < 1 {
@@ -174,9 +172,9 @@ func (m Model) sectionsWidth(w int) int {
 	case w < 30:
 		return max(w/3, 0)
 	case m.listW > 0:
-		return clamp(m.listW, minSections, max(w-minRight, minSections))
+		return pane.Clamp(m.listW, minSections, max(w-minRight, minSections))
 	}
-	return clamp(w/5, minSections, 16)
+	return pane.Clamp(w/5, minSections, 16)
 }
 
 // rowSplit divides the body of the right pane (the rows under its heading) into
@@ -191,7 +189,7 @@ func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
 	if avail >= 9 {
 		detailH = min(detailWant[m.section], avail-5)
 		if m.detailRows > 0 {
-			detailH = clamp(m.detailRows, minDetailRows, avail-5)
+			detailH = pane.Clamp(m.detailRows, minDetailRows, avail-5)
 		}
 	}
 	listH = avail

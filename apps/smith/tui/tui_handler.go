@@ -199,12 +199,3 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	}
 	return Chosen{Argv: argv, Form: sh.Form, Answers: sh.Answers}, nil, nil
 }
-
-// saveSplits keeps the sizes of the panels in the preferences file; a file that
-// cannot be written loses only the sizes, so the error is dropped.
-func saveSplits(sizes map[string]int) {
-	home := pluginhost.Home()
-	p, _ := userprefs.Load(home)
-	p.Splits = sizes
-	_ = userprefs.Save(home, p)
-}

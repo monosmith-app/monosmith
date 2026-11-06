@@ -1,6 +1,8 @@
 package composer
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"regexp"
 	"slices"
 	"strings"
@@ -9,7 +11,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/choiceselect"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
@@ -68,7 +69,7 @@ type Model struct {
 	note    string
 
 	w, h int
-	rect dialog.Rect
+	rect layout.Rect
 }
 
 // New builds the screen on a catalogue (the output of smith compose --json).
@@ -98,7 +99,7 @@ func (m Model) Place(sw, sh int) Model {
 	m.w, m.h = sw, sh
 	w := min(max(sw-6, 40), 104)
 	h := min(max(sh-2, 12), 34)
-	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	m.search.Width = max(w-14, 10)
 	m.name.Width = max(w-20, 10)
 	return m
@@ -111,7 +112,7 @@ func (m Model) Wheel(delta int) Model {
 }
 
 // Rect is where the screen sits after Place.
-func (m Model) Rect() dialog.Rect { return m.rect }
+func (m Model) Rect() layout.Rect { return m.rect }
 
 // Check is what the ticks add up to now.
 func (m Model) Check() compose.Check { return m.chk }
@@ -259,6 +260,26 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Outcome) {
 
 // browseKey handles a key while the person searches and ticks.
 func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavUp:
+		m.cursor = max(m.cursor-1, 0)
+		return m, Outcome{}
+	case commands.NavDown:
+		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
+		return m, Outcome{}
+	case commands.NavPageUp:
+		m.cursor = max(m.cursor-8, 0)
+		return m, Outcome{}
+	case commands.NavPageDown:
+		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
+		return m, Outcome{}
+	case commands.NavHome:
+		m.cursor = 0
+		return m, Outcome{}
+	case commands.NavEnd:
+		m.cursor = max(m.length()-1, 0)
+		return m, Outcome{}
+	}
 	switch msg.String() {
 	case "ctrl+c":
 		return m, Outcome{Done: true}
@@ -272,18 +293,6 @@ func (m Model) browseKey(msg tea.KeyMsg) (Model, Outcome) {
 			return m, Outcome{}
 		}
 		return m, Outcome{Done: true}
-	case "up":
-		m.cursor = max(m.cursor-1, 0)
-	case "down":
-		m.cursor = min(m.cursor+1, max(m.length()-1, 0))
-	case "pgup":
-		m.cursor = max(m.cursor-8, 0)
-	case "pgdown":
-		m.cursor = min(m.cursor+8, max(m.length()-1, 0))
-	case "home":
-		m.cursor = 0
-	case "end":
-		m.cursor = max(m.length()-1, 0)
 	case "tab":
 		m.stack, m.cursor = !m.stack, 0
 	case "enter":
@@ -364,14 +373,14 @@ func (m Model) questionKey(key string) (Model, Outcome) {
 		m.stage = stBrowse
 		return m, Outcome{}
 	}
-	switch key {
-	case "ctrl+c", "esc":
+	switch commands.NavNamed(key) {
+	case commands.NavCancel:
 		m.stage = stBrowse
-	case "up":
+	case commands.NavUp:
 		m.qcursor = max(m.qcursor-1, 0)
-	case "down":
+	case commands.NavDown:
 		m.qcursor = min(m.qcursor+1, len(q.Options)-1)
-	case "enter":
+	case commands.NavConfirm:
 		answer := q.Options[min(m.qcursor, len(q.Options)-1)]
 		for _, it := range m.cat.Items {
 			if it.Kind == compose.KindChoice && it.Name == answer.Name && it.Language == m.language() {

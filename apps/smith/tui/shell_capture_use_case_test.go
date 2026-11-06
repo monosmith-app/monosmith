@@ -186,15 +186,6 @@ func TestTheReportIsWrittenToATemporaryFileAndOpened(t *testing.T) {
 	l.has("Report opened in your browser", "smith-report-")
 }
 
-func TestReportTargetReadsTheOutputFile(t *testing.T) {
-	for argv, want := range map[string]string{"report -o a.html": "a.html", "report --output b.html": "b.html", "report": "", "doctor -o x": ""} {
-		got, ok := reportTarget(strings.Fields(argv))
-		if got != want || ok != (want != "") {
-			t.Errorf("%q: %q %v", argv, got, ok)
-		}
-	}
-}
-
 func TestReleasingOnAChannelRepeatsTheNoticeInTheConfirmation(t *testing.T) {
 	l := newLab(t, true, 140, 40)
 	l.keys("6") // the plan is read

@@ -2,6 +2,7 @@ package settingsview
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/choicerow"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
@@ -31,11 +32,11 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 	switch it.kind {
 	case kindPlugin:
 		p := m.snap.Plugins[it.idx]
-		box, state := "[ ]", th.Muted(words.Say("settingsview.row.off"))
+		state := th.Muted(words.Say("settingsview.row.off"))
 		if p.Enabled {
-			box, state = "[x]", th.Success(words.Say("settingsview.row.on"))
+			state = th.Success(words.Say("settingsview.row.on"))
 		}
-		return "   " + box + " " + pane.Cell(p.Name, 14) + state
+		return "   " + choicerow.Box(p.Enabled, false) + " " + pane.Cell(p.Name, 14) + state
 	case kindExternal:
 		p := m.snap.External[it.idx]
 		mark, state := th.Success(th.Icons.Passed), words.Say("settingsview.row.trusted")
@@ -60,11 +61,11 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + th.Accent(words.Say("settingsview.row.search")) + "  " + th.Muted("smith plugin search") // words:literal
 	case kindArchitecture:
 		a := m.snap.Architectures[it.idx]
-		return "   " + m.radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
+		return "   " + choicerow.Radio(th, a.Name == m.snap.Architecture) + " " + pane.Cell(a.Name, 16) + th.Muted(a.Meaning)
 	case kindTheme:
-		return "   " + m.radio(th, normalise(it.key) == m.savedTheme) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(themeAbout[it.key]))
+		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedTheme) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(themeAbout[it.key]))
 	case kindIcons:
-		return "   " + m.radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
+		return "   " + choicerow.Radio(th, normalise(it.key) == m.savedIcons) + " " + pane.Cell(it.key, 8) + th.Muted(words.Say(iconsAbout[it.key]))
 	case kindSetting:
 		st := m.snap.Settings[it.idx]
 		return "   " + pane.Cell(st.Path, m.pathWidth(w)) + shownValue(th, st)
@@ -79,14 +80,6 @@ func (m Model) itemRow(th theme.Theme, it item, w int) string {
 		return "   " + pane.Cell(f.Title, 28) + th.Muted(f.Hint)
 	}
 	return ""
-}
-
-// radio is the mark of a choice that is the saved one.
-func (m Model) radio(th theme.Theme, on bool) string {
-	if on {
-		return "(" + th.Success(th.Icons.Dot) + ")"
-	}
-	return "( )"
 }
 
 // pathWidth is the width of the setting names: the longest, up to half the pane.
@@ -278,11 +271,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 	case editMulti:
 		lines = append(lines, "")
 		for i, c := range e.choices {
-			box := "[ ]"
-			if e.marked[i] {
-				box = "[x]"
-			}
-			row := " " + map[bool]string{true: th.Icons.Pointer, false: " "}[i == e.at] + " " + box + " " + c
+			row := " " + choicerow.Render(th, c, e.marked[i], i == e.at, false)
 			if i == e.at {
 				row = th.Selected(pane.Fit(pane.Strip(row), w))
 			}
@@ -295,7 +284,7 @@ func (m Model) editorLines(th theme.Theme, w, h int) (lines []string, rowOf map[
 			text = append(text, pane.Wrap(" "+l, max(w, 4), 3)...)
 		}
 		room := max(h-len(lines)-3, 1)
-		top := clamp(e.top, 0, len(text)-room)
+		top := pane.Clamp(e.top, 0, len(text)-room)
 		lines = append(lines, text[top:min(top+room, len(text))]...)
 		keys = words.Say("settingsview.keys.review")
 		if e.trusted {

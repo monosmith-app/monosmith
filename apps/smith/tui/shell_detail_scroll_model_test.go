@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -103,19 +104,19 @@ func TestBracketsMoveTheDividerAndTheWidthIsKeptForThatView(t *testing.T) {
 	l := doctorLab(t, 140, 30)
 	before := l.sh().lay().Detail.W
 	l.keys("]")
-	if got := l.sh().lay().Detail.W; got != before-splitStep {
-		t.Fatalf("] moves the divider right, so the detail narrows by %d: %d -> %d", splitStep, before, got)
+	if got := l.sh().lay().Detail.W; got != before-splitter.Step {
+		t.Fatalf("] moves the divider right, so the detail narrows by %d: %d -> %d", splitter.Step, before, got)
 	}
 	l.keys("[", "[")
-	if got := l.sh().lay().Detail.W; got != before+splitStep {
+	if got := l.sh().lay().Detail.W; got != before+splitter.Step {
 		t.Fatalf("[ moves the divider left: %d", got)
 	}
 	l.keys("2")
-	if got := l.sh().lay().Detail.W; got == before+splitStep {
+	if got := l.sh().lay().Detail.W; got == before+splitter.Step {
 		t.Fatalf("each view keeps its own width, Projects has %d", got)
 	}
 	l.keys("4")
-	if got := l.sh().lay().Detail.W; got != before+splitStep {
+	if got := l.sh().lay().Detail.W; got != before+splitter.Step {
 		t.Fatalf("Doctor keeps the width it was given: %d", got)
 	}
 	for i := 0; i < 40; i++ {

@@ -6,9 +6,6 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// splitStep is how many cells one press of [ or ] moves a divider.
-const splitStep = 4
-
 // splitKey handles the keys of the dividers: the backslash selects the next
 // one and the bar the previous; Shift+arrows select one too (Shift+← and
 // Shift+↑ the previous, Shift+→ and Shift+↓ the next, of the same direction);
@@ -18,34 +15,18 @@ func (s *Shell) splitKey(name string) bool {
 		return false
 	}
 	spots := s.spots()
-	axis, dir := splitter.Column, 0
-	switch name {
-	case "shift+left":
-		dir = -1
-	case "shift+right":
-		dir = 1
-	case "shift+up":
-		axis, dir = splitter.Row, -1
-	case "shift+down":
-		axis, dir = splitter.Row, 1
-	}
-	switch name {
-	case `\`, "|":
-		// One key, any terminal: the backslash picks the next divider, the bar the previous.
-		dir = 1
-		if name == "|" {
-			dir = -1
-		}
-		next, ok := s.split.Cycle(spots, dir)
+	in := splitter.IntentOf(name)
+	switch in.Action {
+	case splitter.CycleKey:
+		next, ok := s.split.Cycle(spots, in.Dir)
 		if !ok {
 			return false
 		}
 		s.split = next
 		s.say(words.Say("tui.split.selected"))
 		return true
-	}
-	if dir != 0 {
-		next, ok := s.split.Select(spots, axis, dir)
+	case splitter.SelectKey:
+		next, ok := s.split.Select(spots, in.Axis, in.Dir)
 		if !ok {
 			// No divider this way: the key keeps its other meaning (a list marks rows with it).
 			return false
@@ -53,25 +34,14 @@ func (s *Shell) splitKey(name string) bool {
 		s.split = next
 		s.say(words.Say("tui.split.selected"))
 		return true
-	}
-	if !s.splitSelected(spots) {
-		return false
-	}
-	switch name {
-	case "tab":
-		s.split, _ = s.split.Cycle(spots, 1)
-		return true
-	case "esc":
-		s.split = s.split.Deselect()
-		return true
-	}
-	return false
-}
-
-// splitSelected is true while the selected divider is on this screen.
-func (s Shell) splitSelected(spots []splitter.Spot) bool {
-	for _, p := range spots {
-		if p.ID == s.split.Selected {
+	case splitter.AdvanceKey:
+		if s.split.SelectedIn(spots) {
+			s.split, _ = s.split.Cycle(spots, in.Dir)
+			return true
+		}
+	case splitter.ReleaseKey:
+		if s.split.SelectedIn(spots) {
+			s.split = s.split.Deselect()
 			return true
 		}
 	}
@@ -81,7 +51,7 @@ func (s Shell) splitSelected(spots []splitter.Spot) bool {
 // moveSplit moves the selected divider one step towards the right or the
 // bottom (dir 1) or the left or the top (dir -1).
 func (s *Shell) moveSplit(dir int) {
-	next, p, ok := s.split.Move(s.spots(), dir, splitStep)
+	next, p, ok := s.split.Move(s.spots(), dir, splitter.Step)
 	if !ok {
 		s.say(words.Say("tui.split.none"))
 		return

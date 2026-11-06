@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"strings"
 	"time"
 
@@ -281,8 +282,8 @@ func (s Shell) runGeom(w, h int) runGeom {
 	n := len(s.runIDs())
 	avail := max(h-g.listTop-2, 1)
 	g.listRows = min(n, max(min(avail, 2), avail*2/5))
-	if given, ok := s.split.Size(splitRunList); ok {
-		g.listRows = min(max(given, minRunListRows), max(avail-minLogRows, minRunListRows))
+	if given, ok := s.split.Size(splitter.RunListID); ok {
+		g.listRows = splitter.RunListRows(given, avail)
 	}
 	g.sepRow = g.listTop + g.listRows
 	g.logTop = g.sepRow + 1

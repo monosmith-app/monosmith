@@ -56,7 +56,7 @@ flowchart TD
 | `tui/commands` | the keymap and everything computed from it: availability, footer hints, help rows, key labels, parsing a run request |
 | `tui/theme` | tokens (dark, light, plain), icons (Unicode, ASCII), the theme chosen from the environment |
 | `tui/layout`, `pane`, `tabs`, `footer`, `statusbar`, `toast`, `detail` | geometry and drawing of the pieces |
-| `tui/dialog`, `palette`, `guide` | confirmation and help dialogs, the command palette, guided forms |
+| `tui/dialog`, `helpdialog`, `palette`, `guide` | the confirmation dialog, the shortcuts overlay, the command palette, guided forms |
 | `tui/dashboard`, `projectlist`, `runview`, `logview`, `doctorview`, `depsview`, `releaseview` | the views |
 | `tui/fixwizard`, `tui/adoptwizard` | the doctor fix dialog and the adopt dialog |
 | `tui/composer` | the screen of `smith compose` and of the first question of `add` ("What are you building?"), over the catalogue of the `compose` slice ([ADR 0076](decisions/0076-one-composer-for-the-stack-of-a-project.md), [ADR 0078](decisions/0078-the-first-run-is-a-set-of-choices-not-a-manual.md)) |

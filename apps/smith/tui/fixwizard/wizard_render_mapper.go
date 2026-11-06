@@ -2,13 +2,12 @@ package fixwizard
 
 import (
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -66,31 +65,11 @@ func (w Wizard) buttonSpans(inner int) [][2]int { return w.spansIn(theme.Default
 // spansIn is buttonSpans for the theme the dialog is drawn with: without
 // colour every button is two cells wider, for its brackets.
 func (w Wizard) spansIn(th theme.Theme, inner int) [][2]int {
-	bs := w.buttons()
-	total := max(len(bs)-1, 0)
-	for _, b := range bs {
-		total += button.Width(th, b.label, b.key)
+	var labels, keys []string
+	for _, b := range w.buttons() {
+		labels, keys = append(labels, b.label), append(keys, b.key)
 	}
-	x := 2 + max((inner-total)/2, 0)
-	var spans [][2]int
-	for _, b := range bs {
-		spans = append(spans, [2]int{x, x + button.Width(th, b.label, b.key)})
-		x += button.Width(th, b.label, b.key) + 1
-	}
-	return spans
-}
-
-func (w Wizard) buttonAt(x, y int) int {
-	r := w.Rect()
-	if y != r.Y+r.H-2 {
-		return -1
-	}
-	for i, s := range w.buttonSpans(r.W - 4) {
-		if x-r.X >= s[0] && x-r.X < s[1] {
-			return i
-		}
-	}
-	return -1
+	return button.RowSpans(th, labels, keys, inner)
 }
 
 // width is the dialog's width on the screen it was placed on.
@@ -105,14 +84,14 @@ func (w Wizard) width() int {
 func (w Wizard) visible() int { return max(w.Rect().H-4, 1) }
 
 // Rect is where the dialog sits.
-func (w Wizard) Rect() dialog.Rect {
+func (w Wizard) Rect() layout.Rect {
 	width := w.width()
 	h := max(w.sh-2, 5)
 	if !w.LogOpen() {
 		rows, _ := w.rows(theme.Default(), 0)
 		h = min(len(rows)+4, h)
 	}
-	return dialog.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
+	return layout.Rect{X: max((w.sw-width)/2, 0), Y: max((w.sh-h)/2, 0), W: width, H: h}
 }
 
 func (w Wizard) bodyRows() []string {
@@ -303,7 +282,7 @@ func (w Wizard) optionAt(y int) (int, bool) {
 		return 0, false
 	}
 	if len(rows) > w.visible() {
-		line += detail.ClampTop(w.top, len(rows), w.visible())
+		line += pane.ClampTop(w.top, len(rows), w.visible())
 	}
 	for i := 0; i+1 < len(at); i++ {
 		if line >= at[i] && line < at[i+1] {
@@ -323,7 +302,7 @@ func (w Wizard) TextAt(y int) string {
 		return ""
 	}
 	if len(rows) > w.visible() {
-		line += detail.ClampTop(w.top, len(rows), w.visible())
+		line += pane.ClampTop(w.top, len(rows), w.visible())
 	}
 	if line >= len(rows) {
 		return ""
@@ -341,8 +320,8 @@ func (w Wizard) Lines(th theme.Theme, tick int) []string {
 	inner := r.W - 4
 	rows, _ := w.rows(th, tick)
 	total := len(rows)
-	rows, _ = detail.Window(th, rows, nil, w.top, w.visible())
-	rows = pane.Scrollbar(th, rows, inner, detail.ClampTop(w.top, total, w.visible()), total)
+	rows, _ = pane.WindowMarked(th, rows, nil, w.top, w.visible())
+	rows = pane.Scrollbar(th, rows, inner, pane.ClampTop(w.top, total, w.visible()), total)
 	out := make([]string, 0, r.H-2)
 	row := func(content string) string { return " " + pane.Fit(content, inner) }
 	for i, l := range rows {

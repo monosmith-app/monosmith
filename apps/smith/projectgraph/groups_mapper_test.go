@@ -71,8 +71,8 @@ func TestAProjectOverridesItsGroupField(t *testing.T) {
 func TestAGroupSeesTagsFromSmithToml(t *testing.T) {
 	p := nodeLib("a")
 	cfg := workspace.Config{
-		Groups: []workspace.Group{{Select: []string{"tag:ui"}, Tasks: map[string]workspace.TaskOverride{"build": {Outputs: []string{"dist"}}}}},
-		Projects:   map[string]workspace.ProjectOverride{"a": {Tags: []string{"ui"}}},
+		Groups:   []workspace.Group{{Select: []string{"tag:ui"}, Tasks: map[string]workspace.TaskOverride{"build": {Outputs: []string{"dist"}}}}},
+		Projects: map[string]workspace.ProjectOverride{"a": {Tags: []string{"ui"}}},
 	}
 	if err := ApplyOverrides(p, cfg); err != nil {
 		t.Fatal(err)

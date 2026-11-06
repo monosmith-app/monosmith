@@ -3,6 +3,7 @@ package tui
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commandtext"
 	"slices"
 	"strings"
 
@@ -197,7 +198,7 @@ func (s *Shell) output(msg outputMsg) tea.Cmd {
 	}
 	s.last = lastOf(s.run.Command, s.run.OK(), s.run.Cancelled, shortDuration(s.run.RunTime(s.now())))
 	cmds := []tea.Cmd{s.refreshAfter(s.run.Command)}
-	if _, ok := reportTarget(s.run.Command); ok && s.run.OK() {
+	if _, ok := commandtext.ReportTarget(s.run.Command); ok && s.run.OK() {
 		cmds = append(cmds, s.reportWritten(s.run.Command))
 	}
 	return tea.Batch(cmds...)
@@ -236,7 +237,7 @@ func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
 		s.notify(words.Say("tui.run.cancelled", "commandLine", s.run.CommandLine()), toast.Warning)
-	case s.run.OK() && undoable(s.run.Command, s.commitOps) && !saidNotCommitted(s.run.Lines):
+	case s.run.OK() && undoable(s.run.Command, s.commitOps) && !commandtext.SaidNotCommitted(s.run.Lines):
 		s.notify(s.summary()+". "+undoHint(), toast.Success)
 	case s.run.OK() && changesFiles(s.run.Command):
 		s.notify(s.summary()+". "+notCommittedHint(), toast.Success)

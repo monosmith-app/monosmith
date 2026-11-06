@@ -1,6 +1,9 @@
 package splitter
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+)
 
 // Axis is the direction a divider runs.
 type Axis int
@@ -41,10 +44,7 @@ func (p Spot) at(x, y int) int {
 
 // SizeAt is the size the panel gets when the divider is at (x, y), kept
 // between Min and Max.
-func (p Spot) SizeAt(x, y int) int { return p.clamp(p.Sign * (p.at(x, y) - p.Origin)) }
-
-// clamp keeps a size between Min and Max.
-func (p Spot) clamp(size int) int { return min(max(size, p.Min), max(p.Max, p.Min)) }
+func (p Spot) SizeAt(x, y int) int { return pane.Clamp(p.Sign*(p.at(x, y)-p.Origin), p.Min, p.Max) }
 
 // Look is how a divider is drawn.
 type Look int

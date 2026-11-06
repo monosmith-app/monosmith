@@ -46,3 +46,46 @@ func TestNoScreenDrawsAClickableItemByHand(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// handDrawnBox matches, inside a Go string, a tick box spelled by hand: "[ ]",
+// "[x]" or "[-]".
+var handDrawnBox = regexp.MustCompile(`"[^"]*\[[ x-]\]`)
+
+// boxGuardExempt are the directories that may spell a box: choicerow draws it,
+// theme owns the status icons (which are not tick boxes).
+var boxGuardExempt = map[string]bool{"choicerow": true, "theme": true}
+
+// TestNoScreenDrawsATickBoxByHand fails when a Go source under the TUI spells
+// "[ ]", "[x]" or "[-]" itself instead of calling choicerow.
+func TestNoScreenDrawsATickBoxByHand(t *testing.T) {
+	err := filepath.WalkDir("..", func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if path != ".." && boxGuardExempt[d.Name()] && filepath.Dir(path) == ".." {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		for n, line := range strings.Split(string(raw), "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "//") {
+				continue
+			}
+			if m := handDrawnBox.FindString(line); m != "" {
+				t.Errorf("%s:%d draws a tick box in %q by hand; use choicerow.Box", path, n+1, m)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

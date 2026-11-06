@@ -1,4 +1,4 @@
-package tui
+package runhistory
 
 import (
 	"time"
@@ -6,9 +6,9 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// agoText says how long ago something happened in a few words: "just now",
+// Ago says how long ago something happened in a few words: "just now",
 // "40s ago", "3 min ago", "2 h ago", "4 d ago". A negative age counts as now.
-func agoText(d time.Duration) string {
+func Ago(d time.Duration) string {
 	switch {
 	case d < 5*time.Second:
 		return words.Say("tui.format_ago.just_now")

@@ -1,11 +1,12 @@
 package toolsdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"slices"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
@@ -45,7 +46,7 @@ type Model struct {
 	opt     toolinstall.Option
 	out     []string
 	results []Result
-	rect    dialog.Rect
+	rect    layout.Rect
 }
 
 // New builds the dialog on the plans of the missing tools
@@ -67,12 +68,12 @@ func New(plans []toolinstall.ToolPlan) Model {
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 100)
 	h := min(max(sh-2, 12), 30)
-	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
+	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: h}
 	return m
 }
 
 // Rect is where the dialog sits after Place.
-func (m Model) Rect() dialog.Rect { return m.rect }
+func (m Model) Rect() layout.Rect { return m.rect }
 
 // Running is true while an install streams.
 func (m Model) Running() bool { return m.ph == phaseRun }
@@ -117,10 +118,10 @@ func (m Model) Key(name string) (Model, Outcome) {
 
 // move changes the cursor inside a list of n rows.
 func (m Model) move(name string, n int) Model {
-	switch name {
-	case "up", "k":
+	switch commands.Nav(name) {
+	case commands.NavUp:
 		m.cursor = max(m.cursor-1, 0)
-	case "down", "j":
+	case commands.NavDown:
 		m.cursor = min(m.cursor+1, n-1)
 	}
 	return m

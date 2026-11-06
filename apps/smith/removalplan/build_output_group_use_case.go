@@ -81,7 +81,7 @@ func importersByName(v *legacyinventory.Tree) map[string][]string {
 	importers := map[string][]string{}
 	for _, manifest := range v.ManifestPaths() {
 		var m struct {
-			Name                                                                 string
+			Name                                                                  string
 			Dependencies, DevDependencies, PeerDependencies, OptionalDependencies map[string]string
 		}
 		if json.Unmarshal([]byte(v.Read(manifest)), &m) != nil || m.Name == "" {

@@ -1,11 +1,11 @@
-package tui
+package runhistory
 
 import (
 	"testing"
 	"time"
 )
 
-func TestAgoTextNamesTheAgeInTheLargestFittingUnit(t *testing.T) {
+func TestAgoNamesTheAgeInTheLargestFittingUnit(t *testing.T) {
 	for _, c := range []struct {
 		d    time.Duration
 		want string
@@ -18,8 +18,8 @@ func TestAgoTextNamesTheAgeInTheLargestFittingUnit(t *testing.T) {
 		{2 * time.Hour, "2 h ago"},
 		{49 * time.Hour, "2 d ago"},
 	} {
-		if got := agoText(c.d); got != c.want {
-			t.Errorf("agoText(%v) = %q, want %q", c.d, got, c.want)
+		if got := Ago(c.d); got != c.want {
+			t.Errorf("Ago(%v) = %q, want %q", c.d, got, c.want)
 		}
 	}
 }

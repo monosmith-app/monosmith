@@ -1,11 +1,12 @@
 package resultdialog
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/layout"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
@@ -18,7 +19,7 @@ type Model struct {
 	cursor  int
 	// foot is the sentence under the list that tells what is safe.
 	foot string
-	rect dialog.Rect
+	rect layout.Rect
 	// working, tick and elapsed draw the moving line of a command that runs.
 	working string
 	tick    int
@@ -137,12 +138,12 @@ func NewWhichVersion(argv []string) Model {
 func (m Model) Place(sw, sh int) Model {
 	w := min(max(sw-6, 40), 92)
 	h := min(len(m.facts)*2+len(m.choices)*2+6, max(sh-2, 8))
-	m.rect = dialog.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: max(h, 8)}
+	m.rect = layout.Rect{X: max((sw-w)/2, 0), Y: max((sh-h)/2, 0), W: w, H: max(h, 8)}
 	return m
 }
 
 // Rect is where the dialog sits after Place.
-func (m Model) Rect() dialog.Rect { return m.rect }
+func (m Model) Rect() layout.Rect { return m.rect }
 
 // Cursor is the index of the choice under the cursor.
 func (m Model) Cursor() int { return m.cursor }
@@ -162,17 +163,17 @@ func (m Model) Labels() []string {
 // Returns: the new dialog and what the host must do; Esc closes with a note
 // that nothing was changed by the dialog.
 func (m Model) Key(name string) (Model, Outcome) {
-	switch name {
-	case "up", "k", "shift+tab":
+	switch commands.Nav(name) {
+	case commands.NavUp, commands.NavPrev:
 		m.cursor = max(m.cursor-1, 0)
-	case "down", "j", "tab":
+	case commands.NavDown, commands.NavNext:
 		m.cursor = min(m.cursor+1, len(m.choices)-1)
-	case "enter":
-		if m.cursor < len(m.choices) {
+	case commands.NavCancel:
+		return m, Outcome{Done: true}
+	default:
+		if name == "enter" && m.cursor < len(m.choices) {
 			return m, m.choices[m.cursor].out
 		}
-	case "esc", "q", "ctrl+c":
-		return m, Outcome{Done: true}
 	}
 	return m, Outcome{}
 }

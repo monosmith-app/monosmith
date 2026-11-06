@@ -3,6 +3,7 @@ package settingsview
 import (
 	"errors"
 	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
@@ -23,9 +24,10 @@ func (m Model) Key(msg tea.KeyMsg) (Model, Result) {
 		return m.editorKey(msg)
 	}
 	name := msg.String()
+	if nav := commands.NavNamed(name); nav.Moves() {
+		return m.move(nav), Result{}
+	}
 	switch name {
-	case "up", "down", "pgup", "pgdown", "home", "end":
-		return m.move(name), Result{}
 	case "tab":
 		m.onItems = !m.onItems
 	case "shift+tab", "left", "backspace":
@@ -61,14 +63,15 @@ type busyAnswer struct {
 // tab treats as usual.
 func (m Model) busyKey(msg tea.KeyMsg) (busyAnswer, bool) {
 	name := msg.String()
-	switch name {
-	case "esc":
+	nav := commands.NavNamed(name)
+	switch {
+	case name == "esc":
 		if m.stoppable {
 			m.busy, m.ticket = "", m.ticket+1
 			return busyAnswer{m, Result{Note: words.Say("settingsview.busy.cancelled")}}, true
 		}
 		return busyAnswer{m, Result{Note: words.Say("settingsview.busy.unstoppable")}}, true
-	case "up", "down", "pgup", "pgdown", "home", "end", "tab", "shift+tab", "left", "right":
+	case nav.Moves() || nav == commands.NavNext || nav == commands.NavPrev || name == "left" || name == "right":
 		if m.ed == nil {
 			return busyAnswer{}, false
 		}
@@ -77,18 +80,18 @@ func (m Model) busyKey(msg tea.KeyMsg) (busyAnswer, bool) {
 }
 
 // move moves the cursor of the rows, or the section while the keyboard is on the list of sections.
-func (m Model) move(key string) Model {
+func (m Model) move(key commands.NavAction) Model {
 	m.note, m.confirm = "", ""
 	if !m.onItems {
 		at := int(m.section)
 		switch key {
-		case "up":
+		case commands.NavUp:
 			at--
-		case "down":
+		case commands.NavDown:
 			at++
-		case "home":
+		case commands.NavHome:
 			at = 0
-		case "end":
+		case commands.NavEnd:
 			at = len(Sections) - 1
 		}
 		m.section = Section(max(min(at, len(Sections)-1), 0))
@@ -97,17 +100,17 @@ func (m Model) move(key string) Model {
 	n := len(m.items(m.section))
 	c := m.cursor[m.section]
 	switch key {
-	case "up":
+	case commands.NavUp:
 		c--
-	case "down":
+	case commands.NavDown:
 		c++
-	case "pgup":
+	case commands.NavPageUp:
 		c -= 8
-	case "pgdown":
+	case commands.NavPageDown:
 		c += 8
-	case "home":
+	case commands.NavHome:
 		c = 0
-	case "end":
+	case commands.NavEnd:
 		c = n - 1
 	}
 	m.cursor[m.section] = max(min(c, n-1), 0)

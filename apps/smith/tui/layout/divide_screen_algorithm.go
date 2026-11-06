@@ -1,5 +1,9 @@
 package layout
 
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+)
+
 // Layout is where each area is drawn. An area that is not on screen has an
 // empty rectangle.
 type Layout struct {
@@ -31,12 +35,12 @@ const (
 )
 
 // AutoDetailWidth is the width of the detail the user has not resized.
-func AutoDetailWidth(width int) int { return clamp(width*2/5, 38, 64) }
+func AutoDetailWidth(width int) int { return pane.Clamp(width*2/5, 38, 64) }
 
 // ClampDetailWidth keeps a width the user chose between MinDetail and what
 // leaves the list its MinList columns.
 func ClampDetailWidth(width, detailW int) int {
-	return clamp(detailW, MinDetail, max(width-MinList, MinDetail))
+	return pane.Clamp(detailW, MinDetail, max(width-MinList, MinDetail))
 }
 
 // DivideWith is Divide with a detail width the user chose (0 keeps the
@@ -97,5 +101,3 @@ func (l Layout) DetailInner() Rect {
 
 // HasDetail says whether the detail is on screen beside the list.
 func (l Layout) HasDetail() bool { return l.Detail.W > 0 }
-
-func clamp(v, lo, hi int) int { return min(max(v, lo), hi) }

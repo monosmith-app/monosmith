@@ -2,6 +2,7 @@ package tui
 
 import (
 	"encoding/json"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commandtext"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
@@ -38,7 +39,7 @@ func (s *Shell) openCompose() tea.Cmd {
 func (s *Shell) composeRead(msg capturedMsg) tea.Cmd {
 	var rep composeReport
 	if !msg.res.OK || json.Unmarshal([]byte(msg.res.Text), &rep) != nil {
-		s.notify(words.Say("tui.compose.could_not_read_the_catalogue", "firstLine", firstLine(failureText(msg.res))), toast.Warning)
+		s.notify(words.Say("tui.compose.could_not_read_the_catalogue", "firstLine", commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err))), toast.Warning)
 		return nil
 	}
 	s.composeCat = &compose.Catalogue{Layers: rep.Layers, Items: rep.Items}
@@ -61,7 +62,7 @@ func (s *Shell) composePlanRead(msg capturedMsg) tea.Cmd {
 	var err error
 	switch {
 	case !msg.res.OK:
-		err = errText(firstLine(failureText(msg.res)))
+		err = errText(commandtext.FirstLine(commandtext.Failure(msg.res.Text, msg.res.Err)))
 	case json.Unmarshal([]byte(msg.res.Text), &rep) != nil || rep.Plan == nil:
 		err = errText(words.Say("tui.compose.smith_did_not_print_a_plan"))
 	}

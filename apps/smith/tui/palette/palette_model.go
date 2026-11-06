@@ -1,6 +1,7 @@
 package palette
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -137,18 +138,18 @@ func (p Palette) Reset() Palette {
 
 // Key handles a key press.
 func (p Palette) Key(msg tea.KeyMsg) (Palette, Result) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch commands.NavNamed(msg.String()) {
+	case commands.NavCancel:
 		return p, Result{Closed: true}
-	case "up":
+	case commands.NavUp:
 		p.cursor = max(p.cursor-1, 0)
-	case "down":
+	case commands.NavDown:
 		p.cursor = min(p.cursor+1, max(len(p.matches())-1, 0))
-	case "pgup":
+	case commands.NavPageUp:
 		p.cursor = max(p.cursor-8, 0)
-	case "pgdown":
+	case commands.NavPageDown:
 		p.cursor = min(p.cursor+8, max(len(p.matches())-1, 0))
-	case "enter":
+	case commands.NavConfirm:
 		return p.choose(p.cursor)
 	default:
 		p.filter, _ = p.filter.Update(msg)

@@ -1,6 +1,7 @@
 package settingsview
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"slices"
 	"strings"
 
@@ -249,44 +250,50 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 			e.finder = &f
 		}
 	case editMulti:
-		switch name {
-		case "up", "k":
+		switch commands.Nav(name) {
+		case commands.NavUp:
 			e.at = max(e.at-1, 0)
-		case "down", "j":
+		case commands.NavDown:
 			e.at = min(e.at+1, len(e.choices)-1)
-		case " ":
-			e.marked = slices.Clone(e.marked)
-			e.marked[e.at] = !e.marked[e.at]
-		case "enter":
-			e.err = ""
-			m.ed = &e
-			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
-			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
+		default:
+			switch name {
+			case " ":
+				e.marked = slices.Clone(e.marked)
+				e.marked[e.at] = !e.marked[e.at]
+			case "enter":
+				e.err = ""
+				m.ed = &e
+				m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
+				return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
+			}
 		}
 	case editReview:
-		switch name {
-		case "y":
-			m.ed = &e
-			m = m.begin(words.Say("settingsview.busy.trusting", "name", e.plugin), false)
-			return m, Result{Cmd: m.trust(e.plugin, false)}
-		case "p":
-			m.ed = &e
-			m = m.begin(words.Say("settingsview.busy.pinning", "name", e.plugin), false)
-			return m, Result{Cmd: m.trust(e.plugin, true)}
-		case "f", "u":
-			if e.trusted {
-				m.ed = &e
-				m = m.begin(words.Say("settingsview.busy.forgetting", "name", e.plugin), false)
-				return m, Result{Cmd: m.untrust(e.plugin)}
-			}
-		case "up", "k":
+		switch commands.Nav(name) {
+		case commands.NavUp:
 			e.top = max(e.top-1, 0)
-		case "down", "j":
+		case commands.NavDown:
 			e.top++
-		case "pgup":
+		case commands.NavPageUp:
 			e.top = max(e.top-8, 0)
-		case "pgdown":
+		case commands.NavPageDown:
 			e.top += 8
+		default:
+			switch name {
+			case "y":
+				m.ed = &e
+				m = m.begin(words.Say("settingsview.busy.trusting", "name", e.plugin), false)
+				return m, Result{Cmd: m.trust(e.plugin, false)}
+			case "p":
+				m.ed = &e
+				m = m.begin(words.Say("settingsview.busy.pinning", "name", e.plugin), false)
+				return m, Result{Cmd: m.trust(e.plugin, true)}
+			case "f", "u":
+				if e.trusted {
+					m.ed = &e
+					m = m.begin(words.Say("settingsview.busy.forgetting", "name", e.plugin), false)
+					return m, Result{Cmd: m.untrust(e.plugin)}
+				}
+			}
 		}
 	}
 	m.ed = &e
