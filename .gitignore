@@ -78,3 +78,6 @@ assets/*~lock~
 
 # IntelliJ Platform Gradle plugin: the downloaded IDE and its sandbox
 .intellijPlatform/
+
+# Gradle writes its problems report here on every run
+/build/
