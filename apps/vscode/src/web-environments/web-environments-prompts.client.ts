@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import type { WebEnvironments } from './add-options.contract.ts'
+import type { WebEnvironments } from './web-environments.contract.ts'
 import { checkEnvironmentNames, defaultEnvironment, defaultFirst, describeEnvironments, parseEnvironmentNames, startingEnvironments } from './web-environments.mapper.ts'
 
 const TITLE = 'MonoSmith: Add project'

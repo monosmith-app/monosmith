@@ -1,4 +1,4 @@
-package dev.monosmith.jetbrains.workspace
+package dev.monosmith.jetbrains.smithrun
 
 /**
  * Turns what smith printed on stderr into the one line a tool window shows. smith words a problem as

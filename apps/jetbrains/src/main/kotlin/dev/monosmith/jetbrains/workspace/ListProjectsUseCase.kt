@@ -3,6 +3,7 @@ package dev.monosmith.jetbrains.workspace
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import dev.monosmith.jetbrains.smithcommand.ResolveSmithExecutablePolicy
+import dev.monosmith.jetbrains.smithrun.ProblemTextMapper
 import dev.monosmith.jetbrains.smithcommand.TaskCommandAlgorithm
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files

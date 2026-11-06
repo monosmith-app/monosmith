@@ -1,4 +1,4 @@
-import type { AddRequest, WebEnvironments } from './add-options.contract.ts'
+import type { WebAppChoice, WebEnvironments } from './web-environments.contract.ts'
 
 /** The environments a web app starts from: lcl is the developer's machine. */
 export const DEFAULT_ENVIRONMENTS = ['lcl', 'dev', 'uat', 'prd']
@@ -11,7 +11,7 @@ const RESERVED = new Set(['development', 'production', 'test', 'local', 'example
  * which is built once per environment.
  * @param request - what the person chose
  */
-export function isWebApp (request: Pick<AddRequest, 'role' | 'language' | 'with' | 'stack'>): boolean {
+export function isWebApp (request: WebAppChoice): boolean {
   if (request.role !== 'app' || request.language !== 'node') return false
 
   return [...request.with, ...(request.stack === undefined ? [] : [request.stack])].some((name) => /^(?:react|vue|svelte|html)(?:-|$)/.test(name))

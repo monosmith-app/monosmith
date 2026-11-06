@@ -72,3 +72,11 @@ export function tellGuidedOutcome (title: string, outcome: GuidedOutcome, onOutp
     }
   }
 }
+
+/**
+ * Says smith could not list the divergences of the workspace.
+ * @param reason - smith's words for why
+ */
+export function tellDivergencesFailure (reason: string): void {
+  void vscode.window.showWarningMessage(`MonoSmith: smith could not list the divergences. ${reason}`)
+}

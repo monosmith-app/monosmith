@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { addArguments } from './add-arguments.mapper.ts'
 import { checkEnvironmentNames, defaultEnvironment, defaultFirst, describeEnvironments, environmentArguments, isWebApp, parseEnvironmentNames, startingEnvironments } from './web-environments.mapper.ts'
 
 const web = { role: 'app', language: 'node', with: ['react'], stack: undefined }
@@ -44,10 +43,6 @@ describe('the flags of the environments', () => {
   it('says every answer, so smith asks nothing', () => {
     const environments = { names: ['lcl', 'prd'], default: 'prd', output: 'workspace' as const, envFiles: 'commit' as const }
     expect(environmentArguments(environments)).toEqual(['--environments', 'lcl,prd', '--default-environment', 'prd', '--environment-output', 'workspace', '--env-files', 'commit'])
-    expect(addArguments({ role: 'app', name: 'web', language: 'node', with: ['react'], fresh: false, environments }, 'apply')).toEqual([
-      'add', 'app', 'web', '--lang', 'node', '--with', 'react',
-      '--environments', 'lcl,prd', '--default-environment', 'prd', '--environment-output', 'workspace', '--env-files', 'commit', '--yes',
-    ])
   })
 })
 

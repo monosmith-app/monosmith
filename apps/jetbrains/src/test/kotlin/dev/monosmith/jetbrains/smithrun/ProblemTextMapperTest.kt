@@ -1,4 +1,4 @@
-package dev.monosmith.jetbrains.workspace
+package dev.monosmith.jetbrains.smithrun
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

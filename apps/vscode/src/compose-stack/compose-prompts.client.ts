@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
-import { checkProjectName, tellDoctorFailure, type DoctorFailureFollowUp } from '../add-project/index.ts'
+import { checkProjectName } from '../add-project/index.ts'
+import { tellDoctorFailure, type DoctorFailureFollowUp } from '../doctor-failure/index.ts'
 import { pickLabels, settleRivals, tickedTitles } from './compose-report.mapper.ts'
 import type { ComposeAnswer, ComposeItem, ComposeOption, ComposeOutcome, ComposeQuestion } from './compose-stack.contract.ts'
 

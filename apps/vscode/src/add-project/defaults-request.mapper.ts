@@ -1,5 +1,5 @@
 import type { AddRequest } from './add-options.contract.ts'
-import { isWebApp, startingEnvironments } from './web-environments.mapper.ts'
+import { isWebApp, startingEnvironments } from '../web-environments/index.ts'
 
 /** What the first questions found out, before the person chooses defaults or customising. */
 export interface FoundAdd {

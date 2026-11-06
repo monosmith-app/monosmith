@@ -9,7 +9,6 @@ import dev.monosmith.jetbrains.prompt.PlanAnswerContract
 import dev.monosmith.jetbrains.prompt.PromptClient
 import dev.monosmith.jetbrains.smithrun.SmithRunClient
 import dev.monosmith.jetbrains.smithrun.SmithRunContract
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import java.nio.file.Path
 
 /** Gives a flow its ports in the IDE: smith runs in [root], dialogs and balloons belong to [ide]. */

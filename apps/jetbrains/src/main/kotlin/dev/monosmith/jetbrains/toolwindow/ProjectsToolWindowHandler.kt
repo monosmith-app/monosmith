@@ -18,6 +18,7 @@ import dev.monosmith.jetbrains.addproject.AddProjectUseCase
 import dev.monosmith.jetbrains.composestack.ComposeStackUseCase
 import dev.monosmith.jetbrains.dependencies.UpdateDependenciesUseCase
 import dev.monosmith.jetbrains.flowports.IdePortsClient
+import dev.monosmith.jetbrains.flowports.WorkspaceChangedStore
 import dev.monosmith.jetbrains.health.HealthUseCase
 import dev.monosmith.jetbrains.installdependency.InstallDependencyUseCase
 import dev.monosmith.jetbrains.newworkspace.NewWorkspaceUseCase
@@ -33,7 +34,6 @@ import dev.monosmith.jetbrains.workspace.AffectedJsonMapper
 import dev.monosmith.jetbrains.workspace.FindWorkspaceRootUseCase
 import dev.monosmith.jetbrains.workspace.ListProjectsUseCase
 import dev.monosmith.jetbrains.workspace.SmithProjectContract
-import dev.monosmith.jetbrains.workspace.WorkspaceChangedStore
 import dev.monosmith.jetbrains.workspacetools.WorkspaceToolsUseCase
 import java.awt.BorderLayout
 import java.awt.event.MouseAdapter

@@ -6,3 +6,5 @@ export { writeAgentFile, type AgentFileDeps, type AgentFileOutcome } from './wri
 export type { InstallOutcome, InstallPreview, InstallScope } from './install-run.contract.ts'
 export { optOutOfAgent } from './opt-out-agent.use-case.ts'
 export { talkToAgent, type TalkDeps, type TalkOutcome } from './talk-to-agent.use-case.ts'
+export { writeAgentsFile } from './write-agent-file.handler.ts'
+export { createAgentFlows, type AgentFlows, type AgentFlowsDeps } from './agent-flows.handler.ts'

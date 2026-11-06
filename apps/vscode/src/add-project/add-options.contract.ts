@@ -1,5 +1,6 @@
 import type { LanguageInfo, OutcomeOption } from './add-outcomes.mapper.ts'
 import type { DoctorFailure } from '../smith-run/index.ts'
+import type { WebEnvironments } from '../web-environments/index.ts'
 
 /** One thing `smith add <kind>` accepts, as `smith kinds --json` lists it. */
 export interface KindOption {
@@ -75,17 +76,6 @@ export interface AddRequest {
   like?:         string
   /** The environment builds of a web app (`--environments` and the flags with it); absent for a project that has one build. */
   environments?: WebEnvironments
-}
-
-/** How a web app is built once per environment: what `smith add` asks and the flags answer. */
-export interface WebEnvironments {
-  names:    string[]
-  /** The environment the task `build` builds, which CI and releases use. */
-  default:  string
-  /** `workspace`: dist/apps/<app>/<env>; `project`: dist/<env> in the app. */
-  output:   'workspace' | 'project'
-  /** `commit`: git keeps .env.<env>; `example`: git keeps only .env.example. */
-  envFiles: 'commit' | 'example'
 }
 
 /**

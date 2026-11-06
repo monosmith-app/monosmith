@@ -117,3 +117,20 @@ compiled against the platform.
   `devservers`, `cachecontrol`, `pipelinetemplate`, `ciregenerate`, `tauriapp`, `dockerhub`, `mcpinstall`,
   `agentfile`, `readcommands`.
 - Entry points: `toolwindow` (the tool window) and `smithaction` (one handler for each menu action).
+
+## Written exceptions to the slice rules
+
+### `smithaction` is a catalogue
+
+- Path: `src/main/kotlin/dev/monosmith/jetbrains/smithaction`.
+- Rule waived: the review trigger of 12 production files in one slice.
+- Constraint: the slice holds 62 handlers, one class for each menu action of `plugin.xml`. The IDE needs one
+  class for each action, and the actions share no outcome. Each handler only calls one use case of another
+  slice. Splitting the folder by action would add a slice for each class and no cohesion.
+- Owner: the smith maintainers.
+- Temporary: no. Review it when the shared command catalogue (`guided-commands.config.ts`) exists.
+
+### Package dependencies
+
+No package imports a package that imports it back. `smithrun` owns `FailureTextMapper` and
+`ProblemTextMapper`. `flowports` owns `WorkspaceChangedStore`. `workspace` may use both.

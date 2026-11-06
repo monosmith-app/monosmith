@@ -42,3 +42,13 @@ describe('checkProjectName', () => {
     for (const name of ['my app', 'apps/web', 'Web', '', '-web']) expect(checkProjectName(name)).toContain('Use lowercase letters')
   })
 })
+
+describe('addArguments for a web app', () => {
+  it('says every environment answer, so smith asks nothing', () => {
+    const environments = { names: ['lcl', 'prd'], default: 'prd', output: 'workspace' as const, envFiles: 'commit' as const }
+    expect(addArguments({ role: 'app', name: 'web', language: 'node', with: ['react'], fresh: false, environments }, 'apply')).toEqual([
+      'add', 'app', 'web', '--lang', 'node', '--with', 'react',
+      '--environments', 'lcl,prd', '--default-environment', 'prd', '--environment-output', 'workspace', '--env-files', 'commit', '--yes',
+    ])
+  })
+})

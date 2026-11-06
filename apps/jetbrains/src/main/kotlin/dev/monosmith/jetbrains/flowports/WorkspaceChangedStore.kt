@@ -1,4 +1,4 @@
-package dev.monosmith.jetbrains.workspace
+package dev.monosmith.jetbrains.flowports
 
 import com.intellij.openapi.project.Project
 import java.util.concurrent.CopyOnWriteArrayList
