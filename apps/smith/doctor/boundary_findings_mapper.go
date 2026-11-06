@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"strconv"
+
 	"github.com/monosmith-app/monosmith/apps/smith/boundaries"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
@@ -32,13 +34,20 @@ func BoundaryFindings(vs []boundaries.Violation) []protocol.Finding {
 }
 
 func boundaryFinding(check string, vs []boundaries.Violation, warning bool) protocol.Finding {
-	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning}
+	f := protocol.Finding{Check: check, OK: len(vs) == 0, Warning: warning, Area: AreaDependencies}
 	if len(vs) == 0 {
 		return f
 	}
 	edges := make([]string, len(vs))
 	for i, v := range vs {
 		edges[i] = v.Edge() + ": " + v.Rule
+	}
+	f.Problem = edges[0]
+	if len(edges) > 1 {
+		f.Problem = strconv.Itoa(len(edges)) + " dependencies break a boundary rule"
+		if warning {
+			f.Problem = strconv.Itoa(len(edges)) + " dependencies point at an app"
+		}
 	}
 	f.Detail = Summary(edges, "; ", shownProblems)
 	f.Remedy = vs[0].Hint

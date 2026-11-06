@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/doctorview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // fixRun is a fix being applied off the UI goroutine. Its steps report on
@@ -108,7 +109,7 @@ func (s Shell) fixApplying() bool { return s.fixing != nil }
 // openFix starts the wizard on a planned fix.
 func (s *Shell) openFix(p doctorfix.Planned) tea.Cmd {
 	if s.running() {
-		s.say("A run is in progress (Ctrl+C stops it)")
+		s.say(words.Say("tui.fix.a_run_is_in_progress_ctrl"))
 		return nil
 	}
 	w := fixwizard.New(p, s.sources.ShowFix).Place(s.w, s.h)
@@ -130,14 +131,14 @@ func (s *Shell) afterFix(out fixwizard.Outcome) tea.Cmd {
 		failed := s.fix.Phase() == fixwizard.Failed
 		s.fix = nil
 		if !failed {
-			s.say("Cancelled: nothing was changed")
+			s.say(words.Say("tui.fix.cancelled_nothing_was_changed"))
 		}
 	case out.Apply:
 		return s.applyFix()
 	case out.Stop:
 		if s.fixing != nil {
 			s.fixing.cancel()
-			s.say("Stopping the step…")
+			s.say(words.Say("tui.fix.stopping_the_step"))
 		}
 	case out.Copy != "":
 		s.copyText(out.Copy)
@@ -157,7 +158,7 @@ func (s *Shell) applyFix() tea.Cmd {
 		defer cancel()
 		var err error
 		if apply == nil {
-			err = errors.New("this smith cannot apply fixes here")
+			err = errors.New(words.Say("tui.fix.this_smith_cannot_apply_fixes_here"))
 		} else {
 			err = apply(ctx, fix, &stepWriter{run: run})
 		}
@@ -193,7 +194,7 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 		// smith.toml reads now: start again so the shell opens the workspace.
 		s.fix = nil
 		s.reopen, s.quit = true, true
-		s.reopenNote = "Fixed smith.toml. " + notCommittedHint()
+		s.reopenNote = words.Say("tui.fix.fixed_smith_toml", "notCommittedHint", notCommittedHint())
 		return nil
 	}
 	refresh := s.refreshAfter([]string{"doctor", "--fix"})
@@ -206,7 +207,7 @@ func (s *Shell) fixDone(msg fixDoneMsg) tea.Cmd {
 	s.verifying = s.fix.Fix.Checks
 	s.verifyingWhat = what
 	s.fix = nil
-	s.notify("Ran: "+what+". Checking that it worked…", toast.Success)
+	s.notify(words.Say("tui.fix.ran_checking_that_it_worked", "what", what), toast.Success)
 	return refresh
 }
 
@@ -221,12 +222,12 @@ func (s *Shell) verifyFix(res doctorview.Result) {
 		return
 	}
 	if res.Err != nil {
-		s.notify("The fix ran, but doctor could not check again: "+res.Err.Error(), toast.Warning)
+		s.notify(words.Say("tui.fix.the_fix_ran_but_doctor_could", "err", res.Err.Error()), toast.Warning)
 		return
 	}
 	if still := doctor.StillFailing(res.Report, checks); len(still) > 0 {
 		s.notify(doctor.StillFailingText(still[0]), toast.Warning)
 		return
 	}
-	s.notify("Fixed: "+s.verifyingWhat, toast.Success)
+	s.notify(words.Say("tui.fix.fixed", "verifyingWhat", s.verifyingWhat), toast.Success)
 }

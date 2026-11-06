@@ -27,7 +27,7 @@ func StillFailing(report Report, checks []string) []Finding {
 // StillFailingText words one finding that survived its fix, for a toast or a
 // line: the check, what was found, and what to do.
 func StillFailingText(f Finding) string {
-	text := "Still not fixed: " + f.Check
+	text := "Still not fixed: " + f.Located()
 	if f.Detail != "" {
 		text += ". " + f.Detail
 	}

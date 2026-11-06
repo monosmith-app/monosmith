@@ -1,10 +1,10 @@
 package guide
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // checkProjectName is the live check of the name step of Add a project: the
@@ -14,7 +14,7 @@ func checkProjectName(answers map[string][]string, name string) string {
 	if scaffold.ValidateName(kind, name) == nil {
 		return ""
 	}
-	return fmt.Sprintf("use lowercase words joined by dashes, like %s", exampleName(kind))
+	return words.Say("guide.project_name.example", "example", exampleName(kind))
 }
 
 // checkWorkspaceName is the live check of the name step of Create a workspace:
@@ -24,11 +24,11 @@ func checkWorkspaceName(_ map[string][]string, name string) string {
 	if scaffold.ValidateName("workspace", name) == nil {
 		return ""
 	}
-	return fmt.Sprintf("use lowercase words joined by dashes, like %s", exampleName("workspace"))
+	return words.Say("guide.project_name.example", "example", exampleName("workspace"))
 }
 
 // nameRule explains why a name has the shape smith asks for.
-const nameRule = "A name is lowercase letters and digits, with words joined by single dashes, and it starts with a letter: it becomes a folder, a package name and an import name."
+func nameRule() string { return words.Say("guide.project_name.rule") }
 
 // suggestName is the typed name put into the shape smith asks for ("My Shop"
 // becomes "my-shop"), or "" when that gives nothing valid or changes nothing.

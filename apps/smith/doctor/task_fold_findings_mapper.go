@@ -58,6 +58,8 @@ func TaskFoldFinding(graph []*projectgraph.Project, cfg workspace.Config, src st
 	finding := protocol.Finding{
 		Check:   "task settings shared by projects are written once",
 		Warning: true,
+		Area:    AreaConfig,
+		Problem: "projects repeat the same overrides in smith.toml: " + leadProblem(parts),
 		Detail:  "projects repeat the same overrides in smith.toml: " + strings.Join(parts, "; "),
 		Remedy:  "fold them into a [[groups]] entry (see docs/reference/configuration.md, Task groups); smith doctor --fix writes it and keeps your comments",
 	}

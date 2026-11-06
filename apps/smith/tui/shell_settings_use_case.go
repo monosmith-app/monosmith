@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The Settings tab (package settingsview) changes plugins, the style and the
@@ -45,7 +46,7 @@ func (s Shell) settingsRefusal(key string) string {
 	reasons := s.settings.Reasons()
 	for _, id := range []string{"settings.change", "settings.trust", "settings.forget", "settings.unset"} {
 		if c, ok := commands.ByID(id); ok && slices.Contains(c.Keys, key) && reasons[id] != "" {
-			return c.Title + " is unavailable: " + reasons[id]
+			return words.Say("tui.settings.is_unavailable", "title", c.Title, "reasons", reasons[id])
 		}
 	}
 	return ""

@@ -80,11 +80,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			break
 		}
 	}
+	hasCMake, hasNinja, hasCppcheck := has("cmake", "--version"), has("ninja", "--version"), has("cppcheck", "--version")
 	findings := []protocol.Finding{
-		{Check: "CMake is installed", OK: has("cmake", "--version"), Detail: "cmake is not on PATH", Remedy: "install CMake 3.25+ (https://cmake.org/download)"},
-		{Check: "Ninja is installed", OK: has("ninja", "--version"), Detail: "ninja is not on PATH", Remedy: "install Ninja (https://ninja-build.org)"},
-		{Check: "a C and C++ compiler is installed", OK: compiler, Detail: "none of c++, g++, clang++ or cl is on PATH", Remedy: "install GCC, Clang or MSVC (from a developer prompt)"},
-		{Check: "cppcheck is installed", OK: has("cppcheck", "--version"), Detail: "cppcheck is not on PATH", Remedy: "install cppcheck (https://cppcheck.sourceforge.io)"},
+		{Check: "CMake is installed", Area: "toolchain", OK: hasCMake, Problem: toolrun.ProblemUnless(hasCMake, "cmake is not on PATH"), Detail: "cmake is not on PATH", Remedy: "install CMake 3.25+ (https://cmake.org/download)"},
+		{Check: "Ninja is installed", Area: "toolchain", OK: hasNinja, Problem: toolrun.ProblemUnless(hasNinja, "ninja is not on PATH"), Detail: "ninja is not on PATH", Remedy: "install Ninja (https://ninja-build.org)"},
+		{Check: "a C and C++ compiler is installed", Area: "toolchain", OK: compiler, Problem: toolrun.ProblemUnless(compiler, "none of c++, g++, clang++ or cl is on PATH"), Detail: "none of c++, g++, clang++ or cl is on PATH", Remedy: "install GCC, Clang or MSVC (from a developer prompt)"},
+		{Check: "cppcheck is installed", Area: "toolchain", OK: hasCppcheck, Problem: toolrun.ProblemUnless(hasCppcheck, "cppcheck is not on PATH"), Detail: "cppcheck is not on PATH", Remedy: "install cppcheck (https://cppcheck.sourceforge.io)"},
 	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleasePlatforms(workspaceRoot, p)...)
@@ -93,7 +94,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		findings = append(findings, found...)
 	}
 	if usesVcpkg(workspaceRoot, params.Projects) {
-		findings = append(findings, protocol.Finding{Check: "vcpkg is set up", OK: os.Getenv("VCPKG_ROOT") != "", Detail: "a project has a vcpkg.json, but VCPKG_ROOT is not set", Remedy: "clone and bootstrap vcpkg, then set VCPKG_ROOT (https://learn.microsoft.com/vcpkg/get_started)"})
+		findings = append(findings, protocol.Finding{Check: "vcpkg is set up", Area: "toolchain", OK: os.Getenv("VCPKG_ROOT") != "", Problem: toolrun.ProblemUnless(os.Getenv("VCPKG_ROOT") != "", "VCPKG_ROOT is not set"), Detail: "a project has a vcpkg.json, but VCPKG_ROOT is not set", Remedy: "clone and bootstrap vcpkg, then set VCPKG_ROOT (https://learn.microsoft.com/vcpkg/get_started)"})
 	}
 	return protocol.DoctorResult{Findings: findings}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/detail"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -120,7 +121,7 @@ func (w Wizard) resolve() Wizard {
 	if w.show != nil {
 		text, err := w.show(planned)
 		if err != nil {
-			text = "● " + fix.Description + "\n  could not show the changes: " + err.Error()
+			text = words.Say("fixwizard.review.failed", "description", fix.Description, "error", err.Error())
 		}
 		w.review = strings.Split(strings.TrimRight(text, "\n"), "\n")
 		w.summary, w.hasDiff = summarizeDiffs(w.review)

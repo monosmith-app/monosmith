@@ -1,5 +1,9 @@
 package guide
 
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+)
+
 // ToggleOption flips the mark of option i in a multiple choice and keeps the
 // options of a single-choice axis exclusive, like radio buttons: when a tick
 // turns on an option, every other marked option of the same Group is turned
@@ -32,15 +36,15 @@ func ToggleOption(marked map[int]bool, options []Option, i int) (map[int]bool, s
 	if len(dropped) == 0 {
 		return out, ""
 	}
-	return out, options[i].Value + " replaces " + joinWords(dropped) + ": only one " + options[i].Group + " fits a project. Untick " + options[i].Value + " to get it back."
+	return out, words.Say("guide.toggle_exclusive.replaces", "value", options[i].Value, "dropped", joinWords(dropped), "group", options[i].Group)
 }
 
-func joinWords(words []string) string {
-	switch len(words) {
+func joinWords(names []string) string {
+	switch len(names) {
 	case 1:
-		return words[0]
+		return names[0]
 	case 2:
-		return words[0] + " and " + words[1]
+		return names[0] + words.Say("guide.toggle_exclusive.and") + names[1]
 	}
-	return words[0] + ", " + joinWords(words[1:])
+	return names[0] + ", " + joinWords(names[1:])
 }

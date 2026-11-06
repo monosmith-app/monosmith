@@ -26,13 +26,13 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	var findings []protocol.Finding
 	_, err := probe(workspaceRoot, []string{"cargo", "--version"})
 	findings = append(findings, protocol.Finding{
-		Check: "Rust (cargo) is installed", OK: err == nil,
+		Check: "Rust (cargo) is installed", Area: "toolchain", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "cargo is not on PATH"),
 		Detail: "cargo is not on PATH", Remedy: "install Rust " + Version(workspaceRoot) + " with rustup (https://rustup.rs)",
 	})
 	if err == nil {
 		_, auditErr := probe(workspaceRoot, []string{"cargo", "audit", "--version"})
 		findings = append(findings, protocol.Finding{
-			Check: "cargo-audit is installed", OK: auditErr == nil, Warning: true,
+			Check: "cargo-audit is installed", Area: "toolchain", OK: auditErr == nil, Warning: true, Problem: toolrun.ProblemUnless(auditErr == nil, "cargo-audit is not installed"),
 			Detail: "skipped: cargo-audit is not installed, so smith ci audit cannot check the crates for known vulnerabilities", Remedy: "`cargo install --locked cargo-audit`",
 		})
 	}
@@ -45,12 +45,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "Cargo.toml"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: append(findings, protocol.Finding{
-			Check: "the root Cargo.toml is a workspace", Detail: "the workspace has crates but no root Cargo.toml", Remedy: "create Cargo.toml with [workspace] and members = [...] listing each crate's directory",
+			Check: "the root Cargo.toml is a workspace", Area: "config", Problem: "the workspace has crates but no root Cargo.toml", Detail: "the workspace has crates but no root Cargo.toml", Remedy: "create Cargo.toml with [workspace] and members = [...] listing each crate's directory",
 		})}
 	}
 	root, err := discovery.ParseCargo(src)
 	if err != nil {
-		return protocol.DoctorResult{Findings: append(findings, protocol.Finding{Check: "the root Cargo.toml is valid TOML", Detail: err.Error(), Remedy: "fix the root Cargo.toml"})}
+		return protocol.DoctorResult{Findings: append(findings, protocol.Finding{Check: "the root Cargo.toml is valid TOML", Area: "config", Problem: "the root Cargo.toml is not valid TOML", Detail: err.Error(), Remedy: "fix the root Cargo.toml"})}
 	}
 	for _, m := range root.Members {
 		if strings.ContainsAny(m, "*?[") {
@@ -58,13 +58,15 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 		}
 		_, err := os.Stat(filepath.Join(workspaceRoot, filepath.FromSlash(m), "Cargo.toml"))
 		findings = append(findings, protocol.Finding{
-			Check: "workspace member " + m + " exists", OK: err == nil,
+			Check: "workspace member " + m + " exists", Area: "config", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, m+" is a member of the Cargo workspace but has no Cargo.toml"),
 			Detail: m + " is a member of the Cargo workspace but has no Cargo.toml", Remedy: "remove \"" + m + "\" from members in the root Cargo.toml",
 		})
 	}
 	for _, p := range params.Projects {
 		findings = append(findings, releasing.CheckReleaseTargets(workspaceRoot, p)...)
-		findings = append(findings, workspaceListing(workspaceRoot, string(src), root, p.Root))
+		listing := workspaceListing(workspaceRoot, string(src), root, p.Root)
+		listing.Project = p.Name
+		findings = append(findings, listing)
 	}
 	return protocol.DoctorResult{Findings: findings}
 }
@@ -93,9 +95,10 @@ func workspaceListing(workspaceRoot, rootSrc string, root discovery.Crate, dir s
 		}
 	}
 	f := protocol.Finding{
-		Check:  "the Cargo workspace lists " + dir,
-		Detail: dir + " has a Cargo.toml but the workspace neither lists nor excludes it, so cargo -p cannot find it",
-		Remedy: "add \"" + dir + "\" to members in the root Cargo.toml, or to exclude if it is not part of this workspace",
+		Check:   "the Cargo workspace lists " + dir,
+		Problem: "is neither listed nor excluded by the Cargo workspace",
+		Detail:  dir + " has a Cargo.toml but the workspace neither lists nor excludes it, so cargo -p cannot find it",
+		Remedy:  "add \"" + dir + "\" to members in the root Cargo.toml, or to exclude if it is not part of this workspace",
 	}
 	add, errAdd := scaffolding.AddMember(rootSrc, dir)
 	skip, errSkip := scaffolding.AddExclude(rootSrc, dir)

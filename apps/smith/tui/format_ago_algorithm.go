@@ -1,8 +1,9 @@
 package tui
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // agoText says how long ago something happened in a few words: "just now",
@@ -10,13 +11,13 @@ import (
 func agoText(d time.Duration) string {
 	switch {
 	case d < 5*time.Second:
-		return "just now"
+		return words.Say("tui.format_ago.just_now")
 	case d < time.Minute:
-		return fmt.Sprintf("%ds ago", int(d/time.Second))
+		return words.Say("tui.format_ago.s_ago", "int", int(d/time.Second))
 	case d < time.Hour:
-		return fmt.Sprintf("%d min ago", int(d/time.Minute))
+		return words.Say("tui.format_ago.min_ago", "int", int(d/time.Minute))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%d h ago", int(d/time.Hour))
+		return words.Say("tui.format_ago.h_ago", "int", int(d/time.Hour))
 	}
-	return fmt.Sprintf("%d d ago", int(d/(24*time.Hour)))
+	return words.Say("tui.format_ago.d_ago", "int", int(d/(24*time.Hour)))
 }

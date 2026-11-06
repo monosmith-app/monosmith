@@ -10,6 +10,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Model is the guided menu and its question steps: pick an action, answer
@@ -467,7 +468,7 @@ func (m Model) confirm() Model {
 	case step.Options == nil:
 		value := strings.TrimSpace(m.input.Value())
 		if value == "" && !step.Optional {
-			m.err = "type a value, or esc to go back"
+			m.err = words.Say("guide.guide.type_a_value_or_esc_to")
 			return m
 		}
 		if problem := m.problem(step, value); problem != "" {
@@ -484,7 +485,7 @@ func (m Model) confirm() Model {
 			}
 		}
 		if len(picked) == 0 && !step.Optional {
-			m.err = "toggle at least one with space"
+			m.err = words.Say("guide.guide.toggle_at_least_one_with_space")
 			return m
 		}
 		if problem := m.problem(step, strings.Join(picked, ",")); problem != "" {
@@ -495,7 +496,7 @@ func (m Model) confirm() Model {
 	default:
 		opts := m.options()
 		if len(opts) == 0 {
-			m.err = "nothing matches \"" + m.filter + "\": backspace to widen the list"
+			m.err = words.Say("guide.guide.nothing_matches", "filter", m.filter)
 			return m
 		}
 		if step.Filter {
@@ -655,9 +656,9 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 		for i, a := range m.actions {
 			add(i, Row(th, i == m.cursor, "", a.Title, a.Hint))
 		}
-		lines = append(lines, "", th.Muted("up/down choose · enter select · click an entry, double-click to select"))
+		lines = append(lines, "", th.Muted(words.Say("guide.guide.up_down_choose_enter_select_click")))
 	case step == nil:
-		lines = append(lines, th.Muted("Done: "+m.action.Title))
+		lines = append(lines, th.Muted(words.Say("guide.guide.done", "title", m.action.Title)))
 	case step.Options == nil:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
 		for _, note := range strings.Split(step.Note, "\n") {
@@ -676,27 +677,27 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 			lines = append(lines, "")
 		}
 		if m.replace {
-			lines = append(lines, th.Muted("This is what you typed before: type to replace it, Backspace to edit it."))
+			lines = append(lines, th.Muted(words.Say("guide.guide.this_is_what_you_typed_before")))
 		}
 		if v := strings.TrimSpace(m.input.Value()); v == "" && m.input.Placeholder != "" && !step.Optional {
 			// The grey text is an example, not a default Enter would accept.
-			lines = append(lines, th.Muted("The grey text is an example: type your own, enter does not take it."))
+			lines = append(lines, th.Muted(words.Say("guide.guide.the_grey_text_is_an_example")))
 		} else if v != "" {
 			if problem := m.problem(step, v); problem != "" {
-				lines = append(lines, th.Failure(problem), th.Muted(nameRule))
+				lines = append(lines, th.Failure(problem), th.Muted(nameRule()))
 				if step.Suggest != nil {
 					if s := step.Suggest(m.answers, v); s != "" {
-						lines = append(lines, "", "You can:", "  tab    use "+th.Bold(s)+" (your name in the shape smith asks for)", "  type   another name instead")
+						lines = append(lines, "", words.Say("guide.guide.you_can"), words.Say("guide.guide.tab_use", "name", th.Bold(s)), words.Say("guide.guide.type_another_name_instead"))
 					}
 				}
 			} else if step.Check != nil {
-				lines = append(lines, th.Success(th.Icons.Passed+" that name works"))
+				lines = append(lines, th.Success(th.Icons.Passed+words.Say("guide.guide.name_works")))
 			}
 		}
 		if step.Path {
 			lines = append(lines, th.Muted(pathfinder.Hint))
 		} else {
-			lines = append(lines, th.Muted("enter confirm · esc back"))
+			lines = append(lines, th.Muted(words.Say("guide.guide.enter_confirm_esc_back")))
 		}
 	default:
 		lines = append(lines, th.Title(m.action.Title)+" › "+step.Prompt)
@@ -715,13 +716,13 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 		lines = append(lines, "")
 		if step.Filter {
 			if m.filter == "" {
-				narrow := "Type to narrow the list"
+				narrow := words.Say("guide.guide.type_to_narrow_the_list")
 				if step.Try != "" {
-					narrow += ": try " + step.Try
+					narrow += words.Say("guide.guide.try", "examples", step.Try)
 				}
 				lines = append(lines, th.Muted(narrow), "")
 			} else {
-				lines = append(lines, th.Muted("Showing matches for ")+th.Bold(m.filter)+th.Muted(" (esc clears it)"), "")
+				lines = append(lines, th.Muted(words.Say("guide.guide.showing_matches_for"))+th.Bold(m.filter)+th.Muted(words.Say("guide.guide.esc_clears_it")), "")
 			}
 		}
 		for i, o := range m.options() {
@@ -729,29 +730,29 @@ func (m Model) body(th theme.Theme, w int, fold bool) (lines []string, optionAt 
 			if step.Multi {
 				box = "[ ] "
 				if m.marked[i] {
-					box = "[x] "
+					box = words.Say("guide.guide.x")
 				}
 			}
 			hint := o.Hint
 			if via := MatchedVia(o, m.filter); len(via) > 0 {
-				hint = "has " + strings.Join(via, ", ") + " · " + hint
+				hint = words.Say("guide.guide.has_via", "via", strings.Join(via, ", "), "hint", hint)
 			}
 			add(i, Row(th, i == m.cursor, box, o.Label, hint))
 		}
 		if step.Filter && len(m.options()) == 0 {
 			lines = append(lines, th.Muted("  "+NothingMatches(step.Options, m.filter)))
 			if near := Suggestions(step.Options, m.filter); len(near) > 0 {
-				lines = append(lines, "", "  You can:", "    tab        show "+th.Bold(near[0]), "    backspace  edit what you typed", "    esc        clear the filter and see every language")
+				lines = append(lines, "", words.Say("guide.guide.you_can_2"), words.Say("guide.guide.tab_show", "name", th.Bold(near[0])), words.Say("guide.guide.backspace_edit_what_you_typed"), words.Say("guide.guide.esc_clear_the_filter_and_see"))
 			}
 		}
-		help := "up/down choose · enter select · esc back"
+		help := words.Say("guide.guide.up_down_choose_enter_select_esc")
 		if step.Filter {
-			help = "type to filter · up/down choose · enter select · esc back"
+			help = words.Say("guide.guide.type_to_filter_up_down_choose")
 		}
 		if step.Multi {
-			help = "up/down move · space or click toggles · enter confirm · esc back"
+			help = words.Say("guide.guide.up_down_move_space_or_click")
 			if step.Optional {
-				help = "up/down move · space or click toggles · enter confirms (nothing ticked skips this) · esc back"
+				help = words.Say("guide.guide.up_down_move_space_or_click_2")
 			}
 		}
 		if m.notice != "" {

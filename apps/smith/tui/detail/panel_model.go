@@ -1,13 +1,14 @@
 package detail
 
 import (
-	"fmt"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Row is a label and its value.
@@ -59,7 +60,7 @@ type Action struct {
 	Disabled bool
 	// Hint says, under the label, what the action does or what it needs.
 	Hint string
-	// Button draws the action as `[ Label  key ]` instead of a line with
+	// Button draws the action as a button, ` Label (key) `, instead of a line with
 	// the key at the right edge. The mouse clicks it the same way.
 	Button bool
 }
@@ -84,7 +85,7 @@ type Panel struct {
 func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits map[int]string) {
 	hits = map[int]string{}
 	if len(p.Sections) == 0 && len(p.Actions) == 0 && len(p.After) == 0 {
-		return []string{th.Muted(" Nothing selected.")}, hits
+		return []string{th.Muted(words.Say("detail.nothing"))}, hits
 	}
 	labelW := 0
 	for _, list := range [][]Section{p.Sections, p.After} {
@@ -104,26 +105,25 @@ func (p Panel) View(th theme.Theme, w int, hover string) (lines []string, hits m
 		}
 		title := p.ActionsTitle
 		if title == "" {
-			title = "Actions"
+			title = words.Say("detail.actions")
 		}
 		lines = append(lines, " "+th.Title(title))
 		for _, a := range p.Actions {
 			// A long label wraps under itself, the shortcut stays on its first line,
 			// and every line of the action is clickable.
 			if a.Button {
-				text := "[ " + a.Label
-				if a.Shortcut != "" {
-					text += "  " + a.Shortcut
+				label := a.Label
+				if over := button.Width(th, label, a.Shortcut) - max(w-1, 4); over > 0 {
+					label = ansi.Truncate(label, max(pane.Width(label)-over, 1), "…")
 				}
-				text = pane.Fit(" "+ansi.Truncate(text+" ]", max(w-1, 4), "…"), w)
+				state := button.Rest
 				switch {
 				case a.Disabled:
-					text = th.Muted(text)
+					state = button.Disabled
 				case a.ID == hover:
-					text = th.Selected(text)
-				default:
-					text = th.Bold(text)
+					state = button.Hover
 				}
+				text := pane.Fit(" "+button.Render(th, label, a.Shortcut, state), w)
 				hits[len(lines)] = a.ID
 				lines = append(lines, text)
 				for _, part := range pane.Wrap(a.Hint, max(w-5, 4), 0) {
@@ -183,7 +183,7 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 		}
 		if folded {
 			// Said at the top too: the count under the list can be below the fold.
-			count := fmt.Sprintf("  %d, e shows all", len(s.Items))
+			count := words.Say("detail.folded", "count", len(s.Items))
 			last := len(lines) - 1
 			if pane.Width(parts[len(parts)-1])+pane.Width(count) < w {
 				lines[last] += th.Muted(count)
@@ -235,9 +235,9 @@ func (p Panel) section(lines []string, th theme.Theme, s Section, w, labelW int)
 	}
 	switch {
 	case hidden > 0:
-		lines = append(lines, pane.Fit(th.Muted(fmt.Sprintf("  +%d more (e shows all)", hidden)), w))
+		lines = append(lines, pane.Fit(th.Muted(words.Say("detail.hidden", "count", hidden)), w))
 	case s.Collapse > 0 && p.Expanded && len(items) > s.Collapse:
-		lines = append(lines, pane.Fit(th.Muted("  (e shows fewer)"), w))
+		lines = append(lines, pane.Fit(th.Muted(words.Say("detail.fewer")), w))
 	}
 	return lines
 }

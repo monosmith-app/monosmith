@@ -15,16 +15,20 @@ const shownImports = 5
 // distribution it imports is declared where installing it from PyPI installs it.
 func CheckPackageImports(workspaceRoot string, p protocol.Project) protocol.Finding {
 	f := protocol.Finding{
-		Check:  p.Root + " declares the distributions it imports",
-		Remedy: "add the distribution that provides each to dependencies in " + p.Root + "/pyproject.toml, then reinstall the project",
+		Check:   p.Root + " declares the distributions it imports",
+		Project: p.Name,
+		Remedy:  "add the distribution that provides each to dependencies in " + p.Root + "/pyproject.toml, then reinstall the project",
 	}
 	undeclared, err := declaredimports.Check(workspaceRoot, p.Root)
 	if err != nil {
-		f.Detail = err.Error()
+		f.Problem, f.Detail = "smith could not read its files to check its imports", err.Error()
 		f.Remedy = "smith could not read " + p.Root + " to check its imports: fix what the problem says, then check again"
 		return f
 	}
 	f.OK = len(undeclared) == 0
+	if !f.OK {
+		f.Problem = fmt.Sprintf("imports %d distribution(s) its pyproject.toml does not declare", len(undeclared))
+	}
 	lines := make([]string, 0, shownImports+1)
 	for i, u := range undeclared {
 		if i == shownImports {

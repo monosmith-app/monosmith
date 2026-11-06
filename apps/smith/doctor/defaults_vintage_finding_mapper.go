@@ -20,19 +20,22 @@ import (
 // smith.toml, from which the record fix is made ("" offers no record fix).
 func defaultsVintageFinding(recorded, tomlSrc string) protocol.Finding {
 	latest := workspace.LatestDefaultsVintage()
-	f := protocol.Finding{Check: "the workspace uses the latest defaults"}
+	f := protocol.Finding{Check: "the workspace uses the latest defaults", Area: AreaConfig}
 	switch workspace.DefaultsVintageState(recorded) {
 	case workspace.VintageCurrent:
 		f.OK = true
 	case workspace.VintageAhead:
 		f.Warning = true
+		f.Problem = "the workspace uses the defaults of " + recorded + ", newer than this smith knows (" + latest + ")"
 		f.Detail = "this workspace uses the defaults of " + recorded + ", newer than this smith knows (" + latest + ")"
 		f.Remedy = "upgrade smith"
 	default:
 		f.Warning = true
 		if recorded == "" {
+			f.Problem = "the workspace does not record which defaults it uses"
 			f.Detail = "this workspace follows the defaults of " + latest + " but does not record it. Recording the vintage keeps them exactly as they are and changes nothing else"
 		} else {
+			f.Problem = "the workspace uses the defaults of " + recorded + ", the latest is " + latest
 			f.Detail = "this workspace uses the defaults of " + recorded + "; the latest is " + latest
 		}
 		f.Remedy = "`smith upgrade --defaults` shows the plan and moves the workspace; until then smith keeps the defaults it has"

@@ -2,12 +2,14 @@ package screenreader
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // maxTries is how many times one question is asked before giving up.
@@ -23,27 +25,27 @@ const maxTries = 3
 func Ask(in io.Reader, out io.Writer, actions []guide.Action) ([]string, error) {
 	r := bufio.NewReader(in)
 	if len(actions) == 0 {
-		fmt.Fprintln(out, "There is nothing to do here.")
+		fmt.Fprintln(out, words.Say("screenreader.none"))
 		return nil, nil
 	}
-	fmt.Fprintln(out, "smith. What do you want to do? Type a number and press Enter, or q to quit.")
+	fmt.Fprintln(out, words.Say("screenreader.welcome"))
 	for i, a := range actions {
-		fmt.Fprintf(out, "%d. %s\n", i+1, describe(a.Title, a.Hint))
+		fmt.Fprintln(out, words.Say("screenreader.numbered", "number", i+1, "text", describe(a.Title, a.Hint)))
 	}
 	for try := 0; try < maxTries; try++ {
-		fmt.Fprint(out, "Your choice: ")
+		fmt.Fprint(out, words.Say("screenreader.choice.prompt"))
 		line, quit := readLine(r)
 		if quit {
 			return nil, nil
 		}
 		n, err := strconv.Atoi(line)
 		if err != nil || n < 1 || n > len(actions) {
-			fmt.Fprintf(out, "%q is not one of the numbers 1 to %d.\n", line, len(actions))
+			fmt.Fprintln(out, words.Say("screenreader.number.invalid", "given", strconv.Quote(line), "max", len(actions)))
 			continue
 		}
 		return ask(r, out, actions[n-1])
 	}
-	return nil, fmt.Errorf("no valid choice after %d tries", maxTries)
+	return nil, errors.New(words.Say("screenreader.choice.giveup", "count", maxTries))
 }
 
 // ask puts an action's questions and builds its command line.
@@ -70,14 +72,14 @@ func question(r *bufio.Reader, out io.Writer, step guide.Step) (answer []string,
 	if len(step.Options) == 0 {
 		hint := ""
 		if step.Placeholder != "" {
-			hint = " For example " + step.Placeholder + "."
+			hint = words.Say("screenreader.hint.example", "example", step.Placeholder)
 		}
 		if step.Optional {
-			hint += " Press Enter to skip."
+			hint += words.Say("screenreader.hint.skip")
 		}
-		fmt.Fprintf(out, "%s.%s\n", strings.TrimSuffix(step.Prompt, "."), hint)
+		fmt.Fprintln(out, words.Say("screenreader.question.free", "prompt", strings.TrimSuffix(step.Prompt, "."), "hint", hint))
 		for try := 0; try < maxTries; try++ {
-			fmt.Fprint(out, "Your answer: ")
+			fmt.Fprint(out, words.Say("screenreader.answer.prompt"))
 			line, q := readLine(r)
 			if q {
 				return nil, true, nil
@@ -85,20 +87,20 @@ func question(r *bufio.Reader, out io.Writer, step guide.Step) (answer []string,
 			if line != "" || step.Optional {
 				return []string{line}, false, nil
 			}
-			fmt.Fprintln(out, "An answer is required.")
+			fmt.Fprintln(out, words.Say("screenreader.answer.required"))
 		}
-		return nil, false, fmt.Errorf("no answer to %q after %d tries", step.Prompt, maxTries)
+		return nil, false, errors.New(words.Say("screenreader.answer.giveup", "question", strconv.Quote(step.Prompt), "count", maxTries))
 	}
-	how := "Type the number of one."
+	how := words.Say("screenreader.how.one")
 	if step.Multi {
-		how = "Type the numbers of the ones you want, separated by spaces."
+		how = words.Say("screenreader.how.many")
 	}
-	fmt.Fprintf(out, "%s %s\n", strings.TrimSuffix(step.Prompt, "."), how)
+	fmt.Fprintln(out, words.Say("screenreader.question.pick", "prompt", strings.TrimSuffix(step.Prompt, "."), "how", how))
 	for i, o := range step.Options {
-		fmt.Fprintf(out, "%d. %s\n", i+1, describe(o.Label, o.Hint))
+		fmt.Fprintln(out, words.Say("screenreader.numbered", "number", i+1, "text", describe(o.Label, o.Hint)))
 	}
 	for try := 0; try < maxTries; try++ {
-		fmt.Fprint(out, "Your answer: ")
+		fmt.Fprint(out, words.Say("screenreader.answer.prompt"))
 		line, q := readLine(r)
 		if q {
 			return nil, true, nil
@@ -109,22 +111,22 @@ func question(r *bufio.Reader, out io.Writer, step guide.Step) (answer []string,
 		}
 		fmt.Fprintln(out, problem)
 	}
-	return nil, false, fmt.Errorf("no valid answer to %q after %d tries", step.Prompt, maxTries)
+	return nil, false, errors.New(words.Say("screenreader.answer.invalid.giveup", "question", strconv.Quote(step.Prompt), "count", maxTries))
 }
 
 // pick turns the typed numbers into the options' values, or says what is wrong.
 func pick(line string, step guide.Step) (values []string, problem string) {
 	fields := strings.Fields(strings.ReplaceAll(line, ",", " "))
 	if len(fields) == 0 {
-		return nil, "Type at least one number."
+		return nil, words.Say("screenreader.pick.atleast")
 	}
 	if !step.Multi && len(fields) > 1 {
-		return nil, "Type one number."
+		return nil, words.Say("screenreader.pick.one")
 	}
 	for _, f := range fields {
 		n, err := strconv.Atoi(f)
 		if err != nil || n < 1 || n > len(step.Options) {
-			return nil, fmt.Sprintf("%q is not one of the numbers 1 to %d.", f, len(step.Options))
+			return nil, words.Say("screenreader.pick.invalid", "given", strconv.Quote(f), "max", len(step.Options))
 		}
 		values = append(values, step.Options[n-1].Value)
 	}

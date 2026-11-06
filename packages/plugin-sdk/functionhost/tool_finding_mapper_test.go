@@ -27,3 +27,21 @@ func TestTheFindingIsAWarningWithTheWayToGetTheTool(t *testing.T) {
 		t.Error("only the three hosts have a tool")
 	}
 }
+
+// TestFindingForProblem lists a missing tool by what is wrong, and a found
+// tool by nothing.
+func TestFindingForProblem(t *testing.T) {
+	tool := Tool{Name: "SAM CLI"}
+	if got := FindingFor(tool, true).Problem; got != "" {
+		t.Errorf("found tool has Problem %q", got)
+	}
+	if got := FindingFor(tool, false).Problem; got != "SAM CLI is not found, so the function cannot run locally" {
+		t.Errorf("Problem = %q", got)
+	}
+}
+
+func TestFindingForIsAToolchainFinding(t *testing.T) {
+	if f := FindingFor(Tool{Name: "func"}, false); f.Area != "toolchain" || f.Project != "" {
+		t.Fatalf("%+v", f)
+	}
+}

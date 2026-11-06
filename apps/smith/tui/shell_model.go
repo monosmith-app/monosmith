@@ -31,14 +31,19 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/settingsview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/splitter"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toolsdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-var tabTitles = map[string]string{
-	commands.TabHome: "Home", commands.TabProjects: "Projects", commands.TabRun: "Run", commands.TabDoctor: "Doctor",
-	commands.TabDeps: "Deps", commands.TabRelease: "Release", commands.TabSettings: "Settings", commands.TabGuide: "Start",
+// tabTitles are the names of the tabs, by tab id.
+func tabTitles() map[string]string {
+	return map[string]string{
+		commands.TabHome: words.Say("tui.tab.home"), commands.TabProjects: words.Say("tui.tab.projects"), commands.TabRun: words.Say("tui.tab.run"), commands.TabDoctor: words.Say("tui.tab.doctor"),
+		commands.TabDeps: words.Say("tui.tab.deps"), commands.TabRelease: words.Say("tui.tab.release"), commands.TabSettings: words.Say("tui.tab.settings"), commands.TabGuide: words.Say("tui.tab.guide"),
+	}
 }
 
 // Config is what the shell is built from.
@@ -46,6 +51,10 @@ type Config struct {
 	Version   string
 	Workspace string
 	Theme     theme.Theme
+	// Splits are the sizes of the panels the person set earlier, by divider; SaveSplits
+	// keeps them when they change (nil keeps none).
+	Splits     map[string]int
+	SaveSplits func(map[string]int)
 	// Actions are the guided menu's entries.
 	Actions []guide.Action
 	// Commands are every smith command, for the guided forms.
@@ -99,10 +108,10 @@ type Shell struct {
 	inWorkspace bool
 	emptyFolder bool
 	// problem is why smith.toml cannot be read; commitOps mirrors commit_operations.
-	problem   string
+	problem string
 	// repair is the fix offered for an unreadable smith.toml; the wizard that
 	// shows it is s.fix.
-	repair *sources.ConfigRepair
+	repair    *sources.ConfigRepair
 	commitOps bool
 	// environments are the names of `[workspace] environments`.
 	environments []string
@@ -123,7 +132,7 @@ type Shell struct {
 	loadedProjects bool
 	projectsErr    error
 
-	guide   guide.Model
+	guide guide.Model
 	// addForm is the add form as it ended, kept while its plan is on screen: Esc
 	// on the plan goes back to its last question, with the answers filled in.
 	addForm *guide.Model
@@ -132,11 +141,11 @@ type Shell struct {
 	formOrigin string
 	// settingsSince is when the Settings tab started the change it waits for.
 	settingsSince time.Time
-	pal     palette.Palette
-	palOpen bool
-	doctor  doctorview.Model
-	release releaseview.Model
-	deps    depsview.Model
+	pal           palette.Palette
+	palOpen       bool
+	doctor        doctorview.Model
+	release       releaseview.Model
+	deps          depsview.Model
 	// settings is the Settings tab: plugins, style and the settings of smith.toml.
 	settings settingsview.Model
 
@@ -251,8 +260,10 @@ type Shell struct {
 	detailCursor int
 	// zoom is set while the detail fills the pane on a wide screen (z).
 	zoom bool
-	// detailW is the width the user gave the detail pane ([ and ]); 0 is automatic.
-	detailW int
+	// split is what the person did to the dividers between panels (see the splitter
+	// package); saveSplits keeps the sizes for the next start, nil to keep none.
+	split      splitter.State
+	saveSplits func(map[string]int)
 	// detailTop is the first visible line of the detail; detailAll shows every
 	// line of a folded list; detailFor is what the detail told last, so the
 	// place starts over for another selection.
@@ -295,10 +306,12 @@ func NewShell(cfg Config) Shell {
 		sh.th = theme.Default()
 	}
 	sh.pal = palette.New(nil)
+	sh.split, sh.saveSplits = splitter.New(cfg.Splits), cfg.SaveSplits
 	if cfg.Sources != nil {
 		sh.inWorkspace = true
 		sh.sources = *cfg.Sources
 		sh.settings = settingsview.New(sh.sources.Settings, settingsForms(cfg.Actions))
+		sh.applySplits()
 		sh.tab = commands.TabHome
 		// Doctor runs in the background from the start (see Init).
 		sh.doctor.Loading = sh.sources.Doctor != nil
@@ -362,37 +375,37 @@ func (s Shell) taskProjects() map[string]int {
 func (s Shell) viewReasons() map[string]string {
 	r := map[string]string{}
 	if s.doctor.Report == nil {
-		r["ws.fix"] = "doctor has not checked the workspace yet"
+		r["ws.fix"] = words.Say("tui.shell.doctor_has_not_checked_the_workspace")
 	} else if _, ok := s.doctor.FixAll(); !ok {
-		r["ws.fix"] = "doctor found nothing it can fix"
+		r["ws.fix"] = words.Say("tui.shell.doctor_found_nothing_it_can_fix")
 	}
 	if s.list.Len() == 0 {
-		r["projects.install-package"] = "the workspace has no project yet"
-		r["projects.remove-package"] = "the workspace has no project yet"
+		r["projects.install-package"] = words.Say("tui.shell.the_workspace_has_no_project_yet")
+		r["projects.remove-package"] = words.Say("tui.shell.the_workspace_has_no_project_yet")
 	}
 	switch s.tab {
 	case commands.TabDoctor:
 		if _, ok := s.doctor.SelectedFix(); !ok {
-			r["doctor.fix"] = "this check has no fix; its remedy says what to do"
+			r["doctor.fix"] = words.Say("tui.shell.this_check_has_no_fix_its")
 		}
 	case commands.TabDeps:
 		if s.deps.UpArgv() == nil {
-			r["deps.update"] = "no dependency to update"
+			r["deps.update"] = words.Say("tui.shell.no_dependency_to_update")
 		}
 		if _, _, ok := s.deps.RemoveTargets(); !ok {
-			r["deps.remove"] = "no dependency is selected"
+			r["deps.remove"] = words.Say("tui.shell.no_dependency_is_selected")
 		}
 		if len(s.deps.Policy) > 0 {
-			r["deps.one-version"] = "dependencies.one_version is already on"
+			r["deps.one-version"] = words.Say("tui.shell.dependencies_one_version_is_already_on")
 		}
 		if s.deps.AlignArgv() == nil {
-			r["deps.align"] = "the one-version policy found nothing to align"
+			r["deps.align"] = words.Say("tui.shell.the_one_version_policy_found_nothing")
 		}
 	case commands.TabRelease:
 		if !s.release.CanRelease() {
-			r["rel.notes"] = "there is no release to show the notes of"
-			r["rel.release"] = "there is nothing to release"
-			r["release.open"] = "there is no bump to show the commits of"
+			r["rel.notes"] = words.Say("tui.shell.there_is_no_release_to_show")
+			r["rel.release"] = words.Say("tui.shell.there_is_nothing_to_release")
+			r["release.open"] = words.Say("tui.shell.there_is_no_bump_to_show")
 		}
 	case commands.TabSettings:
 		for id, why := range s.settings.Reasons() {
@@ -400,7 +413,7 @@ func (s Shell) viewReasons() map[string]string {
 		}
 	case commands.TabHome:
 		if s.nextAction().CommandID == "" {
-			r["home.next"] = "nothing to do yet"
+			r["home.next"] = words.Say("tui.shell.nothing_to_do_yet")
 		}
 	case commands.TabRun:
 		for id, why := range s.runReasons() {
@@ -651,7 +664,7 @@ func (s *Shell) resize(w, h int) {
 
 // lay is where each area of the screen is drawn, for the size and the open view.
 func (s Shell) lay() layout.Layout {
-	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailW)
+	return layout.DivideWith(s.w, s.h, s.hasDetail() && !s.zoomed(), s.detailWidth())
 }
 
 // canShow is true for a view the shell can open: a tab of the strip, or the

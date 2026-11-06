@@ -138,7 +138,7 @@ func groupFinding(workspaceRoot string, g *dotnetGroup) (protocol.Finding, bool)
 	}
 	explicit := explicitOutputs(workspaceRoot, g, src)
 	if g.artifacts != "" && protocol.InBuildDir(g.artifacts) && len(explicit) == 0 {
-		return protocol.Finding{Check: check, OK: true}, true
+		return pinned(protocol.Finding{Check: check, OK: true}, names), true
 	}
 	where := "bin/ and obj/ of each project"
 	if g.artifacts != "" {
@@ -149,6 +149,11 @@ func groupFinding(workspaceRoot string, g *dotnetGroup) (protocol.Finding, bool)
 		Detail: strings.Join(names, ", ") + verb(len(names)) + " into " + where + ", not into " + artifactsDir + "/",
 		Remedy: "set <ArtifactsPath>" + propsValue(propsDir) + "</ArtifactsPath> in " + g.props + ", or run smith doctor --fix",
 	}
+	f.Problem = f.Detail
+	if len(names) == 1 {
+		f.Problem = strings.TrimPrefix(f.Detail, names[0]+" ")
+	}
+	f = pinned(f, names)
 	if refusal := dotnetRefusal(workspaceRoot, g, explicit); refusal != "" {
 		f.Warning = true
 		f.Remedy = "smith does not edit " + g.props + " for you, because " + refusal + ". To move it by hand: " + strings.TrimSuffix(f.Remedy, ", or run smith doctor --fix")
@@ -292,4 +297,15 @@ func verb(n int) string {
 		return " builds"
 	}
 	return " build"
+}
+
+// pinned files a finding under its project when the props file governs one,
+// and under "config" when it governs several or the whole workspace.
+func pinned(f protocol.Finding, names []string) protocol.Finding {
+	if len(names) == 1 {
+		f.Project = names[0]
+	} else {
+		f.Area = "config"
+	}
+	return f
 }

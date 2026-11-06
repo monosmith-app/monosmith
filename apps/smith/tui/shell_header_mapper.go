@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // headerRow is the top row: the workspace, its branch and its health.
@@ -16,7 +17,7 @@ func (s Shell) headerRow() string {
 	parts := []string{" " + s.th.Bold(name)}
 	if !s.inWorkspace && s.problem != "" {
 		// The full message, with its line, is wrapped in the guide below.
-		parts = append(parts, s.th.Warning("smith.toml cannot be read: see the message below"))
+		parts = append(parts, s.th.Warning(words.Say("tui.header.smith_toml_cannot_be_read_see")))
 	} else if !s.inWorkspace {
 		parts = append(parts, s.th.Muted(strings.TrimSpace(s.noWorkspaceHint())))
 	}

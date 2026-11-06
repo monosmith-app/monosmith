@@ -1,0 +1,22 @@
+{
+  "depsview.waiting.scope": " of {projects}",
+  "depsview.waiting": "Asking the package registries for newer releases of every dependency{scope}.",
+  "depsview.waiting.more": " On a large workspace this takes up to half a minute; you can use the other tabs meanwhile.",
+  "depsview.policy.title": "One version",
+  "depsview.policy.empty": "not required yet: press o to make every project use the same version of a shared dependency",
+  "depsview.chosen.majors": "{count} of the chosen packages are major releases: they can break your code. Read their release notes first.",
+  "depsview.latest": "Every dependency is on its latest release.",
+  "depsview.summary": "{count} with newer releases: {patch} patch · {minor} minor · {major} major",
+  "depsview.marked": "   {count} marked",
+  "depsview.safe": "{count} patch and minor releases are safe to take together (press s).",
+  "depsview.column.package": "Package",
+  "depsview.column.now": "Now",
+  "depsview.column.latest": "Latest",
+  "depsview.column.level": "Level",
+  "depsview.column.kind": "Kind",
+  "depsview.column.projects": "Projects",
+  "depsview.group.major": "Major releases: may break your code, take one at a time",
+  "depsview.group.safe": "Patch and minor releases: safe to take together",
+  "depsview.major.one": " The 1 major one can break your code: take it on its own.",
+  "depsview.major.many": " The {count} major ones can break your code: take them one at a time."
+}

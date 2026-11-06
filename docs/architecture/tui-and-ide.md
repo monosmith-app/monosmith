@@ -11,7 +11,7 @@ they disagree with the box, the box is right.
 > | Terminal shell with Home, Projects, Run, Doctor, Deps, Release, Settings | built; one keymap, no menu bar ([ADR 0032](decisions/0032-single-key-tui-keymap.md), [architecture](tui-architecture.md)) |
 > | Navigator tree and permanent inspector | not built; replaced by a list with a detail pane beside it (from 100 columns) |
 > | Right-click context menu | not built; removed with the menu bar in the redesign (ADR 0032) |
-> | Drag a pane border to resize | not built; `[` and `]` make the detail narrower or wider |
+> | Drag a pane border to resize | built in the TUI (the `splitter` package): drag a divider, or select it with `\` (or `Shift`+arrows) and move it with `[` and `]`; the IDE panels do not have it |
 > | Huh, Glamour and ntcharts | not used; the shell uses Bubble Tea, Bubbles and Lip Gloss |
 > | The `.cuppa` design files in `docs/architecture/tui/` | not in the repository |
 > | Event stream and `smith serve` | built ([ADR 0026](decisions/0026-event-stream-and-smith-serve.md), [Serve](../reference/serve.md)); the shell's Run tab reads it for task runs (`--json-events`, `tui/runview`) and parses smith's text output for other commands |

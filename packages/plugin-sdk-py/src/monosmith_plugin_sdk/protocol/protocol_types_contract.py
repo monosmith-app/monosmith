@@ -923,12 +923,33 @@ class FileEdit(_FileEditRequired, total=False):
 
 class _FindingRequired(TypedDict):
     check: str
+    """
+    Check is the rule, stated as it should hold ("golangci-lint is 2.15.0, as in CI"). A passing
+    finding is listed by it.
+    """
     ok: bool
 
 
 class Finding(_FindingRequired, total=False):
-    """Finding is one check. Every failed finding names its remedy."""
+    """Finding is one check. Every failed finding names its problem and its remedy."""
 
+    problem: str
+    """
+    Problem is what is wrong, in one line ("golangci-lint is 2.14.0, CI uses 2.15.0"). A failed
+    finding is listed by it; one without it is listed by its Check.
+    """
+    project: str
+    """
+    Project is the project the finding is about, as the workspace names it ("web"); empty for a
+    finding about the workspace itself. The host files a finding under its project, so the Check,
+    Problem and Detail need not name it.
+    """
+    area: str
+    """
+    Area is the part of the workspace a workspace-wide finding is about, in one lowercase word:
+    "toolchain", "ci", "lint", "dependencies", "release", "git" or "config". A finding with a
+    Project has none.
+    """
     detail: str
     remedy: str
     warning: bool

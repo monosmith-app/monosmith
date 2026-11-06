@@ -96,7 +96,7 @@ option number. Steps run in the workspace root and stop at the first that fails.
 							mark = "!"
 						}
 					}
-					fmt.Fprintf(out, "%s %s\n", mark, f.Check)
+					fmt.Fprintf(out, "%s %s\n", mark, f.Located())
 					if !f.OK {
 						fmt.Fprintf(out, "    %s\n", f.Detail)
 						for _, step := range strings.Split(f.Remedy, "\n") {
@@ -190,7 +190,7 @@ func reportUntrusted(cmd *cobra.Command, asJSON bool) error {
 		if !f.OK {
 			mark = "✖"
 		}
-		fmt.Fprintf(out, "%s %s\n", mark, f.Check)
+		fmt.Fprintf(out, "%s %s\n", mark, f.Located())
 		if !f.OK {
 			fmt.Fprintf(out, "    %s\n", f.Detail)
 			for _, step := range strings.Split(f.Remedy, "\n") {

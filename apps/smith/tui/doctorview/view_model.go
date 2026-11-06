@@ -1,22 +1,25 @@
 package doctorview
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
-// Model lists doctor's failing checks, one line each, failures before
-// warnings; g files them by project (the workspace's first); enter expands the
-// selected one into its problem and remedy, and f opens the wizard of its fix
+// Model lists doctor's failing checks under a heading per group (the
+// workspace's first, then each project), failures before warnings; enter on a
+// heading folds or unfolds its group, E all of them, g turns the groups off;
+// enter on a check expands it into its problem and remedy, and f opens the wizard of its fix
 // (see package fixwizard); Plan, FixFor and FixAll say which fixes there are.
 type Model struct {
 	Report   *doctor.Report
@@ -25,8 +28,15 @@ type Model struct {
 	// Cursor is a position in the order the findings are drawn.
 	Cursor int
 	Open   bool
-	// Grouped files the findings under their project; by default they are one flat list.
+	// Grouped files the findings under headings, the workspace's first and then
+	// each project's; a model that is not grouped is one flat list.
 	Grouped bool
+	// Folds is what the person chose for single groups, by group (the project's
+	// name; "" is the workspace): true for open, false for closed.
+	Folds map[string]bool
+	// All is what the person chose for every group at once: above 0 opens
+	// them, below 0 closes them, 0 leaves each as it is by default.
+	All int
 	// Loading is true while doctor runs for the first time.
 	Loading bool
 	// Waited is how long that run has taken so far, set by the shell for drawing.
@@ -43,7 +53,9 @@ func FromResult(r Result) Model {
 	if r.Err != nil {
 		return Model{Err: r.Err}
 	}
-	return Model{Report: &r.Report, Projects: r.Projects}
+	m := Model{Report: &r.Report, Projects: r.Projects, Grouped: true}
+	m.Cursor = m.firstFinding()
+	return m
 }
 
 // groups is the findings as drawn: one group, or one per project.
@@ -88,35 +100,23 @@ func (v Model) collapsed() bool {
 	return v.Report != nil && !v.ShowPassed && v.Report.Passed > 0
 }
 
-// rows is how many rows the cursor moves over: the problems, then the line
-// that stands for the collapsed passes.
-func (v Model) rows() int {
-	n := len(v.order())
-	if v.collapsed() {
-		n++
-	}
-	return n
-}
+// rows is how many rows the cursor moves over: the headings, the problems
+// of the open groups, then the line that stands for the collapsed passes.
+func (v Model) rows() int { return len(v.layout()) }
 
 // OnPassedLine is true when the cursor is on the collapsed passes' line.
-func (v Model) OnPassedLine() bool { return v.collapsed() && v.Cursor == len(v.order()) }
-
-// order is the finding indexes in the order they are drawn.
-func (v Model) order() []int {
-	var out []int
-	for _, g := range v.groups() {
-		out = append(out, g.Indexes...)
-	}
-	return out
+func (v Model) OnPassedLine() bool {
+	rows := v.layout()
+	return v.Cursor >= 0 && v.Cursor < len(rows) && rows[v.Cursor].kind == passedRow
 }
 
 // Selected is the finding under the cursor.
 func (v Model) Selected() (doctor.Finding, bool) {
-	order := v.order()
-	if v.Report == nil || v.Cursor < 0 || v.Cursor >= len(order) {
+	rows := v.layout()
+	if v.Report == nil || v.Cursor < 0 || v.Cursor >= len(rows) || rows[v.Cursor].kind != findingRow {
 		return doctor.Finding{}, false
 	}
-	return v.Report.Findings[order[v.Cursor]], true
+	return v.Report.Findings[rows[v.Cursor].finding], true
 }
 
 // Update handles a key.
@@ -136,16 +136,30 @@ func (v Model) Update(key tea.KeyMsg) Model {
 		v.Cursor = (v.Cursor + 1) % n
 		v.Open = false
 	case "enter", " ":
-		if v.OnPassedLine() {
+		switch {
+		case v.OnPassedLine():
 			v.ShowPassed = true
 			return v
+		case v.OnHeader():
+			return v.toggleGroup(v.layout()[v.Cursor].group)
 		}
 		v.Open = !v.Open
+	case "right", "left":
+		if v.OnHeader() {
+			g := v.groups()[v.layout()[v.Cursor].group]
+			if v.groupOpen(g) != (key.String() == "right") {
+				return v.toggleGroup(v.layout()[v.Cursor].group)
+			}
+		}
+	case "E": // words:literal
+		v = v.ToggleAll()
+		v.Cursor, v.Open = 0, false
 	case "p":
 		v.ShowPassed, v.Open = !v.ShowPassed, false
 		v.Cursor = min(v.Cursor, max(v.rows()-1, 0))
 	case "g":
-		v.Grouped, v.Cursor, v.Open = !v.Grouped, 0, false
+		v.Grouped, v.Open = !v.Grouped, false
+		v.Cursor = v.firstFinding()
 	}
 	return v
 }
@@ -155,13 +169,13 @@ func (v Model) Headline(th theme.Theme) string {
 	r := v.Report
 	var parts []string
 	if r.Failed > 0 {
-		parts = append(parts, th.Failure(fmt.Sprintf("%s %d failed", th.Icons.Failed, r.Failed)))
+		parts = append(parts, th.Failure(words.Say("doctor.headline.failed", "icon", th.Icons.Failed, "count", r.Failed)))
 	}
 	if r.Warnings > 0 {
-		parts = append(parts, th.Warning(fmt.Sprintf("%s %d warning(s)", th.Icons.Warning, r.Warnings)))
+		parts = append(parts, th.Warning(words.Say("doctor.headline.warnings", "icon", th.Icons.Warning, "count", r.Warnings)))
 	}
 	if len(parts) == 0 {
-		parts = append(parts, th.Success(th.Icons.Passed+" Every check passed"))
+		parts = append(parts, th.Success(words.Say("doctor.headline.passed", "icon", th.Icons.Passed)))
 	}
 	return strings.Join(parts, th.Muted(" · "))
 }
@@ -177,21 +191,34 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	}
 	if v.Report == nil {
-		return []string{th.Muted(progress.Waiting("Running the health checks on "+progress.OfProjects(v.Covered)+"…", v.Waited))}, rowOf
+		return []string{th.Muted(progress.Waiting(words.Say("doctor.waiting", "projects", progress.OfProjects(v.Covered)), v.Waited))}, rowOf
 	}
-	lines = append(lines, " "+v.Headline(th), "")
+	if v.Grouped {
+		rowOf[0] = ToggleAllRow
+	}
+	lines = append(lines, v.headline(th, w), "")
 	position := 0
-	for _, g := range v.groups() {
+	for gi, g := range v.groups() {
+		open := v.groupOpen(g)
 		if v.Grouped {
-			lines = append(lines, v.header(th, g))
+			rowOf[len(lines)] = HeaderCode(gi)
+			lines = append(lines, v.header(th, g, open, position == v.Cursor))
+			position++
+		}
+		if !open {
+			continue
+		}
+		indent := ""
+		if v.Grouped {
+			indent = "  "
 		}
 		for _, i := range g.Indexes {
 			f := v.Report.Findings[i]
 			selected := position == v.Cursor
 			rowOf[len(lines)] = i
-			lines = append(lines, guide.Row(th, selected, Mark(th, f)+" ", f.Check, ""))
+			lines = append(lines, guide.Row(th, selected, indent+Mark(th, f)+" ", f.Title(), ""))
 			if selected && v.Open && expand && !f.OK {
-				lines = append(lines, Text(th, f, 5)...)
+				lines = append(lines, Text(th, f, 5+len(indent))...)
 			}
 			position++
 		}
@@ -200,8 +227,8 @@ func (v Model) View(th theme.Theme, w int, expand bool) (lines []string, rowOf m
 		if len(lines) > 2 {
 			lines = append(lines, "")
 		}
-		rowOf[len(lines)] = -1
-		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", fmt.Sprintf("%d checks passed", v.Report.Passed), "enter or p shows them"))
+		rowOf[len(lines)] = PassedRow
+		lines = append(lines, guide.Row(th, v.OnPassedLine(), th.Icons.Closed+" ", words.Say("doctor.passed.line", "count", v.Report.Passed), words.Say("doctor.passed.hint")))
 	}
 	lines, rowOf = pane.WrapRows(lines, rowOf, w, 5)
 	for i := range lines {
@@ -230,28 +257,28 @@ func Text(th theme.Theme, f doctor.Finding, indent int) []string {
 		out = append(out, pad+th.Muted(f.Detail))
 	}
 	if f.Remedy != "" {
-		out = append(out, pad+th.Bold("→ ")+f.Remedy)
+		out = append(out, pad+th.Bold(words.Say("doctor.remedy.prefix"))+f.Remedy)
 	}
 	if f.OK {
 		return out
 	}
 	switch {
 	case f.Fix != nil && f.Fix.Safe && len(f.Fix.Choices) == 0:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (safe: f shows what changes, then applies it)"))
+		out = append(out, pad+th.Bold(words.Say("doctor.fix.prefix"))+f.Fix.Description+th.Muted(words.Say("doctor.fix.safe.hint")))
 	case f.Fix != nil:
-		out = append(out, pad+th.Bold("fix: ")+f.Fix.Description+th.Muted(" (f asks, shows what changes, then applies it)"))
+		out = append(out, pad+th.Bold(words.Say("doctor.fix.prefix"))+f.Fix.Description+th.Muted(words.Say("doctor.fix.asks.hint")))
 		// The first answer is the suggested one: say it, so f then Enter is known to do it.
 		if s := suggestion(*f.Fix); s != "" {
-			out = append(out, pad+"  "+th.Muted("f, Enter takes the suggestion: "+s))
+			out = append(out, pad+"  "+th.Muted(words.Say("doctor.fix.suggestion", "suggestion", s)))
 		}
 	}
 	if f.Fix != nil {
 		for _, e := range f.Fix.Files {
-			verb := "writes "
+			key := "doctor.file.writes"
 			if e.Delete {
-				verb = "removes "
+				key = "doctor.file.removes"
 			}
-			out = append(out, pad+"  "+th.Muted(verb+e.Path))
+			out = append(out, pad+"  "+th.Muted(words.Say(key, "path", e.Path)))
 		}
 	}
 	return out
@@ -267,11 +294,27 @@ func suggestion(fix protocol.Fix) string {
 	return fix.Choices[0].Options[0].Label
 }
 
-// header is a group's title line with what is wrong in it.
-func (v Model) header(th theme.Theme, g Group) string {
+// headline is the state of the workspace, and, with groups, the button at the
+// right end that folds or unfolds all of them.
+func (v Model) headline(th theme.Theme, w int) string {
+	left := " " + v.Headline(th)
+	if !v.Grouped {
+		return left
+	}
+	label := words.Say("doctor.toggle.collapse")
+	if !v.allOpen() {
+		label = words.Say("doctor.toggle.expand")
+	}
+	toggle := button.Render(th, label, commands.ShortcutOf("doctor.foldall"), button.Rest)
+	gap := w - pane.Width(left) - pane.Width(toggle) - 1
+	return left + strings.Repeat(" ", max(gap, 2)) + toggle
+}
+
+// header is a group's heading: its fold mark, its name and what is wrong in it.
+func (v Model) header(th theme.Theme, g Group, open, selected bool) string {
 	name := g.Project
 	if name == "" {
-		name = "workspace"
+		name = words.Say("doctor.group.workspace")
 	}
 	failed, warned := 0, 0
 	for _, i := range g.Indexes {
@@ -285,40 +328,53 @@ func (v Model) header(th theme.Theme, g Group) string {
 	}
 	var facts []string
 	if failed > 0 {
-		facts = append(facts, th.Failure(fmt.Sprintf("%d failed", failed)))
+		facts = append(facts, th.Failure(words.Say("doctor.group.failed", "count", failed)))
 	}
 	if warned > 0 {
-		facts = append(facts, th.Warning(fmt.Sprintf("%d warning(s)", warned)))
+		facts = append(facts, th.Warning(words.Say("doctor.group.warnings", "count", warned)))
 	}
 	if len(facts) == 0 {
-		facts = append(facts, th.Muted("all passed"))
+		facts = append(facts, th.Muted(words.Say("doctor.group.passed")))
 	}
-	return th.Title(name) + "  " + strings.Join(facts, " · ")
+	mark := th.Icons.Closed
+	if open {
+		mark = th.Icons.Open
+	}
+	return guide.Row(th, selected, mark+" ", th.Title(name)+"  "+strings.Join(facts, " · "), "")
 }
 
-// SelectRow moves the cursor to finding i and toggles its details when it was already there.
-func (v Model) SelectRow(i int) Model {
-	if i == -1 && v.collapsed() {
-		// The line of collapsed passes: a click opens it.
-		v.ShowPassed = true
-		return v
-	}
-	if v.Report == nil || i < 0 || i >= len(v.Report.Findings) {
-		return v
-	}
-	at := -1
-	for pos, idx := range v.order() {
-		if idx == i {
-			at = pos
+// SelectRow moves the cursor to the row a click landed on, given the code View
+// drew on that line: a finding's index (a second click toggles its details),
+// PassedRow, ToggleAllRow or a group's HeaderCode (a click folds or unfolds it).
+func (v Model) SelectRow(code int) Model {
+	switch {
+	case code == PassedRow:
+		if v.collapsed() {
+			// The line of collapsed passes: a click opens it.
+			v.ShowPassed = true
 		}
-	}
-	if at < 0 {
+		return v
+	case code == ToggleAllRow:
+		v = v.ToggleAll()
+		v.Cursor, v.Open = 0, false
+		return v
+	case v.Report == nil:
 		return v
 	}
-	if v.Cursor == at {
-		v.Open = !v.Open
-	} else {
-		v.Cursor, v.Open = at, false
+	for at, r := range v.layout() {
+		isHeader := r.kind == headerRow && code == HeaderCode(r.group)
+		isFinding := r.kind == findingRow && code >= 0 && code == r.finding
+		switch {
+		case isHeader:
+			v.Cursor, v.Open = at, false
+			return v.toggleGroup(r.group)
+		case isFinding && v.Cursor == at:
+			v.Open = !v.Open
+			return v
+		case isFinding:
+			v.Cursor, v.Open = at, false
+			return v
+		}
 	}
 	return v
 }

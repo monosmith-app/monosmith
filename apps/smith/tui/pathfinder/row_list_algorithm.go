@@ -3,6 +3,8 @@ package pathfinder
 import (
 	"slices"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // rowKind says what a row of the list stands for.
@@ -41,7 +43,7 @@ type Setting struct{ Path, Hint string }
 func buildRows(dir, prefix string, raw []rawEntry, settings []Setting, ignored func(rel string) bool) []row {
 	var rows []row
 	if dir != "" && prefix == "" {
-		rows = append(rows, row{kind: rowUp, name: "..", hint: "up one folder", value: parentOf(dir)})
+		rows = append(rows, row{kind: rowUp, name: "..", hint: words.Say("pathfinder.up"), value: parentOf(dir)})
 	}
 	want := strings.ToLower(prefix)
 	var folders, files, found []row

@@ -35,7 +35,7 @@ func doctorLab(t *testing.T, w, h int) *lab {
 
 func TestALongProblemFoldsSoTheRemedyAndTheActionsStayOnTheScreen(t *testing.T) {
 	l := doctorLab(t, 140, 30)
-	l.has("How to fix", "declare dist as the output", "Actions", "[ Check again  r ]", "What is wrong", "pkg01:build", "23, e shows all")
+	l.has("How to fix", "declare dist as the output", "Actions", "[Check again (r)]", "What is wrong", "pkg01:build", "23, e shows all")
 	l.hasNot("pkg06:build")
 	v := l.view()
 	if a, w, h := strings.Index(v, "Actions"), strings.Index(v, "What is wrong"), strings.Index(v, "How to fix"); a >= w || w >= h {
@@ -99,23 +99,27 @@ func TestAnotherCheckStartsAtTheTopAndFolded(t *testing.T) {
 	l.has("23, e shows all")
 }
 
-func TestBracketsResizeTheDetailAndTheWidthIsKept(t *testing.T) {
+func TestBracketsMoveTheDividerAndTheWidthIsKeptForThatView(t *testing.T) {
 	l := doctorLab(t, 140, 30)
 	before := l.sh().lay().Detail.W
 	l.keys("]")
-	if got := l.sh().lay().Detail.W; got != before+detailStep {
-		t.Fatalf("] widens by %d: %d -> %d", detailStep, before, got)
+	if got := l.sh().lay().Detail.W; got != before-splitStep {
+		t.Fatalf("] moves the divider right, so the detail narrows by %d: %d -> %d", splitStep, before, got)
 	}
 	l.keys("[", "[")
-	if got := l.sh().lay().Detail.W; got != before-detailStep {
-		t.Fatalf("[ narrows: %d", got)
+	if got := l.sh().lay().Detail.W; got != before+splitStep {
+		t.Fatalf("[ moves the divider left: %d", got)
 	}
 	l.keys("2")
-	if got := l.sh().lay().Detail.W; got != before-detailStep {
-		t.Fatalf("the width is kept for the session, Projects has %d", got)
+	if got := l.sh().lay().Detail.W; got == before+splitStep {
+		t.Fatalf("each view keeps its own width, Projects has %d", got)
+	}
+	l.keys("4")
+	if got := l.sh().lay().Detail.W; got != before+splitStep {
+		t.Fatalf("Doctor keeps the width it was given: %d", got)
 	}
 	for i := 0; i < 40; i++ {
-		l.keys("]")
+		l.keys("[")
 	}
 	if got := l.sh().lay().Main.W; got < 36 {
 		t.Fatalf("the list keeps its room: %d", got)
@@ -159,5 +163,5 @@ func TestZoomWorksInTheProjectsViewToo(t *testing.T) {
 func TestTheDetailKeysAreInTheHelp(t *testing.T) {
 	l := doctorLab(t, 140, 30)
 	l.keys("?")
-	l.has("Scroll the detail up", "Make the detail wider", "Zoom the detail")
+	l.has("Scroll the detail up", "Move the selected divider right or down", "Zoom the detail")
 }

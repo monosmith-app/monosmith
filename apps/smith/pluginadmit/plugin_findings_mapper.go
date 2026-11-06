@@ -16,10 +16,11 @@ func Findings(statuses []Status, inCI bool) []protocol.Finding {
 	var out []protocol.Finding
 	for _, st := range statuses {
 		check := fmt.Sprintf("external plugin %s is trusted (from %s, pinned %s, sees %s)", st.Name, st.Source, yesNo(st.Pinned), seen(st.Env))
-		f := protocol.Finding{Check: check, OK: st.Trusted && st.Problem == ""}
+		f := protocol.Finding{Check: check, OK: st.Trusted && st.Problem == "", Area: "config"}
 		if !f.OK {
 			refusal := Refusal(st, inCI)
 			f.Check = fmt.Sprintf("external plugin %s is trusted", st.Name)
+			f.Problem = refusal.Problem
 			f.Detail = refusal.Problem
 			f.Remedy = strings.Join(refusal.Remedy, "\n")
 			if st.Reason == plugintrust.ReasonNew && st.Problem == "" {

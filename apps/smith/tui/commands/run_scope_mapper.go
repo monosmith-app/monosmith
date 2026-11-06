@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // RunProject is the project the run keys act on in a state: the one selected
@@ -31,11 +32,11 @@ func RunScopeLabel(argv []string, projects int) string {
 	case len(req.Projects) > 0:
 		return verb + " · " + strings.Join(req.Projects, ", ")
 	case req.Affected:
-		return verb + " · affected projects"
+		return verb + words.Say("commands.scope.affected")
 	case projects == 1:
-		return verb + " · the only project"
+		return verb + words.Say("commands.scope.only")
 	case projects > 0:
-		return fmt.Sprintf("%s · all %d projects", verb, projects)
+		return words.Say("commands.scope.count", "verb", verb, "count", projects)
 	}
-	return verb + " · all projects"
+	return verb + words.Say("commands.scope.all")
 }

@@ -6,22 +6,23 @@ import (
 	"time"
 
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // checkedText says what the closing checks proved, in the order they ran:
 // "everything builds (9.8s), every test passes (31s)". Steps that are not a
 // check (the installs) are left out; it is "" when no check ran.
 func checkedText(steps []checkedStep) string {
-	words := map[string]string{
-		removalplan.StepBuild:  "everything builds",
-		removalplan.StepTest:   "every test passes",
-		removalplan.StepLint:   "lint is clean",
-		removalplan.StepDoctor: "doctor finds nothing wrong",
+	names := map[string]string{
+		removalplan.StepBuild:  words.Say("adopt.checked.build"),
+		removalplan.StepTest:   words.Say("adopt.checked.test"),
+		removalplan.StepLint:   words.Say("adopt.checked.lint"),
+		removalplan.StepDoctor: words.Say("adopt.checked.doctor"),
 	}
 	var parts []string
 	for _, s := range steps {
-		if w, ok := words[s.Name]; ok {
-			parts = append(parts, fmt.Sprintf("%s (%s)", w, tookText(s.Took)))
+		if w, ok := names[s.Name]; ok {
+			parts = append(parts, words.Say("adopt.checked.item", "what", w, "took", tookText(s.Took)))
 		}
 	}
 	return strings.Join(parts, ", ")
@@ -31,7 +32,7 @@ func checkedText(steps []checkedStep) string {
 func tookText(d time.Duration) string {
 	switch {
 	case d < time.Second:
-		return "under a second"
+		return words.Say("adopt.took.under")
 	case d < 10*time.Second:
 		return fmt.Sprintf("%.1fs", d.Seconds())
 	case d < time.Minute:

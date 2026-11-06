@@ -1,0 +1,9 @@
+{
+  "settingssource.disable.hides": "it hides projects: {count}. {warning}",
+  "settingssource.trust.done": "Trusted {name}",
+  "settingssource.trust.pinned": "{note}; sha256 {digest} pinned in smith.toml for CI",
+  "settingssource.untrust.none": "{name} was not trusted",
+  "settingssource.untrust.done": "No longer trusting {name}",
+  "settingssource.setting.set": "{path} = {value}",
+  "settingssource.setting.unset": "{path} removed: it has its default"
+}

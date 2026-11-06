@@ -30,27 +30,27 @@ func (l *lab) doubleClick(x, y int) {
 
 func TestClickingATabSwitchesTheView(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	x, y := l.findAfter("Doctor", 0) // the label row of the tab boxes, under the header
-	if y != 2 {
+	x, y := l.findAfter("Doctor", 0) // the one row of tabs, under the header
+	if y != 1 {
 		t.Fatalf("the tab labels are on row %d", y)
 	}
 	l.send(click(x+1, y))
-	l.has("2 failed", "✗ go.work lists every module", "F fix all")
+	l.has("2 failed", "✗ go.work lists every module", "fix all (F)")
 }
 
 func TestClickingAFooterHintPressesItsKey(t *testing.T) {
-	l := newLab(t, true, 160, 34)
-	x, y := l.find("t test")
+	l := newLab(t, true, 260, 34)
+	x, y := l.find("test orders (t)")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "run test -p orders" {
 		t.Fatalf("started %q", l.lastStarted())
 	}
 	l = newLab(t, true, 160, 34)
-	x, y = l.find("? help")
+	x, y = l.find("help (?)")
 	l.send(click(x+1, y))
 	l.has("Keyboard shortcuts")
 	l.keys("esc")
-	x, y = l.find("m mouse")
+	x, y = l.find("mouse (m)")
 	l.send(click(x+1, y))
 	if !l.sh().mouseOff {
 		t.Fatal("clicking the m hint turns the mouse off")
@@ -60,7 +60,7 @@ func TestClickingAFooterHintPressesItsKey(t *testing.T) {
 func TestHoveringAFooterHintHighlightsIt(t *testing.T) {
 	l := newLab(t, true, 160, 34)
 	before := l.sh().View()
-	x, y := l.find("l lint")
+	x, y := l.find("lint (l)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change how the hint is drawn")
@@ -193,14 +193,14 @@ func TestClickingADoctorFindingOpensItsRemedy(t *testing.T) {
 func TestClickingTheRunButtonOfTheDialogRunsAndCancelCancels(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("6", "x", "enter")
-	x, y := l.find("[ Cancel")
+	x, y := l.find("Cancel (esc)")
 	l.send(click(x+2, y))
 	if len(l.started) != 0 {
 		t.Fatal("cancel must not run")
 	}
 	l.hasNot("The command that will run:")
 	l.keys("x", "enter")
-	x, y = l.find("[ Run")
+	x, y = l.find("Run (enter)")
 	l.send(click(x+2, y))
 	if l.lastStarted() != "release --yes" {
 		t.Fatalf("started %q", l.lastStarted())
@@ -221,7 +221,7 @@ func TestHoveringTheDialogButtonsHighlightsThem(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("6", "x", "enter")
 	before := l.sh().View()
-	x, y := l.find("[ Cancel")
+	x, y := l.find("Cancel (esc)")
 	l.send(motion(x+2, y))
 	if l.sh().View() == before {
 		t.Fatal("hover should change the button")
@@ -307,9 +307,10 @@ func TestClickingOutsideTheHelpClosesIt(t *testing.T) {
 }
 
 func TestEveryTabIsOnTheStripAtTheLeastWidthAndAClickOpensIt(t *testing.T) {
-	l := newLab(t, true, 72, 30)
+	// Every tab is a button with its key, so the strip needs more room than the names alone.
+	l := newLab(t, true, 99, 30)
 	l.hasNot("›", "‹")
-	for _, name := range []string{"Home", "Projects", "Run", "Doctor", "Deps", "Release"} {
+	for _, name := range []string{"Home", "Proj", "Run", "Doctor", "Deps", "Rel"} {
 		l.has(name)
 	}
 	x, y := l.findAfter("Run", 0)

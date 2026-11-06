@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pathfinder"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 type editorKind int
@@ -70,7 +71,7 @@ func newTextEditor(st Setting) *editor {
 	}
 	placeholder := st.Default
 	if placeholder == "" {
-		placeholder = "a " + st.Type
+		placeholder = words.Say("settingsview.editor.placeholder", "type", st.Type)
 	}
 	e := &editor{kind: editText, title: st.Path, about: st.Explanation, setting: st, input: newInput(value, placeholder)}
 	if takesPath(st) {
@@ -118,15 +119,15 @@ func newPicker(st Setting) *editor {
 }
 
 func newReview(name string, r TrustReview) *editor {
-	return &editor{kind: editReview, title: "Trust " + name + "?", plugin: name, text: r.Text, trusted: r.Trusted}
+	return &editor{kind: editReview, title: words.Say("settingsview.editor.trust.title", "name", name), plugin: name, text: r.Text, trusted: r.Trusted}
 }
 
 func newInstall() *editor {
 	e := &editor{
 		kind:  editInstall,
-		title: "Install a plugin",
-		about: "A plugin directory or archive, an https URL or github:owner/repo@tag. An archive or URL also needs its sha256: type it after the source.",
-		input: newInput("", "source [sha256]"),
+		title: words.Say("settingsview.install.title"),
+		about: words.Say("settingsview.install.about"),
+		input: newInput("", words.Say("settingsview.install.placeholder")),
 	}
 	e.withFinder()
 	return e
@@ -135,23 +136,23 @@ func newInstall() *editor {
 func newSearch() *editor {
 	return &editor{
 		kind:  editSearch,
-		title: "Find a plugin in the marketplace",
-		about: "Words from the name, the description, the roles or the languages (for example: deploy go). Leave it empty to list every plugin.",
-		input: newInput("", "words to look for"),
+		title: words.Say("settingsview.search.title"),
+		about: words.Say("settingsview.search.about"),
+		input: newInput("", words.Say("settingsview.search.placeholder")),
 	}
 }
 
 // installArgv is the command line the typed text stands for, or why it is not one.
 func installArgv(typed string) ([]string, string) {
-	words := strings.Fields(typed)
-	if len(words) == 0 {
-		return []string{"plugin", "install", "<source>"}, "Say where the plugin comes from."
+	fields := strings.Fields(typed)
+	if len(fields) == 0 {
+		return []string{"plugin", "install", "<source>"}, words.Say("settingsview.install.missing")
 	}
 	argv := []string{"plugin", "install"}
-	if n := len(words); n > 1 && isSHA256(words[n-1]) {
-		argv = append(argv, strings.Join(words[:n-1], " "), "--sha256", words[n-1])
+	if n := len(fields); n > 1 && isSHA256(fields[n-1]) {
+		argv = append(argv, strings.Join(fields[:n-1], " "), "--sha256", fields[n-1])
 	} else {
-		argv = append(argv, strings.Join(words, " "))
+		argv = append(argv, strings.Join(fields, " "))
 	}
 	return argv, ""
 }
@@ -238,7 +239,7 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 				m.ed = nil
 				return m, Result{Run: argv}
 			}
-			m = m.begin("saving "+e.setting.Path, false)
+			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 		e.err = ""
@@ -259,23 +260,23 @@ func (m Model) editorKey(msg tea.KeyMsg) (Model, Result) {
 		case "enter":
 			e.err = ""
 			m.ed = &e
-			m = m.begin("saving "+e.setting.Path, false)
+			m = m.begin(words.Say("settingsview.busy.saving", "path", e.setting.Path), false)
 			return m, Result{Cmd: m.setSetting(e.setting.Path, e.values())}
 		}
 	case editReview:
 		switch name {
 		case "y":
 			m.ed = &e
-			m = m.begin("trusting "+e.plugin, false)
+			m = m.begin(words.Say("settingsview.busy.trusting", "name", e.plugin), false)
 			return m, Result{Cmd: m.trust(e.plugin, false)}
 		case "p":
 			m.ed = &e
-			m = m.begin("trusting "+e.plugin+" at this version", false)
+			m = m.begin(words.Say("settingsview.busy.pinning", "name", e.plugin), false)
 			return m, Result{Cmd: m.trust(e.plugin, true)}
 		case "f", "u":
 			if e.trusted {
 				m.ed = &e
-				m = m.begin("forgetting the trust of "+e.plugin, false)
+				m = m.begin(words.Say("settingsview.busy.forgetting", "name", e.plugin), false)
 				return m, Result{Cmd: m.untrust(e.plugin)}
 			}
 		case "up", "k":

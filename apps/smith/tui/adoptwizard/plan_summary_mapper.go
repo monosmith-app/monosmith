@@ -1,11 +1,11 @@
 package adoptwizard
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
 	"github.com/monosmith-app/monosmith/apps/smith/convert"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // planSummaryText is the top of the review of a conversion, before the files:
@@ -15,26 +15,26 @@ import (
 // with + or -.
 func planSummaryText(c adoptflow.Changes, r convert.Highlights) string {
 	var b strings.Builder
-	b.WriteString("● In short\n")
+	b.WriteString(words.Say("adopt.summary.short"))
 	if c.Total() > 0 {
-		fmt.Fprintf(&b, "  Files: smith creates %d, edits %d and removes %d.\n", len(c.Created), len(c.Edited), len(c.Removed))
+		b.WriteString(words.Say("adopt.summary.files", "created", len(c.Created), "edited", len(c.Edited), "removed", len(c.Removed)))
 	}
-	fmt.Fprintf(&b, "  Things to check: %s\n", countOrNone(len(r.Checks), "listed below"))
-	fmt.Fprintf(&b, "  Things that behave differently afterwards: %s\n", countOrNone(len(r.Changed), "listed below"))
+	b.WriteString(words.Say("adopt.summary.checks", "count", countOrNone(len(r.Checks), words.Say("adopt.summary.below"))))
+	b.WriteString(words.Say("adopt.summary.changed", "count", countOrNone(len(r.Changed), words.Say("adopt.summary.below"))))
 	if len(r.Checks) > 0 {
-		fmt.Fprintf(&b, "\n! Check these before you go ahead (%d)\n", len(r.Checks))
+		b.WriteString(words.Say("adopt.summary.checkhead", "count", len(r.Checks)))
 		for _, x := range r.Checks {
-			fmt.Fprintf(&b, "  • %s\n", x)
+			b.WriteString("  • " + x + "\n")
 		}
 	}
 	if len(r.Changed) > 0 {
-		fmt.Fprintf(&b, "\n● Behaves differently afterwards (%d)\n", len(r.Changed))
+		b.WriteString(words.Say("adopt.summary.changedhead", "count", len(r.Changed)))
 		for i, x := range r.Changed {
 			if i == shownChanged {
-				fmt.Fprintf(&b, "  • and %d more: the full list is saved in %s once it is converted\n", len(r.Changed)-shownChanged, convert.ReportFile)
+				b.WriteString(words.Say("adopt.summary.more", "count", len(r.Changed)-shownChanged, "file", convert.ReportFile))
 				break
 			}
-			fmt.Fprintf(&b, "  • %s\n", x)
+			b.WriteString("  • " + x + "\n")
 		}
 	}
 	return b.String()
@@ -42,7 +42,7 @@ func planSummaryText(c adoptflow.Changes, r convert.Highlights) string {
 
 func countOrNone(n int, where string) string {
 	if n == 0 {
-		return "none"
+		return words.Say("adopt.summary.none")
 	}
-	return fmt.Sprintf("%d (%s)", n, where)
+	return words.Say("adopt.summary.count", "count", n, "where", where)
 }

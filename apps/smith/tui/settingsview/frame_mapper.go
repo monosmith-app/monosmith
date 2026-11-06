@@ -1,13 +1,13 @@
 package settingsview
 
 import (
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // frame is the tab drawn in w by h cells, and what each row stands for.
@@ -35,13 +35,10 @@ func (m Model) frame(th theme.Theme, w, h, px, py int) frame {
 		f.lines = pane.Block(nil, max(w, 0), max(h, 0))
 		return f
 	}
-	f.listW = clamp(w/5, 11, 16)
-	if w < 30 {
-		f.listW = max(w/3, 0)
-	}
+	f.listW = m.sectionsWidth(w)
 	rw := max(w-f.listW-1, 0)
 	left := make([]string, h)
-	left[0] = th.Muted(" Sections")
+	left[0] = th.Muted(words.Say("settingsview.sections.title"))
 	for i, s := range Sections {
 		row := i + 1
 		if row >= h {
@@ -122,19 +119,7 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 	if len(all) == 0 {
 		all = m.emptyList(th, w)
 	}
-	noteRow := 0
-	if body >= 5 {
-		noteRow = 1
-	}
-	avail := body - noteRow
-	detailH := 0
-	if avail >= 9 {
-		detailH = min(detailWant[m.section], avail-5)
-	}
-	listH := avail
-	if detailH > 0 {
-		listH = avail - detailH - 1
-	}
+	listH, detailH, noteRow := m.rowSplit(body)
 	top := 0
 	if cursor < len(lineOf) {
 		top = m.scroll[m.section].Show(lineOf[cursor], listH, len(all))
@@ -165,7 +150,7 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 		}
 		if hidden := len(detail) - detailH; hidden > 0 && detailH >= 2 {
 			// Say that the detail goes on instead of cutting it in the middle.
-			rows[1+listH+detailH] = " " + th.Muted(fmt.Sprintf("… %d more lines: make the window taller", hidden+1))
+			rows[1+listH+detailH] = " " + th.Muted(words.Say("settingsview.detail.more", "count", hidden+1))
 		}
 	}
 	if noteRow > 0 {
@@ -181,6 +166,47 @@ func (m Model) rightRows(th theme.Theme, w, h, px, py int) ([]string, map[int]in
 	}
 	return rows, rowItem
 }
+
+// sectionsWidth is the width of the list of sections in a tab w cells wide:
+// the width the person gave it, else a fifth of the tab.
+func (m Model) sectionsWidth(w int) int {
+	switch {
+	case w < 30:
+		return max(w/3, 0)
+	case m.listW > 0:
+		return clamp(m.listW, minSections, max(w-minRight, minSections))
+	}
+	return clamp(w/5, minSections, 16)
+}
+
+// rowSplit divides the body of the right pane (the rows under its heading) into
+// the rows of the list, the rows of the detail under it, and the row of the
+// note. The detail has the rows the person gave it, else what its section
+// wants; a body too short for both shows the list alone.
+func (m Model) rowSplit(body int) (listH, detailH, noteRow int) {
+	if body >= 5 {
+		noteRow = 1
+	}
+	avail := body - noteRow
+	if avail >= 9 {
+		detailH = min(detailWant[m.section], avail-5)
+		if m.detailRows > 0 {
+			detailH = clamp(m.detailRows, minDetailRows, avail-5)
+		}
+	}
+	listH = avail
+	if detailH > 0 {
+		listH = avail - detailH - 1
+	}
+	return listH, detailH, noteRow
+}
+
+// The least the list of sections, the right pane and the detail may be.
+const (
+	minSections   = 11
+	minRight      = 24
+	minDetailRows = 2
+)
 
 // detailWant is how many rows the detail of each section would like.
 var detailWant = map[Section]int{Plugins: 7, Architecture: 10, Style: 8, Workspace: 8, Recipes: 5, Forms: 3}
@@ -220,9 +246,9 @@ func (m Model) unavailable(th theme.Theme, w int) (lines []string, blocked bool)
 	}
 	switch {
 	case m.b.Load == nil:
-		return []string{"", " " + th.Muted("The settings of this workspace are not available here.")}, true
+		return []string{"", " " + th.Muted(words.Say("settingsview.unavailable"))}, true
 	case !m.loaded:
-		return []string{"", " " + th.Muted("Reading the workspace…")}, true
+		return []string{"", " " + th.Muted(words.Say("settingsview.reading"))}, true
 	case m.snap.Err != nil:
 		lines = append([]string{""}, indent(pane.Wrap(th.Failure(m.snap.Err.Error()), w-2, 0))...)
 		return lines, true

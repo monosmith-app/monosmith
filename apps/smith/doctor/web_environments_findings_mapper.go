@@ -64,17 +64,19 @@ func webEnvironmentFindings(root string, projects []*projectgraph.Project) []pro
 	sort.Strings(missing)
 	sort.Strings(secrets)
 	have := protocol.Finding{
-		Check: "every environment of a web app has its env file", OK: len(missing) == 0, Warning: true,
-		Detail: "Vite reads .env.<environment> when it builds that environment. Missing: " + strings.Join(missing, ", "),
-		Remedy: "make the files (smith doctor --fix writes a starter for each), or remove the environment (smith environments remove <project> <name>)",
+		Check: "every environment of a web app has its env file", OK: len(missing) == 0, Warning: true, Area: AreaConfig,
+		Problem: problemWhen(len(missing) > 0, "env files are missing: "+leadProblem(missing)),
+		Detail:  "Vite reads .env.<environment> when it builds that environment. Missing: " + strings.Join(missing, ", "),
+		Remedy:  "make the files (smith doctor --fix writes a starter for each), or remove the environment (smith environments remove <project> <name>)",
 	}
 	if len(fixFiles) > 0 {
 		have.Fix = &protocol.Fix{Description: "Write the missing env files of the web apps", Files: fixFiles}
 	}
 	return []protocol.Finding{have, {
-		Check: "no VITE_ value of a web app looks like a secret", OK: len(secrets) == 0, Warning: true,
-		Detail: "every VITE_ value is written into the browser bundle, where anyone can read it. Names with KEY, SECRET or TOKEN in them: " + strings.Join(secrets, ", "),
-		Remedy: "keep the secret on a server and let the app ask the server, or rename the variable if it is not a secret (a public key is fine, a private key is not); a secret the build needs goes through [ci] secrets in smith.toml and never into a VITE_ name",
+		Check: "no VITE_ value of a web app looks like a secret", OK: len(secrets) == 0, Warning: true, Area: AreaConfig,
+		Problem: problemWhen(len(secrets) > 0, "VITE_ names that look like secrets: "+leadProblem(secrets)),
+		Detail:  "every VITE_ value is written into the browser bundle, where anyone can read it. Names with KEY, SECRET or TOKEN in them: " + strings.Join(secrets, ", "),
+		Remedy:  "keep the secret on a server and let the app ask the server, or rename the variable if it is not a secret (a public key is fine, a private key is not); a secret the build needs goes through [ci] secrets in smith.toml and never into a VITE_ name",
 	}}
 }
 

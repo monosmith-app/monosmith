@@ -1,27 +1,33 @@
 package releasepick
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/monosmith-app/monosmith/apps/smith/release"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // bumpLevels are the answers of the bump column: the commits decide (empty), or
 // the person picks a level.
 var bumpLevels = []string{"", "patch", "minor", "major"}
 
-const (
-	buttonGo   = "[ Continue  Enter ]"
-	buttonStop = "[ Cancel  Esc ]"
-	minWidth   = 56
-)
+const minWidth = 56
+
+// buttonKeys are the keys that do what a click on Continue and Cancel does.
+var buttonKeys = [2]string{"enter", "esc"} // words:literal
+
+// buttonGo is the label of the button that continues the release.
+func buttonGo() string { return words.Say("releasepick.button.go") }
+
+// buttonStop is the label of the button that cancels the release.
+func buttonStop() string { return words.Say("releasepick.button.stop") }
 
 // Model is the question before a release is confirmed: which packages of the
 // plan to hold back (any number) and which bump to change (pick the package,
@@ -66,7 +72,7 @@ func (m Model) Within(top, bottom int) Model {
 }
 
 // Title is the heading of the dialog.
-func (m Model) Title() string { return "Release: hold back or bump" }
+func (m Model) Title() string { return words.Say("releasepick.title") }
 
 // canBump is true when the commits decide the version of a package that was
 // released before. A first release, a forced version and a channel release
@@ -132,7 +138,7 @@ func (m Model) bumps() map[string]string {
 
 // intro is the text above the list.
 func intro(inner int) []string {
-	return pane.Wrap("Enter releases the plan as it is. To change it first: Space holds a package back (it stays at its version), B changes its bump.", inner, 0)
+	return pane.Wrap(words.Say("releasepick.intro"), inner, 0)
 }
 
 // Place centres the dialog on a screen of sw by sh cells, between the margins.
@@ -168,7 +174,7 @@ func (m Model) Rect() dialog.Rect { return m.rect }
 
 // tailLines are the command that will run and the blank line before it.
 func (m Model) tailLines(inner int) []string {
-	tail := []string{"", "The command that will run (it asks once more before it runs):"}
+	tail := []string{"", words.Say("releasepick.command.label")}
 	for _, l := range pane.Wrap(commands.Line(m.Argv()), inner-4, 2) {
 		tail = append(tail, "  $ "+l)
 	}
@@ -183,35 +189,35 @@ func (m Model) rowText(it release.Item, now map[string]release.Item, nameW int) 
 	}
 	from := it.Current
 	if from == "" {
-		from = "new"
+		from = words.Say("releasepick.version.new")
 	}
 	name := pane.Fit(it.Project, nameW)
 	switch {
 	case m.held[it.Project]:
-		return fmt.Sprintf("%s %s %s  held back: it stays at %s", box, name, from, from)
+		return words.Say("releasepick.row.held", "box", box, "name", name, "from", from)
 	case !m.canBump(it):
-		return fmt.Sprintf("%s %s %s → %s  (no bump: %s)", box, name, from, it.Next, m.fixedBecause(it))
+		return words.Say("releasepick.row.fixed", "box", box, "name", name, "from", from, "to", it.Next, "because", m.fixedBecause(it))
 	}
 	next, ok := now[it.Project]
 	if !ok {
-		return fmt.Sprintf("%s %s %s  held back: a package it depends on is held back", box, name, from)
+		return words.Say("releasepick.row.dependency", "box", box, "name", name, "from", from)
 	}
-	choice := "as the commits ask"
+	choice := words.Say("releasepick.bump.commits")
 	if level := bumpLevels[m.bump[it.Project]]; level != "" {
 		choice = level
 	}
-	return fmt.Sprintf("%s %s %s → %s  bump: ‹ %s ›", box, name, from, next.Next, choice)
+	return words.Say("releasepick.row.bump", "box", box, "name", name, "from", from, "to", next.Next, "choice", choice)
 }
 
 // fixedBecause says why a package has no bump to choose.
 func (m Model) fixedBecause(it release.Item) string {
 	switch {
 	case m.plan.Channel != "":
-		return "release channel"
+		return words.Say("releasepick.fixed.channel")
 	case it.Forced:
-		return "a version() commit sets it"
+		return words.Say("releasepick.fixed.forced")
 	}
-	return "first release"
+	return words.Say("releasepick.fixed.first")
 }
 
 // Lines draws the dialog: Rect().H lines of Rect().W cells.
@@ -253,34 +259,37 @@ func (m Model) Lines(th theme.Theme) []string {
 		rows = append(rows, row(l))
 	}
 	rows = append(rows, row(""))
-	spans := m.buttons(inner)
+	spans := m.buttonsIn(th, inner)
 	line := strings.Repeat(" ", spans[0][0]-2)
-	for i, label := range []string{buttonGo, buttonStop} {
-		text := th.Muted(label)
+	for i, label := range []string{buttonGo(), buttonStop()} {
+		state := button.Rest
 		switch {
-		case m.focus == i:
-			text = th.Selected(label)
 		case m.hover == i:
-			text = th.Hover(label)
+			state = button.Hover
+		case m.focus == i:
+			state = button.Active
 		}
-		line += text
+		line += button.Render(th, label, buttonKeys[i], state)
 		if i == 0 {
-			line += "  "
+			line += " "
 		}
 	}
 	rows = append(rows, row(line))
 	if len(m.plan.Items) > m.room {
 		// The list is longer than the dialog: say so on the line above the buttons.
-		rows[len(rows)-2] = row(th.Muted(fmt.Sprintf("%d of %d packages shown (Up and Down show the rest)", m.room, len(m.plan.Items))))
+		rows[len(rows)-2] = row(th.Muted(words.Say("releasepick.shown", "shown", m.room, "total", len(m.plan.Items))))
 	}
 	return pane.Frame(th, m.Title(), rows, r.W, r.H, true)
 }
 
 // buttons are the spans, from the dialog's left edge, of Continue and Cancel.
-func (m Model) buttons(inner int) [2][2]int {
-	run, stop := ansi.StringWidth(buttonGo), ansi.StringWidth(buttonStop)
-	start := 2 + max((inner-(run+2+stop))/2, 0)
-	return [2][2]int{{start, start + run}, {start + run + 2, start + run + 2 + stop}}
+func (m Model) buttons(inner int) [2][2]int { return m.buttonsIn(theme.Default(), inner) }
+
+// buttonsIn is buttons for the theme the dialog is drawn with.
+func (m Model) buttonsIn(th theme.Theme, inner int) [2][2]int {
+	run, stop := button.Width(th, buttonGo(), buttonKeys[0]), button.Width(th, buttonStop(), buttonKeys[1])
+	start := 2 + max((inner-(run+1+stop))/2, 0)
+	return [2][2]int{{start, start + run}, {start + run + 1, start + run + 1 + stop}}
 }
 
 func (m Model) buttonAt(x, y int) int {

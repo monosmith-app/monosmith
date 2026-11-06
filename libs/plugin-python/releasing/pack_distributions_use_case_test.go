@@ -19,7 +19,10 @@ func TestPackCopiesTheWheelAndTheSdistWithoutTwine(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	Twine = func(string, []string, []string) (string, error) { t.Fatal("pack mode never runs twine"); return "", nil }
+	Twine = func(string, []string, []string) (string, error) {
+		t.Fatal("pack mode never runs twine")
+		return "", nil
+	}
 	res, err := Publish(root, protocol.PublishParams{Project: protocol.Project{Root: "packages/py", Exports: []string{"acme"}}, Version: "1.0.0", PackDir: "dist/release/py/packages"})
 	if err != nil {
 		t.Fatal(err)

@@ -10,10 +10,25 @@ type DoctorResult struct {
 	Findings []Finding `json:"findings"`
 }
 
-// Finding is one check. Every failed finding names its remedy.
+// Finding is one check. Every failed finding names its problem and its remedy.
 type Finding struct {
-	Check  string `json:"check"`
-	OK     bool   `json:"ok"`
+	// Check is the rule, stated as it should hold ("golangci-lint is 2.15.0, as
+	// in CI"). A passing finding is listed by it.
+	Check string `json:"check"`
+	OK    bool   `json:"ok"`
+	// Problem is what is wrong, in one line ("golangci-lint is 2.14.0, CI uses
+	// 2.15.0"). A failed finding is listed by it; one without it is listed by
+	// its Check.
+	Problem string `json:"problem,omitempty"`
+	// Project is the project the finding is about, as the workspace names it
+	// ("web"); empty for a finding about the workspace itself. The host files a
+	// finding under its project, so the Check, Problem and Detail need not name
+	// it.
+	Project string `json:"project,omitempty"`
+	// Area is the part of the workspace a workspace-wide finding is about, in
+	// one lowercase word: "toolchain", "ci", "lint", "dependencies", "release",
+	// "git" or "config". A finding with a Project has none.
+	Area   string `json:"area,omitempty"`
 	Detail string `json:"detail,omitempty"`
 	Remedy string `json:"remedy,omitempty"`
 	// Warning true reports a problem without failing doctor.

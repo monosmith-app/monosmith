@@ -47,9 +47,10 @@ func recipeReleaseChecks(s *session.Session) []protocol.Finding {
 		if err != nil {
 			continue
 		}
-		f := protocol.Finding{Check: fmt.Sprintf("recipe %s %s is the newest release", loc.Name, loc.Version)}
+		f := protocol.Finding{Check: fmt.Sprintf("recipe %s %s is the newest release", loc.Name, loc.Version), Area: AreaConfig}
 		if recipereleases.Newer(latest, loc.Version) {
 			f.Warning = true
+			f.Problem = fmt.Sprintf("smith.toml pins %s %s, and %s is released", loc.Name, loc.Version, latest)
 			f.Detail = fmt.Sprintf("%s %s is released, and smith.toml pins %s", loc.Name, latest, loc.Version)
 			f.Remedy = "point the recipe at the new release: " + loc.Pinned(latest) + "; then `smith upgrade` accepts its content and brings the projects up to date"
 		} else {

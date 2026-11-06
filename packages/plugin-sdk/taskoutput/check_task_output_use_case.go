@@ -58,9 +58,9 @@ func Check(p protocol.Project, task string, spec Spec) (protocol.Finding, bool) 
 		if protocol.InBuildDir(resolved) {
 			return protocol.Finding{}, false
 		}
-		return protocol.Finding{Check: check, Detail: "the " + task + " task writes into " + resolved + ", not into " + target + "/", Remedy: remedy}, true
+		return protocol.Finding{Check: check, Project: p.Name, Problem: "builds into " + resolved + ", not " + target, Detail: "the " + task + " task writes into " + resolved + ", not into " + target + "/", Remedy: remedy}, true
 	}
-	return protocol.Finding{Check: check, Detail: "the " + task + " task (" + strings.Join(t.Command, " ") + ") passes no " + spec.Flag + ", so it writes " + spec.Default + ", not into " + target + "/", Remedy: remedy}, true
+	return protocol.Finding{Check: check, Project: p.Name, Problem: "builds " + spec.Default + ", not into " + target, Detail: "the " + task + " task (" + strings.Join(t.Command, " ") + ") passes no " + spec.Flag + ", so it writes " + spec.Default + ", not into " + target + "/", Remedy: remedy}, true
 }
 
 func hasFlagPrefix(arg string, flags []string) bool {

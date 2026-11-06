@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The keys of the decisions the form asks beyond smith new's own questions.
@@ -33,11 +34,11 @@ func decisionSteps() []Step {
 	return []Step{
 		{
 			Key:    answerFirstCommit,
-			Prompt: "This folder already holds files and is not a git repository. What should the first commit hold?",
+			Prompt: words.Say("guide.new_workspace_decision_steps.this_folder_already_holds_files_and"),
 			Options: []Option{
-				{Label: "Only the files smith writes", Value: scaffold.CommitSmith, Hint: "your own files stay out of the commit (default)"},
-				{Label: "Nothing", Value: scaffold.CommitNone, Hint: "smith makes no commit; you commit when you are ready"},
-				{Label: "Everything in the folder", Value: scaffold.CommitAll, Hint: "every file goes into the first commit and its history"},
+				{Label: words.Say("guide.new_workspace_decision_steps.only_the_files_smith_writes"), Value: scaffold.CommitSmith, Hint: words.Say("guide.new_workspace_decision_steps.your_own_files_stay_out_of")},
+				{Label: words.Say("guide.new_workspace_decision_steps.nothing"), Value: scaffold.CommitNone, Hint: words.Say("guide.new_workspace_decision_steps.smith_makes_no_commit_you_commit")},
+				{Label: words.Say("guide.new_workspace_decision_steps.everything_in_the_folder"), Value: scaffold.CommitAll, Hint: words.Say("guide.new_workspace_decision_steps.every_file_goes_into_the_first")},
 			},
 			Skip: func(a map[string][]string) bool {
 				c, ok := holds(a)
@@ -46,11 +47,11 @@ func decisionSteps() []Step {
 		},
 		{
 			Key:    answerFirstCommitSecrets,
-			Prompt: "This folder holds files whose names look like secrets (.env, keys). What should the first commit hold?",
+			Prompt: words.Say("guide.new_workspace_decision_steps.this_folder_holds_files_whose_names"),
 			Options: []Option{
-				{Label: "Only the files smith writes", Value: scaffold.CommitSmith, Hint: "your files, secrets included, stay out of the commit (default)"},
-				{Label: "Nothing", Value: scaffold.CommitNone, Hint: "smith makes no commit"},
-				{Label: "Everything, secrets included", Value: scaffold.CommitAll + "+secrets", Hint: "a secret in history stays there after you delete the file"},
+				{Label: words.Say("guide.new_workspace_decision_steps.only_the_files_smith_writes"), Value: scaffold.CommitSmith, Hint: words.Say("guide.new_workspace_decision_steps.your_files_secrets_included_stay_out")},
+				{Label: words.Say("guide.new_workspace_decision_steps.nothing"), Value: scaffold.CommitNone, Hint: words.Say("guide.new_workspace_decision_steps.smith_makes_no_commit")},
+				{Label: words.Say("guide.new_workspace_decision_steps.everything_secrets_included"), Value: scaffold.CommitAll + "+secrets", Hint: words.Say("guide.new_workspace_decision_steps.a_secret_in_history_stays_there")},
 			},
 			Skip: func(a map[string][]string) bool {
 				c, ok := holds(a)
@@ -59,7 +60,7 @@ func decisionSteps() []Step {
 		},
 		{
 			Key:         answerModulePrefix,
-			Prompt:      "This workspace has no git remote. Which Go module prefix should its projects use? Every Go import path starts with it and it is hard to change later. Enter takes the one shown.",
+			Prompt:      words.Say("guide.new_workspace_decision_steps.this_workspace_has_no_git_remote"),
 			Placeholder: "github.com/acme/my-studio",
 			Optional:    true,
 			PlaceholderFor: func(a map[string][]string) string {

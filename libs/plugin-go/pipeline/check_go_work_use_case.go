@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Doctor checks that go.work lists every Go project and that every entry it
@@ -31,7 +32,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 	src, err := os.ReadFile(filepath.Join(workspaceRoot, "go.work"))
 	if err != nil {
 		return protocol.DoctorResult{Findings: []protocol.Finding{{
-			Check: "go.work exists", Detail: "the workspace has Go projects but no go.work", Remedy: "run `go work init` then `go work use` for each Go project",
+			Check: "go.work exists", Area: "config", Problem: "the workspace has Go projects but no go.work", Detail: "the workspace has Go projects but no go.work", Remedy: "run `go work init` then `go work use` for each Go project",
 		}}}
 	}
 	work := ParseGoWork(string(src))
@@ -45,7 +46,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 			fixed, _ = DropUse(fixed, entry)
 		}
 		findings = append(findings, protocol.Finding{
-			Check: "go.work entry " + entry + " exists", OK: err == nil,
+			Check: "go.work entry " + entry + " exists", Area: "config", OK: err == nil, Problem: toolrun.ProblemUnless(err == nil, "go.work lists "+entry+", which has no go.mod"),
 			Detail: entry + " is listed in go.work but has no go.mod", Remedy: "remove `" + entry + "` from go.work (`go work edit -dropuse=./" + entry + "`)",
 		})
 	}
@@ -55,7 +56,7 @@ func doctorChecks(workspaceRoot string, params protocol.DoctorParams) protocol.D
 			fixed = AddUse(fixed, p.Root)
 		}
 		findings = append(findings, protocol.Finding{
-			Check: "go.work lists " + p.Root, OK: listed[p.Root],
+			Check: "go.work lists " + p.Root, Project: p.Name, OK: listed[p.Root], Problem: toolrun.ProblemUnless(listed[p.Root], "is not listed in go.work"),
 			Detail: p.Root + " has a go.mod but go.work does not use it", Remedy: "run `go work use ./" + p.Root + "`",
 		})
 		if lint, ok := p.Tasks["lint"]; ok && len(lint.Command) > 0 && lint.Command[0] == "golangci-lint" {

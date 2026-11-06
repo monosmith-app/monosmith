@@ -134,13 +134,18 @@ func homeFinding(workspaceRoot string, h buildHome, projects []protocol.Project)
 		resolved = path.Clean(path.Join(base, filepath.ToSlash(where)))
 	}
 	if protocol.InBuildDir(resolved) {
-		return protocol.Finding{Check: check, OK: true}, true
+		return filed(protocol.Finding{Check: check, OK: true}, h.crates), true
 	}
 	f := protocol.Finding{
 		Check:  check,
 		Detail: names + verb(len(h.crates)) + " into " + resolved + "/ (" + source + "), not into " + cargoTargetDir + "/",
 		Remedy: "set [build] target-dir = \"" + relativeTarget(h.dir) + "\" in " + configFile(h) + ", or run smith doctor --fix",
 	}
+	f.Problem = f.Detail
+	if len(h.crates) == 1 {
+		f.Problem = strings.TrimPrefix(f.Detail, names+" ")
+	}
+	f = filed(f, h.crates)
 	if os.Getenv("CARGO_TARGET_DIR") != "" {
 		f.Warning = true
 		f.Remedy = "unset CARGO_TARGET_DIR (the environment overrides .cargo/config.toml), or point it into " + cargoTargetDir + "; smith does not edit your environment"
@@ -234,4 +239,15 @@ func verb(n int) string {
 		return " builds"
 	}
 	return " build"
+}
+
+// filed files a finding under its project when one crate builds in the home,
+// and under "config" when several share it or it is the whole workspace's.
+func filed(f protocol.Finding, crates []string) protocol.Finding {
+	if len(crates) == 1 {
+		f.Project = crates[0]
+	} else {
+		f.Area = "config"
+	}
+	return f
 }

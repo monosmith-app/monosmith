@@ -101,17 +101,17 @@ func TestTheDepsViewShowsAFailedLookup(t *testing.T) {
 
 func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	l := newLab(t, true, 140, 34)
-	l.keys("4", "g")
-	l.has("workspace", "web  1 failed", "2 checks passed", "F fix all")
-	l.hasNot("f fix", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
+	l.keys("4") // the checks are grouped by default
+	l.has("workspace", "web  1 failed", "2 checks passed", "fix all (F)")
+	l.hasNot("fix (f)", "Fix:") // the cursor is on go.work, which has no fix: no action, no key
 	l.has("Check again")
 	l.keys("f")
 	if l.sh().fix != nil || len(l.started) != 0 {
 		t.Fatal("a finding without a fix opened a wizard")
 	}
 	l.has("no fix")
-	l.keys("down")
-	l.has("f fix", "[ Fix  f ]", "write web's registry", "writes apps/web/Dockerfile")
+	l.keys("down", "down") // past web's heading
+	l.has("fix (f)", "[Fix (f)]", "write web's registry", "writes apps/web/Dockerfile")
 	l.keys("f") // web's Docker finding
 	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
@@ -119,19 +119,19 @@ func TestTheDoctorTabOffersTheFixOnlyOnTheChecksThatHaveOne(t *testing.T) {
 	}
 }
 
-func TestTheDoctorTabListsFlatUntilGroupingIsOn(t *testing.T) {
+func TestTheDoctorTabListsGroupedUntilGroupingIsOff(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4")
-	l.hasNot("orders  all passed", "web  1 failed")
-	l.has("Docker registries of web agree")
+	l.has("web  1 failed", "Docker registries of web agree")
 	l.keys("g")
-	l.has("web  1 failed")
+	l.hasNot("web  1 failed")
+	l.has("Docker registries of web agree")
 }
 
 func TestTheReleaseTabDrillsDownToTheCommitsAndPrintsTheNotesCommand(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("6")
-	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "n notes")
+	l.has("2 packages to release", "web", "1.0.0", "1.1.0", "kit", "0.2.1", "notes (n)")
 	l.hasNot("a1b2c3d")
 	l.keys("enter")
 	l.has("a1b2c3d feat(ui): dark mode", "9f8e7d6 fix!: cookie parsing", "BREAKING: drops the old cookie format")
@@ -231,6 +231,9 @@ func TestTheTabsStayReachableBelowEightyColumns(t *testing.T) {
 	l := newLab(t, true, 79, 24)
 	l.keys("5")
 	l.has("Deps", "3 with newer releases")
+	for i := 0; i < 8 && !strings.Contains(l.view(), "Home"); i++ {
+		l.clickText("‹") // the strip scrolls: the marker leads to the tabs before
+	}
 	l.clickText("Home")
 	l.has("Next:")
 }

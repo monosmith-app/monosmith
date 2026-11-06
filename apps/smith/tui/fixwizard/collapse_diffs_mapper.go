@@ -1,9 +1,10 @@
 package fixwizard
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // summarizeDiffs replaces each unified diff in a review text by one line, so a
@@ -51,10 +52,10 @@ func summarizeDiffs(lines []string) (out []string, found bool) {
 
 // diffPath reports the file a diff at lines[i] is about.
 func diffPath(lines []string, i int) (string, bool) {
-	if i+1 >= len(lines) || !strings.HasPrefix(lines[i], "--- a/") || !strings.HasPrefix(lines[i+1], "+++ b/") {
+	if i+1 >= len(lines) || !strings.HasPrefix(lines[i], "--- a/") || !strings.HasPrefix(lines[i+1], "+++ b/") { // words:literal
 		return "", false
 	}
-	return strings.TrimRight(strings.TrimPrefix(lines[i], "--- a/"), "\r"), true
+	return strings.TrimRight(strings.TrimPrefix(lines[i], "--- a/"), "\r"), true // words:literal
 }
 
 // hunkLengths reads the two line counts of a hunk header; a missing count is 1.
@@ -78,12 +79,12 @@ func hunkLengths(header string) (before, after int) {
 
 // summaryLine is the one line for a file: what happened and how much.
 func summaryLine(path string, added, removed, before, after int) string {
-	what := "changed"
+	what := words.Say("fixwizard.diff.changed")
 	switch {
 	case before == 0:
-		what = "new file"
+		what = words.Say("fixwizard.diff.new")
 	case after == 0:
-		what = "removed"
+		what = words.Say("fixwizard.diff.removed")
 	}
-	return fmt.Sprintf("  %s  %s  +%d -%d", path, what, added, removed)
+	return words.Say("fixwizard.diff.summary", "path", path, "what", what, "added", added, "removed", removed)
 }

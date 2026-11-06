@@ -1,9 +1,12 @@
 package packageprompt
 
 import (
-	"fmt"
+	"errors"
+	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // ParsePackages splits what was typed into package names. A name that starts
@@ -12,14 +15,14 @@ import (
 func ParsePackages(text string) ([]string, error) {
 	names := strings.Fields(text)
 	if len(names) == 0 {
-		return nil, fmt.Errorf("type at least one package, such as zod or react@19")
+		return nil, errors.New(words.Say("packageprompt.error.none"))
 	}
 	for _, n := range names {
 		if strings.HasPrefix(n, "-") {
-			return nil, fmt.Errorf("%q is an option, not a package: the box below sets the development dependency", n)
+			return nil, errors.New(words.Say("packageprompt.error.option", "name", strconv.Quote(n)))
 		}
 		if strings.ContainsFunc(n, unicode.IsControl) {
-			return nil, fmt.Errorf("%q has a control character", n)
+			return nil, errors.New(words.Say("packageprompt.error.control", "name", strconv.Quote(n)))
 		}
 	}
 	return names, nil

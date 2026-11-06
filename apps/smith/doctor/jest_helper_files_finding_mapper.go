@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/legacyjesthelpers"
@@ -25,6 +26,8 @@ func jestHelperFilesFindings(s *session.Session) []protocol.Finding {
 	finding := protocol.Finding{
 		Check:   "Jest helper files of an older convert are replaced by " + legacyjesthelpers.Package,
 		Warning: true,
+		Area:    AreaConfig,
+		Problem: strconv.Itoa(len(cleanup.Files)) + " Jest helper file(s) of an older convert are still at the workspace root",
 		Detail:  "at the workspace root: " + strings.Join(cleanup.Files, ", ") + ". They stand in for what Nx's Jest plugins provided; " + legacyjesthelpers.Package + " does that now, without files to keep",
 		Remedy:  "`smith doctor --fix` points the Jest configs at the package, adds it to the root devDependencies and deletes the files",
 		Fix:     cleanup.Fix,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // HelpRow is one line of the shortcuts overlay.
@@ -47,7 +48,7 @@ func (h Help) content(th theme.Theme, w int) []string {
 		out = append(out, "  "+r.Title+strings.Repeat(" ", gap)+th.Bold(r.Shortcut))
 	}
 	if len(h.extra) > 0 {
-		out = append(out, "", th.Title("Mouse"))
+		out = append(out, "", th.Title(words.Say("dialog.help.mouse")))
 		for _, l := range h.extra {
 			out = append(out, pane.Wrap("  "+l, w, 4)...)
 		}
@@ -84,7 +85,7 @@ func (h Help) Lines(th theme.Theme) []string {
 		}
 		rows = append(rows, " "+line)
 	}
-	return pane.Frame(th, "Keyboard shortcuts · Esc closes · ↑↓ scroll", rows, r.W, r.H, true)
+	return pane.Frame(th, words.Say("dialog.help.title"), rows, r.W, r.H, true)
 }
 
 // Key handles a key name; the overlay ends on Esc, F1, ? or q.

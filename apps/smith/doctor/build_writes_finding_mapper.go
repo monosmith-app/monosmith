@@ -3,6 +3,7 @@ package doctor
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/monosmith-app/monosmith/apps/smith/buildoutputs"
 	"github.com/monosmith-app/monosmith/apps/smith/session"
@@ -17,7 +18,7 @@ import (
 // the outputs in smith.toml, which only changes what the cache restores.
 func buildWritesFinding(s *session.Session) protocol.Finding {
 	gaps := buildoutputs.FindGaps(s.Root, s.Graph.Projects)
-	finding := protocol.Finding{Check: "every build declares the directories it writes as outputs", OK: len(gaps) == 0}
+	finding := protocol.Finding{Check: "every build declares the directories it writes as outputs", OK: len(gaps) == 0, Area: AreaLint}
 	if len(gaps) == 0 {
 		return finding
 	}
@@ -26,6 +27,10 @@ func buildWritesFinding(s *session.Session) protocol.Finding {
 		problems = append(problems, g.Problem())
 		remedies = append(remedies, g.Remedy())
 		projects = append(projects, g.Project)
+	}
+	finding.Problem = problems[0]
+	if len(problems) > 1 {
+		finding.Problem = strconv.Itoa(len(problems)) + " builds write directories that are not declared as outputs"
 	}
 	finding.Detail = Summary(problems, "; ", shownProblems)
 	finding.Remedy = Summary(remedies, "\n", shownProblems)

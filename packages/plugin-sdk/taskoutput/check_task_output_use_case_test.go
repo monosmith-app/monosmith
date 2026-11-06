@@ -24,7 +24,7 @@ func TestCheckIsSilentWhenTheOptionNamesDist(t *testing.T) {
 		{"tool", "-o", "{workspaceRoot}/dist/libs/kit/bin"},
 		{"tool", "--outdir={workspaceRoot}/dist/libs/kit"},
 		{"tool", "-o", "{workspaceRoot}/dist/x/{target}"}, // another placeholder: not read
-		{"other", "build"},                                // not that command
+		{"other", "build"}, // not that command
 	} {
 		if f, ok := Check(project(c...), "build", spec); ok {
 			t.Errorf("%v: %+v", c, f)
@@ -46,6 +46,13 @@ func TestCheckReportsACommandThatWritesElsewhereAndSaysWhatToPass(t *testing.T) 
 		t.Fatalf("a relative option is read from the project: %+v", f)
 	}
 	if f, ok = Check(project("tool", "--outdir=../../out"), "build", spec); !ok || !strings.Contains(f.Detail, "writes into out,") {
+		t.Fatalf("%+v", f)
+	}
+}
+
+func TestCheckNamesTheProjectApartFromTheProblem(t *testing.T) {
+	f, _ := Check(project("tool", "."), "build", spec)
+	if f.Project != "kit" || f.Area != "" || strings.HasPrefix(f.Problem, "kit") || !strings.HasPrefix(f.Problem, "builds ") {
 		t.Fatalf("%+v", f)
 	}
 }

@@ -124,7 +124,7 @@ each title (`Build orders`, `Build all 23`).
 | any workspace view | `-` | Remove a package: the same form for `smith uninstall -p <project> ...`. After the form, a confirmation shows the exact command line and what it changes, because a removal edits the manifest and the lock file. |
 | any workspace view | `i` | Install everything every project declares, as after a fresh clone (asks to confirm the command). To add one package use `+`. |
 | Projects | `z` | Zoom the detail to the full width, and back. |
-| Projects, Doctor | `[` `]` | Make the detail narrower or wider (kept until smith closes). |
+| Projects, Run, Doctor, Settings | `\` `|`, `[` `]` | `\` selects the next divider between two panels and `|` the previous one. `Shift`+arrows select one too. `[` moves it left or up and `]` right or down. `Tab` picks the next divider and `Esc` lets go. With one divider, `[` and `]` need no selection. Drag a divider with the mouse to do the same. Each view keeps its sizes in the preferences file. |
 | Projects, Run, Doctor | `Ctrl+U` `Ctrl+D` | Scroll the detail. |
 | Run | `r` | Run the last command again, as it was. A command that changes files asks first. A command that makes or removes something (`add`, `new`, `remove`, `adopt`, `convert`) is not run again: the key says why. |
 | Run | `f` | Follow the log, or pause it to read. |

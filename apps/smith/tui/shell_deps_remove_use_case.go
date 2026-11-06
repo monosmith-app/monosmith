@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // removeDependency removes the package under the cursor of the Deps view from
@@ -15,7 +16,7 @@ import (
 func (s *Shell) removeDependency() tea.Cmd {
 	name, targets, ok := s.deps.RemoveTargets()
 	if !ok {
-		s.say("No dependency is selected")
+		s.say(words.Say("tui.deps_remove.no_dependency_is_selected"))
 		return nil
 	}
 	if len(targets) == 1 {

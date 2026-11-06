@@ -1,6 +1,9 @@
 package detail
 
-import "github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
+)
 
 // ClampTop keeps the first visible line inside the panel: from 0 to the
 // line that puts the last one on the bottom row.
@@ -24,10 +27,10 @@ func Window(th theme.Theme, lines []string, hits map[int]string, top, h int) ([]
 	out := append([]string(nil), lines[top:top+h]...)
 	above, below := top > 0, top+h < len(lines)
 	if above {
-		out[0] = th.Muted(" ↑ more (PgUp, Ctrl+U)")
+		out[0] = th.Muted(words.Say("detail.scroll.up"))
 	}
 	if below {
-		out[h-1] = th.Muted(" ↓ more (PgDn, Ctrl+D)")
+		out[h-1] = th.Muted(words.Say("detail.scroll.down"))
 	}
 	vis := map[int]string{}
 	for row, id := range hits {

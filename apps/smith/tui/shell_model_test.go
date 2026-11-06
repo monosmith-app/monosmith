@@ -127,13 +127,13 @@ type lab struct {
 
 	// The fake fix engine: what ApplyFix was given, what it answers, and
 	// whether the context it was given was cancelled.
-	fixMu       sync.Mutex
-	applied     []protocol.Fix
-	applyErr    error
-	applyHold   chan struct{}
+	fixMu     sync.Mutex
+	applied   []protocol.Fix
+	applyErr  error
+	applyHold chan struct{}
 	// fixStaysBroken makes the fake doctor report the check as failing after a fix.
 	fixStaysBroken bool
-	applyCancel bool
+	applyCancel    bool
 }
 
 // appliedFixes are the fixes the fake engine was asked to apply.

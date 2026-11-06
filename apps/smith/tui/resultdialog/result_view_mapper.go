@@ -3,13 +3,14 @@ package resultdialog
 import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Title is the frame title of the dialog.
 func (m Model) Title() string { return m.title }
 
 // Hint is the line under the choices that says how to answer.
-const Hint = "up/down choose · enter select · click an entry, double-click to select · esc closes and changes nothing"
+var Hint = words.Say("resultdialog.hint")
 
 // Lines draws the dialog, framed, at the size Place set.
 func (m Model) Lines(th theme.Theme) []string {

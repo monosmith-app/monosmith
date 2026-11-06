@@ -49,7 +49,7 @@ func ChooseWith(getenv func(string) string, darkBackground bool, savedTheme, sav
 	if strings.ToLower(savedIcons) == "ascii" {
 		c.Icons = ASCII
 	}
-	switch strings.ToLower(getenv("SMITH_THEME")) {
+	switch strings.ToLower(getenv(envTheme)) {
 	case "light":
 		c.Tokens = Light
 	case "dark":
@@ -57,30 +57,39 @@ func ChooseWith(getenv func(string) string, darkBackground bool, savedTheme, sav
 	case "plain":
 		c.Tokens = Plain
 	}
-	if getenv("NO_COLOR") != "" {
+	if getenv(envColor) != "" {
 		c.Tokens = Plain
 	}
-	if term := getenv("TERM"); getenv("SMITH_ASCII") != "" || term == "dumb" || term == "linux" {
+	if term := getenv(envTerm); getenv(envASCII) != "" || term == "dumb" || term == "linux" {
 		c.Icons = ASCII
 	}
 	return c
 }
+
+// The environment variables that decide the theme and the icons.
+const (
+	envTheme = "SMITH_THEME" // words:literal
+	envColor = "NO_COLOR"    // words:literal
+	envTerm  = "TERM"        // words:literal
+	envASCII = "SMITH_ASCII" // words:literal
+	envFgBg  = "COLORFGBG"   // words:literal
+)
 
 // Overrides names the environment variable that decides the theme and the one
 // that decides the icons, "" for one that is not set: they win over a saved
 // choice, so the Style section says so.
 func Overrides(getenv func(string) string) (themeVar, iconsVar string) {
 	switch {
-	case getenv("NO_COLOR") != "":
-		themeVar = "NO_COLOR"
-	case slices.Contains(ThemeNames[1:], strings.ToLower(getenv("SMITH_THEME"))):
-		themeVar = "SMITH_THEME"
+	case getenv(envColor) != "":
+		themeVar = envColor
+	case slices.Contains(ThemeNames[1:], strings.ToLower(getenv(envTheme))):
+		themeVar = envTheme
 	}
-	switch term := getenv("TERM"); {
-	case getenv("SMITH_ASCII") != "":
-		iconsVar = "SMITH_ASCII"
+	switch term := getenv(envTerm); {
+	case getenv(envASCII) != "":
+		iconsVar = envASCII
 	case term == "dumb" || term == "linux":
-		iconsVar = "TERM=" + term
+		iconsVar = envTerm + "=" + term
 	}
 	return themeVar, iconsVar
 }

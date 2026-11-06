@@ -3,20 +3,21 @@ package tabs
 import (
 	"strings"
 
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
-	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 )
 
-// Render draws the strip for the props.
+// Render draws the strip for the props: one row of buttons, a blank cell between them.
 func Render(p Props) Strip {
 	if p.Width < 1 {
 		return Strip{}
 	}
-	if p.Tall {
-		return renderTall(p)
-	}
 	return renderFlat(p)
 }
+
+// gapW is the blank cell between two tabs: the buttons share one resting
+// background, so without it they would run into one block. It replaces the pipe.
+const gapW = 1
 
 // activeIndex is the position of the active tab, 0 when none is.
 func activeIndex(p Props) int {
@@ -28,27 +29,27 @@ func activeIndex(p Props) int {
 	return 0
 }
 
-// styleLabel is a tab's text in the style of its state: the active tab in
-// activeStyle, the one under the pointer highlighted, the others dim.
-func styleLabel(th theme.Theme, id string, p Props, label string, activeStyle func(string) string) string {
+// state is how a tab's button looks: the active one pressed in, the one under
+// the pointer lit, the others at rest.
+func state(id string, p Props) button.State {
 	switch id {
 	case p.Active:
-		return activeStyle(pane.Strip(label))
+		return button.Active
 	case p.Hover:
-		return th.Hover(label)
+		return button.Hover
 	}
-	return th.Muted(label)
+	return button.Rest
 }
 
-// renderFlat is the one-row strip: " Name " for each tab, the active one
-// highlighted.
+// renderFlat is the one-row strip: a button " Name (n) " for each tab with a
+// blank cell between them, the active one pressed in. A badge follows its button.
 func renderFlat(p Props) Strip {
 	th := p.Theme
 	avail := max(p.Width-1, 0)
-	short := shortened(p.Tabs, p.ShortenOrder, avail, func(inner int) int { return inner + 1 })
+	short := shortened(th, p.Tabs, p.ShortenOrder, avail, func(inner int) int { return inner + gapW })
 	widths := make([]int, len(p.Tabs))
 	for i, t := range p.Tabs {
-		widths[i] = t.planned(short[t.ID]) + 1
+		widths[i] = t.planned(th, short[t.ID]) + gapW
 	}
 	start, end := window(widths, activeIndex(p), avail)
 
@@ -63,93 +64,22 @@ func renderFlat(p Props) Strip {
 	}
 	for i := start; i < end; i++ {
 		t := p.Tabs[i]
-		label := t.text(short[t.ID])
-		w := pane.Width(label)
-		label = styleLabel(th, t.ID, p, label, th.Selected)
+		name := t.name(short[t.ID])
+		label := button.Render(th, name, t.Key, state(t.ID, p))
+		w := button.Width(th, name, t.Key)
+		if t.Badge != "" {
+			label += " " + t.Badge
+			w += 1 + pane.Width(t.Badge)
+		}
 		spans = append(spans, Span{ID: t.ID, X0: x, X1: x + w})
-		put(label+" ", w+1)
+		put(label, w)
+		if i < end-1 {
+			put(strings.Repeat(" ", gapW), gapW)
+		}
 	}
 	if end < len(p.Tabs) {
 		spans = append(spans, Span{ID: Next, X0: x, X1: x + markerW})
 		put(th.Accent(Next), 1)
 	}
 	return Strip{Lines: []string{pane.Fit(b.String(), p.Width)}, Spans: spans}
-}
-
-// renderTall is the three-row strip:
-//
-//	╭──────────╮╭─────╮
-//	│ Projects ││ Run │
-//	│          └┴─────┴───────────────╮
-//
-// The active tab has no floor, so it opens into the pane below; the last row
-// is that pane's top edge.
-func renderTall(p Props) Strip {
-	th := p.Theme
-	// The last column holds the corner of the pane.
-	avail := max(p.Width-1, 0)
-	short := shortened(p.Tabs, p.ShortenOrder, avail, func(inner int) int { return inner + 2 })
-	widths := make([]int, len(p.Tabs))
-	for i, t := range p.Tabs {
-		widths[i] = t.planned(short[t.ID]) + 2
-	}
-	start, end := window(widths, activeIndex(p), avail)
-
-	top, mid := newCells(p.Width), newCells(p.Width)
-	base := newCells(p.Width)
-	for x := range base.ch {
-		base.ch[x] = '─'
-	}
-	base.ch[0], base.ch[p.Width-1] = '├', '╮'
-	if p.Width == 1 {
-		base.ch[0] = '╮'
-	}
-
-	var spans []Span
-	x := 0
-	if start > 0 {
-		mid.text(x, th.Accent(Prev)+" ", markerW)
-		spans = append(spans, Span{ID: Prev, X0: x, X1: x + markerW})
-		x += markerW
-	}
-	for i := start; i < end; i++ {
-		t := p.Tabs[i]
-		label := t.text(short[t.ID])
-		w := pane.Width(label)
-		if x+w+2 > p.Width-1 {
-			break
-		}
-		active := t.ID == p.Active
-		edge := func(s string) string { return th.Border(s, active) }
-		top.text(x, edge("╭"+strings.Repeat("─", w)+"╮"), w+2)
-		styled := styleLabel(th, t.ID, p, label, th.Accent)
-		mid.text(x, edge("│")+styled+edge("│"), w+2)
-		if active {
-			base.set(x, '┘', true)
-			if x == 0 {
-				base.set(x, '│', true)
-			}
-			for dx := 1; dx <= w; dx++ {
-				base.set(x+dx, ' ', false)
-			}
-			base.set(x+w+1, '└', true)
-		} else {
-			base.set(x+w+1, '┴', false)
-		}
-		spans = append(spans, Span{ID: t.ID, X0: x, X1: x + w + 2})
-		x += w + 2
-	}
-	if end < len(p.Tabs) && x+markerW <= p.Width-1 {
-		mid.text(x, " "+th.Accent(Next), markerW)
-		spans = append(spans, Span{ID: Next, X0: x, X1: x + markerW})
-		x += markerW
-	}
-	if t := p.Title; t != "" && pane.Width(t)+3 <= p.Width-x {
-		at := p.Width - 1 - pane.Width(t) - 1
-		mid.text(at, th.Muted(t), pane.Width(t))
-	}
-	if d := p.Divider; d > 0 && d < p.Width-1 && base.ch[d] == '─' {
-		base.set(d, '┬', false)
-	}
-	return Strip{Lines: []string{top.render(th, p.Width, false), mid.render(th, p.Width, false), base.render(th, p.Width, true)}, Spans: spans}
 }

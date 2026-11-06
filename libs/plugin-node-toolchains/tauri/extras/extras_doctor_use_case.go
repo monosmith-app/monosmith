@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // Findings checks, for each Tauri project, that every sidecar and
@@ -24,7 +25,7 @@ func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Find
 		extras, err := ParseExtras(p.Settings[tauriapp.Name])
 		if err != nil {
 			findings = append(findings, protocol.Finding{
-				Check: "the tauri settings of " + p.Name + " are valid", Detail: err.Error(),
+				Check: "the tauri settings of " + p.Name + " are valid", Project: p.Name, Problem: "has tauri settings in smith.toml that are not valid", Detail: err.Error(),
 				Remedy: "fix [projects." + p.Name + ".settings.tauri] in smith.toml",
 			})
 			continue
@@ -45,13 +46,14 @@ func Findings(workspaceRoot string, projects []protocol.Project) []protocol.Find
 // sidecarFinding checks a sidecar given as a file; one that names a project is
 // checked by smith doctor itself, which sees every project.
 func sidecarFinding(workspaceRoot string, p protocol.Project, s Sidecar) protocol.Finding {
-	f := protocol.Finding{Check: "the sidecar " + s.Name + " of " + p.Name + " exists", OK: true}
+	f := protocol.Finding{Check: "the sidecar " + s.Name + " of " + p.Name + " exists", Project: p.Name, OK: true}
 	src, err := ExpandSource(workspaceRoot, s.From)
 	if err != nil {
-		f.OK, f.Warning, f.Detail, f.Remedy = false, true, err.Error(), "set the variable (CI sets it from [[ci.sibling_repos]]) before building"
+		f.OK, f.Warning, f.Problem, f.Detail, f.Remedy = false, true, err.Error(), err.Error(), "set the variable (CI sets it from [[ci.sibling_repos]]) before building"
 		return f
 	}
 	if !fileExists(src) && !fileExists(src+".exe") {
+		f.Problem = rel(workspaceRoot, src) + " does not exist"
 		f.OK, f.Detail, f.Remedy = false, rel(workspaceRoot, src)+" does not exist", "build it first, or fix from in [projects."+p.Name+".settings.tauri]"
 		// A build output is made by the build, so its absence is no mistake yet.
 		f.Warning = strings.HasPrefix(rel(workspaceRoot, src), protocol.BuildDir+"/")
@@ -60,10 +62,10 @@ func sidecarFinding(workspaceRoot string, p protocol.Project, s Sidecar) protoco
 }
 
 func resourceFinding(workspaceRoot string, p protocol.Project, r Resource) protocol.Finding {
-	f := protocol.Finding{Check: "the resource " + r.From + " of " + p.Name + " exists", OK: true}
+	f := protocol.Finding{Check: "the resource " + r.From + " of " + p.Name + " exists", Project: p.Name, OK: true}
 	src, err := ExpandSource(workspaceRoot, strings.TrimSuffix(strings.TrimSuffix(r.From, "/*"), "/**"))
 	if err != nil {
-		f.OK, f.Warning, f.Detail, f.Remedy = false, true, err.Error(), "set the variable (CI sets it from [[ci.sibling_repos]]) before building"
+		f.OK, f.Warning, f.Problem, f.Detail, f.Remedy = false, true, err.Error(), err.Error(), "set the variable (CI sets it from [[ci.sibling_repos]]) before building"
 		return f
 	}
 	_, statErr := os.Stat(src)
@@ -73,6 +75,7 @@ func resourceFinding(workspaceRoot string, p protocol.Project, r Resource) proto
 		found = len(m) > 0
 	}
 	if !found {
+		f.Problem = rel(workspaceRoot, src) + " does not exist or matches nothing"
 		f.OK, f.Detail, f.Remedy = false, rel(workspaceRoot, src)+" does not exist or matches nothing", "fix from in [projects."+p.Name+".settings.tauri]"
 		f.Warning = strings.HasPrefix(rel(workspaceRoot, src), protocol.BuildDir+"/")
 	}
@@ -97,8 +100,10 @@ func externalBinFindings(workspaceRoot string, p protocol.Project, extras Extras
 		want := filepath.Join(srcTauri, filepath.FromSlash(e)+"-"+triple+exeSuffix(triple))
 		findings = append(findings, protocol.Finding{
 			Check:   "the sidecar " + name + " of " + p.Name + " is named for this machine",
+			Project: p.Name,
 			OK:      fileExists(want),
 			Warning: true,
+			Problem: toolrun.ProblemUnless(fileExists(want), "bundle.externalBin lists "+e+", but "+rel(workspaceRoot, want)+" does not exist"),
 			Detail:  p.Root + "/" + tauriapp.SrcDir + "/tauri.conf.json lists " + e + " in bundle.externalBin, but " + rel(workspaceRoot, want) + " does not exist; Tauri wants <name>-<target triple>[.exe]",
 			Remedy:  "declare it in [projects." + p.Name + ".settings.tauri] sidecars, and smith builds and copies it with the right name",
 		})

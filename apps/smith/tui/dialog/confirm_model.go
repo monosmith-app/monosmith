@@ -1,15 +1,16 @@
 package dialog
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Confirm asks before a command that changes the workspace or publishes. It
@@ -116,9 +117,18 @@ const (
 	noticeWide = 60
 	// detailWide is the least width of a dialog that lists what a command touches.
 	detailWide = 84
-	buttonRun  = "[ Run  Enter ]"
-	buttonStop = "[ Cancel  Esc ]"
-	buttonOK   = "[ OK  Enter ]"
+)
+
+// The labels of the buttons, and the keys that do what a click does.
+var (
+	buttonRun  = words.Say("dialog.button.run")
+	buttonStop = words.Say("dialog.button.cancel")
+	buttonOK   = words.Say("dialog.button.ok")
+)
+
+const (
+	keyEnter = "enter" // words:literal
+	keyEsc   = "esc"   // words:literal
 )
 
 // WithDetails adds the lines that say what the command will touch.
@@ -190,13 +200,13 @@ func (c Confirm) tailLines() []string {
 	if c.Offer {
 		box := "[ ] "
 		if c.Commit {
-			box = "[x] "
+			box = "[x] " // words:literal
 		}
-		tail = append(tail, "", box+CommitLabel+"  (C)")
+		tail = append(tail, "", box+CommitLabel+words.Say("dialog.commit.key"))
 	}
-	caption := "The command that will run:"
+	caption := words.Say("dialog.command.will")
 	if c.reading {
-		caption = "The command that is running:"
+		caption = words.Say("dialog.command.running")
 	}
 	tail = append(tail, "", caption)
 	for i, l := range c.cmdLines {
@@ -234,15 +244,18 @@ func (c Confirm) shownHead(inner int) (shown []string, hidden int) {
 
 // buttonsRow returns the row of buttons for the inner width and the columns
 // (relative to the dialog's left edge) of each.
-func (c Confirm) buttonsRow(inner int) (spans [2][2]int) {
-	run, stop := ansi.StringWidth(buttonRun), ansi.StringWidth(buttonStop)
+func (c Confirm) buttonsRow(inner int) [2][2]int { return c.buttonsIn(theme.Default(), inner) }
+
+// buttonsIn is buttonsRow for the theme the dialog is drawn with.
+func (c Confirm) buttonsIn(th theme.Theme, inner int) (spans [2][2]int) {
+	run, stop := button.Width(th, buttonRun, keyEnter), button.Width(th, buttonStop, keyEsc)
 	if c.Info {
-		run, stop = ansi.StringWidth(buttonOK), 0
+		run, stop = button.Width(th, buttonOK, keyEnter), 0
 	}
-	total := run + 2 + stop
+	total := run + 1 + stop
 	start := 2 + max((inner-total)/2, 0)
 	spans[0] = [2]int{start, start + run}
-	spans[1] = [2]int{start + run + 2, start + run + 2 + stop}
+	spans[1] = [2]int{start + run + 1, start + run + 1 + stop}
 	return spans
 }
 
@@ -263,7 +276,7 @@ func (c Confirm) Lines(th theme.Theme) []string {
 		rows = append(rows, row(l))
 	}
 	if hidden > 0 && c.headRoom() >= 2 {
-		rows = append(rows, row(th.Muted(fmt.Sprintf("… %d more lines (Up/Down/PgDn show them)", hidden))))
+		rows = append(rows, row(th.Muted(words.Say("dialog.more", "count", hidden))))
 	}
 	for len(rows) < c.headRoom() {
 		rows = append(rows, row(""))
@@ -276,26 +289,27 @@ func (c Confirm) Lines(th theme.Theme) []string {
 		rows = append(rows, row(l))
 	}
 	rows = append(rows, row(""))
-	spans := c.buttonsRow(inner)
+	spans := c.buttonsIn(th, inner)
 	line := strings.Repeat(" ", spans[0][0]-2)
-	labels := []string{buttonRun, buttonStop}
+	type face struct{ label, key string }
+	faces := []face{{buttonRun, keyEnter}, {buttonStop, keyEsc}}
 	if c.Info {
-		labels = []string{buttonOK}
+		faces = []face{{buttonOK, keyEnter}}
 	}
-	for i, label := range labels {
-		text := th.Muted(label)
+	for i, f := range faces {
+		state := button.Rest
 		switch {
 		case c.Working() && i == 0:
-			// Run waits for the plan: it is drawn faint and does nothing.
-			text = th.Faint(label)
-		case i == c.focus:
-			text = th.Selected(label)
+			// Run waits for the plan: it is drawn disabled and does nothing.
+			state = button.Disabled
 		case i == c.hover:
-			text = th.Hover(label)
+			state = button.Hover
+		case i == c.focus:
+			state = button.Active
 		}
-		line += text
-		if i == 0 && len(labels) > 1 {
-			line += "  "
+		line += button.Render(th, f.label, f.key, state)
+		if i == 0 && len(faces) > 1 {
+			line += " "
 		}
 	}
 	rows = append(rows, row(line))
@@ -358,19 +372,19 @@ func (c Confirm) Key(name string) (Confirm, Outcome) {
 		// The plan is not ready: only the way out works, so a hurried Enter
 		// cannot run what the person has not seen.
 		switch name {
-		case "n", "N", "esc", "ctrl+c", "q":
+		case "n", "N", "esc", "ctrl+c", "q": // words:literal
 			return c, Outcome{Done: true}
 		}
 		return c, Outcome{}
 	}
 	switch name {
-	case "c", "C":
+	case "c", "C": // words:literal
 		if c.Offer {
 			return c.toggleCommit(), Outcome{}
 		}
-	case "y", "Y":
+	case "y", "Y": // words:literal
 		return c, Outcome{Done: true, Confirmed: true}
-	case "n", "N", "esc", "ctrl+c", "q":
+	case "n", "N", "esc", "ctrl+c", "q": // words:literal
 		return c, Outcome{Done: true}
 	case "enter", " ":
 		return c, Outcome{Done: true, Confirmed: c.focus == 0}

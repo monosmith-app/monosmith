@@ -1,0 +1,7 @@
+{
+  "progress.bar.label": " {done}/{total} {percent}%",
+  "progress.elapsed.minutes": "{minutes}m {seconds}s",
+  "progress.projects.every": "every project",
+  "progress.projects.one": "the project",
+  "progress.projects.many": "the {count} projects"
+}

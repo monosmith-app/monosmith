@@ -1,20 +1,21 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The sections of the command palette, in the order they are listed.
-const (
-	SectionBuild        = "Build"
-	SectionProjects     = "Projects"
-	SectionDependencies = "Dependencies"
-	SectionRelease      = "Release"
-	SectionHealth       = "Health"
-	SectionGoTo         = "Go to"
-	SectionStart        = "Start"
-	SectionHelp         = "Help"
+var (
+	SectionBuild        = words.Say("commands.section.build")
+	SectionProjects     = words.Say("commands.section.projects")
+	SectionDependencies = words.Say("commands.section.dependencies")
+	SectionRelease      = words.Say("commands.section.release")
+	SectionHealth       = words.Say("commands.section.health")
+	SectionGoTo         = words.Say("commands.section.goto")
+	SectionStart        = words.Say("commands.section.start")
+	SectionHelp         = words.Say("commands.section.help")
 )
 
 // SectionOrder is the order of the sections in the palette.
@@ -78,10 +79,10 @@ func PaletteEntries(s State) []PaletteEntry {
 			// their own: the palette is their keyboard path.
 			busy := ""
 			if s.Running {
-				busy = "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
+				busy = words.Say("commands.reason.running", "shortcut", ShortcutOf("run.stop"))
 			}
 			for _, task := range s.OtherTasks {
-				out = append(out, PaletteEntry{ID: "x:run:" + task, Section: section, Title: "Run " + task + " on " + s.Project, Hint: Line(RunArgv(task, s.Project)), Unavailable: busy})
+				out = append(out, PaletteEntry{ID: "x:run:" + task, Section: section, Title: words.Say("commands.palette.task", "task", task, "project", s.Project), Hint: Line(RunArgv(task, s.Project)), Unavailable: busy})
 			}
 		}
 	}
@@ -94,19 +95,19 @@ func paletteText(c Command, s State) (title, hint string) {
 	switch {
 	case c.Kind == RunTask && c.All:
 		if s.Projects > 0 {
-			return fmt.Sprintf("%s all %d", c.verb(), s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
+			return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
 		}
-		return c.verb() + " all", Line(RunArgv(c.Task, ""))
+		return words.Say("commands.palette.all", "verb", c.verb()), Line(RunArgv(c.Task, ""))
 	case c.Kind == RunTask:
 		if s.RunProject() == "" {
 			if s.Projects > 0 {
-				return fmt.Sprintf("%s all %d", c.verb(), s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
+				return words.Say("commands.palette.all.count", "verb", c.verb(), "count", s.countFor(c.Task)), Line(RunArgv(c.Task, ""))
 			}
-			return c.verb() + " all", Line(RunArgv(c.Task, ""))
+			return words.Say("commands.palette.all", "verb", c.verb()), Line(RunArgv(c.Task, ""))
 		}
 		return c.verb() + " " + s.RunProject(), Line(RunArgv(c.Task, s.RunProject()))
 	case c.Kind == ShowTab:
-		return "Go to " + c.Title, c.Hint
+		return words.Say("commands.palette.goto", "title", c.Title), c.Hint
 	case len(c.Argv) > 0:
 		return c.Title, Line(c.Argv)
 	}

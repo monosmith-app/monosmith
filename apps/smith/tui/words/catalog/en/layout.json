@@ -1,0 +1,9 @@
+{
+  "layout.area.nowhere": "nowhere",
+  "layout.area.header": "header",
+  "layout.area.tabs": "tabs",
+  "layout.area.main": "main",
+  "layout.area.detail": "detail",
+  "layout.area.footer": "footer",
+  "layout.area.status": "status bar"
+}

@@ -5,8 +5,6 @@ package layout
 type Layout struct {
 	Mode          Mode
 	Width, Height int
-	// Tall is true when the tabs are three rows high.
-	Tall bool
 	// Header is the workspace, the branch and the health; Tabs the row of views.
 	Header, Tabs Rect
 	// Main is the list (or the detail, when it has the whole width); Detail is
@@ -17,9 +15,7 @@ type Layout struct {
 }
 
 // Divide lays the screen out from the top: a header row, the row of tabs, the
-// content, then a one-row footer of key hints and a one-row status bar. From
-// TallFrom rows the tabs are drawn three rows high and the last of them is the
-// top edge of the content; below it they are one row. Below WideFrom columns
+// content, then a one-row footer of key hints and a one-row status bar. Below WideFrom columns
 // the content is one pane; from WideFrom it is the list and, when withDetail
 // is true, the detail of the selection beside it (two fifths of the width, 38
 // to 64 columns).
@@ -46,7 +42,7 @@ func ClampDetailWidth(width, detailW int) int {
 // DivideWith is Divide with a detail width the user chose (0 keeps the
 // automatic one).
 func DivideWith(width, height int, withDetail bool, detailW int) Layout {
-	l := Layout{Width: width, Height: height, Mode: Narrow, Tall: height >= TallFrom}
+	l := Layout{Width: width, Height: height, Mode: Narrow}
 	if width >= WideFrom {
 		l.Mode = Wide
 	}
@@ -66,13 +62,9 @@ func DivideWith(width, height int, withDetail bool, detailW int) Layout {
 			detail = ClampDetailWidth(width, detailW)
 		}
 	}
-	// The content starts under the tabs; the top edge of a tall strip is the
-	// content's own.
-	tabsH, top := 1, 2
-	if l.Tall {
-		tabsH, top = 3, 3
-	}
-	l.Tabs = Rect{0, 1, width, tabsH}
+	// The content starts under the one row of tabs.
+	const top = 2
+	l.Tabs = Rect{0, 1, width, 1}
 	l.Main = Rect{0, top, width - detail, max(height-2-top, 0)}
 	l.Detail = Rect{width - detail, top, detail, max(height-2-top, 0)}
 	return l

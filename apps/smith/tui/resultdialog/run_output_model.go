@@ -7,6 +7,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // outputLines is how many lines of a running command the dialog shows.
@@ -40,9 +41,9 @@ func NewRunOutput(argv, lines []string, state RunState) Model {
 	case Running:
 		m.title, m.working = runningWords(argv, op)
 	case Succeeded:
-		m.title = "Done: " + op
+		m.title = words.Say("resultdialog.done", "operation", op)
 	default:
-		m.title = "It did not finish: " + op
+		m.title = words.Say("resultdialog.run.failed", "operation", op)
 	}
 	if len(lines) > outputLines {
 		lines = lines[len(lines)-outputLines:]
@@ -54,19 +55,19 @@ func NewRunOutput(argv, lines []string, state RunState) Model {
 	}
 	switch state {
 	case Running:
-		m.choices = []choice{{"Stop it", "the command ends; files it already wrote stay", Outcome{Stop: true}}}
-		m.foot = "smith shows its output here until it ends."
+		m.choices = []choice{{words.Say("resultdialog.run.stop.label"), words.Say("resultdialog.run.stop.hint"), Outcome{Stop: true}}}
+		m.foot = words.Say("resultdialog.foot.running")
 	case Succeeded:
-		m.facts = append(m.facts, Fact{Good, "It finished."})
+		m.facts = append(m.facts, Fact{Good, words.Say("resultdialog.run.finished")})
 		m.choices = []choice{
-			{"Open the workspace here", "smith starts again inside the folder (default)", Outcome{Enter: OutsideDir(argv)}},
-			{"Stay here", "nothing more happens", Outcome{Done: true}},
+			{words.Say("resultdialog.run.enter.label"), words.Say("resultdialog.run.enter.hint"), Outcome{Enter: OutsideDir(argv)}},
+			{words.Say("resultdialog.run.stay.label"), words.Say("resultdialog.run.stay.hint"), Outcome{Done: true}},
 		}
-		m.foot = "Nothing is committed unless the command said so above."
+		m.foot = words.Say("resultdialog.foot.finished")
 	default:
-		m.facts = append(m.facts, Fact{Bad, "It stopped before the end. The last lines above say why."})
-		m.choices = []choice{{"Back", "closes this box; the form keeps your answers", Outcome{Done: true}}}
-		m.foot = "Fix what the lines say, then try again."
+		m.facts = append(m.facts, Fact{Bad, words.Say("resultdialog.run.stopped")})
+		m.choices = []choice{{words.Say("resultdialog.run.back.label"), words.Say("resultdialog.run.back.hint"), Outcome{Done: true}}}
+		m.foot = words.Say("resultdialog.foot.failed")
 	}
 	return m
 }
@@ -76,11 +77,11 @@ func NewRunOutput(argv, lines []string, state RunState) Model {
 func runningWords(argv []string, op string) (title, working string) {
 	switch {
 	case len(argv) > 0 && argv[0] == "convert":
-		return "Converting this workspace to smith…", "Reading the workspace and writing the smith files"
+		return words.Say("resultdialog.convert.title"), words.Say("resultdialog.convert.working")
 	case len(argv) > 0 && argv[0] == "new":
-		return "Creating a new workspace…", "Writing the files of the new workspace"
+		return words.Say("resultdialog.new.title"), words.Say("resultdialog.new.working")
 	}
-	return "Running: " + op, "Running " + op
+	return words.Say("resultdialog.running.title", "operation", op), words.Say("resultdialog.running.working", "operation", op)
 }
 
 // Pulse shows that a running command is alive: a spinner frame and the time it

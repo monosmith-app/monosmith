@@ -11,6 +11,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // stage is the step the screen is on.
@@ -76,10 +77,10 @@ type Model struct {
 // Returns: the screen with nothing ticked, searching for everything.
 func New(cat compose.Catalogue) Model {
 	search := textinput.New()
-	search.Placeholder = "search: react, desktop, serverless, test…"
+	search.Placeholder = words.Say("composer.search.placeholder")
 	search.Focus()
 	name := textinput.New()
-	name.Placeholder = "web"
+	name.Placeholder = words.Say("composer.name.placeholder")
 	m := Model{cat: cat, offers: compose.OffersOf(cat.Items), search: search, name: name, scroll: &pane.Scroll{}}
 	return m.refresh()
 }
@@ -168,7 +169,7 @@ func (m Model) refresh() Model {
 	}
 	m.chk = compose.CheckItems(m.offers, pickLang, m.ticked)
 	if len(m.ticked) == 0 {
-		m.chk = compose.Check{Language: pickLang, Missing: "tick what you want: a framework, a desktop shell, a cloud host. The language comes with it."}
+		m.chk = compose.Check{Language: pickLang, Missing: words.Say("composer.missing.empty")}
 	}
 	return m
 }
@@ -194,10 +195,10 @@ func (m Model) tick(it compose.Item) Model {
 	m.note = ""
 	switch {
 	case it.Kind == compose.KindPlugin:
-		m.note = it.Title + " is a workspace plugin, not part of the stack of one project. Turn it on with: " + it.Route
+		m.note = words.Say("composer.note.plugin", "title", it.Title, "route", it.Route)
 		return m
 	case it.Problem != "":
-		m.note = it.Title + " cannot be used here: " + it.Problem
+		m.note = words.Say("composer.note.problem", "title", it.Title, "problem", it.Problem)
 		return m
 	case it.Kind == compose.KindLanguage:
 		if m.lang != nil && m.lang.ID == it.ID {
@@ -222,7 +223,7 @@ func (m Model) tick(it compose.Item) Model {
 				for i, r := range rivals {
 					names[i] = r.Title
 				}
-				m.note = it.Title + " replaces " + strings.Join(names, " and ") + ": a project has one " + it.Axis + ". Untick " + it.Title + " to get " + names[0] + " back."
+				m.note = words.Say("composer.note.replaces", "title", it.Title, "names", strings.Join(names, words.Say("composer.and")), "axis", it.Axis, "first", names[0])
 			}
 		}
 	}
@@ -343,11 +344,11 @@ func layerIndex(cat compose.Catalogue, id string) int {
 func (m Model) next() (Model, Outcome) {
 	switch {
 	case m.chk.Conflict != "":
-		m.note = "Fix the conflict first: " + m.chk.Conflict
+		m.note = words.Say("composer.note.conflict", "conflict", m.chk.Conflict)
 	case m.chk.Question != nil:
 		m.stage, m.qcursor = stQuestion, suggestedIndex(m.chk.Question)
 	case !m.chk.Complete:
-		m.note = firstNonEmpty(m.chk.Missing, "the selection is not complete")
+		m.note = firstNonEmpty(m.chk.Missing, words.Say("composer.note.incomplete"))
 	default:
 		m.stage = stName
 		m.name.Focus()
@@ -401,7 +402,7 @@ func (m Model) nameKey(msg tea.KeyMsg) (Model, Outcome) {
 	case "enter":
 		value := strings.TrimSpace(m.name.Value())
 		if !projectName.MatchString(value) {
-			m.note = "Name the project with lowercase words joined by dashes, like web or my-api."
+			m.note = words.Say("composer.note.name")
 			return m, Outcome{}
 		}
 		m.note = ""
@@ -427,7 +428,7 @@ func (m Model) planKey(key string) (Model, Outcome) {
 		}
 	case "c":
 		if m.plan != nil {
-			return m, Outcome{Copy: m.plan.Command, Note: "Copied the command."}
+			return m, Outcome{Copy: m.plan.Command, Note: words.Say("composer.note.copied")}
 		}
 	case "s":
 		if m.plan != nil && len(m.plan.RecipeArgv) > 1 {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/guide"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // installDependency opens the form that installs packages from the Deps view.
@@ -28,7 +29,7 @@ func (s *Shell) installDependency() tea.Cmd {
 		offered = append([]guide.InstallTarget{guide.RootInstallTarget}, offered...)
 	}
 	if len(offered) == 0 {
-		s.say("The workspace has no project to install into")
+		s.say(words.Say("tui.deps_install.the_workspace_has_no_project_to"))
 		return nil
 	}
 	var preset []string

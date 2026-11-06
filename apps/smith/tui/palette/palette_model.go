@@ -1,13 +1,13 @@
 package palette
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Entry is a shell command (an id) listed with its shortcut, under a section.
@@ -47,7 +47,7 @@ type Palette struct {
 // New builds a palette of the shell's commands.
 func New(entries []Entry) Palette {
 	in := textinput.New()
-	in.Placeholder = "type to find a command"
+	in.Placeholder = words.Say("palette.placeholder")
 	in.Focus()
 	return Palette{filter: in}.WithEntries(entries)
 }
@@ -167,7 +167,7 @@ func (p Palette) choose(i int) (Palette, Result) {
 	}
 	e := found[min(i, len(found)-1)]
 	if e.unavailable() {
-		return p, Result{Refused: e.Title + " is unavailable: " + e.Unavailable}
+		return p, Result{Refused: words.Say("palette.unavailable", "title", e.Title, "reason", e.Unavailable)}
 	}
 	return p, Result{CommandID: e.ID, Closed: true}
 }
@@ -224,7 +224,7 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 	height := max(h-2, 1)
 	found := p.matches()
 	if len(found) == 0 {
-		out = append(out, th.Muted(" no command matches"))
+		out = append(out, th.Muted(words.Say("palette.empty")))
 	}
 	rows := p.rows()
 	top := p.windowTop(rows, height)
@@ -235,9 +235,9 @@ func (p Palette) Lines(th theme.Theme, w, h int) []string {
 			out = append(out, p.line(th, found[r.index], r.index == p.cursor, w))
 		}
 	}
-	footer := "up/down choose · enter pick · esc close"
+	footer := words.Say("palette.footer")
 	if n := p.hidden(); n > 0 && strings.TrimSpace(p.filter.Value()) == "" {
-		footer = fmt.Sprintf("%d more not usable here: type to find them", n)
+		footer = words.Say("palette.footer.hidden", "count", n)
 	}
 	for len(out) < h-1 {
 		out = append(out, "")

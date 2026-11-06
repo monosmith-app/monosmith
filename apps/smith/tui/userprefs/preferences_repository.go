@@ -3,10 +3,11 @@ package userprefs
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Path is the preferences file in the smith home; "" when there is no home.
@@ -34,7 +35,7 @@ func Load(home string) (Preferences, error) {
 	}
 	var p Preferences
 	if err := json.Unmarshal(raw, &p); err != nil {
-		return Preferences{}, fmt.Errorf("%s is not valid JSON: %w", path, err)
+		return Preferences{}, errors.New(words.Say("userprefs.invalid", "path", path, "reason", err))
 	}
 	return p, nil
 }
@@ -44,7 +45,7 @@ func Load(home string) (Preferences, error) {
 func Save(home string, p Preferences) error {
 	path := Path(home)
 	if path == "" {
-		return errors.New("there is no smith home to keep preferences in; set SMITH_HOME")
+		return errors.New(words.Say("userprefs.nohome"))
 	}
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		return err

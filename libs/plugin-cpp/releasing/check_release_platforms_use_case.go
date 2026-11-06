@@ -8,6 +8,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-cpp/discovery"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 var installRule = regexp.MustCompile(`(?i)\binstall\s*\(`)
@@ -26,16 +27,18 @@ func CheckReleasePlatforms(workspaceRoot string, p protocol.Project) []protocol.
 	for _, platform := range p.ReleaseAssets.Platforms {
 		if why := CheckPlatform(platform); why != "" {
 			findings = append(findings, protocol.Finding{
-				Check: p.Name + " releases for " + platform, Detail: why,
+				Check: p.Name + " releases for " + platform, Project: p.Name, Problem: why, Detail: why,
 				Remedy: "change platforms in [projects." + p.Name + ".release] in smith.toml",
 			})
 			continue
 		}
 		if !native && platform != hostPlatform {
 			findings = append(findings, protocol.Finding{
-				Check:  p.Name + " can build the " + platform + " archive here",
-				Detail: "this machine (" + hostPlatform + ") cannot build " + platform + ": a C++ program is built on the system it is for",
-				Remedy: "add set(SMITH_NATIVE ON) to " + p.Root + "/CMakeLists.txt: `smith ci native` then builds each archive on a runner of its own system",
+				Check:   p.Name + " can build the " + platform + " archive here",
+				Project: p.Name,
+				Problem: "this machine (" + hostPlatform + ") cannot build " + platform,
+				Detail:  "this machine (" + hostPlatform + ") cannot build " + platform + ": a C++ program is built on the system it is for",
+				Remedy:  "add set(SMITH_NATIVE ON) to " + p.Root + "/CMakeLists.txt: `smith ci native` then builds each archive on a runner of its own system",
 			})
 		}
 	}
@@ -43,9 +46,10 @@ func CheckReleasePlatforms(workspaceRoot string, p protocol.Project) []protocol.
 		lists := discovery.ParseLists(string(src))
 		ok := lists.Executable != "" || installRule.Match(src)
 		findings = append(findings, protocol.Finding{
-			Check: p.Name + " has a program to release", OK: ok,
-			Detail: p.Root + "/CMakeLists.txt has no add_executable and no install rule, so the archive would be empty",
-			Remedy: "add an add_executable target (the app's program), or install(TARGETS ...) rules",
+			Check: p.Name + " has a program to release", Project: p.Name, OK: ok,
+			Problem: toolrun.ProblemUnless(ok, p.Root+"/CMakeLists.txt has no add_executable and no install rule"),
+			Detail:  p.Root + "/CMakeLists.txt has no add_executable and no install rule, so the archive would be empty",
+			Remedy:  "add an add_executable target (the app's program), or install(TARGETS ...) rules",
 		})
 	}
 	return findings

@@ -15,19 +15,20 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/palette"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releasepick"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/releaseview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// detailStep is how many columns [ and ] move the edge of the detail.
-const detailStep = 4
-
 // mouseHelp are the mouse actions listed in the shortcuts overlay.
-var mouseHelp = []string{
-	"Click: select   Double-click: open the detail (narrow terminals)",
-	"Click a tab to open the view, a hint in the footer to press its key",
-	"Click an action in the detail to do it",
-	"Wheel: scroll lists and logs; over the detail it scrolls the detail",
-	"Shift+drag selects text (Option+drag in macOS terminals)",
-	"m turns the mouse off, so a plain drag selects text",
+func mouseHelp() []string {
+	return []string{
+		words.Say("tui.keys.mouse_help.click"),
+		words.Say("tui.keys.mouse_help.tab"),
+		words.Say("tui.keys.mouse_help.action"),
+		words.Say("tui.keys.mouse_help.drag"),
+		words.Say("tui.keys.mouse_help.wheel"),
+		words.Say("tui.keys.mouse_help.shift"),
+		words.Say("tui.keys.mouse_help.mouse"),
+	}
 }
 
 // editing is true while a text field has the keyboard.
@@ -75,6 +76,9 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 		s.pal = p
 		return s.afterPalette(res)
 	}
+	if s.splitKey(name) {
+		return nil
+	}
 	if name == "ctrl+c" {
 		if s.running() {
 			s.stop()
@@ -86,7 +90,7 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	if name == "q" && !s.editing() {
 		switch {
 		case s.running():
-			s.say("A run is in progress (" + commands.ShortcutOf("run.stop") + " stops it)")
+			s.say(words.Say("tui.keys.a_run_is_in_progress_stops", "shortcutOf", commands.ShortcutOf("run.stop")))
 			return nil
 		case s.tab == commands.TabGuide && s.guide.Title() != "":
 			// Inside a form q goes back one step, as Esc does.
@@ -99,7 +103,7 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 	}
 	if c, reason, ok := commands.ByKey(name, s.state()); ok {
 		if reason != "" {
-			s.say(c.Title + " is unavailable: " + reason)
+			s.say(words.Say("tui.keys.is_unavailable", "title", c.Title, "reason", reason))
 			return nil
 		}
 		return s.perform(c)
@@ -116,7 +120,7 @@ func (s *Shell) key(msg tea.KeyMsg) tea.Cmd {
 func (s *Shell) openPackages(remove bool) {
 	project := s.selectedProject()
 	if project == "" {
-		s.say("Select a project first: packages are installed on one project")
+		s.say(words.Say("tui.keys.select_a_project_first_packages_are"))
 		return
 	}
 	var names []string
@@ -175,7 +179,7 @@ func (s *Shell) afterReleasePick(m releasepick.Model, out dialog.Outcome) tea.Cm
 		s.askConfirm(m.Argv())
 		return nil
 	}
-	s.say("Cancelled: nothing was released")
+	s.say(words.Say("tui.keys.cancelled_nothing_was_released"))
 	return nil
 }
 
@@ -208,7 +212,7 @@ func (s *Shell) afterConfirm(c dialog.Confirm, out dialog.Outcome) tea.Cmd {
 		s.guide = back
 		return s.gotoTab(commands.TabGuide)
 	}
-	s.say("Cancelled: " + commands.Line(c.Argv) + " was not run")
+	s.say(words.Say("tui.keys.cancelled_was_not_run", "line", commands.Line(c.Argv)))
 	return s.leaveForm()
 }
 
@@ -237,7 +241,7 @@ func (s *Shell) activate(id string) tea.Cmd {
 		return nil
 	}
 	if reason := c.Unavailable(s.state()); reason != "" {
-		s.say(c.Title + " is unavailable: " + reason)
+		s.say(words.Say("tui.keys.is_unavailable", "title", c.Title, "reason", reason))
 		return nil
 	}
 	return s.perform(c)
@@ -272,7 +276,7 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if argv := p.DeriveArgv(strings.TrimPrefix(action, "derive-")); argv != nil {
 			return s.execute(argv, false)
 		}
-		s.say("No file of " + p.Name + " needs that")
+		s.say(words.Say("tui.keys.no_file_of_needs_that", "name", p.Name))
 	case "rerun":
 		if argv := s.repeatArgv(); argv != nil {
 			return s.execute(argv, false)
@@ -281,7 +285,7 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if argv := s.failedArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
-		s.say("No task failed or was skipped")
+		s.say(words.Say("tui.keys.no_task_failed_or_was_skipped"))
 	case "copy-log":
 		s.copyLog()
 	case "run-older", "run-newer":
@@ -299,17 +303,17 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if s.release.CanRelease() {
 			return s.execute([]string{"release", "--dry-run", "--notes"}, false)
 		}
-		s.say("There is no release to show the notes of")
+		s.say(words.Say("tui.keys.there_is_no_release_to_show"))
 	case "doctor-fix":
 		if p, ok := s.doctor.SelectedFix(); ok {
 			return s.openFix(p)
 		}
-		s.say("This check has no fix; its remedy says what to do")
+		s.say(words.Say("tui.keys.this_check_has_no_fix_its"))
 	case "deps-up":
 		if argv := s.deps.UpArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
-		s.say("No dependency to update")
+		s.say(words.Say("tui.keys.no_dependency_to_update"))
 	case "deps-install":
 		return s.installDependency()
 	case "deps-remove":
@@ -318,18 +322,18 @@ func (s *Shell) activateSelection(action string) tea.Cmd {
 		if argv := s.deps.AlignArgv(); argv != nil {
 			return s.execute(argv, false)
 		}
-		s.say("The one-version policy found nothing to align")
+		s.say(words.Say("tui.keys.the_one_version_policy_found_nothing"))
 	case "reload":
 		return s.reload()
 	case "detail-zoom":
 		s.zoomDetail()
-	case "detail-wider":
-		s.resizeDetail(detailStep)
-	case "detail-narrower":
-		s.resizeDetail(-detailStep)
+	case "split-left":
+		s.moveSplit(-1)
+	case "split-right":
+		s.moveSplit(1)
 	case "detail-up", "detail-down":
 		if !s.detailVisible() {
-			s.say("The detail is not on screen (" + commands.ShortcutOf("detail.zoom") + " shows it)")
+			s.say(words.Say("tui.keys.the_detail_is_not_on_screen", "shortcutOf", commands.ShortcutOf("detail.zoom")))
 			return nil
 		}
 		s.pageDetail(map[string]int{"detail-up": -1, "detail-down": 1}[action])
@@ -358,13 +362,13 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		}
 		return s.execute(commands.RunArgv(c.Task, project), false)
 	case commands.Guided:
-		if c.Guide == addProjectTitle {
+		if c.Guide == addProjectTitle() {
 			return s.openAddProject()
 		}
-		if c.Guide == swapTitle {
+		if c.Guide == swapTitle() {
 			return s.openSwap()
 		}
-		if c.Guide == removeProjectTitle {
+		if c.Guide == removeProjectTitle() {
 			return s.openRemoveProject()
 		}
 		if c.Guide == guide.EnvironmentsAddTitle || c.Guide == guide.EnvironmentsRemoveTitle {
@@ -392,9 +396,9 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 	case commands.Follow:
 		s.log = s.log.Toggle(s.logTotal(), s.logHeight())
 		if s.log.Following() {
-			s.say("Following the log")
+			s.say(words.Say("tui.keys.following_the_log"))
 		} else {
-			s.say("Log paused: scroll or press " + commands.ShortcutOf("run.follow") + " to follow again")
+			s.say(words.Say("tui.keys.log_paused_scroll_or_press_to", "shortcutOf", commands.ShortcutOf("run.follow")))
 		}
 	case commands.CopyFocused:
 		s.copyFocused()
@@ -418,7 +422,7 @@ func (s *Shell) perform(c commands.Command) tea.Cmd {
 		if p, ok := s.doctor.FixAll(); ok {
 			return s.openFix(p)
 		}
-		s.say("Doctor found nothing it can fix")
+		s.say(words.Say("tui.keys.doctor_found_nothing_it_can_fix"))
 	}
 	return nil
 }
@@ -427,10 +431,10 @@ func (s *Shell) openHelp() {
 	// The keys of the open view come first, then the keys every view shares,
 	// all read from the keymap the keys themselves come from.
 	var rows []dialog.HelpRow
-	for _, r := range commands.HelpRows(s.state(), tabTitles[s.tab]) {
+	for _, r := range commands.HelpRows(s.state(), tabTitles()[s.tab]) {
 		rows = append(rows, dialog.HelpRow(r))
 	}
-	h := dialog.NewHelp(rows, mouseHelp).Place(s.w, s.h)
+	h := dialog.NewHelp(rows, mouseHelp()).Place(s.w, s.h)
 	s.help = &h
 }
 
@@ -521,7 +525,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		switch {
 		case s.detailFull():
 			return s.detailKey(name)
-		case name == "enter" && s.lay().HasDetail() && !s.doctor.OnPassedLine():
+		case name == "enter" && s.lay().HasDetail() && !s.doctor.OnPassedLine() && !s.doctor.OnHeader():
 			// Beside the detail Enter unfolds what the detail folded. On the line
 			// that hides the passed checks it shows them, as that line says.
 			s.detailAll = !s.detailAll
@@ -530,7 +534,7 @@ func (s *Shell) paneKey(msg tea.KeyMsg) tea.Cmd {
 		}
 	case commands.TabGuide:
 		g, cmd := s.guide.Handle(msg)
-		if s.guide.Title() == "" && g.Title() == recipeTitle && s.recipeLevels == nil {
+		if s.guide.Title() == "" && g.Title() == recipeTitle() && s.recipeLevels == nil {
 			// The recipe form lists the plugins of each level: read them first.
 			return s.openRecipeForm()
 		}

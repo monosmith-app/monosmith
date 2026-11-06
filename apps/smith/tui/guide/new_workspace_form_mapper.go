@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/scaffold"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // NewWorkspaceSteps are the questions of "Create a workspace": the name, then
@@ -12,14 +13,14 @@ import (
 // form and the command ask the same. The first option of each is the default
 // and a text question left empty takes its default.
 func NewWorkspaceSteps() []Step {
-	steps := []Step{{Key: "name", Prompt: "What should the new workspace be called? It becomes a folder (lowercase words joined by dashes)", Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}, setupStep()}
+	steps := []Step{{Key: "name", Prompt: words.Say("guide.new_workspace_form.what_should_the_new_workspace_be"), Placeholder: "my-studio", Check: checkWorkspaceName, Suggest: suggestName("workspace")}, setupStep()}
 	for _, q := range scaffold.NewQuestions() {
 		step := Step{Key: q.Key, Prompt: q.Prompt}
 		if q.Key == scaffold.AnswerArchitecture {
 			step.Note = WhatIs("slice")
 		}
 		if q.Advanced {
-			step.Prompt += " Enter keeps " + q.Default + "."
+			step.Prompt += words.Say("guide.new_workspace_form.enter_keeps", "default", q.Default)
 		}
 		if q.Options != nil {
 			for _, o := range q.Options {

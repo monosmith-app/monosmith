@@ -83,7 +83,7 @@ func TestTheTabsKeepTheirFullNamesForAsLongAsTheyFit(t *testing.T) {
 func TestTheDoctorTabCarriesTheCountOfFailures(t *testing.T) {
 	l := newLab(t, true, 140, 30)
 	l.keys("4")
-	if text := stripText(l); !strings.Contains(text, "Doctor ✗2") {
+	if text := stripText(l); !strings.Contains(text, "Doctor (4)] ✗2") {
 		t.Fatalf("the Doctor tab should carry its failures:\n%s", text)
 	}
 	if first := l.lines()[0]; !strings.Contains(first, "✗2") {
@@ -105,14 +105,13 @@ func TestWarningsAloneNeverShowTheFailureMark(t *testing.T) {
 	}
 }
 
-func TestOnAShortTerminalTheTabsAreASingleRow(t *testing.T) {
-	l := newLab(t, true, 120, 23)
-	if got := len(l.sh().tabStrip().Lines); got != 1 {
-		t.Fatalf("the strip has %d rows", got)
-	}
-	l.has("Projects (4)") // the title is on the pane's own edge again
-	if l = newLab(t, true, 120, 24); len(l.sh().tabStrip().Lines) != 3 {
-		t.Fatal("24 rows is tall enough for boxes")
+func TestTheTabsAreASingleRowOnAnyHeight(t *testing.T) {
+	for _, rows := range []int{23, 24, 40} {
+		l := newLab(t, true, 120, rows)
+		if got := len(l.sh().tabStrip().Lines); got != 1 {
+			t.Fatalf("%d rows: the strip has %d rows", rows, got)
+		}
+		l.has("Projects (4)") // the title is on the pane's own edge
 	}
 }
 
@@ -120,7 +119,7 @@ func TestTheAddProjectWizardIsTitledAddAProject(t *testing.T) {
 	l := newLab(t, true, 120, 30)
 	l.keys("a")
 	l.has("Add a project")
-	if !strings.Contains(stripText(l), "Add a project") {
-		t.Fatalf("the form's title belongs in the tab strip:\n%s", l.view())
+	if !strings.Contains(l.view(), "─ Add a project ─") {
+		t.Fatalf("the form's title belongs on the pane's edge:\n%s", l.view())
 	}
 }

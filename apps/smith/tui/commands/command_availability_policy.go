@@ -4,6 +4,8 @@ import (
 	"slices"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Unavailable says why the command cannot be used now, or "" when it can.
@@ -13,15 +15,15 @@ func (c Command) Unavailable(s State) string {
 	}
 	switch {
 	case c.NeedsWorkspace && !s.InWorkspace:
-		return "not in a workspace (press " + ShortcutOf("file.new") + " to create one)"
+		return words.Say("commands.reason.noworkspace", "shortcut", ShortcutOf("file.new"))
 	case c.NeedsRunning && !s.Running:
-		return "nothing is running"
+		return words.Say("commands.reason.notrunning")
 	case c.NeedsNarrowList && (!s.Narrow || s.DetailOpen):
-		return "the detail is beside the list"
+		return words.Say("commands.reason.besidelist")
 	case c.NeedsDetailOpen && !s.DetailOpen:
-		return "the detail is not open"
+		return words.Say("commands.reason.detailclosed")
 	case c.NeedsIdle && s.Running:
-		return "a run is in progress (" + ShortcutOf("run.stop") + " stops it)"
+		return words.Say("commands.reason.running", "shortcut", ShortcutOf("run.stop"))
 	}
 	return ""
 }

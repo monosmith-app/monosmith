@@ -1,11 +1,11 @@
 package doctorview
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/monosmith-app/monosmith/apps/smith/doctor"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Plan is the fixes the failed checks carry, folded as `smith doctor --fix`
@@ -63,7 +63,7 @@ func (v Model) FixAll() (doctorfix.Planned, bool) {
 // its Description, shown under the button.
 func FixLabel(p doctorfix.Planned) string {
 	if n := len(p.AppliesTo); n > 1 {
-		return fmt.Sprintf("Fix all %d projects", n)
+		return words.Say("doctor.fix.all", "count", n)
 	}
-	return "Fix"
+	return words.Say("doctor.fix.one")
 }

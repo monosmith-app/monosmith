@@ -1,7 +1,7 @@
 package adoptwizard
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/adoptflow"
@@ -9,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/legacyinventory"
 	"github.com/monosmith-app/monosmith/apps/smith/removalplan"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/languagenames"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // The review paints lines that start with + green and - red (they are
@@ -24,32 +25,35 @@ const shownKept = 8
 // shownChanged is how many changes of behaviour the last screen names.
 const shownChanged = 5
 
+// say writes the catalog text for key, with its placeholders filled from pairs.
+func say(b *strings.Builder, key string, pairs ...any) { b.WriteString(words.Say(key, pairs...)) }
+
 // foundText is the first screen: what the folder is and what it uses.
 func foundText(f adoptflow.Found) string {
 	var b strings.Builder
 	switch f.Kind {
 	case adoptflow.KindSmith, adoptflow.KindNotARepo:
-		fmt.Fprintf(&b, "● %s\n", f.Name)
+		say(&b, "adopt.found.name", "name", f.Name)
 	default:
-		fmt.Fprintf(&b, "● Found %s %s: %s\n", article(f.Source), f.Source, f.Name)
+		say(&b, "adopt.found.is", "article", article(f.Source), "source", f.Source, "name", f.Name)
 		if len(f.Blockers) == 0 {
-			fmt.Fprintf(&b, "  %s\n", projectsLine(f))
+			b.WriteString("  " + projectsLine(f) + "\n")
 		}
 		if len(f.Tooling) > 0 {
-			fmt.Fprintf(&b, "  Tools it uses today: %s\n", strings.Join(f.Tooling, ", "))
+			say(&b, "adopt.found.tooling", "tools", strings.Join(f.Tooling, ", "))
 		} else if len(f.Blockers) == 0 {
-			fmt.Fprintf(&b, "  Nothing to replace: it has no lint, test or build tool of its own.\n")
+			say(&b, "adopt.found.notooling")
 		}
 	}
 	for i, p := range f.Projects {
 		if i == shownProjects {
-			fmt.Fprintf(&b, "  • and %d more\n", len(f.Projects)-shownProjects)
+			say(&b, "adopt.more", "count", len(f.Projects)-shownProjects)
 			break
 		}
-		fmt.Fprintf(&b, "  • %s  %s  %s\n", p.Name, projectWords(p), p.Root)
+		b.WriteString("  • " + p.Name + "  " + projectWords(p) + "  " + p.Root + "\n")
 	}
 	if len(f.Blockers) > 0 && !f.NeedsInstall {
-		fmt.Fprintf(&b, "\n%s to clear before smith can go on:\n", plural(len(f.Blockers), "blocker"))
+		say(&b, "adopt.found.blockers", "blockers", words.Count("adopt.blocker", len(f.Blockers)))
 	}
 	for _, x := range f.Blockers {
 		// Missing packages are a step smith takes itself, not a dead end.
@@ -57,24 +61,24 @@ func foundText(f adoptflow.Found) string {
 		if f.NeedsInstall {
 			mark = "●"
 		}
-		fmt.Fprintf(&b, "\n%s %s\n", mark, x)
+		b.WriteString("\n" + mark + " " + x + "\n")
 	}
 	for _, x := range f.Warnings {
-		fmt.Fprintf(&b, "\n! %s\n", x)
+		b.WriteString("\n! " + x + "\n")
 	}
 	switch {
 	case f.NeedsInstall:
-		fmt.Fprintf(&b, "\nNothing has changed yet. Installing only fills node_modules, which git does not track, so git cannot take it back. None of your own files are touched.\n")
+		say(&b, "adopt.found.install")
 	case len(f.Blockers) == 0 && f.RootProject != nil:
-		fmt.Fprintf(&b, "\nThe project (%s, %q) is at the repository root. smith manages one folder per project, so the next screen asks where to move it. smith does not choose the folder for you.\n", f.RootProject.Manifest, f.RootProject.Name)
-		fmt.Fprintf(&b, "\nNothing has changed. The screens after list every file before anything is written.\n")
+		say(&b, "adopt.found.root", "manifest", f.RootProject.Manifest, "name", strconv.Quote(f.RootProject.Name))
+		say(&b, "adopt.found.unchanged.root")
 	case len(f.Blockers) == 0:
-		fmt.Fprintf(&b, "\nNothing has changed. The next screens ask how far to go and list every file before anything is written.\n")
+		say(&b, "adopt.found.unchanged")
 		if !f.Full && f.NoFull != "" {
-			fmt.Fprintf(&b, "\n%s\n", f.NoFull)
+			b.WriteString("\n" + f.NoFull + "\n")
 		}
 	default:
-		fmt.Fprintf(&b, "\nNothing was changed.\n")
+		say(&b, "adopt.found.blocked")
 	}
 	return b.String()
 }
@@ -82,10 +86,10 @@ func foundText(f adoptflow.Found) string {
 // article is "a" or "an" for a noun phrase as it is said aloud ("an Nx
 // workspace", "a Turborepo workspace").
 func article(noun string) string {
-	if strings.HasPrefix(noun, "Nx") || strings.ContainsRune("AEIOUaeiou", rune(noun[0])) {
-		return "an"
+	if strings.HasPrefix(noun, "Nx") || strings.ContainsRune("AEIOUaeiou", rune(noun[0])) { // words:literal
+		return words.Say("adopt.article.an")
 	}
-	return "a"
+	return words.Say("adopt.article.a")
 }
 
 // projectWords says what a project is: "TypeScript / JavaScript library".
@@ -94,26 +98,19 @@ func projectWords(p adoptflow.Project) string {
 }
 
 func projectsLine(f adoptflow.Found) string {
-	switch len(f.Projects) {
-	case 0:
-		return "No projects found yet."
-	case 1:
-		return "1 project:"
+	if len(f.Projects) == 0 {
+		return words.Say("adopt.projects.none")
 	}
-	return fmt.Sprintf("%d projects:", len(f.Projects))
+	return words.Count("adopt.projects", len(f.Projects))
 }
 
 // conservativeText is the review of the conservative level.
 func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow.Changes, diffs string, r convert.Highlights, commit bool) string {
 	var b strings.Builder
 	if f.Kind.Convertible() {
-		tool := strings.TrimSuffix(f.Source, " workspace")
-		fmt.Fprintf(&b, "● Convert the %s %q to smith, keeping what works\n", f.Source, f.Name)
-		fmt.Fprintf(&b, "  smith takes over from %s. It adds its settings file (smith.toml), turns each %s task into a task\n", tool, tool)
-		fmt.Fprintf(&b, "  smith runs, removes %s and the files only it used, and replaces the CI pipeline files with ones\n", tool)
-		fmt.Fprintf(&b, "  it generates (your own steps go in the marked sections). Your code is not rewritten. How each\n")
-		fmt.Fprintf(&b, "  project lints, tests and builds is carried over where smith can; what behaves differently or needs\n")
-		fmt.Fprintf(&b, "  you is listed below. Every change is a file in git, so git can take it back.\n\n")
+		tool := strings.TrimSuffix(f.Source, " workspace") // words:literal
+		say(&b, "adopt.convert.title", "source", f.Source, "name", strconv.Quote(f.Name))
+		say(&b, "adopt.convert.body", "tool", tool)
 		b.WriteString(planSummaryText(changes, r))
 		if changes.Total() > 0 {
 			// The same diffs as the Doctor fix dialog shows for a fix.
@@ -124,11 +121,11 @@ func conservativeText(f adoptflow.Found, commandReview string, changes adoptflow
 	}
 	b.WriteString(commandReview)
 	if len(f.Projects) == 0 && f.RootProject != nil {
-		fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the project once it is moved (or an empty workspace if it stays);\n")
+		say(&b, "adopt.writes.moved")
 	} else {
-		fmt.Fprintf(&b, "\n  Writes smith.toml and the CI pipelines for the %d projects found;\n", len(f.Projects))
+		say(&b, "adopt.writes.found", "count", len(f.Projects))
 	}
-	fmt.Fprintf(&b, "  your build and lint setup stay as they are. smith doctor then says what is left to do.\n")
+	say(&b, "adopt.writes.kept")
 	b.WriteString(commitBox(commit))
 	return b.String()
 }
@@ -140,26 +137,26 @@ func commitBox(commit bool) string {
 	if commit {
 		box = "[x]"
 	}
-	return fmt.Sprintf("\n  %s Commit this change so it can be undone (press c to tick it)\n", box)
+	return words.Say("adopt.commit.box", "box", box)
 }
 
 // reviewHeader goes above the full plan.
-const reviewHeader = "● Nothing has changed yet. The files below are what the conversion writes. After it, smith asks about each group of old files before deleting anything. Every change is a file in git, so git can take it back.\n\n"
+var reviewHeader = words.Say("adopt.review.header")
 
 // groupText is the question about one group of removals, above its diffs.
 func groupText(g removalplan.Group, reviewed string) string {
 	var b strings.Builder
 	if g.Files == 0 && g.Packages == 0 {
-		fmt.Fprintf(&b, "● %s — ok?\n", g.Reason)
-		b.WriteString("  y changes them · n keeps them as they are · s keeps these and skips the groups after\n\n")
+		say(&b, "adopt.group.empty", "reason", g.Reason)
+		say(&b, "adopt.group.empty.keys")
 		b.WriteString(reviewed)
 		return b.String()
 	}
-	fmt.Fprintf(&b, "● We are going to delete %s. %s — ok?\n", groupCounts(g), g.Reason)
+	say(&b, "adopt.group.delete", "counts", groupCounts(g), "reason", g.Reason)
 	if len(g.Removes) > 0 {
-		fmt.Fprintf(&b, "  packages: %s\n", strings.Join(g.Removes, ", "))
+		say(&b, "adopt.group.packages", "list", strings.Join(g.Removes, ", "))
 	}
-	b.WriteString("  y deletes them · n keeps them · s keeps these and skips the groups after\n\n")
+	say(&b, "adopt.group.keys")
 	b.WriteString(reviewed)
 	return b.String()
 }
@@ -167,22 +164,15 @@ func groupText(g removalplan.Group, reviewed string) string {
 func groupCounts(g removalplan.Group) string {
 	var parts []string
 	if g.Packages > 0 {
-		parts = append(parts, plural(g.Packages, "package"))
+		parts = append(parts, words.Count("adopt.package", g.Packages))
 	}
 	if g.Files > 0 {
-		parts = append(parts, plural(g.Files, "file"))
+		parts = append(parts, words.Count("adopt.file", g.Files))
 	}
 	if len(parts) == 0 {
-		return "nothing"
+		return words.Say("adopt.nothing")
 	}
-	return strings.Join(parts, " and ")
-}
-
-func plural(n int, noun string) string {
-	if n == 1 {
-		return "1 " + noun
-	}
-	return fmt.Sprintf("%d %ss", n, noun)
+	return strings.Join(parts, words.Say("adopt.and"))
 }
 
 // doneText is the last screen, in three parts: what is done, what behaves
@@ -190,70 +180,68 @@ func plural(n int, noun string) string {
 func doneText(f adoptflow.Found, r convert.Highlights, checked string, applied, declined []string, kept []legacyinventory.Kept, notes []string, committed bool) string {
 	var b strings.Builder
 	if len(f.Projects) == 0 && r.Projects == "" {
-		fmt.Fprintf(&b, "● %q has a smith.toml now, but smith found no project in it\n", f.Name)
-		b.WriteString("  Add one with smith add, or move your code into folders that hold a manifest (package.json, go.mod, pyproject.toml).\n")
+		say(&b, "adopt.done.empty", "name", strconv.Quote(f.Name))
+		say(&b, "adopt.done.empty.hint")
 	} else {
-		fmt.Fprintf(&b, "✓ %q is a smith workspace now", f.Name)
+		say(&b, "adopt.done.workspace", "name", strconv.Quote(f.Name))
 		if r.Projects != "" {
-			fmt.Fprintf(&b, ": %s", r.Projects)
+			b.WriteString(": " + r.Projects)
 		}
 		b.WriteString("\n")
 	}
 	if checked != "" {
-		fmt.Fprintf(&b, "  It works: %s.\n", checked)
+		say(&b, "adopt.done.works", "checked", checked)
 		switch len(r.Checks) {
 		case 0:
-			b.WriteString("  Nothing needs you.\n")
-		case 1:
-			b.WriteString("  1 thing needs you (listed below).\n")
+			say(&b, "adopt.done.needs.none")
 		default:
-			fmt.Fprintf(&b, "  %d things need you (listed below).\n", len(r.Checks))
+			b.WriteString(words.Count("adopt.done.needs", len(r.Checks)))
 		}
 	}
 	if len(applied) > 0 {
-		fmt.Fprintf(&b, "  Old tools removed: %s\n", strings.Join(applied, ", "))
+		say(&b, "adopt.done.removed", "list", strings.Join(applied, ", "))
 	}
 	if len(declined) > 0 {
-		fmt.Fprintf(&b, "  Left as they were, as you chose: %s\n", strings.Join(declined, ", "))
+		say(&b, "adopt.done.declined", "list", strings.Join(declined, ", "))
 	}
 	if committed {
-		fmt.Fprintf(&b, "  Committed as one change: smith undo reverts it.\n")
+		say(&b, "adopt.done.committed")
 	} else {
-		fmt.Fprintf(&b, "  Not committed: review with git status. git can take the changes back.\n")
+		say(&b, "adopt.done.uncommitted")
 	}
 	if len(r.Checks) > 0 {
-		fmt.Fprintf(&b, "\n! Needs you (%d)\n", len(r.Checks))
+		say(&b, "adopt.done.checks", "count", len(r.Checks))
 		for _, c := range r.Checks {
-			fmt.Fprintf(&b, "  • %s\n", c)
+			b.WriteString("  • " + c + "\n")
 		}
 	}
 	for _, n := range notes {
-		fmt.Fprintf(&b, "\n! %s\n", n)
+		b.WriteString("\n! " + n + "\n")
 	}
 	if len(r.Changed) > 0 {
-		fmt.Fprintf(&b, "\n● Behaves differently now (%d)\n", len(r.Changed))
+		say(&b, "adopt.done.changed", "count", len(r.Changed))
 		for i, c := range r.Changed {
 			if i == shownChanged {
-				fmt.Fprintf(&b, "  • and %d more: the full list is in %s\n", len(r.Changed)-shownChanged, convert.ReportFile)
+				say(&b, "adopt.done.changed.more", "count", len(r.Changed)-shownChanged, "file", convert.ReportFile)
 				break
 			}
-			fmt.Fprintf(&b, "  • %s\n", c)
+			b.WriteString("  • " + c + "\n")
 		}
 	}
 	if len(kept) > 0 {
-		fmt.Fprintf(&b, "\nLooks like the old tooling but stays (something still uses it):\n")
+		say(&b, "adopt.done.kept")
 		for i, k := range kept {
 			if i == shownKept {
-				fmt.Fprintf(&b, "  • and %d more\n", len(kept)-shownKept)
+				say(&b, "adopt.more", "count", len(kept)-shownKept)
 				break
 			}
-			fmt.Fprintf(&b, "  • %s: %s\n", k.What, k.Why)
+			b.WriteString("  • " + k.What + ": " + k.Why + "\n")
 		}
 	}
 	if checked != "" {
-		fmt.Fprintf(&b, "\nEnter opens the workspace. The full report is saved in %s; press s to read it here.\n", convert.ReportFile)
+		say(&b, "adopt.done.open", "file", convert.ReportFile)
 	} else {
-		fmt.Fprintf(&b, "\nOpen the workspace to see it, or let smith build everything first to check that it works.\n")
+		say(&b, "adopt.done.open.first")
 	}
 	return b.String()
 }

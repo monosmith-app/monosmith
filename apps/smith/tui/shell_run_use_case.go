@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runner"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/actions/catalog"
 )
 
@@ -59,7 +61,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 				// load is the tab's own, so Esc ignores its result and lets it end.
 				title, why := commands.Describe(argv)
 				s.planTicket++
-				s.openWaiting(title, why, catalog.WithConfirmation(argv), "Reading the commits to work out each version", nil)
+				s.openWaiting(title, why, catalog.WithConfirmation(argv), words.Say("tui.run.reading_the_commits_to_work_out"), nil)
 				load := s.sources.Release
 				return func() tea.Msg { return load() }
 			}
@@ -72,7 +74,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 			if flag, ok := catalog.PlanFlag(argv); ok && s.sources.Capture != nil {
 				// The dialog shows what the command will do, not a sentence about it.
 				title, why := commands.Describe(argv)
-				return s.captureInDialog(capPlan, title, why, catalog.WithConfirmation(argv), append(slices.Clone(argv), flag), "Working out what will change")
+				return s.captureInDialog(capPlan, title, why, catalog.WithConfirmation(argv), append(slices.Clone(argv), flag), words.Say("tui.run.working_out_what_will_change"))
 			}
 			s.askConfirm(argv)
 			return nil
@@ -90,7 +92,7 @@ func (s *Shell) execute(argv []string, confirmed bool) tea.Cmd {
 		return nil
 	}
 	if s.running() {
-		s.say("A run is in progress (Ctrl+C stops it)")
+		s.say(words.Say("tui.run.a_run_is_in_progress_ctrl"))
 		return nil
 	}
 	return s.start(argv)
@@ -133,7 +135,7 @@ func (s *Shell) start(argv []string) tea.Cmd {
 	begin := s.sources.Start
 	return func() tea.Msg {
 		if begin == nil {
-			return startedMsg{argv: argv, err: fmt.Errorf("this smith cannot start commands here")}
+			return startedMsg{argv: argv, err: errors.New(words.Say("tui.run.cannot_start"))}
 		}
 		p, err := begin(argv)
 		return startedMsg{proc: p, argv: argv, err: err}
@@ -145,9 +147,9 @@ func (s *Shell) started(msg startedMsg) tea.Cmd {
 		return nil
 	}
 	if msg.err != nil {
-		s.run.Feed("could not start: "+msg.err.Error(), s.now())
+		s.run.Feed(words.Say("tui.run.could_not_start", "err", msg.err.Error()), s.now())
 		s.run.End(1, false, s.now())
-		s.notify("Could not start: "+msg.err.Error(), toast.Error)
+		s.notify(words.Say("tui.run.could_not_start_2", "err", msg.err.Error()), toast.Error)
 		s.showOutside()
 		return nil
 	}
@@ -233,7 +235,7 @@ func (s *Shell) refreshAfter(argv []string) tea.Cmd {
 func (s *Shell) finished() {
 	switch {
 	case s.run.Cancelled:
-		s.notify("Cancelled: "+s.run.CommandLine(), toast.Warning)
+		s.notify(words.Say("tui.run.cancelled", "commandLine", s.run.CommandLine()), toast.Warning)
 	case s.run.OK() && undoable(s.run.Command, s.commitOps) && !saidNotCommitted(s.run.Lines):
 		s.notify(s.summary()+". "+undoHint(), toast.Success)
 	case s.run.OK() && changesFiles(s.run.Command):
@@ -252,9 +254,9 @@ func (s *Shell) summary() string {
 	c := r.Counts()
 	if c.Total == 0 {
 		if r.Exit == 0 {
-			return "done in " + took
+			return words.Say("tui.run.done_in", "took", took)
 		}
-		return fmt.Sprintf("failed (code %d) in %s", r.Exit, took)
+		return words.Say("tui.run.failed_code_in", "exit", r.Exit, "took", took)
 	}
 	var parts []string
 	for _, p := range []struct {
@@ -262,10 +264,10 @@ func (s *Shell) summary() string {
 		word string
 	}{{c.Passed, "passed"}, {c.Cached, "cached"}, {c.Failed, "failed"}, {c.Skipped, "skipped"}} {
 		if p.n > 0 {
-			parts = append(parts, fmt.Sprintf("%d %s", p.n, p.word))
+			parts = append(parts, words.Say("tui.run.text", "n", p.n, "word", p.word))
 		}
 	}
-	return strings.Join(parts, " · ") + " in " + took
+	return words.Say("tui.run.in", "list", strings.Join(parts, " · "), "took", took)
 }
 
 // stop asks the running command to stop; asking again quits the shell.
@@ -279,7 +281,7 @@ func (s *Shell) stop() {
 	}
 	s.proc.Stop()
 	s.stopping = true
-	s.say("Stopping… (Ctrl+C again quits)")
+	s.say(words.Say("tui.run.stopping_ctrl_c_again_quits"))
 }
 
 // selectedProject is the project of the list's selection, or "".

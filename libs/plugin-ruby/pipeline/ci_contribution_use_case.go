@@ -88,7 +88,7 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	_, rubyErr := probe(workspaceRoot, []string{"ruby", "--version"})
 	_, bundleErr := probe(workspaceRoot, []string{"bundle", "--version"})
 	return protocol.DoctorResult{Findings: []protocol.Finding{
-		{Check: "Ruby is installed", OK: rubyErr == nil, Detail: "ruby is not on PATH", Remedy: "install Ruby " + Version(workspaceRoot) + " (https://www.ruby-lang.org)"},
-		{Check: "Bundler is installed", OK: bundleErr == nil, Detail: "bundle is not on PATH", Remedy: "gem install bundler"},
+		{Check: "Ruby is installed", Area: "toolchain", OK: rubyErr == nil, Problem: toolrun.ProblemUnless(rubyErr == nil, "ruby is not on PATH"), Detail: "ruby is not on PATH", Remedy: "install Ruby " + Version(workspaceRoot) + " (https://www.ruby-lang.org)"},
+		{Check: "Bundler is installed", Area: "toolchain", OK: bundleErr == nil, Problem: toolrun.ProblemUnless(bundleErr == nil, "bundle is not on PATH"), Detail: "bundle is not on PATH", Remedy: "gem install bundler"},
 	}}
 }

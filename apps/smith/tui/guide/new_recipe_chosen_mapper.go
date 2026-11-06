@@ -1,11 +1,12 @@
 package guide
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/recipewizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // recipeChosen is the value of the answer that leaves a level to the people
@@ -30,8 +31,8 @@ func recipeChosenKey(levelKey, part string) string {
 // the recipe does not fix it, the people who use the recipe choose.
 func recipeChosenOption(level string) Option {
 	return Option{
-		Label: "Chosen by the people who use it", Value: recipeChosen,
-		Hint: "smith asks them a question for the " + level + " when they make a project; each answer gives a plugin. You write the question and the answers next",
+		Label: words.Say("guide.new_recipe_chosen.chosen_by_the_people_who_use"), Value: recipeChosen,
+		Hint: words.Say("guide.new_recipe_chosen.chosen_hint", "level", level),
 	}
 }
 
@@ -48,10 +49,10 @@ func recipeChosenSteps(levelKey, level string, plugins []recipewizard.PluginOffe
 	}
 	picks := Step{
 		Key: recipeChosenKey(levelKey, chosenPlugins), Multi: true, Skip: skip,
-		Prompt: fmt.Sprintf("Which %s plugins can the users end up with? Space ticks one, enter confirms (two at least).", level),
+		Prompt: words.Say("guide.new_recipe_chosen.which_plugins", "level", level),
 		Check: func(_ map[string][]string, v string) string {
 			if len(strings.Split(v, ",")) < 2 {
-				return "tick at least two plugins: a choice with one answer is a fixed plugin"
+				return words.Say("guide.new_recipe_chosen.tick_at_least_two_plugins_a")
 			}
 			return ""
 		},
@@ -62,12 +63,14 @@ func recipeChosenSteps(levelKey, level string, plugins []recipewizard.PluginOffe
 	return []Step{
 		{
 			Key: recipeChosenKey(levelKey, chosenQuestion), Skip: skip,
-			Prompt:  "What question do the users read for the " + level + "?",
-			Initial: func(map[string][]string) string { return "Which " + level + " do you want?" },
-			Note:    "They see it when they make a project from the recipe. Do not use a colon.",
+			Prompt: words.Say("guide.new_recipe_chosen.what_question", "level", level),
+			Initial: func(map[string][]string) string {
+				return words.Say("guide.new_recipe_chosen.which_do_you_want", "level", level)
+			},
+			Note: words.Say("guide.new_recipe_chosen.they_see_it_when_they_make"),
 			Check: func(_ map[string][]string, v string) string {
 				if strings.ContainsAny(v, ":\n") {
-					return "write the question without a colon"
+					return words.Say("guide.new_recipe_chosen.write_the_question_without_a_colon")
 				}
 				return ""
 			},
@@ -75,22 +78,22 @@ func recipeChosenSteps(levelKey, level string, plugins []recipewizard.PluginOffe
 		picks,
 		{
 			Key: recipeChosenKey(levelKey, chosenAnswers), Skip: skip,
-			Prompt: "Name each answer, separated by commas, in the order of the plugins you ticked.",
-			Note:   "The answer is what the user reads; the plugin behind it is what the project gets. Enter keeps the plugin names.",
+			Prompt: words.Say("guide.new_recipe_chosen.name_each_answer_separated_by_commas"),
+			Note:   words.Say("guide.new_recipe_chosen.the_answer_is_what_the_user"),
 			Initial: func(a map[string][]string) string {
 				return strings.Join(a[recipeChosenKey(levelKey, chosenPlugins)], ", ")
 			},
 			Check: func(a map[string][]string, v string) string {
 				answers := splitAnswers(v)
 				if want := len(a[recipeChosenKey(levelKey, chosenPlugins)]); len(answers) != want {
-					return fmt.Sprintf("name %d answers, one for each plugin you ticked (you named %d)", want, len(answers))
+					return words.Say("guide.new_recipe_chosen.name_answers", "want", want, "named", len(answers))
 				}
 				for i, answer := range answers {
 					if strings.ContainsAny(answer, ":=+") || answer == "" {
-						return "an answer is a word or two, without : = or +"
+						return words.Say("guide.new_recipe_chosen.an_answer_is_a_word_or")
 					}
 					if slices.Contains(answers[:i], answer) {
-						return fmt.Sprintf("two answers are named %q: each needs its own name", answer)
+						return words.Say("guide.new_recipe_chosen.two_answers", "answer", strconv.Quote(answer))
 					}
 				}
 				with := make(map[string][]string, len(a)+1)
@@ -125,10 +128,10 @@ func recipeAdditiveSteps(fixed Step, level recipewizard.LevelOffer, plugins []re
 		return (skipLevel != nil && skipLevel(a)) || first(a, modeKey) != recipeChosen
 	}
 	mode := Step{
-		Key: modeKey, Skip: skipLevel, Prompt: "Who decides the " + level.Level + "?",
+		Key: modeKey, Skip: skipLevel, Prompt: words.Say("guide.new_recipe_chosen.who_decides", "level", level.Level),
 		Options: []Option{
-			{Label: "Fixed by the recipe (default)", Value: "fixed", Hint: "you tick the plugins; every project made from the recipe gets them"},
-			{Label: "Chosen by the people who use it", Value: recipeChosen, Hint: "they answer a question; each answer gives one plugin or several"},
+			{Label: words.Say("guide.new_recipe_chosen.fixed_by_the_recipe_default"), Value: "fixed", Hint: words.Say("guide.new_recipe_chosen.you_tick_the_plugins_every_project")},
+			{Label: words.Say("guide.new_recipe_chosen.chosen_by_the_people_who_use"), Value: recipeChosen, Hint: words.Say("guide.new_recipe_chosen.they_answer_a_question_each_answer")},
 		},
 	}
 	fixed.Skip = func(a map[string][]string) bool {
@@ -142,20 +145,22 @@ func recipeAdditiveSteps(fixed Step, level recipewizard.LevelOffer, plugins []re
 	}
 	question := Step{
 		Key: recipeChosenKey(levelKey, chosenQuestion), Skip: notChosen,
-		Prompt:  "What question do the users read for the " + level.Level + "?",
-		Initial: func(map[string][]string) string { return "Which " + level.Level + " do you want?" },
-		Note:    "They see it when they make a project from the recipe. Do not use a colon.",
+		Prompt: words.Say("guide.new_recipe_chosen.what_question", "level", level.Level),
+		Initial: func(map[string][]string) string {
+			return words.Say("guide.new_recipe_chosen.which_do_you_want", "level", level.Level)
+		},
+		Note: words.Say("guide.new_recipe_chosen.they_see_it_when_they_make"),
 		Check: func(_ map[string][]string, v string) string {
 			if strings.ContainsAny(v, ":\n") {
-				return "write the question without a colon"
+				return words.Say("guide.new_recipe_chosen.write_the_question_without_a_colon")
 			}
 			return ""
 		},
 	}
 	groups := Step{
 		Key: recipeChosenKey(levelKey, chosenGroups), Skip: notChosen,
-		Prompt: "Name the answers, each with its plugins: answer=plugin, answer=plugin+plugin",
-		Note:   "Each plugin starts as an answer of its own. Edit the names, or join plugins that go together with +. Plugins: " + strings.Join(names, ", "),
+		Prompt: words.Say("guide.new_recipe_chosen.name_the_answers_each_with_its"),
+		Note:   words.Say("guide.new_recipe_chosen.each_plugin", "names", strings.Join(names, ", ")),
 		Initial: func(map[string][]string) string {
 			return strings.Join(initial, ", ")
 		},
@@ -184,24 +189,24 @@ func parseGroups(text string, offered []string) (pairs []string, problem string)
 		answer, plugs, ok := strings.Cut(strings.TrimSpace(part), "=")
 		answer, plugs = strings.TrimSpace(answer), strings.TrimSpace(plugs)
 		if !ok || answer == "" || plugs == "" || strings.ContainsAny(answer, ":+") {
-			return nil, "write each answer as answer=plugin, or answer=plugin+plugin"
+			return nil, words.Say("guide.new_recipe_chosen.write_each_answer_as_answer_plugin")
 		}
 		if seen[answer] {
-			return nil, fmt.Sprintf("two answers are named %q: each needs its own name", answer)
+			return nil, words.Say("guide.new_recipe_chosen.two_answers", "answer", strconv.Quote(answer))
 		}
 		seen[answer] = true
 		var clean []string
 		for _, p := range strings.Split(plugs, "+") {
 			p = strings.TrimSpace(p)
 			if !slices.Contains(offered, p) {
-				return nil, fmt.Sprintf("%q is not a plugin of this level (%s)", p, strings.Join(offered, ", "))
+				return nil, words.Say("guide.new_recipe_chosen.not_a_plugin", "plugin", strconv.Quote(p), "offered", strings.Join(offered, ", "))
 			}
 			clean = append(clean, p)
 		}
 		pairs = append(pairs, answer+"="+strings.Join(clean, "+"))
 	}
 	if len(pairs) < 2 {
-		return nil, "name at least two answers: a choice with one answer is a fixed plugin"
+		return nil, words.Say("guide.new_recipe_chosen.name_at_least_two_answers_a")
 	}
 	return pairs, ""
 }

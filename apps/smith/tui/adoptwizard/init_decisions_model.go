@@ -4,6 +4,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/adoptdecision"
 	"github.com/monosmith-app/monosmith/apps/smith/doctorfix"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/fixwizard"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
 )
 
@@ -36,9 +37,9 @@ func (m Model) askInit() Model {
 		}
 		qs = append(qs, c)
 	}
-	desc := "smith will write smith.toml and the pipelines. These choices change files of yours, so smith asks. The first answer of each changes the least; the next screen shows every file with a diff before anything is written."
+	desc := words.Say("adopt.init.desc")
 	style := adoptStyle
-	style.Back, style.Ask = true, "how smith sets up the repository"
+	style.Back, style.Ask = true, words.Say("adopt.init.ask")
 	m.fw = fixwizard.New(doctorfix.Planned{Fix: protocol.Fix{Description: desc, Choices: qs}}, nil).Styled(style).Place(m.sw, m.sh)
 	return m
 }

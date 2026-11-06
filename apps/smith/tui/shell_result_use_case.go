@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/toast"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // maxRunLines bounds the output kept for the result dialog.
@@ -22,7 +23,7 @@ func (s *Shell) keepLines(lines []string) {
 }
 
 // notCommittedMark is how a finished change says its files are not committed.
-const notCommittedMark = "Not committed."
+func notCommittedMark() string { return words.Say("tui.result.not_committed") }
 
 // afterRun opens the result dialog for a run that just ended: a failed add that
 // left its project on disk because a tool is missing, or a change that was not
@@ -39,7 +40,7 @@ func (s *Shell) afterRun() {
 		}
 		return
 	}
-	if slices.ContainsFunc(s.runLines, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), notCommittedMark) }) {
+	if slices.ContainsFunc(s.runLines, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), notCommittedMark()) }) {
 		m := resultdialog.NewAfterChange(argv, s.runLines).Place(s.w, s.h)
 		s.result = &m
 	}

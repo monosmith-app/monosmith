@@ -82,7 +82,7 @@ func TestAFixWithQuestionsAsksThemInOrderThenReviewsTheResolvedFix(t *testing.T)
 		t.Fatalf("after the last answer: phase %v, outcome %+v", w.Phase(), out)
 	}
 	got := text(w)
-	for _, want := range []string{"Fix · review", "package.json", "+pnpm", "pnpm install", "echo now", "[ Apply  Enter ]", "[ Back  b ]"} {
+	for _, want := range []string{"Fix · review", "package.json", "+pnpm", "pnpm install", "echo now", "Apply (enter)", "Back (b)"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("review lacks %q:\n%s", want, got)
 		}
@@ -136,7 +136,7 @@ func TestAFixWithoutQuestionsStartsOnTheReviewAndNeedsOneConfirmation(t *testing
 	if w.Phase() != Reviewing {
 		t.Fatalf("phase %v, want Reviewing", w.Phase())
 	}
-	if got := text(w); !strings.Contains(got, ".gitignore") || strings.Contains(got, "[ Back") {
+	if got := text(w); !strings.Contains(got, ".gitignore") || strings.Contains(got, " Back (") {
 		t.Fatalf("review:\n%s", got)
 	}
 	w, out := press(t, w, "enter")
@@ -149,7 +149,7 @@ func TestApplyingShowsTheStepAndOnlyCtrlCStopsIt(t *testing.T) {
 	w := New(question(), show).Place(100, 30)
 	w, _ = press(t, w, "1", "1", "enter")
 	w = w.Progress(2, 2, "echo now")
-	if got := text(w); !strings.Contains(got, "step 2 of 2: echo now") || !strings.Contains(got, "[ Stop  Ctrl+C ]") {
+	if got := text(w); !strings.Contains(got, "step 2 of 2: echo now") || !strings.Contains(got, "Stop (ctrl+c)") {
 		t.Fatalf("applying:\n%s", got)
 	}
 	if w2, out := press(t, w, "enter", "q", "x"); out != (Outcome{}) || w2.Phase() != Applying {
@@ -165,7 +165,7 @@ func TestAStepErrorShowsTheStepAndItsOutputAndOffersRetryAndClose(t *testing.T) 
 	w, _ = press(t, w, "enter")
 	w = w.Fail(&doctorfix.StepError{Number: 2, Total: 3, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("exited with code 1"), Output: "npm ERR! 404 not found\nnpm ERR! left-pad"})
 	got := text(w)
-	for _, want := range []string{"Fix failed", "Step 2 of 3 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "[ Retry  r ]", "[ Copy output  y ]", "[ Close  Esc ]"} {
+	for _, want := range []string{"Fix failed", "Step 2 of 3 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Copy output (y)", "Close (esc)"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("failure lacks %q:\n%s", want, got)
 		}
@@ -285,7 +285,7 @@ func TestAStyledReviewCanDeclineSkipAndGoBackToTheStageBefore(t *testing.T) {
 	st := Style{Name: "Adopt", Apply: "Yes, delete", Decline: "No, keep", Skip: "Skip rest", Back: true}
 	w := New(safe(), show).Styled(st).Place(100, 30)
 	got := text(w)
-	for _, want := range []string{"Adopt · review", "[ Yes, delete  Enter ]", "[ No, keep  n ]", "[ Skip rest  s ]", "[ Back  b ]", "[ Cancel  Esc ]"} {
+	for _, want := range []string{"Adopt · review", "Yes, delete (enter)", "No, keep (n)", "Skip rest (s)", "Back (b)", "Cancel (esc)"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q:\n%s", want, got)
 		}
@@ -319,7 +319,7 @@ func TestAStartedStepShowsItsHeadlineAndAFailureWithoutRetryOffersOnlyClose(t *t
 	}
 	w = w.Fail(errors.New("boom"))
 	got := text(w)
-	if strings.Contains(got, "Retry") || !strings.Contains(got, "Adopt failed") || !strings.Contains(got, "[ Close  Esc ]") {
+	if strings.Contains(got, "Retry") || !strings.Contains(got, "Adopt failed") || !strings.Contains(got, "Close (esc)") {
 		t.Fatalf("failure:\n%s", got)
 	}
 	if _, out := w.Key("r"); out.Apply {

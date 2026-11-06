@@ -1,0 +1,4 @@
+{
+  "userprefs.invalid": "{path} is not valid JSON: {reason}",
+  "userprefs.nohome": "there is no smith home to keep preferences in; set SMITH_HOME"
+}

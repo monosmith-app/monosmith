@@ -32,7 +32,7 @@ func CheckOneVersionPolicy(s *session.Session) []protocol.Finding {
 		}
 		var declared protocol.DeclaredResult
 		if err := c.Call(protocol.MethodDeclared, protocol.DeclaredParams{Projects: projects}, &declared, timeout); err != nil {
-			return []protocol.Finding{{Check: "plugin " + name + " lists its declared dependencies", Detail: err.Error(), Remedy: "report this to the plugin's maintainers"}}
+			return []protocol.Finding{{Check: "plugin " + name + " lists its declared dependencies", Area: "dependencies", Problem: "plugin " + name + " cannot list its declared dependencies: " + err.Error(), Detail: err.Error(), Remedy: "report this to the plugin's maintainers"}}
 		}
 		for _, d := range FindFragmentation(name, declared, local, allow) {
 			fragmented = append(fragmented, describe(d))
@@ -43,15 +43,17 @@ func CheckOneVersionPolicy(s *session.Session) []protocol.Finding {
 	}
 	return []protocol.Finding{
 		{
-			Check: CheckOneVersion, OK: len(fragmented) == 0,
-			Detail: strings.Join(fragmented, "; "),
-			Remedy: "`smith deps up --align` brings each to one version; a dependency that may differ is listed in smith.toml [dependencies] allow = [...]",
-			Fix:    alignFix(len(fragmented) > 0),
+			Check: CheckOneVersion, OK: len(fragmented) == 0, Area: "dependencies",
+			Problem: problemIf(len(fragmented) > 0, fmt.Sprintf("%d dependencies are declared at more than one version", len(fragmented))),
+			Detail:  strings.Join(fragmented, "; "),
+			Remedy:  "`smith deps up --align` brings each to one version; a dependency that may differ is listed in smith.toml [dependencies] allow = [...]",
+			Fix:     alignFix(len(fragmented) > 0),
 		},
 		{
-			Check: CheckDevAtRoot, OK: len(misplaced) == 0, Warning: true,
-			Detail: strings.Join(misplaced, "; "),
-			Remedy: "declare the dev tool once, in the root manifest, and remove it from the projects (`smith uninstall -p <project> <package>`)",
+			Check: CheckDevAtRoot, OK: len(misplaced) == 0, Warning: true, Area: "dependencies",
+			Problem: problemIf(len(misplaced) > 0, fmt.Sprintf("%d dev tools are declared in projects, not at the root", len(misplaced))),
+			Detail:  strings.Join(misplaced, "; "),
+			Remedy:  "declare the dev tool once, in the root manifest, and remove it from the projects (`smith uninstall -p <project> <package>`)",
 		},
 	}
 }
@@ -64,4 +66,12 @@ func describe(d Drift) string {
 		parts = append(parts, fmt.Sprintf("%s %s", where(s), s.Spec))
 	}
 	return fmt.Sprintf("%s (%s) should be %s everywhere, but is %s", d.Name, d.Plugin, d.Target, strings.Join(parts, ", "))
+}
+
+// problemIf is the Problem of a finding: text when the check failed, else "".
+func problemIf(failed bool, text string) string {
+	if !failed {
+		return ""
+	}
+	return text
 }

@@ -24,11 +24,18 @@ func tauriSidecarChecks(s *session.Session) []protocol.Finding {
 			if sc.Project == "" {
 				continue
 			}
-			f := protocol.Finding{Check: "the sidecar " + sc.Name + " of " + p.Name + " is a project that exists", OK: true}
+			f := protocol.Finding{Check: "the sidecar " + sc.Name + " of " + p.Name + " is a project that exists", OK: true, Project: p.Name}
+			why := ""
 			if sidecar := s.Graph.Get(sc.Project); sidecar == nil {
-				f.OK, f.Detail, f.Remedy = false, "the workspace has no project "+sc.Project, "name one of `smith projects` in [projects."+p.Name+".settings.tauri] sidecars"
+				f.OK, why = false, "the workspace has no project "+sc.Project
+				f.Detail, f.Remedy = why, "name one of `smith projects` in [projects."+p.Name+".settings.tauri] sidecars"
 			} else if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(sidecar.Root), "Cargo.toml")); err != nil {
-				f.OK, f.Detail, f.Remedy = false, sc.Project+" is not a Rust project (no Cargo.toml in "+sidecar.Root+"); smith builds only Rust programs as sidecars", "build the program another way and give its file as from"
+				f.OK = false
+				why = sc.Project + " is not a Rust project (no Cargo.toml in " + sidecar.Root + ")"
+				f.Detail, f.Remedy = why+"; smith builds only Rust programs as sidecars", "build the program another way and give its file as from"
+			}
+			if !f.OK {
+				f.Problem = "names the sidecar " + sc.Name + ", but " + why
 			}
 			out = append(out, f)
 		}

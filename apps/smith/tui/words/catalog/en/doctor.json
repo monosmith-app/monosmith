@@ -1,0 +1,23 @@
+{
+  "doctor.headline.failed": "{icon} {count} failed",
+  "doctor.headline.warnings": "{icon} {count} warning(s)",
+  "doctor.headline.passed": "{icon} Every check passed",
+  "doctor.waiting": "Running the health checks on {projects}…",
+  "doctor.passed.line": "{count} checks passed",
+  "doctor.passed.hint": "enter or p shows them",
+  "doctor.remedy.prefix": "→ ",
+  "doctor.fix.prefix": "fix: ",
+  "doctor.fix.safe.hint": " (safe: f shows what changes, then applies it)",
+  "doctor.fix.asks.hint": " (f asks, shows what changes, then applies it)",
+  "doctor.fix.suggestion": "f, Enter takes the suggestion: {suggestion}",
+  "doctor.file.writes": "writes {path}",
+  "doctor.file.removes": "removes {path}",
+  "doctor.group.workspace": "workspace",
+  "doctor.group.failed": "{count} failed",
+  "doctor.group.warnings": "{count} warning(s)",
+  "doctor.group.passed": "all passed",
+  "doctor.toggle.collapse": "collapse all (E)",
+  "doctor.toggle.expand": "expand all (E)",
+  "doctor.fix.one": "Fix",
+  "doctor.fix.all": "Fix all {count} projects"
+}

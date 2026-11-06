@@ -112,8 +112,9 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	out, err := probe(workspaceRoot, []string{"dotnet", "--version"})
 	findings := []protocol.Finding{{
-		Check: "the .NET SDK is installed", OK: err == nil,
-		Detail: "dotnet is not on PATH", Remedy: "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net)",
+		Check: "the .NET SDK is installed", Area: "toolchain", OK: err == nil,
+		Problem: toolrun.ProblemUnless(err == nil, "dotnet is not on PATH"),
+		Detail:  "dotnet is not on PATH", Remedy: "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net)",
 	}}
 	if f, ok := toolrun.CIPinFinding(".NET SDK", strings.TrimSpace(out), Version(workspaceRoot)); ok && err == nil {
 		f.Remedy = "install the .NET SDK " + Version(workspaceRoot) + " (https://dot.net), or pin the SDK in global.json and run `smith ci generate` to move CI and the dev container"

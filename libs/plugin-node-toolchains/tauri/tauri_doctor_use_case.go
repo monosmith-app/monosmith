@@ -12,6 +12,7 @@ import (
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/versionsync"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 // lookPath, platform and pkgConfigHas are replaced by tests.
@@ -60,17 +61,21 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 	}
 	findings = append(findings,
 		protocol.Finding{
-			Check:  "Rust (cargo) is installed",
-			OK:     rustc == nil && cargo == nil,
-			Detail: "rustc or cargo is not on PATH, so tauri-build cannot compile src-tauri",
-			Remedy: "install Rust from https://rustup.rs",
+			Check:   "Rust (cargo) is installed",
+			Area:    "toolchain",
+			OK:      rustc == nil && cargo == nil,
+			Problem: toolrun.ProblemUnless(rustc == nil && cargo == nil, "rustc or cargo is not on PATH"),
+			Detail:  "rustc or cargo is not on PATH, so tauri-build cannot compile src-tauri",
+			Remedy:  "install Rust from https://rustup.rs",
 		},
 		protocol.Finding{
-			Check:  "the tauri CLI is installed",
-			OK:     cli,
-			Detail: "node_modules has no @tauri-apps/cli",
-			Remedy: "smith install -D @tauri-apps/cli in the project, then npm ci",
-			Fix:    cliFix,
+			Check:   "the tauri CLI is installed",
+			Area:    "toolchain",
+			OK:      cli,
+			Problem: toolrun.ProblemUnless(cli, "node_modules has no @tauri-apps/cli"),
+			Detail:  "node_modules has no @tauri-apps/cli",
+			Remedy:  "smith install -D @tauri-apps/cli in the project, then npm ci",
+			Fix:     cliFix,
 		})
 	if platform == "linux" {
 		missing := linuxLibs
@@ -83,10 +88,12 @@ func Doctor(workspaceRoot string, params protocol.DoctorParams) protocol.DoctorR
 			}
 		}
 		findings = append(findings, protocol.Finding{
-			Check:  "the system libraries Tauri needs on Linux",
-			OK:     len(missing) == 0,
-			Detail: "pkg-config does not find " + strings.Join(missing, ", "),
-			Remedy: "sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev",
+			Check:   "the system libraries Tauri needs on Linux",
+			Area:    "toolchain",
+			OK:      len(missing) == 0,
+			Problem: toolrun.ProblemUnless(len(missing) == 0, "pkg-config does not find "+strings.Join(missing, ", ")),
+			Detail:  "pkg-config does not find " + strings.Join(missing, ", "),
+			Remedy:  "sudo apt-get install -y pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev",
 		})
 	}
 	return protocol.DoctorResult{Findings: findings}

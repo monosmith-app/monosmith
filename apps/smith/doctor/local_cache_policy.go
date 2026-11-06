@@ -19,16 +19,18 @@ func localCacheFindings(s cachemaintenance.Status) []protocol.Finding {
 	}
 	var out []protocol.Finding
 	out = append(out, protocol.Finding{
-		Check: "the local cache is within its limit", OK: !s.OverLimit(), Warning: true,
-		Detail: fmt.Sprintf("the cache at %s is %s, over [cache] max_size_mb (%s)", s.Dir, size(s.Bytes), size(s.LimitBytes)),
-		Remedy: "run `smith cache prune` to trim it now; smith also trims it after runs that stored results",
-		Fix:    cacheFix(!s.OverLimit(), "Trim the local cache to its limit", "cache", "prune"),
+		Check: "the local cache is within its limit", OK: !s.OverLimit(), Warning: true, Area: AreaConfig,
+		Problem: problemWhen(s.OverLimit(), fmt.Sprintf("the local cache is %s, over its limit of %s", size(s.Bytes), size(s.LimitBytes))),
+		Detail:  fmt.Sprintf("the cache at %s is %s, over [cache] max_size_mb (%s)", s.Dir, size(s.Bytes), size(s.LimitBytes)),
+		Remedy:  "run `smith cache prune` to trim it now; smith also trims it after runs that stored results",
+		Fix:     cacheFix(!s.OverLimit(), "Trim the local cache to its limit", "cache", "prune"),
 	})
 	out = append(out, protocol.Finding{
-		Check: "the local cache has no unusable entries", OK: s.BrokenEntries == 0, Warning: true,
-		Detail: fmt.Sprintf("%d cache entries are unreadable or name a blob that is gone, so they can never be a hit", s.BrokenEntries),
-		Remedy: "run `smith cache verify --fix` to remove them",
-		Fix:    cacheFix(s.BrokenEntries == 0, "Remove the unusable cache entries", "cache", "verify", "--fix"),
+		Check: "the local cache has no unusable entries", OK: s.BrokenEntries == 0, Warning: true, Area: AreaConfig,
+		Problem: problemWhen(s.BrokenEntries > 0, fmt.Sprintf("%d local cache entries are unusable", s.BrokenEntries)),
+		Detail:  fmt.Sprintf("%d cache entries are unreadable or name a blob that is gone, so they can never be a hit", s.BrokenEntries),
+		Remedy:  "run `smith cache verify --fix` to remove them",
+		Fix:     cacheFix(s.BrokenEntries == 0, "Remove the unusable cache entries", "cache", "verify", "--fix"),
 	})
 	return out
 }

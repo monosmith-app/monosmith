@@ -42,7 +42,7 @@ func checkLockfilePlatformDeps(root string) []protocol.Finding {
 	if err != nil {
 		return nil
 	}
-	f := protocol.Finding{Check: lockfilePlatformCheck, OK: len(missing) == 0, Warning: true}
+	f := protocol.Finding{Check: lockfilePlatformCheck, OK: len(missing) == 0, Warning: true, Area: AreaDependencies}
 	if f.OK {
 		return []protocol.Finding{f}
 	}
@@ -50,6 +50,7 @@ func checkLockfilePlatformDeps(root string) []protocol.Finding {
 	if len(shown) > 5 {
 		shown = shown[:5]
 	}
+	f.Problem = fmt.Sprintf("package-lock.json lacks %d package(s) that other platforms need", len(missing))
 	f.Detail = fmt.Sprintf("npm ci on another OS (CI, Linux) fails: the lockfile lacks %d package(s) it depends on, such as %s. npm leaves out the optional packages of other platforms (such as the wasm fallbacks @emnapi/core and @emnapi/runtime) when the lockfile is made on one OS", len(missing), strings.Join(shown, ", "))
 	f.Remedy = platformRemedy(shown)
 	f.Fix = &protocol.Fix{

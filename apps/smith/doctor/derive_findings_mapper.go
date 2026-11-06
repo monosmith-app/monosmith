@@ -18,7 +18,7 @@ func deriveChecks(s *session.Session) []protocol.Finding {
 	}
 	plan, _, err := derive.BuildPlan(s)
 	if err != nil {
-		return []protocol.Finding{{Check: "derived files can be checked", Detail: err.Error(), Remedy: "fix the problem above, then run smith derive --check"}}
+		return []protocol.Finding{{Check: "derived files can be checked", Area: AreaConfig, Problem: "smith cannot work out the derived files: " + err.Error(), Detail: err.Error(), Remedy: "fix the problem above, then run smith derive --check"}}
 	}
 	return deriveFindings(plan)
 }
@@ -29,10 +29,12 @@ func deriveFindings(plan derive.Plan) []protocol.Finding {
 	var out []protocol.Finding
 	for _, i := range plan.Pending() {
 		f := protocol.Finding{
-			Check:  "derived file " + i.File.Path + " (" + i.File.Renderer + ") matches what smith derives",
-			Detail: fmt.Sprintf("%s: %s (owner: %s)", i.Status, i.Detail, i.Owner),
-			Remedy: "run smith derive",
-			Fix:    smithfix.Fix("Write the derived files that are out of date", smithfix.Step("Write every derived file that is out of date; the plan lists each", "derive")),
+			Area:    AreaConfig,
+			Check:   "derived file " + i.File.Path + " (" + i.File.Renderer + ") matches what smith derives",
+			Problem: fmt.Sprintf("derived file %s is %s", i.File.Path, i.Status),
+			Detail:  fmt.Sprintf("%s: %s (owner: %s)", i.Status, i.Detail, i.Owner),
+			Remedy:  "run smith derive",
+			Fix:     smithfix.Fix("Write the derived files that are out of date", smithfix.Step("Write every derived file that is out of date; the plan lists each", "derive")),
 		}
 		switch i.Status {
 		case derive.StatusDrift, derive.StatusDiverged:
@@ -45,12 +47,13 @@ func deriveFindings(plan derive.Plan) []protocol.Finding {
 		out = append(out, f)
 	}
 	if len(out) == 0 {
-		out = append(out, protocol.Finding{Check: "derived files are up to date", OK: true})
+		out = append(out, protocol.Finding{Check: "derived files are up to date", OK: true, Area: AreaConfig})
 	}
 	if n := len(plan.Diverging); n > 0 {
 		// A file that differs from its siblings is the project's own, so this
 		// passes: it tells, it does not ask for an action.
 		out = append(out, protocol.Finding{
+			Area:   AreaConfig,
 			Check:  "config files that differ from their sibling projects are yours",
 			Detail: fmt.Sprintf("%d files diverge from siblings (first: %s); smith leaves them alone", n, plan.Diverging[0].Path),
 			Remedy: "smith derive --explain <file> says how a file differs",

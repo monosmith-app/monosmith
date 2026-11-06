@@ -80,7 +80,7 @@ func TestBumpIsPickedPerPackageAndCyclesThroughTheLevels(t *testing.T) {
 	if got := press(m, "left").Argv(); !slices.Equal(got, []string{"release", "--bump", "web=minor"}) {
 		t.Fatalf("Left goes back: %v", got)
 	}
-	if text := screen(m);!strings.Contains(text, "1.0.0 → 2.0.0  bump: ‹ major ›") {
+	if text := screen(m); !strings.Contains(text, "1.0.0 → 2.0.0  bump: ‹ major ›") {
 		t.Fatalf("the row shows the version the bump gives:\n%s", text)
 	}
 }
@@ -125,7 +125,7 @@ func TestAShortScreenScrollsTheListAndKeepsTheCommandAndButtons(t *testing.T) {
 	}
 	m = press(m, "down", "down", "down", "down", "down", "down", "down", " ")
 	text := screen(m)
-	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "[ Continue  Enter ]", "packages shown"} {
+	for _, want := range []string{"[x] h", "The command that will run", "$ smith release --hold h", "Continue (enter)", "packages shown"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("lost %q:\n%s", want, text)
 		}

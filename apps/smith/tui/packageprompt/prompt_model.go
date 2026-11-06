@@ -2,16 +2,17 @@ package packageprompt
 
 import (
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/button"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/commands"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Prompt asks which project and which packages to install on, or remove from,
@@ -71,7 +72,7 @@ func NewRemove(project string, projects []string) Prompt { return newPrompt(proj
 func newPrompt(project string, projects []string, remove bool) Prompt {
 	in := textinput.New()
 	in.Prompt = "› "
-	in.Placeholder = "zod  react@19  @types/node"
+	in.Placeholder = ExampleNames("")
 	in.CharLimit = 200
 	in.Focus()
 	return Prompt{project: project, projects: append([]string(nil), projects...), remove: remove, input: in, hover: -1}
@@ -80,9 +81,9 @@ func newPrompt(project string, projects []string, remove bool) Prompt {
 // Title is the heading of the dialog.
 func (p Prompt) Title() string {
 	if p.remove {
-		return "Remove packages"
+		return words.Say("packageprompt.title.remove")
 	}
-	return "Install packages"
+	return words.Say("packageprompt.title.install")
 }
 
 // Project is the project the packages go to or come from.
@@ -212,18 +213,45 @@ func (p Prompt) Removes() bool { return p.remove }
 // Dev reports whether the packages go to the development dependencies.
 func (p Prompt) Dev() bool { return p.dev }
 
-const (
-	minWidth      = 46
-	buttonInstall = "[ Install  Enter ]"
-	buttonRemove  = "[ Remove  Enter ]"
-	buttonCancel  = "[ Cancel  Esc ]"
-)
+const minWidth = 46
+
+// buttonKeys are the keys that do what a click on the go and cancel buttons does.
+var buttonKeys = [2]string{"enter", "esc"} // words:literal
+
+// buttonCancel is the label of the button that closes the dialog.
+func buttonCancel() string { return words.Say("packageprompt.button.cancel") }
 
 func (p Prompt) goLabel() string {
 	if p.remove {
-		return buttonRemove
+		return words.Say("packageprompt.button.remove")
 	}
-	return buttonInstall
+	return words.Say("packageprompt.button.install")
+}
+
+// choiceRows are the rows that take focus after the project row, each with the
+// label its text starts with, so a row is found by what it says.
+func choiceRows() []struct {
+	prefix string
+	id     int
+} {
+	return []struct {
+		prefix string
+		id     int
+	}{
+		{words.Say("packageprompt.label.add"), focusSource},
+		{words.Say("packageprompt.label.library"), focusLibrary},
+		{words.Say("packageprompt.label.range"), focusRange},
+	}
+}
+
+// rowFocus is the focus id of the choice row that line l is, or -1.
+func rowFocus(l string) int {
+	for _, c := range choiceRows() {
+		if strings.HasPrefix(l, c.prefix) {
+			return c.id
+		}
+	}
+	return -1
 }
 
 // Place centres the dialog on a screen of sw by sh cells.
@@ -247,19 +275,19 @@ func (p Prompt) body(inner int) []string {
 	if p.linking() {
 		lines = append(lines, p.libraryLines(inner)...)
 	} else {
-		lines = append(lines, "Packages, separated by spaces:", " "+p.input.View(), "")
+		lines = append(lines, words.Say("packageprompt.packages.label"), " "+p.input.View(), "")
 		if !p.remove {
 			lines = append(lines, p.devLine(), "")
-			lines = append(lines, "Names come from the language's public registry, not from this workspace.", "If one is wrong, smith keeps nothing: fix the name and try again.", "")
+			lines = append(lines, words.Say("packageprompt.registry.names"), words.Say("packageprompt.registry.wrong"), "")
 		}
 	}
 	if p.err != "" {
 		lines = append(lines, p.err, "")
 	}
-	lines = append(lines, "The command that will run:")
-	command := "(type a package first)"
+	lines = append(lines, words.Say("packageprompt.command.label"))
+	command := words.Say("packageprompt.command.empty")
 	if p.linking() {
-		command = "(no library to link)"
+		command = words.Say("packageprompt.command.nolibrary")
 	}
 	if argv := p.Argv(); argv != nil {
 		command = commands.Line(argv)
@@ -272,30 +300,30 @@ func (p Prompt) body(inner int) []string {
 
 func (p Prompt) projectLine() string {
 	if p.choosable() {
-		return "Project: ‹ " + p.project + " ›  (Left and Right change it)"
+		return words.Say("packageprompt.project.choosable", "project", p.project)
 	}
-	return "Project: " + p.project
+	return words.Say("packageprompt.project.fixed", "project", p.project)
 }
 
 // sourceLine is the first question: what is being added.
 func (p Prompt) sourceLine() string {
-	answer := "A package from the registry (default)"
+	answer := words.Say("packageprompt.source.registry")
 	if p.fromWorkspace {
-		answer = "A library of this workspace"
+		answer = words.Say("packageprompt.source.workspace")
 	}
-	return "Add: ‹ " + answer + " ›  (Left, Right)"
+	return words.Say("packageprompt.source.line", "answer", answer)
 }
 
 // libraryLines are the library and range rows with what each choice means.
 func (p Prompt) libraryLines(inner int) []string {
 	lib, ok := p.library()
 	if !ok {
-		return append(wrap("No library of this workspace can be linked to "+p.project+": a library must be a lib or a package, in the same language, and must not already depend on "+p.project+".", inner), "")
+		return append(wrap(words.Say("packageprompt.library.none", "project", p.project), inner), "")
 	}
 	libs := p.valid()
-	line := "Library: ‹ " + lib.Name + " · " + lib.Kind + " · " + lib.Language + " ›"
+	line := words.Say("packageprompt.library.line", "name", lib.Name, "kind", lib.Kind, "language", lib.Language)
 	if len(libs) > 1 {
-		line += "  " + strconv.Itoa(min(p.libAt, len(libs)-1)+1) + "/" + strconv.Itoa(len(libs)) + " (Left, Right)"
+		line += words.Say("packageprompt.library.position", "at", min(p.libAt, len(libs)-1)+1, "total", len(libs))
 	}
 	lines := []string{line}
 	for _, l := range wrapWords(LibraryMeaning(p.project, lib), inner-2) {
@@ -304,7 +332,7 @@ func (p Prompt) libraryLines(inner int) []string {
 	lines = append(lines, "")
 	if choices := p.rangeChoices(); len(choices) > 0 {
 		current := p.rangeChoice()
-		lines = append(lines, "Range: ‹ "+current.Label+" ›  (Left, Right)")
+		lines = append(lines, words.Say("packageprompt.range.line", "choice", current.Label))
 		for _, l := range wrapWords(current.Meaning, inner-2) {
 			lines = append(lines, "  "+l)
 		}
@@ -318,7 +346,7 @@ func (p Prompt) devLine() string {
 	if p.dev {
 		box = "[x]"
 	}
-	return " " + box + " a development dependency (-D)"
+	return words.Say("packageprompt.dev.line", "box", box)
 }
 
 // rowOf finds the line of the body that starts with prefix, or -1.
@@ -345,15 +373,15 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			break
 		}
 		switch {
-		case strings.HasPrefix(l, "Project:"):
+		case strings.HasPrefix(l, words.Say("packageprompt.label.project")):
 			switch {
 			case p.focus == focusProject:
 				l = th.Selected(l)
 			case p.hover == focusProject:
 				l = th.Hover(l)
 			}
-		case strings.HasPrefix(l, "Add:"), strings.HasPrefix(l, "Library:"), strings.HasPrefix(l, "Range:"):
-			id := map[string]int{"Add:": focusSource, "Library:": focusLibrary, "Range:": focusRange}[l[:strings.Index(l, ":")+1]]
+		case rowFocus(l) >= 0:
+			id := rowFocus(l)
 			switch {
 			case p.focus == id:
 				l = th.Selected(l)
@@ -362,7 +390,7 @@ func (p Prompt) Lines(th theme.Theme) []string {
 			}
 		case p.err != "" && l == p.err:
 			l = th.Failure(l)
-		case strings.HasPrefix(strings.TrimLeft(l, " "), "[") && !p.remove && strings.Contains(l, "development"):
+		case !p.remove && l == p.devLine():
 			switch {
 			case p.focus == focusDev:
 				l = th.Selected(l)
@@ -375,18 +403,18 @@ func (p Prompt) Lines(th theme.Theme) []string {
 		rows = append(rows, row(l))
 	}
 	rows = append(rows, row(""))
-	line := strings.Repeat(" ", p.buttonsRow(inner)[0][0]-2)
-	for i, label := range []string{p.goLabel(), buttonCancel} {
-		text := th.Muted(label)
+	line := strings.Repeat(" ", p.buttonsIn(th, inner)[0][0]-2)
+	for i, label := range []string{p.goLabel(), buttonCancel()} {
+		state := button.Rest
 		switch id := focusInstall + i; {
-		case p.focus == id:
-			text = th.Selected(label)
 		case p.hover == id:
-			text = th.Hover(label)
+			state = button.Hover
+		case p.focus == id:
+			state = button.Active
 		}
-		line += text
+		line += button.Render(th, label, buttonKeys[i], state)
 		if i == 0 {
-			line += "  "
+			line += " "
 		}
 	}
 	rows = append(rows, row(line))
@@ -394,10 +422,13 @@ func (p Prompt) Lines(th theme.Theme) []string {
 }
 
 // buttonsRow is the span (from the dialog's left edge) of each button.
-func (p Prompt) buttonsRow(inner int) [2][2]int {
-	run, stop := ansi.StringWidth(p.goLabel()), ansi.StringWidth(buttonCancel)
-	start := 2 + max((inner-(run+2+stop))/2, 0)
-	return [2][2]int{{start, start + run}, {start + run + 2, start + run + 2 + stop}}
+func (p Prompt) buttonsRow(inner int) [2][2]int { return p.buttonsIn(theme.Default(), inner) }
+
+// buttonsIn is buttonsRow for the theme the dialog is drawn with.
+func (p Prompt) buttonsIn(th theme.Theme, inner int) [2][2]int {
+	run, stop := button.Width(th, p.goLabel(), buttonKeys[0]), button.Width(th, buttonCancel(), buttonKeys[1])
+	start := 2 + max((inner-(run+1+stop))/2, 0)
+	return [2][2]int{{start, start + run}, {start + run + 1, start + run + 1 + stop}}
 }
 
 // controlAt is the control at a cell: the development box, a button, or -1.
@@ -416,10 +447,7 @@ func (p Prompt) controlAt(x, y int) int {
 		return focusProject
 	}
 	inside := x > r.X && x < r.X+r.W-1
-	for _, c := range []struct {
-		prefix string
-		id     int
-	}{{"Add:", focusSource}, {"Library:", focusLibrary}, {"Range:", focusRange}} {
+	for _, c := range choiceRows() {
 		if row := p.rowOf(c.prefix, inner); row >= 0 && y-r.Y-1 == row && inside {
 			return c.id
 		}
@@ -577,7 +605,7 @@ func (p Prompt) cycle(id, dir int) Prompt {
 func (p Prompt) submit() (Prompt, dialog.Outcome) {
 	if p.linking() {
 		if _, ok := p.library(); !ok {
-			p.err = "There is no library to link: choose a package from the registry, or press Esc."
+			p.err = words.Say("packageprompt.error.nolibrary")
 			return p, dialog.Outcome{}
 		}
 		return p, dialog.Outcome{Done: true, Confirmed: true}

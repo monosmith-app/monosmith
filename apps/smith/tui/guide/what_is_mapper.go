@@ -5,17 +5,18 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
-// glossary holds the words the forms use before a person has read anything,
-// each in one sentence. They are the first sentences of docs/reference/glossary.md
+// glossary holds the catalog key of the words the forms use before a person has
+// read anything, each in one sentence. They are the first sentences of docs/reference/glossary.md
 // (a test keeps the terms there); the layers (framework, shell, host) come from
 // the composer's catalogue, so the two say the same.
 var glossary = map[string]string{
-	"stack":  "stack = the set of tools one project is built with: its language, tests, lint and build.",
-	"slice":  "A slice is a folder that holds one outcome of a program, with files named for the role they play. vertical-slices checks that layout.",
-	"plugin": "plugin = a program that teaches smith something: a language, a test runner, a layout rule, a deploy target.",
-	"recipe": "recipe = a file that says how every new project is made, so a team makes them all the same way.",
+	"stack":  "guide.what_is.stack",
+	"slice":  "guide.what_is.slice",
+	"plugin": "guide.what_is.plugin",
+	"recipe": "guide.what_is.recipe",
 }
 
 // WhatIs is the one line that says what a word of smith means, to show where
@@ -26,7 +27,7 @@ var glossary = map[string]string{
 // Returns: the sentence, or "" for a word that has none.
 func WhatIs(term string) string {
 	if line, ok := glossary[term]; ok {
-		return line
+		return words.Say(line)
 	}
 	if about := compose.AboutLayer(term); about != "" {
 		return term + " = " + about + "."

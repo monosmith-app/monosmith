@@ -8,7 +8,7 @@ import (
 func TestTheFooterOfHomeNamesWhatBuildAndBuildAllRunOn(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	footer := l.lines()[len(l.lines())-2]
-	for _, want := range []string{"b build orders", "B build all 3", "t test orders"} {
+	for _, want := range []string{"build orders (b)", "build all 3 (B)", "test orders (t)"} {
 		if !strings.Contains(footer, want) {
 			t.Fatalf("the footer lacks %q: %q", want, footer)
 		}
@@ -32,7 +32,7 @@ func TestOnHomeTheRunKeysCoverTheWholeWorkspaceAndSayWhichScope(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.openTab("home")
 	footer := l.lines()[len(l.lines())-2]
-	if !strings.Contains(footer, "b build all 3") || strings.Contains(footer, "build orders") {
+	if !strings.Contains(footer, "build all 3 (b)") || strings.Contains(footer, "build orders") {
 		t.Fatalf("the Home footer is %q", footer)
 	}
 	l.keys("b")

@@ -51,11 +51,11 @@ func TestFixWizardSaysWhatIsStillWrongWhenTheFixDidNotClearTheCheck(t *testing.T
 
 func TestFixWizardAsksTheQuestionsThenReviewsAndAppliesOffTheUIGoroutine(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.has("[ Fix  f ]", "install the dependencies", "asks: Which package manager?")
+	l.has("[Fix (f)]", "install the dependencies", "asks: Which package manager?")
 	l.keys("f")
 	l.has("Fix · question 1 of 1", "Which package manager?", "1) npm  (suggested)", "2) pnpm")
 	l.keys("down", "enter")
-	l.has("Fix · review", "$ pnpm install", "[ Apply  Enter ]")
+	l.has("Fix · review", "$ pnpm install", "Apply (enter)")
 	if len(l.appliedFixes()) != 0 {
 		t.Fatal("applied before the confirmation")
 	}
@@ -93,7 +93,7 @@ func TestFixWizardShowsProgressWhileAStepRunsAndCtrlCStopsIt(t *testing.T) {
 	}
 	run := l.sh().fixing
 	l.send(fixDoneMsg{run: run, err: &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("context canceled")}})
-	l.has("Fix failed", "Step 1 of 1 failed: npm install", "[ Retry  r ]")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "Retry (r)")
 	close(l.applyHold)
 }
 
@@ -104,7 +104,7 @@ func TestFixWizardShowsTheFailingStepsOutputAndRetryRunsTheFixAgain(t *testing.T
 	l.m = sh
 	l.applyErr = &doctorfix.StepError{Number: 1, Total: 1, Step: protocol.FixStep{Argv: []string{"npm", "install"}}, Err: errors.New("exited with code 1"), Output: "npm ERR! 404 not found"}
 	l.keys("f", "enter", "enter")
-	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "[ Retry  r ]", "[ Close  Esc ]")
+	l.has("Fix failed", "Step 1 of 1 failed: npm install", "exited with code 1", "npm ERR! 404 not found", "Retry (r)", "Close (esc)")
 	if len(l.appliedFixes()) != 1 {
 		t.Fatalf("applied %d times", len(l.appliedFixes()))
 	}
@@ -134,7 +134,7 @@ func TestFixWizardCancelsFromTheQuestionsAndTheReviewWithoutChangingAnything(t *
 func TestFixWizardFixAllReviewsTheSafeFixesOnceAndAppliesThemOnConfirm(t *testing.T) {
 	l := newLab(t, true, 140, 34)
 	l.keys("4", "F")
-	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "[ Apply  Enter ]")
+	l.has("Fix · review", "write web's registry", "apps/web/Dockerfile", "Apply (enter)")
 	if len(l.started) != 0 || len(l.appliedFixes()) != 0 {
 		t.Fatal("x applied before the review was confirmed")
 	}
@@ -168,11 +168,11 @@ func TestFixWizardIsInThePaletteAndRefusesWhenThereIsNothingToFix(t *testing.T) 
 
 func TestFixWizardWorksWithTheMouse(t *testing.T) {
 	l := withInstallFix(newLab(t, true, 140, 34))
-	l.clickText("[ Fix  f ]")
+	l.clickText("[Fix (f)]")
 	l.has("Which package manager?")
 	l.clickText("2) pnpm")
 	l.has("Fix · review", "$ pnpm install")
-	l.clickText("[ Apply")
+	l.clickText("Apply (enter)")
 	if got := l.appliedFixes(); len(got) != 1 || got[0].Steps[0].Argv[0] != "pnpm" {
 		t.Fatalf("applied %+v", got)
 	}
@@ -200,9 +200,9 @@ func TestAFindingWhoseRemedyIsASmithCommandIsFixedInPlaceAndDoctorChecksAgain(t 
 	l.m = sh
 	l.keys("4", "r")
 	first := loads
-	l.has("[ Fix  f ]", "Move the workspace to the latest defaults")
+	l.has("[Fix (f)]", "Move the workspace to the latest defaults")
 	l.keys("f")
-	l.has("Fix · review", "$ smith upgrade --defaults --yes", "[ Apply  Enter ]")
+	l.has("Fix · review", "$ smith upgrade --defaults --yes", "Apply (enter)")
 	if len(l.appliedFixes()) != 0 {
 		t.Fatal("applied before the person agreed")
 	}

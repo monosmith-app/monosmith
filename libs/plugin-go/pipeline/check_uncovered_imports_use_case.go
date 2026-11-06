@@ -54,6 +54,8 @@ func CheckUncoveredImports(workspaceRoot string, projects []protocol.Project) []
 		findings = append(findings, protocol.Finding{
 			Check:   p.Name + " imports only packages that a project holds",
 			Warning: true,
+			Project: p.Name,
+			Problem: "imports " + strings.Join(folders, ", ") + " of its module, which no project holds",
 			Detail:  p.Root + " imports " + strings.Join(folders, ", ") + " of its module, which no project holds: a change there does not rebuild it, because the folder is part of no cache key",
 			Remedy:  "declare each folder as a lib: [projects.<name>] with root = \"<folder>\", language = \"go\", kind = \"lib\"",
 		})

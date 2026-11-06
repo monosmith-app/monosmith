@@ -4,6 +4,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // SwapProject is a project of the workspace as the Swap form lists it: its
@@ -54,7 +56,7 @@ func SwapProjectAction(base Action, offers []ChoiceOffer, projects []SwapProject
 	}
 	offered := offerLanguages(offers)
 	languageOf := map[string]string{}
-	pick := Step{Key: "project", Prompt: "Which project?"}
+	pick := Step{Key: "project", Prompt: words.Say("guide.swap_form.which_project")}
 	for _, p := range projects {
 		if !slices.Contains(offered, p.Language) {
 			continue // no plugin offers a choice for its language
@@ -88,13 +90,13 @@ func swapLanguageSteps(lang string, offers []ChoiceOffer, languageOf map[string]
 	sort.Strings(axes)
 	axisKey := swapAxisPrefix + lang
 	steps := []Step{{
-		Key: axisKey, Prompt: "Which decision?",
+		Key: axisKey, Prompt: words.Say("guide.swap_form.which_decision"),
 		Skip: func(a map[string][]string) bool { return languageOf[first(a, "project")] != lang },
 	}}
 	for _, axis := range axes {
 		steps[0].Options = append(steps[0].Options, Option{Label: axis, Value: axis})
 		step := Step{
-			Key: swapChoicePrefix + lang + ":" + axis, Prompt: "Swap " + axis + " to which answer?",
+			Key: swapChoicePrefix + lang + ":" + axis, Prompt: words.Say("guide.swap_form.which_answer", "axis", axis),
 			Skip: func(a map[string][]string) bool {
 				return languageOf[first(a, "project")] != lang || first(a, axisKey) != axis
 			},
@@ -105,7 +107,7 @@ func swapLanguageSteps(lang string, offers []ChoiceOffer, languageOf map[string]
 			}
 			hint := o.Description
 			if o.Default {
-				hint += " (default)"
+				hint += words.Say("guide.swap_form.default")
 			}
 			step.Options = append(step.Options, Option{Label: o.Name, Value: o.Name, Hint: hint})
 		}

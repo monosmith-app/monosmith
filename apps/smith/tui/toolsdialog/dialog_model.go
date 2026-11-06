@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/toolinstall"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/dialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // phase is the step the dialog is on.
@@ -29,7 +30,9 @@ const maxOutput = 400
 const failedLines = 6
 
 // adminAnswers are the three answers of the administrator question, in order.
-var adminAnswers = []string{"I will run it myself", "Let smith run it", "Skip it"}
+func adminAnswers() []string {
+	return []string{words.Say("toolsdialog.answer.myself"), words.Say("toolsdialog.answer.smith"), words.Say("toolsdialog.answer.skip")}
+}
 
 // Model is the dialog. It holds the plans of the missing tools, asks about one
 // at a time, and keeps a result for each. It starts nothing: a key that decides
@@ -140,11 +143,11 @@ func (m Model) pickKey(name string) (Model, Outcome) {
 			}
 			return m.start(opt, false)
 		case toolinstall.OptionPage:
-			return m.record("Go to " + plan.Download + ", install " + plan.Title + ", then run smith tools in a new terminal."), Outcome{}
+			return m.record(words.Say("toolsdialog.result.page", "download", plan.Download, "title", plan.Title)), Outcome{}
 		case toolinstall.OptionMyself:
-			return m.record("Left to you. " + strings.TrimSpace(strings.ReplaceAll(toolinstall.RenderWays(plan), "\n", " "))), Outcome{}
+			return m.record(words.Say("toolsdialog.result.myself", "ways", strings.TrimSpace(strings.ReplaceAll(toolinstall.RenderWays(plan), "\n", " ")))), Outcome{}
 		default:
-			return m.record("Skipped. " + plan.Title + ": " + plan.Consequence + "."), Outcome{}
+			return m.record(words.Say("toolsdialog.result.skipped", "title", plan.Title, "consequence", plan.Consequence)), Outcome{}
 		}
 	}
 	return m.move(name, len(plan.Options)), Outcome{}
@@ -164,13 +167,13 @@ func (m Model) adminKey(name string) (Model, Outcome) {
 	case "enter":
 		switch m.cursor {
 		case 0:
-			return m.record("Left to you. Run this, then open a new terminal and run smith tools: " + command), Outcome{}
+			return m.record(words.Say("toolsdialog.result.admin.myself", "command", command)), Outcome{}
 		case 2:
-			return m.record("Skipped. " + plan.Title + ": " + plan.Consequence + "."), Outcome{}
+			return m.record(words.Say("toolsdialog.result.skipped", "title", plan.Title, "consequence", plan.Consequence)), Outcome{}
 		}
 		return m.start(m.opt, true)
 	}
-	return m.move(name, len(adminAnswers)), Outcome{}
+	return m.move(name, len(adminAnswers())), Outcome{}
 }
 
 // argv is the smith command that installs the tool with the option.
@@ -189,7 +192,7 @@ func (m Model) start(opt toolinstall.Option, withAdmin bool) (Model, Outcome) {
 	plan := m.current()
 	cmd := argv(plan, opt, withAdmin)
 	if len(opt.Command) > 0 && opt.Command[0] == "sudo" {
-		m = m.record("Handed over to the terminal: " + strings.Join(opt.Command, " "))
+		m = m.record(words.Say("toolsdialog.result.handover", "command", strings.Join(opt.Command, " ")))
 		return m, Outcome{Handover: cmd, Done: true}
 	}
 	m.ph, m.opt, m.out = phaseRun, opt, nil
@@ -239,11 +242,11 @@ func (m Model) Finished(code int, cancelled bool) Model {
 	r := Result{Name: plan.Name, Title: plan.Title}
 	switch {
 	case cancelled:
-		r.Line, r.Failed = "Stopped. Check with smith tools whether "+plan.Title+" is there.", true
+		r.Line, r.Failed = words.Say("toolsdialog.result.stopped", "title", plan.Title), true
 	case code == 0:
-		r.Line = "Installed."
+		r.Line = words.Say("toolsdialog.result.installed")
 	default:
-		r.Line, r.Failed = "Not found yet. The install may have failed, or "+plan.Title+" needs a new terminal (the PATH updates there). Then run smith tools. Official page: "+plan.Download, true
+		r.Line, r.Failed = words.Say("toolsdialog.result.notfound", "title", plan.Title, "download", plan.Download), true
 	}
 	if r.Failed {
 		r.Output = slices.Clone(m.out[max(len(m.out)-failedLines, 0):])

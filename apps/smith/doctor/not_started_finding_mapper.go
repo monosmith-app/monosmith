@@ -50,6 +50,8 @@ func notStartedChecks(s *session.Session) []protocol.Finding {
 	return []protocol.Finding{{
 		Check:   "the latest CI run on the default branch started its jobs",
 		Warning: true,
+		Area:    AreaCI,
+		Problem: "GitHub did not start the jobs of the latest CI run: " + message,
 		Detail:  "GitHub did not start a job, so the run has no logs. GitHub says: " + message,
 		Remedy:  "open the GitHub billing page of the account that owns " + repo.String() + ", check the payment method and the spending limit, then run the failed jobs again",
 	}}

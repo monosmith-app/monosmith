@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/libs/actions/flagvocabulary"
 	"strings"
 )
@@ -27,13 +28,13 @@ func uninstallDetails(argv []string) []string {
 	if len(packages) == 0 || len(targets) == 0 {
 		return nil
 	}
-	lines := []string{"Removes " + strings.Join(packages, ", ") + " from the dependencies, or the development dependencies, of:"}
+	lines := []string{words.Say("tui.uninstall_details.removes_from_the_dependencies_or_the", "list", strings.Join(packages, ", "))}
 	for _, t := range targets {
 		if t == "." {
-			lines = append(lines, "  the workspace root (package.json at the top)")
+			lines = append(lines, words.Say("tui.uninstall_details.the_workspace_root_package_json_at"))
 			continue
 		}
 		lines = append(lines, "  "+t)
 	}
-	return append(lines, "The lock file changes with it. Nothing is committed unless you tick the box.")
+	return append(lines, words.Say("tui.uninstall_details.the_lock_file_changes_with_it"))
 }

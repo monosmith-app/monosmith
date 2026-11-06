@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/resultdialog"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // runsOutside reports whether a command line runs inside the shell before a
@@ -20,7 +21,7 @@ func runsOutside(argv []string) bool {
 // the dialog that shows its output, because no Run tab exists yet.
 func (s *Shell) startOutside(argv []string) tea.Cmd {
 	if s.running() {
-		s.say("A run is in progress (Ctrl+C stops it)")
+		s.say(words.Say("tui.outside.a_run_is_in_progress_ctrl"))
 		return nil
 	}
 	cmd := s.start(argv)
@@ -68,7 +69,7 @@ func (s *Shell) outsideOutcome(out resultdialog.Outcome) (cmd tea.Cmd, handled b
 	case out.Enter != "":
 		s.result, s.resultKept = nil, nil
 		s.reopen, s.reopenDir, s.quit = true, out.Enter, true
-		s.reopenNote = "Workspace ready. " + s.outsideHint()
+		s.reopenNote = words.Say("tui.outside.workspace_ready", "outsideHint", s.outsideHint())
 		return nil, true
 	case out.Done:
 		failed := s.run.Finished && !s.run.OK()
@@ -87,7 +88,7 @@ func (s *Shell) outsideOutcome(out resultdialog.Outcome) (cmd tea.Cmd, handled b
 func (s *Shell) outsideHint() string {
 	switch {
 	case s.run.Command[0] == "new":
-		return "The first commit is made."
+		return words.Say("tui.outside.the_first_commit_is_made")
 	case slices.Contains(s.run.Command, "--commit"):
 		return undoHint()
 	}
@@ -99,8 +100,8 @@ func (s *Shell) outsideHint() string {
 func (s *Shell) failureLine() string {
 	for i := len(s.runLines) - 1; i >= 0; i-- {
 		if l := strings.TrimSpace(s.runLines[i]); l != "" {
-			return strings.TrimPrefix(l, "smith: ")
+			return strings.TrimPrefix(l, "smith: ") // words:literal
 		}
 	}
-	return "the command did not finish"
+	return words.Say("tui.outside.the_command_did_not_finish")
 }

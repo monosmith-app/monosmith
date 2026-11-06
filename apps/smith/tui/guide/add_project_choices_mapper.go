@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/monosmith-app/monosmith/apps/smith/compose"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // ChoiceOffer is one choice of a project as `smith choices --json` lists it:
@@ -51,7 +52,7 @@ type ChoiceOffer struct {
 func ParseChoices(text string) ([]ChoiceOffer, error) {
 	var all []ChoiceOffer
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &all); err != nil {
-		return nil, fmt.Errorf("smith choices did not print a list of choices: %w", err)
+		return nil, fmt.Errorf("%s: %w", words.Say("guide.add_project_choices.unreadable"), err) // words:literal
 	}
 	var usable []ChoiceOffer
 	for _, o := range all {
@@ -87,7 +88,7 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 			check := steps[i].Check
 			steps[i].Check = func(a map[string][]string, value string) string {
 				if slices.Contains(existing, value) {
-					return fmt.Sprintf("%s exists already: pick another name", value)
+					return words.Say("guide.add_project_choices.exists", "name", value)
 				}
 				return check(a, value)
 			}
@@ -119,17 +120,17 @@ func AddProjectAction(base Action, offers []ChoiceOffer, existing []string) Acti
 		steps = append(steps, axisSteps(lang, own)...)
 	}
 	if len(existing) >= siblingsMin {
-		steps = append(steps, Step{Key: "follow", Prompt: "Should it do what the other projects here do?",
+		steps = append(steps, Step{Key: "follow", Prompt: words.Say("guide.add_project_choices.should_it_do_what_the_other"),
 			Take: func(a map[string][]string) ([]string, bool) {
 				return []string{"follow"}, first(a, addSetupKey) == setupDefaults
 			},
 			Options: []Option{
-				{Label: "Yes, match the other projects", Value: "follow", Hint: "when most projects of this kind share a test runner or a build tool, so does this one"},
-				{Label: "Follow one project", Value: "like", Hint: "smith add --like <project>: take its choices, whatever the others do"},
-				{Label: "No, use the stack's own defaults", Value: "fresh", Hint: "smith add --fresh"},
+				{Label: words.Say("guide.add_project_choices.yes_match_the_other_projects"), Value: "follow", Hint: words.Say("guide.add_project_choices.when_most_projects_of_this_kind")},
+				{Label: words.Say("guide.add_project_choices.follow_one_project"), Value: "like", Hint: words.Say("guide.add_project_choices.smith_add_like_project_take_its")},
+				{Label: words.Say("guide.add_project_choices.no_use_the_stack_s_own"), Value: "fresh", Hint: words.Say("guide.add_project_choices.smith_add_fresh")},
 			}})
 		like := Step{
-			Key: "like", Prompt: "Follow which project?", Filter: len(existing) > 10,
+			Key: "like", Prompt: words.Say("guide.add_project_choices.follow_which_project"), Filter: len(existing) > 10,
 			Skip: func(a map[string][]string) bool { return first(a, "follow") != "like" },
 		}
 		for _, n := range existing {
@@ -199,7 +200,7 @@ func RemoveProjectAction(base Action, names []string) Action {
 	if len(names) == 0 {
 		return base
 	}
-	pick := Step{Key: "name", Prompt: "Which project?", Filter: len(names) > 10}
+	pick := Step{Key: "name", Prompt: words.Say("guide.add_project_choices.which_project"), Filter: len(names) > 10}
 	for _, n := range names {
 		pick.Options = append(pick.Options, Option{Label: n, Value: n})
 	}
@@ -218,7 +219,7 @@ func RemoveProjectAction(base Action, names []string) Action {
 func choicesStep(lang, kind string, offers []ChoiceOffer, check func(map[string][]string, string) string) Step {
 	step := Step{
 		Key:      withKeyPrefix + lang,
-		Prompt:   "Build it from choices? (space ticks; enter with nothing ticked uses the stack's defaults)",
+		Prompt:   words.Say("guide.add_project_choices.build_it_from_choices_space_ticks"),
 		Glossary: true,
 		Multi:    true,
 		Optional: true,
@@ -251,10 +252,10 @@ func choicesStep(lang, kind string, offers []ChoiceOffer, check func(map[string]
 		listed = append(listed, o)
 		hint := o.Description
 		if len(o.Requires) > 0 {
-			hint += " (needs " + strings.Join(o.Requires, ", ") + ")"
+			hint += words.Say("guide.add_project_choices.needs", "names", strings.Join(o.Requires, ", "))
 		}
 		if o.Default {
-			hint += " (default)"
+			hint += words.Say("guide.add_project_choices.default")
 		}
 		step.Options = append(step.Options, Option{Label: o.Axis + ": " + o.Name, Value: o.Name, Hint: hint, Group: o.Axis, Many: o.Many})
 	}

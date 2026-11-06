@@ -1,7 +1,6 @@
 package depsview
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/progress"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // Model lists the dependencies that have newer releases, patch before
@@ -21,11 +21,11 @@ type Model struct {
 	Waited time.Duration
 	// Projects is how many projects the load covers, set by the shell for drawing (0 when unknown).
 	Projects int
-	Rows   []Row
-	Policy []PolicyLine
-	Err    error
-	Cursor int
-	Marked map[string]bool
+	Rows     []Row
+	Policy   []PolicyLine
+	Err      error
+	Cursor   int
+	Marked   map[string]bool
 	// Anchor is the row a shift-click or shift-arrow extends the marks from.
 	Anchor int
 	// scroll is where the list's window starts, apart from the cursor, so the
@@ -332,7 +332,7 @@ func inProjects(n int) string {
 	if n <= 0 {
 		return ""
 	}
-	return " of " + progress.OfProjects(n)
+	return words.Say("depsview.waiting.scope", "projects", progress.OfProjects(n))
 }
 
 // View draws the view in a w by h area; rowOf maps a line to the row drawn on it.
@@ -342,12 +342,12 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	case v.Err != nil:
 		return []string{th.Failure(v.Err.Error())}, rowOf
 	case !v.Loaded:
-		return pane.Wrap(th.Muted(progress.Waiting("Asking the package registries for newer releases of every dependency"+inProjects(v.Projects)+".", v.Waited)+" On a large workspace this takes up to half a minute; you can use the other tabs meanwhile."), w, 0), rowOf
+		return pane.Wrap(th.Muted(progress.Waiting(words.Say("depsview.waiting", "scope", inProjects(v.Projects)), v.Waited)+words.Say("depsview.waiting.more")), w, 0), rowOf
 	}
 	var tail []string
-	tail = append(tail, "", th.Title("One version"))
+	tail = append(tail, "", th.Title(words.Say("depsview.policy.title")))
 	if len(v.Policy) == 0 {
-		tail = append(tail, "  "+th.Muted("not required yet: press o to make every project use the same version of a shared dependency"))
+		tail = append(tail, "  "+th.Muted(words.Say("depsview.policy.empty")))
 	}
 	for _, p := range v.Policy {
 		mark := th.Success(th.Icons.Passed)
@@ -365,7 +365,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		}
 	}
 	if n := v.chosenMajors(); n > 0 {
-		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+fmt.Sprintf("%d of the chosen packages are major releases: they can break your code. Read their release notes first.", n)))
+		tail = append(tail, "", th.Warning(th.Icons.Warning+" "+words.Say("depsview.chosen.majors", "count", n)))
 	}
 	var wrapped []string
 	for _, l := range tail {
@@ -374,12 +374,12 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 	tail = wrapped
 
 	if len(v.Rows) == 0 {
-		lines = append(lines, th.Success(th.Icons.Passed+" Every dependency is on its latest release."))
+		lines = append(lines, th.Success(th.Icons.Passed+" "+words.Say("depsview.latest")))
 	} else {
 		patch, minor, major := v.levelCounts()
-		lines = append(lines, th.Bold(fmt.Sprintf("%d with newer releases: %d patch · %d minor · %d major", len(v.Rows), patch, minor, major))+th.Muted(fmt.Sprintf("   %d marked", len(v.Marked))))
+		lines = append(lines, th.Bold(words.Say("depsview.summary", "count", len(v.Rows), "patch", patch, "minor", minor, "major", major))+th.Muted(words.Say("depsview.marked", "count", len(v.Marked))))
 		if safe := patch + minor; safe > 0 {
-			lines = append(lines, pane.Wrap(th.Success(fmt.Sprintf("%d patch and minor releases are safe to take together (press s).", safe))+th.Muted(majorWarning(major)), w, 0)...)
+			lines = append(lines, pane.Wrap(th.Success(words.Say("depsview.safe", "count", safe))+th.Muted(majorWarning(major)), w, 0)...)
 		}
 		lines = append(lines, "")
 		nameW := 8
@@ -394,7 +394,7 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 		}
 		headBox := [3]string{"[ ]", "[-]", "[x]"}[v.MarkState()]
 		rowOf[len(lines)] = HeadingRow
-		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols("Package", "Now", "Latest", "Level", "Kind", "Projects"), w)))
+		lines = append(lines, th.Muted(pane.Fit("  "+headBox+" "+cols(words.Say("depsview.column.package"), words.Say("depsview.column.now"), words.Say("depsview.column.latest"), words.Say("depsview.column.level"), words.Say("depsview.column.kind"), words.Say("depsview.column.projects")), w)))
 		// Two group headings may sit among the rows: they take room too.
 		avail := max(h-len(lines)-len(tail)-2, 3)
 		top := v.scroll.Show(v.Cursor, avail, len(v.Rows))
@@ -404,15 +404,15 @@ func (v Model) View(th theme.Theme, w, h int) (lines []string, rowOf map[int]int
 			r := v.Rows[i]
 			if isMajor := r.Level == "major"; i == top || isMajor != prevMajor {
 				if isMajor {
-					lines = append(lines, "  "+th.Warning("Major releases: may break your code, take one at a time"))
+					lines = append(lines, "  "+th.Warning(words.Say("depsview.group.major")))
 				} else {
-					lines = append(lines, "  "+th.Success("Patch and minor releases: safe to take together"))
+					lines = append(lines, "  "+th.Success(words.Say("depsview.group.safe")))
 				}
 			}
 			prevMajor = r.Level == "major"
 			box := "[ ] "
 			if v.Marked[r.Name] {
-				box = "[x] "
+				box = "[x] " // words:literal
 			}
 			level := th.Muted(r.Level)
 			switch r.Level {
@@ -451,7 +451,7 @@ func majorWarning(major int) string {
 	case 0:
 		return ""
 	case 1:
-		return " The 1 major one can break your code: take it on its own."
+		return words.Say("depsview.major.one")
 	}
-	return fmt.Sprintf(" The %d major ones can break your code: take them one at a time.", major)
+	return words.Say("depsview.major.many", "count", major)
 }

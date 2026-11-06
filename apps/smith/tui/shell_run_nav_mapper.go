@@ -6,6 +6,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/apps/smith/tui/pane"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/runview"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 )
 
 // navPart is one part of the run header: its text, the action a click on it
@@ -21,13 +22,13 @@ type navPart struct {
 func (s Shell) navParts() []navPart {
 	idle := !s.running()
 	return []navPart{
-		{"‹ Start", "start", idle},
+		{words.Say("tui.run_nav.start"), "start", idle},
 		{" · ", "", false},
-		{fmt.Sprintf("run %d of %d", s.runAt+1, len(s.runs)), "", false},
+		{words.Say("tui.run_nav.run_of", "value", s.runAt+1, "len", len(s.runs)), "", false},
 		{" · ", "", false},
-		{"‹ older", "older", idle && s.runAt > 0},
+		{words.Say("tui.run_nav.older"), "older", idle && s.runAt > 0},
 		{"  ", "", false},
-		{"newer ›", "newer", idle && s.runAt < len(s.runs)-1},
+		{words.Say("tui.run_nav.newer"), "newer", idle && s.runAt < len(s.runs)-1},
 	}
 }
 
@@ -74,7 +75,7 @@ func (s Shell) lastRun() *runview.Run {
 // its list of recent runs. A run in progress keeps the screen.
 func (s *Shell) openStart() {
 	if s.running() {
-		s.say("A run is in progress; the start screen waits until it ends")
+		s.say(words.Say("tui.run_nav.a_run_is_in_progress_the"))
 		return
 	}
 	s.runSel, s.runHome = "", true
@@ -124,11 +125,11 @@ func (s Shell) recentLine(i, w int) string {
 func (s Shell) runResult(r *runview.Run) string {
 	switch {
 	case !r.Finished:
-		return s.th.Info(s.th.Spin(s.tick) + " running")
+		return s.th.Info(words.Say("tui.run_nav.running", "spin", s.th.Spin(s.tick)))
 	case r.Cancelled:
-		return s.th.Warning(s.th.Icons.Skipped + " stopped")
+		return s.th.Warning(words.Say("tui.run_nav.stopped", "skipped", s.th.Icons.Skipped))
 	case r.OK():
-		return s.th.Success(s.th.Icons.Passed + " passed")
+		return s.th.Success(words.Say("tui.run_nav.passed", "passed", s.th.Icons.Passed))
 	}
-	return s.th.Failure(s.th.Icons.Failed + " failed")
+	return s.th.Failure(words.Say("tui.run_nav.failed", "failed", s.th.Icons.Failed))
 }

@@ -40,11 +40,13 @@ func checkLockfile(root string, run func(root string) (output string, ran bool, 
 	if !ran {
 		return nil
 	}
-	f := protocol.Finding{Check: lockfileCheck, OK: err == nil, Warning: true}
+	f := protocol.Finding{Check: lockfileCheck, OK: err == nil, Warning: true, Area: AreaDependencies}
 	if err == nil {
 		return []protocol.Finding{f}
 	}
-	f.Detail = "npm ci refuses package-lock.json, so a clean install (CI, a new clone) fails: " + firstNpmError(output)
+	npmError := firstNpmError(output)
+	f.Problem = "npm ci refuses package-lock.json: " + npmError
+	f.Detail = "npm ci refuses package-lock.json, so a clean install (CI, a new clone) fails: " + npmError
 	f.Remedy = "run npm install, then commit package-lock.json (`smith doctor --fix` does the install)"
 	install := []string{"npm", "install", "--no-audit", "--no-fund"}
 	f.Fix = &protocol.Fix{

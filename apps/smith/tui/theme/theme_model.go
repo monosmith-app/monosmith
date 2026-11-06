@@ -14,6 +14,7 @@ type Theme struct {
 
 	accent, success, warning, failure, info, muted, faint, text lipgloss.Style
 	selected, hover, bar, title                                 lipgloss.Style
+	button, buttonHover, buttonActive                           lipgloss.Style
 }
 
 // New builds a theme from a choice.
@@ -40,9 +41,14 @@ func New(c Choice) Theme {
 	if t.Colour {
 		th.selected = bg(t.Highlight).Bold(true).Foreground(lipgloss.Color(t.Accent))
 		th.hover = bg(t.Highlight)
+		on := func(bgCol string) lipgloss.Style { return bg(bgCol).Foreground(lipgloss.Color(t.ButtonOn)) }
+		th.button = bg(t.Button).Foreground(lipgloss.Color(t.ButtonText))
+		th.buttonHover, th.buttonActive = on(t.ButtonHover), on(t.ButtonActive).Bold(true)
 	} else {
 		th.selected = lipgloss.NewStyle().Reverse(true).Bold(true)
 		th.hover = lipgloss.NewStyle().Underline(true)
+		th.buttonHover = lipgloss.NewStyle().Reverse(true)
+		th.buttonActive = lipgloss.NewStyle().Reverse(true).Bold(true)
 	}
 	return th
 }
@@ -78,6 +84,14 @@ func (t Theme) Faint(s string) string    { return t.faint.Render(s) }
 func (t Theme) Title(s string) string    { return t.title.Render(s) }
 func (t Theme) Selected(s string) string { return t.selected.Render(s) }
 func (t Theme) Hover(s string) string    { return t.hover.Render(s) }
+
+// Button, ButtonHover and ButtonActive render s as a clickable item at rest,
+// under the pointer, and pressed or selected. Without colour a resting item is
+// told apart by its brackets (the caller adds them, see the button package) and
+// the other two by reverse video.
+func (t Theme) Button(s string) string       { return t.button.Render(s) }
+func (t Theme) ButtonHover(s string) string  { return t.buttonHover.Render(s) }
+func (t Theme) ButtonActive(s string) string { return t.buttonActive.Render(s) }
 
 // Bold renders s in bold.
 func (t Theme) Bold(s string) string { return lipgloss.NewStyle().Bold(true).Render(s) }

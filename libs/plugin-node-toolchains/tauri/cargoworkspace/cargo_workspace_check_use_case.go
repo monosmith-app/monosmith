@@ -9,6 +9,7 @@ import (
 
 	"github.com/monosmith-app/monosmith/libs/plugin-node-toolchains/tauri/tauriapp"
 	"github.com/monosmith-app/monosmith/packages/plugin-sdk/protocol"
+	"github.com/monosmith-app/monosmith/packages/plugin-sdk/toolrun"
 )
 
 var (
@@ -63,8 +64,10 @@ func WorkspaceFinding(workspaceRoot string, roots []string) protocol.Finding {
 	hits := workspaceMembers(workspaceRoot, roots)
 	return protocol.Finding{
 		Check:   "src-tauri is outside the root Cargo workspace",
+		Area:    "config",
 		OK:      len(hits) == 0,
 		Warning: true,
+		Problem: toolrun.ProblemUnless(len(hits) == 0, "the root Cargo.toml [workspace] members include "+strings.Join(hits, ", ")),
 		Detail:  "the root Cargo.toml [workspace] members match " + strings.Join(hits, ", "),
 		Remedy:  "narrow members so they do not match src-tauri, or list it under exclude",
 	}

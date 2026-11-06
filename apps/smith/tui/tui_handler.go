@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/monosmith-app/monosmith/apps/smith/tui/sources"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/theme"
 	"github.com/monosmith-app/monosmith/apps/smith/tui/userprefs"
+	"github.com/monosmith-app/monosmith/apps/smith/tui/words"
 	"github.com/monosmith-app/monosmith/apps/smith/updatenotice"
 	"github.com/monosmith-app/monosmith/apps/smith/workspace"
 	"golang.org/x/term"
@@ -26,7 +28,7 @@ import (
 // is typing at a terminal and this is not CI. When standard output is not a
 // terminal the questions are plain lines (see screenreader.Plain).
 func Interactive() bool {
-	return term.IsTerminal(int(os.Stdin.Fd())) && os.Getenv("CI") == ""
+	return term.IsTerminal(int(os.Stdin.Fd())) && os.Getenv(words.Say("tui.tui.ci")) == ""
 }
 
 // Choose runs the shell full screen, with the mouse, and returns the smith
@@ -82,10 +84,10 @@ type reopening struct {
 func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDescription, start []string, note string, resume *Resume) (chosen Chosen, reopen *reopening, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			chosen, reopen, err = Chosen{}, nil, fmt.Errorf("the interface stopped unexpectedly: %v", r)
+			chosen, reopen, err = Chosen{}, nil, errors.New(words.Say("tui.handler.stopped_unexpectedly", "reason", r))
 		}
 	}()
-	name := "no workspace"
+	name := words.Say("tui.tui.no_workspace")
 	inside := false
 	enabled := pluginhost.BuiltinNames()
 	problem, commitOps := "", false
@@ -135,7 +137,7 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 			return Chosen{}, nil, err
 		}
 		if len(argv) > 0 {
-			fmt.Fprintf(out, "Running: %s\n\n", commands.Line(argv))
+			fmt.Fprint(out, words.Say("tui.handler.running", "command", commands.Line(argv)))
 		}
 		return Chosen{Argv: argv}, nil, nil
 	}
@@ -155,6 +157,8 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 		Version:   version, Workspace: name, Actions: actions, Commands: catalog, EmptyFolder: empty,
 		Problem: problem, Repair: repair, CommitOperations: commitOps, Environments: environments, Resume: resume,
 		Theme: theme.New(theme.ChooseWith(os.Getenv, theme.DarkBackground(os.Getenv), prefs.Theme, prefs.Icons)),
+		// The sizes of the panels are kept in the same file as the other choices.
+		Splits: prefs.Splits, SaveSplits: saveSplits,
 	}
 	cfg.Notice = strings.Join(updatenotice.Start(updatenotice.ForThisProcess(version, 0)).Lines(), "  ")
 	if note != "" {
@@ -191,7 +195,16 @@ func chooseOnce(version string, out io.Writer, catalog []clicontract.CommandDesc
 	}
 	argv := sh.Argv
 	if len(argv) > 0 {
-		fmt.Fprintf(out, "→ %s\n\n", commands.Line(argv))
+		fmt.Fprint(out, words.Say("tui.handler.chosen", "command", commands.Line(argv)))
 	}
 	return Chosen{Argv: argv, Form: sh.Form, Answers: sh.Answers}, nil, nil
+}
+
+// saveSplits keeps the sizes of the panels in the preferences file; a file that
+// cannot be written loses only the sizes, so the error is dropped.
+func saveSplits(sizes map[string]int) {
+	home := pluginhost.Home()
+	p, _ := userprefs.Load(home)
+	p.Splits = sizes
+	_ = userprefs.Save(home, p)
 }

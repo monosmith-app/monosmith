@@ -36,11 +36,12 @@ func CheckBuildDir(workspaceRoot string, p protocol.Project, dependents ...strin
 		remedy = "pass --outDir \"" + protocol.BuildDirFromProject(p.Root) + "\" in the build script, and point package.json's main, types and start script there"
 	}
 	finding := protocol.Finding{
-		Check: p.Name + " compiles into " + protocol.ProjectBuildDir(p.Root), OK: protocol.InBuildDir(resolved),
+		Check: p.Name + " compiles into " + protocol.ProjectBuildDir(p.Root), Project: p.Name, OK: protocol.InBuildDir(resolved),
 		Detail: source + " compiles into " + resolved + ", inside the source tree",
 		Remedy: remedy,
 	}
 	if !finding.OK {
+		finding.Problem = "compiles into " + resolved + ", not " + protocol.ProjectBuildDir(p.Root)
 		broken := false
 		if declared := declaredBuildOutputs(p); declared != "" && !strings.Contains(", "+declared+",", ", "+resolved+",") {
 			finding.Detail += ". The build task caches " + declared + " instead, which that build never writes, so a cache hit restores nothing"

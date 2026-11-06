@@ -45,12 +45,13 @@ func stableOnlyFindings(all []*projectgraph.Project, channels bool) []protocol.F
 		sort.Strings(every)
 		sort.Strings(stable)
 		if len(every) > 0 {
-			out = append(out, protocol.Finding{Check: "release: " + p.Name + " pre-releases and registry size", Warning: true,
-				Detail: fmt.Sprintf("every pre-release of %s is published to %s, one package per platform each; these registries limit the total size of a project and refuse uploads when it is full", p.Name, strings.Join(every, ", ")),
-				Remedy: fmt.Sprintf("set stable_only = [%s] in [projects.%s.release] to send them stable versions only", quotedList(every), p.Name)})
+			out = append(out, protocol.Finding{Check: "release: " + p.Name + " pre-releases and registry size", Warning: true, Project: p.Name,
+				Problem: fmt.Sprintf("publishes every pre-release to %s", strings.Join(every, ", ")),
+				Detail:  fmt.Sprintf("every pre-release of %s is published to %s, one package per platform each; these registries limit the total size of a project and refuse uploads when it is full", p.Name, strings.Join(every, ", ")),
+				Remedy:  fmt.Sprintf("set stable_only = [%s] in [projects.%s.release] to send them stable versions only", quotedList(every), p.Name)})
 		}
 		if len(stable) > 0 {
-			out = append(out, protocol.Finding{Check: "release: " + p.Name + " pre-releases and registry size", OK: true,
+			out = append(out, protocol.Finding{Check: "release: " + p.Name + " pre-releases and registry size", OK: true, Project: p.Name,
 				Detail: fmt.Sprintf("%s receive stable versions only; a pre-release is reported as skipped: pre-release", strings.Join(stable, ", "))})
 		}
 	}
